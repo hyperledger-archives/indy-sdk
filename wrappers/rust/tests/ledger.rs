@@ -3,6 +3,7 @@
 extern crate rmp_serde;
 extern crate byteorder;
 extern crate indy;
+extern crate futures;
 #[allow(unused_variables)]
 #[allow(unused_macros)]
 #[allow(dead_code)]
@@ -10,14 +11,21 @@ extern crate indy;
 pub mod utils;
 
 use indy::did::Did;
+#[cfg(feature="extended_api_types")]
 use indy::ErrorCode;
 use indy::ledger::Ledger;
 use indy::pool::Pool;
+#[cfg(feature="extended_api_types")]
 use std::sync::mpsc::channel;
+#[cfg(feature="extended_api_types")]
 use std::time::Duration;
-use utils::constants::{INVALID_TIMEOUT, PROTOCOL_VERSION, VALID_TIMEOUT};
+#[cfg(feature="extended_api_types")]
+use utils::constants::{INVALID_TIMEOUT, VALID_TIMEOUT};
+use utils::constants::PROTOCOL_VERSION;
 use utils::setup::{Setup, SetupConfig};
 use utils::wallet::Wallet;
+#[allow(unused_imports)]
+use futures::Future;
 
 const REQUEST_JSON: &str = r#"{
                               "reqId":1496822211362017764,
@@ -36,7 +44,7 @@ mod test_sign_and_submit_request {
 
     #[test]
     pub fn sign_and_submit_request_success() {
-        Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
+        Pool::set_protocol_version(PROTOCOL_VERSION as usize).wait().unwrap();
 
         let wallet = Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
@@ -46,12 +54,12 @@ mod test_sign_and_submit_request {
             num_users: 0,
         });
 
-        let pool_handle = Pool::open_ledger(&setup.pool_name, None).unwrap();
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
+        let pool_handle = Pool::open_ledger(&setup.pool_name, None).wait().unwrap();
+        let (did, _) = Did::new(wallet.handle, "{}").wait().unwrap();
 
-        let result = Ledger::sign_and_submit_request(pool_handle, wallet.handle, &did, REQUEST_JSON);
+        let result = Ledger::sign_and_submit_request(pool_handle, wallet.handle, &did, REQUEST_JSON).wait();
 
-        Pool::close(pool_handle).unwrap();
+        Pool::close(pool_handle).wait().unwrap();
 
         match result {
             Ok(_) => { },
@@ -91,6 +99,7 @@ mod test_sign_and_submit_request {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn sign_and_submit_request_async_success() {
         Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
 
@@ -120,6 +129,7 @@ mod test_sign_and_submit_request {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn sign_and_submit_request_timeout_success() {
 
         Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
@@ -147,6 +157,7 @@ mod test_sign_and_submit_request {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     #[cfg(feature = "timeout_tests")]
     pub fn sign_and_submit_request_timeout_times_out() {
         Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
@@ -183,7 +194,7 @@ mod test_submit_request {
 
     #[test]
     pub fn submit_request_success() {
-        Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
+        Pool::set_protocol_version(PROTOCOL_VERSION as usize).wait().unwrap();
 
         let wallet = Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
@@ -193,12 +204,12 @@ mod test_submit_request {
             num_users: 0,
         });
 
-        let pool_handle = Pool::open_ledger(&setup.pool_name, None).unwrap();
-        let (_, _) = Did::new(wallet.handle, "{}").unwrap();
+        let pool_handle = Pool::open_ledger(&setup.pool_name, None).wait().unwrap();
+        let (_, _) = Did::new(wallet.handle, "{}").wait().unwrap();
 
-        let submit_request_result = Ledger::submit_request(pool_handle, REQUEST_JSON);
+        let submit_request_result = Ledger::submit_request(pool_handle, REQUEST_JSON).wait();
 
-        Pool::close(pool_handle).unwrap();
+        Pool::close(pool_handle).wait().unwrap();
 
         match submit_request_result {
             Ok(submit_request_response) => {
@@ -215,6 +226,7 @@ mod test_submit_request {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn submit_request_async_success() {
         Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
 
@@ -249,6 +261,7 @@ mod test_submit_request {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn submit_request_timeout_success() {
         Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
 
@@ -281,6 +294,7 @@ mod test_submit_request {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     #[cfg(feature = "timeout_tests")]
     pub fn submit_request_timeout_times_out() {
         Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
@@ -322,7 +336,7 @@ mod test_submit_action {
     #[ignore] // TODO: restore after IS-1027 will be fixed
     pub fn submit_action_this_hangs_indefinitely() {
 
-        Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
+        Pool::set_protocol_version(PROTOCOL_VERSION as usize).wait().unwrap();
 
         let wallet = Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
@@ -332,21 +346,21 @@ mod test_submit_action {
             num_users: 0,
         });
 
-        let pool_handle = Pool::open_ledger(&setup.pool_name, None).unwrap();
+        let pool_handle = Pool::open_ledger(&setup.pool_name, None).wait().unwrap();
 
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
-        let validator_request = Ledger::build_get_validator_info_request(&did).unwrap();
-        let signed_request = Ledger::sign_request(wallet.handle, &did, &validator_request).unwrap();
+        let (did, _) = Did::new(wallet.handle, "{}").wait().unwrap();
+        let validator_request = Ledger::build_get_validator_info_request(&did).wait().unwrap();
+        let signed_request = Ledger::sign_request(wallet.handle, &did, &validator_request).wait().unwrap();
 
-        Ledger::submit_action(pool_handle, &signed_request, "[]", 5).unwrap_err();
+        Ledger::submit_action(pool_handle, &signed_request, "[]", 5).wait().unwrap_err();
 
-        Pool::close(pool_handle).unwrap();
+        Pool::close(pool_handle).wait().unwrap();
     }
 
     #[test]
     pub fn submit_action_success() {
 
-        Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
+        Pool::set_protocol_version(PROTOCOL_VERSION as usize).wait().unwrap();
 
         let wallet = Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
@@ -356,15 +370,15 @@ mod test_submit_action {
             num_users: 0,
         });
 
-        let pool_handle = Pool::open_ledger(&setup.pool_name, None).unwrap();
+        let pool_handle = Pool::open_ledger(&setup.pool_name, None).wait().unwrap();
 
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
-        let validator_request = Ledger::build_get_validator_info_request(&did).unwrap();
-        let signed_request = Ledger::sign_request(wallet.handle, &did, &validator_request).unwrap();
+        let (did, _) = Did::new(wallet.handle, "{}").wait().unwrap();
+        let validator_request = Ledger::build_get_validator_info_request(&did).wait().unwrap();
+        let signed_request = Ledger::sign_request(wallet.handle, &did, &validator_request).wait().unwrap();
 
-        let result = Ledger::submit_action(pool_handle, &signed_request, NODES, 5);
+        let result = Ledger::submit_action(pool_handle, &signed_request, NODES, 5).wait();
 
-        Pool::close(pool_handle).unwrap();
+        Pool::close(pool_handle).wait().unwrap();
 
         match result {
             Ok(_) => {},
@@ -375,6 +389,7 @@ mod test_submit_action {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn submit_action_async_success() {
         Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
 
@@ -406,6 +421,7 @@ mod test_submit_action {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn submit_action_timeout_success() {
         Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
 
@@ -435,6 +451,7 @@ mod test_submit_action {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     #[cfg(feature = "timeout_tests")]
     pub fn submit_action_timeout_times_out() {
         Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
@@ -473,7 +490,7 @@ mod test_sign_request {
 
     #[test]
     pub fn sign_request_success() {
-        Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
+        Pool::set_protocol_version(PROTOCOL_VERSION as usize).wait().unwrap();
 
         let wallet = Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
@@ -483,13 +500,13 @@ mod test_sign_request {
             num_users: 0,
         });
 
-        let pool_handle = Pool::open_ledger(&setup.pool_name, None).unwrap();
+        let pool_handle = Pool::open_ledger(&setup.pool_name, None).wait().unwrap();
 
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
-        let validator_request = Ledger::build_get_validator_info_request(&did).unwrap();
-        let signed_request_result = Ledger::sign_request(wallet.handle, &did, &validator_request);
+        let (did, _) = Did::new(wallet.handle, "{}").wait().unwrap();
+        let validator_request = Ledger::build_get_validator_info_request(&did).wait().unwrap();
+        let signed_request_result = Ledger::sign_request(wallet.handle, &did, &validator_request).wait();
 
-        Pool::close(pool_handle).unwrap();
+        Pool::close(pool_handle).wait().unwrap();
 
         match signed_request_result {
             Ok(_) => {},
@@ -500,6 +517,7 @@ mod test_sign_request {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn sign_request_async_success() {
         Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
 
@@ -531,6 +549,7 @@ mod test_sign_request {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn sign_request_timeout_success() {
         Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
 
@@ -559,6 +578,7 @@ mod test_sign_request {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     #[cfg(feature = "timeout_tests")]
     pub fn sign_request_timeout_times_out() {
         Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
@@ -596,7 +616,7 @@ mod test_multi_sign_request {
 
     #[test]
     pub fn multi_sign_request_success() {
-        Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
+        Pool::set_protocol_version(PROTOCOL_VERSION as usize).wait().unwrap();
 
         let wallet = Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
@@ -606,13 +626,13 @@ mod test_multi_sign_request {
             num_users: 0,
         });
 
-        let pool_handle = Pool::open_ledger(&setup.pool_name, None).unwrap();
+        let pool_handle = Pool::open_ledger(&setup.pool_name, None).wait().unwrap();
 
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
-        let validator_request = Ledger::build_get_validator_info_request(&did).unwrap();
-        let signed_request_result = Ledger::multi_sign_request(wallet.handle, &did, &validator_request);
+        let (did, _) = Did::new(wallet.handle, "{}").wait().unwrap();
+        let validator_request = Ledger::build_get_validator_info_request(&did).wait().unwrap();
+        let signed_request_result = Ledger::multi_sign_request(wallet.handle, &did, &validator_request).wait();
 
-        Pool::close(pool_handle).unwrap();
+        Pool::close(pool_handle).wait().unwrap();
 
         match signed_request_result {
             Ok(_) => {},
@@ -623,6 +643,7 @@ mod test_multi_sign_request {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn multi_sign_request_async_success() {
         Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
 
@@ -652,6 +673,7 @@ mod test_multi_sign_request {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn multi_sign_request_timeout_success() {
         Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
 
@@ -680,6 +702,7 @@ mod test_multi_sign_request {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     #[cfg(feature = "timeout_tests")]
     pub fn multi_sign_request_timeout_times_out() {
         Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
@@ -719,13 +742,13 @@ mod test_build_nym_request {
 
     #[test]
     pub fn build_nym_request_success() {
-        Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
+        Pool::set_protocol_version(PROTOCOL_VERSION as usize).wait().unwrap();
 
         let wallet = Wallet::new();
-        let (did, verkey) = Did::new(wallet.handle, "{}").unwrap();
-        let (trustee_did, _) = Did::new(wallet.handle, "{}").unwrap();
+        let (did, verkey) = Did::new(wallet.handle, "{}").wait().unwrap();
+        let (trustee_did, _) = Did::new(wallet.handle, "{}").wait().unwrap();
 
-        let nym_result = Ledger::build_nym_request(&trustee_did, &did, Some(&verkey), None, NymRole::Trustee.prepare());
+        let nym_result = Ledger::build_nym_request(&trustee_did, &did, Some(&verkey), None, NymRole::Trustee.prepare()).wait();
 
         match nym_result {
             Ok(_) => {},
@@ -738,13 +761,13 @@ mod test_build_nym_request {
 
     #[test]
     pub fn build_nym_request_with_no_verkey_success() {
-        Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
+        Pool::set_protocol_version(PROTOCOL_VERSION as usize).wait().unwrap();
 
         let wallet = Wallet::new();
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
-        let (trustee_did, _) = Did::new(wallet.handle, "{}").unwrap();
+        let (did, _) = Did::new(wallet.handle, "{}").wait().unwrap();
+        let (trustee_did, _) = Did::new(wallet.handle, "{}").wait().unwrap();
 
-        let nym_result = Ledger::build_nym_request(&trustee_did, &did, None, None, NymRole::Trustee.prepare());
+        let nym_result = Ledger::build_nym_request(&trustee_did, &did, None, None, NymRole::Trustee.prepare()).wait();
 
         match nym_result {
             Ok(_) => {},
@@ -757,13 +780,13 @@ mod test_build_nym_request {
 
     #[test]
     pub fn build_nym_request_with_data_success() {
-        Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
+        Pool::set_protocol_version(PROTOCOL_VERSION as usize).wait().unwrap();
 
         let wallet = Wallet::new();
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
-        let (trustee_did, _) = Did::new(wallet.handle, "{}").unwrap();
+        let (did, _) = Did::new(wallet.handle, "{}").wait().unwrap();
+        let (trustee_did, _) = Did::new(wallet.handle, "{}").wait().unwrap();
 
-        let nym_result = Ledger::build_nym_request(&trustee_did, &did, None, Some("some_data"), NymRole::Trustee.prepare());
+        let nym_result = Ledger::build_nym_request(&trustee_did, &did, None, Some("some_data"), NymRole::Trustee.prepare()).wait();
 
         match nym_result {
             Ok(_) => {},
@@ -774,6 +797,7 @@ mod test_build_nym_request {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn build_nym_request_async_success() {
         Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
 
@@ -796,6 +820,7 @@ mod test_build_nym_request {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn build_nym_request_timeout_success() {
 
         Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
@@ -815,6 +840,7 @@ mod test_build_nym_request {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     #[cfg(feature = "timeout_tests")]
     pub fn build_nym_request_timeout_times_out() {
         Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
@@ -842,14 +868,14 @@ mod test_build_get_nym_request {
 
     #[test]
     pub fn build_get_nym_request_success() {
-        Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
+        Pool::set_protocol_version(PROTOCOL_VERSION as usize).wait().unwrap();
 
         let submitter_wallet = Wallet::new();
         let wallet = Wallet::new();
-        let (submitter_did, _) = Did::new(submitter_wallet.handle, "{}").unwrap();
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
+        let (submitter_did, _) = Did::new(submitter_wallet.handle, "{}").wait().unwrap();
+        let (did, _) = Did::new(wallet.handle, "{}").wait().unwrap();
 
-        let get_result = Ledger::build_get_nym_request(Some(&submitter_did), &did);
+        let get_result = Ledger::build_get_nym_request(Some(&submitter_did), &did).wait();
 
         match get_result {
             Ok(_) => {},
@@ -861,12 +887,12 @@ mod test_build_get_nym_request {
 
     #[test]
     pub fn build_get_nym_request_no_submitter_did_success() {
-        Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
+        Pool::set_protocol_version(PROTOCOL_VERSION as usize).wait().unwrap();
 
         let wallet = Wallet::new();
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
+        let (did, _) = Did::new(wallet.handle, "{}").wait().unwrap();
 
-        let get_result = Ledger::build_get_nym_request(None, &did);
+        let get_result = Ledger::build_get_nym_request(None, &did).wait();
 
         match get_result {
             Ok(_) => {},
@@ -877,6 +903,7 @@ mod test_build_get_nym_request {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn build_get_nym_request_async_success() {
         Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
 
@@ -899,6 +926,7 @@ mod test_build_get_nym_request {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn build_get_nym_request_timeout_success() {
         Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
 
@@ -918,6 +946,7 @@ mod test_build_get_nym_request {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     #[cfg(feature = "timeout_tests")]
     pub fn build_get_nym_request_timeout_times_out() {
         Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
@@ -949,9 +978,9 @@ mod test_build_attrib_request {
 
         let submitter_wallet = Wallet::new();
         let wallet = Wallet::new();
-        let (submitter_did, _) = Did::new(submitter_wallet.handle, "{}").unwrap();
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
-        match Ledger::build_attrib_request(&submitter_did, &did, None, Some("{}"), None) {
+        let (submitter_did, _) = Did::new(submitter_wallet.handle, "{}").wait().unwrap();
+        let (did, _) = Did::new(wallet.handle, "{}").wait().unwrap();
+        match Ledger::build_attrib_request(&submitter_did, &did, None, Some("{}"), None).wait() {
             Ok(_) => {},
             Err(ec) => {
                 assert!(false, "build_attrib_request failed with error {:?}", ec);
@@ -960,6 +989,7 @@ mod test_build_attrib_request {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn build_attrib_request_async_success() {
         let submitter_wallet = Wallet::new();
         let wallet = Wallet::new();
@@ -981,6 +1011,7 @@ mod test_build_attrib_request {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn build_attrib_request_timeout_success() {
 
         let submitter_wallet = Wallet::new();
@@ -996,6 +1027,7 @@ mod test_build_attrib_request {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     #[cfg(feature = "timeout_tests")]
     pub fn build_attrib_request_timeout_times_out() {
         let submitter_wallet = Wallet::new();
@@ -1023,9 +1055,9 @@ mod test_build_get_attrib_request {
 
         let submitter_wallet = Wallet::new();
         let wallet = Wallet::new();
-        let (submitter_did, _) = Did::new(submitter_wallet.handle, "{}").unwrap();
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
-        match Ledger::build_get_attrib_request(Some(&submitter_did), &did, Some("{}"), None, None) {
+        let (submitter_did, _) = Did::new(submitter_wallet.handle, "{}").wait().unwrap();
+        let (did, _) = Did::new(wallet.handle, "{}").wait().unwrap();
+        match Ledger::build_get_attrib_request(Some(&submitter_did), &did, Some("{}"), None, None).wait() {
             Ok(_) => {},
             Err(ec) => {
                 assert!(false, "build_attrib_request failed with error {:?}", ec);
@@ -1034,6 +1066,7 @@ mod test_build_get_attrib_request {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn build_get_attrib_request_async_success() {
         let submitter_wallet = Wallet::new();
         let wallet = Wallet::new();
@@ -1055,6 +1088,7 @@ mod test_build_get_attrib_request {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn build_get_attrib_request_timeout_success() {
 
         let submitter_wallet = Wallet::new();
@@ -1070,6 +1104,7 @@ mod test_build_get_attrib_request {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     #[cfg(feature = "timeout_tests")]
     pub fn build_get_attrib_request_timeout_times_out() {
         let submitter_wallet = Wallet::new();
@@ -1096,9 +1131,9 @@ mod test_build_schema_request {
     #[test]
     pub fn build_schema_request_success() {
         let wallet = Wallet::new();
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
+        let (did, _) = Did::new(wallet.handle, "{}").wait().unwrap();
 
-        match Ledger::build_schema_request(&did, SCHEMA_DATA) {
+        match Ledger::build_schema_request(&did, SCHEMA_DATA).wait() {
             Ok(_) => {},
             Err(ec) => {
                 assert!(false, "build_schema_request failed with error {:?}", ec);
@@ -1107,6 +1142,7 @@ mod test_build_schema_request {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn build_schema_request_async_success() {
         let wallet = Wallet::new();
         let (did, _) = Did::new(wallet.handle, "{}").unwrap();
@@ -1124,6 +1160,7 @@ mod test_build_schema_request {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn build_schema_request_timeout_success() {
         let wallet = Wallet::new();
         let (did, _) = Did::new(wallet.handle, "{}").unwrap();
@@ -1137,6 +1174,7 @@ mod test_build_schema_request {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     #[cfg(feature = "timeout_tests")]
     pub fn build_schema_request_timeout_times_out() {
         let wallet = Wallet::new();
@@ -1162,10 +1200,10 @@ use super::*;
     #[test]
     pub fn build_get_schema_request_success() {
         let wallet = Wallet::new();
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
+        let (did, _) = Did::new(wallet.handle, "{}").wait().unwrap();
 
 
-        match Ledger::build_get_schema_request(Some(&did), SCHEMA_REQUEST) {
+        match Ledger::build_get_schema_request(Some(&did), SCHEMA_REQUEST).wait() {
             Ok(_) => {},
             Err(ec) => {
                 assert!(false, "build_get_schema_request failed with error {:?}", ec);
@@ -1174,6 +1212,7 @@ use super::*;
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn build_get_schema_request_async_success() {
         let wallet = Wallet::new();
         let (did, _) = Did::new(wallet.handle, "{}").unwrap();
@@ -1191,6 +1230,7 @@ use super::*;
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn build_get_schema_request_timeout_success() {
         let wallet = Wallet::new();
         let (did, _) = Did::new(wallet.handle, "{}").unwrap();
@@ -1204,6 +1244,7 @@ use super::*;
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     #[cfg(feature = "timeout_tests")]
     pub fn build_get_schema_request_timeout_times_out() {
         let wallet = Wallet::new();
@@ -1236,8 +1277,8 @@ mod test_parse_get_schema_response {
     }
 
     fn build_schema(did: &String, pool_handle: i32) {
-        let build_schema = Ledger::build_schema_request(&did, SCHEMA_DATA).unwrap();
-        let submit_response = Ledger::submit_request(pool_handle, &build_schema).unwrap();
+        let build_schema = Ledger::build_schema_request(&did, SCHEMA_DATA).wait().unwrap();
+        let submit_response = Ledger::submit_request(pool_handle, &build_schema).wait().unwrap();
     }
 
     #[test]
@@ -1245,7 +1286,7 @@ mod test_parse_get_schema_response {
         Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
 
         let wallet = Wallet::new();
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
+        let (did, _) = Did::new(wallet.handle, "{}").wait().unwrap();
         let setup = Setup::new(&wallet, SetupConfig {
             connect_to_pool: false,
             num_trustees: 0,
@@ -1253,18 +1294,18 @@ mod test_parse_get_schema_response {
             num_users: 0,
         });
 
-        let pool_handle = Pool::open_ledger(&setup.pool_name, None).unwrap();
+        let pool_handle = Pool::open_ledger(&setup.pool_name, None).wait().unwrap();
 
         build_schema(&did, pool_handle);
         let schema_request = create_build_schema_request(&did);
 
-        let schema_response = Ledger::build_get_schema_request(Some(&did), &schema_request).unwrap();
-        let signed_response = Ledger::sign_request(wallet.handle, &did,&schema_response).unwrap();
-        let submit_response = Ledger::submit_request(pool_handle, &signed_response).unwrap();
+        let schema_response = Ledger::build_get_schema_request(Some(&did), &schema_request).wait().unwrap();
+        let signed_response = Ledger::sign_request(wallet.handle, &did,&schema_response).wait().unwrap();
+        let submit_response = Ledger::submit_request(pool_handle, &signed_response).wait().unwrap();
 
-        let parse_response = Ledger::parse_get_schema_response(&submit_response);
+        let parse_response = Ledger::parse_get_schema_response(&submit_response).wait();
 
-        Pool::close(pool_handle).unwrap();
+        Pool::close(pool_handle).wait().unwrap();
 
         match parse_response {
             Ok(_) => {},
@@ -1275,6 +1316,7 @@ mod test_parse_get_schema_response {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn parse_get_schema_response_async_success() {
         Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
 
@@ -1311,6 +1353,7 @@ mod test_parse_get_schema_response {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn parse_get_schema_response_timeout_success() {
         let wallet = Wallet::new();
         let (did, _) = Did::new(wallet.handle, "{}").unwrap();
@@ -1326,6 +1369,7 @@ mod test_parse_get_schema_response {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     #[cfg(feature = "timeout_tests")]
     pub fn parse_get_schema_response_timeout_times_out() {
         let wallet = Wallet::new();
@@ -1352,9 +1396,9 @@ mod test_build_get_ddo_request {
     #[test]
     pub fn build_get_ddo_request_success() {
         let wallet = Wallet::new();
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
+        let (did, _) = Did::new(wallet.handle, "{}").wait().unwrap();
 
-        match Ledger::build_get_ddo_request(Some(&did), &did) {
+        match Ledger::build_get_ddo_request(Some(&did), &did).wait() {
             Ok(_) => {},
             Err(ec) => {
                 assert!(false, "build_get_ddo_request failed error_code {:?}", ec);
@@ -1363,6 +1407,7 @@ mod test_build_get_ddo_request {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn build_get_ddo_request_async_success() {
         let wallet = Wallet::new();
         let (did, _) = Did::new(wallet.handle, "{}").unwrap();
@@ -1380,6 +1425,7 @@ mod test_build_get_ddo_request {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn build_get_ddo_request_timeout_success() {
         let wallet = Wallet::new();
         let (did, _) = Did::new(wallet.handle, "{}").unwrap();
@@ -1393,6 +1439,7 @@ mod test_build_get_ddo_request {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     #[cfg(feature = "timeout_tests")]
     pub fn build_get_ddo_request_timeout_times_out() {
         let wallet = Wallet::new();
@@ -1418,9 +1465,9 @@ mod test_build_get_txn_request {
     #[test]
     pub fn build_get_txn_request_success() {
         let wallet = Wallet::new();
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
+        let (did, _) = Did::new(wallet.handle, "{}").wait().unwrap();
 
-        match Ledger::build_get_txn_request(Some(&did), Some(LEDGER_TYPE), 1) {
+        match Ledger::build_get_txn_request(Some(&did), Some(LEDGER_TYPE), 1).wait() {
             Ok(_) => {},
             Err(ec) => {
                 assert!(false, "build_get_txn_request failed error_code {:?}", ec);
@@ -1429,6 +1476,7 @@ mod test_build_get_txn_request {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn build_get_txn_request_async_success() {
         let wallet = Wallet::new();
         let (did, _) = Did::new(wallet.handle, "{}").unwrap();
@@ -1448,6 +1496,7 @@ mod test_build_get_txn_request {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn build_get_txn_request_timeout_success() {
         let wallet = Wallet::new();
         let (did, _) = Did::new(wallet.handle, "{}").unwrap();
@@ -1461,6 +1510,7 @@ mod test_build_get_txn_request {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     #[cfg(feature = "timeout_tests")]
     pub fn build_get_txn_request_timeout_times_out() {
         let wallet = Wallet::new();
@@ -1487,9 +1537,9 @@ mod test_build_cred_def_request {
     pub fn test_build_cred_def_request_success(){
 
         let wallet = Wallet::new();
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
+        let (did, _) = Did::new(wallet.handle, "{}").wait().unwrap();
 
-        match Ledger::build_cred_def_request(&did, &CRED_DATA) {
+        match Ledger::build_cred_def_request(&did, &CRED_DATA).wait() {
             Ok(_) => {},
             Err(ec) => {
                 assert!(false, "build_cred_def_request returned error_code {:?}", ec);
@@ -1498,6 +1548,7 @@ mod test_build_cred_def_request {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn test_build_cred_def_request_async_success(){
         let wallet = Wallet::new();
         let (did, _) = Did::new(wallet.handle, "{}").unwrap();
@@ -1515,6 +1566,7 @@ mod test_build_cred_def_request {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn test_build_cred_def_request_timeout_success(){
         let wallet = Wallet::new();
         let (did, _) = Did::new(wallet.handle, "{}").unwrap();
@@ -1528,6 +1580,7 @@ mod test_build_cred_def_request {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     #[cfg(feature = "timeout_tests")]
     pub fn test_build_cred_def_request_timeout_times_out(){
         let wallet = Wallet::new();

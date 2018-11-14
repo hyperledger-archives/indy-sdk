@@ -1,11 +1,11 @@
 use {ErrorCode, IndyHandle};
 
+use futures::Future;
+
 use std::ffi::CString;
-use std::time::Duration;
 use std::ptr::null;
 
-use utils::callbacks::ClosureHandler;
-use utils::results::ResultHandler;
+use utils::callbacks::{ClosureHandler, ResultHandler};
 
 use ffi::pairwise;
 use ffi::{ResponseEmptyCB,
@@ -15,15 +15,16 @@ use ffi::{ResponseEmptyCB,
 pub struct Pairwise {}
 
 impl Pairwise {
-    pub fn does_exist(wallet_handle: IndyHandle, their_did: &str) -> Result<bool, ErrorCode> {
+    pub fn does_exist(wallet_handle: IndyHandle, their_did: &str) -> Box<Future<Item=bool, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_bool();
 
         let err = Pairwise::_does_exist(command_handle, wallet_handle, their_did, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::bool(command_handle, err, receiver)
     }
 
     /// * `timeout` - the maximum time this function waits for a response
+    #[cfg(feature="extended_api_types")]
     pub fn does_exist_timeout(wallet_handle: IndyHandle, their_did: &str, timeout: Duration) -> Result<bool, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_bool();
 
@@ -36,6 +37,7 @@ impl Pairwise {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn does_exist_async<F: 'static>(wallet_handle: IndyHandle, their_did: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, bool) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_bool(Box::new(closure));
 
@@ -50,15 +52,16 @@ impl Pairwise {
         })
     }
 
-    pub fn create(wallet_handle: IndyHandle, their_did: &str, my_did: &str, metadata: Option<&str>) -> Result<(), ErrorCode> {
+    pub fn create(wallet_handle: IndyHandle, their_did: &str, my_did: &str, metadata: Option<&str>) -> Box<Future<Item=(), Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
         let err = Pairwise::_create(command_handle, wallet_handle, their_did, my_did, metadata, cb);
 
-        ResultHandler::empty(err, receiver)
+        ResultHandler::empty(command_handle, err, receiver)
     }
 
     /// * `timeout` - the maximum time this function waits for a response
+    #[cfg(feature="extended_api_types")]
     pub fn create_timeout(wallet_handle: IndyHandle, their_did: &str, my_did: &str, metadata: Option<&str>, timeout: Duration) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
@@ -71,6 +74,7 @@ impl Pairwise {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn create_async<F: 'static>(wallet_handle: IndyHandle, their_did: &str, my_did: &str, metadata: Option<&str>, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
 
@@ -87,15 +91,16 @@ impl Pairwise {
         })
     }
 
-    pub fn list(wallet_handle: IndyHandle) -> Result<String, ErrorCode> {
+    pub fn list(wallet_handle: IndyHandle) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Pairwise::_list(command_handle, wallet_handle, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
     /// * `timeout` - the maximum time this function waits for a response
+    #[cfg(feature="extended_api_types")]
     pub fn list_timeout(wallet_handle: IndyHandle, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -108,6 +113,7 @@ impl Pairwise {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn list_async<F: 'static>(wallet_handle: IndyHandle, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
@@ -120,15 +126,16 @@ impl Pairwise {
         })
     }
 
-    pub fn get(wallet_handle: IndyHandle, their_did: &str) -> Result<String, ErrorCode> {
+    pub fn get(wallet_handle: IndyHandle, their_did: &str) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Pairwise::_get(command_handle, wallet_handle, their_did, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
     /// * `timeout` - the maximum time this function waits for a response
+    #[cfg(feature="extended_api_types")]
     pub fn get_timeout(wallet_handle: IndyHandle, their_did: &str, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -141,6 +148,7 @@ impl Pairwise {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn get_async<F: 'static>(wallet_handle: IndyHandle, their_did: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
@@ -155,15 +163,16 @@ impl Pairwise {
         })
     }
 
-    pub fn set_metadata(wallet_handle: IndyHandle, their_did: &str, metadata: Option<&str>) -> Result<(), ErrorCode> {
+    pub fn set_metadata(wallet_handle: IndyHandle, their_did: &str, metadata: Option<&str>) -> Box<Future<Item=(), Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
         let err = Pairwise::_set_metadata(command_handle, wallet_handle, their_did, metadata, cb);
 
-        ResultHandler::empty(err, receiver)
+        ResultHandler::empty(command_handle, err, receiver)
     }
 
     /// * `timeout` - the maximum time this function waits for a response
+    #[cfg(feature="extended_api_types")]
     pub fn set_metadata_timeout(wallet_handle: IndyHandle, their_did: &str, metadata: Option<&str>, timeout: Duration) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
@@ -176,6 +185,7 @@ impl Pairwise {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn set_metadata_async<F: 'static>(wallet_handle: IndyHandle, their_did: &str, metadata: Option<&str>, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
 

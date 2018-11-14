@@ -2,15 +2,15 @@ use {ErrorCode, IndyHandle};
 
 use std::ffi::CString;
 use std::ptr::null;
-use std::time::Duration;
 
-use utils::results::ResultHandler;
-use utils::callbacks::ClosureHandler;
+use utils::callbacks::{ClosureHandler, ResultHandler};
 
 use ffi::pool;
 use ffi::{ResponseEmptyCB,
           ResponseStringCB,
           ResponseI32CB};
+
+use futures::Future;
 
 pub struct Pool {}
 
@@ -23,12 +23,12 @@ impl Pool {
     /// {
     ///     "genesis_txn": string (required), A path to genesis transaction file.
     /// }
-    pub fn create_ledger_config(pool_name: &str, pool_config: Option<&str>) -> Result<(), ErrorCode> {
+    pub fn create_ledger_config(pool_name: &str, pool_config: Option<&str>) -> Box<Future<Item=(), Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
         let err = Pool::_create_ledger_config(command_handle, pool_name, pool_config, cb);
 
-        ResultHandler::empty(err, receiver)
+        ResultHandler::empty(command_handle, err, receiver)
     }
 
     /// Creates a new local pool ledger configuration that can be used later to connect pool nodes.
@@ -40,6 +40,7 @@ impl Pool {
     ///     "genesis_txn": string (required), A path to genesis transaction file.
     /// }
     /// * `timeout` - the maximum time this function waits for a response
+    #[cfg(feature="extended_api_types")]
     pub fn create_ledger_config_timeout(pool_name: &str, pool_config: Option<&str>, timeout: Duration) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
@@ -57,6 +58,7 @@ impl Pool {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn create_ledger_config_async<F: 'static>(pool_name: &str, pool_config: Option<&str>, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
 
@@ -91,12 +93,12 @@ impl Pool {
     ///
     /// # Returns
     /// Handle to opened pool to use in methods that require pool connection.
-    pub fn open_ledger(pool_name: &str, config: Option<&str>) -> Result<IndyHandle, ErrorCode> {
-        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_i32();
+    pub fn open_ledger(pool_name: &str, config: Option<&str>) -> Box<Future<Item=IndyHandle, Error=ErrorCode>> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_handle();
 
         let err = Pool::_open_ledger(command_handle, pool_name, config, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::handle(command_handle, err, receiver)
     }
 
     /// Opens pool ledger and performs connecting to pool nodes.
@@ -121,6 +123,7 @@ impl Pool {
     ///
     /// # Returns
     /// Handle to opened pool to use in methods that require pool connection.
+    #[cfg(feature="extended_api_types")]
     pub fn open_ledger_timeout(pool_name: &str, config: Option<&str>, timeout: Duration) -> Result<IndyHandle, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_i32();
 
@@ -151,6 +154,7 @@ impl Pool {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn open_ledger_async<F: 'static>(pool_name: &str, config: Option<&str>, closure: F) -> ErrorCode where F: FnMut(ErrorCode, IndyHandle) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_i32(Box::new(closure));
 
@@ -168,12 +172,12 @@ impl Pool {
     ///
     /// # Arguments
     /// * `handle` - pool handle returned by Pool::open_ledger
-    pub fn refresh(pool_handle: IndyHandle) -> Result<(), ErrorCode> {
+    pub fn refresh(pool_handle: IndyHandle) -> Box<Future<Item=(), Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
         let err = Pool::_refresh(command_handle, pool_handle, cb);
 
-        ResultHandler::empty(err, receiver)
+        ResultHandler::empty(command_handle, err, receiver)
     }
 
     /// Refreshes a local copy of a pool ledger and updates pool nodes connections.
@@ -181,6 +185,7 @@ impl Pool {
     /// # Arguments
     /// * `handle` - pool handle returned by Pool::open_ledger
     /// * `timeout` - the maximum time this function waits for a response
+    #[cfg(feature="extended_api_types")]
     pub fn refresh_timeout(pool_handle: IndyHandle, timeout: Duration) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
@@ -197,6 +202,7 @@ impl Pool {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn refresh_async<F: 'static>(pool_handle: IndyHandle, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
 
@@ -208,16 +214,17 @@ impl Pool {
     }
 
     /// Lists names of created pool ledgers
-    pub fn list() -> Result<String, ErrorCode> {
+    pub fn list() -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Pool::_list(command_handle, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
     /// Lists names of created pool ledgers
     /// * `timeout` - the maximum time this function waits for a response
+    #[cfg(feature="extended_api_types")]
     pub fn list_timeout(timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -231,6 +238,7 @@ impl Pool {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn list_async<F: 'static>(closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
@@ -245,12 +253,12 @@ impl Pool {
     ///
     /// # Arguments
     /// * `handle` - pool handle returned by Pool::open_ledger.
-    pub fn close(pool_handle: IndyHandle) -> Result<(), ErrorCode> {
+    pub fn close(pool_handle: IndyHandle) -> Box<Future<Item=(), Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
         let err = Pool::_close(command_handle, pool_handle, cb);
 
-        ResultHandler::empty(err, receiver)
+        ResultHandler::empty(command_handle, err, receiver)
     }
 
     /// Closes opened pool ledger, opened nodes connections and frees allocated resources.
@@ -258,6 +266,7 @@ impl Pool {
     /// # Arguments
     /// * `handle` - pool handle returned by Pool::open_ledger.
     /// * `timeout` - the maximum time this function waits for a response
+    #[cfg(feature="extended_api_types")]
     pub fn close_timeout(pool_handle: IndyHandle, timeout: Duration) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
@@ -274,6 +283,7 @@ impl Pool {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn close_async<F: 'static>(pool_handle: IndyHandle, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
 
@@ -288,12 +298,12 @@ impl Pool {
     ///
     /// # Arguments
     /// * `config_name` - Name of the pool ledger configuration to delete.
-    pub fn delete(pool_name: &str) -> Result<(), ErrorCode> {
+    pub fn delete(pool_name: &str) -> Box<Future<Item=(), Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
         let err = Pool::_delete(command_handle, pool_name, cb);
 
-        ResultHandler::empty(err, receiver)
+        ResultHandler::empty(command_handle, err, receiver)
     }
 
     /// Deletes created pool ledger configuration.
@@ -301,6 +311,7 @@ impl Pool {
     /// # Arguments
     /// * `config_name` - Name of the pool ledger configuration to delete.
     /// * `timeout` - the maximum time this function waits for a response
+    #[cfg(feature="extended_api_types")]
     pub fn delete_timeout(pool_name: &str, timeout: Duration) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
@@ -317,6 +328,7 @@ impl Pool {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn delete_async<F: 'static>(pool_name: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
 
@@ -340,12 +352,12 @@ impl Pool {
     /// * `protocol_version` - Protocol version will be used:
     ///     1 - for Indy Node 1.3
     ///     2 - for Indy Node 1.4
-    pub fn set_protocol_version(protocol_version: usize) -> Result<(), ErrorCode> {
+    pub fn set_protocol_version(protocol_version: usize) -> Box<Future<Item=(), Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
         let err = Pool::_set_protocol_version(command_handle, protocol_version, cb);
 
-        ResultHandler::empty(err, receiver)
+        ResultHandler::empty(command_handle, err, receiver)
     }
 
     /// Set PROTOCOL_VERSION to specific version.
@@ -360,6 +372,7 @@ impl Pool {
     ///     1 - for Indy Node 1.3
     ///     2 - for Indy Node 1.4
     /// * `timeout` - the maximum time this function waits for a response
+    #[cfg(feature="extended_api_types")]
     pub fn set_protocol_version_timeout(protocol_version: usize, timeout: Duration) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
@@ -383,6 +396,7 @@ impl Pool {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn set_protocol_version_async<F: 'static>(protocol_version: usize, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
 

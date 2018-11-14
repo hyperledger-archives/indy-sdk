@@ -1,11 +1,11 @@
 use {ErrorCode, IndyHandle};
 
 use std::ffi::CString;
-use std::time::Duration;
 use std::ptr::null;
 
-use utils::callbacks::ClosureHandler;
-use utils::results::ResultHandler;
+use futures::Future;
+
+use utils::callbacks::{ClosureHandler, ResultHandler};
 
 use ffi::anoncreds;
 use ffi::{ResponseStringStringCB,
@@ -39,12 +39,12 @@ impl Issuer {
     /// # Returns
     /// * `schema_id`: identifier of created schema
     /// * `schema_json`: schema as json
-    pub fn create_schema(issuer_did: &str, name: &str, version: &str, attrs: &str) -> Result<(String, String), ErrorCode> {
+    pub fn create_schema(issuer_did: &str, name: &str, version: &str, attrs: &str) -> Box<Future<Item=(String, String), Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_string();
 
         let err = Issuer::_create_schema(command_handle, issuer_did, name, version, attrs, cb);
 
-        ResultHandler::two(err, receiver)
+        ResultHandler::str_str(command_handle, err, receiver)
     }
 
     /// Create credential schema entity that describes credential attributes list and allows credentials
@@ -68,6 +68,7 @@ impl Issuer {
     /// # Returns
     /// * `schema_id`: identifier of created schema
     /// * `schema_json`: schema as json
+    #[cfg(feature="extended_api_types")]
     pub fn create_schema_timeout(issuer_did: &str, name: &str, version: &str, attrs: &str, timeout: Duration) -> Result<(String, String), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_string();
 
@@ -96,6 +97,7 @@ impl Issuer {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn create_schema_async<F: 'static>(issuer_did: &str, name: &str, version: &str, attrs: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string_string(Box::new(closure));
 
@@ -136,12 +138,12 @@ impl Issuer {
     /// # Returns
     /// * `cred_def_id`: identifier of created credential definition
     /// * `cred_def_json`: public part of created credential definition
-    pub fn create_and_store_credential_def(wallet_handle: IndyHandle, issuer_did: &str, schema_json: &str, tag: &str, signature_type: Option<&str>, config_json: &str) -> Result<(String, String), ErrorCode> {
+    pub fn create_and_store_credential_def(wallet_handle: IndyHandle, issuer_did: &str, schema_json: &str, tag: &str, signature_type: Option<&str>, config_json: &str) -> Box<Future<Item=(String, String), Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_string();
 
         let err = Issuer::_create_and_store_credential_def(command_handle, wallet_handle, issuer_did, schema_json, tag, signature_type, config_json, cb);
 
-        ResultHandler::two(err, receiver)
+        ResultHandler::str_str(command_handle, err, receiver)
     }
 
     /// Create credential definition entity that encapsulates credentials issuer DID, credential schema, secrets used for signing credentials
@@ -168,6 +170,7 @@ impl Issuer {
     /// # Returns
     /// * `cred_def_id`: identifier of created credential definition
     /// * `cred_def_json`: public part of created credential definition
+    #[cfg(feature="extended_api_types")]
     pub fn create_and_store_credential_def_timeout(wallet_handle: IndyHandle, issuer_did: &str, schema_json: &str, tag: &str, signature_type: Option<&str>, config_json: &str, timeout: Duration) -> Result<(String, String), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_string();
 
@@ -199,6 +202,7 @@ impl Issuer {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn create_and_store_credential_def_async<F: 'static>(wallet_handle: IndyHandle, issuer_did: &str, schema_json: &str, tag: &str, signature_type: Option<&str>, config_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string_string(Box::new(closure));
 
@@ -255,12 +259,12 @@ impl Issuer {
     /// * `revoc_reg_id`: identifier of created revocation registry definition
     /// * `revoc_reg_def_json`: public part of revocation registry definition
     /// * `revoc_reg_entry_json`: revocation registry entry that defines initial state of revocation registry
-    pub fn create_and_store_revoc_reg(wallet_handle: IndyHandle, issuer_did: &str, revoc_def_type: Option<&str>, tag: &str, cred_def_id: &str, config_json: &str, tails_writer_handle: IndyHandle) -> Result<(String, String, String), ErrorCode> {
+    pub fn create_and_store_revoc_reg(wallet_handle: IndyHandle, issuer_did: &str, revoc_def_type: Option<&str>, tag: &str, cred_def_id: &str, config_json: &str, tails_writer_handle: IndyHandle) -> Box<Future<Item=(String, String, String), Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_string_string();
 
         let err = Issuer::_create_and_store_revoc_reg(command_handle, wallet_handle, issuer_did, revoc_def_type, tag, cred_def_id, config_json, tails_writer_handle, cb);
 
-        ResultHandler::three(err, receiver)
+        ResultHandler::str_str_str(command_handle, err, receiver)
     }
 
     /// Create a new revocation registry for the given credential definition as tuple of entities
@@ -302,6 +306,7 @@ impl Issuer {
     /// * `revoc_reg_id`: identifier of created revocation registry definition
     /// * `revoc_reg_def_json`: public part of revocation registry definition
     /// * `revoc_reg_entry_json`: revocation registry entry that defines initial state of revocation registry
+    #[cfg(feature="extended_api_types")]
     pub fn create_and_store_revoc_reg_timeout(wallet_handle: IndyHandle, issuer_did: &str, revoc_def_type: Option<&str>, tag: &str, cred_def_id: &str, config_json: &str, tails_writer_handle: IndyHandle, timeout: Duration) -> Result<(String, String, String), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_string_string();
 
@@ -347,6 +352,7 @@ impl Issuer {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn create_and_store_revoc_reg_async<F: 'static>(wallet_handle: IndyHandle, issuer_did: &str, revoc_def_type: Option<&str>, tag: &str, cred_def_id: &str, config_json: &str, tails_writer_handle: IndyHandle, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String, String, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string_string_string(Box::new(closure));
 
@@ -381,12 +387,12 @@ impl Issuer {
     ///     "nonce": string,
     ///     "key_correctness_proof" : <key_correctness_proof>
     /// }
-    pub fn create_credential_offer(wallet_handle: IndyHandle, cred_def_id: &str) -> Result<String, ErrorCode> {
+    pub fn create_credential_offer(wallet_handle: IndyHandle, cred_def_id: &str) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Issuer::_create_credential_offer(command_handle, wallet_handle, cred_def_id, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
     /// Create credential offer that will be used by Prover for
@@ -406,6 +412,7 @@ impl Issuer {
     ///     "nonce": string,
     ///     "key_correctness_proof" : <key_correctness_proof>
     /// }
+    #[cfg(feature="extended_api_types")]
     pub fn create_credential_offer_timeout(wallet_handle: IndyHandle, cred_def_id: &str, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -425,6 +432,7 @@ impl Issuer {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn create_credential_offer_async<F: 'static>(wallet_handle: IndyHandle, cred_def_id: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
@@ -476,12 +484,12 @@ impl Issuer {
     ///     }
     /// * `cred_revoc_id`: local id for revocation info (Can be used for revocation of this credential)
     /// * `revoc_reg_delta_json`: Revocation registry delta json with a newly issued credential
-    pub fn create_credential(wallet_handle: IndyHandle, cred_offer_json: &str, cred_req_json: &str, cred_values_json: &str, rev_reg_id: Option<&str>, blob_storage_reader_handle: IndyHandle) -> Result<(String, Option<String>, Option<String>), ErrorCode> {
+    pub fn create_credential(wallet_handle: IndyHandle, cred_offer_json: &str, cred_req_json: &str, cred_values_json: &str, rev_reg_id: Option<&str>, blob_storage_reader_handle: IndyHandle) -> Box<Future<Item=(String, Option<String>, Option<String>), Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_opt_string_opt_string();
 
         let err = Issuer::_create_credential(command_handle, wallet_handle, cred_offer_json, cred_req_json, cred_values_json, rev_reg_id, blob_storage_reader_handle, cb);
 
-        ResultHandler::three(err, receiver)
+        ResultHandler::str_optstr_optstr(command_handle, err, receiver)
     }
 
     /// Check Cred Request for the given Cred Offer and issue Credential for the given Cred Request.
@@ -522,6 +530,7 @@ impl Issuer {
     ///     }
     /// * `cred_revoc_id`: local id for revocation info (Can be used for revocation of this credential)
     /// * `revoc_reg_delta_json`: Revocation registry delta json with a newly issued credential
+    #[cfg(feature="extended_api_types")]
     pub fn create_credential_timeout(wallet_handle: IndyHandle, cred_offer_json: &str, cred_req_json: &str, cred_values_json: &str, rev_reg_id: Option<&str>, blob_storage_reader_handle: IndyHandle, timeout: Duration) -> Result<(String, Option<String>, Option<String>), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_opt_string_opt_string();
 
@@ -557,6 +566,7 @@ impl Issuer {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn create_credential_async<F: 'static>(wallet_handle: IndyHandle, cred_offer_json: &str, cred_req_json: &str, cred_values_json: &str, rev_reg_id: Option<&str>, blob_storage_reader_handle: IndyHandle, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String, Option<String>, Option<String>) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string_opt_string_opt_string(Box::new(closure));
 
@@ -590,12 +600,12 @@ impl Issuer {
     ///
     /// # Returns
     /// * `revoc_reg_delta_json`: Revocation registry delta json with a revoked credential
-    pub fn revoke_credential(wallet_handle: IndyHandle, blob_storage_reader_cfg_handle: IndyHandle, rev_reg_id: &str, cred_revoc_id: &str) -> Result<String, ErrorCode> {
+    pub fn revoke_credential(wallet_handle: IndyHandle, blob_storage_reader_cfg_handle: IndyHandle, rev_reg_id: &str, cred_revoc_id: &str) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Issuer::_revoke_credential(command_handle, wallet_handle, blob_storage_reader_cfg_handle, rev_reg_id, cred_revoc_id, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
     /// Revoke a credential identified by a cred_revoc_id (returned by indy_issuer_create_credential).
@@ -615,6 +625,7 @@ impl Issuer {
     ///
     /// # Returns
     /// * `revoc_reg_delta_json`: Revocation registry delta json with a revoked credential
+    #[cfg(feature="extended_api_types")]
     pub fn revoke_credential_timeout(wallet_handle: IndyHandle, blob_storage_reader_cfg_handle: IndyHandle, rev_reg_id: &str, cred_revoc_id: &str, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -640,6 +651,7 @@ impl Issuer {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn revoke_credential_async<F: 'static>(wallet_handle: IndyHandle, blob_storage_reader_cfg_handle: IndyHandle, rev_reg_id: &str, cred_revoc_id: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
@@ -664,12 +676,12 @@ impl Issuer {
     ///
     /// # Returns
     /// * `merged_rev_reg_delta` - Merged revocation registry delta
-    pub fn merge_revocation_registry_deltas(rev_reg_delta_json: &str, other_rev_reg_delta_json: &str) -> Result<String, ErrorCode> {
+    pub fn merge_revocation_registry_deltas(rev_reg_delta_json: &str, other_rev_reg_delta_json: &str) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Issuer::_merge_revocation_registry_deltas(command_handle, rev_reg_delta_json, other_rev_reg_delta_json, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
     /// Merge two revocation registry deltas (returned by Issuer::create_credential or Issuer::revoke_credential) to accumulate common delta.
@@ -682,6 +694,7 @@ impl Issuer {
     ///
     /// # Returns
     /// * `merged_rev_reg_delta` - Merged revocation registry delta
+    #[cfg(feature="extended_api_types")]
     pub fn merge_revocation_registry_deltas_timeout(rev_reg_delta_json: &str, other_rev_reg_delta_json: &str, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -700,6 +713,7 @@ impl Issuer {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn merge_revocation_registry_deltas_async<F: 'static>(rev_reg_delta_json: &str, other_rev_reg_delta_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
@@ -728,12 +742,12 @@ impl Prover {
     ///
     /// # Returns
     /// * `out_master_secret_id` - Id of generated master secret
-    pub fn create_master_secret(wallet_handle: IndyHandle, master_secret_id: Option<&str>) -> Result<String, ErrorCode> {
+    pub fn create_master_secret(wallet_handle: IndyHandle, master_secret_id: Option<&str>) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Prover::_create_master_secret(command_handle, wallet_handle, master_secret_id, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
     /// Creates a master secret with a given id and stores it in the wallet.
@@ -746,6 +760,7 @@ impl Prover {
     ///
     /// # Returns
     /// * `out_master_secret_id` - Id of generated master secret
+    #[cfg(feature="extended_api_types")]
     pub fn create_master_secret_timeout(wallet_handle: IndyHandle, master_secret_id: Option<&str>, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -764,6 +779,7 @@ impl Prover {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn create_master_secret_async<F: 'static>(wallet_handle: IndyHandle, master_secret_id: Option<&str>, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
@@ -793,12 +809,12 @@ impl Prover {
     ///     "rev_reg_id": Optional<string>,
     ///     "cred_rev_id": Optional<string>
     /// }
-    pub fn get_credential(wallet_handle: IndyHandle, cred_id: &str) -> Result<String, ErrorCode> {
+    pub fn get_credential(wallet_handle: IndyHandle, cred_id: &str) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Prover::_get_credential(command_handle, wallet_handle, cred_id, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
     /// Gets human readable credential by the given id.
@@ -817,6 +833,7 @@ impl Prover {
     ///     "rev_reg_id": Optional<string>,
     ///     "cred_rev_id": Optional<string>
     /// }
+    #[cfg(feature="extended_api_types")]
     pub fn get_credential_timeout(wallet_handle: IndyHandle, cred_id: &str, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -834,6 +851,7 @@ impl Prover {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn get_credential_async<F: 'static>(wallet_handle: IndyHandle, cred_id: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
@@ -872,12 +890,12 @@ impl Prover {
     ///      "nonce": string
     ///    }
     /// * `cred_req_metadata_json`: Credential request metadata json for further processing of received form Issuer credential.
-    pub fn create_credential_req(wallet_handle: IndyHandle, prover_did: &str, cred_offer_json: &str, cred_def_json: &str, master_secret_id: &str) -> Result<(String, String), ErrorCode> {
+    pub fn create_credential_req(wallet_handle: IndyHandle, prover_did: &str, cred_offer_json: &str, cred_def_json: &str, master_secret_id: &str) -> Box<Future<Item=(String, String), Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_string();
 
         let err = Prover::_create_credential_req(command_handle, wallet_handle, prover_did, cred_offer_json, cred_def_json, master_secret_id, cb);
 
-        ResultHandler::two(err, receiver)
+        ResultHandler::str_str(command_handle, err, receiver)
     }
 
     /// Creates a credential request for the given credential offer.
@@ -905,6 +923,7 @@ impl Prover {
     ///      "nonce": string
     ///    }
     /// * `cred_req_metadata_json`: Credential request metadata json for further processing of received form Issuer credential.
+    #[cfg(feature="extended_api_types")]
     pub fn create_credential_req_timeout(wallet_handle: IndyHandle, prover_did: &str, cred_offer_json: &str, cred_def_json: &str, master_secret_id: &str, timeout: Duration) -> Result<(String, String), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_string();
 
@@ -929,6 +948,7 @@ impl Prover {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn create_credential_req_async<F: 'static>(wallet_handle: IndyHandle, prover_did: &str, cred_offer_json: &str, cred_def_json: &str, master_secret_id: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string_string(Box::new(closure));
 
@@ -973,12 +993,12 @@ impl Prover {
     ///
     /// # Returns
     /// * `out_cred_id` - identifier by which credential is stored in the wallet
-    pub fn store_credential(wallet_handle: IndyHandle, cred_id: Option<&str>, cred_req_metadata_json: &str, cred_json: &str, cred_def_json: &str, rev_reg_def_json: Option<&str>) -> Result<String, ErrorCode> {
+    pub fn store_credential(wallet_handle: IndyHandle, cred_id: Option<&str>, cred_req_metadata_json: &str, cred_json: &str, cred_def_json: &str, rev_reg_def_json: Option<&str>) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Prover::_store_credential(command_handle, wallet_handle, cred_id, cred_req_metadata_json, cred_json, cred_def_json, rev_reg_def_json, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
     /// Check credential provided by Issuer for the given credential request,
@@ -1009,6 +1029,7 @@ impl Prover {
     ///
     /// # Returns
     /// * `out_cred_id` - identifier by which credential is stored in the wallet
+    #[cfg(feature="extended_api_types")]
     pub fn store_credential_timeout(wallet_handle: IndyHandle, cred_id: Option<&str>, cred_req_metadata_json: &str, cred_json: &str, cred_def_json: &str, rev_reg_def_json: Option<&str>, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -1045,6 +1066,7 @@ impl Prover {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn store_credential_async<F: 'static>(wallet_handle: IndyHandle, cred_id: Option<&str>, cred_req_metadata_json: &str, cred_json: &str, cred_def_json: &str, rev_reg_def_json: Option<&str>, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
@@ -1087,12 +1109,12 @@ impl Prover {
     ///     "rev_reg_id": Optional<string>,
     ///     "cred_rev_id": Optional<string>
     /// }]
-    pub fn get_credentials(wallet_handle: IndyHandle, filter_json: Option<&str>) -> Result<String, ErrorCode> {
+    pub fn get_credentials(wallet_handle: IndyHandle, filter_json: Option<&str>) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Prover::_get_credentials(command_handle, wallet_handle, filter_json, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
     /// Gets human readable credentials according to the filter.
@@ -1120,6 +1142,7 @@ impl Prover {
     ///     "rev_reg_id": Optional<string>,
     ///     "cred_rev_id": Optional<string>
     /// }]
+    #[cfg(feature="extended_api_types")]
     pub fn get_credentials_timeout(wallet_handle: IndyHandle, filter_json: Option<&str>, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -1146,6 +1169,7 @@ impl Prover {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn get_credentials_async<F: 'static>(wallet_handle: IndyHandle, filter_json: Option<&str>, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
@@ -1175,12 +1199,12 @@ impl Prover {
     /// # Returns
     /// * `search_handle`: Search handle that can be used later to fetch records by small batches (with Prover::fetch_credentials)
     /// * `total_count`: Total count of records
-    pub fn search_credentials(wallet_handle: IndyHandle, query_json: Option<&str>) -> Result<(i32, usize), ErrorCode> {
-        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_i32_usize();
+    pub fn search_credentials(wallet_handle: IndyHandle, query_json: Option<&str>) -> Box<Future<Item=(IndyHandle, usize), Error=ErrorCode>> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_handle_usize();
 
         let err = Prover::_search_credentials(command_handle, wallet_handle, query_json, cb);
 
-        ResultHandler::two(err, receiver)
+        ResultHandler::handle_usize(command_handle, err, receiver)
     }
 
     /// Search for credentials stored in wallet.
@@ -1199,6 +1223,7 @@ impl Prover {
     /// # Returns
     /// * `search_handle`: Search handle that can be used later to fetch records by small batches (with Prover::fetch_credentials)
     /// * `total_count`: Total count of records
+    #[cfg(feature="extended_api_types")]
     pub fn search_credentials_timeout(wallet_handle: IndyHandle, query_json: Option<&str>, timeout: Duration) -> Result<(i32, usize), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_i32_usize();
 
@@ -1222,6 +1247,7 @@ impl Prover {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn search_credentials_async<F: 'static>(wallet_handle: IndyHandle, query_json: Option<&str>, closure: F) -> ErrorCode where F: FnMut(ErrorCode, i32, usize) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_i32_usize(Box::new(closure));
 
@@ -1252,12 +1278,12 @@ impl Prover {
     ///     "rev_reg_id": Optional<string>,
     ///     "cred_rev_id": Optional<string>
     ///  }]
-    pub fn fetch_credentials(search_handle: IndyHandle, count: usize) -> Result<String, ErrorCode> {
+    pub fn fetch_credentials(search_handle: IndyHandle, count: usize) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Prover::_fetch_credentials(command_handle, search_handle, count, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
     /// Fetch next credentials for search.
@@ -1277,6 +1303,7 @@ impl Prover {
     ///     "rev_reg_id": Optional<string>,
     ///     "cred_rev_id": Optional<string>
     ///  }]
+    #[cfg(feature="extended_api_types")]
     pub fn fetch_credentials_timeout(search_handle: IndyHandle, count: usize, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -1294,6 +1321,7 @@ impl Prover {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn fetch_credentials_async<F: 'static>(search_handle: IndyHandle, count: usize, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
@@ -1311,12 +1339,12 @@ impl Prover {
     ///
     /// # Arguments
     /// * `search_handle`: Search handle (created by Prover::search_credentials)
-    pub fn close_credentials_search(search_handle: IndyHandle) -> Result<(), ErrorCode> {
+    pub fn close_credentials_search(search_handle: IndyHandle) -> Box<Future<Item=(), Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
         let err = Prover::_close_credentials_search(command_handle, search_handle, cb);
 
-        ResultHandler::empty(err, receiver)
+        ResultHandler::empty(command_handle, err, receiver)
     }
 
     /// Close credentials search (make search handle invalid)
@@ -1324,6 +1352,7 @@ impl Prover {
     /// # Arguments
     /// * `search_handle`: Search handle (created by Prover::search_credentials)
     /// * `timeout` - the maximum time this function waits for a response
+    #[cfg(feature="extended_api_types")]
     pub fn close_credentials_search_timeout(search_handle: IndyHandle, timeout: Duration) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
@@ -1340,6 +1369,7 @@ impl Prover {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn close_credentials_search_async<F: 'static>(search_handle: IndyHandle, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
 
@@ -1428,12 +1458,12 @@ impl Prover {
     ///         "rev_reg_id": Optional<int>,
     ///         "cred_rev_id": Optional<int>,
     ///     }
-    pub fn get_credentials_for_proof_req(wallet_handle: IndyHandle, proof_request_json: &str) -> Result<String, ErrorCode> {
+    pub fn get_credentials_for_proof_req(wallet_handle: IndyHandle, proof_request_json: &str) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Prover::_get_credentials_for_proof_req(command_handle, wallet_handle, proof_request_json, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
     /// Gets human readable credentials matching the given proof request.
@@ -1512,6 +1542,7 @@ impl Prover {
     ///         "rev_reg_id": Optional<int>,
     ///         "cred_rev_id": Optional<int>,
     ///     }
+    #[cfg(feature="extended_api_types")]
     pub fn get_credentials_for_proof_req_timeout(wallet_handle: IndyHandle, proof_request_json: &str, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -1578,6 +1609,7 @@ impl Prover {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn get_credentials_for_proof_req_async<F: 'static>(wallet_handle: IndyHandle, proof_request_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
@@ -1656,12 +1688,12 @@ impl Prover {
     ///
     /// # Returns
     /// * `search_handle`: Search handle that can be used later to fetch records by small batches (with Prover::fetch_credentials_for_proof_req)
-    pub fn search_credentials_for_proof_req(wallet_handle: IndyHandle, proof_request_json: &str, extra_query_json: Option<&str>) -> Result<i32, ErrorCode> {
-        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_i32();
+    pub fn search_credentials_for_proof_req(wallet_handle: IndyHandle, proof_request_json: &str, extra_query_json: Option<&str>) -> Box<Future<Item=IndyHandle, Error=ErrorCode>> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_handle();
 
         let err = Prover::_search_credentials_for_proof_req(command_handle, wallet_handle, proof_request_json, extra_query_json, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::handle(command_handle, err, receiver)
     }
 
     /// Search for credentials matching the given proof request.
@@ -1729,6 +1761,7 @@ impl Prover {
     ///
     /// # Returns
     /// * `search_handle`: Search handle that can be used later to fetch records by small batches (with Prover::fetch_credentials_for_proof_req)
+    #[cfg(feature="extended_api_types")]
     pub fn search_credentials_for_proof_req_timeout(wallet_handle: IndyHandle, proof_request_json: &str, extra_query_json: Option<&str>, timeout: Duration) -> Result<i32, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_i32();
 
@@ -1802,6 +1835,7 @@ impl Prover {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn search_credentials_for_proof_req_async<F: 'static>(wallet_handle: IndyHandle, proof_request_json: &str, extra_query_json: Option<&str>, closure: F) -> ErrorCode where F: FnMut(ErrorCode, i32) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_i32(Box::new(closure));
 
@@ -1848,12 +1882,12 @@ impl Prover {
     ///     }
     /// NOTE: The list of length less than the requested count means that search iterator
     /// correspondent to the requested <item_referent> is completed.
-    pub fn _fetch_credentials_for_proof_req(search_handle: IndyHandle, item_referent: &str, count: usize) -> Result<String, ErrorCode> {
+    pub fn _fetch_credentials_for_proof_req(search_handle: IndyHandle, item_referent: &str, count: usize) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Prover::__fetch_credentials_for_proof_req(command_handle, search_handle, item_referent, count, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
     /// Fetch next credentials for the requested item using proof request search
@@ -1888,6 +1922,7 @@ impl Prover {
     ///     }
     /// NOTE: The list of length less than the requested count means that search iterator
     /// correspondent to the requested <item_referent> is completed.
+    #[cfg(feature="extended_api_types")]
     pub fn _fetch_credentials_for_proof_req_timeout(search_handle: IndyHandle, item_referent: &str, count: usize, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -1907,6 +1942,7 @@ impl Prover {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn _fetch_credentials_for_proof_req_async<F: 'static>(search_handle: IndyHandle, item_referent: &str, count: usize, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
@@ -1925,12 +1961,12 @@ impl Prover {
     ///
     /// # Arguments
     /// * `search_handle`: Search handle (created by Prover::search_credentials_for_proof_req)
-    pub fn _close_credentials_search_for_proof_req(search_handle: IndyHandle) -> Result<(), ErrorCode> {
+    pub fn _close_credentials_search_for_proof_req(search_handle: IndyHandle) -> Box<Future<Item=(), Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
         let err = Prover::__close_credentials_search_for_proof_req(command_handle, search_handle, cb);
 
-        ResultHandler::empty(err, receiver)
+        ResultHandler::empty(command_handle, err, receiver)
     }
 
     /// Close credentials search for proof request (make search handle invalid)
@@ -1938,6 +1974,7 @@ impl Prover {
     /// # Arguments
     /// * `search_handle`: Search handle (created by Prover::search_credentials_for_proof_req)
     /// * `timeout` - the maximum time this function waits for a response
+    #[cfg(feature="extended_api_types")]
     pub fn _close_credentials_search_for_proof_req_timeout(search_handle: IndyHandle, timeout: Duration) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
@@ -1954,6 +1991,7 @@ impl Prover {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn _close_credentials_search_for_proof_req_async<F: 'static>(search_handle: IndyHandle, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
 
@@ -2094,12 +2132,12 @@ impl Prover {
     ///         }
     ///         "identifiers": [{schema_id, cred_def_id, Optional<rev_reg_id>, Optional<timestamp>}]
     ///     }
-    pub fn create_proof(wallet_handle: IndyHandle, proof_req_json: &str, requested_credentials_json: &str, master_secret_id: &str, schemas_json: &str, credential_defs_json: &str, rev_states_json: &str) -> Result<String, ErrorCode> {
+    pub fn create_proof(wallet_handle: IndyHandle, proof_req_json: &str, requested_credentials_json: &str, master_secret_id: &str, schemas_json: &str, credential_defs_json: &str, rev_states_json: &str) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Prover::_create_proof(command_handle, wallet_handle, proof_req_json, requested_credentials_json, master_secret_id, schemas_json, credential_defs_json, rev_states_json, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
     /// Creates a proof according to the given proof request
@@ -2230,6 +2268,7 @@ impl Prover {
     ///         }
     ///         "identifiers": [{schema_id, cred_def_id, Optional<rev_reg_id>, Optional<timestamp>}]
     ///     }
+    #[cfg(feature="extended_api_types")]
     pub fn create_proof_timeout(wallet_handle: IndyHandle, proof_req_json: &str, requested_credentials_json: &str, master_secret_id: &str, schemas_json: &str, credential_defs_json: &str, rev_states_json: &str, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -2339,6 +2378,7 @@ impl Prover {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn create_proof_async<F: 'static>(wallet_handle: IndyHandle, proof_req_json: &str, requested_credentials_json: &str, master_secret_id: &str, schemas_json: &str, credential_defs_json: &str, rev_states_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
@@ -2443,12 +2483,12 @@ impl Verifier {
     ///
     /// # Returns
     /// * `valid`: true - if signature is valid, false - otherwise
-    pub fn verify_proof(proof_request_json: &str, proof_json: &str, schemas_json: &str, credential_defs_json: &str, rev_reg_defs_json: &str, rev_regs_json: &str) -> Result<bool, ErrorCode> {
+    pub fn verify_proof(proof_request_json: &str, proof_json: &str, schemas_json: &str, credential_defs_json: &str, rev_reg_defs_json: &str, rev_regs_json: &str) -> Box<Future<Item=bool, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_bool();
 
         let err = Verifier::_verify_proof(command_handle, proof_request_json, proof_json, schemas_json, credential_defs_json, rev_reg_defs_json, rev_regs_json, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::bool(command_handle, err, receiver)
     }
 
     /// Verifies a proof (of multiple credential).
@@ -2533,6 +2573,7 @@ impl Verifier {
     ///
     /// # Returns
     /// * `valid`: true - if signature is valid, false - otherwise
+    #[cfg(feature="extended_api_types")]
     pub fn verify_proof_timeout(proof_request_json: &str, proof_json: &str, schemas_json: &str, credential_defs_json: &str, rev_reg_defs_json: &str, rev_regs_json: &str, timeout: Duration) -> Result<bool, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_bool();
 
@@ -2623,6 +2664,7 @@ impl Verifier {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn verify_proof_async<F: 'static>(proof_request_json: &str, proof_json: &str, schemas_json: &str, credential_defs_json: &str, rev_reg_defs_json: &str, rev_regs_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, bool) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_bool(Box::new(closure));
 
@@ -2662,12 +2704,12 @@ impl AnonCreds {
     ///     "witness": <witness>,
     ///     "timestamp" : integer
     /// }
-    pub fn create_revocation_state(blob_storage_reader_handle: IndyHandle, rev_reg_def_json: &str, rev_reg_delta_json: &str, timestamp: u64, cred_rev_id: &str) -> Result<String, ErrorCode> {
+    pub fn create_revocation_state(blob_storage_reader_handle: IndyHandle, rev_reg_def_json: &str, rev_reg_delta_json: &str, timestamp: u64, cred_rev_id: &str) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = AnonCreds::_create_revocation_state(command_handle, blob_storage_reader_handle, rev_reg_def_json, rev_reg_delta_json, timestamp, cred_rev_id, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
     /// Create revocation state for a credential in the particular time moment.
@@ -2687,6 +2729,7 @@ impl AnonCreds {
     ///     "witness": <witness>,
     ///     "timestamp" : integer
     /// }
+    #[cfg(feature="extended_api_types")]
     pub fn create_revocation_state_timeout(blob_storage_reader_handle: IndyHandle, rev_reg_def_json: &str, rev_reg_delta_json: &str, timestamp: u64, cred_rev_id: &str, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -2707,6 +2750,7 @@ impl AnonCreds {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn create_revocation_state_async<F: 'static>(blob_storage_reader_handle: IndyHandle, rev_reg_def_json: &str, rev_reg_delta_json: &str, timestamp: u64, cred_rev_id: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
@@ -2741,12 +2785,12 @@ impl AnonCreds {
     ///     "witness": <witness>,
     ///     "timestamp" : integer
     /// }
-    pub fn update_revocation_state(blob_storage_reader_handle: IndyHandle, rev_state_json: &str, rev_reg_def_json: &str, rev_reg_delta_json: &str, timestamp: u64, cred_rev_id: &str) -> Result<String, ErrorCode> {
+    pub fn update_revocation_state(blob_storage_reader_handle: IndyHandle, rev_state_json: &str, rev_reg_def_json: &str, rev_reg_delta_json: &str, timestamp: u64, cred_rev_id: &str) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = AnonCreds::_update_revocation_state(command_handle, blob_storage_reader_handle, rev_state_json, rev_reg_def_json, rev_reg_delta_json, timestamp, cred_rev_id, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
     /// Create new revocation state for a credential based on existed state
@@ -2768,6 +2812,7 @@ impl AnonCreds {
     ///     "witness": <witness>,
     ///     "timestamp" : integer
     /// }
+    #[cfg(feature="extended_api_types")]
     pub fn update_revocation_state_timeout(blob_storage_reader_handle: IndyHandle, rev_state_json: &str, rev_reg_def_json: &str, rev_reg_delta_json: &str, timestamp: u64, cred_rev_id: &str, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -2790,6 +2835,7 @@ impl AnonCreds {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn update_revocation_state_async<F: 'static>(blob_storage_reader_handle: IndyHandle, rev_state_json: &str, rev_reg_def_json: &str, rev_reg_delta_json: &str, timestamp: u64, cred_rev_id: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 

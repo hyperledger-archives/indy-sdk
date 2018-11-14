@@ -3,14 +3,20 @@
 extern crate rmp_serde;
 extern crate byteorder;
 extern crate indy;
+extern crate futures;
 #[macro_use]
 mod utils;
+
+#[allow(unused_imports)]
+use futures::Future;
 
 use utils::wallet::Wallet;
 use utils::constants::{DID_TRUSTEE, VERKEY_TRUSTEE, METADATA, DID};
 
 use indy::ErrorCode;
+#[cfg(feature="extended_api_types")]
 use std::time::Duration;
+#[cfg(feature="extended_api_types")]
 use std::sync::mpsc::channel;
 
 mod create_pairwise {
@@ -20,13 +26,14 @@ mod create_pairwise {
     pub fn create_pairwise_works() {
         let wallet = Wallet::new();
         let their_identity_json = json!({"did": DID_TRUSTEE, "verkey": VERKEY_TRUSTEE}).to_string();
-        indy::did::Did::store_their_did(wallet.handle, &their_identity_json).unwrap();
+        indy::did::Did::store_their_did(wallet.handle, &their_identity_json).wait().unwrap();
 
-        let (did, _) = indy::did::Did::new(wallet.handle, "{}").unwrap();
-        indy::pairwise::Pairwise::create(wallet.handle, DID_TRUSTEE, &did, Some(METADATA)).unwrap();
+        let (did, _) = indy::did::Did::new(wallet.handle, "{}").wait().unwrap();
+        indy::pairwise::Pairwise::create(wallet.handle, DID_TRUSTEE, &did, Some(METADATA)).wait().unwrap();
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn create_pairwise_timeout_works() {
         let wallet = Wallet::new();
         let their_identity_json = json!({"did": DID_TRUSTEE, "verkey": VERKEY_TRUSTEE}).to_string();
@@ -37,6 +44,7 @@ mod create_pairwise {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn create_pairwise_async_works() {
         let wallet = Wallet::new();
         let their_identity_json = json!({"did": DID_TRUSTEE, "verkey": VERKEY_TRUSTEE}).to_string();
@@ -61,13 +69,14 @@ mod create_pairwise {
     pub fn create_pairwise_works_for_empty_metadata() {
         let wallet = Wallet::new();
         let their_identity_json = json!({"did": DID_TRUSTEE, "verkey": VERKEY_TRUSTEE}).to_string();
-        indy::did::Did::store_their_did(wallet.handle, &their_identity_json).unwrap();
+        indy::did::Did::store_their_did(wallet.handle, &their_identity_json).wait().unwrap();
 
-        let (did, _) = indy::did::Did::new(wallet.handle, "{}").unwrap();
-        indy::pairwise::Pairwise::create(wallet.handle, DID_TRUSTEE, &did, None).unwrap();
+        let (did, _) = indy::did::Did::new(wallet.handle, "{}").wait().unwrap();
+        indy::pairwise::Pairwise::create(wallet.handle, DID_TRUSTEE, &did, None).wait().unwrap();
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn create_pairwise_timeout_works_for_empty_metadata() {
         let wallet = Wallet::new();
         let their_identity_json = json!({"did": DID_TRUSTEE, "verkey": VERKEY_TRUSTEE}).to_string();
@@ -78,6 +87,7 @@ mod create_pairwise {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn create_pairwise_async_works_for_empty_metadata() {
         let wallet = Wallet::new();
         let their_identity_json = json!({"did": DID_TRUSTEE, "verkey": VERKEY_TRUSTEE}).to_string();
@@ -102,13 +112,14 @@ mod create_pairwise {
     pub fn create_pairwise_works_for_not_found_my_did() {
         let wallet = Wallet::new();
         let their_identity_json = json!({"did": DID_TRUSTEE, "verkey": VERKEY_TRUSTEE}).to_string();
-        indy::did::Did::store_their_did(wallet.handle, &their_identity_json).unwrap();
+        indy::did::Did::store_their_did(wallet.handle, &their_identity_json).wait().unwrap();
 
-        let ec = indy::pairwise::Pairwise::create(wallet.handle, DID_TRUSTEE, DID, Some(METADATA)).unwrap_err();
+        let ec = indy::pairwise::Pairwise::create(wallet.handle, DID_TRUSTEE, DID, Some(METADATA)).wait().unwrap_err();
         assert_eq!(ec, ErrorCode::WalletItemNotFound);
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn create_pairwise_timeout_works_for_not_found_my_did() {
         let wallet = Wallet::new();
         let their_identity_json = json!({"did": DID_TRUSTEE, "verkey": VERKEY_TRUSTEE}).to_string();
@@ -119,6 +130,7 @@ mod create_pairwise {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn create_pairwise_async_works_for_not_found_my_did() {
         let wallet = Wallet::new();
         let their_identity_json = json!({"did": DID_TRUSTEE, "verkey": VERKEY_TRUSTEE}).to_string();
@@ -141,12 +153,13 @@ mod create_pairwise {
     pub fn create_pairwise_works_for_not_found_their_did() {
         let wallet = Wallet::new();
 
-        let (did, _) = indy::did::Did::new(wallet.handle, "{}").unwrap();
-        let ec = indy::pairwise::Pairwise::create(wallet.handle, DID_TRUSTEE, &did, Some(METADATA)).unwrap_err();
+        let (did, _) = indy::did::Did::new(wallet.handle, "{}").wait().unwrap();
+        let ec = indy::pairwise::Pairwise::create(wallet.handle, DID_TRUSTEE, &did, Some(METADATA)).wait().unwrap_err();
         assert_eq!(ec, ErrorCode::WalletItemNotFound);
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn create_pairwise_timeout_works_for_not_found_their_did() {
         let wallet = Wallet::new();
 
@@ -156,6 +169,7 @@ mod create_pairwise {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn create_pairwise_async_works_for_not_found_their_did() {
         let wallet = Wallet::new();
 
@@ -178,14 +192,15 @@ mod create_pairwise {
     pub fn create_pairwise_works_for_invalid_handle() {
         let wallet = Wallet::new();
         let their_identity_json = json!({"did": DID_TRUSTEE, "verkey": VERKEY_TRUSTEE}).to_string();
-        indy::did::Did::store_their_did(wallet.handle, &their_identity_json).unwrap();
+        indy::did::Did::store_their_did(wallet.handle, &their_identity_json).wait().unwrap();
 
-        let (did, _) = indy::did::Did::new(wallet.handle, "{}").unwrap();
-        let ec = indy::pairwise::Pairwise::create(wallet.handle + 1, DID_TRUSTEE, &did, Some(METADATA)).unwrap_err();
+        let (did, _) = indy::did::Did::new(wallet.handle, "{}").wait().unwrap();
+        let ec = indy::pairwise::Pairwise::create(wallet.handle + 1, DID_TRUSTEE, &did, Some(METADATA)).wait().unwrap_err();
         assert_eq!(ec, ErrorCode::WalletInvalidHandle);
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn create_pairwise_timeout_works_for_invalid_handle() {
         let wallet = Wallet::new();
         let their_identity_json = json!({"did": DID_TRUSTEE, "verkey": VERKEY_TRUSTEE}).to_string();
@@ -197,6 +212,7 @@ mod create_pairwise {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn create_pairwise_async_works_for_invalid_handle() {
         let wallet = Wallet::new();
         let their_identity_json = json!({"did": DID_TRUSTEE, "verkey": VERKEY_TRUSTEE}).to_string();
@@ -221,16 +237,17 @@ mod create_pairwise {
     pub fn create_pairwise_works_for_twice() {
         let wallet = Wallet::new();
         let their_identity_json = json!({"did": DID_TRUSTEE, "verkey": VERKEY_TRUSTEE}).to_string();
-        indy::did::Did::store_their_did(wallet.handle, &their_identity_json).unwrap();
+        indy::did::Did::store_their_did(wallet.handle, &their_identity_json).wait().unwrap();
 
-        let (did, _) = indy::did::Did::new(wallet.handle, "{}").unwrap();
-        indy::pairwise::Pairwise::create(wallet.handle, DID_TRUSTEE, &did, Some(METADATA)).unwrap();
+        let (did, _) = indy::did::Did::new(wallet.handle, "{}").wait().unwrap();
+        indy::pairwise::Pairwise::create(wallet.handle, DID_TRUSTEE, &did, Some(METADATA)).wait().unwrap();
 
-        let ec = indy::pairwise::Pairwise::create(wallet.handle, DID_TRUSTEE, &did, None).unwrap_err();
+        let ec = indy::pairwise::Pairwise::create(wallet.handle, DID_TRUSTEE, &did, None).wait().unwrap_err();
         assert_eq!(ec, ErrorCode::WalletItemAlreadyExists);
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn create_pairwise_timeout_works_for_twice() {
         let wallet = Wallet::new();
         let their_identity_json = json!({"did": DID_TRUSTEE, "verkey": VERKEY_TRUSTEE}).to_string();
@@ -244,6 +261,7 @@ mod create_pairwise {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn create_pairwise_async_works_for_twice() {
         let wallet = Wallet::new();
         let their_identity_json = json!({"did": DID_TRUSTEE, "verkey": VERKEY_TRUSTEE}).to_string();
@@ -284,12 +302,12 @@ mod list_pairwise {
     pub fn list_pairwise_works() {
         let wallet = Wallet::new();
         let their_identity_json = json!({"did": DID_TRUSTEE, "verkey": VERKEY_TRUSTEE}).to_string();
-        indy::did::Did::store_their_did(wallet.handle, &their_identity_json).unwrap();
+        indy::did::Did::store_their_did(wallet.handle, &their_identity_json).wait().unwrap();
 
-        let (did, _) = indy::did::Did::new(wallet.handle, "{}").unwrap();
-        indy::pairwise::Pairwise::create(wallet.handle, DID_TRUSTEE, &did, None).unwrap();
+        let (did, _) = indy::did::Did::new(wallet.handle, "{}").wait().unwrap();
+        indy::pairwise::Pairwise::create(wallet.handle, DID_TRUSTEE, &did, None).wait().unwrap();
 
-        let res = indy::pairwise::Pairwise::list(wallet.handle).unwrap();
+        let res = indy::pairwise::Pairwise::list(wallet.handle).wait().unwrap();
         let vec_res: Vec<String> = serde_json::from_str(&res).unwrap();
 
         assert_eq!(vec_res.len(), 1);
@@ -297,6 +315,7 @@ mod list_pairwise {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn list_pairwise_timeout_works() {
         let wallet = Wallet::new();
         let their_identity_json = json!({"did": DID_TRUSTEE, "verkey": VERKEY_TRUSTEE}).to_string();
@@ -313,6 +332,7 @@ mod list_pairwise {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn list_pairwise_async_works() {
         let wallet = Wallet::new();
         let their_identity_json = json!({"did": DID_TRUSTEE, "verkey": VERKEY_TRUSTEE}).to_string();
@@ -340,13 +360,14 @@ mod list_pairwise {
     pub fn list_pairwise_works_for_empty_result() {
         let wallet = Wallet::new();
 
-        let res = indy::pairwise::Pairwise::list(wallet.handle).unwrap();
+        let res = indy::pairwise::Pairwise::list(wallet.handle).wait().unwrap();
         let vec_res: Vec<String> = serde_json::from_str(&res).unwrap();
 
         assert_eq!(vec_res.len(), 0);
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn list_pairwise_timeout_works_for_empty_result() {
         let wallet = Wallet::new();
 
@@ -357,6 +378,7 @@ mod list_pairwise {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn list_pairwise_async_works_for_empty_result() {
         let wallet = Wallet::new();
         let (sender, receiver) = channel();
@@ -377,16 +399,17 @@ mod list_pairwise {
     pub fn list_pairwise_works_for_invalid_wallet_handle() {
         let wallet = Wallet::new();
         let their_identity_json = json!({"did": DID_TRUSTEE, "verkey": VERKEY_TRUSTEE}).to_string();
-        indy::did::Did::store_their_did(wallet.handle, &their_identity_json).unwrap();
+        indy::did::Did::store_their_did(wallet.handle, &their_identity_json).wait().unwrap();
 
-        let (did, _) = indy::did::Did::new(wallet.handle, "{}").unwrap();
-        indy::pairwise::Pairwise::create(wallet.handle, DID_TRUSTEE, &did, None).unwrap();
+        let (did, _) = indy::did::Did::new(wallet.handle, "{}").wait().unwrap();
+        indy::pairwise::Pairwise::create(wallet.handle, DID_TRUSTEE, &did, None).wait().unwrap();
 
-        let ec = indy::pairwise::Pairwise::list(wallet.handle + 1).unwrap_err();
+        let ec = indy::pairwise::Pairwise::list(wallet.handle + 1).wait().unwrap_err();
         assert_eq!(ec, ErrorCode::WalletInvalidHandle);
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn list_pairwise_timeout_works_for_invalid_wallet_handle() {
         let wallet = Wallet::new();
         let their_identity_json = json!({"did": DID_TRUSTEE, "verkey": VERKEY_TRUSTEE}).to_string();
@@ -400,6 +423,7 @@ mod list_pairwise {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn list_pairwise_async_works_for_invalid_wallet_handle() {
         let wallet = Wallet::new();
         let their_identity_json = json!({"did": DID_TRUSTEE, "verkey": VERKEY_TRUSTEE}).to_string();
@@ -431,15 +455,16 @@ mod pairwise_exists {
     pub fn pairwise_exists_works() {
         let wallet = Wallet::new();
         let their_identity_json = json!({"did": DID_TRUSTEE, "verkey": VERKEY_TRUSTEE}).to_string();
-        indy::did::Did::store_their_did(wallet.handle, &their_identity_json).unwrap();
+        indy::did::Did::store_their_did(wallet.handle, &their_identity_json).wait().unwrap();
 
-        let (did, _) = indy::did::Did::new(wallet.handle, "{}").unwrap();
-        indy::pairwise::Pairwise::create(wallet.handle, DID_TRUSTEE, &did, Some(METADATA)).unwrap();
+        let (did, _) = indy::did::Did::new(wallet.handle, "{}").wait().unwrap();
+        indy::pairwise::Pairwise::create(wallet.handle, DID_TRUSTEE, &did, Some(METADATA)).wait().unwrap();
 
-        assert!(indy::pairwise::Pairwise::does_exist(wallet.handle, DID_TRUSTEE).unwrap());
+        assert!(indy::pairwise::Pairwise::does_exist(wallet.handle, DID_TRUSTEE).wait().unwrap());
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn pairwise_exists_timeout_works() {
         let wallet = Wallet::new();
         let their_identity_json = json!({"did": DID_TRUSTEE, "verkey": VERKEY_TRUSTEE}).to_string();
@@ -452,6 +477,7 @@ mod pairwise_exists {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn pairwise_exists_async_works() {
         let wallet = Wallet::new();
         let their_identity_json = json!({"did": DID_TRUSTEE, "verkey": VERKEY_TRUSTEE}).to_string();
@@ -478,10 +504,11 @@ mod pairwise_exists {
     pub fn pairwise_exists_works_for_not_created() {
         let wallet = Wallet::new();
 
-        assert!(!indy::pairwise::Pairwise::does_exist(wallet.handle, DID_TRUSTEE).unwrap());
+        assert!(!indy::pairwise::Pairwise::does_exist(wallet.handle, DID_TRUSTEE).wait().unwrap());
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn pairwise_exists_timeout_works_for_not_created() {
         let wallet = Wallet::new();
 
@@ -489,6 +516,7 @@ mod pairwise_exists {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn pairwise_exists_async_works_for_not_created() {
         let wallet = Wallet::new();
         let (sender, receiver) = channel();
@@ -509,15 +537,16 @@ mod pairwise_exists {
     pub fn pairwise_exists_works_for_invalid_handle() {
         let wallet = Wallet::new();
         let their_identity_json = json!({"did": DID_TRUSTEE, "verkey": VERKEY_TRUSTEE}).to_string();
-        indy::did::Did::store_their_did(wallet.handle, &their_identity_json).unwrap();
+        indy::did::Did::store_their_did(wallet.handle, &their_identity_json).wait().unwrap();
 
-        let (did, _) = indy::did::Did::new(wallet.handle, "{}").unwrap();
-        indy::pairwise::Pairwise::create(wallet.handle, DID_TRUSTEE, &did, Some(METADATA)).unwrap();
+        let (did, _) = indy::did::Did::new(wallet.handle, "{}").wait().unwrap();
+        indy::pairwise::Pairwise::create(wallet.handle, DID_TRUSTEE, &did, Some(METADATA)).wait().unwrap();
 
-        assert_eq!(ErrorCode::WalletInvalidHandle, indy::pairwise::Pairwise::does_exist(wallet.handle + 1, DID_TRUSTEE).unwrap_err());
+        assert_eq!(ErrorCode::WalletInvalidHandle, indy::pairwise::Pairwise::does_exist(wallet.handle + 1, DID_TRUSTEE).wait().unwrap_err());
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn pairwise_exists_timeout_works_for_invalid_handle() {
         let wallet = Wallet::new();
         let their_identity_json = json!({"did": DID_TRUSTEE, "verkey": VERKEY_TRUSTEE}).to_string();
@@ -530,6 +559,7 @@ mod pairwise_exists {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn pairwise_exists_async_works_for_invalid_handle() {
         let wallet = Wallet::new();
         let their_identity_json = json!({"did": DID_TRUSTEE, "verkey": VERKEY_TRUSTEE}).to_string();
@@ -560,17 +590,18 @@ mod get_pairwise {
     pub fn get_pairwise_works() {
         let wallet = Wallet::new();
         let their_identity_json = json!({"did": DID_TRUSTEE, "verkey": VERKEY_TRUSTEE}).to_string();
-        indy::did::Did::store_their_did(wallet.handle, &their_identity_json).unwrap();
+        indy::did::Did::store_their_did(wallet.handle, &their_identity_json).wait().unwrap();
 
-        let (did, _) = indy::did::Did::new(wallet.handle, "{}").unwrap();
-        indy::pairwise::Pairwise::create(wallet.handle, DID_TRUSTEE, &did, Some(METADATA)).unwrap();
+        let (did, _) = indy::did::Did::new(wallet.handle, "{}").wait().unwrap();
+        indy::pairwise::Pairwise::create(wallet.handle, DID_TRUSTEE, &did, Some(METADATA)).wait().unwrap();
 
-        let pairwise_info_json = indy::pairwise::Pairwise::get(wallet.handle, DID_TRUSTEE).unwrap();
+        let pairwise_info_json = indy::pairwise::Pairwise::get(wallet.handle, DID_TRUSTEE).wait().unwrap();
 
         assert_eq!(format!(r#"{{"my_did":"{}","metadata":"{}"}}"#, did, METADATA), pairwise_info_json);
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn get_pairwise_timeout_works() {
         let wallet = Wallet::new();
         let their_identity_json = json!({"did": DID_TRUSTEE, "verkey": VERKEY_TRUSTEE}).to_string();
@@ -585,6 +616,7 @@ mod get_pairwise {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn get_pairwise_async_works() {
         let wallet = Wallet::new();
         let their_identity_json = json!({"did": DID_TRUSTEE, "verkey": VERKEY_TRUSTEE}).to_string();
@@ -611,12 +643,13 @@ mod get_pairwise {
     pub fn get_pairwise_works_for_not_created_pairwise() {
         let wallet = Wallet::new();
 
-        let ec = indy::pairwise::Pairwise::get(wallet.handle, DID_TRUSTEE).unwrap_err();
+        let ec = indy::pairwise::Pairwise::get(wallet.handle, DID_TRUSTEE).wait().unwrap_err();
 
         assert_eq!(ec, ErrorCode::WalletItemNotFound);
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn get_pairwise_timeout_works_for_not_created_pairwise() {
         let wallet = Wallet::new();
 
@@ -626,6 +659,7 @@ mod get_pairwise {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn get_pairwise_async_works_for_not_created_pairwise() {
         let wallet = Wallet::new();
         let (sender, receiver) = channel();
@@ -645,17 +679,18 @@ mod get_pairwise {
     pub fn get_pairwise_works_for_invalid_wallet_handle() {
         let wallet = Wallet::new();
         let their_identity_json = json!({"did": DID_TRUSTEE, "verkey": VERKEY_TRUSTEE}).to_string();
-        indy::did::Did::store_their_did(wallet.handle, &their_identity_json).unwrap();
+        indy::did::Did::store_their_did(wallet.handle, &their_identity_json).wait().unwrap();
 
-        let (did, _) = indy::did::Did::new(wallet.handle, "{}").unwrap();
-        indy::pairwise::Pairwise::create(wallet.handle, DID_TRUSTEE, &did, Some(METADATA)).unwrap();
+        let (did, _) = indy::did::Did::new(wallet.handle, "{}").wait().unwrap();
+        indy::pairwise::Pairwise::create(wallet.handle, DID_TRUSTEE, &did, Some(METADATA)).wait().unwrap();
 
-        let ec = indy::pairwise::Pairwise::get(wallet.handle + 1, DID_TRUSTEE).unwrap_err();
+        let ec = indy::pairwise::Pairwise::get(wallet.handle + 1, DID_TRUSTEE).wait().unwrap_err();
 
         assert_eq!(ec, ErrorCode::WalletInvalidHandle);
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn get_pairwise_timeout_works_for_invalid_wallet_handle() {
         let wallet = Wallet::new();
         let their_identity_json = json!({"did": DID_TRUSTEE, "verkey": VERKEY_TRUSTEE}).to_string();
@@ -670,6 +705,7 @@ mod get_pairwise {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn get_pairwise_async_works_for_invalid_wallet_handle() {
         let wallet = Wallet::new();
         let their_identity_json = json!({"did": DID_TRUSTEE, "verkey": VERKEY_TRUSTEE}).to_string();
@@ -699,24 +735,25 @@ mod set_pairwise_metadata {
     pub fn set_pairwise_metadata_works() {
         let wallet = Wallet::new();
         let their_identity_json = json!({"did": DID_TRUSTEE, "verkey": VERKEY_TRUSTEE}).to_string();
-        indy::did::Did::store_their_did(wallet.handle, &their_identity_json).unwrap();
+        indy::did::Did::store_their_did(wallet.handle, &their_identity_json).wait().unwrap();
 
-        let (did, _) = indy::did::Did::new(wallet.handle, "{}").unwrap();
-        indy::pairwise::Pairwise::create(wallet.handle, DID_TRUSTEE, &did, None).unwrap();
+        let (did, _) = indy::did::Did::new(wallet.handle, "{}").wait().unwrap();
+        indy::pairwise::Pairwise::create(wallet.handle, DID_TRUSTEE, &did, None).wait().unwrap();
 
-        let pairwise_info_without_metadata = indy::pairwise::Pairwise::get(wallet.handle, DID_TRUSTEE).unwrap();
+        let pairwise_info_without_metadata = indy::pairwise::Pairwise::get(wallet.handle, DID_TRUSTEE).wait().unwrap();
 
         assert_eq!(format!(r#"{{"my_did":"{}"}}"#, did), pairwise_info_without_metadata);
 
-        indy::pairwise::Pairwise::set_metadata(wallet.handle, DID_TRUSTEE, Some(METADATA)).unwrap();
+        indy::pairwise::Pairwise::set_metadata(wallet.handle, DID_TRUSTEE, Some(METADATA)).wait().unwrap();
 
-        let pairwise_info_with_metadata = indy::pairwise::Pairwise::get(wallet.handle, DID_TRUSTEE).unwrap();
+        let pairwise_info_with_metadata = indy::pairwise::Pairwise::get(wallet.handle, DID_TRUSTEE).wait().unwrap();
 
         assert_ne!(pairwise_info_with_metadata, pairwise_info_without_metadata);
         assert_eq!(format!(r#"{{"my_did":"{}","metadata":"{}"}}"#, did, METADATA), pairwise_info_with_metadata);
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn set_pairwise_metadata_timeout_works() {
         let wallet = Wallet::new();
         let their_identity_json = json!({"did": DID_TRUSTEE, "verkey": VERKEY_TRUSTEE}).to_string();
@@ -738,6 +775,7 @@ mod set_pairwise_metadata {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn set_pairwise_metadata_async_works() {
         let wallet = Wallet::new();
         let their_identity_json = json!({"did": DID_TRUSTEE, "verkey": VERKEY_TRUSTEE}).to_string();
@@ -772,24 +810,25 @@ mod set_pairwise_metadata {
     pub fn set_pairwise_metadata_works_for_reset() {
         let wallet = Wallet::new();
         let their_identity_json = json!({"did": DID_TRUSTEE, "verkey": VERKEY_TRUSTEE}).to_string();
-        indy::did::Did::store_their_did(wallet.handle, &their_identity_json).unwrap();
+        indy::did::Did::store_their_did(wallet.handle, &their_identity_json).wait().unwrap();
 
-        let (did, _) = indy::did::Did::new(wallet.handle, "{}").unwrap();
-        indy::pairwise::Pairwise::create(wallet.handle, DID_TRUSTEE, &did, Some(METADATA)).unwrap();
+        let (did, _) = indy::did::Did::new(wallet.handle, "{}").wait().unwrap();
+        indy::pairwise::Pairwise::create(wallet.handle, DID_TRUSTEE, &did, Some(METADATA)).wait().unwrap();
 
-        let pairwise_info_without_metadata = indy::pairwise::Pairwise::get(wallet.handle, DID_TRUSTEE).unwrap();
+        let pairwise_info_without_metadata = indy::pairwise::Pairwise::get(wallet.handle, DID_TRUSTEE).wait().unwrap();
 
         assert_eq!(format!(r#"{{"my_did":"{}","metadata":"{}"}}"#, did, METADATA), pairwise_info_without_metadata);
 
-        indy::pairwise::Pairwise::set_metadata(wallet.handle, DID_TRUSTEE, None).unwrap();
+        indy::pairwise::Pairwise::set_metadata(wallet.handle, DID_TRUSTEE, None).wait().unwrap();
 
-        let pairwise_info_with_metadata = indy::pairwise::Pairwise::get(wallet.handle, DID_TRUSTEE).unwrap();
+        let pairwise_info_with_metadata = indy::pairwise::Pairwise::get(wallet.handle, DID_TRUSTEE).wait().unwrap();
 
         assert_ne!(pairwise_info_with_metadata, pairwise_info_without_metadata);
         assert_eq!(format!(r#"{{"my_did":"{}"}}"#, did), pairwise_info_with_metadata);
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn set_pairwise_metadata_timeout_works_for_reset() {
         let wallet = Wallet::new();
         let their_identity_json = json!({"did": DID_TRUSTEE, "verkey": VERKEY_TRUSTEE}).to_string();
@@ -811,6 +850,7 @@ mod set_pairwise_metadata {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn set_pairwise_metadata_async_works_for_reset() {
         let wallet = Wallet::new();
         let their_identity_json = json!({"did": DID_TRUSTEE, "verkey": VERKEY_TRUSTEE}).to_string();
@@ -844,12 +884,13 @@ mod set_pairwise_metadata {
     pub fn set_pairwise_metadata_works_for_not_created_pairwise() {
         let wallet = Wallet::new();
 
-        let ec = indy::pairwise::Pairwise::set_metadata(wallet.handle, DID_TRUSTEE, Some(METADATA)).unwrap_err();
+        let ec = indy::pairwise::Pairwise::set_metadata(wallet.handle, DID_TRUSTEE, Some(METADATA)).wait().unwrap_err();
 
         assert_eq!(ec, ErrorCode::WalletItemNotFound);
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn set_pairwise_metadata_timeout_works_for_not_created_pairwise() {
         let wallet = Wallet::new();
 
@@ -859,6 +900,7 @@ mod set_pairwise_metadata {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn set_pairwise_metadata_async_works_for_not_created_pairwise() {
         let wallet = Wallet::new();
         let (sender, receiver) = channel();
@@ -878,17 +920,18 @@ mod set_pairwise_metadata {
     pub fn set_pairwise_metadata_works_for_invalid_wallet_handle() {
         let wallet = Wallet::new();
         let their_identity_json = json!({"did": DID_TRUSTEE, "verkey": VERKEY_TRUSTEE}).to_string();
-        indy::did::Did::store_their_did(wallet.handle, &their_identity_json).unwrap();
+        indy::did::Did::store_their_did(wallet.handle, &their_identity_json).wait().unwrap();
 
-        let (did, _) = indy::did::Did::new(wallet.handle, "{}").unwrap();
-        indy::pairwise::Pairwise::create(wallet.handle, DID_TRUSTEE, &did, None).unwrap();
+        let (did, _) = indy::did::Did::new(wallet.handle, "{}").wait().unwrap();
+        indy::pairwise::Pairwise::create(wallet.handle, DID_TRUSTEE, &did, None).wait().unwrap();
 
-        let ec = indy::pairwise::Pairwise::set_metadata(wallet.handle + 1, DID_TRUSTEE, Some(METADATA)).unwrap_err();
+        let ec = indy::pairwise::Pairwise::set_metadata(wallet.handle + 1, DID_TRUSTEE, Some(METADATA)).wait().unwrap_err();
 
         assert_eq!(ec, ErrorCode::WalletInvalidHandle);
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn set_pairwise_metadata_timeout_works_for_invalid_wallet_handle() {
         let wallet = Wallet::new();
         let their_identity_json = json!({"did": DID_TRUSTEE, "verkey": VERKEY_TRUSTEE}).to_string();
@@ -903,6 +946,7 @@ mod set_pairwise_metadata {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn set_pairwise_metadata_async_works_for_invalid_wallet_handle() {
         let wallet = Wallet::new();
         let their_identity_json = json!({"did": DID_TRUSTEE, "verkey": VERKEY_TRUSTEE}).to_string();

@@ -1,12 +1,12 @@
 extern crate libc;
 
+use futures::Future;
 use serde_json;
 use serde_json::{ map::Map, Value};
 use settings;
 use utils::constants::{ LIBINDY_CRED_OFFER, REQUESTED_ATTRIBUTES, ATTRS};
 use utils::error::{ INVALID_PROOF_REQUEST, INVALID_ATTRIBUTES_STRUCTURE, INVALID_CONFIGURATION } ;
 use utils::libindy::{ error_codes::map_rust_indy_sdk_error_code, mock_libindy_rc, wallet::get_wallet_handle };
-use utils::timeout::TimeoutUtils;
 use indy::anoncreds::{ Verifier, Prover, Issuer };
 
 pub fn libindy_verifier_verify_proof(proof_req_json: &str,
@@ -16,13 +16,14 @@ pub fn libindy_verifier_verify_proof(proof_req_json: &str,
                                      rev_reg_defs_json: &str,
                                      rev_regs_json: &str)  -> Result<bool, u32> {
 
-    Verifier::verify_proof_timeout(proof_req_json,
+    //TODO there was timeout here (before future-based Rust wrapper)
+    Verifier::verify_proof(proof_req_json,
                                    proof_json,
                                    schemas_json,
                                    credential_defs_json,
                                    rev_reg_defs_json,
-                                   rev_regs_json,
-                                   TimeoutUtils::long_timeout())
+                                   rev_regs_json)
+        .wait()
         .map_err(map_rust_indy_sdk_error_code)
 }
 
@@ -38,6 +39,7 @@ pub fn libindy_create_and_store_credential_def(issuer_did: &str,
                                             tag,
                                             sig_type,
                                             config_json)
+        .wait()
         .map_err(map_rust_indy_sdk_error_code)
 }
 
@@ -49,6 +51,7 @@ pub fn libindy_issuer_create_credential_offer(cred_def_id: &str) -> Result<Strin
     }
     Issuer::create_credential_offer(get_wallet_handle(),
                                     cred_def_id)
+        .wait()
         .map_err(map_rust_indy_sdk_error_code)
 }
 
@@ -66,6 +69,7 @@ pub fn libindy_issuer_create_credential(cred_offer_json: &str,
                               cred_values_json,
                               rev_reg_id,
                               blob_storage_reader_handle)
+        .wait()
         .map_err(map_rust_indy_sdk_error_code)
 }
 
@@ -83,13 +87,14 @@ pub fn libindy_prover_create_proof(proof_req_json: &str,
                          schemas_json,
                          credential_defs_json,
                          revoc_states_json)
+        .wait()
         .map_err(map_rust_indy_sdk_error_code)
 }
 
 fn fetch_credentials(search_handle: i32, requested_attributes: Map<String, Value>) -> Result<String, u32> {
     let mut v: Value = json!({});
     for item_referent in requested_attributes.keys().into_iter() {
-        v[ATTRS][item_referent] = serde_json::from_str(&Prover::_fetch_credentials_for_proof_req(search_handle, item_referent, 100)
+        v[ATTRS][item_referent] = serde_json::from_str(&Prover::_fetch_credentials_for_proof_req(search_handle, item_referent, 100).wait()
             .map_err(map_rust_indy_sdk_error_code)?)
             .map_err(|_| {
                 error!("Invalid Json Parsing of Object Returned from Libindy. Did Libindy change its structure?");
@@ -100,7 +105,7 @@ fn fetch_credentials(search_handle: i32, requested_attributes: Map<String, Value
 }
 
 fn close_search_handle(search_handle: i32) -> Result<(), u32> {
-    Prover::_close_credentials_search_for_proof_req(search_handle).map_err(|ec| {
+    Prover::_close_credentials_search_for_proof_req(search_handle).wait().map_err(|ec| {
         error!("Error closing search handle");
         map_rust_indy_sdk_error_code(ec)
     })
@@ -122,7 +127,9 @@ pub fn libindy_prover_get_credentials_for_proof_req(proof_req: &str) -> Result<S
 
     match requested_attributes {
         Some(attrs) => {
-            let search_handle = Prover::search_credentials_for_proof_req(wallet_handle, proof_req, None).map_err(|ec| {
+            let search_handle = Prover::search_credentials_for_proof_req(wallet_handle, proof_req, None)
+                .wait()
+                .map_err(|ec| {
                 error!("Opening Indy Search for Credentials Failed");
                 map_rust_indy_sdk_error_code(ec)
             })?;
@@ -150,6 +157,7 @@ pub fn libindy_prover_create_credential_req(prover_did: &str,
                                   credential_offer_json,
                                   credential_def_json,
                                   master_secret_name)
+        .wait()
         .map_err(map_rust_indy_sdk_error_code)
 }
 
@@ -166,6 +174,7 @@ pub fn libindy_prover_store_credential(cred_id: Option<&str>,
                              cred_json,
                              cred_def_json,
                              rev_reg_def_json)
+        .wait()
         .map_err(map_rust_indy_sdk_error_code)
 }
 
@@ -174,6 +183,7 @@ pub fn libindy_prover_create_master_secret(master_secret_id: &str) -> Result<Str
 
     Prover::create_master_secret(get_wallet_handle(),
                                  Some(master_secret_id))
+        .wait()
         .map_err(map_rust_indy_sdk_error_code)
 }
 
@@ -186,6 +196,7 @@ pub fn libindy_issuer_create_schema(issuer_did: &str,
                           name,
                           version,
                           attrs)
+        .wait()
         .map_err(map_rust_indy_sdk_error_code)
 }
 

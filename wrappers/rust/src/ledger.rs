@@ -1,17 +1,16 @@
 use {ErrorCode, IndyHandle};
 
 use std::ffi::CString;
-use std::time::Duration;
 use std::ptr::null;
 
+use futures::Future;
+
 use ffi::ledger;
-use ffi::{ResponseEmptyCB,
-          ResponseStringCB,
+use ffi::{ResponseStringCB,
           ResponseStringStringCB,
           ResponseStringStringU64CB};
 
-use utils::results::ResultHandler;
-use utils::callbacks::ClosureHandler;
+use utils::callbacks::{ClosureHandler, ResultHandler};
 
 pub struct Ledger {}
 
@@ -30,12 +29,12 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
-    pub fn sign_and_submit_request(pool_handle: IndyHandle, wallet_handle: IndyHandle, submitter_did: &str, request_json: &str) -> Result<String, ErrorCode> {
+    pub fn sign_and_submit_request(pool_handle: IndyHandle, wallet_handle: IndyHandle, submitter_did: &str, request_json: &str) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Ledger::_sign_and_submit_request(command_handle, pool_handle, wallet_handle, submitter_did, request_json, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
     /// Signs and submits request message to validator pool.
@@ -53,6 +52,7 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
+    #[cfg(feature="extended_api_types")]
     pub fn sign_and_submit_request_timeout(pool_handle: IndyHandle, wallet_handle: IndyHandle, submitter_did: &str, request_json: &str, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -76,6 +76,7 @@ impl Ledger {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn sign_and_submit_request_async<F: 'static>(pool_handle: IndyHandle, wallet_handle: IndyHandle, submitter_did: &str, request_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
@@ -106,12 +107,12 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
-    pub fn submit_request(pool_handle: IndyHandle, request_json: &str) -> Result<String, ErrorCode> {
+    pub fn submit_request(pool_handle: IndyHandle, request_json: &str) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Ledger::_submit_request(command_handle, pool_handle, request_json, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
     /// Publishes request message to validator pool (no signing, unlike Ledger::sign_and_submit_request).
@@ -125,6 +126,7 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
+    #[cfg(feature="extended_api_types")]
     pub fn submit_request_timeout(pool_handle: IndyHandle, request_json: &str, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -144,6 +146,7 @@ impl Ledger {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn submit_request_async<F: 'static>(pool_handle: IndyHandle, request_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
@@ -156,15 +159,16 @@ impl Ledger {
         ErrorCode::from(unsafe { ledger::indy_submit_request(command_handle, pool_handle, request_json.as_ptr(), cb) })
     }
 
-    pub fn submit_action(pool_handle: IndyHandle, request_json: &str, nodes: &str, wait_timeout: i32) -> Result<String, ErrorCode> {
+    pub fn submit_action(pool_handle: IndyHandle, request_json: &str, nodes: &str, wait_timeout: i32) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Ledger::_submit_action(command_handle, pool_handle, request_json, nodes, wait_timeout, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
     /// * `timeout` - the maximum time this function waits for a response
+    #[cfg(feature="extended_api_types")]
     pub fn submit_action_timeout(pool_handle: IndyHandle, request_json: &str, nodes: &str, wait_timeout: i32, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -177,6 +181,7 @@ impl Ledger {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn submit_action_async<F: 'static>(pool_handle: IndyHandle, request_json: &str, nodes: &str, wait_timeout: i32, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
@@ -204,12 +209,12 @@ impl Ledger {
     ///
     /// # Returns
     /// Signed request json.
-    pub fn sign_request(wallet_handle: IndyHandle, submitter_did: &str, request_json: &str) -> Result<String, ErrorCode> {
+    pub fn sign_request(wallet_handle: IndyHandle, submitter_did: &str, request_json: &str) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Ledger::_sign_request(command_handle, wallet_handle, submitter_did, request_json, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
     /// Signs request message.
@@ -225,6 +230,7 @@ impl Ledger {
     ///
     /// # Returns
     /// Signed request json.
+    #[cfg(feature="extended_api_types")]
     pub fn sign_request_timeout(wallet_handle: IndyHandle, submitter_did: &str, request_json: &str, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -246,6 +252,7 @@ impl Ledger {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn sign_request_async<F: 'static>(wallet_handle: IndyHandle, submitter_did: &str, request_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
@@ -271,12 +278,12 @@ impl Ledger {
     ///
     /// # Returns
     /// Signed request json.
-    pub fn multi_sign_request(wallet_handle: IndyHandle, submitter_did: &str, request_json: &str) -> Result<String, ErrorCode> {
+    pub fn multi_sign_request(wallet_handle: IndyHandle, submitter_did: &str, request_json: &str) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Ledger::_multi_sign_request(command_handle, wallet_handle, submitter_did, request_json, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
     /// Multi signs request message.
@@ -292,6 +299,7 @@ impl Ledger {
     ///
     /// # Returns
     /// Signed request json.
+    #[cfg(feature="extended_api_types")]
     pub fn multi_sign_request_timeout(wallet_handle: IndyHandle, submitter_did: &str, request_json: &str, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -313,6 +321,7 @@ impl Ledger {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn multi_sign_request_async<F: 'static>(wallet_handle: IndyHandle, submitter_did: &str, request_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
@@ -334,12 +343,12 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
-    pub fn build_get_ddo_request(submitter_did: Option<&str>, target_did: &str) -> Result<String, ErrorCode> {
+    pub fn build_get_ddo_request(submitter_did: Option<&str>, target_did: &str) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Ledger::_build_get_ddo_request(command_handle, submitter_did, target_did, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
     /// Builds a request to get a DDO.
@@ -351,6 +360,7 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
+    #[cfg(feature="extended_api_types")]
     pub fn build_get_ddo_request_timeout(submitter_did: Option<&str>, target_did: &str, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -368,6 +378,7 @@ impl Ledger {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn build_get_ddo_request_async<F: 'static>(submitter_did: Option<&str>, target_did: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
@@ -397,12 +408,12 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
-    pub fn build_nym_request(submitter_did: &str, target_did: &str, verkey: Option<&str>, data: Option<&str>, role: Option<&str>) -> Result<String, ErrorCode> {
+    pub fn build_nym_request(submitter_did: &str, target_did: &str, verkey: Option<&str>, data: Option<&str>, role: Option<&str>) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Ledger::_build_nym_request(command_handle, submitter_did, target_did, verkey, data, role, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
     /// Builds a NYM request. Request to create a new NYM record for a specific user.
@@ -422,6 +433,7 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
+    #[cfg(feature="extended_api_types")]
     pub fn build_nym_request_timeout(submitter_did: &str, target_did: &str, verkey: Option<&str>, data: Option<&str>, role: Option<&str>, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -447,6 +459,7 @@ impl Ledger {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn build_nym_request_async<F: 'static>(submitter_did: &str, target_did: &str, verkey: Option<&str>, data: Option<&str>, role: Option<&str>, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
@@ -486,12 +499,12 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
-    pub fn build_get_nym_request(submitter_did: Option<&str>, target_did: &str) -> Result<String, ErrorCode> {
+    pub fn build_get_nym_request(submitter_did: Option<&str>, target_did: &str) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Ledger::_build_get_nym_request(command_handle, submitter_did, target_did, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
     /// Builds a GET_NYM request. Request to get information about a DID (NYM).
@@ -503,6 +516,7 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
+    #[cfg(feature="extended_api_types")]
     pub fn build_get_nym_request_timeout(submitter_did: Option<&str>, target_did: &str, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -520,6 +534,7 @@ impl Ledger {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn build_get_nym_request_async<F: 'static>(submitter_did: Option<&str>, target_did: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
@@ -545,12 +560,12 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
-    pub fn build_get_txn_request(submitter_did: Option<&str>, ledger_type: Option<&str>, seq_no: i32) -> Result<String, ErrorCode> {
+    pub fn build_get_txn_request(submitter_did: Option<&str>, ledger_type: Option<&str>, seq_no: i32) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Ledger::_build_get_txn_request(command_handle, submitter_did, ledger_type, seq_no, cb);
-    
-        ResultHandler::one(err, receiver)
+
+        ResultHandler::str(command_handle, err, receiver)
     }
 
     /// Builds a GET_TXN request. Request to get any transaction by its seq_no.
@@ -566,11 +581,12 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
+    #[cfg(feature="extended_api_types")]
     pub fn build_get_txn_request_timeout(submitter_did: Option<&str>, ledger_type: Option<&str>, seq_no: i32, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Ledger::_build_get_txn_request(command_handle, submitter_did, ledger_type, seq_no, cb);
-    
+
         ResultHandler::one_timeout(err, receiver, timeout)
     }
 
@@ -587,6 +603,7 @@ impl Ledger {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn build_get_txn_request_async<F: 'static>(submitter_did: Option<&str>, ledger_type: Option<&str>, seq_no: i32, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
@@ -611,12 +628,12 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
-    pub fn build_attrib_request(submitter_did: &str, target_did: &str, hash: Option<&str>, raw: Option<&str>, enc: Option<&str>) -> Result<String, ErrorCode> {
+    pub fn build_attrib_request(submitter_did: &str, target_did: &str, hash: Option<&str>, raw: Option<&str>, enc: Option<&str>) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Ledger::_build_attrib_request(command_handle, submitter_did, target_did, hash, raw, enc, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
     /// Builds an ATTRIB request. Request to add attribute to a NYM record.
@@ -631,6 +648,7 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
+    #[cfg(feature="extended_api_types")]
     pub fn build_attrib_request_timeout(submitter_did: &str, target_did: &str, hash: Option<&str>, raw: Option<&str>, enc: Option<&str>, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -651,6 +669,7 @@ impl Ledger {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn build_attrib_request_async<F: 'static>(submitter_did: &str, target_did: &str, hash: Option<&str>, raw: Option<&str>, enc: Option<&str>, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
@@ -687,12 +706,12 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
-    pub fn build_get_attrib_request(submitter_did: Option<&str>, target_did: &str, raw: Option<&str>, hash: Option<&str>, enc: Option<&str>) -> Result<String, ErrorCode> {
+    pub fn build_get_attrib_request(submitter_did: Option<&str>, target_did: &str, raw: Option<&str>, hash: Option<&str>, enc: Option<&str>) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Ledger::_build_get_attrib_request(command_handle, submitter_did, target_did, raw, hash, enc, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
     /// Builds a GET_ATTRIB request. Request to get information about an Attribute for the specified DID.
@@ -707,6 +726,7 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
+    #[cfg(feature="extended_api_types")]
     pub fn build_get_attrib_request_timeout(submitter_did: Option<&str>, target_did: &str, raw: Option<&str>, hash: Option<&str>, enc: Option<&str>, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -727,6 +747,7 @@ impl Ledger {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn build_get_attrib_request_async<F: 'static>(submitter_did: Option<&str>, target_did: &str, raw: Option<&str>, hash: Option<&str>, enc: Option<&str>, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
@@ -767,12 +788,12 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
-    pub fn build_schema_request(submitter_did: &str, data: &str) -> Result<String, ErrorCode> {
+    pub fn build_schema_request(submitter_did: &str, data: &str) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Ledger::_build_schema_request(command_handle, submitter_did, data, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
     /// Builds a SCHEMA request. Request to add Credential's schema.
@@ -791,6 +812,7 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
+    #[cfg(feature="extended_api_types")]
     pub fn build_schema_request_timeout(submitter_did: &str, data: &str, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -815,6 +837,7 @@ impl Ledger {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn build_schema_request_async<F: 'static>(submitter_did: &str, data: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
@@ -836,12 +859,12 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
-    pub fn build_get_schema_request(submitter_did: Option<&str>, id: &str) -> Result<String, ErrorCode> {
+    pub fn build_get_schema_request(submitter_did: Option<&str>, id: &str) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Ledger::_build_get_schema_request(command_handle, submitter_did, id, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
     /// Builds a GET_SCHEMA request. Request to get Credential's Schema.
@@ -853,6 +876,7 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
+    #[cfg(feature="extended_api_types")]
     pub fn build_get_schema_request_timeout(submitter_did: Option<&str>, id: &str, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -870,6 +894,7 @@ impl Ledger {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn build_get_schema_request_async<F: 'static>(submitter_did: Option<&str>, id: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
@@ -897,12 +922,12 @@ impl Ledger {
     ///     version: Schema's version string
     ///     ver: Version of the Schema json
     /// }
-    pub fn parse_get_schema_response(get_schema_response: &str) -> Result<(String, String), ErrorCode> {
+    pub fn parse_get_schema_response(get_schema_response: &str) -> Box<Future<Item=(String, String), Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_string();
 
         let err = Ledger::_parse_get_schema_response(command_handle, get_schema_response, cb);
 
-        ResultHandler::two(err, receiver)
+        ResultHandler::str_str(command_handle, err, receiver)
     }
 
     /// Parse a GET_SCHEMA response to get Schema in the format compatible with Anoncreds API.
@@ -920,6 +945,7 @@ impl Ledger {
     ///     version: Schema's version string
     ///     ver: Version of the Schema json
     /// }
+    #[cfg(feature="extended_api_types")]
     pub fn parse_get_schema_response_timeout(get_schema_response: &str, timeout: Duration) -> Result<(String, String), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_string();
 
@@ -936,6 +962,7 @@ impl Ledger {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn parse_get_schema_response_async<F: 'static>(get_schema_response: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string_string(Box::new(closure));
 
@@ -968,12 +995,12 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
-    pub fn build_cred_def_request(submitter_did: &str, data: &str) -> Result<String, ErrorCode> {
+    pub fn build_cred_def_request(submitter_did: &str, data: &str) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Ledger::_build_cred_def_request(command_handle, submitter_did, data, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
     /// Builds an CRED_DEF request. Request to add a Credential Definition (in particular, public key),
@@ -997,6 +1024,7 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
+    #[cfg(feature="extended_api_types")]
     pub fn build_cred_def_request_timeout(submitter_did: &str, data: &str, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -1026,6 +1054,7 @@ impl Ledger {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn build_cred_def_request_async<F: 'static>(submitter_did: &str, data: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
@@ -1048,12 +1077,12 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
-    pub fn build_get_cred_def_request(submitter_did: Option<&str>, id: &str) -> Result<String, ErrorCode> {
+    pub fn build_get_cred_def_request(submitter_did: Option<&str>, id: &str) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Ledger::_build_get_cred_def_request(command_handle, submitter_did, id, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
     /// Builds a GET_CRED_DEF request. Request to get a Credential Definition (in particular, public key),
@@ -1066,6 +1095,7 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
+    #[cfg(feature="extended_api_types")]
     pub fn build_get_cred_def_request_timeout(submitter_did: Option<&str>, id: &str, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -1084,6 +1114,7 @@ impl Ledger {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn build_get_cred_def_request_async<F: 'static>(submitter_did: Option<&str>, id: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
@@ -1115,12 +1146,12 @@ impl Ledger {
     ///     },
     ///     ver: Version of the Credential Definition json
     /// }
-    pub fn parse_get_cred_def_response(get_cred_def_response: &str) -> Result<(String, String), ErrorCode> {
+    pub fn parse_get_cred_def_response(get_cred_def_response: &str) -> Box<Future<Item=(String, String), Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_string();
 
         let err = Ledger::_parse_get_cred_def_response(command_handle, get_cred_def_response, cb);
 
-        ResultHandler::two(err, receiver)
+        ResultHandler::str_str(command_handle, err, receiver)
     }
 
     /// Parse a GET_CRED_DEF response to get Credential Definition in the format compatible with Anoncreds API.
@@ -1142,6 +1173,7 @@ impl Ledger {
     ///     },
     ///     ver: Version of the Credential Definition json
     /// }
+    #[cfg(feature="extended_api_types")]
     pub fn parse_get_cred_def_response_timeout(get_cred_def_response: &str, timeout: Duration) -> Result<(String, String), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_string();
 
@@ -1158,6 +1190,7 @@ impl Ledger {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn parse_get_cred_def_response_async<F: 'static>(get_cred_def_response: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string_string(Box::new(closure));
 
@@ -1187,12 +1220,12 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
-    pub fn build_node_request(submitter_did: &str, target_did: &str, data: &str) -> Result<String, ErrorCode> {
+    pub fn build_node_request(submitter_did: &str, target_did: &str, data: &str) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Ledger::_build_node_request(command_handle, submitter_did, target_did, data, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
     /// Builds a NODE request. Request to add a new node to the pool, or updates existing in the pool.
@@ -1213,6 +1246,7 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
+    #[cfg(feature="extended_api_types")]
     pub fn build_node_request_timeout(submitter_did: &str, target_did: &str, data: &str, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -1239,6 +1273,7 @@ impl Ledger {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn build_node_request_async<F: 'static>(submitter_did: &str, target_did: &str, data: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
@@ -1260,12 +1295,12 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
-    pub fn build_get_validator_info_request(submitter_did: &str) -> Result<String, ErrorCode> {
+    pub fn build_get_validator_info_request(submitter_did: &str) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Ledger::_build_get_validator_info_request(command_handle, submitter_did, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
     /// Builds a GET_VALIDATOR_INFO request.
@@ -1276,6 +1311,7 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
+    #[cfg(feature="extended_api_types")]
     pub fn build_get_validator_info_request_timeout(submitter_did: &str, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -1292,6 +1328,7 @@ impl Ledger {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn build_get_validator_info_request_async<F: 'static>(submitter_did: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
@@ -1317,12 +1354,12 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
-    pub fn build_pool_config_request(submitter_did: &str, writes: bool, force: bool) -> Result<String, ErrorCode> {
+    pub fn build_pool_config_request(submitter_did: &str, writes: bool, force: bool) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Ledger::_build_pool_config_request(command_handle, submitter_did, writes, force, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
     /// Builds a POOL_CONFIG request. Request to change Pool's configuration.
@@ -1337,6 +1374,7 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
+    #[cfg(feature="extended_api_types")]
     pub fn build_pool_config_request_timeout(submitter_did: &str, writes: bool, force: bool, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -1357,6 +1395,7 @@ impl Ledger {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn build_pool_config_request_async<F: 'static>(submitter_did: &str, writes: bool, force: bool, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
@@ -1373,29 +1412,30 @@ impl Ledger {
     ///
     /// # Arguments
     /// * `submitter_did` - Id of Identity stored in secured Wallet.
-    /// * `action`- 
-    /// * `datetime`- 
+    /// * `action`-
+    /// * `datetime`-
     ///
     /// # Returns
     /// Request result as json.
-    pub fn build_pool_restart_request(submitter_did: &str, action: &str, datetime: Option<&str>) -> Result<String, ErrorCode> {
+    pub fn build_pool_restart_request(submitter_did: &str, action: &str, datetime: Option<&str>) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Ledger::_build_pool_restart_request(command_handle, submitter_did, action, datetime, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
     /// Builds a POOL_RESTART request.
     ///
     /// # Arguments
     /// * `submitter_did` - Id of Identity stored in secured Wallet.
-    /// * `action`- 
-    /// * `datetime`- 
+    /// * `action`-
+    /// * `datetime`-
     /// * `timeout` - the maximum time this function waits for a response
     ///
     /// # Returns
     /// Request result as json.
+    #[cfg(feature="extended_api_types")]
     pub fn build_pool_restart_request_timeout(submitter_did: &str, action: &str, datetime: Option<&str>, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -1408,12 +1448,13 @@ impl Ledger {
     ///
     /// # Arguments
     /// * `submitter_did` - Id of Identity stored in secured Wallet.
-    /// * `action`- 
-    /// * `datetime`- 
+    /// * `action`-
+    /// * `datetime`-
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn build_pool_restart_request_async<F: 'static>(submitter_did: &str, action: &str, datetime: Option<&str>, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
@@ -1463,12 +1504,12 @@ impl Ledger {
                                       justification: Option<&str>,
                                       reinstall: bool,
                                       force: bool,
-                                      package: Option<&str>) -> Result<String, ErrorCode> {
+                                      package: Option<&str>) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Ledger::_build_pool_upgrade_request(command_handle, submitter_did, name, version, action, sha256, upgrade_timeout, schedule, justification, reinstall, force, package, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
     /// Builds a POOL_UPGRADE request. Request to upgrade the Pool (sent by Trustee).
@@ -1491,6 +1532,7 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
+    #[cfg(feature="extended_api_types")]
     pub fn build_pool_upgrade_request_timeout(submitter_did: &str,
                                               name: &str,
                                               version: &str,
@@ -1530,6 +1572,7 @@ impl Ledger {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn build_pool_upgrade_request_async<F: 'static>(submitter_did: &str,
                                                         name: &str,
                                                         version: &str,
@@ -1611,12 +1654,12 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
-    pub fn build_revoc_reg_def_request(submitter_did: &str, data: &str) -> Result<String, ErrorCode> {
+    pub fn build_revoc_reg_def_request(submitter_did: &str, data: &str) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Ledger::_build_revoc_reg_def_request(command_handle, submitter_did, data, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
     /// Builds a REVOC_REG_DEF request. Request to add the definition of revocation registry
@@ -1643,6 +1686,7 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
+    #[cfg(feature="extended_api_types")]
     pub fn build_revoc_reg_def_request_timeout(submitter_did: &str, data: &str, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -1675,6 +1719,7 @@ impl Ledger {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn build_revoc_reg_def_request_async<F: 'static>(submitter_did: &str, data: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
@@ -1697,12 +1742,12 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
-    pub fn build_get_revoc_reg_def_request(submitter_did: Option<&str>, id: &str) -> Result<String, ErrorCode> {
+    pub fn build_get_revoc_reg_def_request(submitter_did: Option<&str>, id: &str) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Ledger::_build_get_revoc_reg_def_request(command_handle, submitter_did, id, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
     /// Builds a GET_REVOC_REG_DEF request. Request to get a revocation registry definition,
@@ -1715,6 +1760,7 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
+    #[cfg(feature="extended_api_types")]
     pub fn build_get_revoc_reg_def_request_timeout(submitter_did: Option<&str>, id: &str, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -1733,6 +1779,7 @@ impl Ledger {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn build_get_revoc_reg_def_request_async<F: 'static>(submitter_did: Option<&str>, id: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
@@ -1768,12 +1815,12 @@ impl Ledger {
     ///     },
     ///     "ver": string - version of revocation registry definition json.
     /// }
-    pub fn parse_get_revoc_reg_def_response(get_revoc_reg_def_response: &str) -> Result<(String, String), ErrorCode> {
+    pub fn parse_get_revoc_reg_def_response(get_revoc_reg_def_response: &str) -> Box<Future<Item=(String, String), Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_string();
 
         let err = Ledger::_parse_get_revoc_reg_def_response(command_handle, get_revoc_reg_def_response, cb);
 
-        ResultHandler::two(err, receiver)
+        ResultHandler::str_str(command_handle, err, receiver)
     }
 
     /// Parse a GET_REVOC_REG_DEF response to get Revocation Registry Definition in the format
@@ -1799,6 +1846,7 @@ impl Ledger {
     ///     },
     ///     "ver": string - version of revocation registry definition json.
     /// }
+    #[cfg(feature="extended_api_types")]
     pub fn parse_get_revoc_reg_def_response_timeout(get_revoc_reg_def_response: &str, timeout: Duration) -> Result<(String, String), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_string();
 
@@ -1816,6 +1864,7 @@ impl Ledger {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn parse_get_revoc_reg_def_response_async<F: 'static>(get_revoc_reg_def_response: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string_string(Box::new(closure));
 
@@ -1850,12 +1899,12 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
-    pub fn build_revoc_reg_entry_request(submitter_did: &str, revoc_reg_def_id: &str, rev_def_type: &str, value: &str) -> Result<String, ErrorCode> {
+    pub fn build_revoc_reg_entry_request(submitter_did: &str, revoc_reg_def_id: &str, rev_def_type: &str, value: &str) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Ledger::_build_revoc_reg_entry_request(command_handle, submitter_did, revoc_reg_def_id, rev_def_type, value, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
     /// Builds a REVOC_REG_ENTRY request.  Request to add the RevocReg entry containing
@@ -1881,6 +1930,7 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
+    #[cfg(feature="extended_api_types")]
     pub fn build_revoc_reg_entry_request_timeout(submitter_did: &str, revoc_reg_def_id: &str, rev_def_type: &str, value: &str, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -1912,6 +1962,7 @@ impl Ledger {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn build_revoc_reg_entry_request_async<F: 'static>(submitter_did: &str, revoc_reg_def_id: &str, rev_def_type: &str, value: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
@@ -1937,12 +1988,12 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
-    pub fn build_get_revoc_reg_request(submitter_did: Option<&str>, revoc_reg_def_id: &str, timestamp: i64) -> Result<String, ErrorCode> {
+    pub fn build_get_revoc_reg_request(submitter_did: Option<&str>, revoc_reg_def_id: &str, timestamp: i64) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Ledger::_build_get_revoc_reg_request(command_handle, submitter_did, revoc_reg_def_id, timestamp, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
     /// Builds a GET_REVOC_REG request. Request to get the accumulated state of the Revocation Registry
@@ -1956,6 +2007,7 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
+    #[cfg(feature="extended_api_types")]
     pub fn build_get_revoc_reg_request_timeout(submitter_did: Option<&str>, revoc_reg_def_id: &str, timestamp: i64, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -1975,6 +2027,7 @@ impl Ledger {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn build_get_revoc_reg_request_async<F: 'static>(submitter_did: Option<&str>, revoc_reg_def_id: &str, timestamp: i64, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
@@ -2001,12 +2054,12 @@ impl Ledger {
     ///     },
     ///     "ver": string - version revocation registry json
     /// }
-    pub fn parse_get_revoc_reg_response(get_revoc_reg_response: &str) -> Result<(String, String, u64), ErrorCode> {
+    pub fn parse_get_revoc_reg_response(get_revoc_reg_response: &str) -> Box<Future<Item=(String, String, u64), Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_string_u64();
 
         let err = Ledger::_parse_get_revoc_reg_response(command_handle, get_revoc_reg_response, cb);
 
-        ResultHandler::three(err, receiver)
+        ResultHandler::str_str_u64(command_handle, err, receiver)
     }
 
     /// Parse a GET_REVOC_REG response to get Revocation Registry in the format compatible with Anoncreds API.
@@ -2023,6 +2076,7 @@ impl Ledger {
     ///     },
     ///     "ver": string - version revocation registry json
     /// }
+    #[cfg(feature="extended_api_types")]
     pub fn parse_get_revoc_reg_response_timeout(get_revoc_reg_response: &str, timeout: Duration) -> Result<(String, String, u64), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_string_u64();
 
@@ -2039,6 +2093,7 @@ impl Ledger {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn parse_get_revoc_reg_response_async<F: 'static>(get_revoc_reg_response: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String, String, u64) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string_string_u64(Box::new(closure));
 
@@ -2063,12 +2118,12 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
-    pub fn build_get_revoc_reg_delta_request(submitter_did: Option<&str>, revoc_reg_def_id: &str, from: i64, to: i64) -> Result<String, ErrorCode> {
+    pub fn build_get_revoc_reg_delta_request(submitter_did: Option<&str>, revoc_reg_def_id: &str, from: i64, to: i64) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Ledger::_build_get_revoc_reg_delta_request(command_handle, submitter_did, revoc_reg_def_id, from, to, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
     /// Builds a GET_REVOC_REG_DELTA request. Request to get the delta of the accumulated state of the Revocation Registry.
@@ -2084,6 +2139,7 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
+    #[cfg(feature="extended_api_types")]
     pub fn build_get_revoc_reg_delta_request_timeout(submitter_did: Option<&str>, revoc_reg_def_id: &str, from: i64, to: i64, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -2105,6 +2161,7 @@ impl Ledger {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn build_get_revoc_reg_delta_request_async<F: 'static>(submitter_did: Option<&str>, revoc_reg_def_id: &str, from: i64, to: i64, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
@@ -2134,12 +2191,12 @@ impl Ledger {
     ///     },
     ///     "ver": string - version revocation registry delta json
     /// }
-    pub fn parse_get_revoc_reg_delta_response(get_revoc_reg_delta_response: &str) -> Result<(String, String, u64), ErrorCode> {
+    pub fn parse_get_revoc_reg_delta_response(get_revoc_reg_delta_response: &str) -> Box<Future<Item=(String, String, u64), Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_string_u64();
 
         let err = Ledger::_parse_get_revoc_reg_delta_response(command_handle, get_revoc_reg_delta_response, cb);
 
-        ResultHandler::three(err, receiver)
+        ResultHandler::str_str_u64(command_handle, err, receiver)
     }
 
     /// Parse a GET_REVOC_REG_DELTA response to get Revocation Registry Delta in the format compatible with Anoncreds API.
@@ -2159,6 +2216,7 @@ impl Ledger {
     ///     },
     ///     "ver": string - version revocation registry delta json
     /// }
+    #[cfg(feature="extended_api_types")]
     pub fn parse_get_revoc_reg_delta_response_timeout(get_revoc_reg_delta_response: &str, timeout: Duration) -> Result<(String, String, u64), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_string_u64();
 
@@ -2175,6 +2233,7 @@ impl Ledger {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn parse_get_revoc_reg_delta_response_async<F: 'static>(get_revoc_reg_delta_response: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String, String, u64) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string_string_u64(Box::new(closure));
 
@@ -2185,65 +2244,6 @@ impl Ledger {
         let get_revoc_reg_delta_response = c_str!(get_revoc_reg_delta_response);
 
         ErrorCode::from(unsafe { ledger::indy_parse_get_revoc_reg_delta_response(command_handle,get_revoc_reg_delta_response.as_ptr(), cb) })
-    }
-
-    /// Register callbacks (see type description for `CustomTransactionParser` and `CustomFree`
-    ///
-    /// # Arguments
-    /// * `txn_type` - type of transaction to apply `parse` callback.
-    /// * `parse` - required callback to parse reply for state proof.
-    /// * `free` - required callback to deallocate memory.
-    ///
-    /// # Returns
-    /// Status of callbacks registration.
-    pub fn register_transaction_parser_for_sp(txn_type: &str, parser: Option<ledger::CustomTransactionParser>, free: Option<ledger::CustomFree>) -> Result<(), ErrorCode> {
-        let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
-
-        let err = Ledger::_register_transaction_parser_for_sp(command_handle, txn_type, parser, free, cb);
-
-        ResultHandler::empty(err, receiver)
-    }
-
-    /// Register callbacks (see type description for `CustomTransactionParser` and `CustomFree`
-    ///
-    /// # Arguments
-    /// * `txn_type` - type of transaction to apply `parse` callback.
-    /// * `parse` - required callback to parse reply for state proof.
-    /// * `free` - required callback to deallocate memory.
-    /// * `timeout` - the maximum time this function waits for a response
-    ///
-    /// # Returns
-    /// Status of callbacks registration.
-    pub fn register_transaction_parser_for_sp_timeout(txn_type: &str, parser: Option<ledger::CustomTransactionParser>, free: Option<ledger::CustomFree>, timeout: Duration) -> Result<(), ErrorCode> {
-        let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
-
-        let err = Ledger::_register_transaction_parser_for_sp(command_handle, txn_type, parser, free, cb);
-
-        ResultHandler::empty_timeout(err, receiver, timeout)
-    }
-
-    /// Register callbacks (see type description for `CustomTransactionParser` and `CustomFree`
-    ///
-    /// # Arguments
-    /// * `txn_type` - type of transaction to apply `parse` callback.
-    /// * `parse` - required callback to parse reply for state proof.
-    /// * `free` - required callback to deallocate memory.
-    /// * `closure` - the closure that is called when finished
-    ///
-    /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
-    pub fn register_transaction_parser_for_sp_async<F: 'static>(txn_type: &str, parser: Option<ledger::CustomTransactionParser>, free: Option<ledger::CustomFree>, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
-        let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
-
-        Ledger::_register_transaction_parser_for_sp(command_handle, txn_type, parser, free, cb)
-    }
-
-    fn _register_transaction_parser_for_sp(command_handle: IndyHandle, txn_type: &str, parser: Option<ledger::CustomTransactionParser>, free: Option<ledger::CustomFree>, cb: Option<ResponseEmptyCB>) -> ErrorCode {
-        let txn_type = c_str!(txn_type);
-
-        ErrorCode::from(unsafe {
-          ledger::indy_register_transaction_parser_for_sp(command_handle, txn_type.as_ptr(), parser, free, cb)
-        })
     }
 }
 

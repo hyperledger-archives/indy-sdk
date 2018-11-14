@@ -2,20 +2,26 @@
 #[macro_use] extern crate serde_derive;
 extern crate rmp_serde;
 extern crate byteorder;
+extern crate futures;
 extern crate indy;
 #[macro_use]
 pub mod utils;
 
 use utils::constants::{DID_1};
 use utils::setup::{Setup, SetupConfig};
+#[cfg(feature="extended_api_types")]
 use std::time::Duration;
+#[cfg(feature="extended_api_types")]
 use std::sync::mpsc::channel;
 use indy::ErrorCode;
 use indy::pool::Pool;
+#[allow(unused_imports)]
+use futures::Future;
 
 #[cfg(test)]
 mod open_pool {
     use super::*;
+    use futures::future::Future;
 
     #[test]
     pub fn open_pool_works() {
@@ -27,12 +33,13 @@ mod open_pool {
             num_users: 0,
         });
 
-        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
+        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).wait().unwrap();
 
-        indy::pool::Pool::close(pool_handle).unwrap();
+        indy::pool::Pool::close(pool_handle).wait().unwrap();
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn open_pool_timeout_works() {
         let wallet = utils::wallet::Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
@@ -42,12 +49,13 @@ mod open_pool {
             num_users: 0,
         });
 
-        let pool_handle = indy::pool::Pool::open_ledger_timeout(&setup.pool_name, None, Duration::from_secs(5)).unwrap();
+        let err = indy::pool::Pool::open_ledger_timeout(&setup.pool_name, None, Duration::from_millis(1)).unwrap_err();
 
-        indy::pool::Pool::close(pool_handle).unwrap();
+        assert_eq!(err, ErrorCode::PoolLedgerTimeout);
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn open_pool_async_works() {
         let wallet = utils::wallet::Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
@@ -69,7 +77,7 @@ mod open_pool {
         let (ec, pool_handle) = receiver.recv_timeout(Duration::from_secs(5)).unwrap();
         assert_eq!(ec, ErrorCode::Success);
 
-        indy::pool::Pool::close(pool_handle).unwrap();
+        indy::pool::Pool::close(pool_handle).wait().unwrap();
     }
 
     #[test]
@@ -84,12 +92,13 @@ mod open_pool {
 
         let config = Some(r#"{"timeout": 20}"#);
 
-        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, config).unwrap();
+        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, config).wait().unwrap();
 
-        indy::pool::Pool::close(pool_handle).unwrap();
+        indy::pool::Pool::close(pool_handle).wait().unwrap();
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn open_pool_timeout_works_for_config() {
         let wallet = utils::wallet::Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
@@ -103,10 +112,11 @@ mod open_pool {
 
         let pool_handle = indy::pool::Pool::open_ledger_timeout(&setup.pool_name, config, Duration::from_secs(5)).unwrap();
 
-        indy::pool::Pool::close(pool_handle).unwrap();
+        indy::pool::Pool::close(pool_handle).wait().unwrap();
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn open_pool_async_works_for_config() {
         let wallet = utils::wallet::Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
@@ -130,7 +140,7 @@ mod open_pool {
         let (ec, pool_handle) = receiver.recv_timeout(Duration::from_secs(5)).unwrap();
         assert_eq!(ec, ErrorCode::Success);
 
-        indy::pool::Pool::close(pool_handle).unwrap();
+        indy::pool::Pool::close(pool_handle).wait().unwrap();
     }
 
     #[test]
@@ -143,15 +153,16 @@ mod open_pool {
             num_users: 0,
         });
 
-        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
+        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).wait().unwrap();
 
-        let ec = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap_err();
+        let ec = indy::pool::Pool::open_ledger(&setup.pool_name, None).wait().unwrap_err();
         assert_eq!(ec, ErrorCode::PoolLedgerInvalidPoolHandle);
 
-        indy::pool::Pool::close(pool_handle).unwrap();
+        indy::pool::Pool::close(pool_handle).wait().unwrap();
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn open_pool_timeout_works_for_twice() {
         let wallet = utils::wallet::Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
@@ -165,10 +176,11 @@ mod open_pool {
         let ec = indy::pool::Pool::open_ledger_timeout(&setup.pool_name, None, Duration::from_secs(5)).unwrap_err();
         assert_eq!(ec, ErrorCode::PoolLedgerInvalidPoolHandle);
 
-        indy::pool::Pool::close(pool_handle).unwrap();
+        indy::pool::Pool::close(pool_handle).wait().unwrap();
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn open_pool_async_works_for_twice() {
         let wallet = utils::wallet::Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
@@ -202,7 +214,7 @@ mod open_pool {
         let (ec, _) = receiver.recv_timeout(Duration::from_secs(5)).unwrap();
         assert_eq!(ec, ErrorCode::PoolLedgerInvalidPoolHandle);
 
-        indy::pool::Pool::close(pool_handle).unwrap();
+        indy::pool::Pool::close(pool_handle).wait().unwrap();
     }
 
     #[test]
@@ -215,12 +227,13 @@ mod open_pool {
             num_users: 0,
         });
 
-        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
+        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).wait().unwrap();
 
-        indy::pool::Pool::close(pool_handle).unwrap();
+        indy::pool::Pool::close(pool_handle).wait().unwrap();
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn open_pool_timeout_works_for_two_nodes() {
         let wallet = utils::wallet::Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
@@ -232,10 +245,11 @@ mod open_pool {
 
         let pool_handle = indy::pool::Pool::open_ledger_timeout(&setup.pool_name, None, Duration::from_secs(5)).unwrap();
 
-        indy::pool::Pool::close(pool_handle).unwrap();
+        indy::pool::Pool::close(pool_handle).wait().unwrap();
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn open_pool_async_works_for_two_nodes() {
         let wallet = utils::wallet::Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
@@ -257,7 +271,7 @@ mod open_pool {
         let (ec, pool_handle) = receiver.recv_timeout(Duration::from_secs(5)).unwrap();
         assert_eq!(ec, ErrorCode::Success);
 
-        indy::pool::Pool::close(pool_handle).unwrap();
+        indy::pool::Pool::close(pool_handle).wait().unwrap();
     }
 
     #[test]
@@ -270,12 +284,13 @@ mod open_pool {
             num_users: 0,
         });
 
-        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
+        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).wait().unwrap();
 
-        indy::pool::Pool::close(pool_handle).unwrap();
+        indy::pool::Pool::close(pool_handle).wait().unwrap();
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn open_pool_timeout_works_for_three_nodes() {
         let wallet = utils::wallet::Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
@@ -287,10 +302,11 @@ mod open_pool {
 
         let pool_handle = indy::pool::Pool::open_ledger_timeout(&setup.pool_name, None, Duration::from_secs(5)).unwrap();
 
-        indy::pool::Pool::close(pool_handle).unwrap();
+        indy::pool::Pool::close(pool_handle).wait().unwrap();
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn open_pool_async_works_for_three_nodes() {
         let wallet = utils::wallet::Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
@@ -312,7 +328,7 @@ mod open_pool {
         let (ec, pool_handle) = receiver.recv_timeout(Duration::from_secs(5)).unwrap();
         assert_eq!(ec, ErrorCode::Success);
 
-        indy::pool::Pool::close(pool_handle).unwrap();
+        indy::pool::Pool::close(pool_handle).wait().unwrap();
     }
 
     #[test]
@@ -326,12 +342,13 @@ mod open_pool {
         });
         utils::pool::dump_correct_genesis_txns_to_cache(&setup.pool_name).unwrap();
 
-        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
+        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).wait().unwrap();
 
-        indy::pool::Pool::close(pool_handle).unwrap();
+        indy::pool::Pool::close(pool_handle).wait().unwrap();
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn open_pool_timeout_works_for_cached_txns() {
         let wallet = utils::wallet::Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
@@ -344,10 +361,11 @@ mod open_pool {
 
         let pool_handle = indy::pool::Pool::open_ledger_timeout(&setup.pool_name, None, Duration::from_secs(5)).unwrap();
 
-        indy::pool::Pool::close(pool_handle).unwrap();
+        indy::pool::Pool::close(pool_handle).wait().unwrap();
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn open_pool_async_works_for_cached_txns() {
         let wallet = utils::wallet::Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
@@ -370,7 +388,7 @@ mod open_pool {
         let (ec, pool_handle) = receiver.recv_timeout(Duration::from_secs(5)).unwrap();
         assert_eq!(ec, ErrorCode::Success);
 
-        indy::pool::Pool::close(pool_handle).unwrap();
+        indy::pool::Pool::close(pool_handle).wait().unwrap();
     }
 
     #[test]
@@ -384,12 +402,13 @@ mod open_pool {
         });
         utils::pool::dump_incorrect_genesis_txns_to_cache(&setup.pool_name).unwrap();
 
-        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
+        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).wait().unwrap();
 
-        indy::pool::Pool::close(pool_handle).unwrap();
+        indy::pool::Pool::close(pool_handle).wait().unwrap();
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn open_pool_timeout_works_for_corrupted_cached_txns() {
         let wallet = utils::wallet::Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
@@ -402,10 +421,11 @@ mod open_pool {
 
         let pool_handle = indy::pool::Pool::open_ledger_timeout(&setup.pool_name, None, Duration::from_secs(5)).unwrap();
 
-        indy::pool::Pool::close(pool_handle).unwrap();
+        indy::pool::Pool::close(pool_handle).wait().unwrap();
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn open_pool_async_works_for_corrupted_cached_txns() {
         let wallet = utils::wallet::Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
@@ -428,13 +448,14 @@ mod open_pool {
         let (ec, pool_handle) = receiver.recv_timeout(Duration::from_secs(5)).unwrap();
         assert_eq!(ec, ErrorCode::Success);
 
-        indy::pool::Pool::close(pool_handle).unwrap();
+        indy::pool::Pool::close(pool_handle).wait().unwrap();
     }
 }
 
 #[cfg(test)]
 mod close_pool {
     use super::*;
+    use futures::future::Future;
 
     #[test]
     pub fn close_pool_works() {
@@ -446,12 +467,13 @@ mod close_pool {
             num_users: 0,
         });
 
-        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
+        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).wait().unwrap();
 
-        indy::pool::Pool::close(pool_handle).unwrap();
+        indy::pool::Pool::close(pool_handle).wait().unwrap();
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn close_pool_timeout_works() {
         let wallet = utils::wallet::Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
@@ -461,12 +483,13 @@ mod close_pool {
             num_users: 0,
         });
 
-        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
+        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).wait().unwrap();
 
         indy::pool::Pool::close_timeout(pool_handle, Duration::from_secs(5)).unwrap();
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn close_pool_async_works() {
         let wallet = utils::wallet::Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
@@ -482,7 +505,7 @@ mod close_pool {
             sender.send(ec).unwrap();
         };
 
-        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
+        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).wait().unwrap();
 
         let ec = indy::pool::Pool::close_async(pool_handle, cb);
         assert_eq!(ec, ErrorCode::Success);
@@ -501,14 +524,15 @@ mod close_pool {
             num_users: 0,
         });
 
-        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
+        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).wait().unwrap();
 
-        indy::pool::Pool::close(pool_handle).unwrap();
-        let ec = indy::pool::Pool::close(pool_handle).unwrap_err();
+        indy::pool::Pool::close(pool_handle).wait().unwrap();
+        let ec = indy::pool::Pool::close(pool_handle).wait().unwrap_err();
         assert_eq!(ec, ErrorCode::PoolLedgerInvalidPoolHandle);
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn close_pool_timeout_works_for_twice() {
         let wallet = utils::wallet::Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
@@ -518,7 +542,7 @@ mod close_pool {
             num_users: 0,
         });
 
-        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
+        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).wait().unwrap();
 
         indy::pool::Pool::close_timeout(pool_handle, Duration::from_secs(5)).unwrap();
         let ec = indy::pool::Pool::close_timeout(pool_handle, Duration::from_secs(5)).unwrap_err();
@@ -526,6 +550,7 @@ mod close_pool {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn close_pool_async_works_for_twice() {
         let wallet = utils::wallet::Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
@@ -535,7 +560,7 @@ mod close_pool {
             num_users: 0,
         });
 
-        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
+        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).wait().unwrap();
 
         let (sender, receiver) = channel();
 
@@ -574,14 +599,15 @@ mod close_pool {
             num_users: 0,
         });
 
-        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
+        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).wait().unwrap();
 
-        indy::pool::Pool::close(pool_handle).unwrap();
-        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
-        indy::pool::Pool::close(pool_handle).unwrap();
+        indy::pool::Pool::close(pool_handle).wait().unwrap();
+        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).wait().unwrap();
+        indy::pool::Pool::close(pool_handle).wait().unwrap();
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn close_pool_timeout_works_for_reopen_after_close() {
         let wallet = utils::wallet::Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
@@ -591,15 +617,16 @@ mod close_pool {
             num_users: 0,
         });
 
-        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
+        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).wait().unwrap();
 
         indy::pool::Pool::close_timeout(pool_handle, Duration::from_secs(5)).unwrap();
-        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
+        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).wait().unwrap();
 
-        indy::pool::Pool::close(pool_handle).unwrap();
+        indy::pool::Pool::close(pool_handle).wait().unwrap();
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn close_pool_async_works_for_reopen_after_close() {
         let wallet = utils::wallet::Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
@@ -615,7 +642,7 @@ mod close_pool {
             sender.send(ec).unwrap();
         };
 
-        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
+        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).wait().unwrap();
 
         let ec = indy::pool::Pool::close_async(pool_handle, cb);
         assert_eq!(ec, ErrorCode::Success);
@@ -623,8 +650,8 @@ mod close_pool {
         let ec = receiver.recv_timeout(Duration::from_secs(5)).unwrap();
         assert_eq!(ec, ErrorCode::Success);
 
-        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
-        indy::pool::Pool::close(pool_handle).unwrap();
+        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).wait().unwrap();
+        indy::pool::Pool::close(pool_handle).wait().unwrap();
     }
 
     #[test]
@@ -637,26 +664,20 @@ mod close_pool {
             num_users: 0,
         });
 
-        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
+        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).wait().unwrap();
 
-        let get_nym_req = indy::ledger::Ledger::build_get_nym_request(Some(DID_1), DID_1).unwrap();
+        let get_nym_req = indy::ledger::Ledger::build_get_nym_request(Some(DID_1), DID_1).wait().unwrap();
+        
+        let _request_future = indy::ledger::Ledger::submit_request(pool_handle, &get_nym_req);
 
-        let (sender, receiver) = channel();
+        indy::pool::Pool::close(pool_handle).wait().unwrap();
 
-        let cb = move |ec, s| {
-            sender.send((ec, s)).unwrap();
-        };
-
-        let ec = indy::ledger::Ledger::submit_request_async(pool_handle, &get_nym_req, cb);
-        assert_eq!(ec, ErrorCode::Success);
-
-        indy::pool::Pool::close(pool_handle).unwrap();
-
-        let (err, _) = receiver.recv_timeout(Duration::from_secs(10)).unwrap();
-        assert_eq!(err, ErrorCode::PoolLedgerTerminated);
+        let res = _request_future.wait();
+        assert_eq!(res.unwrap_err(), ErrorCode::PoolLedgerTerminated);
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn close_pool_timeout_works_for_pending_request() {
         let wallet = utils::wallet::Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
@@ -666,7 +687,7 @@ mod close_pool {
             num_users: 0,
         });
 
-        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
+        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).wait().unwrap();
 
         let get_nym_req = indy::ledger::Ledger::build_get_nym_request(Some(DID_1), DID_1).unwrap();
 
@@ -686,6 +707,7 @@ mod close_pool {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn close_pool_async_works_for_pending_request() {
         let wallet = utils::wallet::Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
@@ -701,7 +723,7 @@ mod close_pool {
             sender.send(ec).unwrap();
         };
 
-        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
+        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).wait().unwrap();
 
         let get_nym_req = indy::ledger::Ledger::build_get_nym_request(Some(DID_1), DID_1).unwrap();
 
@@ -730,11 +752,14 @@ mod test_pool_create_config {
     use super::*;
 
     use std::fs;
+    #[cfg(feature="extended_api_types")]
     use std::time::Duration;
+    #[cfg(feature="extended_api_types")]
     use std::sync::mpsc::channel;
     use utils::file::TempFile;
     use utils::pool::{PoolList, test_pool_name, test_genesis_config};
 
+    #[cfg(feature="extended_api_types")]
     const VALID_TIMEOUT: Duration = Duration::from_millis(250);
 
     #[inline]
@@ -764,18 +789,18 @@ mod test_pool_create_config {
     fn config_with_genesis_txn() {
         let name = test_pool_name();
         let (config, _file) = test_genesis_config();
-        let result = Pool::create_ledger_config(&name, Some(&config));
+        let result = Pool::create_ledger_config(&name, Some(&config)).wait();
 
         assert_eq!((), result.unwrap());
         assert_pool_exists(&name);
-        Pool::delete(&name).unwrap();
+        Pool::delete(&name).wait().unwrap();
     }
 
     #[test]
     /* Config options missing genesis_txn */
     fn config_missing_genesis_txn() {
         let name = test_pool_name();
-        let result = Pool::create_ledger_config(&name, Some("{}"));
+        let result = Pool::create_ledger_config(&name, Some("{}")).wait();
 
         assert_eq!(ErrorCode::CommonInvalidStructure, result.unwrap_err());
         assert_pool_not_exists(&name);
@@ -786,7 +811,7 @@ mod test_pool_create_config {
     fn config_with_unknown_path_genesis_txn() {
         let name = test_pool_name();
         let config = json!({"genesis_txn": "/nonexist15794345"}).to_string();
-        let result = Pool::create_ledger_config(&name, Some(&config));
+        let result = Pool::create_ledger_config(&name, Some(&config)).wait();
 
         assert_eq!(ErrorCode::CommonIOError, result.unwrap_err());
         assert_pool_not_exists(&name);
@@ -798,7 +823,7 @@ mod test_pool_create_config {
         let name = test_pool_name();
         let (config, _file) = invalid_temporary_genesis_config();
 
-        let result = Pool::create_ledger_config(&name, Some(&config));
+        let result = Pool::create_ledger_config(&name, Some(&config)).wait();
 
         assert_eq!(ErrorCode::CommonInvalidStructure, result.unwrap_err());
         assert_pool_not_exists(&name);
@@ -809,7 +834,7 @@ mod test_pool_create_config {
     fn config_with_empty_pool_name() {
         let name = test_pool_name();
         let (config, _file) = test_genesis_config();
-        let result = Pool::create_ledger_config("", Some(&config));
+        let result = Pool::create_ledger_config("", Some(&config)).wait();
 
         assert_eq!(ErrorCode::CommonInvalidParam2, result.unwrap_err());
         assert_pool_not_exists(&name);
@@ -821,17 +846,18 @@ mod test_pool_create_config {
         let name = test_pool_name();
         let (config, _file) = test_genesis_config();
 
-        let result = Pool::create_ledger_config(&name, Some(&config));
+        let result = Pool::create_ledger_config(&name, Some(&config)).wait();
         assert_eq!((), result.unwrap());
 
-        let result = Pool::create_ledger_config(&name, Some(&config));
+        let result = Pool::create_ledger_config(&name, Some(&config)).wait();
         assert_eq!(ErrorCode::PoolLedgerConfigAlreadyExistsError, result.unwrap_err());
 
         assert_pool_exists(&name);
-        Pool::delete(&name).unwrap();
+        Pool::delete(&name).wait().unwrap();
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     /* Create a config async. */
     fn config_async() {
         let name = test_pool_name();
@@ -854,6 +880,7 @@ mod test_pool_create_config {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     /* Create a config async resulting in an early error: callback isn't called. */
     fn config_async_with_early_error() {
         let name = test_pool_name();
@@ -871,6 +898,7 @@ mod test_pool_create_config {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     /* Create a config async resulting in a late error: callback is called. */
     fn config_async_with_late_error() {
         let name = test_pool_name();
@@ -891,6 +919,7 @@ mod test_pool_create_config {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     /* Create a config with timeout. */
     fn config_timeout() {
         let name = test_pool_name();
@@ -907,6 +936,7 @@ mod test_pool_create_config {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     /* Create a config timeout resulting in an error. */
     fn config_timeout_with_error() {
         let name = test_pool_name();
@@ -921,6 +951,7 @@ mod test_pool_create_config {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     #[cfg(feature = "timeout_tests")]
     /* Timeout occurs while creating config. Pool is still created. */
     fn config_timeout_timeouts() {
@@ -942,9 +973,13 @@ mod test_pool_create_config {
 mod test_delete_config {
     use super::*;
 
+    use futures::future::Future;
+
+    #[cfg(feature="extended_api_types")]
     use std::sync::mpsc::channel;
     use utils::pool::{PoolList, create_default_pool};
 
+    #[cfg(feature="extended_api_types")]
     const VALID_TIMEOUT: Duration = Duration::from_millis(250);
     const NON_EXISTENT_NAME: &str = "a_pool_name_which_does_not_exist";
 
@@ -964,7 +999,7 @@ mod test_delete_config {
         let pool_name = create_default_pool();
         assert_pool_exists(&pool_name);
 
-        let result = Pool::delete(&pool_name);
+        let result = Pool::delete(&pool_name).wait();
         assert_eq!((), result.unwrap());
 
         assert_pool_not_exists(&pool_name);
@@ -973,7 +1008,7 @@ mod test_delete_config {
     #[test]
     /* Error deleting non existent pool_config. */
     fn delete_pool_not_exist() {
-        let result = Pool::delete(NON_EXISTENT_NAME);
+        let result = Pool::delete(NON_EXISTENT_NAME).wait();
         assert_eq!(ErrorCode::CommonIOError, result.unwrap_err());
     }
 
@@ -986,19 +1021,20 @@ mod test_delete_config {
             "auto_refresh_time": 0,
         }).to_string();
 
-        Pool::set_protocol_version(2).unwrap();
-        let pool_handle = Pool::open_ledger(&pool_name, Some(&config)).unwrap();
+        Pool::set_protocol_version(2).wait().unwrap();
+        let pool_handle = Pool::open_ledger(&pool_name, Some(&config)).wait().unwrap();
 
-        let result = Pool::delete(&pool_name);
+        let result = Pool::delete(&pool_name).wait();
         assert_eq!(ErrorCode::CommonInvalidState, result.unwrap_err());
         assert_pool_exists(&pool_name);
 
-        Pool::close(pool_handle).unwrap();
-        Pool::delete(&pool_name).unwrap();
-        Pool::set_protocol_version(1).unwrap();
+        Pool::close(pool_handle).wait().unwrap();
+        Pool::delete(&pool_name).wait().unwrap();
+        Pool::set_protocol_version(1).wait().unwrap();
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     /* Delete pool async. */
     fn delete_pool_async() {
         let pool_name = create_default_pool();
@@ -1015,6 +1051,7 @@ mod test_delete_config {
 
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     /* Delete pool async resuting in a late error: callback is called. */
     fn delete_pool_async_late_error() {
         let (sender, receiver) = channel();
@@ -1031,6 +1068,7 @@ mod test_delete_config {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     /* Delete a pool with a timeout. */
     fn delete_pool_timeout() {
         let pool_name = create_default_pool();
@@ -1042,6 +1080,7 @@ mod test_delete_config {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     /* Error deleting a pool with a timeout. */
     fn delete_pool_timeout_error() {
         let result = Pool::delete_timeout(
@@ -1053,6 +1092,7 @@ mod test_delete_config {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     #[cfg(feature = "timeout_tests")]
     /* Delete a pool with timeout that timeouts. */
     fn delete_pool_timeout_timeouts() {
@@ -1075,15 +1115,18 @@ mod test_set_protocol_version {
 
     use indy::ledger::Ledger;
     use serde_json;
+    #[cfg(feature="extended_api_types")]
     use std::time::Duration;
+    #[cfg(feature="extended_api_types")]
     use std::sync::mpsc::channel;
 
     const VALID_VERSIONS: [usize; 2] = [1, 2];
+    #[cfg(feature="extended_api_types")]
     const VALID_TIMEOUT: Duration = Duration::from_millis(250);
 
     fn assert_protocol_version_set(version: usize) {
         let did = "5UBVMdSADMjGzuJMQwJ6yyzYV1krTcKRp6EqRAz8tiDP";
-        let request = Ledger::build_get_nym_request(Some(did), did).unwrap();
+        let request = Ledger::build_get_nym_request(Some(did), did).wait().unwrap();
         let request: serde_json::Value = serde_json::from_str(&request).unwrap();
         assert_eq!(json!(version), *request.get("protocolVersion").unwrap());
     }
@@ -1092,28 +1135,29 @@ mod test_set_protocol_version {
     /* Set all available protocol versions. */
     fn set_all_valid_versions() {
         for &version in VALID_VERSIONS.into_iter() {
-            let result = Pool::set_protocol_version(version);
+            let result = Pool::set_protocol_version(version).wait();
             assert_eq!((), result.unwrap());
             assert_protocol_version_set(version);
         }
 
-        Pool::set_protocol_version(1).unwrap();
+        Pool::set_protocol_version(1).wait().unwrap();
     }
 
     #[test]
     /* Error setting invalid protocol version. */
     fn set_invalid_versions() {
-        let result = Pool::set_protocol_version(0);
+        let result = Pool::set_protocol_version(0).wait();
         assert_eq!(ErrorCode::PoolIncompatibleProtocolVersion, result.unwrap_err());
         assert_protocol_version_set(1);
 
         let next_protocol_version = *VALID_VERSIONS.last().unwrap() + 1;
-        let result = Pool::set_protocol_version(next_protocol_version);
+        let result = Pool::set_protocol_version(next_protocol_version).wait();
         assert_eq!(ErrorCode::PoolIncompatibleProtocolVersion, result.unwrap_err());
         assert_protocol_version_set(1);
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     /* Set protocol version async. */
     fn set_protocol_version_async() {
         let (sender, receiver) = channel();
@@ -1122,10 +1166,11 @@ mod test_set_protocol_version {
         assert_eq!(ErrorCode::Success, result);
         assert_protocol_version_set(2);
 
-        Pool::set_protocol_version(1).unwrap();
+        Pool::set_protocol_version(1).wait().unwrap();
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     /* Error setting protocol version async. */
     fn set_invalid_version_async() {
         let (sender, receiver) = channel();
@@ -1137,16 +1182,18 @@ mod test_set_protocol_version {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     /* Set protocol version with timeout. */
     fn set_protocol_version_timeout() {
         let result = Pool::set_protocol_version_timeout(2, VALID_TIMEOUT);
         assert_eq!((), result.unwrap());
         assert_protocol_version_set(2);
 
-        Pool::set_protocol_version(1).unwrap();
+        Pool::set_protocol_version(1).wait().unwrap();
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     /* Error setting protocol version with timeout. */
     fn set_invalid_version_timeout() {
         let result = Pool::set_protocol_version_timeout(0, VALID_TIMEOUT);
@@ -1155,6 +1202,7 @@ mod test_set_protocol_version {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     #[cfg(feature = "timeout_tests")]
     /* Setting protcol version with timeout timeouts. */
     fn set_protocol_version_timeout_timeouts() {
@@ -1172,12 +1220,25 @@ There aren't tests for failure because I'm not sure how it would fail.
 mod test_pool_list {
     use super::*;
 
+    #[cfg(feature="extended_api_types")]
     use std::sync::mpsc::channel;
     use utils::pool::{PoolList, create_default_pool};
 
+    #[cfg(feature="extended_api_types")]
     const VALID_TIMEOUT: Duration = Duration::from_millis(250);
 
     #[test]
+    fn list_pool() {
+        let name = create_default_pool();
+
+        let pool_json = Pool::list().wait().unwrap();
+        assert!(PoolList::from_json(&pool_json).pool_exists(&name));
+
+        Pool::delete(&name).wait().unwrap();
+    }
+
+    #[test]
+    #[cfg(feature="extended_api_types")]
     fn list_pool_async() {
         let name = create_default_pool();
         let (sender, receiver) = channel();
@@ -1193,6 +1254,7 @@ mod test_pool_list {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     /* List pools with timeout. */
     fn list_pool_timeout() {
         let name = create_default_pool();
@@ -1204,6 +1266,7 @@ mod test_pool_list {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     #[cfg(feature = "timeout_tests")]
     /* List pools with timeout, timeouts. */
     fn list_pool_timeout_timeouts() {
@@ -1226,10 +1289,11 @@ mod test_refresh_works {
             num_users: 0,
         });
 
-        indy::pool::Pool::refresh(setup.pool_handle.unwrap()).unwrap();
+        indy::pool::Pool::refresh(setup.pool_handle.unwrap()).wait().unwrap();
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn refresh_pool_timeout_works() {
         let wallet = utils::wallet::Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
@@ -1243,6 +1307,7 @@ mod test_refresh_works {
     }
 
     #[test]
+    #[cfg(feature="extended_api_types")]
     pub fn refresh_pool_async_works() {
         let wallet = utils::wallet::Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {

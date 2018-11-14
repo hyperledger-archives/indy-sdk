@@ -1,8 +1,3 @@
-use {ErrorCode, IndyHandle};
-
-use std::ffi::CString;
-use std::time::Duration;
-
 use ffi::crypto;
 use ffi::{ResponseEmptyCB,
           ResponseStringCB,
@@ -10,8 +5,12 @@ use ffi::{ResponseEmptyCB,
           ResponseBoolCB,
           ResponseStringSliceCB};
 
-use utils::results::ResultHandler;
-use utils::callbacks::ClosureHandler;
+use futures::Future;
+
+use std::ffi::CString;
+
+use {ErrorCode, IndyHandle};
+use utils::callbacks::{ClosureHandler, ResultHandler};
 
 pub struct Key {}
 
@@ -30,12 +29,12 @@ impl Key {
     /// }
     /// # Returns
     /// verkey of generated key pair, also used as key identifier
-    pub fn create(wallet_handle: IndyHandle, my_key_json: Option<&str>) -> Result<String, ErrorCode> {
+    pub fn create(wallet_handle: IndyHandle, my_key_json: Option<&str>) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Key::_create(command_handle, wallet_handle, my_key_json, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
     /// Creates key pair in wallet
@@ -53,6 +52,7 @@ impl Key {
     /// }
     /// # Returns
     /// verkey of generated key pair, also used as key identifier
+    #[cfg(feature="extended_api_types")]
     pub fn create_timeout(wallet_handle: IndyHandle, my_key_json: Option<&str>, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -76,6 +76,7 @@ impl Key {
     /// }
     /// # Returns
     /// errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn create_async<F: 'static>(wallet_handle: IndyHandle, my_key_json: Option<&str>, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
@@ -93,12 +94,12 @@ impl Key {
     /// * `wallet_handle` - wallet handle (created by Wallet::open)
     /// * `verkey` - the public key or key id where to store the metadata
     /// * `metadata` - the metadata that will be stored with the key, can be empty string
-    pub fn set_metadata(wallet_handle: IndyHandle, verkey: &str, metadata: &str) -> Result<(), ErrorCode> {
+    pub fn set_metadata(wallet_handle: IndyHandle, verkey: &str, metadata: &str) -> Box<Future<Item=(), Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
         let err = Key::_set_metadata(command_handle, wallet_handle, verkey, metadata, cb);
 
-        ResultHandler::empty(err, receiver)
+        ResultHandler::empty(command_handle, err, receiver)
     }
 
     /// Saves/replaces the metadata for the `verkey` in the wallet
@@ -107,6 +108,7 @@ impl Key {
     /// * `verkey` - the public key or key id where to store the metadata
     /// * `metadata` - the metadata that will be stored with the key, can be empty string
     /// * `timeout` - the maximum time this function waits for a response
+    #[cfg(feature="extended_api_types")]
     pub fn set_metadata_timeout(wallet_handle: IndyHandle, verkey: &str, metadata: &str, timeout: Duration) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
@@ -121,6 +123,7 @@ impl Key {
     /// * `verkey` - the public key or key id where to store the metadata
     /// * `metadata` - the metadata that will be stored with the key, can be empty string
     /// * `closure` - The closure that is called when finished
+    #[cfg(feature="extended_api_types")]
     pub fn set_metadata_async<F: 'static>(wallet_handle: IndyHandle, verkey: &str, metadata: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
 
@@ -140,12 +143,12 @@ impl Key {
     /// * `verkey` - the public key or key id to retrieve metadata
     /// # Returns
     /// metadata currently stored with the key; Can be empty if no metadata was saved for this key
-    pub fn get_metadata(wallet_handle: IndyHandle, verkey: &str) -> Result<String, ErrorCode> {
+    pub fn get_metadata(wallet_handle: IndyHandle, verkey: &str) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Key::_get_metadata(command_handle, wallet_handle, verkey, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
     /// Retrieves the metadata for the `verkey` in the wallet
@@ -155,6 +158,7 @@ impl Key {
     /// * `timeout` - the maximum time this function waits for a response
     /// # Returns
     /// metadata currently stored with the key; Can be empty if no metadata was saved for this key
+    #[cfg(feature="extended_api_types")]
     pub fn get_metadata_timeout(wallet_handle: IndyHandle, verkey: &str, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -170,6 +174,7 @@ impl Key {
     /// * `closure` - The closure that is called when finished
     /// # Returns
     /// errorcode from calling ffi function
+    #[cfg(feature="extended_api_types")]
     pub fn get_metadata_async<F: 'static>(wallet_handle: IndyHandle, verkey: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
@@ -193,12 +198,12 @@ impl Crypto {
     /// * `message` - the data to be signed
     /// # Returns
     /// the signature
-    pub fn sign(wallet_handle: IndyHandle, signer_vk: &str, message: &[u8]) -> Result<Vec<u8>, ErrorCode> {
+    pub fn sign(wallet_handle: IndyHandle, signer_vk: &str, message: &[u8]) -> Box<Future<Item=Vec<u8>, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
 
         let err = Crypto::_sign(command_handle, wallet_handle, signer_vk, message, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::slice(command_handle, err, receiver)
     }
 
     /// Signs a message with a key
@@ -209,6 +214,7 @@ impl Crypto {
     /// * `timeout` - the maximum time this function waits for a response
     /// # Returns
     /// the signature
+    #[cfg(feature="extended_api_types")]
     pub fn sign_timeout(wallet_handle: IndyHandle, signer_vk: &str, message: &[u8], timeout: Duration) -> Result<Vec<u8>, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
 
@@ -225,6 +231,7 @@ impl Crypto {
     /// * `closure` - The closure that is called when finished
     /// # Returns
     /// errorcode from calling ffi function
+    #[cfg(feature="extended_api_types")]
     pub fn sign_async<F: 'static>(wallet_handle: IndyHandle, signer_vk: &str, message: &[u8], closure: F) -> ErrorCode where F: FnMut(ErrorCode, Vec<u8>) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_slice(Box::new(closure));
 
@@ -249,12 +256,12 @@ impl Crypto {
     /// * `signature` - the signature to verify
     /// # Returns
     /// true if signature is valid, false otherwise
-    pub fn verify(signer_vk: &str, message: &[u8], signature: &[u8]) -> Result<bool, ErrorCode> {
+    pub fn verify(signer_vk: &str, message: &[u8], signature: &[u8]) -> Box<Future<Item=bool, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_bool();
 
         let err = Crypto::_verify(command_handle, signer_vk, message, signature, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::bool(command_handle, err, receiver)
     }
 
      /// Verify a signature with a verkey
@@ -266,6 +273,7 @@ impl Crypto {
     /// * `timeout` - the maximum time this function waits for a response
     /// # Returns
     /// true if signature is valid, false otherwise
+    #[cfg(feature="extended_api_types")]
     pub fn verify_timeout(signer_vk: &str, message: &[u8], signature: &[u8], timeout: Duration) -> Result<bool, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_bool();
 
@@ -283,6 +291,7 @@ impl Crypto {
     /// * `closure` - The closure that is called when finished
     /// # Returns
     /// errorcode from calling ffi function
+    #[cfg(feature="extended_api_types")]
     pub fn verify_async<F: 'static>(signer_vk: &str, message: &[u8], signature: &[u8], closure: F) -> ErrorCode where F: FnMut(ErrorCode, bool) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_bool(Box::new(closure));
 
@@ -316,12 +325,12 @@ impl Crypto {
     /// * `message` - the data to be encrypted
     /// # Returns
     /// the encrypted message
-    pub fn auth_crypt(wallet_handle: IndyHandle, sender_vk: &str, recipient_vk: &str, message: &[u8]) -> Result<Vec<u8>, ErrorCode> {
+    pub fn auth_crypt(wallet_handle: IndyHandle, sender_vk: &str, recipient_vk: &str, message: &[u8]) -> Box<Future<Item=Vec<u8>, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
 
         let err = Crypto::_auth_crypt(command_handle, wallet_handle, sender_vk, recipient_vk, message, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::slice(command_handle, err, receiver)
     }
 
     /// Encrypt a message by authenticated-encryption scheme.
@@ -342,6 +351,7 @@ impl Crypto {
     /// * `timeout` - the maximum time this function waits for a response
     /// # Returns
     /// the encrypted message
+    #[cfg(feature="extended_api_types")]
     pub fn auth_crypt_timeout(wallet_handle: IndyHandle, sender_vk: &str, recipient_vk: &str, message: &[u8], timeout: Duration) -> Result<Vec<u8>, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
 
@@ -368,6 +378,7 @@ impl Crypto {
     /// * `closure` - The closure that is called when finished
     /// # Returns
     /// errorcode from calling ffi function
+    #[cfg(feature="extended_api_types")]
     pub fn auth_crypt_async<F: 'static>(wallet_handle: IndyHandle, sender_vk: &str, recipient_vk: &str, message: &[u8], closure: F) -> ErrorCode where F: FnMut(ErrorCode, Vec<u8>) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_slice(Box::new(closure));
 
@@ -403,12 +414,12 @@ impl Crypto {
     /// * `encrypted_message`: the message to be decrypted
     /// # Returns
     /// sender's verkey and decrypted message
-    pub fn auth_decrypt(wallet_handle: IndyHandle, recipient_vk: &str, encrypted_message: &[u8]) -> Result<(String, Vec<u8>), ErrorCode> {
+    pub fn auth_decrypt(wallet_handle: IndyHandle, recipient_vk: &str, encrypted_message: &[u8]) -> Box<Future<Item=(String, Vec<u8>), Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_slice();
 
         let err = Crypto::_auth_decrypt(command_handle, wallet_handle, recipient_vk, encrypted_message, cb);
 
-        ResultHandler::two(err, receiver)
+        ResultHandler::str_slice(command_handle, err, receiver)
     }
 
     /// Decrypt a message by authenticated-encryption scheme.
@@ -429,6 +440,7 @@ impl Crypto {
     /// * `timeout` - the maximum time this function waits for a response
     /// # Returns
     /// sender's verkey and decrypted message
+    #[cfg(feature="extended_api_types")]
     pub fn auth_decrypt_timeout(wallet_handle: IndyHandle, recipient_vk: &str, encrypted_message: &[u8], timeout: Duration) -> Result<(String, Vec<u8>), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_slice();
 
@@ -455,6 +467,7 @@ impl Crypto {
     /// * `closure` - The closure that is called when finished
     /// # Returns
     /// errorcode from calling ffi function
+    #[cfg(feature="extended_api_types")]
     pub fn auth_decrypt_async<F: 'static>(wallet_handle: IndyHandle, recipient_vk: &str, encrypted_message: &[u8], closure: F) -> ErrorCode where F: FnMut(ErrorCode, String, Vec<u8>) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string_slice(Box::new(closure));
 
@@ -488,12 +501,12 @@ impl Crypto {
     ///
     /// # Returns
     /// the encrypted message
-    pub fn anon_crypt(recipient_vk: &str, message: &[u8]) -> Result<Vec<u8>, ErrorCode> {
+    pub fn anon_crypt(recipient_vk: &str, message: &[u8]) -> Box<Future<Item=Vec<u8>, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
 
         let err = Crypto::_anon_crypt(command_handle, recipient_vk, message, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::slice(command_handle, err, receiver)
     }
 
     /// Encrypts a message by anonymous-encryption scheme.
@@ -512,6 +525,7 @@ impl Crypto {
     /// * `timeout` - the maximum time this function waits for a response
     /// # Returns
     /// the encrypted message
+    #[cfg(feature="extended_api_types")]
     pub fn anon_crypt_timeout(recipient_vk: &str, message: &[u8], timeout: Duration) -> Result<Vec<u8>, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
 
@@ -536,6 +550,7 @@ impl Crypto {
     /// * `closure` - The closure that is called when finished
     /// # Returns
     /// errorcode from calling ffi function
+    #[cfg(feature="extended_api_types")]
     pub fn anon_crypt_async<F: 'static>(recipient_vk: &str, message: &[u8], closure: F) -> ErrorCode where F: FnMut(ErrorCode, Vec<u8>) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_slice(Box::new(closure));
 
@@ -569,12 +584,12 @@ impl Crypto {
     ///
     /// # Returns
     /// decrypted message
-    pub fn anon_decrypt(wallet_handle: IndyHandle, recipient_vk: &str, encrypted_message: &[u8]) -> Result<Vec<u8>, ErrorCode> {
+    pub fn anon_decrypt(wallet_handle: IndyHandle, recipient_vk: &str, encrypted_message: &[u8]) -> Box<Future<Item=Vec<u8>, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
 
         let err = Crypto::_anon_decrypt(command_handle, wallet_handle, recipient_vk, encrypted_message, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::slice(command_handle, err, receiver)
     }
 
     /// Decrypts a message by anonymous-encryption scheme.
@@ -593,6 +608,7 @@ impl Crypto {
     /// * `timeout` - the maximum time this function waits for a response
     /// # Returns
     /// decrypted message
+    #[cfg(feature="extended_api_types")]
     pub fn anon_decrypt_timeout(wallet_handle: IndyHandle, recipient_vk: &str, encrypted_message: &[u8], timeout: Duration) -> Result<Vec<u8>, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
 
@@ -617,6 +633,7 @@ impl Crypto {
     /// * `closure` - The closure that is called when finished
     /// # Returns
     /// decrypted message
+    #[cfg(feature="extended_api_types")]
     pub fn anon_decrypt_async<F: 'static>(wallet_handle: IndyHandle, recipient_vk: &str, encrypted_message: &[u8], closure: F) -> ErrorCode where F: FnMut(ErrorCode, Vec<u8>) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_slice(Box::new(closure));
 
