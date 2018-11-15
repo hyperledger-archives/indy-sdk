@@ -270,6 +270,8 @@ mod tests {
     use utils::libindy::pool::get_pool_handle;
     use api::return_types_u32;
 
+
+
     fn create_config_util(logging: Option<&str>) -> String {
         json!({"agency_did" : "72x8p4HubxzUK1dwxcc5FU",
                "remote_to_sdk_did" : "UJGjM6Cea2YVixjWwHN9wq",
@@ -692,17 +694,19 @@ mod tests {
 
     #[test]
     fn test_error_c_message() {
+        use utils::error::call_vcx_error;
         init!("true");
-        let c_message = CStringUtils::c_str_to_string(vcx_error_c_message(0)).unwrap().unwrap();
+        let c_message = call_vcx_error(0).unwrap();
+//        let c_message = CStringUtils::c_str_to_string(vcx_error_c_message(0)).unwrap().unwrap();
         assert_eq!(c_message,error::SUCCESS.message);
 
-        let c_message = CStringUtils::c_str_to_string(vcx_error_c_message(1001)).unwrap().unwrap();
+        let c_message = call_vcx_error(1001).unwrap();
         assert_eq!(c_message,error::UNKNOWN_ERROR.message);
 
-        let c_message = CStringUtils::c_str_to_string(vcx_error_c_message(100100)).unwrap().unwrap();
+        let c_message = call_vcx_error(100100).unwrap();
         assert_eq!(c_message,error::UNKNOWN_ERROR.message);
 
-        let c_message = CStringUtils::c_str_to_string(vcx_error_c_message(1021)).unwrap().unwrap();
+        let c_message = call_vcx_error(1021).unwrap();
         assert_eq!(c_message,error::INVALID_ATTRIBUTES_STRUCTURE.message);
     }
 

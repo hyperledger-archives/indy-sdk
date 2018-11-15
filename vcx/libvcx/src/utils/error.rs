@@ -264,6 +264,26 @@ pub fn map_libindy_err(check_rtn: u32, default_rtn: u32) -> u32 {
     }
 }
 
+pub fn call_vcx_error(error_code: u32) -> Result<String, String> {
+    use utils::constants::DEFAULT_BUFFER_SIZE;
+    use api::vcx::vcx_error_c_message;
+    let mut buf:Vec<u8> = vec![0x0; DEFAULT_BUFFER_SIZE];
+    let bytes_written = vcx_error_c_message(error_code, buf.as_mut_ptr(), DEFAULT_BUFFER_SIZE);
+    let mut ns = String::from_utf8(buf).map_err(|_| {"Error In Converting Error Message, NOT utf8 valid"})?;
+//    let mut ns = String::new();
+//    let nul = '\0' as char;
+//    for u in buf.iter() {
+//        if u.is_ascii_alphanumeric() || u.is_ascii_whitespace() || u.is {
+
+//        if u != nul {
+//            ns.push(*u as char);
+//        }
+//    };
+
+    ns.split_off(bytes_written as usize);
+    Ok(ns)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -444,5 +464,10 @@ mod tests {
     #[test]
     fn test_error_is_reference(){
         println!("{}", error_message(&1035))
+    }
+
+    #[test]
+    fn test_error_code() {
+        assert_eq!(call_vcx_error(1035).unwrap(), "Unknown libindy error");
     }
 }
