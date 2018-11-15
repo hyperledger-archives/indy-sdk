@@ -12,7 +12,6 @@ extern crate indy;                      // rust wrapper project
 use std::env;
 use std::fs;
 use std::io::Write;
-use std::path::Path;
 use std::path::PathBuf;
 
 use serde_json::{Value};
@@ -105,7 +104,7 @@ fn main() {
     let first_json_seed = json!({
         "seed":"000000000000000000000000Steward1"
     }).to_string();
-    let (steward_did, steward_verkey) = Did::new(wallet_handle, &first_json_seed).unwrap();
+    let (steward_did, _steward_verkey) = Did::new(wallet_handle, &first_json_seed).unwrap();
 
     // 6. Generating and storing Trust Anchor DID and Verkey
     println!("6. Generating and storing Trust Anchor DID and Verkey");
@@ -118,12 +117,12 @@ fn main() {
 
     // 8. Sending the nym request to ledger
     println!("8. Sending the nym request to ledger");
-    let build_nym_sign_submit_result : String = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &steward_did, &build_nym_request).unwrap();
+    let _build_nym_sign_submit_result : String = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &steward_did, &build_nym_request).unwrap();
 
     // PART 4
     // 9. Generating and storing client DID and Verkey
     println!("9. Generating and storing client DID and Verkey");
-    let (client_did, client_verkey) = Did::new(wallet_handle, &"{}".to_string()).unwrap();
+    let (client_did, _client_verkey) = Did::new(wallet_handle, &"{}".to_string()).unwrap();
 
     // 10. Building the GET_NYM request to query Trust Anchor's Verkey as the Client
     println!("10. Building the GET_NYM request");
@@ -134,15 +133,13 @@ fn main() {
     let build_get_nym_submit_result : String = Ledger::submit_request(pool_handle, &build_get_nym_request).unwrap();
 
     // 12. Comparing Trust Anchor Verkey as written by Steward and as retrieved in Client's query
-    println!("12. Comparing Trust Anchor Verkey");
+    println!("12. output results");
     println!("    Trustee Did {}", &trustee_did);
-    println!("    Trustee VerkKey {}", &trustee_verkey);
+    println!("    Trustee VerkKey from wallet {}", &trustee_verkey);
+    println!("    nym response {}", build_get_nym_submit_result);
     let refresh_json : Value = serde_json::from_str(&build_get_nym_submit_result).unwrap();
     let refresh_data = &refresh_json["result"]["data"];
     let trustee_verkey_from_ledger = refresh_data["verkey"].to_string();
-
-    assert_eq!(trustee_verkey, trustee_verkey_from_ledger, "verkeys did not match as expected");
-
 
     // clean up
     // 13. Close and delete wallet
@@ -158,4 +155,9 @@ fn main() {
     println!("15. Delete pool ledger config");
     Pool::delete(&pool_name).unwrap();
     fs::remove_file(pool_config_pathbuf).unwrap();
+
+    // 16. Comparing Trust Anchor Verkey as written by Steward and as retrieved in Client's query
+    println!("16. Comparing Trust Anchor Verkey as written by Steward and as retrieved in Client's query");
+    assert_eq!(trustee_verkey, trustee_verkey_from_ledger, "verkeys did not match as expected");
+
 }

@@ -12,10 +12,7 @@ extern crate indy;                      // rust wrapper project
 use std::env;
 use std::fs;
 use std::io::Write;
-use std::path::Path;
 use std::path::PathBuf;
-
-use serde_json::{Value};
 
 use indy::did::Did;
 use indy::ledger::Ledger;
@@ -68,6 +65,7 @@ fn write_genesis_txn_to_file(pool_name: &str,
 
 
 fn main() {
+
     let wallet_name = "wallet";
     let pool_name = "pool";
 
@@ -101,7 +99,7 @@ fn main() {
     let first_json_seed = json!({
         "seed":"000000000000000000000000Steward1"
     }).to_string();
-    let (steward_did, steward_verkey) = Did::new(wallet_handle, &first_json_seed).unwrap();
+    let (steward_did, _steward_verkey) = Did::new(wallet_handle, &first_json_seed).unwrap();
 
     // 6. Generating and storing Trust Anchor DID and Verkey
     println!("6. Generating and storing Trust Anchor DID and Verkey");
@@ -113,28 +111,40 @@ fn main() {
 
     // 8. Sending the nym request to ledger
     println!("8. Sending the nym request to ledger");
-    let build_nym_sign_submit_result : String = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &steward_did, &build_nym_request).unwrap();
+    let _build_nym_sign_submit_result : String = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &steward_did, &build_nym_request).unwrap();
 
     // 9. build the schema definition request
     println!("9. build the schema definition request");
     let name = "gvt";
     let version = "1.0";
-    let attributes = "[\"age\", \"sex\", \"height\", \"name\"]";
+    let attributes = ["age", "sex", "height", "name"];
     let schema_json = json!({
         "name" : name,
         "version" : version,
-        "attr_names" : attributes
+        "attrNames" : attributes,
+        "id": "id",
+        "ver": "1.0"
     });
     let build_schema_request : String = Ledger::build_schema_request(&steward_did, &schema_json.to_string()).unwrap();
 
     // 10. Sending the SCHEMA request to the ledger
     println!("10. Sending the SCHEMA request to the ledger");
-    let signed_schema_request_response = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &steward_did, &build_schema_request).unwrap();
+    let _signed_schema_request_response = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &steward_did, &build_schema_request).unwrap();
 
     // 11. Creating and storing CLAIM DEFINITION using anoncreds as Trust Anchor, for the given Schema
     println!("11. Creating and storing CLAIM DEFINITION using anoncreds as Trust Anchor, for the given Schema");
-    let cred_def_json = json!({});
-    let (cred_def_id, cred_def_json) = indy::anoncreds::Issuer::create_and_store_credential_def(wallet_handle, &trustee_did, &cred_def_json.to_string(), "CL", None, "CL").unwrap();
+    let cred_def_json = json!({
+        "seqNo" : 1,
+        "name" : name,
+        "version" : version,
+        "attrNames" : attributes,
+        "id": "id",
+        "ver": "1.0"
+    });
+    let config_json = r#"{ "support_revocation": true }"#;
+    let tag = r#"TAG1"#;                                        // required:  empty string generates CommonInvalidParam5 error
+
+    let (cred_def_id, cred_def_json) = indy::anoncreds::Issuer::create_and_store_credential_def(wallet_handle, &trustee_did, &cred_def_json.to_string(), tag, None, config_json).unwrap();
     println!("    cred_def_id : {}", cred_def_id);
     println!("    json        : {}", cred_def_json);
 

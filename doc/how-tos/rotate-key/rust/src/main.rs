@@ -12,7 +12,6 @@ extern crate indy;                      // rust wrapper project
 use std::env;
 use std::fs;
 use std::io::Write;
-use std::path::Path;
 use std::path::PathBuf;
 
 use serde_json::{Value};
@@ -102,7 +101,7 @@ fn main() {
     let first_json_seed = json!({
         "seed":"000000000000000000000000Steward1"
     }).to_string();
-    let (steward_did, steward_verkey) = Did::new(wallet_handle, &first_json_seed).unwrap();
+    let (steward_did, _steward_verkey) = Did::new(wallet_handle, &first_json_seed).unwrap();
 
     // 6. Generating and storing Trust Anchor DID and Verkey
     println!("6. Generating and storing Trust Anchor DID and Verkey");
@@ -114,7 +113,7 @@ fn main() {
 
     // 8. Sending the nym request to ledger
     println!("8. Sending the nym request to ledger");
-    let build_nym_sign_submit_result : String = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &steward_did, &build_nym_request).unwrap();
+    let _build_nym_sign_submit_result : String = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &steward_did, &build_nym_request).unwrap();
 
     // 9. Generating new Verkey of Trust Anchor in the wallet
     println!("9. Generating new Verkey of Trust Anchor in the wallet");
@@ -126,11 +125,11 @@ fn main() {
 
     // 11. Sending NYM request to the ledger
     println!("11. Sending NYM request to the ledger");
-    let replace_key_nym_sign_submit_result : String = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &replace_key_nym_request).unwrap();
+    let _replace_key_nym_sign_submit_result : String = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &replace_key_nym_request).unwrap();
 
     // 12. Applying new Trust Anchor's Verkey in wallet
     println!("12. Applying new Trust Anchor's Verkey in wallet");
-    Did::replace_keys_apply(wallet_handle, &trustee_did);
+    Did::replace_keys_apply(wallet_handle, &trustee_did).unwrap();
 
     // 13. Reading new Verkey from wallet
     println!("13. Reading new Verkey from wallet");
@@ -142,30 +141,35 @@ fn main() {
 
     // 15. Sending GET_NYM request to ledger
     println!("15. Sending GET_NYM request to ledger");
-    let refresh_build_nym_response = Ledger::submit_request(pool_handle, &refresh_build_nym_request).unwrap();
+    let refresh_build_nym_response : String = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &refresh_build_nym_request).unwrap();
 
     // 16. Comparing Trust Anchor verkeys
-    println!("16. Comparing Trust Anchor verkeys");
+    println!("16. output results");
     println!("    Trustee Did {}", &trustee_did);
     println!("    Trustee VerkKey from wallet {}", &trustee_verkey_from_wallet);
+    println!("    nym response {}", refresh_build_nym_response);
     let refresh_json : Value = serde_json::from_str(&refresh_build_nym_response).unwrap();
-    let refresh_data = &refresh_json["result"]["data"];
-    let trustee_verkey_from_ledger = refresh_data["verkey"].to_string();
-
-    assert_eq!(trustee_verkey_from_wallet, trustee_verkey_from_ledger, "verkeys did not match as expected");
+    let refresh_signature_values = &refresh_json["result"]["reqSignature"]["values"];
+    let trustee_did_from_ledger = refresh_signature_values[0]["from"].to_string();
 
     // clean up
     // Close and delete wallet
-    println!("Close and delete wallet");
+    println!("16. Cleanup");
+    println!("    Close and delete wallet");
     indy::wallet::Wallet::close(wallet_handle).unwrap();
     indy::wallet::Wallet::delete(&config, USEFUL_CREDENTIALS).unwrap();
 
     // Close pool
-    println!("Close pool");
+    println!("    Close pool");
     indy::pool::Pool::close(pool_handle).unwrap();
 
     // Delete pool ledger config
-    println!("Delete pool ledger config");
+    println!("    Delete pool ledger config");
     indy::pool::Pool::delete(&pool_name).unwrap();
     fs::remove_file(pool_config_pathbuf).unwrap();
+
+    // Perform assertions last, so that none of the demo data remains
+    println!("17. Tests to confirm results");
+    assert_eq!(trustee_did, trustee_did_from_ledger, "DIDs did not match as expected");
+
 }
