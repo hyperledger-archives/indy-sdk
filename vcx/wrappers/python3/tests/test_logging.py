@@ -1,22 +1,22 @@
 import pytest
 from vcx.error import VcxError, error_message, ErrorCode
 from vcx.api.logging import set_logger, default_logger, get_logger
-from ctypes import CFUNCTYPE, c_void_p, c_char_p, c_uint32, cast, c_int, c_bool, POINTER
-import ctypes
+from ctypes import c_uint32, c_int, addressof
 
 
 def test_default_logging():
+    level = "debug"
     try:
-        default_logger()
+        default_logger(level)
     except VcxError as e:
         pytest.fail("Error in VcxLogger.init_default: %s", e)
 
     with pytest.raises(VcxError) as e:
-        default_logger()
+        default_logger(level)
 
     assert ErrorCode.LoggingError == e.value.error_code
 
-    error_message(1000)
+    VcxError(1000)
 
 
 # Tests that a custom logger can be set and
@@ -63,7 +63,7 @@ def test_get_logger():
     flush_cb = int_array256(0)
     get_logger(context, enabled_cb, log_cb, flush_cb)
 
-    print('_context address: %x' % ctypes.addressof(context))
-    print('_enabled_cb address: %x' % ctypes.addressof(enabled_cb))
-    print('_log_cb address: %x' % ctypes.addressof(log_cb))
-    print('_flush_cb address: %x' % ctypes.addressof(flush_cb))
+    print('_context address: %x' % addressof(context))
+    print('_enabled_cb address: %x' % addressof(enabled_cb))
+    print('_log_cb address: %x' % addressof(log_cb))
+    print('_flush_cb address: %x' % addressof(flush_cb))

@@ -1,9 +1,10 @@
 LIBRARY = "libvcx.so"
 from vcx.cdll import _cdll
 from enum import IntEnum
-from ctypes import c_char_p, cast, c_uint32
+from ctypes import *
 import logging
 
+BUFFER_SIZE = 256
 
 class ErrorCode(IntEnum):
     Success = 0,
@@ -107,17 +108,21 @@ class VcxError(Exception):
 
     def __init__(self, error_code: ErrorCode):
         self.error_code = error_code
-        self.error_msg = error_message(error_code)
+        self.buffer_size = BUFFER_SIZE
+        self.error_msg = error_message(error_code, self.buffer_size)
 
 
-def error_message(error_code: int) -> str:
+def error_message(error_code: int, buffer_size) -> str:
     logger = logging.getLogger(__name__)
-    print("VCX_ERRROR_C_MESSAGE")
+
     name = 'vcx_error_c_message'
     c_error_code = c_uint32(error_code)
-    c_err_msg = getattr(_cdll(), name)(c_error_code)
-    print("c_err_msg: %s" % c_err_msg)
-    err_msg = cast(c_err_msg , c_char_p).value.decode()
-    print("err_msg: %s" % err_msg)
-    logger.debug("error_message: Function %s[%s] returned error_message: %s", name, error_code, err_msg)
+    c_buff = create_unicode_buffer(buffer_size)
+    c_size = c_uint32(buffer_size)
+    err = getattr(_cdll(), name)(c_error_code, c_buff, c_size)
+    if err == 0:
+        return "Buffer Size for Error Message Not Large Enough"
+    err_msg = cast(c_buff , c_char_p).value.decode()
+    logger.info("error_message: Function %s returned error_message: %s", name, err_msg)
+
     return err_msg

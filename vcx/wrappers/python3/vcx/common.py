@@ -4,7 +4,7 @@ import asyncio
 import itertools
 import logging
 import os
-from .error import VcxError, ErrorCode
+from vcx.error import VcxError, ErrorCode
 from vcx.cdll import _cdll, LIBRARY
 
 _futures = {}
@@ -44,21 +44,6 @@ def release(name, handle):
     if err != ErrorCode.Success:
         logger.warning("release: Function %s returned error %i", name, err)
         raise VcxError(ErrorCode(err))
-
-
-def error_message(error_code: int) -> str:
-    logger = logging.getLogger(__name__)
-
-    print("error message")
-    name = 'vcx_error_c_message'
-    c_error_code = c_uint32(error_code)
-    c_err_msg = getattr(_cdll(), name)(c_error_code)
-
-    print("c error message: " % c_err_msg)
-    err_msg = cast(c_err_msg , c_char_p).value.decode()
-    print("error_message: Function %s returned error_message: %s", name, err_msg)
-
-    return err_msg
 
 
 def get_version() -> str:

@@ -13,6 +13,7 @@ from vcx.api.credential_def import CredentialDef
 from vcx.state import State, ProofState
 from vcx.api.utils import vcx_agent_provision
 import vcx.api.logging as logging
+from vcx.error import VcxError, error_message
 from ctypes import cdll
 
 # 'agency_url': URL of the agency
@@ -39,7 +40,11 @@ async def main():
 
     logging.default_logger("info")
     print("#1 Provision an agent and wallet, get back configuration details")
-    config = await vcx_agent_provision(json.dumps(provisionConfig))
+    try:
+        config = await vcx_agent_provision(json.dumps(provisionConfig))
+    except VcxError as e:
+        print('Cannot provision agent: %s' % e.error_msg)
+        exit(1)
     config = json.loads(config)
     # Set some additional configuration options specific to faber
     config['institution_name'] = 'Faber'
@@ -48,7 +53,6 @@ async def main():
     
     print("#2 Initialize libvcx with new configuration")
     await vcx_init_with_config(json.dumps(config))
-
 
     print("#3 Create a new schema on the ledger")
     version = format("%d.%d.%d" % (random.randint(1, 101), random.randint(1, 101), random.randint(1, 101)))

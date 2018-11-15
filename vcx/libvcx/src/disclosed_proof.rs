@@ -209,6 +209,7 @@ impl DisclosedProof {
         let schemas = self._find_schemas(&credentials_identifiers)?;
         let credential_defs_json = self._find_credential_def(&credentials_identifiers)?;
         let revoc_regs_json = Some("{}");
+
         let proof = anoncreds::libindy_prover_create_proof(&proof_req_data_json,
                                                            &requested_credentials,
                                                           &self.link_secret_alias,

@@ -209,15 +209,20 @@ pub extern fn vcx_shutdown(delete: bool) -> u32 {
 pub extern fn vcx_error_c_message(error_code: u32, dest_ptr: *mut u8, size: usize) -> u32 {
     use std::slice;
     info!("vcx_error_message(error_code: {})", error_code);
-    unsafe {
-//        let s = CString::from_vec_unchecked(b"hello world".to_vec());
-        let c_s = CString::new("Hello World".to_string()).unwrap();
-        let bytes = c_s.as_bytes_with_nul();
-        let dest_bytes = slice::from_raw_parts_mut(dest_ptr, size);
-        dest_bytes[..bytes.len()].copy_from_slice(bytes);
+    let msg = error::error_message(&error_code);
+    let msg_size = msg.len();
+    if msg_size >= size {
+        // error
+        0
+    } else {
+        unsafe {
+            let c_s = CString::new(msg).unwrap();
+            let bytes = c_s.as_bytes_with_nul();
+            let dest_bytes = slice::from_raw_parts_mut(dest_ptr, size);
+            dest_bytes[..bytes.len()].copy_from_slice(bytes);
+        }
+        msg_size as u32
     }
-    0
-
 }
 
 #[no_mangle]

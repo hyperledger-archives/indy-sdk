@@ -1,6 +1,6 @@
 import pytest
-from vcx.error import ErrorCode, VcxError
-from vcx.common import error_message, get_version, update_institution_info
+from vcx.error import ErrorCode, VcxError, error_message
+from vcx.common import get_version, update_institution_info
 from vcx.api.utils import vcx_agent_provision, vcx_agent_update_info, vcx_messages_download, vcx_messages_update_status
 from ctypes import *
 
