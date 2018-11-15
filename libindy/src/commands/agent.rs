@@ -85,6 +85,37 @@ impl RouteCommandExecutor {
             self.wallet_service.clone(),
             self.crypto_service.clone(),
         )
+
+        //encrypt ciphertext
+        let (sym_key, iv, ciphertext) = self.encrypt_ciphertext(message);
+
+        //convert sender_vk to Key
+        let my_key = &ws
+            .get_indy_object(wallet_handle, sender_vk, &RecordOptions::id_value())
+            .map_err(|err| RouteError::UnpackError(format!("Can't find my_key: {:?}", err)))?;
+
+        //encrypt ceks
+        let mut auth_recipients = vec![];
+
+        for their_vk in recv_keys {
+            auth_recipients.push(
+                self.auth_encrypt_recipient(my_key, their_vk, &sym_key, cs.clone())
+                    .map_err(|err| {
+                        RouteError::PackError(format!("Failed to push auth recipient {}", err))
+                    })?,
+            );
+        }
+
+        //serialize AuthAMES
+        let auth_ames_struct = AuthAMES {
+            recipients: auth_recipients,
+            ver: "AuthAMES/1.0/".to_string(),
+            enc: "xsalsa20poly1305".to_string(),
+            ciphertext: base64::encode(ciphertext.as_slice()),
+            iv: base64::encode(&iv[..]),
+        };
+        serde_json::to_string(&auth_ames_struct)
+            .map_err(|err| RouteError::PackError(format!("Failed to serialize authAMES {}", err)))
     }
 
     pub fn anon_pack_msg(&self, message: &str, recv_keys_json: &str) -> Result<String> {
