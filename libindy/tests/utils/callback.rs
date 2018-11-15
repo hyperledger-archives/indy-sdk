@@ -1,6 +1,7 @@
 extern crate libc;
 
-use indy::api::ErrorCode;
+
+use indy::ErrorCode;
 
 use self::libc::c_char;
 use std::ffi::CStr;

@@ -1527,4 +1527,75 @@ impl Wallet {
             None => c_str!(r#"{"key":""}"#)
         }
     }
+
+    /// Generate wallet master key.
+    /// Returned key is compatible with "RAW" key derivation method.
+    /// It allows to avoid expensive key derivation for use cases when wallet keys can be stored in a secure enclave.
+    ///
+    /// # Arguments
+    /// * `config` - (optional) key configuration json.
+    /// {
+    ///   "seed": string, (optional) Seed that allows deterministic key creation (if not set random one will be created).
+    ///                              Can be UTF-8, base64 or hex string.
+    /// }
+    ///
+    /// # Returns
+    /// wallet key can be used with RAW derivation type
+    pub fn generate_key(config: Option<&str>) -> Box<Future<Item=String, Error=ErrorCode>> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+
+        let err = Wallet::_generate_key(command_handle, config, cb);
+
+        ResultHandler::str(command_handle, err, receiver)
+    }
+
+    /// Generate wallet master key.
+    /// Returned key is compatible with "RAW" key derivation method.
+    /// It allows to avoid expensive key derivation for use cases when wallet keys can be stored in a secure enclave.
+    ///
+    /// # Arguments
+    /// * `config` - (optional) key configuration json.
+    /// {
+    ///   "seed": string, (optional) Seed that allows deterministic key creation (if not set random one will be created).
+    ///                              Can be UTF-8, base64 or hex string.
+    /// }
+    /// * `timeout` - the maximum time this function waits for a response
+    ///
+    /// # Returns
+    /// wallet key can be used with RAW derivation type
+    #[cfg(feature="extended_api_types")]
+    pub fn generate_key_timeout(config: Option<&str>, timeout: Duration) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
+
+        let err = Wallet::_generate_key(command_handle, config, cb);
+
+        ResultHandler::str_timeout(command_handle, err, receiver)
+    }
+
+    /// Generate wallet master key.
+    /// Returned key is compatible with "RAW" key derivation method.
+    /// It allows to avoid expensive key derivation for use cases when wallet keys can be stored in a secure enclave.
+    ///
+    /// # Arguments
+    /// * `config` - (optional) key configuration json.
+    /// {
+    ///   "seed": string, (optional) Seed that allows deterministic key creation (if not set random one will be created).
+    ///                              Can be UTF-8, base64 or hex string.
+    /// }
+    /// * `closure` - the closure that is called when finished
+    ///
+    /// # Returns
+    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
+    pub fn generate_key_async<F: 'static>(config: Option<&str>, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
+        let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
+
+        Wallet::_generate_key(command_handle, config, cb)
+    }
+
+    fn _generate_key(command_handle: IndyHandle, config: Option<&str>, cb: Option<ResponseStringCB>) -> ErrorCode {
+        let config = opt_c_str_json!(config);
+
+        ErrorCode::from(unsafe { wallet::indy_generate_wallet_key(command_handle, config.as_ptr(), cb) })
+    }
 }

@@ -1,14 +1,19 @@
+extern crate libc;
+extern crate byteorder;
 extern crate serde_json;
+extern crate rmp_serde;
+extern crate time;
+extern crate futures;
+extern crate indyrs as indy;
 
-use indy::api::ErrorCode;
-use indy::api::non_secrets::*;
+use self::indy::ErrorCode;
+use self::indy::wallet::Wallet;
+use self::futures::Future;
 
-use utils::{callback, wallet, test, ctypes};
+use utils::{wallet, test};
 use utils::constants::WALLET_CREDENTIALS;
 use utils::types::WalletRecord;
 
-use std::ffi::CString;
-use std::ptr::null;
 use std::sync::{Once, ONCE_INIT};
 use std::collections::HashMap;
 
@@ -37,171 +42,43 @@ pub const TAGS_4: &'static str = r#"{"tagName1":"somestr","~tagName2":"4","~tagN
 pub const TAGS_5: &'static str = r#"{"tagName1":"prefix_str2","~tagName2":"str3","~tagName3":"6"}"#;
 
 pub fn add_wallet_record(wallet_handle: i32, type_: &str, id: &str, value: &str, tags_json: Option<&str>) -> Result<(), ErrorCode> {
-    let (receiver, command_handle, cb) = callback::_closure_to_cb_ec();
-
-    let type_ = CString::new(type_).unwrap();
-    let id = CString::new(id).unwrap();
-    let value = CString::new(value).unwrap();
-    let tags_json = tags_json.map(ctypes::str_to_cstring);
-
-    let err =
-        indy_add_wallet_record(command_handle,
-                               wallet_handle,
-                               type_.as_ptr(),
-                               id.as_ptr(),
-                               value.as_ptr(),
-                               tags_json.as_ref().map(|s| s.as_ptr()).unwrap_or(null()),
-                               cb);
-
-    super::results::result_to_empty(err, receiver)
+    Wallet::add_record(wallet_handle, type_, id, value, tags_json).wait()
 }
 
 pub fn update_wallet_record_value(wallet_handle: i32, type_: &str, id: &str, value: &str) -> Result<(), ErrorCode> {
-    let (receiver, command_handle, cb) = callback::_closure_to_cb_ec();
-
-    let type_ = CString::new(type_).unwrap();
-    let id = CString::new(id).unwrap();
-    let value = CString::new(value).unwrap();
-
-    let err =
-        indy_update_wallet_record_value(command_handle,
-                                        wallet_handle,
-                                        type_.as_ptr(),
-                                        id.as_ptr(),
-                                        value.as_ptr(),
-                                        cb);
-
-    super::results::result_to_empty(err, receiver)
+    Wallet::update_record_value(wallet_handle, type_, id, value).wait()
 }
 
 pub fn update_wallet_record_tags(wallet_handle: i32, type_: &str, id: &str, tags_json: &str) -> Result<(), ErrorCode> {
-    let (receiver, command_handle, cb) = callback::_closure_to_cb_ec();
-
-    let type_ = CString::new(type_).unwrap();
-    let id = CString::new(id).unwrap();
-    let tags_json = CString::new(tags_json).unwrap();
-
-    let err =
-        indy_update_wallet_record_tags(command_handle,
-                                       wallet_handle,
-                                       type_.as_ptr(),
-                                       id.as_ptr(),
-                                       tags_json.as_ptr(),
-                                       cb);
-
-    super::results::result_to_empty(err, receiver)
+    Wallet::update_record_tags(wallet_handle, type_, id, tags_json).wait()
 }
 
 pub fn add_wallet_record_tags(wallet_handle: i32, type_: &str, id: &str, tags_json: &str) -> Result<(), ErrorCode> {
-    let (receiver, command_handle, cb) = callback::_closure_to_cb_ec();
-
-    let type_ = CString::new(type_).unwrap();
-    let id = CString::new(id).unwrap();
-    let tags_json = CString::new(tags_json).unwrap();
-
-    let err =
-        indy_add_wallet_record_tags(command_handle,
-                                    wallet_handle,
-                                    type_.as_ptr(),
-                                    id.as_ptr(),
-                                    tags_json.as_ptr(),
-                                    cb);
-
-    super::results::result_to_empty(err, receiver)
+    Wallet::add_record_tags(wallet_handle, type_, id, tags_json).wait()
 }
 
 pub fn delete_wallet_record_tags(wallet_handle: i32, type_: &str, id: &str, tag_names_json: &str) -> Result<(), ErrorCode> {
-    let (receiver, command_handle, cb) = callback::_closure_to_cb_ec();
-
-    let type_ = CString::new(type_).unwrap();
-    let id = CString::new(id).unwrap();
-    let tag_names_json = CString::new(tag_names_json).unwrap();
-
-    let err =
-        indy_delete_wallet_record_tags(command_handle,
-                                       wallet_handle,
-                                       type_.as_ptr(),
-                                       id.as_ptr(),
-                                       tag_names_json.as_ptr(),
-                                       cb);
-
-    super::results::result_to_empty(err, receiver)
+    Wallet::delete_record_tags(wallet_handle, type_, id, tag_names_json).wait()
 }
 
 pub fn delete_wallet_record(wallet_handle: i32, type_: &str, id: &str) -> Result<(), ErrorCode> {
-    let (receiver, command_handle, cb) = callback::_closure_to_cb_ec();
-
-    let type_ = CString::new(type_).unwrap();
-    let id = CString::new(id).unwrap();
-
-    let err =
-        indy_delete_wallet_record(command_handle,
-                                  wallet_handle,
-                                  type_.as_ptr(),
-                                  id.as_ptr(),
-                                  cb);
-
-    super::results::result_to_empty(err, receiver)
+    Wallet::delete_record(wallet_handle, type_, id).wait()
 }
 
 pub fn get_wallet_record(wallet_handle: i32, type_: &str, id: &str, options_json: &str) -> Result<String, ErrorCode> {
-    let (receiver, command_handle, cb) = callback::_closure_to_cb_ec_string();
-
-    let type_ = CString::new(type_).unwrap();
-    let id = CString::new(id).unwrap();
-    let options_json = CString::new(options_json).unwrap();
-
-    let err =
-        indy_get_wallet_record(command_handle,
-                               wallet_handle,
-                               type_.as_ptr(),
-                               id.as_ptr(),
-                               options_json.as_ptr(),
-                               cb);
-
-    super::results::result_to_string(err, receiver)
+    Wallet::get_record(wallet_handle, type_, id, options_json).wait()
 }
 
 pub fn open_wallet_search(wallet_handle: i32, type_: &str, query_json: &str, options_json: &str) -> Result<i32, ErrorCode> {
-    let (receiver, command_handle, cb) = callback::_closure_to_cb_ec_i32();
-
-    let type_ = CString::new(type_).unwrap();
-    let query_json = CString::new(query_json).unwrap();
-    let options_json = CString::new(options_json).unwrap();
-
-    let err =
-        indy_open_wallet_search(command_handle,
-                                wallet_handle,
-                                type_.as_ptr(),
-                                query_json.as_ptr(),
-                                options_json.as_ptr(),
-                                cb);
-
-    super::results::result_to_int(err, receiver)
+    Wallet::open_search(wallet_handle, type_, query_json, options_json).wait()
 }
 
 pub fn fetch_wallet_search_next_records(wallet_handle: i32, wallet_search_handle: i32, count: usize) -> Result<String, ErrorCode> {
-    let (receiver, command_handle, cb) = callback::_closure_to_cb_ec_string();
-
-    let err =
-        indy_fetch_wallet_search_next_records(command_handle,
-                                              wallet_handle,
-                                              wallet_search_handle,
-                                              count,
-                                              cb);
-
-    super::results::result_to_string(err, receiver)
+    Wallet::fetch_search_next_records(wallet_handle, wallet_search_handle, count).wait()
 }
 
 pub fn close_wallet_search(wallet_search_handle: i32) -> Result<(), ErrorCode> {
-    let (receiver, command_handle, cb) = callback::_closure_to_cb_ec();
-
-    let err =
-        indy_close_wallet_search(command_handle,
-                                 wallet_search_handle,
-                                 cb);
-
-    super::results::result_to_empty(err, receiver)
+    Wallet::close_search(wallet_search_handle).wait()
 }
 
 pub fn tags_1() -> HashMap<String, String> {

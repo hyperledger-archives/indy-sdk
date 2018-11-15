@@ -1,19 +1,25 @@
-use byteorder::{LittleEndian, WriteBytesExt};
-use serde_json;
-use std::fs;
-use std::ffi::CString;
-use std::io::Write;
-#[cfg(feature = "local_nodes_pool")]
-use std::ptr::null;
-use std::path::{Path, PathBuf};
-use rmp_serde;
-use time;
+extern crate byteorder;
+extern crate serde;
+extern crate serde_json;
+extern crate rmp_serde;
+extern crate time;
+extern crate futures;
+extern crate indyrs as indy;
 
-use indy::api::ErrorCode;
-use indy::api::pool::*;
+
+use self::byteorder::{LittleEndian, WriteBytesExt};
+
+use std::fs;
+use std::io::Write;
+use std::path::{Path, PathBuf};
+
+use self::indy::ErrorCode;
+use self::indy::pool::Pool;
+use self::futures::Future;
+
 use utils::types::{Response, ResponseType};
 use utils::constants::PROTOCOL_VERSION;
-use utils::{callback, environment, test, ctypes};
+use utils::{environment, test};
 
 #[derive(Serialize, Deserialize)]
 struct PoolConfig {
@@ -108,32 +114,12 @@ pub fn pool_config_json(txn_file_path: &Path) -> String {
 }
 
 pub fn create_pool_ledger_config(pool_name: &str, pool_config: Option<&str>) -> Result<(), ErrorCode> {
-    let (receiver, command_handle, cb) = callback::_closure_to_cb_ec();
-
-    let pool_name = CString::new(pool_name).unwrap();
-    let pool_config = pool_config.map(ctypes::str_to_cstring);
-
-    let err = indy_create_pool_ledger_config(command_handle,
-                                             pool_name.as_ptr(),
-                                             pool_config.as_ref().map(|s| s.as_ptr()).unwrap_or(null()),
-                                             cb);
-
-    super::results::result_to_empty(err, receiver)
+    Pool::create_ledger_config(pool_name, pool_config).wait()
 }
 
 #[cfg(feature = "local_nodes_pool")]
 pub fn open_pool_ledger(pool_name: &str, config: Option<&str>) -> Result<i32, ErrorCode> {
-    let (receiver, command_handle, cb) = callback::_closure_to_cb_ec_i32();
-
-    let pool_name = CString::new(pool_name).unwrap();
-    let config = config.map(ctypes::str_to_cstring);
-
-    let err = indy_open_pool_ledger(command_handle,
-                                    pool_name.as_ptr(),
-                                    config.as_ref().map(|s| s.as_ptr()).unwrap_or(null()),
-                                    cb);
-
-    super::results::result_to_int(err, receiver)
+    Pool::open_ledger(pool_name, config).wait()
 }
 
 pub fn dump_correct_genesis_txns_to_cache(pool_name: &str) -> Result<(), ErrorCode> {
@@ -189,37 +175,19 @@ pub fn create_and_open_pool_ledger(pool_name: &str) -> Result<i32, ErrorCode> {
 }
 
 pub fn refresh(pool_handle: i32) -> Result<(), ErrorCode> {
-    let (receiver, command_handle, cb) = callback::_closure_to_cb_ec();
-
-    let err = indy_refresh_pool_ledger(command_handle, pool_handle, cb);
-
-    super::results::result_to_empty(err, receiver)
+    Pool::refresh(pool_handle).wait()
 }
 
 pub fn close(pool_handle: i32) -> Result<(), ErrorCode> {
-    let (receiver, command_handle, cb) = callback::_closure_to_cb_ec();
-
-    let err = indy_close_pool_ledger(command_handle, pool_handle, cb);
-
-    super::results::result_to_empty(err, receiver)
+    Pool::close(pool_handle).wait()
 }
 
 pub fn delete(pool_name: &str) -> Result<(), ErrorCode> {
-    let (receiver, command_handle, cb) = callback::_closure_to_cb_ec();
-
-    let pool_name = CString::new(pool_name).unwrap();
-
-    let err = indy_delete_pool_ledger_config(command_handle, pool_name.as_ptr(), cb);
-
-    super::results::result_to_empty(err, receiver)
+    Pool::delete(pool_name).wait()
 }
 
 pub fn set_protocol_version(protocol_version: usize) -> Result<(), ErrorCode> {
-    let (receiver, command_handle, cb) = callback::_closure_to_cb_ec();
-
-    let err = indy_set_protocol_version(command_handle, protocol_version, cb);
-
-    super::results::result_to_empty(err, receiver)
+    Pool::set_protocol_version(protocol_version).wait()
 }
 
 pub fn get_req_id() -> u64 {

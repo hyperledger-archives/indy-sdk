@@ -17,6 +17,11 @@ exclude = [
     "tests/*",
     ]
 
+[lib]
+name = "indyrs"
+path = "src/lib.rs"
+crate-type = ["rlib"]
+
 [dependencies]
 futures = "0.1.24"
 lazy_static = "0.2"

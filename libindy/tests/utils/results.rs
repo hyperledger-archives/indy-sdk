@@ -1,4 +1,6 @@
-use indy::api::ErrorCode;
+extern crate indyrs as indy;
+
+use self::indy::ErrorCode;
 
 use std::sync::mpsc::Receiver;
 
