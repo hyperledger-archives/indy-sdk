@@ -115,7 +115,28 @@ fn main() {
     println!("8. Sending the nym request to ledger");
     let build_nym_sign_submit_result : String = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &steward_did, &build_nym_request).unwrap();
 
+    // 9. build the schema definition request
+    println!("9. build the schema definition request");
+    let name = "gvt";
+    let version = "1.0";
+    let attributes = "[\"age\", \"sex\", \"height\", \"name\"]";
+    let schema_json = json!({
+        "name" : name,
+        "version" : version,
+        "attr_names" : attributes
+    });
+    let build_schema_request : String = Ledger::build_schema_request(&steward_did, &schema_json.to_string()).unwrap();
 
+    // 10. Sending the SCHEMA request to the ledger
+    println!("10. Sending the SCHEMA request to the ledger");
+    let signed_schema_request_response = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &steward_did, &build_schema_request).unwrap();
+
+    // 11. Creating and storing CLAIM DEFINITION using anoncreds as Trust Anchor, for the given Schema
+    println!("11. Creating and storing CLAIM DEFINITION using anoncreds as Trust Anchor, for the given Schema");
+    let cred_def_json = json!({});
+    let (cred_def_id, cred_def_json) = indy::anoncreds::Issuer::create_and_store_credential_def(wallet_handle, &trustee_did, &cred_def_json.to_string(), "CL", None, "CL").unwrap();
+    println!("    cred_def_id : {}", cred_def_id);
+    println!("    json        : {}", cred_def_json);
 
     // clean up
     // Close and delete wallet
