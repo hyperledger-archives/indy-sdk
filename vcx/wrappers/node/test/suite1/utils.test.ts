@@ -113,4 +113,5 @@ describe('utils:', () => {
       assert.equal(errorMessage(max + 1), errorMessage(1001))
     })
   })
+
 })

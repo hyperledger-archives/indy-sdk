@@ -99,11 +99,12 @@ class ErrorCode(IntEnum):
     MissingPaymentMethod = 1087,
     DuplicateSchema = 1088,
     UnknownLibindyRejection = 1089,
-    InvalidRevocationDetails = 1090,
-    InvalidRevEntry = 1091,
-    InvalidRevocationTimestamp = 1092,
-    UnknownSchemaRejection = 1093,
-    InvalidRevRegDefCreation = 1094
+    LoggingError = 1090
+    InvalidRevocationDetails = 1091,
+    InvalidRevEntry = 1092,
+    InvalidRevocationTimestamp = 1093,
+    UnknownSchemaRejection = 1094,
+    InvalidRevRegDefCreation = 1095
 
 
 class VcxError(Exception):
