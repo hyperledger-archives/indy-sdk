@@ -285,54 +285,6 @@ impl RouteService {
         )));
     }
 
-    /* Authcrypt helper function section */
-    fn anon_encrypt_recipient(
-        &self,
-        recp_vk: &str,
-        sym_key: xsalsa20::Key,
-        cs: Rc<CryptoService>,
-    ) -> Result<AnonRecipient> {
-        //encrypt cek
-        let cek = cs.encrypt_sealed(recp_vk, &sym_key[..]).map_err(|err| {
-            RouteError::PackError(format!("Failed to encrypt anon recipient {}", err))
-        })?;
-
-        //generate struct
-        let anon_recipient = AnonRecipient {
-            to: recp_vk.to_string(),
-            cek: base64::encode(cek.as_slice()),
-        };
-
-        Ok(anon_recipient)
-    }
-
-    fn anon_decrypt_recipient(
-        &self,
-        my_key: &Key,
-        anon_recipient: AnonRecipient,
-        cs: Rc<CryptoService>,
-    ) -> Result<xsalsa20::Key> {
-        let cek_as_vec = base64::decode(&anon_recipient.cek).map_err(|err| {
-            RouteError::DecodeError(format!(
-                "Failed to decode cek for anon_decrypt_recipient {}",
-                err
-            ))
-        })?;
-        let cek_as_bytes = cek_as_vec.as_ref();
-
-        let decrypted_cek = cs
-            .decrypt_sealed(my_key, cek_as_bytes)
-            .map_err(|err| RouteError::EncryptionError(format!("Failed to decrypt cek {}", err)))?;
-
-        //convert to secretbox key
-        let sym_key = xsalsa20::Key::from_slice(&decrypted_cek[..]).map_err(|err| {
-            RouteError::EncryptionError(format!("Failed to unpack sym_key {}", err))
-        })?;
-
-        //return key
-        Ok(sym_key)
-    }
-
     fn get_anon_recipient_header(
         &self,
         recp_vk: &str,
@@ -350,46 +302,7 @@ impl RouteService {
         )));
     }
 
-    /* ciphertext helper functions*/
-    fn decrypt_ciphertext(
-        &self,
-        ciphertext: &str,
-        iv: &str,
-        sym_key: &xsalsa20::Key,
-    ) -> Result<String> {
-        //convert IV from &str to &Nonce
-        let iv_as_vec = base64::decode(iv)
-            .map_err(|err| RouteError::DecodeError(format!("Failed to decode IV {}", err)))?;
-        let iv_as_slice = iv_as_vec.as_slice();
-        let nonce = xsalsa20::Nonce::from_slice(iv_as_slice).map_err(|err| {
-            RouteError::UnpackError(format!("Failed to convert IV to Nonce type {}", err))
-        })?;
 
-        //convert ciphertext to bytes
-        let ciphertext_as_vec = base64::decode(ciphertext).map_err(|err| {
-            RouteError::DecodeError(format!("Failed to decode ciphertext {}", err))
-        })?;
-        let ciphertext_as_bytes = ciphertext_as_vec.as_ref();
-
-        //decrypt message
-        let plaintext_bytes =
-            xsalsa20::decrypt(sym_key, &nonce, ciphertext_as_bytes).map_err(|err| {
-                RouteError::EncryptionError(format!("Failed to decrypt ciphertext {}", err))
-            })?;
-
-        //convert message to readable (UTF-8) string
-        String::from_utf8(plaintext_bytes).map_err(|err| {
-            RouteError::DecodeError(format!("Failed to convert message to UTF-8 {}", err))
-        })
-    }
-
-    fn encrypt_ciphertext(&self, ciphertext: &str) -> (xsalsa20::Key, xsalsa20::Nonce, Vec<u8>) {
-        let sym_key = create_key();
-        let iv = gen_nonce();
-        let message = xsalsa20::encrypt(&sym_key, &iv, ciphertext.as_bytes());
-
-        (sym_key, iv, message)
-    }
 }
 
 #[cfg(test)]
