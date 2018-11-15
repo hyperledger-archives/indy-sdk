@@ -8,7 +8,7 @@ pub mod wallet;
 pub mod pairwise;
 pub mod non_secrets;
 pub mod payments;
-pub mod route;
+pub mod agent;
 
 extern crate indy_crypto;
 extern crate threadpool;
@@ -25,7 +25,7 @@ use commands::wallet::{WalletCommand, WalletCommandExecutor};
 use commands::pairwise::{PairwiseCommand, PairwiseCommandExecutor};
 use commands::non_secrets::{NonSecretsCommand, NonSecretsCommandExecutor};
 use commands::payments::{PaymentsCommand, PaymentsCommandExecutor};
-use commands::route::{RouteCommand, RouteCommandExecutor};
+use commands::agent::{RouteCommand, RouteCommandExecutor};
 
 use errors::common::CommonError;
 
