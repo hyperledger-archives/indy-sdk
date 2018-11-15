@@ -1,7 +1,7 @@
 extern crate libc;
 
 use api::ErrorCode;
-use commands::route::RouteCommand;
+use commands::agent::RouteCommand;
 use commands::{Command, CommandExecutor};
 use errors::ToErrorCode;
 use utils::ctypes;
