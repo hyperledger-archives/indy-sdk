@@ -28,12 +28,11 @@ async def vcx_agent_provision(config: str) -> None:
         vcx_agent_provision.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
 
     c_config = c_char_p(config.encode('utf-8'))
-    print("C CONFIG: %s" % c_config)
     result = await do_call('vcx_agent_provision_async',
                            c_config,
                            vcx_agent_provision.cb)
 
-    print("vcx_agent_provision completed")
+    logger.debug("vcx_agent_provision completed")
     return result.decode()
 
 async def vcx_agent_update_info(config: str) -> None:

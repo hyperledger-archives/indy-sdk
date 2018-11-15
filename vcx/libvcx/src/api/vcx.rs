@@ -205,6 +205,15 @@ pub extern fn vcx_shutdown(delete: bool) -> u32 {
     error::SUCCESS.code_num
 }
 
+/// Retrieve a message associated with a given error code.
+///
+/// #Params
+/// error_code:
+/// dest_ptr: a allocated buffer size length u8 width.
+/// size: size of the allocated buffer
+///
+/// #Returns
+/// Number of bytes written to the buffer.
 #[no_mangle]
 pub extern fn vcx_error_c_message(error_code: u32, dest_ptr: *mut u8, size: usize) -> u32 {
     use std::slice;
@@ -269,8 +278,6 @@ mod tests {
     use utils::libindy::wallet::{import, tests::export_test_wallet, tests::delete_import_wallet_path};
     use utils::libindy::pool::get_pool_handle;
     use api::return_types_u32;
-
-
 
     fn create_config_util(logging: Option<&str>) -> String {
         json!({"agency_did" : "72x8p4HubxzUK1dwxcc5FU",

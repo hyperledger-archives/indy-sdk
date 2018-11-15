@@ -224,7 +224,7 @@ fn insert_message(map: &mut HashMap<u32, &'static str>, error: &Error) {
 
 pub struct Error {
     pub code_num: u32,
-    pub message: &'static str,
+    pub message: &'static str
 }
 
 impl fmt::Display for Error {
@@ -236,7 +236,7 @@ impl fmt::Display for Error {
 
 pub fn error_c_message(code_num:&u32) -> &CString {
     match ERROR_C_MESSAGES.get(code_num) {
-        Some(msg) => { println!("Message: {:?}", msg); &msg },
+        Some(msg) => &msg,
         None => error_c_message(&UNKNOWN_ERROR.code_num),
     }
 }
@@ -270,16 +270,6 @@ pub fn call_vcx_error(error_code: u32) -> Result<String, String> {
     let mut buf:Vec<u8> = vec![0x0; DEFAULT_BUFFER_SIZE];
     let bytes_written = vcx_error_c_message(error_code, buf.as_mut_ptr(), DEFAULT_BUFFER_SIZE);
     let mut ns = String::from_utf8(buf).map_err(|_| {"Error In Converting Error Message, NOT utf8 valid"})?;
-//    let mut ns = String::new();
-//    let nul = '\0' as char;
-//    for u in buf.iter() {
-//        if u.is_ascii_alphanumeric() || u.is_ascii_whitespace() || u.is {
-
-//        if u != nul {
-//            ns.push(*u as char);
-//        }
-//    };
-
     ns.split_off(bytes_written as usize);
     Ok(ns)
 }

@@ -13,24 +13,24 @@ _futures_counter = itertools.count()
 
 def do_call(name: str, *args):
     logger = logging.getLogger(__name__)
-    print("do_call: >>> name: %s, args: %s", name, args)
+    logger.debug("do_call: >>> name: %s, args: %s", name, args)
 
     event_loop = asyncio.get_event_loop()
     future = event_loop.create_future()
     command_handle = next(_futures_counter)
-    print('Command Handle %s' % command_handle)
+    logger.debug('Command Handle %s' % command_handle)
     _futures[command_handle] = (event_loop, future)
 
     err = getattr(_cdll(), name)(command_handle,
                                  *args)
 
-    print("do_call: Function %s returned err: %i" % (name, err))
+    logger.debug("do_call: Function %s returned err: %i" % (name, err))
 
     if err != ErrorCode.Success:
-        print("_do_call: Function %s returned error %i", name, err)
+        logger.warning("_do_call: Function %s returned error %i", name, err)
         future.set_exception(VcxError(ErrorCode(err)))
 
-    print("do_call: <<< %s", future)
+    logger.debug("do_call: <<< %s", future)
     return future
 
 

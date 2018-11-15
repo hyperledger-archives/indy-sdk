@@ -209,7 +209,6 @@ impl LibvcxDefaultLogger {
     }
 
     extern fn flush(_context: *const c_void) {
-        println!("Accessing Flush");
         log::logger().flush()
     }
 }
