@@ -635,7 +635,6 @@ pub mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_build_payment_request() {
-        ::utils::logger::LoggerUtils::init_test_logging("trace");
         init!("ledger");
 
         let payment_address = build_test_address("2ZrAm5Jc3sP4NAXMQbaWzDxEa12xxJW3VgWjbbPtMPQCoznJyS");
@@ -659,11 +658,13 @@ pub mod tests {
         assert_eq!(get_my_balance(), 5);
     }
 
+    // this test if failing to to both changes in error codes being produced
+    // by master libindy and how wallets are deleted.
     #[cfg(feature = "pool_tests")]
+    #[ignore]
     #[test]
     #[ignore] // TODO: FIXME test is affected by the previous one
     fn test_build_payment_request_bogus_payment_method() {
-        ::utils::logger::LoggerUtils::init_test_logging("trace");
         init!("false");
         let payment_address = "pay:bogus:123";
         let result_from_paying = pay_a_payee(0, payment_address);

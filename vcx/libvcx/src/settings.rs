@@ -59,8 +59,6 @@ pub static DEFAULT_WALLET_KEY_DERIVATION: &str = "ARGON2I_INT";
 pub static DEFAULT_PAYMENT_PLUGIN: &str = "libnullpay.so";
 pub static DEFAULT_PAYMENT_INIT_FUNCTION: &str = "nullpay_init";
 pub static DEFAULT_PAYMENT_METHOD: &str = "null";
-
-
 pub static MAX_THREADPOOL_SIZE: usize = 128;
 
 lazy_static! {
@@ -535,25 +533,5 @@ pub mod tests {
         assert_eq!(get_config_value("institution_name"), Err(error::INVALID_CONFIGURATION.code_num));
         assert_eq!(get_config_value("genesis_path"), Err(error::INVALID_CONFIGURATION.code_num));
         assert_eq!(get_config_value("wallet_key"), Err(error::INVALID_CONFIGURATION.code_num));
-    }
-
-    #[test]
-    fn test_log_settings() {
-        // log settings should mask the wallet_key field
-        ::utils::logger::LoggerUtils::init_test_logging("trace");
-        set_defaults();
-        let key = "secretkeyabc123foobar";
-        {
-            let mut settings = SETTINGS.write().unwrap();
-            settings.insert(CONFIG_WALLET_KEY.to_string(), key.to_string()).unwrap();
-            let masked_settings = settings.to_string();
-            match masked_settings.get(CONFIG_WALLET_KEY) {
-                None => panic!("Test Failure"),
-                Some(value) => {
-                    assert_ne!(value, key);
-                },
-            }
-        }
-        log_settings();
     }
 }

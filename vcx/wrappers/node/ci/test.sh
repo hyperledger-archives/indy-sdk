@@ -4,3 +4,4 @@ npm i
 npm run lint
 npm run compile
 npm test
+npm run test-logging
