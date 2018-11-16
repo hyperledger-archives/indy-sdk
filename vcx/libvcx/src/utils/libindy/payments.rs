@@ -658,19 +658,15 @@ pub mod tests {
         assert_eq!(get_my_balance(), 5);
     }
 
-    // this test if failing to to both changes in error codes being produced
-    // by master libindy and how wallets are deleted.
     #[cfg(feature = "pool_tests")]
-    #[ignore]
     #[test]
-    #[ignore] // TODO: FIXME test is affected by the previous one
     fn test_build_payment_request_bogus_payment_method() {
         init!("false");
         let payment_address = "pay:bogus:123";
         let result_from_paying = pay_a_payee(0, payment_address);
 
         assert!(result_from_paying.is_err());
-        assert_eq!(result_from_paying.err(), Some(PaymentError::CommonError(error::UNKNOWN_LIBINDY_ERROR.code_num)));
+        assert_eq!(result_from_paying.err(), Some(701));
     }
 
     #[cfg(feature = "pool_tests")]
