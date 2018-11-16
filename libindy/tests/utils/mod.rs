@@ -28,6 +28,9 @@ pub mod test;
 
 pub mod timeout;
 
+#[path = "../../src/api"]
+pub mod api;
+
 #[path = "../../src/utils/sequence.rs"]
 pub mod sequence;
 

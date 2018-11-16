@@ -184,7 +184,7 @@ pub enum ErrorCode
 
     // Revocation registry is full and creation of new registry is necessary
     AnoncredsRevocationRegistryFullError = 400,
-    AnoncredsInvalidUserRevocIndex = 401,
+    AnoncredsInvalidUserRevocId = 401,
     // Attempt to generate master secret with duplicated name
     AnoncredsMasterSecretDuplicateNameError = 404,
     AnoncredsProofRejected = 405,

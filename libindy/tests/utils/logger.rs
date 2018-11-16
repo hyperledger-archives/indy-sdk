@@ -11,7 +11,7 @@ use self::indy::logger::Logger;
 
 extern crate log as log_crate;
 
-struct SimpleLogger;
+pub struct SimpleLogger;
 
 impl log::Log for SimpleLogger {
     fn enabled(&self, _metadata: &log::Metadata) -> bool {
@@ -33,9 +33,9 @@ impl log::Log for SimpleLogger {
 }
 
 pub fn set_logger(logger: &'static log::Log) {
-    Logger::set_indy_logger(logger).unwrap()
+    Logger::set_indy_logger(logger).ok();
 }
 
 pub fn set_default_logger() {
-    Logger::set_default_logger("").unwrap()
+    Logger::set_default_logger("trace").ok();
 }

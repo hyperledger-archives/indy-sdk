@@ -5,16 +5,19 @@ extern crate rmp_serde;
 extern crate time;
 extern crate futures;
 extern crate indyrs as indy;
+extern crate indy as libindy;
 
 use self::indy::ErrorCode;
 use self::indy::ledger::Ledger;
 use self::futures::Future;
+use self::libindy::api::ledger as ledger_api;
 
-use utils::{timeout, anoncreds, blob_storage, did, wallet, pool};
+use utils::{timeout, anoncreds, blob_storage, did, wallet, pool, callback};
 use utils::constants::*;
 
 use std::sync::{Once, ONCE_INIT};
 use std::mem;
+use std::ffi::CString;
 
 pub static mut SCHEMA_ID: &'static str = "";
 pub static mut CRED_DEF_ID: &'static str = "";
@@ -100,7 +103,7 @@ pub fn build_schema_request(submitter_did: &str, data: &str) -> Result<String, E
     Ledger::build_schema_request(submitter_did, data).wait()
 }
 
-pub fn build_get_schema_request(submitter_did:  Option<&str>, id: &str) -> Result<String, ErrorCode> {
+pub fn build_get_schema_request(submitter_did: Option<&str>, id: &str) -> Result<String, ErrorCode> {
     Ledger::build_get_schema_request(submitter_did, id).wait()
 }
 
@@ -180,20 +183,20 @@ pub fn parse_get_revoc_reg_delta_response(get_revoc_reg_delta_response: &str) ->
     Ledger::parse_get_revoc_reg_delta_response(get_revoc_reg_delta_response).wait()
 }
 
-//pub fn register_transaction_parser_for_sp(txn_type: &str, parse: CustomTransactionParser, free: CustomFree) -> Result<(), ErrorCode> {
-//    let (receiver, command_handle, cb) = callback::_closure_to_cb_ec();
-//
-//    let txn_type = CString::new(txn_type).unwrap();
-//
-//    let err =
-//        indy_register_transaction_parser_for_sp(command_handle,
-//                                                txn_type.as_ptr(),
-//                                                Some(parse),
-//                                                Some(free),
-//                                                cb);
-//
-//    super::results::result_to_empty(err, receiver)
-//}
+pub fn register_transaction_parser_for_sp(txn_type: &str, parse: ledger_api::CustomTransactionParser, free: ledger_api::CustomFree) -> Result<(), ErrorCode> {
+    let (receiver, command_handle, cb) = callback::_closure_to_cb_ec();
+
+    let txn_type = CString::new(txn_type).unwrap();
+
+    let err =
+        ledger_api::indy_register_transaction_parser_for_sp(command_handle,
+                                                            txn_type.as_ptr(),
+                                                            Some(parse),
+                                                            Some(free),
+                                                            cb);
+
+    super::results::result_to_empty(err, receiver)
+}
 
 pub fn post_entities() -> (&'static str, &'static str, &'static str) {
     lazy_static! {

@@ -15,7 +15,7 @@ extern crate serde_json;
 
 extern crate byteorder;
 extern crate hex;
-extern crate indy;
+extern crate indyrs as indy;
 extern crate indy_crypto;
 extern crate uuid;
 extern crate named_type;
@@ -26,13 +26,10 @@ extern crate time;
 extern crate serde;
 extern crate sodiumoxide;
 
-// Workaround to share some utils code based on indy sdk types between tests and indy sdk
-use indy::api as api;
-
 #[macro_use]
 mod utils;
 
-use indy::api::ErrorCode;
+use self::indy::ErrorCode;
 #[cfg(feature = "local_nodes_pool")]
 use utils::{pool, ledger, did, anoncreds};
 use utils::types::*;

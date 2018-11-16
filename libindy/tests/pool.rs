@@ -8,32 +8,33 @@ extern crate named_type_derive;
 extern crate derivative;
 
 #[macro_use]
+extern crate serde;
+
+#[macro_use]
 extern crate serde_derive;
 
 #[macro_use]
 extern crate serde_json;
 
 extern crate byteorder;
-extern crate indy;
+extern crate indyrs as indy;
 extern crate indy_crypto;
 extern crate uuid;
 extern crate named_type;
 extern crate rmp_serde;
 extern crate rust_base58;
 extern crate time;
-extern crate serde;
-
-// Workaround to share some utils code based on indy sdk types between tests and indy sdk
-use indy::api as api;
+extern crate futures;
 
 #[macro_use]
 mod utils;
 
-#[cfg(feature = "local_nodes_pool")]
-use indy::api::ErrorCode;
+use self::indy::ErrorCode;
+use self::futures::Future;
 
 use utils::{environment, callback, ledger, pool, timeout};
 use utils::constants::*;
+
 
 use std::ffi::CString;
 
@@ -284,17 +285,11 @@ mod high_cases {
 
             let get_nym_req = ledger::build_get_nym_request(Some(DID_MY1), DID_MY1).unwrap();
 
-            let get_nym_req = CString::new(get_nym_req).unwrap();
-
-            let (submit_receiver, submit_cmd_handle, submit_cb) = callback::_closure_to_cb_ec_string();
-
-            assert_eq!(api::ledger::indy_submit_request(submit_cmd_handle, pool_handle, get_nym_req.as_ptr(), submit_cb),
-                       ErrorCode::Success);
+            let submit_fut = indy::ledger::Ledger::submit_request(pool_handle, &get_nym_req);
 
             pool::close(pool_handle).unwrap();
 
-            let (err, _) = submit_receiver.recv_timeout(timeout::short_timeout()).unwrap();
-            assert_eq!(err, ErrorCode::PoolLedgerTerminated);
+            assert_eq!(submit_fut.wait().unwrap_err(), ErrorCode::PoolLedgerTerminated);
 
             /* Now any request to API can failed, if pool::close works incorrect in case of pending requests.
                For example try to delete the pool. */
