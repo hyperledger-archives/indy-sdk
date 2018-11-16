@@ -90,9 +90,9 @@ The code block below contains each of these items. Note how the comments denote 
 # Steward Agent
 
 provisionConfig = {
-  'agency_url':'https://agency-sandbox.evernym.com',
-  'agency_did':'Nv9oqGX57gy15kPSJzo2i4',
-  'agency_verkey':'CwpcjCc6MtVNdQgwoonNMFoR6dhzmRXHHaUCRSrjh8gj',
+  'agency_url':'http://localhost:8080',
+  'agency_did':'VsKV7grR1BUE29mG2Fm2kX',
+  'agency_verkey':'Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR',
   'wallet_name':'alice_wallet',
   'wallet_key':'123',
   'enterprise_seed':'000000000000000000000000Trustee1'
