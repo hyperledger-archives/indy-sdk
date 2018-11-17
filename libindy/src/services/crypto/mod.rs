@@ -296,6 +296,36 @@ impl CryptoService {
         Ok(decrypted_doc)
     }
 
+    pub fn authenticated_encrypt(&self, my_key: &Key, their_vk: &str, doc: &[u8]) -> Result<Vec<u8>, CryptoError> {
+        let msg = self.create_combo_box(my_key, their_vk, doc)?;
+
+        let msg_pack = msg.to_msg_pack()
+            .map_err(|e| CommonError::InvalidState(format!("Can't serialize ComboBox: {:?}", e)))?;
+
+        let res = self.encrypt_sealed(&their_vk, &msg_pack)?;
+
+        Ok(res)
+    }
+
+    pub fn authenticated_decrypt(&self, my_key: &Key, doc: &[u8]) -> Result<(String, Vec<u8>), CryptoError> {
+        let decrypted_msg = self.decrypt_sealed(&my_key, &doc)?;
+
+        let parsed_msg = ComboBox::from_msg_pack(decrypted_msg.as_slice())
+            .map_err(|err| CommonError::InvalidStructure(format!("Can't deserialize ComboBox: {:?}", err)))?;
+
+        let doc: Vec<u8> = base64::decode(&parsed_msg.msg)
+            .map_err(|err| CommonError::InvalidStructure(format!("Can't decode internal msg filed from base64 {}", err)))?;
+
+        let nonce: Vec<u8> = base64::decode(&parsed_msg.nonce)
+            .map_err(|err| CommonError::InvalidStructure(format!("Can't decode nonce from base64 {}", err)))?;
+
+        let decrypted_msg = self.decrypt(&my_key, &parsed_msg.sender, &doc, &nonce)?;
+
+        let res = (parsed_msg.sender, decrypted_msg);
+
+        Ok(res)
+    }
+
     pub fn encrypt_sealed(&self, their_vk: &str, doc: &[u8]) -> Result<Vec<u8>, CryptoError> {
         trace!("encrypt_sealed >>> their_vk: {:?}, doc: {:?}", their_vk, doc);
 
@@ -666,5 +696,34 @@ mod tests {
         let encrypted_message = service.encrypt_sealed(&encrypt_did.verkey, msg).unwrap();
         let decrypted_message = service.decrypt_sealed(&key, &encrypted_message).unwrap();
         assert_eq!(msg, decrypted_message.as_slice());
+    }
+
+    #[test]
+    fn authenticated_encrypt_works() {
+        let service = CryptoService::new();
+        let msg = "some message".as_bytes();
+        let did_info = MyDidInfo { did: None, cid: None, seed: None, crypto_type: None };
+        let (my_did, my_key) = service.create_my_did(&did_info).unwrap();
+        let my_key_for_encrypt = my_key.clone();
+        let (their_did, their_key) = service.create_my_did(&did_info.clone()).unwrap();
+        let their_did_for_encrypt = Did::new(their_did.did, their_did.verkey);
+        let encrypted_message = service.authenticated_encrypt(&my_key, &their_did_for_encrypt.verkey, msg).unwrap();
+    }
+
+    #[test]
+    fn authenticated_encrypt_and_authenticated_decrypt_works() {
+        let service = CryptoService::new();
+        let msg = "some message";
+        let did_info = MyDidInfo { did: None, cid: None, seed: None, crypto_type: None };
+        let (my_did, my_key) = service.create_my_did(&did_info).unwrap();
+        let my_key_for_encrypt = my_key.clone();
+        let their_did_for_decrypt = Did::new(my_did.did, my_did.verkey);
+        let (their_did, their_key) = service.create_my_did(&did_info.clone()).unwrap();
+        let my_key_for_decrypt = their_key.clone();
+        let their_did_for_encrypt = Did::new(their_did.did, their_did.verkey);
+        let encrypted_message = service.authenticated_encrypt(&my_key_for_encrypt, &their_did_for_encrypt.verkey, msg.as_bytes()).unwrap();
+        let (their_vk, decrypted_message) = service.authenticated_decrypt(&my_key_for_decrypt, &their_did_for_decrypt.verkey, &encrypted_message).unwrap();
+        assert_eq!(msg.as_bytes().to_vec(), decrypted_message);
+
     }
 }
