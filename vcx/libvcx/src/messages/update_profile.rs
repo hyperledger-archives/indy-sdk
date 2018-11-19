@@ -80,6 +80,17 @@ impl UpdateProfileData{
         }
     }
 
+    pub fn use_public_did(&mut self, did: &Option<String>) -> &mut Self {
+        match did {
+            Some(x) => {
+                    let config = AttrValue { name: "publicDid".to_string(), value: x.to_string(), };
+                    self.payload.configs.push(config);
+            },
+            None => (),
+        };
+        self
+    }
+
     pub fn send_secure(&mut self) -> Result<Vec<String>, u32> {
         let data = match self.msgpack() {
             Ok(x) => x,
