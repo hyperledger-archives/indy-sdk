@@ -217,20 +217,32 @@ def vcxTesting(file, env_name, network_name, stashBuildResults) {
                 waitUntil {
                     libvcxBuildFinished[env_name]
                 }
-                def jobs = [
-                        "${env_name}-vcx-nodejs-test": {
-                            linuxModuleTesting(file, env_name, network_name, this.&linuxVcxNodejsTesting, stashBuildResults)
-                        }
-                ]
                 if (env_name == "Ubuntu") {
-                    jobs["${env_name}-vcx-java-test"] = {
-                        linuxModuleTesting(file, env_name, network_name, this.&linuxVcxJavaTesting, stashBuildResults)
-                    }
-                    jobs["${env_name}-vcx-python-test"] = {
-                        linuxModuleTesting(file, env_name, network_name, this.&linuxVcxPythonTesting, stashBuildResults)
-                    }
+                    def jobs = [
+                            "${env_name}-vcx-java-test": {
+                                linuxModuleTesting(file, env_name, network_name, this.&linuxVcxJavaTesting, stashBuildResults)
+                            },
+                            "${env_name}-vcx-python-test": {
+                                linuxModuleTesting(file, env_name, network_name, this.&linuxVcxPythonTesting, stashBuildResults)
+                            }
+                    ]
+                    parallel(jobs)
                 }
-                parallel(jobs)
+                // RETURN THIS AFTER https://github.com/hyperledger/indy-sdk/pull/1293 WILL BE MERGED
+//                def jobs = [
+//                        "${env_name}-vcx-nodejs-test": {
+//                            linuxModuleTesting(file, env_name, network_name, this.&linuxVcxNodejsTesting, stashBuildResults)
+//                        }
+//                ]
+//                if (env_name == "Ubuntu") {
+//                    jobs["${env_name}-vcx-java-test"] = {
+//                        linuxModuleTesting(file, env_name, network_name, this.&linuxVcxJavaTesting, stashBuildResults)
+//                    }
+//                    jobs["${env_name}-vcx-python-test"] = {
+//                        linuxModuleTesting(file, env_name, network_name, this.&linuxVcxPythonTesting, stashBuildResults)
+//                    }
+//                }
+//                parallel(jobs)
             },
     ])
 }
@@ -359,9 +371,9 @@ def linuxVcxBuild(file, env_name, network_name, stashBuildResults) {
             }
         }
 
-        sh "cp vcx/libvcx/target/debug/libvcx.so vcx/wrappers/node"
-        sh "cp vcx/libvcx/target/debug/libvcx.so vcx/wrappers/java"
-        sh "cp vcx/libvcx/target/debug/libvcx.so vcx/wrappers/python3"
+        sh "cp vcx/libvcx/target/release/libvcx.so vcx/wrappers/node"
+        sh "cp vcx/libvcx/target/release/libvcx.so vcx/wrappers/java"
+        sh "cp vcx/libvcx/target/release/libvcx.so vcx/wrappers/python3"
 
         stash includes: 'vcx/wrappers/node/libvcx.so', name: "VcxNodeLibvcxSO${env_name}"
         stash includes: 'vcx/wrappers/java/libvcx.so', name: "VcxJavaLibvcxSO${env_name}"
