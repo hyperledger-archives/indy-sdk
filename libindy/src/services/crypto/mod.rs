@@ -49,7 +49,7 @@ impl CryptoService {
     }
 
     pub fn create_key(&self, key_info: &KeyInfo) -> Result<Key, CryptoError> {
-        trace!("create_key >>> key_info: {:?}", key_info);
+        trace!("create_key >>> key_info: {:?}", secret!(key_info));
 
         let crypto_type_name = key_info.crypto_type
             .as_ref()
@@ -81,7 +81,7 @@ impl CryptoService {
     }
 
     pub fn create_my_did(&self, my_did_info: &MyDidInfo) -> Result<(Did, Key), CryptoError> {
-        trace!("create_my_did >>> my_did_info: {:?}", my_did_info);
+        trace!("create_my_did >>> my_did_info: {:?}", secret!(my_did_info));
 
         let crypto_type_name = my_did_info.crypto_type
             .as_ref()
@@ -349,7 +349,7 @@ impl CryptoService {
     }
 
     pub fn convert_seed(&self, seed: Option<&str>) -> Result<Option<ed25519_sign::Seed>, CryptoError> {
-        trace!("convert_seed >>> seed: {:?}", seed);
+        trace!("convert_seed >>> seed: {:?}", secret!(seed));
 
         if seed.is_none() {
             trace!("convert_seed <<< res: None");
@@ -375,7 +375,7 @@ impl CryptoService {
 
         let res = ed25519_sign::Seed::from_slice(bytes.as_slice())?;
 
-        trace!("convert_seed <<< res: {:?}", res);
+        trace!("convert_seed <<< res: {:?}", secret!(&res));
 
         Ok(Some(res))
     }

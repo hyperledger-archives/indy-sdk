@@ -13,5 +13,3 @@ async def test_vcx_init():
 @pytest.mark.asyncio
 async def test_error_message(vcx_init_test_mode):
     assert error_message(ErrorCode.NotReady) == 'Object not ready for specified action'
-
-
