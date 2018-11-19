@@ -371,9 +371,9 @@ def linuxVcxBuild(file, env_name, network_name, stashBuildResults) {
             }
         }
 
-        sh "cp vcx/libvcx/target/debug/libvcx.so vcx/wrappers/node"
-        sh "cp vcx/libvcx/target/debug/libvcx.so vcx/wrappers/java"
-        sh "cp vcx/libvcx/target/debug/libvcx.so vcx/wrappers/python3"
+        sh "cp vcx/libvcx/target/release/libvcx.so vcx/wrappers/node"
+        sh "cp vcx/libvcx/target/release/libvcx.so vcx/wrappers/java"
+        sh "cp vcx/libvcx/target/release/libvcx.so vcx/wrappers/python3"
 
         stash includes: 'vcx/wrappers/node/libvcx.so', name: "VcxNodeLibvcxSO${env_name}"
         stash includes: 'vcx/wrappers/java/libvcx.so', name: "VcxJavaLibvcxSO${env_name}"
