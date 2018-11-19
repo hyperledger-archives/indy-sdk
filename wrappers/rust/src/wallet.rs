@@ -639,3 +639,30 @@ fn _default_credentials(credentials: Option<&str>) -> CString {
         None => c_str!(r#"{"key":""}"#)
     }
 }
+
+/// Generate wallet master key.
+/// Returned key is compatible with "RAW" key derivation method.
+/// It allows to avoid expensive key derivation for use cases when wallet keys can be stored in a secure enclave.
+///
+/// # Arguments
+/// * `config` - (optional) key configuration json.
+/// {
+///   "seed": string, (optional) Seed that allows deterministic key creation (if not set random one will be created).
+///                              Can be UTF-8, base64 or hex string.
+/// }
+///
+/// # Returns
+/// wallet key can be used with RAW derivation type
+pub fn generate_wallet_key(config: Option<&str>) -> Box<Future<Item=String, Error=ErrorCode>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+
+    let err = _generate_key(command_handle, config, cb);
+
+    ResultHandler::str(command_handle, err, receiver)
+}
+
+fn _generate_key(command_handle: IndyHandle, config: Option<&str>, cb: Option<ResponseStringCB>) -> ErrorCode {
+    let config = opt_c_str_json!(config);
+
+    ErrorCode::from(unsafe { wallet::indy_generate_wallet_key(command_handle, config.as_ptr(), cb) })
+}

@@ -2,7 +2,7 @@
 #[macro_use] extern crate serde_derive;
 extern crate rmp_serde;
 extern crate byteorder;
-extern crate indy;
+extern crate indyrs as indy;
 extern crate futures;
 #[macro_use]
 mod utils;

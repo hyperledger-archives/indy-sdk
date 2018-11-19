@@ -90,13 +90,22 @@ pub mod tests {
     */
 
     /* sandbox */
-    pub const AGENCY_ENDPOINT: &'static str = "https://agency-ea-sandbox.evernym.com";
+    /*pub const AGENCY_ENDPOINT: &'static str = "http://sbx-eas.pdev.evernym.com";
     pub const AGENCY_DID: &'static str = "HB7qFQyFxx4ptjKqioEtd8";
     pub const AGENCY_VERKEY: &'static str = "9pJkfHyfJMZjUjS7EZ2q2HX55CbFQPKpQ9eTjSAUMLU8";
 
-    pub const C_AGENCY_ENDPOINT: &'static str = "https://agency-sandbox.evernym.com";
+    pub const C_AGENCY_ENDPOINT: &'static str = "http://sbx-agency.pdev.evernym.com";
     pub const C_AGENCY_DID: &'static str = "Nv9oqGX57gy15kPSJzo2i4";
-    pub const C_AGENCY_VERKEY: &'static str = "CwpcjCc6MtVNdQgwoonNMFoR6dhzmRXHHaUCRSrjh8gj";
+    pub const C_AGENCY_VERKEY: &'static str = "CwpcjCc6MtVNdQgwoonNMFoR6dhzmRXHHaUCRSrjh8gj";*/
+
+    /* dummy */
+    pub const AGENCY_ENDPOINT: &'static str = "http://localhost:8080";
+    pub const AGENCY_DID: &'static str = "VsKV7grR1BUE29mG2Fm2kX";
+    pub const AGENCY_VERKEY: &'static str = "Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR";
+
+    pub const C_AGENCY_ENDPOINT: &'static str = "http://localhost:8080";
+    pub const C_AGENCY_DID: &'static str = "VsKV7grR1BUE29mG2Fm2kX";
+    pub const C_AGENCY_VERKEY: &'static str = "Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR";
 
     pub fn set_trustee_did() {
         let (my_did, _) = ::utils::libindy::signus::create_and_store_my_did(Some(TRUSTEE)).unwrap();

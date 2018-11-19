@@ -16,7 +16,7 @@ extern crate serde_derive;
 extern crate serde_json;
 extern crate prettytable;
 extern crate log4rs;
-extern crate indy;
+extern crate indyrs as indy;
 
 #[macro_use]
 mod utils;

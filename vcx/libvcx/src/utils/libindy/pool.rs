@@ -100,7 +100,8 @@ pub mod tests {
     }
 
     pub fn create_genesis_txn_file() {
-        let test_pool_ip = "127.0.0.1".to_string();
+        let test_pool_ip = ::std::env::var("TEST_POOL_IP").unwrap_or("127.0.0.1".to_string());
+
         let node_txns = get_txns(&test_pool_ip);
         let txn_file_data = node_txns[0..4].join("\n");
 

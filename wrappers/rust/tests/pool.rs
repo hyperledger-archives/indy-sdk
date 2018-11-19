@@ -3,7 +3,7 @@
 extern crate rmp_serde;
 extern crate byteorder;
 extern crate futures;
-extern crate indy;
+extern crate indyrs as indy;
 #[macro_use]
 pub mod utils;
 

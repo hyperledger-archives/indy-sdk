@@ -1,7 +1,7 @@
 extern crate log4rs;
 extern crate log;
 extern crate libc;
-extern crate indy;
+extern crate indyrs as indy;
 
 use std::error::Error;
 
