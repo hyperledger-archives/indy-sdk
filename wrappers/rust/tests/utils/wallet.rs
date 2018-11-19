@@ -13,7 +13,7 @@ A test wallet that deletees itself when it leaves scope.
 Use by calling `let wallet = Wallet::new();` and pass the `wallet.handle`.
 
 ```
-use utils::wallet::Wallet;
+use utils::wallet;
 // The wallet is opened and created.
 let wallet_1 = Wallet::new();
 {
@@ -60,23 +60,23 @@ impl Wallet {
 
     fn open(&mut self) -> Result<i32, ErrorCode> {
         let config : String = Wallet::create_wallet_config(&self.name);
-        let handle = indy::wallet::Wallet::open(&config, USEFUL_CREDENTIALS).wait()?;
+        let handle = indy::wallet::open_wallet(&config, USEFUL_CREDENTIALS).wait()?;
         self.handle = handle;
         return Ok(handle);
     }
 
     fn create(&self) -> Result<(), ErrorCode> {
         let config = Wallet::create_wallet_config(&self.name);
-        return indy::wallet::Wallet::create(&config, USEFUL_CREDENTIALS).wait()
+        return indy::wallet::create_wallet(&config, USEFUL_CREDENTIALS).wait()
     }
 
     fn close(&self) -> Result<(), ErrorCode> {
-        indy::wallet::Wallet::close(self.handle).wait()
+        indy::wallet::close_wallet(self.handle).wait()
     }
 
     fn delete(&self) -> Result<(), ErrorCode> {
         let config : String = Wallet::create_wallet_config(&self.name);
-        return indy::wallet::Wallet::delete(&config, USEFUL_CREDENTIALS).wait()
+        return indy::wallet::delete_wallet(&config, USEFUL_CREDENTIALS).wait()
     }
 }
 
