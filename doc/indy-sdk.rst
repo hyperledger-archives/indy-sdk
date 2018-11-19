@@ -1,5 +1,19 @@
-Hyperledger Indy SDK
+ Hyperledger Indy SDK
 ====================
+
+ .. toctree::
+   :maxdepth: 2
+   :name: 'Indy SDK'
+   :hidden:
+
+   getting-started/getting-started.md 
+   rtd-tutorials
+   rtd-design
+   rtd-building
+   rtd-migration-guides
+   release-workflow.md
+   signing-commits.md  
+  
 
 .. image:: https://raw.githubusercontent.com/hyperledger/indy-node/master/collateral/logos/indy-logo.png
    :width: 50%
@@ -43,6 +57,3 @@ here are some resources to increase your understanding:
 
   * The next page contains an extended tutorial introduces Indy, explains how the whole ecosystem works, and how the
     functions in the SDK can be used to construct rich clients.
-
-
-.. include:: _sidebar.rst.inc
