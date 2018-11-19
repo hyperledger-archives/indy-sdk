@@ -5,15 +5,19 @@ extern crate rmp_serde;
 extern crate time;
 extern crate futures;
 extern crate indyrs as indy;
+extern crate indy_sys;
 
 use self::indy::ErrorCode;
 use self::indy::payments::Payment;
 use self::futures::Future;
+use self::indy_sys::payments;
 
 use std::collections::VecDeque;
 use std::ffi::CString;
 use std::os::raw::c_char;
 use std::sync::{Once, ONCE_INIT, Mutex};
+
+use utils::callback;
 
 #[macro_export]
 macro_rules! mocked_handler {
@@ -21,13 +25,13 @@ macro_rules! mocked_handler {
         use super::*;
 
         lazy_static! {
-          static ref INJECTIONS: Mutex<VecDeque<(ErrorCode, CString)>> = Default::default();
+          static ref INJECTIONS: Mutex<VecDeque<(i32, CString)>> = Default::default();
         }
 
         pub extern fn handle(cmd_handle: i32,
                                     $first_param_name: $first_param_type,
                                     $($param_name: $param_type,)*
-                                    cb: Option<IndyPaymentCallback>) -> ErrorCode {
+                                    cb: Option<IndyPaymentCallback>) -> i32 {
 
             let cb = cb.unwrap_or_else(|| {
                 panic!("Null passed as callback!")
@@ -47,7 +51,7 @@ macro_rules! mocked_handler {
         pub fn inject_mock(err: ErrorCode, res: &str) {
             if let Ok(mut injections) = INJECTIONS.lock() {
                 let res = CString::new(res).unwrap();
-                injections.push_back((err, res))
+                injections.push_back((err as i32, res))
             } else {
                 panic!("Can't lock injections mutex");
             }
@@ -64,8 +68,8 @@ macro_rules! mocked_handler {
 }
 
 type IndyPaymentCallback = extern fn(command_handle_: i32,
-                                     err: ErrorCode,
-                                     payment_address: *const c_char) -> ErrorCode;
+                                     err: i32,
+                                     payment_address: *const c_char) -> i32;
 
 lazy_static! {
         static ref CREATE_PAYMENT_METHOD_INIT: Once = ONCE_INIT;
@@ -74,31 +78,33 @@ lazy_static! {
 pub mod mock_method {
     use super::*;
 
-    //    pub fn init() {
-    //        CREATE_PAYMENT_METHOD_INIT.call_once(|| {
-    //            let (receiver, cmd_handle, cb) = callback::_closure_to_cb_ec();
-    //            let payment_method_name = CString::new("null").unwrap();
-    //            indy_register_payment_method(cmd_handle,
-    //                                         payment_method_name.as_ptr(),
-    //                                         Some(create_payment_address::handle),
-    //                                         Some(add_request_fees::handle),
-    //                                         Some(parse_response_with_fees::handle),
-    //                                         Some(build_get_payment_sources_request::handle),
-    //                                         Some(parse_get_payment_sources_response::handle),
-    //                                         Some(build_payment_req::handle),
-    //                                         Some(parse_payment_response::handle),
-    //                                         Some(build_mint_req::handle),
-    //                                         Some(build_set_txn_fees_req::handle),
-    //                                         Some(build_get_txn_fees_req::handle),
-    //                                         Some(parse_get_txn_fees_response::handle),
-    //                                         Some(build_verify_payment_req::handle),
-    //                                         Some(parse_verify_payment_response::handle),
-    //                                         cb,
-    //            );
-    //
-    //            receiver.recv().unwrap();
-    //        });
-    //    }
+    pub fn init() {
+        CREATE_PAYMENT_METHOD_INIT.call_once(|| {
+            let (receiver, cmd_handle, cb) = callback::_closure_to_cb_ec();
+            let payment_method_name = CString::new("null").unwrap();
+            unsafe {
+                payments::indy_register_payment_method(cmd_handle,
+                                                       payment_method_name.as_ptr(),
+                                                       Some(create_payment_address::handle),
+                                                       Some(add_request_fees::handle),
+                                                       Some(parse_response_with_fees::handle),
+                                                       Some(build_get_payment_sources_request::handle),
+                                                       Some(parse_get_payment_sources_response::handle),
+                                                       Some(build_payment_req::handle),
+                                                       Some(parse_payment_response::handle),
+                                                       Some(build_mint_req::handle),
+                                                       Some(build_set_txn_fees_req::handle),
+                                                       Some(build_get_txn_fees_req::handle),
+                                                       Some(parse_get_txn_fees_response::handle),
+                                                       Some(build_verify_payment_req::handle),
+                                                       Some(parse_verify_payment_response::handle),
+                                                       cb,
+                );
+            }
+
+            receiver.recv().unwrap();
+        });
+    }
 
     pub mod create_payment_address {
         mocked_handler!(_wallet_handle: i32, _config: *const c_char);
@@ -153,48 +159,50 @@ pub mod mock_method {
     }
 }
 
-//pub fn register_payment_method(payment_method_name: &str,
-//                               create_payment_address: Option<CreatePaymentAddressCB>,
-//                               add_request_fees: Option<AddRequestFeesCB>,
-//                               parse_response_with_fees: Option<ParseResponseWithFeesCB>,
-//                               build_get_payment_sources_request: Option<BuildGetPaymentSourcesRequestCB>,
-//                               parse_get_payment_sources_response: Option<ParseGetPaymentSourcesResponseCB>,
-//                               build_payment_req: Option<BuildPaymentReqCB>,
-//                               parse_payment_response: Option<ParsePaymentResponseCB>,
-//                               build_mint_req: Option<BuildMintReqCB>,
-//                               build_set_txn_fees_req: Option<BuildSetTxnFeesReqCB>,
-//                               build_get_txn_fees_req: Option<BuildGetTxnFeesReqCB>,
-//                               parse_get_txn_fees_response: Option<ParseGetTxnFeesResponseCB>,
-//                               build_verify_payment_req: Option<BuildVerifyPaymentReqCB>,
-//                               parse_verify_payment_response: Option<ParseVerifyPaymentResponseCB>,
-//) -> Result<(), ErrorCode> {
-//    let (receiver, cmd_handle, cb) = callback::_closure_to_cb_ec();
-//
-//    let payment_method_name = CString::new(payment_method_name).unwrap();
-//
-//    let err = indy_register_payment_method(cmd_handle,
-//                                           payment_method_name.as_ptr(),
-//                                           create_payment_address,
-//                                           add_request_fees,
-//                                           parse_response_with_fees,
-//                                           build_get_payment_sources_request,
-//                                           parse_get_payment_sources_response,
-//                                           build_payment_req,
-//                                           parse_payment_response,
-//                                           build_mint_req,
-//                                           build_set_txn_fees_req,
-//                                           build_get_txn_fees_req,
-//                                           parse_get_txn_fees_response,
-//                                           build_verify_payment_req,
-//                                           parse_verify_payment_response,
-//                                           cb,
-//    );
-//
-//    super::results::result_to_empty(err, receiver)
-//}
+pub fn register_payment_method(payment_method_name: &str,
+                               create_payment_address: Option<payments::CreatePaymentAddressCB>,
+                               add_request_fees: Option<payments::AddRequestFeesCB>,
+                               parse_response_with_fees: Option<payments::ParseResponseWithFeesCB>,
+                               build_get_payment_sources_request: Option<payments::BuildGetPaymentSourcesRequestCB>,
+                               parse_get_payment_sources_response: Option<payments::ParseGetPaymentSourcesResponseCB>,
+                               build_payment_req: Option<payments::BuildPaymentReqCB>,
+                               parse_payment_response: Option<payments::ParsePaymentResponseCB>,
+                               build_mint_req: Option<payments::BuildMintReqCB>,
+                               build_set_txn_fees_req: Option<payments::BuildSetTxnFeesReqCB>,
+                               build_get_txn_fees_req: Option<payments::BuildGetTxnFeesReqCB>,
+                               parse_get_txn_fees_response: Option<payments::ParseGetTxnFeesResponseCB>,
+                               build_verify_payment_req: Option<payments::BuildVerifyPaymentReqCB>,
+                               parse_verify_payment_response: Option<payments::ParseVerifyPaymentResponseCB>,
+) -> Result<(), ErrorCode> {
+    let (receiver, cmd_handle, cb) = callback::_closure_to_cb_ec();
+
+    let payment_method_name = CString::new(payment_method_name).unwrap();
+
+    let err = unsafe {
+        payments::indy_register_payment_method(cmd_handle,
+                                               payment_method_name.as_ptr(),
+                                               create_payment_address,
+                                               add_request_fees,
+                                               parse_response_with_fees,
+                                               build_get_payment_sources_request,
+                                               parse_get_payment_sources_response,
+                                               build_payment_req,
+                                               parse_payment_response,
+                                               build_mint_req,
+                                               build_set_txn_fees_req,
+                                               build_get_txn_fees_req,
+                                               parse_get_txn_fees_response,
+                                               build_verify_payment_req,
+                                               parse_verify_payment_response,
+                                               cb,
+        )
+    };
+
+    super::results::result_to_empty(err, receiver)
+}
 
 pub fn create_payment_address(wallet_handle: i32, config: &str, payment_method: &str) -> Result<String, ErrorCode> {
-    Payment::create_payment_address(wallet_handle, config, payment_method).wait()
+    Payment::create_payment_address(wallet_handle, payment_method, config).wait()
 }
 
 pub fn list_payment_addresses(wallet_handle: i32) -> Result<String, ErrorCode> {

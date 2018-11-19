@@ -28,9 +28,6 @@ pub mod test;
 
 pub mod timeout;
 
-#[path = "../../src/api"]
-pub mod api;
-
 #[path = "../../src/utils/sequence.rs"]
 pub mod sequence;
 
@@ -39,8 +36,8 @@ pub mod sequence;
 #[path = "../../src/utils/ctypes.rs"]
 pub mod ctypes;
 
-//#[path = "../../src/utils/inmem_wallet.rs"]
-//pub mod inmem_wallet;
+#[path = "../../src/utils/inmem_wallet.rs"]
+pub mod inmem_wallet;
 
 #[path = "../../src/domain/mod.rs"]
 pub mod domain;

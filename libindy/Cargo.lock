@@ -545,6 +545,7 @@ dependencies = [
  "hex 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "indy 1.6.7",
  "indy-crypto 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "indy-sys 1.6.7",
  "int_traits 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.43 (registry+https://github.com/rust-lang/crates.io-index)",

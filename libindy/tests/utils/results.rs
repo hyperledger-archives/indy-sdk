@@ -1,12 +1,12 @@
-extern crate indy;
+extern crate indy_sys;
 extern crate indyrs;
 
-use self::indy::api::ErrorCode as LibindyErrorCode;
+use self::indy_sys::Error;
 use self::indyrs::ErrorCode;
 
 use std::sync::mpsc::Receiver;
 
-pub fn result_to_empty(err: LibindyErrorCode, receiver: Receiver<LibindyErrorCode>) -> Result<(), ErrorCode> {
+pub fn result_to_empty(err: Error, receiver: Receiver<Error>) -> Result<(), ErrorCode> {
     let err = ErrorCode::from(err as i32);
     if err != ErrorCode::Success {
         return Err(err);

@@ -16,6 +16,7 @@ extern crate serde_json;
 extern crate byteorder;
 extern crate hex;
 extern crate indyrs as indy;
+extern crate indyrs as api;
 extern crate indy_crypto;
 extern crate uuid;
 extern crate named_type;
@@ -1511,11 +1512,11 @@ mod high_cases {
         fn indy_register_transaction_parser_for_sp_works() {
             utils::setup();
 
-            extern fn parse(msg: *const c_char, parsed: *mut *const c_char) -> ErrorCode {
+            extern fn parse(msg: *const c_char, parsed: *mut *const c_char) -> i32 {
                 unsafe { *parsed = msg; }
-                ErrorCode::Success
+                ErrorCode::Success as i32
             }
-            extern fn free(_buf: *const c_char) -> ErrorCode { ErrorCode::Success }
+            extern fn free(_buf: *const c_char) -> i32 { ErrorCode::Success as i32 }
 
             ledger::register_transaction_parser_for_sp("my_txn_type", parse, free).unwrap();
 

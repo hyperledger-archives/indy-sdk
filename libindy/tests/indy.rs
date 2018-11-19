@@ -4,8 +4,9 @@ extern crate time;
 #[macro_use]
 extern crate lazy_static;
 extern crate indyrs as indy;
+extern crate indyrs as api;
+extern crate indy_sys;
 
-#[macro_use]
 extern crate serde;
 #[macro_use]
 extern crate named_type_derive;

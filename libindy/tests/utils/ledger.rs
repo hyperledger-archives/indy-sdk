@@ -5,12 +5,12 @@ extern crate rmp_serde;
 extern crate time;
 extern crate futures;
 extern crate indyrs as indy;
-extern crate indy as libindy;
+extern crate indy_sys;
 
 use self::indy::ErrorCode;
 use self::indy::ledger::Ledger;
 use self::futures::Future;
-use self::libindy::api::ledger as ledger_api;
+use self::indy_sys::ledger;
 
 use utils::{timeout, anoncreds, blob_storage, did, wallet, pool, callback};
 use utils::constants::*;
@@ -41,7 +41,7 @@ pub fn submit_request(pool_handle: i32, request_json: &str) -> Result<String, Er
 }
 
 pub fn submit_action(pool_handle: i32, request_json: &str, nodes: Option<&str>, timeout: Option<i32>) -> Result<String, ErrorCode> {
-    Ledger::submit_action(pool_handle, request_json, nodes.unwrap_or("[]"), timeout.unwrap_or(-1)).wait() // TODO: FIX WRAPPER
+    Ledger::submit_action(pool_handle, request_json, nodes, timeout).wait()
 }
 
 pub fn sign_request(wallet_handle: i32, submitter_did: &str, request_json: &str) -> Result<String, ErrorCode> {
@@ -183,17 +183,19 @@ pub fn parse_get_revoc_reg_delta_response(get_revoc_reg_delta_response: &str) ->
     Ledger::parse_get_revoc_reg_delta_response(get_revoc_reg_delta_response).wait()
 }
 
-pub fn register_transaction_parser_for_sp(txn_type: &str, parse: ledger_api::CustomTransactionParser, free: ledger_api::CustomFree) -> Result<(), ErrorCode> {
+pub fn register_transaction_parser_for_sp(txn_type: &str, parse: ledger::CustomTransactionParser, free: ledger::CustomFree) -> Result<(), ErrorCode> {
     let (receiver, command_handle, cb) = callback::_closure_to_cb_ec();
 
     let txn_type = CString::new(txn_type).unwrap();
 
     let err =
-        ledger_api::indy_register_transaction_parser_for_sp(command_handle,
+        unsafe {
+            ledger::indy_register_transaction_parser_for_sp(command_handle,
                                                             txn_type.as_ptr(),
                                                             Some(parse),
                                                             Some(free),
-                                                            cb);
+                                                            cb)
+        };
 
     super::results::result_to_empty(err, receiver)
 }

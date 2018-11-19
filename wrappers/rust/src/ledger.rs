@@ -159,7 +159,7 @@ impl Ledger {
         ErrorCode::from(unsafe { ledger::indy_submit_request(command_handle, pool_handle, request_json.as_ptr(), cb) })
     }
 
-    pub fn submit_action(pool_handle: IndyHandle, request_json: &str, nodes: &str, wait_timeout: i32) -> Box<Future<Item=String, Error=ErrorCode>> {
+    pub fn submit_action(pool_handle: IndyHandle, request_json: &str, nodes: Option<&str>, wait_timeout: Option<i32>) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Ledger::_submit_action(command_handle, pool_handle, request_json, nodes, wait_timeout, cb);
@@ -169,7 +169,7 @@ impl Ledger {
 
     /// * `timeout` - the maximum time this function waits for a response
     #[cfg(feature="extended_api_types")]
-    pub fn submit_action_timeout(pool_handle: IndyHandle, request_json: &str, nodes: &str, wait_timeout: i32, timeout: Duration) -> Result<String, ErrorCode> {
+    pub fn submit_action_timeout(pool_handle: IndyHandle, request_json: &str, nodes: Option<&str>, wait_timeout: Option<i32>, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Ledger::_submit_action(command_handle, pool_handle, request_json, nodes, wait_timeout, cb);
@@ -182,18 +182,18 @@ impl Ledger {
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
     #[cfg(feature="extended_api_types")]
-    pub fn submit_action_async<F: 'static>(pool_handle: IndyHandle, request_json: &str, nodes: &str, wait_timeout: i32, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
+    pub fn submit_action_async<F: 'static>(pool_handle: IndyHandle, request_json: &str, nodes: Option<&str>, wait_timeout: Option<i32>, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
         Ledger::_submit_action(command_handle, pool_handle, request_json, nodes, wait_timeout, cb)
     }
 
-    fn _submit_action(command_handle: IndyHandle, pool_handle: IndyHandle, request_json: &str, nodes: &str, wait_timeout: i32, cb: Option<ResponseStringCB>) -> ErrorCode {
+    fn _submit_action(command_handle: IndyHandle, pool_handle: IndyHandle, request_json: &str, nodes: Option<&str>, wait_timeout: Option<i32>, cb: Option<ResponseStringCB>) -> ErrorCode {
         let request_json = c_str!(request_json);
-        let nodes = c_str!(nodes);
+        let nodes_str = opt_c_str!(nodes);
 
         ErrorCode::from(unsafe {
-          ledger::indy_submit_action(command_handle, pool_handle, request_json.as_ptr(), nodes.as_ptr(), wait_timeout, cb)
+          ledger::indy_submit_action(command_handle, pool_handle, request_json.as_ptr(), opt_c_ptr!(nodes, nodes_str), wait_timeout.unwrap_or(-1), cb)
         })
     }
 
@@ -1464,13 +1464,13 @@ impl Ledger {
     fn _build_pool_restart_request(command_handle: IndyHandle, submitter_did: &str, action: &str, datetime: Option<&str>, cb: Option<ResponseStringCB>) -> ErrorCode {
         let submitter_did = c_str!(submitter_did);
         let action = c_str!(action);
-        let datetime = opt_c_str!(datetime);
+        let datetime_str = opt_c_str!(datetime);
 
         ErrorCode::from(unsafe {
             ledger::indy_build_pool_restart_request(command_handle,
                                                     submitter_did.as_ptr(),
                                                     action.as_ptr(),
-                                                    datetime.as_ptr(),
+                                                    opt_c_ptr!(datetime, datetime_str),
                                                     cb)
         })
     }

@@ -15,6 +15,7 @@ extern crate serde_json;
 
 extern crate byteorder;
 extern crate indyrs as indy;
+extern crate indyrs as api;
 extern crate indy_crypto;
 extern crate uuid;
 extern crate named_type;
@@ -26,7 +27,7 @@ extern crate serde;
 #[macro_use]
 mod utils;
 
-//use utils::inmem_wallet::InmemWallet;
+use utils::inmem_wallet::InmemWallet;
 use utils::{environment, wallet, test, did};
 use utils::constants::*;
 
@@ -37,22 +38,22 @@ pub const CONFIG: &'static str = r#"{"freshness_time":1000}"#;
 mod high_cases {
     use super::*;
 
-//    mod register_wallet_storage {
-//        use super::*;
-//
-//        #[test]
-//        fn indy_register_wallet_storage_works() {
-//            utils::setup();
-//
-//            test::cleanup_storage();
-//            InmemWallet::cleanup();
-//
-//            wallet::register_wallet_storage(INMEM_TYPE, false).unwrap();
-//
-//            InmemWallet::cleanup();
-//            utils::tear_down();
-//        }
-//    }
+    mod register_wallet_storage {
+        use super::*;
+
+        #[test]
+        fn indy_register_wallet_storage_works() {
+            utils::setup();
+
+            test::cleanup_storage();
+            InmemWallet::cleanup();
+
+            wallet::register_wallet_storage(INMEM_TYPE, false).unwrap();
+
+            InmemWallet::cleanup();
+            utils::tear_down();
+        }
+    }
 
     mod create_wallet {
         use super::*;
@@ -379,40 +380,41 @@ mod medium_cases {
     use super::*;
     use std::ffi::CString;
 
-//    mod register_wallet_type {
-//        use super::*;
-//        use indy::api::wallet::indy_register_wallet_storage;
-//
-//        #[test]
-//        fn indy_register_wallet_storage_does_not_work_twice_with_same_name() {
-//            utils::setup();
-//            InmemWallet::cleanup();
-//
-//            wallet::register_wallet_storage(INMEM_TYPE, false).unwrap();
-//            let res = wallet::register_wallet_storage(INMEM_TYPE, true);
-//            assert_eq!(res.unwrap_err(), ErrorCode::WalletTypeAlreadyRegisteredError);
-//
-//            InmemWallet::cleanup();
-//            utils::tear_down();
-//        }
-//
-//        #[test]
-//        fn indy_register_wallet_storage_does_not_work_with_null_params() {
-//            utils::setup();
-//            InmemWallet::cleanup();
-//
-//            let xtype = CString::new(INMEM_TYPE).unwrap();
-//            let res = indy_register_wallet_storage(1, xtype.as_ptr(), None, None, None, None, None,
-//                                                   None, None, None, None, None,
-//                                                   None, None, None, None, None, None,
-//                                                   None, None, None, None,
-//                                                   None, None, None, None, None);
-//            assert_eq!(res, ErrorCode::CommonInvalidParam3);
-//
-//            InmemWallet::cleanup();
-//            utils::tear_down();
-//        }
-//    }
+    mod register_wallet_type {
+        use super::*;
+
+        #[test]
+        fn indy_register_wallet_storage_does_not_work_twice_with_same_name() {
+            utils::setup();
+            InmemWallet::cleanup();
+
+            wallet::register_wallet_storage(INMEM_TYPE, false).unwrap();
+            let res = wallet::register_wallet_storage(INMEM_TYPE, true);
+            assert_eq!(res.unwrap_err(), ErrorCode::WalletTypeAlreadyRegisteredError);
+
+            InmemWallet::cleanup();
+            utils::tear_down();
+        }
+
+        #[test]
+        fn indy_register_wallet_storage_does_not_work_with_null_params() {
+            utils::setup();
+            InmemWallet::cleanup();
+
+            let xtype = CString::new(INMEM_TYPE).unwrap();
+            let res = unsafe {
+                wallet::indy_register_wallet_storage(1, xtype.as_ptr(), None, None, None, None, None,
+                                                     None, None, None, None, None,
+                                                     None, None, None, None, None, None,
+                                                     None, None, None, None,
+                                                     None, None, None, None, None)
+            };
+            assert_eq!(res, ErrorCode::CommonInvalidParam3);
+
+            InmemWallet::cleanup();
+            utils::tear_down();
+        }
+    }
 
     mod create_wallet {
         use super::*;
