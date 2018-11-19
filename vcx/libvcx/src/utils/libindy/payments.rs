@@ -666,7 +666,7 @@ pub mod tests {
         let result_from_paying = pay_a_payee(0, payment_address);
 
         assert!(result_from_paying.is_err());
-        assert_eq!(result_from_paying.err(), Some(701));
+        assert_eq!(result_from_paying.err(), Some(PaymentError::CommonError(error::WALLET_RECORD_NOT_FOUND.code_num)));
     }
 
     #[cfg(feature = "pool_tests")]

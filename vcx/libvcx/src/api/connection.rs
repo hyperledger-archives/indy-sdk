@@ -142,8 +142,7 @@ pub extern fn vcx_connection_create_with_invite(command_handle: u32,
 ///
 /// connection_options: Provides details indicating if the connection will be established by text or QR Code
 ///
-/// # Examples connection_options -> "{"connection_type":"SMS","phone":"123","use_public_did": true}" 
-///                              OR: "{"connection_type":"QR","phone":"","use_public_did": false}"
+/// # Examples connection_options -> "{"connection_type":"SMS","phone":"123","use_public_did": true}" OR: "{"connection_type":"QR","phone":"","use_public_did": false}"
 ///
 /// cb: Callback that provides error status of request
 ///
