@@ -1,11 +1,6 @@
 extern crate byteorder;
-extern crate serde;
-extern crate serde_json;
-extern crate rmp_serde;
-extern crate time;
 extern crate futures;
-extern crate indyrs as indy;
-
+extern crate rmp_serde;
 
 use self::byteorder::{LittleEndian, WriteBytesExt};
 
@@ -13,9 +8,11 @@ use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
-use self::indy::ErrorCode;
-use self::indy::pool::Pool;
+use indy::ErrorCode;
+use indy::pool::Pool;
 use self::futures::Future;
+use serde_json;
+use time;
 
 use utils::types::{Response, ResponseType};
 use utils::constants::PROTOCOL_VERSION;

@@ -1,13 +1,7 @@
-extern crate libc;
-extern crate byteorder;
-extern crate serde_json;
-extern crate rmp_serde;
-extern crate time;
 extern crate futures;
-extern crate indyrs as indy;
 
-use self::indy::ErrorCode;
-use self::indy::crypto::{Crypto, Key};
+use indy::ErrorCode;
+use indy::crypto::{Crypto, Key};
 use self::futures::Future;
 
 pub fn create_key(wallet_handle: i32, seed: Option<&str>) -> Result<String, ErrorCode> {

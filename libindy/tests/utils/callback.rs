@@ -109,7 +109,7 @@ pub fn _closure_to_cb_ec_bool() -> (Receiver<(ErrorCode, u8)>, i32,
     extern "C" fn _callback(command_handle: i32, err: ErrorCode, valid: u8) {
         let mut callbacks = CALLBACKS.lock().unwrap();
         let mut cb = callbacks.remove(&command_handle).unwrap();
-        cb(err, valid)
+        cb(err, valid as u8)
     }
 
     let mut callbacks = CALLBACKS.lock().unwrap();

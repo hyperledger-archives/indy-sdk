@@ -1,13 +1,7 @@
-extern crate libc;
-extern crate byteorder;
-extern crate serde_json;
-extern crate rmp_serde;
-extern crate time;
 extern crate futures;
-extern crate indyrs as indy;
 
-use self::indy::ErrorCode;
-use self::indy::blob_storage::Blob;
+use indy::ErrorCode;
+use indy::blob_storage::Blob;
 
 use self::futures::Future;
 

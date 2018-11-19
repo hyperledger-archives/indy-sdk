@@ -1,11 +1,10 @@
-extern crate serde_json;
 extern crate futures;
-extern crate indyrs as indy;
 
-use self::indy::ErrorCode;
-use self::indy::anoncreds::{AnonCreds, Issuer, Prover, Verifier};
-
+use indy::ErrorCode;
+use indy::anoncreds::{AnonCreds, Issuer, Prover, Verifier};
 use self::futures::Future;
+
+use serde_json;
 
 use utils::{environment, wallet, blob_storage, test, pool};
 use utils::types::CredentialOfferInfo;

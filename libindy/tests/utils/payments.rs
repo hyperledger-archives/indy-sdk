@@ -1,14 +1,8 @@
-extern crate libc;
-extern crate byteorder;
-extern crate serde_json;
-extern crate rmp_serde;
-extern crate time;
 extern crate futures;
-extern crate indyrs as indy;
 extern crate indy_sys;
 
-use self::indy::ErrorCode;
-use self::indy::payments::Payment;
+use indy::ErrorCode;
+use indy::payments::Payment;
 use self::futures::Future;
 use self::indy_sys::payments;
 

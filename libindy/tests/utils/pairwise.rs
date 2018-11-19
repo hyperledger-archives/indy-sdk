@@ -1,13 +1,7 @@
-extern crate libc;
-extern crate byteorder;
-extern crate serde_json;
-extern crate rmp_serde;
-extern crate time;
 extern crate futures;
-extern crate indyrs as indy;
 
-use self::indy::ErrorCode;
-use self::indy::pairwise::Pairwise;
+use indy::ErrorCode;
+use indy::pairwise::Pairwise;
 use self::futures::Future;
 
 pub fn pairwise_exists(wallet_handle: i32, their_did: &str) -> Result<bool, ErrorCode> {

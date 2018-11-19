@@ -1,15 +1,8 @@
-extern crate libc;
-extern crate byteorder;
-extern crate serde_json;
-extern crate rmp_serde;
-extern crate time;
 extern crate futures;
 extern crate log;
-extern crate indyrs as indy;
+extern crate time;
 
-use self::indy::logger::Logger;
-
-extern crate log as log_crate;
+use indy::logger::Logger;
 
 pub struct SimpleLogger;
 

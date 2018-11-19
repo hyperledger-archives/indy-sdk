@@ -7,7 +7,6 @@ extern crate named_type_derive;
 #[macro_use]
 extern crate derivative;
 
-#[macro_use]
 extern crate serde;
 
 #[macro_use]
@@ -25,19 +24,14 @@ extern crate named_type;
 extern crate rmp_serde;
 extern crate rust_base58;
 extern crate time;
-extern crate futures;
 
 #[macro_use]
 mod utils;
 
 use self::indy::ErrorCode;
-use self::futures::Future;
 
-use utils::{environment, callback, ledger, pool, timeout};
+use utils::{environment, ledger, pool};
 use utils::constants::*;
-
-
-use std::ffi::CString;
 
 mod high_cases {
     use super::*;
@@ -245,6 +239,8 @@ mod high_cases {
 
     mod close {
         use super::*;
+        extern crate futures;
+        use self::futures::Future;
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]

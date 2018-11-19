@@ -1,8 +1,10 @@
 extern crate futures;
 
 use serde_json;
+
 use indy::ErrorCode;
 use indy::wallet::Wallet;
+
 use self::futures::Future;
 
 use utils::{callback, sequence, environment};

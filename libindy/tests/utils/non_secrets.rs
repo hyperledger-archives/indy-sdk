@@ -1,14 +1,9 @@
-extern crate libc;
-extern crate byteorder;
-extern crate serde_json;
-extern crate rmp_serde;
-extern crate time;
 extern crate futures;
-extern crate indyrs as indy;
 
-use self::indy::ErrorCode;
-use self::indy::wallet::Wallet;
+use indy::ErrorCode;
+use indy::wallet::Wallet;
 use self::futures::Future;
+use serde_json;
 
 use utils::{wallet, test};
 use utils::constants::WALLET_CREDENTIALS;

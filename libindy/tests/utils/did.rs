@@ -1,13 +1,7 @@
-extern crate libc;
-extern crate byteorder;
-extern crate serde_json;
-extern crate rmp_serde;
-extern crate time;
 extern crate futures;
-extern crate indyrs as indy;
 
-use self::indy::did::Did;
-use self::indy::ErrorCode;
+use indy::did::Did;
+use indy::ErrorCode;
 use self::futures::Future;
 
 use utils::{ledger, pool};
