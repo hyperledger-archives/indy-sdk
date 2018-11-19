@@ -2,6 +2,7 @@ pub mod did;
 pub mod pool;
 pub mod wallet;
 pub mod ledger;
+pub mod logger;
 pub mod payment;
 mod callbacks;
 mod results;
@@ -136,6 +137,9 @@ pub enum ErrorCode
     // Attempt to open Pool for witch Genesis Transactions are not compatible with set Protocol version.
     // Call pool.indy_set_protocol_version to set correct Protocol version.
     PoolIncompatibleProtocolVersion = 308,
+
+    // Item not found on ledger.
+    LedgerNotFound = 309,
 
     // Revocation registry is full and creation of new registry is necessary
     AnoncredsRevocationRegistryFullError = 400,

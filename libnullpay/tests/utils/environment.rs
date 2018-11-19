@@ -1,3 +1,5 @@
+extern crate dirs;
+
 use std::path::PathBuf;
 use std::env;
 
@@ -9,7 +11,7 @@ pub fn tmp_path() -> PathBuf {
 
 pub fn indy_home_path() -> PathBuf {
     // TODO: FIXME: Provide better handling for the unknown home path case!!!
-    let mut path = env::home_dir().unwrap_or(PathBuf::from("/home/indy"));
+    let mut path = dirs::home_dir().unwrap_or(PathBuf::from("/home/indy"));
     path.push(if cfg!(target_os = "ios") { "Documents/.indy_client" } else { ".indy_client" });
     path
 }
@@ -20,7 +22,7 @@ pub fn test_pool_ip() -> String {
 }
 
 pub fn tmp_file_path(file_name: &str) -> PathBuf {
-    let mut path = super::environment::tmp_path();
+    let mut path = tmp_path();
     path.push(file_name);
     path
 }

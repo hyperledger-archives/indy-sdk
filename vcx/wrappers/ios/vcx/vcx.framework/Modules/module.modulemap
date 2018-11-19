@@ -1,0 +1,6 @@
+framework module vcx {
+  umbrella header "vcx.h"
+
+  export *
+  module * { export * }
+}

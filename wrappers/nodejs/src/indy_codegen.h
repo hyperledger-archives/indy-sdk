@@ -2616,5 +2616,7 @@ NAN_MODULE_INIT(InitAll) {
   Nan::Export(target, "closeWallet", closeWallet);
   Nan::Export(target, "deleteWallet", deleteWallet);
   Nan::Export(target, "generateWalletKey", generateWalletKey);
+  Nan::Export(target, "setDefaultLogger", setDefaultLogger);
+  Nan::Export(target, "setLogger", setLogger);
 }
 NODE_MODULE(indynodejs, InitAll)

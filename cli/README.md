@@ -34,6 +34,11 @@ by beginning the line with a `#`.
 The most simple way is just start cli by `indy-cli` command and put `help` command. Also you can look to
 [Indy CLI Design](../doc/design/001-cli) doc that contains the list of commands and architecture overview.
 
+### Options
+* -h and --help - Print usage.
+* --logger-config - Init logger according to a config file (default no logger initialized).
+* --plugins - Load plugins in Libindy (usage: <lib-1-name>:<init-func-1-name>,...,<lib-n-name>:<init-func-n-name>).
+
 ### Old python-based CLI migration
 It is possible to import did's stored in the wallet of deprecated python-based CLI tool.
 To achieve this user needs to perform the following steps:

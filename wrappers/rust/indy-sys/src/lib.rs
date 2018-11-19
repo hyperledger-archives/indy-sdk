@@ -28,3 +28,8 @@ pub type ResponseStringStringStringCB = extern fn(xcommand_handle: Handle, err: 
 pub type ResponseSliceCB = extern fn(xcommand_handle: Handle, err: Error, raw: BString, len: u32);
 pub type ResponseStringSliceCB = extern fn(xcommand_handle: Handle, err: Error, str1: CString, raw: BString, len: u32);
 pub type ResponseStringStringU64CB = extern fn(xcommand_handle: Handle, err: Error, arg1: CString, arg2: CString, arg3: u64);
+
+extern {
+    #[no_mangle]
+    pub fn indy_set_runtime_config(config: CString) -> Error;
+}

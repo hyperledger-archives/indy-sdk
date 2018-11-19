@@ -1,0 +1,12 @@
+{
+  "defaultSeverity": "error",
+  "extends": [
+    "tslint:recommended",
+    "tslint-config-standard"
+  ],
+  "linterOptions": {
+    "exclude": [
+      "test"
+    ]
+  }
+}

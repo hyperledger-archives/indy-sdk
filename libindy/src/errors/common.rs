@@ -1,5 +1,6 @@
 extern crate zmq;
 extern crate indy_crypto;
+extern crate log;
 
 use std::cell::{BorrowError, BorrowMutError};
 use std::error::Error;
@@ -140,6 +141,12 @@ impl From<BorrowError> for CommonError {
 impl From<BorrowMutError> for CommonError {
     fn from(err: BorrowMutError) -> Self {
         CommonError::InvalidState(err.description().to_string())
+    }
+}
+
+impl From<log::SetLoggerError> for CommonError {
+    fn from(err: log::SetLoggerError) -> CommonError{
+        CommonError::InvalidState(err.description().to_owned())
     }
 }
 

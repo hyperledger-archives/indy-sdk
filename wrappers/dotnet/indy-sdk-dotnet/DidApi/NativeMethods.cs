@@ -12,11 +12,11 @@ namespace Hyperledger.Indy.DidApi
         /// </summary>
         /// <param name="command_handle">The handle for the command that will be passed to the callback.</param>
         /// <param name="wallet_handle">wallet handle (created by open_wallet)</param>
-        /// <param name="did_json">Identity information as json.</param>
+        /// <param name="did_info">Identity information as json.</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_create_and_store_my_did(int command_handle, IntPtr wallet_handle, string did_json, CreateAndStoreMyDidCompletedDelegate cb);
+        internal static extern int indy_create_and_store_my_did(int command_handle, IntPtr wallet_handle, string did_info, CreateAndStoreMyDidCompletedDelegate cb);
 
         /// <summary>
         /// Delegate to be used on completion of calls to indy_create_and_store_my_did.
@@ -34,11 +34,11 @@ namespace Hyperledger.Indy.DidApi
         /// <param name="command_handle">The handle for the command that will be passed to the callback.</param>
         /// <param name="wallet_handle">wallet handle (created by open_wallet).</param>
         /// <param name="did">Id of Identity stored in secured Wallet.</param>
-        /// <param name="identity_json">Identity information as json.</param>
+        /// <param name="key_info">Identity information as json.</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_replace_keys_start(int command_handle, IntPtr wallet_handle, string did, string identity_json, ReplaceKeysStartCompletedDelegate cb);
+        internal static extern int indy_replace_keys_start(int command_handle, IntPtr wallet_handle, string did, string key_info, ReplaceKeysStartCompletedDelegate cb);
 
         /// <summary>
         /// Delegate to be used on completion of calls to indy_replace_keys_start.
