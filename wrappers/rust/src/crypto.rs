@@ -12,273 +12,265 @@ use std::ffi::CString;
 use {ErrorCode, IndyHandle};
 use utils::callbacks::{ClosureHandler, ResultHandler};
 
-pub struct Key {}
+/// Creates key pair in wallet
+/// # Arguments
+/// * `wallet_handle` - wallet handle (created by Wallet::open)
+/// * `my_key_json` - Optional key information as json. If none then defaults are used.
+///
+/// # Example
+/// my_key_json
+/// {
+///     "seed": string, (optional) Seed that allows deterministic key creation (if not set random one will be created).
+///                                Can be UTF-8, base64 or hex string.
+///     "crypto_type": string, // Optional (if not set then ed25519 curve is used); Currently only 'ed25519' value is supported for this field.
+/// }
+/// # Returns
+/// verkey of generated key pair, also used as key identifier
+pub fn create_key(wallet_handle: IndyHandle, my_key_json: Option<&str>) -> Box<Future<Item=String, Error=ErrorCode>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
-impl Key {
-    /// Creates key pair in wallet
-    /// # Arguments
-    /// * `wallet_handle` - wallet handle (created by Wallet::open)
-    /// * `my_key_json` - Optional key information as json. If none then defaults are used.
-    ///
-    /// # Example
-    /// my_key_json
-    /// {
-    ///     "seed": string, (optional) Seed that allows deterministic key creation (if not set random one will be created).
-    ///                                Can be UTF-8, base64 or hex string.
-    ///     "crypto_type": string, // Optional (if not set then ed25519 curve is used); Currently only 'ed25519' value is supported for this field.
-    /// }
-    /// # Returns
-    /// verkey of generated key pair, also used as key identifier
-    pub fn create(wallet_handle: IndyHandle, my_key_json: Option<&str>) -> Box<Future<Item=String, Error=ErrorCode>> {
-        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+    let err = _create(command_handle, wallet_handle, my_key_json, cb);
 
-        let err = Key::_create(command_handle, wallet_handle, my_key_json, cb);
-
-        ResultHandler::str(command_handle, err, receiver)
-    }
-
-    fn _create(command_handle: IndyHandle, wallet_handle: IndyHandle, my_key_json: Option<&str>, cb: Option<ResponseStringCB>) -> ErrorCode {
-        let my_key_json = opt_c_str_json!(my_key_json);
-
-        ErrorCode::from(unsafe { crypto::indy_create_key(command_handle, wallet_handle, my_key_json.as_ptr(), cb) })
-    }
-
-    /// Saves/replaces the metadata for the `verkey` in the wallet
-    /// # Arguments
-    /// * `wallet_handle` - wallet handle (created by Wallet::open)
-    /// * `verkey` - the public key or key id where to store the metadata
-    /// * `metadata` - the metadata that will be stored with the key, can be empty string
-    pub fn set_metadata(wallet_handle: IndyHandle, verkey: &str, metadata: &str) -> Box<Future<Item=(), Error=ErrorCode>> {
-        let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
-
-        let err = Key::_set_metadata(command_handle, wallet_handle, verkey, metadata, cb);
-
-        ResultHandler::empty(command_handle, err, receiver)
-    }
-
-    fn _set_metadata(command_handle: IndyHandle, wallet_handle: IndyHandle, verkey: &str, metadata: &str, cb: Option<ResponseEmptyCB>) -> ErrorCode {
-        let verkey = c_str!(verkey);
-        let metadata = c_str!(metadata);
-
-        ErrorCode::from(unsafe { crypto::indy_set_key_metadata(command_handle, wallet_handle, verkey.as_ptr(), metadata.as_ptr(), cb) })
-    }
-
-    /// Retrieves the metadata for the `verkey` in the wallet
-    /// # Argument
-    /// * `wallet_handle` - wallet handle (created by Wallet::open)
-    /// * `verkey` - the public key or key id to retrieve metadata
-    /// # Returns
-    /// metadata currently stored with the key; Can be empty if no metadata was saved for this key
-    pub fn get_metadata(wallet_handle: IndyHandle, verkey: &str) -> Box<Future<Item=String, Error=ErrorCode>> {
-        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
-
-        let err = Key::_get_metadata(command_handle, wallet_handle, verkey, cb);
-
-        ResultHandler::str(command_handle, err, receiver)
-    }
-
-    fn _get_metadata(command_handle: IndyHandle, wallet_handle: IndyHandle, verkey: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
-        let verkey = c_str!(verkey);
-
-        ErrorCode::from(unsafe { crypto::indy_get_key_metadata(command_handle, wallet_handle, verkey.as_ptr(), cb) })
-    }
+    ResultHandler::str(command_handle, err, receiver)
 }
 
-pub struct Crypto {}
+fn _create(command_handle: IndyHandle, wallet_handle: IndyHandle, my_key_json: Option<&str>, cb: Option<ResponseStringCB>) -> ErrorCode {
+    let my_key_json = opt_c_str_json!(my_key_json);
 
-impl Crypto {
-    /// Signs a message with a key
-    /// # Arguments
-    /// * `wallet_handle` - wallet handle (created by Wallet::open)
-    /// * `signer_vk` - key id or verkey of my key. The key must be created by calling Key::create or Did::new
-    /// * `message` - the data to be signed
-    /// # Returns
-    /// the signature
-    pub fn sign(wallet_handle: IndyHandle, signer_vk: &str, message: &[u8]) -> Box<Future<Item=Vec<u8>, Error=ErrorCode>> {
-        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
+    ErrorCode::from(unsafe { crypto::indy_create_key(command_handle, wallet_handle, my_key_json.as_ptr(), cb) })
+}
 
-        let err = Crypto::_sign(command_handle, wallet_handle, signer_vk, message, cb);
+/// Saves/replaces the metadata for the `verkey` in the wallet
+/// # Arguments
+/// * `wallet_handle` - wallet handle (created by Wallet::open)
+/// * `verkey` - the public key or key id where to store the metadata
+/// * `metadata` - the metadata that will be stored with the key, can be empty string
+pub fn set_key_metadata(wallet_handle: IndyHandle, verkey: &str, metadata: &str) -> Box<Future<Item=(), Error=ErrorCode>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
-        ResultHandler::slice(command_handle, err, receiver)
-    }
+    let err = _set_metadata(command_handle, wallet_handle, verkey, metadata, cb);
 
-    fn _sign(command_handle: IndyHandle, wallet_handle: IndyHandle, signer_vk: &str, message: &[u8], cb: Option<ResponseSliceCB>) -> ErrorCode {
-        let signer_vk = c_str!(signer_vk);
-        ErrorCode::from(unsafe {
-            crypto::indy_crypto_sign(command_handle, wallet_handle, signer_vk.as_ptr(),
-                             message.as_ptr() as *const u8,
-                             message.len() as u32,
-                             cb)
-        })
-    }
+    ResultHandler::empty(command_handle, err, receiver)
+}
 
-    /// Verify a signature with a verkey
-    /// # Arguments
-    /// * `wallet_handle` - wallet handle (created by Wallet::open)
-    /// * `signer_vk` - key id or verkey of my key. The key must be created by calling Key::create or Did::new
-    /// * `message` - the data that was signed
-    /// * `signature` - the signature to verify
-    /// # Returns
-    /// true if signature is valid, false otherwise
-    pub fn verify(signer_vk: &str, message: &[u8], signature: &[u8]) -> Box<Future<Item=bool, Error=ErrorCode>> {
-        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_bool();
+fn _set_metadata(command_handle: IndyHandle, wallet_handle: IndyHandle, verkey: &str, metadata: &str, cb: Option<ResponseEmptyCB>) -> ErrorCode {
+    let verkey = c_str!(verkey);
+    let metadata = c_str!(metadata);
 
-        let err = Crypto::_verify(command_handle, signer_vk, message, signature, cb);
+    ErrorCode::from(unsafe { crypto::indy_set_key_metadata(command_handle, wallet_handle, verkey.as_ptr(), metadata.as_ptr(), cb) })
+}
 
-        ResultHandler::bool(command_handle, err, receiver)
-    }
+/// Retrieves the metadata for the `verkey` in the wallet
+/// # Argument
+/// * `wallet_handle` - wallet handle (created by Wallet::open)
+/// * `verkey` - the public key or key id to retrieve metadata
+/// # Returns
+/// metadata currently stored with the key; Can be empty if no metadata was saved for this key
+pub fn get_key_metadata(wallet_handle: IndyHandle, verkey: &str) -> Box<Future<Item=String, Error=ErrorCode>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
-    fn _verify(command_handle: IndyHandle, signer_vk: &str, message: &[u8], signature: &[u8], cb: Option<ResponseBoolCB>) -> ErrorCode {
-        let signer_vk = c_str!(signer_vk);
+    let err = _get_metadata(command_handle, wallet_handle, verkey, cb);
 
-        ErrorCode::from(unsafe {
-            crypto::indy_crypto_verify(command_handle, signer_vk.as_ptr(),
-                               message.as_ptr() as *const u8, message.len() as u32,
-                               signature.as_ptr() as *const u8, signature.len() as u32, cb)
-        })
-    }
+    ResultHandler::str(command_handle, err, receiver)
+}
 
-    /// Encrypt a message by authenticated-encryption scheme.
-    ///
-    /// Sender can encrypt a confidential message specifically for Recipient, using Sender's public key.
-    /// Using Recipient's public key, Sender can compute a shared secret key.
-    /// Using Sender's public key and his secret key, Recipient can compute the exact same shared secret key.
-    /// That shared secret key can be used to verify that the encrypted message was not tampered with,
-    /// before eventually decrypting it.
-    ///
-    /// Note to use DID keys with this function you can call Did::get_ver_key to get key id (verkey)
-    /// for specific DID.
-    /// # Arguments
-    /// * `wallet_handle` - wallet handle (created by Wallet::open)
-    /// * `signer_vk` - key id or verkey of my key. The key must be created by calling Key::create or Did::new
-    /// * `recipient_vk` - key id or verkey of the other party's key
-    /// * `message` - the data to be encrypted
-    /// # Returns
-    /// the encrypted message
-    pub fn auth_crypt(wallet_handle: IndyHandle, sender_vk: &str, recipient_vk: &str, message: &[u8]) -> Box<Future<Item=Vec<u8>, Error=ErrorCode>> {
-        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
+fn _get_metadata(command_handle: IndyHandle, wallet_handle: IndyHandle, verkey: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+    let verkey = c_str!(verkey);
 
-        let err = Crypto::_auth_crypt(command_handle, wallet_handle, sender_vk, recipient_vk, message, cb);
+    ErrorCode::from(unsafe { crypto::indy_get_key_metadata(command_handle, wallet_handle, verkey.as_ptr(), cb) })
+}
 
-        ResultHandler::slice(command_handle, err, receiver)
-    }
+/// Signs a message with a key
+/// # Arguments
+/// * `wallet_handle` - wallet handle (created by Wallet::open)
+/// * `signer_vk` - key id or verkey of my key. The key must be created by calling create_key or Did::new
+/// * `message` - the data to be signed
+/// # Returns
+/// the signature
+pub fn crypto_sign(wallet_handle: IndyHandle, signer_vk: &str, message: &[u8]) -> Box<Future<Item=Vec<u8>, Error=ErrorCode>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
 
-    fn _auth_crypt(command_handle: IndyHandle, wallet_handle: IndyHandle, sender_vk: &str, recipient_vk: &str, message: &[u8], cb: Option<ResponseSliceCB>) -> ErrorCode {
-        let sender_vk = c_str!(sender_vk);
-        let recipient_vk = c_str!(recipient_vk);
-        ErrorCode::from(unsafe {
-            crypto::indy_crypto_auth_crypt(command_handle, wallet_handle,
-                                   sender_vk.as_ptr(),
-                                    recipient_vk.as_ptr(),
-                                    message.as_ptr() as *const u8,
-                                    message.len() as u32, cb)
-        })
-    }
+    let err = _sign(command_handle, wallet_handle, signer_vk, message, cb);
 
-    /// Decrypt a message by authenticated-encryption scheme.
-    ///
-    /// Sender can encrypt a confidential message specifically for Recipient, using Sender's public key.
-    /// Using Recipient's public key, Sender can compute a shared secret key.
-    /// Using Sender's public key and his secret key, Recipient can compute the exact same shared secret key.
-    /// That shared secret key can be used to verify that the encrypted message was not tampered with,
-    /// before eventually decrypting it.
-    ///
-    /// Note to use DID keys with this function you can call Did::get_ver_key to get key id (verkey)
-    /// for specific DID.
-    ///
-    /// # Arguments
-    /// * `wallet_handle`: wallet handle (created by Wallet::open)
-    /// * `recipient_vk`: key id or verkey of my key. The key must be created by calling Key::create or Did::new
-    /// * `encrypted_message`: the message to be decrypted
-    /// # Returns
-    /// sender's verkey and decrypted message
-    pub fn auth_decrypt(wallet_handle: IndyHandle, recipient_vk: &str, encrypted_message: &[u8]) -> Box<Future<Item=(String, Vec<u8>), Error=ErrorCode>> {
-        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_slice();
+    ResultHandler::slice(command_handle, err, receiver)
+}
 
-        let err = Crypto::_auth_decrypt(command_handle, wallet_handle, recipient_vk, encrypted_message, cb);
+fn _sign(command_handle: IndyHandle, wallet_handle: IndyHandle, signer_vk: &str, message: &[u8], cb: Option<ResponseSliceCB>) -> ErrorCode {
+    let signer_vk = c_str!(signer_vk);
+    ErrorCode::from(unsafe {
+        crypto::indy_crypto_sign(command_handle, wallet_handle, signer_vk.as_ptr(),
+                         message.as_ptr() as *const u8,
+                         message.len() as u32,
+                         cb)
+    })
+}
 
-        ResultHandler::str_slice(command_handle, err, receiver)
-    }
+/// Verify a signature with a verkey
+/// # Arguments
+/// * `wallet_handle` - wallet handle (created by Wallet::open)
+/// * `signer_vk` - key id or verkey of my key. The key must be created by calling create_key or Did::new
+/// * `message` - the data that was signed
+/// * `signature` - the signature to verify
+/// # Returns
+/// true if signature is valid, false otherwise
+pub fn crypto_verify(signer_vk: &str, message: &[u8], signature: &[u8]) -> Box<Future<Item=bool, Error=ErrorCode>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_bool();
 
-    fn _auth_decrypt(command_handle: IndyHandle, wallet_handle: IndyHandle, recipient_vk: &str, encrypted_message: &[u8], cb: Option<ResponseStringSliceCB>) -> ErrorCode {
-        let recipient_vk = c_str!(recipient_vk);
-        ErrorCode::from(unsafe {
-            crypto::indy_crypto_auth_decrypt(command_handle,
-                                     wallet_handle,
-                                     recipient_vk.as_ptr(),
-                                     encrypted_message.as_ptr() as *const u8,
-                                     encrypted_message.len() as u32, cb)
-        })
-    }
+    let err = _verify(command_handle, signer_vk, message, signature, cb);
 
-    /// Encrypts a message by anonymous-encryption scheme.
-    ///
-    /// Sealed boxes are designed to anonymously send messages to a Recipient given its public key.
-    /// Only the Recipient can decrypt these messages, using its private key.
-    /// While the Recipient can verify the integrity of the message, it cannot verify the identity of the Sender.
-    ///
-    /// Note to use DID keys with this function you can call Did::get_ver_key to get key id (verkey)
-    /// for specific DID.
-    ///
-    /// # Arguments
-    /// * `wallet_handle`: wallet handle (created by Wallet::open)
-    /// * `recipient_vk`: verkey of message recipient
-    /// * `message`: a pointer to first byte of message that to be encrypted
-    ///
-    /// # Returns
-    /// the encrypted message
-    pub fn anon_crypt(recipient_vk: &str, message: &[u8]) -> Box<Future<Item=Vec<u8>, Error=ErrorCode>> {
-        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
+    ResultHandler::bool(command_handle, err, receiver)
+}
 
-        let err = Crypto::_anon_crypt(command_handle, recipient_vk, message, cb);
+fn _verify(command_handle: IndyHandle, signer_vk: &str, message: &[u8], signature: &[u8], cb: Option<ResponseBoolCB>) -> ErrorCode {
+    let signer_vk = c_str!(signer_vk);
 
-        ResultHandler::slice(command_handle, err, receiver)
-    }
+    ErrorCode::from(unsafe {
+        crypto::indy_crypto_verify(command_handle, signer_vk.as_ptr(),
+                           message.as_ptr() as *const u8, message.len() as u32,
+                           signature.as_ptr() as *const u8, signature.len() as u32, cb)
+    })
+}
 
-    fn _anon_crypt(command_handle: IndyHandle, recipient_vk: &str, message: &[u8], cb: Option<ResponseSliceCB>) -> ErrorCode {
-        let recipient_vk = c_str!(recipient_vk);
-        ErrorCode::from(unsafe {
-            crypto::indy_crypto_anon_crypt(command_handle,
-                                   recipient_vk.as_ptr(),
-                                   message.as_ptr() as *const u8,
-                                    message.len() as u32,
-                                    cb)
-        })
-    }
+/// Encrypt a message by authenticated-encryption scheme.
+///
+/// Sender can encrypt a confidential message specifically for Recipient, using Sender's public key.
+/// Using Recipient's public key, Sender can compute a shared secret key.
+/// Using Sender's public key and his secret key, Recipient can compute the exact same shared secret key.
+/// That shared secret key can be used to verify that the encrypted message was not tampered with,
+/// before eventually decrypting it.
+///
+/// Note to use DID keys with this function you can call Did::get_ver_key to get key id (verkey)
+/// for specific DID.
+/// # Arguments
+/// * `wallet_handle` - wallet handle (created by Wallet::open)
+/// * `signer_vk` - key id or verkey of my key. The key must be created by calling create_key or Did::new
+/// * `recipient_vk` - key id or verkey of the other party's key
+/// * `message` - the data to be encrypted
+/// # Returns
+/// the encrypted message
+pub fn crypto_auth_crypt(wallet_handle: IndyHandle, sender_vk: &str, recipient_vk: &str, message: &[u8]) -> Box<Future<Item=Vec<u8>, Error=ErrorCode>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
 
-    /// Decrypts a message by anonymous-encryption scheme.
-    ///
-    /// Sealed boxes are designed to anonymously send messages to a Recipient given its public key.
-    /// Only the Recipient can decrypt these messages, using its private key.
-    /// While the Recipient can verify the integrity of the message, it cannot verify the identity of the Sender.
-    ///
-    /// Note to use DID keys with this function you can call Did::get_ver_key to get key id (verkey)
-    /// for specific DID.
-    ///
-    /// # Arguments
-    /// * `wallet_handle`: wallet handle (created by Wallet::open).
-    /// * `recipient_vk`: key id or verkey of my key. The key must be created by calling Key::create or Did::new
-    /// * `encrypted_message`: a pointer to first byte of message that to be decrypted
-    ///
-    /// # Returns
-    /// decrypted message
-    pub fn anon_decrypt(wallet_handle: IndyHandle, recipient_vk: &str, encrypted_message: &[u8]) -> Box<Future<Item=Vec<u8>, Error=ErrorCode>> {
-        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
+    let err = _auth_crypt(command_handle, wallet_handle, sender_vk, recipient_vk, message, cb);
 
-        let err = Crypto::_anon_decrypt(command_handle, wallet_handle, recipient_vk, encrypted_message, cb);
+    ResultHandler::slice(command_handle, err, receiver)
+}
 
-        ResultHandler::slice(command_handle, err, receiver)
-    }
+fn _auth_crypt(command_handle: IndyHandle, wallet_handle: IndyHandle, sender_vk: &str, recipient_vk: &str, message: &[u8], cb: Option<ResponseSliceCB>) -> ErrorCode {
+    let sender_vk = c_str!(sender_vk);
+    let recipient_vk = c_str!(recipient_vk);
+    ErrorCode::from(unsafe {
+        crypto::indy_crypto_auth_crypt(command_handle, wallet_handle,
+                               sender_vk.as_ptr(),
+                                recipient_vk.as_ptr(),
+                                message.as_ptr() as *const u8,
+                                message.len() as u32, cb)
+    })
+}
 
-    fn _anon_decrypt(command_handle: IndyHandle, wallet_handle: IndyHandle, recipient_vk: &str, encrypted_message: &[u8], cb: Option<ResponseSliceCB>) -> ErrorCode {
-        let recipient_vk = c_str!(recipient_vk);
-        ErrorCode::from(unsafe {
-            crypto::indy_crypto_anon_decrypt(command_handle,
-                                     wallet_handle,
-                                     recipient_vk.as_ptr(),
-                                     encrypted_message.as_ptr() as *const u8,
-                                     encrypted_message.len() as u32, cb)
-        })
-    }
+/// Decrypt a message by authenticated-encryption scheme.
+///
+/// Sender can encrypt a confidential message specifically for Recipient, using Sender's public key.
+/// Using Recipient's public key, Sender can compute a shared secret key.
+/// Using Sender's public key and his secret key, Recipient can compute the exact same shared secret key.
+/// That shared secret key can be used to verify that the encrypted message was not tampered with,
+/// before eventually decrypting it.
+///
+/// Note to use DID keys with this function you can call Did::get_ver_key to get key id (verkey)
+/// for specific DID.
+///
+/// # Arguments
+/// * `wallet_handle`: wallet handle (created by Wallet::open)
+/// * `recipient_vk`: key id or verkey of my key. The key must be created by calling create_key or Did::new
+/// * `encrypted_message`: the message to be decrypted
+/// # Returns
+/// sender's verkey and decrypted message
+pub fn crypto_auth_decrypt(wallet_handle: IndyHandle, recipient_vk: &str, encrypted_message: &[u8]) -> Box<Future<Item=(String, Vec<u8>), Error=ErrorCode>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_slice();
+
+    let err = _auth_decrypt(command_handle, wallet_handle, recipient_vk, encrypted_message, cb);
+
+    ResultHandler::str_slice(command_handle, err, receiver)
+}
+
+fn _auth_decrypt(command_handle: IndyHandle, wallet_handle: IndyHandle, recipient_vk: &str, encrypted_message: &[u8], cb: Option<ResponseStringSliceCB>) -> ErrorCode {
+    let recipient_vk = c_str!(recipient_vk);
+    ErrorCode::from(unsafe {
+        crypto::indy_crypto_auth_decrypt(command_handle,
+                                 wallet_handle,
+                                 recipient_vk.as_ptr(),
+                                 encrypted_message.as_ptr() as *const u8,
+                                 encrypted_message.len() as u32, cb)
+    })
+}
+
+/// Encrypts a message by anonymous-encryption scheme.
+///
+/// Sealed boxes are designed to anonymously send messages to a Recipient given its public key.
+/// Only the Recipient can decrypt these messages, using its private key.
+/// While the Recipient can verify the integrity of the message, it cannot verify the identity of the Sender.
+///
+/// Note to use DID keys with this function you can call Did::get_ver_key to get key id (verkey)
+/// for specific DID.
+///
+/// # Arguments
+/// * `wallet_handle`: wallet handle (created by Wallet::open)
+/// * `recipient_vk`: verkey of message recipient
+/// * `message`: a pointer to first byte of message that to be encrypted
+///
+/// # Returns
+/// the encrypted message
+pub fn crypto_anon_crypt(recipient_vk: &str, message: &[u8]) -> Box<Future<Item=Vec<u8>, Error=ErrorCode>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
+
+    let err = _anon_crypt(command_handle, recipient_vk, message, cb);
+
+    ResultHandler::slice(command_handle, err, receiver)
+}
+
+fn _anon_crypt(command_handle: IndyHandle, recipient_vk: &str, message: &[u8], cb: Option<ResponseSliceCB>) -> ErrorCode {
+    let recipient_vk = c_str!(recipient_vk);
+    ErrorCode::from(unsafe {
+        crypto::indy_crypto_anon_crypt(command_handle,
+                               recipient_vk.as_ptr(),
+                               message.as_ptr() as *const u8,
+                                message.len() as u32,
+                                cb)
+    })
+}
+
+/// Decrypts a message by anonymous-encryption scheme.
+///
+/// Sealed boxes are designed to anonymously send messages to a Recipient given its public key.
+/// Only the Recipient can decrypt these messages, using its private key.
+/// While the Recipient can verify the integrity of the message, it cannot verify the identity of the Sender.
+///
+/// Note to use DID keys with this function you can call Did::get_ver_key to get key id (verkey)
+/// for specific DID.
+///
+/// # Arguments
+/// * `wallet_handle`: wallet handle (created by Wallet::open).
+/// * `recipient_vk`: key id or verkey of my key. The key must be created by calling create_key or Did::new
+/// * `encrypted_message`: a pointer to first byte of message that to be decrypted
+///
+/// # Returns
+/// decrypted message
+pub fn crypto_anon_decrypt(wallet_handle: IndyHandle, recipient_vk: &str, encrypted_message: &[u8]) -> Box<Future<Item=Vec<u8>, Error=ErrorCode>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
+
+    let err = _anon_decrypt(command_handle, wallet_handle, recipient_vk, encrypted_message, cb);
+
+    ResultHandler::slice(command_handle, err, receiver)
+}
+
+fn _anon_decrypt(command_handle: IndyHandle, wallet_handle: IndyHandle, recipient_vk: &str, encrypted_message: &[u8], cb: Option<ResponseSliceCB>) -> ErrorCode {
+    let recipient_vk = c_str!(recipient_vk);
+    ErrorCode::from(unsafe {
+        crypto::indy_crypto_anon_decrypt(command_handle,
+                                 wallet_handle,
+                                 recipient_vk.as_ptr(),
+                                 encrypted_message.as_ptr() as *const u8,
+                                 encrypted_message.len() as u32, cb)
+    })
 }
 

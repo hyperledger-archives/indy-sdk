@@ -5,7 +5,7 @@ use futures::Future;
 use utils::error;
 use std::sync::RwLock;
 use settings;
-use indy::pool::Pool;
+use indy::pool;
 use indy::ErrorCode;
 use utils::libindy::error_codes::map_rust_indy_sdk_error_code;
 
@@ -19,7 +19,7 @@ pub fn change_pool_handle(handle: Option<i32>){
 }
 
 pub fn set_protocol_version() -> u32 {
-    match Pool::set_protocol_version(settings::get_protocol_version()).wait() {
+    match pool::set_protocol_version(settings::get_protocol_version()).wait() {
         Ok(_) => error::SUCCESS.code_num,
         Err(_) => error::UNKNOWN_LIBINDY_ERROR.code_num,
     }
@@ -28,7 +28,7 @@ pub fn set_protocol_version() -> u32 {
 pub fn create_pool_ledger_config(pool_name: &str, path: &str) -> Result<(), u32> {
     let pool_config = format!(r#"{{"genesis_txn":"{}"}}"#, path);
 
-    match Pool::create_ledger_config(pool_name, Some(&pool_config)).wait() {
+    match pool::create_pool_ledger_config(pool_name, Some(&pool_config)).wait() {
         Ok(_) => Ok(()),
         Err(x) => if x != ErrorCode::PoolLedgerConfigAlreadyExistsError {
             Err(error::UNKNOWN_LIBINDY_ERROR.code_num)
@@ -43,7 +43,7 @@ pub fn open_pool_ledger(pool_name: &str, config: Option<&str>) -> Result<u32, u3
     set_protocol_version();
 
     //TODO there was timeout here (before future-based Rust wrapper)
-    match Pool::open_ledger(pool_name, config).wait().map_err(map_rust_indy_sdk_error_code) {
+    match pool::open_pool_ledger(pool_name, config).wait().map_err(map_rust_indy_sdk_error_code) {
         Ok(x) => {
             change_pool_handle(Some(x));
             Ok(x as u32)
@@ -56,7 +56,7 @@ pub fn close() -> Result<(), u32> {
     let handle = get_pool_handle()?;
     change_pool_handle(None);
     //TODO there was timeout here (before future-based Rust wrapper)
-    Pool::close(handle).wait().map_err(map_rust_indy_sdk_error_code)
+    pool::close_pool_ledger(handle).wait().map_err(map_rust_indy_sdk_error_code)
 }
 
 pub fn delete(pool_name: &str) -> Result<(), u32> {
@@ -65,7 +65,7 @@ pub fn delete(pool_name: &str) -> Result<(), u32> {
         return Ok(())
     }
 
-    Pool::delete(pool_name).wait().map_err(map_rust_indy_sdk_error_code)
+    pool::delete_pool_ledger(pool_name).wait().map_err(map_rust_indy_sdk_error_code)
 }
 
 pub fn get_pool_handle() -> Result<i32, u32> {
