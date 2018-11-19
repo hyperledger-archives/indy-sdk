@@ -1464,13 +1464,13 @@ impl Ledger {
     fn _build_pool_restart_request(command_handle: IndyHandle, submitter_did: &str, action: &str, datetime: Option<&str>, cb: Option<ResponseStringCB>) -> ErrorCode {
         let submitter_did = c_str!(submitter_did);
         let action = c_str!(action);
-        let datetime = opt_c_str!(datetime);
+        let datetime_str = opt_c_str!(datetime);
 
         ErrorCode::from(unsafe {
             ledger::indy_build_pool_restart_request(command_handle,
                                                     submitter_did.as_ptr(),
                                                     action.as_ptr(),
-                                                    datetime.as_ptr(),
+                                                    opt_c_ptr!(datetime, datetime_str),
                                                     cb)
         })
     }

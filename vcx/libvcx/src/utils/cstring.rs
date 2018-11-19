@@ -21,7 +21,18 @@ impl CStringUtils {
             }
         }
     }
+    pub fn c_str_to_str<'a>(cstr: *const c_char) -> Result<Option<&'a str>, Utf8Error> {
+        if cstr.is_null() {
+            return Ok(None);
+        }
 
+        unsafe {
+            match CStr::from_ptr(cstr).to_str() {
+                Ok(s) => Ok(Some(s)),
+                Err(err) => Err(err)
+            }
+        }
+    }
     pub fn string_to_cstring(s: String) -> CString {
         CString::new(s).unwrap()
     }
