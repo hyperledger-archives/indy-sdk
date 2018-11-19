@@ -81,12 +81,11 @@ impl UpdateProfileData{
     }
 
     pub fn use_public_did(&mut self, did: &Option<String>) -> &mut Self {
-        match did {
-            Some(x) => {
-                    let config = AttrValue { name: "publicDid".to_string(), value: x.to_string(), };
-                    self.payload.configs.push(config);
-            },
-            None => (),
+     if let Some(x) = did {
+            self.payload.configs.push(AttrValue {
+                name: "publicDid".to_string(),
+                value: x.to_string(),
+            });
         };
         self
     }
