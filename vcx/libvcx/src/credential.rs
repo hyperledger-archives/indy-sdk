@@ -655,7 +655,6 @@ pub mod tests {
         assert_eq!(get_credential_id(c_h).unwrap(), "cred_id"); // this is set in test mode
         assert!(get_credential(c_h).unwrap().len() > 100);
         let serialized = to_string(c_h).unwrap();
-        println!("{}", serialized);
     }
 
     #[test]

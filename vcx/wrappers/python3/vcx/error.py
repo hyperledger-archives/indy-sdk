@@ -99,6 +99,7 @@ class ErrorCode(IntEnum):
     MissingPaymentMethod = 1087,
     DuplicateSchema = 1088,
     UnknownLibindyRejection = 1089
+    LoggingError = 1090
 
 
 class VcxError(Exception):
