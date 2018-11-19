@@ -57,7 +57,7 @@ pub mod new_command {
             JSONValue::from(json).to_string()
         };
 
-        trace!(r#"Did::new try: config {:?}"#, config);
+        trace!(r#"Did::new try: config {:?}"#, secret!(&config));
 
         let res =
             Did::new(wallet_handle, config.as_str())
