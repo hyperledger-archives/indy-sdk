@@ -14,6 +14,8 @@ extern crate indy_sys as ffi;
 #[macro_use]
 mod macros;
 
+pub use futures::future;
+
 pub mod anoncreds;
 pub mod blob_storage;
 pub mod crypto;
@@ -204,8 +206,13 @@ pub enum ErrorCode
 
     // Insufficient funds on inputs
     PaymentInsufficientFundsError = 702,
+
     // No such source on a ledger
     PaymentSourceDoesNotExistError = 703,
+
+    // Operation is not supported for payment method
+    PaymentOperationNotSupportedError = 704,
+
     // Extra funds on inputs
     PaymentExtraFundsError = 705,
 }
