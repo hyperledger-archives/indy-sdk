@@ -404,7 +404,9 @@ impl WalletStorage for PluggedStorage {
                                             joined_value.len(),
                                             tags.as_ptr());
 
-        if err != ErrorCode::Success {
+        if err == ErrorCode::WalletItemAlreadyExists {
+            return Err(WalletStorageError::ItemAlreadyExists);
+        } else if err != ErrorCode::Success {
             return Err(WalletStorageError::PluggedStorageError(err));
         }
 
@@ -473,7 +475,9 @@ impl WalletStorage for PluggedStorage {
                                                      joined_value.as_ptr(),
                                                      joined_value.len());
 
-        if err != ErrorCode::Success {
+        if err == ErrorCode::WalletItemNotFound {
+            return Err(WalletStorageError::ItemNotFound);
+        } else if err != ErrorCode::Success {
             return Err(WalletStorageError::PluggedStorageError(err));
         }
 
@@ -488,7 +492,9 @@ impl WalletStorage for PluggedStorage {
                                                type_.as_ptr(),
                                                id.as_ptr());
 
-        if err != ErrorCode::Success {
+        if err == ErrorCode::WalletItemNotFound {
+            return Err(WalletStorageError::ItemNotFound);
+        } else if err != ErrorCode::Success {
             return Err(WalletStorageError::PluggedStorageError(err));
         }
 
@@ -565,7 +571,7 @@ impl WalletStorage for PluggedStorage {
                                                 query.as_ptr(),
                                                 options_cstr.as_ptr(),
                                                 &mut search_handle);
-
+        
         if err != ErrorCode::Success {
             return Err(WalletStorageError::PluggedStorageError(err));
         }
@@ -703,7 +709,9 @@ impl WalletStorageType for PluggedStorageType {
                                         credentials.as_ref().map_or(ptr::null(), |x| x.as_ptr()),
                                         metadata.as_ptr());
 
-        if err != ErrorCode::Success {
+        if err == ErrorCode::WalletAlreadyExistsError {
+            return Err(WalletStorageError::AlreadyExists);
+        } else if err != ErrorCode::Success {
             return Err(WalletStorageError::PluggedStorageError(err));
         }
 
@@ -727,7 +735,9 @@ impl WalletStorageType for PluggedStorageType {
                                       credentials.as_ref().map_or(ptr::null(), |x| x.as_ptr()),
                                       &mut handle);
 
-        if err != ErrorCode::Success {
+        if err == ErrorCode::WalletNotFoundError {
+            return Err(WalletStorageError::NotFound);
+        } else if err != ErrorCode::Success {
             return Err(WalletStorageError::PluggedStorageError(err));
         }
 

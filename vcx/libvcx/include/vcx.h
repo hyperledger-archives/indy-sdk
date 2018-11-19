@@ -19,6 +19,7 @@ typedef unsigned int vcx_wallet_search_handle_t;
 typedef unsigned int vcx_bool_t;
 typedef unsigned int count_t;
 typedef unsigned long vcx_price_t;
+typedef unsigned int vcx_u32_t;
 
 typedef enum
 {
@@ -1576,6 +1577,33 @@ vcx_error_t vcx_wallet_update_record_value(vcx_command_handle_t command_handle,
 vcx_error_t vcx_wallet_validate_payment_address(int32_t command_handle,
                                              const char *payment_address,
                                              void (*cb)(int32_t, vcx_error_t));
+
+
+vcx_error_t vcx_set_default_logger( const char * pattern );
+vcx_error_t vcx_set_logger( const void* context,
+                            vcx_bool_t (*enabledFn)(const void*  context,
+                                                      vcx_u32_t level,
+                                                      const char* target),
+                            void (*logFn)(const void*  context,
+                                          vcx_u32_t level,
+                                          const char* target,
+                                          const char* message,
+                                          const char* module_path,
+                                          const char* file,
+                                          vcx_u32_t line),
+                            void (*flushFn)(const void*  context));
+vcx_error_t vcx_get_logger(const void*  vcx_get_logger,
+                           vcx_bool_t (**enabledFn)(const void*  context,
+                                                     vcx_u32_t level,
+                                                     const char* target),
+                           void (**logFn)(const void*  context,
+                                          vcx_u32_t level,
+                                          const char* target,
+                                          const char* message,
+                                          const char* module_path,
+                                          const char* file,
+                                          vcx_u32_t line),
+                           void (**flushFn)(const void*  context) );
 
 #ifdef __cplusplus
 } // extern "C"

@@ -374,7 +374,7 @@ pub mod export_command {
     );
 
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
-        trace!("execute >> ctx {:?} params {:?}", ctx, params);
+        trace!("execute >> ctx {:?} params {:?}", ctx, secret!(params));
 
         let (wallet_handle, wallet_name) = ensure_opened_wallet(&ctx)?;
 
