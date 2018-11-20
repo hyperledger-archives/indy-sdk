@@ -1,261 +1,34 @@
 use futures::*;
-use futures::sync::oneshot;
-use std::collections::HashMap;
-use std::os::raw::c_char;
-use std::sync::Mutex;
 use super::IndyError;
 use utils::futures::*;
-use utils::sequence;
+use indyrs::did::Did as did;
 
 pub fn create_and_store_my_did(wallet_handle: i32, did_info: &str) -> Box<Future<Item=(String, String), Error=IndyError>> {
-    lazy_static! {
-        static ref CALLBACKS: Mutex<HashMap<i32, oneshot::Sender<Result<(String, String), IndyError>>>> = Default::default();
-    }
-
-    extern fn callback(command_handle: i32, err: i32, str1: *const c_char, str2: *const c_char) {
-        let tx = {
-            let mut callbacks = CALLBACKS.lock().unwrap();
-            callbacks.remove(&command_handle).unwrap()
-        };
-
-        let res = if err != 0 {
-            Err(IndyError::from_err_code(err))
-        } else {
-            Ok((rust_str!(str1), rust_str!(str2)))
-        };
-
-        tx.send(res).unwrap();
-    }
-
-    let (rx, command_handle) = {
-        let (tx, rx) = oneshot::channel();
-        let command_handle = sequence::get_next_id();
-        let mut callbacks = CALLBACKS.lock().unwrap();
-        callbacks.insert(command_handle, tx);
-        (rx, command_handle)
-    };
-
-    let err = unsafe {
-        indy_create_and_store_my_did(command_handle, wallet_handle, c_str!(did_info).as_ptr(), Some(callback))
-    };
-
-    if err != 0 {
-        let mut callbacks = CALLBACKS.lock().unwrap();
-        callbacks.remove(&command_handle).unwrap();
-        future::err(IndyError::from_err_code(err)).into_box()
-    } else {
-        rx
-            .map_err(|_| panic!("channel error!"))
-            .and_then(|res| res)
-            .into_box()
-    }
+    did::new(wallet_handle, did_info)
+        .map_err(|err| IndyError::from_err_code(err as i32))
+        .into_box()
 }
 
 pub fn key_for_local_did(wallet_handle: i32, did: &str) -> Box<Future<Item=String, Error=IndyError>> {
-    lazy_static! {
-        static ref CALLBACKS: Mutex<HashMap<i32, oneshot::Sender<Result<String, IndyError>>>> = Default::default();
-    }
-
-    extern fn callback(command_handle: i32, err: i32, str1: *const c_char) {
-        let tx = {
-            let mut callbacks = CALLBACKS.lock().unwrap();
-            callbacks.remove(&command_handle).unwrap()
-        };
-
-        let res = if err != 0 {
-            Err(IndyError::from_err_code(err))
-        } else {
-            Ok(rust_str!(str1))
-        };
-
-        tx.send(res).unwrap();
-    }
-
-    let (rx, command_handle) = {
-        let (tx, rx) = oneshot::channel();
-        let command_handle = sequence::get_next_id();
-        let mut callbacks = CALLBACKS.lock().unwrap();
-        callbacks.insert(command_handle, tx);
-        (rx, command_handle)
-    };
-
-    let err = unsafe {
-        indy_key_for_local_did(command_handle, wallet_handle, c_str!(did).as_ptr(), Some(callback))
-    };
-
-    if err != 0 {
-        let mut callbacks = CALLBACKS.lock().unwrap();
-        callbacks.remove(&command_handle).unwrap();
-        future::err(IndyError::from_err_code(err)).into_box()
-    } else {
-        rx
-            .map_err(|_| panic!("channel error!"))
-            .and_then(|res| res)
-            .into_box()
-    }
+    did::get_ver_key_local(wallet_handle, did)
+        .map_err(|err| IndyError::from_err_code(err as i32))
+        .into_box()
 }
 
 pub fn store_their_did(wallet_handle: i32, did_info: &str) -> Box<Future<Item=(), Error=IndyError>> {
-    lazy_static! {
-        static ref CALLBACKS: Mutex<HashMap<i32, oneshot::Sender<Result<(), IndyError>>>> = Default::default();
-    }
-
-    extern fn callback(command_handle: i32, err: i32) {
-        let tx = {
-            let mut callbacks = CALLBACKS.lock().unwrap();
-            callbacks.remove(&command_handle).unwrap()
-        };
-
-        let res = if err != 0 {
-            Err(IndyError::from_err_code(err))
-        } else {
-            Ok(())
-        };
-
-        tx.send(res).unwrap();
-    }
-
-    let (rx, command_handle) = {
-        let (tx, rx) = oneshot::channel();
-        let command_handle = sequence::get_next_id();
-        let mut callbacks = CALLBACKS.lock().unwrap();
-        callbacks.insert(command_handle, tx);
-        (rx, command_handle)
-    };
-
-    let err = unsafe {
-        indy_store_their_did(command_handle, wallet_handle, c_str!(did_info).as_ptr(), Some(callback))
-    };
-
-    if err != 0 {
-        let mut callbacks = CALLBACKS.lock().unwrap();
-        callbacks.remove(&command_handle).unwrap();
-        future::err(IndyError::from_err_code(err)).into_box()
-    } else {
-        rx
-            .map_err(|_| panic!("channel error!"))
-            .and_then(|res| res)
-            .into_box()
-    }
+    did::store_their_did(wallet_handle, did_info)
+        .map_err(|err| IndyError::from_err_code(err as i32))
+        .into_box()
 }
 
 pub fn set_did_metadata(wallet_handle: i32, did: &str, metadata: &str) -> Box<Future<Item=(), Error=IndyError>> {
-    lazy_static! {
-        static ref CALLBACKS: Mutex<HashMap<i32, oneshot::Sender<Result<(), IndyError>>>> = Default::default();
-    }
-
-    extern fn callback(command_handle: i32, err: i32) {
-        let tx = {
-            let mut callbacks = CALLBACKS.lock().unwrap();
-            callbacks.remove(&command_handle).unwrap()
-        };
-
-        let res = if err != 0 {
-            Err(IndyError::from_err_code(err))
-        } else {
-            Ok(())
-        };
-
-        tx.send(res).unwrap();
-    }
-
-    let (rx, command_handle) = {
-        let (tx, rx) = oneshot::channel();
-        let command_handle = sequence::get_next_id();
-        let mut callbacks = CALLBACKS.lock().unwrap();
-        callbacks.insert(command_handle, tx);
-        (rx, command_handle)
-    };
-
-    let err = unsafe {
-        indy_set_did_metadata(command_handle, wallet_handle, c_str!(did).as_ptr(), c_str!(metadata).as_ptr(), Some(callback))
-    };
-
-    if err != 0 {
-        let mut callbacks = CALLBACKS.lock().unwrap();
-        callbacks.remove(&command_handle).unwrap();
-        future::err(IndyError::from_err_code(err)).into_box()
-    } else {
-        rx
-            .map_err(|_| panic!("channel error!"))
-            .and_then(|res| res)
-            .into_box()
-    }
+    did::set_metadata(wallet_handle, did, metadata)
+        .map_err(|err| IndyError::from_err_code(err as i32))
+        .into_box()
 }
 
 pub fn get_did_metadata(wallet_handle: i32, did: &str) -> Box<Future<Item=String, Error=IndyError>> {
-    lazy_static! {
-        static ref CALLBACKS: Mutex<HashMap<i32, oneshot::Sender<Result<String, IndyError>>>> = Default::default();
-    }
-
-    extern fn callback(command_handle: i32, err: i32, str1: *const c_char) {
-        let tx = {
-            let mut callbacks = CALLBACKS.lock().unwrap();
-            callbacks.remove(&command_handle).unwrap()
-        };
-
-        let res = if err != 0 {
-            Err(IndyError::from_err_code(err))
-        } else {
-            Ok(rust_str!(str1))
-        };
-
-        tx.send(res).unwrap();
-    }
-
-    let (rx, command_handle) = {
-        let (tx, rx) = oneshot::channel();
-        let command_handle = sequence::get_next_id();
-        let mut callbacks = CALLBACKS.lock().unwrap();
-        callbacks.insert(command_handle, tx);
-        (rx, command_handle)
-    };
-
-    let err = unsafe {
-        indy_get_did_metadata(command_handle, wallet_handle, c_str!(did).as_ptr(), Some(callback))
-    };
-
-    if err != 0 {
-        let mut callbacks = CALLBACKS.lock().unwrap();
-        callbacks.remove(&command_handle).unwrap();
-        future::err(IndyError::from_err_code(err)).into_box()
-    } else {
-        rx
-            .map_err(|_| panic!("channel error!"))
-            .and_then(|res| res)
-            .into_box()
-    }
-}
-
-extern {
-    #[no_mangle]
-    fn indy_create_and_store_my_did(command_handle: i32,
-                                    wallet_handle: i32,
-                                    did_info: *const c_char,
-                                    cb: Option<extern fn(xcommand_handle: i32, err: i32, str1: *const c_char, str2: *const c_char)>) -> i32;
-
-    #[no_mangle]
-    fn indy_key_for_local_did(command_handle: i32,
-                              wallet_handle: i32,
-                              did: *const c_char,
-                              cb: Option<extern fn(xcommand_handle: i32, err: i32, str1: *const c_char)>) -> i32;
-
-    #[no_mangle]
-    pub fn indy_store_their_did(command_handle: i32,
-                                wallet_handle: i32,
-                                did_info: *const c_char,
-                                cb: Option<extern fn(xcommand_handle: i32, err: i32)>) -> i32;
-
-    #[no_mangle]
-    pub fn indy_set_did_metadata(command_handle: i32,
-                                 wallet_handle: i32,
-                                 did: *const c_char,
-                                 metadata: *const c_char,
-                                 cb: Option<extern fn(command_handle_: i32, err: i32)>) -> i32;
-
-    #[no_mangle]
-    pub fn indy_get_did_metadata(command_handle: i32,
-                                 wallet_handle: i32,
-                                 did: *const c_char,
-                                 cb: Option<extern fn(command_handle_: i32, err: i32, metadata: *const c_char)>) -> i32;
+    did::get_metadata(wallet_handle, did)
+        .map_err(|err| IndyError::from_err_code(err as i32))
+        .into_box()
 }

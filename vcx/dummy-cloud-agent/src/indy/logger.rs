@@ -1,20 +1,7 @@
-use std::os::raw::c_char;
-use std::ptr;
 use super::IndyError;
+use indyrs::logger::Logger as logger;
 
 pub fn set_default_logger(pattern: Option<&str>) -> Result<(), IndyError> {
-    let err = unsafe {
-        let pattern = opt_c_str!(pattern);
-        indy_set_default_logger(pattern.map(|x| x.as_ptr()).unwrap_or(ptr::null()))
-    };
-
-    if err == 0 {
-        Ok(())
-    } else {
-        Err(IndyError::from_err_code(err))
-    }
-}
-
-extern {
-    pub fn indy_set_default_logger(pattern: *const c_char) -> i32;
+    logger::set_default_logger(pattern.unwrap_or("trace")) // TODO: FIXME
+        .map_err(|err| IndyError::from_err_code(err as i32))
 }

@@ -10,8 +10,6 @@ extern crate dirs;
 extern crate failure;
 extern crate futures;
 #[macro_use]
-extern crate lazy_static;
-#[macro_use]
 extern crate log;
 extern crate pretty_env_logger as env_logger;
 extern crate rmp_serde;
@@ -25,6 +23,7 @@ extern crate tokio_core;
 extern crate base64;
 extern crate rand;
 extern crate hyper;
+extern crate indyrs;
 
 use actix::prelude::*;
 use actors::forward_agent::ForwardAgent;

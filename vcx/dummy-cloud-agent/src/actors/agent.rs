@@ -421,7 +421,7 @@ impl Agent {
                     .into_actor(slf)
             })
             .and_then(|(for_did, pairwise_did, pairwise_did_verkey), slf, _| {
-                pairwise::create_pairwise(slf.wallet_handle, &for_did, &pairwise_did, "{}")
+                pairwise::create_pairwise(slf.wallet_handle, &for_did, &pairwise_did, None)
                     .map_err(|err| err.context("Can't store agent pairwise connection.").into())
                     .map(|_| (for_did, pairwise_did, pairwise_did_verkey))
                     .into_actor(slf)
