@@ -15,8 +15,11 @@ use std::io::Write;
 use std::path::PathBuf;
 
 use indy::did::Did;
+use indy::anoncreds::Issuer;
 use indy::ledger::Ledger;
 use indy::pool::Pool;
+use indy::anoncreds::Prover;
+use indy::wallet::Wallet;
 
 const PROTOCOL_VERSION: usize = 2;
 static USEFUL_CREDENTIALS : &'static str = r#"
@@ -65,5 +68,143 @@ fn write_genesis_txn_to_file(pool_name: &str,
 
 
 fn main() {
-    println!("Hello, world!");
+    let wallet_name = "wallet";
+    let pool_name = "pool";
+
+    // 1. Creating a new local pool ledger configuration that can be used later to connect pool nodes.
+    let pool_config_pathbuf = create_genesis_txn_file_for_pool(pool_name);
+    let pool_config_file = pool_config_pathbuf.as_os_str().to_str().unwrap().to_string();
+    indy::pool::Pool::set_protocol_version(PROTOCOL_VERSION).unwrap();
+
+    println!("1. Creating a new local pool ledger configuration");
+    println!("   pool: {} and file: {}", &pool_name, pool_config_file);
+        let pool_config = json!({
+        "genesis_txn" : &pool_config_file
+    });
+    Pool::create_ledger_config(&pool_name, Some(&pool_config.to_string())).unwrap();
+
+    // 2. Open pool ledger and get the pool handle from libindy.
+    println!("2. Open pool ledger");
+    let pool_handle : i32 = Pool::open_ledger(&pool_name, None).unwrap();
+
+    // 3. Creates a new wallet
+    println!("3. Creates a new wallet");
+    let config = json!({ "id" : wallet_name.to_string() }).to_string();
+    Wallet::create(&config, USEFUL_CREDENTIALS).unwrap();
+
+    // 4. Open wallet and get the wallet handle from libindy
+    println!("4. Open wallet");
+    let wallet_handle : i32 = Wallet::open(&config, USEFUL_CREDENTIALS).unwrap();
+
+    // 5. Generating and storing steward DID and Verkey
+    println!("5. Generating and storing steward DID and Verkey");
+    let first_json_seed = json!({
+        "seed":"000000000000000000000000Steward1"
+    }).to_string();
+    let (steward_did, _steward_verkey) = Did::new(wallet_handle, &first_json_seed).unwrap();
+
+    // 6. Generating and storing Trust Anchor DID and Verkey
+    println!("6. Generating and storing Trust Anchor DID and Verkey");
+    let (trustee_did, trustee_verkey) = Did::new(wallet_handle, &"{}".to_string()).unwrap();
+
+    // 7. Build NYM request to add Trust Anchor to the ledger
+    println!("7. Build NYM request");
+    let build_nym_request : String = Ledger::build_nym_request(&steward_did, &trustee_did, Some(&trustee_verkey), None, Some("TRUST_ANCHOR")).unwrap();
+
+    // 8. Sending the nym request to ledger
+    println!("8. Sending the nym request to ledger");
+    let _build_nym_sign_submit_result : String = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &steward_did, &build_nym_request).unwrap();
+
+    // 9. build the schema definition request
+    println!("9. build the schema definition request");
+    let name = "gvt";
+    let version = "1.0";
+    let attributes = ["age", "sex", "height", "name"];
+    let schema_json = json!({
+        "name" : name,
+        "version" : version,
+        "attrNames" : attributes,
+        "id": "id",
+        "ver": "1.0"
+    });
+    let build_schema_request : String = Ledger::build_schema_request(&steward_did, &schema_json.to_string()).unwrap();
+
+    // 10. Sending the SCHEMA request to the ledger
+    println!("10. Sending the SCHEMA request to the ledger");
+    let _signed_schema_request_response = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &steward_did, &build_schema_request).unwrap();
+
+    // 11. Creating and storing CLAIM DEFINITION using anoncreds as Trust Anchor, for the given Schema
+    println!("11. Creating and storing CLAIM DEFINITION using anoncreds as Trust Anchor, for the given Schema");
+    let cred_def_json = json!({
+        "seqNo" : 1,
+        "name" : name,
+        "version" : version,
+        "attrNames" : attributes,
+        "id": "id",
+        "ver": "1.0"
+    });
+    let config_json = r#"{ "support_revocation": true }"#;
+    let tag = r#"TAG1"#;                                        // required:  empty string generates CommonInvalidParam5 error
+
+    let (cred_def_id, cred_def_json) = Issuer::create_and_store_credential_def(wallet_handle, &trustee_did, &cred_def_json.to_string(), tag, None, config_json).unwrap();
+
+    // 12. Creating Prover wallet and opening it to get the handle
+    println!("12. Creating Prover wallet and opening it to get the handle");
+    let prover_DID = "VsKV7grR1BUE29mG2Fm2kX";
+    let prover_wallet_name = "prover_wallet";
+    let prover_wallet_config = json!({ "id" : prover_wallet_name.to_string() }).to_string();
+    Wallet::create(&prover_wallet_config, USEFUL_CREDENTIALS).unwrap();
+    let prover_wallet_handle : i32 = Wallet::open(&prover_wallet_config, USEFUL_CREDENTIALS).unwrap();
+
+    // 13. Prover is creating Master Secret
+    println!("13. Prover is creating Master Secret");
+    let master_secret_name = "master_secret";
+    Prover::create_master_secret(prover_wallet_handle, Some(master_secret_name)).unwrap();
+
+    // 14. Issuer (Trust Anchor) is creating a Claim Offer for Prover
+    println!("14. Issuer (Trust Anchor) is creating a Claim Offer for Prover");
+    let claim_offer_json = Issuer::create_credential_offer(wallet_handle, &cred_def_id).unwrap();
+
+    // 15. Prover creates Claim Request
+    println!("15. Prover creates Claim Request");
+    let (claim_id, claim_json) = Prover::create_credential_req(prover_wallet_handle, prover_DID, &claim_offer_json, &cred_def_json, &master_secret_name).unwrap();
+
+    println!("claim_id: {}", claim_id);
+    println!("claim_json: {}", claim_json);
+
+    // 16. Issuer (Trust Anchor) creates Claim for Claim Request
+    println!("16. Issuer (Trust Anchor) creates Claim for Claim Request");
+
+    let cred_attrib_values_json = json!({
+        "sex": ["male","5944657099558967239210949258394887428692050081607692519917050011144233115103"],
+        "name": ["Alex", "99262857098057710338306967609588410025648622308394250666849665532448612202874"],
+        "height": ["175", "175"],
+        "age": ["28", "28"]
+    });
+
+    let (cred_json, cred_revoc_id, revoc_reg_delta_json) =
+        Issuer::create_credential(wallet_handle, &claim_offer_json, &claim_json, &cred_attrib_values_json, cred_revoc_id, -1).unwrap();
+
+    // 17. Prover processes and stores Claim
+    println!("17. Prover processes and stores Claim");
+    let actual_cred_revoc_id = cred_revoc_id.unwrap();
+    let out_cred_id = Prover::store_credential(prover_wallet_handle, None, &claim_json, &cred_json, &cred_def_json,Some(&actual_cred_revoc_id)).unwrap();
+
+
+    // clean up
+    // Close and delete wallet
+    println!("Close and delete two wallets");
+    indy::wallet::Wallet::close(prover_wallet_handle).unwrap();
+    indy::wallet::Wallet::delete(&prover_wallet_config, USEFUL_CREDENTIALS).unwrap();
+    indy::wallet::Wallet::close(wallet_handle).unwrap();
+    indy::wallet::Wallet::delete(&config, USEFUL_CREDENTIALS).unwrap();
+
+    // Close pool
+    println!("Close pool");
+    indy::pool::Pool::close(pool_handle).unwrap();
+
+    // Delete pool ledger config
+    println!("Delete pool ledger config");
+    indy::pool::Pool::delete(&pool_name).unwrap();
+    fs::remove_file(pool_config_pathbuf).unwrap();
 }
