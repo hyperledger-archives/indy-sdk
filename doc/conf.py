@@ -74,7 +74,7 @@ source_parsers = {
 source_suffix = ['.rst', '.md']
 
 # The master toctree document.
-master_doc = 'index'
+master_doc = 'toc'
 
 
 # -------------------- INTERSPHINX -------

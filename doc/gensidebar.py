@@ -67,7 +67,7 @@ def generate_sidebar(conf, conf_api):
 
     toctree('Repositories', 2)
     write_api('node', 'Indy Node', 'indy-node')
-    write_api('sdk', 'Indy SDK', 'indy-sdk')
+    write_api('sdk', 'Indy SDK', 'index')
     endl()
     
     write_if_changed('_sidebar.rst.inc', '\n'.join(lines))

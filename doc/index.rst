@@ -4,6 +4,20 @@ Hyperledger Indy SDK
 .. image:: https://raw.githubusercontent.com/hyperledger/indy-node/master/collateral/logos/indy-logo.png
    :width: 50%
 
+
+
+.. toctree::
+  :maxdepth: 2
+  :hidden:
+  
+  getting-started/getting-started.md 
+  rtd-tutorials
+  rtd-design
+  rtd-building
+  rtd-migration-guides
+  release-workflow.md
+  signing-commits.md  
+
 Distributed ledger purpose-built for decentralized identity.
 
 Hyperledger Indy provides tools, libraries, and reusable components for providing digital identities 
@@ -43,6 +57,3 @@ here are some resources to increase your understanding:
 
   * The next page contains an extended tutorial introduces Indy, explains how the whole ecosystem works, and how the
     functions in the SDK can be used to construct rich clients.
-
-
-.. include:: _sidebar.rst.inc
