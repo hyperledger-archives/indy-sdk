@@ -150,7 +150,7 @@ fn main() {
 
     // 12. Creating Prover wallet and opening it to get the handle
     println!("12. Creating Prover wallet and opening it to get the handle");
-    let prover_DID = "VsKV7grR1BUE29mG2Fm2kX";
+    let prover_did = "VsKV7grR1BUE29mG2Fm2kX";
     let prover_wallet_name = "prover_wallet";
     let prover_wallet_config = json!({ "id" : prover_wallet_name.to_string() }).to_string();
     Wallet::create(&prover_wallet_config, USEFUL_CREDENTIALS).unwrap();
@@ -167,7 +167,7 @@ fn main() {
 
     // 15. Prover creates Claim Request
     println!("15. Prover creates Claim Request");
-    let (claim_id, claim_json) = Prover::create_credential_req(prover_wallet_handle, prover_DID, &claim_offer_json, &cred_def_json, &master_secret_name).unwrap();
+    let (claim_id, claim_json) = Prover::create_credential_req(prover_wallet_handle, prover_did, &claim_offer_json, &cred_def_json, &master_secret_name).unwrap();
 
     println!("claim_id: {}", claim_id);
     println!("claim_json: {}", claim_json);
@@ -182,8 +182,8 @@ fn main() {
         "age": ["28", "28"]
     });
 
-    let (cred_json, cred_revoc_id, revoc_reg_delta_json) =
-        Issuer::create_credential(wallet_handle, &claim_offer_json, &claim_json, &cred_attrib_values_json, cred_revoc_id, -1).unwrap();
+    let (cred_json, cred_revoc_id, _revoc_reg_delta_json) =
+        Issuer::create_credential(wallet_handle, &claim_offer_json, &claim_json, &cred_attrib_values_json.to_string(), Some(""), -1).unwrap();
 
     // 17. Prover processes and stores Claim
     println!("17. Prover processes and stores Claim");
