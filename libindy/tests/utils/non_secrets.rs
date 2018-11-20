@@ -1,11 +1,11 @@
 extern crate futures;
 
 use indy::ErrorCode;
-use indy::wallet::Wallet;
 use self::futures::Future;
 use serde_json;
 
-use utils::{wallet, test};
+use indy::wallet;
+use utils::{test};
 use utils::constants::WALLET_CREDENTIALS;
 use utils::types::WalletRecord;
 
@@ -37,43 +37,43 @@ pub const TAGS_4: &'static str = r#"{"tagName1":"somestr","~tagName2":"4","~tagN
 pub const TAGS_5: &'static str = r#"{"tagName1":"prefix_str2","~tagName2":"str3","~tagName3":"6"}"#;
 
 pub fn add_wallet_record(wallet_handle: i32, type_: &str, id: &str, value: &str, tags_json: Option<&str>) -> Result<(), ErrorCode> {
-    Wallet::add_record(wallet_handle, type_, id, value, tags_json).wait()
+    wallet::add_wallet_record(wallet_handle, type_, id, value, tags_json).wait()
 }
 
 pub fn update_wallet_record_value(wallet_handle: i32, type_: &str, id: &str, value: &str) -> Result<(), ErrorCode> {
-    Wallet::update_record_value(wallet_handle, type_, id, value).wait()
+    wallet::update_wallet_record_value(wallet_handle, type_, id, value).wait()
 }
 
 pub fn update_wallet_record_tags(wallet_handle: i32, type_: &str, id: &str, tags_json: &str) -> Result<(), ErrorCode> {
-    Wallet::update_record_tags(wallet_handle, type_, id, tags_json).wait()
+    wallet::update_wallet_record_tags(wallet_handle, type_, id, tags_json).wait()
 }
 
 pub fn add_wallet_record_tags(wallet_handle: i32, type_: &str, id: &str, tags_json: &str) -> Result<(), ErrorCode> {
-    Wallet::add_record_tags(wallet_handle, type_, id, tags_json).wait()
+    wallet::add_wallet_record_tags(wallet_handle, type_, id, tags_json).wait()
 }
 
 pub fn delete_wallet_record_tags(wallet_handle: i32, type_: &str, id: &str, tag_names_json: &str) -> Result<(), ErrorCode> {
-    Wallet::delete_record_tags(wallet_handle, type_, id, tag_names_json).wait()
+    wallet::delete_wallet_record_tags(wallet_handle, type_, id, tag_names_json).wait()
 }
 
 pub fn delete_wallet_record(wallet_handle: i32, type_: &str, id: &str) -> Result<(), ErrorCode> {
-    Wallet::delete_record(wallet_handle, type_, id).wait()
+    wallet::delete_wallet_record(wallet_handle, type_, id).wait()
 }
 
 pub fn get_wallet_record(wallet_handle: i32, type_: &str, id: &str, options_json: &str) -> Result<String, ErrorCode> {
-    Wallet::get_record(wallet_handle, type_, id, options_json).wait()
+    wallet::get_wallet_record(wallet_handle, type_, id, options_json).wait()
 }
 
 pub fn open_wallet_search(wallet_handle: i32, type_: &str, query_json: &str, options_json: &str) -> Result<i32, ErrorCode> {
-    Wallet::open_search(wallet_handle, type_, query_json, options_json).wait()
+    wallet::open_wallet_search(wallet_handle, type_, query_json, options_json).wait()
 }
 
 pub fn fetch_wallet_search_next_records(wallet_handle: i32, wallet_search_handle: i32, count: usize) -> Result<String, ErrorCode> {
-    Wallet::fetch_search_next_records(wallet_handle, wallet_search_handle, count).wait()
+    wallet::fetch_wallet_search_next_records(wallet_handle, wallet_search_handle, count).wait()
 }
 
 pub fn close_wallet_search(wallet_search_handle: i32) -> Result<(), ErrorCode> {
-    Wallet::close_search(wallet_search_handle).wait()
+    wallet::close_wallet_search(wallet_search_handle).wait()
 }
 
 pub fn tags_1() -> HashMap<String, String> {
@@ -126,8 +126,8 @@ pub fn populate_wallet_for_search() {
         test::cleanup_storage();
 
         //1. Create and Open wallet
-        wallet::create_wallet(SEARCH_COMMON_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
-        let wallet_handle = wallet::open_wallet(SEARCH_COMMON_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+        wallet::create_wallet(SEARCH_COMMON_WALLET_CONFIG, WALLET_CREDENTIALS).wait().unwrap();
+        let wallet_handle = wallet::open_wallet(SEARCH_COMMON_WALLET_CONFIG, WALLET_CREDENTIALS).wait().unwrap();
 
         let record_1 = record_1();
         add_wallet_record(wallet_handle,
@@ -164,6 +164,6 @@ pub fn populate_wallet_for_search() {
                                            &record_5.value.clone().unwrap(),
                                            Some(TAGS_5)).unwrap();
 
-        wallet::close_wallet(wallet_handle).unwrap();
+        wallet::close_wallet(wallet_handle).wait().unwrap();
     });
 }

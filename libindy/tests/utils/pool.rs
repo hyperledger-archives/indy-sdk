@@ -9,7 +9,7 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 
 use indy::ErrorCode;
-use indy::pool::Pool;
+use indy::pool;
 use self::futures::Future;
 use serde_json;
 use time;
@@ -111,12 +111,12 @@ pub fn pool_config_json(txn_file_path: &Path) -> String {
 }
 
 pub fn create_pool_ledger_config(pool_name: &str, pool_config: Option<&str>) -> Result<(), ErrorCode> {
-    Pool::create_ledger_config(pool_name, pool_config).wait()
+    pool::create_pool_ledger_config(pool_name, pool_config).wait()
 }
 
 #[cfg(feature = "local_nodes_pool")]
 pub fn open_pool_ledger(pool_name: &str, config: Option<&str>) -> Result<i32, ErrorCode> {
-    Pool::open_ledger(pool_name, config).wait()
+    pool::open_pool_ledger(pool_name, config).wait()
 }
 
 pub fn dump_correct_genesis_txns_to_cache(pool_name: &str) -> Result<(), ErrorCode> {
@@ -172,19 +172,19 @@ pub fn create_and_open_pool_ledger(pool_name: &str) -> Result<i32, ErrorCode> {
 }
 
 pub fn refresh(pool_handle: i32) -> Result<(), ErrorCode> {
-    Pool::refresh(pool_handle).wait()
+    pool::refresh_pool_ledger(pool_handle).wait()
 }
 
 pub fn close(pool_handle: i32) -> Result<(), ErrorCode> {
-    Pool::close(pool_handle).wait()
+    pool::close_pool_ledger(pool_handle).wait()
 }
 
 pub fn delete(pool_name: &str) -> Result<(), ErrorCode> {
-    Pool::delete(pool_name).wait()
+    pool::delete_pool_ledger(pool_name).wait()
 }
 
 pub fn set_protocol_version(protocol_version: usize) -> Result<(), ErrorCode> {
-    Pool::set_protocol_version(protocol_version).wait()
+    pool::set_protocol_version(protocol_version).wait()
 }
 
 pub fn get_req_id() -> u64 {

@@ -1,20 +1,16 @@
-extern crate indy;
+extern crate indyrs as indy;
 #[macro_use] extern crate serde_json;
 #[macro_use] extern crate serde_derive;
 extern crate rmp_serde;
 extern crate byteorder;
 extern crate futures;
 
-use indy::did::Did;
-use indy::wallet::Wallet;
+use indy::did;
+use indy::wallet;
 
 use indy::ErrorCode;
 
 use std::path::{Path, PathBuf};
-#[cfg(feature="extended_api_types")]
-use std::sync::mpsc::channel;
-#[cfg(feature="extended_api_types")]
-use std::time::Duration;
 
 mod utils;
 
@@ -24,10 +20,6 @@ use utils::rand;
 #[allow(unused_imports)]
 use futures::Future;
 
-#[cfg(feature="extended_api_types")]
-const VALID_TIMEOUT: Duration = Duration::from_secs(5);
-#[cfg(feature = "timeout_tests")]
-const INVALID_TIMEOUT: Duration = Duration::from_micros(0);
 const EXPORT_KEY: &str = "TheScythesHangInTheAppleTrees";
 
 
@@ -98,11 +90,11 @@ mod test_wallet_create {
     fn create_default_wallet() {
         let config = wallet_config::with_storage("default");
         
-        let result = Wallet::create(&config, CREDENTIALS).wait();
+        let result = wallet::create_wallet(&config, CREDENTIALS).wait();
 
         assert_eq!((), result.unwrap());
 
-        Wallet::delete(&config, CREDENTIALS).wait().unwrap();
+        wallet::delete_wallet(&config, CREDENTIALS).wait().unwrap();
     }
 
     #[test]
@@ -110,11 +102,11 @@ mod test_wallet_create {
         let dir = TempDir::new(None).unwrap();
         let config = wallet_config::with_custom_path(&dir);
 
-        let result = Wallet::create(&config, CREDENTIALS).wait();
+        let result = wallet::create_wallet(&config, CREDENTIALS).wait();
 
         assert_eq!((), result.unwrap());
 
-        Wallet::delete(&config, CREDENTIALS).wait().unwrap();
+        wallet::delete_wallet(&config, CREDENTIALS).wait().unwrap();
     }
 
     // #[test]
@@ -126,7 +118,7 @@ mod test_wallet_create {
     fn create_wallet_unknown_storage_type() {
         let config = wallet_config::with_storage("unknown");
 
-        let result = Wallet::create(&config, CREDENTIALS).wait();
+        let result = wallet::create_wallet(&config, CREDENTIALS).wait();
 
         assert_eq!(ErrorCode::WalletUnknownTypeError, result.unwrap_err());
     }
@@ -135,11 +127,11 @@ mod test_wallet_create {
     fn create_wallet_empty_storage_type() {
         let config = wallet_config::new();
 
-        let result = Wallet::create(&config, CREDENTIALS).wait();
+        let result = wallet::create_wallet(&config, CREDENTIALS).wait();
 
         assert_eq!((), result.unwrap());
 
-        Wallet::delete(&config, CREDENTIALS).wait().unwrap();
+        wallet::delete_wallet(&config, CREDENTIALS).wait().unwrap();
     }
 
     #[test]
@@ -147,7 +139,7 @@ mod test_wallet_create {
         let config = wallet_config::new();
         let credentials = "{}";
 
-        let result = Wallet::create(&config, credentials).wait();
+        let result = wallet::create_wallet(&config, credentials).wait();
 
         assert_eq!(ErrorCode::CommonInvalidStructure, result.unwrap_err());
     }
@@ -157,92 +149,11 @@ mod test_wallet_create {
         let config = wallet_config::new();
         let credentials = json!({"key": ""}).to_string();
 
-        let result = Wallet::create(&config, &credentials).wait();
+        let result = wallet::create_wallet(&config, &credentials).wait();
 
         assert_eq!((), result.unwrap());
 
-        Wallet::delete(&config, &credentials).wait().unwrap();
-    }
-
-    #[test]
-    #[cfg(feature="extended_api_types")]
-    fn create_default_wallet_async() {
-        let (sender, receiver) = channel();
-        let config = wallet_config::with_storage("default");
-
-        Wallet::create_async(
-            &config,
-            CREDENTIALS,
-            move |ec| sender.send(ec).unwrap()
-        );
-
-        let ec = receiver.recv_timeout(VALID_TIMEOUT).unwrap();
-        
-        assert_eq!(ErrorCode::Success, ec);
-
-        Wallet::delete(&config, CREDENTIALS).unwrap();
-    }
-
-    #[test]
-    #[cfg(feature="extended_api_types")]
-    fn create_wallet_unknown_storage_type_async() {
-        let (sender, receiver) = channel();
-        let config = wallet_config::with_storage("unknown");
-
-        Wallet::create_async(
-            &config,
-            CREDENTIALS,
-            move |ec| sender.send(ec).unwrap()
-        );
-
-        let ec = receiver.recv_timeout(VALID_TIMEOUT).unwrap();
-
-        assert_eq!(ErrorCode::WalletUnknownTypeError, ec);
-    }
-
-    #[test]
-    #[cfg(feature="extended_api_types")]
-    fn create_default_wallet_timeout() {
-        let config = wallet_config::with_storage("default");
-
-        let result = Wallet::create_timeout(
-            &config,
-            CREDENTIALS,
-            VALID_TIMEOUT
-        );
-
-        assert_eq!((), result.unwrap());
-
-        Wallet::delete(&config, CREDENTIALS).unwrap();
-    }
-
-    #[test]
-    #[cfg(feature="extended_api_types")]
-    fn create_wallet_unknown_storage_type_timeout() {
-        let config = wallet_config::with_storage("unknown");
-
-        let result = Wallet::create_timeout(
-            &config,
-            CREDENTIALS,
-            VALID_TIMEOUT
-        );
-
-        assert_eq!(ErrorCode::WalletUnknownTypeError, result.unwrap_err());
-    }
-
-    #[test]
-    #[cfg(feature="extended_api_types")]
-    #[cfg(feature = "timeout_tests")]
-    fn create_wallet_timeout_timeouts() {
-        let config = wallet_config::with_storage("unknown");
-
-        let result = Wallet::create_timeout(
-            &config,
-            CREDENTIALS,
-            INVALID_TIMEOUT
-        );
-
-        assert_eq!(ErrorCode::CommonIOError, result.unwrap_err());
+        wallet::delete_wallet(&config, &credentials).wait().unwrap();
     }
 }
 
@@ -254,16 +165,16 @@ mod test_wallet_delete {
 
     #[inline]
     fn assert_wallet_deleted(config: &str, credentials: &str) {
-        let result = Wallet::open(config, credentials).wait();
+        let result = wallet::open_wallet(config, credentials).wait();
         assert_eq!(ErrorCode::WalletNotFoundError, result.unwrap_err());
     }
 
     #[test]
     fn delete_wallet() {
         let config = wallet_config::new();
-        Wallet::create(&config, DEFAULT_CREDENTIALS).wait().unwrap();
+        wallet::create_wallet(&config, DEFAULT_CREDENTIALS).wait().unwrap();
 
-        let result = Wallet::delete(&config, DEFAULT_CREDENTIALS).wait();
+        let result = wallet::delete_wallet(&config, DEFAULT_CREDENTIALS).wait();
 
         assert_eq!((), result.unwrap());
         assert_wallet_deleted(&config, DEFAULT_CREDENTIALS);
@@ -273,9 +184,9 @@ mod test_wallet_delete {
     fn delete_wallet_custom_path() {
         let dir = TempDir::new(None).unwrap();
         let config = wallet_config::with_custom_path(&dir);
-        Wallet::create(&config, DEFAULT_CREDENTIALS).wait().unwrap();
+        wallet::create_wallet(&config, DEFAULT_CREDENTIALS).wait().unwrap();
 
-        let result = Wallet::delete(&config, DEFAULT_CREDENTIALS).wait();
+        let result = wallet::delete_wallet(&config, DEFAULT_CREDENTIALS).wait();
 
         assert_eq!((), result.unwrap());
         assert_wallet_deleted(&config, DEFAULT_CREDENTIALS);
@@ -285,11 +196,11 @@ mod test_wallet_delete {
     fn delete_wallet_closed() {
         let config = wallet_config::new();
 
-        Wallet::create(&config, DEFAULT_CREDENTIALS).wait().unwrap();
-        let handle = Wallet::open(&config, DEFAULT_CREDENTIALS).wait().unwrap();
-        Wallet::close(handle).wait().unwrap();
+        wallet::create_wallet(&config, DEFAULT_CREDENTIALS).wait().unwrap();
+        let handle = wallet::open_wallet(&config, DEFAULT_CREDENTIALS).wait().unwrap();
+        wallet::close_wallet(handle).wait().unwrap();
 
-        let result = Wallet::delete(&config, DEFAULT_CREDENTIALS).wait();
+        let result = wallet::delete_wallet(&config, DEFAULT_CREDENTIALS).wait();
         
         assert_eq!((), result.unwrap());
         assert_wallet_deleted(&config, DEFAULT_CREDENTIALS);
@@ -299,15 +210,15 @@ mod test_wallet_delete {
     fn delete_wallet_opened() {
         let config = wallet_config::new();
 
-        Wallet::create(&config, DEFAULT_CREDENTIALS).wait().unwrap();
-        let handle = Wallet::open(&config, DEFAULT_CREDENTIALS).wait().unwrap();
+        wallet::create_wallet(&config, DEFAULT_CREDENTIALS).wait().unwrap();
+        let handle = wallet::open_wallet(&config, DEFAULT_CREDENTIALS).wait().unwrap();
 
-        let result = Wallet::delete(&config, DEFAULT_CREDENTIALS).wait();
+        let result = wallet::delete_wallet(&config, DEFAULT_CREDENTIALS).wait();
         
         assert_eq!(ErrorCode::CommonInvalidState, result.unwrap_err());
 
-        Wallet::close(handle).wait().unwrap();
-        Wallet::delete(&config, DEFAULT_CREDENTIALS).wait().unwrap();
+        wallet::close_wallet(handle).wait().unwrap();
+        wallet::delete_wallet(&config, DEFAULT_CREDENTIALS).wait().unwrap();
     }
 
     // #[test]
@@ -318,10 +229,10 @@ mod test_wallet_delete {
     #[test]
     fn delete_wallet_repeated_command() {
         let config = wallet_config::new();
-        Wallet::create(&config, DEFAULT_CREDENTIALS).wait().unwrap();
-        Wallet::delete(&config, DEFAULT_CREDENTIALS).wait().unwrap();
+        wallet::create_wallet(&config, DEFAULT_CREDENTIALS).wait().unwrap();
+        wallet::delete_wallet(&config, DEFAULT_CREDENTIALS).wait().unwrap();
 
-        let result = Wallet::delete(&config, DEFAULT_CREDENTIALS).wait();
+        let result = wallet::delete_wallet(&config, DEFAULT_CREDENTIALS).wait();
 
         assert_eq!(ErrorCode::WalletNotFoundError, result.unwrap_err());
     }
@@ -329,104 +240,24 @@ mod test_wallet_delete {
     #[test]
     fn delete_wallet_invalid_credentials() {
         let config = wallet_config::new();
-        Wallet::create(&config, DEFAULT_CREDENTIALS).wait().unwrap();
+        wallet::create_wallet(&config, DEFAULT_CREDENTIALS).wait().unwrap();
 
-        let result = Wallet::delete(&config, r#"{"key": "badkey"}"#).wait();
+        let result = wallet::delete_wallet(&config, r#"{"key": "badkey"}"#).wait();
 
         assert_eq!(ErrorCode::WalletAccessFailed, result.unwrap_err());
 
-        Wallet::delete(&config, DEFAULT_CREDENTIALS).wait().unwrap();
+        wallet::delete_wallet(&config, DEFAULT_CREDENTIALS).wait().unwrap();
     }
 
     #[test]
     fn delete_wallet_uncreated() {
         let config = wallet_config::new();
 
-        let result = Wallet::delete(&config, DEFAULT_CREDENTIALS).wait();
+        let result = wallet::delete_wallet(&config, DEFAULT_CREDENTIALS).wait();
 
         assert_eq!(ErrorCode::WalletNotFoundError, result.unwrap_err());
     }
 
-    #[test]
-    #[cfg(feature="extended_api_types")]
-    fn delete_wallet_async() {
-        let (sender, receiver) = channel();
-        let config = wallet_config::new();
-        Wallet::create(&config, DEFAULT_CREDENTIALS).unwrap();
-
-        Wallet::delete_async(
-            &config,
-            DEFAULT_CREDENTIALS,
-            move |ec| sender.send(ec).unwrap()
-        );
-
-        let ec = receiver.recv().unwrap();
-
-        assert_eq!(ErrorCode::Success, ec);
-        assert_wallet_deleted(&config, DEFAULT_CREDENTIALS);
-    }
-
-    #[test]
-    #[cfg(feature="extended_api_types")]
-    fn delete_wallet_uncreated_async() {
-        let (sender, receiver) = channel();
-        let config = wallet_config::new();
-
-        Wallet::delete_async(
-            &config,
-            DEFAULT_CREDENTIALS,
-            move |ec| sender.send(ec).unwrap()
-        );
-
-        let ec = receiver.recv().unwrap();
-
-        assert_eq!(ErrorCode::WalletNotFoundError, ec);
-    }
-
-    #[test]
-    #[cfg(feature="extended_api_types")]
-    fn delete_wallet_timeout() {
-        let config = wallet_config::new();
-        Wallet::create(&config, DEFAULT_CREDENTIALS).unwrap();
-
-        let result = Wallet::delete_timeout(
-            &config,
-            DEFAULT_CREDENTIALS,
-            VALID_TIMEOUT,
-        );
-
-        assert_eq!((), result.unwrap());
-        assert_wallet_deleted(&config, DEFAULT_CREDENTIALS);
-    }
-
-    #[test]
-    #[cfg(feature="extended_api_types")]
-    fn delete_wallet_uncreated_timeout() {
-        let config = wallet_config::new();
-
-        let result = Wallet::delete_timeout(
-            &config,
-            DEFAULT_CREDENTIALS,
-            VALID_TIMEOUT,
-        );
-
-        assert_eq!(ErrorCode::WalletNotFoundError, result.unwrap_err());
-    }
-
-    #[test]
-    #[cfg(feature="extended_api_types")]
-    #[cfg(feature = "timeout_tests")]
-    fn delete_wallet_timeout_timeouts() {
-        let config = wallet_config::new();
-
-        let result = Wallet::delete_timeout(
-            &config,
-            DEFAULT_CREDENTIALS,
-            INVALID_TIMEOUT,
-        );
-
-        assert_eq!(ErrorCode::CommonIOError, result.unwrap_err());
-    }
 }
 
 #[cfg(test)]
@@ -436,12 +267,12 @@ mod test_wallet_open {
     #[test]
     fn open_wallet() {
         let config = wallet_config::new();
-        Wallet::create(&config, DEFAULT_CREDENTIALS).wait().unwrap();
+        wallet::create_wallet(&config, DEFAULT_CREDENTIALS).wait().unwrap();
 
-        let handle = Wallet::open(&config, DEFAULT_CREDENTIALS).wait().unwrap();
+        let handle = wallet::open_wallet(&config, DEFAULT_CREDENTIALS).wait().unwrap();
 
-        Wallet::close(handle).wait().unwrap();
-        Wallet::delete(&config, DEFAULT_CREDENTIALS).wait().unwrap();
+        wallet::close_wallet(handle).wait().unwrap();
+        wallet::delete_wallet(&config, DEFAULT_CREDENTIALS).wait().unwrap();
     }
 
     #[test]
@@ -449,12 +280,12 @@ mod test_wallet_open {
         let dir = TempDir::new(None).unwrap();
         let config = wallet_config::with_custom_path(&dir);
 
-        Wallet::create(&config, DEFAULT_CREDENTIALS).wait().unwrap();
+        wallet::create_wallet(&config, DEFAULT_CREDENTIALS).wait().unwrap();
 
-        let handle = Wallet::open(&config, DEFAULT_CREDENTIALS).wait().unwrap();
+        let handle = wallet::open_wallet(&config, DEFAULT_CREDENTIALS).wait().unwrap();
 
-        Wallet::close(handle).wait().unwrap();
-        Wallet::delete(&config, DEFAULT_CREDENTIALS).wait().unwrap();
+        wallet::close_wallet(handle).wait().unwrap();
+        wallet::delete_wallet(&config, DEFAULT_CREDENTIALS).wait().unwrap();
     }
 
     // #[test]
@@ -466,7 +297,7 @@ mod test_wallet_open {
     fn open_wallet_not_created() {
         let config = wallet_config::new();
 
-        let result = Wallet::open(&config, DEFAULT_CREDENTIALS).wait();
+        let result = wallet::open_wallet(&config, DEFAULT_CREDENTIALS).wait();
         
         assert_eq!(ErrorCode::WalletNotFoundError, result.unwrap_err());
     }
@@ -474,16 +305,16 @@ mod test_wallet_open {
     #[test]
     fn open_wallet_repeated_command() {
         let config = wallet_config::new();
-        Wallet::create(&config, DEFAULT_CREDENTIALS).wait().unwrap();
+        wallet::create_wallet(&config, DEFAULT_CREDENTIALS).wait().unwrap();
 
-        let handle = Wallet::open(&config, DEFAULT_CREDENTIALS).wait().unwrap();
+        let handle = wallet::open_wallet(&config, DEFAULT_CREDENTIALS).wait().unwrap();
 
-        let result = Wallet::open(&config, DEFAULT_CREDENTIALS).wait();
+        let result = wallet::open_wallet(&config, DEFAULT_CREDENTIALS).wait();
 
         assert_eq!(ErrorCode::WalletAlreadyOpenedError, result.unwrap_err());
 
-        Wallet::close(handle).wait().unwrap();
-        Wallet::delete(&config, DEFAULT_CREDENTIALS).wait().unwrap();
+        wallet::close_wallet(handle).wait().unwrap();
+        wallet::delete_wallet(&config, DEFAULT_CREDENTIALS).wait().unwrap();
     }
 
     #[test]
@@ -491,16 +322,16 @@ mod test_wallet_open {
         let config1 = wallet_config::new();
         let config2 = wallet_config::new();
 
-        Wallet::create(&config1, DEFAULT_CREDENTIALS).wait().unwrap();
-        Wallet::create(&config2, DEFAULT_CREDENTIALS).wait().unwrap();
+        wallet::create_wallet(&config1, DEFAULT_CREDENTIALS).wait().unwrap();
+        wallet::create_wallet(&config2, DEFAULT_CREDENTIALS).wait().unwrap();
 
-        let handle1 = Wallet::open(&config1, DEFAULT_CREDENTIALS).wait().unwrap();
-        let handle2 = Wallet::open(&config2, DEFAULT_CREDENTIALS).wait().unwrap();
+        let handle1 = wallet::open_wallet(&config1, DEFAULT_CREDENTIALS).wait().unwrap();
+        let handle2 = wallet::open_wallet(&config2, DEFAULT_CREDENTIALS).wait().unwrap();
 
-        Wallet::close(handle1).wait().unwrap();
-        Wallet::close(handle2).wait().unwrap();
-        Wallet::delete(&config1, DEFAULT_CREDENTIALS).wait().unwrap();
-        Wallet::delete(&config2, DEFAULT_CREDENTIALS).wait().unwrap();
+        wallet::close_wallet(handle1).wait().unwrap();
+        wallet::close_wallet(handle2).wait().unwrap();
+        wallet::delete_wallet(&config1, DEFAULT_CREDENTIALS).wait().unwrap();
+        wallet::delete_wallet(&config2, DEFAULT_CREDENTIALS).wait().unwrap();
     }
 
     #[test]
@@ -508,13 +339,13 @@ mod test_wallet_open {
         let config = wallet_config::new();
         let credentials = json!({"key": "xylophone rat"}).to_string();
 
-        Wallet::create(&config, &credentials).wait().unwrap();
+        wallet::create_wallet(&config, &credentials).wait().unwrap();
 
-        let result = Wallet::open(&config, DEFAULT_CREDENTIALS).wait();
+        let result = wallet::open_wallet(&config, DEFAULT_CREDENTIALS).wait();
 
         assert_eq!(ErrorCode::WalletAccessFailed, result.unwrap_err());
 
-        Wallet::delete(&config, &credentials).wait().unwrap();
+        wallet::delete_wallet(&config, &credentials).wait().unwrap();
     }
 
     #[test]
@@ -524,115 +355,30 @@ mod test_wallet_open {
         let credentials2 = json!({"key": "key_2"}).to_string();
         let rekey = json!({"key": "key_1", "rekey": "key_2"}).to_string();
 
-        Wallet::create(&config, &credentials1).wait().unwrap();
+        wallet::create_wallet(&config, &credentials1).wait().unwrap();
 
-        let handle = Wallet::open(&config, &rekey).wait().unwrap();
-        Wallet::close(handle).wait().unwrap();
+        let handle = wallet::open_wallet(&config, &rekey).wait().unwrap();
+        wallet::close_wallet(handle).wait().unwrap();
 
-        let result = Wallet::open(&config, &credentials1).wait();
+        let result = wallet::open_wallet(&config, &credentials1).wait();
         assert_eq!(ErrorCode::WalletAccessFailed, result.unwrap_err());
 
-        let handle = Wallet::open(&config, &credentials2).wait().unwrap();
-        Wallet::close(handle).wait().unwrap();
+        let handle = wallet::open_wallet(&config, &credentials2).wait().unwrap();
+        wallet::close_wallet(handle).wait().unwrap();
 
-        Wallet::delete(&config, &credentials2).wait().unwrap();
+        wallet::delete_wallet(&config, &credentials2).wait().unwrap();
     }
 
     #[test]
     fn open_wallet_invalid_config() {
         let config = wallet_config::new();
-        Wallet::create(&config, DEFAULT_CREDENTIALS).wait().unwrap();
+        wallet::create_wallet(&config, DEFAULT_CREDENTIALS).wait().unwrap();
 
-        let result = Wallet::open("{}", DEFAULT_CREDENTIALS).wait();
+        let result = wallet::open_wallet("{}", DEFAULT_CREDENTIALS).wait();
 
         assert_eq!(ErrorCode::CommonInvalidStructure, result.unwrap_err());
 
-        Wallet::delete(&config, DEFAULT_CREDENTIALS).wait().unwrap();
-    }
-
-    #[test]
-    #[cfg(feature="extended_api_types")]
-    fn open_wallet_async() {
-        let (sender, receiver) = channel();
-        let config = wallet_config::new();
-        Wallet::create(&config, DEFAULT_CREDENTIALS).unwrap();
-
-        Wallet::open_async(
-            &config,
-            DEFAULT_CREDENTIALS,
-            move |ec, handle| sender.send((ec, handle)).unwrap()
-        );
-
-        let (ec, handle) = receiver.recv_timeout(VALID_TIMEOUT).unwrap();
-
-        assert_eq!(ErrorCode::Success, ec);
-
-        Wallet::close(handle).unwrap();
-        Wallet::delete(&config, DEFAULT_CREDENTIALS).unwrap();
-    }
-
-    #[test]
-    #[cfg(feature="extended_api_types")]
-    fn open_wallet_async_not_created() {
-        let (sender, receiver) = channel();
-        let config = wallet_config::new();
-
-        Wallet::open_async(
-            &config,
-            DEFAULT_CREDENTIALS,
-            move |ec, handle| sender.send((ec, handle)).unwrap()
-        );
-
-        let (ec, handle) = receiver.recv_timeout(VALID_TIMEOUT).unwrap();
-
-        assert_eq!(ErrorCode::WalletNotFoundError, ec);
-        assert_eq!(0, handle);
-    }
-
-    #[test]
-    #[cfg(feature="extended_api_types")]
-    fn open_wallet_timeout() {
-        let config = wallet_config::new();
-        Wallet::create(&config, DEFAULT_CREDENTIALS).unwrap();
-
-        let handle = Wallet::open_timeout(
-            &config,
-            DEFAULT_CREDENTIALS,
-            VALID_TIMEOUT
-        ).unwrap();
-
-        Wallet::close(handle).unwrap();
-        Wallet::delete(&config, DEFAULT_CREDENTIALS).unwrap();
-    }
-
-    #[test]
-    #[cfg(feature="extended_api_types")]
-    fn open_wallet_timeout_not_created() {
-        let config = wallet_config::new();
-
-        let result = Wallet::open_timeout(
-            &config,
-            DEFAULT_CREDENTIALS,
-            VALID_TIMEOUT
-        );
-
-        assert_eq!(ErrorCode::WalletNotFoundError, result.unwrap_err());
-    }
-
-    #[test]
-    #[cfg(feature="extended_api_types")]
-    #[cfg(feature = "timeout_tests")]
-    fn open_wallet_timeout_timeouts() {
-        let config = wallet_config::new();
-        Wallet::create(&config, DEFAULT_CREDENTIALS).unwrap();
-
-        let result = Wallet::open_timeout(
-            &config,
-            DEFAULT_CREDENTIALS,
-            INVALID_TIMEOUT
-        );
-
-        assert_eq!(ErrorCode::CommonIOError, result.unwrap_err());
+        wallet::delete_wallet(&config, DEFAULT_CREDENTIALS).wait().unwrap();
     }
 }
 
@@ -643,10 +389,10 @@ mod test_wallet_close {
     #[test]
     fn close_wallet() {
         let config = wallet_config::new();
-        Wallet::create(&config, DEFAULT_CREDENTIALS).wait().unwrap();
-        let handle = Wallet::open(&config, DEFAULT_CREDENTIALS).wait().unwrap();
+        wallet::create_wallet(&config, DEFAULT_CREDENTIALS).wait().unwrap();
+        let handle = wallet::open_wallet(&config, DEFAULT_CREDENTIALS).wait().unwrap();
 
-        let result = Wallet::close(handle).wait();
+        let result = wallet::close_wallet(handle).wait();
 
         assert_eq!((), result.unwrap());
     }
@@ -658,79 +404,25 @@ mod test_wallet_close {
 
     #[test]
     fn close_wallet_invalid_handle() {
-        let result = Wallet::close(INVALID_HANDLE).wait();
+        let result = wallet::close_wallet(INVALID_HANDLE).wait();
         assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err());
     }
 
     #[test]
     fn close_wallet_duplicate_command() {
         let config = wallet_config::new();
-        Wallet::create(&config, DEFAULT_CREDENTIALS).wait().unwrap();
-        let handle = Wallet::open(&config, DEFAULT_CREDENTIALS).wait().unwrap();
+        wallet::create_wallet(&config, DEFAULT_CREDENTIALS).wait().unwrap();
+        let handle = wallet::open_wallet(&config, DEFAULT_CREDENTIALS).wait().unwrap();
 
-        let result = Wallet::close(handle).wait();
+        let result = wallet::close_wallet(handle).wait();
 
         assert_eq!((), result.unwrap());
 
-        let result = Wallet::close(handle).wait();
+        let result = wallet::close_wallet(handle).wait();
 
         assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err());
     }
 
-    #[test]
-    #[cfg(feature="extended_api_types")]
-    fn close_wallet_async() {
-        let (sender, receiver) = channel();
-        let config = wallet_config::new();
-
-        Wallet::create(&config, DEFAULT_CREDENTIALS).unwrap();
-        let handle = Wallet::open(&config, DEFAULT_CREDENTIALS).unwrap();
-
-        Wallet::close_async(handle, move |ec| sender.send(ec).unwrap());
-
-        let ec = receiver.recv_timeout(VALID_TIMEOUT).unwrap();
-
-        assert_eq!(ErrorCode::Success, ec);
-    }
-
-    #[test]
-    #[cfg(feature="extended_api_types")]
-    fn close_wallet_async_invalid_handle() {
-        let (sender, receiver) = channel();
-
-        Wallet::close_async(INVALID_HANDLE, move |ec| sender.send(ec).unwrap());
-
-        let ec = receiver.recv_timeout(VALID_TIMEOUT).unwrap();
-
-        assert_eq!(ErrorCode::WalletInvalidHandle, ec);
-    }
-
-    #[test]
-    #[cfg(feature="extended_api_types")]
-    fn close_wallet_timeout() {
-        let config = wallet_config::new();
-        Wallet::create(&config, DEFAULT_CREDENTIALS).unwrap();
-        let handle = Wallet::open(&config, DEFAULT_CREDENTIALS).unwrap();
-
-        let result = Wallet::close_timeout(handle, VALID_TIMEOUT);
-
-        assert_eq!((), result.unwrap());
-    }
-
-    #[test]
-    #[cfg(feature="extended_api_types")]
-    fn close_wallet_timeout_invalid_handle() {
-        let result = Wallet::close_timeout(INVALID_HANDLE, VALID_TIMEOUT);
-        assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err());
-    }
-
-    #[test]
-    #[cfg(feature="extended_api_types")]
-    #[cfg(feature = "timeout_tests")]
-    fn close_wallet_timeout_timeouts() {
-        let result = Wallet::close_timeout(INVALID_HANDLE, INVALID_TIMEOUT);
-        assert_eq!(ErrorCode::CommonIOError, result.unwrap_err());
-    }
 }
 
 #[cfg(test)]
@@ -742,17 +434,17 @@ mod test_wallet_export {
         let config_wallet = wallet_config::new();
         let (config_export, path, _dir) = wallet_config::export::with_defaults();
 
-        Wallet::create(&config_wallet, DEFAULT_CREDENTIALS).wait().unwrap();
-        let handle = Wallet::open(&config_wallet, DEFAULT_CREDENTIALS).wait().unwrap();
+        wallet::create_wallet(&config_wallet, DEFAULT_CREDENTIALS).wait().unwrap();
+        let handle = wallet::open_wallet(&config_wallet, DEFAULT_CREDENTIALS).wait().unwrap();
 
-        let result = Wallet::export(handle, &config_export).wait();
+        let result = wallet::export_wallet(handle, &config_export).wait();
 
         assert_eq!((), result.unwrap());
         
         assert!(path.exists());
 
-        Wallet::close(handle).wait().unwrap();
-        Wallet::delete(&config_wallet, DEFAULT_CREDENTIALS).wait().unwrap();
+        wallet::close_wallet(handle).wait().unwrap();
+        wallet::delete_wallet(&config_wallet, DEFAULT_CREDENTIALS).wait().unwrap();
     }
 
     #[test]
@@ -761,133 +453,37 @@ mod test_wallet_export {
         let file = TempFile::new(None).unwrap();
         let config_export = wallet_config::export::new(&file, EXPORT_KEY);
 
-        Wallet::create(&config_wallet, DEFAULT_CREDENTIALS).wait().unwrap();
-        let handle = Wallet::open(&config_wallet, DEFAULT_CREDENTIALS).wait().unwrap();
+        wallet::create_wallet(&config_wallet, DEFAULT_CREDENTIALS).wait().unwrap();
+        let handle = wallet::open_wallet(&config_wallet, DEFAULT_CREDENTIALS).wait().unwrap();
 
-        let result = Wallet::export(handle, &config_export).wait();
+        let result = wallet::export_wallet(handle, &config_export).wait();
 
         assert_eq!(ErrorCode::CommonIOError, result.unwrap_err());
         
-        Wallet::close(handle).wait().unwrap();
-        Wallet::delete(&config_wallet, DEFAULT_CREDENTIALS).wait().unwrap();
+        wallet::close_wallet(handle).wait().unwrap();
+        wallet::delete_wallet(&config_wallet, DEFAULT_CREDENTIALS).wait().unwrap();
     }
 
     #[test]
     fn export_wallet_invalid_config() {
         let config_wallet = wallet_config::new();
-        Wallet::create(&config_wallet, DEFAULT_CREDENTIALS).wait().unwrap();
-        let handle = Wallet::open(&config_wallet, DEFAULT_CREDENTIALS).wait().unwrap();
+        wallet::create_wallet(&config_wallet, DEFAULT_CREDENTIALS).wait().unwrap();
+        let handle = wallet::open_wallet(&config_wallet, DEFAULT_CREDENTIALS).wait().unwrap();
 
-        let result = Wallet::export(handle, "{}").wait();
+        let result = wallet::export_wallet(handle, "{}").wait();
 
         assert_eq!(ErrorCode::CommonInvalidStructure, result.unwrap_err());
 
-        Wallet::close(handle).wait().unwrap();
-        Wallet::delete(&config_wallet, DEFAULT_CREDENTIALS).wait().unwrap();
+        wallet::close_wallet(handle).wait().unwrap();
+        wallet::delete_wallet(&config_wallet, DEFAULT_CREDENTIALS).wait().unwrap();
     }
 
     #[test]
     fn export_wallet_invalid_handle() {
         let (config_export, path, _dir) = wallet_config::export::with_defaults();
 
-        let result = Wallet::export(INVALID_HANDLE, &config_export).wait();
+        let result = wallet::export_wallet(INVALID_HANDLE, &config_export).wait();
         assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err());
-        assert!(!path.exists());
-    }
-
-    #[test]
-    #[cfg(feature="extended_api_types")]
-    fn export_wallet_async() {
-        let (sender, receiver) = channel();
-        let config_wallet = wallet_config::new();
-        let (config_export, path, _dir) = wallet_config::export::with_defaults();
-
-        Wallet::create(&config_wallet, DEFAULT_CREDENTIALS).unwrap();
-        let handle = Wallet::open(&config_wallet, DEFAULT_CREDENTIALS).unwrap();
-
-        Wallet::export_async(
-            handle,
-            &config_export,
-            move |ec| sender.send(ec).unwrap()
-        );
-
-        let ec = receiver.recv_timeout(VALID_TIMEOUT).unwrap();
-
-        assert_eq!(ErrorCode::Success, ec);
-        assert!(path.exists());
-
-        Wallet::close(handle).unwrap();
-        Wallet::delete(&config_wallet, DEFAULT_CREDENTIALS).unwrap();
-    }
-
-    #[test]
-    #[cfg(feature="extended_api_types")]
-    fn export_wallet_async_invalid_handle() {
-        let (sender, receiver) = channel();
-        let (config_export, path, _dir) = wallet_config::export::with_defaults();
-
-        Wallet::export_async(
-            INVALID_HANDLE,
-            &config_export,
-            move |ec| sender.send(ec).unwrap()
-        );
-
-        let ec = receiver.recv_timeout(VALID_TIMEOUT).unwrap();
-
-        assert_eq!(ErrorCode::WalletInvalidHandle, ec);
-        assert!(!path.exists());
-    }
-
-    #[test]
-    #[cfg(feature="extended_api_types")]
-    fn export_wallet_timeout() {
-        let config_wallet = wallet_config::new();
-        let (config_export, path, _dir) = wallet_config::export::with_defaults();
-
-        Wallet::create(&config_wallet, DEFAULT_CREDENTIALS).unwrap();
-        let handle = Wallet::open(&config_wallet, DEFAULT_CREDENTIALS).unwrap();
-
-        let result = Wallet::export_timeout(
-            handle,
-            &config_export,
-            VALID_TIMEOUT
-        );
-
-        assert_eq!((), result.unwrap());
-        assert!(path.exists());
-
-        Wallet::close(handle).unwrap();
-        Wallet::delete(&config_wallet, DEFAULT_CREDENTIALS).unwrap();
-    }
-
-    #[test]
-    #[cfg(feature="extended_api_types")]
-    fn export_wallet_timeout_invalid_handle() {
-        let (config_export, path, _dir) = wallet_config::export::with_defaults();
-
-        let result = Wallet::export_timeout(
-            INVALID_HANDLE,
-            &config_export,
-            VALID_TIMEOUT
-        );
-
-        assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err());
-        assert!(!path.exists());
-    }
-
-    #[test]
-    #[cfg(feature="extended_api_types")]
-    #[cfg(feature = "timeout_tests")]
-    fn export_wallet_timeout_timeouts() {
-        let (config_export, path, _dir) = wallet_config::export::with_defaults();
-
-        let result = Wallet::export_timeout(
-            INVALID_HANDLE,
-            &config_export,
-            INVALID_TIMEOUT
-        );
-
-        assert_eq!(ErrorCode::CommonIOError, result.unwrap_err());
         assert!(!path.exists());
     }
 }
@@ -901,17 +497,17 @@ mod test_wallet_import {
         credentials: &str,
         config_export: &str
     ) -> (String, String) {
-        Wallet::create(&config_wallet, credentials).wait().unwrap();
-        let handle = Wallet::open(&config_wallet, credentials).wait().unwrap();
+        wallet::create_wallet(&config_wallet, credentials).wait().unwrap();
+        let handle = wallet::open_wallet(&config_wallet, credentials).wait().unwrap();
 
-        let (did, _) = Did::new(handle, "{}").wait().unwrap();
-        Did::set_metadata(handle, &did, METADATA).wait().unwrap();
-        let did_with_metadata = Did::get_metadata(handle, &did).wait().unwrap();
+        let (did, _) = did::create_and_store_my_did(handle, "{}").wait().unwrap();
+        did::set_did_metadata(handle, &did, METADATA).wait().unwrap();
+        let did_with_metadata = did::get_did_metadata(handle, &did).wait().unwrap();
 
-        Wallet::export(handle, &config_export).wait().unwrap();
+        wallet::export_wallet(handle, &config_export).wait().unwrap();
 
-        Wallet::close(handle).wait().unwrap();
-        Wallet::delete(&config_wallet, DEFAULT_CREDENTIALS).wait().unwrap();
+        wallet::close_wallet(handle).wait().unwrap();
+        wallet::delete_wallet(&config_wallet, DEFAULT_CREDENTIALS).wait().unwrap();
 
         (did, did_with_metadata)
     }
@@ -926,7 +522,7 @@ mod test_wallet_import {
             &config_export
         );
 
-        let result = Wallet::import(
+        let result = wallet::import_wallet(
             &config_wallet,
             DEFAULT_CREDENTIALS,
             &config_export
@@ -934,14 +530,14 @@ mod test_wallet_import {
 
         assert_eq!((), result.unwrap());
 
-        let handle = Wallet::open(&config_wallet, DEFAULT_CREDENTIALS).wait().unwrap();
+        let handle = wallet::open_wallet(&config_wallet, DEFAULT_CREDENTIALS).wait().unwrap();
 
-        let imported_did_with_metadata = Did::get_metadata(handle, &did).wait().unwrap();
+        let imported_did_with_metadata = did::get_did_metadata(handle, &did).wait().unwrap();
 
         assert_eq!(did_with_metadata, imported_did_with_metadata);
 
-        Wallet::close(handle).wait().unwrap();
-        Wallet::delete(&config_wallet, DEFAULT_CREDENTIALS).wait().unwrap();
+        wallet::close_wallet(handle).wait().unwrap();
+        wallet::delete_wallet(&config_wallet, DEFAULT_CREDENTIALS).wait().unwrap();
     }
 
     #[test]
@@ -953,7 +549,7 @@ mod test_wallet_import {
             EXPORT_KEY
         );
 
-        let result = Wallet::import(
+        let result = wallet::import_wallet(
             &config_wallet,
             DEFAULT_CREDENTIALS,
             &config_export
@@ -961,7 +557,7 @@ mod test_wallet_import {
 
         assert_eq!(ErrorCode::CommonIOError, result.unwrap_err());
 
-        let result = Wallet::open(&config_wallet, DEFAULT_CREDENTIALS).wait();
+        let result = wallet::open_wallet(&config_wallet, DEFAULT_CREDENTIALS).wait();
         assert_eq!(ErrorCode::WalletNotFoundError, result.unwrap_err());
     }
 
@@ -969,7 +565,7 @@ mod test_wallet_import {
     fn import_wallet_invalid_config() {
         let config_wallet = wallet_config::new();
 
-        let result = Wallet::import(&config_wallet, DEFAULT_CREDENTIALS, "{}").wait();
+        let result = wallet::import_wallet(&config_wallet, DEFAULT_CREDENTIALS, "{}").wait();
 
         assert_eq!(ErrorCode::CommonInvalidStructure, result.unwrap_err());
     }
@@ -986,7 +582,7 @@ mod test_wallet_import {
 
         let config_import = wallet_config::export::new(path, "bad_key");
 
-        let result = Wallet::import(
+        let result = wallet::import_wallet(
             &config_wallet,
             DEFAULT_CREDENTIALS,
             &config_import
@@ -1005,9 +601,9 @@ mod test_wallet_import {
             &config_export
         );
 
-        Wallet::create(&config_wallet, DEFAULT_CREDENTIALS).wait().unwrap();
+        wallet::create_wallet(&config_wallet, DEFAULT_CREDENTIALS).wait().unwrap();
 
-        let result = Wallet::import(
+        let result = wallet::import_wallet(
             &config_wallet,
             DEFAULT_CREDENTIALS,
             &config_export
@@ -1015,6 +611,6 @@ mod test_wallet_import {
 
         assert_eq!(ErrorCode::WalletAlreadyExistsError, result.unwrap_err());
 
-        Wallet::delete(&config_wallet, DEFAULT_CREDENTIALS).wait().unwrap();
+        wallet::delete_wallet(&config_wallet, DEFAULT_CREDENTIALS).wait().unwrap();
     }
 }

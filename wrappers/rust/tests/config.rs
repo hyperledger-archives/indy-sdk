@@ -1,4 +1,4 @@
-extern crate indy;
+extern crate indyrs as indy;
 
 mod tests {
     use super::*;

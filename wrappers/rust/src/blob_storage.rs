@@ -9,68 +9,32 @@ use ffi::ResponseI32CB;
 
 use utils::callbacks::{ClosureHandler, ResultHandler};
 
-pub struct Blob {}
+pub fn open_reader(xtype: &str, config_json: &str) -> Box<Future<Item=IndyHandle, Error=ErrorCode>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_handle();
 
-impl Blob {
-    pub fn open_reader(xtype: &str, config_json: &str) -> Box<Future<Item=IndyHandle, Error=ErrorCode>> {
-        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_handle();
+    let err = _open_reader(command_handle, xtype, config_json, cb);
 
-        let err = Blob::_open_reader(command_handle, xtype, config_json, cb);
+    ResultHandler::handle(command_handle, err, receiver)
+}
 
-        ResultHandler::handle(command_handle, err, receiver)
-    }
+fn _open_reader(command_handle: IndyHandle, xtype: &str, config_json: &str, cb: Option<ResponseI32CB>) -> ErrorCode {
+    let xtype = c_str!(xtype);
+    let config_json = c_str!(config_json);
 
-    #[cfg(feature="extended_api_types")]
-    pub fn open_reader_timeout(xtype: &str, config_json: &str, timeout: Duration) -> Result<IndyHandle, ErrorCode> {
-        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_i32();
+    ErrorCode::from(unsafe { blob_storage::indy_open_blob_storage_reader(command_handle, xtype.as_ptr(), config_json.as_ptr(), cb) })
+}
 
-        let err = Blob::_open_reader(command_handle, xtype, config_json, cb);
+pub fn open_writer(xtype: &str, config_json: &str) -> Box<Future<Item=IndyHandle, Error=ErrorCode>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_handle();
 
-        ResultHandler::one_timeout(err, receiver, timeout)
-    }
+    let err = _open_writer(command_handle, xtype, config_json, cb);
 
-    #[cfg(feature="extended_api_types")]
-    pub fn open_reader_async<F: 'static>(xtype: &str, config_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, IndyHandle) + Send {
-        let (command_handle, cb) = ClosureHandler::convert_cb_ec_i32(Box::new(closure));
+    ResultHandler::handle(command_handle, err, receiver)
+}
 
-        Blob::_open_reader(command_handle, xtype, config_json, cb)
-    }
+fn _open_writer(command_handle: IndyHandle, xtype: &str, config_json: &str, cb: Option<ResponseI32CB>) -> ErrorCode {
+    let xtype = c_str!(xtype);
+    let config_json = c_str!(config_json);
 
-    fn _open_reader(command_handle: IndyHandle, xtype: &str, config_json: &str, cb: Option<ResponseI32CB>) -> ErrorCode {
-        let xtype = c_str!(xtype);
-        let config_json = c_str!(config_json);
-
-        ErrorCode::from(unsafe { blob_storage::indy_open_blob_storage_reader(command_handle, xtype.as_ptr(), config_json.as_ptr(), cb) })
-    }
-
-    pub fn open_writer(xtype: &str, config_json: &str) -> Box<Future<Item=IndyHandle, Error=ErrorCode>> {
-        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_handle();
-
-        let err = Blob::_open_writer(command_handle, xtype, config_json, cb);
-
-        ResultHandler::handle(command_handle, err, receiver)
-    }
-
-    #[cfg(feature="extended_api_types")]
-    pub fn open_writer_timeout(xtype: &str, config_json: &str, timeout: Duration) -> Result<IndyHandle, ErrorCode> {
-        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_i32();
-
-        let err = Blob::_open_writer(command_handle, xtype, config_json, cb);
-
-        ResultHandler::one_timeout(err, receiver, timeout)
-    }
-
-    #[cfg(feature="extended_api_types")]
-    pub fn open_writer_async<F: 'static>(xtype: &str, config_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, IndyHandle) + Send {
-        let (command_handle, cb) = ClosureHandler::convert_cb_ec_i32(Box::new(closure));
-
-        Blob::_open_writer(command_handle, xtype, config_json, cb)
-    }
-
-    fn _open_writer(command_handle: IndyHandle, xtype: &str, config_json: &str, cb: Option<ResponseI32CB>) -> ErrorCode {
-        let xtype = c_str!(xtype);
-        let config_json = c_str!(config_json);
-
-        ErrorCode::from(unsafe { blob_storage::indy_open_blob_storage_writer(command_handle, xtype.as_ptr(), config_json.as_ptr(), cb) })
-    }
+    ErrorCode::from(unsafe { blob_storage::indy_open_blob_storage_writer(command_handle, xtype.as_ptr(), config_json.as_ptr(), cb) })
 }
