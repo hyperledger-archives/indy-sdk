@@ -12,4 +12,4 @@
     :maxdepth: 2
 
     Indy Node <https://sovrin.readthedocs.io/projects/node/en/latest/indy-node.html>
-    Indy SDK <indy-sdk>
+    Indy SDK <../index>
