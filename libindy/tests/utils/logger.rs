@@ -30,5 +30,5 @@ pub fn set_logger(logger: &'static log::Log) {
 }
 
 pub fn set_default_logger() {
-    logger::set_default_logger(Some("trace")).ok();
+    logger::set_default_logger(None).ok();
 }

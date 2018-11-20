@@ -412,7 +412,7 @@ def linuxVcxBuild(file, env_name, network_name) {
             sh '''
                 cp vcx/libvcx/libindy.so vcx/dummy-cloud-agent
                 cd vcx/dummy-cloud-agent
-                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy=info cargo run --release sample-config.json &
+                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy=info cargo run sample-config.json &
             '''
 
             echo "${env_name} Libvcx Test: Run tests"

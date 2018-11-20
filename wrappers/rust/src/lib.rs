@@ -33,22 +33,18 @@ use std::ffi::CString;
 
 pub type IndyHandle = i32;
 
-pub struct Indy {}
+/// Set libindy runtime configuration. Can be optionally called to change current params.
+///
+/// # Arguments
+/// * `config` - {
+///     "crypto_thread_pool_size": <int> - size of thread pool for the most expensive crypto operations. (4 by default)
+/// }
+pub fn set_runtime_config(config: &str) -> ErrorCode {
+    let config = c_str!(config);
 
-impl Indy {
-    /// Set libindy runtime configuration. Can be optionally called to change current params.
-    ///
-    /// # Arguments
-    /// * `config` - {
-    ///     "crypto_thread_pool_size": <int> - size of thread pool for the most expensive crypto operations. (4 by default)
-    /// }
-    pub fn set_runtime_config(config: &str) -> ErrorCode {
-        let config = c_str!(config);
-
-        ErrorCode::from(unsafe {
-            ffi::indy_set_runtime_config(config.as_ptr())
-        })
-    }
+    ErrorCode::from(unsafe {
+        ffi::indy_set_runtime_config(config.as_ptr())
+    })
 }
 
 #[derive(Debug, PartialEq, Copy, Clone, FromPrimitive, ToPrimitive)]
