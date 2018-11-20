@@ -194,17 +194,17 @@ fn main() {
     // clean up
     // Close and delete wallet
     println!("Close and delete two wallets");
-    indy::wallet::Wallet::close(prover_wallet_handle).unwrap();
-    indy::wallet::Wallet::delete(&prover_wallet_config, USEFUL_CREDENTIALS).unwrap();
-    indy::wallet::Wallet::close(wallet_handle).unwrap();
-    indy::wallet::Wallet::delete(&config, USEFUL_CREDENTIALS).unwrap();
+    Wallet::close(prover_wallet_handle).unwrap();
+    Wallet::delete(&prover_wallet_config, USEFUL_CREDENTIALS).unwrap();
+    Wallet::close(wallet_handle).unwrap();
+    Wallet::delete(&config, USEFUL_CREDENTIALS).unwrap();
 
     // Close pool
     println!("Close pool");
-    indy::pool::Pool::close(pool_handle).unwrap();
+    Pool::close(pool_handle).unwrap();
 
     // Delete pool ledger config
     println!("Delete pool ledger config");
-    indy::pool::Pool::delete(&pool_name).unwrap();
+    Pool::delete(&pool_name).unwrap();
     fs::remove_file(pool_config_pathbuf).unwrap();
 }

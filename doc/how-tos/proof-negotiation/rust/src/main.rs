@@ -78,14 +78,14 @@ fn main() {
 
     println!("1. Creating a new local pool ledger configuration");
     println!("   pool: {} and file: {}", &pool_name, pool_config_file);
-        let pool_config = json!({
+    let pool_config = json!({
         "genesis_txn" : &pool_config_file
     });
     Pool::create_ledger_config(&pool_name, Some(&pool_config.to_string())).unwrap();
 
     // 2. Open pool ledger and get the pool handle from libindy.
     println!("2. Open pool ledger");
-    let pool_handle : i32 = Pool::open_ledger(&pool_name, None).unwrap();
+    let pool_handle: i32 = Pool::open_ledger(&pool_name, None).unwrap();
 
     // 3. Creates a new wallet
     println!("3. Creates a new wallet");
@@ -94,7 +94,7 @@ fn main() {
 
     // 4. Open wallet and get the wallet handle from libindy
     println!("4. Open wallet");
-    let wallet_handle : i32 = Wallet::open(&config, USEFUL_CREDENTIALS).unwrap();
+    let wallet_handle: i32 = Wallet::open(&config, USEFUL_CREDENTIALS).unwrap();
 
     // 5. Generating and storing steward DID and Verkey
     println!("5. Generating and storing steward DID and Verkey");
@@ -109,11 +109,11 @@ fn main() {
 
     // 7. Build NYM request to add Trust Anchor to the ledger
     println!("7. Build NYM request");
-    let build_nym_request : String = Ledger::build_nym_request(&steward_did, &trustee_did, Some(&trustee_verkey), None, Some("TRUST_ANCHOR")).unwrap();
+    let build_nym_request: String = Ledger::build_nym_request(&steward_did, &trustee_did, Some(&trustee_verkey), None, Some("TRUST_ANCHOR")).unwrap();
 
     // 8. Sending the nym request to ledger
     println!("8. Sending the nym request to ledger");
-    let _build_nym_sign_submit_result : String = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &steward_did, &build_nym_request).unwrap();
+    let _build_nym_sign_submit_result: String = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &steward_did, &build_nym_request).unwrap();
 
     // 9. build the schema definition request
     println!("9. build the schema definition request");
@@ -127,7 +127,7 @@ fn main() {
         "id": "id",
         "ver": "1.0"
     });
-    let build_schema_request : String = Ledger::build_schema_request(&steward_did, &schema_json.to_string()).unwrap();
+    let build_schema_request: String = Ledger::build_schema_request(&steward_did, &schema_json.to_string()).unwrap();
 
     // 10. Sending the SCHEMA request to the ledger
     println!("10. Sending the SCHEMA request to the ledger");
@@ -154,7 +154,7 @@ fn main() {
     let prover_wallet_name = "prover_wallet";
     let prover_wallet_config = json!({ "id" : prover_wallet_name.to_string() }).to_string();
     Wallet::create(&prover_wallet_config, USEFUL_CREDENTIALS).unwrap();
-    let prover_wallet_handle : i32 = Wallet::open(&prover_wallet_config, USEFUL_CREDENTIALS).unwrap();
+    let prover_wallet_handle: i32 = Wallet::open(&prover_wallet_config, USEFUL_CREDENTIALS).unwrap();
 
     // 13. Prover is creating Master Secret
     println!("13. Prover is creating Master Secret");
@@ -188,22 +188,23 @@ fn main() {
     // 17. Prover processes and stores Claim
     println!("17. Prover processes and stores Claim");
     let actual_cred_revoc_id = cred_revoc_id.unwrap();
-    let out_cred_id = Prover::store_credential(prover_wallet_handle, None, &claim_json, &cred_json, &cred_def_json,Some(&actual_cred_revoc_id)).unwrap();
+    let out_cred_id = Prover::store_credential(prover_wallet_handle, None, &claim_json, &cred_json, &cred_def_json, Some(&actual_cred_revoc_id)).unwrap();
 
 
     // clean up
     // Close and delete wallet
     println!("Close and delete two wallets");
-    indy::wallet::Wallet::close(prover_wallet_handle).unwrap();
-    indy::wallet::Wallet::delete(&prover_wallet_config, USEFUL_CREDENTIALS).unwrap();
-    indy::wallet::Wallet::close(wallet_handle).unwrap();
-    indy::wallet::Wallet::delete(&config, USEFUL_CREDENTIALS).unwrap();
+    Wallet::close(prover_wallet_handle).unwrap();
+    Wallet::delete(&prover_wallet_config, USEFUL_CREDENTIALS).unwrap();
+    Wallet::close(wallet_handle).unwrap();
+    Wallet::delete(&config, USEFUL_CREDENTIALS).unwrap();
 
     // Close pool
     println!("Close pool");
-    indy::pool::Pool::close(pool_handle).unwrap();
+    Pool::close(pool_handle).unwrap();
 
     // Delete pool ledger config
     println!("Delete pool ledger config");
-    indy::pool::Pool::delete(&pool_name).unwrap();
+    Pool::delete(&pool_name).unwrap();
     fs::remove_file(pool_config_pathbuf).unwrap();
+}
