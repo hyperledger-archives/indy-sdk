@@ -5,10 +5,11 @@ Hyperledger Indy SDK
    :width: 50%
 
 
+
 .. toctree::
   :maxdepth: 2
   :hidden:
-
+  
   getting-started/getting-started.md 
   rtd-tutorials
   rtd-design
@@ -56,6 +57,3 @@ here are some resources to increase your understanding:
 
   * The next page contains an extended tutorial introduces Indy, explains how the whole ecosystem works, and how the
     functions in the SDK can be used to construct rich clients.
-
-  
-  

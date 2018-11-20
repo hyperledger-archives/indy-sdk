@@ -5,8 +5,8 @@
     :caption: Sovrin
     :maxdepth: 2
 
-    Release Notes <https://sovrin.readthedocs.io/projects/sovrin/en/latest/release-notes.md.html>
-    Build Instructions <https://sovrin.readthedocs.io/projects/sovrin/en/latest/build-scripts/ubuntu-1604/README.md.html>
+    Release Notes <https://sovrin.readthedocs.io/en/latest/release-notes.html>
+    Build Instructions <https://sovrin.readthedocs.io/en/latest/build-scripts/ubuntu-1604/README.html>
 .. toctree::
     :caption: Repositories
     :maxdepth: 2

@@ -133,8 +133,8 @@ html_static_path = ['_static']
 #
 # html_sidebars = {}
 
-def setup(app):
-     app.add_stylesheet('css/custom.css')
+# def setup(app):
+#      app.add_stylesheet('css/custom.css')
 
 # -- Options for HTMLHelp output ---------------------------------------------
 
