@@ -1,6 +1,6 @@
 [package]
 name = "indy"
-version = "1.6.7"
+version = "1.6.8"
 description = "A library for assisting developers using LibIndy API"
 authors = ["Mike Lodder <redmike7@gmail.com>",
            "Matt Raffel <matt.raffel@evernyn.com>",
