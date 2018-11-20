@@ -2,8 +2,6 @@ const indy = require('indy-sdk')
 
 const PROTOCOL_VERSION = 2
 
-run();
-
 function path_home() {
     return require('os').homedir() + "/.indy_client"
 }
@@ -15,6 +13,8 @@ function assertEquals(expected, value) {
 }
 
 async function run() {
+
+    console.log("anoncredsRevocation.js -> started")
 
     console.log("Anoncreds Revocation sample -> started")
 
@@ -175,4 +175,12 @@ async function run() {
     await indy.deleteWallet(proverWalletConfig, proverWalletCredentials)
 
     console.log("Anoncreds Revocation sample -> completed")
+}
+
+if (process.argv.indexOf("--run") > 0) {
+    run()
+}
+
+module.exports = {
+    run
 }
