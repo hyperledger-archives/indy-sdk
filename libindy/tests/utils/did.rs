@@ -1,6 +1,6 @@
 extern crate futures;
 
-use indy::did::Did;
+use indy::did;
 use indy::ErrorCode;
 use self::futures::Future;
 
@@ -28,32 +28,32 @@ pub fn create_store_and_publish_my_did_from_steward(wallet_handle: i32, pool_han
 
 pub fn create_and_store_my_did(wallet_handle: i32, seed: Option<&str>) -> Result<(String, String), ErrorCode> {
     let my_did_json = json!({"seed": seed}).to_string();
-    Did::new(wallet_handle, &my_did_json).wait()
+    did::create_and_store_my_did(wallet_handle, &my_did_json).wait()
 }
 
 pub fn create_my_did(wallet_handle: i32, my_did_json: &str) -> Result<(String, String), ErrorCode> {
-    Did::new(wallet_handle, my_did_json).wait()
+    did::create_and_store_my_did(wallet_handle, my_did_json).wait()
 }
 
 pub fn store_their_did(wallet_handle: i32, identity_json: &str) -> Result<(), ErrorCode> {
-    Did::store_their_did(wallet_handle, identity_json).wait()
+    did::store_their_did(wallet_handle, identity_json).wait()
 }
 
 pub fn store_their_did_from_parts(wallet_handle: i32, their_did: &str, their_verkey: &str) -> Result<(), ErrorCode> {
     let their_identity_json = json!({"did": their_did, "verkey": their_verkey}).to_string();
-    Did::store_their_did(wallet_handle, &their_identity_json).wait()
+    did::store_their_did(wallet_handle, &their_identity_json).wait()
 }
 
 pub fn replace_keys_start(wallet_handle: i32, did: &str, identity_json: &str) -> Result<String, ErrorCode> {
-    Did::replace_keys_start(wallet_handle, did, identity_json).wait()
+    did::replace_keys_start(wallet_handle, did, identity_json).wait()
 }
 
 pub fn replace_keys_apply(wallet_handle: i32, did: &str) -> Result<(), ErrorCode> {
-    Did::replace_keys_apply(wallet_handle, did).wait()
+    did::replace_keys_apply(wallet_handle, did).wait()
 }
 
 pub fn replace_keys(pool_handle: i32, wallet_handle: i32, did: &str) -> Result<String, ErrorCode> {
-    let verkey = Did::replace_keys_start(wallet_handle, did, "{}").wait().unwrap();
+    let verkey = did::replace_keys_start(wallet_handle, did, "{}").wait().unwrap();
 
     let nym_request = ledger::build_nym_request(did, did, Some(&verkey), None, None).unwrap();
     ledger::sign_and_submit_request(pool_handle, wallet_handle, did, &nym_request).unwrap();
@@ -64,33 +64,33 @@ pub fn replace_keys(pool_handle: i32, wallet_handle: i32, did: &str) -> Result<S
 }
 
 pub fn key_for_did(pool_handle: i32, wallet_handle: i32, did: &str) -> Result<String, ErrorCode> {
-    Did::get_ver_key(pool_handle, wallet_handle, did).wait()
+    did::key_for_did(pool_handle, wallet_handle, did).wait()
 }
 
 pub fn key_for_local_did(wallet_handle: i32, did: &str) -> Result<String, ErrorCode> {
-    Did::get_ver_key_local(wallet_handle, did).wait()
+    did::key_for_local_did(wallet_handle, did).wait()
 }
 
 pub fn set_endpoint_for_did(wallet_handle: i32, did: &str, address: &str, transport_key: &str) -> Result<(), ErrorCode> {
-    Did::set_endpoint(wallet_handle, did, address, transport_key).wait()
+    did::set_endpoint_for_did(wallet_handle, did, address, transport_key).wait()
 }
 
 pub fn get_endpoint_for_did(wallet_handle: i32, pool_handle: i32, did: &str) -> Result<(String, Option<String>), ErrorCode> {
-    Did::get_endpoint(wallet_handle, pool_handle, did).wait()
+    did::get_endpoint_for_did(wallet_handle, pool_handle, did).wait()
 }
 
 pub fn set_did_metadata(wallet_handle: i32, did: &str, metadata: &str) -> Result<(), ErrorCode> {
-    Did::set_metadata(wallet_handle, did, metadata).wait()
+    did::set_did_metadata(wallet_handle, did, metadata).wait()
 }
 
 pub fn get_did_metadata(wallet_handle: i32, did: &str) -> Result<String, ErrorCode> {
-    Did::get_metadata(wallet_handle, did).wait()
+    did::get_did_metadata(wallet_handle, did).wait()
 }
 
 pub fn get_my_did_with_metadata(wallet_handle: i32, did: &str) -> Result<String, ErrorCode> {
-    Did::get_my_metadata(wallet_handle, did).wait()
+    did::get_my_did_with_metadata(wallet_handle, did).wait()
 }
 
 pub fn abbreviate_verkey(did: &str, verkey: &str) -> Result<String, ErrorCode> {
-    Did::abbreviate_verkey(did, verkey).wait()
+    did::abbreviate_verkey(did, verkey).wait()
 }

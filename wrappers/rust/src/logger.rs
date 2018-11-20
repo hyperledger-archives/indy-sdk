@@ -143,17 +143,17 @@ impl IndyLogger {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use log;
+    use log::{set_boxed_logger, logger};
 
     #[test]
     fn test_logger() {
-        log::set_boxed_logger(Box::new(SimpleLogger {})).unwrap();
-        Logger::set_indy_logger(log::logger()).unwrap();
+        set_boxed_logger(Box::new(SimpleLogger {})).unwrap();
+        Logger::set_indy_logger(logger()).unwrap();
     }
 
     struct SimpleLogger;
 
-    impl log::Log for SimpleLogger {
+    impl Log for SimpleLogger {
         fn enabled(&self, _metadata: &Metadata) -> bool {
             true
         }

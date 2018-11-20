@@ -6,7 +6,7 @@ use futures::Future;
 use utils::libindy::{ mock_libindy_rc};
 use utils::libindy::error_codes::map_rust_indy_sdk_error_code;
 use settings;
-use indy::crypto::Crypto;
+use indy::crypto;
 
 pub fn prep_msg(wallet_handle: i32, sender_vk: &str, recipient_vk: &str, msg: &[u8]) -> Result<Vec<u8>, u32> {
     if settings::test_indy_mode_enabled() {
@@ -15,7 +15,7 @@ pub fn prep_msg(wallet_handle: i32, sender_vk: &str, recipient_vk: &str, msg: &[
         return Ok(Vec::from(msg).to_owned());
     }
 
-    Crypto::auth_crypt(wallet_handle, sender_vk, recipient_vk, msg)
+    crypto::crypto_auth_crypt(wallet_handle, sender_vk, recipient_vk, msg)
         .wait()
         .map_err(map_rust_indy_sdk_error_code)
 }
@@ -23,7 +23,7 @@ pub fn prep_msg(wallet_handle: i32, sender_vk: &str, recipient_vk: &str, msg: &[
 pub fn prep_anonymous_msg(recipient_vk: &str, msg: &[u8]) -> Result<Vec<u8>, u32> {
     if settings::test_indy_mode_enabled() {return Ok(Vec::from(msg).to_owned())}
 
-    Crypto::anon_crypt(recipient_vk, msg)
+    crypto::crypto_anon_crypt(recipient_vk, msg)
         .wait()
         .map_err(map_rust_indy_sdk_error_code)
 }
@@ -31,7 +31,7 @@ pub fn prep_anonymous_msg(recipient_vk: &str, msg: &[u8]) -> Result<Vec<u8>, u32
 pub fn parse_msg(recipient_vk: &str, msg: &[u8]) -> Result<(String, Vec<u8>), u32> {
     if settings::test_indy_mode_enabled() { return Ok((::utils::constants::VERKEY.to_string(), Vec::from(msg).to_owned())) }
 
-    Crypto::auth_decrypt(::utils::libindy::wallet::get_wallet_handle(), recipient_vk, msg)
+    crypto::crypto_auth_decrypt(::utils::libindy::wallet::get_wallet_handle(), recipient_vk, msg)
         .wait()
         .map_err(map_rust_indy_sdk_error_code)
 }
@@ -39,7 +39,7 @@ pub fn parse_msg(recipient_vk: &str, msg: &[u8]) -> Result<(String, Vec<u8>), u3
 pub fn parse_anonymous_msg(wallet_handle: i32, recipient_vk: &str, msg: &[u8]) -> Result<Vec<u8>, u32> {
     if settings::test_indy_mode_enabled() { return Ok(Vec::from(msg).to_owned()) }
 
-    Crypto::anon_decrypt(wallet_handle, recipient_vk, msg)
+    crypto::crypto_anon_decrypt(wallet_handle, recipient_vk, msg)
         .wait()
         .map_err(map_rust_indy_sdk_error_code)
 }
@@ -47,5 +47,5 @@ pub fn parse_anonymous_msg(wallet_handle: i32, recipient_vk: &str, msg: &[u8]) -
 pub fn sign(wallet_handle: i32, my_vk: &str, msg: &[u8]) -> Result<Vec<u8>, u32> {
     if settings::test_indy_mode_enabled() {return Ok(Vec::from(msg).to_owned())}
 
-    Crypto::sign(wallet_handle, my_vk, msg).wait().map_err(map_rust_indy_sdk_error_code)
+    crypto::crypto_sign(wallet_handle, my_vk, msg).wait().map_err(map_rust_indy_sdk_error_code)
 }

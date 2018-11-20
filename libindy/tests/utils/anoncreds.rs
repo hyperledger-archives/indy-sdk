@@ -1,7 +1,7 @@
 extern crate futures;
 
 use indy::ErrorCode;
-use indy::anoncreds::{AnonCreds, Issuer, Prover, Verifier};
+use indy::anoncreds;
 use self::futures::Future;
 
 use serde_json;
@@ -47,109 +47,109 @@ macro_rules! map (
 );
 
 pub fn issuer_create_schema(issuer_did: &str, name: &str, version: &str, attr_names: &str) -> Result<(String, String), ErrorCode> {
-    Issuer::create_schema(issuer_did, name, version, attr_names).wait()
+    anoncreds::issuer_create_schema(issuer_did, name, version, attr_names).wait()
 }
 
 pub fn issuer_create_credential_definition(wallet_handle: i32, issuer_did: &str, schema: &str, tag: &str,
                                            signature_type: Option<&str>, config: Option<&str>) -> Result<(String, String), ErrorCode> {
-    Issuer::create_and_store_credential_def(wallet_handle, issuer_did, schema, tag, signature_type, config.unwrap_or("{}")).wait() // TODO: FIXME OPTIONAL CONFIG
+    anoncreds::issuer_create_and_store_credential_def(wallet_handle, issuer_did, schema, tag, signature_type, config.unwrap_or("{}")).wait() // TODO: FIXME OPTIONAL CONFIG
 }
 
 pub fn issuer_create_and_store_revoc_reg(wallet_handle: i32, issuer_did: &str, type_: Option<&str>, tag: &str,
                                          cred_def_id: &str, config_json: &str, tails_writer_handle: i32)
                                          -> Result<(String, String, String), ErrorCode> {
-    Issuer::create_and_store_revoc_reg(wallet_handle, issuer_did, type_, tag, cred_def_id, config_json, tails_writer_handle).wait()
+    anoncreds::issuer_create_and_store_revoc_reg(wallet_handle, issuer_did, type_, tag, cred_def_id, config_json, tails_writer_handle).wait()
 }
 
 pub fn issuer_create_credential_offer(wallet_handle: i32, cred_def_id: &str) -> Result<String, ErrorCode> {
-    Issuer::create_credential_offer(wallet_handle, cred_def_id).wait()
+    anoncreds::issuer_create_credential_offer(wallet_handle, cred_def_id).wait()
 }
 
 pub fn issuer_create_credential(wallet_handle: i32, cred_offer_json: &str, cred_req_json: &str, cred_values_json: &str,
                                 rev_reg_id: Option<&str>, blob_storage_reader_handle: Option<i32>) -> Result<(String, Option<String>, Option<String>), ErrorCode> {
-    Issuer::create_credential(wallet_handle, cred_offer_json, cred_req_json, cred_values_json, rev_reg_id, blob_storage_reader_handle.unwrap_or(-1)).wait() // TODO OPTIONAL blob_storage_reader_handle
+    anoncreds::issuer_create_credential(wallet_handle, cred_offer_json, cred_req_json, cred_values_json, rev_reg_id, blob_storage_reader_handle.unwrap_or(-1)).wait() // TODO OPTIONAL blob_storage_reader_handle
 }
 
 pub fn issuer_revoke_credential(wallet_handle: i32, blob_storage_reader_handle: i32, rev_reg_id: &str, cred_revoc_id: &str) -> Result<String, ErrorCode> {
-    Issuer::revoke_credential(wallet_handle, blob_storage_reader_handle, rev_reg_id, cred_revoc_id).wait()
+    anoncreds::issuer_revoke_credential(wallet_handle, blob_storage_reader_handle, rev_reg_id, cred_revoc_id).wait()
 }
 
 pub fn issuer_merge_revocation_registry_deltas(rev_reg_delta: &str, other_rev_reg_delta: &str) -> Result<String, ErrorCode> {
-    Issuer::merge_revocation_registry_deltas(rev_reg_delta, other_rev_reg_delta).wait()
+    anoncreds::issuer_merge_revocation_registry_deltas(rev_reg_delta, other_rev_reg_delta).wait()
 }
 
 pub fn prover_create_master_secret(wallet_handle: i32, master_secret_id: &str) -> Result<String, ErrorCode> {
-    Prover::create_master_secret(wallet_handle, Some(master_secret_id)).wait()
+    anoncreds::prover_create_master_secret(wallet_handle, Some(master_secret_id)).wait()
 }
 
 pub fn prover_create_credential_req(wallet_handle: i32, prover_did: &str, cred_offer_json: &str,
                                     cred_def_json: &str, master_secret_id: &str) -> Result<(String, String), ErrorCode> {
-    Prover::create_credential_req(wallet_handle, prover_did, cred_offer_json, cred_def_json, master_secret_id).wait()
+    anoncreds::prover_create_credential_req(wallet_handle, prover_did, cred_offer_json, cred_def_json, master_secret_id).wait()
 }
 
 pub fn prover_store_credential(wallet_handle: i32, cred_id: &str, cred_req_metadata_json: &str, cred_json: &str,
                                cred_def_json: &str, rev_reg_def_json: Option<&str>) -> Result<String, ErrorCode> {
-    Prover::store_credential(wallet_handle, Some(cred_id), cred_req_metadata_json, cred_json, cred_def_json, rev_reg_def_json).wait()
+    anoncreds::prover_store_credential(wallet_handle, Some(cred_id), cred_req_metadata_json, cred_json, cred_def_json, rev_reg_def_json).wait()
 }
 
 //TODO mark as depricated and use only in target tests
 pub fn prover_get_credentials(wallet_handle: i32, filter_json: &str) -> Result<String, ErrorCode> {
-    Prover::get_credentials(wallet_handle, Some(filter_json)).wait()
+    anoncreds::prover_get_credentials(wallet_handle, Some(filter_json)).wait()
 }
 
 pub fn prover_get_credential(wallet_handle: i32, cred_id: &str) -> Result<String, ErrorCode> {
-    Prover::get_credential(wallet_handle, cred_id).wait()
+    anoncreds::prover_get_credential(wallet_handle, cred_id).wait()
 }
 
 pub fn prover_search_credentials(wallet_handle: i32, filter_json: &str) -> Result<(i32, usize), ErrorCode> {
-    Prover::search_credentials(wallet_handle, Some(filter_json)).wait()
+    anoncreds::prover_search_credentials(wallet_handle, Some(filter_json)).wait()
 }
 
 pub fn prover_fetch_credentials(search_handle: i32, count: usize) -> Result<String, ErrorCode> {
-    Prover::fetch_credentials(search_handle, count).wait()
+    anoncreds::prover_fetch_credentials(search_handle, count).wait()
 }
 
 pub fn prover_close_credentials_search(search_handle: i32) -> Result<(), ErrorCode> {
-    Prover::close_credentials_search(search_handle).wait()
+    anoncreds::prover_close_credentials_search(search_handle).wait()
 }
 
 //TODO mark as depricated and use only in target tests
 pub fn prover_get_credentials_for_proof_req(wallet_handle: i32, proof_request_json: &str) -> Result<String, ErrorCode> {
-    Prover::get_credentials_for_proof_req(wallet_handle, proof_request_json).wait()
+    anoncreds::prover_get_credentials_for_proof_req(wallet_handle, proof_request_json).wait()
 }
 
 pub fn prover_search_credentials_for_proof_req(wallet_handle: i32, proof_request_json: &str, extra_query_json: Option<&str>) -> Result<i32, ErrorCode> {
-    Prover::search_credentials_for_proof_req(wallet_handle, proof_request_json, extra_query_json).wait()
+    anoncreds::prover_search_credentials_for_proof_req(wallet_handle, proof_request_json, extra_query_json).wait()
 }
 
 pub fn prover_fetch_next_credentials_for_proof_req(search_handle: i32, item_ref: &str, count: usize) -> Result<String, ErrorCode> {
-    Prover::_fetch_credentials_for_proof_req(search_handle, item_ref, count).wait()
+    anoncreds::prover_fetch_credentials_for_proof_req(search_handle, item_ref, count).wait()
 }
 
 pub fn prover_close_credentials_search_for_proof_req(search_handle: i32) -> Result<(), ErrorCode> {
-    Prover::_close_credentials_search_for_proof_req(search_handle).wait()
+    anoncreds::prover_close_credentials_search_for_proof_req(search_handle).wait()
 }
 
 pub fn prover_create_proof(wallet_handle: i32, proof_req_json: &str, requested_credentials_json: &str,
                            master_secret_name: &str, schemas_json: &str, cred_defs_json: &str,
                            rev_states_json: &str) -> Result<String, ErrorCode> {
-    Prover::create_proof(wallet_handle, proof_req_json, requested_credentials_json,
+    anoncreds::prover_create_proof(wallet_handle, proof_req_json, requested_credentials_json,
                          master_secret_name, schemas_json, cred_defs_json, rev_states_json).wait()
 }
 
 pub fn verifier_verify_proof(proof_request_json: &str, proof_json: &str, schemas_json: &str,
                              cred_defs_json: &str, rev_reg_defs_json: &str, rev_regs_json: &str) -> Result<bool, ErrorCode> {
-    Verifier::verify_proof(proof_request_json, proof_json, schemas_json, cred_defs_json, rev_reg_defs_json, rev_regs_json).wait()
+    anoncreds::verifier_verify_proof(proof_request_json, proof_json, schemas_json, cred_defs_json, rev_reg_defs_json, rev_regs_json).wait()
 }
 
 pub fn create_revocation_state(blob_storage_reader_handle: i32, rev_reg_def_json: &str,
                                rev_reg_delta_json: &str, timestamp: u64, cred_rev_id: &str) -> Result<String, ErrorCode> {
-    AnonCreds::create_revocation_state(blob_storage_reader_handle, rev_reg_def_json, rev_reg_delta_json, timestamp, cred_rev_id).wait()
+    anoncreds::create_revocation_state(blob_storage_reader_handle, rev_reg_def_json, rev_reg_delta_json, timestamp, cred_rev_id).wait()
 }
 
 pub fn update_revocation_state(tails_reader_handle: i32, rev_state_json: &str, rev_reg_def_json: &str,
                                rev_reg_delta_json: &str, timestamp: u64, cred_rev_id: &str) -> Result<String, ErrorCode> {
-    AnonCreds::update_revocation_state(tails_reader_handle, rev_state_json, rev_reg_def_json, rev_reg_delta_json, timestamp, cred_rev_id).wait()
+    anoncreds::update_revocation_state(tails_reader_handle, rev_state_json, rev_reg_def_json, rev_reg_delta_json, timestamp, cred_rev_id).wait()
 }
 
 pub fn default_cred_def_config() -> String {

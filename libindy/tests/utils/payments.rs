@@ -2,9 +2,9 @@ extern crate futures;
 extern crate indy_sys;
 
 use indy::ErrorCode;
-use indy::payments::Payment;
+use indy::payments;
 use self::futures::Future;
-use self::indy_sys::payments;
+use self::indy_sys::{payments as payments_sys};
 
 use std::collections::VecDeque;
 use std::ffi::CString;
@@ -77,7 +77,7 @@ pub mod mock_method {
             let (receiver, cmd_handle, cb) = callback::_closure_to_cb_ec();
             let payment_method_name = CString::new("null").unwrap();
             unsafe {
-                payments::indy_register_payment_method(cmd_handle,
+                payments_sys::indy_register_payment_method(cmd_handle,
                                                        payment_method_name.as_ptr(),
                                                        Some(create_payment_address::handle),
                                                        Some(add_request_fees::handle),
@@ -154,26 +154,26 @@ pub mod mock_method {
 }
 
 pub fn register_payment_method(payment_method_name: &str,
-                               create_payment_address: Option<payments::CreatePaymentAddressCB>,
-                               add_request_fees: Option<payments::AddRequestFeesCB>,
-                               parse_response_with_fees: Option<payments::ParseResponseWithFeesCB>,
-                               build_get_payment_sources_request: Option<payments::BuildGetPaymentSourcesRequestCB>,
-                               parse_get_payment_sources_response: Option<payments::ParseGetPaymentSourcesResponseCB>,
-                               build_payment_req: Option<payments::BuildPaymentReqCB>,
-                               parse_payment_response: Option<payments::ParsePaymentResponseCB>,
-                               build_mint_req: Option<payments::BuildMintReqCB>,
-                               build_set_txn_fees_req: Option<payments::BuildSetTxnFeesReqCB>,
-                               build_get_txn_fees_req: Option<payments::BuildGetTxnFeesReqCB>,
-                               parse_get_txn_fees_response: Option<payments::ParseGetTxnFeesResponseCB>,
-                               build_verify_payment_req: Option<payments::BuildVerifyPaymentReqCB>,
-                               parse_verify_payment_response: Option<payments::ParseVerifyPaymentResponseCB>,
+                               create_payment_address: Option<payments_sys::CreatePaymentAddressCB>,
+                               add_request_fees: Option<payments_sys::AddRequestFeesCB>,
+                               parse_response_with_fees: Option<payments_sys::ParseResponseWithFeesCB>,
+                               build_get_payment_sources_request: Option<payments_sys::BuildGetPaymentSourcesRequestCB>,
+                               parse_get_payment_sources_response: Option<payments_sys::ParseGetPaymentSourcesResponseCB>,
+                               build_payment_req: Option<payments_sys::BuildPaymentReqCB>,
+                               parse_payment_response: Option<payments_sys::ParsePaymentResponseCB>,
+                               build_mint_req: Option<payments_sys::BuildMintReqCB>,
+                               build_set_txn_fees_req: Option<payments_sys::BuildSetTxnFeesReqCB>,
+                               build_get_txn_fees_req: Option<payments_sys::BuildGetTxnFeesReqCB>,
+                               parse_get_txn_fees_response: Option<payments_sys::ParseGetTxnFeesResponseCB>,
+                               build_verify_payment_req: Option<payments_sys::BuildVerifyPaymentReqCB>,
+                               parse_verify_payment_response: Option<payments_sys::ParseVerifyPaymentResponseCB>,
 ) -> Result<(), ErrorCode> {
     let (receiver, cmd_handle, cb) = callback::_closure_to_cb_ec();
 
     let payment_method_name = CString::new(payment_method_name).unwrap();
 
     let err = unsafe {
-        payments::indy_register_payment_method(cmd_handle,
+        payments_sys::indy_register_payment_method(cmd_handle,
                                                payment_method_name.as_ptr(),
                                                create_payment_address,
                                                add_request_fees,
@@ -196,57 +196,57 @@ pub fn register_payment_method(payment_method_name: &str,
 }
 
 pub fn create_payment_address(wallet_handle: i32, config: &str, payment_method: &str) -> Result<String, ErrorCode> {
-    Payment::create_payment_address(wallet_handle, payment_method, config).wait()
+    payments::create_payment_address(wallet_handle, payment_method, config).wait()
 }
 
 pub fn list_payment_addresses(wallet_handle: i32) -> Result<String, ErrorCode> {
-    Payment::list_payment_addresses(wallet_handle).wait()
+    payments::list_payment_addresses(wallet_handle).wait()
 }
 
 pub fn add_request_fees(wallet_handle: i32, submitter_did: Option<&str>, req_json: &str, inputs_json: &str, outputs_json: &str, extra: Option<&str>) -> Result<(String, String), ErrorCode> {
-    Payment::add_request_fees(wallet_handle, submitter_did, req_json, inputs_json, outputs_json, extra).wait()
+    payments::add_request_fees(wallet_handle, submitter_did, req_json, inputs_json, outputs_json, extra).wait()
 }
 
 pub fn build_get_payment_sources_request(wallet_handle: i32, submitter_did: Option<&str>, payment_address: &str) -> Result<(String, String), ErrorCode> {
-    Payment::build_get_payment_sources_request(wallet_handle, submitter_did, payment_address).wait()
+    payments::build_get_payment_sources_request(wallet_handle, submitter_did, payment_address).wait()
 }
 
 pub fn build_payment_req(wallet_handle: i32, submitter_did: Option<&str>, inputs_json: &str, outputs_json: &str, extra: Option<&str>) -> Result<(String, String), ErrorCode> {
-    Payment::build_payment_req(wallet_handle, submitter_did, inputs_json, outputs_json, extra).wait()
+    payments::build_payment_req(wallet_handle, submitter_did, inputs_json, outputs_json, extra).wait()
 }
 
 pub fn parse_response_with_fees(payment_method: &str, resp_json: &str) -> Result<String, ErrorCode> {
-    Payment::parse_response_with_fees(payment_method, resp_json).wait()
+    payments::parse_response_with_fees(payment_method, resp_json).wait()
 }
 
 pub fn parse_get_payment_sources_response(payment_method: &str, resp_json: &str) -> Result<String, ErrorCode> {
-    Payment::parse_get_payment_sources_response(payment_method, resp_json).wait()
+    payments::parse_get_payment_sources_response(payment_method, resp_json).wait()
 }
 
 pub fn parse_payment_response(payment_method: &str, resp_json: &str) -> Result<String, ErrorCode> {
-    Payment::parse_payment_response(payment_method, resp_json).wait()
+    payments::parse_payment_response(payment_method, resp_json).wait()
 }
 
 pub fn build_mint_req(wallet_handle: i32, submitter_did: Option<&str>, outputs_json: &str, extra: Option<&str>) -> Result<(String, String), ErrorCode> {
-    Payment::build_mint_req(wallet_handle, submitter_did, outputs_json, extra).wait()
+    payments::build_mint_req(wallet_handle, submitter_did, outputs_json, extra).wait()
 }
 
 pub fn build_set_txn_fees_req(wallet_handle: i32, submitter_did: Option<&str>, payment_method: &str, fees_json: &str) -> Result<String, ErrorCode> {
-    Payment::build_set_txn_fees_req(wallet_handle, submitter_did, payment_method, fees_json).wait()
+    payments::build_set_txn_fees_req(wallet_handle, submitter_did, payment_method, fees_json).wait()
 }
 
 pub fn build_get_txn_fees_req(wallet_handle: i32, submitter_did: Option<&str>, payment_method: &str) -> Result<String, ErrorCode> {
-    Payment::build_get_txn_fees_req(wallet_handle, submitter_did, payment_method).wait()
+    payments::build_get_txn_fees_req(wallet_handle, submitter_did, payment_method).wait()
 }
 
 pub fn parse_get_txn_fees_response(payment_method: &str, resp_json: &str) -> Result<String, ErrorCode> {
-    Payment::parse_get_txn_fees_response(payment_method, resp_json).wait()
+    payments::parse_get_txn_fees_response(payment_method, resp_json).wait()
 }
 
 pub fn build_verify_payment_req(wallet_handle: i32, submitter_did: Option<&str>, receipt: &str) -> Result<(String, String), ErrorCode> {
-    Payment::build_verify_req(wallet_handle, submitter_did, receipt).wait()
+    payments::build_verify_payment_req(wallet_handle, submitter_did, receipt).wait()
 }
 
 pub fn parse_verify_payment_response(payment_method: &str, resp_json: &str) -> Result<String, ErrorCode> {
-    Payment::parse_verify_response(payment_method, resp_json).wait()
+    payments::parse_verify_payment_response(payment_method, resp_json).wait()
 }
