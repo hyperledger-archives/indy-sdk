@@ -206,7 +206,7 @@ if(on_rtd):
         import remote_conf
         remote_conf.generate_sidebar(globals(), 'sdk')
         intersphinx_mapping = remote_conf.get_intersphinx_mapping(rtd_version)
-        master_doc = "builder/toc"
+        master_doc = "toc"
     except:
         e = sys.exc_info*()[0]
         print e
