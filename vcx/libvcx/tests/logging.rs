@@ -1,11 +1,12 @@
 extern crate vcx;
-extern crate indy;
+extern crate indyrs as indy;
 extern crate libc;
 #[macro_use]
 extern crate log;
+extern crate futures;
 
 
-
+use self::futures::Future;
 use self::libc::{c_void, c_char};
 use std::ptr::null;
 use vcx::api::logger::*;
@@ -13,6 +14,7 @@ use vcx::utils::logger::{LOGGER_STATE, LoggerState};
 use indy::wallet;
 use vcx::utils::cstring::CStringUtils;
 use vcx::api::logger::vcx_set_logger;
+
 /// These tests can only be run individually as initing the log crate can happen
 /// only once.
 ///
@@ -72,7 +74,7 @@ mod log_tests {
     fn test_works_with_libindy() {
         pub const DEFAULT_WALLET_CONFIG: &'static str = r#"{"id":"wallet_1","storage_type":"default"}"#;
         pub const WALLET_CREDENTIALS: &'static str = r#"{"key":"8dvfYSt5d1taSd6yJdpjq4emkwsPDDLYxkNFysFD2cZY", "key_derivation_method":"RAW"}"#;
-        wallet::Wallet::create(DEFAULT_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+        wallet::Wallet::create(DEFAULT_WALLET_CONFIG, WALLET_CREDENTIALS).wait().unwrap();
         let pattern = CStringUtils::string_to_cstring("debug".to_string());
         assert_eq!(vcx_set_default_logger(pattern.as_ptr()), 0);
         debug!("testing debug");

@@ -1,10 +1,9 @@
 extern crate log4rs;
 extern crate log;
 extern crate libc;
-extern crate indy;
 
 use std::error::Error;
-
+use indy;
 
 pub struct  IndyCliLogger;
 

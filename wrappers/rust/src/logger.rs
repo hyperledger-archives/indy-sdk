@@ -22,11 +22,11 @@ impl Logger {
     ///
     /// # Arguments
     /// * `pattern` - (optional) pattern that corresponds with the log messages to show.
-    pub fn set_default_logger(pattern: &str) -> Result<(), ErrorCode> {
-        let pattern = c_str!(pattern);
+    pub fn set_default_logger(pattern: Option<&str>) -> Result<(), ErrorCode> {
+        let pattern_str = opt_c_str!(pattern);
 
         let res = ErrorCode::from(unsafe {
-            logger::indy_set_default_logger(pattern.as_ptr())
+            logger::indy_set_default_logger(opt_c_ptr!(pattern, pattern_str))
         });
 
         match res {
