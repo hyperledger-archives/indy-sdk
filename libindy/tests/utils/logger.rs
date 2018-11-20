@@ -2,7 +2,7 @@ extern crate futures;
 extern crate log;
 extern crate time;
 
-use indy::logger::Logger;
+use indy::logger;
 
 pub struct SimpleLogger;
 
@@ -26,9 +26,9 @@ impl log::Log for SimpleLogger {
 }
 
 pub fn set_logger(logger: &'static log::Log) {
-    Logger::set_indy_logger(logger).ok();
+    logger::set_indy_logger(logger).ok();
 }
 
 pub fn set_default_logger() {
-    Logger::set_default_logger(Some("trace")).ok();
+    logger::set_default_logger(Some("trace")).ok();
 }

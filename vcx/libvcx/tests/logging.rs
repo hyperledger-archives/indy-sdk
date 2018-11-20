@@ -5,8 +5,6 @@ extern crate libc;
 extern crate log;
 extern crate futures;
 
-
-use self::futures::Future;
 use self::libc::{c_void, c_char};
 use std::ptr::null;
 use vcx::api::logger::*;

@@ -14,52 +14,50 @@ static mut LOGGER: Option<Box<(&'static Log)>> = None;
 
 pub struct Logger {}
 
-impl Logger {
-    /// Set default logger implementation.
-    ///
-    /// Allows library user use `env_logger` logger as default implementation.
-    /// More details about `env_logger` and its customization can be found here: https://crates.io/crates/env_logger
-    ///
-    /// # Arguments
-    /// * `pattern` - (optional) pattern that corresponds with the log messages to show.
-    pub fn set_default_logger(pattern: Option<&str>) -> Result<(), ErrorCode> {
-        let pattern_str = opt_c_str!(pattern);
+/// Set default logger implementation.
+///
+/// Allows library user use `env_logger` logger as default implementation.
+/// More details about `env_logger` and its customization can be found here: https://crates.io/crates/env_logger
+///
+/// # Arguments
+/// * `pattern` - (optional) pattern that corresponds with the log messages to show.
+pub fn set_default_logger(pattern: Option<&str>) -> Result<(), ErrorCode> {
+    let pattern_str = opt_c_str!(pattern);
 
-        let res = ErrorCode::from(unsafe {
-            logger::indy_set_default_logger(opt_c_ptr!(pattern, pattern_str))
-        });
+    let res = ErrorCode::from(unsafe {
+        logger::indy_set_default_logger(opt_c_ptr!(pattern, pattern_str))
+    });
 
-        match res {
-            ErrorCode::Success => Ok(()),
-            err => Err(err)
+    match res {
+        ErrorCode::Success => Ok(()),
+        err => Err(err)
+    }
+}
+
+/// Set application logger implementation to Libindy.
+///
+/// # Arguments
+/// * `logger` - reference to logger used by application.
+pub fn set_indy_logger(logger: &'static Log) -> Result<(), ErrorCode> {
+    {
+        unsafe {
+            if LOGGER.is_some() { return Err(ErrorCode::CommonInvalidState); }
+            LOGGER = Some(Box::new(logger));
         }
     }
 
-    /// Set application logger implementation to Libindy.
-    ///
-    /// # Arguments
-    /// * `logger` - reference to logger used by application.
-    pub fn set_indy_logger(logger: &'static Log) -> Result<(), ErrorCode> {
-        {
-            unsafe {
-                if LOGGER.is_some() { return Err(ErrorCode::CommonInvalidState); }
-                LOGGER = Some(Box::new(logger));
-            }
-        }
+    let res = ErrorCode::from(unsafe {
+        logger::indy_set_logger(
+            null(),
+            Some(IndyLogger::enabled_cb),
+            Some(IndyLogger::log_cb),
+            Some(IndyLogger::flush_cb),
+        )
+    });
 
-        let res = ErrorCode::from(unsafe {
-            logger::indy_set_logger(
-                null(),
-                Some(IndyLogger::enabled_cb),
-                Some(IndyLogger::log_cb),
-                Some(IndyLogger::flush_cb),
-            )
-        });
-
-        match res {
-            ErrorCode::Success => Ok(()),
-            err => Err(err)
-        }
+    match res {
+        ErrorCode::Success => Ok(()),
+        err => Err(err)
     }
 }
 
@@ -148,7 +146,7 @@ mod tests {
     #[test]
     fn test_logger() {
         set_boxed_logger(Box::new(SimpleLogger {})).unwrap();
-        Logger::set_indy_logger(logger()).unwrap();
+        set_indy_logger(logger()).unwrap();
     }
 
     struct SimpleLogger;

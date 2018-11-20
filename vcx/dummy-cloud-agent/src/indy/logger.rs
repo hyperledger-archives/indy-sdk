@@ -1,5 +1,5 @@
 use super::IndyError;
-use indyrs::logger::Logger as logger;
+use indyrs::logger;
 
 pub fn set_default_logger(pattern: Option<&str>) -> Result<(), IndyError> {
     logger::set_default_logger(pattern)
