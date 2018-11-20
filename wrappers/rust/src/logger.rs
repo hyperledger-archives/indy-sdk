@@ -143,6 +143,7 @@ impl IndyLogger {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use log;
 
     #[test]
     fn test_logger() {

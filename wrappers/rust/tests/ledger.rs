@@ -2,7 +2,7 @@
 #[macro_use] extern crate serde_derive;
 extern crate rmp_serde;
 extern crate byteorder;
-extern crate indy;
+extern crate indyrs as indy;
 extern crate futures;
 #[allow(unused_variables)]
 #[allow(unused_macros)]
@@ -352,7 +352,7 @@ mod test_submit_action {
         let validator_request = Ledger::build_get_validator_info_request(&did).wait().unwrap();
         let signed_request = Ledger::sign_request(wallet.handle, &did, &validator_request).wait().unwrap();
 
-        Ledger::submit_action(pool_handle, &signed_request, "[]", 5).wait().unwrap_err();
+        Ledger::submit_action(pool_handle, &signed_request, Some("[]"), Some(5)).wait().unwrap_err();
 
         Pool::close(pool_handle).wait().unwrap();
     }
@@ -376,7 +376,7 @@ mod test_submit_action {
         let validator_request = Ledger::build_get_validator_info_request(&did).wait().unwrap();
         let signed_request = Ledger::sign_request(wallet.handle, &did, &validator_request).wait().unwrap();
 
-        let result = Ledger::submit_action(pool_handle, &signed_request, NODES, 5).wait();
+        let result = Ledger::submit_action(pool_handle, &signed_request, Some(NODES), Some(5)).wait();
 
         Pool::close(pool_handle).wait().unwrap();
 
