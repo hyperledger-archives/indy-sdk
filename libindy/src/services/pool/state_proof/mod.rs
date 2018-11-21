@@ -192,7 +192,9 @@ fn _parse_reply_for_builtin_sp(json_msg: &SJsonValue, type_: &str) -> Option<Vec
                                                           json_msg["ref"].as_u64()) {
                 trace!("TransactionHandler::parse_reply_for_builtin_sp: GET_CRED_DEF sign_type {:?}, sch_seq_no: {:?}", sign_type, sch_seq_no);
                 let marker = if ProtocolVersion::is_node_1_3() { '\x03' } else { '3' };
-                format!(":{}:{}:{}", marker, sign_type, sch_seq_no)
+                let tag = if ProtocolVersion::is_node_1_3() { None } else { json_msg["tag"].as_str() };
+                let tag = tag.map(|t| format!(":{}", t)).unwrap_or("".to_owned());
+                format!(":{}:{}:{}{}", marker, sign_type, sch_seq_no, tag)
             } else {
                 trace!("TransactionHandler::parse_reply_for_builtin_sp: <<< GET_CRED_DEF No key suffix");
                 return None;
