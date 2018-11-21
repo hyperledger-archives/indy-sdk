@@ -276,9 +276,9 @@ mod tests {
     fn test_real_connect_register_provision() {
         settings::set_defaults();
 
-        let agency_did = "YRuVCckY6vfZfX9kcQZe3u";
-        let agency_vk = "J8Yct6FwmarXjrE2khZesUXRVVSVczSoa9sFaGe6AD2v";
-        let host = "https://enym-eagency.pdev.evernym.com";
+        let agency_did = "VsKV7grR1BUE29mG2Fm2kX";
+        let agency_vk = "Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR";
+        let host = "http://localhost:8080";
         let wallet_key = "test_key";
         let config = json!({
             "agency_url": host.to_string(),
