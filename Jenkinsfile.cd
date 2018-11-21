@@ -253,7 +253,7 @@ def linuxLibindyBuild(file, env_name, network_name, stashBuildResults) {
             '''
 
             if (stashBuildResults) {
-                stash includes: 'libindy/target/release/libindy.so,target/release/libindy.a', name: 'LibindyUbuntuBuildResult'
+                stash includes: 'libindy/target/release/libindy.so,libindy/target/release/libindy.a', name: 'LibindyUbuntuBuildResult'
             }
         }
 

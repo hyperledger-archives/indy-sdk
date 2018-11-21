@@ -1,7 +1,5 @@
-use super::IndyError;
-use indyrs::logger;
+use indyrs::{logger, ErrorCode};
 
-pub fn set_default_logger(pattern: Option<&str>) -> Result<(), IndyError> {
+pub fn set_default_logger(pattern: Option<&str>) -> Result<(), ErrorCode> {
     logger::set_default_logger(pattern)
-        .map_err(|err| IndyError::from_err_code(err as i32))
 }

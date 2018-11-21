@@ -1,23 +1,19 @@
 use futures::*;
-use super::IndyError;
 use utils::futures::*;
-use indyrs::wallet;
+use indyrs::{wallet, ErrorCode};
 
-pub fn create_wallet(config: &str, credentials: &str) -> Box<Future<Item=(), Error=IndyError>> {
+pub fn create_wallet(config: &str, credentials: &str) -> Box<Future<Item=(), Error=ErrorCode>> {
     wallet::create_wallet(config, credentials)
-        .map_err(|err| IndyError::from_err_code(err as i32))
         .into_box()
 }
 
-pub fn open_wallet(config: &str, credentials: &str) -> Box<Future<Item=i32, Error=IndyError>> {
+pub fn open_wallet(config: &str, credentials: &str) -> Box<Future<Item=i32, Error=ErrorCode>> {
     wallet::open_wallet(config, credentials)
-        .map_err(|err| IndyError::from_err_code(err as i32))
         .into_box()
 }
 
 #[allow(unused)] // TODO: Use!
-pub fn close_wallet(wallet_handle: i32) -> Box<Future<Item=(), Error=IndyError>> {
+pub fn close_wallet(wallet_handle: i32) -> Box<Future<Item=(), Error=ErrorCode>> {
     wallet::close_wallet(wallet_handle)
-        .map_err(|err| IndyError::from_err_code(err as i32))
         .into_box()
 }

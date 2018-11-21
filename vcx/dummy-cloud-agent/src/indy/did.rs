@@ -1,34 +1,28 @@
 use futures::*;
-use super::IndyError;
 use utils::futures::*;
-use indyrs::did;
+use indyrs::{did, ErrorCode};
 
-pub fn create_and_store_my_did(wallet_handle: i32, did_info: &str) -> Box<Future<Item=(String, String), Error=IndyError>> {
+pub fn create_and_store_my_did(wallet_handle: i32, did_info: &str) -> Box<Future<Item=(String, String), Error=ErrorCode>> {
     did::create_and_store_my_did(wallet_handle, did_info)
-        .map_err(|err| IndyError::from_err_code(err as i32))
         .into_box()
 }
 
-pub fn key_for_local_did(wallet_handle: i32, did: &str) -> Box<Future<Item=String, Error=IndyError>> {
+pub fn key_for_local_did(wallet_handle: i32, did: &str) -> Box<Future<Item=String, Error=ErrorCode>> {
     did::key_for_local_did(wallet_handle, did)
-        .map_err(|err| IndyError::from_err_code(err as i32))
         .into_box()
 }
 
-pub fn store_their_did(wallet_handle: i32, did_info: &str) -> Box<Future<Item=(), Error=IndyError>> {
+pub fn store_their_did(wallet_handle: i32, did_info: &str) -> Box<Future<Item=(), Error=ErrorCode>> {
     did::store_their_did(wallet_handle, did_info)
-        .map_err(|err| IndyError::from_err_code(err as i32))
         .into_box()
 }
 
-pub fn set_did_metadata(wallet_handle: i32, did: &str, metadata: &str) -> Box<Future<Item=(), Error=IndyError>> {
+pub fn set_did_metadata(wallet_handle: i32, did: &str, metadata: &str) -> Box<Future<Item=(), Error=ErrorCode>> {
     did::set_did_metadata(wallet_handle, did, metadata)
-        .map_err(|err| IndyError::from_err_code(err as i32))
         .into_box()
 }
 
-pub fn get_did_metadata(wallet_handle: i32, did: &str) -> Box<Future<Item=String, Error=IndyError>> {
+pub fn get_did_metadata(wallet_handle: i32, did: &str) -> Box<Future<Item=String, Error=ErrorCode>> {
     did::get_did_metadata(wallet_handle, did)
-        .map_err(|err| IndyError::from_err_code(err as i32))
         .into_box()
 }

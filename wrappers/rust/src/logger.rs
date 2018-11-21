@@ -12,8 +12,6 @@ use utils::ctypes::c_str_to_string;
 
 static mut LOGGER: Option<Box<(&'static Log)>> = None;
 
-pub struct Logger {}
-
 /// Set default logger implementation.
 ///
 /// Allows library user use `env_logger` logger as default implementation.
