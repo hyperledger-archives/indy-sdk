@@ -4,7 +4,6 @@ extern crate serde_json;
 extern crate serde;
 extern crate nullpay;
 extern crate indyrs as indy;
-extern crate indy_sys;
 
 #[macro_use]
 extern crate lazy_static;
