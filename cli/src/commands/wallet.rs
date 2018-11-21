@@ -443,8 +443,8 @@ pub mod import_command {
             return Err(println_err!("Wallet \"{}\" is already attached to CLI", id));
         }
 
-        trace!("Wallet::import_wallet try: config {}, import_config {}", config, import_config);
-
+        trace!("Wallet::import_wallet try: config {}, import_config {}", config, secret!(&import_config));
+        
         let res = Wallet::import_wallet(config.as_str(),
                                         credentials.as_str(),
                                         import_config.as_str(),
