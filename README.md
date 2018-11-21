@@ -70,12 +70,17 @@ A set of libvcx wrappers for developing vcx-based applications in your favorite 
 
 Indy SDK provides libvcx wrappers for the following programming languages and platforms:
 
-* [Java](/vcx/wrappers/java/vcx/README.md)
+* [Java](/vcx/wrappers/java/README.md)
 * [Python](/vcx/wrappers/python3/README.md)
 * [iOS](vcx/wrappers/ios/README.md)
 * [NodeJS](/vcx/wrappers/node/README.md)
 
 These wrappers are currently in **experimental** state and it is not part of official releases.
+
+### Dummy Cloud Agent
+[Dummy Cloud Agent](/vcx/dummy-cloud-agent/README.md) is a simple HTTP server which implements Agent2Agent communication protocol required for full VCX work.
+
+This library is currently in an **experimental** state and is not part of official releases.
 
 ## How-To Tutorials
 
