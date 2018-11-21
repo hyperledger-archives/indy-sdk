@@ -169,9 +169,6 @@ fn main() {
     println!("15. Prover creates Claim Request");
     let (claim_id, claim_json) = Prover::create_credential_req(prover_wallet_handle, prover_did, &claim_offer_json, &cred_def_json, &master_secret_name).unwrap();
 
-    println!("claim_id: {}", claim_id);
-    println!("claim_json: {}", claim_json);
-
     // 16. Issuer (Trust Anchor) creates Claim for Claim Request
     println!("16. Issuer (Trust Anchor) creates Claim for Claim Request");
 
@@ -183,12 +180,12 @@ fn main() {
     });
 
     let (cred_json, cred_revoc_id, _revoc_reg_delta_json) =
-        Issuer::create_credential(wallet_handle, &claim_offer_json, &claim_json, &cred_attrib_values_json.to_string(), Some(""), -1).unwrap();
+        Issuer::create_credential(wallet_handle, &claim_offer_json, &claim_json, &cred_attrib_values_json.to_string(), None, -1).unwrap();
 
     // 17. Prover processes and stores Claim
     println!("17. Prover processes and stores Claim");
     let actual_cred_revoc_id = cred_revoc_id.unwrap();
-    let out_cred_id = Prover::store_credential(prover_wallet_handle, None, &claim_json, &cred_json, &cred_def_json, Some(&actual_cred_revoc_id)).unwrap();
+    let out_cred_id = Prover::store_credential(prover_wallet_handle, None, &claim_json, &cred_json, &cred_def_json, None).unwrap();
 
 
     // clean up
