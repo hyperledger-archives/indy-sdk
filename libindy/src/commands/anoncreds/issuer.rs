@@ -6,6 +6,8 @@ use errors::wallet::WalletError;
 use errors::anoncreds::AnoncredsError;
 use errors::common::CommonError;
 
+use commands::anoncreds::AnoncredsCommand;
+
 use services::anoncreds::AnoncredsService;
 use services::anoncreds::helpers::parse_cred_rev_id;
 use services::blob_storage::BlobStorageService;
@@ -28,7 +30,8 @@ use domain::anoncreds::credential_definition::{
     CredentialDefinitionConfig,
     SignatureType,
     CredentialDefinitionPrivateKey,
-    CredentialDefinitionCorrectnessProof
+    CredentialDefinitionCorrectnessProof,
+    CredentialDefinitionData
 };
 use domain::anoncreds::revocation_registry_definition::{
     RevocationRegistryConfig,
@@ -53,6 +56,12 @@ use domain::anoncreds::credential_offer::CredentialOffer;
 use domain::anoncreds::credential_request::CredentialRequest;
 use domain::wallet::Tags;
 
+use indy_crypto::cl::{CredentialPrivateKey, CredentialKeyCorrectnessProof};
+
+use commands::{Command, CommandExecutor};
+
+use std::cell::RefCell;
+
 pub enum IssuerCommand {
     CreateSchema(
         String, // issuer did
@@ -68,6 +77,22 @@ pub enum IssuerCommand {
         Option<String>, // type
         Option<CredentialDefinitionConfig>, // config
         Box<Fn(Result<(String, String), IndyError>) + Send>),
+    CreateCredentialDefinition(AttributeNames,
+                               bool,
+                               Box<Fn(Result<(CredentialDefinitionData,
+                                              CredentialPrivateKey,
+                                              CredentialKeyCorrectnessProof), AnoncredsError>) + Send>),
+    CreateAndStoreCredentialDefinitionContinue(
+        i32, // config
+        SchemaV1, // credentials
+        String,
+        String,
+        String,
+        SignatureType,
+        Result<(CredentialDefinitionData,
+                CredentialPrivateKey,
+                CredentialKeyCorrectnessProof), AnoncredsError>,
+        i32),
     CreateAndStoreRevocationRegistry(
         i32, // wallet handle
         String, // issuer did
@@ -112,7 +137,8 @@ pub struct IssuerCommandExecutor {
     pub blob_storage_service: Rc<BlobStorageService>,
     pub pool_service: Rc<PoolService>,
     pub wallet_service: Rc<WalletService>,
-    pub crypto_service: Rc<CryptoService>
+    pub crypto_service: Rc<CryptoService>,
+    pending_callbacks: RefCell<HashMap<i32, Box<Fn(Result<(String, String), IndyError>) + Send>>>,
 }
 
 impl IssuerCommandExecutor {
@@ -127,6 +153,7 @@ impl IssuerCommandExecutor {
             blob_storage_service,
             wallet_service,
             crypto_service,
+            pending_callbacks: RefCell::new(HashMap::new())
         }
     }
 
@@ -138,8 +165,15 @@ impl IssuerCommandExecutor {
             }
             IssuerCommand::CreateAndStoreCredentialDefinition(wallet_handle, issuer_did, schema, tag, type_, config, cb) => {
                 info!(target: "issuer_command_executor", "CreateAndStoreCredentialDefinition command received");
-                cb(self.create_and_store_credential_definition(wallet_handle, &issuer_did, &SchemaV1::from(schema), &tag,
-                                                               type_.as_ref().map(String::as_str), config.as_ref()));
+                self.create_and_store_credential_definition(wallet_handle, &issuer_did, &SchemaV1::from(schema), &tag,
+                                                            type_.as_ref().map(String::as_str), config.as_ref(), cb);
+            }
+            IssuerCommand::CreateCredentialDefinition(attr_names, support_revocation, cb) => {
+                self._create_credential_definition(&attr_names, support_revocation, cb)
+            }
+            IssuerCommand::CreateAndStoreCredentialDefinitionContinue(wallet_handle, schema, schema_id, cred_def_id, tag, signature_type, result, cb_id) => {
+                debug!(target: "wallet_command_executor", "CreateAndStoreCredentialDefinitionContinue command received");
+                self._create_and_store_credential_definition_continue(cb_id, wallet_handle, &schema, &schema_id, &cred_def_id, &tag, &signature_type, result)
             }
             IssuerCommand::CreateAndStoreRevocationRegistry(wallet_handle, issuer_did, type_, tag, cred_def_id, config,
                                                             tails_writer_handle, cb) => {
@@ -158,7 +192,7 @@ impl IssuerCommandExecutor {
             }
             IssuerCommand::CreateCredential(wallet_handle, cred_offer, cred_req, cred_values, rev_reg_id, blob_storage_reader_handle, cb) => {
                 info!(target: "issuer_command_executor", "CreateCredential command received");
-                cb(self.new_credential(wallet_handle, &cred_offer,& cred_req,& cred_values, rev_reg_id.as_ref().map(String::as_str), blob_storage_reader_handle));
+                cb(self.new_credential(wallet_handle, &cred_offer, &cred_req, &cred_values, rev_reg_id.as_ref().map(String::as_str), blob_storage_reader_handle));
             }
             IssuerCommand::RevokeCredential(wallet_handle, blob_storage_reader_handle, rev_reg_id, cred_revoc_id, cb) => {
                 info!(target: "issuer_command_executor", "RevokeCredential command received");
@@ -209,10 +243,82 @@ impl IssuerCommandExecutor {
                                               schema: &SchemaV1,
                                               tag: &str,
                                               type_: Option<&str>,
-                                              config: Option<&CredentialDefinitionConfig>) -> Result<(String, String), IndyError> {
+                                              config: Option<&CredentialDefinitionConfig>,
+                                              cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
         debug!("create_and_store_credential_definition >>> wallet_handle: {:?}, issuer_did: {:?}, schema: {:?}, tag: {:?}, \
               type_: {:?}, config: {:?}", wallet_handle, issuer_did, schema, tag, type_, config);
 
+        let (cred_def_config, schema_id, cred_def_id, signature_type) =
+            try_cb!(self._prepare_create_and_store_credential_definition(wallet_handle, issuer_did, schema, tag, type_, config), cb);
+
+        let cb_id = ::utils::sequence::get_next_id();
+        self.pending_callbacks.borrow_mut().insert(cb_id, cb);
+
+        let tag = tag.to_string();
+        let schema = schema.clone();
+
+        CommandExecutor::instance().send(Command::Anoncreds(
+            AnoncredsCommand::Issuer(
+                IssuerCommand::CreateCredentialDefinition(
+                    schema.attr_names.clone(),
+                    cred_def_config.support_revocation,
+                    Box::new(move |res| {
+                        CommandExecutor::instance().send(
+                            Command::Anoncreds(
+                                AnoncredsCommand::Issuer(
+                                    IssuerCommand::CreateAndStoreCredentialDefinitionContinue(
+                                        wallet_handle,
+                                        schema.clone(),
+                                        schema_id.clone(),
+                                        cred_def_id.clone(),
+                                        tag.clone(),
+                                        signature_type.clone(),
+                                        res,
+                                        cb_id,
+                                    ))
+                            )).unwrap();
+                    })
+                ))
+        )).unwrap();
+    }
+
+    fn _create_credential_definition(&self,
+                                     attr_names: &AttributeNames,
+                                     support_revocation: bool,
+                                     cb: Box<Fn(Result<(CredentialDefinitionData,
+                                                        CredentialPrivateKey,
+                                                        CredentialKeyCorrectnessProof), AnoncredsError>) + Send>) {
+        let attr_names = attr_names.clone();
+        ::commands::THREADPOOL.lock().unwrap().execute(move || cb(::services::anoncreds::issuer::Issuer::new_credential_definition(&attr_names, support_revocation)));
+    }
+
+    fn _create_and_store_credential_definition_continue(&self,
+                                                        cb_id: i32,
+                                                        wallet_handle: i32,
+                                                        schema: &SchemaV1,
+                                                        schema_id: &str,
+                                                        cred_def_id: &str,
+                                                        tag: &str,
+                                                        signature_type: &SignatureType,
+                                                        result: Result<(CredentialDefinitionData,
+                                                                        CredentialPrivateKey,
+                                                                        CredentialKeyCorrectnessProof), AnoncredsError>) {
+        let cb = self.pending_callbacks.borrow_mut().remove(&cb_id).expect("FIXME INVALID STATE");
+        cb(result
+            .map_err(|err| IndyError::AnoncredsError(AnoncredsError::from(err)))
+            .and_then(|result| {
+                self._complete_create_and_store_credential_definition(wallet_handle, schema, schema_id, cred_def_id, tag, signature_type.clone(), result)
+            }))
+    }
+
+    fn _prepare_create_and_store_credential_definition(&self,
+                                                       wallet_handle: i32,
+                                                       issuer_did: &str,
+                                                       schema: &SchemaV1,
+                                                       tag: &str,
+                                                       type_: Option<&str>,
+                                                       config: Option<&CredentialDefinitionConfig>) -> Result<((CredentialDefinitionConfig, String,
+                                                                                                                String, SignatureType)), IndyError> {
         self.crypto_service.validate_did(issuer_did)?;
 
         let default_cred_def_config = CredentialDefinitionConfig::default();
@@ -235,14 +341,26 @@ impl IssuerCommandExecutor {
             return Err(IndyError::AnoncredsError(AnoncredsError::CredDefAlreadyExists(format!("CredentialDefinition for cred_def_id: {:?} already exists", cred_def_id))));
         };
 
-        let (credential_definition_value, cred_priv_key, cred_key_correctness_proof) =
-            self.anoncreds_service.issuer.new_credential_definition(issuer_did, &schema, cred_def_config.support_revocation)?;
+        Ok((cred_def_config.clone(), schema_id, cred_def_id, signature_type))
+    }
+
+    fn _complete_create_and_store_credential_definition(&self,
+                                                        wallet_handle: i32,
+                                                        schema: &SchemaV1,
+                                                        schema_id: &str,
+                                                        cred_def_id: &str,
+                                                        tag: &str,
+                                                        signature_type: SignatureType,
+                                                        res: (::domain::anoncreds::credential_definition::CredentialDefinitionData,
+                                                              indy_crypto::cl::CredentialPrivateKey,
+                                                              indy_crypto::cl::CredentialKeyCorrectnessProof)) -> Result<(String, String), IndyError> {
+        let (credential_definition_value, cred_priv_key, cred_key_correctness_proof) = res;
 
         let cred_def =
             CredentialDefinition::CredentialDefinitionV1(
                 CredentialDefinitionV1 {
-                    id: cred_def_id.clone(),
-                    schema_id,
+                    id: cred_def_id.to_string(),
+                    schema_id: schema_id.to_string(),
                     signature_type,
                     tag: tag.to_string(),
                     value: credential_definition_value
@@ -263,7 +381,7 @@ impl IssuerCommandExecutor {
         self._wallet_set_schema_id(wallet_handle, &cred_def_id, &schema.id)?; // TODO: FIXME delete temporary storing of schema id
 
         debug!("create_and_store_credential_definition <<< cred_def_id: {:?}, cred_def_json: {:?}", cred_def_id, cred_def_json);
-        Ok((cred_def_id, cred_def_json))
+        Ok((cred_def_id.to_string(), cred_def_json))
     }
 
     fn create_and_store_revocation_registry(&self,

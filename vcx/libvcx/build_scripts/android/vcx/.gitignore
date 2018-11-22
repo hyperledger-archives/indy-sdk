@@ -1,0 +1,7 @@
+libvcx.*
+indy/libindy.*
+libsodium*
+libzmq*
+openssl*
+toolchains
+sdk

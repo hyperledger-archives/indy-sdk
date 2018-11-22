@@ -3,7 +3,7 @@ using Hyperledger.Indy.WalletApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Threading.Tasks;
 
-namespace Hyperledger.Indy.Test.SignusTests
+namespace Hyperledger.Indy.Test.DidTests
 {
     [TestClass]
     public class ReplaceKeysApplyTest : IndyIntegrationTestWithSingleWallet
@@ -27,7 +27,7 @@ namespace Hyperledger.Indy.Test.SignusTests
         [TestMethod]
         public async Task TestReplaceKeysApplyWorksWithoutCallingReplaceStart()
         {
-            var ex = await Assert.ThrowsExceptionAsync<WalletValueNotFoundException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<WalletItemNotFoundException>(() =>
                 Did.ReplaceKeysApplyAsync(wallet, _did)
             );
         }
@@ -37,8 +37,8 @@ namespace Hyperledger.Indy.Test.SignusTests
         {
             await Did.ReplaceKeysStartAsync(wallet, _did, "{}");
 
-            var ex = await Assert.ThrowsExceptionAsync<WalletValueNotFoundException>(() =>
-                Did.ReplaceKeysApplyAsync(wallet, DID1)
+            var ex = await Assert.ThrowsExceptionAsync<WalletItemNotFoundException>(() =>
+                Did.ReplaceKeysApplyAsync(wallet, DID)
             );
         }
     }

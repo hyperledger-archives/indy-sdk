@@ -60,8 +60,7 @@ pub enum DidCommand {
     SetEndpointForDid(
         i32, // wallet handle
         String, // did
-        String, // address
-        String, // transport_key
+        Endpoint, // endpoint address and optional verkey
         Box<Fn(Result<(), IndyError>) + Send>),
     GetEndpointForDid(
         i32, // wallet handle
@@ -159,9 +158,9 @@ impl DidCommandExecutor {
                 info!("KeyForLocalDid command received");
                 cb(self.key_for_local_did(wallet_handle, &did));
             }
-            DidCommand::SetEndpointForDid(wallet_handle, did, address, transport_key, cb) => {
+            DidCommand::SetEndpointForDid(wallet_handle, did, endpoint, cb) => {
                 info!("SetEndpointForDid command received");
-                cb(self.set_endpoint_for_did(wallet_handle, &did, &address, &transport_key));
+                cb(self.set_endpoint_for_did(wallet_handle, &did, &endpoint));
             }
             DidCommand::GetEndpointForDid(wallet_handle, pool_handle, did, cb) => {
                 info!("GetEndpointForDid command received");
@@ -276,10 +275,12 @@ impl DidCommandExecutor {
 
         let did = self.wallet_service.get_indy_object::<Did>(wallet_handle, &my_did, &RecordOptions::id_value())?;
         let metadata = self.wallet_service.get_indy_opt_object::<DidMetadata>(wallet_handle, &did.did, &RecordOptions::id_value())?;
+        let temp_verkey = self.wallet_service.get_indy_opt_object::<TemporaryDid>(wallet_handle, &did.did, &RecordOptions::id_value())?;
 
         let did_with_meta = DidWithMeta {
             did: did.did,
             verkey: did.verkey,
+            temp_verkey: temp_verkey.map(|tv| tv.verkey),
             metadata: metadata.map(|m|m.value)
         };
 
@@ -308,10 +309,12 @@ impl DidCommandExecutor {
                 .ok_or(CommonError::InvalidStructure(format!("Cannot deserialize Did: {:?}", did_id)))?;
 
             let metadata = self.wallet_service.get_indy_opt_object::<DidMetadata>(wallet_handle, &did.did, &RecordOptions::id_value())?;
+            let temp_verkey = self.wallet_service.get_indy_opt_object::<TemporaryDid>(wallet_handle, &did.did, &RecordOptions::id_value())?;
 
             let did_with_meta = DidWithMeta {
                 did: did.did,
                 verkey: did.verkey,
+                temp_verkey: temp_verkey.map(|tv| tv.verkey),
                 metadata: metadata.map(|m|m.value)
             };
 
@@ -389,16 +392,16 @@ impl DidCommandExecutor {
     fn set_endpoint_for_did(&self,
                             wallet_handle: i32,
                             did: &str,
-                            address: &str,
-                            transport_key: &str) -> Result<(), IndyError> {
-        debug!("set_endpoint_for_did >>> wallet_handle: {:?}, did: {:?}, address: {:?}, transport_key: {:?}", wallet_handle, did, address, transport_key);
+                            endpoint: &Endpoint) -> Result<(), IndyError> {
+        debug!("set_endpoint_for_did >>> wallet_handle: {:?}, did: {:?}, endpoint: {:?}", wallet_handle, did, endpoint);
 
         self.crypto_service.validate_did(did)?;
-        self.crypto_service.validate_key(transport_key)?;
+        if endpoint.verkey.is_some() {
+            let transport_key = endpoint.verkey.as_ref().unwrap();
+            self.crypto_service.validate_key(transport_key)?;
+        }
 
-        let endpoint = Endpoint::new(address.to_string(), Some(transport_key.to_string()));
-
-        self.wallet_service.upsert_indy_object(wallet_handle, did, &endpoint)?;
+        self.wallet_service.upsert_indy_object(wallet_handle, did, endpoint)?;
 
         debug!("set_endpoint_for_did <<<");
         Ok(())

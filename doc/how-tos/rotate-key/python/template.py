@@ -23,9 +23,12 @@ import pprint
 from indy import pool, ledger, wallet, did
 from indy.error import IndyError
 
+from src.utils import get_pool_genesis_txn_path, PROTOCOL_VERSION
+
 
 pool_name = 'pool'
-genesis_file_path = '/home/vagrant/code/evernym/indy-sdk/cli/docker_pool_transactions_genesis'
+genesis_file_path = get_pool_genesis_txn_path(pool_name)
+
 wallet_config = json.dumps({"id": "wallet"})
 wallet_credentials = json.dumps({"key": "wallet_key"})
 
