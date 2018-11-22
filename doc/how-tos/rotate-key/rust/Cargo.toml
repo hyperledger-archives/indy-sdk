@@ -2,7 +2,16 @@
 name = "rotate-key"
 version = "0.1.0"
 authors = ["matt raffel <matt.raffel@evernym.com>"]
-Desscription = "Demostrates using the Rust Wrapper to rotate a key (did functions)"
+description = "Demonstrates using Rust wrapper for LibIndy through creating and retrieving DIDs"
+
+[[bin]]
+name = "rotate-key"
+path = "src/rotate-key.rs"
+
+[[bin]]
+name = "template"
+path = "src/template.rs"
+
 
 [dependencies]
 indy = "1.6.7"

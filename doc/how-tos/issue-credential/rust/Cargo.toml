@@ -1,7 +1,15 @@
 [package]
-name = "rust"
+name = "issue-credential"
 version = "0.1.0"
 authors = ["matt raffel <matt.raffel@evernym.com>"]
+
+[[bin]]
+name = "issue-credential"
+path = "src/issue-credential.rs"
+
+[[bin]]
+name = "template"
+path = "src/template.rs"
 
 [dependencies]
 indy = "1.6.7"

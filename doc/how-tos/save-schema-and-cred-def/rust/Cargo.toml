@@ -1,7 +1,16 @@
 [package]
-name = "save-schema-and-cred-def"
+name = "write-schema-and-cred-def"
 version = "0.1.0"
 authors = ["matt raffel <matt.raffel@evernym.com>"]
+description = "Demonstrates using Rust wrapper for LibIndy through creating and retrieving DIDs"
+
+[[bin]]
+name = "write-schema-and-cred-def"
+path = "src/write-schema-and-cred-def.rs"
+
+[[bin]]
+name = "template"
+path = "src/template.rs"
 
 [dependencies]
 indy = "1.6.7"

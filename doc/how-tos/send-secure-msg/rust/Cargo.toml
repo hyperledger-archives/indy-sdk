@@ -1,15 +1,11 @@
 [package]
-name = "negotiate-proof"
+name = "send-secure-msg"
 version = "0.1.0"
 authors = ["matt raffel <matt.raffel@evernym.com>"]
 
 [[bin]]
-name = "negotiate-proof"
-path = "src/negotiate-proof.rs"
-
-[[bin]]
-name = "template"
-path = "src/template.rs"
+name = "send-secure-msg"
+path = "src/send-secure-msg.rs"
 
 [dependencies]
 indy = "1.6.7"
