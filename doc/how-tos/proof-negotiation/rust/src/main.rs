@@ -19,6 +19,7 @@ use indy::anoncreds::Issuer;
 use indy::ledger::Ledger;
 use indy::pool::Pool;
 use indy::anoncreds::Prover;
+use indy::anoncreds::Verifier;
 use indy::wallet::Wallet;
 
 const PROTOCOL_VERSION: usize = 2;
@@ -32,7 +33,7 @@ static USEFUL_CREDENTIALS : &'static str = r#"
 fn create_genesis_txn_file_for_pool(pool_name: &str) -> PathBuf {
     let nodes_count = 4;
 
-    let test_pool_ip = "127.0.0.1";
+    let test_pool_ip = env::var("TEST_POOL_IP").unwrap_or("127.0.0.1".to_string());
 
     let node_txns = vec![
         format!(r#"{{"reqSignature":{{}},"txn":{{"data":{{"data":{{"alias":"Node1","blskey":"4N8aUNHSgjQVgkpm8nhNEfDf6txHznoYREg9kirmJrkivgL4oSEimFF6nsQ6M41QvhM2Z33nves5vfSn9n1UwNFJBYtWVnHYMATn76vLuL3zU88KyeAYcHfsih3He6UHcXDxcaecHVz6jhCYz1P2UZn2bDVruL5wXpehgBfBaLKm3Ba","blskey_pop":"RahHYiCvoNCtPTrVtP7nMC5eTYrsUA8WjXbdhNc8debh1agE9bGiJxWBXYNFbnJXoXhWFMvyqhqhRoq737YQemH5ik9oL7R4NTTCz2LEZhkgLJzB3QRQqJyBNyv7acbdHrAT8nQ9UkLbaVL9NBpnWXBTw4LEMePaSHEw66RzPNdAX1","client_ip":"{}","client_port":9702,"node_ip":"{}","node_port":9701,"services":["VALIDATOR"]}},"dest":"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv"}},"metadata":{{"from":"Th7MpTaRZVRYnPiabds81Y"}},"type":"0"}},"txnMetadata":{{"seqNo":1,"txnId":"fea82e10e894419fe2bea7d96296a6d46f50f93f9eeda954ec461b2ed2950b62"}},"ver":"1"}}"#, test_pool_ip, test_pool_ip),
@@ -119,15 +120,10 @@ fn main() {
     println!("9. build the schema definition request");
     let name = "gvt";
     let version = "1.0";
-    let attributes = ["age", "sex", "height", "name"];
-    let schema_json = json!({
-        "name" : name,
-        "version" : version,
-        "attrNames" : attributes,
-        "id": "id",
-        "ver": "1.0"
-    });
-    let build_schema_request: String = Ledger::build_schema_request(&steward_did, &schema_json.to_string()).unwrap();
+    let attributes = r#"["age", "sex", "height", "name"]"#;
+    let (schema_id, schema_json) = Issuer::create_schema(&steward_did, name, version, attributes).unwrap();
+
+    let build_schema_request: String = Ledger::build_schema_request(&steward_did, &schema_json).unwrap();
 
     // 10. Sending the SCHEMA request to the ledger
     println!("10. Sending the SCHEMA request to the ledger");
@@ -135,18 +131,10 @@ fn main() {
 
     // 11. Creating and storing CLAIM DEFINITION using anoncreds as Trust Anchor, for the given Schema
     println!("11. Creating and storing CLAIM DEFINITION using anoncreds as Trust Anchor, for the given Schema");
-    let cred_def_json = json!({
-        "seqNo" : 1,
-        "name" : name,
-        "version" : version,
-        "attrNames" : attributes,
-        "id": "id",
-        "ver": "1.0"
-    });
-    let config_json = r#"{ "support_revocation": true }"#;
-    let tag = r#"TAG1"#;                                        // required:  empty string generates CommonInvalidParam5 error
+    let config_json = r#"{ "support_revocation": false }"#;
+    let tag = r#"TAG1"#;
 
-    let (cred_def_id, cred_def_json) = Issuer::create_and_store_credential_def(wallet_handle, &trustee_did, &cred_def_json.to_string(), tag, None, config_json).unwrap();
+    let (cred_def_id, cred_def_json) = Issuer::create_and_store_credential_def(wallet_handle, &trustee_did, &schema_json, tag, None, config_json).unwrap();
 
     // 12. Creating Prover wallet and opening it to get the handle
     println!("12. Creating Prover wallet and opening it to get the handle");
@@ -163,30 +151,115 @@ fn main() {
 
     // 14. Issuer (Trust Anchor) is creating a Claim Offer for Prover
     println!("14. Issuer (Trust Anchor) is creating a Claim Offer for Prover");
-    let claim_offer_json = Issuer::create_credential_offer(wallet_handle, &cred_def_id).unwrap();
+    let cred_offer_json = Issuer::create_credential_offer(wallet_handle, &cred_def_id).unwrap();
 
     // 15. Prover creates Claim Request
     println!("15. Prover creates Claim Request");
-    let (claim_id, claim_json) = Prover::create_credential_req(prover_wallet_handle, prover_did, &claim_offer_json, &cred_def_json, &master_secret_name).unwrap();
+    let (cred_req_json, cred_req_metadata_json) = Prover::create_credential_req(prover_wallet_handle, prover_did, &cred_offer_json, &cred_def_json, &master_secret_name).unwrap();
 
     // 16. Issuer (Trust Anchor) creates Claim for Claim Request
     println!("16. Issuer (Trust Anchor) creates Claim for Claim Request");
 
-    let cred_attrib_values_json = json!({
-        "sex": ["male","5944657099558967239210949258394887428692050081607692519917050011144233115103"],
-        "name": ["Alex", "99262857098057710338306967609588410025648622308394250666849665532448612202874"],
-        "height": ["175", "175"],
-        "age": ["28", "28"]
+    let cred_values_json = json!({
+        "sex": { "raw": "male", "encoded": "5944657099558967239210949258394887428692050081607692519917050011144233115103" },
+        "name": { "raw": "Alex", "encoded": "99262857098057710338306967609588410025648622308394250666849665532448612202874" },
+        "height": { "raw": "175", "encoded": "175" },
+        "age": { "raw": "28", "encoded": "28" },
     });
 
-    let (cred_json, cred_revoc_id, _revoc_reg_delta_json) =
-        Issuer::create_credential(wallet_handle, &claim_offer_json, &claim_json, &cred_attrib_values_json.to_string(), None, -1).unwrap();
+    let (cred_json, _cred_revoc_id, _revoc_reg_delta_json) =
+        Issuer::create_credential(wallet_handle, &cred_offer_json, &cred_req_json, &cred_values_json.to_string(), None, -1).unwrap();
 
     // 17. Prover processes and stores Claim
     println!("17. Prover processes and stores Claim");
-    let actual_cred_revoc_id = cred_revoc_id.unwrap();
-    let out_cred_id = Prover::store_credential(prover_wallet_handle, None, &claim_json, &cred_json, &cred_def_json, None).unwrap();
+    Prover::store_credential(prover_wallet_handle, None, &cred_req_metadata_json, &cred_json, &cred_def_json, None).unwrap();
 
+    // 18. Prover gets Credentials for Proof Request
+    println!("18. Prover gets Credentials for Proof Request");
+
+    let proof_req_json = json!({
+        "nonce": "123432421212",
+        "name": "proof_req_1",
+        "version": "0.1",
+        "requested_attributes": {
+            "attr1_referent": {
+                "name": "name",
+                "restrictions": {
+                    "issuer_did": trustee_did,
+                    "schema_id": schema_id
+                }
+            }
+        },
+        "requested_predicates": {
+            "predicate1_referent": {
+                "name": "age",
+                "p_type": ">=",
+                "p_value": 18,
+                "restrictions": {
+                    "issuer_did": trustee_did
+                }
+            }
+        }
+    });
+    println!("Proof Request: {}", proof_req_json);
+
+    let creds_for_proof_request_json = Prover::get_credentials_for_proof_req(prover_wallet_handle, &proof_req_json.to_string()).unwrap();
+    println!("Credentials for Proof Request: {}", creds_for_proof_request_json);
+
+    // 19. Prover creates Proof for Proof Request
+    println!("19. Prover creates Proof for Proof Request");
+    let creds_for_proof_request = serde_json::from_str::<serde_json::Value>(&creds_for_proof_request_json).unwrap();
+    let creds_for_attr_1 = &creds_for_proof_request["attrs"]["attr1_referent"];
+    let credential = &creds_for_attr_1[0]["cred_info"];
+
+    let requested_credentials_json = json!({
+        "self_attested_attributes": {},
+        "requested_attributes": {
+            "attr1_referent": {
+                "cred_id": credential["referent"].as_str().unwrap(),
+                "revealed": true
+            }
+        },
+        "requested_predicates":{
+            "predicate1_referent":{
+                "cred_id": credential["referent"].as_str().unwrap(),
+            }
+        }
+    });
+    println!("Requested Credentials for Proving: {}", requested_credentials_json.to_string());
+
+    let schemas_json = json!({
+        schema_id.as_str(): serde_json::from_str::<serde_json::Value>(&schema_json).unwrap()
+    }).to_string();
+    let credential_defs_json = json!({
+        cred_def_id.as_str(): serde_json::from_str::<serde_json::Value>(&cred_def_json).unwrap()
+    }).to_string();
+    let rev_states_json = json!({}).to_string();
+
+    let proof_json = Prover::create_proof(prover_wallet_handle,
+                                          &proof_req_json.to_string(),
+                                          &requested_credentials_json.to_string(),
+                                          &master_secret_name,
+                                          &schemas_json,
+                                          &credential_defs_json,
+                                          &rev_states_json).unwrap();
+    let proof = serde_json::from_str::<serde_json::Value>(&proof_json).unwrap();
+    assert_eq!("Alex", proof["requested_proof"]["revealed_attrs"]["attr1_referent"]["raw"].as_str().unwrap());
+
+    // 20. Verifier is verifying proof from Prover
+    println!("20. Verifier is verifying proof from Prover");
+
+    let rev_reg_defs_json = json!({}).to_string();
+    let rev_regs_json = json!({}).to_string();
+    let valid = Verifier::verify_proof(&proof_req_json.to_string(),
+                                       &proof_json,
+                                       &schemas_json,
+                                       &credential_defs_json,
+                                       &rev_reg_defs_json,
+                                       &rev_regs_json
+    ).unwrap();
+
+    assert!(valid);
 
     // clean up
     // Close and delete wallet

@@ -31,7 +31,7 @@ static USEFUL_CREDENTIALS : &'static str = r#"
 fn create_genesis_txn_file_for_pool(pool_name: &str) -> PathBuf {
     let nodes_count = 4;
 
-    let test_pool_ip = "127.0.0.1";
+    let test_pool_ip = env::var("TEST_POOL_IP").unwrap_or("127.0.0.1".to_string());
 
     let node_txns = vec![
         format!(r#"{{"reqSignature":{{}},"txn":{{"data":{{"data":{{"alias":"Node1","blskey":"4N8aUNHSgjQVgkpm8nhNEfDf6txHznoYREg9kirmJrkivgL4oSEimFF6nsQ6M41QvhM2Z33nves5vfSn9n1UwNFJBYtWVnHYMATn76vLuL3zU88KyeAYcHfsih3He6UHcXDxcaecHVz6jhCYz1P2UZn2bDVruL5wXpehgBfBaLKm3Ba","blskey_pop":"RahHYiCvoNCtPTrVtP7nMC5eTYrsUA8WjXbdhNc8debh1agE9bGiJxWBXYNFbnJXoXhWFMvyqhqhRoq737YQemH5ik9oL7R4NTTCz2LEZhkgLJzB3QRQqJyBNyv7acbdHrAT8nQ9UkLbaVL9NBpnWXBTw4LEMePaSHEw66RzPNdAX1","client_ip":"{}","client_port":9702,"node_ip":"{}","node_port":9701,"services":["VALIDATOR"]}},"dest":"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv"}},"metadata":{{"from":"Th7MpTaRZVRYnPiabds81Y"}},"type":"0"}},"txnMetadata":{{"seqNo":1,"txnId":"fea82e10e894419fe2bea7d96296a6d46f50f93f9eeda954ec461b2ed2950b62"}},"ver":"1"}}"#, test_pool_ip, test_pool_ip),
@@ -150,7 +150,7 @@ fn main() {
     println!("    nym response {}", refresh_build_nym_response);
     let refresh_json : Value = serde_json::from_str(&refresh_build_nym_response).unwrap();
     let refresh_signature_values = &refresh_json["result"]["reqSignature"]["values"];
-    let trustee_did_from_ledger = refresh_signature_values[0]["from"].to_string();
+    let trustee_did_from_ledger = refresh_signature_values[0]["from"].as_str().unwrap();
 
     // clean up
     // Close and delete wallet
