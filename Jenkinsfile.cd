@@ -243,21 +243,17 @@ def linuxLibindyBuild(file, env_name, network_name, stashBuildResults) {
 
         poolInst = openPool(env_name, network_name)
 
-        def testEnv
+        def testEnv = buildTestEnv(file, env_name)
 
-        dir('libindy') {
-            echo "${env_name} Libindy Test: Build docker image"
-            testEnv = dockerHelpers.build('libindy', file)
+        testEnv.inside {
+            echo "${env_name} Libindy Test: Build"
+            sh '''
+                cd libindy
+                cargo build --release --features "fatal_warnings sodium_static"
+            '''
 
-            testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
-                echo "${env_name} Test: Test"
-
-                echo "${env_name} Libindy Test: Build"
-                sh "RUST_BACKTRACE=1 cargo build --release --features \"fatal_warnings sodium_static\""
-
-                if (stashBuildResults) {
-                    stash includes: 'target/release/libindy.so,target/release/libindy.a', name: 'LibindyUbuntuBuildResult'
-                }
+            if (stashBuildResults) {
+                stash includes: 'libindy/target/release/libindy.so,libindy/target/release/libindy.a', name: 'LibindyUbuntuBuildResult'
             }
         }
 
@@ -273,14 +269,15 @@ def linuxLibindyBuild(file, env_name, network_name, stashBuildResults) {
         sh "cp libindy/target/release/libindy.so vcx/wrappers/python3"
         sh "cp libindy/target/release/libindy.so vcx/dummy-cloud-agent"
 
-        dir('libnullpay') {
-            testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
-                echo "${env_name} Libnullpay Test: Build"
-                sh "LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo build --release"
+        testEnv.inside {
+            echo "${env_name} Libnullpay Test: Build"
+            sh '''
+                cd libnullpay
+                LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo build --release
+            '''
 
-                if (stashBuildResults) {
-                    stash includes: 'target/release/libnullpay.so', name: 'LibnullpayUbuntuBuildResult'
-                }
+            if (stashBuildResults) {
+                stash includes: 'libnullpay/target/release/libnullpay.so', name: 'LibnullpayUbuntuBuildResult'
             }
         }
 
@@ -304,30 +301,22 @@ def linuxLibindyBuild(file, env_name, network_name, stashBuildResults) {
 
         libindyBuildFinished[env_name] = true
 
-        dir('libindy') {
-            testEnv.inside("--network=${network_name}") {
-                echo "${env_name} Libindy Test: Test"
-
-                def libindyFeatures = "--features sodium_static"
-
-                echo "${env_name} Libindy Test: Build tests"
-                sh "RUST_BACKTRACE=1 cargo test --release --no-run $libindyFeatures"
-
-                echo "${env_name} Libindy Test: Run tests"
-                sh "RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release $libindyFeatures"
-            }
+        echo "${env_name} Libindy Test: Test"
+        testEnv.inside("--network=${network_name}") {
+            sh '''
+                cd libindy
+                RUST_BACKTRACE=1 cargo test --release --no-run --features sodium_static
+                RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release --features sodium_static
+            '''
         }
 
-        dir('libnullpay') {
-            testEnv.inside("--network=${network_name}") {
-                echo "${env_name} Libnullpay Test: Test"
-
-                echo "${env_name} Libnullpay Test: Build Test"
-                sh "LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --no-run --release"
-
-                echo "${env_name} Libnullpay Test: Run tests"
-                sh 'LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release'
-            }
+        echo "${env_name} Libnullpay Test: Test"
+        testEnv.inside("--network=${network_name}") {
+            sh '''
+                cd libnullpay
+                LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --no-run --release
+                LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release
+            '''
         }
 
     }
@@ -348,14 +337,14 @@ def linuxVcxBuild(file, env_name, network_name, stashBuildResults) {
 
         unstash name: "VCXLibindyAndLibnullpaySO${env_name}"
 
-        dir('vcx/libvcx') {
-            testEnv.inside {
-                echo "${env_name} Libvcx Test: Build"
-                sh "LIBRARY_PATH=./ cargo build --release --features fatal_warnings"
-
-                if (stashBuildResults) {
-                    stash includes: 'target/release/libvcx.so', name: 'LibvcxUbuntuBuildResult'
-                }
+        echo "${env_name} Libvcx Test: Build"
+        testEnv.inside {
+            sh '''
+                cd vcx/libvcx
+                LIBRARY_PATH=./ cargo build --release --features fatal_warnings
+            '''
+            if (stashBuildResults) {
+                stash includes: 'vcx/libvcx/target/release/libvcx.so', name: 'LibvcxUbuntuBuildResult'
             }
         }
 
@@ -372,13 +361,17 @@ def linuxVcxBuild(file, env_name, network_name, stashBuildResults) {
         dir('vcx') {
             testEnv.inside("--network=${network_name}") {
                 echo "${env_name} Libvcx Test: Run Cloud Agent"
-                sh 'cp libvcx/libindy.so dummy-cloud-agent'
-                sh 'cd dummy-cloud-agent && LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy=info ' +
-                        'cargo run sample-config.json &'
+                sh '''
+                    cp vcx/libvcx/libindy.so vcx/dummy-cloud-agent
+                    cd vcx/dummy-cloud-agent
+                    LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy=info cargo run sample-config.json &
+                '''
 
                 echo "${env_name} Libvcx Test: Run tests"
-                sh 'cd libvcx && LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 ' +
-                        'cargo test --release --features "pool_tests agency"'
+                sh '''
+                    cd vcx/libvcx
+                    LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release --features "pool_tests agency"
+                '''
             }
         }
     }
@@ -416,20 +409,16 @@ def linuxCLITesting(env_name, network_name, testEnv, stashBuildResults) {
     unstash name: "LibindyCliSO${env_name}"
     unstash name: "LibnullpayCliSO${env_name}"
 
-    dir('cli') {
-        testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
-            echo "${env_name} Indy Cli Test: Build"
-            sh "LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo build --release --features fatal_warnings"
-
-            echo "${env_name} Indy Cli Test: Build Tests"
-            sh 'LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --release --features "nullpay_plugin" --no-run'
-
-            echo "${env_name} Indy Cli Test: Run tests"
-            sh 'LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test  --release --features "nullpay_plugin"'
-
-            if (stashBuildResults) {
-                stash includes: 'target/release/indy-cli', name: 'IndyCliUbuntuBuildResult'
-            }
+    echo "${env_name} Indy Cli Test: tests"
+    testEnv.inside("--network=${network_name}") {
+        sh '''
+            cd cli
+            LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo build --release --features fatal_warnings
+            LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --release --features "nullpay_plugin" --no-run
+            LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test  --release --features "nullpay_plugin"
+        '''
+        if (stashBuildResults) {
+            stash includes: 'cli/target/release/indy-cli', name: 'IndyCliUbuntuBuildResult'
         }
     }
 }
@@ -977,8 +966,6 @@ def debPublishing(testEnv, directory, packageName, version, inStashName, outStas
 
         unstash name: inStashName
 
-        sh "mkdir --parent $directory/target/release/ && mv target/release/* $directory/target/release/"
-
         withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'sovrin_key')]) {
             sh "cd $directory && ./deb-build-and-upload.sh $packageName $version $env.BRANCH_NAME $suffix $SOVRIN_SDK_REPO_NAME $SOVRIN_REPO_HOST $sovrin_key"
 
@@ -988,7 +975,6 @@ def debPublishing(testEnv, directory, packageName, version, inStashName, outStas
         }
     }
 }
-
 
 def pythonWrapperPublishing(testEnv, isRelease, directory) {
     def version = getSrcVersion("libindy")

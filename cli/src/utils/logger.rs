@@ -1,10 +1,9 @@
 extern crate log4rs;
 extern crate log;
 extern crate libc;
-extern crate indyrs as indy;
 
 use std::error::Error;
-
+use indy;
 
 pub struct  IndyCliLogger;
 
@@ -13,7 +12,7 @@ impl IndyCliLogger {
         log4rs::init_file(path, Default::default())
             .map_err(|err| format!("Cannot init Indy CLI logger: {}", err.description()))?;
 
-        indy::logger::Logger::set_indy_logger(log::logger())
+        indy::logger::set_indy_logger(log::logger())
             .map_err(|_| format!("Cannot init Libindy logger"))
     }
 }
