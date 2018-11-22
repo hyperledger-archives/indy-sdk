@@ -1,6 +1,10 @@
-libindy (1.6.7) unstable; urgency=medium
+libindy (1.6.8) unstable; urgency=medium
 
 [ Hyperledger ]
+
+* 1.6.8
+    * Fix State Proof verification for some types of GET requests to the ledger
+    * Additional clean-up for secrets in logs
 
 * 1.6.7
     * Supported hexadecimal seed for did and key creation.
