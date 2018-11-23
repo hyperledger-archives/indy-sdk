@@ -43,7 +43,7 @@ let build_schema_request: String = Ledger::build_schema_request(&steward_did, &s
 println!("10. Sending the SCHEMA request to the ledger");
 let _signed_schema_request_response = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &steward_did, &build_schema_request).unwrap();
 
-println!("11. Creating and storing CLAIM DEFINITION using anoncreds as Trust Anchor, for the given Schema");
+println!("11. Creating and storing CREDENTIAL DEFINITION using anoncreds as Trust Anchor, for the given Schema");
 let config_json = r#"{ "support_revocation": false }"#;
 let tag = r#"TAG1"#;
 

@@ -1,10 +1,10 @@
-println!("14. Issuer (Trust Anchor) is creating a Claim Offer for Prover");
+println!("14. Issuer (Trust Anchor) is creating a Credential Offer for Prover");
 let cred_offer_json = Issuer::create_credential_offer(wallet_handle, &cred_def_id).unwrap();
 
-println!("15. Prover creates Claim Request");
+println!("15. Prover creates Credential Request");
 let (cred_req_json, cred_req_metadata_json) = Prover::create_credential_req(prover_wallet_handle, prover_did, &cred_offer_json, &cred_def_json, &master_secret_name).unwrap();
 
-println!("16. Issuer (Trust Anchor) creates Claim for Claim Request");
+println!("16. Issuer (Trust Anchor) creates Credential for Credential Request");
 
 let cred_values_json = json!({
         "sex": { "raw": "male", "encoded": "5944657099558967239210949258394887428692050081607692519917050011144233115103" },

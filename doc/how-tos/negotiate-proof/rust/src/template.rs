@@ -1,11 +1,11 @@
 /*
 Example demonstrating Proof Verification.
 
-First Issuer creates Claim Definition for existing Schema.
-After that, it issues a Claim to Prover (as in issue-credential example)
+First Issuer creates Credential Definition for existing Schema.
+After that, it issues a Credential to Prover (as in issue-credential example)
 
-Once Prover has successfully stored its Claim, it uses Proof Request that he
-received, to get Claims which satisfy the Proof Request from his wallet.
+Once Prover has successfully stored its Credential, it uses Proof Request that he
+received, to get Credentials which satisfy the Proof Request from his wallet.
 Prover uses the output to create Proof, using its Master Secret.
 After that, Proof is verified against the Proof Request
 */

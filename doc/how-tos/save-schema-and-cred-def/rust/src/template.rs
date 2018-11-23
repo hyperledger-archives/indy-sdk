@@ -5,7 +5,7 @@ As a setup, Steward (already on the ledger) adds Trust Anchor to the ledger.
 
 After that, Steward builds the SCHEMA request to add new schema to the ledger.
 Once that succeeds, Trust Anchor uses anonymous credentials to issue and store
-claim definition for the Schema added by Steward.
+credential definition for the Schema added by Steward.
 */
 
 // ------------------------------------------

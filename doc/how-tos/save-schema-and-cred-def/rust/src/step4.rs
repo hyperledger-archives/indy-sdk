@@ -1,4 +1,4 @@
-println!("11. Creating and storing CLAIM DEFINITION using anoncreds as Trust Anchor, for the given Schema");
+println!("11. Creating and storing CREDENTIAL DEFINITION using anoncreds as Trust Anchor, for the given Schema");
 let config_json = r#"{ "support_revocation": false }"#;
 let tag = r#"TAG1"#;
 

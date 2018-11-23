@@ -5,7 +5,7 @@ As a setup, Steward (already on the ledger) adds Trust Anchor to the ledger.
 
 After that, Steward builds the SCHEMA request to add new schema to the ledger.
 Once that succeeds, Trust Anchor uses anonymous credentials to issue and store
-claim definition for the Schema added by Steward.
+credential definition for the Schema added by Steward.
 */
 
 // ------------------------------------------
@@ -82,7 +82,7 @@ fn main() {
     println!("10. Sending the SCHEMA request to the ledger");
     let _signed_schema_request_response = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &steward_did, &build_schema_request).unwrap();
 
-    println!("11. Creating and storing CLAIM DEFINITION using anoncreds as Trust Anchor, for the given Schema");
+    println!("11. Creating and storing CREDENTAIL DEFINITION using anoncreds as Trust Anchor, for the given Schema");
     let config_json = r#"{ "support_revocation": false }"#;
     let tag = r#"TAG1"#;
 

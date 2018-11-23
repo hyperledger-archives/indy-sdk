@@ -44,7 +44,7 @@ fn main() {
     let pool_name = "pool";
 
     // PART 1
-    indy::pool::Pool::set_protocol_version(PROTOCOL_VERSION).unwrap();
+    Pool::set_protocol_version(PROTOCOL_VERSION).unwrap();
 
     println!("1. Creating a new local pool ledger configuration that can be used later to connect pool nodes");
     let pool_config_file = create_genesis_txn_file_for_pool(pool_name);
