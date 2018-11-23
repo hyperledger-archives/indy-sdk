@@ -68,7 +68,7 @@ fn init() -> (i32, String, String) {
     let wallet_handle: i32 = Wallet::open(&config, USEFUL_CREDENTIALS).unwrap();
 
     let (did, verkey) = Did::new(wallet_handle, "{}").unwrap();
-    println!("My DID and Verkey: {} {}", did, verkey);
+    println!("DID and Verkey: {} {}", did, verkey);
 
     println!("Other party's DID and Verkey? ");
     let mut other = String::new();

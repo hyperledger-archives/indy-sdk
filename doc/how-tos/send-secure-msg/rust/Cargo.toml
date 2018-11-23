@@ -7,6 +7,10 @@ authors = ["matt raffel <matt.raffel@evernym.com>"]
 name = "send-secure-msg"
 path = "src/send-secure-msg.rs"
 
+[[bin]]
+name = "template"
+path = "src/template.rs"
+
 [dependencies]
 indy = "1.6.7"
 lazy_static = "0.2"
