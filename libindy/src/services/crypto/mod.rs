@@ -724,7 +724,7 @@ mod tests {
         let encrypted_message = service.authenticated_encrypt(&my_key_for_encrypt, &their_did_for_encrypt.verkey, msg.as_bytes()).unwrap();
         let (their_vk, decrypted_message) = service.authenticated_decrypt(&my_key_for_decrypt,&encrypted_message).unwrap();
         assert_eq!(msg.as_bytes().to_vec(), decrypted_message);
-        assert_eq!(&their_vk, &their_did_for_encrypt.verkey);
+        assert_eq!(&their_vk, &their_did_for_decrypt.verkey);
 
     }
 }

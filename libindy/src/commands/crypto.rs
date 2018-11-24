@@ -174,12 +174,7 @@ impl CryptoCommandExecutor {
 
         let my_key: Key = self.wallet_service.get_indy_object(wallet_handle, my_vk, &RecordOptions::id_value())?;
 
-        let msg = self.crypto_service.create_combo_box(&my_key, &their_vk, msg)?;
-
-        let msg = msg.to_msg_pack()
-            .map_err(|e| CommonError::InvalidState(format!("Can't serialize ComboBox: {:?}", e)))?;
-
-        let res = self.crypto_service.encrypt_sealed(&their_vk, &msg)?;
+        let res = self.crypto_service.authenticated_encrypt(&my_key, their_vk, msg)?;
 
         debug!("authenticated_encrypt <<< res: {:?}", res);
 
@@ -196,20 +191,7 @@ impl CryptoCommandExecutor {
 
         let my_key: Key = self.wallet_service.get_indy_object(wallet_handle, my_vk, &RecordOptions::id_value())?;
 
-        let decrypted_msg = self.crypto_service.decrypt_sealed(&my_key, &msg)?;
-
-        let parsed_msg = ComboBox::from_msg_pack(decrypted_msg.as_slice())
-            .map_err(|err| CommonError::InvalidStructure(format!("Can't deserialize ComboBox: {:?}", err)))?;
-
-        let doc: Vec<u8> = base64::decode(&parsed_msg.msg)
-            .map_err(|err| CommonError::InvalidStructure(format!("Can't decode internal msg filed from base64 {}", err)))?;
-
-        let nonce: Vec<u8> = base64::decode(&parsed_msg.nonce)
-            .map_err(|err| CommonError::InvalidStructure(format!("Can't decode nonce from base64 {}", err)))?;
-
-        let decrypted_msg = self.crypto_service.decrypt(&my_key, &parsed_msg.sender, &doc, &nonce)?;
-
-        let res = (parsed_msg.sender, decrypted_msg);
+        let res = self.crypto_service.authenticated_decrypt(&my_key, &msg)?;
 
         debug!("authenticated_decrypt <<< res: {:?}", res);
 
