@@ -1,8 +1,11 @@
 from distutils.core import setup
+import os
+
+PKG_VERSION = os.environ.get('PACKAGE_VERSION') or '1.6.8'
 
 setup(
     name='python3-indy',
-    version='1.6.7',
+    version=PKG_VERSION,
     packages=['indy'],
     url='https://github.com/hyperledger/indy-sdk',
     license='MIT/Apache-2.0',

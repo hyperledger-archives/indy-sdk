@@ -165,3 +165,23 @@ def _set_logger():
                  _set_logger.callbacks['flush_cb'])
 
     logger.debug("set_logger: <<<")
+
+
+def set_runtime_config(config: str):
+    """
+     Set libindy runtime configuration. Can be optionally called to change current params.
+
+     :param config: {
+         "crypto_thread_pool_size": <int> - size of thread pool for the most expensive crypto operations. (4 by default)
+     }
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("set_runtime_config: >>> config: %r", config)
+
+    c_config = c_char_p(config.encode('utf-8'))
+
+    do_call_sync('indy_set_runtime_config',
+                 c_config)
+
+    logger.debug("set_runtime_config: <<<")

@@ -431,12 +431,8 @@ mod tests {
         };
 
         let data = encode::to_vec_named(&response).unwrap();
-
-        println!("generated response: {:?}", data);
         let bundle = Bundled::create(data).encode().unwrap();
-        println!("bundle: {:?}", bundle);
         let result = parse_get_messages_response(bundle).unwrap();
-        println!("response: {:?}", result);
     }
 
     #[cfg(feature = "agency")]
@@ -449,7 +445,6 @@ mod tests {
         init!("agency");
         let institution_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
         let (faber, alice) = ::connection::tests::create_connected_connections();
-
         let (schema_id, _, cred_def_id, _) = ::utils::libindy::anoncreds::tests::create_and_store_credential_def(::utils::constants::DEFAULT_SCHEMA_ATTRS);
         let credential_data = r#"{"address1": ["123 Main St"], "address2": ["Suite 3"], "city": ["Draper"], "state": ["UT"], "zip": ["84000"]}"#;
         let credential_offer = ::issuer_credential::issuer_credential_create(cred_def_id.clone(),

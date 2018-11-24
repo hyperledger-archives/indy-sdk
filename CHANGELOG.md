@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.6.8
+* Fix State Proof verification for some types of GET requests to the ledger
+* Additional clean-up for secrets in logs
+* Update CLI help
+
 ## 1.6.7
 * Supported setting fees in `did rotate-key` CLI command.
 * Supported hexadecimal seed for did and key creation. 

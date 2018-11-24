@@ -390,11 +390,9 @@ mod tests {
     use std::time::Duration;
     use std::thread;
     use proof;
-    use api::VcxStateType;
     use connection;
-    use api::{ ProofStateType };
+    use api::{ ProofStateType, return_types_u32, VcxStateType };
     use utils::constants::*;
-    use utils::libindy::return_types_u32;
 
     static DEFAULT_PROOF_NAME: &'static str = "PROOF_NAME";
 

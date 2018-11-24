@@ -4,19 +4,19 @@ pub mod signus;
 pub mod wallet;
 pub mod callback;
 pub mod callback_u32;
-pub mod return_types;
-pub mod return_types_u32;
 pub mod pool;
 pub mod crypto;
 pub mod payments;
 
-mod error_codes;
+pub mod error_codes;
 
 extern crate libc;
 
 use settings;
 use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
 use std::sync::Mutex;
+
+use indy::ErrorCode;
 
 lazy_static!{
     static ref NEXT_LIBINDY_RC: Mutex<Vec<i32>> = Mutex::new(vec![]);
@@ -28,11 +28,11 @@ pub fn set_libindy_rc(rc: u32) {NEXT_LIBINDY_RC.lock().unwrap().push(rc as i32);
 
 static COMMAND_HANDLE_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
 
-fn next_i32_command_handle() -> i32 {
+pub fn next_i32_command_handle() -> i32 {
     (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32
 }
 
-fn next_u32_command_handle() -> u32 {
+pub fn next_u32_command_handle() -> u32 {
     (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as u32
 }
 
@@ -56,6 +56,10 @@ pub fn init_pool() -> Result<(), u32>  {
             Ok(())
         }
     }
+}
+
+extern {
+    pub fn indy_set_default_logger(level: *const libc::c_char) -> ErrorCode;
 }
 
 #[cfg(test)]

@@ -34,7 +34,7 @@ Anoncreds protocol links:
 
 ## Anoncreds Workflow
 
-<img src="./libindy-anoncreds.svg">
+<img src="./anoncreds-workflow.svg">
 
 ## API
 

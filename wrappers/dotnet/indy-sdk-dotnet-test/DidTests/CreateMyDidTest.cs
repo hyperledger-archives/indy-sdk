@@ -3,7 +3,7 @@ using Hyperledger.Indy.Test.Util.Base58Check;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Threading.Tasks;
 
-namespace Hyperledger.Indy.Test.SignusTests
+namespace Hyperledger.Indy.Test.DidTests
 {
     [TestClass]
     public class CreateMyDidTest : IndyIntegrationTestWithSingleWallet
@@ -43,12 +43,12 @@ namespace Hyperledger.Indy.Test.SignusTests
         [TestMethod]
         public async Task TestCreateMyDidWorksForPassedDid()
         {
-            var json = string.Format("{{\"did\":\"{0}\",\"cid\":false}}", DID1);
+            var json = string.Format("{{\"did\":\"{0}\",\"cid\":false}}", DID);
 
             var result = await Did.CreateAndStoreMyDidAsync(wallet, json);
             Assert.IsNotNull(result);
 
-            Assert.AreEqual(DID1, result.Did);
+            Assert.AreEqual(DID, result.Did);
         }
 
         [TestMethod]
@@ -78,7 +78,7 @@ namespace Hyperledger.Indy.Test.SignusTests
         {
             var json = string.Format("{{\"seed\":\"{0}\",\"crypto_type\":\"crypto_type\"}}", MY1_SEED);
 
-            var ex = await Assert.ThrowsExceptionAsync<UnknownCryptoException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<UnknownCryptoTypeException>(() =>
                 Did.CreateAndStoreMyDidAsync(wallet, json)
             );
         }
@@ -86,12 +86,12 @@ namespace Hyperledger.Indy.Test.SignusTests
         [TestMethod]
         public async Task TestCreateMyDidWorksForAllParams()
         {
-            var json = string.Format("{{\"did\":\"{0}\",\"seed\":\"{1}\",\"crypto_type\":\"{2}\",\"cid\":true}}", DID1, MY1_SEED, CRYPTO_TYPE);
+            var json = string.Format("{{\"did\":\"{0}\",\"seed\":\"{1}\",\"crypto_type\":\"{2}\",\"cid\":true}}", DID, MY1_SEED, CRYPTO_TYPE);
 
             var result = await Did.CreateAndStoreMyDidAsync(wallet, json);
             Assert.IsNotNull(result);
 
-            Assert.AreEqual(DID1, result.Did);
+            Assert.AreEqual(DID, result.Did);
             Assert.AreEqual(VERKEY_MY1, result.VerKey);
         }
 

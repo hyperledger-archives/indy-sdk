@@ -11,8 +11,7 @@ namespace Hyperledger.Indy.Test.CryptoTests
         [TestMethod]
         public async Task TestCreateKeyWorksForSeed()
         {
-            var paramJson = string.Format("{{\"seed\":\"{0}\"}}", MY1_SEED);
-            var senderVk = await Crypto.CreateKeyAsync(wallet, paramJson);
+            var senderVk = await Crypto.CreateKeyAsync(wallet, MY1_IDENTITY_KEY_JSON);
             Assert.AreEqual(32, Base58CheckEncoding.DecodePlain(senderVk).Length);
         }
 

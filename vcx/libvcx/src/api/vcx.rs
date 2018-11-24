@@ -76,10 +76,14 @@ pub extern fn vcx_init (command_handle: u32,
         } else {
             match settings::process_config_file(&config_path) {
                 Err(e) => {
-                    println!("Invalid configuration specified: {}", e);
                     return error::INVALID_CONFIGURATION.code_num;
                 },
-                Ok(_) => (),
+                Ok(_) => {
+                    match settings::validate_payment_method() {
+                        Ok(_) => (),
+                        Err(e) => return e
+                    }
+                },
             };
         }
     } else {
@@ -91,14 +95,8 @@ pub extern fn vcx_init (command_handle: u32,
 }
 
 fn _finish_init(command_handle: u32, cb: extern fn(xcommand_handle: u32, err: u32)) -> u32 {
-    ::utils::logger::LoggerUtils::init();
 
     ::utils::threadpool::init();
-
-    match ::utils::libindy::payments::init_payments() {
-        Ok(_) => (),
-        Err(x) => return x,
-    };
 
     settings::log_settings();
 
@@ -255,17 +253,19 @@ mod tests {
     use std::ptr;
     use std::thread;
     use utils::libindy::wallet::{import, tests::export_test_wallet, tests::delete_import_wallet_path};
-    use utils::libindy::{ pool::get_pool_handle, return_types_u32 };
+    use utils::libindy::pool::get_pool_handle;
+    use api::return_types_u32;
 
-    fn create_config_util() -> String {
+    fn create_config_util(logging: Option<&str>) -> String {
         json!({"agency_did" : "72x8p4HubxzUK1dwxcc5FU",
-                        "remote_to_sdk_did" : "UJGjM6Cea2YVixjWwHN9wq",
-                        "sdk_to_remote_did" : "AB3JM851T4EQmhh8CdagSP",
-                        "sdk_to_remote_verkey" : "888MFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
-                        "institution_name" : "evernym enterprise",
-                        "agency_verkey" : "91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
-                        "remote_to_sdk_verkey" : "91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
-                        "genesis_path":"/tmp/pool1.txn"}).to_string()
+               "remote_to_sdk_did" : "UJGjM6Cea2YVixjWwHN9wq",
+               "sdk_to_remote_did" : "AB3JM851T4EQmhh8CdagSP",
+               "sdk_to_remote_verkey" : "888MFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
+               "institution_name" : "evernym enterprise",
+               "agency_verkey" : "91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
+               "remote_to_sdk_verkey" : "91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
+               "genesis_path":"/tmp/pool1.txn",
+               "payment_method": "null"}).to_string()
     }
 
     #[cfg(feature = "agency")]
@@ -277,7 +277,7 @@ mod tests {
         pool::close().unwrap();
 
         let config_path = "/tmp/test_init.json";
-        let content = create_config_util();
+        let content = create_config_util(Some("true"));
         settings::write_config_to_file(&content, config_path).unwrap();
 
         let cb = return_types_u32::Return_U32::new().unwrap();
@@ -293,12 +293,34 @@ mod tests {
     #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
+    fn test_init_with_file_no_payment_method() {
+        init!("false");
+        settings::clear_config();
+
+        let config_path = "/tmp/test_init.json";
+        let content = json!({
+            "wallet_name": settings::DEFAULT_WALLET_NAME,
+            "wallet_key": settings::DEFAULT_WALLET_KEY
+        }).to_string();
+
+        settings::write_config_to_file(&content, config_path).unwrap();
+
+        let cb = return_types_u32::Return_U32::new().unwrap();
+        assert_eq!(vcx_init(cb.command_handle,
+                            CString::new(config_path).unwrap().into_raw(),
+                            Some(cb.get_callback())),
+                   error::MISSING_PAYMENT_METHOD.code_num);
+    }
+
+    #[cfg(feature = "agency")]
+    #[cfg(feature = "pool_tests")]
+    #[test]
     fn test_init_with_config() {
         init!("ledger");
         wallet::close_wallet().unwrap();
         pool::close().unwrap();
 
-        let content = create_config_util();
+        let content = create_config_util(None);
 
         let cb = return_types_u32::Return_U32::new().unwrap();
         assert_eq!(vcx_init_with_config(cb.command_handle,
@@ -329,7 +351,7 @@ mod tests {
         let wallet_name = "test_init_fails_when_open_pool_fails";
         wallet::create_wallet(wallet_name).unwrap();
 
-        let content = create_config_util();
+        let content = create_config_util(None);
 
         let cb = return_types_u32::Return_U32::new().unwrap();
         assert_eq!(vcx_init_with_config(cb.command_handle,
@@ -487,7 +509,7 @@ mod tests {
         init!("ledger");
 
         let config_path = "/tmp/test_init.json";
-        let content = create_config_util();
+        let content = create_config_util(None);
         settings::write_config_to_file(&content, config_path).unwrap();
 
         let cb = return_types_u32::Return_U32::new().unwrap();
@@ -690,5 +712,26 @@ mod tests {
         assert_eq!(new_name, &settings::get_config_value(::settings::CONFIG_INSTITUTION_NAME).unwrap());
         assert_eq!(new_url, &settings::get_config_value(::settings::CONFIG_INSTITUTION_LOGO_URL).unwrap());
         ::settings::set_defaults();
+    }
+
+    // This test is ignored because it sets up logging, which can only be done
+    // once per process.
+    #[ignore]
+    #[cfg(feature = "agency")]
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn test_init_with_logging_config() {
+        init!("ledger");
+        wallet::close_wallet().unwrap();
+        pool::close().unwrap();
+        let content = create_config_util(Some("debug"));
+        let cb = return_types_u32::Return_U32::new().unwrap();
+        assert_eq!(vcx_init_with_config(cb.command_handle,
+                                        CString::new(content).unwrap().into_raw(),
+                                        Some(cb.get_callback())),
+                   error::SUCCESS.code_num);
+        cb.receive(Some(Duration::from_secs(10))).unwrap();
+        assert_ne!(get_pool_handle().unwrap(), 0);
+        debug!("This statement should log");
     }
 }

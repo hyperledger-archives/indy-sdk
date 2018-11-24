@@ -5,3 +5,8 @@ pub mod pairwise;
 pub mod pool;
 pub mod wallet;
 pub mod route;
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct IndyConfig {
+    pub crypto_thread_pool_size : usize
+}

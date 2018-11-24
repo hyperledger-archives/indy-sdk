@@ -9,9 +9,9 @@ async def vcx_agent_provision(config: str) -> None:
     Example:
     import json
     enterprise_config = {
-        'agency_url': 'https://enym-eagency.pdev.evernym.com',
-        'agency_did': 'YRuVCckY6vfZfX9kcQZe3u',
-        'agency_verkey': "J8Yct6FwmarXjrE2khZesUXRVVSVczSoa9sFaGe6AD2v",
+        'agency_url': 'http://localhost:8080',
+        'agency_did': 'VsKV7grR1BUE29mG2Fm2kX',
+        'agency_verkey': "Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR",
         'wallet_name': 'LIBVCX_SDK_WALLET',
         'agent_seed': '00000000000000000000000001234561',
         'enterprise_seed': '000000000000000000000000Trustee1',
@@ -113,6 +113,7 @@ async def vcx_messages_download(status: str = None, uids: str = None, pw_dids: s
 
     logger.debug("vcx_messages_download completed")
     return result
+
 
 async def vcx_messages_update_status(msg_json: str):
     """

@@ -17,7 +17,7 @@ pub fn change_pool_handle(handle: Option<i32>){
 }
 
 pub fn set_protocol_version() -> u32 {
-    match Pool::set_protocol_version(2) {
+    match Pool::set_protocol_version(settings::get_protocol_version()) {
         Ok(_) => error::SUCCESS.code_num,
         Err(_) => error::UNKNOWN_LIBINDY_ERROR.code_num,
     }
@@ -96,7 +96,8 @@ pub mod tests {
     }
 
     pub fn create_genesis_txn_file() {
-        let test_pool_ip = "127.0.0.1".to_string();
+        let test_pool_ip = ::std::env::var("TEST_POOL_IP").unwrap_or("127.0.0.1".to_string());
+
         let node_txns = get_txns(&test_pool_ip);
         let txn_file_data = node_txns[0..4].join("\n");
 
