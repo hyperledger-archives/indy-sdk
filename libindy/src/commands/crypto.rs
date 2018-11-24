@@ -3,11 +3,8 @@ extern crate serde_json;
 
 use std::collections::HashMap;
 
-use errors::common::CommonError;
 use errors::indy::IndyError;
 use domain::crypto::key::{KeyInfo, Key, KeyMetadata};
-use domain::crypto::combo_box::ComboBox;
-use utils::crypto::base64;
 use services::wallet::{WalletService, RecordOptions};
 use services::crypto::CryptoService;
 

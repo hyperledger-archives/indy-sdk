@@ -466,7 +466,8 @@ mod tests {
     fn create_my_did_with_works_for_empty_info() {
         let service = CryptoService::new();
         let did_info = MyDidInfo { did: None, cid: None, seed: None, crypto_type: None };
-        service.create_my_did(&did_info).unwrap();
+        let my_did = service.create_my_did(&did_info);
+        assert!(my_did.is_ok());
     }
 
     #[test]
@@ -551,7 +552,8 @@ mod tests {
 
         let message = r#"message"#;
         let (_, my_key) = service.create_my_did(&did_info).unwrap();
-        service.sign(&my_key, message.as_bytes()).unwrap();
+        let sig = service.sign(&my_key, message.as_bytes());
+        assert!(sig.is_ok());
     }
 
     #[test]
@@ -617,7 +619,8 @@ mod tests {
         let (_, my_key) = service.create_my_did(&did_info).unwrap();
         let (their_did, _) = service.create_my_did(&did_info.clone()).unwrap();
         let their_did = Did::new(their_did.did, their_did.verkey);
-        service.encrypt(&my_key, &their_did.verkey, msg.as_bytes()).unwrap();
+        let encrypted_message = service.encrypt(&my_key, &their_did.verkey, msg.as_bytes());
+        assert!(encrypted_message.is_ok());
     }
 
     #[test]
@@ -683,7 +686,8 @@ mod tests {
         let did_info = MyDidInfo { did: None, cid: None, seed: None, crypto_type: None };
         let (did, _) = service.create_my_did(&did_info.clone()).unwrap();
         let did = Did::new(did.did, did.verkey);
-        service.encrypt_sealed(&did.verkey, msg.as_bytes()).unwrap();
+        let encrypted_message = service.encrypt_sealed(&did.verkey, msg.as_bytes());
+        assert!(encrypted_message.is_ok());
     }
 
     #[test]
@@ -703,11 +707,11 @@ mod tests {
         let service = CryptoService::new();
         let msg = "some message".as_bytes();
         let did_info = MyDidInfo { did: None, cid: None, seed: None, crypto_type: None };
-        let (my_did, my_key) = service.create_my_did(&did_info).unwrap();
-        let my_key_for_encrypt = my_key.clone();
-        let (their_did, their_key) = service.create_my_did(&did_info.clone()).unwrap();
+        let ( _ , my_key) = service.create_my_did(&did_info).unwrap();
+        let (their_did, _their_key) = service.create_my_did(&did_info.clone()).unwrap();
         let their_did_for_encrypt = Did::new(their_did.did, their_did.verkey);
-        let encrypted_message = service.authenticated_encrypt(&my_key, &their_did_for_encrypt.verkey, msg).unwrap();
+        let encrypted_message = service.authenticated_encrypt(&my_key, &their_did_for_encrypt.verkey, msg);
+        assert!(encrypted_message.is_ok());
     }
 
     #[test]
