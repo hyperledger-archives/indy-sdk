@@ -11,3 +11,7 @@ Podfile.lock
 _build/
 
 /wrappers/python/venv/
+
+.vscode/
+toc.rst
+
