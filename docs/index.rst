@@ -10,13 +10,14 @@ Hyperledger Indy SDK
   :maxdepth: 2
   :hidden:
   
-  getting-started/getting-started.md 
-  rtd-tutorials
-  rtd-design
-  rtd-building
-  rtd-migration-guides
-  release-workflow.md
-  signing-commits.md  
+  getting-started/getting-started.rst
+  how-tos/how-tos.rst
+  architecture/architecture.rst
+  design/design.rst
+  concepts/concepts.rst
+  build-guides/build-guides.rst
+  migration-guides/migration-guides.rst
+  contributors/contributors.rst
 
 Distributed ledger purpose-built for decentralized identity.
 
