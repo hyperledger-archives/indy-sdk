@@ -10,11 +10,15 @@ use errors::crypto::CryptoError;
 use domain::crypto::key::{Key, KeyInfo};
 use domain::crypto::did::{Did, MyDidInfo, TheirDidInfo, TheirDid};
 use domain::crypto::combo_box::ComboBox;
+use domain::route::AuthRecipient;
+use domain::route::AnonRecipient;
 use utils::crypto::base58;
 use utils::crypto::base64;
 use utils::crypto::verkey_builder::build_full_verkey;
 use utils::crypto::ed25519_sign;
 use utils::crypto::ed25519_box;
+use utils::crypto::xsalsa20;
+use utils::crypto::xsalsa20::{create_key, gen_nonce};
 
 use std::collections::HashMap;
 use std::str;
@@ -455,6 +459,177 @@ impl CryptoService {
 
         Ok(res)
     }
+
+    /* ciphertext helper functions*/
+    pub fn decrypt_ciphertext(
+        &self,
+        ciphertext: &str,
+        iv: &str,
+        sym_key: &xsalsa20::Key,
+    ) -> Result<String, CryptoError> {
+        //convert IV from &str to &Nonce
+        let iv_as_vec = base64::decode(iv)
+            .map_err(|err| (format!("Failed to decode IV {}", err)))?;
+        let iv_as_slice = iv_as_vec.as_slice();
+        let nonce = xsalsa20::Nonce::from_slice(iv_as_slice).map_err(|err| {
+            CommonError::InvalidStructure(format!("Failed to convert IV to Nonce type {}", err))
+        })?;
+
+        //convert ciphertext to bytes
+        let ciphertext_as_vec = base64::decode(ciphertext).map_err(|err| {
+            CryptoError::CommonError(err(format!("Failed to decode AMES ciphertext")))
+        })?;
+        let ciphertext_as_bytes = ciphertext_as_vec.as_ref();
+
+        //decrypt message
+        let plaintext_bytes =
+            xsalsa20::decrypt(sym_key, &nonce, ciphertext_as_bytes).map_err(|err| {
+                CryptoError::CommonError(err(format!("Failed to decrypt AMES ciphertext")))
+            })?;
+
+        //convert message to readable (UTF-8) string
+        String::from_utf8(plaintext_bytes).map_err(|err| {
+            CryptoError::CommonError::InvalidStructure(format!("Failed to convert message to UTF-8 {}", err))
+        })
+    }
+
+    pub fn encrypt_ciphertext(&self, ciphertext: &str) -> (xsalsa20::Key, xsalsa20::Nonce, Vec<u8>) {
+        let sym_key = create_key();
+        let iv = gen_nonce();
+        let message = xsalsa20::encrypt(&sym_key, &iv, ciphertext.as_bytes());
+
+        (sym_key, iv, message)
+    }
+
+    /* Authcrypt helper function section */
+    pub fn anon_encrypt_recipient(
+        &self,
+        recp_vk: &str,
+        sym_key: xsalsa20::Key,
+    ) -> Result<AnonRecipient, CryptoError> {
+        //encrypt cek
+        let cek = self.encrypt_sealed(recp_vk, &sym_key[..]).map_err(|err| {
+            RouteError::PackError(format!("Failed to encrypt anon recipient {}", err))
+        })?;
+
+        //generate struct
+        let anon_recipient = AnonRecipient {
+            to: recp_vk.to_string(),
+            cek: base64::encode(cek.as_slice()),
+        };
+
+        Ok(anon_recipient)
+    }
+
+    pub fn anon_decrypt_recipient(
+        &self,
+        my_key: &Key,
+        anon_recipient: AnonRecipient
+    ) -> Result<xsalsa20::Key, CryptoError> {
+        let cek_as_vec = base64::decode(&anon_recipient.cek).map_err(|err| {
+            RouteError::DecodeError(format!(
+                "Failed to decode cek for anon_decrypt_recipient {}",
+                err
+            ))
+        })?;
+        let cek_as_bytes = cek_as_vec.as_ref();
+
+        let decrypted_cek = self
+            .decrypt_sealed(my_key, cek_as_bytes)
+            .map_err(|err| CryptoError::CommonError::InvalidState(format!("Failed to decrypt cek {}", err)))?;
+
+        //convert to secretbox key
+        let sym_key = xsalsa20::Key::from_slice(&decrypted_cek[..]).map_err(|err| {
+            RouteError::EncryptionError(format!("Failed to unpack sym_key {}", err))
+        })?;
+
+        //return key
+        Ok(sym_key)
+    }
+
+    /* Authcrypt helper function section */
+    pub fn auth_encrypt_recipient(
+        &self,
+        my_key: &Key,
+        recp_vk: &str,
+        sym_key: &xsalsa20::Key
+    ) -> Result<AuthRecipient, CryptoError> {
+        //encrypt sym_key for recipient
+        let (e_cek, cek_nonce) = cs.encrypt(my_key, recp_vk, &sym_key[..]).map_err(|err| {
+            RouteError::EncryptionError(format!("Failed to auth encrypt cek {}", err))
+        })?;
+
+        //serialize enc_header
+        let sender_vk_bytes = base58::decode(&my_key.verkey).map_err(|err| {
+            RouteError::SerializationError(format!("Failed to serialize cek {}", err))
+        })?;
+
+        //encrypt enc_from
+        let enc_from = cs
+            .encrypt_sealed(recp_vk, sender_vk_bytes.as_slice())
+            .map_err(|err| {
+                RouteError::EncryptionError(format!("Failed to encrypt sender verkey {}", err))
+            })?;;
+
+        //create struct
+        let auth_recipient = AuthRecipient {
+            enc_from: base64::encode(enc_from.as_slice()),
+            e_cek: base64::encode(e_cek.as_slice()),
+            cek_nonce: base64::encode(cek_nonce.as_slice()),
+            to: recp_vk.to_string(),
+        };
+
+        //return AuthRecipient struct
+        Ok(auth_recipient)
+    }
+
+    pub fn auth_decrypt_recipient(
+        &self,
+        my_key: &Key,
+        auth_recipient: AuthRecipient
+    ) -> Result<(xsalsa20::Key, String), CryptoError> {
+        //decode enc_from
+        let enc_from_bytes = base64::decode(&auth_recipient.enc_from)
+            .map_err(|err| RouteError::DecodeError(format!("Failed to decode enc_from {}", err)))?;
+
+        //decrypt enc_from
+        let sender_vk_as_vec =
+            cs.decrypt_sealed(my_key, enc_from_bytes.as_ref())
+                .map_err(|err| {
+                    RouteError::EncryptionError(format!("Failed to decrypt sender verkey {}", err))
+                })?;
+
+        //encode sender_vk to base58 to use to decrypt cek
+        let sender_vk = base58::encode(sender_vk_as_vec.as_ref());
+
+        //decode e_cek
+        let e_cek_as_vec = base64::decode(&auth_recipient.e_cek)
+            .map_err(|err| RouteError::DecodeError(format!("Failed to decode e_cek {}", err)))?;
+        let e_cek: &[u8] = e_cek_as_vec.as_ref();
+
+        //type convert cek_nonce
+        let cek_nonce_as_vec = base64::decode(&auth_recipient.cek_nonce).map_err(|err| {
+            RouteError::DecodeError(format!("Failed to decode cek_nonce {}", err))
+        })?;
+        let cek_nonce: &[u8] = cek_nonce_as_vec.as_ref();
+
+        //decrypt cek
+        let decrypted_cek = cs
+            .decrypt(my_key, &sender_vk, e_cek, cek_nonce)
+            .map_err(|err| {
+                RouteError::EncryptionError(format!("Failed to auth decrypt cek {}", err))
+            })?;
+
+        //convert to secretbox key
+        let sym_key = xsalsa20::Key::from_slice(&decrypted_cek[..]).map_err(|err| {
+            RouteError::EncryptionError(format!("Failed to unpack sym_key {}", err))
+        })?;
+
+        //TODO Verify key is in DID Doc
+
+        //return key to decrypt ciphertext and the key used to decrypt with
+        Ok((sym_key, sender_vk))
+    }
 }
 
 #[cfg(test)]
@@ -730,5 +905,36 @@ mod tests {
         assert_eq!(msg.as_bytes().to_vec(), decrypted_message);
         assert_eq!(&their_vk, &their_did_for_decrypt.verkey);
 
+    }
+
+    #[test]
+    pub fn test_auth_encrypt_decrypt_recipient() {
+        _cleanup();
+        //setup route_service
+        let rs: Rc<RouteService> = Rc::new(RouteService::new());
+        let cs: Rc<CryptoService> = Rc::new(CryptoService::new());
+        let ws: Rc<WalletService> = Rc::new(WalletService::new());
+
+        //setup wallets
+        let (_, _, recv_key) = _setup_recv_wallet1(ws.clone(), cs.clone());
+        let (_, _, expected_send_key) = _setup_send_wallet(ws.clone(), cs.clone());
+
+        //setup recv_keys to use with pack_msg
+        let recv_verkey: &str = recv_key.verkey.as_ref();
+
+        //sym_key
+        let sym_key = xsalsa20::create_key();
+
+        //pack then unpack message
+        let auth_recipient = rs
+            .auth_encrypt_recipient(&expected_send_key, &recv_verkey, &sym_key, cs.clone())
+            .unwrap();
+        let (expected_sym_key, sender_vk) = rs
+            .auth_decrypt_recipient(&recv_key, auth_recipient, cs.clone())
+            .unwrap();
+
+        //verify same plaintext goes in and comes out
+        assert_eq!(expected_sym_key, sym_key);
+        assert_eq!(expected_send_key.verkey, sender_vk);
     }
 }
