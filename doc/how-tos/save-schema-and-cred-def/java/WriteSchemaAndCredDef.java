@@ -61,7 +61,7 @@ public class WriteSchemaAndCredDef {
 		String name = "gvt";
 		String version = "1.0";
 		String attributes = "[\"age\", \"sex\", \"height\", \"name\"]";
-		String schemaDataJSON = "{\"name\":\"" + name + "\",\"version\":\"" + version + "\",\"attr_names\":" + attributes + "}";
+		String schemaDataJSON = "{\"name\":\"" + name + "\",\"version\":\"" + version + "\",\"attrNames\":" + attributes + ", id=\"id\", ver=\"1.0\"}";
 		System.out.println("Schema: " + schemaDataJSON);
 		String schemaRequest = buildSchemaRequest(defaultStewardDid, schemaDataJSON).get();
 		System.out.println("Schema request:\n" + schemaRequest);

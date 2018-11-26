@@ -12,7 +12,8 @@ from vcx.api.schema import Schema
 from vcx.api.credential_def import CredentialDef
 from vcx.state import State, ProofState
 from vcx.api.utils import vcx_agent_provision
-
+import vcx.api.logging as logging
+from ctypes import cdll
 
 # 'agency_url': URL of the agency
 # 'agency_did':  public DID of the agency
@@ -21,13 +22,13 @@ from vcx.api.utils import vcx_agent_provision
 # 'wallet_key': encryption key for encoding wallet
 # 'payment_method': method that will be used for payments
 provisionConfig = {
-  'agency_url': 'http://sbx-eas.pdev.evernym.com',
-  'agency_did': 'HB7qFQyFxx4ptjKqioEtd8',
-  'agency_verkey': '9pJkfHyfJMZjUjS7EZ2q2HX55CbFQPKpQ9eTjSAUMLU8',
-  'wallet_name': 'faber_wallet',
-  'wallet_key': '123',
-  'enterprise_seed': '000000000000000000000000Trustee1',
+  'agency_url':'http://localhost:8080',
+  'agency_did':'VsKV7grR1BUE29mG2Fm2kX',
+  'agency_verkey':'Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR',
+  'wallet_name':'faber_wallet',
+  'wallet_key':'123',
   'payment_method': 'null',
+  'enterprise_seed':'000000000000000000000000Trustee1'
 }
 
 
@@ -36,6 +37,7 @@ async def main():
     payment_plugin = cdll.LoadLibrary("libnullpay.so")
     payment_plugin.nullpay_init()
 
+    logging.default_logger()
     print("#1 Provision an agent and wallet, get back configuration details")
     config = await vcx_agent_provision(json.dumps(provisionConfig))
     config = json.loads(config)
@@ -46,6 +48,7 @@ async def main():
     
     print("#2 Initialize libvcx with new configuration")
     await vcx_init_with_config(json.dumps(config))
+
 
     print("#3 Create a new schema on the ledger")
     version = format("%d.%d.%d" % (random.randint(1, 101), random.randint(1, 101), random.randint(1, 101)))

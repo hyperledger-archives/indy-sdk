@@ -5,7 +5,7 @@ It expects all code to be used in each integration test.
 Without this, we are warned of all unused code in each integration test.
 */
 
-extern crate indy;
+extern crate indyrs as indy;
 
 pub mod b58;
 pub mod constants;
