@@ -32,7 +32,7 @@ namespace Hyperledger.Indy.LedgerApi
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_sign_and_submit_request(int command_handle, IntPtr pool_handle, IntPtr wallet_handle, string submitter_did, string request_json, SubmitRequestCompletedDelegate cb);
+        internal static extern int indy_sign_and_submit_request(int command_handle, int pool_handle, int wallet_handle, string submitter_did, string request_json, SubmitRequestCompletedDelegate cb);
 
         /// <summary>
         /// Publishes request message to validator pool (no signing, unlike sign_and_submit_request).
@@ -43,7 +43,7 @@ namespace Hyperledger.Indy.LedgerApi
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_submit_request(int command_handle, IntPtr pool_handle, string request_json, SubmitRequestCompletedDelegate cb);
+        internal static extern int indy_submit_request(int command_handle, int pool_handle, string request_json, SubmitRequestCompletedDelegate cb);
 
         /// <summary>
         /// Send action to particular nodes of validator pool.
@@ -60,7 +60,7 @@ namespace Hyperledger.Indy.LedgerApi
         /// <param name="timeout">Timeout.</param>
         /// <param name="cb">Cb.</param>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_submit_action(int command_handle, IntPtr pool_handle, string request_json, string nodes, int timeout, SubmitRequestCompletedDelegate cb);
+        internal static extern int indy_submit_action(int command_handle, int pool_handle, string request_json, string nodes, int timeout, SubmitRequestCompletedDelegate cb);
 
 
         /// <summary>
@@ -73,7 +73,7 @@ namespace Hyperledger.Indy.LedgerApi
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_sign_request(int command_handle, IntPtr wallet_handle, string submitter_did, string request_json, SignRequestCompletedDelegate cb);
+        internal static extern int indy_sign_request(int command_handle, int wallet_handle, string submitter_did, string request_json, SignRequestCompletedDelegate cb);
 
         /// <summary>
         /// Multi signs request message.
@@ -88,7 +88,7 @@ namespace Hyperledger.Indy.LedgerApi
         /// <param name="request_json">Request json.</param>
         /// <param name="cb">Cb.</param>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_multi_sign_request(int command_handle, IntPtr wallet_handle, string submitter_did, string request_json, SignRequestCompletedDelegate cb);
+        internal static extern int indy_multi_sign_request(int command_handle, int wallet_handle, string submitter_did, string request_json, SignRequestCompletedDelegate cb);
 
 
         /// <summary>
