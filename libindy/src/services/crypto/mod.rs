@@ -194,24 +194,8 @@ impl CryptoService {
         Ok(valid)
     }
 
-    pub fn create_combo_box(&self, my_key: &Key, their_vk: &str, doc: &[u8]) -> Result<ComboBox, CryptoError> {
-        trace!("create_combo_box >>> my_key: {:?}, their_vk: {:?}, doc: {:?}", my_key, their_vk, doc);
-
-        let (msg, nonce) = self.encrypt(my_key, their_vk, doc)?;
-
-        let res = ComboBox {
-            msg: base64::encode(msg.as_slice()),
-            sender: my_key.verkey.to_string(),
-            nonce: base64::encode(nonce.as_slice())
-        };
-
-        trace!("create_combo_box <<< res: {:?}", res);
-
-        Ok(res)
-    }
-
-    pub fn encrypt(&self, my_key: &Key, their_vk: &str, doc: &[u8]) -> Result<(Vec<u8>, Vec<u8>), CryptoError> {
-        trace!("encrypt >>> my_key: {:?}, their_vk: {:?}, doc: {:?}", my_key, their_vk, doc);
+    pub fn crypto_box(&self, my_key: &Key, their_vk: &str, doc: &[u8]) -> Result<(Vec<u8>, Vec<u8>), CryptoError> {
+        trace!("crypto_box >>> my_key: {:?}, their_vk: {:?}, doc: {:?}", my_key, their_vk, doc);
 
         let (_my_vk, crypto_type_name) = if my_key.verkey.contains(':') {
             let splits: Vec<&str> = my_key.verkey.split(':').collect();
@@ -228,7 +212,7 @@ impl CryptoService {
         };
 
         if !self.crypto_types.contains_key(&crypto_type_name) {
-            return Err(CryptoError::UnknownCryptoError(format!("Trying to encrypt message with unknown crypto: {}", crypto_type_name)));
+            return Err(CryptoError::UnknownCryptoError(format!("Trying to crypto_box message with unknown crypto: {}", crypto_type_name)));
         }
 
         if !crypto_type_name.eq(their_crypto_type_name) {
@@ -248,13 +232,13 @@ impl CryptoService {
         let encrypted_doc = crypto_type.encrypt(&my_sk, &their_vk, doc, &nonce)?;
         let nonce = nonce[..].to_vec();
 
-        trace!("encrypt <<< encrypted_doc: {:?}, nonce: {:?}", encrypted_doc, nonce);
+        trace!("crypto_box <<< encrypted_doc: {:?}, nonce: {:?}", encrypted_doc, nonce);
 
         Ok((encrypted_doc, nonce))
     }
 
-    pub fn decrypt(&self, my_key: &Key, their_vk: &str, doc: &[u8], nonce: &[u8]) -> Result<Vec<u8>, CryptoError> {
-        trace!("decrypt >>> my_key: {:?}, their_vk: {:?}, doc: {:?}, nonce: {:?}", my_key, their_vk, doc, nonce);
+    pub fn crypto_box_open(&self, my_key: &Key, their_vk: &str, doc: &[u8], nonce: &[u8]) -> Result<Vec<u8>, CryptoError> {
+        trace!("crypto_box_open >>> my_key: {:?}, their_vk: {:?}, doc: {:?}, nonce: {:?}", my_key, their_vk, doc, nonce);
 
         let (_my_vk, crypto_type_name) = if my_key.verkey.contains(':') {
             let splits: Vec<&str> = my_key.verkey.split(':').collect();
@@ -272,7 +256,7 @@ impl CryptoService {
 
         if !self.crypto_types.contains_key(&crypto_type_name) {
             return Err(CryptoError::UnknownCryptoError(
-                format!("Trying to decrypt message with unknown crypto: {}", crypto_type_name)));
+                format!("Trying to crypto_box_open message with unknown crypto: {}", crypto_type_name)));
         }
 
         if !crypto_type_name.eq(their_crypto_type_name) {
@@ -291,24 +275,30 @@ impl CryptoService {
 
         let decrypted_doc = crypto_type.decrypt(&my_sk, &their_vk, &doc, &nonce)?;
 
-        trace!("decrypt <<< decrypted_doc: {:?}", decrypted_doc);
+        trace!("crypto_box_open <<< decrypted_doc: {:?}", decrypted_doc);
 
         Ok(decrypted_doc)
     }
 
     pub fn authenticated_encrypt(&self, my_key: &Key, their_vk: &str, doc: &[u8]) -> Result<Vec<u8>, CryptoError> {
-        let msg = self.create_combo_box(my_key, their_vk, doc)?;
+        let (msg, nonce) = self.crypto_box(my_key, their_vk, doc)?;
 
-        let msg_pack = msg.to_msg_pack()
+        let combo_box = ComboBox {
+            msg: base64::encode(msg.as_slice()),
+            sender: my_key.verkey.to_string(),
+            nonce: base64::encode(nonce.as_slice())
+        };
+
+        let msg_pack = combo_box.to_msg_pack()
             .map_err(|e| CommonError::InvalidState(format!("Can't serialize ComboBox: {:?}", e)))?;
 
-        let res = self.encrypt_sealed(&their_vk, &msg_pack)?;
+        let res = self.crypto_box_seal(&their_vk, &msg_pack)?;
 
         Ok(res)
     }
 
     pub fn authenticated_decrypt(&self, my_key: &Key, doc: &[u8]) -> Result<(String, Vec<u8>), CryptoError> {
-        let decrypted_msg = self.decrypt_sealed(&my_key, &doc)?;
+        let decrypted_msg = self.crypto_box_seal_open(&my_key, &doc)?;
 
         let parsed_msg = ComboBox::from_msg_pack(decrypted_msg.as_slice())
             .map_err(|err| CommonError::InvalidStructure(format!("Can't deserialize ComboBox: {:?}", err)))?;
@@ -319,15 +309,15 @@ impl CryptoService {
         let nonce: Vec<u8> = base64::decode(&parsed_msg.nonce)
             .map_err(|err| CommonError::InvalidStructure(format!("Can't decode nonce from base64 {}", err)))?;
 
-        let decrypted_msg = self.decrypt(&my_key, &parsed_msg.sender, &doc, &nonce)?;
+        let decrypted_msg = self.crypto_box_open(&my_key, &parsed_msg.sender, &doc, &nonce)?;
 
         let res = (parsed_msg.sender, decrypted_msg);
 
         Ok(res)
     }
 
-    pub fn encrypt_sealed(&self, their_vk: &str, doc: &[u8]) -> Result<Vec<u8>, CryptoError> {
-        trace!("encrypt_sealed >>> their_vk: {:?}, doc: {:?}", their_vk, doc);
+    pub fn crypto_box_seal(&self, their_vk: &str, doc: &[u8]) -> Result<Vec<u8>, CryptoError> {
+        trace!("crypto_box_seal >>> their_vk: {:?}, doc: {:?}", their_vk, doc);
 
         let (their_vk, crypto_type_name) = if their_vk.contains(':') {
             let splits: Vec<&str> = their_vk.split(':').collect();
@@ -346,13 +336,13 @@ impl CryptoService {
 
         let encrypted_doc = crypto_type.encrypt_sealed(&their_vk, doc)?;
 
-        trace!("encrypt_sealed <<< encrypted_doc: {:?}", encrypted_doc);
+        trace!("crypto_box_seal <<< encrypted_doc: {:?}", encrypted_doc);
 
         Ok(encrypted_doc)
     }
 
-    pub fn decrypt_sealed(&self, my_key: &Key, doc: &[u8]) -> Result<Vec<u8>, CryptoError> {
-        trace!("decrypt_sealed >>> my_key: {:?}, doc: {:?}", my_key, doc);
+    pub fn crypto_box_seal_open(&self, my_key: &Key, doc: &[u8]) -> Result<Vec<u8>, CryptoError> {
+        trace!("crypto_box_seal_open >>> my_key: {:?}, doc: {:?}", my_key, doc);
 
         let (my_vk, crypto_type_name) = if my_key.verkey.contains(':') {
             let splits: Vec<&str> = my_key.verkey.split(':').collect();
@@ -363,7 +353,7 @@ impl CryptoService {
 
         if !self.crypto_types.contains_key(&crypto_type_name) {
             return Err(CryptoError::UnknownCryptoError(
-                format!("Trying to decrypt sealed message with unknown crypto: {}", crypto_type_name)));
+                format!("Trying to crypto_box_open sealed message with unknown crypto: {}", crypto_type_name)));
         }
 
         let crypto_type = self.crypto_types.get(crypto_type_name).unwrap();
@@ -373,7 +363,7 @@ impl CryptoService {
 
         let decrypted_doc = crypto_type.decrypt_sealed(&my_vk, &my_sk, doc)?;
 
-        trace!("decrypt_sealed <<< decrypted_doc: {:?}", decrypted_doc);
+        trace!("crypto_box_seal_open <<< decrypted_doc: {:?}", decrypted_doc);
 
         Ok(decrypted_doc)
     }
@@ -619,7 +609,7 @@ mod tests {
         let (_, my_key) = service.create_my_did(&did_info).unwrap();
         let (their_did, _) = service.create_my_did(&did_info.clone()).unwrap();
         let their_did = Did::new(their_did.did, their_did.verkey);
-        let encrypted_message = service.encrypt(&my_key, &their_did.verkey, msg.as_bytes());
+        let encrypted_message = service.crypto_box(&my_key, &their_did.verkey, msg.as_bytes());
         assert!(encrypted_message.is_ok());
     }
 
@@ -643,9 +633,9 @@ mod tests {
 
         let their_did_for_encrypt = Did::new(their_did.did, their_did.verkey);
 
-        let (encrypted_message, noce) = service.encrypt(&my_key_for_encrypt, &their_did_for_encrypt.verkey, msg.as_bytes()).unwrap();
+        let (encrypted_message, noce) = service.crypto_box(&my_key_for_encrypt, &their_did_for_encrypt.verkey, msg.as_bytes()).unwrap();
 
-        let decrypted_message = service.decrypt(&my_key_for_decrypt, &their_did_for_decrypt.verkey, &encrypted_message, &noce).unwrap();
+        let decrypted_message = service.crypto_box_open(&my_key_for_decrypt, &their_did_for_decrypt.verkey, &encrypted_message, &noce).unwrap();
 
         assert_eq!(msg.as_bytes().to_vec(), decrypted_message);
     }
@@ -670,11 +660,11 @@ mod tests {
 
         let their_did_for_encrypt = Did::new(their_did.did, their_did.verkey);
 
-        let (encrypted_message, noce) = service.encrypt(&my_key_for_encrypt, &their_did_for_encrypt.verkey, msg.as_bytes()).unwrap();
+        let (encrypted_message, noce) = service.crypto_box(&my_key_for_encrypt, &their_did_for_encrypt.verkey, msg.as_bytes()).unwrap();
 
         let verkey = their_did_for_decrypt.verkey + ":ed25519";
 
-        let decrypted_message = service.decrypt(&my_key_for_decrypt, &verkey, &encrypted_message, &noce).unwrap();
+        let decrypted_message = service.crypto_box_open(&my_key_for_decrypt, &verkey, &encrypted_message, &noce).unwrap();
 
         assert_eq!(msg.as_bytes().to_vec(), decrypted_message);
     }
@@ -686,7 +676,7 @@ mod tests {
         let did_info = MyDidInfo { did: None, cid: None, seed: None, crypto_type: None };
         let (did, _) = service.create_my_did(&did_info.clone()).unwrap();
         let did = Did::new(did.did, did.verkey);
-        let encrypted_message = service.encrypt_sealed(&did.verkey, msg.as_bytes());
+        let encrypted_message = service.crypto_box_seal(&did.verkey, msg.as_bytes());
         assert!(encrypted_message.is_ok());
     }
 
@@ -697,8 +687,8 @@ mod tests {
         let did_info = MyDidInfo { did: None, cid: None, seed: None, crypto_type: None };
         let (did, key) = service.create_my_did(&did_info.clone()).unwrap();
         let encrypt_did = Did::new(did.did.clone(), did.verkey.clone());
-        let encrypted_message = service.encrypt_sealed(&encrypt_did.verkey, msg).unwrap();
-        let decrypted_message = service.decrypt_sealed(&key, &encrypted_message).unwrap();
+        let encrypted_message = service.crypto_box_seal(&encrypt_did.verkey, msg).unwrap();
+        let decrypted_message = service.crypto_box_seal_open(&key, &encrypted_message).unwrap();
         assert_eq!(msg, decrypted_message.as_slice());
     }
 

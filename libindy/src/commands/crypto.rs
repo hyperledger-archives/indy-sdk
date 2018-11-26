@@ -202,7 +202,7 @@ impl CryptoCommandExecutor {
 
         self.crypto_service.validate_key(their_vk)?;
 
-        let res = self.crypto_service.encrypt_sealed(their_vk, &msg)?;
+        let res = self.crypto_service.crypto_box_seal(their_vk, &msg)?;
 
         debug!("anonymous_encrypt <<< res: {:?}", res);
 
@@ -219,7 +219,7 @@ impl CryptoCommandExecutor {
 
         let my_key: Key = self.wallet_service.get_indy_object(wallet_handle, &my_vk, &RecordOptions::id_value())?;
 
-        let res = self.crypto_service.decrypt_sealed(&my_key, &encrypted_msg)?;
+        let res = self.crypto_service.crypto_box_seal_open(&my_key, &encrypted_msg)?;
 
         debug!("anonymous_decrypt <<< res: {:?}", res);
 
