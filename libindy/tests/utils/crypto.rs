@@ -18,25 +18,25 @@ pub fn get_key_metadata(wallet_handle: i32, verkey: &str) -> Result<String, Erro
 }
 
 pub fn sign(wallet_handle: i32, my_vk: &str, msg: &[u8]) -> Result<Vec<u8>, ErrorCode> {
-    crypto::crypto_sign(wallet_handle, my_vk, msg).wait()
+    crypto::sign(wallet_handle, my_vk, msg).wait()
 }
 
 pub fn verify(their_vk: &str, msg: &[u8], signature: &[u8]) -> Result<bool, ErrorCode> {
-    crypto::crypto_verify(their_vk, msg, signature).wait()
+    crypto::verify(their_vk, msg, signature).wait()
 }
 
 pub fn auth_crypt(wallet_handle: i32, my_vk: &str, their_vk: &str, msg: &[u8]) -> Result<Vec<u8>, ErrorCode> {
-    crypto::crypto_auth_crypt(wallet_handle, my_vk, their_vk, msg).wait()
+    crypto::auth_crypt(wallet_handle, my_vk, their_vk, msg).wait()
 }
 
 pub fn auth_decrypt(wallet_handle: i32, my_vk: &str, msg: &[u8]) -> Result<(String, Vec<u8>), ErrorCode> {
-    crypto::crypto_auth_decrypt(wallet_handle, my_vk, msg).wait()
+    crypto::auth_decrypt(wallet_handle, my_vk, msg).wait()
 }
 
 pub fn anon_crypt(their_vk: &str, msg: &[u8]) -> Result<Vec<u8>, ErrorCode> {
-    crypto::crypto_anon_crypt(their_vk, msg).wait()
+    crypto::anon_crypt(their_vk, msg).wait()
 }
 
 pub fn anon_decrypt(wallet_handle: i32, my_vk: &str, encrypted_msg: &[u8]) -> Result<Vec<u8>, ErrorCode> {
-    crypto::crypto_anon_decrypt(wallet_handle, my_vk, encrypted_msg).wait()
+    crypto::anon_decrypt(wallet_handle, my_vk, encrypted_msg).wait()
 }

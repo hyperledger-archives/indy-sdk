@@ -26,7 +26,7 @@ impl log::Log for SimpleLogger {
 }
 
 pub fn set_logger(logger: &'static log::Log) {
-    logger::set_indy_logger(logger).ok();
+    logger::set_logger(logger).ok();
 }
 
 pub fn set_default_logger() {

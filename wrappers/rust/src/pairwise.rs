@@ -15,12 +15,12 @@ use ffi::{ResponseEmptyCB,
 pub fn is_pairwise_exists(wallet_handle: IndyHandle, their_did: &str) -> Box<Future<Item=bool, Error=ErrorCode>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_bool();
 
-    let err = _does_exist(command_handle, wallet_handle, their_did, cb);
+    let err = _is_pairwise_exists(command_handle, wallet_handle, their_did, cb);
 
     ResultHandler::bool(command_handle, err, receiver)
 }
 
-fn _does_exist(command_handle: IndyHandle, wallet_handle: IndyHandle, their_did: &str, cb: Option<ResponseBoolCB>) -> ErrorCode {
+fn _is_pairwise_exists(command_handle: IndyHandle, wallet_handle: IndyHandle, their_did: &str, cb: Option<ResponseBoolCB>) -> ErrorCode {
     let their_did = c_str!(their_did);
 
     ErrorCode::from(unsafe {
@@ -31,12 +31,12 @@ fn _does_exist(command_handle: IndyHandle, wallet_handle: IndyHandle, their_did:
 pub fn create_pairwise(wallet_handle: IndyHandle, their_did: &str, my_did: &str, metadata: Option<&str>) -> Box<Future<Item=(), Error=ErrorCode>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
-    let err = _create(command_handle, wallet_handle, their_did, my_did, metadata, cb);
+    let err = _create_pairwise(command_handle, wallet_handle, their_did, my_did, metadata, cb);
 
     ResultHandler::empty(command_handle, err, receiver)
 }
 
-fn _create(command_handle: IndyHandle, wallet_handle: IndyHandle, their_did: &str, my_did: &str, metadata: Option<&str>, cb: Option<ResponseEmptyCB>) -> ErrorCode {
+fn _create_pairwise(command_handle: IndyHandle, wallet_handle: IndyHandle, their_did: &str, my_did: &str, metadata: Option<&str>, cb: Option<ResponseEmptyCB>) -> ErrorCode {
     let their_did = c_str!(their_did);
     let my_did = c_str!(my_did);
     let metadata_str = opt_c_str!(metadata);
@@ -49,12 +49,12 @@ fn _create(command_handle: IndyHandle, wallet_handle: IndyHandle, their_did: &st
 pub fn list_pairwise(wallet_handle: IndyHandle) -> Box<Future<Item=String, Error=ErrorCode>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
-    let err = _list(command_handle, wallet_handle, cb);
+    let err = _list_pairwise(command_handle, wallet_handle, cb);
 
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _list(command_handle: IndyHandle, wallet_handle: IndyHandle, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _list_pairwise(command_handle: IndyHandle, wallet_handle: IndyHandle, cb: Option<ResponseStringCB>) -> ErrorCode {
     ErrorCode::from(unsafe {
         pairwise::indy_list_pairwise(command_handle, wallet_handle, cb)
     })
@@ -63,12 +63,12 @@ fn _list(command_handle: IndyHandle, wallet_handle: IndyHandle, cb: Option<Respo
 pub fn get_pairwise(wallet_handle: IndyHandle, their_did: &str) -> Box<Future<Item=String, Error=ErrorCode>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
-    let err = _get(command_handle, wallet_handle, their_did, cb);
+    let err = _get_pairwise(command_handle, wallet_handle, their_did, cb);
 
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _get(command_handle: IndyHandle, wallet_handle: IndyHandle, their_did: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _get_pairwise(command_handle: IndyHandle, wallet_handle: IndyHandle, their_did: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
     let their_did = c_str!(their_did);
 
     ErrorCode::from(unsafe {
@@ -79,12 +79,12 @@ fn _get(command_handle: IndyHandle, wallet_handle: IndyHandle, their_did: &str, 
 pub fn set_pairwise_metadata(wallet_handle: IndyHandle, their_did: &str, metadata: Option<&str>) -> Box<Future<Item=(), Error=ErrorCode>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
-    let err = _set_metadata(command_handle, wallet_handle, their_did, metadata, cb);
+    let err = _set_pairwise_metadata(command_handle, wallet_handle, their_did, metadata, cb);
 
     ResultHandler::empty(command_handle, err, receiver)
 }
 
-fn _set_metadata(command_handle: IndyHandle, wallet_handle: IndyHandle, their_did: &str, metadata: Option<&str>, cb: Option<ResponseEmptyCB>) -> ErrorCode {
+fn _set_pairwise_metadata(command_handle: IndyHandle, wallet_handle: IndyHandle, their_did: &str, metadata: Option<&str>, cb: Option<ResponseEmptyCB>) -> ErrorCode {
     let their_did = c_str!(their_did);
     let metadata_str = opt_c_str!(metadata);
 

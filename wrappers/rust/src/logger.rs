@@ -36,7 +36,7 @@ pub fn set_default_logger(pattern: Option<&str>) -> Result<(), ErrorCode> {
 ///
 /// # Arguments
 /// * `logger` - reference to logger used by application.
-pub fn set_indy_logger(logger: &'static Log) -> Result<(), ErrorCode> {
+pub fn set_logger(logger: &'static Log) -> Result<(), ErrorCode> {
     {
         unsafe {
             if LOGGER.is_some() { return Err(ErrorCode::CommonInvalidState); }
@@ -144,7 +144,7 @@ mod tests {
     #[test]
     fn test_logger() {
         set_boxed_logger(Box::new(SimpleLogger {})).unwrap();
-        set_indy_logger(logger()).unwrap();
+        set_logger(logger()).unwrap();
     }
 
     struct SimpleLogger;

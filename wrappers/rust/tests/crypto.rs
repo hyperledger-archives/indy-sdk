@@ -79,7 +79,7 @@ mod high_cases {
             let vkey = crypto::create_key(handle, None).wait().unwrap();
 
             let message = r#"Hello World"#.as_bytes();
-            let sig = crypto::crypto_sign(handle, &vkey, message).wait().unwrap();
+            let sig = crypto::sign(handle, &vkey, message).wait().unwrap();
             assert_eq!(sig.len(), 64);
 
             wallet_cleanup!(handle, wallet_name);
@@ -138,7 +138,7 @@ mod low_cases {
             let handle = wallet::open_wallet(wallet_name, DEFAULT_CREDENTIALS).wait().unwrap();
             let vkey = crypto::create_key(handle, None).wait().unwrap();
 
-            let res = crypto::crypto_sign(handle, &vkey, r#"Hello World"#.as_bytes()).wait();
+            let res = crypto::sign(handle, &vkey, r#"Hello World"#.as_bytes()).wait();
             assert!(res.is_ok());
             let sig = res.unwrap();
             assert_eq!(sig.len(), 64);
@@ -153,11 +153,11 @@ mod low_cases {
             safe_wallet_create!(wallet_name);
             let handle = wallet::open_wallet(wallet_name, DEFAULT_CREDENTIALS).wait().unwrap();
             let vkey = crypto::create_key(handle, None).wait().unwrap();
-            let res = crypto::crypto_sign(handle, &vkey, message.as_bytes()).wait();
+            let res = crypto::sign(handle, &vkey, message.as_bytes()).wait();
             assert!(res.is_ok());
             let sig = res.unwrap();
 
-            let res = crypto::crypto_verify(&vkey, message.as_bytes(), sig.as_slice()).wait();
+            let res = crypto::verify(&vkey, message.as_bytes(), sig.as_slice()).wait();
             assert!(res.is_ok());
             assert!(res.unwrap());
 
@@ -166,7 +166,7 @@ mod low_cases {
                 fake_sig.push(i as u8);
             }
 
-            let res = crypto::crypto_verify(&vkey, message.as_bytes(), fake_sig.as_slice()).wait();
+            let res = crypto::verify(&vkey, message.as_bytes(), fake_sig.as_slice()).wait();
             assert!(res.is_ok());
             assert!(!res.unwrap());
             wallet_cleanup!(handle, wallet_name);
@@ -181,11 +181,11 @@ mod low_cases {
             let vkey1 = crypto::create_key(handle, None).wait().unwrap();
             let vkey2 = crypto::create_key(handle, None).wait().unwrap();
 
-            let res = crypto::crypto_auth_crypt(handle, &vkey1, &vkey2, message.as_bytes()).wait();
+            let res = crypto::auth_crypt(handle, &vkey1, &vkey2, message.as_bytes()).wait();
             assert!(res.is_ok());
             let ciphertext = res.unwrap();
 
-            let res = crypto::crypto_auth_decrypt(handle, &vkey2, ciphertext.as_slice()).wait();
+            let res = crypto::auth_decrypt(handle, &vkey2, ciphertext.as_slice()).wait();
 
             assert!(res.is_ok());
             let (actual_vkey, plaintext) = res.unwrap();
@@ -197,7 +197,7 @@ mod low_cases {
                 fake_msg.push(i as u8);
             }
 
-            let res = crypto::crypto_auth_decrypt(handle, &vkey2, fake_msg.as_slice()).wait();
+            let res = crypto::auth_decrypt(handle, &vkey2, fake_msg.as_slice()).wait();
             assert!(res.is_err());
 
             wallet_cleanup!(handle, wallet_name);
@@ -211,11 +211,11 @@ mod low_cases {
             let handle = wallet::open_wallet(wallet_name, DEFAULT_CREDENTIALS).wait().unwrap();
             let vkey1 = crypto::create_key(handle, None).wait().unwrap();
 
-            let res = crypto::crypto_anon_crypt(&vkey1, message.as_bytes()).wait();
+            let res = crypto::anon_crypt(&vkey1, message.as_bytes()).wait();
             assert!(res.is_ok());
             let ciphertext = res.unwrap();
 
-            let res = crypto::crypto_anon_decrypt(handle, &vkey1, ciphertext.as_slice()).wait();
+            let res = crypto::anon_decrypt(handle, &vkey1, ciphertext.as_slice()).wait();
 
             assert!(res.is_ok());
             let plaintext = res.unwrap();
@@ -226,7 +226,7 @@ mod low_cases {
                 fake_msg.push(i as u8);
             }
 
-            let res = crypto::crypto_anon_decrypt(handle, &vkey1, fake_msg.as_slice()).wait();
+            let res = crypto::anon_decrypt(handle, &vkey1, fake_msg.as_slice()).wait();
             assert!(res.is_err());
 
             wallet_cleanup!(handle, wallet_name);
