@@ -1,10 +1,10 @@
-Indy SDK Design Documents
+Design Documents
 =========================
 
 Here are design documents to describe core concepts of the Indy SDK:
 
 .. toctree:: 
-   :maxdepth: 2
+   :maxdepth: 1
 
    001-cli/README.md
    002-anoncreds/README.md

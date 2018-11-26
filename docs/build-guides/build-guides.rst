@@ -6,8 +6,8 @@ Below are the different instructions on how to build Indy SDK for specific platf
 .. toctree::
    :maxdepth: 1
 
-   ubuntu-build.md 
-   mac-build.md 
-   windows-build.md
-   rhel-build.md 
-   android-build.md
+   Ubuntu <ubuntu-build.md> 
+   Mac <mac-build.md>
+   Windows <windows-build.md>
+   RHEL <rhel-build.md>
+   Android <android-build.md>
