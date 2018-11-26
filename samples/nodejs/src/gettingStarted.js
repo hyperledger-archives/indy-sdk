@@ -1,12 +1,12 @@
 "use strict";
+
 const indy = require('indy-sdk');
 const util = require('./util');
 const assert = require('assert');
 
-run();
-
 async function run() {
-    console.log("Getting started -> started");
+
+    console.log("gettingStarted.js -> started");
 
     let poolName = 'pool1';
     console.log(`Open Pool Ledger: ${poolName}`);
@@ -821,4 +821,12 @@ async function authDecrypt(walletHandle, key, message) {
     let decryptedMessage = JSON.parse(decryptedMessageJsonBuffer);
     let decryptedMessageJson = JSON.stringify(decryptedMessage);
     return [fromVerkey, decryptedMessageJson, decryptedMessage];
+}
+
+if (process.argv.indexOf("--run") > 0) {
+    run()
+}
+
+module.exports = {
+    run
 }
