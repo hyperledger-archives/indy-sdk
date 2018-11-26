@@ -602,7 +602,7 @@ mod tests {
     }
 
     #[test]
-    fn encrypt_works() {
+    fn crypto_box_works() {
         let service = CryptoService::new();
         let msg = "some message";
         let did_info = MyDidInfo { did: None, cid: None, seed: None, crypto_type: None };
@@ -614,7 +614,7 @@ mod tests {
     }
 
     #[test]
-    fn encrypt_decrypt_works() {
+    fn crypto_box_and_crypto_box_open_works() {
         let service = CryptoService::new();
 
         let msg = "some message";
@@ -642,7 +642,7 @@ mod tests {
 
 
     #[test]
-    fn encrypt_decrypt_works_for_verkey_contained_crypto_type() {
+    fn crypto_box_and_crypto_box_open_works_for_verkey_contained_crypto_type() {
         let service = CryptoService::new();
 
         let msg = "some message";
@@ -670,7 +670,7 @@ mod tests {
     }
 
     #[test]
-    fn encrypt_sealed_works() {
+    fn crypto_box_seal_works() {
         let service = CryptoService::new();
         let msg = "some message";
         let did_info = MyDidInfo { did: None, cid: None, seed: None, crypto_type: None };
@@ -681,7 +681,7 @@ mod tests {
     }
 
     #[test]
-    fn encrypt_decrypt_sealed_works() {
+    fn crypto_box_seal_and_crypto_box_seal_open_works() {
         let service = CryptoService::new();
         let msg = "some message".as_bytes();
         let did_info = MyDidInfo { did: None, cid: None, seed: None, crypto_type: None };
