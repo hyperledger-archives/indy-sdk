@@ -188,7 +188,7 @@ epub_title = project
 epub_exclude_files = ['search.html']
 
 
-ource_parsers = {
+source_parsers = {
     '.md' : 'recommonmark.parser.CommonMarkParser',
 }
 
