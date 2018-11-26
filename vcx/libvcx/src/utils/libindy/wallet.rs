@@ -1,11 +1,13 @@
 extern crate libc;
 extern crate serde_json;
 
+use futures::Future;
+
 use settings;
 use utils::libindy::error_codes::map_rust_indy_sdk_error_code;
 use utils::error;
 use error::wallet::WalletError;
-use indy::wallet::Wallet;
+use indy::wallet;
 use indy::ErrorCode;
 use std::path::Path;
 pub static mut WALLET_HANDLE: i32 = 0;
@@ -17,7 +19,7 @@ pub fn create_wallet(wallet_name: &str) -> Result<(), u32> {
 
     let config = format!(r#"{{"id":"{}"}}"#, wallet_name);
 
-    match Wallet::create(&config, &settings::get_wallet_credentials()) {
+    match wallet::create_wallet(&config, &settings::get_wallet_credentials()).wait() {
         Ok(x) => Ok(()),
         Err(x) => if x != ErrorCode::WalletAlreadyExistsError && x != ErrorCode::Success {
             warn!("could not create wallet {}: {:?}", wallet_name, x);
@@ -38,7 +40,8 @@ pub fn open_wallet(wallet_name: &str) -> Result<i32, u32> {
 
     let config = format!(r#"{{"id":"{}"}}"#, wallet_name);
 
-    let handle = Wallet::open(&config, &settings::get_wallet_credentials())
+    let handle = wallet::open_wallet(&config, &settings::get_wallet_credentials())
+        .wait()
         .map_err(map_rust_indy_sdk_error_code)?;
 
     unsafe { WALLET_HANDLE = handle; }
@@ -60,7 +63,7 @@ pub fn close_wallet() -> Result<(), u32> {
         unsafe { WALLET_HANDLE = 0; }
         return Ok(());
     }
-    let result = Wallet::close(get_wallet_handle()).map_err(map_rust_indy_sdk_error_code);
+    let result = wallet::close_wallet(get_wallet_handle()).wait().map_err(map_rust_indy_sdk_error_code);
     unsafe { WALLET_HANDLE = 0; }
     result
 }
@@ -77,13 +80,14 @@ pub fn delete_wallet(wallet_name: &str) -> Result<(), u32> {
     };
 
     let config = format!(r#"{{"id":"{}"}}"#, wallet_name);
-    Wallet::delete(&config,&settings::get_wallet_credentials()).map_err(map_rust_indy_sdk_error_code)
+    wallet::delete_wallet(&config,&settings::get_wallet_credentials()).wait().map_err(map_rust_indy_sdk_error_code)
 }
 
 pub fn add_record(xtype: &str, id: &str, value: &str, tags: &str) -> Result<(), u32> {
     if settings::test_indy_mode_enabled() { return Ok(()) }
 
-    Wallet::add_record(get_wallet_handle(), xtype, id, value, Some(tags))
+    wallet::add_wallet_record(get_wallet_handle(), xtype, id, value, Some(tags))
+        .wait()
         .map_err(map_rust_indy_sdk_error_code)
 }
 
@@ -93,26 +97,29 @@ pub fn get_record(xtype: &str, id: &str, options: &str) -> Result<String, u32> {
         return Ok(r#"{"id":"123","type":"record type","value":"record value","tags":null}"#.to_string())
     }
 
-    Wallet::get_record(get_wallet_handle(), xtype, id, options)
+    wallet::get_wallet_record(get_wallet_handle(), xtype, id, options)
+        .wait()
         .map_err(map_rust_indy_sdk_error_code)
 }
 
 pub fn delete_record(xtype: &str, id: &str) -> Result<(), u32> {
     if settings::test_indy_mode_enabled() { return Ok(()) }
-    Wallet::delete_record(get_wallet_handle(), xtype, id)
+    wallet::delete_wallet_record(get_wallet_handle(), xtype, id)
+        .wait()
         .map_err(map_rust_indy_sdk_error_code)
 }
 
 
 pub fn update_record_value(xtype: &str, id: &str, value: &str) -> Result<(), u32> {
     if settings::test_indy_mode_enabled() { return Ok(()) }
-    Wallet::update_record_value(get_wallet_handle(), xtype, id, value)
+    wallet::update_wallet_record_value(get_wallet_handle(), xtype, id, value)
+        .wait()
         .map_err(map_rust_indy_sdk_error_code)
 }
 
 pub fn export(wallet_handle: i32, path: &Path, backup_key: &str) -> Result<(), WalletError> {
     let export_config = json!({ "key": backup_key, "path": &path}).to_string();
-    match Wallet::export(wallet_handle, &export_config) {
+    match wallet::export_wallet(wallet_handle, &export_config).wait() {
         Ok(_) => Ok(()),
         Err(e) => Err(WalletError::CommonError(map_rust_indy_sdk_error_code(e))),
     }
@@ -137,7 +144,7 @@ pub fn import(config: &str) -> Result<(), WalletError> {
     let credentials = settings::get_wallet_credentials();
     let import_config = json!({"key": backup_key, "path": exported_wallet_path }).to_string();
 
-    match Wallet::import(&config, &credentials, &import_config) {
+    match wallet::import_wallet(&config, &credentials, &import_config).wait() {
         Ok(_) => Ok(()),
         Err(e) => Err(WalletError::CommonError(map_rust_indy_sdk_error_code(e))),
     }

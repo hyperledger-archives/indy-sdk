@@ -2,22 +2,22 @@
 #[macro_use] extern crate serde_derive;
 extern crate rmp_serde;
 extern crate byteorder;
-extern crate indy;
+extern crate indyrs as indy;
+extern crate futures;
 #[allow(unused_variables)]
 #[allow(unused_macros)]
 #[allow(dead_code)]
 #[macro_use]
 pub mod utils;
 
-use indy::did::Did;
-use indy::ErrorCode;
-use indy::ledger::Ledger;
-use indy::pool::Pool;
-use std::sync::mpsc::channel;
-use std::time::Duration;
-use utils::constants::{INVALID_TIMEOUT, PROTOCOL_VERSION, VALID_TIMEOUT};
+use indy::did;
+use indy::ledger;
+use indy::pool;
+use utils::constants::PROTOCOL_VERSION;
 use utils::setup::{Setup, SetupConfig};
 use utils::wallet::Wallet;
+#[allow(unused_imports)]
+use futures::Future;
 
 const REQUEST_JSON: &str = r#"{
                               "reqId":1496822211362017764,
@@ -36,7 +36,7 @@ mod test_sign_and_submit_request {
 
     #[test]
     pub fn sign_and_submit_request_success() {
-        Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
+        pool::set_protocol_version(PROTOCOL_VERSION as usize).wait().unwrap();
 
         let wallet = Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
@@ -46,12 +46,12 @@ mod test_sign_and_submit_request {
             num_users: 0,
         });
 
-        let pool_handle = Pool::open_ledger(&setup.pool_name, None).unwrap();
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
+        let pool_handle = pool::open_pool_ledger(&setup.pool_name, None).wait().unwrap();
+        let (did, _) = did::create_and_store_my_did(wallet.handle, "{}").wait().unwrap();
 
-        let result = Ledger::sign_and_submit_request(pool_handle, wallet.handle, &did, REQUEST_JSON);
+        let result = ledger::sign_and_submit_request(pool_handle, wallet.handle, &did, REQUEST_JSON).wait();
 
-        Pool::close(pool_handle).unwrap();
+        pool::close_pool_ledger(pool_handle).wait().unwrap();
 
         match result {
             Ok(_) => { },
@@ -89,92 +89,6 @@ mod test_sign_and_submit_request {
             "op":"REPLY"}
         */
     }
-
-    #[test]
-    pub fn sign_and_submit_request_async_success() {
-        Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
-
-        let wallet = Wallet::new();
-        let setup = Setup::new(&wallet, SetupConfig {
-            connect_to_pool: false,
-            num_trustees: 0,
-            num_nodes: 4,
-            num_users: 0,
-        });
-
-        let pool_handle = Pool::open_ledger(&setup.pool_name, None).unwrap();
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
-
-        let (sender, receiver) = channel();
-        let cb = move |ec, stuff| {
-            sender.send((ec, stuff)).unwrap();
-        };
-
-        Ledger::sign_and_submit_request_async(pool_handle, wallet.handle, &did, REQUEST_JSON, cb);
-
-        let (ec, _) = receiver.recv_timeout(Duration::from_secs(5)).unwrap();
-
-        Pool::close(pool_handle).unwrap();
-
-        assert_eq!(ec, ErrorCode::Success);
-    }
-
-    #[test]
-    pub fn sign_and_submit_request_timeout_success() {
-
-        Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
-
-        let wallet = Wallet::new();
-        let setup = Setup::new(&wallet, SetupConfig {
-            connect_to_pool: false,
-            num_trustees: 0,
-            num_nodes: 4,
-            num_users: 0,
-        });
-
-        let pool_handle = Pool::open_ledger(&setup.pool_name, None).unwrap();
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
-
-        let result = Ledger::sign_and_submit_request_timeout(pool_handle, wallet.handle, &did, REQUEST_JSON, VALID_TIMEOUT);
-        Pool::close(pool_handle).unwrap();
-
-        match result {
-            Ok(_) => {  },
-            Err(ec) => { assert!(false, "sign_and_submit_request_timeout_success got error code {:?}", ec); },
-        }
-
-
-    }
-
-    #[test]
-    #[cfg(feature = "timeout_tests")]
-    pub fn sign_and_submit_request_timeout_times_out() {
-        Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
-
-        let wallet = Wallet::new();
-        let setup = Setup::new(&wallet, SetupConfig {
-            connect_to_pool: false,
-            num_trustees: 0,
-            num_nodes: 4,
-            num_users: 0,
-        });
-
-        let pool_handle = Pool::open_ledger(&setup.pool_name, None).unwrap();;
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
-
-        let result = Ledger::sign_and_submit_request_timeout(pool_handle, wallet.handle, &did, REQUEST_JSON, INVALID_TIMEOUT);
-        Pool::close(pool_handle).unwrap();
-
-        match result {
-            Ok(_) => {
-                assert!(false, "sign_and_submit_request_timeout DID NOT time out");
-            },
-            Err(ec) => {
-                assert_eq!(ec, ErrorCode::CommonIOError, "sign_and_submit_request_timeout error code didn't match expected => {:?}", ec);
-            },
-        }
-    }
-
 }
 
 #[cfg(test)]
@@ -183,7 +97,7 @@ mod test_submit_request {
 
     #[test]
     pub fn submit_request_success() {
-        Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
+        pool::set_protocol_version(PROTOCOL_VERSION as usize).wait().unwrap();
 
         let wallet = Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
@@ -193,79 +107,12 @@ mod test_submit_request {
             num_users: 0,
         });
 
-        let pool_handle = Pool::open_ledger(&setup.pool_name, None).unwrap();
-        let (_, _) = Did::new(wallet.handle, "{}").unwrap();
+        let pool_handle = pool::open_pool_ledger(&setup.pool_name, None).wait().unwrap();
+        let (_, _) = did::create_and_store_my_did(wallet.handle, "{}").wait().unwrap();
 
-        let submit_request_result = Ledger::submit_request(pool_handle, REQUEST_JSON);
+        let submit_request_result = ledger::submit_request(pool_handle, REQUEST_JSON).wait();
 
-        Pool::close(pool_handle).unwrap();
-
-        match submit_request_result {
-            Ok(submit_request_response) => {
-                // return is REQNACK client request invalid: MissingSignature()....this is ok.  we wanted to make sure the function works
-                // and getting that response back indicates success
-                assert!(submit_request_response.contains("REQNACK"), "submit_request did not return REQNACK => {:?}", submit_request_response);
-                assert!(submit_request_response.contains("MissingSignature"), "submit_request did not return MissingSignature => {:?}", submit_request_response);
-            },
-            Err(ec) => {
-                assert!(false, "submit_request failed with {:?}", ec);
-            }
-        }
-
-    }
-
-    #[test]
-    pub fn submit_request_async_success() {
-        Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
-
-        let wallet = utils::wallet::Wallet::new();
-        let setup = Setup::new(&wallet, SetupConfig {
-            connect_to_pool: false,
-            num_trustees: 0,
-            num_nodes: 4,
-            num_users: 0,
-        });
-
-        let pool_handle = Pool::open_ledger(&setup.pool_name, None).unwrap();
-        let (_, _) = Did::new(wallet.handle, "{}").unwrap();
-
-        let (sender, receiver) = channel();
-        let cb = move |ec, stuff| {
-            sender.send((ec, stuff)).unwrap();
-        };
-
-        indy::ledger::Ledger::submit_request_async(pool_handle, REQUEST_JSON, cb);
-
-        let (ec, submit_request_response) = receiver.recv_timeout(Duration::from_secs(5)).unwrap();
-
-        Pool::close(pool_handle).unwrap();
-
-        assert_eq!(ec, ErrorCode::Success, "submit_request did not return ErrorCode::Success => {:?}", ec);
-
-        // return is REQNACK client request invalid: MissingSignature()....this is ok.  we wanted to make sure the function works
-        // and getting that response back indicates success
-        assert!(submit_request_response.contains("REQNACK"), "submit_request did not return REQNACK => {:?}", submit_request_response);
-        assert!(submit_request_response.contains("MissingSignature"), "submit_request did not return MissingSignature => {:?}", submit_request_response);
-    }
-
-    #[test]
-    pub fn submit_request_timeout_success() {
-        Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
-
-        let wallet = utils::wallet::Wallet::new();
-        let setup = Setup::new(&wallet, SetupConfig {
-            connect_to_pool: false,
-            num_trustees: 0,
-            num_nodes: 4,
-            num_users: 0,
-        });
-
-        let pool_handle = Pool::open_ledger(&setup.pool_name, None).unwrap();
-        let (_, _) = Did::new(wallet.handle, "{}").unwrap();
-
-        let submit_request_result = indy::ledger::Ledger::submit_request_timeout(pool_handle, REQUEST_JSON, VALID_TIMEOUT);
-
-        Pool::close(pool_handle).unwrap();
+        pool::close_pool_ledger(pool_handle).wait().unwrap();
 
         match submit_request_result {
             Ok(submit_request_response) => {
@@ -278,38 +125,8 @@ mod test_submit_request {
                 assert!(false, "submit_request failed with {:?}", ec);
             }
         }
+
     }
-
-    #[test]
-    #[cfg(feature = "timeout_tests")]
-    pub fn submit_request_timeout_times_out() {
-        Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
-
-        let wallet = utils::wallet::Wallet::new();
-        let setup = Setup::new(&wallet, SetupConfig {
-            connect_to_pool: false,
-            num_trustees: 0,
-            num_nodes: 4,
-            num_users: 0,
-        });
-
-        let pool_handle = Pool::open_ledger(&setup.pool_name, None).unwrap();
-        let (_, _) = Did::new(wallet.handle, "{}").unwrap();
-
-        let submit_request_result = indy::ledger::Ledger::submit_request_timeout(pool_handle, REQUEST_JSON, INVALID_TIMEOUT);
-
-        Pool::close(pool_handle).unwrap();
-
-        match submit_request_result {
-            Ok(_) => {
-                assert!(false, "submit_request_timeout DID NOT time out");
-            },
-            Err(ec) => {
-                assert_eq!(ec, ErrorCode::CommonIOError, "submit_request_timeout error code didn't match expected => {:?}", ec);
-            },
-        }
-    }
-
 }
 
 #[cfg(test)]
@@ -322,7 +139,7 @@ mod test_submit_action {
     #[ignore] // TODO: restore after IS-1027 will be fixed
     pub fn submit_action_this_hangs_indefinitely() {
 
-        Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
+        pool::set_protocol_version(PROTOCOL_VERSION as usize).wait().unwrap();
 
         let wallet = Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
@@ -332,21 +149,21 @@ mod test_submit_action {
             num_users: 0,
         });
 
-        let pool_handle = Pool::open_ledger(&setup.pool_name, None).unwrap();
+        let pool_handle = pool::open_pool_ledger(&setup.pool_name, None).wait().unwrap();
 
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
-        let validator_request = Ledger::build_get_validator_info_request(&did).unwrap();
-        let signed_request = Ledger::sign_request(wallet.handle, &did, &validator_request).unwrap();
+        let (did, _) = did::create_and_store_my_did(wallet.handle, "{}").wait().unwrap();
+        let validator_request = ledger::build_get_validator_info_request(&did).wait().unwrap();
+        let signed_request = ledger::sign_request(wallet.handle, &did, &validator_request).wait().unwrap();
 
-        Ledger::submit_action(pool_handle, &signed_request, "[]", 5).unwrap_err();
+        ledger::submit_action(pool_handle, &signed_request, Some("[]"), Some(5)).wait().unwrap_err();
 
-        Pool::close(pool_handle).unwrap();
+        pool::close_pool_ledger(pool_handle).wait().unwrap();
     }
 
     #[test]
     pub fn submit_action_success() {
 
-        Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
+        pool::set_protocol_version(PROTOCOL_VERSION as usize).wait().unwrap();
 
         let wallet = Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
@@ -356,112 +173,20 @@ mod test_submit_action {
             num_users: 0,
         });
 
-        let pool_handle = Pool::open_ledger(&setup.pool_name, None).unwrap();
+        let pool_handle = pool::open_pool_ledger(&setup.pool_name, None).wait().unwrap();
 
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
-        let validator_request = Ledger::build_get_validator_info_request(&did).unwrap();
-        let signed_request = Ledger::sign_request(wallet.handle, &did, &validator_request).unwrap();
+        let (did, _) = did::create_and_store_my_did(wallet.handle, "{}").wait().unwrap();
+        let validator_request = ledger::build_get_validator_info_request(&did).wait().unwrap();
+        let signed_request = ledger::sign_request(wallet.handle, &did, &validator_request).wait().unwrap();
 
-        let result = Ledger::submit_action(pool_handle, &signed_request, NODES, 5);
+        let result = ledger::submit_action(pool_handle, &signed_request, Some(NODES), Some(5)).wait();
 
-        Pool::close(pool_handle).unwrap();
+        pool::close_pool_ledger(pool_handle).wait().unwrap();
 
         match result {
             Ok(_) => {},
             Err(ec) => {
                 assert!(false, "submit_action_success failed with {:?} extra {:?}", ec, signed_request);
-            }
-        }
-    }
-
-    #[test]
-    pub fn submit_action_async_success() {
-        Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
-
-        let wallet = Wallet::new();
-        let setup = Setup::new(&wallet, SetupConfig {
-            connect_to_pool: false,
-            num_trustees: 0,
-            num_nodes: 4,
-            num_users: 0,
-        });
-
-        let pool_handle = Pool::open_ledger(&setup.pool_name, None).unwrap();
-
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
-        let validator_request = Ledger::build_get_validator_info_request(&did).unwrap();
-
-        let (sender, receiver) = channel();
-        let cb = move |ec, stuff| {
-            sender.send((ec, stuff)).unwrap();
-        };
-
-        Ledger::submit_action_async(pool_handle, &validator_request, NODES, 5, cb);
-
-        let (ec, _) = receiver.recv_timeout(Duration::from_secs(5)).unwrap();
-
-        Pool::close(pool_handle).unwrap();
-
-        assert_eq!(ec, ErrorCode::Success, "submit_action_async failed error_code {:?}", ec);
-    }
-
-    #[test]
-    pub fn submit_action_timeout_success() {
-        Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
-
-        let wallet = Wallet::new();
-        let setup = Setup::new(&wallet, SetupConfig {
-            connect_to_pool: false,
-            num_trustees: 0,
-            num_nodes: 4,
-            num_users: 0,
-        });
-
-        let pool_handle = Pool::open_ledger(&setup.pool_name, None).unwrap();
-
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
-        let validator_request = Ledger::build_get_validator_info_request(&did).unwrap();
-
-        let result = Ledger::submit_action_timeout(pool_handle, &validator_request, NODES, 5, VALID_TIMEOUT);
-
-        Pool::close(pool_handle).unwrap();
-
-        match result {
-            Ok(_) => {},
-            Err(ec) => {
-                assert!(false, "submit_action_timeout failed with {:?} extra {:?}", ec, validator_request);
-            }
-        }
-    }
-
-    #[test]
-    #[cfg(feature = "timeout_tests")]
-    pub fn submit_action_timeout_times_out() {
-        Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
-
-        let wallet = Wallet::new();
-        let setup = Setup::new(&wallet, SetupConfig {
-            connect_to_pool: false,
-            num_trustees: 0,
-            num_nodes: 4,
-            num_users: 0,
-        });
-
-        let pool_handle = Pool::open_ledger(&setup.pool_name, None).unwrap();
-
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
-        let validator_request = Ledger::build_get_validator_info_request(&did).unwrap();
-
-        let result = Ledger::submit_action_timeout(pool_handle, &validator_request, NODES, 5, INVALID_TIMEOUT);
-
-        Pool::close(pool_handle).unwrap();
-
-        match result {
-            Ok(_) => {
-                assert!(false, "submit_action_timeout DID NOT timeout as expected");
-            },
-            Err(ec) => {
-                assert_eq!(ec, ErrorCode::CommonIOError, "submit_action_timeout failed with {:?}", ec);
             }
         }
     }
@@ -473,7 +198,7 @@ mod test_sign_request {
 
     #[test]
     pub fn sign_request_success() {
-        Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
+        pool::set_protocol_version(PROTOCOL_VERSION as usize).wait().unwrap();
 
         let wallet = Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
@@ -483,108 +208,18 @@ mod test_sign_request {
             num_users: 0,
         });
 
-        let pool_handle = Pool::open_ledger(&setup.pool_name, None).unwrap();
+        let pool_handle = pool::open_pool_ledger(&setup.pool_name, None).wait().unwrap();
 
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
-        let validator_request = Ledger::build_get_validator_info_request(&did).unwrap();
-        let signed_request_result = Ledger::sign_request(wallet.handle, &did, &validator_request);
+        let (did, _) = did::create_and_store_my_did(wallet.handle, "{}").wait().unwrap();
+        let validator_request = ledger::build_get_validator_info_request(&did).wait().unwrap();
+        let signed_request_result = ledger::sign_request(wallet.handle, &did, &validator_request).wait();
 
-        Pool::close(pool_handle).unwrap();
+        pool::close_pool_ledger(pool_handle).wait().unwrap();
 
         match signed_request_result {
             Ok(_) => {},
             Err(ec) => {
                 assert!(false, "sign_request returned error {:?}", ec);
-            }
-        }
-    }
-
-    #[test]
-    pub fn sign_request_async_success() {
-        Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
-
-        let wallet = Wallet::new();
-        let setup = Setup::new(&wallet, SetupConfig {
-            connect_to_pool: false,
-            num_trustees: 0,
-            num_nodes: 4,
-            num_users: 0,
-        });
-
-        let pool_handle = Pool::open_ledger(&setup.pool_name, None).unwrap();
-
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
-        let validator_request = Ledger::build_get_validator_info_request(&did).unwrap();
-
-        let (sender, receiver) = channel();
-        let cb = move |ec, stuff| {
-            sender.send((ec, stuff)).unwrap();
-        };
-        let signed_request_result = Ledger::sign_request_async(wallet.handle, &did, &validator_request, cb);
-
-        assert_eq!(signed_request_result, ErrorCode::Success, "sign_request_async failed error_code {:?}", signed_request_result);
-
-        let (ec, _) = receiver.recv_timeout(Duration::from_secs(5)).unwrap();
-        Pool::close(pool_handle).unwrap();
-
-        assert_eq!(ec, ErrorCode::Success, "sign_request_async returned error_code {:?}", ec);
-    }
-
-    #[test]
-    pub fn sign_request_timeout_success() {
-        Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
-
-        let wallet = Wallet::new();
-        let setup = Setup::new(&wallet, SetupConfig {
-            connect_to_pool: false,
-            num_trustees: 0,
-            num_nodes: 4,
-            num_users: 0,
-        });
-
-        let pool_handle = Pool::open_ledger(&setup.pool_name, None).unwrap();
-
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
-        let validator_request = Ledger::build_get_validator_info_request(&did).unwrap();
-        let signed_request_result = Ledger::sign_request_timeout(wallet.handle, &did, &validator_request, VALID_TIMEOUT);
-
-        Pool::close(pool_handle).unwrap();
-
-        match signed_request_result {
-            Ok(_) => {},
-            Err(ec) => {
-                assert!(false, "sign_request_timeout returned error {:?}", ec);
-            }
-        }
-    }
-
-    #[test]
-    #[cfg(feature = "timeout_tests")]
-    pub fn sign_request_timeout_times_out() {
-        Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
-
-        let wallet = Wallet::new();
-        let setup = Setup::new(&wallet, SetupConfig {
-            connect_to_pool: false,
-            num_trustees: 0,
-            num_nodes: 4,
-            num_users: 0,
-        });
-
-        let pool_handle = Pool::open_ledger(&setup.pool_name, None).unwrap();
-
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
-        let validator_request = Ledger::build_get_validator_info_request(&did).unwrap();
-        let signed_request_result = Ledger::sign_request_timeout(wallet.handle, &did, &validator_request, INVALID_TIMEOUT);
-
-        Pool::close(pool_handle).unwrap();
-
-        match signed_request_result {
-            Ok(_) => {
-                assert!(false, "sign_request_timeout DID NOT timeout as expected");
-            },
-            Err(ec) => {
-                assert_eq!(ec, ErrorCode::CommonIOError, "sign_request_timeout failed with {:?}", ec);
             }
         }
     }
@@ -596,7 +231,7 @@ mod test_multi_sign_request {
 
     #[test]
     pub fn multi_sign_request_success() {
-        Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
+        pool::set_protocol_version(PROTOCOL_VERSION as usize).wait().unwrap();
 
         let wallet = Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
@@ -606,106 +241,18 @@ mod test_multi_sign_request {
             num_users: 0,
         });
 
-        let pool_handle = Pool::open_ledger(&setup.pool_name, None).unwrap();
+        let pool_handle = pool::open_pool_ledger(&setup.pool_name, None).wait().unwrap();
 
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
-        let validator_request = Ledger::build_get_validator_info_request(&did).unwrap();
-        let signed_request_result = Ledger::multi_sign_request(wallet.handle, &did, &validator_request);
+        let (did, _) = did::create_and_store_my_did(wallet.handle, "{}").wait().unwrap();
+        let validator_request = ledger::build_get_validator_info_request(&did).wait().unwrap();
+        let signed_request_result = ledger::multi_sign_request(wallet.handle, &did, &validator_request).wait();
 
-        Pool::close(pool_handle).unwrap();
+        pool::close_pool_ledger(pool_handle).wait().unwrap();
 
         match signed_request_result {
             Ok(_) => {},
             Err(ec) => {
                 assert!(false, "multi_sign_request returned error {:?}", ec);
-            }
-        }
-    }
-
-    #[test]
-    pub fn multi_sign_request_async_success() {
-        Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
-
-        let wallet = Wallet::new();
-        let setup = Setup::new(&wallet, SetupConfig {
-            connect_to_pool: false,
-            num_trustees: 0,
-            num_nodes: 4,
-            num_users: 0,
-        });
-
-        let pool_handle = Pool::open_ledger(&setup.pool_name, None).unwrap();
-
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
-        let validator_request = Ledger::build_get_validator_info_request(&did).unwrap();
-
-        let (sender, receiver) = channel();
-        let cb = move |ec, stuff| {
-            sender.send((ec, stuff)).unwrap();
-        };
-        let _ = Ledger::multi_sign_request_async(wallet.handle, &did, &validator_request, cb);
-
-        let (ec, _) = receiver.recv_timeout(Duration::from_secs(5)).unwrap();
-        Pool::close(pool_handle).unwrap();
-
-        assert_eq!(ec, ErrorCode::Success, "sign_request_async failed error_code {:?}", ec);
-    }
-
-    #[test]
-    pub fn multi_sign_request_timeout_success() {
-        Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
-
-        let wallet = Wallet::new();
-        let setup = Setup::new(&wallet, SetupConfig {
-            connect_to_pool: false,
-            num_trustees: 0,
-            num_nodes: 4,
-            num_users: 0,
-        });
-
-        let pool_handle = Pool::open_ledger(&setup.pool_name, None).unwrap();
-
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
-        let validator_request = Ledger::build_get_validator_info_request(&did).unwrap();
-        let signed_request_result = Ledger::multi_sign_request_timeout(wallet.handle, &did, &validator_request, VALID_TIMEOUT);
-
-        Pool::close(pool_handle).unwrap();
-
-        match signed_request_result {
-            Ok(_) => {},
-            Err(ec) => {
-                assert!(false, "multi_sign_request_timeout returned error {:?}", ec);
-            }
-        }
-    }
-
-    #[test]
-    #[cfg(feature = "timeout_tests")]
-    pub fn multi_sign_request_timeout_times_out() {
-        Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
-
-        let wallet = Wallet::new();
-        let setup = Setup::new(&wallet, SetupConfig {
-            connect_to_pool: false,
-            num_trustees: 0,
-            num_nodes: 4,
-            num_users: 0,
-        });
-
-        let pool_handle = Pool::open_ledger(&setup.pool_name, None).unwrap();
-
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
-        let validator_request = Ledger::build_get_validator_info_request(&did).unwrap();
-        let signed_request_result = Ledger::multi_sign_request_timeout(wallet.handle, &did, &validator_request, INVALID_TIMEOUT);
-
-        Pool::close(pool_handle).unwrap();
-
-        match signed_request_result {
-            Ok(_) => {
-                assert!(false, "multi_sign_request_timeout DID NOT timeout as expected");
-            },
-            Err(ec) => {
-                assert_eq!(ec, ErrorCode::CommonIOError, "multi_sign_request_timeout failed with {:?}", ec);
             }
         }
     }
@@ -719,13 +266,13 @@ mod test_build_nym_request {
 
     #[test]
     pub fn build_nym_request_success() {
-        Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
+        pool::set_protocol_version(PROTOCOL_VERSION as usize).wait().unwrap();
 
         let wallet = Wallet::new();
-        let (did, verkey) = Did::new(wallet.handle, "{}").unwrap();
-        let (trustee_did, _) = Did::new(wallet.handle, "{}").unwrap();
+        let (did, verkey) = did::create_and_store_my_did(wallet.handle, "{}").wait().unwrap();
+        let (trustee_did, _) = did::create_and_store_my_did(wallet.handle, "{}").wait().unwrap();
 
-        let nym_result = Ledger::build_nym_request(&trustee_did, &did, Some(&verkey), None, NymRole::Trustee.prepare());
+        let nym_result = ledger::build_nym_request(&trustee_did, &did, Some(&verkey), None, NymRole::Trustee.prepare()).wait();
 
         match nym_result {
             Ok(_) => {},
@@ -738,13 +285,13 @@ mod test_build_nym_request {
 
     #[test]
     pub fn build_nym_request_with_no_verkey_success() {
-        Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
+        pool::set_protocol_version(PROTOCOL_VERSION as usize).wait().unwrap();
 
         let wallet = Wallet::new();
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
-        let (trustee_did, _) = Did::new(wallet.handle, "{}").unwrap();
+        let (did, _) = did::create_and_store_my_did(wallet.handle, "{}").wait().unwrap();
+        let (trustee_did, _) = did::create_and_store_my_did(wallet.handle, "{}").wait().unwrap();
 
-        let nym_result = Ledger::build_nym_request(&trustee_did, &did, None, None, NymRole::Trustee.prepare());
+        let nym_result = ledger::build_nym_request(&trustee_did, &did, None, None, NymRole::Trustee.prepare()).wait();
 
         match nym_result {
             Ok(_) => {},
@@ -757,80 +304,18 @@ mod test_build_nym_request {
 
     #[test]
     pub fn build_nym_request_with_data_success() {
-        Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
+        pool::set_protocol_version(PROTOCOL_VERSION as usize).wait().unwrap();
 
         let wallet = Wallet::new();
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
-        let (trustee_did, _) = Did::new(wallet.handle, "{}").unwrap();
+        let (did, _) = did::create_and_store_my_did(wallet.handle, "{}").wait().unwrap();
+        let (trustee_did, _) = did::create_and_store_my_did(wallet.handle, "{}").wait().unwrap();
 
-        let nym_result = Ledger::build_nym_request(&trustee_did, &did, None, Some("some_data"), NymRole::Trustee.prepare());
+        let nym_result = ledger::build_nym_request(&trustee_did, &did, None, Some("some_data"), NymRole::Trustee.prepare()).wait();
 
         match nym_result {
             Ok(_) => {},
             Err(ec) => {
                 assert!(false, "build_nym_request returned error_code {:?}", ec);
-            }
-        }
-    }
-
-    #[test]
-    pub fn build_nym_request_async_success() {
-        Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
-
-        let wallet = Wallet::new();
-        let (did, verkey) = Did::new(wallet.handle, "{}").unwrap();
-        let (trustee_did, _) = Did::new(wallet.handle, "{}").unwrap();
-
-        let (sender, receiver) = channel();
-        let cb = move |ec, stuff| {
-            sender.send((ec, stuff)).unwrap();
-        };
-        let async_error_code = Ledger::build_nym_request_async(&trustee_did, &did, Some(&verkey), None, NymRole::Trustee.prepare(), cb);
-
-        assert_eq!(async_error_code, ErrorCode::Success, "build_nym_request_async failed error_code {:?}", async_error_code);
-
-        let (ec, _) = receiver.recv_timeout(Duration::from_secs(5)).unwrap();
-
-        assert_eq!(ec, ErrorCode::Success, "build_nym_request_async returned error_code {:?}", ec);
-
-    }
-
-    #[test]
-    pub fn build_nym_request_timeout_success() {
-
-        Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
-
-        let wallet = Wallet::new();
-        let (did, verkey) = Did::new(wallet.handle, "{}").unwrap();
-        let (trustee_did, _) = Did::new(wallet.handle, "{}").unwrap();
-
-        let nym_result = Ledger::build_nym_request_timeout(&trustee_did, &did, Some(&verkey), None, NymRole::Trustee.prepare(), VALID_TIMEOUT);
-
-        match nym_result {
-            Ok(_) => {},
-            Err(ec) => {
-                assert!(false, "build_nym_request_timeout returned error_code {:?}", ec);
-            }
-        }
-    }
-
-    #[test]
-    #[cfg(feature = "timeout_tests")]
-    pub fn build_nym_request_timeout_times_out() {
-        Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
-
-        let wallet = Wallet::new();
-        let (did, verkey) = Did::new(wallet.handle, "{}").unwrap();
-        let (trustee_did, _) = Did::new(wallet.handle, "{}").unwrap();
-
-        let nym_result = Ledger::build_nym_request_timeout(&trustee_did, &did, Some(&verkey), None, NymRole::Trustee.prepare(), INVALID_TIMEOUT);
-
-        match nym_result {
-            Ok(_) => {
-                assert!(false, "build_nym_request_timeout did not time out as expected");
-            },
-            Err(ec) => {
-                assert_eq!(ec, ErrorCode::CommonIOError, "build_nym_request_timeout returned error_code {:?}", ec);
             }
         }
     }
@@ -842,14 +327,14 @@ mod test_build_get_nym_request {
 
     #[test]
     pub fn build_get_nym_request_success() {
-        Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
+        pool::set_protocol_version(PROTOCOL_VERSION as usize).wait().unwrap();
 
         let submitter_wallet = Wallet::new();
         let wallet = Wallet::new();
-        let (submitter_did, _) = Did::new(submitter_wallet.handle, "{}").unwrap();
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
+        let (submitter_did, _) = did::create_and_store_my_did(submitter_wallet.handle, "{}").wait().unwrap();
+        let (did, _) = did::create_and_store_my_did(wallet.handle, "{}").wait().unwrap();
 
-        let get_result = Ledger::build_get_nym_request(Some(&submitter_did), &did);
+        let get_result = ledger::build_get_nym_request(Some(&submitter_did), &did).wait();
 
         match get_result {
             Ok(_) => {},
@@ -861,80 +346,17 @@ mod test_build_get_nym_request {
 
     #[test]
     pub fn build_get_nym_request_no_submitter_did_success() {
-        Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
+        pool::set_protocol_version(PROTOCOL_VERSION as usize).wait().unwrap();
 
         let wallet = Wallet::new();
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
+        let (did, _) = did::create_and_store_my_did(wallet.handle, "{}").wait().unwrap();
 
-        let get_result = Ledger::build_get_nym_request(None, &did);
+        let get_result = ledger::build_get_nym_request(None, &did).wait();
 
         match get_result {
             Ok(_) => {},
             Err(ec) => {
                 assert!(false, "build_get_nym_request returned error_code {:?}", ec);
-            }
-        }
-    }
-
-    #[test]
-    pub fn build_get_nym_request_async_success() {
-        Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
-
-        let submitter_wallet = Wallet::new();
-        let wallet = Wallet::new();
-        let (submitter_did, _) = Did::new(submitter_wallet.handle, "{}").unwrap();
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
-
-        let (sender, receiver) = channel();
-        let cb = move |ec, stuff| {
-            sender.send((ec, stuff)).unwrap();
-        };
-
-        let get_async_result = Ledger::build_get_nym_request_async(Some(&submitter_did), &did, cb);
-
-        assert_eq!(get_async_result, ErrorCode::Success, "build_get_nym_request_async failed {:?}", get_async_result);
-
-        let (ec, _) = receiver.recv_timeout(Duration::from_secs(5)).unwrap();
-        assert_eq!(ec, ErrorCode::Success, "build_get_nym_request_async returned error_code {:?}", ec);
-    }
-
-    #[test]
-    pub fn build_get_nym_request_timeout_success() {
-        Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
-
-        let submitter_wallet = Wallet::new();
-        let wallet = Wallet::new();
-        let (submitter_did, _) = Did::new(submitter_wallet.handle, "{}").unwrap();
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
-
-        let get_result = Ledger::build_get_nym_request_timeout(Some(&submitter_did), &did, VALID_TIMEOUT);
-
-        match get_result {
-            Ok(_) => {},
-            Err(ec) => {
-                assert!(false, "build_get_nym_request_timeout returned error_code {:?}", ec);
-            }
-        }
-    }
-
-    #[test]
-    #[cfg(feature = "timeout_tests")]
-    pub fn build_get_nym_request_timeout_times_out() {
-        Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
-
-        let submitter_wallet = Wallet::new();
-        let wallet = Wallet::new();
-        let (submitter_did, _) = Did::new(submitter_wallet.handle, "{}").unwrap();
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
-
-        let get_result = Ledger::build_get_nym_request_timeout(Some(&submitter_did), &did, INVALID_TIMEOUT);
-
-        match get_result {
-            Ok(_) => {
-                assert!(false, "build_get_nym_request_timeout DID NOT time out as expected");
-            },
-            Err(ec) => {
-                assert_eq!(ec, ErrorCode::CommonIOError, "build_get_nym_request_timeout returned error_code {:?}", ec);
             }
         }
     }
@@ -949,65 +371,12 @@ mod test_build_attrib_request {
 
         let submitter_wallet = Wallet::new();
         let wallet = Wallet::new();
-        let (submitter_did, _) = Did::new(submitter_wallet.handle, "{}").unwrap();
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
-        match Ledger::build_attrib_request(&submitter_did, &did, None, Some("{}"), None) {
+        let (submitter_did, _) = did::create_and_store_my_did(submitter_wallet.handle, "{}").wait().unwrap();
+        let (did, _) = did::create_and_store_my_did(wallet.handle, "{}").wait().unwrap();
+        match ledger::build_attrib_request(&submitter_did, &did, None, Some("{}"), None).wait() {
             Ok(_) => {},
             Err(ec) => {
                 assert!(false, "build_attrib_request failed with error {:?}", ec);
-            }
-        }
-    }
-
-    #[test]
-    pub fn build_attrib_request_async_success() {
-        let submitter_wallet = Wallet::new();
-        let wallet = Wallet::new();
-        let (submitter_did, _) = Did::new(submitter_wallet.handle, "{}").unwrap();
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
-
-        let (sender, receiver) = channel();
-        let cb = move |ec, stuff| {
-            sender.send((ec, stuff)).unwrap();
-        };
-
-        let request_error_code =  Ledger::build_attrib_request_async(&submitter_did, &did, None, Some("{}"), None, cb);
-
-        assert_eq!(request_error_code, ErrorCode::Success, "build_attrib_request_async returned {:?}", request_error_code);
-
-        let (ec, _) = receiver.recv_timeout(Duration::from_secs(5)).unwrap();
-        assert_eq!(ec, ErrorCode::Success, "build_attrib_request_async returned error_code {:?}", ec);
-
-    }
-
-    #[test]
-    pub fn build_attrib_request_timeout_success() {
-
-        let submitter_wallet = Wallet::new();
-        let wallet = Wallet::new();
-        let (submitter_did, _) = Did::new(submitter_wallet.handle, "{}").unwrap();
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
-        match Ledger::build_attrib_request_timeout(&submitter_did, &did, None, Some("{}"), None, VALID_TIMEOUT) {
-            Ok(_) => {},
-            Err(ec) => {
-                assert!(false, "build_attrib_request_timeout failed with error {:?}", ec);
-            }
-        }
-    }
-
-    #[test]
-    #[cfg(feature = "timeout_tests")]
-    pub fn build_attrib_request_timeout_times_out() {
-        let submitter_wallet = Wallet::new();
-        let wallet = Wallet::new();
-        let (submitter_did, _) = Did::new(submitter_wallet.handle, "{}").unwrap();
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
-        match Ledger::build_attrib_request_timeout(&submitter_did, &did, None, Some("{}"), None, INVALID_TIMEOUT) {
-            Ok(_) => {
-                assert!(false, "build_attrib_request_timeout did not time out");
-            },
-            Err(ec) => {
-                assert_eq!(ec, ErrorCode::CommonIOError, "build_attrib_request_timeout failed with error {:?}", ec);
             }
         }
     }
@@ -1023,65 +392,12 @@ mod test_build_get_attrib_request {
 
         let submitter_wallet = Wallet::new();
         let wallet = Wallet::new();
-        let (submitter_did, _) = Did::new(submitter_wallet.handle, "{}").unwrap();
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
-        match Ledger::build_get_attrib_request(Some(&submitter_did), &did, Some("{}"), None, None) {
+        let (submitter_did, _) = did::create_and_store_my_did(submitter_wallet.handle, "{}").wait().unwrap();
+        let (did, _) = did::create_and_store_my_did(wallet.handle, "{}").wait().unwrap();
+        match ledger::build_get_attrib_request(Some(&submitter_did), &did, Some("{}"), None, None).wait() {
             Ok(_) => {},
             Err(ec) => {
                 assert!(false, "build_attrib_request failed with error {:?}", ec);
-            }
-        }
-    }
-
-    #[test]
-    pub fn build_get_attrib_request_async_success() {
-        let submitter_wallet = Wallet::new();
-        let wallet = Wallet::new();
-        let (submitter_did, _) = Did::new(submitter_wallet.handle, "{}").unwrap();
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
-
-        let (sender, receiver) = channel();
-        let cb = move |ec, stuff| {
-            sender.send((ec, stuff)).unwrap();
-        };
-
-        let request_error_code =  Ledger::build_get_attrib_request_async(Some(&submitter_did), &did, Some("{}"), None, None, cb);
-
-        assert_eq!(request_error_code, ErrorCode::Success, "build_get_attrib_request_async returned {:?}", request_error_code);
-
-        let (ec, _) = receiver.recv_timeout(Duration::from_secs(5)).unwrap();
-        assert_eq!(ec, ErrorCode::Success, "build_get_attrib_request_async returned error_code {:?}", ec);
-
-    }
-
-    #[test]
-    pub fn build_get_attrib_request_timeout_success() {
-
-        let submitter_wallet = Wallet::new();
-        let wallet = Wallet::new();
-        let (submitter_did, _) = Did::new(submitter_wallet.handle, "{}").unwrap();
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
-        match Ledger::build_get_attrib_request_timeout(Some(&submitter_did), &did, Some("{}"), None, None, VALID_TIMEOUT) {
-            Ok(_) => {},
-            Err(ec) => {
-                assert!(false, "build_get_attrib_request_timeout failed with error {:?}", ec);
-            }
-        }
-    }
-
-    #[test]
-    #[cfg(feature = "timeout_tests")]
-    pub fn build_get_attrib_request_timeout_times_out() {
-        let submitter_wallet = Wallet::new();
-        let wallet = Wallet::new();
-        let (submitter_did, _) = Did::new(submitter_wallet.handle, "{}").unwrap();
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
-        match Ledger::build_get_attrib_request_timeout(Some(&submitter_did), &did, Some("{}"), None, None, INVALID_TIMEOUT) {
-            Ok(_) => {
-                assert!(false, "build_attrib_request_timeout did not time out");
-            },
-            Err(ec) => {
-                assert_eq!(ec, ErrorCode::CommonIOError, "build_get_attrib_request_timeout failed with error {:?}", ec);
             }
         }
     }
@@ -1096,58 +412,12 @@ mod test_build_schema_request {
     #[test]
     pub fn build_schema_request_success() {
         let wallet = Wallet::new();
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
+        let (did, _) = did::create_and_store_my_did(wallet.handle, "{}").wait().unwrap();
 
-        match Ledger::build_schema_request(&did, SCHEMA_DATA) {
+        match ledger::build_schema_request(&did, SCHEMA_DATA).wait() {
             Ok(_) => {},
             Err(ec) => {
                 assert!(false, "build_schema_request failed with error {:?}", ec);
-            }
-        }
-    }
-
-    #[test]
-    pub fn build_schema_request_async_success() {
-        let wallet = Wallet::new();
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
-
-        let (sender, receiver) = channel();
-        let cb = move |ec, stuff| {
-            sender.send((ec, stuff)).unwrap();
-        };
-
-        let async_ec = Ledger::build_schema_request_async(&did, SCHEMA_DATA, cb);
-        assert_eq!(async_ec, ErrorCode::Success, "build_schema_request_async returned {:?}", async_ec);
-
-        let (ec, _) = receiver.recv_timeout(Duration::from_secs(5)).unwrap();
-        assert_eq!(ec, ErrorCode::Success, "build_schema_request_async returned error_code {:?}", ec);
-    }
-
-    #[test]
-    pub fn build_schema_request_timeout_success() {
-        let wallet = Wallet::new();
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
-
-        match Ledger::build_schema_request_timeout(&did, SCHEMA_DATA, VALID_TIMEOUT) {
-            Ok(_) => {},
-            Err(ec) => {
-                assert!(false, "build_schema_request_timeout failed with error {:?}", ec);
-            }
-        }
-    }
-
-    #[test]
-    #[cfg(feature = "timeout_tests")]
-    pub fn build_schema_request_timeout_times_out() {
-        let wallet = Wallet::new();
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
-
-        match Ledger::build_schema_request_timeout(&did, SCHEMA_DATA, INVALID_TIMEOUT) {
-            Ok(_) => {
-                assert!(false, "build_schema_request_timeout failed to TIME OUT");
-            },
-            Err(ec) => {
-                assert_eq!(ec, ErrorCode::CommonIOError, "build_schema_request_timeout failed with error {:?}", ec);
             }
         }
     }
@@ -1162,59 +432,13 @@ use super::*;
     #[test]
     pub fn build_get_schema_request_success() {
         let wallet = Wallet::new();
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
+        let (did, _) = did::create_and_store_my_did(wallet.handle, "{}").wait().unwrap();
 
 
-        match Ledger::build_get_schema_request(Some(&did), SCHEMA_REQUEST) {
+        match ledger::build_get_schema_request(Some(&did), SCHEMA_REQUEST).wait() {
             Ok(_) => {},
             Err(ec) => {
                 assert!(false, "build_get_schema_request failed with error {:?}", ec);
-            }
-        }
-    }
-
-    #[test]
-    pub fn build_get_schema_request_async_success() {
-        let wallet = Wallet::new();
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
-
-        let (sender, receiver) = channel();
-        let cb = move |ec, stuff| {
-            sender.send((ec, stuff)).unwrap();
-        };
-
-        let async_ec = Ledger::build_get_schema_request_async(Some(&did), SCHEMA_REQUEST, cb);
-        assert_eq!(async_ec, ErrorCode::Success, "build_get_schema_request_async returned {:?}", async_ec);
-
-        let (ec, _) = receiver.recv_timeout(Duration::from_secs(5)).unwrap();
-        assert_eq!(ec, ErrorCode::Success, "build_get_schema_request_async returned error_code {:?}", ec);
-    }
-
-    #[test]
-    pub fn build_get_schema_request_timeout_success() {
-        let wallet = Wallet::new();
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
-
-        match Ledger::build_get_schema_request_timeout(Some(&did), SCHEMA_REQUEST, VALID_TIMEOUT) {
-            Ok(_) => {},
-            Err(ec) => {
-                assert!(false, "build_get_schema_request_timeout failed with error {:?}", ec);
-            }
-        }
-    }
-
-    #[test]
-    #[cfg(feature = "timeout_tests")]
-    pub fn build_get_schema_request_timeout_times_out() {
-        let wallet = Wallet::new();
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
-
-        match Ledger::build_get_schema_request_timeout(Some(&did), SCHEMA_REQUEST, INVALID_TIMEOUT) {
-            Ok(_) => {
-                assert!(false, "build_get_schema_request_timeout failed to TIME OUT");
-            },
-            Err(ec) => {
-                assert_eq!(ec, ErrorCode::CommonIOError, "build_get_schema_request_timeout failed with error {:?}", ec);
             }
         }
     }
@@ -1226,7 +450,6 @@ mod test_parse_get_schema_response {
 
     use super::*;
 
-    const SCHEMA_ID : &str = "schema_id1234";
     const SCHEMA_NAME : &str = "schema_1234";
     const SCHEMA_DATA : &str = r#"{"id":"schema_id1234","attrNames": ["name", "male"],"name":"schema_1234","version":"1.0","ver":"1.0"}"#;
 
@@ -1236,16 +459,17 @@ mod test_parse_get_schema_response {
     }
 
     fn build_schema(did: &String, pool_handle: i32) {
-        let build_schema = Ledger::build_schema_request(&did, SCHEMA_DATA).unwrap();
-        let submit_response = Ledger::submit_request(pool_handle, &build_schema).unwrap();
+        let build_schema = ledger::build_schema_request(&did, SCHEMA_DATA).wait().unwrap();
+        let _submit_response = ledger::submit_request(pool_handle, &build_schema).wait().unwrap();
     }
 
     #[test]
+    #[ignore]
     pub fn parse_get_schema_response_success() {
-        Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
+        pool::set_protocol_version(PROTOCOL_VERSION as usize).wait().unwrap();
 
         let wallet = Wallet::new();
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
+        let (did, _) = did::create_and_store_my_did(wallet.handle, "{}").wait().unwrap();
         let setup = Setup::new(&wallet, SetupConfig {
             connect_to_pool: false,
             num_trustees: 0,
@@ -1253,92 +477,23 @@ mod test_parse_get_schema_response {
             num_users: 0,
         });
 
-        let pool_handle = Pool::open_ledger(&setup.pool_name, None).unwrap();
+        let pool_handle = pool::open_pool_ledger(&setup.pool_name, None).wait().unwrap();
 
         build_schema(&did, pool_handle);
         let schema_request = create_build_schema_request(&did);
 
-        let schema_response = Ledger::build_get_schema_request(Some(&did), &schema_request).unwrap();
-        let signed_response = Ledger::sign_request(wallet.handle, &did,&schema_response).unwrap();
-        let submit_response = Ledger::submit_request(pool_handle, &signed_response).unwrap();
+        let schema_response = ledger::build_get_schema_request(Some(&did), &schema_request).wait().unwrap();
+        let signed_response = ledger::sign_request(wallet.handle, &did,&schema_response).wait().unwrap();
+        let submit_response = ledger::submit_request(pool_handle, &signed_response).wait().unwrap();
 
-        let parse_response = Ledger::parse_get_schema_response(&submit_response);
+        let parse_response = ledger::parse_get_schema_response(&submit_response).wait();
 
-        Pool::close(pool_handle).unwrap();
+        pool::close_pool_ledger(pool_handle).wait().unwrap();
 
         match parse_response {
             Ok(_) => {},
             Err(ec) => {
                 assert!(false, "parse_get_schema_response failed error_code {:?} \n\n using submit_response {:?} \n\n with signed_response {:?} \n\n from schema_response {:?} \n\n schema {:?}", ec, submit_response, signed_response, schema_response, schema_request);
-            }
-        }
-    }
-
-    #[test]
-    pub fn parse_get_schema_response_async_success() {
-        Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
-
-        let wallet = Wallet::new();
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
-        let setup = Setup::new(&wallet, SetupConfig {
-            connect_to_pool: false,
-            num_trustees: 0,
-            num_nodes: 4,
-            num_users: 0,
-        });
-
-        let pool_handle = Pool::open_ledger(&setup.pool_name, None).unwrap();
-
-        build_schema(&did, pool_handle);
-        let schema_request = create_build_schema_request(&did);
-
-        let schema_response = Ledger::build_get_schema_request(Some(&did), &schema_request).unwrap();
-        let signed_response = Ledger::sign_request(wallet.handle, &did,&schema_response).unwrap();
-        let submit_response = Ledger::submit_request(pool_handle, &signed_response).unwrap();
-
-        let (sender, receiver) = channel();
-        let cb = move |ec, s1, s2| {
-            sender.send((ec, s1, s2)).unwrap();
-        };
-
-        let async_ec = Ledger::parse_get_schema_response_async(&submit_response, cb);
-
-        let (ec, _, _) = receiver.recv_timeout(Duration::from_secs(5)).unwrap();
-        Pool::close(pool_handle).unwrap();
-
-        assert_eq!(async_ec, ErrorCode::Success, "parse_get_schema_response_async returned {:?}", async_ec);
-        assert_eq!(ec, ErrorCode::Success, "parse_get_schema_response_async failed error_code {:?}", ec);
-    }
-
-    #[test]
-    pub fn parse_get_schema_response_timeout_success() {
-        let wallet = Wallet::new();
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
-
-        let response = Ledger::build_get_schema_request(Some(&did), SCHEMA_DATA).unwrap();
-
-        match Ledger::parse_get_schema_response_timeout(&response, VALID_TIMEOUT) {
-            Ok(_) => {},
-            Err(ec) => {
-                assert!(false, "parse_get_schema_response_timeout failed with error {:?}", ec);
-            }
-        }
-    }
-
-    #[test]
-    #[cfg(feature = "timeout_tests")]
-    pub fn parse_get_schema_response_timeout_times_out() {
-        let wallet = Wallet::new();
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
-
-        let response = Ledger::build_get_schema_request(Some(&did), SCHEMA_DATA).unwrap();
-
-        match Ledger::parse_get_schema_response_timeout(&response, INVALID_TIMEOUT) {
-            Ok(_) => {
-                assert!(false, "parse_get_schema_response_timeout failed to TIME OUT");
-            },
-            Err(ec) => {
-                assert_eq!(ec, ErrorCode::CommonIOError, "parse_get_schema_response_timeout failed with error {:?}", ec);
             }
         }
     }
@@ -1352,58 +507,12 @@ mod test_build_get_ddo_request {
     #[test]
     pub fn build_get_ddo_request_success() {
         let wallet = Wallet::new();
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
+        let (did, _) = did::create_and_store_my_did(wallet.handle, "{}").wait().unwrap();
 
-        match Ledger::build_get_ddo_request(Some(&did), &did) {
+        match ledger::build_get_ddo_request(Some(&did), &did).wait() {
             Ok(_) => {},
             Err(ec) => {
                 assert!(false, "build_get_ddo_request failed error_code {:?}", ec);
-            }
-        }
-    }
-
-    #[test]
-    pub fn build_get_ddo_request_async_success() {
-        let wallet = Wallet::new();
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
-
-        let (sender, receiver) = channel();
-        let cb = move |ec, stuff| {
-            sender.send((ec, stuff)).unwrap();
-        };
-
-        let async_ec = Ledger::build_get_ddo_request_async(Some(&did), &did, cb);
-        assert_eq!(async_ec, ErrorCode::Success, "build_get_ddo_request_async returned {:?}", async_ec);
-
-        let (ec, _) = receiver.recv_timeout(Duration::from_secs(5)).unwrap();
-        assert_eq!(ec, ErrorCode::Success, "build_get_ddo_request_async returned error_code {:?}", ec);
-    }
-
-    #[test]
-    pub fn build_get_ddo_request_timeout_success() {
-        let wallet = Wallet::new();
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
-
-        match Ledger::build_get_ddo_request_timeout(Some(&did), &did, VALID_TIMEOUT) {
-            Ok(_) => {},
-            Err(ec) => {
-                assert!(false, "build_get_ddo_request_timeout failed error_code {:?}", ec);
-            }
-        }
-    }
-
-    #[test]
-    #[cfg(feature = "timeout_tests")]
-    pub fn build_get_ddo_request_timeout_times_out() {
-        let wallet = Wallet::new();
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
-
-        match Ledger::build_get_ddo_request_timeout(Some(&did), &did, INVALID_TIMEOUT) {
-            Ok(_) => {
-                assert!(false, "build_get_ddo_request_timeout failed to timeout");
-            },
-            Err(ec) => {
-                assert_eq!(ec, ErrorCode::CommonIOError, "build_get_ddo_request_timeout failed error_code {:?}", ec);
             }
         }
     }
@@ -1418,60 +527,12 @@ mod test_build_get_txn_request {
     #[test]
     pub fn build_get_txn_request_success() {
         let wallet = Wallet::new();
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
+        let (did, _) = did::create_and_store_my_did(wallet.handle, "{}").wait().unwrap();
 
-        match Ledger::build_get_txn_request(Some(&did), Some(LEDGER_TYPE), 1) {
+        match ledger::build_get_txn_request(Some(&did), Some(LEDGER_TYPE), 1).wait() {
             Ok(_) => {},
             Err(ec) => {
                 assert!(false, "build_get_txn_request failed error_code {:?}", ec);
-            }
-        }
-    }
-
-    #[test]
-    pub fn build_get_txn_request_async_success() {
-        let wallet = Wallet::new();
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
-
-        let (sender, receiver) = channel();
-        let cb = move |ec, stuff| {
-            sender.send((ec, stuff)).unwrap();
-        };
-
-        let async_ec =  Ledger::build_get_txn_request_async(Some(&did), Some(LEDGER_TYPE), 1, cb);
-
-        assert_eq!(async_ec, ErrorCode::Success, "build_get_txn_request_async return error_code {:?}", async_ec);
-
-        let (ec, _) = receiver.recv_timeout(Duration::from_secs(5)).unwrap();
-        assert_eq!(ec, ErrorCode::Success, "build_get_txn_request_async returned error_code {:?}", ec);
-
-    }
-
-    #[test]
-    pub fn build_get_txn_request_timeout_success() {
-        let wallet = Wallet::new();
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
-
-        match Ledger::build_get_txn_request_timeout(Some(&did), Some(LEDGER_TYPE), 1, VALID_TIMEOUT) {
-            Ok(_) => {},
-            Err(ec) => {
-                assert!(false, "build_get_txn_request_timeout failed error_code {:?}", ec);
-            }
-        }
-    }
-
-    #[test]
-    #[cfg(feature = "timeout_tests")]
-    pub fn build_get_txn_request_timeout_times_out() {
-        let wallet = Wallet::new();
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
-
-        match Ledger::build_get_txn_request_timeout(Some(&did), Some(LEDGER_TYPE), 1, INVALID_TIMEOUT) {
-            Ok(_) => {
-                assert!(false, "build_get_txn_request_timeout failed to timeout");
-            },
-            Err(ec) => {
-                assert_eq!(ec, ErrorCode::CommonIOError, "build_get_txn_request_timeout failed error_code {:?}", ec);
             }
         }
     }
@@ -1487,56 +548,12 @@ mod test_build_cred_def_request {
     pub fn test_build_cred_def_request_success(){
 
         let wallet = Wallet::new();
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
+        let (did, _) = did::create_and_store_my_did(wallet.handle, "{}").wait().unwrap();
 
-        match Ledger::build_cred_def_request(&did, &CRED_DATA) {
+        match ledger::build_cred_def_request(&did, &CRED_DATA).wait() {
             Ok(_) => {},
             Err(ec) => {
                 assert!(false, "build_cred_def_request returned error_code {:?}", ec);
-            }
-        }
-    }
-
-    #[test]
-    pub fn test_build_cred_def_request_async_success(){
-        let wallet = Wallet::new();
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
-
-        let (sender, receiver) = channel();
-        let cb = move |ec, stuff| {
-            sender.send((ec, stuff)).unwrap();
-        };
-
-        let async_ec = Ledger::build_cred_def_request_async(&did, &CRED_DATA, cb);
-        assert_eq!(async_ec, ErrorCode::Success, "build_cred_def_request_async returned error_code {:?}", async_ec);
-
-        let (ec, _) = receiver.recv_timeout(Duration::from_secs(5)).unwrap();
-        assert_eq!(ec, ErrorCode::Success, "build_cred_def_request_async returned error_code {:?}", ec);
-    }
-
-    #[test]
-    pub fn test_build_cred_def_request_timeout_success(){
-        let wallet = Wallet::new();
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
-
-        match Ledger::build_cred_def_request_timeout(&did, &CRED_DATA, VALID_TIMEOUT) {
-            Ok(_) => {},
-            Err(ec) => {
-                assert!(false, "build_cred_def_request_timeout returned error_code {:?}", ec);
-            }
-        }
-    }
-
-    #[test]
-    #[cfg(feature = "timeout_tests")]
-    pub fn test_build_cred_def_request_timeout_times_out(){
-        let wallet = Wallet::new();
-        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
-
-        match Ledger::build_cred_def_request_timeout(&did, &CRED_DATA, INVALID_TIMEOUT) {
-            Ok(_) => {},
-            Err(ec) => {
-                assert_eq!(ec, ErrorCode::CommonIOError, "build_cred_def_request_timeout returned error_code {:?}", ec);
             }
         }
     }
