@@ -9,7 +9,6 @@ pool.txn - genesis files for connecting to an indy pool (existing file connects 
 To run these follow the next steps:
  1) install the latest vcx python package
  2) start Dummy Cloud Agent according to instruction: https://github.com/hyperledger/indy-sdk/tree/master/vcx/dummy-cloud-agent/README.md
- 2) start Dummy Cloud Agent according to instruction: https://github.com/hyperledger/indy-sdk/tree/master/vcx/dummy-cloud-agent/README.md
  3) execute the faber.py script first with "python3.6 faber.py".
     This script will explain what it is doing and output invite details.
  4) When the invite details are displayed start the alice.py script with "python3.6 alice.py".

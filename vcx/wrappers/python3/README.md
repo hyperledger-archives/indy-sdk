@@ -22,4 +22,4 @@ python3 generateDocs.py
 * A directory will be created locally `./docs` which contains subdirectories 'vcx' and within that 'api'.  Html files are generated and put here that give details on each api function.
 
 ### Example use
-For the main workflow example check [demo](https://github.com/hyperledger/indy-sdk/tree/master/vcx/wrappers/python3/demo).
+For the main workflow example check [Python demo](https://github.com/hyperledger/indy-sdk/tree/master/vcx/wrappers/python3/demo).
