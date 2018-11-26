@@ -6,109 +6,118 @@ namespace Hyperledger.Indy.WalletApi
 {
     internal static class NativeMethods
     {
-        /*
-        /// <summary>
-        /// Registers custom wallet implementation.
-        /// </summary>
-        /// <param name="command_handle">Command handle to map callback to caller context.</param>
-        /// <param name="xtype">Wallet type name.</param>
-        /// <param name="create">WalletType create operation handler</param>
-        /// <param name="open">WalletType open operation handler</param>
-        /// <param name="set">Wallet set operation handler</param>
-        /// <param name="get">Wallet get operation handler</param>
-        /// <param name="get_not_expired">Wallet get_not_expired operation handler</param>
-        /// <param name="list">Wallet list operation handler</param>
-        /// <param name="close">Wallet close operation handler</param>
-        /// <param name="delete">WalletType delete operation handler</param>
-        /// <param name="free">Handler that allows to de-allocate strings allocated in caller code</param>
-        /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
-        /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
-        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_register_wallet_type(int command_handle, string xtype, WalletTypeCreateDelegate create, WalletTypeOpenDelegate open, WalletTypeSetDelegate set, WalletTypeGetDelegate get, WalletTypeGetNotExpiredDelegate get_not_expired, WalletTypeListDelegate list, WalletTypeCloseDelegate close, WalletTypeDeleteDelegate delete, WalletTypeFreeDelegate free, IndyMethodCompletedDelegate cb);
-        */
+        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false,
+            ThrowOnUnmappableChar = true)]
+        internal static extern int indy_register_wallet_storage(int command_handle, string type_,
+            WalletCreateDelegate create,
+            WalletOpenDelegate open,
+            WalletCloseDelegate close,
+            WalletDeleteDelegate delete,
+            WalletAddRecordDelegate add_record,
+            WalletUpdateRecordValueDelegate update_record_value,
+            WalletUpdateRecordTagsDelegate update_record_tags,
+            WalletAddRecordTagsDelegate add_record_tags,
+            WalletDeleteRecordTagsDelegate delete_record_tags,
+            WalletDeleteRecordDelegate delete_record,
+            WalletGetRecordDelegate get_record,
+            WalletGetRecordIdDelegate get_record_id,
+            WalletGetRecordTypeDelegate get_record_type,
+            WalletGetRecordValueDelegate get_record_value,
+            WalletGetRecordTagsDelegate get_record_tags,
+            WalletFreeRecordDelegate free_record,
+            WalletGetStorageMetadataDelegate get_storage_metadata,
+            WalletSetStorageMetadataDelegate set_storage_metadata,
+            WalletFreeStorageMetadataDelegate free_storage_metadata,
+            WalletSearchRecordsDelegate search_records,
+            WalletSearchAllRecordsDelegate search_all_records,
+            WalletGetSearchTotalCountDelegate get_search_total_count,
+            WalletFetchSearchNextRecordDelegate fetch_search_next_record,
+            WalletFreeSearchDelegate free_search,
+            IndyMethodCompletedDelegate cb);
 
-        /// <summary>
-        /// Delegate for the function called back to when a wallet of a custom type is created.
-        /// </summary>
-        /// <param name="name">The name of the wallet.</param>
-        /// <param name="config">The configuration of the wallet.</param>
-        /// <param name="credentials">The credentials for the wallet.</param>
-        internal delegate ErrorCode WalletTypeCreateDelegate(string name, string config, string credentials);
+        internal delegate ErrorCode WalletCreateDelegate(string name, string config, string credentials_json,
+            string metadata);
 
-        /// <summary>
-        /// Delegate for the function called back to when a wallet of a custom type is opened.
-        /// </summary>
-        /// <param name="name">The name of the wallet to open.</param>
-        /// <param name="config">The configuration for the wallet.</param>
-        /// <param name="runtime_config">The runtime configuration for the wallet.</param>
-        /// <param name="credentials">The credentials of the wallet.</param>
-        /// <param name="handle">A handle to use when tracking the wallet instance.</param>
-        internal delegate ErrorCode WalletTypeOpenDelegate(string name, string config, string runtime_config, string credentials, ref int handle);
+        internal delegate ErrorCode WalletOpenDelegate(string name, string config, string credentials_json,
+            ref int storage_handle_p);
 
-        /// <summary>
-        /// Delegate for the function called back to when value is set on a wallet of a custom type.
-        /// </summary>
-        /// <param name="handle">The handle of the wallet instance the action is being performed on.</param>
-        /// <param name="key">The key of the value to set.</param>
-        /// <param name="value">The value to set.</param>
-        internal delegate ErrorCode WalletTypeSetDelegate(int handle, string key, string value);
+        internal delegate ErrorCode WalletCloseDelegate(int storage_handle);
 
-        /// <summary>
-        /// Delegate for the function called back to when value is requested from a wallet of a custom type.
-        /// </summary>
-        /// <param name="handle">The handle of the wallet instance the action is being performed on.</param>
-        /// <param name="key">The key of the value to get.</param>
-        /// <param name="value_ptr">The pointer to the value associated with the key.</param>
-        internal delegate ErrorCode WalletTypeGetDelegate(int handle, string key, ref IntPtr value_ptr);
+        internal delegate ErrorCode WalletDeleteDelegate(string name, string config, string credentials_json);
 
-        /// <summary>
-        /// Delegate for the function called back to when an unexpired value is requested from a wallet of a custom type.
-        /// </summary>
-        /// <param name="handle">The handle of the wallet instance the action is being performed on.</param>
-        /// <param name="key">The key of the value to get.</param>
-        /// <param name="value_ptr">The pointer to the value associated with the key.</param>
-        internal delegate ErrorCode WalletTypeGetNotExpiredDelegate(int handle, string key, ref IntPtr value_ptr);
+        internal delegate ErrorCode WalletAddRecordDelegate(int storage_handle, string type_, string id, IntPtr value,
+            int value_len, string tags_json);
 
-        /// <summary>
-        /// Delegate for the function called back to when an list of values is requested from a wallet of a custom type.
-        /// </summary>
-        /// <param name="handle">The handle of the wallet instance the action is being performed on.</param>
-        /// <param name="keyPrefix">The key prefix for the values requested.</param>
-        /// <param name="values_json_ptr">The pointer to the values associated with the key prefix.</param>
-        internal delegate ErrorCode WalletTypeListDelegate(int handle, string keyPrefix, ref IntPtr values_json_ptr);
+        internal delegate ErrorCode WalletUpdateRecordValueDelegate(int storage_handle, string type_, string id,
+            IntPtr value, int value_len);
 
-        /// <summary>
-        /// Delegate for the function called back to when a wallet of a custom type is closed.
-        /// </summary>
-        /// <param name="handle">The handle of the wallet instance the action is being performed on.</param>
-        internal delegate ErrorCode WalletTypeCloseDelegate(int handle);
+        internal delegate ErrorCode WalletUpdateRecordTagsDelegate(int storage_handle, string type_, string id,
+            string tags_json);
 
-        /// <summary>
-        /// Delegate for the function called back to when a wallet of a custom type is deleted.
-        /// </summary>
-        /// <param name="name">The name of the wallet being deleted</param>
-        /// <param name="config">The configuration of the wallet.</param>
-        /// <param name="credentials">The credentials of the wallet.</param>
-        internal delegate ErrorCode WalletTypeDeleteDelegate(string name, string config, string credentials);
+        internal delegate ErrorCode WalletAddRecordTagsDelegate(int storage_handle, string type_, string id,
+            string tags_json);
 
-        /// <summary>
-        /// Delegate for the function called back to when a value in a  wallet of a custom type is freed.
-        /// </summary>
-        /// <param name="handle">The handle of the wallet the action is being performed on.</param>
-        /// <param name="value">A pointer to the value to be freed.</param>
-        internal delegate ErrorCode WalletTypeFreeDelegate(int handle, IntPtr value);
+        internal delegate ErrorCode WalletDeleteRecordTagsDelegate(int storage_handle, string type_, string id,
+            string tag_names_json);
 
-        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_create_wallet(int command_handle, string config, string credentials, IndyMethodCompletedDelegate cb);
+        internal delegate ErrorCode WalletDeleteRecordDelegate(int storage_handle, string type_, string id);
 
-        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_open_wallet(int command_handle, string config, string credentials, OpenWalletCompletedDelegate cb);
+        internal delegate ErrorCode WalletGetRecordDelegate(int storage_handle, string type_, string id,
+            string options_json, ref int record_handle_p);
 
-        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_export_wallet(int command_handle, IntPtr wallet_handle, string export_config, IndyMethodCompletedDelegate cb);
+        internal delegate ErrorCode WalletGetRecordIdDelegate(int storage_handle, int record_handle,
+            ref string record_id_p);
 
-        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_import_wallet(int command_handle, string config, string credentials, string import_config, IndyMethodCompletedDelegate cb);
+        internal delegate ErrorCode WalletGetRecordTypeDelegate(int storage_handle, int record_handle,
+            ref string record_type_p);
+
+        internal delegate ErrorCode WalletGetRecordValueDelegate(int storage_handle, int record_handle,
+            ref IntPtr record_value_p, ref IntPtr record_value_len_p);
+
+        internal delegate ErrorCode WalletGetRecordTagsDelegate(int storage_handle, int record_handle,
+            ref string record_tags_p);
+
+        internal delegate ErrorCode WalletFreeRecordDelegate(int storage_handle, int record_handle);
+
+        internal delegate ErrorCode WalletGetStorageMetadataDelegate(int storage_handle, ref string metadata_p,
+            ref int metadata_handle);
+
+        internal delegate ErrorCode WalletSetStorageMetadataDelegate(int storage_handle, string metadata_p);
+
+        internal delegate ErrorCode WalletFreeStorageMetadataDelegate(int stroage_handle, int metadata_handle);
+
+        internal delegate ErrorCode WalletSearchRecordsDelegate(int storage_handle, string type_, string query_json,
+            string options_json, ref int search_handle_p);
+
+        internal delegate ErrorCode WalletSearchAllRecordsDelegate(int storage_handle, ref int search_handle_p);
+
+        internal delegate ErrorCode WalletGetSearchTotalCountDelegate(int storage_handle, int search_handle,
+            ref IntPtr total_count_p);
+
+        internal delegate ErrorCode WalletFetchSearchNextRecordDelegate(int storage_handle, int search_handle,
+            ref int record_handle_p);
+
+        internal delegate ErrorCode WalletFreeSearchDelegate(int storage_handle, int search_handle);
+
+        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false,
+            ThrowOnUnmappableChar = true)]
+        internal static extern int indy_create_wallet(int command_handle, string config, string credentials,
+            IndyMethodCompletedDelegate cb);
+
+        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false,
+            ThrowOnUnmappableChar = true)]
+        internal static extern int indy_open_wallet(int command_handle, string config, string credentials,
+            OpenWalletCompletedDelegate cb);
+
+        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false,
+            ThrowOnUnmappableChar = true)]
+        internal static extern int indy_export_wallet(int command_handle, IntPtr wallet_handle, string export_config,
+            IndyMethodCompletedDelegate cb);
+
+        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false,
+            ThrowOnUnmappableChar = true)]
+        internal static extern int indy_import_wallet(int command_handle, string config, string credentials,
+            string import_config, IndyMethodCompletedDelegate cb);
 
         internal delegate void OpenWalletCompletedDelegate(int xcommand_handle, int err, IntPtr wallet_handle);
 
@@ -119,8 +128,10 @@ namespace Hyperledger.Indy.WalletApi
         /// <param name="wallet_handle">wallet handle returned by indy_open_wallet.</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
-        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_close_wallet(int command_handle, IntPtr wallet_handle, IndyMethodCompletedDelegate cb);
+        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false,
+            ThrowOnUnmappableChar = true)]
+        internal static extern int indy_close_wallet(int command_handle, IntPtr wallet_handle,
+            IndyMethodCompletedDelegate cb);
 
         /// <summary>
         /// Deletes created wallet.
@@ -130,11 +141,15 @@ namespace Hyperledger.Indy.WalletApi
         /// <param name="credentials">Wallet credentials json</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
-        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_delete_wallet(int command_handle, string config, string credentials, IndyMethodCompletedDelegate cb);
+        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false,
+            ThrowOnUnmappableChar = true)]
+        internal static extern int indy_delete_wallet(int command_handle, string config, string credentials,
+            IndyMethodCompletedDelegate cb);
 
-        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_generate_wallet_key(int command_handle, string config, GenerateWalletKeyCompletedDelegate cb);
+        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false,
+            ThrowOnUnmappableChar = true)]
+        internal static extern int indy_generate_wallet_key(int command_handle, string config,
+            GenerateWalletKeyCompletedDelegate cb);
 
         internal delegate void GenerateWalletKeyCompletedDelegate(int xcommand_handle, int err, string key);
 

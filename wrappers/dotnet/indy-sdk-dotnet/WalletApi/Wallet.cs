@@ -1,6 +1,7 @@
 ﻿using Hyperledger.Indy.Utils;
 using System;
 using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 using static Hyperledger.Indy.WalletApi.NativeMethods;
 #if __IOS__
@@ -13,12 +14,13 @@ namespace Hyperledger.Indy.WalletApi
     /// Represents a wallet that stores key value records and provides static methods for managing
     /// wallets.
     /// </summary>
+    [SuppressMessage("ReSharper", "InconsistentNaming")]
     public sealed class Wallet : IDisposable
     {
         /// <summary>
-        /// Wallet type registrations by type name.
+        /// Wallet storage registrations by name.
         /// </summary>
-        private static ConcurrentBag<WalletType> _registeredWalletTypes = new ConcurrentBag<WalletType>();
+        private static readonly ConcurrentBag<WalletStorage> _registeredWalletStores = new ConcurrentBag<WalletStorage>();
 
         /// <summary>
         /// Gets the callback to use when a wallet open command has completed.
@@ -35,7 +37,7 @@ namespace Hyperledger.Indy.WalletApi
 
             taskCompletionSource.SetResult(new Wallet(wallet_handle));
         }
-        private static OpenWalletCompletedDelegate OpenWalletCallback = OpenWalletCallbackMethod;
+        private static readonly OpenWalletCompletedDelegate OpenWalletCallback = OpenWalletCallbackMethod;
 
 #if __IOS__
         [MonoPInvokeCallback(typeof(GenerateWalletKeyCompletedDelegate))]
@@ -49,8 +51,57 @@ namespace Hyperledger.Indy.WalletApi
 
             taskCompletionSource.SetResult(key);
         }
-        private static GenerateWalletKeyCompletedDelegate GenerateWalletKeyCallback = GenerateWalletKeyCallbackMethod;
+        private static readonly GenerateWalletKeyCompletedDelegate GenerateWalletKeyCallback = GenerateWalletKeyCallbackMethod;
 
+        /// <summary>
+        /// Register custom wallet storage implementation.
+        /// </summary>
+        /// <param name="storageType">Storage type name.</param>
+        /// <param name="storage">Storage implementation instance</param>
+        /// <returns></returns>
+        public static Task RegisterWalletStorageAsync(string storageType, IWalletStorage storage)
+        {
+            ParamGuard.NotNull(storage, "storage");
+
+            var taskCompletionSource = new TaskCompletionSource<bool>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var walletStorage = new WalletStorage(storage);
+            _registeredWalletStores.Add(walletStorage);
+
+            var result = NativeMethods.indy_register_wallet_storage(
+                commandHandle,
+                storageType,
+                walletStorage.WalletCreateCallback,
+                walletStorage.WalletOpenCallback,
+                walletStorage.WalletCloseCallback,
+                walletStorage.WalletDeleteCallback,
+                walletStorage.WalletAddRecordCallback,
+                walletStorage.WalletUpdateRecordValueCallback,
+                walletStorage.WalletUpdateRecordTagsCallback,
+                walletStorage.WalletAddRecordTagsCallback,
+                walletStorage.WalletDeleteRecordTagsCallback,
+                walletStorage.WalletDeleteRecordCallback,
+                walletStorage.WalletGetRecordCallback,
+                walletStorage.WalletGetRecordIdCallback,
+                walletStorage.WalletGetRecordTypeCallback,
+                walletStorage.WalletGetRecordValueCallback,
+                walletStorage.WalletGetRecordTagsCallback,
+                walletStorage.WalletFreeRecordCallback,
+                walletStorage.WalletGetStorageMetadataCallback,
+                walletStorage.WalletSetStorageMetadataCallback,
+                walletStorage.WalletFreeStorageMetadataCallback,
+                walletStorage.WalletSearchRecordsCallback,
+                walletStorage.WalletSearchAllRecordsCallback,
+                walletStorage.WalletGetSearchTotalCountCallback,
+                walletStorage.WalletFetchSearchNextRecordCallback,
+                walletStorage.WalletFreeSearchCallback,
+                CallbackHelper.TaskCompletingNoValueCallback);
+
+            CallbackHelper.CheckResult(result);
+
+            return taskCompletionSource.Task;
+        }
 
         /// <summary>
         /// Create a new secure wallet.

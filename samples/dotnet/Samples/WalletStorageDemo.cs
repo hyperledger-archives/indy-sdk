@@ -2,67 +2,61 @@
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
+using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
+using Hyperledger.Indy.CryptoApi;
 using Hyperledger.Indy.DidApi;
 using Hyperledger.Indy.Samples.Utils;
+using Hyperledger.Indy.Samples.WalletStorage;
 using Hyperledger.Indy.WalletApi;
 using Newtonsoft.Json;
 using Console = Colorful.Console;
 
 namespace Hyperledger.Indy.Samples
 {
-    public class WalletDemo
+    public class WalletStorageDemo
     {
         public static async Task Execute()
         {
-            Console.Write("Executing wallet sample... ");
+            Console.Write("Executing wallet storage sample... ");
 
-            var firstWalletConfig = "{\"id\":\"my_wallet\"}";
-            var secondWalletConfig = "{\"id\":\"their_wallet\"}";
+            var firstWalletConfig = "{\"id\":\"my_wallet\",\"storage_type\":\"inmem\"}";
+            var secondWalletConfig = "{\"id\":\"their_wallet\",\"storage_type\":\"inmem\"}";
 
             var firstWalletCredentials = "{\"key\":\"my_wallet_key\"}";
             var secondWalletCredentials = "{\"key\":\"their_wallet_key\"}";
 
             try
             {
+                await Wallet.RegisterWalletStorageAsync("inmem", new InMemoryWalletStorage());
+
                 // Create and Open First Wallet
                 await WalletUtils.CreateWalletAsync(firstWalletConfig, firstWalletCredentials);
+                await WalletUtils.CreateWalletAsync(secondWalletConfig, secondWalletCredentials);
 
                 using (var firstWallet = await Wallet.OpenWalletAsync(firstWalletConfig, firstWalletCredentials))
+                using (var secondWallet = await Wallet.OpenWalletAsync(secondWalletConfig, secondWalletCredentials))
                 {
                     // Create a DID that we will retrieve and compare from imported wallet
                     var myDid = await Did.CreateAndStoreMyDidAsync(firstWallet, "{}");
+                    var theirDid = await Did.CreateAndStoreMyDidAsync(secondWallet, "{}");
 
-                    var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
-                    var exportConfig = JsonConvert.SerializeObject(new
-                    {
-                        path = path,
-                        key = Guid.NewGuid().ToString()
-                    });
+                    var message = Encoding.UTF8.GetBytes("Hello Indy!");
 
-                    await firstWallet.ExportAsync(exportConfig);
+                    var encrypted = await Crypto.AuthCryptAsync(firstWallet, myDid.VerKey, theirDid.VerKey, message);
 
-                    // Import the exported wallet into a new wallet
-                    await Wallet.ImportAsync(secondWalletConfig, secondWalletCredentials, exportConfig);
+                    var decrypted = await Crypto.AuthDecryptAsync(secondWallet, theirDid.VerKey, encrypted);
 
-                    // Open the second wallet
-                    using (var secondWallet = await Wallet.OpenWalletAsync(secondWalletConfig, secondWalletCredentials))
-                    {
-                        // Retrieve stored key
-                        var myKey = await Did.KeyForLocalDidAsync(secondWallet, myDid.Did);
-
-                        // Compare the two keys
-                        Debug.Assert(myKey == myDid.VerKey);
-
-                        await secondWallet.CloseAsync();
-                    }
+                    Debug.Assert(message.SequenceEqual(decrypted.MessageData));
+                    Debug.Assert(myDid.VerKey.Equals(decrypted.TheirVk));
 
                     // Close wallets 
                     await firstWallet.CloseAsync();
-                    File.Delete(path);
-
-                    Console.WriteLine("OK", Color.Green);
+                    await secondWallet.CloseAsync();
                 }
+
+                Console.WriteLine("OK", Color.Green);
             }
             catch (Exception e)
             {
