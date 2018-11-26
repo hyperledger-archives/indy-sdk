@@ -5,7 +5,7 @@ use command_executor::{Command, CommandContext, CommandMetadata, CommandParams, 
 use commands::*;
 use commands::payment_address::handle_payment_error;
 
-use libindy::ErrorCode;
+use indy::ErrorCode;
 use libindy::ledger::Ledger;
 use libindy::payment::Payment;
 

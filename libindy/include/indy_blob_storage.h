@@ -9,13 +9,13 @@ extern "C" {
     extern indy_error_t indy_open_blob_storage_reader(indy_handle_t  command_handle,
                                                       const char*    type_,
                                                       const char*    config_json,
-                                                      void           (*fn)(indy_handle_t xcommand_handle, indy_error_t err, indy_i32_t handle)
+                                                      void           (*fn)(indy_handle_t command_handle_, indy_error_t err, indy_handle_t handle)
                                                      );
 
     extern indy_error_t indy_open_blob_storage_writer(indy_handle_t  command_handle,
                                                       const char*    type_,
                                                       const char*    config_json,
-                                                      void           (*fn)(indy_handle_t xcommand_handle, indy_error_t err, indy_i32_t handle)
+                                                      void           (*fn)(indy_handle_t command_handle_, indy_error_t err, indy_handle_t handle)
                                                      );
 
 

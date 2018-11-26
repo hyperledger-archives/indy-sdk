@@ -1,7 +1,7 @@
 use command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata};
 use commands::*;
 use utils::table::print_list_table;
-use libindy::ErrorCode;
+use indy::ErrorCode;
 use libindy::wallet::Wallet;
 
 use serde_json;

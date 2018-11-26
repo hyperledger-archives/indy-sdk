@@ -119,7 +119,7 @@ namespace Hyperledger.Indy.WalletApi
         internal static extern int indy_import_wallet(int command_handle, string config, string credentials,
             string import_config, IndyMethodCompletedDelegate cb);
 
-        internal delegate void OpenWalletCompletedDelegate(int xcommand_handle, int err, IntPtr wallet_handle);
+        internal delegate void OpenWalletCompletedDelegate(int xcommand_handle, int err, int wallet_handle);
 
         /// <summary>
         /// Closes opened wallet and frees allocated resources.

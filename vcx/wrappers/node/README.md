@@ -1,5 +1,9 @@
-
 # VCX NodeJS Wrapper
+
+This is a NodeJS wrapper for VCX library. 
+VCX is the open-source library on top of Libindy which fully implements the credentials exchange.
+
+**Note**: This library is currently in experimental state.
 
 ## Contribution Guide
 

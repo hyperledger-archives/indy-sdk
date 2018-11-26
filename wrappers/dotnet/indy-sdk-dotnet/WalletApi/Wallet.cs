@@ -28,7 +28,7 @@ namespace Hyperledger.Indy.WalletApi
 #if __IOS__
         [MonoPInvokeCallback(typeof(OpenWalletCompletedDelegate))]
 #endif
-        private static void OpenWalletCallbackMethod(int xcommand_handle, int err, IntPtr wallet_handle)
+        private static void OpenWalletCallbackMethod(int xcommand_handle, int err, int wallet_handle)
         {
             var taskCompletionSource = PendingCommands.Remove<Wallet>(xcommand_handle);
 
@@ -421,13 +421,13 @@ namespace Hyperledger.Indy.WalletApi
         /// <summary>
         /// Gets the SDK handle for the Wallet instance.
         /// </summary>
-        internal IntPtr Handle { get; }
+        internal int Handle { get; }
 
         /// <summary>
         /// Initializes a new Wallet instance with the specified handle.
         /// </summary>
         /// <param name="handle">The SDK handle for the wallet.</param>
-        private Wallet(IntPtr handle)
+        private Wallet(int handle)
         {
             Handle = handle;
             _requiresClose = true;
