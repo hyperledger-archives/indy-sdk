@@ -20,7 +20,7 @@ namespace Hyperledger.Indy.PoolApi
 #if __IOS__
         [MonoPInvokeCallback(typeof(OpenPoolLedgerCompletedDelegate))]
 #endif
-        private static void OpenPoolLedgerCallbackMethod(int command_handle, int err, IntPtr pool_handle)
+        private static void OpenPoolLedgerCallbackMethod(int command_handle, int err, int pool_handle)
         {
             var taskCompletionSource = PendingCommands.Remove<Pool>(command_handle);
 
@@ -190,13 +190,13 @@ namespace Hyperledger.Indy.PoolApi
         /// <summary>
         /// Gets the handle for the pool.
         /// </summary>
-        internal IntPtr Handle { get; }
+        internal int Handle { get; }
 
         /// <summary>
         /// Initializes a new Pool instance with the specified handle.
         /// </summary>
         /// <param name="handle">The handle of the underlying unmanaged pool.</param>
-        private Pool(IntPtr handle)
+        private Pool(int handle)
         {
             Handle = handle;
             _requiresClose = true;

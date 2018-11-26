@@ -1,7 +1,7 @@
 extern crate libc;
 extern crate serde_json;
 
-use api::ErrorCode;
+use api::{ErrorCode, IndyHandle};
 use errors::common::CommonError;
 use errors::ToErrorCode;
 use commands::{Command, CommandExecutor};
@@ -53,12 +53,12 @@ use std::collections::HashMap;
 /// Common*
 /// Anoncreds*
 #[no_mangle]
-pub extern fn indy_issuer_create_schema(command_handle: i32,
+pub extern fn indy_issuer_create_schema(command_handle: IndyHandle,
                                         issuer_did: *const c_char,
                                         name: *const c_char,
                                         version: *const c_char,
                                         attrs: *const c_char,
-                                        cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                        cb: Option<extern fn(command_handle_: IndyHandle, err: ErrorCode,
                                                              schema_id: *const c_char, schema_json: *const c_char)>) -> ErrorCode {
     trace!("indy_issuer_create_schema: >>> issuer_did: {:?}, name: {:?}, version: {:?}, attrs: {:?}", issuer_did, name, version, attrs);
 
@@ -130,14 +130,14 @@ pub extern fn indy_issuer_create_schema(command_handle: i32,
 /// Wallet*
 /// Anoncreds*
 #[no_mangle]
-pub extern fn indy_issuer_create_and_store_credential_def(command_handle: i32,
-                                                          wallet_handle: i32,
+pub extern fn indy_issuer_create_and_store_credential_def(command_handle: IndyHandle,
+                                                          wallet_handle: IndyHandle,
                                                           issuer_did: *const c_char,
                                                           schema_json: *const c_char,
                                                           tag: *const c_char,
                                                           signature_type: *const c_char,
                                                           config_json: *const c_char,
-                                                          cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                          cb: Option<extern fn(command_handle_: IndyHandle, err: ErrorCode,
                                                                                cred_def_id: *const c_char,
                                                                                cred_def_json: *const c_char)>) -> ErrorCode {
     trace!("indy_issuer_create_and_store_credential_def: >>> wallet_handle: {:?}, issuer_did: {:?}, schema_json: {:?}, tag: {:?}, \
@@ -225,15 +225,15 @@ pub extern fn indy_issuer_create_and_store_credential_def(command_handle: i32,
 /// Wallet*
 /// Anoncreds*
 #[no_mangle]
-pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: i32,
-                                                     wallet_handle: i32,
+pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: IndyHandle,
+                                                     wallet_handle: IndyHandle,
                                                      issuer_did: *const c_char,
                                                      revoc_def_type: *const c_char,
                                                      tag: *const c_char,
                                                      cred_def_id: *const c_char,
                                                      config_json: *const c_char,
-                                                     tails_writer_handle: i32,
-                                                     cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                     tails_writer_handle: IndyHandle,
+                                                     cb: Option<extern fn(command_handle_: IndyHandle, err: ErrorCode,
                                                                           revoc_reg_id: *const c_char,
                                                                           revoc_reg_def_json: *const c_char,
                                                                           revoc_reg_entry_json: *const c_char)>) -> ErrorCode {
@@ -304,10 +304,10 @@ pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: i32,
 /// Wallet*
 /// Anoncreds*
 #[no_mangle]
-pub extern fn indy_issuer_create_credential_offer(command_handle: i32,
-                                                  wallet_handle: i32,
+pub extern fn indy_issuer_create_credential_offer(command_handle: IndyHandle,
+                                                  wallet_handle: IndyHandle,
                                                   cred_def_id: *const c_char,
-                                                  cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                  cb: Option<extern fn(command_handle_: IndyHandle, err: ErrorCode,
                                                                        cred_offer_json: *const c_char)>) -> ErrorCode {
     trace!("indy_issuer_create_credential_offer: >>> wallet_handle: {:?}, cred_def_id: {:?}", wallet_handle, cred_def_id);
 
@@ -382,14 +382,14 @@ pub extern fn indy_issuer_create_credential_offer(command_handle: i32,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn indy_issuer_create_credential(command_handle: i32,
-                                            wallet_handle: i32,
+pub extern fn indy_issuer_create_credential(command_handle: IndyHandle,
+                                            wallet_handle: IndyHandle,
                                             cred_offer_json: *const c_char,
                                             cred_req_json: *const c_char,
                                             cred_values_json: *const c_char,
                                             rev_reg_id: *const c_char,
-                                            blob_storage_reader_handle: i32,
-                                            cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                            blob_storage_reader_handle: IndyHandle,
+                                            cb: Option<extern fn(command_handle_: IndyHandle, err: ErrorCode,
                                                                  cred_json: *const c_char,
                                                                  cred_revoc_id: *const c_char,
                                                                  revoc_reg_delta_json: *const c_char)>) -> ErrorCode {
@@ -461,12 +461,12 @@ pub extern fn indy_issuer_create_credential(command_handle: i32,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn indy_issuer_revoke_credential(command_handle: i32,
-                                            wallet_handle: i32,
-                                            blob_storage_reader_cfg_handle: i32,
+pub extern fn indy_issuer_revoke_credential(command_handle: IndyHandle,
+                                            wallet_handle: IndyHandle,
+                                            blob_storage_reader_cfg_handle: IndyHandle,
                                             rev_reg_id: *const c_char,
                                             cred_revoc_id: *const c_char,
-                                            cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                            cb: Option<extern fn(command_handle_: IndyHandle, err: ErrorCode,
                                                                  revoc_reg_delta_json: *const c_char)>) -> ErrorCode {
     trace!("indy_issuer_revoke_credential: >>> wallet_handle: {:?}, blob_storage_reader_cfg_handle: {:?}, rev_reg_id: {:?}, cred_revoc_id: {:?}",
            wallet_handle, blob_storage_reader_cfg_handle, rev_reg_id, cred_revoc_id);
@@ -525,12 +525,12 @@ pub extern fn indy_issuer_revoke_credential(command_handle: i32,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn indy_issuer_recover_credential(command_handle: i32,
-                                             wallet_handle: i32,
-                                             blob_storage_reader_cfg_handle: i32,
+pub extern fn indy_issuer_recover_credential(command_handle: IndyHandle,
+                                             wallet_handle: IndyHandle,
+                                             blob_storage_reader_cfg_handle: IndyHandle,
                                              rev_reg_id: *const c_char,
                                              cred_revoc_id: *const c_char,
-                                             cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                             cb: Option<extern fn(command_handle_: IndyHandle, err: ErrorCode,
                                                                   revoc_reg_delta_json: *const c_char,
                                              )>) -> ErrorCode {
     check_useful_c_str!(rev_reg_id, ErrorCode::CommonInvalidParam4);
@@ -572,10 +572,10 @@ pub extern fn indy_issuer_recover_credential(command_handle: i32,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn indy_issuer_merge_revocation_registry_deltas(command_handle: i32,
+pub extern fn indy_issuer_merge_revocation_registry_deltas(command_handle: IndyHandle,
                                                            rev_reg_delta_json: *const c_char,
                                                            other_rev_reg_delta_json: *const c_char,
-                                                           cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                           cb: Option<extern fn(command_handle_: IndyHandle, err: ErrorCode,
                                                                                 merged_rev_reg_delta: *const c_char)>) -> ErrorCode {
     trace!("indy_issuer_merge_revocation_registry_deltas: >>> rev_reg_delta_json: {:?}, other_rev_reg_delta_json: {:?}",
            rev_reg_delta_json, other_rev_reg_delta_json);
@@ -624,10 +624,10 @@ pub extern fn indy_issuer_merge_revocation_registry_deltas(command_handle: i32,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn indy_prover_create_master_secret(command_handle: i32,
-                                               wallet_handle: i32,
+pub extern fn indy_prover_create_master_secret(command_handle: IndyHandle,
+                                               wallet_handle: IndyHandle,
                                                master_secret_id: *const c_char,
-                                               cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                               cb: Option<extern fn(command_handle_: IndyHandle, err: ErrorCode,
                                                                     out_master_secret_id: *const c_char)>) -> ErrorCode {
     trace!("indy_prover_create_master_secret: >>> wallet_handle: {:?}, master_secret_id: {:?}", wallet_handle, master_secret_id);
 
@@ -689,13 +689,13 @@ pub extern fn indy_prover_create_master_secret(command_handle: i32,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn indy_prover_create_credential_req(command_handle: i32,
-                                                wallet_handle: i32,
+pub extern fn indy_prover_create_credential_req(command_handle: IndyHandle,
+                                                wallet_handle: IndyHandle,
                                                 prover_did: *const c_char,
                                                 cred_offer_json: *const c_char,
                                                 cred_def_json: *const c_char,
                                                 master_secret_id: *const c_char,
-                                                cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                cb: Option<extern fn(command_handle_: IndyHandle, err: ErrorCode,
                                                                      cred_req_json: *const c_char,
                                                                      cred_req_metadata_json: *const c_char)>) -> ErrorCode {
     trace!("indy_prover_create_credential_req: >>> wallet_handle: {:?}, prover_did: {:?}, cred_offer_json: {:?}, cred_def_json: {:?}, master_secret_id: {:?}",
@@ -770,14 +770,14 @@ pub extern fn indy_prover_create_credential_req(command_handle: i32,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn indy_prover_store_credential(command_handle: i32,
-                                           wallet_handle: i32,
+pub extern fn indy_prover_store_credential(command_handle: IndyHandle,
+                                           wallet_handle: IndyHandle,
                                            cred_id: *const c_char,
                                            cred_req_metadata_json: *const c_char,
                                            cred_json: *const c_char,
                                            cred_def_json: *const c_char,
                                            rev_reg_def_json: *const c_char,
-                                           cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                           cb: Option<extern fn(command_handle_: IndyHandle, err: ErrorCode,
                                                                 out_cred_id: *const c_char)>) -> ErrorCode {
     trace!("indy_prover_store_credential: >>> wallet_handle: {:?}, cred_id: {:?}, cred_req_metadata_json: {:?}, cred_json: {:?}, cred_def_json: {:?}, \
     cred_def_json: {:?}", wallet_handle, cred_id, cred_req_metadata_json, cred_json, cred_def_json, rev_reg_def_json);
@@ -840,11 +840,11 @@ pub extern fn indy_prover_store_credential(command_handle: i32,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn indy_prover_get_credential(command_handle: i32,
-                                         wallet_handle: i32,
+pub extern fn indy_prover_get_credential(command_handle: IndyHandle,
+                                         wallet_handle: IndyHandle,
                                          cred_id: *const c_char,
                                          cb: Option<extern fn(
-                                             xcommand_handle: i32, err: ErrorCode,
+                                             command_handle_: IndyHandle, err: ErrorCode,
                                              credential_json: *const c_char)>) -> ErrorCode {
     trace!("indy_prover_get_credential: >>> wallet_handle: {:?}, cred_id: {:?}", wallet_handle, cred_id);
 
@@ -911,11 +911,11 @@ pub extern fn indy_prover_get_credential(command_handle: i32,
 /// Wallet*
 #[no_mangle]
 #[deprecated(since="1.6.1", note="Please use indy_prover_search_credentials instead!")]
-pub extern fn indy_prover_get_credentials(command_handle: i32,
-                                          wallet_handle: i32,
+pub extern fn indy_prover_get_credentials(command_handle: IndyHandle,
+                                          wallet_handle: IndyHandle,
                                           filter_json: *const c_char,
                                           cb: Option<extern fn(
-                                              xcommand_handle: i32, err: ErrorCode,
+                                              command_handle_: IndyHandle, err: ErrorCode,
                                               matched_credentials_json: *const c_char)>) -> ErrorCode {
     trace!("indy_prover_get_credentials: >>> wallet_handle: {:?}, filter_json: {:?}", wallet_handle, filter_json);
 
@@ -967,12 +967,12 @@ pub extern fn indy_prover_get_credentials(command_handle: i32,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn indy_prover_search_credentials(command_handle: i32,
-                                             wallet_handle: i32,
+pub extern fn indy_prover_search_credentials(command_handle: IndyHandle,
+                                             wallet_handle: IndyHandle,
                                              query_json: *const c_char,
                                              cb: Option<extern fn(
-                                                 xcommand_handle: i32, err: ErrorCode,
-                                                 search_handle: i32,
+                                                 command_handle_: IndyHandle, err: ErrorCode,
+                                                 search_handle: IndyHandle,
                                                  total_count: usize)>) -> ErrorCode {
     trace!("indy_prover_search_credentials: >>> wallet_handle: {:?}, query_json: {:?}", wallet_handle, query_json);
 
@@ -1024,10 +1024,10 @@ pub extern fn indy_prover_search_credentials(command_handle: i32,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub  extern fn indy_prover_fetch_credentials(command_handle: i32,
-                                             search_handle: i32,
+pub  extern fn indy_prover_fetch_credentials(command_handle: IndyHandle,
+                                             search_handle: IndyHandle,
                                              count: usize,
-                                             cb: Option<extern fn(command_handle_: i32, err: ErrorCode,
+                                             cb: Option<extern fn(command_handle_: IndyHandle, err: ErrorCode,
                                                                   credentials_json: *const c_char)>) -> ErrorCode {
     trace!("indy_prover_fetch_credentials: >>> search_handle: {:?}, count: {:?}", search_handle, count);
 
@@ -1066,9 +1066,9 @@ pub  extern fn indy_prover_fetch_credentials(command_handle: i32,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub  extern fn indy_prover_close_credentials_search(command_handle: i32,
-                                                    search_handle: i32,
-                                                    cb: Option<extern fn(command_handle_: i32, err: ErrorCode)>) -> ErrorCode {
+pub  extern fn indy_prover_close_credentials_search(command_handle: IndyHandle,
+                                                    search_handle: IndyHandle,
+                                                    cb: Option<extern fn(command_handle_: IndyHandle, err: ErrorCode)>) -> ErrorCode {
     trace!("indy_prover_close_credentials_search: >>> search_handle: {:?}", search_handle);
 
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
@@ -1177,11 +1177,11 @@ pub  extern fn indy_prover_close_credentials_search(command_handle: i32,
 /// Wallet*
 #[deprecated(since="1.6.1", note="Please use indy_prover_search_credentials_for_proof_req instead!")]
 #[no_mangle]
-pub extern fn indy_prover_get_credentials_for_proof_req(command_handle: i32,
-                                                        wallet_handle: i32,
+pub extern fn indy_prover_get_credentials_for_proof_req(command_handle: IndyHandle,
+                                                        wallet_handle: IndyHandle,
                                                         proof_request_json: *const c_char,
                                                         cb: Option<extern fn(
-                                                            xcommand_handle: i32, err: ErrorCode,
+                                                            command_handle_: IndyHandle, err: ErrorCode,
                                                             credentials_json: *const c_char)>) -> ErrorCode {
     trace!("indy_prover_get_credentials_for_proof_req: >>> wallet_handle: {:?}, proof_request_json: {:?}", wallet_handle, proof_request_json);
 
@@ -1254,13 +1254,13 @@ pub extern fn indy_prover_get_credentials_for_proof_req(command_handle: i32,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn indy_prover_search_credentials_for_proof_req(command_handle: i32,
-                                                           wallet_handle: i32,
+pub extern fn indy_prover_search_credentials_for_proof_req(command_handle: IndyHandle,
+                                                           wallet_handle: IndyHandle,
                                                            proof_request_json: *const c_char,
                                                            extra_query_json: *const c_char,
                                                            cb: Option<extern fn(
-                                                               xcommand_handle: i32, err: ErrorCode,
-                                                               search_handle: i32)>) -> ErrorCode {
+                                                               command_handle_: IndyHandle, err: ErrorCode,
+                                                               search_handle: IndyHandle)>) -> ErrorCode {
     trace!("indy_prover_search_credentials_for_proof_req: >>> wallet_handle: {:?}, proof_request_json: {:?}, extra_query_json: {:?}", wallet_handle, proof_request_json, extra_query_json);
 
     check_useful_json!(proof_request_json, ErrorCode::CommonInvalidParam3, ProofRequest);
@@ -1329,11 +1329,11 @@ pub extern fn indy_prover_search_credentials_for_proof_req(command_handle: i32,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub  extern fn indy_prover_fetch_credentials_for_proof_req(command_handle: i32,
-                                                           search_handle: i32,
+pub  extern fn indy_prover_fetch_credentials_for_proof_req(command_handle: IndyHandle,
+                                                           search_handle: IndyHandle,
                                                            item_referent: *const c_char,
                                                            count: usize,
-                                                           cb: Option<extern fn(command_handle_: i32, err: ErrorCode,
+                                                           cb: Option<extern fn(command_handle_: IndyHandle, err: ErrorCode,
                                                                                 credentials_json: *const c_char)>) -> ErrorCode {
     trace!("indy_prover_fetch_credentials_for_proof_req: >>> search_handle: {:?}, count: {:?}", search_handle, count);
 
@@ -1374,9 +1374,9 @@ pub  extern fn indy_prover_fetch_credentials_for_proof_req(command_handle: i32,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub  extern fn indy_prover_close_credentials_search_for_proof_req(command_handle: i32,
-                                                                  search_handle: i32,
-                                                                  cb: Option<extern fn(command_handle_: i32, err: ErrorCode)>) -> ErrorCode {
+pub  extern fn indy_prover_close_credentials_search_for_proof_req(command_handle: IndyHandle,
+                                                                  search_handle: IndyHandle,
+                                                                  cb: Option<extern fn(command_handle_: IndyHandle, err: ErrorCode)>) -> ErrorCode {
     trace!("indy_prover_close_credentials_search_for_proof_req: >>> search_handle: {:?}", search_handle);
 
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
@@ -1537,15 +1537,15 @@ pub  extern fn indy_prover_close_credentials_search_for_proof_req(command_handle
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn indy_prover_create_proof(command_handle: i32,
-                                       wallet_handle: i32,
+pub extern fn indy_prover_create_proof(command_handle: IndyHandle,
+                                       wallet_handle: IndyHandle,
                                        proof_req_json: *const c_char,
                                        requested_credentials_json: *const c_char,
                                        master_secret_id: *const c_char,
                                        schemas_json: *const c_char,
                                        credential_defs_json: *const c_char,
                                        rev_states_json: *const c_char,
-                                       cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                       cb: Option<extern fn(command_handle_: IndyHandle, err: ErrorCode,
                                                             proof_json: *const c_char)>) -> ErrorCode {
     trace!("indy_prover_create_proof: >>> wallet_handle: {:?}, proof_req_json: {:?}, requested_credentials_json: {:?}, master_secret_id: {:?}, \
     schemas_json: {:?}, credential_defs_json: {:?}, rev_states_json: {:?}",
@@ -1676,14 +1676,14 @@ pub extern fn indy_prover_create_proof(command_handle: i32,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn indy_verifier_verify_proof(command_handle: i32,
+pub extern fn indy_verifier_verify_proof(command_handle: IndyHandle,
                                          proof_request_json: *const c_char,
                                          proof_json: *const c_char,
                                          schemas_json: *const c_char,
                                          credential_defs_json: *const c_char,
                                          rev_reg_defs_json: *const c_char,
                                          rev_regs_json: *const c_char,
-                                         cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                         cb: Option<extern fn(command_handle_: IndyHandle, err: ErrorCode,
                                                               valid: bool)>) -> ErrorCode {
     trace!("indy_verifier_verify_proof: >>> proof_request_json: {:?}, proof_json: {:?}, schemas_json: {:?}, credential_defs_json: {:?}, \
     rev_reg_defs_json: {:?}, rev_regs_json: {:?}", proof_request_json, proof_json, schemas_json, credential_defs_json, rev_reg_defs_json, rev_regs_json);
@@ -1746,14 +1746,14 @@ pub extern fn indy_verifier_verify_proof(command_handle: i32,
 /// Wallet*
 /// Anoncreds*
 #[no_mangle]
-pub extern fn indy_create_revocation_state(command_handle: i32,
-                                           blob_storage_reader_handle: i32,
+pub extern fn indy_create_revocation_state(command_handle: IndyHandle,
+                                           blob_storage_reader_handle: IndyHandle,
                                            rev_reg_def_json: *const c_char,
                                            rev_reg_delta_json: *const c_char,
                                            timestamp: u64,
                                            cred_rev_id: *const c_char,
                                            cb: Option<extern fn(
-                                               xcommand_handle: i32, err: ErrorCode,
+                                               command_handle_: IndyHandle, err: ErrorCode,
                                                rev_state_json: *const c_char)>) -> ErrorCode {
     trace!("indy_create_revocation_state: >>> blob_storage_reader_handle: {:?}, rev_reg_def_json: {:?}, rev_reg_delta_json: {:?}, timestamp: {:?}, \
     cred_rev_id: {:?}", blob_storage_reader_handle, rev_reg_def_json, rev_reg_delta_json, timestamp, cred_rev_id);
@@ -1814,15 +1814,15 @@ pub extern fn indy_create_revocation_state(command_handle: i32,
 /// Wallet*
 /// Anoncreds*
 #[no_mangle]
-pub extern fn indy_update_revocation_state(command_handle: i32,
-                                           blob_storage_reader_handle: i32,
+pub extern fn indy_update_revocation_state(command_handle: IndyHandle,
+                                           blob_storage_reader_handle: IndyHandle,
                                            rev_state_json: *const c_char,
                                            rev_reg_def_json: *const c_char,
                                            rev_reg_delta_json: *const c_char,
                                            timestamp: u64,
                                            cred_rev_id: *const c_char,
                                            cb: Option<extern fn(
-                                               xcommand_handle: i32, err: ErrorCode,
+                                               command_handle_: IndyHandle, err: ErrorCode,
                                                updated_rev_state_json: *const c_char)>) -> ErrorCode {
     trace!("indy_update_revocation_state: >>> blob_storage_reader_handle: {:?}, rev_state_json: {:?}, rev_reg_def_json: {:?}, rev_reg_delta_json: {:?}, \
     timestamp: {:?}, cred_rev_id: {:?}", blob_storage_reader_handle, rev_state_json, rev_reg_def_json, rev_reg_delta_json, timestamp, cred_rev_id);
