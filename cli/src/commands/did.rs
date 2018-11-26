@@ -2,7 +2,7 @@ use command_executor::{Command, CommandContext, CommandMetadata, CommandParams, 
 use commands::*;
 use utils::table::print_list_table;
 
-use libindy::ErrorCode;
+use indy::ErrorCode;
 
 use libindy::did::Did;
 use libindy::ledger::Ledger;

@@ -3,7 +3,7 @@ use {CString, CVoid, Error};
 extern {
 
     #[no_mangle]
-    pub fn indy_set_logger(context: CVoid,
+    pub fn indy_set_logger(context: *const CVoid,
                            enabled: Option<EnabledCB>,
                            log: Option<LogCB>,
                            flush: Option<FlushCB>) -> Error;
@@ -20,14 +20,14 @@ extern {
 
 pub type EnabledCB = extern fn(context: *const CVoid,
                                level: u32,
-                               target: *const CString) -> bool;
+                               target: CString) -> bool;
 
 pub type LogCB = extern fn(context: *const CVoid,
                            level: u32,
-                           target: *const CString,
-                           message: *const CString,
-                           module_path: *const CString,
-                           file: *const CString,
+                           target: CString,
+                           message: CString,
+                           module_path: CString,
+                           file: CString,
                            line: u32);
 
 pub type FlushCB = extern fn(context: *const CVoid);
