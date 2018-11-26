@@ -23,12 +23,12 @@ use futures::Future;
 pub fn create_pool_ledger_config(pool_name: &str, pool_config: Option<&str>) -> Box<Future<Item=(), Error=ErrorCode>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
-    let err = _create_ledger_config(command_handle, pool_name, pool_config, cb);
+    let err = _create_pool_ledger_config(command_handle, pool_name, pool_config, cb);
 
     ResultHandler::empty(command_handle, err, receiver)
 }
 
-fn _create_ledger_config(command_handle: IndyHandle, pool_name: &str, pool_config: Option<&str>, cb: Option<ResponseEmptyCB>) -> ErrorCode {
+fn _create_pool_ledger_config(command_handle: IndyHandle, pool_name: &str, pool_config: Option<&str>, cb: Option<ResponseEmptyCB>) -> ErrorCode {
     let pool_name = c_str!(pool_name);
     let pool_config_str = opt_c_str!(pool_config);
 
@@ -59,12 +59,12 @@ fn _create_ledger_config(command_handle: IndyHandle, pool_name: &str, pool_confi
 pub fn open_pool_ledger(pool_name: &str, config: Option<&str>) -> Box<Future<Item=IndyHandle, Error=ErrorCode>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_handle();
 
-    let err = _open_ledger(command_handle, pool_name, config, cb);
+    let err = _open_pool_ledger(command_handle, pool_name, config, cb);
 
     ResultHandler::handle(command_handle, err, receiver)
 }
 
-fn _open_ledger(command_handle: IndyHandle, pool_name: &str, config: Option<&str>, cb: Option<ResponseI32CB>) -> ErrorCode {
+fn _open_pool_ledger(command_handle: IndyHandle, pool_name: &str, config: Option<&str>, cb: Option<ResponseI32CB>) -> ErrorCode {
     let pool_name = c_str!(pool_name);
     let config_str = opt_c_str!(config);
 
@@ -78,12 +78,12 @@ fn _open_ledger(command_handle: IndyHandle, pool_name: &str, config: Option<&str
 pub fn refresh_pool_ledger(pool_handle: IndyHandle) -> Box<Future<Item=(), Error=ErrorCode>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
-    let err = _refresh(command_handle, pool_handle, cb);
+    let err = _refresh_pool_ledger(command_handle, pool_handle, cb);
 
     ResultHandler::empty(command_handle, err, receiver)
 }
 
-fn _refresh(command_handle: IndyHandle, pool_handle: IndyHandle, cb: Option<ResponseEmptyCB>) -> ErrorCode {
+fn _refresh_pool_ledger(command_handle: IndyHandle, pool_handle: IndyHandle, cb: Option<ResponseEmptyCB>) -> ErrorCode {
     ErrorCode::from(unsafe { pool::indy_refresh_pool_ledger(command_handle, pool_handle, cb) })
 }
 
@@ -91,12 +91,12 @@ fn _refresh(command_handle: IndyHandle, pool_handle: IndyHandle, cb: Option<Resp
 pub fn list_pools() -> Box<Future<Item=String, Error=ErrorCode>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
-    let err = _list(command_handle, cb);
+    let err = _list_pools(command_handle, cb);
 
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _list(command_handle: IndyHandle, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _list_pools(command_handle: IndyHandle, cb: Option<ResponseStringCB>) -> ErrorCode {
     ErrorCode::from(unsafe { pool::indy_list_pools(command_handle, cb) })
 }
 
@@ -107,12 +107,12 @@ fn _list(command_handle: IndyHandle, cb: Option<ResponseStringCB>) -> ErrorCode 
 pub fn close_pool_ledger(pool_handle: IndyHandle) -> Box<Future<Item=(), Error=ErrorCode>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
-    let err = _close(command_handle, pool_handle, cb);
+    let err = _close_pool_ledger(command_handle, pool_handle, cb);
 
     ResultHandler::empty(command_handle, err, receiver)
 }
 
-fn _close(command_handle: IndyHandle, pool_handle: IndyHandle, cb: Option<ResponseEmptyCB>) -> ErrorCode {
+fn _close_pool_ledger(command_handle: IndyHandle, pool_handle: IndyHandle, cb: Option<ResponseEmptyCB>) -> ErrorCode {
     ErrorCode::from(unsafe { pool::indy_close_pool_ledger(command_handle, pool_handle, cb) })
 }
 
@@ -123,12 +123,12 @@ fn _close(command_handle: IndyHandle, pool_handle: IndyHandle, cb: Option<Respon
 pub fn delete_pool_ledger(pool_name: &str) -> Box<Future<Item=(), Error=ErrorCode>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
-    let err = _delete(command_handle, pool_name, cb);
+    let err = _delete_pool_ledger(command_handle, pool_name, cb);
 
     ResultHandler::empty(command_handle, err, receiver)
 }
 
-fn _delete(command_handle: IndyHandle, pool_name: &str, cb: Option<ResponseEmptyCB>) -> ErrorCode {
+fn _delete_pool_ledger(command_handle: IndyHandle, pool_name: &str, cb: Option<ResponseEmptyCB>) -> ErrorCode {
     let pool_name = c_str!(pool_name);
 
     ErrorCode::from(unsafe { pool::indy_delete_pool_ledger_config(command_handle, pool_name.as_ptr(), cb) })

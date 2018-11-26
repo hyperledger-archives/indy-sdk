@@ -41,12 +41,12 @@ use utils::callbacks::{ClosureHandler, ResultHandler};
 pub fn create_and_store_my_did(wallet_handle: IndyHandle, did_json: &str) -> Box<Future<Item=(String, String), Error=ErrorCode>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_string();
 
-    let err = _new(command_handle, wallet_handle, did_json, cb);
+    let err = _create_and_store_my_did(command_handle, wallet_handle, did_json, cb);
 
     ResultHandler::str_str(command_handle, err, receiver)
 }
 
-fn _new(command_handle: IndyHandle, wallet_handle: IndyHandle, did_json: &str, cb: Option<ResponseStringStringCB>) -> ErrorCode {
+fn _create_and_store_my_did(command_handle: IndyHandle, wallet_handle: IndyHandle, did_json: &str, cb: Option<ResponseStringStringCB>) -> ErrorCode {
     let did_json = c_str!(did_json);
 
     ErrorCode::from(unsafe { did::indy_create_and_store_my_did(command_handle, wallet_handle, did_json.as_ptr(), cb) })
@@ -153,12 +153,12 @@ fn _store_their_did(command_handle: IndyHandle, wallet_handle: IndyHandle, ident
 pub fn key_for_did(pool_handle: IndyHandle, wallet_handle: IndyHandle, did: &str) -> Box<Future<Item=String, Error=ErrorCode>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
-    let err = _get_ver_key(command_handle, pool_handle, wallet_handle, did, cb);
+    let err = _key_for_did(command_handle, pool_handle, wallet_handle, did, cb);
 
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _get_ver_key(command_handle: IndyHandle, pool_handle: IndyHandle, wallet_handle: IndyHandle, did: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _key_for_did(command_handle: IndyHandle, pool_handle: IndyHandle, wallet_handle: IndyHandle, did: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
     let did = c_str!(did);
 
     ErrorCode::from(unsafe { did::indy_key_for_did(command_handle, pool_handle, wallet_handle, did.as_ptr(), cb) })
@@ -184,12 +184,12 @@ fn _get_ver_key(command_handle: IndyHandle, pool_handle: IndyHandle, wallet_hand
 pub fn key_for_local_did(wallet_handle: IndyHandle, did: &str) -> Box<Future<Item=String, Error=ErrorCode>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
-    let err = _get_ver_key_local(command_handle, wallet_handle, did, cb);
+    let err = _key_for_local_did(command_handle, wallet_handle, did, cb);
 
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _get_ver_key_local(command_handle: IndyHandle, wallet_handle: IndyHandle, did: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _key_for_local_did(command_handle: IndyHandle, wallet_handle: IndyHandle, did: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
     let did = c_str!(did);
 
     ErrorCode::from(unsafe { did::indy_key_for_local_did(command_handle, wallet_handle, did.as_ptr(), cb) })
@@ -205,12 +205,12 @@ fn _get_ver_key_local(command_handle: IndyHandle, wallet_handle: IndyHandle, did
 pub fn set_endpoint_for_did(wallet_handle: IndyHandle, did: &str, address: &str, transport_key: &str) -> Box<Future<Item=(), Error=ErrorCode>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
-    let err = _set_endpoint(command_handle, wallet_handle, did, address, transport_key, cb);
+    let err = _set_endpoint_for_did(command_handle, wallet_handle, did, address, transport_key, cb);
 
     ResultHandler::empty(command_handle, err, receiver)
 }
 
-fn _set_endpoint(command_handle: IndyHandle, wallet_handle: IndyHandle, did: &str, address: &str, transport_key: &str, cb: Option<ResponseEmptyCB>) -> ErrorCode {
+fn _set_endpoint_for_did(command_handle: IndyHandle, wallet_handle: IndyHandle, did: &str, address: &str, transport_key: &str, cb: Option<ResponseEmptyCB>) -> ErrorCode {
     let did = c_str!(did);
     let address = c_str!(address);
     let transport_key = c_str!(transport_key);
@@ -230,12 +230,12 @@ fn _set_endpoint(command_handle: IndyHandle, wallet_handle: IndyHandle, did: &st
 pub fn get_endpoint_for_did(wallet_handle: IndyHandle, pool_handle: IndyHandle, did: &str) -> Box<Future<Item=(String, Option<String>), Error=ErrorCode>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_opt_string();
 
-    let err = _get_endpoint(command_handle, wallet_handle, pool_handle, did, cb);
+    let err = _get_endpoint_for_did(command_handle, wallet_handle, pool_handle, did, cb);
 
     ResultHandler::str_optstr(command_handle, err, receiver)
 }
 
-fn _get_endpoint(command_handle: IndyHandle, wallet_handle: IndyHandle, pool_handle: IndyHandle, did: &str, cb: Option<ResponseStringStringCB>) -> ErrorCode {
+fn _get_endpoint_for_did(command_handle: IndyHandle, wallet_handle: IndyHandle, pool_handle: IndyHandle, did: &str, cb: Option<ResponseStringStringCB>) -> ErrorCode {
     let did = c_str!(did);
 
     ErrorCode::from(unsafe { did::indy_get_endpoint_for_did(command_handle, wallet_handle, pool_handle, did.as_ptr(), cb) })
@@ -250,12 +250,12 @@ fn _get_endpoint(command_handle: IndyHandle, wallet_handle: IndyHandle, pool_han
 pub fn set_did_metadata(wallet_handle: IndyHandle, tgt_did: &str, metadata: &str) -> Box<Future<Item=(), Error=ErrorCode>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
-    let err = _set_metadata(command_handle, wallet_handle, tgt_did, metadata, cb);
+    let err = _set_did_metadata(command_handle, wallet_handle, tgt_did, metadata, cb);
 
     ResultHandler::empty(command_handle, err, receiver)
 }
 
-fn _set_metadata(command_handle: IndyHandle, wallet_handle: IndyHandle, tgt_did: &str, metadata: &str, cb: Option<ResponseEmptyCB>) -> ErrorCode {
+fn _set_did_metadata(command_handle: IndyHandle, wallet_handle: IndyHandle, tgt_did: &str, metadata: &str, cb: Option<ResponseEmptyCB>) -> ErrorCode {
     let tgt_did = c_str!(tgt_did);
     let metadata = c_str!(metadata);
 
@@ -273,12 +273,12 @@ fn _set_metadata(command_handle: IndyHandle, wallet_handle: IndyHandle, tgt_did:
 pub fn get_did_metadata(wallet_handle: IndyHandle, tgt_did: &str) -> Box<Future<Item=String, Error=ErrorCode>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
-    let err = _get_metadata(command_handle, wallet_handle, tgt_did, cb);
+    let err = _get_did_metadata(command_handle, wallet_handle, tgt_did, cb);
 
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _get_metadata(command_handle: IndyHandle, wallet_handle: IndyHandle, tgt_did: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _get_did_metadata(command_handle: IndyHandle, wallet_handle: IndyHandle, tgt_did: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
     let tgt_did = c_str!(tgt_did);
 
     ErrorCode::from(unsafe { did::indy_get_did_metadata(command_handle, wallet_handle, tgt_did.as_ptr(), cb) })
@@ -299,12 +299,12 @@ fn _get_metadata(command_handle: IndyHandle, wallet_handle: IndyHandle, tgt_did:
 pub fn get_my_did_with_metadata(wallet_handle: IndyHandle, my_did: &str) -> Box<Future<Item=String, Error=ErrorCode>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
-    let err = _get_my_metadata(command_handle, wallet_handle, my_did, cb);
+    let err = _get_my_did_with_metadata(command_handle, wallet_handle, my_did, cb);
 
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _get_my_metadata(command_handle: IndyHandle, wallet_handle: IndyHandle, my_did: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _get_my_did_with_metadata(command_handle: IndyHandle, wallet_handle: IndyHandle, my_did: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
     let my_did = c_str!(my_did);
 
     ErrorCode::from(unsafe { did::indy_get_my_did_with_meta(command_handle, wallet_handle, my_did.as_ptr(), cb) })
@@ -325,12 +325,12 @@ fn _get_my_metadata(command_handle: IndyHandle, wallet_handle: IndyHandle, my_di
 pub fn list_my_dids_with_metadata(wallet_handle: IndyHandle) -> Box<Future<Item=String, Error=ErrorCode>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
-    let err = _list_with_metadata(command_handle, wallet_handle, cb);
+    let err = _list_my_dids_with_metadata(command_handle, wallet_handle, cb);
 
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _list_with_metadata(command_handle: IndyHandle, wallet_handle: IndyHandle, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _list_my_dids_with_metadata(command_handle: IndyHandle, wallet_handle: IndyHandle, cb: Option<ResponseStringCB>) -> ErrorCode {
     ErrorCode::from(unsafe { did::indy_list_my_dids_with_meta(command_handle, wallet_handle, cb) })
 }
 
