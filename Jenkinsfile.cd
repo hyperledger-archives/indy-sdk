@@ -370,21 +370,20 @@ def linuxVcxBuild(file, env_name, network_name, stashBuildResults) {
 
         libvcxBuildFinished[env_name] = true
 
-        dir('vcx') {
-            testEnv.inside("--network=${network_name}") {
-                echo "${env_name} Libvcx Test: Run Cloud Agent"
-                sh '''
-                    cp vcx/libvcx/libindy.so vcx/dummy-cloud-agent
-                    cd vcx/dummy-cloud-agent
-                    LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy=info cargo run sample-config.json &
-                '''
 
-                echo "${env_name} Libvcx Test: Run tests"
-                sh '''
-                    cd vcx/libvcx
-                    LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release --features "pool_tests agency"
-                '''
-            }
+        testEnv.inside("--network=${network_name}") {
+            echo "${env_name} Libvcx Test: Run Cloud Agent"
+            sh '''
+                cp vcx/libvcx/libindy.so vcx/dummy-cloud-agent
+                cd vcx/dummy-cloud-agent
+                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy=info cargo run sample-config.json &
+            '''
+
+            echo "${env_name} Libvcx Test: Run tests"
+            sh '''
+                cd vcx/libvcx
+                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release --features "pool_tests agency"
+            '''
         }
     }
     finally {
