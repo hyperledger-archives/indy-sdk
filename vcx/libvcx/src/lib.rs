@@ -7,7 +7,8 @@ extern crate rand;
 extern crate reqwest;
 extern crate url;
 extern crate openssl;
-extern crate indy;
+extern crate indyrs as indy;
+extern crate futures;
 
 #[macro_use]
 extern crate log;

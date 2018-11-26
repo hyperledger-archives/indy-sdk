@@ -13,7 +13,7 @@ use domain::status::*;
 use env_logger;
 use failure::{err_msg, Error, Fail};
 use futures::*;
-use indy::{self, did, IndyError, wallet, crypto};
+use indy::{self, did, wallet, crypto};
 use std::env;
 use std::fs;
 use std::path::PathBuf;

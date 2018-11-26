@@ -14,27 +14,23 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// Gets the handle.
         /// </summary>
         /// <value>The handle.</value>
-        public IntPtr Handle { get; }
+        public int Handle { get; }
 
         /// <summary>
         /// Gets the total count of items.
         /// This field is <c>null</c> when search was created using <see cref="AnonCreds.ProverSearchCredentialsForProofRequestAsync(Wallet, string, string)"/>
         /// </summary>
         /// <value>The total count.</value>
-        public int? TotalCount { get; }
-
-        internal bool ProofRequest { get; }
+        public int TotalCount { get; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="T:Hyperledger.Indy.AnonCredsApi.CredentialSearch"/> class.
         /// </summary>
         /// <param name="handle">Handle.</param>
-        /// <param name="total_count">Total count.</param>
-        /// <param name="proofRequest">If set to <c>true</c> proof request.</param>
-        internal CredentialSearch(IntPtr handle, int? total_count, bool proofRequest)
+        /// <param name="totalCount">Total count.</param>
+        internal CredentialSearch(int handle, int totalCount)
         {
-            ProofRequest = proofRequest;
-            TotalCount = total_count;
+            TotalCount = totalCount;
             Handle = handle;
         }
 
@@ -43,20 +39,13 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// </summary>
         /// <returns>The async.</returns>
         /// <param name="count">The item count to fetch.</param>
-        /// <param name="itemReferent">Item referent (optional).
-        /// Required only when search was opened using <see cref="AnonCreds.ProverSearchCredentialsForProofRequestAsync(Wallet, string, string)"/>
-        /// </param>
-        public Task<string> NextAsync(int count, string itemReferent = null)
+        public Task<string> NextAsync(int count)
         {
-            if (ProofRequest)
-            {
-                return AnonCreds.ProverFetchCredentialsForProofRequestAsync(this, itemReferent, count);
-            }
             return AnonCreds.ProverFetchCredentialsAsync(this, count);
         }
 
         #region IDisposable Support
-        private bool disposedValue = false; // To detect redundant calls
+        private bool _disposedValue; // To detect redundant calls
 
         /// <summary>
         /// Dispose the specified disposing.
@@ -64,28 +53,18 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// <param name="disposing">If set to <c>true</c> disposing.</param>
         protected virtual void Dispose(bool disposing)
         {
-            if (!disposedValue)
+            if (!_disposedValue)
             {
                 if (disposing)
                 {
                 }
 
-                if (ProofRequest)
-                {
-                    NativeMethods.indy_prover_close_credentials_search_for_proof_req(
-                        -1,
-                        Handle,
-                        CallbackHelper.NoValueCallback);
-                }
-                else
-                {
-                    NativeMethods.indy_prover_close_credentials_search(
-                        -1,
-                        Handle,
-                        CallbackHelper.NoValueCallback);
-                }
+                NativeMethods.indy_prover_close_credentials_search(
+                    -1,
+                    Handle,
+                    CallbackHelper.NoValueCallback);
 
-                disposedValue = true;
+                _disposedValue = true;
             }
         }
 

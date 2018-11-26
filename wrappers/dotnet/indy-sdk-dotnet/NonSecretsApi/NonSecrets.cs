@@ -34,7 +34,7 @@ namespace Hyperledger.Indy.NonSecretsApi
 #if __IOS__
         [MonoPInvokeCallback(typeof(OpenWalletSearchCompletedDelegate))]
 #endif
-        private static void OpenSearchCallbackMethod(int xcommand_handle, int err, IntPtr search_handle)
+        private static void OpenSearchCallbackMethod(int xcommand_handle, int err, int search_handle)
         {
             var taskCompletionSource = PendingCommands.Remove<WalletSearch>(xcommand_handle);
 

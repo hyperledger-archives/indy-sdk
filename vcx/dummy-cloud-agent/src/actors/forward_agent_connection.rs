@@ -68,7 +68,7 @@ impl ForwardAgentConnection {
                         .map_err(|err| err.context("Can't serialize Forward Agent Connection state."))
                 ).to_string();
 
-                pairwise::create_pairwise(wallet_handle, &their_did, &my_did, &metadata)
+                pairwise::create_pairwise(wallet_handle, &their_did, &my_did, Some(&metadata))
                     .map(|_| (my_did, my_verkey, their_did, their_verkey, state))
                     .map_err(|err| err.context("Can't store Forward Agent Connection pairwise.").into())
                     .into_box()
