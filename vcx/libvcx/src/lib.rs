@@ -233,10 +233,10 @@ mod tests {
 
     fn revoke_credential(issuer_handle: u32, rev_reg_id: Option<String>) {
         // GET REV REG DELTA BEFORE REVOCATION
-        let (_, delta, _) = ::utils::libindy::ledger::get_rev_reg_delta_json(&rev_reg_id.clone().unwrap(), None, None).unwrap();
+        let (_, delta, timestamp) = ::utils::libindy::ledger::get_rev_reg_delta_json(&rev_reg_id.clone().unwrap(), None, None).unwrap();
         println!("revoking credential");
         ::issuer_credential::revoke_credential(issuer_handle).unwrap();
-        let (_, delta_after_revoke, _) = ::utils::libindy::ledger::get_rev_reg_delta_json(&rev_reg_id.unwrap(), None, None).unwrap();
+        let (_, delta_after_revoke, _) = ::utils::libindy::ledger::get_rev_reg_delta_json(&rev_reg_id.unwrap(), Some(timestamp+1), None).unwrap();
         assert_ne!(delta, delta_after_revoke);
     }
 
@@ -354,8 +354,8 @@ mod tests {
         // VERIFIER SEND NEW PROOF REQ, Expected revoked proof
         let requested_time = time::get_time().sec as u64;
         let mut _requested_attrs = requested_attrs(&institution_did, &schema_id, &cred_def_id, None, Some(requested_time));
-        _requested_attrs[0]["non_revoked"] = json!({"to": requested_time});
-        let interval = json!({"to": time::get_time().sec}).to_string();
+        _requested_attrs[0]["non_revoked"] = json!({"from": requested_time+1});
+        let interval = json!({"from": time::get_time().sec+1}).to_string();
         let(proof_req_handle2, req_uuid2) = send_proof_request(alice, &_requested_attrs.to_string(), "[]", &interval, "- revoked creds");
 
         //AS Consumer - (Prover) Generate Proof with revoked credentials

@@ -7,6 +7,7 @@ pub mod callback_u32;
 pub mod pool;
 pub mod crypto;
 pub mod payments;
+pub mod cache;
 
 pub mod error_codes;
 
