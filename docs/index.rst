@@ -12,7 +12,7 @@ Hyperledger Indy SDK
   
   getting-started/getting-started.rst
   how-tos/README.md
-  architecture/architecture.rst
+  architecture/dkms/"DKMS Design and Architecture V3".md
   design/design.rst
   concepts/concepts.rst
   build-guides/build-guides.rst

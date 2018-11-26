@@ -8,17 +8,6 @@
 # full list see the documentation:
 # http://www.sphinx-doc.org/en/master/config
 
-from recommonmark.states import DummyStateMachine
-class PatchDummyStateMachine(DummyStateMachine):
-    """Fix recommonmark 0.4 doc reference issues."""
-
-    def run_role(self, name, *args, **kwargs):
-        if name == 'doc':
-            name = 'any'
-        return DummyStateMachine.run_role(self, name, *args, **kwargs)
-
-DummyStateMachine = PatchDummyStateMachine
-
 # -- Path setup --------------------------------------------------------------
 
 # If extensions (or modules to document with autodoc) are in another directory,
@@ -27,13 +16,21 @@ DummyStateMachine = PatchDummyStateMachine
 #
 import os
 import sys
-
 from recommonmark.transform import AutoStructify
-from recommonmark.parser import CommonMarkParser
-
+from recommonmark.states import DummyStateMachine
 import sphinx_rtd_theme
 
 
+#temporary fix for recommonmark's url resolver
+class PatchDummyStateMachine(DummyStateMachine):
+    """Fix recommonmark 0.4 doc reference issues."""
+
+    def run_role(self, name, *args, **kwargs):
+        if name == 'doc':
+            name = 'any'
+        return DummyStateMachine.run_role(self, name, *args, **kwargs)
+        
+DummyStateMachine = PatchDummyStateMachine
 
 # -- Project information -----------------------------------------------------
 
@@ -57,7 +54,7 @@ release = u''
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.intersphinx'
+    'sphinx.ext.intersphinx',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -68,7 +65,7 @@ templates_path = ['_templates']
 #
 # source_suffix = ['.rst', '.md']
 source_parsers = {
-    '.md' : CommonMarkParser,
+    '.md' : 'recommonmark.parser.CommonMarkParser',
 }
 source_suffix = ['.rst', '.md']
 
@@ -201,8 +198,6 @@ epub_title = project
 
 # A list of files that should not be packed into the epub file.
 epub_exclude_files = ['search.html']
-
-
 
 def setup(app):
     app.add_config_value('recommonmark_config', {
