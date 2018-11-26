@@ -34,6 +34,7 @@ author = u'Hyperledger'
 version = u''
 # The full version, including alpha/beta/rc tags
 release = u''
+# for documentation module
 nickname = 'sdk'
 
 # -- General configuration ---------------------------------------------------
@@ -187,21 +188,9 @@ epub_title = project
 epub_exclude_files = ['search.html']
 
 
-source_parsers = {
+ource_parsers = {
     '.md' : 'recommonmark.parser.CommonMarkParser',
 }
-# -------------- Additional fix for Markdown parsing support ---------------
-# Once Recommonmark is fixed, remove this hack.
-from recommonmark.states import DummyStateMachine
-# Monkey patch to fix recommonmark 0.4 doc reference issues.
-orig_run_role = DummyStateMachine.run_role
-def run_role(self, name, options=None, content=None):
-    if name == 'doc':
-        name = 'any'
-    return orig_run_role(self, name, options, content)
-DummyStateMachine.run_role = run_role
-
-# -------------- end hack ----------------------------
 
 def setup(app):
     app.add_config_value('recommonmark_config', {
@@ -209,12 +198,24 @@ def setup(app):
             }, True)
     app.add_transform(AutoStructify)
 
+
+# -------------- Additional fix for Markdown parsing support ---------------
+# Once Recommonmark is fixed, remove this hack.
+# Monkey patch to fix recommonmark 0.4 doc reference issues.
+from recommonmark.states import DummyStateMachine
+orig_run_role = DummyStateMachine.run_role
+def run_role(self, name, options=None, content=None):
+    if name == 'doc':
+        name = 'any'
+    return orig_run_role(self, name, options, content)
+DummyStateMachine.run_role = run_role
+
 # ------------ Remote Documentation Builder Config -----------
 # Note: this is a hacky way of maintaining a consistent sidebar amongst all the repositories. 
 # Do you have a better way to do it?
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 
-if(True):
+if(on_rtd):
     rtd_version = os.environ.get('READTHEDOCS_VERSION', 'latest')
     if rtd_version not in ['stable', 'latest']:
         rtd_version = 'latest'
@@ -231,9 +232,4 @@ if(True):
         print e
     finally:      
         os.system("rm -rf remote_conf/ __pycache__/ remote_conf.py")
-
-
-
-
-
 
