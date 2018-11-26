@@ -20,8 +20,7 @@ impl RouteService {
         RouteService {}
     }
 
-
-    fn get_auth_recipient_header(
+    pub fn get_auth_recipient_header(
         &self,
         recp_vk: &str,
         auth_recipients: Vec<AuthRecipient>,
@@ -38,7 +37,7 @@ impl RouteService {
         )));
     }
 
-    fn get_anon_recipient_header(
+    pub fn get_anon_recipient_header(
         &self,
         recp_vk: &str,
         anon_recipients: Vec<AnonRecipient>,
@@ -54,6 +53,7 @@ impl RouteService {
             "Failed to find a matching header"
         )));
     }
+
 
 }
 
@@ -75,36 +75,7 @@ pub mod tests {
 
     // TODO Fix texts so only one wallet is used to speed up tests
     //unit tests
-    #[test]
-    pub fn test_auth_encrypt_decrypt_recipient() {
-        _cleanup();
-        //setup route_service
-        let rs: Rc<RouteService> = Rc::new(RouteService::new());
-        let cs: Rc<CryptoService> = Rc::new(CryptoService::new());
-        let ws: Rc<WalletService> = Rc::new(WalletService::new());
 
-        //setup wallets
-        let (_, _, recv_key) = _setup_recv_wallet1(ws.clone(), cs.clone());
-        let (_, _, expected_send_key) = _setup_send_wallet(ws.clone(), cs.clone());
-
-        //setup recv_keys to use with pack_msg
-        let recv_verkey: &str = recv_key.verkey.as_ref();
-
-        //sym_key
-        let sym_key = xsalsa20::create_key();
-
-        //pack then unpack message
-        let auth_recipient = rs
-            .auth_encrypt_recipient(&expected_send_key, &recv_verkey, &sym_key, cs.clone())
-            .unwrap();
-        let (expected_sym_key, sender_vk) = rs
-            .auth_decrypt_recipient(&recv_key, auth_recipient, cs.clone())
-            .unwrap();
-
-        //verify same plaintext goes in and comes out
-        assert_eq!(expected_sym_key, sym_key);
-        assert_eq!(expected_send_key.verkey, sender_vk);
-    }
 
     /* component test useful to identify if unpack is breaking or if pack is breaking. If unpack is
      * breaking both this test and the tests below will fail. If only pack is breaking, only this test
