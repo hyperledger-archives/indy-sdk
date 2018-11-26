@@ -44,6 +44,7 @@ Indy SDK provides libindy wrappers for the following programming languages and p
 * [iOS](wrappers/ios/README.md)
 * [NodeJS](wrappers/nodejs/README.md)
 * [.Net](wrappers/dotnet/README.md)
+* [Rust](wrappers/rust/README.md)
 
 
 ### Indy CLI
@@ -70,12 +71,21 @@ A set of libvcx wrappers for developing vcx-based applications in your favorite 
 
 Indy SDK provides libvcx wrappers for the following programming languages and platforms:
 
-* [Java](/vcx/wrappers/java/vcx/README.md)
+* [Java](/vcx/wrappers/java/README.md)
 * [Python](/vcx/wrappers/python3/README.md)
 * [iOS](vcx/wrappers/ios/README.md)
 * [NodeJS](/vcx/wrappers/node/README.md)
 
 These wrappers are currently in **experimental** state and it is not part of official releases.
+
+##### Example use
+For the main workflow example check [VCX Python demo](https://github.com/hyperledger/indy-sdk/tree/master/vcx/wrappers/python3/demo).
+
+### Dummy Cloud Agent
+[Dummy Cloud Agent](/vcx/dummy-cloud-agent/README.md) is simple implementation of VCX compatible Cloud Agent. 
+The main purpose of this implementation is VCX testing, demos and documentation of VCX protocol. 
+There is an parallel work on providing reference implementation of Agent2Agent protocol in indy-agent repo. 
+We plan to migrate to this protocol and implementation soon.
 
 ## How-To Tutorials
 

@@ -23,7 +23,7 @@ extern "C" {
     /// #Returns
     /// Error Code
     /// cb:
-    /// - xcommand_handle: command handle to map callback to caller context.
+    /// - command_handle_: command handle to map callback to caller context.
     /// - err: Error code.
     /// - verkey: Ver key of generated key pair, also used as key identifier
     ///
@@ -52,7 +52,7 @@ extern "C" {
     /// #Returns
     /// Error Code
     /// cb:
-    /// - xcommand_handle: command handle to map callback to caller context.
+    /// - command_handle_: command handle to map callback to caller context.
     /// - err: Error code.
     ///
     /// #Errors
@@ -79,7 +79,7 @@ extern "C" {
     /// #Returns
     /// Error Code
     /// cb:
-    /// - xcommand_handle: Command handle to map callback to caller context.
+    /// - command_handle_: Command handle to map callback to caller context.
     /// - err: Error code.
     /// - metadata - The meta information stored with the key; Can be null if no metadata was saved for this key.
     ///
@@ -125,7 +125,7 @@ extern "C" {
                                          const indy_u8_t *  message_raw,
                                          indy_u32_t         message_len,
 
-                                         void           (*cb)(indy_handle_t    xcommand_handle,
+                                         void           (*cb)(indy_handle_t    command_handle_,
                                                               indy_error_t     err,
                                                               const indy_u8_t* signature_raw,
                                                               indy_u32_t       signature_len)
@@ -160,7 +160,7 @@ extern "C" {
                                            const indy_u8_t *  signature_raw,
                                            indy_u32_t         signature_len,
 
-                                           void           (*cb)(indy_handle_t xcommand_handle,
+                                           void           (*cb)(indy_handle_t command_handle_,
                                                                 indy_error_t  err,
                                                                 indy_bool_t   valid )
                                           );
@@ -200,7 +200,7 @@ extern "C" {
                                                const indy_u8_t *  message_raw,
                                                indy_u32_t         message_len,
 
-                                               void           (*cb)(indy_handle_t     xcommand_handle,
+                                               void           (*cb)(indy_handle_t     command_handle_,
                                                                     indy_error_t      err,
                                                                     const indy_u8_t*  encrypted_msg_raw,
                                                                     indy_u32_t        encrypted_msg_len)
@@ -238,7 +238,7 @@ extern "C" {
                                                  const indy_u8_t*   encrypted_msg_raw,
                                                  indy_u32_t         encrypted_msg_len,
 
-                                                 void           (*cb)(indy_handle_t     xcommand_handle,
+                                                 void           (*cb)(indy_handle_t     command_handle_,
                                                                       indy_error_t      err,
                                                                       const char *      sender_vk,
                                                                       const indy_u8_t*  decrypted_msg_raw,
@@ -275,7 +275,7 @@ extern "C" {
                                                const indy_u8_t *  message_raw,
                                                indy_u32_t         message_len,
 
-                                               void           (*cb)(indy_handle_t     xcommand_handle,
+                                               void           (*cb)(indy_handle_t     command_handle_,
                                                                     indy_error_t      err,
                                                                     const indy_u8_t*  encrypted_msg_raw,
                                                                     indy_u32_t        encrypted_msg_len)
@@ -311,7 +311,7 @@ extern "C" {
                                                  const indy_u8_t*   encrypted_msg,
                                                  indy_u32_t         encrypted_len,
 
-                                                 void           (*cb)(indy_handle_t     xcommand_handle,
+                                                 void           (*cb)(indy_handle_t     command_handle_,
                                                                       indy_error_t      err,
                                                                       const indy_u8_t*  decrypted_msg_raw,
                                                                       indy_u32_t        decrypted_msg_len)

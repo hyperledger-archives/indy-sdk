@@ -27,7 +27,7 @@ extern "C" {
                                                 indy_handle_t wallet_handle,
                                                 const char *  their_did,
 
-                                                void          (*cb)(indy_handle_t  xcommand_handle,
+                                                void          (*cb)(indy_handle_t  command_handle_,
                                                                     indy_error_t  err,
                                                                     indy_bool_t   exists)
                                                );
@@ -56,7 +56,7 @@ extern "C" {
                                              const char *  my_did,
                                              const char *  metadata,
 
-                                             void          (*cb)(indy_handle_t  xcommand_handle,
+                                             void          (*cb)(indy_handle_t  command_handle_,
                                                                  indy_error_t   err)
                                             );
 
@@ -78,7 +78,7 @@ extern "C" {
     extern indy_error_t indy_list_pairwise(indy_handle_t command_handle,
                                            indy_handle_t wallet_handle,
 
-                                           void          (*cb)(indy_handle_t  xcommand_handle,
+                                           void          (*cb)(indy_handle_t  command_handle_,
                                                                indy_error_t   err,
                                                                const char*    list_pairwise)
                                           );
@@ -103,7 +103,7 @@ extern "C" {
                                           indy_handle_t wallet_handle,
                                           const char *  their_did,
 
-                                          void          (*cb)(indy_handle_t  xcommand_handle,
+                                          void          (*cb)(indy_handle_t  command_handle_,
                                                               indy_error_t   err,
                                                               const char*    pairwise_info_json)
                                          );
@@ -130,7 +130,7 @@ extern "C" {
                                                    const char *  their_did,
                                                    const char *  metadata,
 
-                                                   void          (*cb)(indy_handle_t  xcommand_handle,
+                                                   void          (*cb)(indy_handle_t  command_handle_,
                                                                        indy_error_t   err)
                                                   );
 

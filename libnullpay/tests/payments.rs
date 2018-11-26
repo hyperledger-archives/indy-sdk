@@ -3,6 +3,7 @@ extern crate serde_derive;
 extern crate serde_json;
 extern crate serde;
 extern crate nullpay;
+extern crate indyrs as indy;
 
 #[macro_use]
 extern crate lazy_static;
@@ -20,7 +21,7 @@ use utils::types::*;
 use utils::ledger;
 use utils::pool;
 use utils::did;
-use nullpay::ErrorCode;
+use indy::ErrorCode;
 
 use std::collections::HashMap;
 

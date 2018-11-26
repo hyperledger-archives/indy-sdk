@@ -1,7 +1,8 @@
 # Issue a Credential
 Indy-SDK Developer Walkthrough #4, Python Edition
 
-[ [Java](../java/README.md) | [.NET](../../not-yet-written.md) | [Node.js](../../not-yet-written.md) | [Objective C](../../not-yet-written.md) ]
+[ [Java](../java/README.md) | [.NET](../../not-yet-written.md) | [Node.js](../../not-yet-written.md) | [Objective C](../../not-yet-written.md) 
+  [Rust](../rust/README.md)]
 
 
 ## Prerequisites
