@@ -1,4 +1,5 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3.6
+ 
 # -*- coding: utf-8 -*-
 #
 # Configuration file for the Sphinx documentation builder.
@@ -6,6 +7,17 @@
 # This file does only contain a selection of the most common options. For a
 # full list see the documentation:
 # http://www.sphinx-doc.org/en/master/config
+
+from recommonmark.states import DummyStateMachine
+class PatchDummyStateMachine(DummyStateMachine):
+    """Fix recommonmark 0.4 doc reference issues."""
+
+    def run_role(self, name, *args, **kwargs):
+        if name == 'doc':
+            name = 'any'
+        return DummyStateMachine.run_role(self, name, *args, **kwargs)
+
+DummyStateMachine = PatchDummyStateMachine
 
 # -- Path setup --------------------------------------------------------------
 
@@ -15,8 +27,13 @@
 #
 import os
 import sys
+
+from recommonmark.transform import AutoStructify
 from recommonmark.parser import CommonMarkParser
+
 import sphinx_rtd_theme
+
+
 
 # -- Project information -----------------------------------------------------
 
@@ -57,6 +74,9 @@ source_suffix = ['.rst', '.md']
 
 # The master toctree document.
 master_doc = 'index'
+
+
+github_doc_root = 'https://github.com/michaeldboyd/indy-sdk/tree/master/docs/'
 
 
 
@@ -184,6 +204,13 @@ epub_exclude_files = ['search.html']
 
 
 
+def setup(app):
+    app.add_config_value('recommonmark_config', {
+            'url_resolver': lambda url: github_doc_root + url,
+            'auto_toc_tree_section': 'Contents',
+            }, True)
+    app.add_transform(AutoStructify)
+
 # ------------ Remote Documentation Builder Config -----------
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 
@@ -203,7 +230,7 @@ if(on_rtd):
         master_doc = "toc"
     
     except:
-        e = sys.exc_info*()[0]
+        e = sys.exc_info()[0]
         print e
     finally:      
         os.system("rm -rf remote_conf/ __pycache__/ remote_conf.py")

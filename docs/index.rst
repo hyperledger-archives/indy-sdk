@@ -11,7 +11,7 @@ Hyperledger Indy SDK
   :hidden:
   
   getting-started/getting-started.rst
-  how-tos/how-tos.rst
+  how-tos/README.md
   architecture/architecture.rst
   design/design.rst
   concepts/concepts.rst
