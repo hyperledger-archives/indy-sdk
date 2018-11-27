@@ -22,6 +22,7 @@ use std::collections::HashMap;
 use std::str;
 use std::error::Error;
 use domain::route::AnonRecipient;
+use domain::route::AuthRecipient;
 
 pub const DEFAULT_CRYPTO_TYPE: &'static str = "ed25519";
 
@@ -543,6 +544,88 @@ impl CryptoService {
 
         (sym_key, iv, message)
     }
+
+    /* Authcrypt helper function section */
+    pub fn auth_encrypt_recipient(
+        &self,
+        my_key: &Key,
+        recp_vk: &str,
+        sym_key: &xsalsa20::Key
+    ) -> Result<AuthRecipient, CryptoError> {
+        //encrypt sym_key for recipient
+        let (e_cek, cek_nonce) = self.crypto_box(my_key, recp_vk, &sym_key[..])?;
+
+        //serialize enc_header
+        let sender_vk_bytes = base58::decode(&my_key.verkey).map_err(|err| {
+            CryptoError::CommonError(err(format!("Failed to serialize cek")))
+        })?;
+
+        //encrypt enc_from
+        let enc_from = cs
+            .encrypt_sealed(recp_vk, sender_vk_bytes.as_slice())
+            .map_err(|err| {
+                CryptoError::CommonError(err(format!("Failed to encrypt sender verkey")))
+            })?;;
+
+        //create struct
+        let auth_recipient = AuthRecipient {
+            enc_from: base64::encode(enc_from.as_slice()),
+            e_cek: base64::encode(e_cek.as_slice()),
+            cek_nonce: base64::encode(cek_nonce.as_slice()),
+            to: recp_vk.to_string(),
+        };
+
+        //return AuthRecipient struct
+        Ok(auth_recipient)
+    }
+
+//    pub fn auth_decrypt_recipient(
+//        &self,
+//        my_key: &Key,
+//        auth_recipient: AuthRecipient
+//    ) -> Result<(xsalsa20::Key, String), CryptoError> {
+//        //decode enc_from
+//        let enc_from_bytes = base64::decode(&auth_recipient.enc_from)
+//            .map_err(|err| RouteError::DecodeError(format!("Failed to decode enc_from {}", err)))?;
+//
+//        //decrypt enc_from
+//        let sender_vk_as_vec =
+//            cs.decrypt_sealed(my_key, enc_from_bytes.as_ref())
+//                .map_err(|err| {
+//                    RouteError::EncryptionError(format!("Failed to decrypt sender verkey {}", err))
+//                })?;
+//
+//        //encode sender_vk to base58 to use to decrypt cek
+//        let sender_vk = base58::encode(sender_vk_as_vec.as_ref());
+//
+//        //decode e_cek
+//        let e_cek_as_vec = base64::decode(&auth_recipient.e_cek)
+//            .map_err(|err| RouteError::DecodeError(format!("Failed to decode e_cek {}", err)))?;
+//        let e_cek: &[u8] = e_cek_as_vec.as_ref();
+//
+//        //type convert cek_nonce
+//        let cek_nonce_as_vec = base64::decode(&auth_recipient.cek_nonce).map_err(|err| {
+//            RouteError::DecodeError(format!("Failed to decode cek_nonce {}", err))
+//        })?;
+//        let cek_nonce: &[u8] = cek_nonce_as_vec.as_ref();
+//
+//        //decrypt cek
+//        let decrypted_cek = cs
+//            .decrypt(my_key, &sender_vk, e_cek, cek_nonce)
+//            .map_err(|err| {
+//                RouteError::EncryptionError(format!("Failed to auth decrypt cek {}", err))
+//            })?;
+//
+//        //convert to secretbox key
+//        let sym_key = xsalsa20::Key::from_slice(&decrypted_cek[..]).map_err(|err| {
+//            RouteError::EncryptionError(format!("Failed to unpack sym_key {}", err))
+//        })?;
+//
+//        //TODO Verify key is in DID Doc
+//
+//        //return key to decrypt ciphertext and the key used to decrypt with
+//        Ok((sym_key, sender_vk))
+//    }
 }
 
 #[cfg(test)]
@@ -819,4 +902,61 @@ mod tests {
         assert_eq!(&their_vk, &their_did_for_decrypt.verkey);
 
     }
+
+    pub fn test_auth_encrypt_recipient_works() {
+        //setup route_service
+        let service: CryptoService = CryptoService::new();
+
+        //setup DIDs and Keys
+        let did_info = MyDidInfo { did: None, cid: None, seed: None, crypto_type: None };
+        let (my_did, my_key) = service.create_my_did(&did_info).unwrap();
+        let (their_did, their_key) = service.create_my_did(&did_info.clone()).unwrap();
+
+        let my_key_for_encrypt = my_key.clone();
+        let their_did_for_encrypt = Did::new(their_did.did, their_did.verkey);
+
+        let my_key_for_decrypt = their_key.clone();
+        let their_did_for_decrypt = Did::new(my_did.did, my_did.verkey);
+
+        //sym_key
+        let sym_key = xsalsa20::create_key();
+
+        //pack then unpack message
+        let auth_recipient = service
+            .auth_encrypt_recipient(&my_key_for_encrypt, &their_did_for_encrypt.verkey, &sym_key);
+
+        //verify no errors are thrown
+        assert_eq!(auth_recipient.is_ok());
+    }
+
+//    pub fn test_auth_encrypt_and_auth_decrypt_recipient_works() {
+//        //setup route_service
+//        let service: CryptoService = CryptoService::new();
+//
+//        //setup DIDs and Keys
+//        let did_info = MyDidInfo { did: None, cid: None, seed: None, crypto_type: None };
+//        let (my_did, my_key) = service.create_my_did(&did_info).unwrap();
+//        let (their_did, their_key) = service.create_my_did(&did_info.clone()).unwrap();
+//
+//        let my_key_for_encrypt = my_key.clone();
+//        let their_did_for_encrypt = Did::new(their_did.did, their_did.verkey);
+//
+//        let my_key_for_decrypt = their_key.clone();
+//        let their_did_for_decrypt = Did::new(my_did.did, my_did.verkey);
+//
+//        //sym_key
+//        let sym_key = xsalsa20::create_key();
+//
+//        //pack then unpack message
+//        let auth_recipient = service
+//            .auth_encrypt_recipient(&my_key_for_encrypt, &their_did_for_encrypt.verkey, &sym_key);
+//
+//        let (expected_sym_key, sender_vk) = service
+//            .auth_decrypt_recipient(&recv_key, auth_recipient, cs.clone())
+//            .unwrap();
+//
+//        //verify same plaintext goes in and comes out
+//        assert_eq!(expected_sym_key, sym_key);
+//        assert_eq!(expected_send_key.verkey, sender_vk);
+//    }
 }
