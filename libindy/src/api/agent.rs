@@ -13,12 +13,12 @@ pub fn indy_auth_pack_message(
     command_handle: i32,
     wallet_handle: i32,
     message: *const c_char,
-    recv_keys: *const c_char,
-    my_vk: *const c_char,
-    cb: Option<extern "C" fn(xcommand_handle: i32, err: ErrorCode, ames: *const c_char)>,
+    receiver_keys: *const c_char,
+    sender_verkey: *const c_char,
+    cb: Option<extern "C" fn(xcommand_handle: i32, err: ErrorCode, jwe: *const c_char)>,
 ) -> ErrorCode {
     trace!("indy_auth_pack_message: >>> wallet_handle: {:?}, message: {:?}, recv_keys: {:?}, my_vk: {:?}",
-           wallet_handle, message, recv_keys, my_vk);
+           wallet_handle, message, receiver_keys, sender_verkey);
 
     check_useful_c_str!(message, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(recv_keys, ErrorCode::CommonInvalidParam4);
@@ -26,23 +26,23 @@ pub fn indy_auth_pack_message(
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
     trace!("indy_auth_pack_message: entities >>> wallet_handle: {:?}, message: {:?}, recv_keys: {:?}, my_vk: {:?}",
-           wallet_handle, message, recv_keys, my_vk);
+           wallet_handle, message, receiver_keys, sender_verkey);
 
     let result = CommandExecutor::instance().send(Command::Route(RouteCommand::AuthPackMessage(
         message,
-        recv_keys,
-        my_vk,
+        recveiver_keys,
+        sender_verkey,
         wallet_handle,
         Box::new(move |result| {
-            let (err, ames) = result_to_err_code_1!(result, String::new());
+            let (err, jwe) = result_to_err_code_1!(result, String::new());
             trace!(
-                "indy_auth_pack_message: cb command_handle: {:?}, err: {:?}, ames: {:?}",
+                "indy_auth_pack_message: cb command_handle: {:?}, err: {:?}, jwe: {:?}",
                 command_handle,
                 err,
-                ames
+                jwe
             );
-            let ames = ctypes::string_to_cstring(ames);
-            cb(command_handle, err, ames.as_ptr())
+            let jwe = ctypes::string_to_cstring(jwe);
+            cb(command_handle, err, jwe.as_ptr())
         }),
     )));
 
@@ -57,13 +57,13 @@ pub fn indy_auth_pack_message(
 pub fn indy_anon_pack_message(
     command_handle: i32,
     message: *const c_char,
-    recv_keys: *const c_char,
-    cb: Option<extern "C" fn(xcommand_handle: i32, err: ErrorCode, ames: *const c_char)>,
+    recveiver_keys: *const c_char,
+    cb: Option<extern "C" fn(xcommand_handle: i32, err: ErrorCode, jwe: *const c_char)>,
 ) -> ErrorCode {
     trace!(
         "indy_anon_pack_message: >>> message: {:?}, recv_keys: {:?}",
         message,
-        recv_keys
+        recveiver_keys
     );
 
     check_useful_c_str!(message, ErrorCode::CommonInvalidParam3);
@@ -73,21 +73,21 @@ pub fn indy_anon_pack_message(
     trace!(
         "indy_anon_pack_message: entities >>> message: {:?}, recv_keys: {:?}",
         message,
-        recv_keys
+        recveiver_keys
     );
 
     let result = CommandExecutor::instance().send(Command::Route(RouteCommand::AnonPackMessage(
         message,
-        recv_keys,
+        recveiver_keys,
         Box::new(move |result| {
-            let (err, ames) = result_to_err_code_1!(result, String::new());
+            let (err, jwe) = result_to_err_code_1!(result, String::new());
             trace!(
-                "indy_anon_pack_message: cb command_handle: {:?}, err: {:?}, ames: {:?}",
+                "indy_anon_pack_message: cb command_handle: {:?}, err: {:?}, jwe: {:?}",
                 command_handle,
                 err,
-                ames
+                jwe
             );
-            let verkey = ctypes::string_to_cstring(ames);
+            let verkey = ctypes::string_to_cstring(jwe);
             cb(command_handle, err, verkey.as_ptr())
         }),
     )));
@@ -104,8 +104,8 @@ pub fn indy_anon_pack_message(
 pub fn indy_unpack_message(
     command_handle: i32,
     wallet_handle: i32,
-    ames_json: *const c_char,
-    my_vk: *const c_char,
+    jwe: *const c_char,
+    sender_verkey: *const c_char,
     cb: Option<
         extern "C" fn(
             xcommand_handle: i32,
@@ -116,26 +116,26 @@ pub fn indy_unpack_message(
     >,
 ) -> ErrorCode {
     trace!(
-        "indy_unpack_message: >>> wallet_handle: {:?}, ames: {:?}, my_vk: {:?}",
+        "indy_unpack_message: >>> wallet_handle: {:?}, jwe: {:?}, my_vk: {:?}",
         wallet_handle,
-        ames_json,
-        my_vk
+        jwe,
+        sender_verkey
     );
 
-    check_useful_c_str!(ames_json, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(jwe_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(my_vk, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
     trace!(
-        "indy_unpack_message: entities >>> wallet_handle: {:?}, ames: {:?}, my_vk: {:?}",
+        "indy_unpack_message: entities >>> wallet_handle: {:?}, jwe: {:?}, my_vk: {:?}",
         wallet_handle,
-        ames_json,
-        my_vk
+        jwe,
+        sender_verkey
     );
 
     let result = CommandExecutor::instance().send(Command::Route(RouteCommand::UnpackMessage(
-        ames_json,
-        my_vk,
+        jwe,
+        sender_verkey,
         wallet_handle,
         Box::new(move |result| {
             let (err, plaintext, sender_vk) =
