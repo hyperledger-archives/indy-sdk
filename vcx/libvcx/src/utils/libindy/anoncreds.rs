@@ -1,13 +1,13 @@
 extern crate libc;
 
+use futures::Future;
 use serde_json;
 use serde_json::{ map::Map, Value};
 use settings;
 use utils::constants::{ LIBINDY_CRED_OFFER, REQUESTED_ATTRIBUTES, ATTRS, REV_STATE_JSON};
 use utils::error::{ INVALID_PROOF_REQUEST, INVALID_ATTRIBUTES_STRUCTURE, INVALID_CONFIGURATION } ;
 use utils::libindy::{ error_codes::map_rust_indy_sdk_error_code, mock_libindy_rc, wallet::get_wallet_handle };
-use utils::timeout::TimeoutUtils;
-use indy::anoncreds::{ Verifier, Prover, Issuer, AnonCreds };
+use indy::anoncreds;
 use indy::blob_storage;
 
 pub fn libindy_verifier_verify_proof(proof_req_json: &str,
@@ -17,23 +17,28 @@ pub fn libindy_verifier_verify_proof(proof_req_json: &str,
                                      rev_reg_defs_json: &str,
                                      rev_regs_json: &str)  -> Result<bool, u32> {
 
-    Verifier::verify_proof_timeout(proof_req_json,
-                                   proof_json,
-                                   schemas_json,
-                                   credential_defs_json,
-                                   rev_reg_defs_json,
-                                   rev_regs_json,
-                                   TimeoutUtils::long_timeout())
+    //TODO there was timeout here (before future-based Rust wrapper)
+    anoncreds::verifier_verify_proof(proof_req_json,
+                                     proof_json,
+                                     schemas_json,
+                                     credential_defs_json,
+                                     rev_reg_defs_json,
+                                     rev_regs_json)
+        .wait()
         .map_err(map_rust_indy_sdk_error_code)
 }
 
 pub fn libindy_create_and_store_revoc_reg(issuer_did: &str, cred_def_id: &str, tails_path: &str, max_creds: u32) -> Result<(String, String, String), u32> {
     trace!("creating revocation: {}, {}, {}", cred_def_id, tails_path, max_creds);
     let tails_config = json!({"base_dir": tails_path,"uri_pattern": ""}).to_string();
-    let writer = blob_storage::Blob::open_writer("default", &tails_config.to_string()).map_err(|ec|map_rust_indy_sdk_error_code(ec))?;
+    let writer = blob_storage::open_writer("default", &tails_config.to_string())
+        .wait()
+        .map_err(|ec|map_rust_indy_sdk_error_code(ec))?;
     let revoc_config = json!({"max_cred_num": max_creds,"issuance_type": "ISSUANCE_BY_DEFAULT"}).to_string();
 
-    Issuer::create_and_store_revoc_reg(get_wallet_handle(), issuer_did, None, "tag1", cred_def_id, &revoc_config, writer).map_err(|ec|map_rust_indy_sdk_error_code(ec))
+    anoncreds::issuer_create_and_store_revoc_reg(get_wallet_handle(), issuer_did, None, "tag1", cred_def_id, &revoc_config, writer)
+        .wait()
+        .map_err(|ec|map_rust_indy_sdk_error_code(ec))
 }
 
 pub fn libindy_create_and_store_credential_def(issuer_did: &str,
@@ -42,12 +47,13 @@ pub fn libindy_create_and_store_credential_def(issuer_did: &str,
                                                sig_type: Option<&str>,
                                                config_json: &str)  -> Result<(String, String), u32>  {
 
-    Issuer::create_and_store_credential_def(get_wallet_handle(),
-                                            issuer_did,
-                                            schema_json,
-                                            tag,
-                                            sig_type,
-                                            config_json)
+    anoncreds::issuer_create_and_store_credential_def(get_wallet_handle(),
+                                                      issuer_did,
+                                                      schema_json,
+                                                      tag,
+                                                      sig_type,
+                                                      config_json)
+        .wait()
         .map_err(map_rust_indy_sdk_error_code)
 }
 
@@ -57,8 +63,9 @@ pub fn libindy_issuer_create_credential_offer(cred_def_id: &str) -> Result<Strin
         if rc != 0 { return Err(rc) };
         return Ok(LIBINDY_CRED_OFFER.to_string());
     }
-    Issuer::create_credential_offer(get_wallet_handle(),
+    anoncreds::issuer_create_credential_offer(get_wallet_handle(),
                                     cred_def_id)
+        .wait()
         .map_err(map_rust_indy_sdk_error_code)
 }
 
@@ -73,18 +80,20 @@ pub fn libindy_issuer_create_credential(cred_offer_json: &str,
     let blob_handle = match tails_file {
         Some(x) => {
             let tails_config = json!({"base_dir": x,"uri_pattern": ""}).to_string();
-            blob_storage::Blob::open_reader("default", &tails_config.to_string())
+            blob_storage::open_reader("default", &tails_config.to_string())
+                .wait()
                 .map_err(map_rust_indy_sdk_error_code)?
         },
         None => -1,
     };
 
-    Issuer::create_credential(get_wallet_handle(),
-                              cred_offer_json,
-                              cred_req_json,
-                              cred_values_json,
-                              revocation,
-                              blob_handle)
+    anoncreds::issuer_create_credential(get_wallet_handle(),
+                                        cred_offer_json,
+                                        cred_req_json,
+                                        cred_values_json,
+                                        revocation,
+                                        blob_handle)
+        .wait()
         .map_err(map_rust_indy_sdk_error_code)
 }
 
@@ -95,20 +104,21 @@ pub fn libindy_prover_create_proof(proof_req_json: &str,
                                    credential_defs_json: &str,
                                    revoc_states_json: Option<&str>) -> Result<String, u32> {
     let revoc_states_json = revoc_states_json.unwrap_or("{}");
-    Prover::create_proof(get_wallet_handle(),
-                         proof_req_json,
-                         requested_credentials_json,
-                         master_secret_id,
-                         schemas_json,
-                         credential_defs_json,
-                         revoc_states_json)
+    anoncreds::prover_create_proof(get_wallet_handle(),
+                                   proof_req_json,
+                                   requested_credentials_json,
+                                   master_secret_id,
+                                   schemas_json,
+                                   credential_defs_json,
+                                   revoc_states_json)
+        .wait()
         .map_err(map_rust_indy_sdk_error_code)
 }
 
 fn fetch_credentials(search_handle: i32, requested_attributes: Map<String, Value>) -> Result<String, u32> {
     let mut v: Value = json!({});
     for item_referent in requested_attributes.keys().into_iter() {
-        v[ATTRS][item_referent] = serde_json::from_str(&Prover::_fetch_credentials_for_proof_req(search_handle, item_referent, 100)
+        v[ATTRS][item_referent] = serde_json::from_str(&anoncreds::prover_fetch_credentials_for_proof_req(search_handle, item_referent, 100).wait()
             .map_err(map_rust_indy_sdk_error_code)?)
             .map_err(|_| {
                 error!("Invalid Json Parsing of Object Returned from Libindy. Did Libindy change its structure?");
@@ -119,7 +129,7 @@ fn fetch_credentials(search_handle: i32, requested_attributes: Map<String, Value
 }
 
 fn close_search_handle(search_handle: i32) -> Result<(), u32> {
-    Prover::_close_credentials_search_for_proof_req(search_handle).map_err(|ec| {
+    anoncreds::prover_close_credentials_search_for_proof_req(search_handle).wait().map_err(|ec| {
         error!("Error closing search handle");
         map_rust_indy_sdk_error_code(ec)
     })
@@ -141,7 +151,9 @@ pub fn libindy_prover_get_credentials_for_proof_req(proof_req: &str) -> Result<S
 
     match requested_attributes {
         Some(attrs) => {
-            let search_handle = Prover::search_credentials_for_proof_req(wallet_handle, proof_req, None).map_err(|ec| {
+            let search_handle = anoncreds::prover_search_credentials_for_proof_req(wallet_handle, proof_req, None)
+                .wait()
+                .map_err(|ec| {
                 error!("Opening Indy Search for Credentials Failed");
                 map_rust_indy_sdk_error_code(ec)
             })?;
@@ -164,20 +176,24 @@ pub fn libindy_prover_create_credential_req(prover_did: &str,
     if settings::test_indy_mode_enabled() { return Ok((::utils::constants::CREDENTIAL_REQ_STRING.to_owned(), String::new())); }
 
     let master_secret_name = settings::DEFAULT_LINK_SECRET_ALIAS;
-    Prover::create_credential_req(get_wallet_handle(),
+    anoncreds::prover_create_credential_req(get_wallet_handle(),
                                   prover_did,
                                   credential_offer_json,
                                   credential_def_json,
                                   master_secret_name)
+        .wait()
         .map_err(map_rust_indy_sdk_error_code)
 }
 
 pub fn libindy_prover_create_revocation_state(rev_reg_def_json: &str, rev_reg_delta_json: &str, cred_rev_id: &str, tails_file: &str) ->  Result<String,  u32> {
     if settings::test_indy_mode_enabled() { return Ok(REV_STATE_JSON.to_string()); }
     let tails_config = json!({"base_dir": tails_file,"uri_pattern": ""}).to_string();
-    let blob_handle = blob_storage::Blob::open_reader("default", &tails_config.to_string()).map_err(|ec|map_rust_indy_sdk_error_code(ec))?;
+    let blob_handle = blob_storage::open_reader("default", &tails_config.to_string())
+        .wait()
+        .map_err(|ec|map_rust_indy_sdk_error_code(ec))?;
 
-    AnonCreds::create_revocation_state(blob_handle, rev_reg_def_json,  rev_reg_delta_json, 100, cred_rev_id)
+    anoncreds::create_revocation_state(blob_handle, rev_reg_def_json,  rev_reg_delta_json, 100, cred_rev_id)
+        .wait()
         .map_err(map_rust_indy_sdk_error_code)
 }
 
@@ -190,20 +206,22 @@ pub fn libindy_prover_store_credential(cred_id: Option<&str>,
 
     let revocation = rev_reg_def_json.as_ref().map(String::as_str);
 
-    Prover::store_credential(get_wallet_handle(),
+    anoncreds::prover_store_credential(get_wallet_handle(),
                              cred_id,
                              cred_req_meta,
                              cred_json,
                              cred_def_json,
                              revocation)
+        .wait()
         .map_err(map_rust_indy_sdk_error_code)
 }
 
 pub fn libindy_prover_create_master_secret(master_secret_id: &str) -> Result<String, u32> {
     if settings::test_indy_mode_enabled() { return Ok(settings::DEFAULT_LINK_SECRET_ALIAS.to_string()); }
 
-    Prover::create_master_secret(get_wallet_handle(),
+    anoncreds::prover_create_master_secret(get_wallet_handle(),
                                  Some(master_secret_id))
+        .wait()
         .map_err(map_rust_indy_sdk_error_code)
 }
 
@@ -212,20 +230,23 @@ pub fn libindy_issuer_create_schema(issuer_did: &str,
                                     version: &str,
                                     attrs: &str) -> Result<(String, String), u32>{
 
-    Issuer::create_schema(issuer_did,
+    anoncreds::issuer_create_schema(issuer_did,
                           name,
                           version,
                           attrs)
+        .wait()
         .map_err(map_rust_indy_sdk_error_code)
 }
 
 pub fn libindy_issuer_revoke_credential(tails_file: &str, rev_reg_id: &str, cred_rev_id: &str) -> Result<String, u32> {
 
     let tails_config = json!({"base_dir": tails_file,"uri_pattern": ""}).to_string();
-    let blob_handle = blob_storage::Blob::open_reader("default", &tails_config)
+    let blob_handle = blob_storage::open_reader("default", &tails_config)
+        .wait()
         .map_err(map_rust_indy_sdk_error_code)?;
 
-    Issuer::revoke_credential(get_wallet_handle(), blob_handle, rev_reg_id, cred_rev_id)
+    anoncreds::issuer_revoke_credential(get_wallet_handle(), blob_handle, rev_reg_id, cred_rev_id)
+        .wait()
         .map_err(map_rust_indy_sdk_error_code)
 }
 

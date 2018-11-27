@@ -2,7 +2,7 @@
 
 Indy-SDK Developer Walkthrough #1, C# Edition
 
-[ [Python](../../not-yet-written.md) | [Java](java/README.md) | [Node.js](../../not-yet-written.md) | [Objective C](../../not-yet-written.md) ]
+[ [Python](../python/README.md) | [Java](../java/README.md) | [Node.js](../../not-yet-written.md) | [Objective C](../../not-yet-written.md)  | [Rust](../rust/README.md)]
 
 
 ## Prerequisites

@@ -2,7 +2,7 @@
 
 Indy-SDK Developer Walkthrough #5, Python Edition
 
-[ [Java](../../not-yet-written.md) | [.NET](../../not-yet-written.md) | [Node.js](../../not-yet-written.md) | [Objective C](../../not-yet-written.md) ]
+[ [Rust](../rust/README.md) | [Java](../../not-yet-written.md) | [.NET](../../not-yet-written.md) | [Node.js](../../not-yet-written.md) | [Objective C](../../not-yet-written.md) ]
 
 
 ## Prerequisites

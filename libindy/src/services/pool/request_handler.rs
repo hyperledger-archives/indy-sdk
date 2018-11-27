@@ -695,15 +695,18 @@ fn _get_msg_result_without_state_proof(msg: &str) -> Result<(SJsonValue, SJsonVa
 }
 
 fn _check_state_proof(msg_result: &SJsonValue, f: usize, gen: &Generator, bls_keys: &HashMap<String, Option<VerKey>>, raw_msg: &str) -> bool {
-    debug!("TransactionHandler::process_reply: Try to verify proof and signature");
+    debug!("TransactionHandler::process_reply: Try to verify proof and signature >>");
 
-    match state_proof::parse_generic_reply_for_proof_checking(&msg_result, raw_msg) {
+    let res = match state_proof::parse_generic_reply_for_proof_checking(&msg_result, raw_msg) {
         Some(parsed_sps) => {
             debug!("TransactionHandler::process_reply: Proof and signature are present");
             state_proof::verify_parsed_sp(parsed_sps, bls_keys, f, gen)
         }
         None => false
-    }
+    };
+
+    debug!("TransactionHandler::process_reply: Try to verify proof and signature << {}", res);
+    res
 }
 
 #[cfg(test)]
