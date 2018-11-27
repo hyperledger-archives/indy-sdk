@@ -72,6 +72,8 @@ impl LibvcxLogger {
         LibvcxLogger { context, enabled, log, flush }
     }
     pub fn init(context: *const c_void, enabled: Option<EnabledCB>, log: LogCB, flush: Option<FlushCB>) -> Result<(), u32> {
+        trace!("LibvcxLogger::init >>>");
+
         let logger = LibvcxLogger::new(context, enabled, log, flush);
         log::set_boxed_logger(Box::new(logger)).map_err(|_| LOGGING_ERROR.code_num)?;
         log::set_max_level(LevelFilter::Trace);
@@ -119,6 +121,8 @@ pub struct LibvcxDefaultLogger;
 
 impl LibvcxDefaultLogger {
     pub fn init_testing_logger() {
+        trace!("LibvcxDefaultLogger::init_testing_logger >>>");
+
         // ensures that the test that is calling this wont fail simply because
         // the user did not set the RUST_LOG env var.
         let pattern = env::var("RUST_LOG").unwrap_or("warn".to_string());
@@ -129,6 +133,8 @@ impl LibvcxDefaultLogger {
     }
 
     pub fn init(pattern: Option<String>) -> Result<(), u32> {
+        trace!("LibvcxDefaultLogger::init >>> pattern: {:?}", pattern);
+
         let pattern = pattern.or(env::var("RUST_LOG").ok());
         if cfg!(target_os = "android") {
             #[cfg(target_os = "android")]

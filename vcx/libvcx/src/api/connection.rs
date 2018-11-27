@@ -28,7 +28,7 @@ pub extern fn vcx_connection_delete_connection(command_handle: u32,
                                                cb: Option<extern fn(
                                                    xcommand_handle: u32,
                                                    err: u32)>) -> u32 {
-    info!("vcx_connection_delete_connection >>>");
+    info!("vcx_delete_connection >>>");
 
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
     if !is_valid_handle(connection_handle) {

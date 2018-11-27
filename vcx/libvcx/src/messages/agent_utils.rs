@@ -79,6 +79,7 @@ pub struct Config {
 }
 
 pub fn connect_register_provision(config: &str) -> Result<String,u32> {
+    trace!("connect_register_provision >>> config: {:?}", config);
 
     trace!("***Registering with agency");
     let my_config: Config = serde_json::from_str(&config).or(Err(error::INVALID_CONFIGURATION.code_num))?;
@@ -220,6 +221,8 @@ pub fn connect_register_provision(config: &str) -> Result<String,u32> {
 }
 
 pub fn update_agent_info(id: &str, value: &str) -> Result<(), u32> {
+    trace!("update_agent_info >>> id: {}, value: {}", id, value);
+
     let new_config = UpdateAgentMsg {
         msg_type: MsgType { name: "UPDATE_COM_METHOD".to_string(), ver: "1.0".to_string(), },
         com_method: ComMethod { id: id.to_string(), e_type: 1, value: value.to_string(), },

@@ -68,6 +68,8 @@ pub trait Schema: ToString {
     type SchemaType;
 
     fn retrieve_schema(submitter_did: &str, schema_id: &str) -> Result<(String, String), SchemaError> {
+        trace!("retrieve_schema >>> submitter_did: {}, schema_id: {}", submitter_did, schema_id);
+
         if settings::test_indy_mode_enabled() { return Ok((SCHEMA_ID.to_string(), SCHEMA_JSON.to_string()))}
 
         //Todo: Change SchemaError to InvalidSchemaId
@@ -85,6 +87,8 @@ pub trait Schema: ToString {
                       name: &str,
                       version: &str,
                       data: &str) -> Result<(String, Option<PaymentTxn>), SchemaError> {
+        trace!("create_schema >>> submitter_did: {}, name: {}, version: {}, data: {}", submitter_did, name, version, data);
+
         if settings::test_indy_mode_enabled() {
             let inputs = format!(r#"["{}"]"#, build_test_address("9UFgyjuJxi1i1HD"));
             let outputs = format!(r#"[
@@ -113,6 +117,8 @@ pub trait Schema: ToString {
     }
 
     fn check_submit_schema_response(txn: &str) -> Result<(), SchemaError> {
+        trace!("check_submit_schema_response >>> txn: {}", txn);
+
         let txn_val:  Value = serde_json::from_str(txn)
             .or(Err(SchemaError::CommonError(error::INVALID_JSON.code_num)))?;
 
@@ -176,6 +182,8 @@ impl LedgerSchema {
 
     pub fn new_from_ledger(id: &str) -> Result<LedgerSchema, SchemaError>
     {
+        trace!("new_from_ledger >>> id: {}", id);
+
         let submitter_did = &settings::get_config_value(settings::CONFIG_INSTITUTION_DID)
             .map_err(|e| SchemaError::CommonError(e))?;
 
@@ -199,6 +207,7 @@ impl CreateSchema {
     pub fn get_schema_id(&self) -> &String { &self.schema_id }
 
     fn get_payment_txn(&self) -> Result<PaymentTxn, u32> {
+        trace!("CreateSchema::get_payment_txn >>>");
         Ok(self.payment_txn.clone().ok_or(error::NOT_READY.code_num)?)
     }
 
@@ -223,6 +232,9 @@ pub fn create_new_schema(source_id: &str,
                          name: String,
                          version: String,
                          data: String) -> Result<u32, SchemaError> {
+    trace!("create_new_schema >>> source_id: {}, issuer_did: {}, name: {}, version: {}, data: {}",
+           source_id, issuer_did, name, version, data);
+
     debug!("creating schema with source_id: {}, name: {}, issuer_did: {}", source_id, name, issuer_did);
     let (schema_id, payment_txn) = LedgerSchema::create_schema(&issuer_did,
                                                 &name,
@@ -249,6 +261,8 @@ pub fn create_new_schema(source_id: &str,
 
 
 pub fn get_schema_attrs(source_id: String, schema_id: String) -> Result<(u32, String), SchemaError> {
+    trace!("get_schema_attrs >>> source_id: {}, schema_id: {}", source_id, schema_id);
+
     let submitter_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)
         .map_err(|e| SchemaError::CommonError(e))?;
 
