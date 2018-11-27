@@ -11,7 +11,7 @@ Pull requests welcome!
 ### How to install
     pip install python3-indy
     
-Note that before you can use python wrapper you must install  c-callable SDK. 
+Note that before you can use python wrapper you must install c-callable SDK. 
 See the section "Installing the SDK" in the [Indy SDK documentation](../../README.md#installing-the-sdk) 
  
 ### How to build
