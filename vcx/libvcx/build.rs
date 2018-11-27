@@ -95,6 +95,17 @@ fn main() {
         //Linux specific logic
         println!("cargo:rustc-link-lib=indy");
         println!("cargo:rustc-link-search=native=/usr/lib");
+    }else if target.contains("-windows-") {
+        println!("cargo:rustc-link-lib=indy.dll");
+
+        let profile = env::var("PROFILE").unwrap();
+        println!("profile={}", profile);
+
+        let indy_dir = env::var("INDY_DIR").unwrap_or(format!("..\\..\\libindy\\target\\{}", profile));
+        println!("indy_dir={}", indy_dir);
+        let indy_dir = Path::new(indy_dir.as_str());
+
+        println!("cargo:rustc-flags=-L {}", indy_dir.as_os_str().to_str().unwrap());
     }
 
     match env::var("CARGO_FEATURE_CI") {
