@@ -10,6 +10,8 @@ use errors::crypto::CryptoError;
 use domain::crypto::key::{Key, KeyInfo};
 use domain::crypto::did::{Did, MyDidInfo, TheirDidInfo, TheirDid};
 use domain::crypto::combo_box::ComboBox;
+use domain::route::AuthRecipient;
+use domain::route::AnonRecipient;
 use utils::crypto::base58;
 use utils::crypto::base64;
 use utils::crypto::verkey_builder::build_full_verkey;
