@@ -32,7 +32,7 @@ pub fn create_wallet(wallet_name: &str) -> Result<(), u32> {
 }
 
 pub fn open_wallet(wallet_name: &str) -> Result<i32, u32> {
-    trace!("opening wallet: {}", wallet_name);
+    trace!("open_wallet >>> wallet_name: {}", wallet_name);
     if settings::test_indy_mode_enabled() {
         unsafe {WALLET_HANDLE = 1;}
         return Ok(1);
@@ -59,6 +59,8 @@ pub fn init_wallet(wallet_name: &str) -> Result<i32, u32> {
 }
 
 pub fn close_wallet() -> Result<(), u32> {
+    trace!("close_wallet >>>");
+
     if settings::test_indy_mode_enabled() {
         unsafe { WALLET_HANDLE = 0; }
         return Ok(());
@@ -69,6 +71,8 @@ pub fn close_wallet() -> Result<(), u32> {
 }
 
 pub fn delete_wallet(wallet_name: &str) -> Result<(), u32> {
+    trace!("delete_wallet >>> wallet_name: {}", wallet_name);
+
     if settings::test_indy_mode_enabled() {
         unsafe { WALLET_HANDLE = 0;}
         return Ok(())
@@ -84,6 +88,8 @@ pub fn delete_wallet(wallet_name: &str) -> Result<(), u32> {
 }
 
 pub fn add_record(xtype: &str, id: &str, value: &str, tags: Option<&str>) -> Result<(), u32> {
+    trace!("add_record >>> xtype: {}, id: {}, value: {}, tags: {:?}", xtype, id, value, tags);
+
     if settings::test_indy_mode_enabled() { return Ok(()) }
 
     wallet::add_wallet_record(get_wallet_handle(), xtype, id, value, tags)
@@ -93,6 +99,8 @@ pub fn add_record(xtype: &str, id: &str, value: &str, tags: Option<&str>) -> Res
 
 
 pub fn get_record(xtype: &str, id: &str, options: &str) -> Result<String, u32> {
+    trace!("get_record >>> xtype: {}, id: {}, options: {}", xtype, id, options);
+
     if settings::test_indy_mode_enabled() {
         return Ok(r#"{"id":"123","type":"record type","value":"record value","tags":null}"#.to_string())
     }
@@ -103,6 +111,8 @@ pub fn get_record(xtype: &str, id: &str, options: &str) -> Result<String, u32> {
 }
 
 pub fn delete_record(xtype: &str, id: &str) -> Result<(), u32> {
+    trace!("delete_record >>> xtype: {}, id: {}", xtype, id);
+
     if settings::test_indy_mode_enabled() { return Ok(()) }
     wallet::delete_wallet_record(get_wallet_handle(), xtype, id)
         .wait()
@@ -111,6 +121,8 @@ pub fn delete_record(xtype: &str, id: &str) -> Result<(), u32> {
 
 
 pub fn update_record_value(xtype: &str, id: &str, value: &str) -> Result<(), u32> {
+    trace!("update_record_value >>> xtype: {}, id: {}, value: {}", xtype, id, value);
+
     if settings::test_indy_mode_enabled() { return Ok(()) }
     wallet::update_wallet_record_value(get_wallet_handle(), xtype, id, value)
         .wait()
@@ -118,6 +130,8 @@ pub fn update_record_value(xtype: &str, id: &str, value: &str) -> Result<(), u32
 }
 
 pub fn export(wallet_handle: i32, path: &Path, backup_key: &str) -> Result<(), WalletError> {
+    trace!("export >>> wallet_handle: {}, path: {:?}, backup_key: ****", wallet_handle, path);
+
     let export_config = json!({ "key": backup_key, "path": &path}).to_string();
     match wallet::export_wallet(wallet_handle, &export_config).wait() {
         Ok(_) => Ok(()),
@@ -126,6 +140,8 @@ pub fn export(wallet_handle: i32, path: &Path, backup_key: &str) -> Result<(), W
 }
 
 pub fn import(config: &str) -> Result<(), WalletError> {
+    trace!("import >>> config {}", config);
+
     settings::process_config_string(config).map_err(|e| WalletError::CommonError(e))?;
 
     let key = settings::get_config_value(settings::CONFIG_WALLET_KEY)

@@ -37,6 +37,8 @@ struct UpdateMessagesResponse {
 impl UpdateMessages{
 
     pub fn send_secure(&mut self) -> Result<(), u32> {
+        trace!("UpdateMessages::send >>>");
+
         let data = encode::to_vec_named(&self).or(Err(error::UNKNOWN_ERROR.code_num))?;
         trace!("update_message content: {:?}", data);
 
@@ -78,6 +80,7 @@ fn parse_update_messages_response(response: Vec<u8>) -> Result<(), u32> {
 }
 
 pub fn update_agency_messages(status_code: &str, msg_json: &str) -> Result<(), u32> {
+    trace!("update_agency_messages >>> status_code: {:?}, msg_json: {:?}", status_code, msg_json);
 
     debug!("updating agency messages {} to status code: {}", msg_json, status_code);
     let uids_by_conns: Vec<UIDsByConn> = serde_json::from_str(msg_json)

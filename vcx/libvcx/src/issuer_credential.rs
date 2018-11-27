@@ -118,6 +118,8 @@ impl IssuerCredential {
     }
 
     fn send_credential_offer(&mut self, connection_handle: u32) -> Result<u32, IssuerCredError> {
+        trace!("IssuerCredential::send_credential_offer >>> connection_handle: {}", connection_handle);
+
         debug!("sending credential offer for issuer_credential {} to connection {}", self.source_id, connection::get_source_id(connection_handle).unwrap_or_default());
         if self.state != VcxStateType::VcxStateInitialized {
             warn!("credential {} has invalid state {} for sending credentialOffer", self.source_id, self.state as u32);
@@ -175,6 +177,8 @@ impl IssuerCredential {
     }
 
     fn send_credential(&mut self, connection_handle: u32) -> Result<u32, IssuerCredError> {
+        trace!("IssuerCredential::send_credential >>> connection_handle: {}", connection_handle);
+
         debug!("sending credential for issuer_credential {} to connection {}", self.source_id, connection::get_source_id(connection_handle).unwrap_or_default());
         if self.state != VcxStateType::VcxStateRequestReceived {
             warn!("credential {} has invalid state {} for sending credential", self.source_id, self.state as u32);
@@ -253,11 +257,16 @@ impl IssuerCredential {
     }
 
     fn update_state(&mut self) -> Result<u32, IssuerCredError> {
+        trace!("IssuerCredential::update_state >>>");
         self.get_credential_offer_status()
         //There will probably be more things here once we do other things with the credential
     }
 
-    fn get_state(&self) -> u32 { let state = self.state as u32; state }
+    fn get_state(&self) -> u32 {
+        trace!("IssuerCredential::get_state >>>");
+        let state = self.state as u32;
+        state
+    }
     fn get_offer_uid(&self) -> &String { &self.msg_uid }
     fn set_offer_uid(&mut self, uid: &str) {self.msg_uid = uid.to_owned();}
     fn set_credential_request(&mut self, credential_request:CredentialRequest) -> Result<u32,u32> {
@@ -365,6 +374,8 @@ impl IssuerCredential {
     }
 
     fn get_payment_txn(&self) -> Result<payments::PaymentTxn, u32> {
+        trace!("IssuerCredential::get_payment_txn >>>");
+
         match self.payment_address {
             Some(ref payment_address) if self.price > 0 => {
                 Ok(payments::PaymentTxn {
@@ -478,6 +489,9 @@ pub fn issuer_credential_create(cred_def_handle: u32,
                                 credential_name: String,
                                 credential_data: String,
                                 price: u64) -> Result<u32, IssuerCredError> {
+    trace!("issuer_credential_create >>> cred_def_handle: {}, source_id: {}, issuer_did: {}, credential_name: {}, credential_data: {}, price: {}",
+           cred_def_handle, source_id, issuer_did, credential_name, credential_data, price);
+
     let cred_def_id = ::credential_def::get_cred_def_id(cred_def_handle).map_err(|ec|IssuerCredError::CommonError(ec.to_error_code()))?;
     let rev_reg_id = ::credential_def::get_rev_reg_id(cred_def_handle).map_err(|ec|IssuerCredError::CommonError(ec.to_error_code()))?;
     let tails_file = ::credential_def::get_tails_file(cred_def_handle).map_err(|ec|IssuerCredError::CommonError(ec.to_error_code()))?;

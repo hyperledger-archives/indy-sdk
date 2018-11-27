@@ -74,6 +74,7 @@ impl CreateSchema {
     pub fn get_schema_id(&self) -> &String { &self.schema_id }
 
     fn get_payment_txn(&self) -> Result<PaymentTxn, u32> {
+        trace!("CreateSchema::get_payment_txn >>>");
         Ok(self.payment_txn.clone().ok_or(error::NOT_READY.code_num)?)
     }
 
@@ -98,6 +99,9 @@ pub fn create_new_schema(source_id: &str,
                          name: String,
                          version: String,
                          data: String) -> Result<u32, SchemaError> {
+    trace!("create_new_schema >>> source_id: {}, issuer_did: {}, name: {}, version: {}, data: {}",
+           source_id, issuer_did, name, version, data);
+
     debug!("creating schema with source_id: {}, name: {}, issuer_did: {}", source_id, name, issuer_did);
 
     let (schema_id, payment_txn) = ledger::create_schema(&name, &version, &data)
@@ -127,6 +131,8 @@ pub fn create_new_schema(source_id: &str,
 
 
 pub fn get_schema_attrs(source_id: String, schema_id: String) -> Result<(u32, String), SchemaError> {
+    trace!("get_schema_attrs >>> source_id: {}, schema_id: {}", source_id, schema_id);
+
     let submitter_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)
         .map_err(|e| SchemaError::CommonError(e))?;
 

@@ -103,7 +103,7 @@ pub fn create_new_credentialdef(source_id: String,
                                 schema_id: String,
                                 tag: String,
                                 revocation_details: String) -> Result<u32, CredDefError> {
-    debug!("creating credentialdef with source_id: {}, name: {}, issuer_did: {}, schema_id: {}, revocation_details: {}",
+    trace!("create_new_credentialdef >>> source_id: {}, name: {}, issuer_did: {}, schema_id: {}, revocation_details: {}",
            source_id, name, issuer_did, schema_id, revocation_details);
 
     let revocation_details: RevocationDetails = serde_json::from_str(&revocation_details)
