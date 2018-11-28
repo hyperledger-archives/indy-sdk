@@ -29,15 +29,17 @@ use domain::route::AuthRecipient;
 pub const DEFAULT_CRYPTO_TYPE: &'static str = "ed25519";
 
 trait CryptoType {
-    fn encrypt(&self, sk: &ed25519_sign::SecretKey, vk: &ed25519_sign::PublicKey, doc: &[u8], nonce: &ed25519_box::Nonce) -> Result<Vec<u8>, CryptoError>;
-    fn decrypt(&self, sk: &ed25519_sign::SecretKey, vk: &ed25519_sign::PublicKey, doc: &[u8], nonce: &ed25519_box::Nonce) -> Result<Vec<u8>, CryptoError>;
+    fn crypto_box(&self, sk: &ed25519_sign::SecretKey, vk: &ed25519_sign::PublicKey, doc: &[u8], nonce: &ed25519_box::Nonce) -> Result<Vec<u8>, CryptoError>;
+    fn crypto_box_open(&self, sk: &ed25519_sign::SecretKey, vk: &ed25519_sign::PublicKey, doc: &[u8], nonce: &ed25519_box::Nonce) -> Result<Vec<u8>, CryptoError>;
     fn gen_nonce(&self) -> ed25519_box::Nonce;
     fn create_key(&self, seed: Option<&ed25519_sign::Seed>) -> Result<(ed25519_sign::PublicKey, ed25519_sign::SecretKey), CryptoError>;
     fn validate_key(&self, _vk: &ed25519_sign::PublicKey) -> Result<(), CryptoError>;
     fn sign(&self, sk: &ed25519_sign::SecretKey, doc: &[u8]) -> Result<ed25519_sign::Signature, CryptoError>;
     fn verify(&self, vk: &ed25519_sign::PublicKey, doc: &[u8], signature: &ed25519_sign::Signature) -> Result<bool, CryptoError>;
-    fn encrypt_sealed(&self, vk: &ed25519_sign::PublicKey, doc: &[u8]) -> Result<Vec<u8>, CryptoError>;
-    fn decrypt_sealed(&self, vk: &ed25519_sign::PublicKey, sk: &ed25519_sign::SecretKey, doc: &[u8]) -> Result<Vec<u8>, CryptoError>;
+    fn crypto_box_seal(&self, vk: &ed25519_sign::PublicKey, doc: &[u8]) -> Result<Vec<u8>, CryptoError>;
+    fn crypto_box_seal_open(&self, vk: &ed25519_sign::PublicKey, sk: &ed25519_sign::SecretKey, doc: &[u8]) -> Result<Vec<u8>, CryptoError>;
+    fn authenticated_encrypt(&self, my_key: &Key, their_vk: &str, doc: &[u8]) -> Result<Vec<u8>, CryptoError>;
+    fn authenticated_decrypt(&self, my_key: &Key, doc: &[u8]) -> Result<(String, Vec<u8>), CryptoError>;
 }
 
 pub struct CryptoService {
@@ -286,42 +288,6 @@ impl CryptoService {
         Ok(decrypted_doc)
     }
 
-    pub fn authenticated_encrypt(&self, my_key: &Key, their_vk: &str, doc: &[u8]) -> Result<Vec<u8>, CryptoError> {
-        let (msg, nonce) = self.crypto_box(my_key, their_vk, doc)?;
-
-        let combo_box = ComboBox {
-            msg: base64::encode(msg.as_slice()),
-            sender: my_key.verkey.to_string(),
-            nonce: base64::encode(nonce.as_slice())
-        };
-
-        let msg_pack = combo_box.to_msg_pack()
-            .map_err(|e| CommonError::InvalidState(format!("Can't serialize ComboBox: {:?}", e)))?;
-
-        let res = self.crypto_box_seal(&their_vk, &msg_pack)?;
-
-        Ok(res)
-    }
-
-    pub fn authenticated_decrypt(&self, my_key: &Key, doc: &[u8]) -> Result<(String, Vec<u8>), CryptoError> {
-        let decrypted_msg = self.crypto_box_seal_open(&my_key, &doc)?;
-
-        let parsed_msg = ComboBox::from_msg_pack(decrypted_msg.as_slice())
-            .map_err(|err| CommonError::InvalidStructure(format!("Can't deserialize ComboBox: {:?}", err)))?;
-
-        let doc: Vec<u8> = base64::decode(&parsed_msg.msg)
-            .map_err(|err| CommonError::InvalidStructure(format!("Can't decode internal msg filed from base64 {}", err)))?;
-
-        let nonce: Vec<u8> = base64::decode(&parsed_msg.nonce)
-            .map_err(|err| CommonError::InvalidStructure(format!("Can't decode nonce from base64 {}", err)))?;
-
-        let decrypted_msg = self.crypto_box_open(&my_key, &parsed_msg.sender, &doc, &nonce)?;
-
-        let res = (parsed_msg.sender, decrypted_msg);
-
-        Ok(res)
-    }
-
     pub fn crypto_box_seal(&self, their_vk: &str, doc: &[u8]) -> Result<Vec<u8>, CryptoError> {
         trace!("crypto_box_seal >>> their_vk: {:?}, doc: {:?}", their_vk, doc);
 
@@ -372,6 +338,58 @@ impl CryptoService {
         trace!("crypto_box_seal_open <<< decrypted_doc: {:?}", decrypted_doc);
 
         Ok(decrypted_doc)
+    }
+
+    pub fn authenticated_encrypt(&self, my_key: &Key, their_vk: &str, doc: &[u8]) -> Result<Vec<u8>, CryptoError> {
+        let (their_vk, crypto_type_name) = if their_vk.contains(':') {
+            let splits: Vec<&str> = their_vk.split(':').collect();
+            (splits[0], splits[1])
+        } else {
+            (their_vk, DEFAULT_CRYPTO_TYPE)
+        };
+
+        let (msg, nonce) = self.crypto_box(my_key, their_vk, doc)?;
+
+        let combo_box = ComboBox {
+            msg: base64::encode(msg.as_slice()),
+            sender: my_key.verkey.to_string(),
+            nonce: base64::encode(nonce.as_slice())
+        };
+
+        //TODO check about removing msg_pack dependency
+        let msg_pack = combo_box.to_msg_pack()
+            .map_err(|e| CommonError::InvalidState(format!("Can't serialize ComboBox: {:?}", e)))?;
+
+        let res = self.crypto_box_seal(&their_vk, &msg_pack)?;
+
+        Ok(res)
+    }
+
+    pub fn authenticated_decrypt(&self, my_key: &Key, doc: &[u8]) -> Result<(String, Vec<u8>), CryptoError> {
+
+        let (their_vk, crypto_type_name) = if their_vk.contains(':') {
+            let splits: Vec<&str> = their_vk.split(':').collect();
+            (splits[0], splits[1])
+        } else {
+            (their_vk, DEFAULT_CRYPTO_TYPE)
+        };
+
+        let decrypted_msg = self.crypto_box_seal_open(&my_key, &doc)?;
+
+        let parsed_msg = ComboBox::from_msg_pack(decrypted_msg.as_slice())
+            .map_err(|err| CommonError::InvalidStructure(format!("Can't deserialize ComboBox: {:?}", err)))?;
+
+        let doc: Vec<u8> = base64::decode(&parsed_msg.msg)
+            .map_err(|err| CommonError::InvalidStructure(format!("Can't decode internal msg filed from base64 {}", err)))?;
+
+        let nonce: Vec<u8> = base64::decode(&parsed_msg.nonce)
+            .map_err(|err| CommonError::InvalidStructure(format!("Can't decode nonce from base64 {}", err)))?;
+
+        let decrypted_msg = self.crypto_box_open(&my_key, &parsed_msg.sender, &doc, &nonce)?;
+
+        let res = (parsed_msg.sender, decrypted_msg);
+
+        Ok(res)
     }
 
     pub fn convert_seed(&self, seed: Option<&str>) -> Result<Option<ed25519_sign::Seed>, CryptoError> {
@@ -453,7 +471,7 @@ impl CryptoService {
     }
 
     /* Authcrypt helper function section */
-    fn anon_encrypt_recipient(
+    pub fn anon_encrypt_recipient(
         &self,
         recp_vk: &str,
         sym_key: xsalsa20::Key
@@ -472,7 +490,7 @@ impl CryptoService {
         Ok(anon_recipient)
     }
 
-    fn anon_decrypt_recipient(
+    pub fn anon_decrypt_recipient(
         &self,
         my_key: &Key,
         anon_recipient: AnonRecipient
@@ -498,7 +516,7 @@ impl CryptoService {
     }
 
         /* ciphertext helper functions*/
-    fn decrypt_unpack_ciphertext(
+    pub fn decrypt_unpack_ciphertext(
         &self,
         ciphertext: &str,
         iv: &str,
@@ -539,7 +557,7 @@ impl CryptoService {
         })
     }
 
-    fn encrypt_ciphertext(&self, ciphertext: &str) -> (xsalsa20::Key, xsalsa20::Nonce, Vec<u8>) {
+    pub fn encrypt_ciphertext(&self, ciphertext: &str) -> (xsalsa20::Key, xsalsa20::Nonce, Vec<u8>) {
         let sym_key = create_key();
         let iv = gen_nonce();
         let message = xsalsa20::encrypt(&sym_key, &iv, ciphertext.as_bytes());

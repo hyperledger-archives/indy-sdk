@@ -1,7 +1,7 @@
 use core::result;
 use domain::crypto::key::Key;
 use domain::route::*;
-use errors::route::RouteError;
+use errors::route::AgentError;
 use serde_json;
 use services::crypto::CryptoService;
 use services::wallet::{RecordOptions, WalletService};
@@ -11,13 +11,13 @@ use utils::crypto::base64;
 use utils::crypto::xsalsa20;
 use utils::crypto::xsalsa20::{create_key, gen_nonce};
 
-type Result<T> = result::Result<T, RouteError>;
+type Result<T> = result::Result<T, AgentError>;
 
-pub struct RouteService {}
+pub struct AgentService {}
 
-impl RouteService {
-    pub fn new() -> RouteService {
-        RouteService {}
+impl AgentService {
+    pub fn new() -> AgentService {
+        AgentService {}
     }
 
     pub fn get_auth_recipient_header(
@@ -32,7 +32,7 @@ impl RouteService {
             }
         }
 
-        return Err(RouteError::UnpackError(format!(
+        return Err(AgentError::UnpackError(format!(
             "Failed to find a matching header"
         )));
     }
@@ -49,7 +49,7 @@ impl RouteService {
             }
         }
 
-        return Err(RouteError::UnpackError(format!(
+        return Err(AgentError::UnpackError(format!(
             "Failed to find a matching header"
         )));
     }
@@ -57,9 +57,9 @@ impl RouteService {
 
 }
 
-#[cfg(test)]
+
 pub mod tests {
-    use super::RouteService;
+    use super::AgentService;
     use domain::crypto::did::{Did, MyDidInfo};
     use domain::crypto::key::Key;
     use domain::wallet::Config;
@@ -83,14 +83,14 @@ pub mod tests {
      */
 
     // Integration tests
-    #[test]
+
     pub fn test_single_anon_pack_message_and_unpack_msg_success() {
         _cleanup();
         //setup generic data to test
         let expected_message = "Hello World";
 
         //setup route_service
-        let rs: Rc<RouteService> = Rc::new(RouteService::new());
+        let rs: Rc<AgentService> = Rc::new(AgentService::new());
         let cs: Rc<CryptoService> = Rc::new(CryptoService::new());
         let ws: Rc<WalletService> = Rc::new(WalletService::new());
 
@@ -120,14 +120,14 @@ pub mod tests {
         assert_eq!(expected_message.to_string(), message);
     }
 
-    #[test]
+
     pub fn test_single_auth_pack_msg_and_unpack_msg_success() {
         _cleanup();
         //setup generic data to test
         let expected_message = "Hello World";
 
         //setup route_service
-        let rs: Rc<RouteService> = Rc::new(RouteService::new());
+        let rs: Rc<AgentService> = Rc::new(AgentService::new());
         let cs: Rc<CryptoService> = Rc::new(CryptoService::new());
         let ws: Rc<WalletService> = Rc::new(WalletService::new());
 
@@ -166,14 +166,14 @@ pub mod tests {
         assert_eq!(sender_vk, send_key.verkey);
     }
 
-    #[test]
+
     pub fn test_pack_and_unpack_msg_success_multi_anoncrypt() {
         _cleanup();
         //setup generic data to test
         let plaintext = "Hello World";
 
         //setup route_service
-        let rs: Rc<RouteService> = Rc::new(RouteService::new());
+        let rs: Rc<AgentService> = Rc::new(AgentService::new());
         let cs: Rc<CryptoService> = Rc::new(CryptoService::new());
         let ws: Rc<WalletService> = Rc::new(WalletService::new());
 
@@ -223,14 +223,14 @@ pub mod tests {
         let _result2 = ws.close_wallet(recv_wallet_handle2);
     }
 
-    #[test]
+
     pub fn test_pack_and_unpack_msg_success_multi_authcrypt() {
         _cleanup();
         //setup generic data to test
         let plaintext = "Hello World";
 
         //setup route_service
-        let rs: Rc<RouteService> = Rc::new(RouteService::new());
+        let rs: Rc<AgentService> = Rc::new(AgentService::new());
         let cs: Rc<CryptoService> = Rc::new(CryptoService::new());
         let ws: Rc<WalletService> = Rc::new(WalletService::new());
 
@@ -280,116 +280,5 @@ pub mod tests {
         assert_eq!(plaintext, &unpacked_msg2);
         assert_eq!(&expected_send_key.verkey, &send_vk_2);
         let _result2 = ws.close_wallet(recv_wallet_handle2);
-    }
-
-    fn _setup_send_wallet(ws: Rc<WalletService>, cs: Rc<CryptoService>) -> (i32, Did, Key) {
-        let (did, key) = _send_did1(cs.clone());
-        let _result = ws.create_wallet(&_send_config(), &_credentials());
-        let wallet_handle = ws.open_wallet(&_send_config(), &_credentials()).unwrap();
-        ws.add_indy_object(wallet_handle, &did.did, &did, &HashMap::new())
-            .unwrap();
-        ws.add_indy_object(wallet_handle, &key.verkey, &key, &HashMap::new())
-            .unwrap();
-        (wallet_handle, did, key)
-    }
-
-    fn _setup_recv_wallet1(ws: Rc<WalletService>, cs: Rc<CryptoService>) -> (i32, Did, Key) {
-        let (did, key) = _recv_did1(cs.clone());
-        let _result = ws.create_wallet(&_recv_config(), &_credentials());
-        let wallet_handle = ws.open_wallet(&_recv_config(), &_credentials()).unwrap();
-        ws.add_indy_object(wallet_handle, &did.did, &did, &HashMap::new())
-            .unwrap();
-        ws.add_indy_object(wallet_handle, &key.verkey, &key, &HashMap::new())
-            .unwrap();
-        (wallet_handle, did, key)
-    }
-
-    fn _setup_recv_wallet2(ws: Rc<WalletService>, cs: Rc<CryptoService>) -> (i32, Did, Key) {
-        let (did, key) = _recv_did2(cs.clone());
-        let _result = ws.create_wallet(&_recv_config(), &_credentials());
-        let wallet_handle = ws.open_wallet(&_recv_config(), &_credentials()).unwrap();
-        ws.add_indy_object(wallet_handle, &did.did, &did, &HashMap::new())
-            .unwrap();
-        ws.add_indy_object(wallet_handle, &key.verkey, &key, &HashMap::new())
-            .unwrap();
-        (wallet_handle, did, key)
-    }
-
-    fn _send_did1(service: Rc<CryptoService>) -> (Did, Key) {
-        let did_info = MyDidInfo {
-            did: None,
-            cid: None,
-            seed: Some("000000000000000000000000000SEND1".to_string()),
-            crypto_type: None,
-        };
-        service.create_my_did(&did_info).unwrap()
-    }
-
-    fn _recv_did1(service: Rc<CryptoService>) -> (Did, Key) {
-        let did_info = MyDidInfo {
-            did: None,
-            cid: None,
-            seed: Some("000000000000000000000000000RECV1".to_string()),
-            crypto_type: None,
-        };
-        service.create_my_did(&did_info).unwrap()
-    }
-
-    fn _recv_did2(service: Rc<CryptoService>) -> (Did, Key) {
-        let did_info = MyDidInfo {
-            did: None,
-            cid: None,
-            seed: Some("000000000000000000000000000RECV2".to_string()),
-            crypto_type: None,
-        };
-        service.create_my_did(&did_info).unwrap()
-    }
-
-    fn _send_config() -> Config {
-        Config {
-            id: "w1".to_string(),
-            storage_type: None,
-            storage_config: None,
-        }
-    }
-
-    fn _recv_config() -> Config {
-        Config {
-            id: "recv1".to_string(),
-            storage_type: None,
-            storage_config: None,
-        }
-    }
-
-    fn _config() -> Config {
-        Config {
-            id: "w1".to_string(),
-            storage_type: None,
-            storage_config: None,
-        }
-    }
-
-    fn _credentials() -> Credentials {
-        Credentials {
-            key: "my_key".to_string(),
-            rekey: None,
-            storage_credentials: None,
-            key_derivation_method: KeyDerivationMethod::ARGON2I_MOD,
-            rekey_derivation_method: KeyDerivationMethod::ARGON2I_MOD,
-        }
-    }
-
-    fn _cleanup() {
-        test::cleanup_storage();
-        InmemWallet::cleanup();
-    }
-
-    fn _fetch_options(type_: bool, value: bool, tags: bool) -> String {
-        json!({
-          "retrieveType": type_,
-          "retrieveValue": value,
-          "retrieveTags": tags,
-        })
-        .to_string()
     }
 }
