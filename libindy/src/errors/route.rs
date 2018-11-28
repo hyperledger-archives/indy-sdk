@@ -7,7 +7,7 @@ use std::fmt;
 use errors::common::CommonError;
 
 #[derive(Debug)]
-pub enum RouteError {
+pub enum AgentError {
     EncryptionError(String),
 
     DecodeError(String),
@@ -17,58 +17,46 @@ pub enum RouteError {
     CommonError(CommonError)
 }
 
-impl fmt::Display for RouteError {
+impl fmt::Display for AgentError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            RouteError::EncryptionError(ref description) => write!(f, "Did already exists: {}", description),
-            RouteError::DecodeError(ref description) => write!(f, "Failed while decoding: {}", description),
-            RouteError::UnpackError(ref description) => write!(f, "Failed while unpacking message: {}", description),
-            RouteError::PackError(ref description) => write!(f, "Failed while packing message: {}", description),
-            RouteError::SerializationError(ref description) => write!(f, "Failed to serialize: {}", description),
-            RouteError::CommonError(ref err) => err.fmt(f)
+            AgentError::UnpackError(ref description) => write!(f, "Failed while unpacking message: {}", description),
+            AgentError::PackError(ref description) => write!(f, "Failed while packing message: {}", description),
+            AgentError::CommonError(ref err) => err.fmt(f)
         }
     }
 }
 
-impl error::Error for RouteError {
+impl error::Error for AgentError {
     fn description(&self) -> &str {
         match *self {
-            RouteError::EncryptionError(ref description) => description,
-            RouteError::DecodeError(ref description) => description,
-            RouteError::UnpackError(ref description) => description,
-            RouteError::PackError(ref description) => description,
-            RouteError::SerializationError(ref description) => description,
-            RouteError::CommonError(ref err) => err.description()
+            AgentError::UnpackError(ref description) => description,
+            AgentError::PackError(ref description) => description,
+            AgentError::CommonError(ref err) => err.description()
         }
     }
 
     fn cause(&self) -> Option<&error::Error> {
         match *self {
-            RouteError::EncryptionError(_) => None,
-            RouteError::DecodeError(_) => None,
-            RouteError::UnpackError(_) => None,
-            RouteError::PackError(_) => None,
-            RouteError::SerializationError(_) => None,
-            RouteError::CommonError(ref err) => Some(err)
+            AgentError::UnpackError(_) => None,
+            AgentError::PackError(_) => None,
+            AgentError::CommonError(ref err) => Some(err)
         }
     }
 }
 
-impl ToErrorCode for RouteError {
+impl ToErrorCode for AgentError {
     fn to_error_code(&self) -> ErrorCode {
         match *self {
-            RouteError::EncryptionError(_) => ErrorCode::RouteEncryptionError,
-            RouteError::DecodeError(_) => ErrorCode::RouteDecodeError,
-            RouteError::UnpackError(_) => ErrorCode::RouteUnpackError,
-            RouteError::PackError(_) => ErrorCode::RoutePackError,
-            RouteError::SerializationError(_) => ErrorCode::RouteSerializationError,
-            RouteError::CommonError(ref err) => err.to_error_code()
+            AgentError::UnpackError(_) => ErrorCode::RouteUnpackError,
+            AgentError::PackError(_) => ErrorCode::RoutePackError,
+            AgentError::CommonError(ref err) => err.to_error_code()
         }
     }
 }
 
-impl From<CommonError> for RouteError {
-    fn from(err: CommonError) -> RouteError {
-        RouteError::CommonError(err)
+impl From<CommonError> for AgentError {
+    fn from(err: CommonError) -> AgentError {
+        AgentError::CommonError(err)
     }
 }

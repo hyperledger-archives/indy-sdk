@@ -6,7 +6,7 @@ use errors::crypto::CryptoError;
 use errors::wallet::WalletError;
 use errors::did::DidError;
 use errors::payments::PaymentsError;
-use errors::route::RouteError;
+use errors::route::AgentError;
 
 use api::ErrorCode;
 use errors::ToErrorCode;
@@ -24,7 +24,7 @@ pub enum IndyError {
     WalletError(WalletError),
     DidError(DidError),
     PaymentsError(PaymentsError),
-    RouteError(RouteError)
+    AgentError(AgentError)
 }
 
 impl fmt::Display for IndyError {
@@ -38,7 +38,7 @@ impl fmt::Display for IndyError {
             IndyError::WalletError(ref err) => err.fmt(f),
             IndyError::DidError(ref err) => err.fmt(f),
             IndyError::PaymentsError(ref err) => err.fmt(f),
-            IndyError::RouteError(ref err) => err.fmt(f),
+            IndyError::AgentError(ref err) => err.fmt(f),
         }
     }
 }
@@ -54,7 +54,7 @@ impl error::Error for IndyError {
             IndyError::WalletError(ref err) => err.description(),
             IndyError::DidError(ref err) => err.description(),
             IndyError::PaymentsError(ref err) => err.description(),
-            IndyError::RouteError(ref err) => err.description(),
+            IndyError::AgentError(ref err) => err.description(),
         }
     }
 
@@ -68,7 +68,7 @@ impl error::Error for IndyError {
             IndyError::WalletError(ref err) => Some(err),
             IndyError::DidError(ref err) => Some(err),
             IndyError::PaymentsError(ref err) => Some(err),
-            IndyError::RouteError(ref err) => Some(err),
+            IndyError::AgentError(ref err) => Some(err),
         }
     }
 }
@@ -85,7 +85,7 @@ impl ToErrorCode for IndyError {
             IndyError::WalletError(ref err) => err.to_error_code(),
             IndyError::DidError(ref err) => err.to_error_code(),
             IndyError::PaymentsError(ref err) => err.to_error_code(),
-            IndyError::RouteError(ref err) => err.to_error_code(),
+            IndyError::AgentError(ref err) => err.to_error_code(),
         }
     }
 }
@@ -138,8 +138,8 @@ impl From<PaymentsError> for IndyError {
     }
 }
 
-impl From<RouteError> for IndyError {
-    fn from(err : RouteError) -> IndyError {
-        IndyError::RouteError(err)
+impl From<AgentError> for IndyError {
+    fn from(err : AgentError) -> IndyError {
+        IndyError::AgentError(err)
     }
 }
