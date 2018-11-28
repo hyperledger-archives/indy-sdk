@@ -14,7 +14,8 @@ extern crate serde_derive;
 extern crate serde_json;
 
 extern crate byteorder;
-extern crate indy;
+extern crate indyrs as indy;
+extern crate indyrs as api;
 extern crate indy_crypto;
 extern crate uuid;
 extern crate named_type;
@@ -23,16 +24,13 @@ extern crate rust_base58;
 extern crate time;
 extern crate serde;
 
-// Workaround to share some utils code based on indy sdk types between tests and indy sdk
-use indy::api as api;
-
 #[macro_use]
 mod utils;
 
 use utils::{did, pairwise};
 use utils::constants::*;
 
-use indy::api::ErrorCode;
+use self::indy::ErrorCode;
 
 
 mod high_cases {
