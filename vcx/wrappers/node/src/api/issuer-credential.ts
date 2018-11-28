@@ -234,7 +234,7 @@ export class IssuerCredential extends VCXBaseWithState<IIssuerCredentialData> {
     return this._price
   }
 
-  protected _setHandle (handle: string) {
+  protected _setHandle (handle: number) {
     super._setHandle(handle)
     this.paymentManager = new IssuerCredentialPaymentManager({ handle })
   }
