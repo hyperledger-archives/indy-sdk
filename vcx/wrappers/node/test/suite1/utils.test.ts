@@ -46,8 +46,7 @@ describe('utils:', () => {
 
   describe('updateAgentInfo:', () => {
     it('success', async () => {
-      const res = await updateAgentInfo(agentUpdateString)
-      assert.ok(res)
+      await updateAgentInfo(agentUpdateString)
     })
 
     it('throws: invalid input', async () => {
