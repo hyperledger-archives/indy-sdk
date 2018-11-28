@@ -111,7 +111,7 @@ namespace Hyperledger.Indy.WalletApi
 
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false,
             ThrowOnUnmappableChar = true)]
-        internal static extern int indy_export_wallet(int command_handle, IntPtr wallet_handle, string export_config,
+        internal static extern int indy_export_wallet(int command_handle, int wallet_handle, string export_config,
             IndyMethodCompletedDelegate cb);
 
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false,
@@ -130,7 +130,7 @@ namespace Hyperledger.Indy.WalletApi
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false,
             ThrowOnUnmappableChar = true)]
-        internal static extern int indy_close_wallet(int command_handle, IntPtr wallet_handle,
+        internal static extern int indy_close_wallet(int command_handle, int wallet_handle,
             IndyMethodCompletedDelegate cb);
 
         /// <summary>
