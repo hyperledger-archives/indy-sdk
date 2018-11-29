@@ -74,6 +74,7 @@ describe('Connection:', () => {
 
     it('throws: connection deleted', async () => {
       const connection = await connectionCreate()
+      await connection.connect({ phone: '8018018011' })
       await connection.delete()
       const error = await shouldThrow(() => connection.serialize())
       assert.equal(error.vcxCode, VCXCode.INVALID_CONNECTION_HANDLE)

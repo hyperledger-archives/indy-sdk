@@ -340,6 +340,7 @@ pub fn compose_create_connection_request(wallet_handle: i32,
                 key_dlg_proof: gen_key_delegated_proof(wallet_handle, EDGE_PAIRWISE_DID_VERKEY, &agent_pairwise_did, &agent_pairwise_verkey),
                 target_name: None,
                 phone_no: Some(PHONE_NO.to_string()),
+                use_public_did: Some(true),
             }));
 
     let msgs = [create_msg, msg_details];
@@ -382,6 +383,7 @@ pub fn compose_create_connection_request_answer(wallet_handle: i32,
                     agent_key_dlg_proof: gen_key_delegated_proof(wallet_handle, &remote_user_pw_verkey, &remote_agent_pw_did, &remote_agent_pw_verkey),
                     name: None,
                     logo_url: None,
+                    public_did: None,
                 },
                 sender_agency_detail: ForwardAgentDetail {
                     did: FORWARD_AGENT_DID.to_string(),
