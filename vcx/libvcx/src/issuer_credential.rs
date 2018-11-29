@@ -587,7 +587,7 @@ pub fn get_source_id(handle: u32) -> Result<String, u32> {
 pub mod tests {
     use super::*;
     use settings;
-    use connection::{ build_connection };
+    use connection::tests::build_test_connection;
     use credential_request::CredentialRequest;
     #[allow(unused_imports)]
     use utils::{ constants::*,
@@ -747,7 +747,7 @@ pub mod tests {
     #[test]
     fn test_send_credential_offer() {
         init!("true");
-        let connection_handle = build_connection("test_send_credential_offer").unwrap();
+        let connection_handle = build_test_connection();
 
         let credential_id = DEFAULT_CREDENTIAL_ID;
 
@@ -774,7 +774,7 @@ pub mod tests {
     #[test]
     fn test_retry_send_credential_offer() {
         init!("true");
-        let connection_handle = build_connection("test_send_credential_offer").unwrap();
+        let connection_handle = build_test_connection();
 
         let credential_id = DEFAULT_CREDENTIAL_ID;
 
@@ -804,7 +804,7 @@ pub mod tests {
         let mut credential = create_standard_issuer_credential();
         credential.state = VcxStateType::VcxStateRequestReceived;
 
-        let connection_handle = build_connection("test_send_credential_offer").unwrap();
+        let connection_handle = build_test_connection();
 
         set_libindy_rc(error::TIMEOUT_LIBINDY_ERROR.code_num);
         assert_eq!(credential.send_credential(connection_handle),
@@ -839,7 +839,7 @@ pub mod tests {
     #[test]
     fn test_update_state_with_pending_credential_request() {
         init!("true");
-        let connection_handle = build_connection("test_update_state_with_pending_credential_request").unwrap();
+        let connection_handle = build_test_connection();
         let credential_req:CredentialRequest = CredentialRequest::from_str(CREDENTIAL_REQ_STRING).unwrap();
         let (credential_offer, _) = ::credential::parse_json_offer(CREDENTIAL_OFFER_JSON).unwrap();
         let mut credential = IssuerCredential {
@@ -918,7 +918,7 @@ pub mod tests {
         let mut credential = create_standard_issuer_credential();
         credential.state = VcxStateType::VcxStateRequestReceived;
 
-        let connection_handle = build_connection("test_send_credential_offer").unwrap();
+        let connection_handle = build_test_connection();
 
         credential.send_credential(connection_handle).unwrap();
         assert_eq!(credential.state, VcxStateType::VcxStateAccepted);
@@ -1005,7 +1005,7 @@ pub mod tests {
         credential.price = 3;
         credential.payment_address = Some(payments::build_test_address("9UFgyjuJxi1i1HD"));
 
-        let connection_handle = build_connection("test_send_credential_offer").unwrap();
+        let connection_handle = build_test_connection();
 
         // Success
         credential.send_credential(connection_handle).unwrap();

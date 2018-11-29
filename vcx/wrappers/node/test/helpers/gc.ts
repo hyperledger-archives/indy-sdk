@@ -2,8 +2,8 @@ import * as ffi from 'ffi'
 import { VCXCode } from 'src'
 
 export interface IGCTestData {
-  handle: string,
-  serialize: (commandId: number, handle: string, callback: Buffer) => number,
+  handle: number,
+  serialize: (commandId: number, handle: number, callback: Buffer) => number,
   stopCode: VCXCode
 }
 export const gcTest = async ({
