@@ -10,8 +10,8 @@ use errors::crypto::CryptoError;
 use domain::crypto::key::{Key, KeyInfo};
 use domain::crypto::did::{Did, MyDidInfo, TheirDidInfo, TheirDid};
 use domain::crypto::combo_box::ComboBox;
-use domain::route::AuthRecipient;
-use domain::route::AnonRecipient;
+use domain::agent::AuthRecipient;
+use domain::agent::AnonRecipient;
 use utils::crypto::base58;
 use utils::crypto::base64;
 use utils::crypto::verkey_builder::build_full_verkey;
@@ -23,8 +23,6 @@ use utils::crypto::xsalsa20::{create_key, gen_nonce};
 use std::collections::HashMap;
 use std::str;
 use std::error::Error;
-use domain::route::AnonRecipient;
-use domain::route::AuthRecipient;
 
 pub const DEFAULT_CRYPTO_TYPE: &'static str = "ed25519";
 
@@ -38,8 +36,6 @@ trait CryptoType {
     fn verify(&self, vk: &ed25519_sign::PublicKey, doc: &[u8], signature: &ed25519_sign::Signature) -> Result<bool, CryptoError>;
     fn crypto_box_seal(&self, vk: &ed25519_sign::PublicKey, doc: &[u8]) -> Result<Vec<u8>, CryptoError>;
     fn crypto_box_seal_open(&self, vk: &ed25519_sign::PublicKey, sk: &ed25519_sign::SecretKey, doc: &[u8]) -> Result<Vec<u8>, CryptoError>;
-    fn authenticated_encrypt(&self, my_key: &Key, their_vk: &str, doc: &[u8]) -> Result<Vec<u8>, CryptoError>;
-    fn authenticated_decrypt(&self, my_key: &Key, doc: &[u8]) -> Result<(String, Vec<u8>), CryptoError>;
 }
 
 pub struct CryptoService {
@@ -306,7 +302,7 @@ impl CryptoService {
 
         let their_vk = ed25519_sign::PublicKey::from_slice(&base58::decode(their_vk)?)?;
 
-        let encrypted_doc = crypto_type.encrypt_sealed(&their_vk, doc)?;
+        let encrypted_doc = crypto_type.crypto_box_seal(&their_vk, doc)?;
 
         trace!("crypto_box_seal <<< encrypted_doc: {:?}", encrypted_doc);
 
@@ -333,7 +329,7 @@ impl CryptoService {
         let my_vk = ed25519_sign::PublicKey::from_slice(&base58::decode(my_vk)?)?;
         let my_sk = ed25519_sign::SecretKey::from_slice(&base58::decode(my_key.signkey.as_str())?)?;
 
-        let decrypted_doc = crypto_type.decrypt_sealed(&my_vk, &my_sk, doc)?;
+        let decrypted_doc = crypto_type.crypto_box_seal_open(&my_vk, &my_sk, doc)?;
 
         trace!("crypto_box_seal_open <<< decrypted_doc: {:?}", decrypted_doc);
 
@@ -341,12 +337,6 @@ impl CryptoService {
     }
 
     pub fn authenticated_encrypt(&self, my_key: &Key, their_vk: &str, doc: &[u8]) -> Result<Vec<u8>, CryptoError> {
-        let (their_vk, crypto_type_name) = if their_vk.contains(':') {
-            let splits: Vec<&str> = their_vk.split(':').collect();
-            (splits[0], splits[1])
-        } else {
-            (their_vk, DEFAULT_CRYPTO_TYPE)
-        };
 
         let (msg, nonce) = self.crypto_box(my_key, their_vk, doc)?;
 
@@ -366,13 +356,6 @@ impl CryptoService {
     }
 
     pub fn authenticated_decrypt(&self, my_key: &Key, doc: &[u8]) -> Result<(String, Vec<u8>), CryptoError> {
-
-        let (their_vk, crypto_type_name) = if their_vk.contains(':') {
-            let splits: Vec<&str> = their_vk.split(':').collect();
-            (splits[0], splits[1])
-        } else {
-            (their_vk, DEFAULT_CRYPTO_TYPE)
-        };
 
         let decrypted_msg = self.crypto_box_seal_open(&my_key, &doc)?;
 
@@ -477,7 +460,7 @@ impl CryptoService {
         sym_key: xsalsa20::Key
     ) -> Result<AnonRecipient, CryptoError> {
         //encrypt cek
-        let cek = self.encrypt_sealed(recp_vk, &sym_key[..]).map_err(|err| {
+        let cek = self.crypto_box_seal(recp_vk, &sym_key[..]).map_err(|err| {
             CryptoError::UnknownCryptoError(format!("Failed to encrypt anon recipient {}", err))
         })?;
 
@@ -502,8 +485,8 @@ impl CryptoService {
         })?;
         let cek_as_bytes = cek_as_vec.as_ref();
 
-        let decrypted_cek = cs
-            .decrypt_sealed(my_key, cek_as_bytes)
+        let decrypted_cek = self
+            .crypto_box_seal_open(my_key, cek_as_bytes)
             .map_err(|err| CryptoError::UnknownCryptoError(format!("Failed to decrypt cek {}", err)))?;
 
         //convert to secretbox key
@@ -581,8 +564,8 @@ impl CryptoService {
         })?;
 
         //encrypt enc_from
-        let enc_from = cs
-            .encrypt_sealed(recp_vk, sender_vk_bytes.as_slice())
+        let enc_from = &self
+            .crypto_box_seal(recp_vk, sender_vk_bytes.as_slice())
             .map_err(|err| {
                 CryptoError::CommonError(err(format!("Failed to encrypt sender verkey")))
             })?;;
@@ -610,7 +593,7 @@ impl CryptoService {
 //
 //        //decrypt enc_from
 //        let sender_vk_as_vec =
-//            cs.decrypt_sealed(my_key, enc_from_bytes.as_ref())
+//            cs.crypto_box_seal_open(my_key, enc_from_bytes.as_ref())
 //                .map_err(|err| {
 //                    RouteError::EncryptionError(format!("Failed to decrypt sender verkey {}", err))
 //                })?;

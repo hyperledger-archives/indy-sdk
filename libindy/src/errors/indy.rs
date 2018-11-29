@@ -6,7 +6,7 @@ use errors::crypto::CryptoError;
 use errors::wallet::WalletError;
 use errors::did::DidError;
 use errors::payments::PaymentsError;
-use errors::route::AgentError;
+use errors::agent::AgentError;
 
 use api::ErrorCode;
 use errors::ToErrorCode;

@@ -1,7 +1,7 @@
 extern crate libc;
 
 use api::ErrorCode;
-use commands::agent::RouteCommand;
+use commands::agent::AgentCommand;
 use commands::{Command, CommandExecutor};
 use errors::ToErrorCode;
 use utils::ctypes;
@@ -14,24 +14,24 @@ pub fn indy_auth_pack_message(
     wallet_handle: i32,
     message: *const c_char,
     receiver_keys: *const c_char,
-    sender_verkey: *const c_char,
+    sender: *const c_char,
     cb: Option<extern "C" fn(xcommand_handle: i32, err: ErrorCode, jwe: *const c_char)>,
 ) -> ErrorCode {
-    trace!("indy_auth_pack_message: >>> wallet_handle: {:?}, message: {:?}, recv_keys: {:?}, my_vk: {:?}",
-           wallet_handle, message, receiver_keys, sender_verkey);
+    trace!("indy_auth_pack_message: >>> wallet_handle: {:?}, message: {:?}, receiver_keys: {:?}, sender: {:?}",
+           wallet_handle, message, receiver_keys, sender);
 
     check_useful_c_str!(message, ErrorCode::CommonInvalidParam3);
-    check_useful_c_str!(recv_keys, ErrorCode::CommonInvalidParam4);
-    check_useful_c_str!(my_vk, ErrorCode::CommonInvalidParam5);
+    check_useful_c_str!(receiver_keys, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(sender, ErrorCode::CommonInvalidParam5);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
-    trace!("indy_auth_pack_message: entities >>> wallet_handle: {:?}, message: {:?}, recv_keys: {:?}, my_vk: {:?}",
-           wallet_handle, message, receiver_keys, sender_verkey);
+    trace!("indy_auth_pack_message: entities >>> wallet_handle: {:?}, message: {:?}, receiver_keys: {:?}, sender: {:?}",
+           wallet_handle, message, receiver_keys, sender);
 
-    let result = CommandExecutor::instance().send(Command::Route(RouteCommand::AuthPackMessage(
+    let result = CommandExecutor::instance().send(Command::Agent(AgentCommand::AuthPackMessage(
         message,
-        recveiver_keys,
-        sender_verkey,
+        receiver_keys,
+        sender,
         wallet_handle,
         Box::new(move |result| {
             let (err, jwe) = result_to_err_code_1!(result, String::new());
@@ -57,28 +57,28 @@ pub fn indy_auth_pack_message(
 pub fn indy_anon_pack_message(
     command_handle: i32,
     message: *const c_char,
-    recveiver_keys: *const c_char,
+    receiver_keys: *const c_char,
     cb: Option<extern "C" fn(xcommand_handle: i32, err: ErrorCode, jwe: *const c_char)>,
 ) -> ErrorCode {
     trace!(
-        "indy_anon_pack_message: >>> message: {:?}, recv_keys: {:?}",
+        "indy_anon_pack_message: >>> message: {:?}, receiver_keys: {:?}",
         message,
-        recveiver_keys
+        receiver_keys
     );
 
     check_useful_c_str!(message, ErrorCode::CommonInvalidParam3);
-    check_useful_c_str!(recv_keys, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(receiver_keys, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
     trace!(
-        "indy_anon_pack_message: entities >>> message: {:?}, recv_keys: {:?}",
+        "indy_anon_pack_message: entities >>> message: {:?}, receiver_keys: {:?}",
         message,
-        recveiver_keys
+        receiver_keys
     );
 
-    let result = CommandExecutor::instance().send(Command::Route(RouteCommand::AnonPackMessage(
+    let result = CommandExecutor::instance().send(Command::Agent(AgentCommand::AnonPackMessage(
         message,
-        recveiver_keys,
+        receiver_keys,
         Box::new(move |result| {
             let (err, jwe) = result_to_err_code_1!(result, String::new());
             trace!(
@@ -105,7 +105,7 @@ pub fn indy_unpack_message(
     command_handle: i32,
     wallet_handle: i32,
     jwe: *const c_char,
-    sender_verkey: *const c_char,
+    sender: *const c_char,
     cb: Option<
         extern "C" fn(
             xcommand_handle: i32,
@@ -116,26 +116,26 @@ pub fn indy_unpack_message(
     >,
 ) -> ErrorCode {
     trace!(
-        "indy_unpack_message: >>> wallet_handle: {:?}, jwe: {:?}, my_vk: {:?}",
+        "indy_unpack_message: >>> wallet_handle: {:?}, jwe: {:?}, sender: {:?}",
         wallet_handle,
         jwe,
-        sender_verkey
+        sender
     );
 
-    check_useful_c_str!(jwe_json, ErrorCode::CommonInvalidParam3);
-    check_useful_c_str!(my_vk, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(jwe, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(sender, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
     trace!(
-        "indy_unpack_message: entities >>> wallet_handle: {:?}, jwe: {:?}, my_vk: {:?}",
+        "indy_unpack_message: entities >>> wallet_handle: {:?}, jwe: {:?}, sender: {:?}",
         wallet_handle,
         jwe,
-        sender_verkey
+        sender
     );
 
-    let result = CommandExecutor::instance().send(Command::Route(RouteCommand::UnpackMessage(
+    let result = CommandExecutor::instance().send(Command::Agent(AgentCommand::UnpackMessage(
         jwe,
-        sender_verkey,
+        sender,
         wallet_handle,
         Box::new(move |result| {
             let (err, plaintext, sender_vk) =
