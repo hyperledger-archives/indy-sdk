@@ -115,9 +115,18 @@ pub fn connect_register_provision(config: &str) -> Result<String,u32> {
     let seed_opt = if seed.len() > 0 {Some(seed.as_ref())} else {None};
     let (my_did, my_vk) = create_and_store_my_did(seed_opt)?;
 
+    let issuer_did;
+    let issuer_vk;
     let issuer_seed = my_config.enterprise_seed.as_ref().unwrap_or(&String::new()).to_string();
-    let issuer_seed_opt = if issuer_seed.len() > 0 {Some(issuer_seed.as_ref())} else {None};
-    let (issuer_did, issuer_vk) = create_and_store_my_did(issuer_seed_opt)?;
+    if issuer_seed != seed {
+        let issuer_seed_opt = if issuer_seed.len() > 0 { Some(issuer_seed.as_ref()) } else { None };
+        let (did1, vk1) = create_and_store_my_did(issuer_seed_opt)?;
+        issuer_did = did1;
+        issuer_vk = vk1;
+    } else {
+        issuer_did = my_did.clone();
+        issuer_vk = my_vk.clone();
+    }
 
     settings::set_config_value(settings::CONFIG_INSTITUTION_DID,&my_did);
     settings::set_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY,&my_vk);

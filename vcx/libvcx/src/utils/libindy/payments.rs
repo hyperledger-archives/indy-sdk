@@ -687,9 +687,9 @@ pub mod tests {
     // by master libindy and how wallets are deleted.
     #[cfg(feature = "pool_tests")]
     #[test]
-    #[ignore] // TODO: FIXME test is affected by the previous one
+    #[ignore]
     fn test_build_payment_request_bogus_payment_method() {
-        init!("false");
+        init!("ledger");
         let payment_address = "pay:bogus:123";
         let result_from_paying = pay_a_payee(0, payment_address);
 

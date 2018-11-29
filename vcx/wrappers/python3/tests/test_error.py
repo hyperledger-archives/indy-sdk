@@ -1,6 +1,5 @@
 import pytest
-from vcx.error import ErrorCode, VcxError
-from vcx.common import error_message
+from vcx.error import ErrorCode, VcxError, error_message
 
 
 def test_error():

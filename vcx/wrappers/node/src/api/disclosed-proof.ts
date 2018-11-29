@@ -134,8 +134,7 @@ export class DisclosedProof extends VCXBaseWithState<IDisclosedProofData> {
                 return
               }
               const newObj = new DisclosedProof(sourceId)
-              const handleStr = handle.toString()
-              newObj._setHandle(handleStr)
+              newObj._setHandle(handle)
               newObj._proofReq = proofReq
               resolve(newObj)
             })

@@ -668,7 +668,7 @@ mod tests {
         let handle = credential::credential_create_with_offer("test_send_request",::utils::constants::CREDENTIAL_OFFER_JSON).unwrap();
         assert_eq!(credential::get_state(handle).unwrap(),VcxStateType::VcxStateRequestReceived as u32);
 
-        let connection_handle = connection::build_connection("test_send_credential_offer").unwrap();
+        let connection_handle = connection::tests::build_test_connection();
         let cb = return_types_u32::Return_U32::new().unwrap();
         assert_eq!(vcx_credential_send_request(cb.command_handle,handle,connection_handle,0, Some(cb.get_callback())), error::SUCCESS.code_num);
         cb.receive(Some(Duration::from_secs(10))).unwrap();
@@ -677,7 +677,7 @@ mod tests {
     #[test]
     fn test_vcx_credential_get_new_offers(){
         init!("true");
-        let cxn = ::connection::build_connection("test_get_new_offers").unwrap();
+        let cxn = ::connection::tests::build_test_connection();
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         assert_eq!(vcx_credential_get_offers(cb.command_handle,
                                              cxn,
@@ -689,7 +689,7 @@ mod tests {
     #[test]
     fn test_vcx_credential_create() {
         init!("true");
-        let cxn = ::connection::build_connection("test_vcx_credential_create").unwrap();
+        let cxn = ::connection::tests::build_test_connection();
         let cb = return_types_u32::Return_U32_U32_STR::new().unwrap();
         assert_eq!(vcx_credential_create_with_msgid(cb.command_handle,
                                          CString::new("test_vcx_credential_create").unwrap().into_raw(),
@@ -713,7 +713,8 @@ mod tests {
     #[test]
     fn test_vcx_credential_update_state() {
         init!("true");
-        let cxn = ::connection::build_connection("test_credential_update_state").unwrap();
+        let cxn = ::connection::tests::build_test_connection();
+        ::connection::connect(cxn,None).unwrap();
         let handle = credential::from_string(DEFAULT_SERIALIZED_CREDENTIAL).unwrap();
         ::utils::httpclient::set_next_u8_response(::utils::constants::NEW_CREDENTIAL_OFFER_RESPONSE.to_vec());
         let cb = return_types_u32::Return_U32_U32::new().unwrap();

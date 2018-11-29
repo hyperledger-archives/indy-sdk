@@ -578,7 +578,8 @@ mod tests {
         let handle = issuer_credential::from_string(DEFAULT_SERIALIZED_ISSUER_CREDENTIAL).unwrap();
         assert_eq!(issuer_credential::get_state(handle).unwrap(),VcxStateType::VcxStateInitialized as u32);
 
-        let connection_handle = connection::build_connection("test_send_credential_offer").unwrap();
+        let connection_handle = ::connection::tests::build_test_connection();
+        connection::connect(connection_handle,None).unwrap();
 
         let cb = return_types_u32::Return_U32::new().unwrap();
         assert_eq!(vcx_issuer_send_credential_offer(cb.command_handle,
@@ -598,7 +599,8 @@ mod tests {
         let handle = issuer_credential::from_string(ISSUER_CREDENTIAL_STATE_ACCEPTED).unwrap();
 
         // create connection
-        let connection_handle = connection::build_connection("test_send_credential").unwrap();
+        let connection_handle = ::connection::tests::build_test_connection();
+        connection::connect(connection_handle,None).unwrap();
 
         // send the credential
         let cb = return_types_u32::Return_U32::new().unwrap();

@@ -46,19 +46,6 @@ def release(name, handle):
         raise VcxError(ErrorCode(err))
 
 
-def error_message(error_code: int) -> str:
-    logger = logging.getLogger(__name__)
-
-    name = 'vcx_error_c_message'
-    c_error_code = c_uint32(error_code)
-    c_err_msg = getattr(_cdll(), name)(c_error_code)
-
-    err_msg = cast(c_err_msg , c_char_p).value.decode()
-    logger.debug("error_message: Function %s returned error_message: %s", name, err_msg)
-
-    return err_msg
-
-
 def get_version() -> str:
     logger = logging.getLogger(__name__)
 

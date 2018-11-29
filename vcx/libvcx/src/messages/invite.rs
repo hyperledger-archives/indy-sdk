@@ -37,6 +37,8 @@ struct SendMsgDetailPayload {
     #[serde(rename = "phoneNo")]
     #[serde(skip_serializing_if = "Option::is_none")]
     phone: Option<String>,
+    #[serde(rename = "includePublicDID")]
+    include_public_did: bool,
 }
 
 #[derive(Clone, Serialize, Debug, PartialEq, PartialOrd)]
@@ -77,6 +79,9 @@ pub struct SendInvite {
     validate_rc: u32,
     agent_did: String,
     agent_vk: String,
+    #[serde(rename = "publicDID")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    public_did: Option<String>,
 }
 
 #[derive(Clone, Serialize, Debug, PartialEq, PartialOrd)]
@@ -103,6 +108,9 @@ pub struct SenderDetail {
     pub logo_url: Option<String>,
     #[serde(rename = "verKey")]
     pub verkey: String,
+    #[serde(rename = "publicDID")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub public_did: Option<String>,
 }
 
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq, PartialOrd)]
@@ -158,6 +166,7 @@ impl InviteDetail {
                 did: String::new(),
                 logo_url: Some(String::new()),
                 verkey: String::new(),
+                public_did: None,
             },
             sender_agency_detail: SenderAgencyDetail {
                 did: String::new(),
@@ -183,11 +192,14 @@ impl SendInvite{
                 msg_detail_payload: SendMsgDetailPayload {
                     msg_type: MsgType { name: "MSG_DETAIL".to_string(), ver: "1.0".to_string(), } ,
                     key_proof: KeyDlgProofPayload { agent_did: String::new(), agent_delegated_key: String::new(), signature: String::new() , } ,
-                    phone: None, } ,
+                    phone: None,
+                    include_public_did: false,
+                } ,
             },
             validate_rc: error::SUCCESS.code_num,
             agent_did: String::new(),
             agent_vk: String::new(),
+            public_did: None,
         }
     }
 
@@ -202,6 +214,14 @@ impl SendInvite{
                 self
             }
         }
+    }
+
+    pub fn public_did(&mut self, did: Option<String>) -> &mut Self{
+        if did.is_some() {
+            self.payload.msg_detail_payload.include_public_did = true;
+        }
+        self.public_did = did.clone();
+        self
     }
 
     pub fn phone_number(&mut self, phone_number: &Option<String>)-> &mut Self{
@@ -220,7 +240,7 @@ impl SendInvite{
 
     pub fn generate_signature(&mut self) -> Result<u32, u32> {
         let signature = format!("{}{}", self.payload.msg_detail_payload.key_proof.agent_did, self.payload.msg_detail_payload.key_proof.agent_delegated_key);
-        let signature = crypto::sign(wallet::get_wallet_handle(), &self.to_vk, signature.as_bytes())?;
+        let signature = crypto::sign(&self.to_vk, signature.as_bytes())?;
         let signature = base64::encode(&signature);
         self.payload.msg_detail_payload.key_proof.signature = signature.to_string();
         Ok(error::SUCCESS.code_num)
@@ -329,7 +349,7 @@ impl AcceptInvite{
 
     pub fn generate_signature(&mut self) -> Result<u32, u32> {
         let signature = format!("{}{}", self.payload.msg_detail_payload.key_proof.agent_did, self.payload.msg_detail_payload.key_proof.agent_delegated_key);
-        let signature = crypto::sign(wallet::get_wallet_handle(), &self.to_vk, signature.as_bytes())?;
+        let signature = crypto::sign(&self.to_vk, signature.as_bytes())?;
         let signature = base64::encode(&signature);
         self.payload.msg_detail_payload.key_proof.signature = signature.to_string();
         Ok(error::SUCCESS.code_num)
