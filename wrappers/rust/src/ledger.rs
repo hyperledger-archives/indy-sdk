@@ -949,9 +949,16 @@ fn _parse_get_revoc_reg_delta_response(command_handle: IndyHandle, get_revoc_reg
     ErrorCode::from(unsafe { ledger::indy_parse_get_revoc_reg_delta_response(command_handle,get_revoc_reg_delta_response.as_ptr(), cb) })
 }
 
-/// Distributed Ledgers can reply with outdated information for consequence read request after write.
+/// Parse transaction response to fetch metadata.
+/// The important use case for this method is validation of Node's response freshens.
 ///
-/// THis function can be used to parse transaction response to fetch metadata can be used for filtering outdated response.
+/// Distributed Ledgers can reply with outdated information for consequence read request after write.
+/// To reduce pool load libindy sends read requests to one random node in the pool.
+/// Consensus validation is performed based on validation of nodes multi signature for current ledger Merkle Trie root.
+/// This multi signature contains information about the latest ldeger's transaction ordering time and sequence number that this method returns.
+///
+/// If node that returned response for some reason is out of consensus and has outdated ledger
+/// it can be caught by analysis of the returned latest ledger's transaction ordering time and sequence number.
 ///
 /// There are two ways to filter outdated responses:
 ///     1) based on "seqNo" - sender knows the sequence number of transaction that he consider as a fresh enough.

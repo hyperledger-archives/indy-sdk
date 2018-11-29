@@ -1216,15 +1216,22 @@ async def parse_get_revoc_reg_delta_response(get_revoc_reg_delta_response: str) 
 
 async def get_response_metadata(response: str) -> str:
     """
-    Distributed Ledgers can reply with outdated information for consequence read request after write.
-   
-    THis function can be used to parse transaction response to fetch metadata can be used for filtering outdated response.
-   
-    There are two ways to filter outdated responses:
-        1) based on "seqNo" - sender knows the sequence number of transaction that he consider as a fresh enough.
-        2) based on "txnTime" - sender knows the timestamp that he consider as a fresh enough.
-   
-    Note: response of GET_VALIDATOR_INFO request isn't supported
+     Parse transaction response to fetch metadata.
+     The important use case for this method is validation of Node's response freshens.
+
+     Distributed Ledgers can reply with outdated information for consequence read request after write.
+     To reduce pool load libindy sends read requests to one random node in the pool.
+     Consensus validation is performed based on validation of nodes multi signature for current ledger Merkle Trie root.
+     This multi signature contains information about the latest ldeger's transaction ordering time and sequence number that this method returns.
+
+     If node that returned response for some reason is out of consensus and has outdated ledger
+     it can be caught by analysis of the returned latest ledger's transaction ordering time and sequence number.
+
+     There are two ways to filter outdated responses:
+         1) based on "seqNo" - sender knows the sequence number of transaction that he consider as a fresh enough.
+         2) based on "txnTime" - sender knows the timestamp that he consider as a fresh enough.
+
+     Note: response of GET_VALIDATOR_INFO request isn't supported
 
     :param response: response of write or get request.
     :return: Response Metadata.
