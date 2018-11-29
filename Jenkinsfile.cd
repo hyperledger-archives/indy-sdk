@@ -1274,11 +1274,11 @@ def androidBuildArtifact(buildEnv, arch, libVersion, artifact) {
     def artifactName = artifact.toString().toUpperCase()
 
     if (artifactName == "LIBINDY") {
-        dir(artifact) {
-            buildEnv.inside {
-                sh "${artifactName}_VERSION=${libVersion} ./${ANDROID_SCRIPT_PATH} -d $arch"
-                stash includes: "libindy_android_${arch}_${libVersion}.zip", name: "libindy_${arch}_zip"
-            }
+        buildEnv.inside {
+            sh "cd libindy && ${artifactName}_VERSION=${libVersion} ./${ANDROID_SCRIPT_PATH} -d $arch"
+            def libindy_zip_name = "libindy_android_${arch}_${libVersion}.zip"
+            sh "cp libindy/${libindy_zip_name} ./"
+            stash includes: "${libindy_zip_name}", name: "libindy_${arch}_zip"
         }
     } else if (artifactName == "LIBNULLPAY") {
         buildEnv.inside {
