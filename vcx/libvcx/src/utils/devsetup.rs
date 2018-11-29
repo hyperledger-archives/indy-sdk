@@ -212,7 +212,8 @@ pub mod tests {
     }
 
     pub fn setup_local_env() {
-        use indy::ledger::Ledger;
+        use indy::ledger;
+        use futures::Future;
 
         settings::clear_config();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
@@ -271,9 +272,9 @@ pub mod tests {
         // make enterprise and consumer trustees on the ledger
         wallet::init_wallet(settings::DEFAULT_WALLET_NAME).unwrap();
         let (trustee_did, _) = ::utils::libindy::signus::create_and_store_my_did(Some(TRUSTEE)).unwrap();
-        let req_nym = Ledger::build_nym_request(&trustee_did, &did1, Some(&vk1), None, Some("TRUSTEE")).unwrap();
+        let req_nym = ledger::build_nym_request(&trustee_did, &did1, Some(&vk1), None, Some("TRUSTEE")).wait().unwrap();
         ::utils::libindy::ledger::libindy_sign_and_submit_request(&trustee_did, &req_nym).unwrap();
-        let req_nym = Ledger::build_nym_request(&trustee_did, &did2, Some(&vk2), None, Some("TRUSTEE")).unwrap();
+        let req_nym = ledger::build_nym_request(&trustee_did, &did2, Some(&vk2), None, Some("TRUSTEE")).wait().unwrap();
         ::utils::libindy::ledger::libindy_sign_and_submit_request(&trustee_did, &req_nym).unwrap();
         wallet::delete_wallet(settings::DEFAULT_WALLET_NAME).unwrap();
 

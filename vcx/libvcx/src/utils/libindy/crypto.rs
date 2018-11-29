@@ -53,5 +53,7 @@ pub fn sign(my_vk: &str, msg: &[u8]) -> Result<Vec<u8>, u32> {
 }
 
 pub fn verify(vk: &str, msg: &str, signature: &[u8]) -> Result<bool, u32> {
-    crypto::verify(vk, msg.as_bytes(), signature).map_err(map_rust_indy_sdk_error_code)
+    crypto::verify(vk, msg.as_bytes(), signature)
+	.wait()
+	.map_err(map_rust_indy_sdk_error_code)
 }
