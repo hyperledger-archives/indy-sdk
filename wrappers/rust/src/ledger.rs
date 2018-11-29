@@ -949,7 +949,15 @@ fn _parse_get_revoc_reg_delta_response(command_handle: IndyHandle, get_revoc_reg
     ErrorCode::from(unsafe { ledger::indy_parse_get_revoc_reg_delta_response(command_handle,get_revoc_reg_delta_response.as_ptr(), cb) })
 }
 
-/// Parse response to fetch transaction metadata.
+/// Distributed Ledgers can reply with outdated information for consequence read request after write.
+///
+/// THis function can be used to parse transaction response to fetch metadata can be used for filtering outdated response.
+///
+/// There are two ways to filter outdated responses:
+///     1) based on "seqNo" - sender knows the sequence number of transaction that he consider as a fresh enough.
+///     2) based on "txnTime" - sender knows the timestamp that he consider as a fresh enough.
+///
+/// Note: response of GET_VALIDATOR_INFO request isn't supported
 ///
 /// # Arguments
 /// * `response` - response of write or get request.
@@ -961,8 +969,8 @@ fn _parse_get_revoc_reg_delta_response(command_handle: IndyHandle, get_revoc_reg
 /// {
 ///     "seqNo": Option<u64> - transaction sequence number,
 ///     "txnTime": Option<u64> - transaction ordering time,
-///     "lastSeqNo": Option<u64> - the latest transaction seqnNo,
-///     "lastTxnTime": Option<u64> - the latest transaction ordering time
+///     "lastSeqNo": Option<u64> - the latest transaction seqNo for particular Node,
+///     "lastTxnTime": Option<u64> - the latest transaction ordering time for particular Node
 /// }
 pub fn get_response_metadata(response: &str) -> Box<Future<Item=String, Error=ErrorCode>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();

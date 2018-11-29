@@ -2090,7 +2090,6 @@ mod medium_cases {
 
             let node_request = ledger::build_node_request(&did, &did, NODE_DATA).unwrap();
             let response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &did, &node_request).unwrap();
-            println!("{}", response);
             pool::check_response_type(&response, ResponseType::REJECT);
 
             utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);

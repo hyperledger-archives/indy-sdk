@@ -912,7 +912,13 @@ extern "C" {
                                                                );
 
 
-    /// Parse response to fetch transaction metadata.
+    /// Distributed Ledgers can reply with outdated information for consequence read request after write.
+    ///
+    /// THis function can be used to parse transaction response to fetch metadata can be used for filtering outdated response.
+    ///
+    /// There are two ways to filter outdated responses:
+    ///     1) based on "seqNo" - sender knows the sequence number of transaction that he consider as a fresh enough.
+    ///     2) based on "txnTime" - sender knows the timestamp that he consider as a fresh enough.
     ///
     /// Note: response of GET_VALIDATOR_INFO request isn't supported
     ///
@@ -926,8 +932,8 @@ extern "C" {
     /// {
     ///     "seqNo": Option<u64> - transaction sequence number,
     ///     "txnTime": Option<u64> - transaction ordering time,
-    ///     "lastSeqNo": Option<u64> - the latest transaction seqnNo,
-    ///     "lastTxnTime": Option<u64> - the latest transaction ordering time
+    ///     "lastSeqNo": Option<u64> - the latest transaction seqNo for particular Node,
+    ///     "lastTxnTime": Option<u64> - the latest transaction ordering time for particular Node
     /// }
     ///
     /// #Errors

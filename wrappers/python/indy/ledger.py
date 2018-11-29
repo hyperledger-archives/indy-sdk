@@ -1212,3 +1212,44 @@ async def parse_get_revoc_reg_delta_response(get_revoc_reg_delta_response: str) 
     res = (revoc_reg_def_id.decode(), revoc_reg_delta_json.decode(), timestamp)
     logger.debug("parse_get_revoc_reg_delta_response: <<< res: %r", res)
     return res
+
+
+async def get_response_metadata(response: str) -> str:
+    """
+    Distributed Ledgers can reply with outdated information for consequence read request after write.
+   
+    THis function can be used to parse transaction response to fetch metadata can be used for filtering outdated response.
+   
+    There are two ways to filter outdated responses:
+        1) based on "seqNo" - sender knows the sequence number of transaction that he consider as a fresh enough.
+        2) based on "txnTime" - sender knows the timestamp that he consider as a fresh enough.
+   
+    Note: response of GET_VALIDATOR_INFO request isn't supported
+
+    :param response: response of write or get request.
+    :return: Response Metadata.
+    {
+        "seqNo": Option<u64> - transaction sequence number,
+        "txnTime": Option<u64> - transaction ordering time,
+        "lastSeqNo": Option<u64> - the latest transaction seqNo for particular Node,
+        "lastTxnTime": Option<u64> - the latest transaction ordering time for particular Node
+    }
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("get_response_metadata: >>> response: %r",
+                 response)
+
+    if not hasattr(get_response_metadata, "cb"):
+        logger.debug("get_response_metadata: Creating callback")
+        get_response_metadata.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_response = c_char_p(response.encode('utf-8'))
+
+    response_metadata = await do_call('indy_get_response_metadata',
+                                      c_response,
+                                      get_response_metadata.cb)
+
+    res = response_metadata.decode()
+    logger.debug("get_response_metadata: <<< res: %r", res)
+    return res

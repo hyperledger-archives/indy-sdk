@@ -1666,6 +1666,31 @@ Parse a GET\_REVOC\_REG\_DELTA response to get Revocation Registry Delta in the 
 
 Errors: `Common*`
 
+#### getResponseMetadata \( response \) -&gt; \[ responseMetadata \]
+
+Distributed Ledgers can reply with outdated information for consequence read request after write.
+
+This function can be used to parse transaction response to fetch metadata can be used for filtering outdated response.
+
+There are two ways to filter outdated responses:
+* based on "seqNo" - sender knows the sequence number of transaction that he consider as a fresh enough.
+* based on "txnTime" - sender knows the timestamp that he consider as a fresh enough.
+
+Note: response of GET_VALIDATOR_INFO request isn't supported
+
+* `response`: response of write or get request.
+* __->__ [ `responseMetadata`: String ] - Response Metadata.
+```
+{
+    "seqNo": Option<u64> - transaction sequence number,
+    "txnTime": Option<u64> - transaction ordering time,
+    "lastSeqNo": Option<u64> - the latest transaction seqNo for particular Node,
+    "lastTxnTime": Option<u64> - the latest transaction ordering time for particular Node
+}
+````
+
+Errors: `Common*`
+
 ### non_secrets
 
 #### addWalletRecord \( wh, type, id, value, tags \) -&gt; void
