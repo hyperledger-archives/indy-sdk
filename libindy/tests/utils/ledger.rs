@@ -194,6 +194,10 @@ pub fn register_transaction_parser_for_sp(txn_type: &str, parse: CustomTransacti
     super::results::result_to_empty(err, receiver)
 }
 
+pub fn get_response_metadata(response: &str) -> Result<String, ErrorCode> {
+    ledger::get_response_metadata(response).wait()
+}
+
 pub fn post_entities() -> (&'static str, &'static str, &'static str) {
     lazy_static! {
                     static ref COMMON_ENTITIES_INIT: Once = ONCE_INIT;

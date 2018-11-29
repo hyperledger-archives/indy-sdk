@@ -1523,6 +1523,148 @@ mod high_cases {
             utils::tear_down();
         }
     }
+
+    mod get_response_metadata {
+        use super::*;
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn get_response_metadata_works_for_nym_requests() {
+            let (wallet_handle, pool_handle, trustee_did) = utils::setup_trustee();
+
+            let (did, _) = did::create_and_store_my_did(wallet_handle, None).unwrap();
+
+            let nym_request = ledger::build_nym_request(&trustee_did, &did, None, None, None).unwrap();
+            let nym_resp = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
+
+            let response_metadata = ledger::get_response_metadata(&nym_resp).unwrap();
+            _check_write_response_metadata(&response_metadata);
+
+            let get_nym_request = ledger::build_get_nym_request(None, &did).unwrap();
+            let get_nym_response = ledger::submit_request_with_retries(pool_handle, &get_nym_request, &nym_resp).unwrap();
+
+            let response_metadata = ledger::get_response_metadata(&get_nym_response).unwrap();
+            _check_read_response_metadata(&response_metadata);
+
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn get_response_metadata_works_for_get_txn_request() {
+            let (wallet_handle, pool_handle, trustee_did) = utils::setup_trustee();
+
+            let (did, _) = did::create_and_store_my_did(wallet_handle, None).unwrap();
+
+            let nym_request = ledger::build_nym_request(&trustee_did, &did, None, None, None).unwrap();
+            let nym_resp = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
+
+            let response_metadata = ledger::get_response_metadata(&nym_resp).unwrap();
+            let response_metadata: serde_json::Value = serde_json::from_str(&response_metadata).unwrap();
+
+            let seq_no = response_metadata["seqNo"].as_u64().unwrap() as i32;
+
+            let get_txn_request = ledger::build_get_txn_request(None, seq_no, None).unwrap();
+            let get_txn_response = ledger::submit_request(pool_handle, &get_txn_request).unwrap();
+
+            let response_metadata = ledger::get_response_metadata(&get_txn_response).unwrap();
+            let response_metadata: serde_json::Value = serde_json::from_str(&response_metadata).unwrap();
+            assert!(response_metadata["seqNo"].as_u64().is_some());
+            assert!(response_metadata["txnTime"].as_u64().is_none());
+            assert!(response_metadata["lastTxnTime"].as_u64().is_none());
+            assert!(response_metadata["lastSeqNo"].as_u64().is_none());
+
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn get_response_metadata_works_for_pool_config_request() {
+            let (wallet_handle, pool_handle, trustee_did) = utils::setup_trustee();
+
+            let request = ledger::build_pool_config_request(&trustee_did, true, false).unwrap();
+            let response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &request).unwrap();
+
+            let response_metadata = ledger::get_response_metadata(&response).unwrap();
+            _check_write_response_metadata(&response_metadata);
+
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn get_response_metadata_works_for_revocation_related_get_requests() {
+            let (wallet_handle, pool_handle) = utils::setup_with_wallet_and_pool();
+
+            let (_, _, rev_reg_id) = ledger::post_entities();
+
+            let timestamp = time::get_time().sec as u64 + 1000;
+
+            let get_rev_reg_req = ledger::build_get_revoc_reg_request(Some(DID_MY1), &rev_reg_id, timestamp).unwrap();
+            let get_rev_reg_resp = ledger::submit_request(pool_handle, &get_rev_reg_req).unwrap();
+
+            let response_metadata = ledger::get_response_metadata(&get_rev_reg_resp).unwrap();
+            _check_read_response_metadata(&response_metadata);
+
+            let get_rev_reg_delta_req = ledger::build_get_revoc_reg_delta_request(Some(DID_MY1), &rev_reg_id, None, timestamp).unwrap();
+            let get_rev_reg_delta_resp = ledger::submit_request(pool_handle, &get_rev_reg_delta_req).unwrap();
+
+            let response_metadata = ledger::get_response_metadata(&get_rev_reg_delta_resp).unwrap();
+            _check_read_response_metadata(&response_metadata);
+
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn get_response_metadata_works_for_invalid_response() {
+            utils::setup();
+
+            let res = ledger::get_response_metadata("{}");
+            assert_eq!(ErrorCode::LedgerInvalidTransaction, res.unwrap_err());
+
+            utils::tear_down();
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn get_response_metadata_works_for_not_found_response() {
+            let (wallet_handle, pool_handle) = utils::setup_with_wallet_and_pool();
+
+            let (did, _) = did::create_and_store_my_did(wallet_handle, None).unwrap();
+
+            let get_nym_request = ledger::build_get_nym_request(Some(&did), &did).unwrap();
+            let get_nym_response = ledger::submit_request(pool_handle, &get_nym_request).unwrap();
+
+            let response_metadata = ledger::get_response_metadata(&get_nym_response).unwrap();
+            let response_metadata: serde_json::Value = serde_json::from_str(&response_metadata).unwrap();
+
+            assert!(response_metadata["lastTxnTime"].as_u64().is_some());
+            assert!(response_metadata["seqNo"].as_u64().is_none());
+            assert!(response_metadata["txnTime"].as_u64().is_none());
+            assert!(response_metadata["lastSeqNo"].as_u64().is_none());
+
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
+        }
+
+        fn _check_write_response_metadata(response_metadata: &str) {
+            let response_metadata: serde_json::Value = serde_json::from_str(response_metadata).unwrap();
+
+            assert!(response_metadata["seqNo"].as_u64().is_some());
+            assert!(response_metadata["txnTime"].as_u64().is_some());
+            assert!(response_metadata["lastTxnTime"].as_u64().is_none());
+            assert!(response_metadata["lastSeqNo"].as_u64().is_none());
+        }
+
+        fn _check_read_response_metadata(response_metadata: &str) {
+            let response_metadata: serde_json::Value = serde_json::from_str(response_metadata).unwrap();
+
+            assert!(response_metadata["seqNo"].as_u64().is_some());
+            assert!(response_metadata["txnTime"].as_u64().is_some());
+            assert!(response_metadata["lastTxnTime"].as_u64().is_some());
+            assert!(response_metadata["lastSeqNo"].as_u64().is_none());
+        }
+    }
 }
 
 mod medium_cases {
@@ -1948,6 +2090,7 @@ mod medium_cases {
 
             let node_request = ledger::build_node_request(&did, &did, NODE_DATA).unwrap();
             let response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &did, &node_request).unwrap();
+            println!("{}", response);
             pool::check_response_type(&response, ResponseType::REJECT);
 
             utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);

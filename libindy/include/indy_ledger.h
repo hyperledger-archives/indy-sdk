@@ -911,6 +911,36 @@ extern "C" {
                                                                                      unsigned long long      timestamp)
                                                                );
 
+
+    /// Parse response to fetch transaction metadata.
+    ///
+    /// Note: response of GET_VALIDATOR_INFO request isn't supported
+    ///
+    /// #Params
+    /// command_handle: command handle to map callback to caller context.
+    /// response: response of write or get request.
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// response metadata.
+    /// {
+    ///     "seqNo": Option<u64> - transaction sequence number,
+    ///     "txnTime": Option<u64> - transaction ordering time,
+    ///     "lastSeqNo": Option<u64> - the latest transaction seqnNo,
+    ///     "lastTxnTime": Option<u64> - the latest transaction ordering time
+    /// }
+    ///
+    /// #Errors
+    /// Common*
+    /// Ledger*
+    extern indy_error_t indy_get_response_metadata(indy_handle_t command_handle,
+                                                   const char *  response,
+
+                                                   void           (*cb)(indy_handle_t command_handle_,
+                                                                        indy_error_t  err,
+                                                                        const char*   response_metadata)
+                                                  );
+
 #ifdef __cplusplus
 }
 #endif

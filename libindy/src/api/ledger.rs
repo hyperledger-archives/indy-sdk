@@ -1768,3 +1768,56 @@ pub extern fn indy_register_transaction_parser_for_sp(command_handle: IndyHandle
 
     res
 }
+
+/// Parse response to fetch transaction metadata.
+///
+/// Note: response of GET_VALIDATOR_INFO request isn't supported
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// response: response of write or get request.
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// response metadata.
+/// {
+///     "seqNo": Option<u64> - transaction sequence number,
+///     "txnTime": Option<u64> - transaction ordering time,
+///     "lastSeqNo": Option<u64> - the latest transaction seqnNo,
+///     "lastTxnTime": Option<u64> - the latest transaction ordering time
+/// }
+///
+/// #Errors
+/// Common*
+/// Ledger*
+#[no_mangle]
+pub extern fn indy_get_response_metadata(command_handle: IndyHandle,
+                                         response: *const c_char,
+                                         cb: Option<extern fn(command_handle_: IndyHandle,
+                                                              err: ErrorCode,
+                                                              response_metadata: *const c_char)>) -> ErrorCode {
+    trace!("indy_get_response_metadata: >>> response: {:?}", response);
+
+    check_useful_c_str!(response, ErrorCode::CommonInvalidParam2);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
+
+    trace!("indy_get_response_metadata: entities >>> response: {:?}", response);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Ledger(LedgerCommand::GetResponseMetadata(
+            response,
+            Box::new(move |result| {
+                let (err, response_metadata) = result_to_err_code_1!(result, String::new());
+                trace!("indy_get_response_metadata: response_metadata: {:?}", response_metadata);
+
+                let response_metadata = ctypes::string_to_cstring(response_metadata);
+                cb(command_handle, err, response_metadata.as_ptr())
+            })
+        )));
+
+    let res = result_to_err_code!(result);
+
+    trace!("indy_get_response_metadata: <<< res: {:?}", res);
+
+    res
+}

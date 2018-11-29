@@ -948,3 +948,32 @@ fn _parse_get_revoc_reg_delta_response(command_handle: IndyHandle, get_revoc_reg
 
     ErrorCode::from(unsafe { ledger::indy_parse_get_revoc_reg_delta_response(command_handle,get_revoc_reg_delta_response.as_ptr(), cb) })
 }
+
+/// Parse response to fetch transaction metadata.
+///
+/// # Arguments
+/// * `response` - response of write or get request.
+///
+/// Note: response of GET_VALIDATOR_INFO request isn't supported
+///
+/// # Returns
+/// response metadata
+/// {
+///     "seqNo": Option<u64> - transaction sequence number,
+///     "txnTime": Option<u64> - transaction ordering time,
+///     "lastSeqNo": Option<u64> - the latest transaction seqnNo,
+///     "lastTxnTime": Option<u64> - the latest transaction ordering time
+/// }
+pub fn get_response_metadata(response: &str) -> Box<Future<Item=String, Error=ErrorCode>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+
+    let err = _get_response_metadata(command_handle, response, cb);
+
+    ResultHandler::str(command_handle, err, receiver)
+}
+
+fn _get_response_metadata(command_handle: IndyHandle, response: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+    let response = c_str!(response);
+
+    ErrorCode::from(unsafe { ledger::indy_get_response_metadata(command_handle,response.as_ptr(), cb) })
+}
