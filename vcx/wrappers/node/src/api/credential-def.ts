@@ -189,7 +189,7 @@ export class CredentialDef extends VCXBase<ICredentialDefData> {
     return this._credDefId
   }
 
-  protected _setHandle (handle: string) {
+  protected _setHandle (handle: number) {
     super._setHandle(handle)
     this.paymentManager = new CredentialDefPaymentManager({ handle })
   }
