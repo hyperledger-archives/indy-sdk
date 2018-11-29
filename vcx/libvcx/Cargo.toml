@@ -42,7 +42,7 @@ rmp-serde = "0.13.7"
 base64 = "0.8.0"
 openssl = "0.10"
 num-traits = "0.2.0"
-indy = { version = "1.6.7", path = "../../wrappers/rust/" }
+indy = { version = "1.6.8", path = "../../wrappers/rust/" }
 log-panics = "2.0.0"
 tokio-threadpool = "0.1.6"
 futures = "0.1.23"
@@ -65,7 +65,7 @@ dirs = "1.0.4"
 [package.metadata.deb]
 maintainer = "Evernym, Inc."
 copyright = "2018, Evernym Inc."
-depends = "$auto, libindy (=1.6.6)"
+depends = "$auto, libindy (=1.6.8)"
 extended-description = """\
 This is Evernym's SDK for managing Verifiable Credential eXchange against an Indy network. For specific instructions on building see the README in the corresponding github repo https://github.com/evernym/sdk"""
 section = "admin"
