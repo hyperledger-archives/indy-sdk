@@ -567,5 +567,29 @@
  */
 + (void)parseGetRevocRegDeltaResponse:(NSString *)getRevocRegDeltaResponse
                            completion:(void (^)(NSError *error, NSString *revocRegDefId, NSString *revocRegDeltaJson, NSNumber *timestamp))completion;
+                           
+/**
+ Distributed Ledgers can reply with outdated information for consequence read request after write.
+
+ This function can be used to parse transaction response to fetch metadata can be used for filtering outdated response.
+
+ There are two ways to filter outdated responses:
+     1) based on "seqNo" - sender knows the sequence number of transaction that he consider as a fresh enough.
+     2) based on "txnTime" - sender knows the timestamp that he consider as a fresh enough.
+
+ Note: response of GET_VALIDATOR_INFO request isn't supported
+
+ @param response esponse of write or get request.
+ @param completion Callback that takes command result as parameter.
+ Returns Response Metadata
+     {
+         "seqNo": Option<u64> - transaction sequence number,
+         "txnTime": Option<u64> - transaction ordering time,
+         "lastSeqNo": Option<u64> - the latest transaction seqNo for particular Node,
+         "lastTxnTime": Option<u64> - the latest transaction ordering time for particular Node
+     }
+ */
++ (void)getResponseMetadata:(NSString *)response
+                 completion:(void (^)(NSError *error, NSString *responseMetadata))completion;
 
 @end
