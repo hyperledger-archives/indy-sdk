@@ -981,9 +981,8 @@ mod high_cases {
 
             let schema_request = ledger::build_schema_request(&did, &anoncreds::gvt_schema_json()).unwrap();
             let schema_response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &did, &schema_request).unwrap();
-            let schema: serde_json::Value = serde_json::from_str(&schema_response).unwrap();
 
-            let seq_no = schema["result"]["txnMetadata"]["seqNo"].as_i64().unwrap() as i32;
+            let seq_no = ledger::extract_seq_no_from_reply(&schema_response).unwrap() as i32;
 
             thread::sleep(std::time::Duration::from_secs(3));
 
@@ -1010,10 +1009,8 @@ mod high_cases {
 
             let schema_request = ledger::build_schema_request(&did, &anoncreds::gvt_schema_json()).unwrap();
             let schema_response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &did, &schema_request).unwrap();
-            let schema: serde_json::Value = serde_json::from_str(&schema_response).unwrap();
 
-            let seq_no = schema["result"]["txnMetadata"]["seqNo"].as_i64().unwrap() as i32;
-
+            let seq_no = ledger::extract_seq_no_from_reply(&schema_response).unwrap() as i32;
             let seq_no = seq_no + 1;
 
             thread::sleep(std::time::Duration::from_secs(3));
