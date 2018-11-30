@@ -706,4 +706,23 @@
     }
 }
 
++ (void)getResponseMetadata:(NSString *)response
+                 completion:(void (^)(NSError *error, NSString *responseMetadata))completion {
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = indy_get_response_metadata(handle,
+            [response UTF8String],
+            IndyWrapperCommonStringCallback);
+
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret], nil);
+        });
+    }
+}
+
 @end

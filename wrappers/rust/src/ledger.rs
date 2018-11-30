@@ -948,3 +948,47 @@ fn _parse_get_revoc_reg_delta_response(command_handle: IndyHandle, get_revoc_reg
 
     ErrorCode::from(unsafe { ledger::indy_parse_get_revoc_reg_delta_response(command_handle,get_revoc_reg_delta_response.as_ptr(), cb) })
 }
+
+/// Parse transaction response to fetch metadata.
+/// The important use case for this method is validation of Node's response freshens.
+///
+/// Distributed Ledgers can reply with outdated information for consequence read request after write.
+/// To reduce pool load libindy sends read requests to one random node in the pool.
+/// Consensus validation is performed based on validation of nodes multi signature for current ledger Merkle Trie root.
+/// This multi signature contains information about the latest ldeger's transaction ordering time and sequence number that this method returns.
+///
+/// If node that returned response for some reason is out of consensus and has outdated ledger
+/// it can be caught by analysis of the returned latest ledger's transaction ordering time and sequence number.
+///
+/// There are two ways to filter outdated responses:
+///     1) based on "seqNo" - sender knows the sequence number of transaction that he consider as a fresh enough.
+///     2) based on "txnTime" - sender knows the timestamp that he consider as a fresh enough.
+///
+/// Note: response of GET_VALIDATOR_INFO request isn't supported
+///
+/// # Arguments
+/// * `response` - response of write or get request.
+///
+/// Note: response of GET_VALIDATOR_INFO request isn't supported
+///
+/// # Returns
+/// response metadata
+/// {
+///     "seqNo": Option<u64> - transaction sequence number,
+///     "txnTime": Option<u64> - transaction ordering time,
+///     "lastSeqNo": Option<u64> - the latest transaction seqNo for particular Node,
+///     "lastTxnTime": Option<u64> - the latest transaction ordering time for particular Node
+/// }
+pub fn get_response_metadata(response: &str) -> Box<Future<Item=String, Error=ErrorCode>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+
+    let err = _get_response_metadata(command_handle, response, cb);
+
+    ResultHandler::str(command_handle, err, receiver)
+}
+
+fn _get_response_metadata(command_handle: IndyHandle, response: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+    let response = c_str!(response);
+
+    ErrorCode::from(unsafe { ledger::indy_get_response_metadata(command_handle,response.as_ptr(), cb) })
+}
