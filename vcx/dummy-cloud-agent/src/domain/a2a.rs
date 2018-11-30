@@ -287,6 +287,8 @@ pub struct ConnectionRequestMessageDetail {
     pub target_name: Option<String>,
     #[serde(rename = "phoneNo")]
     pub phone_no: Option<String>,
+    #[serde(rename = "usePublicDID")]
+    pub use_public_did: Option<bool>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]

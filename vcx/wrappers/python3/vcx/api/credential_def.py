@@ -1,7 +1,7 @@
 from ctypes import *
-from vcx.error import VcxError, ErrorCode
+from vcx.error import VcxError, ErrorCode, error_message
 from vcx.api.vcx_base import VcxBase
-from vcx.common import do_call, create_cb, error_message
+from vcx.common import do_call, create_cb
 
 import json
 
