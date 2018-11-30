@@ -10,7 +10,7 @@ package="$1"
 [ -z ${package} ] && exit 1
 
 export PKG_CONFIG_ALLOW_CROSS=1
-export OPENSSL_DIR=/usr/local/Cellar/openssl/1.0.2l
+export OPENSSL_DIR=/usr/local/Cellar/openssl/1.0.2p
 export POD_FILE_NAME=${package}.tar.gz
 
 echo "Build IOS POD started..."

@@ -1,14 +1,14 @@
 source 'https://github.com/CocoaPods/Specs.git'
 source 'https://github.com/hyperledger/indy-sdk.git'
-platform :ios, '10.2'
+platform :ios, '12.1'
 
 workspace 'Indy.xcworkspace'
 
 def appPods
-    pod 'libsodium'
+    pod 'libsodium', "1.0.12"
     pod 'libzmq',"4.2.3"
-    pod 'OpenSSL'
-    pod 'libindy', "1.6.2"
+    pod 'OpenSSL-lib-iOS'
+    pod 'ISO8601DateFormatter'
 end
 
 target 'Indy-demo' do
@@ -16,7 +16,7 @@ target 'Indy-demo' do
     pod 'CoreBitcoin', :podspec => 'https://raw.github.com/oleganza/CoreBitcoin/master/CoreBitcoin.podspec'
 
     target 'Indy-demoTests' do
-	inherit! :search_paths
+        inherit! :search_paths
     end
 end
 
