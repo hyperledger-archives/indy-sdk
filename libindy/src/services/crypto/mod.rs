@@ -894,6 +894,7 @@ mod tests {
 
     }
 
+    #[test]
     pub fn test_auth_encrypt_recipient_works() {
         //setup route_service
         let service: CryptoService = CryptoService::new();
@@ -917,7 +918,7 @@ mod tests {
             .auth_encrypt_recipient(&my_key_for_encrypt, &their_did_for_encrypt.verkey, &sym_key);
 
         //verify no errors are thrown
-        assert_eq!(auth_recipient.is_ok());
+        assert!(auth_recipient.is_ok());
     }
 
 //    pub fn test_auth_encrypt_and_auth_decrypt_recipient_works() {
