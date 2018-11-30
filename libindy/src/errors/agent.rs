@@ -8,12 +8,8 @@ use errors::common::CommonError;
 
 #[derive(Debug)]
 pub enum AgentError {
-    EncryptionError(String),
-
-    DecodeError(String),
     UnpackError(String),
     PackError(String),
-    SerializationError(String),
     CommonError(CommonError)
 }
 

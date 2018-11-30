@@ -12,6 +12,7 @@ use services::wallet::WalletService;
 use services::wallet::RecordOptions;
 use std::rc::Rc;
 use std::result;
+use utils::crypto::base64;
 
 type Result<T> = result::Result<T, IndyError>;
 
@@ -59,7 +60,7 @@ impl AgentCommandExecutor {
         match command {
             AgentCommand::AuthPackMessage(message, receiver_keys_json, sender_verkey, wallet_handle, cb) => {
                 info!("PackMessage command received");
-                cb(self.auth_pack_msg(&message, &receiver_keys_json, sender_verkey, wallet_handle));
+                cb(self.auth_pack_msg(&message, &receiver_keys_json, &sender_verkey, wallet_handle));
             }
             AgentCommand::AnonPackMessage(message, receiver_keys_json, cb) => {
                 info!("PackMessage command received");
@@ -77,7 +78,7 @@ impl AgentCommandExecutor {
         &self,
         message: &str,
         receiver_keys_json: &str,
-        sender_verkey: String,
+        sender_verkey: &str,
         wallet_handle: i32,
     ) -> Result<String> {
         //convert type from json array to Vec<String>
@@ -89,8 +90,7 @@ impl AgentCommandExecutor {
         let (sym_key, iv, ciphertext) = self.crypto_service.encrypt_ciphertext(message);
 
         //convert sender_vk to Key
-        let my_key = self.wallet_service
-            .get_indy_object(wallet_handle, &sender_verkey, &RecordOptions::id_value())?;
+        let my_key: Key = self.wallet_service.get_indy_object(wallet_handle, sender_verkey, &RecordOptions::id_value())?;
 
         //encrypt ceks
         let mut auth_recipients = vec![];
@@ -98,7 +98,7 @@ impl AgentCommandExecutor {
         for their_vk in recv_keys {
             auth_recipients.push(
                 self.crypto_service
-                    .auth_encrypt_recipient(my_key, their_vk, &sym_key)
+                    .auth_encrypt_recipient(&my_key, their_vk, &sym_key)
                     .map_err(|err| {
                         IndyError::CommonError(CommonError::InvalidStructure(format!("Invalid anon_recipient structure: {}", err)))
                     })?,
@@ -135,7 +135,7 @@ impl AgentCommandExecutor {
                     .anon_encrypt_recipient(their_vk, sym_key.clone())
                     .map_err(|err| {
                         IndyError::AgentError(AgentError::CommonError(CommonError::InvalidStructure(format!("Invalid anon_recipient structure: {}", err))))
-                    }?),
+                    })?,
             );
         }
 
@@ -161,38 +161,38 @@ impl AgentCommandExecutor {
         if jwe_json.contains("AuthAMES/1.0/") { //handles unpacking auth_crypt JWE
             //deserialize json string to struct
             let jwe_json: AuthAMES = serde_json::from_str(jwe_json).map_err(|err| {
-                IndyError::AgentError(AgentError::SerializationError(format!("Failed to deserialize auth ames {}", err)))
+                IndyError::AgentError(AgentError::UnpackError(format!("Failed to deserialize auth ames {}", err)))
             })?;
 
             //get recipient struct that matches sender_verkey parameter
             let recipient_struct =
-                self.get_auth_recipient_header(sender, jwe_json.recipients)?;
+                self.agent_service.get_auth_recipient_header(sender, jwe_json.recipients)?;
 
             //get key to use for decryption
-            let my_key: &Key = &self.wallet_service
-                .get_indy_object(wallet_handle, sender, &RecordOptions::id_value())
-                .map_err(|err| IndyError::AgentError(AgentError::UnpackError(format!("Can't find my_key: {:?}", err))))?;
+            let my_key: &Key = &self.wallet_service.get_indy_object(wallet_handle, sender, &RecordOptions::id_value())?;
 
             //decrypt recipient header
             let (ephem_sym_key, sender_vk) = self.crypto_service.auth_decrypt_recipient(my_key, recipient_struct)?;
 
             // decode
-            let message = self.decrypt_ciphertext(
+            let message = self.crypto_service.decrypt_ciphertext(
                 &jwe_json.ciphertext,
                 &jwe_json.iv,
                 &ephem_sym_key,
             )?;
+
+            //TODO convert this to a json_string instead of Tuple
             Ok((message, sender_vk))
 
         } else if jwe_json.contains("AnonAMES/1.0/") { //handles unpacking anon_crypt JWE
            //deserialize json string to struct
             let jwe_json: AnonAMES = serde_json::from_str(jwe_json).map_err(|err| {
-                IndyError::AgentError(AgentError::SerializationError(format!("Failed to deserialize auth ames {}", err)))
+                IndyError::AgentError(AgentError::UnpackError(format!("Failed to deserialize auth ames {}", err)))
             })?;
 
             //get recipient struct that matches sender_verkey parameter
             let recipient_struct =
-                self.get_anon_recipient_header(sender, jwe_json.recipients)?;
+                self.agent_service.get_anon_recipient_header(sender, jwe_json.recipients)?;
 
             //get key to use for decryption
             let my_key: &Key = &self.wallet_service
@@ -203,13 +203,13 @@ impl AgentCommandExecutor {
             let ephem_sym_key = self.crypto_service.anon_decrypt_recipient(my_key, recipient_struct)?;
 
             //decrypt message
-            let message = self.decrypt_ciphertext(
+            let message = self.crypto_service.decrypt_ciphertext(
                 &jwe_json.ciphertext,
                 &jwe_json.iv,
                 &ephem_sym_key,
             )?;
 
-            //return message and no key
+            //TODO convert this to a json_string instead of Tuple
             Ok((message, "".to_string()))
 
         } else {
