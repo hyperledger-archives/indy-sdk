@@ -6,13 +6,20 @@ using static Hyperledger.Indy.WalletApi.NativeMethods;
 using ObjCRuntime;
 #endif
 
-
+/* Due to limitations in the Mono runtime explained here https://docs.microsoft.com/en-us/xamarin/ios/internals/limitations#Reverse_Callbacks
+ * iOS cannot support multiple plugged storage implementations. Callback methods must be marked static, and therefore cannot be used
+ * for different instances of plugged storage. This limitation only affects iOS runtime. 
+ */
 namespace Hyperledger.Indy.WalletApi
 {
     [SuppressMessage("ReSharper", "InconsistentNaming")]
     internal class WalletStorage
     {
+#if __IOS__
+        private static IWalletStorage _storage;
+#else
         private readonly IWalletStorage _storage;
+#endif
 
         public WalletStorage(IWalletStorage storage)
         {
@@ -94,6 +101,7 @@ namespace Hyperledger.Indy.WalletApi
 
 #if __IOS__
         [MonoPInvokeCallback(typeof(WalletCreateDelegate))]
+        static
 #endif
         private ErrorCode WalletCreateHandler(string name, string config, string credentials_json, string metadata)
         {
@@ -110,6 +118,7 @@ namespace Hyperledger.Indy.WalletApi
 
 #if __IOS__
         [MonoPInvokeCallback(typeof(WalletOpenDelegate))]
+        static
 #endif
         private ErrorCode WalletOpenHandler(string name, string config, string credentials_json,
             ref int storage_handle_p)
@@ -127,6 +136,7 @@ namespace Hyperledger.Indy.WalletApi
 
 #if __IOS__
         [MonoPInvokeCallback(typeof(WalletCloseDelegate))]
+        static
 #endif
         private ErrorCode WalletCloseHandler(int storage_handle)
         {
@@ -143,6 +153,7 @@ namespace Hyperledger.Indy.WalletApi
 
 #if __IOS__
         [MonoPInvokeCallback(typeof(WalletDeleteDelegate))]
+        static
 #endif
         private ErrorCode WalletDeleteHandler(string name, string config, string credentials_json)
         {
@@ -159,6 +170,7 @@ namespace Hyperledger.Indy.WalletApi
 
 #if __IOS__
         [MonoPInvokeCallback(typeof(WalletAddRecordDelegate))]
+        static
 #endif
         private ErrorCode WalletAddRecordHandler(int storage_handle, string type_, string id, IntPtr value,
             int value_len, string tags_json)
@@ -179,6 +191,7 @@ namespace Hyperledger.Indy.WalletApi
 
 #if __IOS__
         [MonoPInvokeCallback(typeof(WalletUpdateRecordValueDelegate))]
+        static
 #endif
         private ErrorCode WalletUpdateRecordValueHandler(int storage_handle, string type_, string id, IntPtr value,
             int value_len)
@@ -199,6 +212,7 @@ namespace Hyperledger.Indy.WalletApi
 
 #if __IOS__
         [MonoPInvokeCallback(typeof(WalletUpdateRecordTagsDelegate))]
+        static
 #endif
         private ErrorCode WalletUpdateRecordTagsHandler(int storage_handle, string type_, string id, string tags_json)
         {
@@ -215,6 +229,7 @@ namespace Hyperledger.Indy.WalletApi
 
 #if __IOS__
         [MonoPInvokeCallback(typeof(WalletAddRecordTagsDelegate))]
+        static
 #endif
         private ErrorCode WalletAddRecordTagsHandler(int storage_handle, string type_, string id, string tags_json)
         {
@@ -231,6 +246,7 @@ namespace Hyperledger.Indy.WalletApi
 
 #if __IOS__
         [MonoPInvokeCallback(typeof(WalletDeleteRecordTagsDelegate))]
+        static
 #endif
         private ErrorCode WalletDeleteRecordTagsHandler(int storage_handle, string type_, string id,
             string tag_names_json)
@@ -248,6 +264,7 @@ namespace Hyperledger.Indy.WalletApi
 
 #if __IOS__
         [MonoPInvokeCallback(typeof(WalletDeleteRecordDelegate))]
+        static
 #endif
         private ErrorCode WalletDeleteRecordHandler(int storage_handle, string type_, string id)
         {
@@ -264,6 +281,7 @@ namespace Hyperledger.Indy.WalletApi
 
 #if __IOS__
         [MonoPInvokeCallback(typeof(WalletGetRecordDelegate))]
+        static
 #endif
         private ErrorCode WalletGetRecordHandler(int storage_handle, string type_, string id,
             string options_json, ref int record_handle_p)
@@ -282,6 +300,7 @@ namespace Hyperledger.Indy.WalletApi
 
 #if __IOS__
         [MonoPInvokeCallback(typeof(WalletGetRecordIdDelegate))]
+        static
 #endif
         private ErrorCode WalletGetRecordIdHandler(int storage_handle, int record_handle,
             ref string record_id_p)
@@ -299,6 +318,7 @@ namespace Hyperledger.Indy.WalletApi
 
 #if __IOS__
         [MonoPInvokeCallback(typeof(WalletGetRecordTypeDelegate))]
+        static
 #endif
         private ErrorCode WalletGetRecordTypeHandler(int storage_handle, int record_handle,
             ref string record_type_p)
@@ -316,6 +336,7 @@ namespace Hyperledger.Indy.WalletApi
 
 #if __IOS__
         [MonoPInvokeCallback(typeof(WalletGetRecordValueDelegate))]
+        static
 #endif
         private ErrorCode WalletGetRecordValueHandler(int storage_handle, int record_handle, ref IntPtr record_value_p,
             ref IntPtr record_value_len_p)
@@ -340,6 +361,7 @@ namespace Hyperledger.Indy.WalletApi
 
 #if __IOS__
         [MonoPInvokeCallback(typeof(WalletGetRecordTagsDelegate))]
+        static
 #endif
         private ErrorCode WalletGetRecordTagsHandler(int storage_handle, int record_handle,
             ref string record_tags_p)
@@ -357,6 +379,7 @@ namespace Hyperledger.Indy.WalletApi
 
 #if __IOS__
         [MonoPInvokeCallback(typeof(WalletFreeRecordDelegate))]
+        static
 #endif
         private ErrorCode WalletFreeRecordHandler(int storage_handle, int record_handle)
         {
@@ -373,6 +396,7 @@ namespace Hyperledger.Indy.WalletApi
 
 #if __IOS__
         [MonoPInvokeCallback(typeof(WalletGetStorageMetadataDelegate))]
+        static
 #endif
         private ErrorCode WalletGetStorageMetadataHandler(int storage_handle, ref string metadata_p,
             ref int metadata_handle)
@@ -393,6 +417,7 @@ namespace Hyperledger.Indy.WalletApi
 
 #if __IOS__
         [MonoPInvokeCallback(typeof(WalletSetStorageMetadataDelegate))]
+        static
 #endif
         private ErrorCode WalletSetStorageMetadataHandler(int storage_handle, string metadata_p)
         {
@@ -409,6 +434,7 @@ namespace Hyperledger.Indy.WalletApi
 
 #if __IOS__
         [MonoPInvokeCallback(typeof(WalletFreeStorageMetadataDelegate))]
+        static
 #endif
         private ErrorCode WalletFreeStorageMetadataHandler(int storage_handle, int metadata_handle)
         {
@@ -425,6 +451,7 @@ namespace Hyperledger.Indy.WalletApi
 
 #if __IOS__
         [MonoPInvokeCallback(typeof(WalletSearchRecordsDelegate))]
+        static
 #endif
         private ErrorCode WalletSearchRecordsHandler(int storage_handle, string type_, string query_json,
             string options_json, ref int search_handle_p)
@@ -443,6 +470,7 @@ namespace Hyperledger.Indy.WalletApi
 
 #if __IOS__
         [MonoPInvokeCallback(typeof(WalletSearchAllRecordsDelegate))]
+        static
 #endif
         private ErrorCode WalletSearchAllRecordsHandler(int storage_handle, ref int search_handle_p)
         {
@@ -459,6 +487,7 @@ namespace Hyperledger.Indy.WalletApi
 
 #if __IOS__
         [MonoPInvokeCallback(typeof(WalletGetSearchTotalCountDelegate))]
+        static
 #endif
         private ErrorCode WalletGetSearchTotalCountHandler(int storage_handle, int search_handle, ref IntPtr total_count_p)
         {
@@ -476,6 +505,7 @@ namespace Hyperledger.Indy.WalletApi
 
 #if __IOS__
         [MonoPInvokeCallback(typeof(WalletFetchSearchNextRecordDelegate))]
+        static
 #endif
         private ErrorCode WalletFetchSearchNextRecordHandler(int storage_handle, int search_handle,
             ref int record_handle_p)
@@ -494,6 +524,7 @@ namespace Hyperledger.Indy.WalletApi
 
 #if __IOS__
         [MonoPInvokeCallback(typeof(WalletFreeSearchDelegate))]
+        static
 #endif
         private ErrorCode WalletFreeSearchHandler(int storage_handle, int search_handle)
         {
