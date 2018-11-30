@@ -170,7 +170,7 @@ export class Wallet {
         },
         (resolve, reject) => Callback(
           'void',
-          ['uint32','uint32'],
+          ['int32','uint32'],
           (xhandle: number, err: number) => {
             if (err) {
               reject(err)
@@ -252,7 +252,7 @@ export class Wallet {
         },
         (resolve, reject) => Callback(
           'void',
-          ['int32','int32'], (xhandle: number, err: number) => {
+          ['uint32','uint32'], (xhandle: number, err: number) => {
             if (err) {
               reject(err)
               return
@@ -348,13 +348,13 @@ export class Wallet {
         },
         (resolve, reject) => Callback(
           'void',
-          ['uint32','uint32','string'],
-          (xhandle: number, err: number, receipt: string) => {
+          ['uint32','uint32'],
+          (xhandle: number, err: number) => {
             if (err) {
               reject(err)
               return
             }
-            resolve(receipt)
+            resolve()
           })
       )
     } catch (err) {
@@ -401,13 +401,13 @@ export class Wallet {
         },
         (resolve, reject) => Callback(
           'void',
-          ['uint32','uint32','string'],
-          (xhandle: number, err: number, receipt: string) => {
+          ['uint32','uint32'],
+          (xhandle: number, err: number) => {
             if (err) {
               reject(err)
               return
             }
-            resolve(receipt)
+            resolve()
           })
       )
     } catch (err) {
@@ -457,13 +457,13 @@ export class Wallet {
         },
         (resolve, reject) => Callback(
           'void',
-          ['uint32','uint32','string'],
-          (xhandle: number, err: number, receipt: string) => {
+          ['uint32','uint32'],
+          (xhandle: number, err: number) => {
             if (err) {
               reject(err)
               return
             }
-            resolve(receipt)
+            resolve()
           })
       )
     } catch (err) {

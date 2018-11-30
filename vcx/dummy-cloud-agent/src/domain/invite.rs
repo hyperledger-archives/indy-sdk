@@ -40,6 +40,8 @@ pub struct SenderDetail {
     pub name: Option<String>,
     #[serde(rename = "logoUrl")]
     pub logo_url: Option<String>,
+    #[serde(rename = "publicDID")]
+    pub public_did: Option<String>
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
