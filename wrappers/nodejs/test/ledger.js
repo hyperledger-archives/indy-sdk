@@ -38,6 +38,12 @@ test('ledger', async function (t) {
   var res = await indy.signAndSubmitRequest(pool.handle, wh, trusteeDid, req)
   t.is(res.result.txn.data.verkey, myVerkey)
 
+  var resMetadata = await indy.getResponseMetadata(res)
+  t.true('seqNo' in resMetadata)
+  t.true('txnTime' in resMetadata)
+  t.false('lastTxnTime' in resMetadata)
+  t.false('lastSeqNo' in resMetadata)
+
   req = await indy.buildGetNymRequest(trusteeDid, myDid)
   t.is(req.identifier, trusteeDid)
   t.is(req.operation.dest, myDid)

@@ -1,0 +1,14 @@
+Source: python3-indy
+Section: python
+Priority: optional
+Maintainer: Dan Farnsworth <absltkaos@gmail.com>
+Build-Depends-Indep: debhelper (>= 9), dh-python, python3-all, python3-setuptools, python3-pytest
+Standards-Version: 3.7.2
+X-Python3-Version: >= 3.5
+
+Package: python3-indy
+Architecture: all
+Depends: ${misc:Depends}, ${python3:Depends}, libindy (>= 1.6.7)
+Description: Python wrapper library for libindy
+  .
+  This is the official SDK for Hyperledger Indy (https://www.hyperledger.org/projects), which provides a distributed-ledger-based foundation for self-sovereign identity (https://sovrin.org). The major artifact of the SDK is a c-callable library.

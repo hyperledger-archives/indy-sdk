@@ -541,15 +541,15 @@ mod tests {
     fn test_init_after_importing_wallet_success() {
         settings::set_defaults();
         teardown!("false");
-        let exported_path = format!(r#"/tmp/{}"#, settings::DEFAULT_WALLET_NAME);
 
-        let dir = export_test_wallet();
+        let export_path = export_test_wallet();
+
         vcx_shutdown(true);
 
         let import_config = json!({
             settings::CONFIG_WALLET_NAME: settings::DEFAULT_WALLET_NAME,
             settings::CONFIG_WALLET_KEY: settings::DEFAULT_WALLET_KEY,
-            settings::CONFIG_EXPORTED_WALLET_PATH: exported_path,
+            settings::CONFIG_EXPORTED_WALLET_PATH: export_path,
             settings::CONFIG_WALLET_BACKUP_KEY: settings::DEFAULT_WALLET_BACKUP_KEY,
         }).to_string();
         import(&import_config).unwrap();
@@ -566,7 +566,7 @@ mod tests {
                    error::SUCCESS.code_num);
         cb.receive(Some(Duration::from_secs(10))).unwrap();
 
-        delete_import_wallet_path(dir);
+        delete_import_wallet_path(export_path);
         vcx_shutdown(true);
     }
 
@@ -574,15 +574,15 @@ mod tests {
     fn test_init_with_imported_wallet_fails_with_different_params() {
         settings::set_defaults();
         teardown!("false");
-        let exported_path = format!(r#"/tmp/{}"#, settings::DEFAULT_WALLET_NAME);
 
-        let dir = export_test_wallet();
+        let export_path = export_test_wallet();
+
         vcx_shutdown(true);
 
         let import_config = json!({
             settings::CONFIG_WALLET_NAME: settings::DEFAULT_WALLET_NAME,
             settings::CONFIG_WALLET_KEY: settings::DEFAULT_WALLET_KEY,
-            settings::CONFIG_EXPORTED_WALLET_PATH: exported_path,
+            settings::CONFIG_EXPORTED_WALLET_PATH: export_path,
             settings::CONFIG_WALLET_BACKUP_KEY: settings::DEFAULT_WALLET_BACKUP_KEY,
         }).to_string();
         import(&import_config).unwrap();
@@ -599,7 +599,7 @@ mod tests {
                    error::SUCCESS.code_num);
         assert_eq!(cb.receive(Some(Duration::from_secs(10))).err(), Some(error::WALLET_NOT_FOUND.code_num));
 
-        delete_import_wallet_path(dir);
+        delete_import_wallet_path(export_path);
         settings::set_config_value(settings::CONFIG_WALLET_NAME,settings::DEFAULT_WALLET_NAME);
         vcx_shutdown(true);
     }
@@ -608,8 +608,9 @@ mod tests {
     fn test_import_after_init_fails() {
         settings::set_defaults();
         teardown!("false");
-        let exported_path = format!(r#"/tmp/{}"#, settings::DEFAULT_WALLET_NAME);
-        let dir = export_test_wallet();
+
+        let export_path = export_test_wallet();
+
         vcx_shutdown(false);
 
         let content = json!({
@@ -627,12 +628,12 @@ mod tests {
         let import_config = json!({
             settings::CONFIG_WALLET_NAME: settings::DEFAULT_WALLET_NAME,
             settings::CONFIG_WALLET_KEY: settings::DEFAULT_WALLET_KEY,
-            settings::CONFIG_EXPORTED_WALLET_PATH: exported_path,
+            settings::CONFIG_EXPORTED_WALLET_PATH: export_path,
             settings::CONFIG_WALLET_BACKUP_KEY: settings::DEFAULT_WALLET_BACKUP_KEY,
         }).to_string();
         assert_eq!(import(&import_config), Err(::error::wallet::WalletError::CommonError(error::WALLET_ALREADY_EXISTS.code_num)));
 
-        delete_import_wallet_path(dir);
+        delete_import_wallet_path(export_path);
         vcx_shutdown(true);
     }
 

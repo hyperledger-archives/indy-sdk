@@ -1768,3 +1768,69 @@ pub extern fn indy_register_transaction_parser_for_sp(command_handle: IndyHandle
 
     res
 }
+
+/// Parse transaction response to fetch metadata.
+/// The important use case for this method is validation of Node's response freshens.
+///
+/// Distributed Ledgers can reply with outdated information for consequence read request after write.
+/// To reduce pool load libindy sends read requests to one random node in the pool.
+/// Consensus validation is performed based on validation of nodes multi signature for current ledger Merkle Trie root.
+/// This multi signature contains information about the latest ldeger's transaction ordering time and sequence number that this method returns.
+///
+/// If node that returned response for some reason is out of consensus and has outdated ledger
+/// it can be caught by analysis of the returned latest ledger's transaction ordering time and sequence number.
+///
+/// There are two ways to filter outdated responses:
+///     1) based on "seqNo" - sender knows the sequence number of transaction that he consider as a fresh enough.
+///     2) based on "txnTime" - sender knows the timestamp that he consider as a fresh enough.
+///
+/// Note: response of GET_VALIDATOR_INFO request isn't supported
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// response: response of write or get request.
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// response metadata.
+/// {
+///     "seqNo": Option<u64> - transaction sequence number,
+///     "txnTime": Option<u64> - transaction ordering time,
+///     "lastSeqNo": Option<u64> - the latest transaction seqNo for particular Node,
+///     "lastTxnTime": Option<u64> - the latest transaction ordering time for particular Node
+/// }
+///
+/// #Errors
+/// Common*
+/// Ledger*
+#[no_mangle]
+pub extern fn indy_get_response_metadata(command_handle: IndyHandle,
+                                         response: *const c_char,
+                                         cb: Option<extern fn(command_handle_: IndyHandle,
+                                                              err: ErrorCode,
+                                                              response_metadata: *const c_char)>) -> ErrorCode {
+    trace!("indy_get_response_metadata: >>> response: {:?}", response);
+
+    check_useful_c_str!(response, ErrorCode::CommonInvalidParam2);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
+
+    trace!("indy_get_response_metadata: entities >>> response: {:?}", response);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Ledger(LedgerCommand::GetResponseMetadata(
+            response,
+            Box::new(move |result| {
+                let (err, response_metadata) = result_to_err_code_1!(result, String::new());
+                trace!("indy_get_response_metadata: response_metadata: {:?}", response_metadata);
+
+                let response_metadata = ctypes::string_to_cstring(response_metadata);
+                cb(command_handle, err, response_metadata.as_ptr())
+            })
+        )));
+
+    let res = result_to_err_code!(result);
+
+    trace!("indy_get_response_metadata: <<< res: {:?}", res);
+
+    res
+}
