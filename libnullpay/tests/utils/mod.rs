@@ -10,8 +10,5 @@ pub mod types;
 pub mod ledger;
 pub mod pool;
 pub mod payments_utils;
-pub mod logger;
 mod environment;
-mod results;
-mod callbacks;
 mod sequence;

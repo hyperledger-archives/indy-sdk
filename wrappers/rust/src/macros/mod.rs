@@ -43,6 +43,6 @@ macro_rules! opt_rust_str {
 
 macro_rules! rust_slice {
     ($x:ident, $y:ident) => {
-        unsafe { slice::from_raw_parts($x, $y as usize) }
+        unsafe { ::std::slice::from_raw_parts($x, $y as usize) }
     }
 }

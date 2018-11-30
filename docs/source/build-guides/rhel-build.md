@@ -58,10 +58,6 @@ For Fedora 26/27/28, `libsodium-1.0.14` is already available as a system package
 dnf install libsodium libsodium-devel
 ```
 
-Versions of `libsodium` from `1.0.15` onwards miss the required `crypto_stream_aes128ctr_*` functions. Because of this:
-- for distributions without `libsodium` in the system repositories: be advised that in the future the archive might be moved to `https://download.libsodium.org/libsodium/releases/old/libsodium-1.0.14.tar.gz`
-- for Fedora and other distribution where `libsodium` is available: make sure that the available version is at most `1.0.14`; if it is more recent, switch to building it from source as explained above
-
 ### 4. Additional dependencies
 For Fedora 26/27/28, you may also need to install `zeromq` (`libzmq`) before being able to successfully
 build `libindy`:

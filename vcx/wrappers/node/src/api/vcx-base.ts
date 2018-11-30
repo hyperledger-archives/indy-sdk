@@ -21,7 +21,7 @@ export abstract class VCXBase<SerializedData> extends GCWatcher {
     }
   }
 
-  protected abstract _serializeFn: (commandHandle: number, handle: string, cb: ICbRef) => number
+  protected abstract _serializeFn: (commandHandle: number, handle: number, cb: ICbRef) => number
   protected abstract _deserializeFn: (commandHandle: number, handle: string, cb: ICbRef) => number
   protected _sourceId: string
 
@@ -80,7 +80,7 @@ export abstract class VCXBase<SerializedData> extends GCWatcher {
   }
 
   protected async _create (createFn: IVCXBaseCreateFn): Promise<void> {
-    const handleRes = await createFFICallbackPromise<string>(
+    const handleRes = await createFFICallbackPromise<number>(
         (resolve, reject, cb) => {
           const rc = createFn(cb)
           if (rc) {
@@ -95,8 +95,7 @@ export abstract class VCXBase<SerializedData> extends GCWatcher {
               reject(err)
               return
             }
-            const handleStr = handle.toString()
-            resolve(handleStr)
+            resolve(handle)
           })
     )
     this._setHandle(handleRes)
@@ -104,7 +103,7 @@ export abstract class VCXBase<SerializedData> extends GCWatcher {
 
   private async _initFromData (objData: object): Promise<void> {
     const commandHandle = 0
-    const objHandle = await createFFICallbackPromise<string>(
+    const objHandle = await createFFICallbackPromise<number>(
         (resolve, reject, cb) => {
           const rc = this._deserializeFn(commandHandle, JSON.stringify(objData), cb)
           if (rc) {
@@ -118,8 +117,7 @@ export abstract class VCXBase<SerializedData> extends GCWatcher {
             if (err) {
               reject(err)
             }
-            const handleStr = handle.toString()
-            resolve(handleStr)
+            resolve(handle)
           })
     )
     this._setHandle(objHandle)

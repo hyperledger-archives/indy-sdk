@@ -15,7 +15,7 @@ namespace Hyperledger.Indy.PairwiseApi
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_is_pairwise_exists(int command_handle, IntPtr wallet_handle, string their_did, IsPairwiseExistsCompletedDelegate cb);
+        internal static extern int indy_is_pairwise_exists(int command_handle, int wallet_handle, string their_did, IsPairwiseExistsCompletedDelegate cb);
 
         /// <summary>
         /// Delegate for pairwise exists that indicates whether or not a pairwise exists.
@@ -36,7 +36,7 @@ namespace Hyperledger.Indy.PairwiseApi
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_create_pairwise(int command_handle, IntPtr wallet_handle, string their_did, string my_did, string metadata, IndyMethodCompletedDelegate cb);
+        internal static extern int indy_create_pairwise(int command_handle, int wallet_handle, string their_did, string my_did, string metadata, IndyMethodCompletedDelegate cb);
 
         /// <summary>
         /// Get list of saved pairwise.
@@ -46,7 +46,7 @@ namespace Hyperledger.Indy.PairwiseApi
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_list_pairwise(int command_handle, IntPtr wallet_handle, ListPairwiseCompletedDelegate cb);
+        internal static extern int indy_list_pairwise(int command_handle, int wallet_handle, ListPairwiseCompletedDelegate cb);
 
         /// <summary>
         /// Delegate for listing saved pairwise.
@@ -65,7 +65,7 @@ namespace Hyperledger.Indy.PairwiseApi
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_get_pairwise(int command_handle, IntPtr wallet_handle, string their_did, GetPairwiseCompletedDelegate cb);
+        internal static extern int indy_get_pairwise(int command_handle, int wallet_handle, string their_did, GetPairwiseCompletedDelegate cb);
 
         /// <summary>
         /// Delegate for getting a saved pairwise.
@@ -85,7 +85,7 @@ namespace Hyperledger.Indy.PairwiseApi
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_set_pairwise_metadata(int command_handle, IntPtr wallet_handle, string their_did, string metadata, IndyMethodCompletedDelegate cb);
+        internal static extern int indy_set_pairwise_metadata(int command_handle, int wallet_handle, string their_did, string metadata, IndyMethodCompletedDelegate cb);
 
     }
 }

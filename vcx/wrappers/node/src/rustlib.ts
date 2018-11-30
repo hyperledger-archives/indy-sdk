@@ -31,6 +31,8 @@ export const FFI_SCHEMA_HANDLE = 'uint32'
 export const FFI_SCHEMA_NUMBER = 'uint32'
 export const FFI_PAYMENT_HANDLE = 'uint32'
 export const FFI_PRICE = 'uint32'
+export const FFI_LOG_FN = 'pointer'
+export const FFI_VOID_POINTER = 'void *'
 
 // Rust Lib Native Types
 export type rust_did = string
@@ -75,71 +77,75 @@ export interface IFFIEntryPoint {
   vcx_update_institution_info: (institutionName: string, institutionLogoUrl: string) => number,
 
   // connection
-  vcx_connection_delete_connection: (commandId: number, handle: string, cb: any) => void,
-  vcx_connection_connect: (commandId: number, handle: string, data: string, cb: any) => number,
+  vcx_connection_delete_connection: (commandId: number, handle: number, cb: any) => number,
+  vcx_connection_connect: (commandId: number, handle: number, data: string, cb: any) => number,
   vcx_connection_create: (commandId: number, data: string, cb: any) => number,
   vcx_connection_create_with_invite: (commandId: number, data: string, invite: string, cb: any) => number,
   vcx_connection_deserialize: (commandId: number, data: string, cb: any) => number,
-  vcx_connection_release: (handle: string) => number,
-  vcx_connection_serialize: (commandId: number, handle: string, cb: any) => number,
-  vcx_connection_update_state: (commandId: number, handle: string, cb: any) => number,
-  vcx_connection_get_state: (commandId: number, handle: string, cb: any) => number,
-  vcx_connection_invite_details: (commandId: number, handle: string, abbreviated: boolean, cb: any) => number,
+  vcx_connection_release: (handle: number) => number,
+  vcx_connection_serialize: (commandId: number, handle: number, cb: any) => number,
+  vcx_connection_update_state: (commandId: number, handle: number, cb: any) => number,
+  vcx_connection_get_state: (commandId: number, handle: number, cb: any) => number,
+  vcx_connection_invite_details: (commandId: number, handle: number, abbreviated: boolean, cb: any) => number,
 
   // issuer
-  vcx_issuer_credential_release: (handle: string) => number,
+  vcx_issuer_credential_release: (handle: number) => number,
   vcx_issuer_credential_deserialize: (commandId: number, data: string, cb: any) => number,
-  vcx_issuer_credential_serialize: (commandId: number, handle: string, cb: any) => number,
-  vcx_issuer_credential_update_state: (commandId: number, handle: string, cb: any) => number,
-  vcx_issuer_credential_get_state: (commandId: number, handle: string, cb: any) => number,
-  vcx_issuer_create_credential: (commandId: number, sourceId: string, credDefId: string, issuerDid: any,
+  vcx_issuer_credential_serialize: (commandId: number, handle: number, cb: any) => number,
+  vcx_issuer_credential_update_state: (commandId: number, handle: number, cb: any) => number,
+  vcx_issuer_credential_get_state: (commandId: number, handle: number, cb: any) => number,
+  vcx_issuer_create_credential: (commandId: number, sourceId: string, credDefId: string, issuerDid: string | null,
                                  attr: string, credentialName: string, price: string, cb: any) => number,
-  vcx_issuer_send_credential: (commandId: number, credentialHandle: string, connectionHandle: string, cb: any) =>
+  vcx_issuer_send_credential: (commandId: number, credentialHandle: number, connectionHandle: number, cb: any) =>
    number,
-  vcx_issuer_send_credential_offer: (commandId: number, credentialHandle: string, connectionHandle: string, cb: any) =>
+  vcx_issuer_send_credential_offer: (commandId: number, credentialHandle: number, connectionHandle: number, cb: any) =>
    number,
-  vcx_issuer_credential_get_payment_txn: (commandId: number, handle: string, cb: any) => number,
+  vcx_issuer_credential_get_payment_txn: (commandId: number, handle: number, cb: any) => number,
 
   // proof
   vcx_proof_create: (commandId: number, sourceId: string, attrs: string, predicates: string,
                      name: string, cb: any) => number,
   vcx_proof_deserialize: (commandId: number, data: string, cb: any) => number,
-  vcx_get_proof: (commandId: number, proofHandle: string, connectionHandle: string, cb: any) => number,
-  vcx_proof_release: (handle: string) => number,
-  vcx_proof_send_request: (commandId: number, proofHandle: string, connectionHandle: string, cb: any) => number,
-  vcx_proof_serialize: (commandId: number, handle: string, cb: any) => number,
-  vcx_proof_update_state: (commandId: number, handle: string, cb: any) => number,
-  vcx_proof_get_state: (commandId: number, handle: string, cb: any) => number,
+  vcx_get_proof: (commandId: number, proofHandle: number, connectionHandle: number, cb: any) => number,
+  vcx_proof_release: (handle: number) => number,
+  vcx_proof_send_request: (commandId: number, proofHandle: number, connectionHandle: number, cb: any) => number,
+  vcx_proof_serialize: (commandId: number, handle: number, cb: any) => number,
+  vcx_proof_update_state: (commandId: number, handle: number, cb: any) => number,
+  vcx_proof_get_state: (commandId: number, handle: number, cb: any) => number,
 
   // disclosed proof
   vcx_disclosed_proof_create_with_request: (commandId: number, sourceId: string, req: string, cb: any) => number,
-  vcx_disclosed_proof_create_with_msgid: (commandId: number, sourceId: string, connectionHandle: string,
+  vcx_disclosed_proof_create_with_msgid: (commandId: number, sourceId: string, connectionHandle: number,
                                           msgId: string, cb: any) => number,
-  vcx_disclosed_proof_release: (handle: string) => number,
-  vcx_disclosed_proof_send_proof: (commandId: number, proofHandle: string, connectionHandle: string, cb: any) => number,
-  vcx_disclosed_proof_serialize: (commandId: number, handle: string, cb: any) => number,
+  vcx_disclosed_proof_release: (handle: number) => number,
+  vcx_disclosed_proof_send_proof: (commandId: number, proofHandle: number, connectionHandle: number, cb: any) => number,
+  vcx_disclosed_proof_serialize: (commandId: number, handle: number, cb: any) => number,
   vcx_disclosed_proof_deserialize: (commandId: number, data: string, cb: any) => number,
-  vcx_disclosed_proof_update_state: (commandId: number, handle: string, cb: any) => number,
-  vcx_disclosed_proof_get_state: (commandId: number, handle: string, cb: any) => number,
-  vcx_disclosed_proof_get_requests: (commandId: number, connectionHandle: string, cb: any) => number,
-  vcx_disclosed_proof_retrieve_credentials: (commandId: number, handle: string, cb: any) => number,
-  vcx_disclosed_proof_generate_proof: (commandId: number, handle: string, selectedCreds: string,
+  vcx_disclosed_proof_update_state: (commandId: number, handle: number, cb: any) => number,
+  vcx_disclosed_proof_get_state: (commandId: number, handle: number, cb: any) => number,
+  vcx_disclosed_proof_get_requests: (commandId: number, connectionHandle: number, cb: any) => number,
+  vcx_disclosed_proof_retrieve_credentials: (commandId: number, handle: number, cb: any) => number,
+  vcx_disclosed_proof_generate_proof: (commandId: number, handle: number, selectedCreds: string,
                                        selfAttestedAttrs: string, cb: any) => number,
 
   // credential
   vcx_credential_create_with_offer: (commandId: number, sourceId: string, offer: string, cb: any) => number,
-  vcx_credential_create_with_msgid: (commandId: number, sourceId: string, connectionHandle: string,
+  vcx_credential_create_with_msgid: (commandId: number, sourceId: string, connectionHandle: number,
                                      msgId: string, cb: any) => number,
-  vcx_credential_release: (handle: string) => number,
-  vcx_credential_send_request: (commandId: number, handle: string, connectionHandle: string,
+  vcx_credential_release: (handle: number) => number,
+  vcx_credential_send_request: (commandId: number, handle: number, connectionHandle: number,
                                 payment: number, cb: any) => number,
-  vcx_credential_serialize: (commandId: number, handle: string, cb: any) => number,
+  vcx_credential_serialize: (commandId: number, handle: number, cb: any) => number,
   vcx_credential_deserialize: (commandId: number, data: string, cb: any) => number,
-  vcx_credential_update_state: (commandId: number, handle: string, cb: any) => number,
-  vcx_credential_get_state: (commandId: number, handle: string, cb: any) => number,
-  vcx_credential_get_offers: (commandId: number, connectionHandle: string, cb: any) => number,
-  vcx_credential_get_payment_info: (commandId: number, handle: string, cb: any) => number,
-  vcx_credential_get_payment_txn: (commandId: number, handle: string, cb: any) => number,
+  vcx_credential_update_state: (commandId: number, handle: number, cb: any) => number,
+  vcx_credential_get_state: (commandId: number, handle: number, cb: any) => number,
+  vcx_credential_get_offers: (commandId: number, connectionHandle: number, cb: any) => number,
+  vcx_credential_get_payment_info: (commandId: number, handle: number, cb: any) => number,
+  vcx_credential_get_payment_txn: (commandId: number, handle: number, cb: any) => number,
+
+  // logger
+  vcx_set_default_logger: (level: string) => number,
+  vcx_set_logger: (context: any, enabled: any, logFn: any, flush: any) => number,
 
   // mock
   vcx_set_next_agency_response: (messageIndex: number) => void,
@@ -148,20 +154,20 @@ export interface IFFIEntryPoint {
   vcx_credentialdef_create: (commandId: number, sourceId: string, credentialDefName: string, schemaId: string,
                              issuerDid: string | null, tag: string, config: string, payment: number, cb: any) => number
   vcx_credentialdef_deserialize: (commandId: number, data: string, cb: any) => number,
-  vcx_credentialdef_serialize: (commandId: number, handle: string, cb: any) => number,
-  vcx_credentialdef_release: (handle: string) => number,
-  vcx_credentialdef_get_cred_def_id: (commandId: number, handle: string, cb: any) => string,
-  vcx_credentialdef_get_payment_txn: (commandId: number, handle: string, cb: any) => number,
+  vcx_credentialdef_serialize: (commandId: number, handle: number, cb: any) => number,
+  vcx_credentialdef_release: (handle: number) => number,
+  vcx_credentialdef_get_cred_def_id: (commandId: number, handle: number, cb: any) => string,
+  vcx_credentialdef_get_payment_txn: (commandId: number, handle: number, cb: any) => number,
 
   // schema
   vcx_schema_get_attributes: (commandId: number, sourceId: string, schemaId: string, cb: any) => number,
   vcx_schema_create: (commandId: number, sourceId: string, schemaName: string, version: string, schemaData: string,
                       paymentHandle: number, cb: any) => number,
-  vcx_schema_get_schema_id: (commandId: number, handle: string, cb: any) => number,
+  vcx_schema_get_schema_id: (commandId: number, handle: number, cb: any) => number,
   vcx_schema_deserialize: (commandId: number, data: string, cb: any) => number,
-  vcx_schema_serialize: (commandId: number, handle: string, cb: any) => number,
-  vcx_schema_release: (handle: string) => number,
-  vcx_schema_get_payment_txn: (commandId: number, handle: string, cb: any) => number,
+  vcx_schema_serialize: (commandId: number, handle: number, cb: any) => number,
+  vcx_schema_release: (handle: number) => number,
+  vcx_schema_get_payment_txn: (commandId: number, handle: number, cb: any) => number,
 }
 
 // tslint:disable object-literal-sort-keys
@@ -176,7 +182,7 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
   vcx_agent_update_info: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
   vcx_update_institution_info: [FFI_ERROR_CODE, [FFI_STRING_DATA, FFI_STRING_DATA]],
   vcx_mint_tokens: [FFI_VOID, [FFI_STRING_DATA, FFI_STRING_DATA]],
-  vcx_messages_download: [FFI_VOID, [FFI_COMMAND_HANDLE, FFI_STRING_DATA, FFI_STRING_DATA,
+  vcx_messages_download: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_STRING_DATA, FFI_STRING_DATA,
     FFI_STRING_DATA, FFI_CALLBACK_PTR]],
   vcx_messages_update_status: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_STRING_DATA, FFI_STRING_DATA,
     FFI_CALLBACK_PTR]],
@@ -290,6 +296,10 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
   vcx_credentialdef_serialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CREDENTIALDEF_HANDLE, FFI_CALLBACK_PTR]],
   vcx_credentialdef_get_cred_def_id: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CREDENTIALDEF_HANDLE, FFI_CALLBACK_PTR]],
   vcx_credentialdef_get_payment_txn: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CREDENTIAL_HANDLE,FFI_CALLBACK_PTR]],
+
+  // logger
+  vcx_set_default_logger: [FFI_ERROR_CODE, [FFI_STRING]],
+  vcx_set_logger: [FFI_ERROR_CODE, [FFI_VOID_POINTER, FFI_CALLBACK_PTR, FFI_CALLBACK_PTR, FFI_CALLBACK_PTR]],
 
   // mock
   vcx_set_next_agency_response: [FFI_VOID, [FFI_UNSIGNED_INT]],

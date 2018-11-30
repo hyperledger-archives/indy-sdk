@@ -1,3 +1,7 @@
+extern crate futures;
+
+use self::futures::future::Future;
+
 use super::indy;
 
 use std::ops::{Index, IndexMut};
@@ -70,12 +74,12 @@ impl<'a> Setup<'a>
 
     fn setup_pool(connect_to_pool: bool) -> (String, Option<i32>)
     {
-        indy::pool::Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
+        indy::pool::set_protocol_version(PROTOCOL_VERSION as usize).wait().unwrap();
 
         let pool_name = pool::create_default_pool();
 
         if connect_to_pool {
-            let pool_handle = indy::pool::Pool::open_ledger(&pool_name, None).unwrap();
+            let pool_handle = indy::pool::open_pool_ledger(&pool_name, None).wait().unwrap();
             (pool_name, Some(pool_handle))
         } else {
             (pool_name, None)
@@ -104,9 +108,9 @@ impl<'a> Setup<'a>
 impl<'a> Drop for Setup<'a> {
     fn drop(&mut self) {
         self.pool_handle.map(|handle| {
-            indy::pool::Pool::close(handle).unwrap()
+            indy::pool::close_pool_ledger(handle).wait().unwrap()
         });
-        indy::pool::Pool::delete(self.pool_name.as_str()).unwrap();
+        indy::pool::delete_pool_ledger(self.pool_name.as_str()).wait().unwrap();
     }
 }
 
