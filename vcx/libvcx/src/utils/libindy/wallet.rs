@@ -233,9 +233,9 @@ pub mod tests {
     fn test_wallet_import_export() {
         settings::set_defaults();
         teardown!("false");
-        let exported_path = format!(r#"/tmp/{}"#, settings::DEFAULT_WALLET_NAME);
 
-        let dir = export_test_wallet();
+        let export_path = export_test_wallet();
+
         let xtype = "type1";
         let id = "id1";
         let value = "value1";
@@ -246,7 +246,7 @@ pub mod tests {
         let import_config = json!({
             settings::CONFIG_WALLET_NAME: settings::DEFAULT_WALLET_NAME,
             settings::CONFIG_WALLET_KEY: settings::DEFAULT_WALLET_KEY,
-            settings::CONFIG_EXPORTED_WALLET_PATH: exported_path,
+            settings::CONFIG_EXPORTED_WALLET_PATH: export_path,
             settings::CONFIG_WALLET_BACKUP_KEY: settings::DEFAULT_WALLET_BACKUP_KEY,
         }).to_string();
         import(&import_config).unwrap();
@@ -256,7 +256,7 @@ pub mod tests {
         assert_eq!(add_record(xtype, id, value, "{}"), Err(error::DUPLICATE_WALLET_RECORD.code_num));
         thread::sleep(Duration::from_secs(1));
         ::api::vcx::vcx_shutdown(true);
-        delete_import_wallet_path(dir);
+        delete_import_wallet_path(export_path);
     }
 
     #[test]
@@ -287,24 +287,19 @@ pub mod tests {
     #[test]
     fn test_import_wallet_fails_with_existing_wallet() {
         settings::set_defaults();
-        let wallet_name = "test_import_wallet_fails_with_existing_wallet";
-        settings::set_config_value(settings::CONFIG_WALLET_NAME, wallet_name);
-        let exported_path = format!(r#"/tmp/{}"#, wallet_name);
-        let wallet_key = settings::get_config_value(settings::CONFIG_WALLET_KEY).unwrap();
-        let backup_key = settings::get_config_value(settings::CONFIG_WALLET_BACKUP_KEY).unwrap();
 
-        let dir = export_test_wallet();
+        let export_path = export_test_wallet();
 
         let import_config = json!({
-            settings::CONFIG_WALLET_NAME: wallet_name,
-            settings::CONFIG_WALLET_KEY: wallet_key,
-            settings::CONFIG_EXPORTED_WALLET_PATH: exported_path,
-            settings::CONFIG_WALLET_BACKUP_KEY: backup_key,
+            settings::CONFIG_WALLET_NAME: settings::DEFAULT_WALLET_NAME,
+            settings::CONFIG_WALLET_KEY: settings::DEFAULT_WALLET_KEY,
+            settings::CONFIG_EXPORTED_WALLET_PATH: export_path,
+            settings::CONFIG_WALLET_BACKUP_KEY: settings::DEFAULT_WALLET_BACKUP_KEY,
         }).to_string();
         assert_eq!(import(&import_config), Err(WalletError::CommonError(error::WALLET_ALREADY_EXISTS.code_num)));
 
         ::api::vcx::vcx_shutdown(true);
-        delete_import_wallet_path(dir);
+        delete_import_wallet_path(export_path);
     }
 
     #[test]
@@ -312,7 +307,6 @@ pub mod tests {
         settings::set_defaults();
         let wallet_name = "test_import_wallet_fails_with_invalid_path";
         settings::set_config_value(settings::CONFIG_WALLET_NAME, wallet_name);
-        let exported_path = format!(r#"/tmp/{}"#, wallet_name);
         let wallet_key = settings::get_config_value(settings::CONFIG_WALLET_KEY).unwrap();
         let backup_key = settings::get_config_value(settings::CONFIG_WALLET_BACKUP_KEY).unwrap();
 
@@ -336,22 +330,22 @@ pub mod tests {
         settings::set_defaults();
         teardown!("false");
 
-        let exported_path = format!(r#"/tmp/{}"#, settings::DEFAULT_WALLET_NAME);
         let bad_backup = "456";
 
-        let dir = export_test_wallet();
+        let export_path = export_test_wallet();
+
         ::api::vcx::vcx_shutdown(true);
 
         let import_config = json!({
             settings::CONFIG_WALLET_NAME: settings::DEFAULT_WALLET_NAME,
             settings::CONFIG_WALLET_KEY: settings::DEFAULT_WALLET_KEY,
-            settings::CONFIG_EXPORTED_WALLET_PATH: exported_path,
+            settings::CONFIG_EXPORTED_WALLET_PATH: export_path,
             settings::CONFIG_WALLET_BACKUP_KEY: bad_backup,
         }).to_string();
         assert_eq!(import(&import_config), Err(WalletError::CommonError(error::LIBINDY_INVALID_STRUCTURE.code_num)));
 
         ::api::vcx::vcx_shutdown(true);
-        delete_import_wallet_path(dir);
+        delete_import_wallet_path(export_path);
     }
 
     #[test]

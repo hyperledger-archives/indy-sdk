@@ -150,8 +150,15 @@ pub mod tests {
         });
     }
 
+    #[cfg(all(unix, test))]
     fn _load_lib(library: &str) -> libloading::Result<libloading::Library> {
-        libloading::os::unix::Library::open(Some(library), libc::RTLD_NOW | libc::RTLD_NODELETE).map(libloading::Library::from)
+        libloading::os::unix::Library::open(Some(library), libc::RTLD_NOW | libc::RTLD_NODELETE)
+            .map(libloading::Library::from)
+    }
+
+    #[cfg(any(not(unix), not(test)))]
+    fn _load_lib(library: &str) -> libloading::Result<libloading::Library> {
+        libloading::Library::new(library)
     }
 
     pub fn setup_ledger_env() {
