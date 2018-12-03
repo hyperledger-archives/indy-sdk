@@ -2,7 +2,7 @@ use command_executor::{Command, CommandContext, CommandMetadata, CommandParams, 
 use commands::*;
 use utils::table::print_list_table;
 
-use libindy::ErrorCode;
+use indy::ErrorCode;
 
 use libindy::did::Did;
 use libindy::ledger::Ledger;
@@ -57,7 +57,7 @@ pub mod new_command {
             JSONValue::from(json).to_string()
         };
 
-        trace!(r#"Did::new try: config {:?}"#, config);
+        trace!(r#"Did::new try: config {:?}"#, secret!(&config));
 
         let res =
             Did::new(wallet_handle, config.as_str())

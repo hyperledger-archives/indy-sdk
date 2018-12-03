@@ -12,35 +12,6 @@ use std::path::Path;
 use utils::threadpool::spawn;
 use std::thread;
 
-extern {
-    pub fn indy_add_wallet_record(command_handle: i32,
-                                  wallet_handle: i32,
-                                  type_: *const c_char,
-                                  id: *const c_char,
-                                  value: *const c_char,
-                                  tags_json: *const c_char,
-                                  cb: Option<extern fn(command_handle_: i32, err: i32)>) -> i32;
-
-    pub fn indy_get_wallet_record(command_handle: i32,
-                                  wallet_handle: i32,
-                                  type_: *const c_char,
-                                  id: *const c_char,
-                                  options_json: *const c_char,
-                                  cb: Option<extern fn(command_handle_: i32, err: i32, record_json: *const c_char)>) -> i32;
-
-    pub fn indy_update_wallet_record_value(command_handle: i32,
-                                           wallet_handle: i32,
-                                           type_: *const c_char,
-                                           id: *const c_char,
-                                           value: *const c_char,
-                                           cb: Option<extern fn(command_handle_: i32, err: i32)>) -> i32;
-
-    pub fn indy_delete_wallet_record(command_handle: i32,
-                                     wallet_handle: i32,
-                                     type_: *const c_char,
-                                     id: *const c_char,
-                                     cb: Option<extern fn(command_handle_: i32, err: i32)>) -> i32;
-}
 
 /// Get the total balance from all addresses contained in the configured wallet
 ///

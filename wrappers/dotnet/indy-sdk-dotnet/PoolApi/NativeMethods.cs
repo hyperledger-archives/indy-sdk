@@ -44,7 +44,7 @@ namespace Hyperledger.Indy.PoolApi
         /// <param name="xcommand_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
         /// <param name="pool_handle">The handle for the opened pool.</param>
-        internal delegate void OpenPoolLedgerCompletedDelegate(int xcommand_handle, int err, IntPtr pool_handle);
+        internal delegate void OpenPoolLedgerCompletedDelegate(int xcommand_handle, int err, int pool_handle);
 
         /// <summary>
         /// Refreshes a local copy of a pool ledger and updates pool nodes connections.
@@ -54,7 +54,7 @@ namespace Hyperledger.Indy.PoolApi
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_refresh_pool_ledger(int command_handle, IntPtr handle, IndyMethodCompletedDelegate cb);
+        internal static extern int indy_refresh_pool_ledger(int command_handle, int handle, IndyMethodCompletedDelegate cb);
 
         /// <summary>
         /// Closes opened pool ledger, opened nodes connections and frees allocated resources.
@@ -64,7 +64,7 @@ namespace Hyperledger.Indy.PoolApi
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_close_pool_ledger(int command_handle, IntPtr handle, IndyMethodCompletedDelegate cb);
+        internal static extern int indy_close_pool_ledger(int command_handle, int handle, IndyMethodCompletedDelegate cb);
 
         /// <summary>
         /// Lists names of created pool ledgers

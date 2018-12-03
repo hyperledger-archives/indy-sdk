@@ -9,16 +9,18 @@ from vcx.api.credential import Credential
 from vcx.api.disclosed_proof import DisclosedProof
 from vcx.api.utils import vcx_agent_provision
 from vcx.state import State
-
+from time import sleep
+from ctypes import cdll
+import vcx.api.logging as logging
 
 provisionConfig = {
-  'agency_url': 'http://sbx-agency.pdev.evernym.com',
-  'agency_did': 'Nv9oqGX57gy15kPSJzo2i4',
-  'agency_verkey': 'CwpcjCc6MtVNdQgwoonNMFoR6dhzmRXHHaUCRSrjh8gj',
-  'wallet_name': 'alice_wallet',
-  'wallet_key': '123',
-  'enterprise_seed': '000000000000000000000000Trustee1',
+  'agency_url':'http://localhost:8080',
+  'agency_did':'VsKV7grR1BUE29mG2Fm2kX',
+  'agency_verkey':'Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR',
+  'wallet_name':'alice_wallet',
+  'wallet_key':'123',
   'payment_method': 'null',
+  'enterprise_seed':'000000000000000000000000Trustee1'
 }
 
 
@@ -26,6 +28,7 @@ async def main():
 
     payment_plugin = cdll.LoadLibrary("libnullpay.so")
     payment_plugin.nullpay_init()
+    logging.default_logger()
 
     print("#7 Provision an agent and wallet, get back configuration details")
     config = await vcx_agent_provision(json.dumps(provisionConfig))

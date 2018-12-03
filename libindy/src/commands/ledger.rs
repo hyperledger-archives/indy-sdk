@@ -183,6 +183,9 @@ pub enum LedgerCommand {
         CustomTransactionParser,
         CustomFree,
         Box<Fn(Result<(), IndyError>) + Send>),
+    GetResponseMetadata(
+        String, // response
+        Box<Fn(Result<String, IndyError>) + Send>),
 }
 
 pub struct LedgerCommandExecutor {
@@ -355,6 +358,10 @@ impl LedgerCommandExecutor {
             LedgerCommand::ParseGetRevocRegDeltaResponse(get_revoc_reg_delta_response, cb) => {
                 info!(target: "ledger_command_executor", "ParseGetRevocRegDeltaResponse command received");
                 cb(self.parse_revoc_reg_delta_response(&get_revoc_reg_delta_response));
+            }
+            LedgerCommand::GetResponseMetadata(response, cb) => {
+                info!(target: "ledger_command_executor", "GetResponseMetadata command received");
+                cb(self.get_response_metadata(&response));
             }
         };
     }
@@ -872,6 +879,17 @@ impl LedgerCommandExecutor {
         let res = self.ledger_service.parse_get_revoc_reg_delta_response(get_revoc_reg_delta_response)?;
 
         debug!("parse_revoc_reg_delta_response <<< res: {:?}", res);
+
+        Ok(res)
+    }
+
+    fn get_response_metadata(&self,
+                             response: &str) -> Result<String, IndyError> {
+        debug!("get_response_metadata >>> response: {:?}", response);
+
+        let res = self.ledger_service.get_response_metadata(response)?;
+
+        debug!("get_response_metadata <<< res: {:?}", res);
 
         Ok(res)
     }
