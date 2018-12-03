@@ -5,4 +5,9 @@ and ["Issue Credential"](../issue-credential/README.md) how-tos, you have
 all the context for a credential holder and a relying party (verifier)
 to generate a zero-knowledge proof based on the credential.
 
-[ [Python](python/README.md) | [Java](../not-yet-written.md) | [.NET](../not-yet-written.md) | [Node.js](../not-yet-written.md) | [Objective C](../not-yet-written.md) ]
+[ [Python](python/README.md) |
+  [Rust](rust/README.md) 
+  [Java](../not-yet-written.md) | 
+  [.NET](../not-yet-written.md) | 
+  [Node.js](../not-yet-written.md) | 
+  [Objective C](../not-yet-written.md) ]

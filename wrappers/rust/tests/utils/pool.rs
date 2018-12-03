@@ -1,8 +1,11 @@
+extern crate futures;
+
 use super::environment;
+use self::futures::Future;
 
 use byteorder::{LittleEndian, WriteBytesExt};
 use indy::ErrorCode;
-use indy::pool::Pool;
+use indy::pool;
 use rmp_serde;
 use serde_json;
 use std::fs;
@@ -50,7 +53,7 @@ pub fn create_default_pool() -> String {
     let name = test_pool_name();
     let (config, _genesis_file) = test_genesis_config();
 
-    Pool::create_ledger_config(&name, Some(&config)).unwrap();
+    pool::create_pool_ledger_config(&name, Some(&config)).wait().unwrap();
 
     name
 }
@@ -120,7 +123,7 @@ pub struct PoolList(Vec<PoolItem>);
 
 impl PoolList {
     pub fn new() -> Self {
-        let json_pools = Pool::list().unwrap();
+        let json_pools = pool::list_pools().wait().unwrap();
         Self::from_json(&json_pools)
     }
 

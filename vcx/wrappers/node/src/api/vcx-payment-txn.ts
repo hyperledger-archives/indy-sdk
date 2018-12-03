@@ -10,11 +10,11 @@ export interface IPaymentTxn {
   outputs: IPaymentOutput[]
 }
 export interface IPamentManagerConstructorData {
-  handle: string
+  handle: number
 }
 export abstract class PaymentManager {
-  public readonly handle: string
-  protected abstract _getPaymentTxnFn: (commandId: number, handle: string, cb: any) => number
+  public readonly handle: number
+  protected abstract _getPaymentTxnFn: (commandId: number, handle: number, cb: any) => number
   constructor ({ handle }: IPamentManagerConstructorData) {
     this.handle = handle
   }

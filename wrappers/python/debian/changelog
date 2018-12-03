@@ -1,0 +1,6 @@
+python3-indy (1.6.7) unstable; urgency=low
+
+  Add versioning, and debian packaging
+    - Authored by: Dan Farnsworth <absltkaos@gmail.com>
+
+ -- Dan Farnsworth <absltkaos@gmail.com>  Tue, 27 Nov 2018 09:27:12 -0700 

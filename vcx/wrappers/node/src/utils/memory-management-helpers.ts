@@ -4,7 +4,7 @@ import { VCXInternalError } from '../errors'
 export abstract class GCWatcher {
   protected abstract _releaseFn: any
   // LibVCX handles invalid handles
-  private _handleRef!: string
+  private _handleRef!: number
 
   public async release (): Promise<number> {
     try {
@@ -19,7 +19,7 @@ export abstract class GCWatcher {
   }
 
   // Can not use setter because of https://github.com/Microsoft/TypeScript/issues/2521
-  protected _setHandle (handle: string): void {
+  protected _setHandle (handle: number): void {
     this._handleRef = handle
     this._clearOnExit()
   }

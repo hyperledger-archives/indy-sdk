@@ -636,7 +636,7 @@ pub mod tests {
     fn full_credential_test(){
         init!("true");
 
-        let connection_h = connection::build_connection("test_send_credential_offer").unwrap();
+        let connection_h = connection::tests::build_test_connection();
         let offers = get_credential_offer_messages(connection_h).unwrap();
         let offers:Value = serde_json::from_str(&offers).unwrap();
         let offers = serde_json::to_string(&offers[0]).unwrap();
@@ -655,13 +655,12 @@ pub mod tests {
         assert_eq!(get_credential_id(c_h).unwrap(), "cred_id"); // this is set in test mode
         assert!(get_credential(c_h).unwrap().len() > 100);
         let serialized = to_string(c_h).unwrap();
-        println!("{}", serialized);
     }
 
     #[test]
     fn test_get_credential_offer() {
         init!("true");
-        let connection_h = connection::build_connection("test_get_credential_offer").unwrap();
+        let connection_h = connection::tests::build_test_connection();
         let offer = get_credential_offer_messages(connection_h).unwrap();
         let o: serde_json::Value = serde_json::from_str(&offer).unwrap();
         let credential_offer: CredentialOffer = serde_json::from_str(&o[0][0].to_string()).unwrap();
