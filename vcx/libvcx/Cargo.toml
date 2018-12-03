@@ -45,6 +45,7 @@ base64 = "0.8.0"
 openssl = "0.10"
 num-traits = "0.2.0"
 indy = { version = "1.6.7", path = "../../wrappers/rust/" }
+indy-sys = { version = "1.6.7", path = "../../wrappers/rust/indy-sys/" }
 log-panics = "2.0.0"
 tokio-threadpool = "0.1.6"
 futures = "0.1.23"
