@@ -587,7 +587,7 @@ mod tests {
     #[test]
     fn test_create_with_msgid() {
         init!("true");
-        let cxn = ::connection::build_connection("test_create_with_msgid").unwrap();
+        let cxn = ::connection::tests::build_test_connection();
         ::utils::httpclient::set_next_u8_response(::utils::constants::NEW_PROOF_REQUEST_RESPONSE.to_vec());
         let cb = return_types_u32::Return_U32_U32_STR::new().unwrap();
         assert_eq!(vcx_disclosed_proof_create_with_msgid(cb.command_handle,
@@ -628,7 +628,7 @@ mod tests {
         let handle = disclosed_proof::create_proof("1",::utils::constants::PROOF_REQUEST_JSON).unwrap();
         assert_eq!(disclosed_proof::get_state(handle).unwrap(),VcxStateType::VcxStateRequestReceived as u32);
 
-        let connection_handle = connection::build_connection("test_send_proof").unwrap();
+        let connection_handle = connection::tests::build_test_connection();
 
         let cb = return_types_u32::Return_U32::new().unwrap();
         assert_eq!(vcx_disclosed_proof_send_proof(cb.command_handle,handle,connection_handle,Some(cb.get_callback())), error::SUCCESS.code_num);
@@ -638,7 +638,7 @@ mod tests {
     #[test]
     fn test_vcx_proof_get_requests(){
         init!("true");
-        let cxn = ::connection::build_connection("test_get_new_requests").unwrap();
+        let cxn = ::connection::tests::build_test_connection();
         ::utils::httpclient::set_next_u8_response(::utils::constants::NEW_PROOF_REQUEST_RESPONSE.to_vec());
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         assert_eq!(vcx_disclosed_proof_get_requests(cb.command_handle, cxn, Some(cb.get_callback())),error::SUCCESS.code_num as u32);

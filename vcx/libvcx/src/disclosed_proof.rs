@@ -610,7 +610,7 @@ mod tests {
     fn test_proof_cycle() {
         init!("true");
 
-        let connection_h = connection::build_connection("test_send_credential_offer").unwrap();
+        let connection_h = connection::tests::build_test_connection();
 
         let requests = get_proof_request_messages(connection_h, None).unwrap();
         let requests:Value = serde_json::from_str(&requests).unwrap();
@@ -808,7 +808,7 @@ mod tests {
     fn test_get_proof_request() {
         init!("true");
 
-        let connection_h = connection::build_connection("test_get_proof_request").unwrap();
+        let connection_h = connection::tests::build_test_connection();
 
         let request = get_proof_request(connection_h, "123").unwrap();
         assert!(request.len() > 50);

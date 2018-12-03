@@ -68,7 +68,8 @@ mod tests {
     #[test]
     fn test_delete_connection() {
         init!("agency");
-        let alice = connection::build_connection("alice").unwrap();
+        let alice = connection::create_connection("alice").unwrap();
+        connection::connect(alice,None).unwrap();
         connection::delete_connection(alice).unwrap();
         assert!(connection::release(alice).is_err());
         teardown!("agency");

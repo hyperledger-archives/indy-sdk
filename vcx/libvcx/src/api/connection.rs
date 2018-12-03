@@ -8,7 +8,7 @@ use utils::threadpool::spawn;
 use std::ptr;
 use error::ToErrorCode;
 use error::connection::ConnectionError;
-use connection::{get_source_id, build_connection, build_connection_with_invite, connect, to_string, get_state, release, is_valid_handle, update_state, from_string, get_invite_details, delete_connection};
+use connection::{get_source_id, create_connection, create_connection_with_invite, connect, to_string, get_state, release, is_valid_handle, update_state, from_string, get_invite_details, delete_connection};
 
 /// Delete a Connection object and release its handle
 ///
@@ -71,7 +71,7 @@ pub extern fn vcx_connection_create(command_handle: u32,
     check_useful_c_str!(source_id, error::INVALID_OPTION.code_num);
     info!("vcx_connection_create(command_handle: {}, source_id: {})", command_handle, source_id);
     spawn(move|| {
-        match build_connection(&source_id) {
+        match create_connection(&source_id) {
             Ok(handle) => {
                 info!("vcx_connection_create_cb(command_handle: {}, rc: {}, handle: {}) source_id: {}",
                       command_handle, error_string(0), handle, source_id);
@@ -114,7 +114,7 @@ pub extern fn vcx_connection_create_with_invite(command_handle: u32,
     check_useful_c_str!(invite_details, error::INVALID_OPTION.code_num);
     info!("vcx_connection_create_with_invite(command_handle: {}, source_id: {})", command_handle, source_id);
     spawn(move|| {
-        match build_connection_with_invite(&source_id, &invite_details) {
+        match create_connection_with_invite(&source_id, &invite_details) {
             Ok(handle) => {
                 info!("vcx_connection_create_with_invite_cb(command_handle: {}, rc: {}, handle: {}) source_id: {}",
                       command_handle, error_string(0), handle, source_id);
@@ -142,7 +142,7 @@ pub extern fn vcx_connection_create_with_invite(command_handle: u32,
 ///
 /// connection_options: Provides details indicating if the connection will be established by text or QR Code
 ///
-/// # Examples connection_options -> "{"connection_type":"SMS","phone":"123"}" OR: "{"connection_type":"QR","phone":""}"
+/// # Examples connection_options -> "{"connection_type":"SMS","phone":"123","use_public_did":true}" OR: "{"connection_type":"QR","phone":"","use_public_did":false}"
 ///
 /// cb: Callback that provides error status of request
 ///
@@ -459,6 +459,7 @@ mod tests {
     use super::*;
     use std::ffi::CString;
     use std::ptr;
+    use connection::tests::build_test_connection;
     use utils::error;
     use std::time::Duration;
     use api::{return_types_u32, VcxStateType};
@@ -497,7 +498,7 @@ mod tests {
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         let rc = vcx_connection_connect(cb.command_handle, 0, CString::new("{}").unwrap().into_raw(),Some(cb.get_callback()));
         assert_eq!(rc, error::INVALID_CONNECTION_HANDLE.code_num);
-        let handle = build_connection("test_vcx_connection_connect").unwrap();
+        let handle = build_test_connection();
         assert!(handle > 0);
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         let rc = vcx_connection_connect(cb.command_handle,handle, CString::new("{}").unwrap().into_raw(),Some(cb.get_callback()));
@@ -509,8 +510,9 @@ mod tests {
     #[test]
     fn test_vcx_connection_update_state() {
         init!("true");
-        let handle = build_connection("test_vcx_connection_update_state").unwrap();
+        let handle = build_test_connection();
         assert!(handle > 0);
+        connect(handle,None).unwrap();
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         httpclient::set_next_u8_response(GET_MESSAGES_RESPONSE.to_vec());
         let rc = vcx_connection_update_state(cb.command_handle,handle,Some(cb.get_callback()));
@@ -528,7 +530,7 @@ mod tests {
     #[test]
     fn test_vcx_connection_serialize() {
         init!("true");
-        let handle = build_connection("test_vcx_connection_get_data").unwrap();
+        let handle = build_test_connection();
         assert!(handle > 0);
 
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
@@ -542,7 +544,7 @@ mod tests {
     #[test]
     fn test_vcx_connection_release() {
         init!("true");
-        let handle = build_connection("test_vcx_connection_release").unwrap();
+        let handle = build_test_connection();
         assert!(handle > 0);
 
         let rc = vcx_connection_release(handle);
@@ -568,9 +570,10 @@ mod tests {
     #[test]
     fn test_vcx_connection_get_state() {
         init!("true");
-        let handle = build_connection("test_vcx_connection_get_state").unwrap();
+        let handle = build_test_connection();
         assert!(handle > 0);
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
+        connect(handle, None).unwrap();
         httpclient::set_next_u8_response(GET_MESSAGES_RESPONSE.to_vec());
         let rc = vcx_connection_update_state(cb.command_handle,handle,Some(cb.get_callback()));
         assert_eq!(cb.receive(Some(Duration::from_secs(10))).unwrap(), VcxStateType::VcxStateAccepted as u32);
@@ -583,10 +586,10 @@ mod tests {
     #[test]
     fn test_vcx_connection_delete_connection() {
         init!("true");
-        let test_name = "test_vcx_connection_delete_connection";
-        let connection_handle = build_connection(test_name).unwrap();
-        let command_handle = 0;
+        let connection_handle = build_test_connection();
+        connect(connection_handle, Some("{}".to_string())).unwrap();
         let cb = return_types_u32::Return_U32::new().unwrap();
-        assert_eq!(0, vcx_connection_delete_connection(command_handle, connection_handle, Some(cb.get_callback())));
+        assert_eq!(vcx_connection_delete_connection(cb.command_handle, connection_handle, Some(cb.get_callback())), error::SUCCESS.code_num);
+        cb.receive(Some(Duration::from_secs(10))).unwrap();
     }
 }

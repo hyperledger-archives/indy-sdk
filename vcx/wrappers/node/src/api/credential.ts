@@ -128,8 +128,7 @@ export class Credential extends VCXBaseWithState<ICredentialStructData> {
                 return
               }
               const newObj = new Credential(sourceId)
-              const handleStr = handleNum.toString()
-              newObj._setHandle(handleStr)
+              newObj._setHandle(handleNum)
               newObj._credOffer = credOffer
               resolve(newObj)
             })
@@ -263,7 +262,7 @@ export class Credential extends VCXBaseWithState<ICredentialStructData> {
     }
   }
 
-  protected _setHandle (handle: string) {
+  protected _setHandle (handle: number) {
     super._setHandle(handle)
     this.paymentManager = new CredentialPaymentManager({ handle })
   }

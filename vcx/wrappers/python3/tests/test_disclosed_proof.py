@@ -210,6 +210,7 @@ async def test_send_proof_with_bad_connection():
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_get_requests():
     connection = await Connection.create(source_id)
+    await connection.connect('801')
     await DisclosedProof.get_requests(connection)
 
 

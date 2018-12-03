@@ -522,7 +522,7 @@ mod tests {
         let proof_handle = cb.receive(Some(Duration::from_secs(10))).unwrap();
         assert_eq!(proof::get_state(proof_handle).unwrap(),VcxStateType::VcxStateInitialized as u32);
 
-        let connection_handle = connection::build_connection("test_send_proof_request").unwrap();
+        let connection_handle = ::connection::tests::build_test_connection();
         let cb = return_types_u32::Return_U32::new().unwrap();
         assert_eq!(vcx_proof_send_request(cb.command_handle,
                                           proof_handle,
@@ -540,7 +540,7 @@ mod tests {
         let (cb, rc) = create_proof_util();
         assert_eq!(rc, error::SUCCESS.code_num);
         let proof_handle = cb.receive(Some(Duration::from_secs(10))).unwrap();
-        let connection_handle = connection::build_connection("test_get_proof_fails_when_not_ready_with_proof").unwrap();
+        let connection_handle = connection::tests::build_test_connection();
         connection::set_pw_did(connection_handle, "XXFh7yBzrpJQmNyZzgoTqB").unwrap();
 
         thread::sleep(Duration::from_millis(300));
@@ -556,7 +556,7 @@ mod tests {
     #[test]
     fn test_get_proof_returns_proof_with_proof_state_invalid() {
         init!("true");
-        let connection_handle = connection::build_connection("test_get_proof_returns_proof_with_proof_state_invalid").unwrap();
+        let connection_handle = connection::tests::build_test_connection();
         connection::set_pw_did(connection_handle, "XXFh7yBzrpJQmNyZzgoTqB").unwrap();
         let proof_handle = proof::from_string(PROOF_WITH_INVALID_STATE).unwrap();
         let cb = return_types_u32::Return_U32_U32_STR::new().unwrap();

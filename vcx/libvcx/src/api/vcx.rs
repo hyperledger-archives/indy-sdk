@@ -523,15 +523,15 @@ mod tests {
     fn test_init_after_importing_wallet_success() {
         settings::set_defaults();
         teardown!("false");
-        let exported_path = format!(r#"/tmp/{}"#, settings::DEFAULT_WALLET_NAME);
 
-        let dir = export_test_wallet();
+        let export_path = export_test_wallet();
+
         vcx_shutdown(true);
 
         let import_config = json!({
             settings::CONFIG_WALLET_NAME: settings::DEFAULT_WALLET_NAME,
             settings::CONFIG_WALLET_KEY: settings::DEFAULT_WALLET_KEY,
-            settings::CONFIG_EXPORTED_WALLET_PATH: exported_path,
+            settings::CONFIG_EXPORTED_WALLET_PATH: export_path,
             settings::CONFIG_WALLET_BACKUP_KEY: settings::DEFAULT_WALLET_BACKUP_KEY,
         }).to_string();
         import(&import_config).unwrap();
@@ -548,7 +548,7 @@ mod tests {
                    error::SUCCESS.code_num);
         cb.receive(Some(Duration::from_secs(10))).unwrap();
 
-        delete_import_wallet_path(dir);
+        delete_import_wallet_path(export_path);
         vcx_shutdown(true);
     }
 
@@ -556,15 +556,15 @@ mod tests {
     fn test_init_with_imported_wallet_fails_with_different_params() {
         settings::set_defaults();
         teardown!("false");
-        let exported_path = format!(r#"/tmp/{}"#, settings::DEFAULT_WALLET_NAME);
 
-        let dir = export_test_wallet();
+        let export_path = export_test_wallet();
+
         vcx_shutdown(true);
 
         let import_config = json!({
             settings::CONFIG_WALLET_NAME: settings::DEFAULT_WALLET_NAME,
             settings::CONFIG_WALLET_KEY: settings::DEFAULT_WALLET_KEY,
-            settings::CONFIG_EXPORTED_WALLET_PATH: exported_path,
+            settings::CONFIG_EXPORTED_WALLET_PATH: export_path,
             settings::CONFIG_WALLET_BACKUP_KEY: settings::DEFAULT_WALLET_BACKUP_KEY,
         }).to_string();
         import(&import_config).unwrap();
@@ -581,7 +581,7 @@ mod tests {
                    error::SUCCESS.code_num);
         assert_eq!(cb.receive(Some(Duration::from_secs(10))).err(), Some(error::WALLET_NOT_FOUND.code_num));
 
-        delete_import_wallet_path(dir);
+        delete_import_wallet_path(export_path);
         settings::set_config_value(settings::CONFIG_WALLET_NAME,settings::DEFAULT_WALLET_NAME);
         vcx_shutdown(true);
     }
@@ -590,8 +590,9 @@ mod tests {
     fn test_import_after_init_fails() {
         settings::set_defaults();
         teardown!("false");
-        let exported_path = format!(r#"/tmp/{}"#, settings::DEFAULT_WALLET_NAME);
-        let dir = export_test_wallet();
+
+        let export_path = export_test_wallet();
+
         vcx_shutdown(false);
 
         let content = json!({
@@ -609,12 +610,12 @@ mod tests {
         let import_config = json!({
             settings::CONFIG_WALLET_NAME: settings::DEFAULT_WALLET_NAME,
             settings::CONFIG_WALLET_KEY: settings::DEFAULT_WALLET_KEY,
-            settings::CONFIG_EXPORTED_WALLET_PATH: exported_path,
+            settings::CONFIG_EXPORTED_WALLET_PATH: export_path,
             settings::CONFIG_WALLET_BACKUP_KEY: settings::DEFAULT_WALLET_BACKUP_KEY,
         }).to_string();
         assert_eq!(import(&import_config), Err(::error::wallet::WalletError::CommonError(error::WALLET_ALREADY_EXISTS.code_num)));
 
-        delete_import_wallet_path(dir);
+        delete_import_wallet_path(export_path);
         vcx_shutdown(true);
     }
 
@@ -657,10 +658,10 @@ mod tests {
         init!("true");
 
         let data = r#"["name","male"]"#;
-        let connection = ::connection::build_connection("h1").unwrap();
-        let credentialdef = ::credential_def::create_new_credentialdef("SID".to_string(),"NAME".to_string(),"4fUDR9R7fjwELRvH9JT6HH".to_string(), "id".to_string(), "tag".to_string(),"{}".to_string()).unwrap();
-        let issuer_credential = ::issuer_credential::issuer_credential_create(credentialdef,"1".to_string(),"8XFh8yBzrpJQmNyZzgoTqB".to_owned(),"credential_name".to_string(),"{\"attr\":\"value\"}".to_owned(), 1).unwrap();
-        let proof = ::proof::create_proof("1".to_string(),"[]".to_string(), "[]".to_string(),r#"{"support_revocation":false}"#.to_string(), "Optional".to_owned()).unwrap();
+        let connection = ::connection::tests::build_test_connection();
+        let issuer_credential = ::issuer_credential::issuer_credential_create("cred_id".to_string(),"1".to_string(),"8XFh8yBzrpJQmNyZzgoTqB".to_owned(),"credential_name".to_string(),"{\"attr\":\"value\"}".to_owned(), 1).unwrap();
+        let proof = ::proof::create_proof("1".to_string(),"[]".to_string(), "[]".to_string(),"Optional".to_owned()).unwrap();
+        let credentialdef = ::credential_def::create_new_credentialdef("SID".to_string(),"NAME".to_string(),"4fUDR9R7fjwELRvH9JT6HH".to_string(), "id".to_string(), "tag".to_string(),"{}".to_string() ).unwrap();
         let schema = ::schema::create_new_schema("5",  "VsKV7grR1BUE29mG2Fm2kX".to_string(),"name".to_string(), "0.1".to_string(), data.to_string()).unwrap();
         let disclosed_proof = ::disclosed_proof::create_proof("id",::utils::constants::PROOF_REQUEST_JSON).unwrap();
         let credential = ::credential::credential_create_with_offer("name", ::utils::constants::CREDENTIAL_OFFER_JSON).unwrap();

@@ -62,6 +62,7 @@ class TestHelper {
             throw new VcxException("Unable to create connection handle",0);
         }else{
 //            System.out.println("Connection created with connection handle => "  + result);
+
             return result;
         }
 
