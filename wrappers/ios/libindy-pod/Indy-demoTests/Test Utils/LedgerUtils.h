@@ -179,5 +179,9 @@
                                   requestJson:(NSString *)requestJson
                                    resultJson:(NSString **)resultJson;
 
+// MARK: - Response Metadata
+- (NSError *)getResponseMetadata:(NSString *)response
+                responseMetadata:(NSString **)responseMetadata;
+
 
 @end
