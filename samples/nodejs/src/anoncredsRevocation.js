@@ -177,7 +177,7 @@ async function run() {
     console.log("Anoncreds Revocation sample -> completed")
 }
 
-if (process.argv.indexOf("--run") > 0) {
+if (require.main.filename == __filename) {
     run()
 }
 
