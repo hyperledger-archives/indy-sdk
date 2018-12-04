@@ -1,7 +1,9 @@
 import pytest
+
+from vcx.api.connection import Connection
 from vcx.error import VcxError, error_message, ErrorCode
 from vcx.api.logging import set_logger, default_logger, get_logger
-from ctypes import CFUNCTYPE, c_void_p, c_char_p, c_uint32, cast, c_int, c_bool, POINTER
+from ctypes import c_uint32, c_int
 import ctypes
 
 
@@ -25,13 +27,15 @@ def test_default_logging():
 #
 # This test is skipped because Logger Cannot be
 # Initialized twice in the same process
-@pytest.mark.skip
-def test_set_logger():
+@pytest.mark.asyncio
+@pytest.mark.usefixtures('vcx_init_test_mode')
+async def test_set_logger():
     num_entries = c_int(0)
 
     assert (num_entries.value == 0)
 
     def _log_fn(_level, _target, _message, _module_path, _file, _line):
+        print(_message.decode())
         num_entries.value += 1
 
     try:
@@ -39,7 +43,7 @@ def test_set_logger():
     except VcxError as e:
         pytest.fail("Error in VcxLogger.set_logger: %s", e)
 
-    error_message(1000)
+    await Connection.create('123')  # complex async LibVCX call
     assert (num_entries.value > 0)
 
 
