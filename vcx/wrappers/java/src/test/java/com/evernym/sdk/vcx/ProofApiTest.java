@@ -133,6 +133,8 @@ public class ProofApiTest {
     @DisplayName("request proof")
     void requestProof() throws VcxException, ExecutionException, InterruptedException {
         int connectionHandle = TestHelper.getResultFromFuture(ConnectionApi.vcxConnectionCreate(sourceId));
+        String payload= "{ 'connection_type': 'SMS', 'phone':'7202200000' }";
+        TestHelper.getResultFromFuture(ConnectionApi.vcxConnectionConnect(connectionHandle,TestHelper.convertToValidJson(payload)));
         int proofHandle = TestHelper.getResultFromFuture(ProofApi.proofCreate(sourceId, TestHelper.convertToValidJson(attr), "", name));
         assert (proofHandle != 0);
         TestHelper.getResultFromFuture(ProofApi.proofSendRequest(proofHandle,connectionHandle));

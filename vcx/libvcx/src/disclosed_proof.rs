@@ -108,10 +108,17 @@ impl DisclosedProof {
 
     fn set_proof_request(&mut self, req: ProofRequestMessage) {self.proof_request = Some(req)}
 
-    fn get_state(&self) -> u32 {self.state as u32}
-    fn set_state(&mut self, state: VcxStateType) {self.state = state}
+    fn get_state(&self) -> u32 {
+        trace!("DisclosedProof::get_state >>>");
+        self.state as u32
+    }
+    fn set_state(&mut self, state: VcxStateType) {
+        trace!("DisclosedProof::set_state >>> state: {:?}", state);
+        self.state = state
+    }
 
     fn retrieve_credentials(&self) -> Result<String, ProofError> {
+        trace!("DisclosedProof::set_state >>>");
         if settings::test_indy_mode_enabled() {return Ok(CREDS_FROM_PROOF_REQ.to_string())}
 
         let proof_req = self.proof_request.as_ref().ok_or(ProofError::ProofNotReadyError())?;
@@ -194,6 +201,8 @@ impl DisclosedProof {
     }
 
     fn generate_proof(&mut self, credentials: &str, self_attested_attrs: &str) -> Result<u32, ProofError> {
+        trace!("DisclosedProof::generate_proof >>> credentials: {}, self_attested_attrs: {}", credentials, self_attested_attrs);
+
         debug!("generating proof {}", self.source_id);
         if settings::test_indy_mode_enabled() {return Ok(error::SUCCESS.code_num)}
 
@@ -223,6 +232,8 @@ impl DisclosedProof {
     }
 
     fn send_proof(&mut self, connection_handle: u32) -> Result<u32, ProofError> {
+        trace!("DisclosedProof::send_proof >>> connection_handle: {}", connection_handle);
+
         debug!("sending proof {} via connection: {}", self.source_id, connection::get_source_id(connection_handle).unwrap_or_default());
         // There feels like there's a much more rusty way to do the below.
         self.my_did = Some(connection::get_pw_did(connection_handle).or(Err(ProofError::ProofConnectionError()))?);
@@ -285,12 +296,14 @@ impl DisclosedProof {
     fn set_source_id(&mut self, id: &str) { self.source_id = id.to_string(); }
     fn get_source_id(&self) -> &String { &self.source_id }
     fn to_string(&self) -> String {
+        trace!("DisclosedProof::to_string >>>");
         json!({
             "version": DEFAULT_SERIALIZE_VERSION,
             "data": json!(self),
         }).to_string()
     }
     fn from_str(s: &str) -> Result<DisclosedProof, ProofError> {
+        trace!("DisclosedProof::from_str >>> data: {}", s);
         let s:Value = serde_json::from_str(&s)
             .or(Err(ProofError::InvalidJson()))?;
         let proof: DisclosedProof= serde_json::from_value(s["data"].clone())
@@ -312,6 +325,8 @@ fn handle_err(code_num: u32) -> u32 {
 }
 
 pub fn create_proof(source_id: &str, proof_req: &str) -> Result<u32, ProofError> {
+    trace!("create_proof >>> source_id: {}, proof_req: {}", source_id, proof_req);
+
     debug!("creating disclosed proof with id: {}", source_id);
 
     let mut new_proof: DisclosedProof = Default::default();
@@ -392,6 +407,8 @@ pub fn is_valid_handle(handle: u32) -> bool {
 
 //TODO one function with credential
 pub fn get_proof_request(connection_handle: u32, msg_id: &str) -> Result<String, ProofError> {
+    trace!("get_proof_request >>> connection_handle: {}, msg_id: {}", connection_handle, msg_id);
+
     let my_did = connection::get_pw_did(connection_handle).map_err(|e| ProofError::CommonError(e.to_error_code()))?;
     let my_vk = connection::get_pw_verkey(connection_handle).map_err(|e| ProofError::CommonError(e.to_error_code()))?;
     let agent_did = connection::get_agent_did(connection_handle).map_err(|e| ProofError::CommonError(e.to_error_code()))?;
@@ -427,6 +444,8 @@ pub fn get_proof_request(connection_handle: u32, msg_id: &str) -> Result<String,
 
 //TODO one function with credential
 pub fn get_proof_request_messages(connection_handle: u32, match_name: Option<&str>) -> Result<String, ProofError> {
+    trace!("get_proof_request_messages >>> connection_handle: {}, match_name: {:?}", connection_handle, match_name);
+
     let my_did = connection::get_pw_did(connection_handle).map_err(|e| ProofError::CommonError(e.to_error_code()))?;
     let my_vk = connection::get_pw_verkey(connection_handle).map_err(|e| ProofError::CommonError(e.to_error_code()))?;
     let agent_did = connection::get_agent_did(connection_handle).map_err(|e| ProofError::CommonError(e.to_error_code()))?;
@@ -499,7 +518,7 @@ mod tests {
     fn test_proof_cycle() {
         init!("true");
 
-        let connection_h = connection::build_connection("test_send_credential_offer").unwrap();
+        let connection_h = connection::tests::build_test_connection();
 
         let requests = get_proof_request_messages(connection_h, None).unwrap();
         let requests:Value = serde_json::from_str(&requests).unwrap();
@@ -616,7 +635,7 @@ mod tests {
     fn test_get_proof_request() {
         init!("true");
 
-        let connection_h = connection::build_connection("test_get_proof_request").unwrap();
+        let connection_h = connection::tests::build_test_connection();
 
         let request = get_proof_request(connection_h, "123").unwrap();
         assert!(request.len() > 50);

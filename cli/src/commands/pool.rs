@@ -3,7 +3,7 @@ extern crate serde_json;
 use command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata};
 use commands::*;
 
-use libindy::ErrorCode;
+use indy::ErrorCode;
 use libindy::pool::Pool;
 use utils::table::print_list_table;
 

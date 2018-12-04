@@ -9,7 +9,7 @@ use domain::internal_message::InternalMessage;
 use domain::key_deligation_proof::KeyDlgProof;
 use failure::{err_msg, Error, Fail};
 use futures::*;
-use indy::{did, crypto, pairwise, IndyError};
+use indy::{did, crypto, pairwise, ErrorCode};
 use std::convert::Into;
 use std::collections::HashMap;
 use utils::futures::*;
@@ -834,7 +834,7 @@ impl AgentConnection {
 
         did::store_their_did(self.wallet_handle, &their_did_info)
             .then(|res| match res {
-                Err(IndyError::WalletItemAlreadyExists) => Ok(()),
+                Err(ErrorCode::WalletItemAlreadyExists) => Ok(()),
                 r => r
             })
             .map_err(|err| err.context("Can't create my DID for pairwise.").into())
@@ -1066,6 +1066,7 @@ impl AgentConnection {
                     agent_key_dlg_proof: msg_detail.key_dlg_proof.clone(),
                     name: self.agent_configs.get("name").cloned(),
                     logo_url: self.agent_configs.get("logo_url").cloned(),
+                    public_did: Some(self.owner_did.clone()),
                 },
                 status_code: msg.status_code.clone(),
                 status_msg,
@@ -1099,6 +1100,7 @@ impl AgentConnection {
                 agent_key_dlg_proof,
                 name: None,
                 logo_url: None,
+                public_did: None,
             },
             sender_agency_detail: self.forward_agent_detail.clone(),
             answer_status_code: MessageStatusCode::Accepted,

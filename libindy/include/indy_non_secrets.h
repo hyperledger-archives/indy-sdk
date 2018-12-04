@@ -31,7 +31,7 @@ extern "C" {
                                                const char*    id,
                                                const char*    value,
                                                const char*    tags_json,
-                                               void           (*fn)(indy_handle_t xcommand_handle,
+                                               void           (*fn)(indy_handle_t command_handle_,
                                                                     indy_error_t err)
                                               );
 
@@ -49,7 +49,7 @@ extern "C" {
                                                         const char*    type_,
                                                         const char*    id,
                                                         const char*    value,
-                                                        void           (*fn)(indy_handle_t xcommand_handle,
+                                                        void           (*fn)(indy_handle_t command_handle_,
                                                                              indy_error_t err)
                                                        );
 
@@ -76,7 +76,7 @@ extern "C" {
                                                        const char*    type_,
                                                        const char*    id,
                                                        const char*    tags_json,
-                                                       void           (*fn)(indy_handle_t xcommand_handle,
+                                                       void           (*fn)(indy_handle_t command_handle_,
                                                                             indy_error_t err)
                                                       );
 
@@ -105,7 +105,7 @@ extern "C" {
                                                     const char*    type_,
                                                     const char*    id,
                                                     const char*    tags_json,
-                                                    void           (*fn)(indy_handle_t xcommand_handle,
+                                                    void           (*fn)(indy_handle_t command_handle_,
                                                                          indy_error_t err)
                                                    );
 
@@ -124,7 +124,7 @@ extern "C" {
                                                        const char*    type_,
                                                        const char*    id,
                                                        const char*    tag_names_json,
-                                                       void           (*fn)(indy_handle_t xcommand_handle,
+                                                       void           (*fn)(indy_handle_t command_handle_,
                                                                             indy_error_t err)
                                                       );
 
@@ -140,7 +140,7 @@ extern "C" {
                                                   indy_handle_t  wallet_handle,
                                                   const char*    type_,
                                                   const char*    id,
-                                                  void           (*fn)(indy_handle_t xcommand_handle,
+                                                  void           (*fn)(indy_handle_t command_handle_,
                                                                        indy_error_t err)
                                                  );
 
@@ -171,7 +171,7 @@ extern "C" {
                                                const char*    type_,
                                                const char*    id,
                                                const char*    options_json,
-                                               void           (*fn)(indy_handle_t xcommand_handle,
+                                               void           (*fn)(indy_handle_t command_handle_,
                                                                     indy_error_t  err,
                                                                     const char*   record_json)
                                               );
@@ -210,7 +210,7 @@ extern "C" {
                                                 const char*    type_,
                                                 const char*    query_json,
                                                 const char*    options_json,
-                                                void           (*fn)(indy_handle_t xcommand_handle,
+                                                void           (*fn)(indy_handle_t command_handle_,
                                                                      indy_error_t err,
                                                                      indy_handle_t search_handle)
                                                );
@@ -241,7 +241,7 @@ extern "C" {
                                                               indy_handle_t  wallet_handle,
                                                               indy_handle_t  wallet_search_handle,
                                                               indy_u32_t   count,
-                                                              void           (*fn)(indy_handle_t xcommand_handle,
+                                                              void           (*fn)(indy_handle_t command_handle_,
                                                                                    indy_error_t  err,
                                                                                    const char*   records_json)
                                                              );
@@ -253,7 +253,7 @@ extern "C" {
 
     extern indy_error_t indy_close_wallet_search(indy_handle_t  command_handle,
                                                  indy_handle_t  wallet_search_handle,
-                                                 void           (*fn)(indy_handle_t xcommand_handle,
+                                                 void           (*fn)(indy_handle_t command_handle_,
                                                                       indy_error_t  err)
                                                 );
 
