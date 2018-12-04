@@ -104,7 +104,7 @@ public class RotateKeyOnTheLedger {
 		String responseData = new JSONObject(getNymResponse).getJSONObject("result").getString("data");
 		String trustAnchorVerkeyFromLedger = new JSONObject(responseData).getString("verkey");
 		System.out.println("Current from ledger: " + trustAnchorVerkeyFromLedger);
-		boolean match = !trustAnchorDID.equals(trustAnchorVerkeyFromWallet) && trustAnchorVerkeyFromWallet.equals(trustAnchorVerkeyFromWallet);
+		boolean match = !trustAnchorDID.equals(trustAnchorVerkeyFromWallet) && trustAnchorVerkeyFromWallet.equals(trustAnchorVerkeyFromLedger);
 		System.out.println("Matching: " + match);
 
 		// 17

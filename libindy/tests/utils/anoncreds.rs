@@ -1,14 +1,14 @@
-extern crate serde_json;
-extern crate indy_crypto;
+extern crate futures;
 
-use indy::api::ErrorCode;
-use indy::api::anoncreds::*;
+use indy::ErrorCode;
+use indy::anoncreds;
+use self::futures::Future;
 
-use utils::{callback, environment, wallet, blob_storage, test, pool, ctypes};
+use serde_json;
+
+use utils::{environment, wallet, blob_storage, test, pool};
 use utils::types::CredentialOfferInfo;
 
-use std::ffi::CString;
-use std::ptr::null;
 use std::sync::{Once, ONCE_INIT};
 use std::mem;
 use utils::constants::*;
@@ -47,392 +47,109 @@ macro_rules! map (
 );
 
 pub fn issuer_create_schema(issuer_did: &str, name: &str, version: &str, attr_names: &str) -> Result<(String, String), ErrorCode> {
-    let (receiver, command_handle, cb) = callback::_closure_to_cb_ec_string_string();
-
-    let issuer_did = CString::new(issuer_did).unwrap();
-    let name = CString::new(name).unwrap();
-    let version = CString::new(version).unwrap();
-    let attr_names = CString::new(attr_names).unwrap();
-
-    let err =
-        indy_issuer_create_schema(command_handle,
-                                  issuer_did.as_ptr(),
-                                  name.as_ptr(),
-                                  version.as_ptr(),
-                                  attr_names.as_ptr(),
-                                  cb);
-
-    super::results::result_to_string_string(err, receiver)
+    anoncreds::issuer_create_schema(issuer_did, name, version, attr_names).wait()
 }
 
 pub fn issuer_create_credential_definition(wallet_handle: i32, issuer_did: &str, schema: &str, tag: &str,
                                            signature_type: Option<&str>, config: Option<&str>) -> Result<(String, String), ErrorCode> {
-    let (receiver, command_handle, cb) = callback::_closure_to_cb_ec_string_string();
-
-    let schema = CString::new(schema).unwrap();
-    let tag = CString::new(tag).unwrap();
-    let issuer_did = CString::new(issuer_did).unwrap();
-    let signature_type = signature_type.map(ctypes::str_to_cstring);
-    let config = config.map(ctypes::str_to_cstring);
-
-    let err =
-        indy_issuer_create_and_store_credential_def(command_handle,
-                                                    wallet_handle,
-                                                    issuer_did.as_ptr(),
-                                                    schema.as_ptr(),
-                                                    tag.as_ptr(),
-                                                    signature_type.as_ref().map(|s| s.as_ptr()).unwrap_or(null()),
-                                                    config.as_ref().map(|s| s.as_ptr()).unwrap_or(null()),
-                                                    cb);
-
-    super::results::result_to_string_string(err, receiver)
+    anoncreds::issuer_create_and_store_credential_def(wallet_handle, issuer_did, schema, tag, signature_type, config.unwrap_or("{}")).wait() // TODO: FIXME OPTIONAL CONFIG
 }
 
 pub fn issuer_create_and_store_revoc_reg(wallet_handle: i32, issuer_did: &str, type_: Option<&str>, tag: &str,
-                                              cred_def_id: &str, config_json: &str, tails_writer_handle: i32)
-                                              -> Result<(String, String, String), ErrorCode> {
-    let (receiver, command_handle, cb) =
-        callback::_closure_to_cb_ec_string_string_string();
-
-    let issuer_did = CString::new(issuer_did).unwrap();
-    let type_ = type_.map(ctypes::str_to_cstring);
-    let tag = CString::new(tag).unwrap();
-    let cred_def_id = CString::new(cred_def_id).unwrap();
-    let config_json = CString::new(config_json).unwrap();
-
-    let err = indy_issuer_create_and_store_revoc_reg(command_handle,
-                                                     wallet_handle,
-                                                     issuer_did.as_ptr(),
-                                                     type_.as_ref().map(|s| s.as_ptr()).unwrap_or(null()),
-                                                     tag.as_ptr(),
-                                                     cred_def_id.as_ptr(),
-                                                     config_json.as_ptr(),
-                                                     tails_writer_handle,
-                                                     cb);
-
-    super::results::result_to_string_string_string(err, receiver)
+                                         cred_def_id: &str, config_json: &str, tails_writer_handle: i32)
+                                         -> Result<(String, String, String), ErrorCode> {
+    anoncreds::issuer_create_and_store_revoc_reg(wallet_handle, issuer_did, type_, tag, cred_def_id, config_json, tails_writer_handle).wait()
 }
 
 pub fn issuer_create_credential_offer(wallet_handle: i32, cred_def_id: &str) -> Result<String, ErrorCode> {
-    let (receiver, command_handle, cb) = callback::_closure_to_cb_ec_string();
-
-    let cred_def_id = CString::new(cred_def_id).unwrap();
-
-    let err =
-        indy_issuer_create_credential_offer(command_handle,
-                                            wallet_handle,
-                                            cred_def_id.as_ptr(),
-                                            cb);
-
-    super::results::result_to_string(err, receiver)
+    anoncreds::issuer_create_credential_offer(wallet_handle, cred_def_id).wait()
 }
 
 pub fn issuer_create_credential(wallet_handle: i32, cred_offer_json: &str, cred_req_json: &str, cred_values_json: &str,
                                 rev_reg_id: Option<&str>, blob_storage_reader_handle: Option<i32>) -> Result<(String, Option<String>, Option<String>), ErrorCode> {
-    let (receiver, command_handle, cb) =
-        callback::_closure_to_cb_ec_string_opt_string_opt_string();
-
-    let cred_offer_json = CString::new(cred_offer_json).unwrap();
-    let cred_req_json = CString::new(cred_req_json).unwrap();
-    let cred_values_json = CString::new(cred_values_json).unwrap();
-    let rev_reg_id = rev_reg_id.map(ctypes::str_to_cstring);
-
-    let err = indy_issuer_create_credential(command_handle,
-                                            wallet_handle,
-                                            cred_offer_json.as_ptr(),
-                                            cred_req_json.as_ptr(),
-                                            cred_values_json.as_ptr(),
-                                            rev_reg_id.as_ref().map(|s| s.as_ptr()).unwrap_or(null()),
-                                            blob_storage_reader_handle.unwrap_or(-1),
-                                            cb);
-
-    super::results::result_to_string_opt_string_opt_string(err, receiver)
+    anoncreds::issuer_create_credential(wallet_handle, cred_offer_json, cred_req_json, cred_values_json, rev_reg_id, blob_storage_reader_handle.unwrap_or(-1)).wait() // TODO OPTIONAL blob_storage_reader_handle
 }
 
 pub fn issuer_revoke_credential(wallet_handle: i32, blob_storage_reader_handle: i32, rev_reg_id: &str, cred_revoc_id: &str) -> Result<String, ErrorCode> {
-    let (receiver, command_handle, cb) = callback::_closure_to_cb_ec_string();
-
-    let rev_reg_id = CString::new(rev_reg_id).unwrap();
-    let cred_revoc_id = CString::new(cred_revoc_id).unwrap();
-
-    let err = indy_issuer_revoke_credential(command_handle,
-                                            wallet_handle,
-                                            blob_storage_reader_handle,
-                                            rev_reg_id.as_ptr(),
-                                            cred_revoc_id.as_ptr(),
-                                            cb);
-
-    super::results::result_to_string(err, receiver)
+    anoncreds::issuer_revoke_credential(wallet_handle, blob_storage_reader_handle, rev_reg_id, cred_revoc_id).wait()
 }
 
 pub fn issuer_merge_revocation_registry_deltas(rev_reg_delta: &str, other_rev_reg_delta: &str) -> Result<String, ErrorCode> {
-    let (receiver, command_handle, cb) = callback::_closure_to_cb_ec_string();
-
-    let rev_reg_delta = CString::new(rev_reg_delta).unwrap();
-    let other_rev_reg_delta = CString::new(other_rev_reg_delta).unwrap();
-
-    let err = indy_issuer_merge_revocation_registry_deltas(command_handle,
-                                                           rev_reg_delta.as_ptr(),
-                                                           other_rev_reg_delta.as_ptr(),
-                                                           cb);
-
-    super::results::result_to_string(err, receiver)
+    anoncreds::issuer_merge_revocation_registry_deltas(rev_reg_delta, other_rev_reg_delta).wait()
 }
 
 pub fn prover_create_master_secret(wallet_handle: i32, master_secret_id: &str) -> Result<String, ErrorCode> {
-    let (receiver, command_handle, cb) = callback::_closure_to_cb_ec_string();
-
-    let master_secret_id = CString::new(master_secret_id).unwrap();
-
-    let err = indy_prover_create_master_secret(command_handle, wallet_handle, master_secret_id.as_ptr(), cb);
-
-    super::results::result_to_string(err, receiver)
+    anoncreds::prover_create_master_secret(wallet_handle, Some(master_secret_id)).wait()
 }
 
 pub fn prover_create_credential_req(wallet_handle: i32, prover_did: &str, cred_offer_json: &str,
                                     cred_def_json: &str, master_secret_id: &str) -> Result<(String, String), ErrorCode> {
-    let (receiver, command_handle, cb) = callback::_closure_to_cb_ec_string_string();
-
-    let prover_did = CString::new(prover_did).unwrap();
-    let cred_offer_json = CString::new(cred_offer_json).unwrap();
-    let cred_def_json = CString::new(cred_def_json).unwrap();
-    let master_secret_id = CString::new(master_secret_id).unwrap();
-
-    let err = indy_prover_create_credential_req(command_handle,
-                                                wallet_handle,
-                                                prover_did.as_ptr(),
-                                                cred_offer_json.as_ptr(),
-                                                cred_def_json.as_ptr(),
-                                                master_secret_id.as_ptr(),
-                                                cb);
-
-    super::results::result_to_string_string(err, receiver)
+    anoncreds::prover_create_credential_req(wallet_handle, prover_did, cred_offer_json, cred_def_json, master_secret_id).wait()
 }
 
 pub fn prover_store_credential(wallet_handle: i32, cred_id: &str, cred_req_metadata_json: &str, cred_json: &str,
                                cred_def_json: &str, rev_reg_def_json: Option<&str>) -> Result<String, ErrorCode> {
-    let (receiver, command_handle, cb) = callback::_closure_to_cb_ec_string();
-
-    let cred_id = CString::new(cred_id).unwrap();
-    let cred_req_metadata_json = CString::new(cred_req_metadata_json).unwrap();
-    let cred_json = CString::new(cred_json).unwrap();
-    let cred_def_json = CString::new(cred_def_json).unwrap();
-    let rev_reg_def_json = rev_reg_def_json.map(ctypes::str_to_cstring);
-
-    let err = indy_prover_store_credential(command_handle,
-                                           wallet_handle,
-                                           cred_id.as_ptr(),
-                                           cred_req_metadata_json.as_ptr(),
-                                           cred_json.as_ptr(),
-                                           cred_def_json.as_ptr(),
-                                           rev_reg_def_json.as_ref().map(|s| s.as_ptr()).unwrap_or(null()),
-                                           cb);
-
-    super::results::result_to_string(err, receiver)
+    anoncreds::prover_store_credential(wallet_handle, Some(cred_id), cred_req_metadata_json, cred_json, cred_def_json, rev_reg_def_json).wait()
 }
 
 //TODO mark as depricated and use only in target tests
 pub fn prover_get_credentials(wallet_handle: i32, filter_json: &str) -> Result<String, ErrorCode> {
-    let (receiver, command_handle, cb) = callback::_closure_to_cb_ec_string();
-
-    let filter_json = CString::new(filter_json).unwrap();
-
-    #[allow(deprecated)]
-    let err = indy_prover_get_credentials(command_handle,
-                                          wallet_handle,
-                                          filter_json.as_ptr(),
-                                          cb);
-
-    super::results::result_to_string(err, receiver)
+    anoncreds::prover_get_credentials(wallet_handle, Some(filter_json)).wait()
 }
 
 pub fn prover_get_credential(wallet_handle: i32, cred_id: &str) -> Result<String, ErrorCode> {
-    let (receiver, command_handle, cb) = callback::_closure_to_cb_ec_string();
-
-    let cred_id = CString::new(cred_id).unwrap();
-
-    let err = indy_prover_get_credential(command_handle,
-                                         wallet_handle,
-                                         cred_id.as_ptr(),
-                                         cb);
-
-    super::results::result_to_string(err, receiver)
+    anoncreds::prover_get_credential(wallet_handle, cred_id).wait()
 }
 
 pub fn prover_search_credentials(wallet_handle: i32, filter_json: &str) -> Result<(i32, usize), ErrorCode> {
-    let (receiver, command_handle, cb) = callback::_closure_to_cb_ec_i32_usize();
-
-    let filter_json = CString::new(filter_json).unwrap();
-
-    let err = indy_prover_search_credentials(command_handle,
-                                             wallet_handle,
-                                             filter_json.as_ptr(),
-                                             cb);
-
-    super::results::result_to_int_usize(err, receiver)
+    anoncreds::prover_search_credentials(wallet_handle, Some(filter_json)).wait()
 }
 
 pub fn prover_fetch_credentials(search_handle: i32, count: usize) -> Result<String, ErrorCode> {
-    let (receiver, command_handle, cb) = callback::_closure_to_cb_ec_string();
-
-    let err = indy_prover_fetch_credentials(command_handle,
-                                            search_handle,
-                                            count,
-                                            cb);
-
-    super::results::result_to_string(err, receiver)
+    anoncreds::prover_fetch_credentials(search_handle, count).wait()
 }
 
 pub fn prover_close_credentials_search(search_handle: i32) -> Result<(), ErrorCode> {
-    let (receiver, command_handle, cb) = callback::_closure_to_cb_ec();
-
-    let err = indy_prover_close_credentials_search(command_handle,
-                                                   search_handle,
-                                                   cb);
-
-    super::results::result_to_empty(err, receiver)
+    anoncreds::prover_close_credentials_search(search_handle).wait()
 }
 
 //TODO mark as depricated and use only in target tests
 pub fn prover_get_credentials_for_proof_req(wallet_handle: i32, proof_request_json: &str) -> Result<String, ErrorCode> {
-    let (receiver, command_handle, cb) = callback::_closure_to_cb_ec_string();
-
-    let proof_request_json = CString::new(proof_request_json).unwrap();
-
-    #[allow(deprecated)]
-    let err = indy_prover_get_credentials_for_proof_req(command_handle,
-                                                        wallet_handle,
-                                                        proof_request_json.as_ptr(),
-                                                        cb);
-
-    super::results::result_to_string(err, receiver)
+    anoncreds::prover_get_credentials_for_proof_req(wallet_handle, proof_request_json).wait()
 }
 
 pub fn prover_search_credentials_for_proof_req(wallet_handle: i32, proof_request_json: &str, extra_query_json: Option<&str>) -> Result<i32, ErrorCode> {
-    let (receiver, command_handle, cb) = callback::_closure_to_cb_ec_i32();
-
-    let proof_request_json = CString::new(proof_request_json).unwrap();
-    let extra_query_json = extra_query_json.map(ctypes::str_to_cstring);
-
-    let err = indy_prover_search_credentials_for_proof_req(command_handle,
-                                                           wallet_handle,
-                                                           proof_request_json.as_ptr(),
-                                                           extra_query_json.as_ref().map(|s| s.as_ptr()).unwrap_or(null()),
-                                                           cb);
-
-    super::results::result_to_int(err, receiver)
+    anoncreds::prover_search_credentials_for_proof_req(wallet_handle, proof_request_json, extra_query_json).wait()
 }
 
 pub fn prover_fetch_next_credentials_for_proof_req(search_handle: i32, item_ref: &str, count: usize) -> Result<String, ErrorCode> {
-    let (receiver, command_handle, cb) = callback::_closure_to_cb_ec_string();
-
-    let item_ref = CString::new(item_ref).unwrap();
-
-    let err = indy_prover_fetch_credentials_for_proof_req(command_handle,
-                                                          search_handle,
-                                                          item_ref.as_ptr(),
-                                                          count,
-                                                          cb);
-
-    super::results::result_to_string(err, receiver)
+    anoncreds::prover_fetch_credentials_for_proof_req(search_handle, item_ref, count).wait()
 }
 
 pub fn prover_close_credentials_search_for_proof_req(search_handle: i32) -> Result<(), ErrorCode> {
-    let (receiver, command_handle, cb) = callback::_closure_to_cb_ec();
-
-    let err = indy_prover_close_credentials_search_for_proof_req(command_handle,
-                                                                 search_handle,
-                                                                 cb);
-
-    super::results::result_to_empty(err, receiver)
+    anoncreds::prover_close_credentials_search_for_proof_req(search_handle).wait()
 }
 
 pub fn prover_create_proof(wallet_handle: i32, proof_req_json: &str, requested_credentials_json: &str,
                            master_secret_name: &str, schemas_json: &str, cred_defs_json: &str,
                            rev_states_json: &str) -> Result<String, ErrorCode> {
-    let (receiver, command_handle, cb) = callback::_closure_to_cb_ec_string();
-
-    let proof_req_json = CString::new(proof_req_json).unwrap();
-    let requested_credentials_json = CString::new(requested_credentials_json).unwrap();
-    let schemas_json = CString::new(schemas_json).unwrap();
-    let master_secret_name = CString::new(master_secret_name).unwrap();
-    let credential_defs_json = CString::new(cred_defs_json).unwrap();
-    let rev_states_json = CString::new(rev_states_json).unwrap();
-
-    let err = indy_prover_create_proof(command_handle,
-                                       wallet_handle,
-                                       proof_req_json.as_ptr(),
-                                       requested_credentials_json.as_ptr(),
-                                       master_secret_name.as_ptr(),
-                                       schemas_json.as_ptr(),
-                                       credential_defs_json.as_ptr(),
-                                       rev_states_json.as_ptr(),
-                                       cb);
-
-    super::results::result_to_string(err, receiver)
+    anoncreds::prover_create_proof(wallet_handle, proof_req_json, requested_credentials_json,
+                         master_secret_name, schemas_json, cred_defs_json, rev_states_json).wait()
 }
 
 pub fn verifier_verify_proof(proof_request_json: &str, proof_json: &str, schemas_json: &str,
                              cred_defs_json: &str, rev_reg_defs_json: &str, rev_regs_json: &str) -> Result<bool, ErrorCode> {
-    let (receiver, command_handle, cb) = callback::_closure_to_cb_ec_bool();
-
-    let proof_request_json = CString::new(proof_request_json).unwrap();
-    let proof_json = CString::new(proof_json).unwrap();
-    let schemas_json = CString::new(schemas_json).unwrap();
-    let credential_defs_json = CString::new(cred_defs_json).unwrap();
-    let rev_reg_defs_json = CString::new(rev_reg_defs_json).unwrap();
-    let rev_regs_json = CString::new(rev_regs_json).unwrap();
-
-    let err = indy_verifier_verify_proof(command_handle,
-                                         proof_request_json.as_ptr(),
-                                         proof_json.as_ptr(),
-                                         schemas_json.as_ptr(),
-                                         credential_defs_json.as_ptr(),
-                                         rev_reg_defs_json.as_ptr(),
-                                         rev_regs_json.as_ptr(),
-                                         cb);
-
-    super::results::result_to_bool(err, receiver)
+    anoncreds::verifier_verify_proof(proof_request_json, proof_json, schemas_json, cred_defs_json, rev_reg_defs_json, rev_regs_json).wait()
 }
 
 pub fn create_revocation_state(blob_storage_reader_handle: i32, rev_reg_def_json: &str,
                                rev_reg_delta_json: &str, timestamp: u64, cred_rev_id: &str) -> Result<String, ErrorCode> {
-    let (receiver, command_handle, cb) = callback::_closure_to_cb_ec_string();
-
-    let rev_reg_def_json = CString::new(rev_reg_def_json).unwrap();
-    let rev_reg_delta_json = CString::new(rev_reg_delta_json).unwrap();
-    let cred_rev_id = CString::new(cred_rev_id).unwrap();
-
-    let err = indy_create_revocation_state(command_handle,
-                                           blob_storage_reader_handle,
-                                           rev_reg_def_json.as_ptr(),
-                                           rev_reg_delta_json.as_ptr(),
-                                           timestamp,
-                                           cred_rev_id.as_ptr(),
-                                           cb);
-
-    super::results::result_to_string(err, receiver)
+    anoncreds::create_revocation_state(blob_storage_reader_handle, rev_reg_def_json, rev_reg_delta_json, timestamp, cred_rev_id).wait()
 }
 
 pub fn update_revocation_state(tails_reader_handle: i32, rev_state_json: &str, rev_reg_def_json: &str,
                                rev_reg_delta_json: &str, timestamp: u64, cred_rev_id: &str) -> Result<String, ErrorCode> {
-    let (receiver, command_handle, cb) = callback::_closure_to_cb_ec_string();
-
-    let rev_state_json = CString::new(rev_state_json).unwrap();
-    let rev_reg_def_json = CString::new(rev_reg_def_json).unwrap();
-    let rev_reg_delta_json = CString::new(rev_reg_delta_json).unwrap();
-    let cred_rev_id = CString::new(cred_rev_id).unwrap();
-
-    let err = indy_update_revocation_state(command_handle,
-                                           tails_reader_handle,
-                                           rev_state_json.as_ptr(),
-                                           rev_reg_def_json.as_ptr(),
-                                           rev_reg_delta_json.as_ptr(),
-                                           timestamp,
-                                           cred_rev_id.as_ptr(),
-                                           cb);
-
-    super::results::result_to_string(err, receiver)
+    anoncreds::update_revocation_state(tails_reader_handle, rev_state_json, rev_reg_def_json, rev_reg_delta_json, timestamp, cred_rev_id).wait()
 }
 
 pub fn default_cred_def_config() -> String {
@@ -759,29 +476,29 @@ pub fn init_common_wallet() -> (&'static str, &'static str, &'static str, &'stat
             //2. Issuer1 Creates GVT CredentialDefinition
             let (issuer1_gvt_cred_deg_id, issuer1_gvt_credential_def_json) =
                 issuer_create_credential_definition(wallet_handle,
-                                                                    ISSUER_DID,
-                                                                    &gvt_schema_json(),
-                                                                    TAG_1,
-                                                                    None,
-                                                                    Some(&default_cred_def_config())).unwrap();
+                                                    ISSUER_DID,
+                                                    &gvt_schema_json(),
+                                                    TAG_1,
+                                                    None,
+                                                    Some(&default_cred_def_config())).unwrap();
 
             //3. Issuer1 Creates XYZ CredentialDefinition
             let (issuer1_xyz_cred_deg_id, issuer1_xyz_credential_def_json) =
                 issuer_create_credential_definition(wallet_handle,
-                                                                    ISSUER_DID,
-                                                                    &xyz_schema_json(),
-                                                                    TAG_1,
-                                                                    None,
-                                                                    Some(&default_cred_def_config())).unwrap();
+                                                    ISSUER_DID,
+                                                    &xyz_schema_json(),
+                                                    TAG_1,
+                                                    None,
+                                                    Some(&default_cred_def_config())).unwrap();
 
             //4. Issuer2 Creates GVT CredentialDefinition
             let (issuer2_gvt_cred_def_id, issuer2_gvt_credential_def_json) =
                 issuer_create_credential_definition(wallet_handle,
-                                                                    ISSUER_DID_2,
-                                                                    &gvt_schema_json(),
-                                                                    TAG_1,
-                                                                    None,
-                                                                    Some(&default_cred_def_config())).unwrap();
+                                                    ISSUER_DID_2,
+                                                    &gvt_schema_json(),
+                                                    TAG_1,
+                                                    None,
+                                                    Some(&default_cred_def_config())).unwrap();
 
             //5. Issuer1 Creates GVT CredentialOffer
             let issuer1_gvt_credential_offer = issuer_create_credential_offer(wallet_handle, &issuer1_gvt_cred_deg_id).unwrap();
@@ -798,72 +515,72 @@ pub fn init_common_wallet() -> (&'static str, &'static str, &'static str, &'stat
             // Issuer1 issues GVT Credential
             //9. Prover creates  Credential Request
             let (issuer1_gvt_credential_req, issuer1_gvt_credential_req_metadata) = prover_create_credential_req(wallet_handle,
-                                                                                                                                 DID_MY1,
-                                                                                                                                 &issuer1_gvt_credential_offer,
-                                                                                                                                 &issuer1_gvt_credential_def_json,
-                                                                                                                                 COMMON_MASTER_SECRET).unwrap();
+                                                                                                                 DID_MY1,
+                                                                                                                 &issuer1_gvt_credential_offer,
+                                                                                                                 &issuer1_gvt_credential_def_json,
+                                                                                                                 COMMON_MASTER_SECRET).unwrap();
             //10. Issuer1 creates GVT Credential
             let (issuer1_gvt_cred, _, _) = issuer_create_credential(wallet_handle,
-                                                                                    &issuer1_gvt_credential_offer,
-                                                                                    &issuer1_gvt_credential_req,
-                                                                                    &gvt_credential_values_json(),
-                                                                                    None,
-                                                                                    None).unwrap();
+                                                                    &issuer1_gvt_credential_offer,
+                                                                    &issuer1_gvt_credential_req,
+                                                                    &gvt_credential_values_json(),
+                                                                    None,
+                                                                    None).unwrap();
 
             //11. Prover stores Credential
             prover_store_credential(wallet_handle,
-                                                    CREDENTIAL1_ID,
-                                                    &issuer1_gvt_credential_req_metadata,
-                                                    &issuer1_gvt_cred,
-                                                    &issuer1_gvt_credential_def_json,
-                                                    None).unwrap();
+                                    CREDENTIAL1_ID,
+                                    &issuer1_gvt_credential_req_metadata,
+                                    &issuer1_gvt_cred,
+                                    &issuer1_gvt_credential_def_json,
+                                    None).unwrap();
 
             // Issuer1 issue XYZ Credential
             //12. Prover Creates Credential Request
             let (issuer1_xyz_credential_req, issuer1_xyz_credential_req_metadata) = prover_create_credential_req(wallet_handle,
-                                                                                                                                 DID_MY1,
-                                                                                                                                 &issuer1_xyz_credential_offer,
-                                                                                                                                 &issuer1_xyz_credential_def_json,
-                                                                                                                                 COMMON_MASTER_SECRET).unwrap();
+                                                                                                                 DID_MY1,
+                                                                                                                 &issuer1_xyz_credential_offer,
+                                                                                                                 &issuer1_xyz_credential_def_json,
+                                                                                                                 COMMON_MASTER_SECRET).unwrap();
             //13. Issuer1 Creates XYZ Credential
             let (issuer1_xyz_cred, _, _) = issuer_create_credential(wallet_handle,
-                                                                                    &issuer1_xyz_credential_offer,
-                                                                                    &issuer1_xyz_credential_req,
-                                                                                    &xyz_credential_values_json(),
-                                                                                    None,
-                                                                                    None).unwrap();
+                                                                    &issuer1_xyz_credential_offer,
+                                                                    &issuer1_xyz_credential_req,
+                                                                    &xyz_credential_values_json(),
+                                                                    None,
+                                                                    None).unwrap();
 
             //14. Prover stores Credential
             prover_store_credential(wallet_handle,
-                                                    CREDENTIAL2_ID,
-                                                    &issuer1_xyz_credential_req_metadata,
-                                                    &issuer1_xyz_cred,
-                                                    &issuer1_xyz_credential_def_json,
-                                                    None).unwrap();
+                                    CREDENTIAL2_ID,
+                                    &issuer1_xyz_credential_req_metadata,
+                                    &issuer1_xyz_cred,
+                                    &issuer1_xyz_credential_def_json,
+                                    None).unwrap();
 
             // Issuer2 issues GVT Credential
             //15. Prover Creates Credential Request
             let (issuer2_gvt_credential_req, issuer2_gvt_credential_req_metadata) = prover_create_credential_req(wallet_handle,
-                                                                                                                                 DID_MY1,
-                                                                                                                                 &issuer2_gvt_credential_offer,
-                                                                                                                                 &issuer2_gvt_credential_def_json,
-                                                                                                                                 COMMON_MASTER_SECRET).unwrap();
+                                                                                                                 DID_MY1,
+                                                                                                                 &issuer2_gvt_credential_offer,
+                                                                                                                 &issuer2_gvt_credential_def_json,
+                                                                                                                 COMMON_MASTER_SECRET).unwrap();
 
             //16. Issuer2 Creates XYZ Credential
             let (issuer2_gvt_cred, _, _) = issuer_create_credential(wallet_handle,
-                                                                                    &issuer2_gvt_credential_offer,
-                                                                                    &issuer2_gvt_credential_req,
-                                                                                    &gvt2_credential_values_json(),
-                                                                                    None,
-                                                                                    None).unwrap();
+                                                                    &issuer2_gvt_credential_offer,
+                                                                    &issuer2_gvt_credential_req,
+                                                                    &gvt2_credential_values_json(),
+                                                                    None,
+                                                                    None).unwrap();
 
             //17. Prover Stores Credential
             prover_store_credential(wallet_handle,
-                                                    CREDENTIAL3_ID,
-                                                    &issuer2_gvt_credential_req_metadata,
-                                                    &issuer2_gvt_cred,
-                                                    &issuer2_gvt_credential_def_json,
-                                                    None).unwrap();
+                                    CREDENTIAL3_ID,
+                                    &issuer2_gvt_credential_req_metadata,
+                                    &issuer2_gvt_cred,
+                                    &issuer2_gvt_credential_def_json,
+                                    None).unwrap();
 
             let res = mem::transmute(&issuer1_gvt_credential_def_json as &str);
             mem::forget(issuer1_gvt_credential_def_json);
@@ -893,16 +610,16 @@ pub fn multi_steps_issuer_preparation(wallet_handle: i32,
                                       schema_name: &str,
                                       schema_attrs: &str) -> (String, String, String, String) {
     let (schema_id, schema_json) = issuer_create_schema(did,
-                                                                        schema_name,
-                                                                        SCHEMA_VERSION,
-                                                                        schema_attrs).unwrap();
+                                                        schema_name,
+                                                        SCHEMA_VERSION,
+                                                        schema_attrs).unwrap();
 
     let (cred_def_id, cred_def_json) = issuer_create_credential_definition(wallet_handle,
-                                                                                           did,
-                                                                                           &schema_json,
-                                                                                           TAG_1,
-                                                                                           None,
-                                                                                           Some(&default_cred_def_config())).unwrap();
+                                                                           did,
+                                                                           &schema_json,
+                                                                           TAG_1,
+                                                                           None,
+                                                                           Some(&default_cred_def_config())).unwrap();
 
     (schema_id, schema_json, cred_def_id, cred_def_json)
 }
@@ -914,17 +631,17 @@ pub fn multi_steps_issuer_revocation_preparation(wallet_handle: i32,
                                                  revoc_reg_def_config: &str) -> (String, String, String, String, String, String, String, i32) {
     // Issuer creates schema
     let (schema_id, schema_json) = issuer_create_schema(did,
-                                                                        schema_name,
-                                                                        SCHEMA_VERSION,
-                                                                        schema_attrs).unwrap();
+                                                        schema_name,
+                                                        SCHEMA_VERSION,
+                                                        schema_attrs).unwrap();
 
     // Issuer creates credential definition
     let (cred_def_id, cred_def_json) = issuer_create_credential_definition(wallet_handle,
-                                                                                           did,
-                                                                                           &schema_json,
-                                                                                           TAG_1,
-                                                                                           None,
-                                                                                           Some(&revocation_cred_def_config())).unwrap();
+                                                                           did,
+                                                                           &schema_json,
+                                                                           TAG_1,
+                                                                           None,
+                                                                           Some(&revocation_cred_def_config())).unwrap();
 
     // Issuer creates revocation registry
     let tails_writer_config = tails_writer_config();
@@ -932,12 +649,12 @@ pub fn multi_steps_issuer_revocation_preparation(wallet_handle: i32,
 
     let (rev_reg_id, revoc_reg_def_json, revoc_reg_entry_json) =
         issuer_create_and_store_revoc_reg(wallet_handle,
-                                                               did,
-                                                               None,
-                                                               TAG_1,
-                                                               &cred_def_id,
-                                                               revoc_reg_def_config,
-                                                               tails_writer_handle).unwrap();
+                                          did,
+                                          None,
+                                          TAG_1,
+                                          &cred_def_id,
+                                          revoc_reg_def_config,
+                                          tails_writer_handle).unwrap();
 
     let blob_storage_reader_handle = blob_storage::open_reader(TYPE, &tails_writer_config).unwrap();
 
@@ -956,26 +673,26 @@ pub fn multi_steps_create_credential(prover_master_secret_id: &str,
 
     // Prover creates Credential Request
     let (cred_req, cred_req_metadata) = prover_create_credential_req(prover_wallet_handle,
-                                                                                     DID_MY1,
-                                                                                     &cred_offer_json,
-                                                                                     &cred_def_json,
-                                                                                     prover_master_secret_id).unwrap();
+                                                                     DID_MY1,
+                                                                     &cred_offer_json,
+                                                                     &cred_def_json,
+                                                                     prover_master_secret_id).unwrap();
 
     // Issuer creates Credential
     let (cred_json, _, _) = issuer_create_credential(issuer_wallet_handle,
-                                                                     &cred_offer_json,
-                                                                     &cred_req,
-                                                                     &cred_values,
-                                                                     None,
-                                                                     None).unwrap();
+                                                     &cred_offer_json,
+                                                     &cred_req,
+                                                     &cred_values,
+                                                     None,
+                                                     None).unwrap();
 
     // Prover stores received Credential
     prover_store_credential(prover_wallet_handle,
-                                            cred_id,
-                                            &cred_req_metadata,
-                                            &cred_json,
-                                            &cred_def_json,
-                                            None).unwrap();
+                            cred_id,
+                            &cred_req_metadata,
+                            &cred_json,
+                            &cred_def_json,
+                            None).unwrap();
 }
 
 pub fn multi_steps_create_revocation_credential(prover_master_secret_id: &str,
@@ -994,28 +711,28 @@ pub fn multi_steps_create_revocation_credential(prover_master_secret_id: &str,
 
     // Prover creates Credential Request
     let (prover1_cred_req_json, prover1_cred_req_metadata_json) = prover_create_credential_req(prover_wallet_handle,
-                                                                                                               DID_MY1,
-                                                                                                               &cred_offer_for_prover1_json,
-                                                                                                               cred_def_json,
-                                                                                                               prover_master_secret_id).unwrap();
+                                                                                               DID_MY1,
+                                                                                               &cred_offer_for_prover1_json,
+                                                                                               cred_def_json,
+                                                                                               prover_master_secret_id).unwrap();
 
     // Issuer creates Credential for Prover1
     let (prover1_cred_json, prover1_cred_rev_id, revoc_reg_delta1_json) = issuer_create_credential(issuer_wallet_handle,
-                                                                                                                   &cred_offer_for_prover1_json,
-                                                                                                                   &prover1_cred_req_json,
-                                                                                                                   &cred_values,
-                                                                                                                   Some(rev_reg_id),
-                                                                                                                   Some(blob_storage_reader_handle)).unwrap();
+                                                                                                   &cred_offer_for_prover1_json,
+                                                                                                   &prover1_cred_req_json,
+                                                                                                   &cred_values,
+                                                                                                   Some(rev_reg_id),
+                                                                                                   Some(blob_storage_reader_handle)).unwrap();
     let revoc_reg_delta1_json = revoc_reg_delta1_json;
     let prover1_cred_rev_id = prover1_cred_rev_id.unwrap();
 
     // Prover1 stores Credential
     prover_store_credential(prover_wallet_handle,
-                                            credential_id,
-                                            &prover1_cred_req_metadata_json,
-                                            &prover1_cred_json,
-                                            &cred_def_json,
-                                            Some(&revoc_reg_def_json)).unwrap();
+                            credential_id,
+                            &prover1_cred_req_metadata_json,
+                            &prover1_cred_json,
+                            &cred_def_json,
+                            Some(&revoc_reg_def_json)).unwrap();
 
     (prover1_cred_rev_id, revoc_reg_delta1_json)
 }

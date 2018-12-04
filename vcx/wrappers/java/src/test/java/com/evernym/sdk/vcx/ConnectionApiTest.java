@@ -100,6 +100,8 @@ class ConnectionApiTest {
     @DisplayName("delete a connection")
     void deleteConnection() throws VcxException, ExecutionException, InterruptedException {
         Integer connectionHandle = _createConnection();
+        String payload= "{ 'connection_type': 'SMS', 'phone':'7202200000' }";
+        TestHelper.getResultFromFuture(ConnectionApi.vcxConnectionConnect(connectionHandle,TestHelper.convertToValidJson(payload)));
         CompletableFuture<Integer> futureDelete= ConnectionApi.deleteConnection(connectionHandle);
         Awaitility.await().until(futureDelete::isDone);
         assert(futureDelete.get() == 0);
