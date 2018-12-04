@@ -16,7 +16,6 @@ use utils::libindy::error_codes::map_rust_indy_sdk_error_code;
 use utils::libindy::payments::{pay_for_txn, PaymentTxn};
 use utils::constants::{ SCHEMA_ID, SCHEMA_JSON, SCHEMA_TXN_TYPE, CRED_DEF_ID, CRED_DEF_JSON, CRED_DEF_TXN_TYPE, REV_REG_DEF_TXN_TYPE, REV_REG_DELTA_TXN_TYPE, REVOC_REG_TYPE, REV_DEF_JSON, REV_REG_ID, REV_REG_DELTA_JSON, REV_REG_JSON};
 use utils::libindy::anoncreds::{ libindy_create_and_store_credential_def, libindy_create_and_store_revoc_reg, libindy_issuer_create_schema, libindy_issuer_revoke_credential };
-use utils::libindy::cache::{RevRegDelta, get_rev_reg_cache, set_rev_reg_cache};
 
 pub fn multisign_request(did: &str, request: &str) -> Result<String, u32> {
    ledger::multi_sign_request(get_wallet_handle(), did, request)
@@ -94,7 +93,7 @@ pub fn libindy_build_create_credential_def_txn(submitter_did: &str,
 
 pub fn libindy_build_revoc_reg_def_request(submitter_did: &str,
                                            rev_reg_def_json: &str) -> Result<String, u32> {
-    ledger::build_cred_def_request(submitter_did, rev_reg_def_json)
+    ledger::build_revoc_reg_def_request(submitter_did, rev_reg_def_json)
         .wait()
         .map_err(map_rust_indy_sdk_error_code)
 }
@@ -275,32 +274,9 @@ pub fn get_rev_reg_delta_json(rev_reg_id: &str, from: Option<u64>, to: Option<u6
     let from: i64 = if let Some(_from) = from { _from as i64 } else { -1 };
     let to = if let Some(_to) = to { _to as i64 } else { time::get_time().sec };
 
-    let mut cache = get_rev_reg_cache(rev_reg_id);
-
-    if let Some(ref cached_rev_reg_delta) = cache.rev_reg_delta {
-        if cached_rev_reg_delta.timestamp as i64 >= from && cached_rev_reg_delta.timestamp as i64 <= to {
-            return Ok((rev_reg_id.to_owned(), cached_rev_reg_delta.rev_reg_delta_json.clone(), cached_rev_reg_delta.timestamp));
-        }
-    }
-
-    let (rev_reg_id, rev_reg_delta_json, timestamp) =
-        libindy_build_get_revoc_reg_delta_request(&submitter_did, rev_reg_id, from, to)
-            .and_then(|req| libindy_submit_request(&req))
-            .and_then(|response| libindy_parse_get_revoc_reg_delta_response(&response))?;
-
-
-    let update_cache = match cache.rev_reg_delta {
-        Some(ref cached_rev_reg_delta) => {
-            cached_rev_reg_delta.timestamp < timestamp
-        },
-        None => true
-    };
-    if update_cache {
-        cache.rev_reg_delta = Some(RevRegDelta{timestamp, rev_reg_delta_json: rev_reg_delta_json.clone()});
-        set_rev_reg_cache(&rev_reg_id, &cache);
-    }
-
-    Ok((rev_reg_id, rev_reg_delta_json, timestamp))
+    libindy_build_get_revoc_reg_delta_request(&submitter_did, rev_reg_id, from, to)
+        .and_then(|req| libindy_submit_request(&req))
+        .and_then(|response| libindy_parse_get_revoc_reg_delta_response(&response))
 }
 
 pub fn get_rev_reg(rev_reg_id: &str, timestamp: u64) -> Result<(String, String, u64), u32> {
@@ -332,7 +308,6 @@ pub mod tests {
     use utils::constants::{SCHEMAS_JSON};
     #[cfg(feature = "pool_tests")]
     use utils::constants::{TEST_TAILS_FILE};
-    use utils::libindy::cache::{RevRegCache, RevRegDelta};
 
     #[test]
     fn test_create_cred_def() {
@@ -401,124 +376,15 @@ pub mod tests {
 
     #[cfg(feature = "pool_tests")]
     #[test]
-    fn test_get_rev_reg_delta_json_no_cache() {
+    fn test_get_rev_reg_delta_json() {
         init!("ledger");
         let attrs = r#"["address1","address2","city","state","zip"]"#;
         let (_, _, _, _, _, rev_reg_id) =
             ::utils::libindy::anoncreds::tests::create_and_store_credential_def(attrs, true);
         let rev_reg_id = rev_reg_id.unwrap();
-
-        let cache = get_rev_reg_cache(&rev_reg_id);
-        assert_eq!(cache.rev_reg_delta, None);
 
         let (id, delta, timestamp) = get_rev_reg_delta_json(&rev_reg_id, None, None).unwrap();
         assert_eq!(id, rev_reg_id);
-
-        let cache = get_rev_reg_cache(&rev_reg_id);
-        assert_eq!(cache.rev_reg_delta, Some(RevRegDelta{timestamp, rev_reg_delta_json: delta}));
-    }
-
-    #[cfg(feature = "pool_tests")]
-    #[test]
-    fn test_get_rev_reg_delta_json_cached() {
-        init!("ledger");
-        let attrs = r#"["address1","address2","city","state","zip"]"#;
-        let (_, _, _, _, _, rev_reg_id) =
-            ::utils::libindy::anoncreds::tests::create_and_store_credential_def(attrs, true);
-        let rev_reg_id = rev_reg_id.unwrap();
-
-        let expected_timestamp = time::get_time().sec as u64;
-        let expected_rev_reg_delta_json = "{\"ver\":\"1.0\",\"value\":{\"accum\":\"false A6C3FEA0203EC4 305BF116\"}".to_string();
-        let predefined_cache = RevRegCache {
-            rev_reg_delta: Some(RevRegDelta {
-                timestamp: expected_timestamp,
-                rev_reg_delta_json: expected_rev_reg_delta_json.clone()
-            })
-        };
-
-        set_rev_reg_cache(&rev_reg_id, &predefined_cache);
-
-        // check the cache is successfully set.
-        let cache = get_rev_reg_cache(&rev_reg_id);
-        assert_eq!(cache, predefined_cache);
-
-        let (id, delta, timestamp) = get_rev_reg_delta_json(&rev_reg_id, None, None).unwrap();
-        assert_eq!(id, rev_reg_id);
-        assert_eq!(delta, expected_rev_reg_delta_json);
-        assert_eq!(timestamp, expected_timestamp);
-
-        // cache is not changed
-        let cache = get_rev_reg_cache(&rev_reg_id);
-        assert_eq!(cache, predefined_cache);
-    }
-
-    #[cfg(feature = "pool_tests")]
-    #[test]
-    fn test_get_rev_reg_delta_json_cached_old_value() {
-        init!("ledger");
-        let attrs = r#"["address1","address2","city","state","zip"]"#;
-        let (_, _, _, _, _, rev_reg_id) =
-            ::utils::libindy::anoncreds::tests::create_and_store_credential_def(attrs, true);
-        let rev_reg_id = rev_reg_id.unwrap();
-
-        let current_timestamp = time::get_time().sec as u64;
-        let cache_timestamp = current_timestamp - 100;
-        let cache_rev_reg_delta_json = "{\"ver\":\"1.0\",\"value\":{\"accum\":\"false A6C3FEA0203EC4 305BF116\"}".to_string();
-        let predefined_cache = RevRegCache {
-            rev_reg_delta: Some(RevRegDelta {
-                timestamp: cache_timestamp,
-                rev_reg_delta_json: cache_rev_reg_delta_json.clone()
-            })
-        };
-        set_rev_reg_cache(&rev_reg_id, &predefined_cache);
-
-        // check the cache is successfully set.
-        let cache = get_rev_reg_cache(&rev_reg_id);
-        assert_eq!(cache, predefined_cache);
-
-        let (id, delta, timestamp) = get_rev_reg_delta_json(&rev_reg_id, Some(current_timestamp), None).unwrap();
-        assert_eq!(id, rev_reg_id);
-        assert_ne!(delta, cache_rev_reg_delta_json);
-        assert!(timestamp > cache_timestamp);
-
-        // cache is updated with newer timestamp
-        let cache = get_rev_reg_cache(&rev_reg_id);
-        assert_eq!(cache.rev_reg_delta, Some(RevRegDelta{timestamp, rev_reg_delta_json: delta}));
-    }
-
-    #[cfg(feature = "pool_tests")]
-    #[test]
-    fn test_get_rev_reg_delta_json_cached_value_too_new() {
-        init!("ledger");
-        let attrs = r#"["address1","address2","city","state","zip"]"#;
-        let (_, _, _, _, _, rev_reg_id) =
-            ::utils::libindy::anoncreds::tests::create_and_store_credential_def(attrs, true);
-        let rev_reg_id = rev_reg_id.unwrap();
-
-        let current_timestamp = time::get_time().sec as u64;
-        let cache_timestamp = current_timestamp + 100;
-        let cache_rev_reg_delta_json = "{\"ver\":\"1.0\",\"value\":{\"accum\":\"false A6C3FEA0203EC4 305BF116\"}".to_string();
-        let predefined_cache = RevRegCache {
-            rev_reg_delta: Some(RevRegDelta {
-                timestamp: cache_timestamp,
-                rev_reg_delta_json: cache_rev_reg_delta_json.clone()
-            })
-        };
-
-        set_rev_reg_cache(&rev_reg_id, &predefined_cache);
-
-        // check the cache is successfully set.
-        let cache = get_rev_reg_cache(&rev_reg_id);
-        assert_eq!(cache, predefined_cache);
-
-        let (id, delta, timestamp) = get_rev_reg_delta_json(&rev_reg_id, None, Some(current_timestamp)).unwrap();
-        assert_eq!(id, rev_reg_id);
-        assert_ne!(delta, cache_rev_reg_delta_json);
-        assert!(timestamp < cache_timestamp);
-
-        // cache is not changed
-        let cache = get_rev_reg_cache(&rev_reg_id);
-        assert_eq!(cache, predefined_cache);
     }
 
     #[cfg(feature = "pool_tests")]

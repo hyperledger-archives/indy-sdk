@@ -20,6 +20,7 @@ use utils::libindy::ledger::{ get_rev_reg_def_json, get_rev_reg_delta_json };
 use settings;
 use utils::httpclient;
 use utils::constants::{ DEFAULT_SERIALIZE_VERSION, CREDS_FROM_PROOF_REQ, DEFAULT_GENERATED_PROOF };
+use utils::libindy::cache::{get_rev_reg_cache, set_rev_reg_cache, RevRegCache, RevState};
 
 use serde_json::{Value};
 
@@ -164,21 +165,78 @@ fn build_rev_states_json(credentials_identifiers: &mut Vec<CredInfo>) -> Result<
                     { (interval.from, interval.to) }
                 else { (None, None )};
 
-                let (_, rev_reg_def_json) = get_rev_reg_def_json(&rev_reg_id)
-                    .map_err(|e| ProofError::CommonError(e))?;
+//                let from = from.unwrap_or(0);
+//                let to = to.unwrap_or(time::get_time().sec as u64);
+                let cache = get_rev_reg_cache(&rev_reg_id);
 
-                let (rev_reg_id, rev_reg_delta_json, timestamp) = get_rev_reg_delta_json(
-                    &rev_reg_id,
-                    from,
-                    to
-                ).map_err(|e| ProofError::CommonError(e))?;
+                let (rev_state_json, timestamp) = if let Some(cached_rev_state) = cache.rev_state {
+                    if cached_rev_state.timestamp >= from.unwrap_or(0)
+                        && cached_rev_state.timestamp <= to.unwrap_or(time::get_time().sec as u64) {
+                        (cached_rev_state.value, cached_rev_state.timestamp)
+                    } else {
+                        let from = match from {
+                            Some(from) if from >= cached_rev_state.timestamp => {
+                                Some(cached_rev_state.timestamp)
+                            },
+                            _ => None
+                        };
 
-                let rev_state_json = anoncreds::libindy_prover_create_revocation_state(
-                    &rev_reg_def_json,
-                    &rev_reg_delta_json,
-                    &cred_rev_id,
-                    &tails_file
-                ).map_err(|e| ProofError::CommonError(e))?;
+                        let (_, rev_reg_def_json) = get_rev_reg_def_json(&rev_reg_id)
+                            .map_err(|e| ProofError::CommonError(e))?;
+
+                        let (rev_reg_id, rev_reg_delta_json, timestamp) = get_rev_reg_delta_json(
+                            &rev_reg_id,
+                            from,
+                            to
+                        ).map_err(|e| ProofError::CommonError(e))?;
+
+                        let rev_state_json = anoncreds::libindy_prover_update_revocation_state(
+                            &rev_reg_def_json,
+                            &cached_rev_state.value,
+                            &rev_reg_delta_json,
+                            &cred_rev_id,
+                            &tails_file
+                        ).map_err(|e| ProofError::CommonError(e))?;
+
+                        if timestamp > cached_rev_state.timestamp {
+                            let new_cache = RevRegCache {
+                                rev_state: Some(RevState {
+                                    timestamp: timestamp,
+                                    value: rev_state_json.clone()
+                                })
+                            };
+                            set_rev_reg_cache(&rev_reg_id, &new_cache);
+                        }
+
+                        (rev_state_json, timestamp)
+                    }
+                } else {
+                    let (_, rev_reg_def_json) = get_rev_reg_def_json(&rev_reg_id)
+                        .map_err(|e| ProofError::CommonError(e))?;
+
+                    let (rev_reg_id, rev_reg_delta_json, timestamp) = get_rev_reg_delta_json(
+                        &rev_reg_id,
+                        None,
+                        to
+                    ).map_err(|e| ProofError::CommonError(e))?;
+
+                    let rev_state_json = anoncreds::libindy_prover_create_revocation_state(
+                        &rev_reg_def_json,
+                        &rev_reg_delta_json,
+                        &cred_rev_id,
+                        &tails_file
+                    ).map_err(|e| ProofError::CommonError(e))?;
+
+                    let new_cache = RevRegCache {
+                        rev_state: Some(RevState {
+                            timestamp: timestamp,
+                            value: rev_state_json.clone()
+                        })
+                    };
+                    set_rev_reg_cache(&rev_reg_id, &new_cache);
+
+                    (rev_state_json, timestamp)
+                };
 
                 let rev_state_json: Value = serde_json::from_str(&rev_state_json)
                     .or(Err(ProofError::InvalidJson()))?;
@@ -574,6 +632,8 @@ mod tests {
     use utils::constants::{ ADDRESS_CRED_ID, LICENCE_CRED_ID, ADDRESS_SCHEMA_ID,
                             ADDRESS_CRED_DEF_ID, CRED_DEF_ID, SCHEMA_ID, ADDRESS_CRED_REV_ID,
                             ADDRESS_REV_REG_ID, REV_REG_ID, CRED_REV_ID, TEST_TAILS_FILE, REV_STATE_JSON };
+    use utils::libindy::cache::{RevRegCache, RevState};
+    use utils::libindy::cache::{get_rev_reg_cache, set_rev_reg_cache};
     #[cfg(feature = "pool_tests")]
     use time;
 
@@ -1201,12 +1261,16 @@ mod tests {
         assert_eq!(states, expected);
         assert!(cred_info[0].timestamp.is_some());
     }
+
     #[cfg(feature = "pool_tests")]
     #[test]
-    fn test_build_rev_states_json_real() {
+    fn test_build_rev_states_json_empty() {
         init!("ledger");
 
+        // empty vector
         assert_eq!(build_rev_states_json(Vec::new().as_mut()), Ok("{}".to_string()));
+
+        // no rev_reg_id
         let cred1 = CredInfo {
             requested_attr: "height_1".to_string(),
             referent: LICENCE_CRED_ID.to_string(),
@@ -1219,6 +1283,12 @@ mod tests {
             timestamp: None,
         };
         assert_eq!(build_rev_states_json(vec![cred1].as_mut()), Ok("{}".to_string()));
+    }
+
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn test_build_rev_states_json_real_no_cache() {
+        init!("ledger");
 
         let attrs = r#"["address1","address2","city","state","zip"]"#;
         let (schema_id, _, cred_def_id, _, _, _, _, cred_id, rev_reg_id, cred_rev_id) =
@@ -1235,9 +1305,188 @@ mod tests {
             timestamp: None,
         };
         let rev_reg_id = rev_reg_id.unwrap();
+
+        // assert cache is empty
+        let cache = get_rev_reg_cache(&rev_reg_id);
+        assert_eq!(cache.rev_state, None);
+
         let (_, rev_reg_def_json) = get_rev_reg_def_json(&rev_reg_id).unwrap();
         let states = build_rev_states_json(vec![cred2].as_mut()).unwrap();
         assert!(states.contains(&rev_reg_id));
+
+        // check if this value is in cache now.
+        let states: Value = serde_json::from_str(&states).unwrap();
+        let state: HashMap<String, Value> = serde_json::from_value(states[&rev_reg_id].clone()).unwrap();
+
+        let cache = get_rev_reg_cache(&rev_reg_id);
+        let cache_rev_state = cache.rev_state.unwrap();
+        let cache_rev_state_value: Value = serde_json::from_str(&cache_rev_state.value).unwrap();
+        assert_eq!(cache_rev_state.timestamp, state.keys().next().unwrap().parse::<u64>().unwrap());
+        assert_eq!(cache_rev_state_value.to_string(), state.values().next().unwrap().to_string());
+    }
+
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn test_build_rev_states_json_real_cached() {
+        init!("ledger");
+
+        let current_timestamp = time::get_time().sec as u64;
+        let cached_rev_state = "{\"some\": \"json\"}".to_string();
+
+        let attrs = r#"["address1","address2","city","state","zip"]"#;
+        let (schema_id, _, cred_def_id, _, _, _, _, cred_id, rev_reg_id, cred_rev_id) =
+            ::utils::libindy::anoncreds::tests::create_and_store_credential(attrs, true);
+        let cred2 = CredInfo {
+            requested_attr: "height".to_string(),
+            referent: cred_id,
+            schema_id,
+            cred_def_id,
+            rev_reg_id: rev_reg_id.clone(),
+            cred_rev_id: cred_rev_id,
+            tails_file: Some(TEST_TAILS_FILE.to_string()),
+            revocation_interval: None,
+            timestamp: None,
+        };
+        let rev_reg_id = rev_reg_id.unwrap();
+
+        let cached_data = RevRegCache {
+            rev_state: Some(RevState {
+                timestamp: current_timestamp,
+                value: cached_rev_state.clone()
+            })
+        };
+        set_rev_reg_cache(&rev_reg_id, &cached_data);
+
+        // assert data is successfully cached.
+        let cache = get_rev_reg_cache(&rev_reg_id);
+        assert_eq!(cache, cached_data);
+
+        let (_, rev_reg_def_json) = get_rev_reg_def_json(&rev_reg_id).unwrap();
+        let states = build_rev_states_json(vec![cred2].as_mut()).unwrap();
+        assert!(states.contains(&rev_reg_id));
+
+        // assert cached data is unchanged.
+        let cache = get_rev_reg_cache(&rev_reg_id);
+        assert_eq!(cache, cached_data);
+
+        // check if this value is in cache now.
+        let states: Value = serde_json::from_str(&states).unwrap();
+        let state: HashMap<String, Value> = serde_json::from_value(states[&rev_reg_id].clone()).unwrap();
+
+        let cache_rev_state = cache.rev_state.unwrap();
+        let cache_rev_state_value: Value = serde_json::from_str(&cache_rev_state.value).unwrap();
+        assert_eq!(cache_rev_state.timestamp, state.keys().next().unwrap().parse::<u64>().unwrap());
+        assert_eq!(cache_rev_state_value.to_string(), state.values().next().unwrap().to_string());
+    }
+
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn test_build_rev_states_json_real_with_older_cache() {
+        init!("ledger");
+
+        let current_timestamp = time::get_time().sec as u64;
+        let cached_timestamp = current_timestamp - 100;
+        let cached_rev_state = "{\"witness\":{\"omega\":\"false 4EB689DBDAE225 FC38FAD7549614 4AC8A549FD9181 A0CB12A018A1E4 389AB6077 E3BEEAE339E4AB 6093D4ED283F8C E80FD10792CA95 B7BB34E9C94A71 38B0A50E8 A4CC4E92C647C7 D7CDE25CA4E7FC 989FDFE67CB7E1 3258A466E510F 115D0252B 6DA64072164D74 A362947A407C05 F6FE09C9594EA5 D4B79F1118365B 10E3A3B5C F202E3FBF14C7D D3B853BD0D2C7F F8280DF8077824 8EC52A2C1AAF34 557B397B 2F076040B424B6 A78DCB575E12C4 4AD53B979BEBEA CFA3116B3EF4F7 4AC1A050\"},\"rev_reg\":{\"accum\":\"false 807F2E4FE37503 25061ECE2AEDC7 B817E9C472CAD0 BE7DB235FC93DA 18A48A2E2 384CCC29B752BF F73E321FBED41F 4BA715451480B8 D8B4890E27D28B 19812E064 F4336412ADD6A 6475C908CA99DF 16F967040879 ED78FBC8CF5A8D 13A9692EF 4825C1FE8F93D2 BD6F32C4F1EF05 412C7C81BD8504 C03EB626CCB4D6 11A526C2D B39B1F382F1E4A 95AD912FA7330F 59352944DC0B20 814EC778FE3F89 320DB263 F80F85DEFAF259 18FD0F7FF2C34B 7EF1F727649E2 282DD0C87056AC 45FD07C9\"},\"timestamp\":100}".to_string();
+
+        let attrs = r#"["address1","address2","city","state","zip"]"#;
+        let (schema_id, _, cred_def_id, _, _, _, _, cred_id, rev_reg_id, cred_rev_id) =
+            ::utils::libindy::anoncreds::tests::create_and_store_credential(attrs, true);
+        let cred2 = CredInfo {
+            requested_attr: "height".to_string(),
+            referent: cred_id,
+            schema_id,
+            cred_def_id,
+            rev_reg_id: rev_reg_id.clone(),
+            cred_rev_id: cred_rev_id,
+            tails_file: Some(TEST_TAILS_FILE.to_string()),
+            revocation_interval: Some(NonRevokedInterval{from: Some(cached_timestamp + 1), to: None}),
+            timestamp: None,
+        };
+        let rev_reg_id = rev_reg_id.unwrap();
+
+        let cached_data = RevRegCache {
+            rev_state: Some(RevState {
+                timestamp: cached_timestamp,
+                value: cached_rev_state.clone()
+            })
+        };
+        set_rev_reg_cache(&rev_reg_id, &cached_data);
+
+        // assert data is successfully cached.
+        let cache = get_rev_reg_cache(&rev_reg_id);
+        assert_eq!(cache, cached_data);
+
+        let (_, rev_reg_def_json) = get_rev_reg_def_json(&rev_reg_id).unwrap();
+        let states = build_rev_states_json(vec![cred2].as_mut()).unwrap();
+        assert!(states.contains(&rev_reg_id));
+
+        // assert cached data is updated.
+        let cache = get_rev_reg_cache(&rev_reg_id);
+        assert_ne!(cache, cached_data);
+
+        // check if this value is in cache now.
+        let states: Value = serde_json::from_str(&states).unwrap();
+        let state: HashMap<String, Value> = serde_json::from_value(states[&rev_reg_id].clone()).unwrap();
+
+        let cache_rev_state = cache.rev_state.unwrap();
+        let cache_rev_state_value: Value = serde_json::from_str(&cache_rev_state.value).unwrap();
+        assert_eq!(cache_rev_state.timestamp, state.keys().next().unwrap().parse::<u64>().unwrap());
+        assert_eq!(cache_rev_state_value.to_string(), state.values().next().unwrap().to_string());
+    }
+
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn test_build_rev_states_json_real_with_newer_cache() {
+        init!("ledger");
+
+        let current_timestamp = time::get_time().sec as u64;
+        let cached_timestamp = current_timestamp + 100;
+        let cached_rev_state = "{\"witness\":{\"omega\":\"false 4EB689DBDAE225 FC38FAD7549614 4AC8A549FD9181 A0CB12A018A1E4 389AB6077 E3BEEAE339E4AB 6093D4ED283F8C E80FD10792CA95 B7BB34E9C94A71 38B0A50E8 A4CC4E92C647C7 D7CDE25CA4E7FC 989FDFE67CB7E1 3258A466E510F 115D0252B 6DA64072164D74 A362947A407C05 F6FE09C9594EA5 D4B79F1118365B 10E3A3B5C F202E3FBF14C7D D3B853BD0D2C7F F8280DF8077824 8EC52A2C1AAF34 557B397B 2F076040B424B6 A78DCB575E12C4 4AD53B979BEBEA CFA3116B3EF4F7 4AC1A050\"},\"rev_reg\":{\"accum\":\"false 807F2E4FE37503 25061ECE2AEDC7 B817E9C472CAD0 BE7DB235FC93DA 18A48A2E2 384CCC29B752BF F73E321FBED41F 4BA715451480B8 D8B4890E27D28B 19812E064 F4336412ADD6A 6475C908CA99DF 16F967040879 ED78FBC8CF5A8D 13A9692EF 4825C1FE8F93D2 BD6F32C4F1EF05 412C7C81BD8504 C03EB626CCB4D6 11A526C2D B39B1F382F1E4A 95AD912FA7330F 59352944DC0B20 814EC778FE3F89 320DB263 F80F85DEFAF259 18FD0F7FF2C34B 7EF1F727649E2 282DD0C87056AC 45FD07C9\"},\"timestamp\":100}".to_string();
+
+        let attrs = r#"["address1","address2","city","state","zip"]"#;
+        let (schema_id, _, cred_def_id, _, _, _, _, cred_id, rev_reg_id, cred_rev_id) =
+            ::utils::libindy::anoncreds::tests::create_and_store_credential(attrs, true);
+        let cred2 = CredInfo {
+            requested_attr: "height".to_string(),
+            referent: cred_id,
+            schema_id,
+            cred_def_id,
+            rev_reg_id: rev_reg_id.clone(),
+            cred_rev_id: cred_rev_id,
+            tails_file: Some(TEST_TAILS_FILE.to_string()),
+            revocation_interval: Some(NonRevokedInterval{from: None, to: Some(cached_timestamp - 1)}),
+            timestamp: None,
+        };
+        let rev_reg_id = rev_reg_id.unwrap();
+
+        let cached_data = RevRegCache {
+            rev_state: Some(RevState {
+                timestamp: cached_timestamp,
+                value: cached_rev_state.clone()
+            })
+        };
+        set_rev_reg_cache(&rev_reg_id, &cached_data);
+
+        // assert data is successfully cached.
+        let cache = get_rev_reg_cache(&rev_reg_id);
+        assert_eq!(cache, cached_data);
+
+        let (_, rev_reg_def_json) = get_rev_reg_def_json(&rev_reg_id).unwrap();
+        let states = build_rev_states_json(vec![cred2].as_mut()).unwrap();
+        assert!(states.contains(&rev_reg_id));
+
+        // assert cached data is unchanged.
+        let cache = get_rev_reg_cache(&rev_reg_id);
+        assert_eq!(cache, cached_data);
+
+        // check if this value is not in cache.
+        let states: Value = serde_json::from_str(&states).unwrap();
+        let state: HashMap<String, Value> = serde_json::from_value(states[&rev_reg_id].clone()).unwrap();
+
+        let cache_rev_state = cache.rev_state.unwrap();
+        let cache_rev_state_value: Value = serde_json::from_str(&cache_rev_state.value).unwrap();
+        assert_ne!(cache_rev_state.timestamp, state.keys().next().unwrap().parse::<u64>().unwrap());
+        assert_ne!(cache_rev_state_value.to_string(), state.values().next().unwrap().to_string());
     }
 
     #[test]

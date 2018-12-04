@@ -197,6 +197,18 @@ pub fn libindy_prover_create_revocation_state(rev_reg_def_json: &str, rev_reg_de
         .map_err(map_rust_indy_sdk_error_code)
 }
 
+pub fn libindy_prover_update_revocation_state(rev_reg_def_json: &str, rev_state_json: &str, rev_reg_delta_json: &str, cred_rev_id: &str, tails_file: &str) ->  Result<String,  u32> {
+    if settings::test_indy_mode_enabled() { return Ok(REV_STATE_JSON.to_string()); }
+    let tails_config = json!({"base_dir": tails_file,"uri_pattern": ""}).to_string();
+    let blob_handle = blob_storage::open_reader("default", &tails_config.to_string())
+        .wait()
+        .map_err(|ec|map_rust_indy_sdk_error_code(ec))?;
+
+    anoncreds::update_revocation_state(blob_handle, rev_state_json, rev_reg_def_json,  rev_reg_delta_json, 100, cred_rev_id)
+        .wait()
+        .map_err(map_rust_indy_sdk_error_code)
+}
+
 pub fn libindy_prover_store_credential(cred_id: Option<&str>,
                                        cred_req_meta: &str,
                                        cred_json: &str,

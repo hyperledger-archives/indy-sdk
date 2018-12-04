@@ -10,16 +10,16 @@ static REV_REG_CACHE_PREFIX: &str = "rev_reg:";
 ///
 #[derive(Serialize, Deserialize, Debug, Default, PartialEq)]
 pub struct RevRegCache {
-    pub rev_reg_delta: Option<RevRegDelta>,
+    pub rev_state: Option<RevState>,
 }
 
 ///
 /// Rev reg delta object.
 ///
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
-pub struct RevRegDelta {
+pub struct RevState {
     pub timestamp: u64,
-    pub rev_reg_delta_json: String,
+    pub value: String,
 }
 
 ///
@@ -123,9 +123,9 @@ pub mod tests {
         let rev_reg_id = "test-id";
 
         let data = RevRegCache {
-            rev_reg_delta: Some(RevRegDelta{
+            rev_state: Some(RevState {
                 timestamp: 1000,
-                rev_reg_delta_json: "{\"key\": \"value1\"}".to_string(),
+                value: "{\"key\": \"value1\"}".to_string(),
             })
         };
 
@@ -143,9 +143,9 @@ pub mod tests {
         let rev_reg_id = "test-id";
 
         let data = RevRegCache {
-            rev_reg_delta: Some(RevRegDelta{
+            rev_state: Some(RevState {
                 timestamp: 1000,
-                rev_reg_delta_json: "{\"key\": \"value1\"}".to_string(),
+                value: "{\"key\": \"value1\"}".to_string(),
             })
         };
 
@@ -165,16 +165,16 @@ pub mod tests {
         let rev_reg_id = "test-id";
 
         let data1 = RevRegCache {
-            rev_reg_delta: Some(RevRegDelta{
+            rev_state: Some(RevState {
                 timestamp: 1000,
-                rev_reg_delta_json: "{\"key\": \"value1\"}".to_string(),
+                value: "{\"key\": \"value1\"}".to_string(),
             })
         };
 
         let data2 = RevRegCache {
-            rev_reg_delta: Some(RevRegDelta{
+            rev_state: Some(RevState {
                 timestamp: 2000,
-                rev_reg_delta_json: "{\"key\": \"value2\"}".to_string(),
+                value: "{\"key\": \"value2\"}".to_string(),
             })
         };
 
