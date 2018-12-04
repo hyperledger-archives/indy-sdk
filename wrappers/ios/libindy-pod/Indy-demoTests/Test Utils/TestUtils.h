@@ -87,8 +87,6 @@
 
 + (NSString *)defaultType;
 
-+ (NSString *)keychainType;
-
 + (NSString *)gvtSchema;
 
 + (NSString *)gvtSchemaName;

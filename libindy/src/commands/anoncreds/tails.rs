@@ -9,7 +9,6 @@ use domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinit
 
 use self::indy_crypto::cl::{Tail, RevocationTailsAccessor, RevocationTailsGenerator};
 use self::indy_crypto::errors::IndyCryptoError;
-use self::digest::Input;
 
 use self::rust_base58::{ToBase58, FromBase58};
 
@@ -79,15 +78,11 @@ pub fn store_tails_from_generator(service: Rc<BlobStorageService>,
 
     let blob_handle = service.create_blob(writer_handle)?;
 
-    let mut hasher = sha2::Sha256::default();
-
     let version = vec![0u8, TAILS_BLOB_TAG_SZ];
-    hasher.process(version.as_slice());
     service.append(blob_handle, version.as_slice())?;
 
     while let Some(tail) = rtg.next()? {
         let tail_bytes = tail.to_bytes()?;
-        hasher.process(tail_bytes.as_slice());
         service.append(blob_handle, tail_bytes.as_slice())?;
     }
 

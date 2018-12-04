@@ -71,9 +71,6 @@
                <Test
                   Identifier = "PoolMediumCases/testOpenPoolLedgerWorksForInvalidNodesFile">
                </Test>
-               <Test
-                  Identifier = "WalletHignCases/testWalletSetSeqNoWorksForPlugged">
-               </Test>
             </SkippedTests>
          </TestableReference>
       </Testables>

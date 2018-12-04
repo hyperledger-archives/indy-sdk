@@ -92,7 +92,7 @@ async def open_wallet(config: str,
     {
        "key": string, Key or passphrase used for wallet key derivation.
                       Look to key_derivation_method param for information about supported key derivation methods.
-       "rekey": optional<string>, If present than wallet master key will be rotated to a new one.
+       "rekey": optional<string>, If present, then wallet master key will be rotated to a new one.
        "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
                               Can be optional if storage supports default configuration.
                               For 'default' storage type should be empty.

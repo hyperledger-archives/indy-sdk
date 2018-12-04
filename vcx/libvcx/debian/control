@@ -1,0 +1,16 @@
+Source: libvcx
+Section: devel
+Priority: optional
+Maintainer: Hyperledger <info@hyperledger.org>
+Build-Depends: 
+Standards-Version: 1.0.0
+Vcs-Git: https://github.com/hyperledger/indy-sdk/
+Vcs-Browser: https://github.com/hyperledger/indy-sdk/
+
+
+Package: libvcx
+Architecture: amd64
+Depends: libindy
+Recommends: libnullpay
+Suggests: build-essential
+Description: This is a library on top of Libindy which fully implements the credentials exchange.

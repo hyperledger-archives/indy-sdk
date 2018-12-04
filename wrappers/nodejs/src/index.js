@@ -2,6 +2,7 @@
 
 var capi = require('bindings')('indynodejs')
 var wrapIndyCallback = require('./wrapIndyCallback')
+var IndyError = require('./IndyError')
 
 function toJson (val) {
   if (val === null || val === void 0) {
@@ -26,6 +27,20 @@ function fromJson (val) {
 var indy = {}
 
 indy.capi = capi // if you want to skip the json dance, IndyError, and promise support
+
+indy.setDefaultLogger = function setDefaultLogger (pattern) {
+  var err = capi.setDefaultLogger(pattern)
+  if (err !== 0) {
+    throw new IndyError(err)
+  }
+}
+
+indy.setLogger = function setLogger (logFn) {
+  var err = capi.setLogger(logFn)
+  if (err !== 0) {
+    throw new IndyError(err)
+  }
+}
 
 indy.issuerCreateSchema = function issuerCreateSchema (issuerDid, name, version, attrNames, cb) {
   cb = wrapIndyCallback(cb, function (data) {
@@ -506,6 +521,12 @@ indy.parseGetRevocRegDeltaResponse = function parseGetRevocRegDeltaResponse (get
     return [data[0], fromJson(data[1]), data[2]]
   })
   capi.parseGetRevocRegDeltaResponse(toJson(getRevocRegDeltaResponse), cb)
+  return cb.promise
+}
+
+indy.getResponseMetadata = function getResponseMetadata (response, cb) {
+  cb = wrapIndyCallback(cb, fromJson)
+  capi.getResponseMetadata(toJson(response), cb)
   return cb.promise
 }
 

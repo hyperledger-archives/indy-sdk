@@ -12,6 +12,9 @@ fs.readdirSync(dir).forEach(function (file) {
   file = path.resolve(dir, file)
 
   var group = path.basename(file).replace(/^indy_|\.h$/g, '')
+  if (group === 'logger') {
+    return
+  }
   var hText = fs.readFileSync(file, 'utf8') + '\n'
   parseSection(group, hText)
 })
@@ -239,6 +242,7 @@ api.functions.indy_parse_get_revoc_reg_delta_response.params[1].json = true
 api.functions.indy_parse_get_revoc_reg_response.params[1].json = true
 api.functions.indy_parse_get_schema_response.params[1].json = true
 api.functions.indy_submit_action.params[3].json = true
+api.functions.indy_get_response_metadata.params[1].json = true
 
 api.functions.indy_build_get_revoc_reg_delta_request.params[3].timestamp = true
 api.functions.indy_build_get_revoc_reg_delta_request.params[4].timestamp = true

@@ -2,7 +2,7 @@
 
 Indy-SDK Developer Walkthrough #1, Python Edition
 
-[ [Java](../java/README.md) | [.NET](../../not-yet-written.md) | [Node.js](../../not-yet-written.md) | [Objective C](../../not-yet-written.md) ]
+[ [Java](../java/README.md) | [.NET](../cs/README.md) | [Node.js](../../not-yet-written.md) | [Objective C](../../not-yet-written.md) | [Rust](../rust/README.md)]
 
 
 ## Prerequisites
@@ -140,10 +140,10 @@ Error `WalletAlreadyExistsError`.
 Delete wallet before creating:
 ```python
 try:
-    await wallet.create_wallet(pool_name, wallet_name, None, None, wallet_credentials)
+    await wallet.create_wallet(wallet_config, wallet_credentials)
 except IndyError:
     await wallet.delete_wallet(wallet_name, wallet_credentials)
-    await wallet.create_wallet(pool_name, wallet_name, None, None, wallet_credentials)
+    await wallet.create_wallet(wallet_config, wallet_credentials)
 ```
 
 Error `CommonIOError`. Make sure that you have set `genesis_file_path` to point 

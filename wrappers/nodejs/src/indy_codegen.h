@@ -1634,6 +1634,22 @@ NAN_METHOD(parseGetRevocRegDeltaResponse) {
   delete arg0;
 }
 
+void getResponseMetadata_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbString(xerr, arg0);
+  }
+}
+NAN_METHOD(getResponseMetadata) {
+  INDY_ASSERT_NARGS(getResponseMetadata, 2)
+  INDY_ASSERT_STRING(getResponseMetadata, 0, response)
+  INDY_ASSERT_FUNCTION(getResponseMetadata, 1)
+  const char* arg0 = argToCString(info[0]);
+  IndyCallback* icb = argToIndyCb(info[1]);
+  indyCalled(icb, indy_get_response_metadata(icb->handle, arg0, getResponseMetadata_cb));
+  delete arg0;
+}
+
 void addWalletRecord_cb(indy_handle_t handle, indy_error_t xerr) {
   IndyCallback* icb = IndyCallback::getCallback(handle);
   if(icb != nullptr){
@@ -2573,6 +2589,7 @@ NAN_MODULE_INIT(InitAll) {
   Nan::Export(target, "parseGetRevocRegResponse", parseGetRevocRegResponse);
   Nan::Export(target, "buildGetRevocRegDeltaRequest", buildGetRevocRegDeltaRequest);
   Nan::Export(target, "parseGetRevocRegDeltaResponse", parseGetRevocRegDeltaResponse);
+  Nan::Export(target, "getResponseMetadata", getResponseMetadata);
   Nan::Export(target, "addWalletRecord", addWalletRecord);
   Nan::Export(target, "updateWalletRecordValue", updateWalletRecordValue);
   Nan::Export(target, "updateWalletRecordTags", updateWalletRecordTags);
@@ -2616,5 +2633,7 @@ NAN_MODULE_INIT(InitAll) {
   Nan::Export(target, "closeWallet", closeWallet);
   Nan::Export(target, "deleteWallet", deleteWallet);
   Nan::Export(target, "generateWalletKey", generateWalletKey);
+  Nan::Export(target, "setDefaultLogger", setDefaultLogger);
+  Nan::Export(target, "setLogger", setLogger);
 }
 NODE_MODULE(indynodejs, InitAll)

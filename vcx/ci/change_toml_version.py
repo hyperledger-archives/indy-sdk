@@ -1,0 +1,109 @@
+#!/bin/python3
+# Modifies the Cargo.toml file's version number
+import sys
+import subprocess
+from subprocess import PIPE, Popen
+
+
+# opens Cargo.toml, reads the current major and minor 
+# version, then adds the build number and commit
+# hash, then writes this to the file
+def main(filename, full_symver):
+    try:
+        f = open(filename, 'r') 
+        output = ""
+        for line in f.readlines():
+            if 'version =' in line or 'version=' in line:
+                output = output + 'version = \"%s\"\n' % full_symver
+            else:
+                output = output + line
+        f.close()
+
+        with open(filename, 'w') as f:
+            f.write(output)
+
+    except IOError:
+        print("Error: Cannot find Cargo.toml file") 
+
+
+# counts the number of periods
+# in the string
+def number_of_periods(s):
+    count = 0
+    for c in s:
+        if c == '.':
+            count = count + 1
+    return count
+
+
+# removes anything after and including 
+# the second period in a string
+def truncate(s):
+    if '.' in s:
+        return s[::-1][s.index('.')+1:][::-1]
+    else:
+        return s
+
+
+# truncates the version to just major and minor
+# then adds on the build number and hash
+def change_version(v, b, h):
+    while number_of_periods(v) > 1:
+        v = truncate(v)
+    s =  str(v) + "." + str(b) 
+    if len(h) > 1:
+        s = s + "+" + str(h)
+    return s
+
+
+# for testing
+#def test():
+    
+    #version = "1.2.33346324+cd3sd2fe"
+    #build = "45678910"
+    #h = 'beefb23'
+    #print("before: %s" % version)
+    #version = change_version(version, build, h)
+    #print("after: %s" % version)
+
+#    version = "2.3"
+#    print("before: %s" % version)
+#    version = change_version(version, build, h)
+#    print("after: %s" % version)
+#
+#    print('parsing version "version = 1.2.3"')
+#    print(parse_version("version=1.2.3"))
+#
+#    version = "1.2.3.hasbas"
+#    print("testing truncate on %s" % version)
+#    print('truncated: %s ' % truncate(version))
+
+
+# parses out the vesion number from a given 
+# line (pulled from the Cargo.toml file)
+def parse_version(s):
+    index = s.index('=')
+    if index > 0 and index < len(s):
+        return s[index+1:].strip(' ').strip('\n').strip('\"')
+
+    else:
+        return s
+
+
+if __name__ == "__main__":
+    if len(sys.argv) == 4:
+        filename = sys.argv[1]
+        print("filename: %s" % filename)
+        build = sys.argv[2]
+        hash_num = sys.argv[3]
+        main(filename, build, hash_num)
+    elif len(sys.argv) == 2 and sys.argv[1] == '-t':
+        test()
+    else:
+        print("USAGE: python3 change_version.py PATH BUILD_NUM HASH_NUM")
+        print("PATH = path to Cargo.toml file")
+        print("BUILD_NUM = build number for version")
+        print("HASH_NUM = commit hash for version")
+
+
+# not used

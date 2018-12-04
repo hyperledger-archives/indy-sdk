@@ -3,7 +3,6 @@
 // Copyright (c) 2018 Hyperledger. All rights reserved.
 //
 
-#import "IndyWalletCallbacks.h"
 #import "IndyCallbacks.h"
 #import "NSError+IndyError.h"
 #import "IndyNonSecrets.h"

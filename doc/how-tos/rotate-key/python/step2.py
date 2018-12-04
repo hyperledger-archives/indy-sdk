@@ -3,7 +3,7 @@
 		# just for demonstration purposes.
 		print_log('1. Creates a new local pool ledger configuration that is used '
 				  'later when connecting to ledger.\n')
-		pool_config = json.dumps({'genesis_txn': genesis_file_path})
+		pool_config = json.dumps({'genesis_txn': str(genesis_file_path)})
 		await pool.create_pool_ledger_config(config_name=pool_name, config=pool_config)
 
 		print_log('\n2. Open pool ledger and get handle from libindy\n')
@@ -33,7 +33,7 @@
 		print_log('Steward DID: ', steward_did)
 
 		# Now, create a new DID and verkey for a trust anchor, and store it in our wallet as well. Don't use a seed;
-		# this DID and its keyas are secure and random. Again, we're not writing to the ledger yet.
+		# this DID and its keys are secure and random. Again, we're not writing to the ledger yet.
 		print_log('\n6. Generating and storing trust anchor DID and verkey\n')
 		trust_anchor_did, trust_anchor_verkey = await did.create_and_store_my_did(wallet_handle, "{}")
 		print_log('Trust Anchor DID: ', trust_anchor_did)

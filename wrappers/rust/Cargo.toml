@@ -17,12 +17,20 @@ exclude = [
     "tests/*",
     ]
 
+[lib]
+name = "indyrs"
+path = "src/lib.rs"
+crate-type = ["rlib"]
+
 [dependencies]
+failure = "0.1.2"
+futures = "0.1.24"
 lazy_static = "0.2"
-log = "0.4"
+log = { version = "0.4.1", features = ["std"] }
 num-traits = "0.2"
 num-derive = "0.2"
-indy-sys = { path ="indy-sys", version = "1.6.8" }
+indy-sys = { path ="indy-sys", version = "=1.6.8" }
+libc = "0.2.21"
 
 [dev-dependencies]
 bs58 = {version = "0.2.2", features = ["check"]}
@@ -37,3 +45,4 @@ dirs = "1.0.4"
 [features]
 timeout_tests = []
 tests_to_fix = []
+extended_api_types = []

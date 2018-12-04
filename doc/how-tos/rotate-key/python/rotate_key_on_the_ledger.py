@@ -23,12 +23,17 @@ import pprint
 from indy import pool, ledger, wallet, did
 from indy.error import IndyError
 
+from src.utils import get_pool_genesis_txn_path, PROTOCOL_VERSION
+
 
 pool_name = 'pool'
-wallet_name = 'wallet'
-genesis_file_path = '/home/vagrant/code/evernym/indy-sdk/cli/docker_pool_transactions_genesis'
+genesis_file_path = get_pool_genesis_txn_path(pool_name)
+
+wallet_config = json.dumps({"id": "wallet"})
 wallet_credentials = json.dumps({"key": "wallet_key"})
 
+# Set protocol version to 2 to work with the current version of Indy Node
+PROTOCOL_VERSION = 2
 
 def print_log(value_color="", value_noncolor=""):
     """set the colors for text."""
@@ -39,10 +44,12 @@ def print_log(value_color="", value_noncolor=""):
 
 async def rotate_key_on_the_ledger():
     try:
+        await pool.set_protocol_version(PROTOCOL_VERSION)
+
         # 1.
         print_log('1. Creates a new local pool ledger configuration that is used '
                   'later when connecting to ledger.\n')
-        pool_config = json.dumps({'genesis_txn': genesis_file_path})
+        pool_config = json.dumps({'genesis_txn': str(genesis_file_path)})
         await pool.create_pool_ledger_config(config_name=pool_name, config=pool_config)
 
         # 2.
@@ -51,11 +58,11 @@ async def rotate_key_on_the_ledger():
 
         # 3.
         print_log('\n3. Creating new secure wallet with the given unique name\n')
-        await wallet.create_wallet(pool_name, wallet_name, None, None, wallet_credentials)
+        await wallet.create_wallet(wallet_config, wallet_credentials)
 
         # 4.
         print_log('\n4. Open wallet and get handle from libindy to use in methods that require wallet access\n')
-        wallet_handle = await wallet.open_wallet(wallet_name, None, wallet_credentials)
+        wallet_handle = await wallet.open_wallet(wallet_config, wallet_credentials)
 
         # 5.
         print_log('\n5. Generating and storing steward DID and verkey\n')
@@ -145,7 +152,7 @@ async def rotate_key_on_the_ledger():
 
         # 18.
         print_log('\n18. Deleting created wallet\n')
-        await wallet.delete_wallet(wallet_name, wallet_credentials)
+        await wallet.delete_wallet(wallet_config, wallet_credentials)
 
         # 19.
         print_log('\n19. Deleting pool ledger config')
