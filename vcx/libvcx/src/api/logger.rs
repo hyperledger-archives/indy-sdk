@@ -1,7 +1,8 @@
 extern crate libc;
-use utils::logger::{ EnabledCB, FlushCB, LibvcxLogger, LibvcxDefaultLogger, LogCB, LOGGER_STATE };
+extern crate indy_sys;
+use utils::logger::{ EnabledCB, FlushCB, LibvcxLogger, LibvcxDefaultLogger, LogCB, LOGGER_STATE, CVoid };
 use utils::cstring::CStringUtils;
-use self::libc::{c_char, c_void};
+use self::libc::{c_char};
 
 use utils::error::{ INVALID_CONFIGURATION, SUCCESS };
 
@@ -50,7 +51,7 @@ pub extern fn vcx_set_default_logger(pattern: *const c_char) -> u32 {
 /// #Returns
 /// u32 Error Code
 #[no_mangle]
-pub extern fn vcx_set_logger(context: *const c_void,
+pub extern fn vcx_set_logger(context: *const CVoid,
                              enabled: Option<EnabledCB>,
                              log: Option<LogCB>,
                              flush: Option<FlushCB>) -> u32 {
@@ -87,7 +88,7 @@ pub extern fn vcx_set_logger(context: *const c_void,
 ///
 /// This is tested in wrapper tests (python3)
 #[no_mangle]
-pub extern fn vcx_get_logger(context_p: *mut *const c_void,
+pub extern fn vcx_get_logger(context_p: *mut *const CVoid,
                               enabled_cb_p: *mut Option<EnabledCB>,
                               log_cb_p: *mut Option<LogCB>,
                               flush_cb_p: *mut Option<FlushCB>) -> u32 {
