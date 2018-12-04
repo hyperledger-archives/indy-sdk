@@ -1079,7 +1079,7 @@ pub mod tests {
             {
                 use services::pool::{PoolService, REGISTERED_SP_PARSERS};
                 use api::ErrorCode;
-                use std::os::raw::c_char;
+                use libc::c_char;
                 use std::ffi::CString;
 
                 REGISTERED_SP_PARSERS.lock().unwrap().clear();
