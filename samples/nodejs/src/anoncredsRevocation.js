@@ -1,50 +1,47 @@
 const indy = require('indy-sdk')
+const util = require('./util')
 
-const PROTOCOL_VERSION = 2
-
-function path_home() {
-    return require('os').homedir() + "/.indy_client"
-}
+const log = console.log
 
 function assertEquals(expected, value) {
     if (expected != value) {
-        console.log("Assertion error ! Expected : '" + expected + "' / Current value : '" + value + "'")
+        log("Assertion error ! Expected : '" + expected + "' / Current value : '" + value + "'")
     }
 }
 
 async function run() {
 
-    console.log("anoncredsRevocation.js -> started")
+    log("anoncredsRevocation.js -> started")
 
-    console.log("Anoncreds Revocation sample -> started")
+    log("Anoncreds Revocation sample -> started")
 
     const issuerDid = 'NcYxiDXkpYi6ov5FcYDi1e'
     const proverDid = 'VsKV7grR1BUE29mG2Fm2kX'
 
     // Set protocol version 2 to work with Indy Node 1.4
-    await indy.setProtocolVersion(PROTOCOL_VERSION)
+    await indy.setProtocolVersion(2)
 
     // 1. Create Issuer Wallet and Get Wallet Handle
     const issuerWalletConfig = {"id": "issuer_wallet"}
     const issuerWalletCredentials = {"key": "issuer_wallet_key"}
     await indy.createWallet(issuerWalletConfig, issuerWalletCredentials)
     const issuerWallet = await indy.openWallet(issuerWalletConfig, issuerWalletCredentials)
-    console.log({issuerWallet})
+    log({issuerWallet})
 
     // 2. Create Prover Wallet and Get Wallet Handle
     const proverWalletConfig = {"id": "prover_wallet"}
     const proverWalletCredentials = {"key": "issuer_wallet_key"}
     await indy.createWallet(proverWalletConfig, proverWalletCredentials)
     const proverWallet = await indy.openWallet(proverWalletConfig, proverWalletCredentials)
-    console.log({proverWallet})
+    log({proverWallet})
 
     // 3. Issuer create Credential Schema
     const schemaName = 'gvt'
     const schemaVersion = '1.0'
     const schemaAttributes = '["age", "sex", "height", "name"]'
     const [schemaId, schema] = await indy.issuerCreateSchema(issuerDid, schemaName, schemaVersion, schemaAttributes)
-    console.log({schemaId})
-    console.log({schema})
+    log({schemaId})
+    log({schema})
 
     // 4. Issuer create Credential Definition for Schema
     const credDefTag = 'cred_def_tag'
@@ -52,35 +49,35 @@ async function run() {
     const credDefConfig = {"support_revocation": true}
     const [credDefId, credDef] = await indy.issuerCreateAndStoreCredentialDef(issuerWallet, issuerDid,
                                                                     schema, credDefTag, credDefType, credDefConfig)
-    console.log({credDefId})
-    console.log({credDef})
+    log({credDefId})
+    log({credDef})
 
     // 5. Issuer create Revocation Registry
-    const tailsWriterConfig = {'base_dir': path_home() + "/tails", 'uri_pattern': ''}
+    const tailsWriterConfig = {'base_dir': util.getPathToIndyClientHome() + "/tails", 'uri_pattern': ''}
     const tailsWriter = await indy.openBlobStorageWriter('default', tailsWriterConfig)
     const rvocRegDefTag = 'cred_def_tag'
     const rvocRegDefConfig = {"max_cred_num": 5, 'issuance_type': 'ISSUANCE_ON_DEMAND'}
     const [revRegId, revRegDef, _] = await indy.issuerCreateAndStoreRevocReg(issuerWallet, issuerDid,
                                                 undefined, rvocRegDefTag, credDefId, rvocRegDefConfig, tailsWriter)
-    console.log({revRegId})
-    console.log({revRegDef})
+    log({revRegId})
+    log({revRegDef})
 
     // 6. Prover create Master Secret
     const masterSecretId = await indy.proverCreateMasterSecret(proverWallet, undefined)
-    console.log({masterSecretId})
+    log({masterSecretId})
 
     //  7. Issuer create Credential Offer
     const credOffer = await indy.issuerCreateCredentialOffer(issuerWallet, credDefId)
-    console.log({credOffer})
+    log({credOffer})
 
     // 8. Prover create Credential Request
     const [credReq, credReqMetadata] = await indy.proverCreateCredentialReq(proverWallet, proverDid,
                                                                 credOffer, credDef, masterSecretId)
-    console.log({credReq})
+    log({credReq})
 
     // 9. Issuer open Tails reader
     const blobStorageReaderHandle = await indy.openBlobStorageReader('default', tailsWriterConfig)
-    console.log({blobStorageReaderHandle})
+    log({blobStorageReaderHandle})
 
     // 10. Issuer create Credential
     const credValues = {
@@ -114,12 +111,12 @@ async function run() {
 
     // Prover gets Credentials for attr1_referent
     const credentialsForAttr1 = await indy.proverFetchCredentialsForProofReq(search_handle, 'attr1_referent', 10)
-    console.log({credentialsForAttr1})
+    log({credentialsForAttr1})
     const credForAttribute = credentialsForAttr1[0]['cred_info']
 
     // Prover gets Credentials for predicate1_referent
     const credentialsForPredicate1 = await indy.proverFetchCredentialsForProofReq(search_handle, 'predicate1_referent', 10)
-    console.log({credentialsForPredicate1})
+    log({credentialsForPredicate1})
     const credForPredicate = credentialsForPredicate1[0]['cred_info']
 
     await indy.proverCloseCredentialsSearchForProofReq(search_handle)
@@ -127,7 +124,7 @@ async function run() {
     // 12. Prover creates revocation state
     const timestamp = 100
     const revState = await indy.createRevocationState(blobStorageReaderHandle, revRegDef, revRegDelta, timestamp, revId)
-    console.log({revState})
+    log({revState})
 
     // 13. Prover create Proof for Proof Request
     const requestedCredentials = {
@@ -152,7 +149,7 @@ async function run() {
 
     const proof = await indy.proverCreateProof(proverWallet, proofReq, requestedCredentials, masterSecretId,
                                                     schemas, credDefs, revocStates)
-    console.log({proof})
+    log({proof})
 
     assertEquals('Alex', proof['requested_proof']['revealed_attrs']['attr1_referent']['raw'])
 
@@ -164,7 +161,7 @@ async function run() {
     revocRegs[revRegId][timestamp] = revRegDelta
 
     const verified = await indy.verifierVerifyProof(proofReq, proof, schemas, credDefs, revocRefDefs, revocRegs)
-    console.log({verified})
+    log({verified})
 
     // 13. Close and delete Issuer wallet
     await indy.closeWallet(issuerWallet)
@@ -174,7 +171,7 @@ async function run() {
     await indy.closeWallet(proverWallet)
     await indy.deleteWallet(proverWalletConfig, proverWalletCredentials)
 
-    console.log("Anoncreds Revocation sample -> completed")
+    log("Anoncreds Revocation sample -> completed")
 }
 
 if (require.main.filename == __filename) {
