@@ -27,6 +27,7 @@ use utils::threadpool::spawn;
 /// tag: way to create a unique credential def with the same schema and issuer did.
 ///
 /// revocation details: type-specific configuration of credential definition revocation
+///     TODO: Currently supports ISSUANCE BY DEFAULT, support for ISSUANCE ON DEMAND will be added as part of ticket: IS-1074
 ///     support_revocation: true|false - Optional, by default its false
 ///     tails_file: path to tails file - Optional if support_revocation is false
 ///     max_creds: size of tails file - Optional if support_revocation is false

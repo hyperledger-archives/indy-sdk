@@ -477,7 +477,7 @@ pub extern fn vcx_disclosed_proof_retrieve_credentials(command_handle: u32,
 ///                     "tails_file": Option<"String">, // Path to tails file for this credential
 ///                 },
 ///            },
-///           "predicates":{ WILL PROVIDE MORE DETAILS WHEN PREDICATES ARE IMPLEMENTED }
+///           "predicates":{ TODO: will be implemented as part of IS-1095 ticket. }
 ///        }
 ///     // selected_credentials can be empty "{}" if the proof only contains self_attested_attrs
 ///
