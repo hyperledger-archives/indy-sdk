@@ -3,7 +3,6 @@ use super::*;
 use {CString, Error, Handle};
 
 extern {
-
     #[no_mangle]
     pub fn indy_sign_and_submit_request(command_handle: Handle,
                                         pool_handle: Handle,
@@ -217,6 +216,11 @@ extern {
                                                    parser: Option<CustomTransactionParser>,
                                                    free: Option<CustomFree>,
                                                    cb: Option<ResponseEmptyCB>) -> Error;
+
+    #[no_mangle]
+    pub fn indy_get_response_metadata(command_handle: Handle,
+                                      response: CString,
+                                      cb: Option<ResponseStringCB>) -> Error;
 }
 
 pub type CustomTransactionParser = extern fn(reply_from_node: CString, parsed_sp: *mut CString) -> Error;

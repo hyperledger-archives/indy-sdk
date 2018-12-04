@@ -10,7 +10,6 @@ lazy_static!{
 
 //Todo: change this RC to a u32
 pub fn post_u8(body_content: &Vec<u8>) -> Result<Vec<u8>,String> {
-
     let url = format!("{}/agency/msg", settings::get_config_value(settings::CONFIG_AGENCY_ENDPOINT).or(Err("Invalid Configuration".to_string()))?);
 
     if settings::test_agency_mode_enabled() {return Ok(NEXT_U8_RESPONSE.lock().unwrap().pop().unwrap_or(Vec::new()));}

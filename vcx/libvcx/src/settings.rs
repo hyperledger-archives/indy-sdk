@@ -77,6 +77,7 @@ impl ToString for HashMap<String, String> {
     }
 }
 pub fn set_defaults() -> u32 {
+    trace!("set_defaults >>>");
 
     // if this fails the program should exit
     let mut settings = SETTINGS.write().unwrap();
@@ -106,6 +107,7 @@ pub fn set_defaults() -> u32 {
 }
 
 pub fn validate_config(config: &HashMap<String, String>) -> Result<u32, u32> {
+    trace!("validate_config >>> config: {:?}", config);
 
     //Mandatory parameters
     if config.get(CONFIG_WALLET_KEY).is_none() {
@@ -185,6 +187,8 @@ pub fn test_agency_mode_enabled() -> bool {
 }
 
 pub fn process_config_string(config: &str) -> Result<u32, u32> {
+    trace!("process_config_string >>> config {}", config);
+
     let configuration: Value = serde_json::from_str(config).or(Err(error::INVALID_JSON.code_num))?;
     if let Value::Object(ref map) = configuration {
         for (key, value) in map {
@@ -198,6 +202,8 @@ pub fn process_config_string(config: &str) -> Result<u32, u32> {
 }
 
 pub fn process_config_file(path: &str) -> Result<u32, u32> {
+    trace!("process_config_file >>> path: {}", path);
+
     if !Path::new(path).is_file() {
         error!("Configuration path was invalid");
         Err(error::INVALID_CONFIGURATION.code_num)
@@ -227,6 +233,8 @@ pub fn get_protocol_version() -> usize {
 }
 
 pub fn get_config_value(key: &str) -> Result<String, u32> {
+    trace!("get_config_value >>> key: {}", key);
+
     SETTINGS
         .read()
         .or(Err(error::INVALID_CONFIGURATION.code_num))?
@@ -235,6 +243,7 @@ pub fn get_config_value(key: &str) -> Result<String, u32> {
 }
 
 pub fn set_config_value(key: &str, value: &str) {
+    trace!("set_config_value >>> key: {}, value: {}", key, value);
     SETTINGS.write().unwrap().insert(key.to_string(), value.to_string());
 }
 
@@ -266,6 +275,8 @@ pub fn get_payment_method() -> String {
 }
 
 pub fn write_config_to_file(config: &str, path_string: &str) -> Result<(), u32> {
+    trace!("write_config_to_file >>> config: {}, path_string: {}", config, path_string);
+
     let mut file = fs::File::create(Path::new(path_string))
         .or(Err(error::UNKNOWN_ERROR.code_num))?;
 
@@ -275,6 +286,7 @@ pub fn write_config_to_file(config: &str, path_string: &str) -> Result<(), u32> 
 }
 
 pub fn read_config_file(path: &str) -> Result<String, u32> {
+    trace!("read_config_file >>> path: {}", path);
     let mut file = fs::File::open(path).or(Err(error::UNKNOWN_ERROR.code_num))?;
     let mut config = String::new();
     file.read_to_string(&mut config).or(Err(error::UNKNOWN_ERROR.code_num))?;
@@ -282,8 +294,8 @@ pub fn read_config_file(path: &str) -> Result<String, u32> {
 }
 
 pub fn remove_file_if_exists(filename: &str){
+    trace!("remove_file_if_exists >>> filename: {}", filename);
     if Path::new(filename).exists() {
-        println!("{}", format!("Removing file for testing: {}.", &filename));
         match fs::remove_file(filename) {
             Ok(t) => (),
             Err(e) => println!("Unable to remove file: {:?}", e)
@@ -292,6 +304,7 @@ pub fn remove_file_if_exists(filename: &str){
 }
 
 pub fn clear_config() {
+    trace!("clear_config >>>");
     let mut config = SETTINGS.write().unwrap();
     config.clear();
 }
