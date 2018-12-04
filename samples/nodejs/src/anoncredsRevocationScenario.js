@@ -1,3 +1,26 @@
+/**
+ * This script is a sample to show revocation process.
+ *
+ * Scenario :
+ * - Issuer create schema, credential definition, revocation registry and revocation registry entry
+ * - Issuer create and send offer to prover
+ * - Prover request credential
+ * - Issuer issues credential to prover
+ * - Verifier create proof request
+ * - Prover search credential and create proof, with revocation state
+ * - Verifier gets revocation data, and verifies proof is non-revoked (--> true)
+ * - Issuer revoke credential and posts delta to ledger
+ * - Verifier gets delta from ledger (until now), and verifies that proof is revoked (false)
+ * - Verifier gets delta from ledger until proof reception timestamp, and verifies that proof at this timestamp is non-revoked
+ *
+ * All logs are colored differently for each actor (cyan for issuer, magenta for prover and yellow for verifier).
+ * Data checked as expected are logged with green color, otherwise the logs are red.
+ *
+ * To ensure that there is no data shared with local variables between each actors, all data are stored in
+ * separated spaces (issuer = {}, prover = {}, verifier = {}). Likewise, some instructions with local variables
+ * are grouped in "blocks" ( {...} ) to avoid involuntary data sharing between actors.
+ */
+
 const indy = require('indy-sdk')
 const util = require('./util')
 const COLOR = require('./colors')
@@ -307,12 +330,16 @@ async function run() {
     prover.searchHandle = await indy.proverSearchCredentialsForProofReq(prover.wallet, prover.proofReq, undefined)
 
     logProver("Prover gets Credentials for attr1_referent")
-    const credentialsForAttr1 = await indy.proverFetchCredentialsForProofReq(prover.searchHandle, 'attr1_referent', 10)
-    const credInfoForAttribute = credentialsForAttr1[0]['cred_info']
+    {
+        const credentialsForAttr1 = await indy.proverFetchCredentialsForProofReq(prover.searchHandle, 'attr1_referent', 10)
+        prover.credInfoForAttribute = credentialsForAttr1[0]['cred_info']
+    }
 
     logProver("Prover gets Credentials for predicate1_referent")
-    const credentialsForPredicate1 = await indy.proverFetchCredentialsForProofReq(prover.searchHandle, 'predicate1_referent', 10)
-    const credInfoForPredicate = credentialsForPredicate1[0]['cred_info']
+    {
+        const credentialsForPredicate1 = await indy.proverFetchCredentialsForProofReq(prover.searchHandle, 'predicate1_referent', 10)
+        prover.credInfoForPredicate = credentialsForPredicate1[0]['cred_info']
+    }
 
     await indy.proverCloseCredentialsSearchForProofReq(prover.searchHandle)
 
@@ -330,7 +357,7 @@ async function run() {
     }
 
     logProver("Prover creates revocation state")
-    prover.credRevId = credInfoForAttribute['cred_rev_id']
+    prover.credRevId = prover.credInfoForAttribute['cred_rev_id']
     prover.revState = await indy.createRevocationState(prover.blobStorageReaderHandle, prover.revRegDef, prover.revRegDelta, prover.timestampOfDelta, prover.credRevId)
 
     logProver("Prover Gets Schema from Ledger")
@@ -341,11 +368,11 @@ async function run() {
         'self_attested_attributes': {},
         'requested_attributes': {
             'attr1_referent': {
-                'cred_id': credInfoForAttribute['referent'], 'revealed': true, 'timestamp': prover.timestampOfDelta
+                'cred_id': prover.credInfoForAttribute['referent'], 'revealed': true, 'timestamp': prover.timestampOfDelta
             }
         },
         'requested_predicates': {
-            'predicate1_referent': {'cred_id': credInfoForPredicate['referent'], 'timestamp': prover.timestampOfDelta}
+            'predicate1_referent': {'cred_id': prover.credInfoForPredicate['referent'], 'timestamp': prover.timestampOfDelta}
         }
     }
     prover.schemas = {
