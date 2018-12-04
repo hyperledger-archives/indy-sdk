@@ -1,5 +1,5 @@
 use ErrorCode;
-use std::os::raw::c_char;
+use libc::c_char;
 use utils::callbacks;
 use std::sync::mpsc::channel;
 
