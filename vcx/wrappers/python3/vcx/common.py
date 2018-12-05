@@ -3,9 +3,8 @@ from ctypes import *
 import asyncio
 import itertools
 import logging
-import os
 from .error import VcxError, ErrorCode
-from vcx.cdll import _cdll, LIBRARY
+from vcx.cdll import _cdll
 
 _futures = {}
 _futures_counter = itertools.count()

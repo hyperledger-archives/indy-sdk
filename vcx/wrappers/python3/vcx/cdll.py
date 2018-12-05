@@ -1,6 +1,6 @@
 from ctypes import CDLL
-import os
 import sys
+from vcx.logging import set_logger
 
 LIBRARY = "vcx"
 
@@ -8,6 +8,7 @@ LIBRARY = "vcx"
 def _cdll() -> CDLL:
     if not hasattr(_cdll, "cdll"):
         _cdll.cdll = _load_cdll()
+        set_logger(_cdll.cdll)
 
     return _cdll.cdll
 
