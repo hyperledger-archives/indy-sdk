@@ -7,6 +7,7 @@ pub mod callback_u32;
 pub mod pool;
 pub mod crypto;
 pub mod payments;
+pub mod logger;
 
 pub mod error_codes;
 
@@ -35,6 +36,8 @@ pub fn next_u32_command_handle() -> u32 {
 }
 
 pub fn init_pool() -> Result<(), u32>  {
+    trace!("init_pool >>>");
+
     if settings::test_indy_mode_enabled() {return Ok (()); }
 
     let pool_name = settings::get_config_value(settings::CONFIG_POOL_NAME)
