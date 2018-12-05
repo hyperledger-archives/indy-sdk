@@ -35,3 +35,35 @@ pub enum AMES {
     Auth(AuthAMES),
     Anon(AnonAMES)
 }
+
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
+pub struct JWE {
+    pub protected: Protected,
+    pub recipients: Vec<Recipient>,
+    pub aad: String,
+    pub iv: String,
+    pub ciphertext: String,
+    pub tag: String
+
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
+pub struct Recipient {
+    pub encrypted_key: String,
+    pub header: Header
+}
+
+
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
+pub struct Header {
+    pub sender: String,
+    pub kid: String
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
+pub struct Protected {
+    pub enc: String,
+    pub typ: String,
+    pub aad_hash_alg: String,
+    pub cek_enc: String
+}
