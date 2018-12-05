@@ -60,6 +60,8 @@ pub fn close() -> Result<(), u32> {
 }
 
 pub fn delete(pool_name: &str) -> Result<(), u32> {
+    trace!("delete >>> pool_name: {}", pool_name);
+
     if settings::test_indy_mode_enabled() {
         change_pool_handle(None);
         return Ok(())

@@ -199,6 +199,7 @@ public abstract class LibIndy {
 
 		NativeLibrary.addSearchPath(LIBRARY_NAME, searchPath);
 		api = Native.loadLibrary(LIBRARY_NAME, API.class);
+		initLogger();
 	}
 
 	/**
@@ -210,6 +211,7 @@ public abstract class LibIndy {
 	public static void init(File file) {
 
 		api = Native.loadLibrary(file.getAbsolutePath(), API.class);
+		initLogger();
 	}
 
 	/**

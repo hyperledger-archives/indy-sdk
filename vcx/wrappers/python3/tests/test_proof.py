@@ -8,7 +8,7 @@ from vcx.api.connection import Connection
 
 source_id = '123'
 name = 'proof name'
-phone_number = '8019119191'
+connection_options = '{"connection_type":"SMS","phone":"8019119191","use_public_did":true}'
 requested_attrs = [{"name": "age", "restrictions": [{"schema_id": "6XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11", "schema_name":"Faber Student Info", "schema_version":"1.0", "schema_issuer_did":"6XFh8yBzrpJQmNyZzgoTqB", "issuer_did":"8XFh8yBzrpJQmNyZzgoTqB", "cred_def_id": "8XFh8yBzrpJQmNyZzgoTqB:3:CL:1766" }, { "schema_id": "5XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11", "schema_name":"BYU Student Info", "schema_version":"1.0", "schema_issuer_did":"5XFh8yBzrpJQmNyZzgoTqB", "issuer_did":"66Fh8yBzrpJQmNyZzgoTqB", "cred_def_id": "66Fh8yBzrpJQmNyZzgoTqB:3:CL:1766" } ] }, { "name":"name", "restrictions": [ { "schema_id": "6XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11", "schema_name":"Faber Student Info", "schema_version":"1.0", "schema_issuer_did":"6XFh8yBzrpJQmNyZzgoTqB", "issuer_did":"8XFh8yBzrpJQmNyZzgoTqB", "cred_def_id": "8XFh8yBzrpJQmNyZzgoTqB:3:CL:1766" }, { "schema_id": "5XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11", "schema_name":"BYU Student Info", "schema_version":"1.0", "schema_issuer_did":"5XFh8yBzrpJQmNyZzgoTqB", "issuer_did":"66Fh8yBzrpJQmNyZzgoTqB", "cred_def_id": "66Fh8yBzrpJQmNyZzgoTqB:3:CL:1766"}]}]
 
 @pytest.mark.asyncio
@@ -108,7 +108,7 @@ async def test_update_state_with_invalid_handle():
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_request_proof():
     connection = await Connection.create(source_id)
-    await connection.connect(phone_number)
+    await connection.connect(connection_options)
     proof = await Proof.create(source_id, name, requested_attrs)
     await proof.request_proof(connection)
     assert await proof.get_state() == State.OfferSent
@@ -126,7 +126,7 @@ async def test_get_state():
 async def test_request_proof_with_invalid_connection():
     with pytest.raises(VcxError) as e:
         connection = await Connection.create(source_id)
-        await connection.connect(phone_number)
+        await connection.connect(connection_options)
         proof = await Proof.create(source_id, name, requested_attrs)
         connection.release()
         await proof.request_proof(connection)
@@ -138,7 +138,7 @@ async def test_request_proof_with_invalid_connection():
 async def test_request_proof_with_released_proof():
     with pytest.raises(VcxError) as e:
         connection = await Connection.create(source_id)
-        await connection.connect(phone_number)
+        await connection.connect(connection_options)
         proof = await Proof.create(source_id, name, requested_attrs)
         proof.release()
         await proof.request_proof(connection)
@@ -149,7 +149,7 @@ async def test_request_proof_with_released_proof():
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_get_proof_with_invalid_proof():
     connection = await Connection.create(source_id)
-    await connection.connect(phone_number)
+    await connection.connect(connection_options)
     proof = await Proof.create(source_id, name, requested_attrs)
     data = await proof.serialize()
     data['data']['proof'] = {'version': '1.0', 'to_did': None, 'from_did': None, 'proof_request_id': None, "libindy_proof": "{\"proof_data\":123}"}

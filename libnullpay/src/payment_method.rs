@@ -12,7 +12,7 @@ use utils::cstring;
 
 use serde_json::{from_str, to_string};
 use std::collections::HashMap;
-use std::os::raw::c_char;
+use libc::c_char;
 
 use std::thread;
 
