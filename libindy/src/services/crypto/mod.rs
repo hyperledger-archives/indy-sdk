@@ -11,15 +11,14 @@ use errors::agent::AgentError;
 use domain::crypto::key::{Key, KeyInfo};
 use domain::crypto::did::{Did, MyDidInfo, TheirDidInfo, TheirDid};
 use domain::crypto::combo_box::ComboBox;
-use domain::agent::AuthRecipient;
-use domain::agent::AnonRecipient;
+use domain::agent::Recipient;
 use utils::crypto::base58;
 use utils::crypto::base64;
 use utils::crypto::verkey_builder::build_full_verkey;
 use utils::crypto::ed25519_sign;
 use utils::crypto::ed25519_box;
-use utils::crypto::xsalsa20;
-use utils::crypto::xsalsa20::{create_key, gen_nonce};
+use utils::crypto::chacha20poly1305_ietf;
+use utils::crypto::chacha20poly1305_ietf::{gen_key, gen_nonce_and_encrypt};
 
 use std::collections::HashMap;
 use std::str;
@@ -456,8 +455,8 @@ impl CryptoService {
     pub fn anon_encrypt_recipient(
         &self,
         recp_vk: &str,
-        sym_key: xsalsa20::Key
-    ) -> Result<AnonRecipient, CryptoError> {
+        sym_key: chacha20poly1305_ietf::Key
+    ) -> Result<Recipient, CryptoError> {
         //encrypt cek
         let cek = self.crypto_box_seal(recp_vk, &sym_key[..]).map_err(|err| {
             CryptoError::UnknownCryptoError(format!("Failed to encrypt anon recipient {}", err))
@@ -475,8 +474,8 @@ impl CryptoService {
     pub fn anon_decrypt_recipient(
         &self,
         my_key: &Key,
-        anon_recipient: AnonRecipient
-    ) -> Result<xsalsa20::Key, CryptoError> {
+        recipient: &Recipient
+    ) -> Result<chacha20poly1305_ietf::Key, CryptoError> {
         let cek_as_vec = base64::decode(&anon_recipient.cek).map_err(|err| {
             CryptoError::CommonError(
                 CommonError::InvalidStructure(format!("Failed to decode cek for anon_decrypt_recipient {}", err))
@@ -489,7 +488,7 @@ impl CryptoService {
             .map_err(|err| CryptoError::UnknownCryptoError(format!("Failed to decrypt cek {}", err)))?;
 
         //convert to secretbox key
-        let sym_key = xsalsa20::Key::from_slice(&decrypted_cek[..]).map_err(|err| {
+        let sym_key = chacha20poly1305_ietf::Key::from_slice(&decrypted_cek[..]).map_err(|err| {
             CryptoError::UnknownCryptoError(format!("Failed to decrypt sym_key {}", err))
         })?;
 
@@ -502,7 +501,7 @@ impl CryptoService {
         &self,
         my_key: &Key,
         recp_vk: &str,
-        sym_key: &xsalsa20::Key
+        sym_key: &chacha20poly1305_ietf
     ) -> Result<AuthRecipient, CryptoError> {
         //encrypt sym_key for recipient
         let (e_cek, cek_nonce) = self.crypto_box(my_key, recp_vk, &sym_key[..])?;
@@ -567,12 +566,19 @@ impl CryptoService {
         Ok((sym_key, sender_vk))
     }
 
-    /* ciphertext helper functions*/
+    pub fn encrypt_plaintext(&self, plaintext: &str) -> (chacha20poly1305_ietf::Key, chacha20poly1305_ietf::Nonce, Vec<u8>) {
+        let sym_key = gen_key();
+        let (message, iv) = gen_nonce_and_encrypt(plaintext.as_bytes(), &sym_key);
+
+        (sym_key, iv, message)
+    }
+
+        /* ciphertext helper functions*/
     pub fn decrypt_ciphertext(
         &self,
         ciphertext: &str,
         iv: &str,
-        sym_key: &xsalsa20::Key,
+        sym_key: &chacha20poly1305_ietf::Key,
     ) -> Result<String, CryptoError> {
 
         //convert IV from &str to &Nonce
@@ -597,7 +603,7 @@ impl CryptoService {
 
         //decrypt message
         let plaintext_bytes =
-            xsalsa20::decrypt(sym_key, &nonce, ciphertext_as_bytes).map_err(|err| {
+            chacha20poly1305_ietf::decrypt(ciphertext_as_bytes, sym_key, &nonce).map_err(|err| {
                 CryptoError::UnknownCryptoError(format!("Failed to decrypt ciphertext {}", err))
             })?;
 
@@ -607,14 +613,6 @@ impl CryptoService {
                 CommonError::InvalidStructure(format!("Failed to convert message to UTF-8 {}", err))
             )
         })
-    }
-
-    pub fn encrypt_ciphertext(&self, ciphertext: &str) -> (xsalsa20::Key, xsalsa20::Nonce, Vec<u8>) {
-        let sym_key = create_key();
-        let iv = gen_nonce();
-        let message = xsalsa20::encrypt(&sym_key, &iv, ciphertext.as_bytes());
-
-        (sym_key, iv, message)
     }
 }
 
@@ -895,31 +893,44 @@ mod tests {
     }
 
     #[test]
-    pub fn test_auth_encrypt_recipient_works() {
-        //setup route_service
+    pub fn test_encrypt_plaintext_and_decrypt_ciphertext_works() {
         let service: CryptoService = CryptoService::new();
+        let message : &str = "Message to encrypt";
 
-        //setup DIDs and Keys
-        let did_info = MyDidInfo { did: None, cid: None, seed: None, crypto_type: None };
-        let (my_did, my_key) = service.create_my_did(&did_info).unwrap();
-        let (their_did, their_key) = service.create_my_did(&did_info.clone()).unwrap();
+        let (sym_key, iv, expected_ciphertext) = service
+            .encrypt_plaintext(message);
 
-        let my_key_for_encrypt = my_key.clone();
-        let their_did_for_encrypt = Did::new(their_did.did, their_did.verkey);
-
-        let my_key_for_decrypt = their_key.clone();
-        let their_did_for_decrypt = Did::new(my_did.did, my_did.verkey);
-
-        //sym_key
-        let sym_key = xsalsa20::create_key();
-
-        //pack then unpack message
-        let auth_recipient = service
-            .auth_encrypt_recipient(&my_key_for_encrypt, &their_did_for_encrypt.verkey, &sym_key);
-
-        //verify no errors are thrown
-        assert!(auth_recipient.is_ok());
+        let expected_plaintext = service
+            .decrypt_ciphertext(expected_ciphertext.)
+        assert!();
     }
+
+//    #[test]
+//    pub fn test_auth_encrypt_recipient_works() {
+//        //setup route_service
+//        let service: CryptoService = CryptoService::new();
+//
+//        //setup DIDs and Keys
+//        let did_info = MyDidInfo { did: None, cid: None, seed: None, crypto_type: None };
+//        let (my_did, my_key) = service.create_my_did(&did_info).unwrap();
+//        let (their_did, their_key) = service.create_my_did(&did_info.clone()).unwrap();
+//
+//        let my_key_for_encrypt = my_key.clone();
+//        let their_did_for_encrypt = Did::new(their_did.did, their_did.verkey);
+//
+//        let my_key_for_decrypt = their_key.clone();
+//        let their_did_for_decrypt = Did::new(my_did.did, my_did.verkey);
+//
+//        //sym_key
+//        let sym_key = chacha20poly1305_ietf::gen_key();
+//
+//        //pack then unpack message
+//        let auth_recipient = service
+//            .auth_encrypt_recipient(&my_key_for_encrypt, &their_did_for_encrypt.verkey, &sym_key);
+//
+//        //verify no errors are thrown
+//        assert!(auth_recipient.is_ok());
+//    }
 
 //    pub fn test_auth_encrypt_and_auth_decrypt_recipient_works() {
 //        //setup route_service

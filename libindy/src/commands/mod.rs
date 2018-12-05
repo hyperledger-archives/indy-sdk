@@ -25,7 +25,7 @@ use commands::wallet::{WalletCommand, WalletCommandExecutor};
 use commands::pairwise::{PairwiseCommand, PairwiseCommandExecutor};
 use commands::non_secrets::{NonSecretsCommand, NonSecretsCommandExecutor};
 use commands::payments::{PaymentsCommand, PaymentsCommandExecutor};
-use commands::agent::{AgentCommand, AgentCommandExecutor};
+// use commands::agent::{AgentCommand, AgentCommandExecutor};
 
 use errors::common::CommonError;
 
@@ -59,7 +59,7 @@ pub enum Command {
     Pairwise(PairwiseCommand),
     NonSecrets(NonSecretsCommand),
     Payments(PaymentsCommand),
-    Agent(AgentCommand)
+    //Agent(AgentCommand)
 }
 
 lazy_static! {
@@ -100,7 +100,7 @@ impl CommandExecutor {
                 let payments_service = Rc::new(PaymentsService::new());
                 let pool_service = Rc::new(PoolService::new());
                 let wallet_service = Rc::new(WalletService::new());
-                let agent_service = Rc::new(AgentService::new());
+                //let agent_service = Rc::new(AgentService::new());
 
                 let anoncreds_command_executor = AnoncredsCommandExecutor::new(anoncreds_service.clone(), blob_storage_service.clone(), pool_service.clone(), wallet_service.clone(), crypto_service.clone());
                 let crypto_command_executor = CryptoCommandExecutor::new(wallet_service.clone(), crypto_service.clone());
@@ -112,7 +112,7 @@ impl CommandExecutor {
                 let blob_storage_command_executor = BlobStorageCommandExecutor::new(blob_storage_service.clone());
                 let non_secret_command_executor = NonSecretsCommandExecutor::new(wallet_service.clone());
                 let payments_command_executor = PaymentsCommandExecutor::new(payments_service.clone(), wallet_service.clone(), crypto_service.clone());
-                let agent_command_executor = AgentCommandExecutor::new(wallet_service.clone(), crypto_service.clone(), agent_service.clone());
+                //let agent_command_executor = AgentCommandExecutor::new(wallet_service.clone(), crypto_service.clone(), agent_service.clone());
 
                 loop {
                     match receiver.recv() {
@@ -156,10 +156,10 @@ impl CommandExecutor {
                             info!("PaymentsCommand command received");
                             payments_command_executor.execute(cmd);
                         }
-                        Ok(Command::Agent(cmd)) => {
-                            info!("AgentCommand command received");
-                            agent_command_executor.execute(cmd);
-                        }
+//                        Ok(Command::Agent(cmd)) => {
+//                            info!("AgentCommand command received");
+//                            agent_command_executor.execute(cmd);
+//                        }
                         Ok(Command::Exit) => {
                             info!("Exit command received");
                             break

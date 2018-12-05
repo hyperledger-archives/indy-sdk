@@ -20,43 +20,86 @@ impl AgentService {
         AgentService {}
     }
 
-    pub fn get_auth_recipient_header(
+    pub fn get_recipient_header(
         &self,
-        recp_vk: &str,
-        auth_recipients: Vec<AuthRecipient>,
-    ) -> Result<AuthRecipient> {
-        let my_vk_as_string = recp_vk.to_string();
-        for auth_recipient in auth_recipients {
-            if auth_recipient.to == my_vk_as_string {
-                return Ok(auth_recipient);
-            }
-        }
-
-        return Err(AgentError::UnpackError(format!(
-            "Failed to find a matching header"
-        )));
-    }
-
-    pub fn get_anon_recipient_header(
-        &self,
-        recp_vk: &str,
-        anon_recipients: Vec<AnonRecipient>,
-    ) -> Result<AnonRecipient> {
-        let my_vk_as_string = recp_vk.to_string();
-        for recipient in anon_recipients {
-            if recipient.to == my_vk_as_string {
+        recipient_verkey: &str,
+        recipients_list: Vec<Recipient>,
+    ) -> Result<Recipient> {
+        for recipient in recipients_list {
+            if &recipient.header.kid == recipient_verkey {
                 return Ok(recipient);
             }
         }
 
-        return Err(AgentError::UnpackError(format!(
+        Err(AgentError::UnpackError(format!(
             "Failed to find a matching header"
-        )));
+        )))
     }
-
-
 }
 
+#[cfg(test)]
+pub mod tests {
+    use super::*;
+    use domain::agent::{Recipient, Header};
+
+    #[test]
+    pub fn test_get_recipient_header_works(){
+        let service = AgentService::new();
+
+        let verkey = "key_of_recipient1".to_string();
+
+        let recp1 : Recipient = Recipient {
+            encrypted_key: "unrelevant data".to_string(),
+            header: Header {
+                sender : "unrelevant for this test".to_string(),
+                kid : "key_of_recipient1".to_string(),
+            }
+        };
+
+        let recp2 : Recipient = Recipient {
+            encrypted_key: "unrelevant data".to_string(),
+            header: Header {
+                sender : "unrelevant for this test".to_string(),
+                kid : "key_of_recipient2".to_string(),
+            }
+        };
+
+        let test_recp_list : Vec<Recipient> = vec![recp1, recp2];
+
+        let returned_recipient = service.get_recipient_header(&verkey.clone(), test_recp_list).unwrap();
+
+        assert_eq!(returned_recipient.header.kid, verkey);
+    }
+
+    #[test]
+    pub fn test_get_recipient_header_unpack_error(){
+        let service = AgentService::new();
+
+        let verkey = "key_of_recipient1".to_string();
+
+        let recp1 : Recipient = Recipient {
+            encrypted_key: "unrelevant data".to_string(),
+            header: Header {
+                sender : "unrelevant for this test".to_string(),
+                kid : "key_does_not_match1".to_string(),
+            }
+        };
+
+        let recp2 : Recipient = Recipient {
+            encrypted_key: "unrelevant data".to_string(),
+            header: Header {
+                sender : "unrelevant for this test".to_string(),
+                kid : "key_does_not_match2".to_string(),
+            }
+        };
+
+        let test_recp_list : Vec<Recipient> = vec![recp1, recp2];
+
+        let returned_recipient = service.get_recipient_header(&verkey.clone(), test_recp_list);
+
+        assert!(returned_recipient.is_err());
+    }
+}
 
 //pub mod tests {
 //
