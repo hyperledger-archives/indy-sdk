@@ -126,6 +126,9 @@ class ErrorCode(IntEnum):
     # Call pool.indy_set_protocol_version to set correct Protocol version.
     PoolIncompatibleProtocolVersion = 308,
 
+    # Item not found on ledger.
+    LedgerNotFound = 309,
+
     # Revocation registry is full and creation of new registry is necessary
     AnoncredsRevocationRegistryFullError = 400,
 

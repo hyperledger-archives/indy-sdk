@@ -15,7 +15,8 @@ extern crate serde_json;
 
 extern crate byteorder;
 extern crate hex;
-extern crate indy;
+extern crate indyrs as indy;
+extern crate indyrs as api;
 extern crate indy_crypto;
 extern crate uuid;
 extern crate named_type;
@@ -26,13 +27,10 @@ extern crate time;
 extern crate serde;
 extern crate sodiumoxide;
 
-// Workaround to share some utils code based on indy sdk types between tests and indy sdk
-use indy::api as api;
-
 #[macro_use]
 mod utils;
 
-use indy::api::ErrorCode;
+use self::indy::ErrorCode;
 #[cfg(feature = "local_nodes_pool")]
 use utils::{pool, ledger, did, anoncreds};
 use utils::types::*;
@@ -577,7 +575,7 @@ mod high_cases {
 
             let mut ctx = Hasher::new(MessageDigest::sha256()).unwrap();
             ctx.update(&ATTRIB_RAW_DATA.as_bytes()).unwrap();
-            let hashed_attr = ctx.finish2().unwrap().as_ref().to_hex();
+            let hashed_attr = ctx.finish().unwrap().as_ref().to_hex();
 
             let attrib_request = ledger::build_attrib_request(&trustee_did,
                                                               &trustee_did,
@@ -1514,11 +1512,11 @@ mod high_cases {
         fn indy_register_transaction_parser_for_sp_works() {
             utils::setup();
 
-            extern fn parse(msg: *const c_char, parsed: *mut *const c_char) -> ErrorCode {
+            extern fn parse(msg: *const c_char, parsed: *mut *const c_char) -> i32 {
                 unsafe { *parsed = msg; }
-                ErrorCode::Success
+                ErrorCode::Success as i32
             }
-            extern fn free(_buf: *const c_char) -> ErrorCode { ErrorCode::Success }
+            extern fn free(_buf: *const c_char) -> i32 { ErrorCode::Success as i32 }
 
             ledger::register_transaction_parser_for_sp("my_txn_type", parse, free).unwrap();
 
@@ -1891,6 +1889,36 @@ mod medium_cases {
             let get_schema_response = ledger::submit_request(pool_handle, &get_schema_request).unwrap();
 
             let res = ledger::parse_get_schema_response(&get_schema_response);
+            assert_eq!(res.unwrap_err(), ErrorCode::LedgerNotFound);
+
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_get_parse_returns_error_for_wrong_type() {
+            let (wallet_handle, pool_handle) = utils::setup_with_wallet_and_pool();
+
+            let (schema_id, _, _) = ledger::post_entities();
+
+            let get_schema_request = ledger::build_get_schema_request(Some(DID_MY1), &schema_id).unwrap();
+            let get_schema_response = ledger::submit_request(pool_handle, &get_schema_request).unwrap();
+
+            let res = ledger::parse_get_cred_def_response(&get_schema_response);
+            assert_eq!(res.unwrap_err(), ErrorCode::LedgerInvalidTransaction);
+
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_get_parse_returns_error_for_wrong_type_and_unknown_schema() {
+            let (wallet_handle, pool_handle) = utils::setup_with_wallet_and_pool();
+
+            let get_schema_request = ledger::build_get_schema_request(Some(DID_TRUSTEE), &Schema::schema_id(DID, "other_schema", "1.0")).unwrap();
+            let get_schema_response = ledger::submit_request(pool_handle, &get_schema_request).unwrap();
+
+            let res = ledger::parse_get_cred_def_response(&get_schema_response);
             assert_eq!(res.unwrap_err(), ErrorCode::LedgerInvalidTransaction);
 
             utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);

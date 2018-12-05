@@ -5,7 +5,7 @@ use command_executor::{Command, CommandContext, CommandMetadata, CommandParams, 
 use commands::*;
 use commands::payment_address::handle_payment_error;
 
-use libindy::ErrorCode;
+use indy::ErrorCode;
 use libindy::ledger::Ledger;
 use libindy::payment::Payment;
 
@@ -73,12 +73,10 @@ pub mod nym_command {
 
         let payment_method = set_request_fees(&mut request, wallet_handle, Some(&submitter_did), &fees_inputs, &fees_outputs, extra)?;
 
-        let response = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request)
+        let response_json = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request)
             .map_err(|err| handle_transaction_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name)))?;
 
-        let receipts = parse_response_with_fees(&response, payment_method)?;
-
-        let mut response: Response<serde_json::Value> = serde_json::from_str::<Response<serde_json::Value>>(&response)
+        let mut response: Response<serde_json::Value> = serde_json::from_str::<Response<serde_json::Value>>(&response_json)
             .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
 
         if let Some(result) = response.result.as_mut() {
@@ -93,6 +91,8 @@ pub mod nym_command {
                                                      &mut vec![("dest", "Did"),
                                                                ("verkey", "Verkey"),
                                                                ("role", "Role")]))?;
+
+        let receipts = parse_response_with_fees(&response_json, payment_method)?;
 
         let res = print_response_receipts(receipts);
 
@@ -187,12 +187,10 @@ pub mod attrib_command {
 
         let payment_method = set_request_fees(&mut request, wallet_handle, Some(&submitter_did), &fees_inputs, &fees_outputs, extra)?;
 
-        let response = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request)
+        let response_json = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request)
             .map_err(|err| handle_transaction_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name)))?;
 
-        let receipts = parse_response_with_fees(&response, payment_method)?;
-
-        let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
+        let response = serde_json::from_str::<Response<serde_json::Value>>(&response_json)
             .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
 
         let attribute =
@@ -207,6 +205,8 @@ pub mod attrib_command {
                                                      "Attrib request has been sent to Ledger.",
                                                      None,
                                                      &[attribute]))?;
+
+        let receipts = parse_response_with_fees(&response_json, payment_method)?;
 
         let res = print_response_receipts(receipts);
 
@@ -311,12 +311,10 @@ pub mod schema_command {
 
         let payment_method = set_request_fees(&mut request, wallet_handle, Some(&submitter_did), &fees_inputs, &fees_outputs, extra)?;
 
-        let response = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request)
+        let response_json = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request)
             .map_err(|err| handle_transaction_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name)))?;
 
-        let receipts = parse_response_with_fees(&response, payment_method)?;
-
-        let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
+        let response = serde_json::from_str::<Response<serde_json::Value>>(&response_json)
             .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
 
         handle_transaction_response(response)
@@ -326,6 +324,8 @@ pub mod schema_command {
                                                      &[("name", "Name"),
                                                          ("version", "Version"),
                                                          ("attr_names", "Attributes")]))?;
+
+        let receipts = parse_response_with_fees(&response_json, payment_method)?;
 
         let res = print_response_receipts(receipts);
 
@@ -518,12 +518,10 @@ pub mod cred_def_command {
 
         let payment_method = set_request_fees(&mut request, wallet_handle, Some(&submitter_did), &fees_inputs, &fees_outputs, extra)?;
 
-        let response = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request)
+        let response_json = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request)
             .map_err(|err| handle_transaction_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name)))?;
 
-        let receipts = parse_response_with_fees(&response, payment_method)?;
-
-        let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
+        let response = serde_json::from_str::<Response<serde_json::Value>>(&response_json)
             .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
 
         handle_transaction_response(response)
@@ -532,6 +530,8 @@ pub mod cred_def_command {
                                                      Some("data"),
                                                      &[("primary", "Primary Key"),
                                                          ("revocation", "Revocation Key")]))?;
+
+        let receipts = parse_response_with_fees(&response_json, payment_method)?;
 
         let res = print_response_receipts(receipts);
 
@@ -600,9 +600,9 @@ pub mod node_command {
                 .add_optional_param("client_ip", "Client Ip. Note that it is mandatory for adding node case")
                 .add_optional_param("client_port","Client port. Note that it is mandatory for adding node case")
                 .add_optional_param("blskey",  "Node BLS key")
-                .add_optional_param("blskey_pop",  "Node BLS key proof of possession")
+                .add_optional_param("blskey_pop",  "Node BLS key proof of possession. Note that it is mandatory if blskey specified")
                 .add_optional_param("services", "Node type. One of: VALIDATOR, OBSERVER or empty in case of blacklisting node")
-                .add_example("ledger node target=A5iWQVT3k8Zo9nXj4otmeqaUziPQPCiDqcydXkAJBk1Y node_ip=127.0.0.1 node_port=9710 client_ip=127.0.0.1 client_port=9711 alias=Node5 services=VALIDATOR blskey=2zN3bHM1m4rLz54MJHYSwvqzPchYp8jkHswveCLAEJVcX6Mm1wHQD1SkPYMzUDTZvWvhuE6VNAkK3KxVeEmsanSmvjVkReDeBEMxeDaayjcZjFGPydyey1qxBHmTvAnBKoPydvuTAqx5f7YNNRAdeLmUi99gERUU7TD8KfAa6MpQ9bw")
+                .add_example("ledger node target=A5iWQVT3k8Zo9nXj4otmeqaUziPQPCiDqcydXkAJBk1Y node_ip=127.0.0.1 node_port=9710 client_ip=127.0.0.1 client_port=9711 alias=Node5 services=VALIDATOR blskey=2zN3bHM1m4rLz54MJHYSwvqzPchYp8jkHswveCLAEJVcX6Mm1wHQD1SkPYMzUDTZvWvhuE6VNAkK3KxVeEmsanSmvjVkReDeBEMxeDaayjcZjFGPydyey1qxBHmTvAnBKoPydvuTAqx5f7YNNRAdeLmUi99gERUU7TD8KfAa6MpQ9bw blskey_pop=RPLagxaR5xdimFzwmzYnz4ZhWtYQEj8iR5ZU53T2gitPCyCHQneUn2Huc4oeLd2B2HzkGnjAff4hWTJT6C7qHYB1Mv2wU5iHHGFWkhnTX9WsEAbunJCV2qcaXScKj4tTfvdDKfLiVuU2av6hbsMztirRze7LvYBkRHV3tGwyCptsrP")
                 .add_example("ledger node target=A5iWQVT3k8Zo9nXj4otmeqaUziPQPCiDqcydXkAJBk1Y node_ip=127.0.0.1 node_port=9710 client_ip=127.0.0.1 client_port=9711 alias=Node5 services=VALIDATOR")
                 .add_example("ledger node target=A5iWQVT3k8Zo9nXj4otmeqaUziPQPCiDqcydXkAJBk1Y alias=Node5 services=VALIDATOR")
                 .add_example("ledger node target=A5iWQVT3k8Zo9nXj4otmeqaUziPQPCiDqcydXkAJBk1Y alias=Node5 services=")

@@ -199,13 +199,13 @@ async def set_protocol_version(protocol_version: int) -> None:
     logger.debug("set_protocol_version: >>> protocol_version: %r",
                  protocol_version)
 
-    if not hasattr(delete_pool_ledger_config, "cb"):
+    if not hasattr(set_protocol_version, "cb"):
         logger.debug("set_protocol_version: Creating callback")
-        delete_pool_ledger_config.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32))
+        set_protocol_version.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32))
 
     res = await do_call('indy_set_protocol_version',
                         protocol_version,
-                        delete_pool_ledger_config.cb)
+                        set_protocol_version.cb)
 
     logger.debug("set_protocol_version: <<< res: %r", res)
     return res

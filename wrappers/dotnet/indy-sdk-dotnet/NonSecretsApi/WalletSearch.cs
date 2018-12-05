@@ -1,7 +1,7 @@
-﻿using System;
-using System.Threading.Tasks;
-using Hyperledger.Indy.Utils;
+﻿using Hyperledger.Indy.Utils;
 using Hyperledger.Indy.WalletApi;
+using System;
+using System.Threading.Tasks;
 
 namespace Hyperledger.Indy.NonSecretsApi
 {
@@ -14,13 +14,13 @@ namespace Hyperledger.Indy.NonSecretsApi
         /// Gets the handle.
         /// </summary>
         /// <value>The handle.</value>
-        public IntPtr Handle { get; }
+        public int Handle { get; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="T:Hyperledger.Indy.NonSecrets.WalletSearch"/> class.
         /// </summary>
         /// <param name="handle">Handle.</param>
-        internal WalletSearch(IntPtr handle)
+        internal WalletSearch(int handle)
         {
             Handle = handle;
         }

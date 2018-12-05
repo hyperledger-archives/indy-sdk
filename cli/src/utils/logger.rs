@@ -1,18 +1,20 @@
-extern crate env_logger;
+extern crate log4rs;
 extern crate log;
+extern crate libc;
 
-use self::env_logger::Builder;
-use self::log::LevelFilter;
-use std::env;
-use std::io::Write;
+use std::error::Error;
+use indy;
 
-pub fn init() {
-    Builder::new()
-        .format(|buf, record| writeln!(buf, "{:>5}|{:<30}|{:>35}:{:<4}| {}", record.level(), record.target(), record.file().get_or_insert(""), record.line().get_or_insert(0), record.args()))
-        .filter(None, LevelFilter::Off)
-        .parse(env::var("RUST_LOG").as_ref().map(String::as_str).unwrap_or(""))
-        .try_init()
-        .ok();
+pub struct  IndyCliLogger;
+
+impl IndyCliLogger {
+    pub fn init(path: &str) -> Result<(), String> {
+        log4rs::init_file(path, Default::default())
+            .map_err(|err| format!("Cannot init Indy CLI logger: {}", err.description()))?;
+
+        indy::logger::set_logger(log::logger())
+            .map_err(|_| format!("Cannot init Libindy logger"))
+    }
 }
 
 #[macro_export]

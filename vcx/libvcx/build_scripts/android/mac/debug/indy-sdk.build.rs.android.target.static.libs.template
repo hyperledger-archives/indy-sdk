@@ -1,0 +1,16 @@
+
+	if target.contains("arm-linux-androideabi") ||
+       target.contains("armv7-linux-androideabi") ||
+       target.contains("x86_64-linux-android") ||
+       target.contains("i686-linux-android") || 
+       target.contains("aarch64-linux-android") {
+        let openssl_dir = env::var("OPENSSL_DIR").unwrap();
+        println!("cargo:rustc-link-search=native={}",openssl_dir);
+        let android_sodium_lib = env::var("ANDROID_SODIUM_LIB").unwrap();
+        println!("cargo:rustc-link-search=native={}",android_sodium_lib);
+        let android_zmq_lib = env::var("ANDROID_ZMQ_LIB").unwrap();
+        println!("cargo:rustc-link-search=native={}",android_zmq_lib);
+        let android_sqlite_lib = env::var("ANDROID_SQLITE_LIB").unwrap();
+        println!("cargo:rustc-link-search=native={}",android_sqlite_lib);
+    }
+}
