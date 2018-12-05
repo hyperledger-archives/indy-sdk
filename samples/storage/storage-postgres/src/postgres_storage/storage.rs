@@ -1,5 +1,5 @@
 
-use indy_common::errors::wallet::WalletStorageError;
+use errors::wallet::WalletStorageError;
 use postgres_storage::PostgresStorage;
 
 pub trait WalletStorageType {

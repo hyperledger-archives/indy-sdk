@@ -1,7 +1,7 @@
 use postgres::types::ToSql;
 
-use indy_common::errors::wallet::WalletQueryError;
-use indy_common::wallet_storage::language::{Operator,TagName,TargetValue};
+use errors::wallet::WalletQueryError;
+use wallet_storage::language::{Operator,TagName,TargetValue};
 
 
 // Translates Wallet Query Language to SQL
