@@ -4,16 +4,14 @@ extern crate libc;
 #[macro_use]
 extern crate log;
 extern crate futures;
-extern crate indy_sys;
 
-use self::libc::c_char;
+use self::libc::{c_void, c_char};
 use std::ptr::null;
 use vcx::api::logger::*;
 use vcx::utils::logger::{LOGGER_STATE, LoggerState};
 use indy::wallet;
 use vcx::utils::cstring::CStringUtils;
 use vcx::api::logger::vcx_set_logger;
-use self::indy_sys::CVoid;
 
 /// These tests can only be run individually as initing the log crate can happen
 /// only once.
@@ -26,7 +24,7 @@ mod log_tests {
     use indy::future::Future;
 
     static mut COUNT: u32 = 0;
-    extern fn custom_log(_context: *const CVoid,
+    extern fn custom_log(_context: *const c_void,
                          _level: u32,
                          _target: *const c_char,
                          message: *const c_char,
