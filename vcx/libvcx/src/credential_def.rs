@@ -76,11 +76,17 @@ impl CredentialDef {
 
     pub fn set_source_id(&mut self, source_id: String) { self.source_id = source_id.clone(); }
 
+<<<<<<< HEAD
     fn get_cred_def_payment_txn(&self) -> Result<PaymentTxn, u32> { Ok(self.cred_def_payment_txn.clone().ok_or(error::NOT_READY.code_num)?) }
 
     fn get_rev_reg_def_payment_txn(&self) -> Option<PaymentTxn> { self.rev_reg_def_payment_txn.clone() }
 
     fn get_rev_reg_delta_payment_txn(&self) -> Option<PaymentTxn> { self.rev_reg_delta_payment_txn.clone() }
+=======
+    fn get_payment_txn(&self) -> Result<PaymentTxn, u32> {
+        Ok(self.payment_txn.clone().ok_or(error::NOT_READY.code_num)?)
+    }
+>>>>>>> master
 
     fn to_string_with_version(&self) -> String {
         json!({
@@ -102,6 +108,7 @@ pub fn create_new_credentialdef(source_id: String,
                                 issuer_did: String,
                                 schema_id: String,
                                 tag: String,
+<<<<<<< HEAD
                                 revocation_details: String) -> Result<u32, CredDefError> {
     trace!("create_new_credentialdef >>> source_id: {}, name: {}, issuer_did: {}, schema_id: {}, revocation_details: {}",
            source_id, name, issuer_did, schema_id, revocation_details);
@@ -145,6 +152,14 @@ pub fn create_new_credentialdef(source_id: String,
             let (rev_reg_id, rev_reg_def, rev_reg_entry, rev_def_payment) =
                 ledger::create_rev_reg_def(&issuer_did, &id, &tails_file, max_creds)
                     .or(Err(CredDefError::CreateRevRegDefError()))?;
+=======
+                                config_json: String) -> Result<u32, CredDefError> {
+    trace!("create_new_credentialdef >>> source_id: {}, name: {}, issuer_did: {}, schema_id: {}, tag: {}, config_json: {}",
+           source_id, name, issuer_did, schema_id, tag, config_json);
+
+    let schema_json = LedgerSchema::new_from_ledger(&schema_id)
+        .map_err(|x| CredDefError::CommonError(x.to_error_code()))?.schema_json;
+>>>>>>> master
 
             let (delta_payment, _) = ledger::post_rev_reg_delta(&issuer_did, &rev_reg_id, &rev_reg_entry)
                 .or(Err(CredDefError::InvalidRevocationEntry()))?;

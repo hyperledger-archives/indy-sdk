@@ -28,7 +28,7 @@ lazy_static! {
     static ref CONNECTION_MAP: ObjectCache<Connection> = Default::default();
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 struct ConnectionOptions {
     #[serde(default)]
     connection_type: Option<String>,
@@ -142,8 +142,8 @@ impl Connection {
         }
     }
 
-
     fn connect(&mut self, options: &ConnectionOptions) -> Result<u32,ConnectionError> {
+        trace!("Connection::connect >>> options: {:?}", options);
         match self.state {
             VcxStateType::VcxStateInitialized
                 | VcxStateType::VcxStateOfferSent => self._connect_send_invite(options),
@@ -404,6 +404,7 @@ pub fn get_source_id(handle: u32) -> Result<String, ConnectionError> {
 }
 
 pub fn create_connection(source_id: &str) -> Result<u32, ConnectionError> {
+    trace!("create_connection >>> source_id: {}", source_id);
     let (pw_did, pw_verkey) = create_and_store_my_did(None).map_err(|ec|ConnectionError::CommonError(ec))?;
 
     debug!("did: {} verkey: {}, source id: {}", pw_did, pw_verkey, source_id);
@@ -430,7 +431,7 @@ pub fn create_connection(source_id: &str) -> Result<u32, ConnectionError> {
 }
 
 pub fn create_connection_with_invite(source_id: &str, details: &str) -> Result<u32,ConnectionError> {
-    debug!("using invite to create connection {}", source_id);
+    debug!("create connection {} with invite {}", source_id, details);
 
     let details: Value = serde_json::from_str(&details)
         .or(Err(ConnectionError::CommonError(error::INVALID_JSON.code_num)))?;
@@ -574,6 +575,7 @@ pub fn connect(handle: u32, options: Option<String>) -> Result<u32, ConnectionEr
     };
 
     CONNECTION_MAP.get_mut(handle, |t| {
+        debug!("establish connection {}", t.get_source_id());
         t.create_agent_pairwise().map_err(|ec|ec.to_error_code())?;
         t.update_agent_profile(&options_obj).map_err(|ec|ec.to_error_code())?;
         t.connect(&options_obj).map_err(|ec| ec.to_error_code())
