@@ -356,6 +356,20 @@ impl IssuerCredential {
     }
 }
 
+/**
+    Input: json, key/array (of one item)
+    eg:
+    {"address2":["101 Wilson Lane"]}
+
+    Output: json: dictionary with key, object of raw and encoded values
+    eg:
+    {
+      "address2": {
+        "encoded": "68086943237164982734333428280784300550565381723532936263016368251445461241953",
+        "raw": "101 Wilson Lane"
+      }
+    }
+*/
 pub fn encode_attributes(attributes: &str) -> Result<String, IssuerCredError> {
     let mut attributes: serde_json::Value = match serde_json::from_str(attributes) {
         Ok(x) => x,
@@ -1035,7 +1049,7 @@ pub mod tests {
           "address2": {
             "encoded": "68086943237164982734333428280784300550565381723532936263016368251445461241953",
             "raw": "101 Wilson Lane"
-          },
+          }
         });
 
         static TEST_CREDENTIAL_DATA: &str =
@@ -1050,6 +1064,9 @@ pub mod tests {
 
     #[test]
     fn test_encode_with_several_attributes_success() {
+
+        /*
+        for reference....expectation is encode_attributes returns this:
 
         let expected = json!({
           "address2": {
@@ -1073,7 +1090,7 @@ pub mod tests {
             "raw": "UT"
           }
         });
-
+        */
 
         static TEST_CREDENTIAL_DATA: &str =
             r#"{"address2":["101 Wilson Lane"],
@@ -1083,9 +1100,21 @@ pub mod tests {
             "address1":["101 Tela Lane"]
             }"#;
 
-        let expected_json = serde_json::to_string_pretty(&expected).unwrap();
         let results_json = encode_attributes(TEST_CREDENTIAL_DATA).unwrap();
 
-        assert_eq!(expected_json, results_json, "encode_attributes failed to return expected results");
+        let results : Value = serde_json::from_str(&results_json).unwrap();
+        let address2 : &Value = &results["address2"];
+
+        assert_eq!("68086943237164982734333428280784300550565381723532936263016368251445461241953", address2["encoded"]);
+        assert_eq!("101 Wilson Lane", address2["raw"]);
+
+        let state : &Value = &results["state"];
+        assert_eq!("93856629670657830351991220989031130499313559332549427637940645777813964461231", state["encoded"]);
+        assert_eq!("UT", state["raw"]);
+
+        let zip : &Value = &results["zip"];
+        assert_eq!("87121", zip["encoded"]);
+        assert_eq!("87121", zip["raw"]);
+
     }
 }
