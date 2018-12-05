@@ -4,7 +4,7 @@ extern crate chrono;
 use command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata};
 use commands::*;
 
-use libindy::ErrorCode;
+use indy::ErrorCode;
 use libindy::payment::Payment;
 
 use serde_json::Value as JSONValue;
@@ -97,8 +97,8 @@ pub mod list_command {
 
 pub fn handle_payment_error(err: ErrorCode, payment_method: Option<&str>) {
     match err {
-        ErrorCode::PaymentUnknownMethodError => println_err!("Unknown payment method {}", payment_method.unwrap_or("")),
-        ErrorCode::PaymentIncompatibleMethodsError => println_err!("No methods were scraped or more than one was scraped"),
+        ErrorCode::UnknownPaymentMethod => println_err!("Unknown payment method {}", payment_method.unwrap_or("")),
+        ErrorCode::IncompatiblePaymentError => println_err!("No methods were scraped or more than one was scraped"),
         ErrorCode::PaymentInsufficientFundsError => println_err!("Insufficient funds on inputs"),
         ErrorCode::PaymentExtraFundsError => println_err!("Extra funds on inputs"),
         ErrorCode::CommonInvalidState => println_err!("Input not found"),

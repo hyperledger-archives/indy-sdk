@@ -49,6 +49,8 @@ pub struct UpdateProfileResponse {
 impl UpdateProfileData{
 
     pub fn create() -> UpdateProfileData {
+        trace!("UpdateProfileData::create_message >>>");
+
         UpdateProfileData {
             to_did: String::new(),
             payload: UpdateProfileDataPayload{
@@ -80,7 +82,19 @@ impl UpdateProfileData{
         }
     }
 
+    pub fn use_public_did(&mut self, did: &Option<String>) -> &mut Self {
+     if let Some(x) = did {
+            self.payload.configs.push(AttrValue {
+                name: "publicDid".to_string(),
+                value: x.to_string(),
+            });
+        };
+        self
+    }
+
     pub fn send_secure(&mut self) -> Result<Vec<String>, u32> {
+        trace!("UpdateProfileData::send_secure >>>");
+
         let data = match self.msgpack() {
             Ok(x) => x,
             Err(x) => return Err(x),

@@ -7,6 +7,7 @@ pub mod callback_u32;
 pub mod pool;
 pub mod crypto;
 pub mod payments;
+pub mod logger;
 
 pub mod error_codes;
 
@@ -15,8 +16,6 @@ extern crate libc;
 use settings;
 use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
 use std::sync::Mutex;
-
-use indy::ErrorCode;
 
 lazy_static!{
     static ref NEXT_LIBINDY_RC: Mutex<Vec<i32>> = Mutex::new(vec![]);
@@ -37,6 +36,8 @@ pub fn next_u32_command_handle() -> u32 {
 }
 
 pub fn init_pool() -> Result<(), u32>  {
+    trace!("init_pool >>>");
+
     if settings::test_indy_mode_enabled() {return Ok (()); }
 
     let pool_name = settings::get_config_value(settings::CONFIG_POOL_NAME)
@@ -56,10 +57,6 @@ pub fn init_pool() -> Result<(), u32>  {
             Ok(())
         }
     }
-}
-
-extern {
-    pub fn indy_set_default_logger(level: *const libc::c_char) -> ErrorCode;
 }
 
 #[cfg(test)]

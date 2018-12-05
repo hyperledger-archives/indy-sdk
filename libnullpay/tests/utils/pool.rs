@@ -1,13 +1,12 @@
-use nullpay::ErrorCode;
+use indy::ErrorCode;
+use indy::pool;
+use indy::future::Future;
 
 use serde_json::to_string;
 use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
 use std::fs;
-use std::ffi::CString;
-use std::ptr::null;
-use std::os::raw::c_char;
 
 #[derive(Serialize, Deserialize)]
 pub struct PoolConfig {
@@ -25,13 +24,7 @@ pub fn create_and_open_pool_ledger(pool_name: &str) -> Result<i32, ErrorCode> {
 }
 
 pub fn close(pool_handle: i32) -> Result<(), ErrorCode> {
-    let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec();
-
-    let err = unsafe {
-        indy_close_pool_ledger(command_handle, pool_handle, cb)
-    };
-
-    super::results::result_to_empty(err, receiver)
+    pool::close_pool_ledger(pool_handle).wait()
 }
 
 fn _pool_config_json(txn_file_path: &Path) -> String {
@@ -41,19 +34,7 @@ fn _pool_config_json(txn_file_path: &Path) -> String {
 }
 
 fn _create_pool_ledger_config(pool_name: &str, pool_config: Option<&str>) -> Result<(), ErrorCode> {
-    let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec();
-
-    let pool_name = CString::new(pool_name).unwrap();
-    let pool_config_str = pool_config.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
-
-    let err = unsafe {
-        indy_create_pool_ledger_config(command_handle,
-                                       pool_name.as_ptr(),
-                                       if pool_config.is_some() { pool_config_str.as_ptr() } else { null() },
-                                       cb)
-    };
-
-    super::results::result_to_empty(err, receiver)
+    pool::create_pool_ledger_config(pool_name, pool_config).wait()
 }
 
 fn _create_genesis_txn_file_for_test_pool(pool_name: &str,
@@ -96,54 +77,10 @@ fn _create_genesis_txn_file(pool_name: &str,
 }
 
 fn _open_pool_ledger(pool_name: &str, config: Option<&str>) -> Result<i32, ErrorCode> {
-    let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_i32();
-
-    let pool_name = CString::new(pool_name).unwrap();
-    let config_str = config.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
-
-    let err = unsafe {
-        indy_open_pool_ledger(command_handle,
-                              pool_name.as_ptr(),
-                              if config.is_some() { config_str.as_ptr() } else { null() },
-                              cb)
-    };
-
-    super::results::result_to_int(err, receiver)
+    pool::open_pool_ledger(pool_name, config).wait()
 }
 
 
 pub fn set_protocol_version(protocol_version: usize) -> Result<(), ErrorCode> {
-    let (receiver, cmd_id, cb) = super::callbacks::_closure_to_cb_ec();
-
-    let err = unsafe { indy_set_protocol_version(cmd_id, protocol_version, cb) };
-
-    super::results::result_to_empty(err, receiver)
-}
-
-
-extern {
-    #[no_mangle]
-    fn indy_open_pool_ledger(command_handle: i32,
-                             config_name: *const c_char,
-                             config: *const c_char,
-                             cb: Option<extern fn(xcommand_handle: i32,
-                                                  err: ErrorCode,
-                                                  pool_handle: i32)>) -> ErrorCode;
-
-    #[no_mangle]
-    fn indy_create_pool_ledger_config(command_handle: i32,
-                                      config_name: *const c_char,
-                                      config: *const c_char,
-                                      cb: Option<extern fn(xcommand_handle: i32,
-                                                           err: ErrorCode)>) -> ErrorCode;
-
-    #[no_mangle]
-    pub fn indy_close_pool_ledger(command_handle: i32,
-                                  handle: i32,
-                                  cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode;
-
-    #[no_mangle]
-    pub fn indy_set_protocol_version(command_handle: i32,
-                                     protocol_version: usize,
-                                     cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode;
+    pool::set_protocol_version(protocol_version).wait()
 }

@@ -1,7 +1,7 @@
 use command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata};
 use commands::*;
 use utils::table::print_list_table;
-use libindy::ErrorCode;
+use indy::ErrorCode;
 use libindy::wallet::Wallet;
 
 use serde_json;
@@ -374,7 +374,7 @@ pub mod export_command {
     );
 
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
-        trace!("execute >> ctx {:?} params {:?}", ctx, params);
+        trace!("execute >> ctx {:?} params {:?}", ctx, secret!(params));
 
         let (wallet_handle, wallet_name) = ensure_opened_wallet(&ctx)?;
 
@@ -443,8 +443,8 @@ pub mod import_command {
             return Err(println_err!("Wallet \"{}\" is already attached to CLI", id));
         }
 
-        trace!("Wallet::import_wallet try: config {}, import_config {}", config, import_config);
-
+        trace!("Wallet::import_wallet try: config {}, import_config {}", config, secret!(&import_config));
+        
         let res = Wallet::import_wallet(config.as_str(),
                                         credentials.as_str(),
                                         import_config.as_str(),

@@ -1,5 +1,6 @@
 package com.evernym.sdk.vcx;
 
+import com.evernym.sdk.vcx.connection.ConnectionApi;
 import com.evernym.sdk.vcx.credential.CredentialApi;
 import com.evernym.sdk.vcx.credential.GetCredentialCreateMsgidResult;
 import com.evernym.sdk.vcx.credential.InvalidCredentialHandleException;
@@ -48,6 +49,8 @@ class CredentialApiTest {
     @DisplayName("create a credential with message id")
     void createCredentialWithMsgId() throws VcxException, ExecutionException, InterruptedException {
         int connection = TestHelper._createConnection();
+        String payload= "{ 'connection_type': 'SMS', 'phone':'7202200000' }";
+        TestHelper.getResultFromFuture(ConnectionApi.vcxConnectionConnect(connection,TestHelper.convertToValidJson(payload)));
         GetCredentialCreateMsgidResult result = TestHelper.getResultFromFuture(CredentialApi.credentialCreateWithMsgid("1", connection, "1"));
         assertNotSame(0, result.getCredential_handle());
 
@@ -111,6 +114,8 @@ class CredentialApiTest {
     void sendRequest() throws VcxException, ExecutionException, InterruptedException {
         int credential = TestHelper._createCredential();
         int connection = TestHelper._createConnection();
+        String payload= "{ 'connection_type': 'SMS', 'phone':'7202200000' }";
+        TestHelper.getResultFromFuture(ConnectionApi.vcxConnectionConnect(connection,TestHelper.convertToValidJson(payload)));
         assertNotSame(0, credential);
         TestHelper.getResultFromFuture(CredentialApi.credentialSendRequest(credential, connection, 0));
         int state = TestHelper.getResultFromFuture(CredentialApi.credentialGetState(credential));
@@ -122,6 +127,8 @@ class CredentialApiTest {
     @DisplayName("send credential request with message id")
     void sendRequestWithMsgId() throws VcxException, ExecutionException, InterruptedException {
         int connection = TestHelper._createConnection();
+        String payload= "{ 'connection_type': 'SMS', 'phone':'7202200000' }";
+        TestHelper.getResultFromFuture(ConnectionApi.vcxConnectionConnect(connection,TestHelper.convertToValidJson(payload)));
         GetCredentialCreateMsgidResult credential = TestHelper.getResultFromFuture(CredentialApi.credentialCreateWithMsgid("1", connection, "1"));
         assertNotSame(0, credential);
         TestHelper.getResultFromFuture(CredentialApi.credentialSendRequest(credential.getCredential_handle(), connection, 0));
@@ -134,6 +141,8 @@ class CredentialApiTest {
     @DisplayName("get credential offers for a connection")
     void getOffers() throws VcxException, ExecutionException, InterruptedException {
         int connection = TestHelper._createConnection();
+	String payload= "{ 'connection_type': 'SMS', 'phone':'7202200000' }";
+        TestHelper.getResultFromFuture(ConnectionApi.vcxConnectionConnect(connection,TestHelper.convertToValidJson(payload)));
         String offers = TestHelper.getResultFromFuture(CredentialApi.credentialGetOffers(connection));
         assert (offers != null);
         List<String> credentialOffer = JsonPath.read(offers,"$.[0]");

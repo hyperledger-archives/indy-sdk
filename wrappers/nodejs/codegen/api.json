@@ -1544,6 +1544,23 @@
       ],
       "ret": "indy_error_t"
     },
+    "indy_get_response_metadata": {
+      "docs": "Distributed Ledgers can reply with outdated information for consequence read request after write.\n\nThis function can be used to parse transaction response to fetch metadata can be used for filtering outdated response.\n\nThere are two ways to filter outdated responses:\n1) based on \"seqNo\" - sender knows the sequence number of transaction that he consider as a fresh enough.\n2) based on \"txnTime\" - sender knows the timestamp that he consider as a fresh enough.\n\nNote: response of GET_VALIDATOR_INFO request isn't supported\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nresponse: response of write or get request.\ncb: Callback that takes command result as parameter.\n\n#Returns\nresponse metadata.\n{\n   \"seqNo\": Option<u64> - transaction sequence number,\n   \"txnTime\": Option<u64> - transaction ordering time,\n   \"lastSeqNo\": Option<u64> - the latest transaction seqNo for particular Node,\n   \"lastTxnTime\": Option<u64> - the latest transaction ordering time for particular Node\n}",
+      "group": "ledger",
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "response", "type": "const char*", "json": true},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "response_metadata", "type": "const char*"}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
     "indy_set_runtime_config": {
       "docs": "Set libindy runtime configuration. Can be optionally called to change current params.\n\n#Params\nconfig: {\n    \"crypto_thread_pool_size\": <int> - size of thread pool for the most expensive crypto operations. (4 by default)\n}\n\n#Errors\nCommon*",
       "group": "mod",

@@ -28,8 +28,13 @@ use utils::threadpool::spawn;
 pub extern fn vcx_init_with_config(command_handle: u32,
                                    config: *const c_char,
                                    cb: Option<extern fn(xcommand_handle: u32, err:u32)>) -> u32 {
+    info!("vcx_init_with_config >>>");
+
     check_useful_c_str!(config,error::INVALID_OPTION.code_num);
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
+
+    trace!("vcx_init(command_handle: {}, config: {:?})",
+           command_handle, config);
 
     if config == "ENABLE_TEST_MODE" {
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
@@ -64,8 +69,13 @@ pub extern fn vcx_init_with_config(command_handle: u32,
 pub extern fn vcx_init (command_handle: u32,
                         config_path:*const c_char,
                         cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
+    info!("vcx_init >>>");
 
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
+
+    trace!("vcx_init(command_handle: {}, config_path: {:?})",
+           command_handle, config_path);
+
 
     if !config_path.is_null() {
         check_useful_c_str!(config_path,error::INVALID_OPTION.code_num);
@@ -95,7 +105,6 @@ pub extern fn vcx_init (command_handle: u32,
 }
 
 fn _finish_init(command_handle: u32, cb: extern fn(xcommand_handle: u32, err: u32)) -> u32 {
-    ::utils::logger::LoggerUtils::init();
 
     ::utils::threadpool::init();
 
@@ -109,13 +118,13 @@ fn _finish_init(command_handle: u32, cb: extern fn(xcommand_handle: u32, err: u3
     let wallet_name = match settings::get_config_value(settings::CONFIG_WALLET_NAME) {
         Ok(x) => x,
         Err(_) => {
-            info!("Using default wallet: {}", settings::DEFAULT_WALLET_NAME.to_string());
+            trace!("Using default wallet: {}", settings::DEFAULT_WALLET_NAME.to_string());
             settings::set_config_value(settings::CONFIG_WALLET_NAME, settings::DEFAULT_WALLET_NAME);
             settings::DEFAULT_WALLET_NAME.to_string()
         }
     };
 
-    info!("libvcx version: {}{}", version_constants::VERSION, version_constants::REVISION);
+    trace!("libvcx version: {}{}", version_constants::VERSION, version_constants::REVISION);
 
     spawn(move|| {
         if settings::get_config_value(settings::CONFIG_GENESIS_PATH).is_ok() {
@@ -150,6 +159,7 @@ lazy_static!{
 
 #[no_mangle]
 pub extern fn vcx_version() -> *const c_char {
+    info!("vcx_version >>>");
     VERSION_STRING.as_ptr()
 }
 
@@ -164,6 +174,8 @@ pub extern fn vcx_version() -> *const c_char {
 /// Success
 #[no_mangle]
 pub extern fn vcx_shutdown(delete: bool) -> u32 {
+    info!("vcx_shutdown >>>");
+    trace!("vcx_shutdown(delete: {})", delete);
 
     match wallet::close_wallet() {
         Ok(_) => {},
@@ -202,21 +214,24 @@ pub extern fn vcx_shutdown(delete: bool) -> u32 {
     }
 
     settings::clear_config();
-    info!("vcx_shutdown(delete: {})", delete);
+    trace!("vcx_shutdown(delete: {})", delete);
     error::SUCCESS.code_num
 }
 
 #[no_mangle]
 pub extern fn vcx_error_c_message(error_code: u32) -> *const c_char {
-    info!("vcx_error_message(error_code: {})", error_code);
+    info!("vcx_error_c_message >>>");
+    trace!("vcx_error_message(error_code: {})", error_code);
     error::error_c_message(&error_code).as_ptr()
 }
 
 #[no_mangle]
 pub extern fn vcx_update_institution_info(name: *const c_char, logo_url: *const c_char) -> u32 {
+    info!("vcx_update_institution_info >>>");
+
     check_useful_c_str!(name, error::INVALID_CONFIGURATION.code_num);
     check_useful_c_str!(logo_url, error::INVALID_CONFIGURATION.code_num);
-    info!("vcx_update_institution_info(name: {}, logo_url: {})", name, logo_url);
+    trace!("vcx_update_institution_info(name: {}, logo_url: {})", name, logo_url);
 
     settings::set_config_value(::settings::CONFIG_INSTITUTION_NAME, &name);
     settings::set_config_value(::settings::CONFIG_INSTITUTION_LOGO_URL, &logo_url);
@@ -226,6 +241,7 @@ pub extern fn vcx_update_institution_info(name: *const c_char, logo_url: *const 
 
 #[no_mangle]
 pub extern fn vcx_mint_tokens(seed: *const c_char, fees: *const c_char) {
+    info!("vcx_mint_tokens >>>");
 
     let seed = if !seed.is_null() {
         check_useful_opt_c_str!(seed, ());
@@ -242,6 +258,7 @@ pub extern fn vcx_mint_tokens(seed: *const c_char, fees: *const c_char) {
     else {
         None
     };
+    trace!("vcx_mint_tokens(seed: {:?}, fees: {:?})", seed, fees);
 
     ::utils::libindy::payments::mint_tokens_and_set_fees(None, None, fees, seed).unwrap_or_default();
 }
@@ -257,16 +274,16 @@ mod tests {
     use utils::libindy::pool::get_pool_handle;
     use api::return_types_u32;
 
-    fn create_config_util() -> String {
+    fn create_config_util(logging: Option<&str>) -> String {
         json!({"agency_did" : "72x8p4HubxzUK1dwxcc5FU",
-                        "remote_to_sdk_did" : "UJGjM6Cea2YVixjWwHN9wq",
-                        "sdk_to_remote_did" : "AB3JM851T4EQmhh8CdagSP",
-                        "sdk_to_remote_verkey" : "888MFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
-                        "institution_name" : "evernym enterprise",
-                        "agency_verkey" : "91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
-                        "remote_to_sdk_verkey" : "91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
-                        "genesis_path":"/tmp/pool1.txn",
-                        "payment_method": "null"}).to_string()
+               "remote_to_sdk_did" : "UJGjM6Cea2YVixjWwHN9wq",
+               "sdk_to_remote_did" : "AB3JM851T4EQmhh8CdagSP",
+               "sdk_to_remote_verkey" : "888MFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
+               "institution_name" : "evernym enterprise",
+               "agency_verkey" : "91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
+               "remote_to_sdk_verkey" : "91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
+               "genesis_path":"/tmp/pool1.txn",
+               "payment_method": "null"}).to_string()
     }
 
     #[cfg(feature = "agency")]
@@ -278,7 +295,7 @@ mod tests {
         pool::close().unwrap();
 
         let config_path = "/tmp/test_init.json";
-        let content = create_config_util();
+        let content = create_config_util(Some("true"));
         settings::write_config_to_file(&content, config_path).unwrap();
 
         let cb = return_types_u32::Return_U32::new().unwrap();
@@ -321,7 +338,7 @@ mod tests {
         wallet::close_wallet().unwrap();
         pool::close().unwrap();
 
-        let content = create_config_util();
+        let content = create_config_util(None);
 
         let cb = return_types_u32::Return_U32::new().unwrap();
         assert_eq!(vcx_init_with_config(cb.command_handle,
@@ -352,7 +369,7 @@ mod tests {
         let wallet_name = "test_init_fails_when_open_pool_fails";
         wallet::create_wallet(wallet_name).unwrap();
 
-        let content = create_config_util();
+        let content = create_config_util(None);
 
         let cb = return_types_u32::Return_U32::new().unwrap();
         assert_eq!(vcx_init_with_config(cb.command_handle,
@@ -510,7 +527,7 @@ mod tests {
         init!("ledger");
 
         let config_path = "/tmp/test_init.json";
-        let content = create_config_util();
+        let content = create_config_util(None);
         settings::write_config_to_file(&content, config_path).unwrap();
 
         let cb = return_types_u32::Return_U32::new().unwrap();
@@ -524,15 +541,15 @@ mod tests {
     fn test_init_after_importing_wallet_success() {
         settings::set_defaults();
         teardown!("false");
-        let exported_path = format!(r#"/tmp/{}"#, settings::DEFAULT_WALLET_NAME);
 
-        let dir = export_test_wallet();
+        let export_path = export_test_wallet();
+
         vcx_shutdown(true);
 
         let import_config = json!({
             settings::CONFIG_WALLET_NAME: settings::DEFAULT_WALLET_NAME,
             settings::CONFIG_WALLET_KEY: settings::DEFAULT_WALLET_KEY,
-            settings::CONFIG_EXPORTED_WALLET_PATH: exported_path,
+            settings::CONFIG_EXPORTED_WALLET_PATH: export_path,
             settings::CONFIG_WALLET_BACKUP_KEY: settings::DEFAULT_WALLET_BACKUP_KEY,
         }).to_string();
         import(&import_config).unwrap();
@@ -549,7 +566,7 @@ mod tests {
                    error::SUCCESS.code_num);
         cb.receive(Some(Duration::from_secs(10))).unwrap();
 
-        delete_import_wallet_path(dir);
+        delete_import_wallet_path(export_path);
         vcx_shutdown(true);
     }
 
@@ -557,15 +574,15 @@ mod tests {
     fn test_init_with_imported_wallet_fails_with_different_params() {
         settings::set_defaults();
         teardown!("false");
-        let exported_path = format!(r#"/tmp/{}"#, settings::DEFAULT_WALLET_NAME);
 
-        let dir = export_test_wallet();
+        let export_path = export_test_wallet();
+
         vcx_shutdown(true);
 
         let import_config = json!({
             settings::CONFIG_WALLET_NAME: settings::DEFAULT_WALLET_NAME,
             settings::CONFIG_WALLET_KEY: settings::DEFAULT_WALLET_KEY,
-            settings::CONFIG_EXPORTED_WALLET_PATH: exported_path,
+            settings::CONFIG_EXPORTED_WALLET_PATH: export_path,
             settings::CONFIG_WALLET_BACKUP_KEY: settings::DEFAULT_WALLET_BACKUP_KEY,
         }).to_string();
         import(&import_config).unwrap();
@@ -582,7 +599,7 @@ mod tests {
                    error::SUCCESS.code_num);
         assert_eq!(cb.receive(Some(Duration::from_secs(10))).err(), Some(error::WALLET_NOT_FOUND.code_num));
 
-        delete_import_wallet_path(dir);
+        delete_import_wallet_path(export_path);
         settings::set_config_value(settings::CONFIG_WALLET_NAME,settings::DEFAULT_WALLET_NAME);
         vcx_shutdown(true);
     }
@@ -591,8 +608,9 @@ mod tests {
     fn test_import_after_init_fails() {
         settings::set_defaults();
         teardown!("false");
-        let exported_path = format!(r#"/tmp/{}"#, settings::DEFAULT_WALLET_NAME);
-        let dir = export_test_wallet();
+
+        let export_path = export_test_wallet();
+
         vcx_shutdown(false);
 
         let content = json!({
@@ -610,12 +628,12 @@ mod tests {
         let import_config = json!({
             settings::CONFIG_WALLET_NAME: settings::DEFAULT_WALLET_NAME,
             settings::CONFIG_WALLET_KEY: settings::DEFAULT_WALLET_KEY,
-            settings::CONFIG_EXPORTED_WALLET_PATH: exported_path,
+            settings::CONFIG_EXPORTED_WALLET_PATH: export_path,
             settings::CONFIG_WALLET_BACKUP_KEY: settings::DEFAULT_WALLET_BACKUP_KEY,
         }).to_string();
         assert_eq!(import(&import_config), Err(::error::wallet::WalletError::CommonError(error::WALLET_ALREADY_EXISTS.code_num)));
 
-        delete_import_wallet_path(dir);
+        delete_import_wallet_path(export_path);
         vcx_shutdown(true);
     }
 
@@ -658,7 +676,7 @@ mod tests {
         init!("true");
 
         let data = r#"["name","male"]"#;
-        let connection = ::connection::build_connection("h1").unwrap();
+        let connection = ::connection::tests::build_test_connection();
         let issuer_credential = ::issuer_credential::issuer_credential_create("cred_id".to_string(),"1".to_string(),"8XFh8yBzrpJQmNyZzgoTqB".to_owned(),"credential_name".to_string(),"{\"attr\":\"value\"}".to_owned(), 1).unwrap();
         let proof = ::proof::create_proof("1".to_string(),"[]".to_string(), "[]".to_string(),"Optional".to_owned()).unwrap();
         let credentialdef = ::credential_def::create_new_credentialdef("SID".to_string(),"NAME".to_string(),"4fUDR9R7fjwELRvH9JT6HH".to_string(), "id".to_string(), "tag".to_string(),"{}".to_string() ).unwrap();
@@ -713,5 +731,26 @@ mod tests {
         assert_eq!(new_name, &settings::get_config_value(::settings::CONFIG_INSTITUTION_NAME).unwrap());
         assert_eq!(new_url, &settings::get_config_value(::settings::CONFIG_INSTITUTION_LOGO_URL).unwrap());
         ::settings::set_defaults();
+    }
+
+    // This test is ignored because it sets up logging, which can only be done
+    // once per process.
+    #[ignore]
+    #[cfg(feature = "agency")]
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn test_init_with_logging_config() {
+        init!("ledger");
+        wallet::close_wallet().unwrap();
+        pool::close().unwrap();
+        let content = create_config_util(Some("debug"));
+        let cb = return_types_u32::Return_U32::new().unwrap();
+        assert_eq!(vcx_init_with_config(cb.command_handle,
+                                        CString::new(content).unwrap().into_raw(),
+                                        Some(cb.get_callback())),
+                   error::SUCCESS.code_num);
+        cb.receive(Some(Duration::from_secs(10))).unwrap();
+        assert_ne!(get_pool_handle().unwrap(), 0);
+        debug!("This statement should log");
     }
 }

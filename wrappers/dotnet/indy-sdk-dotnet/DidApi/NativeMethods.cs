@@ -16,7 +16,7 @@ namespace Hyperledger.Indy.DidApi
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_create_and_store_my_did(int command_handle, IntPtr wallet_handle, string did_info, CreateAndStoreMyDidCompletedDelegate cb);
+        internal static extern int indy_create_and_store_my_did(int command_handle, int wallet_handle, string did_info, CreateAndStoreMyDidCompletedDelegate cb);
 
         /// <summary>
         /// Delegate to be used on completion of calls to indy_create_and_store_my_did.
@@ -38,7 +38,7 @@ namespace Hyperledger.Indy.DidApi
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_replace_keys_start(int command_handle, IntPtr wallet_handle, string did, string key_info, ReplaceKeysStartCompletedDelegate cb);
+        internal static extern int indy_replace_keys_start(int command_handle, int wallet_handle, string did, string key_info, ReplaceKeysStartCompletedDelegate cb);
 
         /// <summary>
         /// Delegate to be used on completion of calls to indy_replace_keys_start.
@@ -57,7 +57,7 @@ namespace Hyperledger.Indy.DidApi
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_replace_keys_apply(int command_handle, IntPtr wallet_handle, string did, IndyMethodCompletedDelegate cb);
+        internal static extern int indy_replace_keys_apply(int command_handle, int wallet_handle, string did, IndyMethodCompletedDelegate cb);
 
         /// <summary>
         /// Saves their DID for a pairwise connection in a secured Wallet,
@@ -69,7 +69,7 @@ namespace Hyperledger.Indy.DidApi
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_store_their_did(int command_handle, IntPtr wallet_handle, string identity_json, IndyMethodCompletedDelegate cb);
+        internal static extern int indy_store_their_did(int command_handle, int wallet_handle, string identity_json, IndyMethodCompletedDelegate cb);
 
         /// <summary>
         /// Returns ver key (key id) for the given DID.
@@ -81,7 +81,7 @@ namespace Hyperledger.Indy.DidApi
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_key_for_did(int command_handle, IntPtr pool_handle, IntPtr wallet_handle, string did, DidKeyForDidCompletedDelegate cb);
+        internal static extern int indy_key_for_did(int command_handle, int pool_handle, int wallet_handle, string did, DidKeyForDidCompletedDelegate cb);
 
         /// <summary>
         /// Delegate to be used on completion of calls to indy_key_for_did.
@@ -100,7 +100,7 @@ namespace Hyperledger.Indy.DidApi
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_key_for_local_did(int command_handle, IntPtr wallet_handle, string did, DidKeyForLocalDidCompletedDelegate cb);
+        internal static extern int indy_key_for_local_did(int command_handle, int wallet_handle, string did, DidKeyForLocalDidCompletedDelegate cb);
 
         /// <summary>
         /// Delegate to be used on completion of calls to indy_key_for_local_did.
@@ -121,7 +121,7 @@ namespace Hyperledger.Indy.DidApi
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_set_endpoint_for_did(int command_handle, IntPtr wallet_handle, string did, string address, string transport_key, IndyMethodCompletedDelegate cb);
+        internal static extern int indy_set_endpoint_for_did(int command_handle, int wallet_handle, string did, string address, string transport_key, IndyMethodCompletedDelegate cb);
 
         /// <summary>
         /// Gets the endpoint information for the given DID.
@@ -133,7 +133,7 @@ namespace Hyperledger.Indy.DidApi
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_get_endpoint_for_did(int command_handle, IntPtr wallet_handle, IntPtr pool_handle, string did, DidGetEndpointForDidCompletedDelegate cb);
+        internal static extern int indy_get_endpoint_for_did(int command_handle, int wallet_handle, int pool_handle, string did, DidGetEndpointForDidCompletedDelegate cb);
 
         /// <summary>
         /// Delegate to be used on completion of calls to indy_get_endpoint_for_did.
@@ -154,7 +154,7 @@ namespace Hyperledger.Indy.DidApi
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_set_did_metadata(int command_handle, IntPtr wallet_handle, string did, string metadata, IndyMethodCompletedDelegate cb);
+        internal static extern int indy_set_did_metadata(int command_handle, int wallet_handle, string did, string metadata, IndyMethodCompletedDelegate cb);
 
         /// <summary>
         /// Retrieves the meta information for the giving DID in the wallet.
@@ -165,7 +165,7 @@ namespace Hyperledger.Indy.DidApi
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_get_did_metadata(int command_handle, IntPtr wallet_handle, string did, DidGetDidMetadataCompletedDelegate cb);
+        internal static extern int indy_get_did_metadata(int command_handle, int wallet_handle, string did, DidGetDidMetadataCompletedDelegate cb);
 
         /// <summary>
         /// Delegate to be used on completion of calls to indy_get_did_metadata.
@@ -184,7 +184,7 @@ namespace Hyperledger.Indy.DidApi
         /// <param name="my_did">My did.</param>
         /// <param name="cb">Cb.</param>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_get_my_did_with_meta(int command_handle, IntPtr wallet_handle, string my_did, GetMyDidWithMetaCompletedDelegate cb);
+        internal static extern int indy_get_my_did_with_meta(int command_handle, int wallet_handle, string my_did, GetMyDidWithMetaCompletedDelegate cb);
 
         /// <summary>
         /// Delegate to be used on comletion of calls to indy_get_my_did_with_meta
@@ -199,7 +199,7 @@ namespace Hyperledger.Indy.DidApi
         /// <param name="wallet_handle">Wallet handle.</param>
         /// <param name="cb">Cb.</param>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_list_my_dids_with_meta(int command_handle, IntPtr wallet_handle, ListMyDidsWithMetaCompletedDelegate cb);
+        internal static extern int indy_list_my_dids_with_meta(int command_handle, int wallet_handle, ListMyDidsWithMetaCompletedDelegate cb);
 
         /// <summary>
         /// Delegate to be used on comletion of calls to indy_list_my_dids_with_meta

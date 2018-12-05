@@ -46,8 +46,7 @@ describe('utils:', () => {
 
   describe('updateAgentInfo:', () => {
     it('success', async () => {
-      const res = await updateAgentInfo(agentUpdateString)
-      assert.ok(res)
+      await updateAgentInfo(agentUpdateString)
     })
 
     it('throws: invalid input', async () => {
@@ -104,13 +103,16 @@ describe('utils:', () => {
 
   describe('VCXCode:', () => {
     it('should have a one-to-one mapping for each code', async () => {
-      var max = 0
-      for (let ec in VCXCode) {
-        if (typeof VCXCode[ec] === 'number' && parseInt(VCXCode[ec]) > max ) {
+      let max = 0
+      for (const ec in VCXCode) {
+        if (typeof VCXCode[ec] == 'number') {
+          if (parseInt(VCXCode[ec]) > max ) {
             max = parseInt(VCXCode[ec])
+          }
         }
       }
-      assert(errorMessage(max+1) == errorMessage(1001))
+      assert(errorMessage(max+1) === errorMessage(1001))
     })
   })
+
 })

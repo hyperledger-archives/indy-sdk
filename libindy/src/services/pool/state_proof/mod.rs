@@ -9,7 +9,7 @@ extern crate sha3;
 
 use api::ErrorCode;
 use base64;
-use domain::ledger::constants;
+use domain::ledger::{constants, request::ProtocolVersion};
 use errors::common::CommonError;
 use self::digest::FixedOutput;
 use self::digest::Input;
@@ -180,7 +180,8 @@ fn _parse_reply_for_builtin_sp(json_msg: &SJsonValue, type_: &str) -> Option<Vec
 
                 let mut hasher = sha2::Sha256::default();
                 hasher.process(attr_name.as_bytes());
-                format!(":\x01:{}", hasher.fixed_result().to_hex())
+                let marker = if ProtocolVersion::is_node_1_3() { '\x01' } else { '1' };
+                format!(":{}:{}", marker, hasher.fixed_result().to_hex())
             } else {
                 trace!("TransactionHandler::parse_reply_for_builtin_sp: <<< GET_ATTR No key suffix");
                 return None;
@@ -190,7 +191,10 @@ fn _parse_reply_for_builtin_sp(json_msg: &SJsonValue, type_: &str) -> Option<Vec
             if let (Some(sign_type), Some(sch_seq_no)) = (json_msg["signature_type"].as_str(),
                                                           json_msg["ref"].as_u64()) {
                 trace!("TransactionHandler::parse_reply_for_builtin_sp: GET_CRED_DEF sign_type {:?}, sch_seq_no: {:?}", sign_type, sch_seq_no);
-                format!(":\x03:{}:{}", sign_type, sch_seq_no)
+                let marker = if ProtocolVersion::is_node_1_3() { '\x03' } else { '3' };
+                let tag = if ProtocolVersion::is_node_1_3() { None } else { json_msg["tag"].as_str() };
+                let tag = tag.map(|t| format!(":{}", t)).unwrap_or("".to_owned());
+                format!(":{}:{}:{}{}", marker, sign_type, sch_seq_no, tag)
             } else {
                 trace!("TransactionHandler::parse_reply_for_builtin_sp: <<< GET_CRED_DEF No key suffix");
                 return None;
@@ -204,7 +208,8 @@ fn _parse_reply_for_builtin_sp(json_msg: &SJsonValue, type_: &str) -> Option<Vec
             if let (Some(name), Some(ver)) = (parsed_data["name"].as_str(),
                                               parsed_data["version"].as_str()) {
                 trace!("TransactionHandler::parse_reply_for_builtin_sp: GET_SCHEMA name {:?}, ver: {:?}", name, ver);
-                format!(":\x02:{}:{}", name, ver)
+                let marker = if ProtocolVersion::is_node_1_3() { '\x02' } else { '2' };
+                format!(":{}:{}:{}", marker, name, ver)
             } else {
                 trace!("TransactionHandler::parse_reply_for_builtin_sp: <<< GET_SCHEMA No key suffix");
                 return None;
@@ -217,7 +222,8 @@ fn _parse_reply_for_builtin_sp(json_msg: &SJsonValue, type_: &str) -> Option<Vec
                 parsed_data["revocDefType"].as_str(),
                 parsed_data["tag"].as_str()) {
                 trace!("TransactionHandler::parse_reply_for_builtin_sp: GET_REVOC_REG_DEF cred_def_id {:?}, revoc_def_type: {:?}, tag: {:?}", cred_def_id, revoc_def_type, tag);
-                format!(":4:{}:{}:{}", cred_def_id, revoc_def_type, tag)
+                let marker = if ProtocolVersion::is_node_1_3() { '\x04' } else { '4' };
+                format!(":{}:{}:{}:{}", marker, cred_def_id, revoc_def_type, tag)
             } else {
                 trace!("TransactionHandler::parse_reply_for_builtin_sp: <<< GET_REVOC_REG_DEF No key suffix");
                 return None;
@@ -227,7 +233,8 @@ fn _parse_reply_for_builtin_sp(json_msg: &SJsonValue, type_: &str) -> Option<Vec
             //{MARKER}:{REVOC_REG_DEF_ID}
             if let Some(revoc_reg_def_id) = parsed_data["revocRegDefId"].as_str() {
                 trace!("TransactionHandler::parse_reply_for_builtin_sp: GET_REVOC_REG revoc_reg_def_id {:?}", revoc_reg_def_id);
-                format!("5:{}", revoc_reg_def_id)
+                let marker = if ProtocolVersion::is_node_1_3() { '\x05' } else { '5' };
+                format!("{}:{}", marker, revoc_reg_def_id)
             } else {
                 trace!("TransactionHandler::parse_reply_for_builtin_sp: <<< GET_REVOC_REG No key suffix");
                 return None;
@@ -238,7 +245,8 @@ fn _parse_reply_for_builtin_sp(json_msg: &SJsonValue, type_: &str) -> Option<Vec
             //{MARKER}:{REVOC_REG_DEF_ID}
             if let Some(revoc_reg_def_id) = parsed_data["value"]["accum_to"]["revocRegDefId"].as_str() {
                 trace!("TransactionHandler::parse_reply_for_builtin_sp: GET_REVOC_REG_DELTA revoc_reg_def_id {:?}", revoc_reg_def_id);
-                format!("6:{}", revoc_reg_def_id)
+                let marker = if ProtocolVersion::is_node_1_3() { '\x06' } else { '6' };
+                format!("{}:{}", marker, revoc_reg_def_id)
             } else {
                 trace!("TransactionHandler::parse_reply_for_builtin_sp: <<< GET_REVOC_REG_DELTA No key suffix");
                 return None;
@@ -460,7 +468,7 @@ mod tests {
     extern crate libc;
 
     use self::hex::FromHex;
-    use std::os::raw::c_char;
+    use self::libc::c_char;
 
     #[test]
     fn state_proof_nodes_parse_and_get_works() {

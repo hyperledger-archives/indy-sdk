@@ -17,11 +17,16 @@ it _accumulates_ a value as each new factor is multiplied in. We could
 plug in numbers; if `a`=2 and `b`=3 and `c`=5 and `d`=7, then our accumulator
 __`e`__ has a value of 210. If `e` has this value, we
 say that 3 is "in" `e` because it is a factor. If we want to take 3 out
-of the accumulator, we divide 210 by 3 and get 70 (=2*5*7); 3 has now been
+of the accumulator, we divide 210 by 3 and get 70 (=2 * 5 * 7); 3 has now been
 "removed".
 
 Notice that you can also produce __`e`__ by multiplying any single
 factor such as `a` by the product of all the other factors (`b * c * d`).
+
+The product of the _other_ factors contributing to the accumulator (all factors
+except the private one for this credential) is called a __witness__.
+
+
 This is a useful characteristic; it means you can tell someone else
 the value of `a` and _the product of all the other inputs to the accumulator,
 but not the other inputs themselves_, and they can produce the output.
@@ -37,7 +42,8 @@ To be useful for revocation, Indy's accumulators can't be reversible; that is,
 it must be the case that the only way to derive the accumulator
 value is to know the factors.
 We accomplish this by using modular arithmetic (where division is undefined),
-and by using massive numbers for the factors and accumulators.
+and by using massive prime numbers for factors, resulting in a very long integer
+__witness__.
 
 A __tails file__ is associated with an accumulator
 and its factors. It is a binary file that contains an
@@ -133,10 +139,7 @@ communicates two other pieces of vital information:
   lets the holder look up their private factor, which we could map to
   `a` in the simple equation from the accumulator background section
   at the top of the doc.
-* The product of the _other_ factors contributing to the accumulator (all
-  factors except the private one for this credential).
-  This value is like `b * c * d` from the simple equation above, and
-  is called a __witness__.
+* The witness. 
 
 ## Presenting Proof of Non-Revocation
 
