@@ -76,7 +76,7 @@ async function closeAndDeletePoolHandle(poolHandle, actor) {
 // Misc
 
 async function createAndStoreMyDid(wallet, seed) {
-    const [did, _] = await indy.createAndStoreMyDid(wallet, {'seed': seed})
+    const [did, _ /* key */] = await indy.createAndStoreMyDid(wallet, {'seed': seed})
     return did
 }
 
@@ -189,78 +189,93 @@ async function run() {
     log("Set protocol version 2 to work with Indy Node 1.4")
     await indy.setProtocolVersion(2)
 
-    log("Open connections to ledger")
+    log("Actors Open connections to ledger")
     issuer.poolHandle = await createAndOpenPoolHandle("issuer")
     prover.poolHandle = await createAndOpenPoolHandle("prover")
     verifier.poolHandle = await createAndOpenPoolHandle("verifier")
 
-    log("Create Wallets")
+    log("Actors Create Wallets")
     issuer.wallet = await createWallet("issuer")
     prover.wallet = await createWallet("prover")
     verifier.wallet = await createWallet("verifier")
 
-    log("Create DIDs")
-    issuer.did = await createAndStoreMyDid(issuer.wallet, '000000000000000000000000Steward1')
-    prover.did = await createAndStoreMyDid(prover.wallet, '000000000000000000000000Steward2')
+    log("Actors Create DIDs")
+    issuer.did = await createAndStoreMyDid(issuer.wallet, "000000000000000000000000Steward1")
+    prover.did = await createAndStoreMyDid(prover.wallet, "000000000000000000000000Steward2")
     verifier.did = await createAndStoreMyDid(verifier.wallet)
 
-    logIssuer("Issuer create Credential Schema")
+    logIssuer("Issuer creates credential schema")
     {
-        const [schemaId, schema] = await indy.issuerCreateSchema(issuer.did, 'gvt', '1.0', '["name", "age", "sex", "height"]')
+        const [schemaId, schema] = await indy.issuerCreateSchema(issuer.did, "gvt", "1.0", `["name", "age", "sex", "height"]`)
         issuer.schemaId = schemaId
         issuer.schema = schema
     }
 
-    logIssuer("Issuer Posts Schema to Ledger")
+    logIssuer("Issuer posts schema to ledger")
     await postSchemaToLedger(issuer.poolHandle, issuer.wallet, issuer.did, issuer.schema)
 
-    logIssuer("Issuer Gets Schema from Ledger")
+    logIssuer("Issuer gets schema from ledger")
     issuer.schema = await getSchemaFromLedger(issuer.poolHandle, issuer.did, issuer.schemaId)
 
-    logIssuer("Issuer create Credential Definition for Schema")
+    logIssuer("Issuer creates credential definition for schema")
     {
         const [credDefId, credDef] = await indy.issuerCreateAndStoreCredentialDef(issuer.wallet, issuer.did,
-                                                        issuer.schema, 'tag1', 'CL', {"support_revocation": true})
+                                                        issuer.schema, "tag1", "CL", {"support_revocation": true})
         issuer.credDefId = credDefId
         issuer.credDef = credDef
     }
 
-    logIssuer("Issuer Posts Credential Definition")
+    logIssuer("Issuer posts credential definition")
     await postCredDefToLedger(issuer.poolHandle, issuer.wallet, issuer.did, issuer.credDef)
 
-    logIssuer("Issuer create Revocation Registry")
+    logIssuer("Issuer opens tails writer")
     {
-        const tailsWriterConfig = {'base_dir': util.getPathToIndyClientHome() + "/tails", 'uri_pattern': ''}
-        const tailsWriter = await indy.openBlobStorageWriter('default', tailsWriterConfig)
+        const tailsWriterConfig = {"base_dir": util.getPathToIndyClientHome() + "/tails", "uri_pattern": ""}
+        issuer.tailsWriter = await indy.openBlobStorageWriter("default", tailsWriterConfig)
+    }
+
+    logIssuer("Issuer creates revocation registry")
+    {
         const [revRegDefId, revRegDef, revRegEntry] = await indy.issuerCreateAndStoreRevocReg(issuer.wallet, issuer.did,
-                                                    undefined, 'tag1', issuer.credDefId,
-                                                    {"max_cred_num": 5, 'issuance_type': 'ISSUANCE_ON_DEMAND'},
-                                                    tailsWriter)
+                                                    undefined, "tag1", issuer.credDefId,
+                                                    {"max_cred_num": 5, "issuance_type": "ISSUANCE_ON_DEMAND"},
+                                                    issuer.tailsWriter)
         issuer.revRegDefId = revRegDefId
         issuer.revRegDef = revRegDef
         issuer.revRegEntry = revRegEntry
     }
 
-    logIssuer("Issuer posts Revocation Registry Definition to Ledger")
+    logIssuer("Issuer posts revocation registry definition to ledger")
     await postRevocRegDefRequestToLedger(issuer.poolHandle, issuer.wallet, issuer.did, issuer.revRegDef)
 
-    logIssuer("Issuer posts Revocation Registry Entry to Ledger")
+    logIssuer("Issuer posts revocation registry entry to ledger")
     await postRevocRegEntryRequestToLedger(issuer.poolHandle, issuer.wallet, issuer.did, issuer.revRegDefId, issuer.revRegEntry)
 
-    logIssuer("Issuer create Credential Offer")
+    log("Issuer shares public data (schema ID, credential definition ID, ...) (via HTTP or other) ...")
+    prover.schemaId = issuer.schemaId
+    verifier.schemaId = issuer.schemaId
+    verifier.credDefId = issuer.credDefId
+
+    logProver("Prover gets schema from ledger")
+    prover.schema = await getSchemaFromLedger(prover.poolHandle, prover.did, prover.schemaId)
+
+    logVerifier("Verifier gets schema from ledger")
+    verifier.schema = await getSchemaFromLedger(verifier.poolHandle, verifier.did, verifier.schemaId)
+
+    logIssuer("Issuer creates credential offer")
     issuer.credOffer = await indy.issuerCreateCredentialOffer(issuer.wallet, issuer.credDefId)
 
-    log("Transfert Offer from 'Issuer' to 'Prover' (via HTTP or other) ...")
+    log("Transfert offer from 'Issuer' to 'Prover' (via HTTP or other) ...")
     prover.credOffer = issuer.credOffer
 
-    logProver("Prover Gets Credential Definition from Ledger")
-    prover.credDefId = prover.credOffer['cred_def_id']
+    logProver("Prover gets credential definition from ledger")
+    prover.credDefId = prover.credOffer["cred_def_id"]
     prover.credDef = await getCredDefFromLedger(prover.poolHandle, prover.did, prover.credDefId)
 
-    logProver("Prover create Master Secret")
+    logProver("Prover creates master secret")
     prover.masterSecretId = await indy.proverCreateMasterSecret(prover.wallet, undefined)
 
-    logProver("Prover create Credential Request")
+    logProver("Prover creates credential request")
     {
         const [credReq, credReqMetadata] = await indy.proverCreateCredentialReq(prover.wallet, prover.did,
                                                                 prover.credOffer, prover.credDef, prover.masterSecretId)
@@ -268,16 +283,16 @@ async function run() {
         prover.credReqMetadata = credReqMetadata
     }
 
-    log("Transfert Credential Request from 'Prover' to 'Issuer' (via HTTP or other) ...")
+    log("Transfert credential request from 'Prover' to 'Issuer' (via HTTP or other) ...")
     issuer.credReq = prover.credReq
 
     logIssuer("Issuer open Tails reader")
     {
-        const tailsReaderConfig = {'base_dir': util.getPathToIndyClientHome() + "/tails", 'uri_pattern': ''}
-        issuer.blobStorageReaderHandle = await indy.openBlobStorageReader('default', tailsReaderConfig)
+        const tailsReaderConfig = {"base_dir": util.getPathToIndyClientHome() + "/tails", "uri_pattern": ""}
+        issuer.blobStorageReaderHandle = await indy.openBlobStorageReader("default", tailsReaderConfig)
     }
 
-    logIssuer("Issuer create Credential")
+    logIssuer("Issuer creates credential")
     issuer.credValues = {
         "sex": {"raw": "male", "encoded": "5944657099558967239210949258394887428692050081607692519917050"},
         "name": {"raw": "Alex", "encoded": "1139481716457488690172217916278103335"},
@@ -285,94 +300,95 @@ async function run() {
         "age": {"raw": "28", "encoded": "28"}
     }
     {
-        const [cred, credRevId, revRegDelta] = await indy.issuerCreateCredential(issuer.wallet,
-                                                    issuer.credOffer, issuer.credReq, issuer.credValues, issuer.revRegDefId,
-                                                    issuer.blobStorageReaderHandle)
+        const [cred, credRevId, revRegDelta] = await indy.issuerCreateCredential(issuer.wallet, issuer.credOffer,
+                                issuer.credReq, issuer.credValues, issuer.revRegDefId, issuer.blobStorageReaderHandle)
         issuer.cred = cred
         issuer.credRevId = credRevId
         issuer.revRegDelta = revRegDelta
     }
 
-    logIssuer("Issuer Posts Revocation Registry Delta to Ledger (#1)")
+    logIssuer("Issuer posts revocation registry delta to ledger (#1)")
     await postRevocRegEntryRequestToLedger(issuer.poolHandle, issuer.wallet, issuer.did, issuer.revRegDefId, issuer.revRegDelta)
 
-    log("Transfert Credential from 'Issuer' to 'Prover' (via HTTP or other) ...")
+    log("Transfert credential from 'Issuer' to 'Prover' (via HTTP or other) ...")
     prover.cred = issuer.cred
 
-    logProver("Prover Gets Revocation Registry Definition From Ledger")
-    prover.revRegDefId = prover.cred['rev_reg_id']
+    logProver("Prover gets revocation registry definition from ledger")
+    prover.revRegDefId = prover.cred["rev_reg_id"]
     prover.revRegDef = await getRevocRegDefFromLedger(prover.poolHandle, prover.did, prover.revRegDefId)
 
-    logProver("Prover store Credential")
+    logProver("Prover stores credential")
     await indy.proverStoreCredential(prover.wallet, undefined, prover.credReqMetadata, prover.cred, prover.credDef, prover.revRegDef)
 
-    logVerifier("Verifier create Proof Request")
+    logVerifier("Verifier creates proof request")
     verifier.proofReq = {
-        'nonce': '123432421212',
-        'name': 'proof_req_1',
-        'version': '0.1',
-        'requested_attributes': {
-            'attr1_referent': {'name': 'name'}
+        "nonce": "123432421212",
+        "name": "proof_req_1",
+        "version": "0.1",
+        "requested_attributes": {
+            "attr1_referent": {
+                "name": "name",
+                "restrictions": [{"cred_def_id": verifier.credDefId}]
+            }
         },
-        'requested_predicates': {
-            'predicate1_referent': {'name': 'age', 'p_type': '>=', 'p_value': 18}
+        "requested_predicates": {
+            "predicate1_referent": {
+                "name": "age",
+                "p_type": ">=",
+                "p_value": 18,
+                "restrictions": [{"cred_def_id": verifier.credDefId}]
+            }
         },
         "non_revoked": {/*"from": 0,*/ "to": util.getCurrentTimeInSeconds()}
     }
 
-    log("Transfert SchemaId from 'Issuer' to 'Prover' (via HTTP or other) ...")
-    prover.schemaId = issuer.schemaId
-
-    log("Transfert Proof Request from 'Verifier' to 'Prover' (via HTTP or other) ...")
+    log("Transfert proof request from 'Verifier' to 'Prover' (via HTTP or other) ...")
     prover.proofReq = verifier.proofReq
 
-    logProver("Prover gets Credentials for Proof Request")
+    logProver("Prover gets credentials for proof request")
     prover.searchHandle = await indy.proverSearchCredentialsForProofReq(prover.wallet, prover.proofReq, undefined)
 
-    logProver("Prover gets Credentials for attr1_referent")
+    logProver("Prover gets credentials for attr1_referent")
     {
-        const credentialsForAttr1 = await indy.proverFetchCredentialsForProofReq(prover.searchHandle, 'attr1_referent', 10)
-        prover.credInfoForAttribute = credentialsForAttr1[0]['cred_info']
+        const credentialsForAttr1 = await indy.proverFetchCredentialsForProofReq(prover.searchHandle, "attr1_referent", 10)
+        prover.credInfoForAttribute = credentialsForAttr1[0]["cred_info"]
     }
 
-    logProver("Prover gets Credentials for predicate1_referent")
+    logProver("Prover gets credentials for predicate1_referent")
     {
-        const credentialsForPredicate1 = await indy.proverFetchCredentialsForProofReq(prover.searchHandle, 'predicate1_referent', 10)
-        prover.credInfoForPredicate = credentialsForPredicate1[0]['cred_info']
+        const credentialsForPredicate1 = await indy.proverFetchCredentialsForProofReq(prover.searchHandle, "predicate1_referent", 10)
+        prover.credInfoForPredicate = credentialsForPredicate1[0]["cred_info"]
     }
 
     await indy.proverCloseCredentialsSearchForProofReq(prover.searchHandle)
 
-    logProver("Prover open Tails reader")
+    logProver("Prover opens tails reader")
     {
-        const tailsReaderConfig = {'base_dir': util.getPathToIndyClientHome() + "/tails", 'uri_pattern': ''}
-        prover.blobStorageReaderHandle = await indy.openBlobStorageReader('default', tailsReaderConfig)
+        const tailsReaderConfig = {"base_dir": util.getPathToIndyClientHome() + "/tails", "uri_pattern": ""}
+        prover.blobStorageReaderHandle = await indy.openBlobStorageReader("default", tailsReaderConfig)
     }
 
-    logProver("Prover gets Revocation Registry Delta from Ledger")
+    logProver("Prover gets revocation registry delta from ledger")
     {
         const [revRegDelta, timestamp] = await getRevocRegDeltaFromLedger(prover.poolHandle, prover.did, prover.revRegDefId, 0 /* from */, util.getCurrentTimeInSeconds() /* to */)
         prover.revRegDelta = revRegDelta
-        prover.timestampOfDelta = timestamp // = timestamp of "Issuer Posts Revocation Registry Delta to Ledger (#1)"
+        prover.timestampOfDelta = timestamp // = timestamp of "Issuer Posts Revocation Registry Delta to ledger (#1)"
     }
 
     logProver("Prover creates revocation state")
-    prover.credRevId = prover.credInfoForAttribute['cred_rev_id']
+    prover.credRevId = prover.credInfoForAttribute["cred_rev_id"]
     prover.revState = await indy.createRevocationState(prover.blobStorageReaderHandle, prover.revRegDef, prover.revRegDelta, prover.timestampOfDelta, prover.credRevId)
 
-    logProver("Prover Gets Schema from Ledger")
-    prover.schema = await getSchemaFromLedger(prover.poolHandle, prover.did, prover.schemaId)
-
-    logProver("Prover create Proof for Proof Request")
+    logProver("Prover creates proof for proof request")
     prover.requestedCredentials = {
-        'self_attested_attributes': {},
-        'requested_attributes': {
-            'attr1_referent': {
-                'cred_id': prover.credInfoForAttribute['referent'], 'revealed': true, 'timestamp': prover.timestampOfDelta
+        "self_attested_attributes": {},
+        "requested_attributes": {
+            "attr1_referent": {
+                "cred_id": prover.credInfoForAttribute["referent"], "revealed": true, "timestamp": prover.timestampOfDelta
             }
         },
-        'requested_predicates': {
-            'predicate1_referent': {'cred_id': prover.credInfoForPredicate['referent'], 'timestamp': prover.timestampOfDelta}
+        "requested_predicates": {
+            "predicate1_referent": {"cred_id": prover.credInfoForPredicate["referent"], "timestamp": prover.timestampOfDelta}
         }
     }
     prover.schemas = {
@@ -389,27 +405,23 @@ async function run() {
     prover.proof = await indy.proverCreateProof(prover.wallet, prover.proofReq, prover.requestedCredentials, prover.masterSecretId,
                                         prover.schemas, prover.credDefs, prover.revocStates)
 
-    log("Transfert Proof from 'Prover' to 'Verifier' (via HTTP or other) ...")
+    log("Transfert proof from 'Prover' to 'Verifier' (via HTTP or other) ...")
     verifier.proof = prover.proof
     verifier.timestampOfProof = verifier.proof.identifiers[0].timestamp
     verifier.timestampReceptionOfProof = util.getCurrentTimeInSeconds()
 
-    logVerifier("Verifier Gets Schema from Ledger")
-    verifier.schemaId = verifier.proof.identifiers[0]['schema_id']
-    verifier.schema = await getSchemaFromLedger(verifier.poolHandle, verifier.did, verifier.schemaId)
-
-    logVerifier("Verifier Gets Credential Definition from Ledger")
-    verifier.credDefId = verifier.proof.identifiers[0]['cred_def_id']
+    logVerifier("Verifier gets credential definition from ledger")
+    verifier.credDefId = verifier.proof.identifiers[0]["cred_def_id"]
     verifier.credDef = await getCredDefFromLedger(verifier.poolHandle, verifier.did, verifier.credDefId)
 
-    logVerifier("Verifier Gets RevocationRegistryDefinition")
-    verifier.revRegDefId = verifier.proof.identifiers[0]['rev_reg_id']
+    logVerifier("Verifier gets revocation registry definition")
+    verifier.revRegDefId = verifier.proof.identifiers[0]["rev_reg_id"]
     verifier.revRegDef = await getRevocRegDefFromLedger(verifier.poolHandle, verifier.did, verifier.revRegDefId)
 
-    logVerifier("Verifier gets Revocation Registry Delta from Ledger")
+    logVerifier("Verifier gets revocation registry delta from ledger")
     {
-        const [revRegDelta, timestamp] = await getRevocRegDeltaFromLedger(verifier.poolHandle, verifier.did, verifier.revRegDefId, 0 /* from */, util.getCurrentTimeInSeconds() /* to */)
-        // timestamp = timestamp of "Issuer Posts Revocation Registry Delta to Ledger (#1)"
+        const [revRegDelta, _ /* timestamp */] = await getRevocRegDeltaFromLedger(verifier.poolHandle, verifier.did, verifier.revRegDefId, 0 /* from */, util.getCurrentTimeInSeconds() /* to */)
+        // timestamp = timestamp of "Issuer Posts Revocation Registry Delta to ledger (#1)"
         verifier.revRegDelta = revRegDelta
     }
 
@@ -422,60 +434,60 @@ async function run() {
     }
     const verifiedBeforeRevocation = await verifierVerifyProof(verifier.revRegDefId, verifier.revRegDef, verifier.timestampOfProof, verifier.revRegDelta, verifier.proofReq, verifier.proof, verifier.schemas, verifier.credDefs)
     if (verifiedBeforeRevocation) {
-        logOK("OK : Proof is verified as expected :-)")
+        logOK("OK : proof is verified as expected :-)")
     } else {
-        logKO("KO : Proof is expected to be verified but it is NOT... :-(")
+        logKO("KO : proof is expected to be verified but it is NOT... :-(")
     }
 
     log("Pause....")
     await util.sleep(3000)
 
-    logIssuer("Issuer revoke credential")
+    logIssuer("Issuer revokes credential")
     issuer.revRegDeltaAfterRevocation = await indy.issuerRevokeCredential(issuer.wallet, issuer.blobStorageReaderHandle, issuer.revRegDefId, issuer.credRevId)
 
     log("Pause....")
     await util.sleep(3000)
 
-    logIssuer("Issuer Posts Revocation Registry Delta to Ledger (#2 after revocation)")
+    logIssuer("Issuer posts revocation registry delta to ledger (#2 after revocation)")
     await postRevocRegEntryRequestToLedger(issuer.poolHandle, issuer.wallet, issuer.did, issuer.revRegDefId, issuer.revRegDeltaAfterRevocation)
 
-    logVerifier("Verifier gets Revocation Registry Delta from Ledger")
+    logVerifier("Verifier gets revocation registry delta from ledger")
     {
-        const [revRegDelta, timestamp] = await getRevocRegDeltaFromLedger(verifier.poolHandle, verifier.did, verifier.revRegDefId, 0 /* from */, util.getCurrentTimeInSeconds() /* to */)
-        // timestamp = timestamp of "Issuer Posts Revocation Registry Delta to Ledger (#2 after revocation)"
+        const [revRegDelta, _ /* timestamp */] = await getRevocRegDeltaFromLedger(verifier.poolHandle, verifier.did, verifier.revRegDefId, 0 /* from */, util.getCurrentTimeInSeconds() /* to */)
+        // timestamp = timestamp of "Issuer Posts Revocation Registry Delta to ledger (#2 after revocation)"
         verifier.revRegDelta2 = revRegDelta
     }
 
-    logVerifier("Verifier verify proof (#2) (proof must be revoked)")
+    logVerifier("Verifier verifies proof (#2) (proof must be revoked)")
     const verifiedAfterRevocation = await verifierVerifyProof(verifier.revRegDefId, verifier.revRegDef, verifier.timestampOfProof, verifier.revRegDelta2, verifier.proofReq, verifier.proof, verifier.schemas, verifier.credDefs)
     if (!verifiedAfterRevocation) {
-        logOK("OK : Proof is NOT verified as expected :-)")
+        logOK("OK : proof is NOT verified as expected :-)")
     } else {
-        logKO("KO : Proof is verified but is expected to be NOT... :-(")
+        logKO("KO : proof is verified but is expected to be NOT... :-(")
     }
 
-    logVerifier("Verifier check non revoked proof with timestamp of reception of proof (before credential revocation)")
+    logVerifier("Verifier checks non revoked proof with timestamp of reception of proof (before credential revocation)")
 
-    logVerifier("Verifier gets Revocation Registry Delta from Ledger")
+    logVerifier("Verifier gets revocation registry delta from ledger")
     {
-        const [revRegDelta, timestamp] = await getRevocRegDeltaFromLedger(verifier.poolHandle, verifier.did, verifier.revRegDefId, 0 /* from */, verifier.timestampReceptionOfProof /* to */)
+        const [revRegDelta, _ /* timestamp */] = await getRevocRegDeltaFromLedger(verifier.poolHandle, verifier.did, verifier.revRegDefId, 0 /* from */, verifier.timestampReceptionOfProof /* to */)
         verifier.revRegDelta3 = revRegDelta
     }
 
-    logVerifier("Verifier verify proof (#3) (proof must be non-revoked)")
+    logVerifier("Verifier verifies proof (#3) (proof must be non-revoked)")
     const verifiedBeforeRevocation2 = await verifierVerifyProof(verifier.revRegDefId, verifier.revRegDef, verifier.timestampOfProof, verifier.revRegDelta3, verifier.proofReq, verifier.proof, verifier.schemas, verifier.credDefs)
     if (verifiedBeforeRevocation2) {
-        logOK("OK : Proof is NOT verified as expected :-)")
+        logOK("OK : proof is NOT verified as expected :-)")
     } else {
-        logKO("KO : Proof is verified but is expected to be NOT... :-(")
+        logKO("KO : proof is verified but is expected to be NOT... :-(")
     }
 
-    log("Close and delete wallets")
-    closeAndDeleteWallet(issuer.wallet, "issuer")
-    closeAndDeleteWallet(prover.wallet, "prover")
-    closeAndDeleteWallet(verifier.wallet, "verifier")
+    log("Actors close and delete wallets")
+    await closeAndDeleteWallet(issuer.wallet, "issuer")
+    await closeAndDeleteWallet(prover.wallet, "prover")
+    await closeAndDeleteWallet(verifier.wallet, "verifier")
 
-    log("Close and delete poolHandles")
+    log("Actors close and delete poolHandles")
     await closeAndDeletePoolHandle(issuer.poolHandle, "issuer")
     await closeAndDeletePoolHandle(prover.poolHandle, "prover")
     await closeAndDeletePoolHandle(verifier.poolHandle, "verifier")
