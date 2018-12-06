@@ -268,7 +268,7 @@ async function run() {
     logIssuer("Issuer creates credential offer")
     issuer.credOffer = await indy.issuerCreateCredentialOffer(issuer.wallet, issuer.credDefId)
 
-    log("Transfert offer from 'Issuer' to 'Prover' (via HTTP or other) ...")
+    log("Transfer offer from 'Issuer' to 'Prover' (via HTTP or other) ...")
     prover.credOffer = issuer.credOffer
 
     logProver("Prover gets credential definition from ledger")
@@ -286,7 +286,7 @@ async function run() {
         prover.credReqMetadata = credReqMetadata
     }
 
-    log("Transfert credential request from 'Prover' to 'Issuer' (via HTTP or other) ...")
+    log("Transfer credential request from 'Prover' to 'Issuer' (via HTTP or other) ...")
     issuer.credReq = prover.credReq
 
     logIssuer("Issuer open Tails reader")
@@ -313,7 +313,7 @@ async function run() {
     logIssuer("Issuer posts revocation registry delta to ledger (#1)")
     await postRevocRegEntryRequestToLedger(issuer.poolHandle, issuer.wallet, issuer.did, issuer.revRegDefId, issuer.revRegDelta)
 
-    log("Transfert credential from 'Issuer' to 'Prover' (via HTTP or other) ...")
+    log("Transfer credential from 'Issuer' to 'Prover' (via HTTP or other) ...")
     prover.cred = issuer.cred
 
     logProver("Prover gets revocation registry definition from ledger")
@@ -345,7 +345,7 @@ async function run() {
         "non_revoked": {/*"from": 0,*/ "to": util.getCurrentTimeInSeconds()}
     }
 
-    log("Transfert proof request from 'Verifier' to 'Prover' (via HTTP or other) ...")
+    log("Transfer proof request from 'Verifier' to 'Prover' (via HTTP or other) ...")
     prover.proofReq = verifier.proofReq
 
     logProver("Prover gets credentials for proof request")
@@ -404,7 +404,7 @@ async function run() {
     prover.proof = await indy.proverCreateProof(prover.wallet, prover.proofReq, prover.requestedCredentials, prover.masterSecretId,
                                         prover.schemas, prover.credDefs, prover.revocStates)
 
-    log("Transfert proof from 'Prover' to 'Verifier' (via HTTP or other) ...")
+    log("Transfer proof from 'Prover' to 'Verifier' (via HTTP or other) ...")
     verifier.proof = prover.proof
     verifier.timestampOfProof = verifier.proof.identifiers[0].timestamp
     verifier.timestampReceptionOfProof = util.getCurrentTimeInSeconds()
