@@ -273,7 +273,7 @@ mod tests {
         use super::*;
         use std::path;
         use api::ErrorCode;
-        use std::os::raw::c_char;
+        use libc::c_char;
 
         #[test]
         fn pool_service_new_works() {
