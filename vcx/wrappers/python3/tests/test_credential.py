@@ -4,7 +4,8 @@ from vcx.state import State
 from vcx.api.credential import Credential
 from vcx.api.connection import Connection
 
-phone_number = '8019119191'
+connection_options = '{"connection_type":"SMS","phone":"8019119191","use_public_did":true}'
+
 source_id = '1'
 msg_id = '1'
 offer = [{
@@ -115,7 +116,7 @@ async def test_create_credential():
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_create_credential_with_msgid():
     connection = await Connection.create(source_id)
-    await connection.connect(phone_number)
+    await connection.connect(connection_options)
 
     credential = await Credential.create_with_msgid(source_id, connection, msg_id)
     assert credential.source_id == source_id
@@ -211,7 +212,7 @@ async def test_credential_release():
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_send_request():
     connection = await Connection.create(source_id)
-    await connection.connect(phone_number)
+    await connection.connect(connection_options)
     cred_with_msg_id = credential_json
     credential = await Credential.deserialize(credential_json_versioned)
     await credential.send_request(connection, 0)
@@ -223,7 +224,7 @@ async def test_send_request():
 async def test_send_request_with_invalid_state():
     with pytest.raises(VcxError) as e:
         connection = await Connection.create(source_id)
-        await connection.connect(phone_number)
+        await connection.connect(connection_options)
         credential = await Credential.create(source_id, offer)
         await credential.send_request(connection, 0)
     assert ErrorCode.CreateCredentialFailed == e.value.error_code

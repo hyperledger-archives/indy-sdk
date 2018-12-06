@@ -65,7 +65,7 @@ export async function updateAgentInfo (options: string): Promise<void> {
             reject(err)
             return
           }
-            resolve()
+          resolve()
         })
     )
   } catch (err) {

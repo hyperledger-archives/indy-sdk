@@ -1,4 +1,5 @@
 extern crate futures;
+extern crate libc;
 
 use serde_json;
 
@@ -13,7 +14,7 @@ use utils::inmem_wallet::InmemWallet;
 use std::collections::HashSet;
 use std::sync::Mutex;
 use std::ffi::CString;
-use std::os::raw::c_char;
+use self::libc::c_char;
 
 use utils::constants::{TYPE, INMEM_TYPE, WALLET_CREDENTIALS};
 

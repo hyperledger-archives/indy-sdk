@@ -14,7 +14,11 @@ namespace Hyperledger.Indy.Test.WalletTests
             await Wallet.CreateWalletAsync(WALLET_CONFIG, WALLET_CREDENTIALS);
             var wallet = await Wallet.OpenWalletAsync(WALLET_CONFIG, WALLET_CREDENTIALS);
 
+            Assert.IsTrue(wallet.IsOpen);
+
             await wallet.CloseAsync();
+
+            Assert.IsTrue(!wallet.IsOpen);
         }
 
         [TestMethod]
@@ -23,9 +27,13 @@ namespace Hyperledger.Indy.Test.WalletTests
             await Wallet.CreateWalletAsync(WALLET_CONFIG, WALLET_CREDENTIALS);
             var wallet = await Wallet.OpenWalletAsync(WALLET_CONFIG, WALLET_CREDENTIALS);
 
+            Assert.IsTrue(wallet.IsOpen);
+
             await wallet.CloseAsync();
 
-            var ex = await Assert.ThrowsExceptionAsync<InvalidWalletException>(() =>
+            Assert.IsTrue(!wallet.IsOpen);
+
+            await Assert.ThrowsExceptionAsync<InvalidWalletException>(() =>
                 wallet.CloseAsync()
             );
         }
@@ -37,10 +45,16 @@ namespace Hyperledger.Indy.Test.WalletTests
 
             using (var a_wallet = await Wallet.OpenWalletAsync(WALLET_CONFIG, WALLET_CREDENTIALS)) {
                 Assert.IsNotNull(a_wallet);
+                Assert.IsTrue(a_wallet.IsOpen);
             }
 
             var wallet = await Wallet.OpenWalletAsync(WALLET_CONFIG, WALLET_CREDENTIALS);
+
+            Assert.IsTrue(wallet.IsOpen);
+
             await wallet.CloseAsync();
+
+            Assert.IsTrue(!wallet.IsOpen);
         }
     }
 }

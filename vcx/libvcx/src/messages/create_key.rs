@@ -50,6 +50,8 @@ pub struct CreateKeyResponse {
 impl CreateKeyMsg{
 
     pub fn create() -> CreateKeyMsg {
+        trace!("CreateKeyMsg::create_message >>>");
+
         CreateKeyMsg {
             to_did: String::new(),
             payload: CreateKeyPayload{
@@ -91,6 +93,8 @@ impl CreateKeyMsg{
     }
 
     pub fn send_secure(&mut self) -> Result<Vec<String>, u32> {
+        trace!("CreateKeyMsg::send >>>");
+
         let data = match self.msgpack() {
             Ok(x) => x,
             Err(x) => return Err(x),
@@ -144,6 +148,8 @@ impl GeneralMessage for CreateKeyMsg  {
 }
 
 pub fn parse_create_keys_response(response: Vec<u8>) -> Result<(String, String), u32> {
+    trace!("parse_create_keys_response >>>");
+
     let data = unbundle_from_agency(response)?;
 
     debug!("create keys response inner bundle: {:?}", data[0]);
