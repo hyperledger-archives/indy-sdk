@@ -524,6 +524,12 @@ indy.parseGetRevocRegDeltaResponse = function parseGetRevocRegDeltaResponse (get
   return cb.promise
 }
 
+indy.getResponseMetadata = function getResponseMetadata (response, cb) {
+  cb = wrapIndyCallback(cb, fromJson)
+  capi.getResponseMetadata(toJson(response), cb)
+  return cb.promise
+}
+
 indy.addWalletRecord = function addWalletRecord (wh, type, id, value, tags, cb) {
   cb = wrapIndyCallback(cb)
   capi.addWalletRecord(wh, type, id, value, toJson(tags), cb)

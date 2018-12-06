@@ -29,7 +29,11 @@ pub struct UpdateAgentInfo {
 
 #[no_mangle]
 pub extern fn vcx_provision_agent(config: *const c_char) -> *mut c_char {
+    info!("vcx_provision_agent >>>");
+
     check_useful_c_str!(config, ptr::null_mut());
+
+    trace!("vcx_provision_agent(config: {})", config);
 
     match messages::agent_utils::connect_register_provision(&config) {
         Err(e) => {
@@ -62,10 +66,12 @@ pub extern fn vcx_provision_agent(config: *const c_char) -> *mut c_char {
 pub extern fn vcx_agent_provision_async(command_handle : u32,
                                config: *const c_char,
                                cb: Option<extern fn(xcommand_handle: u32, err: u32, _config: *const c_char)>) -> u32 {
+    info!("vcx_agent_provision_async >>>");
+
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
     check_useful_c_str!(config, error::INVALID_OPTION.code_num);
 
-    info!("vcx_agent_provision_async(command_handle: {}, json: {})",
+    trace!("vcx_agent_provision_async(command_handle: {}, json: {})",
           command_handle, config);
 
     thread::spawn(move|| {
@@ -75,7 +81,7 @@ pub extern fn vcx_agent_provision_async(command_handle : u32,
                 cb(command_handle, e, ptr::null_mut());
             },
             Ok(s) => {
-                info!("vcx_agent_provision_async_cb(command_handle: {}, rc: {}, config: {})",
+                trace!("vcx_agent_provision_async_cb(command_handle: {}, rc: {}, config: {})",
                       command_handle, error_string(0), s);
                 let msg = CStringUtils::string_to_cstring(s);
                 cb(command_handle, 0, msg.as_ptr());
@@ -102,11 +108,12 @@ pub extern fn vcx_agent_provision_async(command_handle : u32,
 pub extern fn vcx_agent_update_info(command_handle: u32,
                                     json: *const c_char,
                                     cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
+    info!("vcx_agent_update_info >>>");
 
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
     check_useful_c_str!(json, error::INVALID_OPTION.code_num);
 
-    info!("vcx_agent_update_info(command_handle: {}, json: {})",
+    trace!("vcx_agent_update_info(command_handle: {}, json: {})",
           command_handle, json);
 
     let agent_info: UpdateAgentInfo = match serde_json::from_str(&json) {
@@ -119,7 +126,7 @@ pub extern fn vcx_agent_update_info(command_handle: u32,
     spawn(move|| {
         match messages::agent_utils::update_agent_info(&agent_info.id, &agent_info.value){
             Ok(x) => {
-                info!("vcx_agent_update_info_cb(command_handle: {}, rc: {})",
+                trace!("vcx_agent_update_info_cb(command_handle: {}, rc: {})",
                       command_handle, error::error_string(0));
                 cb(command_handle, error::SUCCESS.code_num);
             },
@@ -149,15 +156,16 @@ pub extern fn vcx_agent_update_info(command_handle: u32,
 #[no_mangle]
 pub extern fn vcx_ledger_get_fees(command_handle: u32,
                                   cb: Option<extern fn(xcommand_handle: u32, err: u32, fees: *const c_char)>) -> u32 {
+    info!("vcx_ledger_get_fees >>>");
 
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
-    info!("vcx_ledger_get_fees(command_handle: {})",
+    trace!("vcx_ledger_get_fees(command_handle: {})",
           command_handle);
 
     spawn(move|| {
         match ::utils::libindy::payments::get_ledger_fees() {
             Ok(x) => {
-                info!("vcx_ledger_get_fees_cb(command_handle: {}, rc: {}, fees: {})",
+                trace!("vcx_ledger_get_fees_cb(command_handle: {}, rc: {}, fees: {})",
                       command_handle, error::error_string(0), x);
 
                 let msg = CStringUtils::string_to_cstring(x);
@@ -179,6 +187,8 @@ pub extern fn vcx_ledger_get_fees(command_handle: u32,
 
 #[no_mangle]
 pub extern fn vcx_set_next_agency_response(message_index: u32) {
+    info!("vcx_set_next_agency_response >>>");
+
     let message = match message_index {
         1 => CREATE_KEYS_RESPONSE.to_vec(),
         2 => UPDATE_PROFILE_RESPONSE.to_vec(),
@@ -215,6 +225,7 @@ pub extern fn vcx_messages_download(command_handle: u32,
                                     uids: *const c_char,
                                     pw_dids: *const c_char,
                                     cb: Option<extern fn(xcommand_handle: u32, err: u32, messages: *const c_char)>) -> u32 {
+    info!("vcx_messages_download >>>");
 
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
 
@@ -245,7 +256,7 @@ pub extern fn vcx_messages_download(command_handle: u32,
         None
     };
 
-    info!("vcx_messages_download(command_handle: {}, message_status: {:?}, uids: {:?})",
+    trace!("vcx_messages_download(command_handle: {}, message_status: {:?}, uids: {:?})",
           command_handle, message_status, uids);
 
     spawn(move|| {
@@ -253,7 +264,7 @@ pub extern fn vcx_messages_download(command_handle: u32,
             Ok(x) => {
                 match  serde_json::to_string(&x) {
                     Ok(x) => {
-                        info!("vcx_messages_download_cb(command_handle: {}, rc: {}, messages: {})",
+                        trace!("vcx_messages_download_cb(command_handle: {}, rc: {}, messages: {})",
                               command_handle, error::error_string(0), x);
 
                         let msg = CStringUtils::string_to_cstring(x);
@@ -301,18 +312,19 @@ pub extern fn vcx_messages_update_status(command_handle: u32,
                                          message_status: *const c_char,
                                          msg_json: *const c_char,
                                          cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
+    info!("vcx_messages_update_status >>>");
 
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
     check_useful_c_str!(message_status, error::INVALID_OPTION.code_num);
     check_useful_c_str!(msg_json, error::INVALID_OPTION.code_num);
 
-    info!("vcx_messages_set_status(command_handle: {}, message_status: {:?}, uids: {:?})",
+    trace!("vcx_messages_set_status(command_handle: {}, message_status: {:?}, uids: {:?})",
           command_handle, message_status, msg_json);
 
     spawn(move|| {
         match ::messages::update_message::update_agency_messages(&message_status, &msg_json) {
             Ok(_) => {
-                info!("vcx_messages_set_status_cb(command_handle: {}, rc: {})",
+                trace!("vcx_messages_set_status_cb(command_handle: {}, rc: {})",
                     command_handle, error::error_string(0));
 
                 cb(command_handle, error::SUCCESS.code_num);

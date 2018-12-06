@@ -1,7 +1,8 @@
 extern crate libc;
-use utils::logger::{ EnabledCB, FlushCB, LibvcxLogger, LibvcxDefaultLogger, LogCB, LOGGER_STATE };
+extern crate indy_sys;
+use utils::logger::{ EnabledCB, FlushCB, LibvcxLogger, LibvcxDefaultLogger, LogCB, LOGGER_STATE, CVoid };
 use utils::cstring::CStringUtils;
-use self::libc::{c_char, c_void};
+use self::libc::{c_char};
 
 use utils::error::{ INVALID_CONFIGURATION, SUCCESS };
 
@@ -19,9 +20,11 @@ use utils::error::{ INVALID_CONFIGURATION, SUCCESS };
 /// u32 error code
 #[no_mangle]
 pub extern fn vcx_set_default_logger(pattern: *const c_char) -> u32 {
+    info!("vcx_set_default_logger >>>");
+
     check_useful_opt_c_str!(pattern, INVALID_CONFIGURATION.code_num);
 
-    info!("vcx_set_default_logger(pattern: {:?})", pattern);
+    trace!("vcx_set_default_logger(pattern: {:?})", pattern);
 
     match LibvcxDefaultLogger::init(pattern) {
         Ok(_) => {
@@ -48,11 +51,13 @@ pub extern fn vcx_set_default_logger(pattern: *const c_char) -> u32 {
 /// #Returns
 /// u32 Error Code
 #[no_mangle]
-pub extern fn vcx_set_logger(context: *const c_void,
+pub extern fn vcx_set_logger(context: *const CVoid,
                              enabled: Option<EnabledCB>,
                              log: Option<LogCB>,
                              flush: Option<FlushCB>) -> u32 {
-    info!("vcx_set_logger( context: {:?}, enabled: {:?}, log: {:?}, flush: {:?}",
+    info!("vcx_set_logger >>>");
+
+    trace!("vcx_set_logger( context: {:?}, enabled: {:?}, log: {:?}, flush: {:?}",
            context, enabled, log, flush);
     check_useful_c_callback!(log, SUCCESS.code_num);
     let res = LibvcxLogger::init(context, enabled, log, flush);
@@ -83,12 +88,13 @@ pub extern fn vcx_set_logger(context: *const c_void,
 ///
 /// This is tested in wrapper tests (python3)
 #[no_mangle]
-pub extern fn vcx_get_logger(context_p: *mut *const c_void,
+pub extern fn vcx_get_logger(context_p: *mut *const CVoid,
                               enabled_cb_p: *mut Option<EnabledCB>,
                               log_cb_p: *mut Option<LogCB>,
                               flush_cb_p: *mut Option<FlushCB>) -> u32 {
+    info!("vcx_get_logger >>>");
 
-    info!("vcx_get_logger >>> context_p: {:?}, enabled_cb_p: {:?}, log_cb_p: {:?}, flush_cb_p: {:?}", context_p, enabled_cb_p, log_cb_p, flush_cb_p);
+    trace!("vcx_get_logger >>> context_p: {:?}, enabled_cb_p: {:?}, log_cb_p: {:?}, flush_cb_p: {:?}", context_p, enabled_cb_p, log_cb_p, flush_cb_p);
 
     unsafe {
         let (context, enabled_cb, log_cb, flush_cb) = LOGGER_STATE.get();
@@ -99,7 +105,7 @@ pub extern fn vcx_get_logger(context_p: *mut *const c_void,
     }
 
     let res = SUCCESS.code_num;
-    info!("vcx_get_logger: <<< res: {:?}", res);
+    trace!("vcx_get_logger: <<< res: {:?}", res);
     res
 }
 

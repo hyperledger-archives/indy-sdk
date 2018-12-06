@@ -182,6 +182,8 @@ impl InviteDetail {
 impl SendInvite{
 
     pub fn create() -> SendInvite {
+        trace!("SendInvite::create_message >>>");
+
         SendInvite {
             to_did: String::new(),
             to_vk: String::new(),
@@ -245,6 +247,8 @@ impl SendInvite{
     }
 
     pub fn send_secure(&mut self) -> Result<Vec<String>, u32> {
+        trace!("SendInvite::send >>>");
+
         let data = match self.msgpack() {
             Ok(x) => x,
             Err(x) => return Err(x),
@@ -288,6 +292,8 @@ impl AcceptInvite{
         debug!("connection invitation details: {}", serde_json::to_string(&self.payload.msg_detail_payload).unwrap_or("failure".to_string()));
     }
     pub fn create() -> AcceptInvite {
+        trace!("AcceptInvite::create_message >>>");
+
         AcceptInvite {
             to_did: String::new(),
             to_vk: String::new(),
@@ -350,6 +356,8 @@ impl AcceptInvite{
     }
 
     pub fn send_secure(&mut self) -> Result<String, u32> {
+        trace!("AcceptInvite::send >>>");
+
         let data = match self.msgpack() {
             Ok(x) => x,
             Err(x) => return Err(x),
