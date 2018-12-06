@@ -7,6 +7,7 @@ import {
   CredentialDef,
   DisclosedProof,
   IConnectionCreateData,
+  IConnectOptions,
   ICredentialCreateWithMsgId,
   ICredentialCreateWithOffer,
   ICredentialDefCreateData,
@@ -32,9 +33,14 @@ export const connectionCreate = async (data = dataConnectionCreate()) => {
   return connection
 }
 
+export const dataConnectionConnectOptions = (): IConnectOptions => ({
+  data: '{"connection_type":"SMS","phone":"123","use_public_did":true}'
+})
+
 export const connectionCreateConnect = async (data = dataConnectionCreate()) => {
   const connection = await connectionCreate(data)
-  const inviteDetails = await connection.connect()
+  const connectionData = dataConnectionConnectOptions()
+  const inviteDetails = await connection.connect(connectionData)
   assert.ok(inviteDetails)
   return connection
 }
