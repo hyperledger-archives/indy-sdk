@@ -62,6 +62,8 @@ impl DeleteConnectionPayload {
 }
 impl DeleteConnection {
     pub fn create() -> DeleteConnection {
+        trace!("DeleteConnection::create_message >>>");
+
         DeleteConnection {
             to_did: String::new(),
             to_vk: String::new(),
@@ -72,6 +74,8 @@ impl DeleteConnection {
         }
     }
     pub fn send_secure(&mut self) -> Result<Vec<String>, u32> {
+        trace!("DeleteConnection::send >>>");
+
         let data = match self.msgpack() {
             Ok(x) => x,
             Err(x) => return Err(x),

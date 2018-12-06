@@ -84,6 +84,8 @@ pub struct Credential {
 impl Credential {
 
     pub fn build_request(&self, my_did: &str, their_did: &str) -> Result<CredentialRequest, CredentialError> {
+        trace!("Credential::build_request >>> my_did: {}, their_did: {}", my_did, their_did);
+
         if self.state != VcxStateType::VcxStateRequestReceived { return Err(CredentialError::NotReady())}
 
         let prover_did = self.my_did.as_ref().ok_or(CredentialError::CommonError(error::INVALID_DID.code_num))?;
@@ -116,6 +118,8 @@ impl Credential {
     }
 
     fn send_request(&mut self, connection_handle: u32) -> Result<u32, CredentialError> {
+        trace!("Credential::send_request >>> connection_handle: {}", connection_handle);
+
         debug!("sending credential request {} via connection: {}", self.source_id, connection::get_source_id(connection_handle).unwrap_or_default());
         self.my_did = Some(connection::get_pw_did(connection_handle).map_err(|ec| CredentialError::CommonError(ec.to_error_code()))?);
         self.my_vk = Some(connection::get_pw_verkey(connection_handle).map_err(|ec| CredentialError::CommonError(ec.to_error_code()))?);
@@ -205,7 +209,7 @@ impl Credential {
     }
 
     fn update_state(&mut self) {
-        debug!("updating state for credential {} with msg_id {:?}", self.source_id, self.msg_uid);
+        trace!("Credential::update_state >>>");
         match self.state {
             VcxStateType::VcxStateOfferSent => {
                 //Check for messages
@@ -221,11 +225,13 @@ impl Credential {
     }
 
     fn get_state(&self) -> u32 {
+        trace!("Credential::get_state >>>");
         let state = self.state as u32;
         state
     }
 
     fn get_credential(&self) -> Result<String, CredentialError> {
+        trace!("Credential::get_credential >>>");
         if self.state == VcxStateType::VcxStateAccepted {
             match self.credential {
                 Some(ref x) => Ok(self.to_cred_string(x)),
@@ -238,6 +244,7 @@ impl Credential {
     }
 
     fn get_credential_offer(&self) -> Result<String, CredentialError> {
+        trace!("Credential::get_credential_offer >>>");
         if self.state == VcxStateType::VcxStateRequestReceived {
             match self.credential_offer {
                 Some(ref x) => match serde_json::to_string(x) {
@@ -278,6 +285,7 @@ impl Credential {
     fn get_source_id(&self) -> &String {&self.source_id}
 
     fn get_payment_txn(&self) -> Result<PaymentTxn, u32> {
+        trace!("Credential::get_payment_txn >>>");
         match self.payment_txn {
             Some(ref payment_txn) if self.payment_info.is_some() => Ok(payment_txn.clone()),
             _ => Err(error::NO_PAYMENT_INFORMATION.code_num)
@@ -306,6 +314,7 @@ impl Credential {
     }
 
     fn get_payment_info(&self) -> Result<Option<PaymentInfo>, CredentialError> {
+        trace!("Credential::get_payment_info >>>");
         Ok(self.payment_info.clone())
     }
 
@@ -338,6 +347,8 @@ fn handle_err(code_num: u32) -> CredentialError {
 }
 
 pub fn credential_create_with_offer(source_id: &str, offer: &str) -> Result<u32, CredentialError> {
+    trace!("credential_create_with_offer >>> source_id: {}, offer: {}", source_id, offer);
+
     let mut new_credential = _credential_create(source_id);
 
     let (offer, payment_info) = parse_json_offer(offer)?;
@@ -362,6 +373,7 @@ fn _credential_create(source_id: &str) -> Credential {
 
 pub fn update_state(handle: u32) -> Result<u32, u32> {
     HANDLE_MAP.get_mut(handle, |obj|{
+        debug!("updating state for credential {} with msg_id {:?}", obj.source_id, obj.msg_uid);
         obj.update_state();
         Ok(error::SUCCESS.code_num)
     })
@@ -370,6 +382,7 @@ pub fn update_state(handle: u32) -> Result<u32, u32> {
 
 pub fn get_credential(handle: u32) -> Result<String, CredentialError> {
     HANDLE_MAP.get(handle, |obj| {
+        debug!("getting credential {}", obj.get_source_id());
         obj.get_credential().map_err(|e| e.to_error_code())
     }).map_err(|ec| CredentialError::CommonError(ec))
 }
@@ -382,6 +395,7 @@ pub fn get_payment_txn(handle: u32) -> Result<PaymentTxn, CredentialError> {
 
 pub fn get_credential_offer(handle: u32) -> Result<String, CredentialError> {
     HANDLE_MAP.get(handle, |obj| {
+        debug!("getting credential offer {}", obj.source_id);
         obj.get_credential_offer().map_err(|e| e.to_error_code())
     }).map_err(|ec| CredentialError::CommonError(ec))
 }
@@ -405,6 +419,8 @@ pub fn send_credential_request(handle: u32, connection_handle: u32) -> Result<u3
 }
 
 pub fn get_credential_offer_msg(connection_handle: u32, msg_id: &str) -> Result<String, CredentialError> {
+    trace!("get_credential_offer_msg >>> connection_handle: {}, msg_id: {}", connection_handle, msg_id);
+
     let my_did = connection::get_pw_did(connection_handle).map_err(|e| CredentialError::CommonError(e.to_error_code()))?;
     let my_vk = connection::get_pw_verkey(connection_handle).map_err(|e| CredentialError::CommonError(e.to_error_code()))?;
     let agent_did = connection::get_agent_did(connection_handle).map_err(|e| CredentialError::CommonError(e.to_error_code()))?;
@@ -442,6 +458,8 @@ pub fn get_credential_offer_msg(connection_handle: u32, msg_id: &str) -> Result<
 }
 
 pub fn get_credential_offer_messages(connection_handle: u32) -> Result<String, CredentialError> {
+    trace!("Credential::get_credential_offer_messages >>> connection_handle: {}", connection_handle);
+
     debug!("checking agent for credential offers from connection {}", connection::get_source_id(connection_handle).unwrap_or_default());
     let my_did = connection::get_pw_did(connection_handle).map_err(|e| CredentialError::CommonError(e.to_error_code()))?;
     let my_vk = connection::get_pw_verkey(connection_handle).map_err(|e| CredentialError::CommonError(e.to_error_code()))?;
@@ -636,7 +654,7 @@ pub mod tests {
     fn full_credential_test(){
         init!("true");
 
-        let connection_h = connection::build_connection("test_send_credential_offer").unwrap();
+        let connection_h = connection::tests::build_test_connection();
         let offers = get_credential_offer_messages(connection_h).unwrap();
         let offers:Value = serde_json::from_str(&offers).unwrap();
         let offers = serde_json::to_string(&offers[0]).unwrap();
@@ -660,7 +678,7 @@ pub mod tests {
     #[test]
     fn test_get_credential_offer() {
         init!("true");
-        let connection_h = connection::build_connection("test_get_credential_offer").unwrap();
+        let connection_h = connection::tests::build_test_connection();
         let offer = get_credential_offer_messages(connection_h).unwrap();
         let o: serde_json::Value = serde_json::from_str(&offer).unwrap();
         let credential_offer: CredentialOffer = serde_json::from_str(&o[0][0].to_string()).unwrap();

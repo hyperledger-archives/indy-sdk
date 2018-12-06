@@ -193,7 +193,7 @@ export class Schema extends VCXBase<ISchemaSerializedData> {
         schemaId
       }
       const newSchema = new Schema(sourceId, schemaParams)
-      newSchema._setHandle(schemaLookupData.handle.toString())
+      newSchema._setHandle(schemaLookupData.handle)
       return newSchema
     } catch (err) {
       throw new VCXInternalError(err)
@@ -273,7 +273,7 @@ export class Schema extends VCXBase<ISchemaSerializedData> {
     }
   }
 
-  protected _setHandle (handle: string) {
+  protected _setHandle (handle: number) {
     super._setHandle(handle)
     this.paymentManager = new SchemaPaymentManager({ handle })
   }

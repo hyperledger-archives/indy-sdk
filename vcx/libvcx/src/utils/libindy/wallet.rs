@@ -32,7 +32,7 @@ pub fn create_wallet(wallet_name: &str) -> Result<(), u32> {
 }
 
 pub fn open_wallet(wallet_name: &str) -> Result<i32, u32> {
-    trace!("opening wallet: {}", wallet_name);
+    trace!("open_wallet >>> wallet_name: {}", wallet_name);
     if settings::test_indy_mode_enabled() {
         unsafe {WALLET_HANDLE = 1;}
         return Ok(1);
@@ -59,6 +59,8 @@ pub fn init_wallet(wallet_name: &str) -> Result<i32, u32> {
 }
 
 pub fn close_wallet() -> Result<(), u32> {
+    trace!("close_wallet >>>");
+
     if settings::test_indy_mode_enabled() {
         unsafe { WALLET_HANDLE = 0; }
         return Ok(());
@@ -69,6 +71,8 @@ pub fn close_wallet() -> Result<(), u32> {
 }
 
 pub fn delete_wallet(wallet_name: &str) -> Result<(), u32> {
+    trace!("delete_wallet >>> wallet_name: {}", wallet_name);
+
     if settings::test_indy_mode_enabled() {
         unsafe { WALLET_HANDLE = 0;}
         return Ok(())
@@ -84,6 +88,8 @@ pub fn delete_wallet(wallet_name: &str) -> Result<(), u32> {
 }
 
 pub fn add_record(xtype: &str, id: &str, value: &str, tags: &str) -> Result<(), u32> {
+    trace!("add_record >>> xtype: {}, id: {}, value: {}, tags: {}", xtype, id, value, tags);
+
     if settings::test_indy_mode_enabled() { return Ok(()) }
 
     wallet::add_wallet_record(get_wallet_handle(), xtype, id, value, Some(tags))
@@ -93,6 +99,8 @@ pub fn add_record(xtype: &str, id: &str, value: &str, tags: &str) -> Result<(), 
 
 
 pub fn get_record(xtype: &str, id: &str, options: &str) -> Result<String, u32> {
+    trace!("get_record >>> xtype: {}, id: {}, options: {}", xtype, id, options);
+
     if settings::test_indy_mode_enabled() {
         return Ok(r#"{"id":"123","type":"record type","value":"record value","tags":null}"#.to_string())
     }
@@ -103,6 +111,8 @@ pub fn get_record(xtype: &str, id: &str, options: &str) -> Result<String, u32> {
 }
 
 pub fn delete_record(xtype: &str, id: &str) -> Result<(), u32> {
+    trace!("delete_record >>> xtype: {}, id: {}", xtype, id);
+
     if settings::test_indy_mode_enabled() { return Ok(()) }
     wallet::delete_wallet_record(get_wallet_handle(), xtype, id)
         .wait()
@@ -111,6 +121,8 @@ pub fn delete_record(xtype: &str, id: &str) -> Result<(), u32> {
 
 
 pub fn update_record_value(xtype: &str, id: &str, value: &str) -> Result<(), u32> {
+    trace!("update_record_value >>> xtype: {}, id: {}, value: {}", xtype, id, value);
+
     if settings::test_indy_mode_enabled() { return Ok(()) }
     wallet::update_wallet_record_value(get_wallet_handle(), xtype, id, value)
         .wait()
@@ -118,6 +130,8 @@ pub fn update_record_value(xtype: &str, id: &str, value: &str) -> Result<(), u32
 }
 
 pub fn export(wallet_handle: i32, path: &Path, backup_key: &str) -> Result<(), WalletError> {
+    trace!("export >>> wallet_handle: {}, path: {:?}, backup_key: ****", wallet_handle, path);
+
     let export_config = json!({ "key": backup_key, "path": &path}).to_string();
     match wallet::export_wallet(wallet_handle, &export_config).wait() {
         Ok(_) => Ok(()),
@@ -126,6 +140,8 @@ pub fn export(wallet_handle: i32, path: &Path, backup_key: &str) -> Result<(), W
 }
 
 pub fn import(config: &str) -> Result<(), WalletError> {
+    trace!("import >>> config {}", config);
+
     settings::process_config_string(config).map_err(|e| WalletError::CommonError(e))?;
 
     let key = settings::get_config_value(settings::CONFIG_WALLET_KEY)
@@ -233,9 +249,9 @@ pub mod tests {
     fn test_wallet_import_export() {
         settings::set_defaults();
         teardown!("false");
-        let exported_path = format!(r#"/tmp/{}"#, settings::DEFAULT_WALLET_NAME);
 
-        let dir = export_test_wallet();
+        let export_path = export_test_wallet();
+
         let xtype = "type1";
         let id = "id1";
         let value = "value1";
@@ -246,7 +262,7 @@ pub mod tests {
         let import_config = json!({
             settings::CONFIG_WALLET_NAME: settings::DEFAULT_WALLET_NAME,
             settings::CONFIG_WALLET_KEY: settings::DEFAULT_WALLET_KEY,
-            settings::CONFIG_EXPORTED_WALLET_PATH: exported_path,
+            settings::CONFIG_EXPORTED_WALLET_PATH: export_path,
             settings::CONFIG_WALLET_BACKUP_KEY: settings::DEFAULT_WALLET_BACKUP_KEY,
         }).to_string();
         import(&import_config).unwrap();
@@ -256,7 +272,7 @@ pub mod tests {
         assert_eq!(add_record(xtype, id, value, "{}"), Err(error::DUPLICATE_WALLET_RECORD.code_num));
         thread::sleep(Duration::from_secs(1));
         ::api::vcx::vcx_shutdown(true);
-        delete_import_wallet_path(dir);
+        delete_import_wallet_path(export_path);
     }
 
     #[test]
@@ -287,24 +303,19 @@ pub mod tests {
     #[test]
     fn test_import_wallet_fails_with_existing_wallet() {
         settings::set_defaults();
-        let wallet_name = "test_import_wallet_fails_with_existing_wallet";
-        settings::set_config_value(settings::CONFIG_WALLET_NAME, wallet_name);
-        let exported_path = format!(r#"/tmp/{}"#, wallet_name);
-        let wallet_key = settings::get_config_value(settings::CONFIG_WALLET_KEY).unwrap();
-        let backup_key = settings::get_config_value(settings::CONFIG_WALLET_BACKUP_KEY).unwrap();
 
-        let dir = export_test_wallet();
+        let export_path = export_test_wallet();
 
         let import_config = json!({
-            settings::CONFIG_WALLET_NAME: wallet_name,
-            settings::CONFIG_WALLET_KEY: wallet_key,
-            settings::CONFIG_EXPORTED_WALLET_PATH: exported_path,
-            settings::CONFIG_WALLET_BACKUP_KEY: backup_key,
+            settings::CONFIG_WALLET_NAME: settings::DEFAULT_WALLET_NAME,
+            settings::CONFIG_WALLET_KEY: settings::DEFAULT_WALLET_KEY,
+            settings::CONFIG_EXPORTED_WALLET_PATH: export_path,
+            settings::CONFIG_WALLET_BACKUP_KEY: settings::DEFAULT_WALLET_BACKUP_KEY,
         }).to_string();
         assert_eq!(import(&import_config), Err(WalletError::CommonError(error::WALLET_ALREADY_EXISTS.code_num)));
 
         ::api::vcx::vcx_shutdown(true);
-        delete_import_wallet_path(dir);
+        delete_import_wallet_path(export_path);
     }
 
     #[test]
@@ -312,7 +323,6 @@ pub mod tests {
         settings::set_defaults();
         let wallet_name = "test_import_wallet_fails_with_invalid_path";
         settings::set_config_value(settings::CONFIG_WALLET_NAME, wallet_name);
-        let exported_path = format!(r#"/tmp/{}"#, wallet_name);
         let wallet_key = settings::get_config_value(settings::CONFIG_WALLET_KEY).unwrap();
         let backup_key = settings::get_config_value(settings::CONFIG_WALLET_BACKUP_KEY).unwrap();
 
@@ -336,22 +346,22 @@ pub mod tests {
         settings::set_defaults();
         teardown!("false");
 
-        let exported_path = format!(r#"/tmp/{}"#, settings::DEFAULT_WALLET_NAME);
         let bad_backup = "456";
 
-        let dir = export_test_wallet();
+        let export_path = export_test_wallet();
+
         ::api::vcx::vcx_shutdown(true);
 
         let import_config = json!({
             settings::CONFIG_WALLET_NAME: settings::DEFAULT_WALLET_NAME,
             settings::CONFIG_WALLET_KEY: settings::DEFAULT_WALLET_KEY,
-            settings::CONFIG_EXPORTED_WALLET_PATH: exported_path,
+            settings::CONFIG_EXPORTED_WALLET_PATH: export_path,
             settings::CONFIG_WALLET_BACKUP_KEY: bad_backup,
         }).to_string();
         assert_eq!(import(&import_config), Err(WalletError::CommonError(error::LIBINDY_INVALID_STRUCTURE.code_num)));
 
         ::api::vcx::vcx_shutdown(true);
-        delete_import_wallet_path(dir);
+        delete_import_wallet_path(export_path);
     }
 
     #[test]
