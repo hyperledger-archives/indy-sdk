@@ -1,6 +1,9 @@
 /**
  * This script is a sample to show revocation process.
  *
+ * This idea is to illustrate revocation process, not the basis of indy SDK (for this, you can take a look
+ * at other scripts like gettingStarted.js.
+ *
  * Scenario :
  * - Issuer create schema, credential definition, revocation registry and revocation registry entry
  * - Issuer create and send offer to prover
@@ -76,7 +79,7 @@ async function closeAndDeletePoolHandle(poolHandle, actor) {
 // Misc
 
 async function createAndStoreMyDid(wallet, seed) {
-    const [did, _ /* key */] = await indy.createAndStoreMyDid(wallet, {'seed': seed})
+    const [did] = await indy.createAndStoreMyDid(wallet, {'seed': seed})
     return did
 }
 
@@ -135,14 +138,14 @@ async function postSchemaToLedger(poolHandle, wallet, did, schema) {
 async function getSchemaFromLedger(poolHandle, did, schemaId) {
     const getSchemaRequest = await indy.buildGetSchemaRequest(did, schemaId)
     const getSchemaResponse = await ensureSubmitRequest(poolHandle, getSchemaRequest)
-    const [_ /*schemaId*/, schema] = await indy.parseGetSchemaResponse(getSchemaResponse)
+    const [, schema] = await indy.parseGetSchemaResponse(getSchemaResponse)
     return schema
 }
 
 async function getCredDefFromLedger(poolHandle, did, credDefId) {
     const getCredDefRequest = await indy.buildGetCredDefRequest(did, credDefId)
     const getCredDefResponse = await ensureSubmitRequest(poolHandle, getCredDefRequest)
-    const [_ /*credDefId*/, credDef] = await indy.parseGetCredDefResponse(getCredDefResponse)
+    const [, credDef] = await indy.parseGetCredDefResponse(getCredDefResponse)
     return credDef
 }
 
@@ -166,14 +169,14 @@ async function postRevocRegEntryRequestToLedger(poolHandle, wallet, did, revRegD
 async function getRevocRegDefFromLedger(poolHandle, did, revRegDefId) {
     const getRevocRegDefRequest = await indy.buildGetRevocRegDefRequest(did, revRegDefId)
     const getRevocRegDefResponse = await ensureSubmitRequest(poolHandle, getRevocRegDefRequest)
-    const [_ /*revRegDefId*/, revRegDef] = await indy.parseGetRevocRegDefResponse(getRevocRegDefResponse)
+    const [, revRegDef] = await indy.parseGetRevocRegDefResponse(getRevocRegDefResponse)
     return revRegDef
 }
 
 async function getRevocRegDeltaFromLedger(poolHandle, did, revRegDefId, from, to) {
     const getRevocRegDeltaRequest = await indy.buildGetRevocRegDeltaRequest(did, revRegDefId, from, to)
     const getRevocRegDeltaResponse = await ensureSubmitRequest(poolHandle, getRevocRegDeltaRequest)
-    const [_ /*revocRegDefId*/, revRegDelta, timestamp] = await indy.parseGetRevocRegDeltaResponse(getRevocRegDeltaResponse)
+    const [, revRegDelta, timestamp] = await indy.parseGetRevocRegDeltaResponse(getRevocRegDeltaResponse)
     return [revRegDelta, timestamp]
 }
 
@@ -346,21 +349,17 @@ async function run() {
     prover.proofReq = verifier.proofReq
 
     logProver("Prover gets credentials for proof request")
-    prover.searchHandle = await indy.proverSearchCredentialsForProofReq(prover.wallet, prover.proofReq, undefined)
-
-    logProver("Prover gets credentials for attr1_referent")
     {
-        const credentialsForAttr1 = await indy.proverFetchCredentialsForProofReq(prover.searchHandle, "attr1_referent", 10)
+        const searchHandle = await indy.proverSearchCredentialsForProofReq(prover.wallet, prover.proofReq, undefined)
+
+        const credentialsForAttr1 = await indy.proverFetchCredentialsForProofReq(searchHandle, "attr1_referent", 10)
         prover.credInfoForAttribute = credentialsForAttr1[0]["cred_info"]
-    }
 
-    logProver("Prover gets credentials for predicate1_referent")
-    {
-        const credentialsForPredicate1 = await indy.proverFetchCredentialsForProofReq(prover.searchHandle, "predicate1_referent", 10)
+        const credentialsForPredicate1 = await indy.proverFetchCredentialsForProofReq(searchHandle, "predicate1_referent", 10)
         prover.credInfoForPredicate = credentialsForPredicate1[0]["cred_info"]
-    }
 
-    await indy.proverCloseCredentialsSearchForProofReq(prover.searchHandle)
+        await indy.proverCloseCredentialsSearchForProofReq(searchHandle)
+    }
 
     logProver("Prover opens tails reader")
     {
@@ -420,7 +419,7 @@ async function run() {
 
     logVerifier("Verifier gets revocation registry delta from ledger")
     {
-        const [revRegDelta, _ /* timestamp */] = await getRevocRegDeltaFromLedger(verifier.poolHandle, verifier.did, verifier.revRegDefId, 0 /* from */, util.getCurrentTimeInSeconds() /* to */)
+        const [revRegDelta, /* timestamp (unused) */] = await getRevocRegDeltaFromLedger(verifier.poolHandle, verifier.did, verifier.revRegDefId, 0 /* from */, util.getCurrentTimeInSeconds() /* to */)
         // timestamp = timestamp of "Issuer Posts Revocation Registry Delta to ledger (#1)"
         verifier.revRegDelta = revRegDelta
     }
@@ -453,7 +452,7 @@ async function run() {
 
     logVerifier("Verifier gets revocation registry delta from ledger")
     {
-        const [revRegDelta, _ /* timestamp */] = await getRevocRegDeltaFromLedger(verifier.poolHandle, verifier.did, verifier.revRegDefId, 0 /* from */, util.getCurrentTimeInSeconds() /* to */)
+        const [revRegDelta, /* timestamp (unused) */] = await getRevocRegDeltaFromLedger(verifier.poolHandle, verifier.did, verifier.revRegDefId, 0 /* from */, util.getCurrentTimeInSeconds() /* to */)
         // timestamp = timestamp of "Issuer Posts Revocation Registry Delta to ledger (#2 after revocation)"
         verifier.revRegDelta2 = revRegDelta
     }
@@ -470,16 +469,16 @@ async function run() {
 
     logVerifier("Verifier gets revocation registry delta from ledger")
     {
-        const [revRegDelta, _ /* timestamp */] = await getRevocRegDeltaFromLedger(verifier.poolHandle, verifier.did, verifier.revRegDefId, 0 /* from */, verifier.timestampReceptionOfProof /* to */)
+        const [revRegDelta, /* timestamp (unused) */] = await getRevocRegDeltaFromLedger(verifier.poolHandle, verifier.did, verifier.revRegDefId, verifier.timestampReceptionOfProof /* from */, verifier.timestampReceptionOfProof /* to */)
         verifier.revRegDelta3 = revRegDelta
     }
 
     logVerifier("Verifier verifies proof (#3) (proof must be non-revoked)")
     const verifiedBeforeRevocation2 = await verifierVerifyProof(verifier.revRegDefId, verifier.revRegDef, verifier.timestampOfProof, verifier.revRegDelta3, verifier.proofReq, verifier.proof, verifier.schemas, verifier.credDefs)
     if (verifiedBeforeRevocation2) {
-        logOK("OK : proof is NOT verified as expected :-)")
+        logOK("OK : proof is verified as expected :-)")
     } else {
-        logKO("KO : proof is verified but is expected to be NOT... :-(")
+        logKO("KO : proof is NOT verified but is expected to be NOT... :-(")
     }
 
     log("Actors close and delete wallets")
