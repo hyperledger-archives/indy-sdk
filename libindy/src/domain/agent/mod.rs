@@ -67,3 +67,18 @@ pub struct Protected {
     pub aad_hash_alg: String,
     pub cek_enc: String
 }
+
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
+pub struct FromAddress {
+    wallet_key: WalletKey
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
+pub enum WalletKey {
+    WalletKeyId(i32, String) //wallet_handle, base58 encoded public key
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
+pub enum ToAddress {
+    PubKey(Vec<String>)
+}
