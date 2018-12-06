@@ -1,3 +1,5 @@
+extern crate libc;
+
 pub mod anoncreds;
 pub mod blob_storage;
 pub mod crypto;
@@ -10,7 +12,7 @@ pub mod pool;
 pub mod wallet;
 pub mod logger;
 
-use std::os::raw::{c_void, c_char};
+use self::libc::{c_void, c_char};
 
 pub type CVoid = c_void;
 pub type BString = *const u8;

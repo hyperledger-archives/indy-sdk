@@ -729,4 +729,22 @@
     return err;
 }
 
+- (NSError *)getResponseMetadata:(NSString *)response
+                responseMetadata:(NSString **)responseMetadata {
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+    __block NSString *result = nil;
+
+    [IndyLedger getResponseMetadata:response completion:^(NSError *error, NSString *responseMetadata) {
+        err = error;
+        result = responseMetadata;
+        [completionExpectation fulfill];
+    }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
+
+    if (responseMetadata) {*responseMetadata = result;}
+    return err;
+}
+
 @end

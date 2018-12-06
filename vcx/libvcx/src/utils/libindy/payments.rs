@@ -4,7 +4,7 @@ extern crate serde_json;
 use futures::Future;
 
 use utils::libindy::wallet::get_wallet_handle;
-use utils::constants::{ SUBMIT_SCHEMA_RESPONSE, TRANSFER_TXN_TYPE };
+use utils::constants::{SUBMIT_SCHEMA_RESPONSE, TRANSFER_TXN_TYPE};
 use utils::libindy::error_codes::map_rust_indy_sdk_error_code;
 #[allow(unused_imports)]
 use utils::libindy::ledger::{libindy_submit_request, libindy_sign_and_submit_request, libindy_sign_request};
@@ -32,6 +32,7 @@ impl WalletInfo {
         self.balance
     }
 }
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct AddressInfo {
     pub address: String,
@@ -58,7 +59,7 @@ pub struct Output {
 
 impl fmt::Display for WalletInfo {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        match serde_json::to_string(&self){
+        match serde_json::to_string(&self) {
             Ok(s) => write!(f, "{}", s),
             Err(e) => write!(f, "null"),
         }
@@ -76,9 +77,9 @@ pub struct PaymentTxn {
 impl PaymentTxn {
     pub fn from_parts(inputs: &str, outputs: &str, amount: u64, credit: bool) -> Result<PaymentTxn, u32> {
         let inputs: Vec<String> = serde_json::from_str(&inputs)
-            .map_err(|err| {error::INVALID_JSON.code_num})?;
+            .map_err(|err| { error::INVALID_JSON.code_num })?;
         let outputs: Vec<Output> = serde_json::from_str(&outputs)
-            .map_err(|err| {error::INVALID_JSON.code_num})?;
+            .map_err(|err| { error::INVALID_JSON.code_num })?;
         Ok(PaymentTxn {
             amount,
             credit,
@@ -93,6 +94,8 @@ pub fn build_test_address(address: &str) -> String {
 }
 
 pub fn create_address(seed: Option<String>) -> Result<String, u32> {
+    trace!("create_address >>> seed: {:?}", seed);
+
     if settings::test_indy_mode_enabled() {
         return Ok(build_test_address("J81AxU9hVHYFtJc"));
     }
@@ -128,7 +131,7 @@ pub fn get_address_info(address: &str) -> Result<AddressInfo, u32> {
 
         let utxo: Vec<UTXO> = serde_json::from_value(utxos).unwrap();
 
-        return Ok(AddressInfo { address: address.to_string(), balance: _address_balance(&utxo), utxo})
+        return Ok(AddressInfo { address: address.to_string(), balance: _address_balance(&utxo), utxo });
     }
 
     let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
@@ -167,6 +170,8 @@ pub fn list_addresses() -> Result<Vec<String>, u32> {
 }
 
 pub fn get_wallet_token_info() -> Result<WalletInfo, u32> {
+    trace!("get_wallet_token_info >>>");
+
     let addresses = list_addresses()?;
 
     let mut balance = 0;
@@ -180,10 +185,17 @@ pub fn get_wallet_token_info() -> Result<WalletInfo, u32> {
         wallet_info.push(info);
     }
 
-    Ok(WalletInfo { balance, balance_str: format!("{}", balance), addresses: wallet_info })
+    let info = WalletInfo { balance, balance_str: format!("{}", balance), addresses: wallet_info };
+
+    trace!("get_wallet_token_info <<< info: {:?}", info);
+    ;
+
+    Ok(info)
 }
 
 pub fn get_ledger_fees() -> Result<String, u32> {
+    trace!("get_ledger_fees >>>");
+
     if settings::test_indy_mode_enabled() { return Ok(DEFAULT_FEES.to_string()); }
 
     let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).or(Err(error::INVALID_CONFIGURATION.code_num))?;
@@ -238,14 +250,14 @@ fn _submit_fees_request(req: &str, inputs: &str, outputs: &str) -> Result<(Strin
     let req = libindy_sign_request(&did, req)?;
 
     let (response, payment_method) = match payments::add_request_fees(get_wallet_handle(),
-                                                                     Some(&did),
-                                                                     &req,
-                                                                     &inputs,
-                                                                     &outputs,
-                                                                     None).wait() {
+                                                                      Some(&did),
+                                                                      &req,
+                                                                      &inputs,
+                                                                      &outputs,
+                                                                      None).wait() {
         Ok((req, payment_method)) => {
             (libindy_submit_request(&req)?, payment_method)
-        },
+        }
         Err(x) => return Err(map_rust_indy_sdk_error_code(x)),
     };
 
@@ -258,13 +270,14 @@ fn _submit_fees_request(req: &str, inputs: &str, outputs: &str) -> Result<(Strin
 }
 
 pub fn pay_a_payee(price: u64, address: &str) -> Result<(PaymentTxn, String), PaymentError> {
-    info!("sending {} tokens to address {}", price, address);
+    trace!("pay_a_payee >>> price: {}, address {}", price, address);
+    debug!("sending {} tokens to address {}", price, address);
 
     let ledger_cost = get_txn_price(TRANSFER_TXN_TYPE).map_err(|e| PaymentError::CommonError(e))?;
     let (remainder, input, refund_address) = inputs(price + ledger_cost)?;
     let output = outputs(remainder, &refund_address, Some(address.to_string()), Some(price))?;
 
-    let payment = PaymentTxn::from_parts(&input, &output, price, false).map_err(|e|PaymentError::CommonError(e))?;
+    let payment = PaymentTxn::from_parts(&input, &output, price, false).map_err(|e| PaymentError::CommonError(e))?;
     let my_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).or(Err(PaymentError::CommonError(error::INVALID_CONFIGURATION.code_num)))?;
 
     if settings::test_indy_mode_enabled() {
@@ -279,25 +292,24 @@ pub fn pay_a_payee(price: u64, address: &str) -> Result<(PaymentTxn, String), Pa
         ]"#, build_test_address("xkIsxem0YNtHrRO"));
 
         return Ok((PaymentTxn::from_parts(&inputs, &outputs, 1, false).unwrap(), SUBMIT_SCHEMA_RESPONSE.to_string()));
-
     }
 
     match payments::build_payment_req(get_wallet_handle(), Some(&my_did), &input, &output, None).wait() {
         Ok((request, payment_method)) => {
-            let result = libindy_submit_request( &request).map_err(|ec| PaymentError::CommonError(ec))?;
+            let result = libindy_submit_request(&request).map_err(|ec| PaymentError::CommonError(ec))?;
             Ok((payment, result))
-        },
+        }
         Err(ec) => {
             error!("error: {:?}", ec);
             Err(PaymentError::CommonError(ec as u32))
-        },
+        }
     }
 }
 
 fn get_txn_price(txn_type: &str) -> Result<u64, u32> {
     let ledger_fees = get_ledger_fees()?;
 
-    let fees: HashMap<String, u64> = serde_json::from_str(&ledger_fees) .or(Err(error::INVALID_JSON.code_num))?;
+    let fees: HashMap<String, u64> = serde_json::from_str(&ledger_fees).or(Err(error::INVALID_JSON.code_num))?;
 
     match fees.get(txn_type) {
         Some(x) => Ok(*x),
@@ -358,6 +370,9 @@ pub fn outputs(remainder: u64, refund_address: &str, payee_address: Option<Strin
 
 // This is used for testing purposes only!!!
 pub fn mint_tokens_and_set_fees(number_of_addresses: Option<u32>, tokens_per_address: Option<u64>, fees: Option<String>, seed: Option<String>) -> Result<(), u32> {
+    trace!("mint_tokens_and_set_fees >>> number_of_addresses: {:?}, tokens_per_address: {:?}, fees: {:?}, seed: {:?}",
+           number_of_addresses, tokens_per_address, fees, seed);
+
     let did_1 = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
 
     let fees = if fees.is_some() {
@@ -412,7 +427,7 @@ pub fn mint_tokens_and_set_fees(number_of_addresses: Option<u32>, tokens_per_add
 
     Ok(())
 }
- 
+
 fn add_new_trustee_did() -> Result<(String, String), u32> {
     use indy::ledger;
 
@@ -435,7 +450,7 @@ pub mod tests {
     }
 
     fn get_my_balance() -> u64 {
-        let info:WalletInfo = get_wallet_token_info().unwrap();
+        let info: WalletInfo = get_wallet_token_info().unwrap();
         info.balance
     }
 
@@ -637,7 +652,7 @@ pub mod tests {
         let (_, schema_json) = ::utils::libindy::anoncreds::tests::create_schema(::utils::constants::DEFAULT_SCHEMA_ATTRS);
         let create_schema_req = ::utils::libindy::anoncreds::tests::create_schema_req(&schema_json);
 
-        let rc= pay_for_txn(&create_schema_req, "101");
+        let rc = pay_for_txn(&create_schema_req, "101");
 
         assert!(rc.is_err());
     }
@@ -672,9 +687,9 @@ pub mod tests {
     // by master libindy and how wallets are deleted.
     #[cfg(feature = "pool_tests")]
     #[test]
-    #[ignore] // TODO: FIXME test is affected by the previous one
+    #[ignore]
     fn test_build_payment_request_bogus_payment_method() {
-        init!("false");
+        init!("ledger");
         let payment_address = "pay:bogus:123";
         let result_from_paying = pay_a_payee(0, payment_address);
 

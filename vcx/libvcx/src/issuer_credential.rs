@@ -103,6 +103,8 @@ impl IssuerCredential {
     }
 
     fn send_credential_offer(&mut self, connection_handle: u32) -> Result<u32, IssuerCredError> {
+        trace!("IssuerCredential::send_credential_offer >>> connection_handle: {}", connection_handle);
+
         debug!("sending credential offer for issuer_credential {} to connection {}", self.source_id, connection::get_source_id(connection_handle).unwrap_or_default());
         if self.state != VcxStateType::VcxStateInitialized {
             warn!("credential {} has invalid state {} for sending credentialOffer", self.source_id, self.state as u32);
@@ -169,6 +171,8 @@ impl IssuerCredential {
     }
 
     fn send_credential(&mut self, connection_handle: u32) -> Result<u32, IssuerCredError> {
+        trace!("IssuerCredential::send_credential >>> connection_handle: {}", connection_handle);
+
         debug!("sending credential for issuer_credential {} to connection {}", self.source_id, connection::get_source_id(connection_handle).unwrap_or_default());
         if self.state != VcxStateType::VcxStateRequestReceived {
             warn!("credential {} has invalid state {} for sending credential", self.source_id, self.state as u32);
@@ -247,11 +251,16 @@ impl IssuerCredential {
     }
 
     fn update_state(&mut self) -> Result<u32, IssuerCredError> {
+        trace!("IssuerCredential::update_state >>>");
         self.get_credential_offer_status()
         //There will probably be more things here once we do other things with the credential
     }
 
-    fn get_state(&self) -> u32 { let state = self.state as u32; state }
+    fn get_state(&self) -> u32 {
+        trace!("IssuerCredential::get_state >>>");
+        let state = self.state as u32;
+        state
+    }
     fn get_offer_uid(&self) -> &String { &self.msg_uid }
     fn set_offer_uid(&mut self, uid: &str) {self.msg_uid = uid.to_owned();}
     fn set_credential_request(&mut self, credential_request:CredentialRequest) -> Result<u32,u32> {
@@ -337,6 +346,8 @@ impl IssuerCredential {
     }
 
     fn get_payment_txn(&self) -> Result<payments::PaymentTxn, u32> {
+        trace!("IssuerCredential::get_payment_txn >>>");
+
         match self.payment_address {
             Some(ref payment_address) if self.price > 0 => {
                 Ok(payments::PaymentTxn {
@@ -451,6 +462,8 @@ pub fn issuer_credential_create(cred_def_id: String,
                            credential_name: String,
                            credential_data: String,
                            price: u64) -> Result<u32, IssuerCredError> {
+    trace!("issuer_credential_create >>> cred_def_id: {}, source_id: {}, issuer_did: {}, credential_name: {}, credential_data: {}, price: {}",
+           cred_def_id, source_id, issuer_did, credential_name, credential_data, price);
 
     let mut new_issuer_credential = IssuerCredential {
         credential_id: source_id.to_string(),
@@ -596,7 +609,7 @@ pub fn get_source_id(handle: u32) -> Result<String, u32> {
 pub mod tests {
     use super::*;
     use settings;
-    use connection::{ build_connection };
+    use connection::tests::build_test_connection;
     use credential_request::CredentialRequest;
     #[allow(unused_imports)]
     use utils::{ constants::*,
@@ -756,7 +769,7 @@ pub mod tests {
     #[test]
     fn test_send_credential_offer() {
         init!("true");
-        let connection_handle = build_connection("test_send_credential_offer").unwrap();
+        let connection_handle = build_test_connection();
 
         let credential_id = DEFAULT_CREDENTIAL_ID;
 
@@ -783,7 +796,7 @@ pub mod tests {
     #[test]
     fn test_retry_send_credential_offer() {
         init!("true");
-        let connection_handle = build_connection("test_send_credential_offer").unwrap();
+        let connection_handle = build_test_connection();
 
         let credential_id = DEFAULT_CREDENTIAL_ID;
 
@@ -813,7 +826,7 @@ pub mod tests {
         let mut credential = create_standard_issuer_credential();
         credential.state = VcxStateType::VcxStateRequestReceived;
 
-        let connection_handle = build_connection("test_send_credential_offer").unwrap();
+        let connection_handle = build_test_connection();
 
         set_libindy_rc(error::TIMEOUT_LIBINDY_ERROR.code_num);
         assert_eq!(credential.send_credential(connection_handle),
@@ -848,7 +861,7 @@ pub mod tests {
     #[test]
     fn test_update_state_with_pending_credential_request() {
         init!("true");
-        let connection_handle = build_connection("test_update_state_with_pending_credential_request").unwrap();
+        let connection_handle = build_test_connection();
         let credential_req:CredentialRequest = CredentialRequest::from_str(CREDENTIAL_REQ_STRING).unwrap();
         let (credential_offer, _) = ::credential::parse_json_offer(CREDENTIAL_OFFER_JSON).unwrap();
         let mut credential = IssuerCredential {
@@ -927,7 +940,7 @@ pub mod tests {
         let mut credential = create_standard_issuer_credential();
         credential.state = VcxStateType::VcxStateRequestReceived;
 
-        let connection_handle = build_connection("test_send_credential_offer").unwrap();
+        let connection_handle = build_test_connection();
 
         credential.send_credential(connection_handle).unwrap();
         assert_eq!(credential.state, VcxStateType::VcxStateAccepted);
@@ -1014,7 +1027,7 @@ pub mod tests {
         credential.price = 3;
         credential.payment_address = Some(payments::build_test_address("9UFgyjuJxi1i1HD"));
 
-        let connection_handle = build_connection("test_send_credential_offer").unwrap();
+        let connection_handle = build_test_connection();
 
         // Success
         credential.send_credential(connection_handle).unwrap();
