@@ -38,6 +38,8 @@ randombytes_sodium = ["sodiumoxide"]
 fatal_warnings = []
 
 [dependencies]
+#indy = { version="1.6.7", path="../../../wrappers/rust" }
+rust-libindy-wrapper = "0.2.13"
 indy-crypto = { version = "=0.4.3", optional = true }
 int_traits = { version = "0.1.1", optional = true }
 digest = "0.6.2"

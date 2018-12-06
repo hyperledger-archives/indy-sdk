@@ -11,6 +11,7 @@ pub mod logger;
 #[macro_use]
 pub mod byte_array;
 
+pub mod callbacks;
 pub mod sequence;
 pub mod crypto;
 pub mod environment;

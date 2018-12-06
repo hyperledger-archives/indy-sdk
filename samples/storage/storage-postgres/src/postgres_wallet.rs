@@ -19,6 +19,8 @@ use std::ffi::CString;
 use std::sync::Mutex;
 use std::str;
 
+pub static POSTGRES_STORAGE_NAME: &str = "postgres_storage";
+
 
 struct PostgresStorageContext {
     // TODO save handle, config and credentials in case we need to re-connect to database
