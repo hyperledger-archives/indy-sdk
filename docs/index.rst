@@ -24,16 +24,17 @@ Go to the next page to get started using the Indy SDK.
   :maxdepth: 1
   :hidden:
 
-  getting-started/getting-started.rst
-  concepts/concepts.rst
+  getting-started/index.rst
+  concepts/index.rst
   how-tos/README.md
-  build-guides/build-guides.rst
-  migration-guides/migration-guides.rst
+  build-guides/index.rst
+  migration-guides/index.rst
+  architecture/index.rst
 
 .. toctree::
   :caption: Contributors
   :maxdepth: 1
   :hidden:
 
-  design/design.rst
-  contributors/contributors.rst
+  design/index.rst
+  contributors/index.rst
