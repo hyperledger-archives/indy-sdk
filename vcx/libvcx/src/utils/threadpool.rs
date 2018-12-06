@@ -61,3 +61,14 @@ where
         None => panic!("no threadpool!"),
     }
 }
+
+pub fn cleanup(){
+    let handle;
+    unsafe { handle = TP_HANDLE; }
+    match THREADPOOL.lock().unwrap().remove(&handle) {
+        Some(x) => {
+            x.shutdown().wait().unwrap();
+        }
+        None => {},
+    }
+}

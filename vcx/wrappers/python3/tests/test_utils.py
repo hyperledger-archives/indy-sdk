@@ -26,11 +26,10 @@ async def test_provision_agent():
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
-async def test_update_agent_info_fails(cleanup):
+async def test_update_agent_info_fails():
     with pytest.raises(VcxError) as e:
         await vcx_agent_update_info("")
     assert ErrorCode.InvalidOption == e.value.error_code
-    cleanup(True)
 
 
 @pytest.mark.asyncio
@@ -38,6 +37,7 @@ async def test_update_agent_info_fails(cleanup):
 async def test_vcx_messages_download():
     messages = await vcx_messages_download()
     assert messages
+
 
 
 @pytest.mark.asyncio
@@ -48,16 +48,14 @@ async def test_vcx_messages_update_status():
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
-async def test_update_agent_info(cleanup):
+async def test_update_agent_info():
     await vcx_agent_update_info(agentUpdateString)
-    cleanup(True)
 
 
 def test_get_version():
     assert get_version()
 
 
-def test_update_institution_info(cleanup):
+def test_update_institution_info():
     # Returns None if successful and throws error otherwise
     assert update_institution_info('new name', 'new logo') is None
-    cleanup(True)
