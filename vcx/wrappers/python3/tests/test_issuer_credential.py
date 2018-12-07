@@ -12,7 +12,7 @@ cred_def_handle = 1
 attrs = {'key': 'value', 'key2': 'value2', 'key3': 'value3'}
 name = 'Credential Name'
 issuer_did = '8XFh8yBzrpJQmNyZzgoTqB'
-phone_number = '8019119191'
+connection_options = '{"connection_type":"SMS","phone":"8019119191","use_public_did":true}'
 price = '1'
 schema_id = '123'
 req = {'libindy_cred_req': '', 'libindy_cred_req_meta': '', 'cred_def_id': '', 'tid': '', 'to_did': '', 'from_did': '',
@@ -129,7 +129,7 @@ async def test_issuer_credential_release():
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_send_offer():
     connection = await Connection.create(source_id)
-    await connection.connect(phone_number)
+    await connection.connect(connection_options)
     cred_def = await CredentialDef.create(source_id, name, schema_id, 0)
     issuer_credential = await IssuerCredential.create(source_id, attrs, cred_def.handle, name, price)
     await issuer_credential.send_offer(connection)
@@ -143,7 +143,7 @@ async def test_send_offer():
 async def test_send_offer_with_invalid_state():
     with pytest.raises(VcxError) as e:
         connection = await Connection.create(source_id)
-        await connection.connect(phone_number)
+        await connection.connect(connection_options)
         cred_def = await CredentialDef.create(source_id, name, schema_id, 0)
         issuer_credential = await IssuerCredential.create(source_id, attrs, cred_def.handle, name, price)
         data = await issuer_credential.serialize()
@@ -169,7 +169,7 @@ async def test_send_offer_with_bad_connection():
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_send_credential():
     connection = await Connection.create(source_id)
-    await connection.connect(phone_number)
+    await connection.connect(connection_options)
     cred_def = await CredentialDef.create(source_id, name, schema_id, 0)
     issuer_credential = await IssuerCredential.create(source_id, attrs, cred_def.handle, name, price)
     await issuer_credential.send_offer(connection)
@@ -208,7 +208,7 @@ async def test_send_credential_with_invalid_connection():
 async def test_send_credential_with_no_prior_offer():
     with pytest.raises(VcxError) as e:
         connection = await Connection.create(source_id)
-        await connection.connect(phone_number)
+        await connection.connect(connection_options)
         cred_def = await CredentialDef.create(source_id, name, schema_id, 0)
         issuer_credential = await IssuerCredential.create(source_id, attrs, cred_def.handle, name, price)
         await issuer_credential.send_credential(connection)
