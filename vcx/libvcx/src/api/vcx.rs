@@ -124,6 +124,8 @@ fn _finish_init(command_handle: u32, cb: extern fn(xcommand_handle: u32, err: u3
         }
     };
 
+    let wallet_type = settings::get_config_value(settings::CONFIG_WALLET_TYPE).ok();
+
     trace!("libvcx version: {}{}", version_constants::VERSION, version_constants::REVISION);
 
     spawn(move|| {
@@ -137,7 +139,7 @@ fn _finish_init(command_handle: u32, cb: extern fn(xcommand_handle: u32, err: u3
             }
         }
 
-        match wallet::open_wallet(&wallet_name) {
+        match wallet::open_wallet(&wallet_name, wallet_type.as_ref().map(String::as_str)) {
             Ok(_) => {
                 debug!("Init Wallet Successful");
                 cb(command_handle, error::SUCCESS.code_num);
@@ -202,7 +204,9 @@ pub extern fn vcx_shutdown(delete: bool) -> u32 {
         let wallet_name = settings::get_config_value(settings::CONFIG_WALLET_NAME)
             .unwrap_or(settings::DEFAULT_WALLET_NAME.to_string());
 
-        match wallet::delete_wallet(&wallet_name) {
+        let wallet_type = settings::get_config_value(settings::CONFIG_WALLET_TYPE).ok();
+
+        match wallet::delete_wallet(&wallet_name, wallet_type.as_ref().map(String::as_str)) {
             Ok(_) => (),
             Err(_) => (),
         };

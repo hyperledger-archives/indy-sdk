@@ -72,6 +72,6 @@ mod tests {
         wallet::close_wallet().unwrap();
         pool::close().unwrap();
         init_pool().unwrap();
-        wallet::init_wallet(settings::DEFAULT_WALLET_NAME).unwrap();
+        wallet::init_wallet(settings::DEFAULT_WALLET_NAME, None).unwrap();
     }
 }
