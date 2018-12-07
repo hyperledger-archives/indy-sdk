@@ -156,20 +156,43 @@ def macosTesting() {
                 echo "MacOS Test: Checkout scm"
                 checkout scm
 
-                dir('libindy') {
-                    echo "MacOS Test: Build"
-                    setupRust()
-                    setupBrewPackages()
-                    sh "cargo build --features fatal_warnings"
-                    sh "cargo test --no-run"
-                    // TODO testing
-                }
+                setupRust()
+                setupBrewPackages()
+
+                macosModuleBuilding('libindy')
+
+                sh "cp libindy/target/debug/libindy.dylib libnullpay"
+                sh "cp libindy/target/debug/libindy.dylib vcx/libvcx"
+
+                macosModuleBuilding('libnullpay')
+
+                sh "cp libnullpay/target/debug/libnullpay.dylib vcx/libvcx"
+
+                macosModuleBuilding('vcx/libvcx')
+                macosModuleTesting('vcx/libvcx')
 
                 //TODO wrappers testing
             } finally {
                 step([$class: 'WsCleanup'])
             }
         }
+    }
+}
+
+def macosModuleBuilding(library) {
+    dir(library) {
+        echo "MacOS ${library} Testing: Build"
+        sh "LIBRARY_PATH=./ cargo build --features fatal_warnings"
+        sh "LIBRARY_PATH=./ cargo test --no-run"
+        // TODO testing
+    }
+}
+
+def macosModuleTesting(library) {
+    dir(library) {
+        echo "MacOS ${library} Testing: Run Tests"
+        sh "LIBRARY_PATH=./ RUST_TEST_THREADS=1 cargo test"
+        // TODO testing
     }
 }
 
