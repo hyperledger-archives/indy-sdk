@@ -4,16 +4,18 @@ import random
 from ctypes import cdll
 from time import sleep
 
-from vcx.api.vcx_init import vcx_init_with_config
+import logging
+
 from vcx.api.connection import Connection
+from vcx.api.credential_def import CredentialDef
 from vcx.api.issuer_credential import IssuerCredential
 from vcx.api.proof import Proof
 from vcx.api.schema import Schema
-from vcx.api.credential_def import CredentialDef
-from vcx.state import State, ProofState
 from vcx.api.utils import vcx_agent_provision
-import vcx.api.logging as logging
-from ctypes import cdll
+from vcx.api.vcx_init import vcx_init_with_config
+from vcx.state import State, ProofState
+
+# logging.basicConfig(level=logging.DEBUG) uncomment to get logs
 
 # 'agency_url': URL of the agency
 # 'agency_did':  public DID of the agency
@@ -37,7 +39,6 @@ async def main():
     payment_plugin = cdll.LoadLibrary("libnullpay.so")
     payment_plugin.nullpay_init()
 
-    logging.default_logger()
     print("#1 Provision an agent and wallet, get back configuration details")
     config = await vcx_agent_provision(json.dumps(provisionConfig))
     config = json.loads(config)
@@ -48,7 +49,6 @@ async def main():
     
     print("#2 Initialize libvcx with new configuration")
     await vcx_init_with_config(json.dumps(config))
-
 
     print("#3 Create a new schema on the ledger")
     version = format("%d.%d.%d" % (random.randint(1, 101), random.randint(1, 101), random.randint(1, 101)))
