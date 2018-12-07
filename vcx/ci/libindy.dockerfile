@@ -66,8 +66,8 @@ RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 68DB5E88 && \
     add-apt-repository 'deb https://repo.corp.evernym.com/deb evernym-agency-dev-ubuntu main' && \
     curl https://repo.corp.evernym.com/repo.corp.evenym.com-sig.key | apt-key add -
 
-ARG LIBINDY_VER="1.6.6"
-ARG LIBNULL_VER="1.6.6"
+ARG LIBINDY_VER="1.6.8"
+ARG LIBNULL_VER="1.6.8"
 
 RUN apt-get update && apt-get install -y \
     libindy=${LIBINDY_VER} \

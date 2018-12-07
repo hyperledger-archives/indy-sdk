@@ -1,7 +1,7 @@
 #![warn(dead_code)]
 use {ErrorCode, IndyHandle};
 
-use std::os::raw::c_char;
+use libc::c_char;
 
 use std::collections::HashMap;
 use std::ffi::CStr;
