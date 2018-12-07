@@ -30,15 +30,16 @@ use std::thread;
 pub extern fn vcx_wallet_get_token_info(command_handle: u32,
                                      payment_handle: u32,
                                      cb: Option<extern fn(xcommand_handle: u32, err:u32, *const c_char)>) -> u32 {
+    info!("vcx_wallet_get_token_info >>>");
 
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
-    info!("vcx_wallet_get_token_info(command_handle: {}, payment_handle: {})",
+    trace!("vcx_wallet_get_token_info(command_handle: {}, payment_handle: {})",
           command_handle, payment_handle);
 
     spawn(move|| {
         match get_wallet_token_info() {
             Ok(x) => {
-                info!("vcx_wallet_get_token_info_cb(command_handle: {}, rc: {}, info: {})",
+                trace!("vcx_wallet_get_token_info_cb(command_handle: {}, rc: {}, info: {})",
                     command_handle, error_string(0), x.to_string());
 
                 let msg = CStringUtils::string_to_cstring(x.to_string());
@@ -72,6 +73,7 @@ pub extern fn vcx_wallet_get_token_info(command_handle: u32,
 pub extern fn vcx_wallet_create_payment_address(command_handle: u32,
                                                 seed: *const c_char,
                                                 cb: Option<extern fn(xcommand_handle: u32, err:u32, address: *const c_char)>) -> u32 {
+    info!("vcx_wallet_create_payment_address >>>");
 
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
     let seed = if !seed.is_null() {
@@ -81,13 +83,13 @@ pub extern fn vcx_wallet_create_payment_address(command_handle: u32,
         None
     };
 
-    info!("vcx_wallet_create_payment_address(command_handle: {})",
+    trace!("vcx_wallet_create_payment_address(command_handle: {})",
           command_handle);
 
     spawn(move|| {
         match create_address(seed) {
             Ok(x) => {
-                info!("vcx_wallet_create_payment_address_cb(command_handle: {}, rc: {}, address: {})",
+                trace!("vcx_wallet_create_payment_address_cb(command_handle: {}, rc: {}, address: {})",
                     command_handle, error_string(0), x);
 
                 let msg = CStringUtils::string_to_cstring(x);
@@ -144,26 +146,27 @@ pub extern fn vcx_wallet_add_record(command_handle: u32,
                                     value: *const c_char,
                                     tags_json: *const c_char,
                                     cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
+    info!("vcx_wallet_add_record >>>");
+
     check_useful_c_str!(type_, error::INVALID_OPTION.code_num);
     check_useful_c_str!(id, error::INVALID_OPTION.code_num);
     check_useful_c_str!(value, error::INVALID_OPTION.code_num);
     check_useful_c_str!(tags_json, error::INVALID_OPTION.code_num);
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
 
-
-    info!("vcx_wallet_add_record(command_handle: {}, type_: {}, id: {}, value: {}, tags_json: {})",
+    trace!("vcx_wallet_add_record(command_handle: {}, type_: {}, id: {}, value: {}, tags_json: {})",
           command_handle, type_, id, value, tags_json);
 
     spawn(move|| {
         match wallet::add_record(&type_, &id, &value, &tags_json) {
             Ok(x) => {
-                info!("vcx_wallet_add_record(command_handle: {}, rc: {})",
+                trace!("vcx_wallet_add_record(command_handle: {}, rc: {})",
                       command_handle, error_string(0));
 
                 cb(command_handle, error::SUCCESS.code_num);
             },
             Err(x) => {
-                info!("vcx_wallet_add_record(command_handle: {}, rc: {})",
+                trace!("vcx_wallet_add_record(command_handle: {}, rc: {})",
                       command_handle, error_string(x));
 
                 cb(command_handle, x);
@@ -200,24 +203,26 @@ pub extern fn vcx_wallet_update_record_value(command_handle: u32,
                                              id: *const c_char,
                                              value: *const c_char,
                                              cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
+    info!("vcx_wallet_update_record_value >>>");
+
     check_useful_c_str!(type_, error::INVALID_OPTION.code_num);
     check_useful_c_str!(id, error::INVALID_OPTION.code_num);
     check_useful_c_str!(value, error::INVALID_OPTION.code_num);
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
 
-    info!("vcx_wallet_update_record_value(command_handle: {}, type_: {}, id: {}, value: {})",
+    trace!("vcx_wallet_update_record_value(command_handle: {}, type_: {}, id: {}, value: {})",
           command_handle, type_, id, value);
 
     spawn(move|| {
         match wallet::update_record_value(&type_, &id, &value) {
             Ok(x) => {
-                info!("vcx_wallet_update_record_value(command_handle: {}, rc: {})",
+                trace!("vcx_wallet_update_record_value(command_handle: {}, rc: {})",
                       command_handle, error_string(0));
 
                 cb(command_handle, error::SUCCESS.code_num);
             },
             Err(x) => {
-                info!("vcx_wallet_update_record_value(command_handle: {}, rc: {})",
+                trace!("vcx_wallet_update_record_value(command_handle: {}, rc: {})",
                       command_handle, error_string(x));
 
                 cb(command_handle, x);
@@ -254,10 +259,16 @@ pub extern fn vcx_wallet_update_record_tags(command_handle: u32,
                                              id: *const c_char,
                                              tags: *const c_char,
                                              cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
+    info!("vcx_wallet_update_record_tags >>>");
+
     check_useful_c_str!(type_, error::INVALID_OPTION.code_num);
     check_useful_c_str!(id, error::INVALID_OPTION.code_num);
     check_useful_c_str!(tags, error::INVALID_OPTION.code_num);
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
+
+    trace!("vcx_wallet_update_record_tags(command_handle: {}, type_: {}, id: {}, tags: {})",
+           command_handle, type_, id, tags);
+
     spawn(move|| {
         cb(command_handle, error::SUCCESS.code_num);
 
@@ -291,10 +302,16 @@ pub extern fn vcx_wallet_add_record_tags(command_handle: u32,
                                             id: *const c_char,
                                             tags: *const c_char,
                                             cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
+    info!("vcx_wallet_add_record_tags >>>");
+
     check_useful_c_str!(type_, error::INVALID_OPTION.code_num);
     check_useful_c_str!(id, error::INVALID_OPTION.code_num);
     check_useful_c_str!(tags, error::INVALID_OPTION.code_num);
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
+
+    trace!("vcx_wallet_add_record_tags(command_handle: {}, type_: {}, id: {}, tags: {})",
+           command_handle, type_, id, tags);
+
     spawn(move|| {
         cb(command_handle, error::SUCCESS.code_num);
         Ok(())
@@ -327,10 +344,16 @@ pub extern fn vcx_wallet_delete_record_tags(command_handle: u32,
                                          id: *const c_char,
                                          tags: *const c_char,
                                          cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
+    info!("vcx_wallet_delete_record_tags >>>");
+
     check_useful_c_str!(type_, error::INVALID_OPTION.code_num);
     check_useful_c_str!(id, error::INVALID_OPTION.code_num);
     check_useful_c_str!(tags, error::INVALID_OPTION.code_num);
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
+
+    trace!("vcx_wallet_delete_record_tags(command_handle: {}, type_: {}, id: {}, tags: {})",
+           command_handle, type_, id, tags);
+
     spawn(move|| {
         cb(command_handle, error::SUCCESS.code_num);
         Ok(())
@@ -362,19 +385,20 @@ pub extern fn vcx_wallet_get_record(command_handle: u32,
                                     id: *const c_char,
                                     options_json: *const c_char,
                                     cb: Option<extern fn(xcommand_handle: u32, err: u32, record_json: *const c_char)>) -> u32 {
+    info!("vcx_wallet_get_record >>>");
 
     check_useful_c_str!(type_, error::INVALID_OPTION.code_num);
     check_useful_c_str!(id, error::INVALID_OPTION.code_num);
     check_useful_c_str!(options_json, error::INVALID_OPTION.code_num);
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
 
-    info!("vcx_wallet_get_record(command_handle: {}, type_: {}, id: {}, options: {})",
+    trace!("vcx_wallet_get_record(command_handle: {}, type_: {}, id: {}, options: {})",
           command_handle, type_, id, options_json);
 
     spawn(move|| {
         match wallet::get_record(&type_, &id, &options_json) {
             Ok(x) => {
-                info!("vcx_wallet_get_record(command_handle: {}, rc: {}, record_json: {})",
+                trace!("vcx_wallet_get_record(command_handle: {}, rc: {}, record_json: {})",
                       command_handle, error_string(0), x);
 
                 let msg = CStringUtils::string_to_cstring(x);
@@ -382,7 +406,7 @@ pub extern fn vcx_wallet_get_record(command_handle: u32,
                 cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
             },
             Err(x) => {
-                info!("vcx_wallet_get_record(command_handle: {}, rc: {}, record_json: {})",
+                trace!("vcx_wallet_get_record(command_handle: {}, rc: {}, record_json: {})",
                       command_handle, error_string(x), "null");
 
                 let msg = CStringUtils::string_to_cstring("".to_string());
@@ -418,23 +442,25 @@ pub extern fn vcx_wallet_delete_record(command_handle: u32,
                                             type_: *const c_char,
                                             id: *const c_char,
                                             cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
+    info!("vcx_wallet_delete_record >>>");
+
     check_useful_c_str!(type_, error::INVALID_OPTION.code_num);
     check_useful_c_str!(id, error::INVALID_OPTION.code_num);
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
 
-    info!("vcx_wallet_delete_record(command_handle: {}, type_: {}, id: {})",
+    trace!("vcx_wallet_delete_record(command_handle: {}, type_: {}, id: {})",
           command_handle, type_, id);
 
     spawn(move|| {
         match wallet::delete_record(&type_, &id) {
             Ok(x) => {
-                info!("vcx_wallet_delete_record(command_handle: {}, rc: {})",
+                trace!("vcx_wallet_delete_record(command_handle: {}, rc: {})",
                       command_handle, error_string(0));
 
                 cb(command_handle, error::SUCCESS.code_num);
             },
             Err(x) => {
-                info!("vcx_wallet_delete_record(command_handle: {}, rc: {})",
+                trace!("vcx_wallet_delete_record(command_handle: {}, rc: {})",
                       command_handle, error_string(x));
 
                 cb(command_handle, x);
@@ -471,6 +497,7 @@ pub extern fn vcx_wallet_send_tokens(command_handle: u32,
                                      tokens: *const c_char,
                                      recipient: *const c_char,
                                      cb: Option<extern fn(xcommand_handle: u32, err: u32, receipt: *const c_char)>) -> u32 {
+    info!("vcx_wallet_send_tokens >>>");
 
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
     check_useful_c_str!(recipient, error::INVALID_OPTION.code_num);
@@ -480,20 +507,20 @@ pub extern fn vcx_wallet_send_tokens(command_handle: u32,
         Ok(x) => x,
         Err(_) => return error::INVALID_OPTION.code_num,
     };
-    info!("vcx_wallet_send_tokens(command_handle: {}, payment_handle: {}, tokens: {}, recipient: {})",
+    trace!("vcx_wallet_send_tokens(command_handle: {}, payment_handle: {}, tokens: {}, recipient: {})",
           command_handle, payment_handle, tokens, recipient);
 
     spawn(move|| {
         match pay_a_payee(tokens, &recipient) {
             Ok((payment, msg)) => {
-                info!("vcx_wallet_send_tokens_cb(command_handle: {}, rc: {}, receipt: {})",
+                trace!("vcx_wallet_send_tokens_cb(command_handle: {}, rc: {}, receipt: {})",
                       command_handle, error_string(0), msg);
                 let msg = CStringUtils::string_to_cstring(msg);
                 cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
             },
             Err(e) => {
                 let msg = "Failed to send tokens".to_string();
-                info!("vcx_wallet_send_tokens_cb(command_handle: {}, rc: {}, reciept: {})", command_handle, e.to_error_code(), msg);
+                trace!("vcx_wallet_send_tokens_cb(command_handle: {}, rc: {}, reciept: {})", command_handle, e.to_error_code(), msg);
                 let msg = CStringUtils::string_to_cstring("".to_string());
                 cb(command_handle, e.to_error_code(), msg.as_ptr());
             },
@@ -540,7 +567,10 @@ pub  extern fn vcx_wallet_open_search(command_handle: i32,
                                        options_json: *const c_char,
                                        cb: Option<extern fn(command_handle_: i32, err: u32,
                                                             search_handle: i32)>) -> u32 {
+    info!("vcx_wallet_open_search >>>");
+
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
+
     use utils::constants::DEFAULT_SEARCH_HANDLE;
     spawn(move|| {
         cb(command_handle, error::SUCCESS.code_num, DEFAULT_SEARCH_HANDLE as i32);
@@ -576,7 +606,13 @@ pub  extern fn vcx_wallet_search_next_records(command_handle: i32,
                                                      count: usize,
                                                      cb: Option<extern fn(command_handle_: i32, err: u32,
                                                                           records_json: *const c_char)>) -> u32 {
+    info!("vcx_wallet_search_next_records >>>");
+
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
+
+    trace!("vcx_wallet_search_next_records(command_handle: {}, wallet_search_handle: {})",
+           command_handle, wallet_search_handle);
+
     spawn(move|| {
         use utils::constants::DEFAULT_SEARCH_RECORD;
         let msg = CStringUtils::string_to_cstring(DEFAULT_SEARCH_RECORD.to_string());
@@ -604,13 +640,14 @@ pub  extern fn vcx_wallet_search_next_records(command_handle: i32,
 pub extern fn vcx_wallet_close_search(command_handle: u32,
                                         search_handle: u32,
                                         cb: Option<extern fn(xcommand_handle: u32, err:u32)>) -> u32 {
+    info!("vcx_wallet_close_search >>>");
 
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
-    info!("vcx_wallet_close_search(command_handle: {}, search_handle: {})",
+    trace!("vcx_wallet_close_search(command_handle: {}, search_handle: {})",
           command_handle, search_handle);
 
     spawn(move|| {
-        info!("vcx_wallet_close_search(command_handle: {}, rc: {})",
+        trace!("vcx_wallet_close_search(command_handle: {}, rc: {})",
               command_handle, error_string(0));
         cb(command_handle, error::SUCCESS.code_num);
         Ok(())
@@ -639,16 +676,23 @@ pub extern fn vcx_wallet_export(command_handle: u32,
                                 backup_key: *const c_char,
                                 cb: Option<extern fn(xcommand_handle: u32,
                                                      err: u32)>) -> u32 {
+    info!("vcx_wallet_export >>>");
+
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
     check_useful_c_str!(path,  error::INVALID_OPTION.code_num);
     check_useful_c_str!(backup_key, error::INVALID_OPTION.code_num);
+
+    trace!("vcx_wallet_export(command_handle: {}, path: {}, backup_key: ****)",
+           command_handle, path);
+
+
     spawn(move|| {
         let path = Path::new(&path);
-        info!("vcx_wallet_export(command_handle: {}, path: {:?}, backup_key: ****)", command_handle, path);
+        trace!("vcx_wallet_export(command_handle: {}, path: {:?}, backup_key: ****)", command_handle, path);
         match export(get_wallet_handle(), &path, &backup_key) {
             Ok(_) => {
                 let return_code = error::SUCCESS.code_num;
-                info!("vcx_wallet_export(command_handle: {}, rc: {})", command_handle, return_code);
+                trace!("vcx_wallet_export(command_handle: {}, rc: {})", command_handle, return_code);
                 cb(command_handle, return_code);
             }
             Err(e) => {
@@ -684,15 +728,20 @@ pub extern fn vcx_wallet_import(command_handle: u32,
                                 config: *const c_char,
                                 cb: Option<extern fn(xcommand_handle: u32,
                                                      err: u32)>) -> u32 {
+    info!("vcx_wallet_import >>>");
+
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
     check_useful_c_str!(config,  error::INVALID_OPTION.code_num);
 
-    thread::spawn(move|| {
-        info!("vcx_wallet_import(command_handle: {}, config: ****)", command_handle);
+    trace!("vcx_wallet_import(command_handle: {}, config: ****)",
+           command_handle);
+
+        thread::spawn(move|| {
+        trace!("vcx_wallet_import(command_handle: {}, config: ****)", command_handle);
         match import(&config) {
             Ok(_) => {
                 let return_code = error::SUCCESS.code_num;
-                info!("vcx_wallet_import(command_handle: {}, rc: {})", command_handle, return_code);
+                trace!("vcx_wallet_import(command_handle: {}, rc: {})", command_handle, return_code);
                 cb(command_handle, return_code);
             }
             Err(e) => {
@@ -723,8 +772,14 @@ pub extern fn vcx_wallet_import(command_handle: u32,
 pub  extern fn vcx_wallet_validate_payment_address(command_handle: i32,
                                                    payment_address: *const c_char,
                                                    cb: Option<extern fn(command_handle_: i32, err: u32)>) -> u32 {
+    info!("vcx_wallet_validate_payment_address >>>");
+
     check_useful_c_str!(payment_address,  error::INVALID_OPTION.code_num);
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
+
+    trace!("vcx_wallet_validate_payment_address(command_handle: {}, payment_address: {})",
+           command_handle, payment_address);
+
     spawn(move|| {
         cb(command_handle, error::SUCCESS.code_num);
         Ok(())

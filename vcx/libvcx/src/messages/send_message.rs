@@ -54,6 +54,8 @@ pub struct MessageDetailPayload {
 impl SendMessage{
 
     pub fn create() -> SendMessage {
+        trace!("SendMessage::create_message >>>");
+
         SendMessage {
             message: String::new(),
             to_did: String::new(),
@@ -102,6 +104,8 @@ impl SendMessage{
     }
 
     pub fn send_secure(&mut self) -> Result<Vec<String>, u32> {
+        trace!("SendMessage::send >>>");
+
         let data = match self.msgpack() {
             Ok(x) => x,
             Err(x) => return Err(x),

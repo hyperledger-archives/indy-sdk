@@ -40,6 +40,8 @@ pub extern fn vcx_schema_create(command_handle: u32,
                                 schema_data: *const c_char,
                                 payment_handle: u32,
                                 cb: Option<extern fn(xcommand_handle: u32, err: u32, credentialdef_handle: u32)>) -> u32 {
+    info!("vcx_schema_create >>>");
+
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
     check_useful_c_str!(schema_name, error::INVALID_OPTION.code_num);
     check_useful_c_str!(version, error::INVALID_OPTION.code_num);
@@ -50,7 +52,7 @@ pub extern fn vcx_schema_create(command_handle: u32,
         Ok(x) => x,
         Err(x) => return x
     };
-    info!(target:"vcx","vcx_schema_create(command_handle: {}, source_id: {}, schema_name: {},  schema_data: {})",
+    trace!(target:"vcx","vcx_schema_create(command_handle: {}, source_id: {}, schema_name: {},  schema_data: {})",
           command_handle, source_id, schema_name, schema_data);
 
     spawn(move|| {
@@ -60,7 +62,7 @@ pub extern fn vcx_schema_create(command_handle: u32,
                                                             version,
                                                             schema_data) {
             Ok(x) => {
-                info!(target:"vcx", "vcx_schema_create_cb(command_handle: {}, rc: {}, handle: {}) source_id: {}",
+                trace!(target:"vcx", "vcx_schema_create_cb(command_handle: {}, rc: {}, handle: {}) source_id: {}",
                       command_handle, error_string(0), x, source_id);
                 (error::SUCCESS.code_num, x)
             },
@@ -94,11 +96,12 @@ pub extern fn vcx_schema_create(command_handle: u32,
 pub extern fn vcx_schema_serialize(command_handle: u32,
                                    schema_handle: u32,
                                    cb: Option<extern fn(xcommand_handle: u32, err: u32, schema_state: *const c_char)>) -> u32 {
+    info!("vcx_schema_serialize >>>");
 
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
 
     let source_id = schema::get_source_id(schema_handle).unwrap_or_default();
-    info!("vcx_schema_serialize(command_handle: {}, schema_handle: {}) source_id: {}",
+    trace!("vcx_schema_serialize(command_handle: {}, schema_handle: {}) source_id: {}",
           command_handle, schema_handle, source_id);
 
     if !schema::is_valid_handle(schema_handle) {
@@ -108,7 +111,7 @@ pub extern fn vcx_schema_serialize(command_handle: u32,
     spawn(move|| {
         match schema::to_string(schema_handle) {
             Ok(x) => {
-                info!("vcx_schema_serialize_cb(command_handle: {}, schema_handle: {}, rc: {}, state: {}) source_id: {}",
+                trace!("vcx_schema_serialize_cb(command_handle: {}, schema_handle: {}, rc: {}, state: {}) source_id: {}",
                       command_handle, schema_handle, error_string(0), x, source_id);
                 let msg = CStringUtils::string_to_cstring(x);
                 cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
@@ -141,15 +144,16 @@ pub extern fn vcx_schema_serialize(command_handle: u32,
 pub extern fn vcx_schema_deserialize(command_handle: u32,
                                      schema_data: *const c_char,
                                      cb: Option<extern fn(xcommand_handle: u32, err: u32, schema_handle: u32)>) -> u32 {
+    info!("vcx_schema_deserialize >>>");
 
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
     check_useful_c_str!(schema_data, error::INVALID_OPTION.code_num);
 
-    info!("vcx_schema_deserialize(command_handle: {}, schema_data: {})", command_handle, schema_data);
+    trace!("vcx_schema_deserialize(command_handle: {}, schema_data: {})", command_handle, schema_data);
     spawn(move|| {
         let (rc, handle) = match schema::from_string(&schema_data) {
             Ok(x) => {
-                info!("vcx_schema_deserialize_cb(command_handle: {}, rc: {}, handle: {}), source_id: {}",
+                trace!("vcx_schema_deserialize_cb(command_handle: {}, rc: {}, handle: {}), source_id: {}",
                       command_handle, error_string(0), x, schema::get_source_id(x).unwrap_or_default());
                 (error::SUCCESS.code_num, x)
             },
@@ -176,9 +180,11 @@ pub extern fn vcx_schema_deserialize(command_handle: u32,
 /// Success
 #[no_mangle]
 pub extern fn vcx_schema_release(schema_handle: u32) -> u32 {
+    info!("vcx_schema_release >>>");
+
     let source_id = schema::get_source_id(schema_handle).unwrap_or_default();
     match schema::release(schema_handle) {
-        Ok(x) => info!("vcx_schema_release(schema_handle: {}, rc: {}), source_id: {}",
+        Ok(x) => trace!("vcx_schema_release(schema_handle: {}, rc: {}), source_id: {}",
                        schema_handle, error_string(0), source_id),
         Err(e) => warn!("vcx_schema_release(schema_handle: {}, rc: {}), source_id: {}",
                        schema_handle, error_string(e.to_error_code()), source_id),
@@ -199,9 +205,11 @@ pub extern fn vcx_schema_release(schema_handle: u32) -> u32 {
 pub extern fn vcx_schema_get_schema_id(command_handle: u32,
                                        schema_handle: u32,
                                        cb: Option<extern fn(xcommand_handle: u32, err: u32, schema_id: *const c_char)>) -> u32 {
+    info!("vcx_schema_get_schema_id >>>");
+
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
 
-    info!("vcx_schema_get_schema_id(command_handle: {}, schema_handle: {})", command_handle, schema_handle);
+    trace!("vcx_schema_get_schema_id(command_handle: {}, schema_handle: {})", command_handle, schema_handle);
     if !schema::is_valid_handle(schema_handle) {
         return error::INVALID_SCHEMA_HANDLE.code_num;
     }
@@ -209,7 +217,7 @@ pub extern fn vcx_schema_get_schema_id(command_handle: u32,
     spawn(move|| {
         match schema::get_schema_id(schema_handle) {
             Ok(x) => {
-                info!("vcx_schema_get_schema_id(command_handle: {}, schema_handle: {}, rc: {}, schema_seq_no: {})",
+                trace!("vcx_schema_get_schema_id(command_handle: {}, schema_handle: {}, rc: {}, schema_seq_no: {})",
                       command_handle, schema_handle, error_string(0), x);
                 let msg = CStringUtils::string_to_cstring(x);
                 cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
@@ -245,10 +253,12 @@ pub extern fn vcx_schema_get_attributes(command_handle: u32,
                                         source_id: *const c_char,
                                         schema_id: *const c_char,
                                         cb: Option<extern fn(xcommand_handle: u32, err: u32, s_handle: u32, schema_attrs: *const c_char)>) -> u32 {
+    info!("vcx_schema_get_attributes >>>");
+
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
     check_useful_c_str!(source_id, error::INVALID_OPTION.code_num);
     check_useful_c_str!(schema_id, error::INVALID_OPTION.code_num);
-    info!("vcx_schema_get_attributes(command_handle: {}, source_id: {}, schema_id: {})",
+    trace!("vcx_schema_get_attributes(command_handle: {}, source_id: {}, schema_id: {})",
           command_handle, source_id, schema_id);
 
     spawn(move|| {
@@ -256,7 +266,7 @@ pub extern fn vcx_schema_get_attributes(command_handle: u32,
             Ok((handle, data)) => {
                 let data:serde_json::Value = serde_json::from_str(&data).unwrap();
                 let data = data["data"].clone();
-                info!("vcx_schema_get_attributes_cb(command_handle: {}, rc: {}, handle: {}, attrs: {})",
+                trace!("vcx_schema_get_attributes_cb(command_handle: {}, rc: {}, handle: {}, attrs: {})",
                       command_handle, error_string(0), handle, data);
                 let msg = CStringUtils::string_to_cstring(data.to_string());
                 cb(command_handle, error::SUCCESS.code_num, handle, msg.as_ptr());
@@ -296,17 +306,18 @@ pub extern fn vcx_schema_get_attributes(command_handle: u32,
 pub extern fn vcx_schema_get_payment_txn(command_handle: u32,
                                              handle: u32,
                                              cb: Option<extern fn(xcommand_handle: u32, err: u32, txn: *const c_char)>) -> u32 {
+    info!("vcx_schema_get_payment_txn >>>");
 
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
 
-    info!("vcx_schema_get_payment_txn(command_handle: {})", command_handle);
+    trace!("vcx_schema_get_payment_txn(command_handle: {})", command_handle);
 
     spawn(move|| {
         match schema::get_payment_txn(handle) {
             Ok(x) => {
                 match serde_json::to_string(&x) {
                     Ok(x) => {
-                        info!("vcx_schema_get_payment_txn_cb(command_handle: {}, rc: {}, : {}), source_id: {:?}",
+                        trace!("vcx_schema_get_payment_txn_cb(command_handle: {}, rc: {}, : {}), source_id: {:?}",
                               command_handle, error_string(0), x, schema::get_source_id(handle).unwrap_or_default());
 
                         let msg = CStringUtils::string_to_cstring(x);
