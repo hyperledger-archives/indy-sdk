@@ -651,8 +651,6 @@ mod tests {
     use utils::constants::{ ADDRESS_CRED_ID, LICENCE_CRED_ID, ADDRESS_SCHEMA_ID,
                             ADDRESS_CRED_DEF_ID, CRED_DEF_ID, SCHEMA_ID, ADDRESS_CRED_REV_ID,
                             ADDRESS_REV_REG_ID, REV_REG_ID, CRED_REV_ID, TEST_TAILS_FILE, REV_STATE_JSON };
-    use utils::libindy::cache::{RevRegCache, RevState};
-    use utils::libindy::cache::{get_rev_reg_cache, set_rev_reg_cache};
     #[cfg(feature = "pool_tests")]
     use time;
 
