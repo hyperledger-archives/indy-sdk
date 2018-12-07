@@ -29,8 +29,8 @@ note over I, V
 Issuer share public data (schema ID, credential definition, ...)
 end note
 
-P <- L : Gets schema from ledger
-V <- L : Gets schema from ledger
+P -> L : Gets schema from ledger
+V -> L : Gets schema from ledger
 
 == Credential request and issue ==
 

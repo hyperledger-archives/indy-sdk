@@ -180,8 +180,8 @@ async function getRevocRegDeltaFromLedger(poolHandle, did, revRegDefId, from, to
     return [revRegDelta, timestamp]
 }
 
-async function getRevocRegFromLedger(poolHandle, did, revRegDefId, to) {
-    const getRevocRegRequest = await indy.buildGetRevocRegRequest(did, revRegDefId, to)
+async function getRevocRegFromLedger(poolHandle, did, revRegDefId, timestamp_) {
+    const getRevocRegRequest = await indy.buildGetRevocRegRequest(did, revRegDefId, timestamp_)
     const getRevocRegResponse = await ensureSubmitRequest(poolHandle, getRevocRegRequest)
     const [, revReg, timestamp] = await indy.parseGetRevocRegResponse(getRevocRegResponse)
     return [revReg, timestamp]
@@ -303,13 +303,13 @@ async function run() {
     }
 
     logIssuer("Issuer creates credential")
-    credValues = {
-        "sex": {"raw": "male", "encoded": "5944657099558967239210949258394887428692050081607692519917050"},
-        "name": {"raw": "Alex", "encoded": "1139481716457488690172217916278103335"},
-        "height": {"raw": "175", "encoded": "175"},
-        "age": {"raw": "28", "encoded": "28"}
-    }
     {
+        const credValues = {
+            "sex": {"raw": "male", "encoded": "5944657099558967239210949258394887428692050081607692519917050"},
+            "name": {"raw": "Alex", "encoded": "1139481716457488690172217916278103335"},
+            "height": {"raw": "175", "encoded": "175"},
+            "age": {"raw": "28", "encoded": "28"}
+        }
         const [cred, credRevId, revRegDelta] = await indy.issuerCreateCredential(issuer.wallet, issuer.credOffer,
                                 issuer.credReq, credValues, issuer.revRegDefId, issuer.blobStorageReaderHandle)
         issuer.cred = cred
