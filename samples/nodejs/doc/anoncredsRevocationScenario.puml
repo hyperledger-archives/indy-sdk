@@ -17,7 +17,7 @@ end note
 
 I -> I : Creates credential schema
 I -> L : Posts credential schema to ledger
-L -> I : Gets credential schema to ledger
+L -> I : Gets credential schema from ledger
 I -> I : Creates credential definition
 I -> L : Posts credential definition
 I -> T : Open tails writer
@@ -29,8 +29,8 @@ note over I, V
 Issuer share public data (schema ID, credential definition, ...)
 end note
 
-P -> L : Gets schema from ledger
-V -> L : Gets schema from ledger
+P <- L : Gets schema from ledger
+V <- L : Gets schema from ledger
 
 == Credential request and issue ==
 
@@ -59,7 +59,7 @@ P -> P : Creates proof
 P --> V : Transfers proof
 L -> V : Gets credential definition from ledger
 L -> V : Gets revocation registry definition
-L -> V : Gets revocation registry delta definition
+L -> V : Gets revocation registry value
 V -> V : Verifies proof (true)
 
 == Revocation ==
@@ -69,12 +69,12 @@ I -> L : Posts revocation registry delta to ledger
 
 == Proof verification after revocation ==
 
-L -> V : Gets revocation registry delta definition
+L -> V : Gets revocation registry value
 V -> V : Verifies proof (false)
 
 == Proof verification at timestamp before revocation ==
 
-L -> V : Gets revocation registry delta definition with timestamp of proof reception
+L -> V : Gets revocation registry value with timestamp of proof reception
 V -> V : Verifies proof (true)
 
 @enduml
