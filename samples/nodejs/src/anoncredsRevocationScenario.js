@@ -5,7 +5,7 @@
  * at other scripts like gettingStarted.js.
  *
  * Scenario :
- * - Issuer create schema, credential definition, revocation registry and revocation registry entry
+ * - Issuer create schema, credential definition, revocation registry
  * - Issuer create and send offer to prover
  * - Prover request credential
  * - Issuer issues credential to prover
@@ -13,8 +13,8 @@
  * - Prover search credential and create proof, with revocation state
  * - Verifier gets revocation data, and verifies proof is non-revoked (--> true)
  * - Issuer revoke credential and posts delta to ledger
- * - Verifier gets delta from ledger (until now), and verifies that proof is revoked (false)
- * - Verifier gets delta from ledger until proof reception timestamp, and verifies that proof at this timestamp is non-revoked
+ * - Verifier gets current revocation registry value from ledger, and verifies that proof is revoked (false)
+ * - Verifier gets revocation registry value from ledger until proof reception timestamp, and verifies that proof at this timestamp is non-revoked
  *
  * All logs are colored differently for each actor (cyan for issuer, magenta for prover and yellow for verifier).
  * Data checked as expected are logged with green color, otherwise the logs are red.
@@ -42,7 +42,7 @@ function logKO(s) { log(COLOR.RED+s+COLOR.NONE) }
 
 // Functions for wallet
 
-async function createWallet(actor) {
+async function createAndOpenWallet(actor) {
     const walletConfig = {"id": actor + ".wallet"}
     const walletCredentials = {"key": actor + ".wallet_key"}
     await indy.createWallet(walletConfig, walletCredentials)
@@ -83,13 +83,13 @@ async function createAndStoreMyDid(wallet, seed) {
     return did
 }
 
-async function verifierVerifyProof(revRegDefId, revRegDef, timestamp, revRegDelta, proofReq, proof, schemas, credDefs) {
+async function verifierVerifyProof(revRegDefId, revRegDef, timestamp, revRegValue, proofReq, proof, schemas, credDefs) {
     const revRefDefs = {
         [revRegDefId]: revRegDef
     }
     const revRegs = {
         [revRegDefId]: {
-            [timestamp]: revRegDelta
+            [timestamp]: revRegValue
         }
     }
     return indy.verifierVerifyProof(proofReq, proof, schemas, credDefs, revRefDefs, revRegs)
@@ -180,6 +180,13 @@ async function getRevocRegDeltaFromLedger(poolHandle, did, revRegDefId, from, to
     return [revRegDelta, timestamp]
 }
 
+async function getRevocRegFromLedger(poolHandle, did, revRegDefId, timestamp_) {
+    const getRevocRegRequest = await indy.buildGetRevocRegRequest(did, revRegDefId, timestamp_)
+    const getRevocRegResponse = await ensureSubmitRequest(poolHandle, getRevocRegRequest)
+    const [, revReg, timestamp] = await indy.parseGetRevocRegResponse(getRevocRegResponse)
+    return [revReg, timestamp]
+}
+
 async function run() {
 
     console.log("Anoncreds Revocation scenario sample -> started")
@@ -198,9 +205,9 @@ async function run() {
     verifier.poolHandle = await createAndOpenPoolHandle("verifier")
 
     log("Actors Create Wallets")
-    issuer.wallet = await createWallet("issuer")
-    prover.wallet = await createWallet("prover")
-    verifier.wallet = await createWallet("verifier")
+    issuer.wallet = await createAndOpenWallet("issuer")
+    prover.wallet = await createAndOpenWallet("prover")
+    verifier.wallet = await createAndOpenWallet("verifier")
 
     log("Actors Create DIDs")
     issuer.did = await createAndStoreMyDid(issuer.wallet, "000000000000000000000000Steward1")
@@ -296,15 +303,15 @@ async function run() {
     }
 
     logIssuer("Issuer creates credential")
-    issuer.credValues = {
-        "sex": {"raw": "male", "encoded": "5944657099558967239210949258394887428692050081607692519917050"},
-        "name": {"raw": "Alex", "encoded": "1139481716457488690172217916278103335"},
-        "height": {"raw": "175", "encoded": "175"},
-        "age": {"raw": "28", "encoded": "28"}
-    }
     {
+        const credValues = {
+            "sex": {"raw": "male", "encoded": "5944657099558967239210949258394887428692050081607692519917050"},
+            "name": {"raw": "Alex", "encoded": "1139481716457488690172217916278103335"},
+            "height": {"raw": "175", "encoded": "175"},
+            "age": {"raw": "28", "encoded": "28"}
+        }
         const [cred, credRevId, revRegDelta] = await indy.issuerCreateCredential(issuer.wallet, issuer.credOffer,
-                                issuer.credReq, issuer.credValues, issuer.revRegDefId, issuer.blobStorageReaderHandle)
+                                issuer.credReq, credValues, issuer.revRegDefId, issuer.blobStorageReaderHandle)
         issuer.cred = cred
         issuer.credRevId = credRevId
         issuer.revRegDelta = revRegDelta
@@ -315,6 +322,7 @@ async function run() {
 
     log("Transfer credential from 'Issuer' to 'Prover' (via HTTP or other) ...")
     prover.cred = issuer.cred
+    issuer.cred = undefined
 
     logProver("Prover gets revocation registry definition from ledger")
     prover.revRegDefId = prover.cred["rev_reg_id"]
@@ -331,7 +339,7 @@ async function run() {
         "requested_attributes": {
             "attr1_referent": {
                 "name": "name",
-                "restrictions": [{"cred_def_id": verifier.credDefId}]
+                "restrictions": {"cred_def_id": verifier.credDefId}
             }
         },
         "requested_predicates": {
@@ -339,7 +347,7 @@ async function run() {
                 "name": "age",
                 "p_type": ">=",
                 "p_value": 18,
-                "restrictions": [{"cred_def_id": verifier.credDefId}]
+                "restrictions": {"cred_def_id": verifier.credDefId}
             }
         },
         "non_revoked": {/*"from": 0,*/ "to": util.getCurrentTimeInSeconds()}
@@ -417,11 +425,11 @@ async function run() {
     verifier.revRegDefId = verifier.proof.identifiers[0]["rev_reg_id"]
     verifier.revRegDef = await getRevocRegDefFromLedger(verifier.poolHandle, verifier.did, verifier.revRegDefId)
 
-    logVerifier("Verifier gets revocation registry delta from ledger")
+    logVerifier("Verifier gets revocation registry value from ledger")
     {
-        const [revRegDelta, /* timestamp (unused) */] = await getRevocRegDeltaFromLedger(verifier.poolHandle, verifier.did, verifier.revRegDefId, 0 /* from */, util.getCurrentTimeInSeconds() /* to */)
+        const [revRegValue, /* timestamp (unused) */] = await getRevocRegFromLedger(verifier.poolHandle, verifier.did, verifier.revRegDefId, verifier.timestampOfProof)
         // timestamp = timestamp of "Issuer Posts Revocation Registry Delta to ledger (#1)"
-        verifier.revRegDelta = revRegDelta
+        verifier.revRegValue = revRegValue
     }
 
     logVerifier("Verifier verify proof (#1)")
@@ -431,7 +439,7 @@ async function run() {
     verifier.credDefs = {
         [verifier.credDefId]: verifier.credDef
     }
-    const verifiedBeforeRevocation = await verifierVerifyProof(verifier.revRegDefId, verifier.revRegDef, verifier.timestampOfProof, verifier.revRegDelta, verifier.proofReq, verifier.proof, verifier.schemas, verifier.credDefs)
+    const verifiedBeforeRevocation = await verifierVerifyProof(verifier.revRegDefId, verifier.revRegDef, verifier.timestampOfProof, verifier.revRegValue, verifier.proofReq, verifier.proof, verifier.schemas, verifier.credDefs)
     if (verifiedBeforeRevocation) {
         logOK("OK : proof is verified as expected :-)")
     } else {
@@ -452,13 +460,13 @@ async function run() {
 
     logVerifier("Verifier gets revocation registry delta from ledger")
     {
-        const [revRegDelta, /* timestamp (unused) */] = await getRevocRegDeltaFromLedger(verifier.poolHandle, verifier.did, verifier.revRegDefId, 0 /* from */, util.getCurrentTimeInSeconds() /* to */)
+        const [revRegValue, /* timestamp (unused) */] = await getRevocRegFromLedger(verifier.poolHandle, verifier.did, verifier.revRegDefId, util.getCurrentTimeInSeconds() /* to */)
         // timestamp = timestamp of "Issuer Posts Revocation Registry Delta to ledger (#2 after revocation)"
-        verifier.revRegDelta2 = revRegDelta
+        verifier.revRegValue2 = revRegValue
     }
 
     logVerifier("Verifier verifies proof (#2) (proof must be revoked)")
-    const verifiedAfterRevocation = await verifierVerifyProof(verifier.revRegDefId, verifier.revRegDef, verifier.timestampOfProof, verifier.revRegDelta2, verifier.proofReq, verifier.proof, verifier.schemas, verifier.credDefs)
+    const verifiedAfterRevocation = await verifierVerifyProof(verifier.revRegDefId, verifier.revRegDef, verifier.timestampOfProof, verifier.revRegValue2, verifier.proofReq, verifier.proof, verifier.schemas, verifier.credDefs)
     if (!verifiedAfterRevocation) {
         logOK("OK : proof is NOT verified as expected :-)")
     } else {
@@ -469,12 +477,12 @@ async function run() {
 
     logVerifier("Verifier gets revocation registry delta from ledger")
     {
-        const [revRegDelta, /* timestamp (unused) */] = await getRevocRegDeltaFromLedger(verifier.poolHandle, verifier.did, verifier.revRegDefId, verifier.timestampReceptionOfProof /* from */, verifier.timestampReceptionOfProof /* to */)
-        verifier.revRegDelta3 = revRegDelta
+        const [revRegValue, /* timestamp (unused) */] = await getRevocRegFromLedger(verifier.poolHandle, verifier.did, verifier.revRegDefId, verifier.timestampReceptionOfProof /* to */)
+        verifier.revRegValue3 = revRegValue
     }
 
     logVerifier("Verifier verifies proof (#3) (proof must be non-revoked)")
-    const verifiedBeforeRevocation2 = await verifierVerifyProof(verifier.revRegDefId, verifier.revRegDef, verifier.timestampOfProof, verifier.revRegDelta3, verifier.proofReq, verifier.proof, verifier.schemas, verifier.credDefs)
+    const verifiedBeforeRevocation2 = await verifierVerifyProof(verifier.revRegDefId, verifier.revRegDef, verifier.timestampOfProof, verifier.revRegValue3, verifier.proofReq, verifier.proof, verifier.schemas, verifier.credDefs)
     if (verifiedBeforeRevocation2) {
         logOK("OK : proof is verified as expected :-)")
     } else {
