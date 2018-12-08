@@ -19,6 +19,7 @@ Foundation login to get access to these channels.
 
 Go to the next page to get started using the Indy SDK.
 
+Find the other Indy docs at https://hyperledger-indy.readthedocs.io
 
 .. toctree::
   :maxdepth: 1
