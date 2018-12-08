@@ -56,7 +56,7 @@ pub struct Recipient {
 
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct Header {
-    pub sender: String,
+    pub sender: Option<String>,
     pub kid: String
 }
 
@@ -74,11 +74,13 @@ pub struct FromAddress {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
+#[serde(untagged)]
 pub enum WalletKey {
     WalletKeyId(i32, String) //wallet_handle, base58 encoded public key
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
+#[serde(untagged)]
 pub enum ToAddress {
-    PubKey(Vec<String>)
+    public_key(Vec<String>)
 }
