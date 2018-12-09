@@ -969,7 +969,7 @@ mod tests {
         let (sym_key, iv, expected_ciphertext) = service
             .encrypt_plaintext(message);
 
-        //convert values to base64 encoded strings
+        //convert values to base64 encoded stringsT
         let plaintext_str = base64::encode(expected_ciphertext.as_slice());
         let iv_encoded = base64::encode(&iv[..]);
         let bad_sym_key = chacha20poly1305_ietf::gen_key();

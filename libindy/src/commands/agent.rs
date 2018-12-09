@@ -155,7 +155,7 @@ impl AgentCommandExecutor {
 //        serde_json::to_string(&anon_ames_struct)
 //            .map_err(|err| IndyError::AgentError(AgentError::PackError(format!("Failed to serialize JWE {}", err))))
 //    }
-
+~~~`
     pub fn pack_msg(
         &self,
         message: &[u8],
