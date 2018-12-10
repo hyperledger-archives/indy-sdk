@@ -28,6 +28,9 @@ try {
 }
 
 def testing() {
+    stage('Static Analysis') {
+        staticValidation()   
+    }
     stage('Testing') {
         parallel([
                 'ubuntu-test' : { ubuntuTesting() },
@@ -89,6 +92,23 @@ def notifyingFailure() {
     currentBuild.result = "FAILED"
     node('ubuntu-master') {
         sendNotification.fail([slack: true])
+    }
+}
+
+def staticValidation() {
+    parallel([
+        'libindy'    : { runValdiationRust('libindy') },
+        'libnullpay' : { runValdiationRust('libnullpay') },
+        'libvcx'     : { runValdiationRust('vcx/libvcx') }
+    ])
+}
+
+def runValdiationRust(dir) {
+    node('ubuntu') {
+        setupRust()
+        sh "rustup component add clippy-preview"
+        sh "cd ${dir}"
+        sh "cargo clippy -- -W clippy::style -W clippy::correctness -W clippy::complexity -W clippy::perf"
     }
 }
 
@@ -249,7 +269,6 @@ def linuxLibindyBuild(file, env_name, network_name, stashBuildResults) {
             echo "${env_name} Libindy Test: Build"
             sh '''
                 cd libindy
-                cargo clippy -- -W clippy::style -W clippy::correctness -W clippy::complexity -W clippy::perf
                 cargo build --release --features "fatal_warnings sodium_static"
             '''
 
@@ -274,7 +293,6 @@ def linuxLibindyBuild(file, env_name, network_name, stashBuildResults) {
             echo "${env_name} Libnullpay Test: Build"
             sh '''
                 cd libnullpay
-                cargo clippy -- -W clippy::style -W clippy::correctness -W clippy::complexity -W clippy::perf
                 LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo build --release
             '''
 
@@ -343,7 +361,6 @@ def linuxVcxBuild(file, env_name, network_name, stashBuildResults) {
         testEnv.inside {
             sh '''
                 cd vcx/libvcx
-                cargo clippy -- -W clippy::style -W clippy::correctness -W clippy::complexity -W clippy::perf
                 LIBRARY_PATH=./ cargo build --release --features fatal_warnings
             '''
             if (stashBuildResults) {
@@ -415,7 +432,6 @@ def linuxCLITesting(env_name, network_name, testEnv, stashBuildResults) {
     testEnv.inside("--network=${network_name}") {
         sh '''
             cd cli
-            cargo clippy -- -W clippy::style -W clippy::correctness -W clippy::complexity -W clippy::perf
             LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo build --release --features fatal_warnings
             LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --release --features "nullpay_plugin" --no-run
             LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test  --release --features "nullpay_plugin"
@@ -531,7 +547,6 @@ def windowsTesting() {
                                 "PATH=$WORKSPACE\\libindy\\prebuilt\\lib;$PATH",
                                 "RUST_BACKTRACE=1"
                         ]) {
-                            bat "cargo clippy -- -W clippy::style -W clippy::correctness -W clippy::complexity -W clippy::perf"
                             bat "cargo build --release --features fatal_warnings"
                             bat "cargo test --release --no-run"
 
@@ -552,7 +567,6 @@ def windowsTesting() {
                         withEnv([
                                 "RUST_BACKTRACE=1"
                         ]) {
-                            bat "cargo clippy -- -W clippy::style -W clippy::correctness -W clippy::complexity -W clippy::perf"
                             bat "cargo build --release --features fatal_warnings"
                             bat "cargo test --release --no-run"
 
@@ -581,7 +595,6 @@ def windowsTesting() {
                         withEnv([
                                 "RUST_BACKTRACE=1"
                         ]) {
-                            bat "cargo clippy -- -W clippy::style -W clippy::correctness -W clippy::complexity -W clippy::perf"
                             bat "cargo build --release --features fatal_warnings"
 
                             echo "Windows Indy Cli Test: Build tests"
@@ -1258,7 +1271,6 @@ def downloadPackagingUtils() {
 
 def setupRust() {
     sh "rustup default 1.29.0"
-    sh "rustup component add clippy-preview"
 }
 
 def androidPublishing() {
