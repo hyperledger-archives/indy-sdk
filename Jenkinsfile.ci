@@ -7,15 +7,36 @@ libvcxBuildFinished = ["Ubuntu": false, "RedHat": false]
 testing()
 
 def testing() {
+    stage('Static Analysis') {
+        staticValidation()
+    }
     stage('Testing') {
         parallel([
-                'ubuntu-test' : { ubuntuTesting() },
-                'android-test': { androidTesting() },
-                'macos-test'  : { macosTesting() },
-                'ios-test'    : { iosTesting() },
-                'redhat-test' : { rhelTesting() },
-                'windows-test': { windowsTesting() }
+            'ubuntu-test' : { ubuntuTesting() },
+            'android-test': { androidTesting() },
+            'macos-test'  : { macosTesting() },
+            'ios-test'    : { iosTesting() },
+            'redhat-test' : { rhelTesting() },
+            'windows-test': { windowsTesting() }
         ])
+    }
+}
+
+def staticValidation() {
+    parallel([
+        'libindy'    : { runValdiationRust('libindy') },
+        'libnullpay' : { runValdiationRust('libnullpay') },
+        'libvcx'     : { runValdiationRust('vcx/libvcx') }
+    ])
+}
+
+def runValdiationRust(dir) {
+    node('ubuntu') {
+        setupRust()
+        sh "rustup component add clippy-preview"
+
+        sh "cd ${dir}"
+        sh "cargo clippy -- -W clippy::style -W clippy::correctness -W clippy::complexity -W clippy::perf"
     }
 }
 
@@ -50,7 +71,6 @@ def windowsTesting() {
                                 "PATH=$WORKSPACE\\libindy\\prebuilt\\lib;$PATH",
                                 "RUST_BACKTRACE=1"
                         ]) {
-                            bat "cargo clippy -- -W clippy::style -W clippy::correctness -W clippy::complexity -W clippy::perf"
                             bat "cargo build --features fatal_warnings"
                             bat "cargo test --no-run"
 
@@ -70,7 +90,6 @@ def windowsTesting() {
                         withEnv([
                                 "RUST_BACKTRACE=1"
                         ]) {
-                            bat "cargo clippy -- -W clippy::style -W clippy::correctness -W clippy::complexity -W clippy::perf"
                             bat "cargo build --features fatal_warnings"
                             bat "cargo test --no-run"
 
@@ -162,7 +181,6 @@ def macosTesting() {
                     echo "MacOS Test: Build"
                     setupRust()
                     setupBrewPackages()
-                    sh "cargo clippy -- -W clippy::style -W clippy::correctness -W clippy::complexity -W clippy::perf"
                     sh "cargo build --features fatal_warnings"
                     sh "cargo test --no-run"
                     // TODO testing
@@ -334,7 +352,6 @@ def linuxLibindyBuild(file, env_name, network_name) {
             echo "${env_name} Libindy Test: Build"
             sh '''
                 cd libindy
-                cargo clippy -- -W clippy::style -W clippy::correctness -W clippy::complexity -W clippy::perf
                 cargo build --features "fatal_warnings sodium_static"
             '''
         }
@@ -355,7 +372,6 @@ def linuxLibindyBuild(file, env_name, network_name) {
             echo "${env_name} Libnullpay Test: Build"
             sh '''
                 cd libnullpay
-                cargo clippy -- -W clippy::style -W clippy::correctness -W clippy::complexity -W clippy::perf
                 LIBRARY_PATH=./ cargo build --features fatal_warnings
             '''
         }
@@ -420,7 +436,6 @@ def linuxVcxBuild(file, env_name, network_name) {
         testEnv.inside {
             sh '''
                 cd vcx/libvcx
-                cargo clippy -- -W clippy::style -W clippy::correctness -W clippy::complexity -W clippy::perf
                 LIBRARY_PATH=./ cargo build --features fatal_warnings
             '''
         }
@@ -685,7 +700,6 @@ def closePool(env_name, network_name, poolInst) {
 
 def setupRust() {
     sh "rustup default 1.29.0"
-    sh "rustup component add clippy-preview"
 }
 
 def setupRustIOS() {
