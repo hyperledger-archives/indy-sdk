@@ -234,6 +234,7 @@ pub fn get_protocol_version() -> usize {
 
 pub fn get_config_value(key: &str) -> Result<String, u32> {
     trace!("get_config_value >>> key: {}", key);
+    println!("get_config_value >>> key: {}", key);
 
     SETTINGS
         .read()

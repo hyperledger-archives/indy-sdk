@@ -6,7 +6,7 @@ use settings;
 use std::fmt;
 use std::string::ToString;
 use utils::error;
-use utils::libindy::ledger;
+use utils::libindy::anoncreds;
 use utils::libindy::payments::PaymentTxn;
 use error::schema::SchemaError;
 use utils::constants::DEFAULT_SERIALIZE_VERSION;
@@ -104,7 +104,7 @@ pub fn create_new_schema(source_id: &str,
 
     debug!("creating schema with source_id: {}, name: {}, issuer_did: {}", source_id, name, issuer_did);
 
-    let (schema_id, payment_txn) = ledger::create_schema(&name, &version, &data)
+    let (schema_id, payment_txn) = anoncreds::create_schema(&name, &version, &data)
         .map_err(|e| {
             if e == error::UNKNOWN_SCHEMA_REJECTION.code_num {SchemaError::UnknownRejection()}
             else if e == error::DUPLICATE_SCHEMA.code_num {SchemaError::DuplicateSchema()}
@@ -136,7 +136,7 @@ pub fn get_schema_attrs(source_id: String, schema_id: String) -> Result<(u32, St
     let submitter_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)
         .map_err(|e| SchemaError::CommonError(e))?;
 
-    let (schema_id, schema_json) = ledger::get_schema_json(&schema_id)
+    let (schema_id, schema_json) = anoncreds::get_schema_json(&schema_id)
         .or(Err(SchemaError::InvalidSchemaSeqNo()))?;
 
     let schema_data: SchemaData = serde_json::from_str(&schema_json)

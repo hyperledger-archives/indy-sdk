@@ -14,7 +14,7 @@ use messages::GeneralMessage;
 use utils::error;
 use utils::constants::*;
 use utils::libindy::anoncreds::libindy_verifier_verify_proof;
-use utils::libindy::ledger;
+use utils::libindy::anoncreds;
 use error::proof::ProofError;
 use error::ToErrorCode;
 use serde_json::Value;
@@ -100,7 +100,7 @@ impl Proof {
 
         for ref cred_info in credential_data.iter() {
             if credential_json.get(&cred_info.cred_def_id).is_none() {
-                let (id, credential_def) = ledger::get_cred_def_json(&cred_info.cred_def_id)
+                let (id, credential_def) = anoncreds::get_cred_def_json(&cred_info.cred_def_id)
                     .map_err(|ec| ProofError::CommonError(ec))?;
 
                 let credential_def = serde_json::from_str(&credential_def)
@@ -120,7 +120,7 @@ impl Proof {
 
         for ref cred_info in credential_data.iter() {
             if schemas_json.get(&cred_info.schema_id).is_none() {
-                let (id, schema_json) = ledger::get_schema_json(&cred_info.schema_id)
+                let (id, schema_json) = anoncreds::get_schema_json(&cred_info.schema_id)
                     .or(Err(ProofError::InvalidSchema()))?;
 
                 let schema_val = serde_json::from_str(&schema_json)
@@ -145,7 +145,7 @@ impl Proof {
                 .ok_or(ProofError::InvalidRevocationInfo())?;
 
             if rev_reg_defs_json.get(rev_reg_id).is_none() {
-                let (id, json) = ledger::get_rev_reg_def_json(rev_reg_id)
+                let (id, json) = anoncreds::get_rev_reg_def_json(rev_reg_id)
                     .or(Err(ProofError::InvalidRevocationInfo()))?;
 
                 let rev_reg_def_json = serde_json::from_str(&json)
@@ -175,7 +175,7 @@ impl Proof {
                 .ok_or(ProofError::InvalidTimestamp())?;
 
             if rev_regs_json.get(rev_reg_id).is_none() {
-                let (id, json, timestamp) = ledger::get_rev_reg(rev_reg_id, timestamp.to_owned())
+                let (id, json, timestamp) = anoncreds::get_rev_reg(rev_reg_id, timestamp.to_owned())
                     .or(Err(ProofError::InvalidRevocationInfo()))?;
 
                 let rev_reg_json: Value = serde_json::from_str(&json)

@@ -235,10 +235,10 @@ mod tests {
 
     fn revoke_credential(issuer_handle: u32, rev_reg_id: Option<String>) {
         // GET REV REG DELTA BEFORE REVOCATION
-        let (_, delta, timestamp) = ::utils::libindy::ledger::get_rev_reg_delta_json(&rev_reg_id.clone().unwrap(), None, None).unwrap();
+        let (_, delta, timestamp) = ::utils::libindy::anoncreds::get_rev_reg_delta_json(&rev_reg_id.clone().unwrap(), None, None).unwrap();
         println!("revoking credential");
         ::issuer_credential::revoke_credential(issuer_handle).unwrap();
-        let (_, delta_after_revoke, _) = ::utils::libindy::ledger::get_rev_reg_delta_json(&rev_reg_id.unwrap(), Some(timestamp+1), None).unwrap();
+        let (_, delta_after_revoke, _) = ::utils::libindy::anoncreds::get_rev_reg_delta_json(&rev_reg_id.unwrap(), Some(timestamp+1), None).unwrap();
         assert_ne!(delta, delta_after_revoke);
     }
 

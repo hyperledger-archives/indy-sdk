@@ -10,9 +10,8 @@ use connection;
 use credential_request::{ CredentialRequest };
 use utils::error;
 use utils::error::{INVALID_JSON};
-use utils::libindy::anoncreds::{ libindy_issuer_create_credential, libindy_issuer_create_credential_offer};
 use utils::libindy::payments;
-use utils::libindy::ledger;
+use utils::libindy::anoncreds;
 use utils::constants::CRED_MSG;
 use utils::openssl::encode;
 use utils::libindy::payments::{PaymentTxn};
@@ -284,7 +283,7 @@ impl IssuerCredential {
         let indy_cred_req = &self.credential_request.as_ref()
             .ok_or(IssuerCredError::InvalidCredRequest())?.libindy_cred_req;
 
-        let (cred, cred_revoc_id, revoc_reg_delta_json) = libindy_issuer_create_credential(
+        let (cred, cred_revoc_id, revoc_reg_delta_json) = anoncreds::libindy_issuer_create_credential(
             &indy_cred_offer,
             &indy_cred_req,
             credential_data,
@@ -310,7 +309,7 @@ impl IssuerCredential {
     fn generate_credential_offer(&self, to_did: &str) -> Result<CredentialOffer, IssuerCredError> {
         let attr_map = convert_to_map(&self.credential_attributes)?;
         //Todo: make a cred_def_offer error
-        let libindy_offer = libindy_issuer_create_credential_offer(&self.cred_def_id)
+        let libindy_offer = anoncreds:: libindy_issuer_create_credential_offer(&self.cred_def_id)
             .map_err(|err| IssuerCredError::CommonError(err))?;
         Ok(CredentialOffer {
             msg_type: String::from("CRED_OFFER"),
@@ -340,7 +339,7 @@ impl IssuerCredential {
             .as_ref()
             .ok_or(IssuerCredError::InvalidRevocationInfo())?;
 
-        let (payment, _) = ledger::revoke_credential(tails_file, rev_reg_id, cred_rev_id)
+        let (payment, _) = anoncreds::revoke_credential(tails_file, rev_reg_id, cred_rev_id)
             .map_err(|e| IssuerCredError::CommonError(e))?;
 
         self.rev_cred_payment_txn = payment;

@@ -14,8 +14,7 @@ use messages::to_u8;
 
 use utils::libindy::anoncreds;
 use utils::libindy::crypto;
-use utils::libindy::ledger;
-use utils::libindy::ledger::{ get_rev_reg_def_json, get_rev_reg_delta_json };
+use utils::libindy::anoncreds::{ get_rev_reg_def_json, get_rev_reg_delta_json };
 
 use settings;
 use utils::httpclient;
@@ -241,6 +240,8 @@ fn build_rev_states_json(credentials_identifiers: &mut Vec<CredInfo>) -> Result<
                 let rev_state_json: Value = serde_json::from_str(&rev_state_json)
                     .or(Err(ProofError::InvalidJson()))?;
 
+                // TODO: proover should be able to create multiple states of same revocation policy for different timestamps
+                // see ticket IS-1108
                 rtn[rev_reg_id.to_string()] = json!({timestamp.to_string(): rev_state_json});
                 cred_info.timestamp = Some(timestamp);
 
@@ -292,7 +293,7 @@ impl DisclosedProof {
 
         for ref cred_info in credentials_identifiers {
             if rtn.get(&cred_info.schema_id).is_none() {
-                let (_, schema_json) = ledger::get_schema_json(&cred_info.schema_id)
+                let (_, schema_json) = anoncreds::get_schema_json(&cred_info.schema_id)
                     .or( Err(ProofError::InvalidSchema()))?;
 
                 let schema_json = serde_json::from_str(&schema_json)
@@ -309,7 +310,7 @@ impl DisclosedProof {
 
         for ref cred_info in credentials_identifiers {
             if rtn.get(&cred_info.cred_def_id).is_none() {
-                let (_, credential_def) = ledger::get_cred_def_json(&cred_info.cred_def_id)
+                let (_, credential_def) = anoncreds::get_cred_def_json(&cred_info.cred_def_id)
                     .or(Err(ProofError::InvalidCredData()))?;
 
                 let credential_def = serde_json::from_str(&credential_def)
