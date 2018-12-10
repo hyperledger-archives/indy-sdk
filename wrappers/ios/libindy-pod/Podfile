@@ -9,6 +9,7 @@ def appPods
     pod 'libzmq',"4.2.3"
     pod 'OpenSSL-lib-iOS'
     pod 'ISO8601DateFormatter'
+    pod 'libindy', "1.6.4-739"
 
 end
 

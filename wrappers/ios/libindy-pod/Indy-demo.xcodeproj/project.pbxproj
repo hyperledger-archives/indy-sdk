@@ -201,8 +201,6 @@
 				5DB57B0B1F7120DE00EB4C90 /* Indy.framework */,
 				5DB57A641F71201200EB4C90 /* Indy-demo */,
 				3E2A7F861EC36186006194EC /* Products */,
-				FFB35C33119165C4896C64A8 /* Pods */,
-				84DF55ECAD03C4B4CEE16BD1 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
