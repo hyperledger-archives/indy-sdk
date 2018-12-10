@@ -6,20 +6,19 @@ use self::futures::Future;
 
 use std::sync::{Once, ONCE_INIT};
 use std::sync::Mutex;
-use std::collections::HashMap;
 use std::thread;
 use std::ops::FnOnce;
 
 lazy_static! {
-    static ref THREADPOOL: Mutex<HashMap<u32, ThreadPool>> = Default::default();
+    static ref THREADPOOL: Mutex<Option<ThreadPool>> = Default::default();
 }
 
 static TP_INIT: Once = ONCE_INIT;
 
-pub static mut TP_HANDLE: u32 = 0;
-
 pub fn init() {
     let size = ::settings::get_threadpool_size();
+
+    _init_cleaner();
 
     if size == 0 {
         info!("no threadpool created, threadpool_size is 0");
@@ -27,48 +26,46 @@ pub fn init() {
     } else {
         TP_INIT.call_once(|| {
             let pool = Builder::new().pool_size(size).build();
-
-            THREADPOOL.lock().unwrap().insert(1, pool);
-
-            unsafe { TP_HANDLE = 1; }
+            let mut threadpool = THREADPOOL.lock().unwrap();
+            *threadpool = Some(pool);
         });
     }
 }
 
 pub fn spawn<F>(future: F)
-where
-    F: FnOnce() -> Result<(), ()> + Send + 'static {
-        let handle;
-        unsafe { handle = TP_HANDLE; }
-        if ::settings::get_threadpool_size() == 0 || handle == 0{
-            thread::spawn(future);
-        }
-        else {
-            spawn_thread_in_pool(futures::lazy(future));
-        }
-
+    where
+        F: FnOnce() -> Result<(), ()> + Send + 'static {
+    if ::settings::get_threadpool_size() == 0 || THREADPOOL.lock().unwrap().as_ref().is_none() {
+        thread::spawn(future);
+    } else {
+        spawn_thread_in_pool(futures::lazy(future));
+    }
 }
 
 fn spawn_thread_in_pool<F>(future: F)
-where
-    F: Future<Item = (), Error = ()> + Send + 'static {
-    let handle;
-    unsafe { handle = TP_HANDLE; }
-    match THREADPOOL.lock().unwrap().get(&handle) {
+    where
+        F: Future<Item=(), Error=()> + Send + 'static {
+    match THREADPOOL.lock().unwrap().as_ref() {
         Some(x) => {
             let n = x.spawn(future);
-        },
+        }
         None => panic!("no threadpool!"),
     }
 }
 
-pub fn cleanup(){
-    let handle;
-    unsafe { handle = TP_HANDLE; }
-    match THREADPOOL.lock().unwrap().remove(&handle) {
-        Some(x) => {
-            x.shutdown().wait().unwrap();
-        }
-        None => {},
+#[derive(Debug)]
+struct ThreadPoolCleaner { name: &'static str }
+
+impl Drop for ThreadPoolCleaner {
+    fn drop(&mut self) {
+        THREADPOOL.lock().unwrap().take();
     }
+}
+
+const CLEANER: ThreadPoolCleaner = ThreadPoolCleaner { name: "" };
+
+fn _init_cleaner() {
+    /// Dirty hack to force cleaning of lazy_static THREADPOOL when the library will be unloaded.
+    /// The otherwise possible situation when the thread of application dies earlier then ThreadPool. In this case, SigAbort will be raised.
+    println!(r#"{}"#, CLEANER.name);
 }

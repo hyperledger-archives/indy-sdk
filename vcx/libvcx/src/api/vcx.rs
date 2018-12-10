@@ -214,7 +214,6 @@ pub extern fn vcx_shutdown(delete: bool) -> u32 {
     }
 
     settings::clear_config();
-    ::utils::threadpool::cleanup();
     trace!("vcx_shutdown(delete: {})", delete);
     error::SUCCESS.code_num
 }
