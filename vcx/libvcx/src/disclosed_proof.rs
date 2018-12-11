@@ -11,6 +11,7 @@ use messages::proofs::proof_message::{ProofMessage };
 use messages::proofs::proof_request::{ ProofRequestMessage, ProofRequestData, NonRevokedInterval };
 use messages::extract_json_payload;
 use messages::to_u8;
+use time;
 
 use utils::libindy::anoncreds;
 use utils::libindy::crypto;

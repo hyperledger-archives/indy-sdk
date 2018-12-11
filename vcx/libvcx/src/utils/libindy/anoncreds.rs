@@ -13,6 +13,7 @@ use utils::libindy::ledger::{libindy_build_schema_request, libindy_build_get_sch
 use indy::anoncreds;
 use indy::blob_storage;
 use indy::ledger;
+use time;
 
 pub fn libindy_verifier_verify_proof(proof_req_json: &str,
                                      proof_json: &str,
