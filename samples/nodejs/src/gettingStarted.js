@@ -823,7 +823,7 @@ async function authDecrypt(walletHandle, key, message) {
     return [fromVerkey, decryptedMessageJson, decryptedMessage];
 }
 
-if (process.argv.indexOf("--run") > 0) {
+if (require.main.filename == __filename) {
     run()
 }
 
