@@ -253,7 +253,6 @@
 				3E08C0171EB3336A000A73BA /* Frameworks */,
 				3E08C0181EB3336A000A73BA /* Headers */,
 				3E08C0191EB3336A000A73BA /* Resources */,
-				20433C185692631015495540 /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
@@ -309,21 +308,6 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		20433C185692631015495540 /* [CP] Copy Pods Resources */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-			);
-			name = "[CP] Copy Pods Resources";
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-Indy/Pods-Indy-resources.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
 		D6BFF417833531D0F48BA45D /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
