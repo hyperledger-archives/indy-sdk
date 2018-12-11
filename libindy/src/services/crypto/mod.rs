@@ -18,7 +18,7 @@ use utils::crypto::verkey_builder::build_full_verkey;
 use utils::crypto::ed25519_sign;
 use utils::crypto::ed25519_box;
 use utils::crypto::chacha20poly1305_ietf;
-use utils::crypto::chacha20poly1305_ietf::{gen_key, gen_nonce_and_encrypt};
+use utils::crypto::chacha20poly1305_ietf::{gen_key, gen_nonce_and_encrypt_detached, decrypt_detached};
 
 use std::collections::HashMap;
 use std::str;
@@ -451,126 +451,21 @@ impl CryptoService {
         Ok(res)
     }
 
-//    /* Authcrypt helper function section */
-//    pub fn anon_encrypt_recipient(
-//        &self,
-//        recp_vk: &str,
-//        sym_key: chacha20poly1305_ietf::Key
-//    ) -> Result<Recipient, CryptoError> {
-//        //encrypt cek
-//        let cek = self.crypto_box_seal(recp_vk, &sym_key[..]).map_err(|err| {
-//            CryptoError::UnknownCryptoError(format!("Failed to encrypt anon recipient {}", err))
-//        })?;
-//
-//        //generate struct
-//        let anon_recipient = AnonRecipient {
-//            to: recp_vk.to_string(),
-//            cek: base64::encode(cek.as_slice()),
-//        };
-//
-//        Ok(anon_recipient)
-//    }
-//
-//    pub fn anon_decrypt_recipient(
-//        &self,
-//        my_key: &Key,
-//        recipient: &Recipient
-//    ) -> Result<chacha20poly1305_ietf::Key, CryptoError> {
-//        let cek_as_vec = base64::decode(&anon_recipient.cek).map_err(|err| {
-//            CryptoError::CommonError(
-//                CommonError::InvalidStructure(format!("Failed to decode cek for anon_decrypt_recipient {}", err))
-//            )
-//        })?;
-//        let cek_as_bytes = cek_as_vec.as_ref();
-//
-//        let decrypted_cek = self
-//            .crypto_box_seal_open(my_key, cek_as_bytes)
-//            .map_err(|err| CryptoError::UnknownCryptoError(format!("Failed to decrypt cek {}", err)))?;
-//
-//        //convert to secretbox key
-//        let sym_key = chacha20poly1305_ietf::Key::from_slice(&decrypted_cek[..]).map_err(|err| {
-//            CryptoError::UnknownCryptoError(format!("Failed to decrypt sym_key {}", err))
-//        })?;
-//
-//        //return key
-//        Ok(sym_key)
-//    }
+    pub fn encrypt_plaintext(&self,
+                             plaintext: &str,
+                             aad: &[u8],
+                             sym_key: &chacha20poly1305_ietf::Key)
+    -> (String, String, String) { ;
 
-//    /* Authcrypt helper function section */
-//    pub fn auth_encrypt_recipient(
-//        &self,
-//        my_key: &Key,
-//        recp_vk: &str,
-//        sym_key: &chacha20poly1305_ietf
-//    ) -> Result<AuthRecipient, CryptoError> {
-//        //encrypt sym_key for recipient
-//        let (e_cek, cek_nonce) = self.crypto_box(my_key, recp_vk, &sym_key[..])?;
-//
-//        //serialize enc_header
-//        let sender_vk_bytes = base58::decode(&my_key.verkey).map_err(|err| {
-//            CryptoError::CommonError(err)
-//        })?;
-//
-//        //encrypt enc_from
-//        let enc_from = self.crypto_box_seal(recp_vk, sender_vk_bytes.as_slice())?;
-//
-//        //create struct
-//        let auth_recipient = AuthRecipient {
-//            enc_from: base64::encode(enc_from.as_slice()),
-//            e_cek: base64::encode(e_cek.as_slice()),
-//            cek_nonce: base64::encode(cek_nonce.as_slice()),
-//            to: recp_vk.to_string(),
-//        };
-//
-//        //return AuthRecipient struct
-//        Ok(auth_recipient)
-//    }
-//
-//    pub fn auth_decrypt_recipient(
-//        &self,
-//        my_key: &Key,
-//        auth_recipient: Recipient
-//    ) -> Result<(chacha20poly1305_ietf::Key, String), CryptoError> {
-//        //decode enc_from
-//        let enc_from_bytes = base64::decode(&auth_recipient.enc_from)
-//            .map_err(|err| CryptoError::CommonError(err))?;
-//
-//        //decrypt enc_from
-//        let sender_vk_as_vec = self.crypto_box_seal_open(my_key, enc_from_bytes.as_ref())?;
-//
-//        //encode sender_vk to base58 to use to decrypt cek
-//        let sender_vk = base58::encode(sender_vk_as_vec.as_ref());
-//
-//        //decode e_cek
-//        let e_cek_as_vec = base64::decode(&auth_recipient.e_cek)
-//            .map_err(|err| CryptoError::CommonError(err))?;
-//        let e_cek: &[u8] = e_cek_as_vec.as_ref();
-//
-//        //type convert cek_nonce
-//        let cek_nonce_as_vec = base64::decode(&auth_recipient.cek_nonce).map_err(|err| {
-//            CryptoError::CommonError(err)
-//        })?;
-//        let cek_nonce: &[u8] = cek_nonce_as_vec.as_ref();
-//
-//        //decrypt cek
-//        let decrypted_cek = self.crypto_box_open(my_key, &sender_vk, e_cek, cek_nonce)?;
-//
-//        //convert to secretbox key
-//        let sym_key = xsalsa20::Key::from_slice(&decrypted_cek[..]).map_err( |err| {
-//            CommonError::InvalidStructure(format!("Failed to unpack sym_key {}", err))
-//        })?;
-//
-//        //TODO Verify key is in DID Doc
-//
-//        //return key to decrypt ciphertext and the key used to decrypt with
-//        Ok((sym_key, sender_vk))
-//    }
+        //encrypt message with aad
+        let (ciphertext, iv, tag) = gen_nonce_and_encrypt_detached(plaintext.as_bytes(), aad, &sym_key);
 
-    pub fn encrypt_plaintext(&self, plaintext: &str) -> (chacha20poly1305_ietf::Key, chacha20poly1305_ietf::Nonce, Vec<u8>) {
-        let sym_key = gen_key();
-        let (message, iv) = gen_nonce_and_encrypt(plaintext.as_bytes(), &sym_key);
+        //base64 url encode data
+        let iv_encoded = base64::encode(&iv[..]);
+        let ciphertext_encoded = base64::encode(ciphertext.as_slice());
+        let tag_encoded = base64::encode(&tag[..]);
 
-        (sym_key, iv, message)
+        (ciphertext_encoded, iv_encoded, tag_encoded)
     }
 
         /* ciphertext helper functions*/
@@ -578,8 +473,18 @@ impl CryptoService {
         &self,
         ciphertext: &str,
         iv: &str,
+        tag: &str,
+        aad: &str,
         sym_key: &chacha20poly1305_ietf::Key,
     ) -> Result<String, CryptoError> {
+
+        //convert ciphertext to bytes
+        let ciphertext_as_vec = base64::decode(ciphertext).map_err(|err| {
+            CryptoError::CommonError(
+                CommonError::InvalidStructure(format!("Failed to decode ciphertext {}", err))
+            )
+        })?;
+        let ciphertext_as_bytes = ciphertext_as_vec.as_ref();
 
         //convert IV from &str to &Nonce
         let iv_as_vec = base64::decode(iv).map_err(|err|
@@ -593,17 +498,33 @@ impl CryptoService {
             )
         })?;
 
-        //convert ciphertext to bytes
-        let ciphertext_as_vec = base64::decode(ciphertext).map_err(|err| {
+        //convert tag from &str to &Tag
+        let tag_as_vec = base64::decode(tag).map_err(|err|
             CryptoError::CommonError(
-                CommonError::InvalidStructure(format!("Failed to decode ciphertext {}", err))
+                CommonError::InvalidStructure(format!("Failed to decode tag {}", err)))
+        )?;
+        let tag_as_slice = tag_as_vec.as_slice();
+        let tag = chacha20poly1305_ietf::Tag::from_slice(tag_as_slice).map_err(|err| {
+            CryptoError::CommonError(
+                CommonError::InvalidStructure(format!("Failed to convert tag to Tag type {}", err))
             )
         })?;
-        let ciphertext_as_bytes = ciphertext_as_vec.as_ref();
+
+        //convert aad to byte array type
+        let aad_as_vec = base64::decode(aad)
+            .map_err(|err|CryptoError::CommonError(
+                CommonError::InvalidStructure(format!("Failed to decode aad {}", err))
+            ))?;
+        let aad_as_bytes= aad_as_vec.as_slice();
 
         //decrypt message
         let plaintext_bytes =
-            chacha20poly1305_ietf::decrypt(ciphertext_as_bytes, sym_key, &nonce).map_err(|err| {
+            chacha20poly1305_ietf::decrypt_detached(ciphertext_as_bytes,
+                                                    sym_key,
+                                                    &nonce,
+                                                    &tag,
+                                                    Some(aad_as_bytes))
+                .map_err(|err| {
                 CryptoError::UnknownCryptoError(format!("Failed to decrypt ciphertext {}", err))
             })?;
 
@@ -621,6 +542,7 @@ impl CryptoService {
 mod tests {
     use super::*;
     use domain::crypto::did::MyDidInfo;
+    use utils::crypto::randombytes::randombytes;
 
     #[test]
     fn create_my_did_with_works_for_empty_info() {
@@ -895,148 +817,119 @@ mod tests {
     #[test]
     pub fn test_encrypt_plaintext_and_decrypt_ciphertext_works() {
         let service: CryptoService = CryptoService::new();
-        let message : &str = "Message to encrypt";
+        let plaintext : &str = "Message to encrypt";
+        let aad = randombytes(100);
+        let sym_key = gen_key();
 
-        let (sym_key, iv, expected_ciphertext) = service
-            .encrypt_plaintext(message);
+        let (expected_ciphertext, iv_encoded, tag) = service
+            .encrypt_plaintext(plaintext, aad.as_slice(), &sym_key);
 
-        //convert values to base64 encoded strings
-        let plaintext_str = base64::encode(expected_ciphertext.as_slice());
-        let iv_encoded = base64::encode(&iv[..]);
 
         let expected_plaintext = service
-            .decrypt_ciphertext(&plaintext_str, &iv_encoded, &sym_key).unwrap();
-        assert_eq!(expected_plaintext, message);
+            .decrypt_ciphertext(&expected_ciphertext, &iv_encoded, &tag, &base64::encode(aad.as_slice()), &sym_key).unwrap();
+        assert_eq!(expected_plaintext, plaintext);
     }
 
 
     #[test]
     pub fn test_encrypt_plaintext_decrypt_ciphertext_empty_string_works() {
         let service: CryptoService = CryptoService::new();
-        let message : &str = "";
+        let plaintext : &str = "Hello World";
+        let aad = randombytes(100);
+        let sym_key = gen_key();
 
-        let (sym_key, iv, expected_ciphertext) = service
-            .encrypt_plaintext(message);
+        let (expected_ciphertext, iv_encoded, tag) = service
+            .encrypt_plaintext(plaintext, aad.as_slice(), &sym_key);
 
-        //convert values to base64 encoded strings
-        let plaintext_str = base64::encode(expected_ciphertext.as_slice());
-        let iv_encoded = base64::encode(&iv[..]);
 
         let expected_plaintext = service
-            .decrypt_ciphertext(&plaintext_str, &iv_encoded, &sym_key).unwrap();
-        assert_eq!(expected_plaintext, message);
+            .decrypt_ciphertext(&expected_ciphertext, &iv_encoded, &tag, &base64::encode(aad.as_slice()), &sym_key).unwrap();
+        assert_eq!(expected_plaintext, plaintext);
     }
 
     #[test]
     pub fn test_encrypt_plaintext_decrypt_ciphertext_bad_iv_fails() {
         let service: CryptoService = CryptoService::new();
-        let message : &str = "hello world";
+        let plaintext : &str = "";
+        let aad = randombytes(100);
+        let sym_key = gen_key();
 
-        let (sym_key, iv, expected_ciphertext) = service
-            .encrypt_plaintext(message);
+        let (expected_ciphertext, _, tag) = service
+            .encrypt_plaintext(plaintext, aad.as_slice(), &sym_key);
 
         //convert values to base64 encoded strings
-        let plaintext_str = base64::encode(expected_ciphertext.as_slice());
         let bad_iv_input = "invalid_iv";
 
         let expected_error = service
-            .decrypt_ciphertext(&plaintext_str, bad_iv_input, &sym_key);
+            .decrypt_ciphertext(&expected_ciphertext, bad_iv_input, &tag, &base64::encode(aad.as_slice()), &sym_key);
         assert!(expected_error.is_err());
     }
 
     #[test]
     pub fn test_encrypt_plaintext_decrypt_ciphertext_bad_ciphertext_fails() {
         let service: CryptoService = CryptoService::new();
-        let message : &str = "hello world";
+        let plaintext : &str = "Hello World";
+        let aad = randombytes(100);
+        let sym_key = gen_key();
 
-        let (sym_key, iv, expected_ciphertext) = service
-            .encrypt_plaintext(message);
+        let (_, iv_encoded, tag) = service
+            .encrypt_plaintext(plaintext, aad.as_slice(), &sym_key);
 
-        //convert values to base64 encoded strings
         let bad_ciphertext= base64::encode("bad_ciphertext".as_bytes());
-        let iv_encoded = base64::encode(&iv[..]);
 
         let expected_error = service
-            .decrypt_ciphertext(&bad_ciphertext, &iv_encoded, &sym_key);
+            .decrypt_ciphertext(&bad_ciphertext, &iv_encoded, &tag, &base64::encode(aad.as_slice()), &sym_key);
         assert!(expected_error.is_err());
     }
 
     #[test]
     pub fn test_encrypt_plaintext_and_decrypt_ciphertext_wrong_sym_key_fails() {
         let service: CryptoService = CryptoService::new();
-        let message : &str = "Message to encrypt";
+        let plaintext : &str = "Hello World";
+        let aad = randombytes(100);
+        let sym_key = chacha20poly1305_ietf::gen_key();
 
-        let (sym_key, iv, expected_ciphertext) = service
-            .encrypt_plaintext(message);
+        let (expected_ciphertext, iv_encoded, tag) = service
+            .encrypt_plaintext(plaintext, aad.as_slice(), &sym_key);
 
-        //convert values to base64 encoded stringsT
-        let plaintext_str = base64::encode(expected_ciphertext.as_slice());
-        let iv_encoded = base64::encode(&iv[..]);
-        let bad_sym_key = chacha20poly1305_ietf::gen_key();
+        let bad_sym_key= gen_key();
 
         let expected_error = service
-            .decrypt_ciphertext(&plaintext_str, &iv_encoded, &bad_sym_key);
+            .decrypt_ciphertext(&expected_ciphertext, &iv_encoded, &tag, &base64::encode(aad.as_slice()), &bad_sym_key);
         assert!(expected_error.is_err());
     }
 
+    #[test]
+    pub fn test_encrypt_plaintext_and_decrypt_ciphertext_bad_tag_fails() {
+        let service: CryptoService = CryptoService::new();
+        let plaintext : &str = "Hello World";
+        let aad = randombytes(100);
+        let sym_key = gen_key();
 
+        let (expected_ciphertext, iv_encoded, tag) = service
+            .encrypt_plaintext(plaintext, aad.as_slice(), &sym_key);
 
+        let bad_tag = "bad_tag".to_string();
 
-//    #[test]
-//    pub fn test_auth_encrypt_recipient_works() {
-//        //setup route_service
-//        let service: CryptoService = CryptoService::new();
-//
-//        //setup DIDs and Keys
-//        let did_info = MyDidInfo { did: None, cid: None, seed: None, crypto_type: None };
-//        let (my_did, my_key) = service.create_my_did(&did_info).unwrap();
-//        let (their_did, their_key) = service.create_my_did(&did_info.clone()).unwrap();
-//
-//        let my_key_for_encrypt = my_key.clone();
-//        let their_did_for_encrypt = Did::new(their_did.did, their_did.verkey);
-//
-//        let my_key_for_decrypt = their_key.clone();
-//        let their_did_for_decrypt = Did::new(my_did.did, my_did.verkey);
-//
-//        //sym_key
-//        let sym_key = chacha20poly1305_ietf::gen_key();
-//
-//        //pack then unpack message
-//        let auth_recipient = service
-//            .auth_encrypt_recipient(&my_key_for_encrypt, &their_did_for_encrypt.verkey, &sym_key);
-//
-//        //verify no errors are thrown
-//        assert!(auth_recipient.is_ok());
-//    }
+        let expected_error = service
+            .decrypt_ciphertext(&expected_ciphertext, &iv_encoded, &bad_tag, &base64::encode(aad.as_slice()), &sym_key);
+        assert!(expected_error.is_err());
+    }
 
-//    pub fn test_auth_encrypt_and_auth_decrypt_recipient_works() {
-//        //setup route_service
-//        let service: CryptoService = CryptoService::new();
-//
-//        //setup DIDs and Keys
-//        let did_info = MyDidInfo { did: None, cid: None, seed: None, crypto_type: None };
-//        let (my_did, my_key) = service.create_my_did(&did_info).unwrap();
-//        let (their_did, their_key) = service.create_my_did(&did_info.clone()).unwrap();
-//
-//        let my_key_for_encrypt = my_key.clone();
-//        let their_did_for_encrypt = Did::new(their_did.did, their_did.verkey);
-//
-//        let my_key_for_decrypt = their_key.clone();
-//        let their_did_for_decrypt = Did::new(my_did.did, my_did.verkey);
-//
-//        //sym_key
-//        let sym_key = xsalsa20::create_key();
-//
-//        //pack then unpack message
-//        let auth_recipient = service
-//            .auth_encrypt_recipient(&my_key_for_encrypt, &their_did_for_encrypt.verkey, &sym_key);
-//
-//        let (expected_sym_key, sender_vk) = service
-//            .auth_decrypt_recipient(&recv_key, auth_recipient, cs.clone())
-//            .unwrap();
-//
-//        //verify same plaintext goes in and comes out
-//        assert_eq!(expected_sym_key, sym_key);
-//        assert_eq!(expected_send_key.verkey, sender_vk);
-//    }
+    #[test]
+    pub fn test_encrypt_plaintext_and_decrypt_ciphertext_bad_aad_fails() {
+        let service: CryptoService = CryptoService::new();
+        let plaintext : &str = "Hello World";
+        let aad = randombytes(100);
+        let sym_key = gen_key();
+
+        let (expected_ciphertext, iv_encoded, tag) = service
+            .encrypt_plaintext(plaintext, aad.as_slice(), &sym_key);
+
+        let bad_aad = randombytes(100);
+
+        let expected_error = service
+            .decrypt_ciphertext(&expected_ciphertext, &iv_encoded, &tag, &base64::encode(bad_aad.as_slice()), &sym_key);
+        assert!(expected_error.is_err());
+    }
 }
