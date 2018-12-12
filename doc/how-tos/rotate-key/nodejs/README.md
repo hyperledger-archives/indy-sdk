@@ -2,7 +2,7 @@
 
 Indy-SDK Developer Walkthrough #2, NodEJS Edition
 
-[ [Python](../python/README.md) | [Java](../java/README.md) | [.NET](../../not-yet-written.md) | [Node.js](../../not-yet-written.md) | [Objective C](../../not-yet-written.md) | [Rust](../rust/README.md)]
+[ [Python](../python/README.md) | [Java](../java/README.md) | [.NET](../../not-yet-written.md) | [Objective C](../../not-yet-written.md) | [Rust](../rust/README.md)]
 
 
 ## Prerequisites
