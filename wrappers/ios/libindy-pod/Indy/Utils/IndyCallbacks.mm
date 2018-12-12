@@ -7,9 +7,9 @@
 #import "IndyCallbacks.h"
 #import "NSError+IndyError.h"
 #import "IndyTypes.h"
+#import "IndyLogger.h"
 
 static NSString *commandCallbackKey = @"commandCallback";
-
 
 @interface IndyCallbacks ()
 
@@ -28,6 +28,9 @@ static NSString *commandCallbackKey = @"commandCallback";
     dispatch_once(&dispatch_once_block, ^{
         instance = [IndyCallbacks new];
     });
+
+
+    [IndyLogger setLogger];
 
     return instance;
 }
