@@ -1,6 +1,8 @@
 cargo-registry
 target
 build
+node_modules
+package-lock.json
 .idea
 *.iml
 .venv

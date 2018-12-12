@@ -87,12 +87,12 @@ connections to pools.</p>
   <div class="markdown level0 conceptual"></div>
   <div class="inheritance">
     <h5>Inheritance</h5>
-    <div class="level0"><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.object(v=vs.110).aspx">Object</a></div>
+    <div class="level0"><span class="xref">System.Object</span></div>
     <div class="level1"><span class="xref">Pool</span></div>
   </div>
   <div classs="implements">
     <h5>Implements</h5>
-    <div><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.idisposable(v=vs.110).aspx">IDisposable</a></div>
+    <div><span class="xref">System.IDisposable</span></div>
   </div>
   <h6><strong>Namespace</strong>: <a class="xref" href="Hyperledger.Indy.PoolApi.html">Hyperledger.Indy.PoolApi</a></h6>
   <h6><strong>Assembly</strong>: Hyperledger.Indy.Sdk.dll</h6>
@@ -121,8 +121,8 @@ connections to pools.</p>
     </thead>
     <tbody>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.threading.tasks.task(v=vs.110).aspx">Task</a></td>
-        <td><p>An asynchronous <a class="xref" href="https://msdn.microsoft.com/en-us/library/system.threading.tasks.task(v=vs.110).aspx">Task</a> that completes when the operation completes.</p>
+        <td><span class="xref">System.Threading.Tasks.Task</span></td>
+        <td><p>An asynchronous <span class="xref">System.Threading.Tasks.Task</span> that completes when the operation completes.</p>
 </td>
       </tr>
     </tbody>
@@ -152,13 +152,13 @@ pool nodes.</p>
     </thead>
     <tbody>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="xref">System.String</span></td>
         <td><span class="parametername">configName</span></td>
         <td><p>The name for the configuration.</p>
 </td>
       </tr>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="xref">System.String</span></td>
         <td><span class="parametername">config</span></td>
         <td><p>The configuration JSON.</p>
 </td>
@@ -175,8 +175,8 @@ pool nodes.</p>
     </thead>
     <tbody>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.threading.tasks.task(v=vs.110).aspx">Task</a></td>
-        <td><p>An asynchronous <a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task&lt;TResult&gt;</a> with no return value that completes when
+        <td><span class="xref">System.Threading.Tasks.Task</span></td>
+        <td><p>An asynchronous <span class="xref">System.Threading.Tasks.Task&lt;&gt;</span> with no return value that completes when
 the configuration is created.</p>
 </td>
       </tr>
@@ -219,7 +219,7 @@ used.  If the file specified does not exist it will be created.
     </thead>
     <tbody>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="xref">System.String</span></td>
         <td><span class="parametername">configName</span></td>
         <td><p>The name of the configuration to delete.</p>
 </td>
@@ -236,8 +236,8 @@ used.  If the file specified does not exist it will be created.
     </thead>
     <tbody>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.threading.tasks.task(v=vs.110).aspx">Task</a></td>
-        <td><p>An asynchronous <a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task&lt;TResult&gt;</a> with no return value that completes when
+        <td><span class="xref">System.Threading.Tasks.Task</span></td>
+        <td><p>An asynchronous <span class="xref">System.Threading.Tasks.Task&lt;&gt;</span> with no return value that completes when
 the configuration is deleted.</p>
 </td>
       </tr>
@@ -265,6 +265,29 @@ the configuration is deleted.</p>
   <div class="codewrapper">
     <pre><code class="lang-csharp hljs">protected override void Finalize()</code></pre>
   </div>
+  <a id="Hyperledger_Indy_PoolApi_Pool_ListPoolsAsync_" data-uid="Hyperledger.Indy.PoolApi.Pool.ListPoolsAsync*"></a>
+  <h4 id="Hyperledger_Indy_PoolApi_Pool_ListPoolsAsync" data-uid="Hyperledger.Indy.PoolApi.Pool.ListPoolsAsync">ListPoolsAsync()</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; ListPoolsAsync()</code></pre>
+  </div>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.String</span>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
   <a id="Hyperledger_Indy_PoolApi_Pool_OpenPoolLedgerAsync_" data-uid="Hyperledger.Indy.PoolApi.Pool.OpenPoolLedgerAsync*"></a>
   <h4 id="Hyperledger_Indy_PoolApi_Pool_OpenPoolLedgerAsync_System_String_System_String_" data-uid="Hyperledger.Indy.PoolApi.Pool.OpenPoolLedgerAsync(System.String,System.String)">OpenPoolLedgerAsync(String, String)</h4>
   <div class="markdown level1 summary"><p>Opens a pool and connects to the ledger nodes.</p>
@@ -285,13 +308,13 @@ the configuration is deleted.</p>
     </thead>
     <tbody>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="xref">System.String</span></td>
         <td><span class="parametername">configName</span></td>
         <td><p>The name of the pool configuration to use.</p>
 </td>
       </tr>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="xref">System.String</span></td>
         <td><span class="parametername">config</span></td>
         <td><p>The runtime configuration to use.</p>
 </td>
@@ -308,8 +331,8 @@ the configuration is deleted.</p>
     </thead>
     <tbody>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task</a>&lt;<a class="xref" href="Hyperledger.Indy.PoolApi.Pool.html">Pool</a>&gt;</td>
-        <td><p>An asynchronous <a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task&lt;TResult&gt;</a> that resolves to a Pool instance once the pool is opened.</p>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<a class="xref" href="Hyperledger.Indy.PoolApi.Pool.html">Pool</a>&gt;</td>
+        <td><p>An asynchronous <span class="xref">System.Threading.Tasks.Task&lt;&gt;</span> that resolves to a Pool instance once the pool is opened.</p>
 </td>
       </tr>
     </tbody>
@@ -350,15 +373,55 @@ parameter, which expects a JSON string with the following format:</p>
     </thead>
     <tbody>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.threading.tasks.task(v=vs.110).aspx">Task</a></td>
-        <td><p>An asynchronous <a class="xref" href="https://msdn.microsoft.com/en-us/library/system.threading.tasks.task(v=vs.110).aspx">Task</a> that completes when the operation completes.</p>
+        <td><span class="xref">System.Threading.Tasks.Task</span></td>
+        <td><p>An asynchronous <span class="xref">System.Threading.Tasks.Task</span> that completes when the operation completes.</p>
 </td>
+      </tr>
+    </tbody>
+  </table>
+  <a id="Hyperledger_Indy_PoolApi_Pool_SetProtocolVersionAsync_" data-uid="Hyperledger.Indy.PoolApi.Pool.SetProtocolVersionAsync*"></a>
+  <h4 id="Hyperledger_Indy_PoolApi_Pool_SetProtocolVersionAsync_System_Int32_" data-uid="Hyperledger.Indy.PoolApi.Pool.SetProtocolVersionAsync(System.Int32)">SetProtocolVersionAsync(Int32)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task SetProtocolVersionAsync(int protocolVersion)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Int32</span></td>
+        <td><span class="parametername">protocolVersion</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Threading.Tasks.Task</span></td>
+        <td></td>
       </tr>
     </tbody>
   </table>
   <h3 id="implements">Implements</h3>
   <div>
-      <a class="xref" href="https://msdn.microsoft.com/en-us/library/system.idisposable(v=vs.110).aspx">IDisposable</a>
+      <span class="xref">System.IDisposable</span>
   </div>
 </article>
           </div>

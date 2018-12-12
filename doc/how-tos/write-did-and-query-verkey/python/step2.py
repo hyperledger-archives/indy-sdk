@@ -9,7 +9,7 @@
         pool_handle = await pool.open_pool_ledger(config_name=pool_name, config=None)
 
         print_log('\n3. Create new identity wallet\n')
-        await wallet.create_wallet(pool_name, wallet_name, None, None, None)
+        await wallet.create_wallet(wallet_config, wallet_credentials)
 
         print_log('\n4. Open identity wallet and get handle\n')
-        wallet_handle = await wallet.open_wallet(wallet_name, None, None)
+        wallet_handle = await wallet.open_wallet(wallet_config, wallet_credentials)

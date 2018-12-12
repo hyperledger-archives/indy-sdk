@@ -25,7 +25,6 @@ extern fn CustomFree(data: *mut c_char) -> ErrorCode;
 Libindy API will contain call to register handler for specific transaction type:
 ```rust
 extern fn indy_register_transaction_parser_for_sp(command_handle: i32,
-                                                  pool_handle: i32,
                                                   txn_type: *const c_char,
                                                   parser: CustomTransactionParser,
                                                   free: CustomFree,

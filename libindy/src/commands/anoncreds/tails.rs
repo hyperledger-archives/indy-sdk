@@ -9,13 +9,12 @@ use domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinit
 
 use self::indy_crypto::cl::{Tail, RevocationTailsAccessor, RevocationTailsGenerator};
 use self::indy_crypto::errors::IndyCryptoError;
-use self::digest::Input;
 
 use self::rust_base58::{ToBase58, FromBase58};
 
 use std::rc::Rc;
 
-const _TAILS_BLOB_TAG_SZ: usize = 2;
+const TAILS_BLOB_TAG_SZ: u8 = 2;
 const TAIL_SIZE: usize = Tail::BYTES_REPR_SIZE;
 
 pub struct SDKTailsAccessor {
@@ -28,7 +27,7 @@ impl SDKTailsAccessor {
                tails_reader_handle: i32,
                rev_reg_def: &RevocationRegistryDefinitionV1) -> Result<SDKTailsAccessor, CommonError> {
         let tails_hash = rev_reg_def.value.tails_hash.from_base58()
-            .map_err(|_| CommonError::InvalidState(format!("Invalid base58 for Tails hash")))?;
+            .map_err(|_| CommonError::InvalidState("Invalid base58 for Tails hash".to_string()))?;
 
         let tails_reader_handle = tails_service.open_blob(tails_reader_handle,
                                                           &rev_reg_def.value.tails_location,
@@ -58,7 +57,7 @@ impl RevocationTailsAccessor for SDKTailsAccessor {
         let tail_bytes = self.tails_service
             .read(self.tails_reader_handle,
                   TAIL_SIZE,
-                  TAIL_SIZE * tail_id as usize)  // + _TAILS_BLOB_TAG_SZ
+                  TAIL_SIZE * tail_id as usize + TAILS_BLOB_TAG_SZ as usize)
             .map_err(|_|
                 IndyCryptoError::InvalidState("Can't read tail bytes from blob storage".to_owned()))?; //TODO
         let tail = Tail::from_bytes(tail_bytes.as_slice())?;
@@ -79,13 +78,11 @@ pub fn store_tails_from_generator(service: Rc<BlobStorageService>,
 
     let blob_handle = service.create_blob(writer_handle)?;
 
-    let mut hasher = sha2::Sha256::default();
-
-    //FIXME store version/tag/meta at start of the Tail's BLOB
+    let version = vec![0u8, TAILS_BLOB_TAG_SZ];
+    service.append(blob_handle, version.as_slice())?;
 
     while let Some(tail) = rtg.next()? {
         let tail_bytes = tail.to_bytes()?;
-        hasher.process(tail_bytes.as_slice());
         service.append(blob_handle, tail_bytes.as_slice())?;
     }
 

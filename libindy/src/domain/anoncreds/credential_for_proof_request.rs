@@ -1,8 +1,4 @@
-extern crate indy_crypto;
-
 use std::collections::HashMap;
-
-use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 
 use super::credential::CredentialInfo;
 use super::proof_request::NonRevocedInterval;
@@ -13,9 +9,11 @@ pub struct CredentialsForProofRequest {
     pub predicates: HashMap<String, Vec<RequestedCredential>>
 }
 
-impl JsonEncodable for CredentialsForProofRequest {}
-
-impl<'a> JsonDecodable<'a> for CredentialsForProofRequest {}
+impl Default for CredentialsForProofRequest {
+    fn default() -> Self {
+        CredentialsForProofRequest { attrs: HashMap::new(), predicates: HashMap::new() }
+    }
+}
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct RequestedCredential {

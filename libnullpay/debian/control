@@ -12,4 +12,4 @@ Package: libnullpay
 Architecture: amd64
 Depends: libindy
 Suggests: build-essential
-Description: Simple payment plugin
+Description: This is a simple plugin that can be used for development of applications that use Payments API of Indy SDK.

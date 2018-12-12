@@ -14,12 +14,12 @@ test('wrapper essentials', async function (t) {
   err = await t.throws(function () {
     indy.abbreviateVerkey(1, verkey)
   }, Error)
-  t.is(err.message, 'Expected String or null for did: abbreviateVerkey(did, full_verkey, cb(err, verkey))')
+  t.is(err.message, 'abbreviateVerkey expects String or null for did')
 
   err = await t.throws(function () {
     indy.abbreviateVerkey(did, [1, 2, 3])
   }, Error)
-  t.is(err.message, 'Expected String or null for full_verkey: abbreviateVerkey(did, full_verkey, cb(err, verkey))')
+  t.is(err.message, 'abbreviateVerkey expects String or null for fullVerkey')
 
   err = await t.throws(indy.abbreviateVerkey(null, verkey))
   t.is(err.indyName, 'CommonInvalidParam3')
@@ -42,6 +42,19 @@ test.cb('wrapper capi', function (t) {
 
     indy.capi.abbreviateVerkey('?', verkey, function (err) {
       t.is(err, 113)
+
+      try {
+        indy.capi.abbreviateVerkey(t.fail)
+        t.fail('should fail b/c not enough arguments were given')
+      } catch (err) {
+        t.is(err + '', 'Error: abbreviateVerkey expects 3 arguments')
+      }
+      try {
+        indy.capi.abbreviateVerkey('a', 'b', t.fail, 'c')
+        t.fail('should fail b/c too many arguments were given')
+      } catch (err) {
+        t.is(err + '', 'Error: abbreviateVerkey expects 3 arguments')
+      }
       t.end()
     })
   })

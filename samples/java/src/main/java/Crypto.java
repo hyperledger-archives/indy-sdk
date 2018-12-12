@@ -9,6 +9,7 @@ import java.util.Arrays;
 
 import static org.hyperledger.indy.sdk.did.Did.*;
 import static org.hyperledger.indy.sdk.crypto.Crypto.*;
+import static utils.PoolUtils.PROTOCOL_VERSION;
 
 
 class Crypto {
@@ -16,22 +17,24 @@ class Crypto {
 	static void demo() throws Exception {
 		System.out.println("Crypto sample -> started");
 
-		String myWalletName = "myWallet";
-		String theirWalletName = "theirWallet";
+		// Set protocol version 2 to work with Indy Node 1.4
+		Pool.setProtocolVersion(PROTOCOL_VERSION).get();
 
 		// 1. Create and Open Pool
 		String poolName = PoolUtils.createPoolLedgerConfig();
 		Pool pool = Pool.openPoolLedger(poolName, "{}").get();
 
 		// 2. Create and Open My Wallet
+		String myWalletConfig = "{\"id\":\"myWallet\"}";
 		String myWalletCredentials = "{\"key\":\"my_wallet_key\"}";
-		Wallet.createWallet(poolName, myWalletName, "default", null, myWalletCredentials).get();
-		Wallet myWallet = Wallet.openWallet(myWalletName, null, myWalletCredentials).get();
+		Wallet.createWallet(myWalletConfig, myWalletCredentials).get();
+		Wallet myWallet = Wallet.openWallet(myWalletConfig, myWalletCredentials).get();
 
 		// 3. Create and Open Their Wallet
+		String theirWalletConfig = "{\"id\":\"theirWallet\"}";
 		String theirWalletCredentials = "{\"key\":\"their_wallet_key\"}";
-		Wallet.createWallet(poolName, theirWalletName, "default", null, theirWalletCredentials).get();
-		Wallet theirWallet = Wallet.openWallet(theirWalletName, null, theirWalletCredentials).get();
+		Wallet.createWallet(theirWalletConfig, theirWalletCredentials).get();
+		Wallet theirWallet = Wallet.openWallet(theirWalletConfig, theirWalletCredentials).get();
 
 		// 4. Create My Did
 		CreateAndStoreMyDidResult myDid = createAndStoreMyDid(myWallet, "{}").get();
@@ -61,11 +64,11 @@ class Crypto {
 
 		// 8. Close and delete My Wallet
 		myWallet.closeWallet().get();
-		Wallet.deleteWallet(myWalletName, myWalletCredentials).get();
+		Wallet.deleteWallet(myWalletConfig, myWalletCredentials).get();
 
 		// 9. Close and delete Their Wallet
 		theirWallet.closeWallet().get();
-		Wallet.deleteWallet(theirWalletName, theirWalletCredentials).get();
+		Wallet.deleteWallet(theirWalletConfig, theirWalletCredentials).get();
 
 		// 10. Close Pool
 		pool.closePoolLedger().get();

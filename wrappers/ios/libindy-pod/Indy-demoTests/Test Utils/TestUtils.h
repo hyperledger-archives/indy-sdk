@@ -41,6 +41,8 @@
 
 + (NSString *)wallet;
 
++ (NSString *)walletConfig;
+
 + (NSData *)message;
 
 + (NSData *)encryptedMessage;
@@ -85,8 +87,6 @@
 
 + (NSString *)defaultType;
 
-+ (NSString *)keychainType;
-
 + (NSString *)gvtSchema;
 
 + (NSString *)gvtSchemaName;
@@ -100,5 +100,7 @@
 + (NSString *)xyzSchemaAttrs;
 
 + (NSString *)tag;
+
++ (NSNumber *)protocolVersion;
 
 @end

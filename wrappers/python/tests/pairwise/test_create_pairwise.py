@@ -27,7 +27,6 @@ async def test_create_pairwise_works_for_empty_metadata(wallet_handle, identity_
 @pytest.mark.asyncio
 async def test_create_pairwise_works_for_not_found_my_did(wallet_handle, identity_trustee1):
     (their_did, _) = identity_trustee1
-    await did.store_their_did(wallet_handle, json.dumps({'did': their_did}))
     with pytest.raises(IndyError) as e:
         await pairwise.create_pairwise(wallet_handle, their_did, UNKNOWN_DID, None)
     assert ErrorCode.WalletItemNotFound == e.value.error_code

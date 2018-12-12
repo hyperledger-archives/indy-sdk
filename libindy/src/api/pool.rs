@@ -1,11 +1,14 @@
 extern crate libc;
 
-use api::ErrorCode;
+use api::{ErrorCode, IndyHandle};
 use commands::{Command, CommandExecutor};
 use commands::pool::PoolCommand;
+use domain::pool::{PoolConfig, PoolOpenConfig};
+use errors::common::CommonError;
 use errors::ToErrorCode;
-use utils::cstring::CStringUtils;
+use utils::ctypes;
 
+use serde_json;
 use self::libc::c_char;
 
 /// Creates a new local pool ledger configuration that can be used later to connect pool nodes.
@@ -25,15 +28,15 @@ use self::libc::c_char;
 /// Common*
 /// Ledger*
 #[no_mangle]
-pub extern fn indy_create_pool_ledger_config(command_handle: i32,
+pub extern fn indy_create_pool_ledger_config(command_handle: IndyHandle,
                                              config_name: *const c_char,
                                              config: *const c_char,
-                                             cb: Option<extern fn(xcommand_handle: i32,
+                                             cb: Option<extern fn(command_handle_: IndyHandle,
                                                                   err: ErrorCode)>) -> ErrorCode {
     trace!("indy_create_pool_ledger_config: >>> config_name: {:?}, config: {:?}", config_name, config);
 
     check_useful_c_str!(config_name, ErrorCode::CommonInvalidParam2);
-    check_useful_opt_c_str!(config, ErrorCode::CommonInvalidParam3);
+    check_useful_opt_json!(config, ErrorCode::CommonInvalidParam3, PoolConfig);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     trace!("indy_create_pool_ledger_config: entities >>> config_name: {:?}, config: {:?}", config_name, config);
@@ -66,12 +69,11 @@ pub extern fn indy_create_pool_ledger_config(command_handle: i32,
 /// config (optional): Runtime pool configuration json.
 ///                         if NULL, then default config will be used. Example:
 /// {
-///     "refresh_on_open": bool (optional), Forces pool ledger to be refreshed immediately after opening.
-///                      Defaults to true.
-///     "auto_refresh_time": int (optional), After this time in minutes pool ledger will be automatically refreshed.
-///                        Use 0 to disable automatic refresh. Defaults to 24*60.
-///     "network_timeout": int (optional), Network timeout for communication with nodes in milliseconds.
-///                       Defaults to 20000.
+///     "timeout": int (optional), timeout for network request (in sec).
+///     "extended_timeout": int (optional), extended timeout for network request (in sec).
+///     "preordered_nodes": array<string> -  (optional), names of nodes which will have a priority during request sending:
+///         ["name_of_1st_prior_node",  "name_of_2nd_prior_node", .... ]
+///         Note: Not specified nodes will be placed in a random way.
 /// }
 ///
 /// #Returns
@@ -81,16 +83,16 @@ pub extern fn indy_create_pool_ledger_config(command_handle: i32,
 /// Common*
 /// Ledger*
 #[no_mangle]
-pub extern fn indy_open_pool_ledger(command_handle: i32,
+pub extern fn indy_open_pool_ledger(command_handle: IndyHandle,
                                     config_name: *const c_char,
                                     config: *const c_char,
-                                    cb: Option<extern fn(xcommand_handle: i32,
+                                    cb: Option<extern fn(command_handle_: IndyHandle,
                                                          err: ErrorCode,
-                                                         pool_handle: i32)>) -> ErrorCode {
+                                                         pool_handle: IndyHandle)>) -> ErrorCode {
     trace!("indy_open_pool_ledger: >>> config_name: {:?}, config: {:?}", config_name, config);
 
     check_useful_c_str!(config_name, ErrorCode::CommonInvalidParam2);
-    check_useful_opt_c_str!(config, ErrorCode::CommonInvalidParam3);
+    check_useful_opt_json!(config, ErrorCode::CommonInvalidParam3, PoolOpenConfig);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     trace!("indy_open_pool_ledger: entities >>> config_name: {:?}, config: {:?}", config_name, config);
@@ -125,9 +127,9 @@ pub extern fn indy_open_pool_ledger(command_handle: i32,
 /// Common*
 /// Ledger*
 #[no_mangle]
-pub extern fn indy_refresh_pool_ledger(command_handle: i32,
-                                       handle: i32,
-                                       cb: Option<extern fn(xcommand_handle: i32,
+pub extern fn indy_refresh_pool_ledger(command_handle: IndyHandle,
+                                       handle: IndyHandle,
+                                       cb: Option<extern fn(command_handle_: IndyHandle,
                                                             err: ErrorCode)>) -> ErrorCode {
     trace!("indy_refresh_pool_ledger: >>> handle: {:?}", handle);
 
@@ -153,9 +155,16 @@ pub extern fn indy_refresh_pool_ledger(command_handle: i32,
 }
 
 /// Lists names of created pool ledgers
+///
+/// #Params
+///
+/// #Returns
+/// Error code
+///
+/// #Errors
 #[no_mangle]
-pub extern fn indy_list_pools(command_handle: i32,
-                              cb: Option<extern fn(xcommand_handle: i32,
+pub extern fn indy_list_pools(command_handle: IndyHandle,
+                              cb: Option<extern fn(command_handle_: IndyHandle,
                                                    err: ErrorCode,
                                                    pools: *const c_char)>) -> ErrorCode {
     trace!("indy_list_pools: >>>");
@@ -168,15 +177,15 @@ pub extern fn indy_list_pools(command_handle: i32,
         .send(Command::Pool(PoolCommand::List(
             Box::new(move |result| {
                 let (err, pools) = result_to_err_code_1!(result, String::new());
-                trace!("indy_refresh_pool_ledger: pools: {:?}", pools);
-                let pools = CStringUtils::string_to_cstring(pools);
+                trace!("indy_list_pools: pools: {:?}", pools);
+                let pools = ctypes::string_to_cstring(pools);
                 cb(command_handle, err, pools.as_ptr())
             })
         )));
 
     let res = result_to_err_code!(result);
 
-    trace!("indy_refresh_pool_ledger: <<< res: {:?}", res);
+    trace!("indy_list_pools: <<< res: {:?}", res);
 
     res
 }
@@ -193,9 +202,9 @@ pub extern fn indy_list_pools(command_handle: i32,
 /// Common*
 /// Ledger*
 #[no_mangle]
-pub extern fn indy_close_pool_ledger(command_handle: i32,
-                                     handle: i32,
-                                     cb: Option<extern fn(xcommand_handle: i32,
+pub extern fn indy_close_pool_ledger(command_handle: IndyHandle,
+                                     handle: IndyHandle,
+                                     cb: Option<extern fn(command_handle_: IndyHandle,
                                                           err: ErrorCode)>) -> ErrorCode {
     trace!("indy_close_pool_ledger: >>> handle: {:?}", handle);
 
@@ -232,9 +241,9 @@ pub extern fn indy_close_pool_ledger(command_handle: i32,
 /// Common*
 /// Ledger*
 #[no_mangle]
-pub extern fn indy_delete_pool_ledger_config(command_handle: i32,
+pub extern fn indy_delete_pool_ledger_config(command_handle: IndyHandle,
                                              config_name: *const c_char,
-                                             cb: Option<extern fn(xcommand_handle: i32,
+                                             cb: Option<extern fn(command_handle_: IndyHandle,
                                                                   err: ErrorCode)>) -> ErrorCode {
     trace!("indy_delete_pool_ledger_config: >>> config_name: {:?}", config_name);
 
@@ -256,6 +265,52 @@ pub extern fn indy_delete_pool_ledger_config(command_handle: i32,
     let res = result_to_err_code!(result);
 
     trace!("indy_delete_pool_ledger_config: <<< res: {:?}", res);
+
+    res
+}
+
+/// Set PROTOCOL_VERSION to specific version.
+///
+/// There is a global property PROTOCOL_VERSION that used in every request to the pool and
+/// specified version of Indy Node which Libindy works.
+///
+/// By default PROTOCOL_VERSION=1.
+///
+/// #Params
+/// protocol_version: Protocol version will be used:
+///     1 - for Indy Node 1.3
+///     2 - for Indy Node 1.4 and greater
+///
+/// #Returns
+/// Error code
+///
+/// #Errors
+/// Common*
+#[no_mangle]
+pub extern fn indy_set_protocol_version(command_handle: IndyHandle,
+                                        protocol_version: usize,
+                                        cb: Option<extern fn(command_handle_: IndyHandle,
+                                                             err: ErrorCode)>) -> ErrorCode {
+    trace!("indy_set_protocol_version: >>> protocol_version: {:?}", protocol_version);
+
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
+
+    trace!("indy_set_protocol_version: entities >>> protocol_version: {:?}", protocol_version);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Pool(
+            PoolCommand::SetProtocolVersion(
+            protocol_version,
+            Box::new(move |result| {
+                let err = result_to_err_code!(result);
+                trace!("indy_set_protocol_version:");
+                cb(command_handle, err)
+            })
+        )));
+
+    let res = result_to_err_code!(result);
+
+    trace!("indy_set_protocol_version: <<< res: {:?}", res);
 
     res
 }

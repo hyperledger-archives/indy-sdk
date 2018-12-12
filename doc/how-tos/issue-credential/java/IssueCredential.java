@@ -36,8 +36,8 @@ public class IssueCredential {
 		System.out.println("\n5. Generating and storing steward DID and Verkey\n");
 		String did_json = "{\"seed\": \"" + stewardSeed + "\"}";
 		DidResults.CreateAndStoreMyDidResult stewardResult = Did.createAndStoreMyDid(walletHandle, did_json).get();
-		String defautStewardDid = stewardResult.getDid();
-		System.out.println("Steward did: " + defautStewardDid);
+		String defaultStewardDid = stewardResult.getDid();
+		System.out.println("Steward did: " + defaultStewardDid);
 
 		// 6.
 		System.out.println("\n6. Generating and storing Trust Anchor DID and Verkey\n");
@@ -49,12 +49,12 @@ public class IssueCredential {
 
 		// 7
 		System.out.println("\n7. Build NYM request to add Trust Anchor to the ledger\n");
-		String nymRequest = buildNymRequest(defautStewardDid, trustAnchorDID, trustAnchorVerkey, null, "TRUST_ANCHOR").get();
+		String nymRequest = buildNymRequest(defaultStewardDid, trustAnchorDID, trustAnchorVerkey, null, "TRUST_ANCHOR").get();
 		System.out.println("NYM request JSON:\n" + nymRequest);
 
 		// 8
 		System.out.println("\n8. Sending the nym request to ledger\n");
-		String nymResponseJson = signAndSubmitRequest(pool, walletHandle, defautStewardDid, nymRequest).get();
+		String nymResponseJson = signAndSubmitRequest(pool, walletHandle, defaultStewardDid, nymRequest).get();
 		System.out.println("NYM transaction response:\n" + nymResponseJson);
 
 		// 9
@@ -64,17 +64,17 @@ public class IssueCredential {
 		String attributes = "[\"age\", \"sex\", \"height\", \"name\"]";
 		String schemaDataJSON = "{\"name\":\"" + name + "\",\"version\":\"" + version + "\",\"attr_names\":" + attributes + "}";
 		System.out.println("Schema: " + schemaDataJSON);
-		String schemaRequest = buildSchemaRequest(defautStewardDid, schemaDataJSON).get();
+		String schemaRequest = buildSchemaRequest(defaultStewardDid, schemaDataJSON).get();
 		System.out.println("Schema request:\n" + schemaRequest);
 
 		// 10
 		System.out.println("\n10. Sending the SCHEMA request to the ledger\n");
-		String schemaResponse = signAndSubmitRequest(pool, walletHandle, defautStewardDid, schemaRequest).get();
+		String schemaResponse = signAndSubmitRequest(pool, walletHandle, defaultStewardDid, schemaRequest).get();
 		System.out.println("Schema response:\n" + schemaResponse);
 
 		// 11
 		System.out.println("\n11. Creating and storing CLAIM DEFINITION using anoncreds as Trust Anchor, for the given Schema\n");
-		String schemaJSON = "{\"seqNo\": 1, \"dest\": \"" + defautStewardDid + "\", \"data\": " + schemaDataJSON + "}";
+		String schemaJSON = "{\"seqNo\": 1, \"dest\": \"" + defaultStewardDid + "\", \"data\": " + schemaDataJSON + "}";
 		System.out.println("Schema:\n" + schemaJSON);
 		String claimDef = issuerCreateAndStoreClaimDef(walletHandle, trustAnchorDID, schemaJSON, "CL", false).get();
 		System.out.println("Claim Definition:\n" + claimDef);
@@ -105,6 +105,7 @@ public class IssueCredential {
 		// 16
 		System.out.println("\n16. Issuer (Trust Anchor) creates Claim for Claim Request\n");
 		// Encoded value of non-integer attribute is SHA256 converted to decimal
+		// note that encoding is not standardized by Indy except that 32-bit integers are encoded as themselves. IS-786
                 String credAttribsJson = "{\n" +
                 "               \"sex\":[\"male\",\"5944657099558967239210949258394887428692050081607692519917050011144233115103\"],\n" +
                 "               \"name\":[\"Alex\",\"99262857098057710338306967609588410025648622308394250666849665532448612202874\"],\n" +

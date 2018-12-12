@@ -7,8 +7,9 @@ import json
 import logging
 
 from indy import blob_storage
+from indy import pool
 
-from src.utils import run_coroutine, path_home
+from src.utils import run_coroutine, path_home, PROTOCOL_VERSION
 
 logger = logging.getLogger(__name__)
 
@@ -16,21 +17,23 @@ logger = logging.getLogger(__name__)
 async def demo():
     logger.info("Anoncreds Revocation sample -> started")
 
-    pool_name = 'pool1'
-    issuer_wallet_name = 'issuer_wallet'
-    prover_wallet_name = 'prover_wallet'
     issuer_did = 'NcYxiDXkpYi6ov5FcYDi1e'
     prover_did = 'VsKV7grR1BUE29mG2Fm2kX'
 
+    # Set protocol version 2 to work with Indy Node 1.4
+    await pool.set_protocol_version(PROTOCOL_VERSION)
+
     # 1. Create Issuer Wallet and Get Wallet Handle
+    issuer_wallet_config = json.dumps({"id":"issuer_wallet"})
     issuer_wallet_credentials = json.dumps({"key": "issuer_wallet_key"})
-    await wallet.create_wallet(pool_name, issuer_wallet_name, None, None, issuer_wallet_credentials)
-    issuer_wallet = await wallet.open_wallet(issuer_wallet_name, None, issuer_wallet_credentials)
+    await wallet.create_wallet(issuer_wallet_config, issuer_wallet_credentials)
+    issuer_wallet = await wallet.open_wallet(issuer_wallet_config, issuer_wallet_credentials)
 
     # 2. Create Prover Wallet and Get Wallet Handle
+    prover_wallet_config = json.dumps({"id":"prover_wallet"})
     prover_wallet_credentials = json.dumps({"key": "issuer_wallet_key"})
-    await wallet.create_wallet(pool_name, prover_wallet_name, None, None, prover_wallet_credentials)
-    prover_wallet = await wallet.open_wallet(prover_wallet_name, None, prover_wallet_credentials)
+    await wallet.create_wallet(prover_wallet_config, prover_wallet_credentials)
+    prover_wallet = await wallet.open_wallet(prover_wallet_config, prover_wallet_credentials)
 
     # 3. Issuer create Credential Schema
     schema_name = 'gvt'
@@ -101,13 +104,19 @@ async def demo():
         "non_revoked": {"from": 80, "to": 100}
     })
 
-    credential_for_proof_json = await anoncreds.prover_get_credentials_for_proof_req(prover_wallet, proof_req_json)
-    creds_for_proof = json.loads(credential_for_proof_json)
+    search_handle = await anoncreds.prover_search_credentials_for_proof_req(prover_wallet, proof_req_json, None)
 
-    cred_for_attr1 = creds_for_proof['attrs']['attr1_referent']
-    cred_for_attr1_referent = cred_for_attr1[0]['cred_info']['referent']
-    cred_for_predicate1 = creds_for_proof['predicates']['predicate1_referent']
-    cred_for_predicate1_referent = cred_for_predicate1[0]['cred_info']['referent']
+    # Prover gets Credentials for attr1_referent
+    credentials = json.loads(
+        await anoncreds.prover_fetch_credentials_for_proof_req(search_handle, 'attr1_referent', 10))
+    cred_for_attribute = credentials[0]['cred_info']
+
+    # Prover gets Credentials for predicate1_referent
+    credentials = json.loads(
+        await anoncreds.prover_fetch_credentials_for_proof_req(search_handle, 'predicate1_referent', 10))
+    cred_for_predicate = credentials[0]['cred_info']
+
+    await anoncreds.prover_close_credentials_search_for_proof_req(search_handle)
 
     # 12. Prover creates revocation state
     timestamp = 100
@@ -118,10 +127,10 @@ async def demo():
     requested_credentials_json = json.dumps({
         'self_attested_attributes': {},
         'requested_attributes': {'attr1_referent': {
-            'cred_id': cred_for_attr1_referent, 'revealed': True, 'timestamp': timestamp}
+            'cred_id': cred_for_attribute['referent'], 'revealed': True, 'timestamp': timestamp}
         },
         'requested_predicates': {
-            'predicate1_referent': {'cred_id': cred_for_predicate1_referent, 'timestamp': timestamp}
+            'predicate1_referent': {'cred_id': cred_for_predicate['referent'], 'timestamp': timestamp}
         }
     })
 
@@ -144,11 +153,11 @@ async def demo():
 
     # 13. Close and delete Issuer wallet
     await wallet.close_wallet(issuer_wallet)
-    await wallet.delete_wallet(issuer_wallet_name, issuer_wallet_credentials)
+    await wallet.delete_wallet(issuer_wallet_config, issuer_wallet_credentials)
 
     # 14. Close and delete Prover wallet
     await wallet.close_wallet(prover_wallet)
-    await wallet.delete_wallet(prover_wallet_name, prover_wallet_credentials)
+    await wallet.delete_wallet(prover_wallet_config, prover_wallet_credentials)
 
     logger.info("Anoncreds Revocation sample -> completed")
 

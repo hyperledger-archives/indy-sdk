@@ -7,7 +7,7 @@ import json
 # noinspection PyUnusedLocal
 @pytest.mark.asyncio
 async def test_crypto_demo_works(pool_name, seed_trustee1, path_home, pool_genesis_txn_path, pool_genesis_txn_file,
-                                 credentials):
+                                 credentials, protocol_version):
     # 1. Create ledger config from genesis txn file
     pool_config = json.dumps({"genesis_txn": str(pool_genesis_txn_path)})
     await pool.create_pool_ledger_config(pool_name, pool_config)
@@ -16,14 +16,14 @@ async def test_crypto_demo_works(pool_name, seed_trustee1, path_home, pool_genes
     pool_handle = await pool.open_pool_ledger(pool_name, None)
 
     # 3. Create My Wallet and Get Wallet Handle
-    my_wallet_name = 'my_wallet'
-    their_wallet_name = 'their_wallet'
-    await wallet.create_wallet(pool_name, my_wallet_name, None, None, credentials)
-    my_wallet_handle = await wallet.open_wallet(my_wallet_name, None, credentials)
+    my_wallet_config = '{"id":"my_wallet"}'
+    await wallet.create_wallet(my_wallet_config, credentials)
+    my_wallet_handle = await wallet.open_wallet(my_wallet_config, credentials)
 
     # 4. Create Their Wallet and Get Wallet Handle
-    await wallet.create_wallet(pool_name, their_wallet_name, None, None, credentials)
-    their_wallet_handle = await wallet.open_wallet(their_wallet_name, None, credentials)
+    their_wallet_config = '{"id":"their_wallet"}'
+    await wallet.create_wallet(their_wallet_config, credentials)
+    their_wallet_handle = await wallet.open_wallet(their_wallet_config, credentials)
 
     # 5. Create My DID
     await did.create_and_store_my_did(my_wallet_handle, "{}")
@@ -55,5 +55,5 @@ async def test_crypto_demo_works(pool_name, seed_trustee1, path_home, pool_genes
     await wallet.close_wallet(my_wallet_handle)
     await pool.close_pool_ledger(pool_handle)
 
-    await wallet.delete_wallet(their_wallet_name, credentials)
-    await wallet.delete_wallet(my_wallet_name, credentials)
+    await wallet.delete_wallet(my_wallet_config, credentials)
+    await wallet.delete_wallet(their_wallet_config, credentials)

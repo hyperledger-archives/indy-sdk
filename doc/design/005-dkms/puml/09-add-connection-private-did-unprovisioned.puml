@@ -66,7 +66,7 @@ include <b>First Edge Agent</b> diagram.
 end note
 
 note over bea
-Edge agent gets gets connection inviation from helper URL.
+Edge agent gets gets connection invitation from helper URL.
 end note
 
 bea -> bob: display connection invitation

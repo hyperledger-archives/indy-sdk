@@ -20,7 +20,8 @@ extern "C" {
     ///             if not provided and cid param is false then the first 16 bit of the verkey will be used as a new DID;
     ///             if not provided and cid is true then the full verkey will be used as a new DID;
     ///             if provided, then keys will be replaced - key rotation use case)
-    ///     "seed": string, (optional; if not provide then a random one will be created)
+    ///     "seed": string, (optional) Seed that allows deterministic did creation (if not set random one will be created).
+    ///                                Can be UTF-8, base64 or hex string.
     ///     "crypto_type": string, (optional; if not set then ed25519 curve is used;
     ///               currently only 'ed25519' value is supported for this field)
     ///     "cid": bool, (optional; if not set then false is used;)
@@ -30,7 +31,7 @@ extern "C" {
     /// #Returns
     /// Error Code
     /// cb:
-    /// - xcommand_handle: Command handle to map callback to caller context.
+    /// - command_handle_: Command handle to map callback to caller context.
     /// - err: Error code.
     ///   did: DID generated and stored in the wallet
     ///   verkey: The DIDs verification key
@@ -44,7 +45,7 @@ extern "C" {
                                                      indy_handle_t wallet_handle,
                                                      const char *  did_json,
 
-                                                     void          (*cb)(indy_handle_t  xcommand_handle,
+                                                     void          (*cb)(indy_handle_t  command_handle_,
                                                                           indy_error_t  err,
                                                                           const char *const   did,
                                                                           const char *const   verkey)
@@ -58,7 +59,8 @@ extern "C" {
     /// command_handle: command handle to map callback to user context.
     /// identity_json: Identity information as json. Example:
     /// {
-    ///     "seed": string, (optional; if not provide then a random one will be created)
+    ///     "seed": string, (optional) Seed that allows deterministic key creation (if not set random one will be created).
+    ///                                Can be UTF-8, base64 or hex string.
     ///     "crypto_type": string, (optional; if not set then ed25519 curve is used;
     ///               currently only 'ed25519' value is supported for this field)
     /// }
@@ -67,7 +69,7 @@ extern "C" {
     /// #Returns
     /// Error Code
     /// cb:
-    /// - xcommand_handle: Command handle to map callback to caller context.
+    /// - command_handle_: Command handle to map callback to caller context.
     /// - err: Error code.
     ///   verkey: The DIDs verification key
     ///
@@ -82,7 +84,7 @@ extern "C" {
                                                 const char *  did,
                                                 const char *  identity_json,
 
-                                                void           (*cb)(indy_handle_t xcommand_handle,
+                                                void           (*cb)(indy_handle_t command_handle_,
                                                                      indy_error_t  err,
                                                                      const char *const   verkey)
                                                );
@@ -98,7 +100,7 @@ extern "C" {
     /// #Returns
     /// Error Code
     /// cb:
-    /// - xcommand_handle: Command handle to map callback to caller context.
+    /// - command_handle_: Command handle to map callback to caller context.
     /// - err: Error code.
     ///
     /// #Errors
@@ -110,7 +112,7 @@ extern "C" {
                                                 indy_handle_t wallet_handle,
                                                 const char *  did,
 
-                                                void           (*cb)(indy_handle_t xcommand_handle,
+                                                void           (*cb)(indy_handle_t command_handle_,
                                                                      indy_error_t  err)
                                                );
 
@@ -130,7 +132,7 @@ extern "C" {
     /// #Returns
     /// Error Code
     /// cb:
-    /// - xcommand_handle: Command handle to map callback to caller context.
+    /// - command_handle_: Command handle to map callback to caller context.
     /// - err: Error code.
     ///
     /// #Errors
@@ -142,7 +144,7 @@ extern "C" {
                                             indy_handle_t wallet_handle,
                                             const char *  identity_json,
 
-                                            void           (*cb)(indy_handle_t xcommand_handle,
+                                            void           (*cb)(indy_handle_t command_handle_,
                                                                  indy_error_t  err)
                                            );
 
@@ -168,7 +170,7 @@ extern "C" {
     /// #Returns
     /// Error Code
     /// cb:
-    /// - xcommand_handle: Command handle to map callback to caller context.
+    /// - command_handle_: Command handle to map callback to caller context.
     /// - err: Error code.
     /// - key - The DIDs ver key (key id).
     ///
@@ -206,7 +208,7 @@ extern "C" {
     /// #Returns
     /// Error Code
     /// cb:
-    /// - xcommand_handle: Command handle to map callback to caller context.
+    /// - command_handle_: Command handle to map callback to caller context.
     /// - err: Error code.
     /// - key - The DIDs ver key (key id).
     ///
@@ -236,7 +238,7 @@ extern "C" {
     /// #Returns
     /// Error Code
     /// cb:
-    /// - xcommand_handle: Command handle to map callback to caller context.
+    /// - command_handle_: Command handle to map callback to caller context.
     /// - err: Error code.
     ///
     /// #Errors
@@ -264,7 +266,7 @@ extern "C" {
     /// #Returns
     /// Error Code
     /// cb:
-    /// - xcommand_handle: Command handle to map callback to caller context.
+    /// - command_handle_: Command handle to map callback to caller context.
     /// - err: Error code.
     /// - endpoint - The DIDs endpoint.
     /// - transport_vk - The DIDs transport key (ver key, key id).
@@ -296,7 +298,7 @@ extern "C" {
     /// #Returns
     /// Error Code
     /// cb:
-    /// - xcommand_handle: command handle to map callback to caller context.
+    /// - command_handle_: command handle to map callback to caller context.
     /// - err: Error code.
     ///
     /// #Errors
@@ -323,7 +325,7 @@ extern "C" {
     /// #Returns
     /// Error Code
     /// cb:
-    /// - xcommand_handle: Command handle to map callback to caller context.
+    /// - command_handle_: Command handle to map callback to caller context.
     /// - err: Error code.
     /// - metadata - The meta information stored with the DID; Can be null if no metadata was saved for this DID.
     ///
@@ -351,7 +353,7 @@ extern "C" {
     /// #Returns
     /// Error Code
     /// cb:
-    /// - xcommand_handle: Command handle to map callback to caller context.
+    /// - command_handle_: Command handle to map callback to caller context.
     /// - err: Error code.
     ///   did_with_meta:  {
     ///     "did": string - DID stored in the wallet,
@@ -366,7 +368,7 @@ extern "C" {
     extern indy_error_t indy_get_my_did_with_meta(indy_handle_t     command_handle,
                                                   indy_handle_t     wallet_handle,
                                                   const char *const my_did,
-                                                  void              (*fn)(indy_handle_t xcommand_handle, indy_error_t err, const char *const did_with_meta)
+                                                  void              (*fn)(indy_handle_t command_handle_, indy_error_t err, const char *const did_with_meta)
                                                  );
 
     /// Retrieves the information about all DIDs stored in the wallet.
@@ -379,7 +381,7 @@ extern "C" {
     /// #Returns
     /// Error Code
     /// cb:
-    /// - xcommand_handle: Command handle to map callback to caller context.
+    /// - command_handle_: Command handle to map callback to caller context.
     /// - err: Error code.
     ///   dids:  [{
     ///     "did": string - DID stored in the wallet,
@@ -393,7 +395,7 @@ extern "C" {
     /// Crypto*
     extern indy_error_t indy_list_my_dids_with_meta(indy_handle_t command_handle,
                                                     indy_handle_t wallet_handle,
-                                                    void          (*fn)(indy_handle_t xcommand_handle, indy_error_t err, const char *const dids)
+                                                    void          (*fn)(indy_handle_t command_handle_, indy_error_t err, const char *const dids)
                                                    );
 
     /// Retrieves abbreviated verkey if it is possible otherwise return full verkey.
@@ -406,7 +408,7 @@ extern "C" {
     /// #Returns
     /// Error Code
     /// cb:
-    /// - xcommand_handle: Command handle to map callback to caller context.
+    /// - command_handle_: Command handle to map callback to caller context.
     /// - err: Error code.
     ///   verkey: The DIDs verification key in either abbreviated or full form
     ///
@@ -417,7 +419,7 @@ extern "C" {
     extern indy_error_t indy_abbreviate_verkey(indy_handle_t command_handle,
                                              const char *const did,
                                              const char *const full_verkey,
-                                             void          (*fn)(indy_handle_t xcommand_handle,
+                                             void          (*fn)(indy_handle_t command_handle_,
                                                                  indy_error_t err,
                                                                  const char *const verkey)
                                             );

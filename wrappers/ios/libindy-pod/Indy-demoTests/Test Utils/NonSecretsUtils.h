@@ -75,6 +75,8 @@
 
 + (NSString *)optionsEmpty;
 
++ (NSString *)optionsFull;
+
 + (NSString *)queryEmpty;
 
 + (NSString *)tags1;

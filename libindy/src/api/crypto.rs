@@ -1,12 +1,14 @@
 extern crate libc;
 
-use api::ErrorCode;
-use errors::ToErrorCode;
+use api::{ErrorCode, IndyHandle};
 use commands::{Command, CommandExecutor};
 use commands::crypto::CryptoCommand;
-use utils::cstring::CStringUtils;
-use utils::byte_array::vec_to_pointer;
+use domain::crypto::key::KeyInfo;
+use errors::common::CommonError;
+use errors::ToErrorCode;
+use utils::ctypes;
 
+use serde_json;
 use self::libc::c_char;
 
 
@@ -17,7 +19,8 @@ use self::libc::c_char;
 /// wallet_handle: Wallet handle (created by open_wallet).
 /// key_json: Key information as json. Example:
 /// {
-///     "seed": string, // Optional (if not set random one will be used); Seed information that allows deterministic key creation.
+///     "seed": string, (optional) Seed that allows deterministic key creation (if not set random one will be created).
+///                                Can be UTF-8, base64 or hex string.
 ///     "crypto_type": string, // Optional (if not set then ed25519 curve is used); Currently only 'ed25519' value is supported for this field.
 /// }
 /// cb: Callback that takes command result as parameter.
@@ -25,7 +28,7 @@ use self::libc::c_char;
 /// #Returns
 /// Error Code
 /// cb:
-/// - xcommand_handle: command handle to map callback to caller context.
+/// - command_handle_: command handle to map callback to caller context.
 /// - err: Error code.
 /// - verkey: Ver key of generated key pair, also used as key identifier
 ///
@@ -34,18 +37,18 @@ use self::libc::c_char;
 /// Wallet*
 /// Crypto*
 #[no_mangle]
-pub  extern fn indy_create_key(command_handle: i32,
-                               wallet_handle: i32,
+pub  extern fn indy_create_key(command_handle: IndyHandle,
+                               wallet_handle: IndyHandle,
                                key_json: *const c_char,
-                               cb: Option<extern fn(xcommand_handle: i32,
+                               cb: Option<extern fn(command_handle_: IndyHandle,
                                                     err: ErrorCode,
                                                     verkey: *const c_char)>) -> ErrorCode {
     trace!("indy_create_key: >>> wallet_handle: {:?}, key_json: {:?}", wallet_handle, key_json);
 
-    check_useful_c_str!(key_json, ErrorCode::CommonInvalidParam3);
+    check_useful_json!(key_json, ErrorCode::CommonInvalidParam3, KeyInfo);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!("indy_create_key: entities >>> wallet_handle: {:?}, key_json: {:?}", wallet_handle, key_json);
+    trace!("indy_create_key: entities >>> wallet_handle: {:?}, key_json: {:?}", wallet_handle, secret!(&key_json));
 
     let result = CommandExecutor::instance()
         .send(Command::Crypto(CryptoCommand::CreateKey(
@@ -54,7 +57,7 @@ pub  extern fn indy_create_key(command_handle: i32,
             Box::new(move |result| {
                 let (err, verkey) = result_to_err_code_1!(result, String::new());
                 trace!("indy_create_key: verkey: {:?}", verkey);
-                let verkey = CStringUtils::string_to_cstring(verkey);
+                let verkey = ctypes::string_to_cstring(verkey);
                 cb(command_handle, err, verkey.as_ptr())
             })
         )));
@@ -78,7 +81,7 @@ pub  extern fn indy_create_key(command_handle: i32,
 /// #Returns
 /// Error Code
 /// cb:
-/// - xcommand_handle: command handle to map callback to caller context.
+/// - command_handle_: command handle to map callback to caller context.
 /// - err: Error code.
 ///
 /// #Errors
@@ -86,11 +89,11 @@ pub  extern fn indy_create_key(command_handle: i32,
 /// Wallet*
 /// Crypto*
 #[no_mangle]
-pub  extern fn indy_set_key_metadata(command_handle: i32,
-                                     wallet_handle: i32,
+pub  extern fn indy_set_key_metadata(command_handle: IndyHandle,
+                                     wallet_handle: IndyHandle,
                                      verkey: *const c_char,
                                      metadata: *const c_char,
-                                     cb: Option<extern fn(xcommand_handle: i32,
+                                     cb: Option<extern fn(command_handle_: IndyHandle,
                                                           err: ErrorCode)>) -> ErrorCode {
     trace!("indy_set_key_metadata: >>> wallet_handle: {:?}, verkey: {:?}, metadata: {:?}", wallet_handle, verkey, metadata);
 
@@ -130,7 +133,7 @@ pub  extern fn indy_set_key_metadata(command_handle: i32,
 /// #Returns
 /// Error Code
 /// cb:
-/// - xcommand_handle: Command handle to map callback to caller context.
+/// - command_handle_: Command handle to map callback to caller context.
 /// - err: Error code.
 /// - metadata - The meta information stored with the key; Can be null if no metadata was saved for this key.
 ///
@@ -139,10 +142,10 @@ pub  extern fn indy_set_key_metadata(command_handle: i32,
 /// Wallet*
 /// Crypto*
 #[no_mangle]
-pub  extern fn indy_get_key_metadata(command_handle: i32,
-                                     wallet_handle: i32,
+pub  extern fn indy_get_key_metadata(command_handle: IndyHandle,
+                                     wallet_handle: IndyHandle,
                                      verkey: *const c_char,
-                                     cb: Option<extern fn(xcommand_handle: i32,
+                                     cb: Option<extern fn(command_handle_: IndyHandle,
                                                           err: ErrorCode,
                                                           metadata: *const c_char)>) -> ErrorCode {
     trace!("indy_get_key_metadata: >>> wallet_handle: {:?}, verkey: {:?}", wallet_handle, verkey);
@@ -159,7 +162,7 @@ pub  extern fn indy_get_key_metadata(command_handle: i32,
             Box::new(move |result| {
                 let (err, metadata) = result_to_err_code_1!(result, String::new());
                 trace!("indy_get_key_metadata: metadata: {:?}", metadata);
-                let metadata = CStringUtils::string_to_cstring(metadata);
+                let metadata = ctypes::string_to_cstring(metadata);
                 cb(command_handle, err, metadata.as_ptr())
             })
         )));
@@ -179,7 +182,7 @@ pub  extern fn indy_get_key_metadata(command_handle: i32,
 /// #Params
 /// command_handle: command handle to map callback to user context.
 /// wallet_handle: wallet handler (created by open_wallet).
-/// signer_vk: id (verkey) of my key. The key must be created by calling indy_create_key or indy_create_and_store_my_did
+/// signer_vk: id (verkey) of message signer. The key must be created by calling indy_create_key or indy_create_and_store_my_did
 /// message_raw: a pointer to first byte of message to be signed
 /// message_len: a message length
 /// cb: Callback that takes command result as parameter.
@@ -192,12 +195,12 @@ pub  extern fn indy_get_key_metadata(command_handle: i32,
 /// Wallet*
 /// Crypto*
 #[no_mangle]
-pub  extern fn indy_crypto_sign(command_handle: i32,
-                                wallet_handle: i32,
+pub  extern fn indy_crypto_sign(command_handle: IndyHandle,
+                                wallet_handle: IndyHandle,
                                 signer_vk: *const c_char,
                                 message_raw: *const u8,
                                 message_len: u32,
-                                cb: Option<extern fn(xcommand_handle: i32,
+                                cb: Option<extern fn(command_handle_: IndyHandle,
                                                      err: ErrorCode,
                                                      signature_raw: *const u8,
                                                      signature_len: u32)>) -> ErrorCode {
@@ -219,7 +222,7 @@ pub  extern fn indy_crypto_sign(command_handle: i32,
             Box::new(move |result| {
                 let (err, signature) = result_to_err_code_1!(result, Vec::new());
                 trace!("indy_crypto_sign: signature: {:?}", signature);
-                let (signature_raw, signature_len) = vec_to_pointer(&signature);
+                let (signature_raw, signature_len) = ctypes::vec_to_pointer(&signature);
                 cb(command_handle, err, signature_raw, signature_len)
             })
         )));
@@ -238,7 +241,7 @@ pub  extern fn indy_crypto_sign(command_handle: i32,
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
-/// signer_vk: verkey of signer of the message
+/// signer_vk: verkey of the message signer
 /// message_raw: a pointer to first byte of message that has been signed
 /// message_len: a message length
 /// signature_raw: a pointer to first byte of signature to be verified
@@ -254,13 +257,13 @@ pub  extern fn indy_crypto_sign(command_handle: i32,
 /// Ledger*
 /// Crypto*
 #[no_mangle]
-pub  extern fn indy_crypto_verify(command_handle: i32,
+pub  extern fn indy_crypto_verify(command_handle: IndyHandle,
                                   signer_vk: *const c_char,
                                   message_raw: *const u8,
                                   message_len: u32,
                                   signature_raw: *const u8,
                                   signature_len: u32,
-                                  cb: Option<extern fn(xcommand_handle: i32,
+                                  cb: Option<extern fn(command_handle_: IndyHandle,
                                                        err: ErrorCode,
                                                        valid: bool)>) -> ErrorCode {
     trace!("indy_crypto_verify: >>> signer_vk: {:?}, message_raw: {:?}, message_len: {:?}, signature_raw: {:?}, signature_len: {:?}",
@@ -307,8 +310,8 @@ pub  extern fn indy_crypto_verify(command_handle: i32,
 /// #Params
 /// command_handle: command handle to map callback to user context.
 /// wallet_handle: wallet handle (created by open_wallet).
-/// sender_vk: id (verkey) of my key. The key must be created by calling indy_create_key or indy_create_and_store_my_did
-/// recipient_vk: id (verkey) of their key
+/// sender_vk: id (verkey) of message sender. The key must be created by calling indy_create_key or indy_create_and_store_my_did
+/// recipient_vk: id (verkey) of message recipient
 /// message_raw: a pointer to first byte of message that to be encrypted
 /// message_len: a message length
 /// cb: Callback that takes command result as parameter.
@@ -322,13 +325,13 @@ pub  extern fn indy_crypto_verify(command_handle: i32,
 /// Ledger*
 /// Crypto*
 #[no_mangle]
-pub  extern fn indy_crypto_auth_crypt(command_handle: i32,
-                                      wallet_handle: i32,
+pub  extern fn indy_crypto_auth_crypt(command_handle: IndyHandle,
+                                      wallet_handle: IndyHandle,
                                       sender_vk: *const c_char,
                                       recipient_vk: *const c_char,
                                       msg_data: *const u8,
                                       msg_len: u32,
-                                      cb: Option<extern fn(command_handle_: i32,
+                                      cb: Option<extern fn(command_handle_: IndyHandle,
                                                            err: ErrorCode,
                                                            encrypted_msg: *const u8,
                                                            encrypted_len: u32)>) -> ErrorCode {
@@ -352,7 +355,7 @@ pub  extern fn indy_crypto_auth_crypt(command_handle: i32,
             Box::new(move |result| {
                 let (err, encrypted_msg) = result_to_err_code_1!(result, Vec::new());
                 trace!("indy_crypto_auth_crypt: encrypted_msg: {:?}", encrypted_msg);
-                let (encrypted_msg_raw, encrypted_msg_len) = vec_to_pointer(&encrypted_msg);
+                let (encrypted_msg_raw, encrypted_msg_len) = ctypes::vec_to_pointer(&encrypted_msg);
                 cb(command_handle, err, encrypted_msg_raw, encrypted_msg_len)
             })
         )));
@@ -378,7 +381,7 @@ pub  extern fn indy_crypto_auth_crypt(command_handle: i32,
 /// #Params
 /// command_handle: command handle to map callback to user context.
 /// wallet_handle: wallet handler (created by open_wallet).
-/// recipient_vk: id (verkey) of my key. The key must be created by calling indy_create_key or indy_create_and_store_my_did
+/// recipient_vk: id (verkey) of message recipient. The key must be created by calling indy_create_key or indy_create_and_store_my_did
 /// encrypted_msg_raw: a pointer to first byte of message that to be decrypted
 /// encrypted_msg_len: a message length
 /// cb: Callback that takes command result as parameter.
@@ -391,12 +394,12 @@ pub  extern fn indy_crypto_auth_crypt(command_handle: i32,
 /// Wallet*
 /// Crypto*
 #[no_mangle]
-pub  extern fn indy_crypto_auth_decrypt(command_handle: i32,
-                                        wallet_handle: i32,
+pub  extern fn indy_crypto_auth_decrypt(command_handle: IndyHandle,
+                                        wallet_handle: IndyHandle,
                                         recipient_vk: *const c_char,
                                         encrypted_msg: *const u8,
                                         encrypted_len: u32,
-                                        cb: Option<extern fn(command_handle_: i32,
+                                        cb: Option<extern fn(command_handle_: IndyHandle,
                                                              err: ErrorCode,
                                                              sender_vk: *const c_char,
                                                              msg_data: *const u8,
@@ -419,8 +422,8 @@ pub  extern fn indy_crypto_auth_decrypt(command_handle: i32,
             Box::new(move |result| {
                 let (err, sender_vk, msg) = result_to_err_code_2!(result, String::new(), Vec::new());
                 trace!("indy_crypto_auth_decrypt: sender_vk: {:?}, msg: {:?}", sender_vk, msg);
-                let (msg_data, msg_len) = vec_to_pointer(&msg);
-                let sender_vk = CStringUtils::string_to_cstring(sender_vk);
+                let (msg_data, msg_len) = ctypes::vec_to_pointer(&msg);
+                let sender_vk = ctypes::string_to_cstring(sender_vk);
                 cb(command_handle, err, sender_vk.as_ptr(), msg_data, msg_len)
             })
         )));
@@ -457,11 +460,11 @@ pub  extern fn indy_crypto_auth_decrypt(command_handle: i32,
 /// Ledger*
 /// Crypto*
 #[no_mangle]
-pub  extern fn indy_crypto_anon_crypt(command_handle: i32,
+pub  extern fn indy_crypto_anon_crypt(command_handle: IndyHandle,
                                       recipient_vk: *const c_char,
                                       msg_data: *const u8,
                                       msg_len: u32,
-                                      cb: Option<extern fn(command_handle_: i32,
+                                      cb: Option<extern fn(command_handle_: IndyHandle,
                                                            err: ErrorCode,
                                                            encrypted_msg: *const u8,
                                                            encrypted_len: u32)>) -> ErrorCode {
@@ -480,7 +483,7 @@ pub  extern fn indy_crypto_anon_crypt(command_handle: i32,
             Box::new(move |result| {
                 let (err, encrypted_msg) = result_to_err_code_1!(result, Vec::new());
                 trace!("indy_crypto_anon_crypt: encrypted_msg: {:?}", encrypted_msg);
-                let (encrypted_msg_raw, encrypted_msg_len) = vec_to_pointer(&encrypted_msg);
+                let (encrypted_msg_raw, encrypted_msg_len) = ctypes::vec_to_pointer(&encrypted_msg);
                 cb(command_handle, err, encrypted_msg_raw, encrypted_msg_len)
             })
         )));
@@ -517,12 +520,12 @@ pub  extern fn indy_crypto_anon_crypt(command_handle: i32,
 /// Wallet*
 /// Crypto*
 #[no_mangle]
-pub  extern fn indy_crypto_anon_decrypt(command_handle: i32,
-                                        wallet_handle: i32,
+pub  extern fn indy_crypto_anon_decrypt(command_handle: IndyHandle,
+                                        wallet_handle: IndyHandle,
                                         recipient_vk: *const c_char,
                                         encrypted_msg: *const u8,
                                         encrypted_len: u32,
-                                        cb: Option<extern fn(command_handle_: i32,
+                                        cb: Option<extern fn(command_handle_: IndyHandle,
                                                              err: ErrorCode,
                                                              msg_data: *const u8,
                                                              msg_len: u32)>) -> ErrorCode {
@@ -544,7 +547,7 @@ pub  extern fn indy_crypto_anon_decrypt(command_handle: i32,
             Box::new(move |result| {
                 let (err, msg) = result_to_err_code_1!(result, Vec::new());
                 trace!("indy_crypto_anon_decrypt: msg: {:?}", msg);
-                let (msg_data, msg_len) = vec_to_pointer(&msg);
+                let (msg_data, msg_len) = ctypes::vec_to_pointer(&msg);
                 cb(command_handle, err, msg_data, msg_len)
             })
         )));

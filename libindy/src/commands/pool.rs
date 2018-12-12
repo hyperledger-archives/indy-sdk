@@ -3,20 +3,21 @@ use errors::indy::IndyError;
 use errors::pool::PoolError;
 
 use services::pool::PoolService;
+use domain::ledger::request::ProtocolVersion;
+use domain::pool::{PoolConfig, PoolOpenConfig};
 
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::collections::HashMap;
 
-
 pub enum PoolCommand {
     Create(String, // name
-           Option<String>, // config
+           Option<PoolConfig>, // config
            Box<Fn(Result<(), IndyError>) + Send>),
     Delete(String, // name
            Box<Fn(Result<(), IndyError>) + Send>),
     Open(String, // name
-         Option<String>, // config
+         Option<PoolOpenConfig>, // config
          Box<Fn(Result<i32, IndyError>) + Send>),
     OpenAck(i32, // cmd id
             i32, // pool handle
@@ -30,6 +31,8 @@ pub enum PoolCommand {
             Box<Fn(Result<(), IndyError>) + Send>),
     RefreshAck(i32,
                Result<(), PoolError>),
+    SetProtocolVersion(usize, // protocol version
+                       Box<Fn(Result<(), IndyError>) + Send>),
 }
 
 pub struct PoolCommandExecutor {
@@ -53,7 +56,7 @@ impl PoolCommandExecutor {
         match command {
             PoolCommand::Create(name, config, cb) => {
                 info!(target: "pool_command_executor", "Create command received");
-                cb(self.create(&name, config.as_ref().map(String::as_str)));
+                cb(self.create(&name, config));
             }
             PoolCommand::Delete(name, cb) => {
                 info!(target: "pool_command_executor", "Delete command received");
@@ -61,7 +64,7 @@ impl PoolCommandExecutor {
             }
             PoolCommand::Open(name, config, cb) => {
                 info!(target: "pool_command_executor", "Open command received");
-                self.open(&name, config.as_ref().map(String::as_str), cb);
+                self.open(&name, config, cb);
             }
             PoolCommand::OpenAck(handle, pool_id, result) => {
                 info!("OpenAck handle {:?}, pool_id {:?}, result {:?}", handle, pool_id, result);
@@ -126,10 +129,14 @@ impl PoolCommandExecutor {
                     Err(err) => { error!("{:?}", err); }
                 }
             }
+            PoolCommand::SetProtocolVersion(protocol_version, cb) => {
+                info!(target: "pool_command_executor", "SetProtocolVersion command received");
+                cb(self.set_protocol_version(protocol_version));
+            }
         };
     }
 
-    fn create(&self, name: &str, config: Option<&str>) -> Result<(), IndyError> {
+    fn create(&self, name: &str, config: Option<PoolConfig>) -> Result<(), IndyError> {
         debug!("create >>> name: {:?}, config: {:?}", name, config);
 
         let res = self.pool_service.create(name, config)?;
@@ -149,7 +156,7 @@ impl PoolCommandExecutor {
         Ok(res)
     }
 
-    fn open(&self, name: &str, config: Option<&str>, cb: Box<Fn(Result<i32, IndyError>) + Send>) {
+    fn open(&self, name: &str, config: Option<PoolOpenConfig>, cb: Box<Fn(Result<i32, IndyError>) + Send>) {
         debug!("open >>> name: {:?}, config: {:?}", name, config);
 
         let result = self.pool_service.open(name, config)
@@ -216,5 +223,20 @@ impl PoolCommandExecutor {
         };
 
         debug!("refresh <<<");
+    }
+
+    fn set_protocol_version(&self, version: usize) -> Result<(), IndyError> {
+        debug!("set_protocol_version >>> version: {:?}", version);
+
+        if version != 1 && version != 2 {
+            return Err(IndyError::PoolError(
+                PoolError::PoolIncompatibleProtocolVersion(format!("Unsupported Protocol version: {}", version))));
+        }
+
+        ProtocolVersion::set(version);
+
+        debug!("set_protocol_version <<<");
+
+        Ok(())
     }
 }

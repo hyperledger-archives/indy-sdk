@@ -58,10 +58,6 @@ For Fedora 26/27/28, `libsodium-1.0.14` is already available as a system package
 dnf install libsodium libsodium-devel
 ```
 
-Versions of `libsodium` from `1.0.15` onwards miss the required `crypto_stream_aes128ctr_*` functions. Because of this:
-- for distributions without `libsodium` in the system repositories: be advised that in the future the archive might be moved to `https://download.libsodium.org/libsodium/releases/old/libsodium-1.0.14.tar.gz`
-- for Fedora and other distribution where `libsodium` is available: make sure that the available version is at most `1.0.14`; if it is more recent, switch to building it from source as explained above
-
 ### 4. Additional dependencies
 For Fedora 26/27/28, you may also need to install `zeromq` (`libzmq`) before being able to successfully
 build `libindy`:
@@ -97,24 +93,7 @@ command above will tell `rustc` to also check `../libindy/target/{BUILD_TYPE}` f
 
 ## Running integration tests
 ### Starting up
-Start local nodes pool on `127.0.0.1:9701-9708` with Docker:
-
-```
-docker build -f ci/indy-pool.dockerfile -t indy_pool .
-docker run -itd -p 9701-9709:9701-9709 indy_pool
-```
-
-In some environments, this approach with mapping of local ports to container ports
-can't be applied. Dockerfile `ci/indy-pool.dockerfile` supports optional `pool_ip` param
-that allows changing ip of pool nodes in generated pool configuration. The following
-commands allow to start local nodes pool in custom docker network and access this pool by
-custom ip in docker network:
-
-```
-docker network create --subnet 10.0.0.0/8 indy_pool_network
-docker build --build-arg pool_ip=10.0.0.2 -f ci/indy-pool.dockerfile -t indy_pool .
-docker run -d --ip="10.0.0.2" --net=indy_pool_network indy_pool
-```
+[Start local nodes pool with Docker](https://github.com/hyperledger/indy-sdk/blob/master/README.md#how-to-start-local-nodes-pool-with-docker)
 
 This may be useful if you want to launch integration tests inside another container attached to
 the same docker network.

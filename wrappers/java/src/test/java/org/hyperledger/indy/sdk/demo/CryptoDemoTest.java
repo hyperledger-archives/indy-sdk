@@ -12,6 +12,7 @@ import org.hyperledger.indy.sdk.wallet.Wallet;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import org.json.JSONObject;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
@@ -25,20 +26,21 @@ public class CryptoDemoTest extends IndyIntegrationTest {
 
 	@Test
 	public void testCryptoDemo() throws Exception {
-
 		//1. Create and Open Pool
 		String poolName = PoolUtils.createPoolLedgerConfig();
 
-		PoolJSONParameters.OpenPoolLedgerJSONParameter config2 = new PoolJSONParameters.OpenPoolLedgerJSONParameter(null, null, null);
+		PoolJSONParameters.OpenPoolLedgerJSONParameter config2 = new PoolJSONParameters.OpenPoolLedgerJSONParameter(null, null);
 		Pool pool = Pool.openPoolLedger(poolName, config2.toJson()).get();
 
 		//2. Create and Open My Wallet
-		Wallet.createWallet(poolName, "myWallet", "default", null, CREDENTIALS).get();
-		Wallet myWallet = Wallet.openWallet("myWallet", null, CREDENTIALS).get();
+		String myWalletConfig = new JSONObject().put("id", "myWallet").toString();
+		Wallet.createWallet(myWalletConfig, WALLET_CREDENTIALS).get();
+		Wallet myWallet = Wallet.openWallet(myWalletConfig, WALLET_CREDENTIALS).get();
 
 		//3. Create and Open Their Wallet
-		Wallet.createWallet(poolName, "theirWallet", "default", null, CREDENTIALS).get();
-		Wallet theirWallet = Wallet.openWallet("theirWallet", null, CREDENTIALS).get();
+		String theirWalletConfig = new JSONObject().put("id", "theirWallet").toString();
+		Wallet.createWallet(theirWalletConfig, WALLET_CREDENTIALS).get();
+		Wallet theirWallet = Wallet.openWallet(theirWalletConfig, WALLET_CREDENTIALS).get();
 
 		//4. Create My Did
 		CreateAndStoreMyDidResult createMyDidResult = Did.createAndStoreMyDid(myWallet, "{}").get();
@@ -72,11 +74,11 @@ public class CryptoDemoTest extends IndyIntegrationTest {
 
 		// 9. Close and delete My Wallet
 		myWallet.closeWallet().get();
-		Wallet.deleteWallet("myWallet", CREDENTIALS).get();
+		Wallet.deleteWallet(myWalletConfig, WALLET_CREDENTIALS).get();
 
 		// 10. Close and delete Their Wallet
 		theirWallet.closeWallet().get();
-		Wallet.deleteWallet("theirWallet", CREDENTIALS).get();
+		Wallet.deleteWallet(theirWalletConfig, WALLET_CREDENTIALS).get();
 
 		//11. Close Pool
 		pool.closePoolLedger().get();

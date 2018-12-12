@@ -28,6 +28,7 @@ var toHumanType = function (param) {
 
     case 'indy_u32_t':
     case 'indy_i32_t':
+    case 'indy_u64_t':
       return 'Number'
 
     case 'Buffer':
@@ -129,6 +130,9 @@ function readmeFn (fn) {
 }
 
 function parseDocString (docs) {
+  apiFunctions.forEach(function (fn) {
+    docs = docs.split(new RegExp('(?=^|[^_])' + fn.name + '(?=[^_]|$)', 'g')).join(fn.jsName)
+  })
   var lines = docs.split('\n')
   var grouped = []
   var section = ''
@@ -188,6 +192,9 @@ function parseDocString (docs) {
       .trim()
     if (section === '') {
       section = 'desc'
+    }
+    if (section === 'return') {
+      section = 'returns'
     }
     if (!keyed.hasOwnProperty(section)) {
       throw new Error('Unsupported doc string section: ' + section)

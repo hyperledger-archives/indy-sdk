@@ -1,10 +1,4 @@
-extern crate serde;
-extern crate serde_json;
-extern crate indy_crypto;
-
 use super::constants::GET_DDO;
-
-use self::indy_crypto::utils::json::JsonEncodable;
 
 #[derive(Serialize, PartialEq, Debug)]
 pub struct GetDdoOperation {
@@ -21,5 +15,3 @@ impl GetDdoOperation {
         }
     }
 }
-
-impl JsonEncodable for GetDdoOperation {}

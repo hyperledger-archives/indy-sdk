@@ -32,7 +32,7 @@ RL -> RA: Listener handle (cb)
 
 RA -> RL: <b>3. indy_add_identity \ncan be performed multiply times for same listener and different DID
 RL -> RW: Check my_did in wallet
-RL -> RL: Start accepting incomming connections for the DID
+RL -> RL: Start accepting incoming connections for the DID
 RL -> RA: Add identity result (cb)
 
 === Establish connection ==

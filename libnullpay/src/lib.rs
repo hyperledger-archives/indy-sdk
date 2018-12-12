@@ -1,3 +1,5 @@
+#![cfg_attr(feature = "fatal_warnings", deny(warnings))]
+
 extern crate libc;
 extern crate rand;
 
@@ -21,7 +23,10 @@ use std::ffi::CString;
 
 #[no_mangle]
 pub extern fn nullpay_init() -> ErrorCode {
-    utils::logger::init();
+    if let Err(err) = utils::logger::LibnullpayLogger::init() {
+        return err;
+    }
+
     let payment_method_name = CString::new(payment_method::PAYMENT_METHOD_NAME).unwrap();
 
     libindy::payments::register_payment_method(
@@ -29,20 +34,21 @@ pub extern fn nullpay_init() -> ErrorCode {
         payment_method::create_payment_address::handle,
         payment_method::add_request_fees::handle,
         payment_method::parse_response_with_fees::handle,
-        payment_method::build_get_utxo_request::handle,
-        payment_method::parse_get_utxo_response::handle,
+        payment_method::build_get_payment_sources_request::handle,
+        payment_method::parse_get_payment_sources_response::handle,
         payment_method::build_payment_req::handle,
         payment_method::parse_payment_response::handle,
         payment_method::build_mint_req::handle,
         payment_method::build_set_txn_fees_req::handle,
         payment_method::build_get_txn_fees_req::handle,
-        payment_method::parse_get_txn_fees_response::handle
+        payment_method::parse_get_txn_fees_response::handle,
+        payment_method::build_verify_payment_req::handle,
+        payment_method::parse_verify_payment_response::handle,
     )
 }
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 #[repr(i32)]
-#[allow(dead_code)]
 pub enum ErrorCode
 {
     Success = 0,
@@ -135,7 +141,7 @@ pub enum ErrorCode
     WalletStorageError = 210,
 
     // Error during encryption-related operations
-    WalletEncryptonError = 211,
+    WalletEncryptionError = 211,
 
     // Requested wallet item not found
     WalletItemNotFound = 212,
@@ -156,7 +162,7 @@ pub enum ErrorCode
     // Pool ledger terminated
     PoolLedgerTerminated = 302,
 
-    // No concensus during ledger operation
+    // No consensus during ledger operation
     LedgerNoConsensusError = 303,
 
     // Attempt to parse invalid transaction response
@@ -201,4 +207,10 @@ pub enum ErrorCode
 
     // Insufficient funds on inputs
     PaymentInsufficientFundsError = 702,
+
+    // No such source on a ledger
+    PaymentSourceDoesNotExistError = 703,
+
+    // Operation is not supported for payment method
+    PaymentOperationNotSupportedError = 704
 }

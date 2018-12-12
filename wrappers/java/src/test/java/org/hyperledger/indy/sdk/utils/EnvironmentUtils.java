@@ -3,7 +3,7 @@ package org.hyperledger.indy.sdk.utils;
 import org.apache.commons.io.FileUtils;
 
 public class EnvironmentUtils {
-    public static String getTestPoolIP() {
+    static String getTestPoolIP() {
         String testPoolIp = System.getenv("TEST_POOL_IP");
         return testPoolIp != null ? testPoolIp : "127.0.0.1";
     }

@@ -19,7 +19,14 @@ test('pool', async function (t) {
     'genesis_txn': pool.file
   }), null)
 
-  var poolH = await indy.openPoolLedger(pool.name, 'null')
+  await indy.setProtocolVersion(1)
+
+  err = await t.throws(indy.openPoolLedger(pool.name, null))
+  t.is(err.indyName, 'PoolIncompatibleProtocolVersion')
+
+  await indy.setProtocolVersion(2)
+
+  var poolH = await indy.openPoolLedger(pool.name, null)
   t.truthy(poolH >= 0)
 
   err = await t.throws(indy.refreshPoolLedger(-1))
@@ -34,6 +41,4 @@ test('pool', async function (t) {
   await indy.closePoolLedger(poolH)
 
   await indy.deletePoolLedgerConfig(pool.name)
-
-  pool.cleanup()
 })

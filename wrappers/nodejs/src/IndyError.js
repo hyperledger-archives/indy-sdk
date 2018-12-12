@@ -32,6 +32,8 @@ var errors = {
   305: 'LedgerSecurityError',
   306: 'PoolLedgerConfigAlreadyExistsError',
   307: 'PoolLedgerTimeout',
+  308: 'PoolIncompatibleProtocolVersion',
+  309: 'LedgerNotFound',
   400: 'AnoncredsRevocationRegistryFullError',
   401: 'AnoncredsInvalidUserRevocId',
   404: 'AnoncredsMasterSecretDuplicateNameError',
@@ -39,7 +41,13 @@ var errors = {
   406: 'AnoncredsCredentialRevoked',
   407: 'AnoncredsCredDefAlreadyExistsError',
   500: 'UnknownCryptoTypeError',
-  600: 'DidAlreadyExistsError'
+  600: 'DidAlreadyExistsError',
+  700: 'PaymentUnknownMethodError',
+  701: 'PaymentIncompatibleMethodsError',
+  702: 'PaymentInsufficientFundsError',
+  703: 'PaymentSourceDoesNotExistError',
+  704: 'PaymentOperationNotSupportedError',
+  705: 'PaymentExtraFundsError'
 }
 
 function IndyError (err) {

@@ -104,6 +104,31 @@
     }
 }
 
++ (void)submitAction:(NSString *)requestJson
+               nodes:(NSString *)nodes
+             timeout:(NSNumber *)timeout
+          poolHandle:(IndyHandle)poolHandle
+          completion:(void (^)(NSError *error, NSString *requestResultJSON))completion {
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = indy_submit_action(handle,
+            poolHandle,
+            [requestJson UTF8String],
+            [nodes UTF8String],
+            timeout ? [timeout intValue] : -1,
+            IndyWrapperCommonStringCallback);
+
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret], nil);
+        });
+    }
+}
+
 // MARK: - Nym request
 
 + (void)buildNymRequestWithSubmitterDid:(NSString *)submitterDid
@@ -212,18 +237,18 @@
 // MARK: - Get validator info request
 
 + (void)buildGetValidatorInfo:(NSString *)submitterDid
-                                   completion:(void (^)(NSError *error, NSString *requestJSON))completion {
+                   completion:(void (^)(NSError *error, NSString *requestJSON))completion {
     indy_error_t ret;
-    
+
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
-    
-    
+
+
     ret = indy_build_get_validator_info_request(handle,
-                                        [submitterDid UTF8String],
-                                        IndyWrapperCommonStringCallback);
+            [submitterDid UTF8String],
+            IndyWrapperCommonStringCallback);
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
-        
+
         dispatch_async(dispatch_get_main_queue(), ^{
             completion([NSError errorFromIndyError:ret], nil);
         });
@@ -403,6 +428,7 @@
 // MARK: - Txn request
 
 + (void)buildGetTxnRequestWithSubmitterDid:(NSString *)submitterDid
+                                ledgerType:(NSString *)ledgerType
                                       data:(NSNumber *)data
                                 completion:(void (^)(NSError *error, NSString *requestJSON))completion {
     indy_error_t ret;
@@ -411,6 +437,7 @@
 
     ret = indy_build_get_txn_request(handle,
             [submitterDid UTF8String],
+            [ledgerType UTF8String],
             [data intValue],
             IndyWrapperCommonStringCallback);
     if (ret != Success) {
@@ -482,6 +509,7 @@
                                   justification:(NSString *)justification
                                       reinstall:(BOOL)reinstall
                                           force:(BOOL)force
+                                       package_:(NSString *)package_
                                      completion:(void (^)(NSError *error, NSString *requestJSON))completion {
     indy_error_t ret;
 
@@ -498,6 +526,7 @@
             [justification UTF8String],
             (indy_bool_t) reinstall,
             (indy_bool_t) force,
+            [package_ UTF8String],
             IndyWrapperCommonStringCallback);
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
@@ -673,6 +702,25 @@
 
         dispatch_async(dispatch_get_main_queue(), ^{
             completion([NSError errorFromIndyError:ret], nil, nil, nil);
+        });
+    }
+}
+
++ (void)getResponseMetadata:(NSString *)response
+                 completion:(void (^)(NSError *error, NSString *responseMetadata))completion {
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = indy_get_response_metadata(handle,
+            [response UTF8String],
+            IndyWrapperCommonStringCallback);
+
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret], nil);
         });
     }
 }

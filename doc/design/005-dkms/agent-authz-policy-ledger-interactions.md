@@ -3,7 +3,7 @@
 
 ## Assumptions
 1. The ledger maintains a global accumulator that holds commitments sent by the agents.
-1. The gloabal accumulator is maintained by the each node so every node knows the accumulator private key
+1. The global accumulator is maintained by the each node so every node knows the accumulator private key
 1. Agent auth policy txns are stored at the identity ledger.
 1. Each auth policy is uniquely identified by a policy address `I`.
 1. One agent can belong to several authz policies, thus several different `I`'s.
@@ -31,7 +31,7 @@ An authz policy is created/updated by an `AGENT_AUTHZ` transaction. A transactio
 } 
 ```
 **address**: The policy address, this is a unique identifier of an authz policy. Is a large number (size/range TBD). If the ledger has never seen the provided policy address, it considers the transaction a creation of a new authz policy else it is considered an update of an existing policy identifier by the address.  
-**verkey**: An ed25519 verkey of the agent to which the `authorization` corresponds. This is optional when a new policy is being created as `identifier` is sufficient. This verkey should be kept different from any DID verkey to avoid coorelation.   
+**verkey**: An ed25519 verkey of the agent to which the `authorization` corresponds. This is optional when a new policy is being created as `identifier` is sufficient. This verkey should be kept different from any DID verkey to avoid correlation.   
 **authorization**: A bitset indicating which authorizations are being given to the agent, it is ignored when creating a new policy (the ledger does not know `I`). The various bits indicate different authorizations:
 
 ```
@@ -46,7 +46,7 @@ An authz policy is created/updated by an `AGENT_AUTHZ` transaction. A transactio
    ... 
 ```
 
-While creating a new policy, this field's value is ignored and the creator agent has all authorizations. For any subsequent polciy transactions, the ledger checks if the sender (author to be precise, since anyone can send a transaction once a signature has been done) of transaction has the authorization to make the transaction, eg. The author of txn has `PROVE_GRANT` if it is giving a `PROVE` authorization to another agent.  
+While creating a new policy, this field's value is ignored and the creator agent has all authorizations. For any subsequent policy transactions, the ledger checks if the sender (author to be precise, since anyone can send a transaction once a signature has been done) of transaction has the authorization to make the transaction, eg. The author of txn has `PROVE_GRANT` if it is giving a `PROVE` authorization to another agent.  
 **Future Work**: When we support `m-of-n` authorization, `verkey` would be a map stating the policy and the verkeys
 
 **commitment**: This is a number (size/range TBD) given by the agent when it is being given a ``PROVE`` authorization. Thus this field is only needed when a policy is being created or an agent is being given the `PROVE` authorization. The ledger upon receiving this commitment checks if the commitment is prime and if it is then it updates the global accumulator with this commitment. Efficient primality testing algorithms like BPSW or ECPP can be used but the exact algorithm is yet to be decided.  If the commitment is not prime (in case of creation or update of policy address) then the transaction is rejected. The ledger rejects the transaction if it has already seen the commitment as part of another transaction. 
@@ -98,7 +98,7 @@ The state stores:
 ]
 ```
 
-The hash of above can then be used to lookup (it is not, more on this later) the exact authorization polciy in a separate name-value store. This is done to keep the database backing the state (trie) smaller.
+The hash of above can then be used to lookup (it is not, more on this later) the exact authorization policy in a separate name-value store. This is done to keep the database backing the state (trie) smaller.
 
 ### Caches
 There is an agent\_authz cache used for optimisations are:
@@ -130,4 +130,4 @@ During processing of any write transaction, the node updates the ledger, state a
 
 
 ## Code organisation.
-These changes would be implemented as a separate plugin. The plugin will not introduce new ledger or state but will introduce the cache described above. The plugin will intrduce a new request handler which will subclass the `DomainRequestHandler`. The plugin's new request handler will introduce 1 `write_type` and 2 `query_types` and methods to handle those.
+These changes would be implemented as a separate plugin. The plugin will not introduce new ledger or state but will introduce the cache described above. The plugin will introduce a new request handler which will subclass the `DomainRequestHandler`. The plugin's new request handler will introduce 1 `write_type` and 2 `query_types` and methods to handle those.

@@ -1,8 +1,8 @@
-use utils::crypto::chacha20poly1305_ietf::ChaCha20Poly1305IETF;
 use errors::wallet::WalletQueryError;
 
 use super::wallet::Keys;
 use super::language::{Operator,TargetValue,TagName};
+use super::encryption::encrypt_as_searchable;
 
 
 // Performs encryption of WQL query
@@ -15,7 +15,7 @@ pub(super) fn encrypt_query(operator: Operator, keys: &Keys) -> Result<Operator,
 
 fn encrypt_operator(op: Operator, keys: &Keys) -> Result<Operator, WalletQueryError> {
     match op {
-        Operator::Eq(name, value) => {
+        Operator::Eq(name, value)  => {
             let (encrypted_name, encrypted_value) = encrypt_name_value(&name, value, keys)?;
             Ok(Operator::Eq(encrypted_name, encrypted_value))
         },
@@ -43,18 +43,14 @@ fn encrypt_operator(op: Operator, keys: &Keys) -> Result<Operator, WalletQueryEr
             let (encrypted_name, encrypted_value) = encrypt_name_value(&name, value, keys)?;
             Ok(Operator::Like(encrypted_name, encrypted_value))
         },
-        Operator::Regex(name, value) => {
-            let (encrypted_name, encrypted_value) = encrypt_name_value(&name, value, keys)?;
-            Ok(Operator::Regex(encrypted_name, encrypted_value))
-        },
         Operator::In(name, values) => {
             let name = match name {
                 TagName::EncryptedTagName(ref name) => {
-                    let encrypted_name = ChaCha20Poly1305IETF::encrypt_as_searchable(&name[..], &keys.tag_name_key, &keys.tags_hmac_key);
+                    let encrypted_name = encrypt_as_searchable(&name[..], &keys.tag_name_key, &keys.tags_hmac_key);
                     TagName::EncryptedTagName(encrypted_name)
                 },
                 TagName::PlainTagName(ref name) => {
-                    let encrypted_name = ChaCha20Poly1305IETF::encrypt_as_searchable(&name[..], &keys.tag_name_key, &keys.tags_hmac_key);
+                    let encrypted_name = encrypt_as_searchable(&name[..], &keys.tag_name_key, &keys.tags_hmac_key);
                     TagName::PlainTagName(encrypted_name)
                 }
             };
@@ -76,12 +72,12 @@ fn encrypt_operator(op: Operator, keys: &Keys) -> Result<Operator, WalletQueryEr
 fn encrypt_name_value(name: &TagName, value: TargetValue, keys: &Keys) -> Result<(TagName, TargetValue), WalletQueryError> {
     match (name, value) {
         (&TagName::EncryptedTagName(ref name), TargetValue::Unencrypted(ref s)) => {
-            let encrypted_tag_name = ChaCha20Poly1305IETF::encrypt_as_searchable(&name[..], &keys.tag_name_key, &keys.tags_hmac_key);
-            let encrypted_tag_value = ChaCha20Poly1305IETF::encrypt_as_searchable(s.as_bytes(), &keys.tag_value_key, &keys.tags_hmac_key);
+            let encrypted_tag_name = encrypt_as_searchable(&name[..], &keys.tag_name_key, &keys.tags_hmac_key);
+            let encrypted_tag_value = encrypt_as_searchable(s.as_bytes(), &keys.tag_value_key, &keys.tags_hmac_key);
             Ok((TagName::EncryptedTagName(encrypted_tag_name), TargetValue::Encrypted(encrypted_tag_value)))
         },
         (&TagName::PlainTagName(ref name), TargetValue::Unencrypted(ref s)) => {
-            let encrypted_tag_name = ChaCha20Poly1305IETF::encrypt_as_searchable(&name[..], &keys.tag_name_key, &keys.tags_hmac_key);
+            let encrypted_tag_name = encrypt_as_searchable(&name[..], &keys.tag_name_key, &keys.tags_hmac_key);
             Ok((TagName::PlainTagName(encrypted_tag_name), TargetValue::Unencrypted(s.clone())))
         },
         _ => Err(WalletQueryError::StructureErr("Reached invalid combination of tag name and value while encrypting query".to_string()))

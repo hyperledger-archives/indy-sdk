@@ -1,7 +1,7 @@
 # How Tos
 
 This folder contains short tutorials demonstrating how to accomplish
-common tasks with the Indy SDK. For best results, proceed through these in order:
+common tasks with the Indy SDK. For best results, proceed through the following in order:
 
 1. [Write a DID and Query Its Verkey](write-did-and-query-verkey/README.md)
 2. [Rotate a Key](rotate-key/README.md)

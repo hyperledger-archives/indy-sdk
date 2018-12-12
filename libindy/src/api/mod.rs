@@ -1,4 +1,5 @@
 extern crate libc;
+extern crate serde_json;
 
 pub mod anoncreds;
 pub mod crypto;
@@ -10,6 +11,17 @@ pub mod wallet;
 pub mod blob_storage;
 pub mod non_secrets;
 pub mod payments;
+pub mod logger;
+
+use self::libc::c_char;
+
+use domain::IndyConfig;
+use errors::common::CommonError;
+use errors::ToErrorCode;
+
+use utils::ctypes;
+
+pub type IndyHandle = i32;
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 #[repr(i32)]
@@ -70,6 +82,45 @@ pub enum ErrorCode
     // Caller passed invalid value as param 14 (null, invalid json and etc..)
     CommonInvalidParam14 = 116,
 
+    // Caller passed invalid value as param 15 (null, invalid json and etc..)
+    CommonInvalidParam15 = 117,
+
+    // Caller passed invalid value as param 16 (null, invalid json and etc..)
+    CommonInvalidParam16 = 118,
+
+    // Caller passed invalid value as param 17 (null, invalid json and etc..)
+    CommonInvalidParam17 = 119,
+
+    // Caller passed invalid value as param 18 (null, invalid json and etc..)
+    CommonInvalidParam18 = 120,
+
+    // Caller passed invalid value as param 19 (null, invalid json and etc..)
+    CommonInvalidParam19 = 121,
+
+    // Caller passed invalid value as param 20 (null, invalid json and etc..)
+    CommonInvalidParam20 = 122,
+
+    // Caller passed invalid value as param 21 (null, invalid json and etc..)
+    CommonInvalidParam21 = 123,
+
+    // Caller passed invalid value as param 22 (null, invalid json and etc..)
+    CommonInvalidParam22 = 124,
+
+    // Caller passed invalid value as param 23 (null, invalid json and etc..)
+    CommonInvalidParam23 = 125,
+
+    // Caller passed invalid value as param 24 (null, invalid json and etc..)
+    CommonInvalidParam24 = 126,
+
+    // Caller passed invalid value as param 25 (null, invalid json and etc..)
+    CommonInvalidParam25 = 127,
+
+    // Caller passed invalid value as param 26 (null, invalid json and etc..)
+    CommonInvalidParam26 = 128,
+
+    // Caller passed invalid value as param 27 (null, invalid json and etc..)
+    CommonInvalidParam27 = 129,
+
     // Wallet errors
     // Caller passed invalid wallet handle
     WalletInvalidHandle = 200,
@@ -105,7 +156,7 @@ pub enum ErrorCode
     WalletStorageError = 210,
 
     // Error during encryption-related operations
-    WalletEncryptonError = 211,
+    WalletEncryptionError = 211,
 
     // Requested wallet item not found
     WalletItemNotFound = 212,
@@ -126,7 +177,7 @@ pub enum ErrorCode
     // Pool ledger terminated
     PoolLedgerTerminated = 302,
 
-    // No concensus during ledger operation
+    // No consensus during ledger operation
     LedgerNoConsensusError = 303,
 
     // Attempt to parse invalid transaction response
@@ -140,6 +191,13 @@ pub enum ErrorCode
 
     // Timeout for action
     PoolLedgerTimeout = 307,
+
+    // Attempt to open Pool for witch Genesis Transactions are not compatible with set Protocol version.
+    // Call pool.indy_set_protocol_version to set correct Protocol version.
+    PoolIncompatibleProtocolVersion = 308,
+
+    // Item not found on ledger.
+    LedgerNotFound = 309,
 
     // Revocation registry is full and creation of new registry is necessary
     AnoncredsRevocationRegistryFullError = 400,
@@ -171,4 +229,37 @@ pub enum ErrorCode
 
     // Insufficient funds on inputs
     PaymentInsufficientFundsError = 702,
+
+    // No such source on a ledger
+    PaymentSourceDoesNotExistError = 703,
+
+    // Operation is not supported for payment method
+    PaymentOperationNotSupportedError = 704,
+
+    // Extra funds on inputs
+    PaymentExtraFundsError = 705
+}
+
+/// Set libindy runtime configuration. Can be optionally called to change current params.
+///
+/// #Params
+/// config: {
+///     "crypto_thread_pool_size": <int> - size of thread pool for the most expensive crypto operations. (4 by default)
+/// }
+///
+/// #Errors
+/// Common*
+#[no_mangle]
+pub extern fn indy_set_runtime_config(config: *const c_char) -> ErrorCode {
+    trace!("indy_init >>> config: {:?}", config);
+
+    check_useful_json!(config, ErrorCode::CommonInvalidParam1, IndyConfig);
+
+    ::commands::indy_set_runtime_config(config);
+
+    let res = ErrorCode::Success;
+
+    trace!("indy_init: <<< res: {:?}", res);
+
+    res
 }

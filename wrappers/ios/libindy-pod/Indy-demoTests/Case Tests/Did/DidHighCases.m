@@ -17,9 +17,11 @@
 - (void)setUp {
     [super setUp];
     [TestUtils cleanupStorage];
-    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
-                                                                  xtype:nil
-                                                                 handle:&walletHandle];
+
+    ret = [[PoolUtils sharedInstance] setProtocolVersion:[TestUtils protocolVersion]];
+    XCTAssertEqual(ret.code, Success, @"PoolUtils::setProtocolVersion() failed!");
+
+    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithHandle:&walletHandle];
     // Put setup code here. This method is called before the invocation of each test method in the class.
 }
 

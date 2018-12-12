@@ -5,6 +5,7 @@
       "include_dirs": [
         "<!(node -e \"require('nan')\")",
         "<(module_root_dir)/include",
+        "<(module_root_dir)/../../libindy/include"
       ],
       "sources": [
         "src/indy.cc"

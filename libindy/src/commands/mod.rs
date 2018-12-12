@@ -1,6 +1,3 @@
-#[macro_use]
-mod utils;
-
 pub mod anoncreds;
 pub mod blob_storage;
 pub mod crypto;
@@ -11,6 +8,11 @@ pub mod wallet;
 pub mod pairwise;
 pub mod non_secrets;
 pub mod payments;
+
+extern crate indy_crypto;
+extern crate threadpool;
+
+use self::threadpool::ThreadPool;
 
 use commands::anoncreds::{AnoncredsCommand, AnoncredsCommandExecutor};
 use commands::blob_storage::{BlobStorageCommand, BlobStorageCommandExecutor};
@@ -33,6 +35,9 @@ use services::wallet::WalletService;
 use services::crypto::CryptoService;
 use services::ledger::LedgerService;
 
+use domain::IndyConfig;
+
+
 use std::error::Error;
 use std::sync::mpsc::{Sender, channel};
 use std::rc::Rc;
@@ -53,6 +58,14 @@ pub enum Command {
     Payments(PaymentsCommand)
 }
 
+lazy_static! {
+    static ref THREADPOOL: Mutex<ThreadPool> = Mutex::new(ThreadPool::new(4));
+}
+
+pub fn indy_set_runtime_config(config: IndyConfig) {
+    THREADPOOL.lock().unwrap().set_num_threads(config.crypto_thread_pool_size)
+}
+
 pub struct CommandExecutor {
     worker: Option<thread::JoinHandle<()>>,
     sender: Sender<Command>
@@ -69,7 +82,6 @@ impl CommandExecutor {
     }
 
     fn new() -> CommandExecutor {
-        ::utils::logger::LoggerUtils::init();
         let (sender, receiver) = channel();
 
         CommandExecutor {
@@ -89,8 +101,8 @@ impl CommandExecutor {
                 let crypto_command_executor = CryptoCommandExecutor::new(wallet_service.clone(), crypto_service.clone());
                 let ledger_command_executor = LedgerCommandExecutor::new(pool_service.clone(), crypto_service.clone(), wallet_service.clone(), ledger_service.clone());
                 let pool_command_executor = PoolCommandExecutor::new(pool_service.clone());
-                let did_command_executor = DidCommandExecutor::new(pool_service.clone(), wallet_service.clone(), crypto_service.clone(), ledger_service.clone());
-                let wallet_command_executor = WalletCommandExecutor::new(wallet_service.clone());
+                let did_command_executor = DidCommandExecutor::new(wallet_service.clone(), crypto_service.clone(), ledger_service.clone());
+                let wallet_command_executor = WalletCommandExecutor::new(wallet_service.clone(), crypto_service.clone());
                 let pairwise_command_executor = PairwiseCommandExecutor::new(wallet_service.clone());
                 let blob_storage_command_executor = BlobStorageCommandExecutor::new(blob_storage_service.clone());
                 let non_secret_command_executor = NonSecretsCommandExecutor::new(wallet_service.clone());

@@ -20,9 +20,9 @@ public class IssuerRevokeCredentialTest extends AnoncredsIntegrationTest {
 	@Test
 	public void testIssuerRevokeProofWorks() throws Exception {
 		// Create wallet, get wallet handle
-		String walletName = "revocationWallet";
-		Wallet.createWallet("default", walletName, "default", null, CREDENTIALS).get();
-		Wallet wallet = Wallet.openWallet(walletName, null, CREDENTIALS).get();
+		String walletConfig = new JSONObject().put("id", "revocationWallet").toString();
+		Wallet.createWallet(walletConfig, CREDENTIALS).get();
+		Wallet wallet = Wallet.openWallet(walletConfig, CREDENTIALS).get();
 
 		// Issuer create Schema
 		AnoncredsResults.IssuerCreateSchemaResult createSchemaResult = Anoncreds.issuerCreateSchema(issuerDid, gvtSchemaName, schemaVersion, gvtSchemaAttributes).get();
@@ -108,6 +108,6 @@ public class IssuerRevokeCredentialTest extends AnoncredsIntegrationTest {
 
 		// Close and Delete Wallet
 		wallet.closeWallet().get();
-		Wallet.deleteWallet(walletName, CREDENTIALS).get();
+		Wallet.deleteWallet(walletConfig, CREDENTIALS).get();
 	}
 }

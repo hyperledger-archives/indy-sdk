@@ -29,6 +29,7 @@ var toJsName = function (name) {
     })
     .replace(/^type_$/, 'type')
     .replace(/^walletHandle$/, 'wh')
+    .replace(/^searchHandle$/, 'sh')
 }
 
 var toJsParams = function (params) {
@@ -44,6 +45,9 @@ var functions = []
 
 Object.keys(api.functions).forEach(function (name) {
   if (name === 'indy_register_wallet_type') {
+    return
+  }
+  if (name === 'indy_register_payment_method') {
     return
   }
 

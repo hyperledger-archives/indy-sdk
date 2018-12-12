@@ -1,13 +1,9 @@
 package org.hyperledger.indy.sdk.crypto;
 
 import org.hyperledger.indy.sdk.IndyIntegrationTestWithSingleWallet;
-import org.hyperledger.indy.sdk.wallet.WalletItemNotFoundException;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.concurrent.ExecutionException;
-
-import static org.hamcrest.CoreMatchers.isA;
 import static org.junit.Assert.assertEquals;
 
 
@@ -44,9 +40,6 @@ public class SetKeyMetadataTest extends IndyIntegrationTestWithSingleWallet {
 
 	@Test
 	public void testSetKeyMetadataWorksForNoKey() throws Exception {
-		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(WalletItemNotFoundException.class));
-
 		Crypto.setKeyMetadata(wallet, VERKEY, METADATA).get();
 	}
 }

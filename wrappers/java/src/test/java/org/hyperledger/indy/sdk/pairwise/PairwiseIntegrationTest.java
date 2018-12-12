@@ -21,7 +21,8 @@ public class PairwiseIntegrationTest extends IndyIntegrationTestWithSingleWallet
 
 		result = Did.createAndStoreMyDid(wallet, "{}").get();
 		theirDid = result.getDid();
+		String theirVerkey = result.getVerkey();
 
-		Did.storeTheirDid(wallet, String.format("{\"did\":\"%s\"}", theirDid)).get();
+		Did.storeTheirDid(wallet, String.format(IDENTITY_JSON_TEMPLATE, theirDid, theirVerkey)).get();
 	}
 }

@@ -45,7 +45,7 @@ public class MultiSignRequestTest extends IndyIntegrationTestWithSingleWallet {
 	}
 
 	@Test
-	public void testMultiSignWorksForUnknowDid() throws Exception {
+	public void testMultiSignWorksForUnknownDid() throws Exception {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(WalletItemNotFoundException.class));
 

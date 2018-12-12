@@ -19,8 +19,11 @@ from indy.error import IndyError
 
 
 pool_name = 'pool'
-wallet_name = 'wallet'
 genesis_file_path = '/home/vagrant/code/evernym/indy-sdk/cli/docker_pool_transactions_genesis'
+wallet_config = json.dumps({"id": "wallet"})
+wallet_credentials = json.dumps({"key": "wallet_key"})
+# Set protocol version to 2 to work with the current version of Indy Node
+PROTOCOL_VERSION = 2
 
 
 def print_log(value_color="", value_noncolor=""):
@@ -32,6 +35,7 @@ def print_log(value_color="", value_noncolor=""):
 
 async def write_nym_and_query_verkey():
     try:
+        await pool.set_protocol_version(PROTOCOL_VERSION)
         # Step 2 code goes here.
 
         # Step 3 code goes here.

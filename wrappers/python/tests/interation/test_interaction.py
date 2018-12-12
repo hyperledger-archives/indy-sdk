@@ -19,9 +19,9 @@ async def test_anoncreds_revocation_interaction_test_issuance_by_demand(pool_nam
     prover_did, _ = identity_my1
 
     #  Prover Creates Wallet and Get Wallet Handle
-    prover_wallet_name = 'prover_wallet'
-    await wallet.create_wallet(pool_name, prover_wallet_name, None, None, credentials)
-    prover_wallet_handle = await wallet.open_wallet(prover_wallet_name, None, credentials)
+    prover_wallet_config = '{"id":"prover_wallet"}'
+    await wallet.create_wallet(prover_wallet_config, credentials)
+    prover_wallet_handle = await wallet.open_wallet(prover_wallet_config, credentials)
 
     # Issuer Creates Schema
     (schema_id, schema_json) = \
@@ -90,6 +90,7 @@ async def test_anoncreds_revocation_interaction_test_issuance_by_demand(pool_nam
     blob_storage_reader_cfg_handle = await blob_storage.open_reader('default', tails_writer_config)
 
     #  Issuer create credential for credential Request
+    #  note that encoding is not standardized by Indy except that 32-bit integers are encoded as themselves. IS-786
     cred_values_json = json.dumps({
         "sex": {
             "raw": "male", "encoded": "5944657099558967239210949258394887428692050081607692519917050011144233115103"},
@@ -138,10 +139,13 @@ async def test_anoncreds_revocation_interaction_test_issuance_by_demand(pool_nam
     })
 
     # Prover Gets credentials for Proof Request
-    credential_for_proof_json = \
-        await anoncreds.prover_get_credentials_for_proof_req(prover_wallet_handle, proof_req_json)
-    credentials_for_proof = json.loads(credential_for_proof_json)
-    cred_info = credentials_for_proof['attrs']['attr1_referent'][0]['cred_info']
+    search_credentials_for_proof_handle = \
+        await anoncreds.prover_search_credentials_for_proof_req(prover_wallet_handle, proof_req_json, None)
+    fetched_credential_json = \
+        await anoncreds.prover_fetch_credentials_for_proof_req(search_credentials_for_proof_handle,
+                                                               'attr1_referent', 10)
+    await anoncreds.prover_close_credentials_search_for_proof_req(search_credentials_for_proof_handle)
+    cred_info = json.loads(fetched_credential_json)[0]['cred_info']
 
     # Prover Gets RevocationRegistryDelta from Ledger
     get_revoc_reg_delta_request = await ledger.build_get_revoc_reg_delta_request(prover_did, rev_reg_def_id, None, to)
@@ -279,4 +283,4 @@ async def test_anoncreds_revocation_interaction_test_issuance_by_demand(pool_nam
 
     #  Close and Delete Prover Wallet
     await wallet.close_wallet(prover_wallet_handle)
-    await wallet.delete_wallet(prover_wallet_name, credentials)
+    await wallet.delete_wallet(prover_wallet_config, credentials)

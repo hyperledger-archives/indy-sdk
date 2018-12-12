@@ -25,6 +25,11 @@
             withPoolHandle:(IndyHandle)poolHandle
                 resultJson:(NSString **)resultJson;
 
+- (NSError *)submitAction:(NSString *)request
+                    nodes:(NSString *)nodes
+                  timeout:(NSNumber *)timeout
+           withPoolHandle:(IndyHandle)poolHandle
+               resultJson:(NSString **)resultJson;
 
 // MARK: - Nym request
 - (NSError *)buildNymRequestWithSubmitterDid:(NSString *)submitterDid
@@ -74,7 +79,7 @@
 
 // MARK: - Get validator info request
 - (NSError *)buildGetValidatorInfo:(NSString *)submitterDid
-                                    resultJson:(NSString **)resultJson;
+                        resultJson:(NSString **)resultJson;
 
 // MARK: - CredDef Request
 - (NSError *)buildCredDefRequestWithSubmitterDid:(NSString *)submitterDid
@@ -91,6 +96,7 @@
 
 // MARK: - Get Txn request
 - (NSError *)buildGetTxnRequestWithSubmitterDid:(NSString *)submitterDid
+                                     ledgerType:(NSString *)ledgerType
                                            data:(NSNumber *)data
                                      resultJson:(NSString **)resultJson;
 
@@ -117,6 +123,7 @@
                                        justification:(NSString *)justification
                                            reinstall:(BOOL)reinstall
                                                force:(BOOL)force
+                                            package_:(NSString *)package_
                                           resultJson:(NSString **)resultJson;
 
 // MARK: - Revocation registry definition request
@@ -171,6 +178,10 @@
                                  submitterdid:(NSString *)submitterDid
                                   requestJson:(NSString *)requestJson
                                    resultJson:(NSString **)resultJson;
+
+// MARK: - Response Metadata
+- (NSError *)getResponseMetadata:(NSString *)response
+                responseMetadata:(NSString **)responseMetadata;
 
 
 @end

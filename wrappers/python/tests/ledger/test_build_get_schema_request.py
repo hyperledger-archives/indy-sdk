@@ -3,11 +3,11 @@ from indy import ledger
 import json
 import pytest
 
+id_ = "identifier:2:name:1.0"
+
 
 @pytest.mark.asyncio
 async def test_build_get_schema_requests_works_for_correct_data_json(did_trustee):
-    id_ = "identifier:2:name:1.0"
-
     expected_response = {
         "identifier": did_trustee,
         "operation": {
@@ -22,3 +22,8 @@ async def test_build_get_schema_requests_works_for_correct_data_json(did_trustee
 
     response = json.loads(await ledger.build_get_schema_request(did_trustee, id_))
     assert expected_response.items() <= response.items()
+
+
+@pytest.mark.asyncio
+async def test_build_get_schema_requests_works_for_default_submitter():
+    json.loads(await ledger.build_get_schema_request(None, id_))

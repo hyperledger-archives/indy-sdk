@@ -13,6 +13,10 @@
 - (void)setUp {
     [super setUp];
     [TestUtils cleanupStorage];
+
+    ret = [[PoolUtils sharedInstance] setProtocolVersion:[TestUtils protocolVersion]];
+    XCTAssertEqual(ret.code, Success, @"PoolUtils::setProtocolVersion() failed!");
+
     // Put setup code here. This method is called before the invocation of each test method in the class.
 }
 
@@ -29,15 +33,11 @@
     IndyHandle proverWalletHandle = 0;
 
     //1. Create Issuer wallet, get wallet handle
-    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
-                                                                  xtype:nil
-                                                                 handle:&issuerWalletHandle];
+    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithHandle:&issuerWalletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWallet() failed");
 
     //2. Create Prover wallet, get wallet handle
-    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
-                                                                  xtype:nil
-                                                                 handle:&proverWalletHandle];
+    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithHandle:&proverWalletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWallet() failed");
 
     // 3. Issuer create Schema
@@ -206,23 +206,17 @@
 - (void)testAnoncredsWorksForMultiplyIssuerSingleProver {
     //1. Issuer1 create wallet, get wallet handles
     IndyHandle issuerGvtWalletHandle = 0;
-    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
-                                                                  xtype:nil
-                                                                 handle:&issuerGvtWalletHandle];
+    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithHandle:&issuerGvtWalletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWallet() failed");
 
     //2. Issuer2 create wallet, get wallet handles
     IndyHandle issuerXyzWalletHandle = 0;
-    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
-                                                                  xtype:nil
-                                                                 handle:&issuerXyzWalletHandle];
+    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithHandle:&issuerXyzWalletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWallet() failed");
 
     //3. Prover create wallet, get wallet handles
     IndyHandle proverWalletHandle = 0;
-    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
-                                                                  xtype:nil
-                                                                 handle:&proverWalletHandle];
+    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithHandle:&proverWalletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWallet() failed");
 
     //4. Issuer create GVT Schema
@@ -480,16 +474,12 @@
 - (void)testAnoncredsWorksForSingleIssuerMultipleCredentialsSingleProver {
     //1. Issuer create wallet, get wallet handles
     IndyHandle issuerWalletHandle = 0;
-    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
-                                                                  xtype:nil
-                                                                 handle:&issuerWalletHandle];
+    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithHandle:&issuerWalletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWallet() failed");
 
     //2. Prover create wallet, get wallet handles
     IndyHandle proverWalletHandle = 0;
-    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
-                                                                  xtype:nil
-                                                                 handle:&proverWalletHandle];
+    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithHandle:&proverWalletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWallet() failed");
 
     //4. Issuer create GVT Schema

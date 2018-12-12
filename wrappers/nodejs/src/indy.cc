@@ -1,5 +1,6 @@
 #include <string>
 #include <map>
+#include <queue>
 #include <nan.h>
 #include "indy_core.h"
 
@@ -33,6 +34,7 @@ enum IndyCallbackType {
     CB_STRING,
     CB_BOOLEAN,
     CB_HANDLE,
+    CB_HANDLE_U32,
     CB_I32,
     CB_BUFFER,
     CB_STRING_BUFFER,
@@ -122,6 +124,15 @@ class IndyCallback : public Nan::AsyncResource {
         send(xerr);
     }
 
+    void cbHandleU32(indy_error_t xerr, indy_handle_t h, indy_u32_t n){
+        if(xerr == 0){
+          type = CB_HANDLE_U32;
+          handle0 = h;
+          u32int0 = n;
+        }
+        send(xerr);
+    }
+
     void cbI32(indy_error_t xerr, indy_i32_t i){
         if(xerr == 0){
           type = CB_I32;
@@ -175,6 +186,7 @@ class IndyCallback : public Nan::AsyncResource {
     bool bool0;
     indy_handle_t handle0;
     indy_i32_t i32int0;
+    indy_u32_t u32int0;
     unsigned long long timestamp0;
     char*    buffer0data;
     uint32_t buffer0len;
@@ -205,6 +217,12 @@ class IndyCallback : public Nan::AsyncResource {
                 break;
             case CB_HANDLE:
                 argv[1] = Nan::New<v8::Number>(icb->handle0);
+                break;
+            case CB_HANDLE_U32:
+                tuple = Nan::New<v8::Array>();
+                tuple->Set(0, Nan::New<v8::Number>(icb->handle0));
+                tuple->Set(1, Nan::New<v8::Number>(icb->u32int0));
+                argv[1] = tuple;
                 break;
             case CB_I32:
                 argv[1] = Nan::New<v8::Number>(icb->i32int0);
@@ -257,12 +275,151 @@ class IndyCallback : public Nan::AsyncResource {
 std::map<indy_handle_t, IndyCallback*> IndyCallback::icbmap;
 indy_handle_t IndyCallback::next_handle = 0;
 
+#define INDY_ASSERT_NARGS(FNAME, N) \
+  if(info.Length() != N){ \
+    return Nan::ThrowError(Nan::New(""#FNAME" expects "#N" arguments").ToLocalChecked()); \
+  }
+
+#define INDY_ASSERT_STRING(FNAME, I, ARGNAME) \
+  if(!info[I]->IsString() && !info[I]->IsNull() && !info[I]->IsUndefined()){ \
+    return Nan::ThrowTypeError(Nan::New(""#FNAME" expects String or null for "#ARGNAME"").ToLocalChecked()); \
+  }
+
+#define INDY_ASSERT_NUMBER(FNAME, I, ARGNAME) \
+  if(!info[I]->IsNumber()){ \
+    return Nan::ThrowTypeError(Nan::New(""#FNAME" expects Number for "#ARGNAME"").ToLocalChecked()); \
+  }
+
+#define INDY_ASSERT_BOOLEAN(FNAME, I, ARGNAME) \
+  if(!info[I]->IsBoolean()){ \
+    return Nan::ThrowTypeError(Nan::New(""#FNAME" expects Boolean for "#ARGNAME"").ToLocalChecked()); \
+  }
+
+#define INDY_ASSERT_UINT8ARRAY(FNAME, I, ARGNAME) \
+  if(!info[I]->IsUint8Array()){ \
+    return Nan::ThrowTypeError(Nan::New(""#FNAME" expects Uint8Array for "#ARGNAME"").ToLocalChecked()); \
+  }
+
+#define INDY_ASSERT_FUNCTION(FNAME, I) \
+  if(!info[I]->IsFunction()){ \
+    return Nan::ThrowTypeError(Nan::New(""#FNAME" expects Function for arg "#I"").ToLocalChecked()); \
+  }
+
+
+char* argToCString(v8::Local<v8::Value> arg){
+    char* arg1 = nullptr;
+    if(arg->IsString()){
+        Nan::Utf8String* arg1UTF = new Nan::Utf8String(arg);
+        arg1 = copyCStr((const char*)(**arg1UTF));
+        delete arg1UTF;
+    }
+    return arg1;
+}
+
+IndyCallback* argToIndyCb(v8::Local<v8::Value> arg){
+    IndyCallback* icb = new IndyCallback(Nan::To<v8::Function>(arg).ToLocalChecked());
+    return icb;
+}
+
 void indyCalled(IndyCallback* icb, indy_error_t res) {
     if(res == 0) {
         return;
     }
     icb->cbNone(res);
 }
+
+NAN_METHOD(setDefaultLogger) {
+  INDY_ASSERT_NARGS(setDefaultLogger, 1)
+  INDY_ASSERT_STRING(setDefaultLogger, 0, pattern)
+  const char* pattern = argToCString(info[0]);
+  indy_error_t res = indy_set_default_logger(pattern);
+  delete pattern;
+  info.GetReturnValue().Set(res);
+}
+
+struct IndyLogEntry {
+    indy_u32_t level;
+    const char* target;
+    const char* message;
+    const char* module_path;
+    const char* file;
+    indy_u32_t line;
+};
+class IndyLogger : public Nan::AsyncResource {
+  public:
+    IndyLogger(v8::Local<v8::Function> logFn_) : Nan::AsyncResource("IndyLogger") {
+        logFn.Reset(logFn_);
+        uvHandle.data = this;
+        uv_async_init(uv_default_loop(), &uvHandle, onMainLoopReentry);
+    }
+
+    ~IndyLogger() {
+        logFn.Reset();
+    }
+
+    void cbLog(indy_u32_t level, const char* target, const char* message, const char* module_path, const char* file, indy_u32_t line){
+        IndyLogEntry* entry = new IndyLogEntry();
+        entry->level = level;
+        entry->target = copyCStr(target);
+        entry->message = copyCStr(message);
+        entry->module_path = copyCStr(module_path);
+        entry->file = copyCStr(file);
+        entry->line = line;
+        entries.push(entry);
+
+        uv_async_send(&uvHandle);
+    }
+
+    void cbFlush(){
+        uv_async_send(&uvHandle);
+    }
+
+  private:
+
+    Nan::Persistent<v8::Function> logFn;
+    uv_async_t uvHandle;
+    std::queue<IndyLogEntry*> entries;
+
+    inline static NAUV_WORK_CB(onMainLoopReentry) {
+        Nan::HandleScope scope;
+
+        IndyLogger* il = static_cast<IndyLogger*>(async->data);
+
+        v8::Local<v8::Object> that = Nan::New<v8::Object>();
+        v8::Local<v8::Function> logFn = Nan::New(il->logFn);
+
+        while(!il->entries.empty()){
+            IndyLogEntry* entry = il->entries.front();
+            il->entries.pop();
+            v8::Local<v8::Value> argv[6];
+            argv[0] = Nan::New<v8::Number>(entry->level);
+            argv[1] = toJSString(entry->target);
+            argv[2] = toJSString(entry->message);
+            argv[3] = toJSString(entry->module_path);
+            argv[4] = toJSString(entry->file);
+            argv[5] = Nan::New<v8::Number>(entry->line);
+            delete entry;
+
+            il->runInAsyncScope(that, logFn, 6, argv);
+        }
+    }
+};
+void setLogger_logFn(const void*  context, indy_u32_t level, const char* target, const char* message, const char* module_path, const char* file, indy_u32_t line){
+    IndyLogger* il = (IndyLogger*) context;
+    il->cbLog(level, target, message, module_path, file, line);
+}
+void setLogger_flushFn(const void*  context){
+    IndyLogger* il = (IndyLogger*) context;
+    il->cbFlush();
+}
+NAN_METHOD(setLogger) {
+  INDY_ASSERT_NARGS(setLogger, 1)
+  INDY_ASSERT_FUNCTION(setLogger, 0)
+  IndyLogger* il = new IndyLogger(Nan::To<v8::Function>(info[0]).ToLocalChecked());
+  indy_error_t res = indy_set_logger(il, nullptr, setLogger_logFn, setLogger_flushFn);
+  info.GetReturnValue().Set(res);
+}
+
 
 // Now inject the generated C++ code (see /codegen/cpp.js)
 #include "indy_codegen.h"

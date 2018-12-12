@@ -2,10 +2,7 @@ package org.hyperledger.indy.sdk;
 
 import java.io.File;
 
-import com.sun.jna.Callback;
-import com.sun.jna.Library;
-import com.sun.jna.Native;
-import com.sun.jna.NativeLibrary;
+import com.sun.jna.*;
 
 public abstract class LibIndy {
 
@@ -27,24 +24,23 @@ public abstract class LibIndy {
 		public int indy_refresh_pool_ledger(int command_handle, int handle, Callback cb);
 		public int indy_close_pool_ledger(int command_handle, int handle, Callback cb);
 		public int indy_delete_pool_ledger_config(int command_handle, String config_name, Callback cb);
+		public int indy_set_protocol_version(int command_handle, int protocol_version, Callback cb);
 
 		// wallet.rs
 
-		public int indy_register_wallet_storage(int command_handle, String type, Callback create, Callback open, Callback close,
-		                                        Callback delete, Callback add_record, Callback update_record_value, Callback update_record_tags,
-		                                        Callback add_record_tags, Callback delete_record_tags, Callback delete_record,
-		                                        Callback get_record, Callback get_record_id, Callback get_record_type, Callback get_record_value,
-		                                        Callback get_record_tags, Callback free_record, Callback search_records, Callback search_all_records,
-		                                        Callback get_search_total_count, Callback fetch_search_next_record, Callback free_search, Callback cb);
-		public int indy_create_wallet(int command_handle, String pool_name, String name, String xtype, String config, String credentials, Callback cb);
-		public int indy_open_wallet(int command_handle, String name, String runtime_config, String credentials, Callback cb);
+		public int indy_create_wallet(int command_handle, String config, String credentials, Callback cb);
+		public int indy_open_wallet(int command_handle, String config, String credentials, Callback cb);
 		public int indy_close_wallet(int command_handle, int handle, Callback cb);
-		public int indy_delete_wallet(int command_handle, String name, String credentials, Callback cb);
+		public int indy_delete_wallet(int command_handle, String config, String credentials, Callback cb);
+		public int indy_export_wallet(int command_handle, int handle, String exportConfigJson, Callback cb);
+		public int indy_import_wallet(int command_handle, String config, String credentials, String importConfigJson, Callback cb);
+		public int indy_generate_wallet_key(int command_handle, String config, Callback cb);
 
 		// ledger.rs
 
 		public int indy_sign_and_submit_request(int command_handle, int pool_handle, int wallet_handle, String submitter_did, String request_json, Callback cb);
 		public int indy_submit_request(int command_handle, int pool_handle, String request_json, Callback cb);
+		public int indy_submit_action(int command_handle, int pool_handle, String request_json, String nodes, int timeout, Callback cb);
 		public int indy_sign_request(int command_handle, int wallet_handle, String submitter_did, String request_json, Callback cb);
 		public int indy_multi_sign_request(int command_handle, int wallet_handle, String submitter_did, String request_json, Callback cb);
 		public int indy_build_get_ddo_request(int command_handle, String submitter_did, String target_did, Callback cb);
@@ -60,18 +56,19 @@ public abstract class LibIndy {
 		public int indy_parse_get_cred_def_response(int command_handle, String get_cred_def_response, Callback cb);
 		public int indy_build_node_request(int command_handle, String submitter_did, String target_did, String data, Callback cb);
 		public int indy_build_get_validator_info_request(int command_handle, String submitter_did, Callback cb);
-		public int indy_build_get_txn_request(int command_handle, String submitter_did, int data, Callback cb);
+		public int indy_build_get_txn_request(int command_handle, String submitter_did, String ledger_type, int data, Callback cb);
 		public int indy_build_pool_config_request(int command_handle, String submitter_did, boolean writes, boolean force, Callback cb);
 		public int indy_build_pool_restart_request(int command_handle, String submitter_did, String action, String datetime, Callback cb);
-		public int indy_build_pool_upgrade_request(int command_handle, String submitter_did, String name, String version, String action, String sha256, int timeout, String schedule, String justification, boolean reinstall, boolean force, Callback cb);
+		public int indy_build_pool_upgrade_request(int command_handle, String submitter_did, String name, String version, String action, String sha256, int timeout, String schedule, String justification, boolean reinstall, boolean force, String package_, Callback cb);
 		public int indy_build_revoc_reg_def_request(int command_handle, String submitter_did, String data, Callback cb);
 		public int indy_build_get_revoc_reg_def_request(int command_handle, String submitter_did, String id, Callback cb);
 		public int indy_parse_get_revoc_reg_def_response(int command_handle, String get_revoc_ref_def_response, Callback cb);
 		public int indy_build_revoc_reg_entry_request(int command_handle, String submitter_did, String revoc_reg_def_id, String rev_def_type, String value, Callback cb);
-		public int indy_build_get_revoc_reg_request(int command_handle, String submitter_did, String revoc_reg_def_id, int timestamp, Callback cb);
+		public int indy_build_get_revoc_reg_request(int command_handle, String submitter_did, String revoc_reg_def_id, long timestamp, Callback cb);
 		public int indy_parse_get_revoc_reg_response(int command_handle, String get_revoc_reg_response, Callback cb);
-		public int indy_build_get_revoc_reg_delta_request(int command_handle, String submitter_did, String revoc_reg_def_id, int from, int to, Callback cb);
+		public int indy_build_get_revoc_reg_delta_request(int command_handle, String submitter_did, String revoc_reg_def_id, long from, long to, Callback cb);
 		public int indy_parse_get_revoc_reg_delta_response(int command_handle, String get_revoc_reg_delta_response, Callback cb);
+		public int indy_get_response_metadata(int command_handle, String response, Callback cb);
 
 		// did.rs
 
@@ -85,6 +82,8 @@ public abstract class LibIndy {
 		public int indy_get_endpoint_for_did(int command_handle, int wallet_handle, int pool_handle, String did, Callback cb);
 		public int indy_set_did_metadata(int command_handle, int wallet_handle, String did, String metadata, Callback cb);
 		public int indy_get_did_metadata(int command_handle, int wallet_handle, String did, Callback cb);
+		public int indy_get_my_did_with_meta(int command_handle, int wallet_handle, String did, Callback cb);
+		public int indy_list_my_dids_with_meta(int command_handle, int wallet_handle, Callback cb);
 		public int indy_abbreviate_verkey(int command_handle, String did, String full_verkey, Callback cb);
 
 		// crypto.rs
@@ -113,11 +112,18 @@ public abstract class LibIndy {
 		public int indy_prover_create_credential_req(int command_handle, int wallet_handle, String prover_did, String cred_offer_json, String cred_def_json, String master_secret_id, Callback cb);
 		public int indy_prover_store_credential(int command_handle, int wallet_handle, String cred_id, String cred_req_metadata_json, String cred_json, String cred_def_json, String rev_reg_def_json, Callback cb);
 		public int indy_prover_get_credentials(int command_handle, int wallet_handle, String filter_json, Callback cb);
+		public int indy_prover_get_credential(int command_handle, int wallet_handle, String cred_id, Callback cb);
+		public int indy_prover_search_credentials(int command_handle, int wallet_handle, String query_json, Callback cb);
+		public int indy_prover_fetch_credentials(int command_handle, int search_handle, int count, Callback cb);
+		public int indy_prover_close_credentials_search(int command_handle, int search_handle, Callback cb);
 		public int indy_prover_get_credentials_for_proof_req(int command_handle, int wallet_handle, String proof_request_json, Callback cb);
+		public int indy_prover_search_credentials_for_proof_req(int command_handle, int wallet_handle, String proof_request_json, String extra_query_json, Callback cb);
+		public int indy_prover_fetch_credentials_for_proof_req(int command_handle, int search_handle, String item_referent, int count, Callback cb);
+		public int indy_prover_close_credentials_search_for_proof_req(int command_handle, int search_handle, Callback cb);
 		public int indy_prover_create_proof(int command_handle, int wallet_handle, String proof_req_json, String requested_credentials_json, String master_secret_name, String schemas_json, String credential_defs_json, String rev_infos_json, Callback cb);
 		public int indy_verifier_verify_proof(int command_handle, String proof_request_json, String proof_json, String schemas_json, String cred_defs_jsons, String rev_reg_defs_json, String revoc_regs_json, Callback cb);
-		public int indy_create_revocation_state(int command_handle, int blob_storage_reader_handle, String rev_reg_def_json, String rev_reg_delta_json, int timestamp, String cred_rev_id, Callback cb);
-		public int indy_update_revocation_info(int command_handle, int blob_storage_reader_handle, String rev_state_json, String rev_reg_def_json, String rev_reg_delta_json, int timestamp, String cred_rev_id, Callback cb);
+		public int indy_create_revocation_state(int command_handle, int blob_storage_reader_handle, String rev_reg_def_json, String rev_reg_delta_json, long timestamp, String cred_rev_id, Callback cb);
+		public int indy_update_revocation_state(int command_handle, int blob_storage_reader_handle, String rev_state_json, String rev_reg_def_json, String rev_reg_delta_json, long timestamp, String cred_rev_id, Callback cb);
 
 		// pairwise.rs
 
@@ -142,19 +148,27 @@ public abstract class LibIndy {
 		public int indy_open_wallet_search(int command_handle, int wallet_handle, String type, String query_json, String options_json, Callback cb);
 		public int indy_fetch_wallet_search_next_records(int command_handle, int wallet_handle, int wallet_search_handle, int count, Callback cb);
 		public int indy_close_wallet_search(int command_handle, int wallet_search_handle, Callback cb);
+
 		// payments.rs
 		int indy_create_payment_address(int command_handle, int wallet_handle, String payment_method, String config, Callback cb);
 		int indy_list_payment_addresses(int command_handle, int wallet_handle, Callback cb);
-		int indy_add_request_fees(int command_handle, int wallet_handle, String submitter_did, String req_json, String inputs_json, String outputs_json, Callback cb);
+		int indy_add_request_fees(int command_handle, int wallet_handle, String submitter_did, String req_json, String inputs_json, String outputs_json, String extra, Callback cb);
 		int indy_parse_response_with_fees(int command_handle, String payment_method, String resp_json, Callback cb);
-		int indy_build_get_utxo_request(int command_handle, int wallet_handle, String submitter_did, String payment_method, Callback cb);
-		int indy_parse_get_utxo_response(int command_handle, String payment_method, String resp_json, Callback cb);
-		int indy_build_payment_req(int command_handle, int wallet_handle, String submitter_did, String inputs_json, String outputs_json, Callback cb);
+		int indy_build_get_payment_sources_request(int command_handle, int wallet_handle, String submitter_did, String payment_address, Callback cb);
+		int indy_parse_get_payment_sources_response(int command_handle, String payment_method, String resp_json, Callback cb);
+		int indy_build_payment_req(int command_handle, int wallet_handle, String submitter_did, String inputs_json, String outputs_json, String extra, Callback cb);
 		int indy_parse_payment_response(int command_handle, String payment_method, String resp_json, Callback cb);
-		int indy_build_mint_req(int command_handle, int wallet_handle, String submitter_did, String outputs_json, Callback cb);
+		int indy_build_mint_req(int command_handle, int wallet_handle, String submitter_did, String outputs_json, String extra, Callback cb);
 		int indy_build_set_txn_fees_req(int command_handle, int wallet_handle, String submitter_did, String payment_method, String fees_json, Callback cb);
 		int indy_build_get_txn_fees_req(int command_handle, int wallet_handle, String submitter_did, String payment_method, Callback cb);
 		int indy_parse_get_txn_fees_response(int command_handle, String payment_method, String resp_json, Callback cb);
+		int indy_build_verify_payment_req(int command_handle, int wallet_handle, String submitter_did, String receipt, Callback cb);
+		int indy_parse_verify_payment_response(int command_handle, String payment_method, String resp_json, Callback cb);
+
+		int indy_set_default_logger(String level);
+		int indy_set_logger(Pointer context, Callback enabled, Callback log, Callback flush);
+
+		int indy_set_runtime_config(String config);
 
 	}
 
@@ -185,6 +199,7 @@ public abstract class LibIndy {
 
 		NativeLibrary.addSearchPath(LIBRARY_NAME, searchPath);
 		api = Native.loadLibrary(LIBRARY_NAME, API.class);
+		initLogger();
 	}
 
 	/**
@@ -196,6 +211,7 @@ public abstract class LibIndy {
 	public static void init(File file) {
 
 		api = Native.loadLibrary(file.getAbsolutePath(), API.class);
+		initLogger();
 	}
 
 	/**
@@ -204,6 +220,7 @@ public abstract class LibIndy {
 	public static void init() {
 
 		api = Native.loadLibrary(LIBRARY_NAME, API.class);
+		initLogger();
 	}
 
 	/**
@@ -214,5 +231,56 @@ public abstract class LibIndy {
 	public static boolean isInitialized() {
 
 		return api != null;
+	}
+
+	private static class Logger {
+		private static Callback enabled = null;
+
+		private static Callback log = new Callback() {
+
+			@SuppressWarnings({"unused", "unchecked"})
+			public void callback(Pointer context, int level, String target, String message, String module_path, String file, int line) {
+				 org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(String.format("%s.native.%s", LibIndy.class.getName(), target.replace("::", ".")));
+
+				String logMessage = String.format("%s:%d | %s", file, line, message);
+
+				switch (level) {
+					case 1:
+						logger.error(logMessage);
+						break;
+					case 2:
+						logger.warn(logMessage);
+						break;
+					case 3:
+						logger.info(logMessage);
+						break;
+					case 4:
+						logger.debug(logMessage);
+						break;
+					case 5:
+						logger.trace(logMessage);
+						break;
+					default:
+						break;
+				}
+			}
+		};
+
+		private static Callback flush = null;
+	}
+
+	private static void initLogger() {
+		api.indy_set_logger(null, Logger.enabled, Logger.log, Logger.flush);
+	}
+
+	/**
+	 * Set libindy runtime configuration. Can be optionally called to change current params.
+	 *
+	 * @param config config: {
+	 *      "crypto_thread_pool_size": int - size of thread pool for the most expensive crypto operations. (4 by default)
+	 *  }
+	 */
+	public static void setRuntimeConfig(String config) {
+		api.indy_set_runtime_config(config);
 	}
 }

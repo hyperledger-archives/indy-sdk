@@ -16,9 +16,9 @@ extern "C" {
     /// tags_json: the record tags used for search and storing meta information as json:
     ///   {
     ///     "tagName1": <str>, // string tag (will be stored encrypted)
-    ///     "tagName2": <int>, // int tag (will be stored encrypted)
+    ///     "tagName2": <str>, // string tag (will be stored encrypted)
     ///     "~tagName3": <str>, // string tag (will be stored un-encrypted)
-    ///     "~tagName4": <int>, // int tag (will be stored un-encrypted)
+    ///     "~tagName4": <str>, // string tag (will be stored un-encrypted)
     ///   }
     ///   Note that null means no tags
     ///   If tag name starts with "~" the tag will be stored un-encrypted that will allow
@@ -31,7 +31,7 @@ extern "C" {
                                                const char*    id,
                                                const char*    value,
                                                const char*    tags_json,
-                                               void           (*fn)(indy_handle_t xcommand_handle,
+                                               void           (*fn)(indy_handle_t command_handle_,
                                                                     indy_error_t err)
                                               );
 
@@ -49,7 +49,7 @@ extern "C" {
                                                         const char*    type_,
                                                         const char*    id,
                                                         const char*    value,
-                                                        void           (*fn)(indy_handle_t xcommand_handle,
+                                                        void           (*fn)(indy_handle_t command_handle_,
                                                                              indy_error_t err)
                                                        );
 
@@ -63,9 +63,9 @@ extern "C" {
 /// tags_json: the record tags used for search and storing meta information as json:
 ///   {
 ///     "tagName1": <str>, // string tag (will be stored encrypted)
-///     "tagName2": <int>, // int tag (will be stored encrypted)
+///     "tagName2": <str>, // string tag (will be stored encrypted)
 ///     "~tagName3": <str>, // string tag (will be stored un-encrypted)
-///     "~tagName4": <int>, // int tag (will be stored un-encrypted)
+///     "~tagName4": <str>, // string tag (will be stored un-encrypted)
 ///   }
 ///   If tag name starts with "~" the tag will be stored un-encrypted that will allow
 ///   usage of this tag in complex search queries (comparison, predicates)
@@ -76,7 +76,7 @@ extern "C" {
                                                        const char*    type_,
                                                        const char*    id,
                                                        const char*    tags_json,
-                                                       void           (*fn)(indy_handle_t xcommand_handle,
+                                                       void           (*fn)(indy_handle_t command_handle_,
                                                                             indy_error_t err)
                                                       );
 
@@ -90,9 +90,9 @@ extern "C" {
     /// tags_json: the record tags used for search and storing meta information as json:
     ///   {
     ///     "tagName1": <str>, // string tag (will be stored encrypted)
-    ///     "tagName2": <int>, // int tag (will be stored encrypted)
+    ///     "tagName2": <str>, // string tag (will be stored encrypted)
     ///     "~tagName3": <str>, // string tag (will be stored un-encrypted)
-    ///     "~tagName4": <int>, // int tag (will be stored un-encrypted)
+    ///     "~tagName4": <str>, // string tag (will be stored un-encrypted)
     ///   }
     ///   If tag name starts with "~" the tag will be stored un-encrypted that will allow
     ///   usage of this tag in complex search queries (comparison, predicates)
@@ -105,7 +105,7 @@ extern "C" {
                                                     const char*    type_,
                                                     const char*    id,
                                                     const char*    tags_json,
-                                                    void           (*fn)(indy_handle_t xcommand_handle,
+                                                    void           (*fn)(indy_handle_t command_handle_,
                                                                          indy_error_t err)
                                                    );
 
@@ -124,7 +124,7 @@ extern "C" {
                                                        const char*    type_,
                                                        const char*    id,
                                                        const char*    tag_names_json,
-                                                       void           (*fn)(indy_handle_t xcommand_handle,
+                                                       void           (*fn)(indy_handle_t command_handle_,
                                                                             indy_error_t err)
                                                       );
 
@@ -140,7 +140,7 @@ extern "C" {
                                                   indy_handle_t  wallet_handle,
                                                   const char*    type_,
                                                   const char*    id,
-                                                  void           (*fn)(indy_handle_t xcommand_handle,
+                                                  void           (*fn)(indy_handle_t command_handle_,
                                                                        indy_error_t err)
                                                  );
 
@@ -151,7 +151,7 @@ extern "C" {
     /// wallet_handle: wallet handle (created by open_wallet)
     /// type_: allows to separate different record types collections
     /// id: the id of record
-    /// options_json: //TODO: FIXME: Think about replacing by bitmaks
+    /// options_json: //TODO: FIXME: Think about replacing by bitmask
     ///  {
     ///    retrieveType: (optional, false by default) Retrieve record type,
     ///    retrieveValue: (optional, true by default) Retrieve record value,
@@ -171,7 +171,7 @@ extern "C" {
                                                const char*    type_,
                                                const char*    id,
                                                const char*    options_json,
-                                               void           (*fn)(indy_handle_t xcommand_handle,
+                                               void           (*fn)(indy_handle_t command_handle_,
                                                                     indy_error_t  err,
                                                                     const char*   record_json)
                                               );
@@ -190,10 +190,10 @@ extern "C" {
     ///    "tagName": "tagValue",
     ///    $or: {
     ///      "tagName2": { $regex: 'pattern' },
-    ///      "tagName3": { $gte: 123 },
+    ///      "tagName3": { $gte: '123' },
     ///    },
     ///  }
-    /// options_json: //TODO: FIXME: Think about replacing by bitmaks
+    /// options_json: //TODO: FIXME: Think about replacing by bitmask
     ///  {
     ///    retrieveRecords: (optional, true by default) If false only "counts" will be calculated,
     ///    retrieveTotalCount: (optional, false by default) Calculate total count,
@@ -210,7 +210,7 @@ extern "C" {
                                                 const char*    type_,
                                                 const char*    query_json,
                                                 const char*    options_json,
-                                                void           (*fn)(indy_handle_t xcommand_handle,
+                                                void           (*fn)(indy_handle_t command_handle_,
                                                                      indy_error_t err,
                                                                      indy_handle_t search_handle)
                                                );
@@ -222,7 +222,7 @@ extern "C" {
     /// wallet_handle: wallet handle (created by open_wallet)
     /// type_: allows to separate different record types collections
     /// id: the id of record
-    /// options_json: //TODO: FIXME: Think about replacing by bitmaks
+    /// options_json: //TODO: FIXME: Think about replacing by bitmask
     ///  {
     ///    retrieveType: (optional, false by default) Retrieve record type,
     ///    retrieveValue: (optional, true by default) Retrieve record value,
@@ -241,7 +241,7 @@ extern "C" {
                                                               indy_handle_t  wallet_handle,
                                                               indy_handle_t  wallet_search_handle,
                                                               indy_u32_t   count,
-                                                              void           (*fn)(indy_handle_t xcommand_handle,
+                                                              void           (*fn)(indy_handle_t command_handle_,
                                                                                    indy_error_t  err,
                                                                                    const char*   records_json)
                                                              );
@@ -253,7 +253,7 @@ extern "C" {
 
     extern indy_error_t indy_close_wallet_search(indy_handle_t  command_handle,
                                                  indy_handle_t  wallet_search_handle,
-                                                 void           (*fn)(indy_handle_t xcommand_handle,
+                                                 void           (*fn)(indy_handle_t command_handle_,
                                                                       indy_error_t  err)
                                                 );
 

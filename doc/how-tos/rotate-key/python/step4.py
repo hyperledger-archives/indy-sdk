@@ -14,7 +14,7 @@
 		pprint.pprint(get_nym_response)
 
 		print_log('\n16. Comparing Trust Anchor verkeys: written by Steward (original), '
-				  'current in wallet and current from ledger\n')
+		 'current in wallet and current from ledger\n')
 		print_log('Written by Steward: ', trust_anchor_verkey)
 		print_log('Current in wallet: ', verkey_in_wallet)
 		verkey_from_ledger = json.loads(get_nym_response['result']['data'])['verkey']
@@ -27,7 +27,7 @@
 		await pool.close_pool_ledger(pool_handle)
 
 		print_log('\n18. Deleting created wallet\n')
-		await wallet.delete_wallet(wallet_name, None)
+		await wallet.delete_wallet(wallet_config, wallet_credentials)
 
 		print_log('\n19. Deleting pool ledger config')
 		await pool.delete_pool_ledger_config(pool_name)

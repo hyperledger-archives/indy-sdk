@@ -42,3 +42,21 @@ macro_rules! result_to_err_code_4 {
         };
     }
 }
+
+macro_rules! unwrap_opt_or_return {
+    ($opt:expr, $err:expr) => {
+        match $opt {
+            Some(val) => val,
+            None => return $err
+        };
+    }
+}
+
+macro_rules! unwrap_or_return {
+    ($result:expr, $err:expr) => {
+        match $result {
+            Ok(res) => res,
+            Err(_) => return $err
+        };
+    }
+}

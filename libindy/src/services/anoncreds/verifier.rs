@@ -31,6 +31,7 @@ impl Verifier {
                full_proof, proof_req, schemas, cred_defs, rev_reg_defs, rev_regs);
 
         let mut proof_verifier = CryptoVerifier::new_proof_verifier()?;
+        let non_credential_schema = build_non_credential_schema()?;
 
         for sub_proof_index in 0..full_proof.identifiers.len() {
             let identifier = full_proof.identifiers[sub_proof_index].clone();
@@ -40,8 +41,8 @@ impl Verifier {
                 .ok_or(CommonError::InvalidStructure(format!("CredentialDefinition not found for id: {:?}", identifier.cred_def_id)))?;
 
             let (rev_reg_def, rev_reg) = if cred_def.value.revocation.is_some() {
-                let timestamp = identifier.timestamp.clone().ok_or(CommonError::InvalidStructure(format!("Timestamp not found")))?;
-                let rev_reg_id = identifier.rev_reg_id.clone().ok_or(CommonError::InvalidStructure(format!("Revocation Registry Id not found")))?;
+                let timestamp = identifier.timestamp.clone().ok_or(CommonError::InvalidStructure("Timestamp not found".to_string()))?;
+                let rev_reg_id = identifier.rev_reg_id.clone().ok_or(CommonError::InvalidStructure("Revocation Registry Id not found".to_string()))?;
                 let rev_reg_def = Some(rev_reg_defs.get(&rev_reg_id)
                     .ok_or(CommonError::InvalidStructure(format!("RevocationRegistryDefinition not found for id: {:?}", identifier.rev_reg_id)))?);
                 let rev_regs_for_cred = rev_regs.get(&rev_reg_id)
@@ -62,6 +63,7 @@ impl Verifier {
 
             proof_verifier.add_sub_proof_request(&sub_proof_request,
                                                  &credential_schema,
+                                                 &non_credential_schema,
                                                  &credential_pub_key,
                                                  rev_reg_def.as_ref().map(|r_reg_def| &r_reg_def.value.public_keys.accum_key),
                                                  rev_reg.as_ref().map(|r_reg| &r_reg.value))?;

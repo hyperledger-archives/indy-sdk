@@ -3,7 +3,6 @@ extern crate serde;
 extern crate serde_json;
 
 use self::indy_crypto::cl::RevocationRegistry as CryptoRevocationRegistry;
-use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 use named_type::NamedType;
 
 use std::collections::HashMap;
@@ -19,10 +18,6 @@ pub enum RevocationRegistry {
     #[serde(rename = "1.0")]
     RevocationRegistryV1(RevocationRegistryV1),
 }
-
-impl JsonEncodable for RevocationRegistry {}
-
-impl<'a> JsonDecodable<'a> for RevocationRegistry {}
 
 impl From<RevocationRegistry> for RevocationRegistryV1 {
     fn from(rev_reg: RevocationRegistry) -> Self {

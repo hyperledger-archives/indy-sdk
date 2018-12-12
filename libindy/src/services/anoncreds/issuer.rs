@@ -20,11 +20,12 @@ use self::indy_crypto::cl::{
 };
 use self::indy_crypto::cl::issuer::Issuer as CryptoIssuer;
 
-use domain::anoncreds::schema::SchemaV1;
 use domain::anoncreds::credential_definition::{CredentialDefinitionV1 as CredentialDefinition, CredentialDefinitionData};
 use domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinitionV1, RevocationRegistryDefinitionValuePublicKeys};
 use domain::anoncreds::credential::AttributeValues;
 use domain::anoncreds::credential_request::CredentialRequest;
+
+use std::collections::HashSet;
 
 pub struct Issuer {}
 
@@ -33,18 +34,17 @@ impl Issuer {
         Issuer {}
     }
 
-    pub fn new_credential_definition(&self,
-                                     issuer_did: &str,
-                                     schema: &SchemaV1,
+    pub fn new_credential_definition(attr_names: &HashSet<String>,
                                      support_revocation: bool) -> Result<(CredentialDefinitionData,
                                                                           CredentialPrivateKey,
                                                                           CredentialKeyCorrectnessProof), AnoncredsError> {
-        trace!("new_credential_definition >>> issuer_did: {:?}, schema: {:?}, support_revocation: {:?}", issuer_did, schema, support_revocation);
+        trace!("new_credential_definition >>> attr_names: {:?}, support_revocation: {:?}", attr_names, support_revocation);
 
-        let credential_schema = build_credential_schema(&schema.attr_names)?;
+        let credential_schema = build_credential_schema(attr_names)?;
+        let non_credential_schema = build_non_credential_schema()?;
 
         let (credential_public_key, credential_private_key, credential_key_correctness_proof) =
-            CryptoIssuer::new_credential_def(&credential_schema, support_revocation)?;
+            CryptoIssuer::new_credential_def(&credential_schema, &non_credential_schema, support_revocation)?;
 
         let credential_definition_value = CredentialDefinitionData {
             primary: credential_public_key.get_primary_key()?.clone()?,
@@ -52,7 +52,7 @@ impl Issuer {
         };
 
         trace!("new_credential_definition <<< credential_definition_value: {:?}, credential_private_key: {:?}, credential_key_correctness_proof: {:?}",
-               credential_definition_value, credential_private_key, credential_key_correctness_proof);
+               credential_definition_value, secret!(&credential_private_key), credential_key_correctness_proof);
 
         Ok((credential_definition_value, credential_private_key, credential_key_correctness_proof))
     }
@@ -79,7 +79,7 @@ impl Issuer {
         };
 
         trace!("new_revocation_registry <<< rev_keys_pub: {:?}, rev_key_priv: {:?}, rev_reg_entry: {:?}, rev_tails_generator: {:?}",
-               rev_keys_pub, rev_key_priv, rev_reg_entry, rev_tails_generator);
+               rev_keys_pub, secret!(&rev_key_priv), rev_reg_entry, rev_tails_generator);
 
         Ok((rev_keys_pub, rev_key_priv, rev_reg_entry, rev_tails_generator))
     }
@@ -87,7 +87,7 @@ impl Issuer {
     pub fn new_credential<RTA>(&self,
                                cred_def: &CredentialDefinition,
                                cred_priv_key: &CredentialPrivateKey,
-                               master_secret_blinding_nonce: &Nonce,
+                               cred_issuance_blinding_nonce: &Nonce,
                                cred_request: &CredentialRequest,
                                cred_values: &HashMap<String, AttributeValues>,
                                rev_idx: Option<u32>,
@@ -97,29 +97,30 @@ impl Issuer {
                                rev_tails_accessor: Option<&RTA>) -> Result<(CredentialSignature,
                                                                             SignatureCorrectnessProof,
                                                                             Option<RevocationRegistryDelta>), AnoncredsError> where RTA: RevocationTailsAccessor {
-        trace!("new_credential >>> cred_def: {:?}, cred_priv_key: {:?}, master_secret_blinding_nonce: {:?}, cred_request: {:?},\
+        trace!("new_credential >>> cred_def: {:?}, cred_priv_key: {:?}, cred_issuance_blinding_nonce: {:?}, cred_request: {:?},\
                cred_values: {:?}, rev_idx: {:?}, rev_reg_def: {:?}, rev_reg: {:?}, rev_key_priv: {:?}",
-               cred_def, cred_priv_key, master_secret_blinding_nonce, cred_request, cred_values, rev_idx, rev_reg_def, rev_reg, rev_key_priv);
+               cred_def, secret!(&cred_priv_key), secret!(&cred_issuance_blinding_nonce), secret!(&cred_request), secret!(&cred_values), secret!(&rev_idx),
+               rev_reg_def, rev_reg, secret!(&rev_key_priv));
 
-        let credential_values = build_credential_values(&cred_values)?;
+        let credential_values = build_credential_values(&cred_values, None)?;
         let credential_pub_key = CredentialPublicKey::build_from_parts(&cred_def.value.primary, cred_def.value.revocation.as_ref())?;
 
         let (credential_signature, signature_correctness_proof, rev_reg_delta) =
             if rev_idx.is_some() {
                 let rev_idx = rev_idx.unwrap();
                 let rev_reg = rev_reg
-                    .ok_or(CommonError::InvalidState(format!("RevocationRegistry not found")))?;
+                    .ok_or(CommonError::InvalidState("RevocationRegistry not found".to_string()))?;
                 let rev_key_priv = rev_key_priv
-                    .ok_or(CommonError::InvalidState(format!("RevocationKeyPrivate not found")))?;
+                    .ok_or(CommonError::InvalidState("RevocationKeyPrivate not found".to_string()))?;
                 let rev_reg_def = rev_reg_def
-                    .ok_or(CommonError::InvalidState(format!("RevocationRegistryDefinitionValue not found")))?;
+                    .ok_or(CommonError::InvalidState("RevocationRegistryDefinitionValue not found".to_string()))?;
                 let rev_tails_accessor = rev_tails_accessor
-                    .ok_or(CommonError::InvalidState(format!("RevocationTailsAccessor not found")))?;
+                    .ok_or(CommonError::InvalidState("RevocationTailsAccessor not found".to_string()))?;
 
                 CryptoIssuer::sign_credential_with_revoc(&cred_request.prover_did,
                                                          &cred_request.blinded_ms,
                                                          &cred_request.blinded_ms_correctness_proof,
-                                                         master_secret_blinding_nonce,
+                                                         cred_issuance_blinding_nonce,
                                                          &cred_request.nonce,
                                                          &credential_values,
                                                          &credential_pub_key,
@@ -135,7 +136,7 @@ impl Issuer {
                     CryptoIssuer::sign_credential(&cred_request.prover_did,
                                                   &cred_request.blinded_ms,
                                                   &cred_request.blinded_ms_correctness_proof,
-                                                  master_secret_blinding_nonce,
+                                                  cred_issuance_blinding_nonce,
                                                   &cred_request.nonce,
                                                   &credential_values,
                                                   &credential_pub_key,
@@ -144,7 +145,7 @@ impl Issuer {
             };
 
         trace!("new_credential <<< credential_signature {:?}, signature_correctness_proof {:?}, rev_reg_delta {:?}",
-               credential_signature, signature_correctness_proof, rev_reg_delta);
+               secret!(&credential_signature), secret!(&signature_correctness_proof), rev_reg_delta);
 
         Ok((credential_signature, signature_correctness_proof, rev_reg_delta))
     }
@@ -154,7 +155,7 @@ impl Issuer {
                        max_cred_num: u32,
                        rev_idx: u32,
                        rev_tails_accessor: &RTA) -> Result<RevocationRegistryDelta, AnoncredsError> where RTA: RevocationTailsAccessor {
-        trace!("revoke >>> rev_reg: {:?}, max_cred_num: {:?}, rev_idx: {:?}", rev_reg, max_cred_num, rev_idx);
+        trace!("revoke >>> rev_reg: {:?}, max_cred_num: {:?}, rev_idx: {:?}", rev_reg, max_cred_num, secret!(&rev_idx));
 
         let rev_reg_delta = CryptoIssuer::revoke_credential(rev_reg, max_cred_num, rev_idx, rev_tails_accessor)?;
 
@@ -169,7 +170,7 @@ impl Issuer {
                          max_cred_num: u32,
                          rev_idx: u32,
                          rev_tails_accessor: &RTA) -> Result<RevocationRegistryDelta, AnoncredsError> where RTA: RevocationTailsAccessor {
-        trace!("revoke >>> rev_reg: {:?}, max_cred_num: {:?}, rev_idx: {:?}", rev_reg, max_cred_num, rev_idx);
+        trace!("revoke >>> rev_reg: {:?}, max_cred_num: {:?}, rev_idx: {:?}", rev_reg, max_cred_num, secret!(&rev_idx));
 
         let rev_reg_delta = CryptoIssuer::recovery_credential(rev_reg, max_cred_num, rev_idx, rev_tails_accessor)?;
 

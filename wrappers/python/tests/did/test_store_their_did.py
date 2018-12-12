@@ -9,8 +9,8 @@ from indy.error import ErrorCode
 
 
 @pytest.mark.asyncio
-async def test_store_their_did_works(wallet_handle, did_my1):
-    await did.store_their_did(wallet_handle, json.dumps({"did": did_my1}))
+async def test_store_their_did_works(wallet_handle, did_my):
+    await did.store_their_did(wallet_handle, json.dumps({"did": did_my}))
 
 
 @pytest.mark.asyncio
@@ -21,9 +21,9 @@ async def test_store_their_did_works_for_invalid_json(wallet_handle):
 
 
 @pytest.mark.asyncio
-async def test_store_their_did_works_for_invalid_handle(wallet_handle, did_my1):
+async def test_store_their_did_works_for_invalid_handle(wallet_handle, did_my):
     with pytest.raises(IndyError) as e:
-        await did.store_their_did(wallet_handle + 1, json.dumps({"did": did_my1}))
+        await did.store_their_did(wallet_handle + 1, json.dumps({"did": did_my}))
     assert ErrorCode.WalletInvalidHandle == e.value.error_code
 
 

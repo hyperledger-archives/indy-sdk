@@ -1,20 +1,17 @@
-extern crate indy_crypto;
-extern crate serde_json;
-
 use errors::common::CommonError;
 use errors::did::DidError;
 use errors::wallet::WalletError;
 use errors::indy::IndyError;
 use domain::crypto::key::KeyInfo;
-use domain::crypto::did::{MyDidInfo, Did, TheirDidInfo, TheirDid, TemporaryDid, DidWithMeta};
+use domain::crypto::did::{MyDidInfo, Did, TheirDidInfo, TheirDid, TemporaryDid, DidWithMeta, DidMetadata};
 use domain::ledger::response::Reply;
 use domain::ledger::nym::{GetNymReplyResult, GetNymResultDataV0};
 use domain::ledger::attrib::{GetAttrReplyResult, AttribData, Endpoint};
-use services::pool::PoolService;
 use services::wallet::{WalletService, RecordOptions, SearchOptions};
 use services::crypto::CryptoService;
 use services::ledger::LedgerService;
 
+use serde_json;
 use std::error::Error;
 use std::rc::Rc;
 use std::str;
@@ -23,20 +20,17 @@ use std::cell::RefCell;
 use commands::ledger::LedgerCommand;
 use commands::{Command, CommandExecutor};
 use std::collections::HashMap;
-use utils::sequence::SequenceUtils;
-use utils::crypto::base58::Base58;
-use self::indy_crypto::utils::json::{JsonEncodable, JsonDecodable};
-
-use super::utils::check_wallet_and_pool_handles_consistency;
+use utils::sequence;
+use utils::crypto::base58;
 
 pub enum DidCommand {
     CreateAndStoreMyDid(
         i32, // wallet handle
-        String, // my did info json
+        MyDidInfo, // my did info
         Box<Fn(Result<(String, String), IndyError>) + Send>),
     ReplaceKeysStart(
         i32, // wallet handle
-        String, // key info json
+        KeyInfo, // key info
         String, // did
         Box<Fn(Result<String, IndyError>) + Send>),
     ReplaceKeysApply(
@@ -45,7 +39,7 @@ pub enum DidCommand {
         Box<Fn(Result<(), IndyError>) + Send>),
     StoreTheirDid(
         i32, // wallet handle
-        String, // their did info json
+        TheirDidInfo, // their did info json
         Box<Fn(Result<(), IndyError>) + Send>),
     GetMyDidWithMeta(
         i32, // wallet handle
@@ -66,8 +60,7 @@ pub enum DidCommand {
     SetEndpointForDid(
         i32, // wallet handle
         String, // did
-        String, // address
-        String, // transport_key
+        Endpoint, // endpoint address and optional verkey
         Box<Fn(Result<(), IndyError>) + Send>),
     GetEndpointForDid(
         i32, // wallet handle
@@ -105,11 +98,7 @@ macro_rules! ensure_their_did {
     ($self_:ident, $wallet_handle:ident, $pool_handle:ident, $their_did:ident, $deferred_cmd:expr, $cb:ident) => (match $self_._wallet_get_their_did($wallet_handle, &$their_did) {
           Ok(val) => val,
           Err(WalletError::ItemNotFound) => {
-
-              check_wallet_and_pool_handles_consistency!($self_.wallet_service, $self_.pool_service,
-                                                         $wallet_handle, $pool_handle, $cb);
-
-              // No their their_did present in the wallet. Deffer this command until it is fetched from ledger.
+              // No their their_did present in the wallet. Defer this command until it is fetched from ledger.
               return $self_._fetch_their_did_from_ledger($wallet_handle, $pool_handle, &$their_did, $deferred_cmd);
             }
             Err(err) => return $cb(Err(IndyError::from(err)))
@@ -117,7 +106,6 @@ macro_rules! ensure_their_did {
 }
 
 pub struct DidCommandExecutor {
-    pool_service: Rc<PoolService>,
     wallet_service: Rc<WalletService>,
     crypto_service: Rc<CryptoService>,
     ledger_service: Rc<LedgerService>,
@@ -125,12 +113,10 @@ pub struct DidCommandExecutor {
 }
 
 impl DidCommandExecutor {
-    pub fn new(pool_service: Rc<PoolService>,
-               wallet_service: Rc<WalletService>,
+    pub fn new(wallet_service: Rc<WalletService>,
                crypto_service: Rc<CryptoService>,
                ledger_service: Rc<LedgerService>) -> DidCommandExecutor {
         DidCommandExecutor {
-            pool_service,
             wallet_service,
             crypto_service,
             ledger_service,
@@ -140,25 +126,25 @@ impl DidCommandExecutor {
 
     pub fn execute(&self, command: DidCommand) {
         match command {
-            DidCommand::CreateAndStoreMyDid(wallet_handle, my_did_info_json, cb) => {
+            DidCommand::CreateAndStoreMyDid(wallet_handle, my_did_info, cb) => {
                 info!("CreateAndStoreMyDid command received");
-                cb(self.create_and_store_my_did(wallet_handle, &my_did_info_json));
+                cb(self.create_and_store_my_did(wallet_handle, &my_did_info));
             }
-            DidCommand::ReplaceKeysStart(wallet_handle, key_info_json, did, cb) => {
+            DidCommand::ReplaceKeysStart(wallet_handle, key_info, did, cb) => {
                 info!("ReplaceKeysStart command received");
-                cb(self.replace_keys_start(wallet_handle, &key_info_json, &did));
+                cb(self.replace_keys_start(wallet_handle, &key_info, &did));
             }
             DidCommand::ReplaceKeysApply(wallet_handle, did, cb) => {
                 info!("ReplaceKeysApply command received");
                 cb(self.replace_keys_apply(wallet_handle, &did));
             }
-            DidCommand::StoreTheirDid(wallet_handle, identity_json, cb) => {
+            DidCommand::StoreTheirDid(wallet_handle, their_did_info, cb) => {
                 info!("StoreTheirDid command received");
-                cb(self.store_their_did(wallet_handle, &identity_json));
+                cb(self.store_their_did(wallet_handle, &their_did_info));
             }
             DidCommand::GetMyDidWithMeta(wallet_handle, my_did, cb) => {
                 info!("GetMyDidWithMeta command received");
-                cb(self.get_my_did_with_meta(wallet_handle, my_did))
+                cb(self.get_my_did_with_meta(wallet_handle, &my_did))
             }
             DidCommand::ListMyDidsWithMeta(wallet_handle, cb) => {
                 info!("ListMyDidsWithMeta command received");
@@ -170,11 +156,11 @@ impl DidCommandExecutor {
             }
             DidCommand::KeyForLocalDid(wallet_handle, did, cb) => {
                 info!("KeyForLocalDid command received");
-                cb(self.key_for_local_did(wallet_handle, did));
+                cb(self.key_for_local_did(wallet_handle, &did));
             }
-            DidCommand::SetEndpointForDid(wallet_handle, did, address, transport_key, cb) => {
+            DidCommand::SetEndpointForDid(wallet_handle, did, endpoint, cb) => {
                 info!("SetEndpointForDid command received");
-                cb(self.set_endpoint_for_did(wallet_handle, did, address, transport_key));
+                cb(self.set_endpoint_for_did(wallet_handle, &did, &endpoint));
             }
             DidCommand::GetEndpointForDid(wallet_handle, pool_handle, did, cb) => {
                 info!("GetEndpointForDid command received");
@@ -182,15 +168,15 @@ impl DidCommandExecutor {
             }
             DidCommand::SetDidMetadata(wallet_handle, did, metadata, cb) => {
                 info!("SetDidMetadata command received");
-                cb(self.set_did_metadata(wallet_handle, did, metadata));
+                cb(self.set_did_metadata(wallet_handle, &did, metadata));
             }
             DidCommand::GetDidMetadata(wallet_handle, did, cb) => {
                 info!("GetDidMetadata command received");
-                cb(self.get_did_metadata(wallet_handle, did));
+                cb(self.get_did_metadata(wallet_handle, &did));
             }
             DidCommand::AbbreviateVerkey(did, verkey, cb) => {
                 info!("AbbreviateVerkey command received");
-                cb(self.abbreviate_verkey(did, verkey));
+                cb(self.abbreviate_verkey(&did, verkey));
             }
             DidCommand::GetNymAck(wallet_handle, result, deferred_cmd_id) => {
                 info!("GetNymAck command received");
@@ -205,27 +191,19 @@ impl DidCommandExecutor {
 
     fn create_and_store_my_did(&self,
                                wallet_handle: i32,
-                               my_did_info_json: &str) -> Result<(String, String), IndyError> {
-        debug!("create_and_store_my_did >>> wallet_handle: {:?}, my_did_info_json: {:?}", wallet_handle, my_did_info_json);
+                               my_did_info: &MyDidInfo) -> Result<(String, String), IndyError> {
+        debug!("create_and_store_my_did >>> wallet_handle: {:?}, my_did_info_json: {:?}", wallet_handle, secret!(my_did_info));
 
-        let my_did_info = MyDidInfo::from_json(&my_did_info_json)
-            .map_err(map_err_trace!())
-            .map_err(|err|
-                CommonError::InvalidStructure(
-                    format!("Invalid MyDidInfo json: {:?}", err)))?;
+        let (did, key) = self.crypto_service.create_my_did(&my_did_info)?;
 
-        if let Some(ref did) = my_did_info.did.as_ref() {
-            if self.wallet_service.record_exists::<Did>(wallet_handle, did)? {
-                return Err(IndyError::DidError(DidError::AlreadyExistsError(format!("Did already exists"))));
-            };
-        }
+        if self.wallet_service.record_exists::<Did>(wallet_handle, &did.did)? {
+            return Err(IndyError::DidError(DidError::AlreadyExistsError(did.did)));
+        };
 
-        let (my_did, key) = self.crypto_service.create_my_did(&my_did_info)?;
+        self.wallet_service.add_indy_object(wallet_handle, &did.did, &did, &HashMap::new())?;
+        self.wallet_service.add_indy_object(wallet_handle, &key.verkey, &key, &HashMap::new())?;
 
-        self.wallet_service.add_indy_object(wallet_handle, &my_did.did, &my_did, "{}")?;
-        self.wallet_service.add_indy_object(wallet_handle, &key.verkey, &key, "{}")?;
-
-        let res = (my_did.did, my_did.verkey);
+        let res = (did.did, did.verkey);
 
         debug!("create_and_store_my_did <<< res: {:?}", res);
 
@@ -234,24 +212,19 @@ impl DidCommandExecutor {
 
     fn replace_keys_start(&self,
                           wallet_handle: i32,
-                          key_info_json: &str,
+                          key_info: &KeyInfo,
                           my_did: &str) -> Result<String, IndyError> {
-        debug!("replace_keys_start >>> wallet_handle: {:?}, key_info_json: {:?}, my_did: {:?}", wallet_handle, key_info_json, my_did);
+        debug!("replace_keys_start >>> wallet_handle: {:?}, key_info_json: {:?}, my_did: {:?}", wallet_handle, secret!(key_info), my_did);
 
         self.crypto_service.validate_did(my_did)?;
-
-        let key_info: KeyInfo = KeyInfo::from_json(key_info_json)
-            .map_err(map_err_trace!())
-            .map_err(|err|
-                CommonError::InvalidStructure(format!("Invalid KeyInfo json: {}", err.description())))?;
 
         let my_did = self._wallet_get_my_did(wallet_handle, my_did)?;
 
         let temporary_key = self.crypto_service.create_key(&key_info)?;
         let my_temporary_did = TemporaryDid { did: my_did.did, verkey: temporary_key.verkey.clone() };
 
-        self.wallet_service.add_indy_object(wallet_handle, &temporary_key.verkey, &temporary_key, "{}")?;
-        self.wallet_service.add_indy_object(wallet_handle, &my_temporary_did.did, &my_temporary_did, "{}")?;
+        self.wallet_service.add_indy_object(wallet_handle, &temporary_key.verkey, &temporary_key, &HashMap::new())?;
+        self.wallet_service.add_indy_object(wallet_handle, &my_temporary_did.did, &my_temporary_did, &HashMap::new())?;
 
         let res = my_temporary_did.verkey;
 
@@ -269,7 +242,7 @@ impl DidCommandExecutor {
 
         let my_did = self._wallet_get_my_did(wallet_handle, my_did)?;
         let my_temporary_did: TemporaryDid =
-            self.wallet_service.get_indy_object(wallet_handle, &my_did.did, &RecordOptions::id_value(), &mut String::new())?;
+            self.wallet_service.get_indy_object(wallet_handle, &my_did.did, &RecordOptions::id_value())?;
 
         let my_did = Did::from(my_temporary_did);
 
@@ -283,45 +256,35 @@ impl DidCommandExecutor {
 
     fn store_their_did(&self,
                        wallet_handle: i32,
-                       their_did_info_json: &str) -> Result<(), IndyError> {
-        debug!("store_their_did >>> wallet_handle: {:?}, their_did_info_json: {:?}", wallet_handle, their_did_info_json);
+                       their_did_info: &TheirDidInfo) -> Result<(), IndyError> {
+        debug!("store_their_did >>> wallet_handle: {:?}, their_did_info: {:?}", wallet_handle, their_did_info);
 
-        let their_did_info = TheirDidInfo::from_json(their_did_info_json)
-            .map_err(map_err_trace!())
-            .map_err(|err|
-                CommonError::InvalidStructure(format!("Invalid TheirDidInfo json: {}", err.description())))?;
+        let their_did = self.crypto_service.create_their_did(their_did_info)?;
 
-        let their_did = self.crypto_service.create_their_did(&their_did_info)?;
-
-        self.wallet_service.add_indy_object(wallet_handle, &their_did.did, &their_did, "{}")?;
+        self.wallet_service.add_indy_object(wallet_handle, &their_did.did, &their_did, &HashMap::new())?;
 
         debug!("store_their_did <<<");
 
         Ok(())
     }
 
-    fn get_my_did_with_meta(&self, wallet_handle: i32, my_did: String) -> Result<String, IndyError> {
+    fn get_my_did_with_meta(&self, wallet_handle: i32, my_did: &str) -> Result<String, IndyError> {
         debug!("get_my_did_with_meta >>> wallet_handle: {:?}, my_did: {:?}", wallet_handle, my_did);
 
         self.crypto_service.validate_did(&my_did)?;
 
-        let did_record = self.wallet_service.get_indy_record::<Did>(wallet_handle, &my_did, &RecordOptions::full())?;
-
-        let did = did_record.get_value()
-            .and_then(|tags_json| Did::from_json(&tags_json).ok())
-            .ok_or(CommonError::InvalidStructure(format!("Cannot deserialize Did: {:?}", my_did)))?;
-
-        let meta: Option<String> = did_record.get_tags()
-            .and_then(|tags_json| serde_json::from_str(&tags_json).ok())
-            .and_then(|tags: serde_json::Value| tags["metadata"].as_str().map(String::from));
+        let did = self.wallet_service.get_indy_object::<Did>(wallet_handle, &my_did, &RecordOptions::id_value())?;
+        let metadata = self.wallet_service.get_indy_opt_object::<DidMetadata>(wallet_handle, &did.did, &RecordOptions::id_value())?;
+        let temp_verkey = self.wallet_service.get_indy_opt_object::<TemporaryDid>(wallet_handle, &did.did, &RecordOptions::id_value())?;
 
         let did_with_meta = DidWithMeta {
             did: did.did,
             verkey: did.verkey,
-            metadata: meta
+            temp_verkey: temp_verkey.map(|tv| tv.verkey),
+            metadata: metadata.map(|m|m.value)
         };
 
-        let res = did_with_meta.to_json()
+        let res = serde_json::to_string(&did_with_meta)
             .map_err(|err|
                 IndyError::CommonError(CommonError::InvalidState(format!("Can't serialize DID {}", err))))?;
 
@@ -334,25 +297,25 @@ impl DidCommandExecutor {
         debug!("list_my_dids_with_meta >>> wallet_handle: {:?}", wallet_handle);
 
         let mut did_search =
-            self.wallet_service.search_indy_records::<Did>(wallet_handle, "{}", &SearchOptions::full())?;
+            self.wallet_service.search_indy_records::<Did>(wallet_handle, "{}", &SearchOptions::id_value())?;
 
         let mut dids: Vec<DidWithMeta> = Vec::new();
 
         while let Some(did_record) = did_search.fetch_next_record()? {
             let did_id = did_record.get_id();
 
-            let did = did_record.get_value()
-                .and_then(|tags_json| Did::from_json(&tags_json).ok())
+            let did: Did = did_record.get_value()
+                .and_then(|tags_json| serde_json::from_str(&tags_json).ok())
                 .ok_or(CommonError::InvalidStructure(format!("Cannot deserialize Did: {:?}", did_id)))?;
 
-            let meta: Option<String> = did_record.get_tags()
-                .and_then(|tags_json| serde_json::from_str(&tags_json).ok())
-                .and_then(|tags: serde_json::Value| tags["metadata"].as_str().map(String::from));
+            let metadata = self.wallet_service.get_indy_opt_object::<DidMetadata>(wallet_handle, &did.did, &RecordOptions::id_value())?;
+            let temp_verkey = self.wallet_service.get_indy_opt_object::<TemporaryDid>(wallet_handle, &did.did, &RecordOptions::id_value())?;
 
             let did_with_meta = DidWithMeta {
                 did: did.did,
                 verkey: did.verkey,
-                metadata: meta
+                temp_verkey: temp_verkey.map(|tv| tv.verkey),
+                metadata: metadata.map(|m|m.value)
             };
 
             dids.push(did_with_meta);
@@ -404,20 +367,20 @@ impl DidCommandExecutor {
 
     fn key_for_local_did(&self,
                          wallet_handle: i32,
-                         did: String) -> Result<String, IndyError> {
+                         did: &str) -> Result<String, IndyError> {
         info!("key_for_local_did >>> wallet_handle: {:?}, did: {:?}", wallet_handle, did);
 
         self.crypto_service.validate_did(&did)?;
 
         // Look to my did
-        match self._wallet_get_my_did(wallet_handle, &did) {
+        match self._wallet_get_my_did(wallet_handle, did) {
             Ok(my_did) => return Ok(my_did.verkey),
             Err(WalletError::ItemNotFound) => {}
             Err(err) => return Err(IndyError::from(err))
         };
 
         // look to their did
-        let their_did = self._wallet_get_their_did(wallet_handle, &did)?;
+        let their_did = self._wallet_get_their_did(wallet_handle, did)?;
 
         let res = their_did.verkey;
 
@@ -428,21 +391,20 @@ impl DidCommandExecutor {
 
     fn set_endpoint_for_did(&self,
                             wallet_handle: i32,
-                            did: String,
-                            address: String,
-                            transport_key: String) -> Result<(), IndyError> {
-        debug!("set_endpoint_for_did >>> wallet_handle: {:?}, did: {:?}, address: {:?}, transport_key: {:?}", wallet_handle, did, address, transport_key);
+                            did: &str,
+                            endpoint: &Endpoint) -> Result<(), IndyError> {
+        debug!("set_endpoint_for_did >>> wallet_handle: {:?}, did: {:?}, endpoint: {:?}", wallet_handle, did, endpoint);
 
-        self.crypto_service.validate_did(&did)?;
-        self.crypto_service.validate_key(&transport_key)?;
+        self.crypto_service.validate_did(did)?;
+        if endpoint.verkey.is_some() {
+            let transport_key = endpoint.verkey.as_ref().unwrap();
+            self.crypto_service.validate_key(transport_key)?;
+        }
 
-        let endpoint = Endpoint::new(address.to_string(), Some(transport_key.to_string()));
+        self.wallet_service.upsert_indy_object(wallet_handle, did, endpoint)?;
 
-        let res = self.wallet_service.upsert_indy_object(wallet_handle, &did, &endpoint)?;
-
-        debug!("set_endpoint_for_did <<< res: {:?}", res);
-
-        Ok(res)
+        debug!("set_endpoint_for_did <<<");
+        Ok(())
     }
 
     fn get_endpoint_for_did(&self,
@@ -455,14 +417,11 @@ impl DidCommandExecutor {
         try_cb!(self.crypto_service.validate_did(&did), cb);
 
         let endpoint =
-            self.wallet_service.get_indy_object::<Endpoint>(wallet_handle, &did, &RecordOptions::id_value(), &mut String::new());
+            self.wallet_service.get_indy_object::<Endpoint>(wallet_handle, &did, &RecordOptions::id_value());
 
         match endpoint {
             Ok(endpoint) => cb(Ok((endpoint.ha, endpoint.verkey))),
             Err(WalletError::ItemNotFound) => {
-                check_wallet_and_pool_handles_consistency!(self.wallet_service, self.pool_service,
-                                                           wallet_handle, pool_handle, cb);
-
                 return self._fetch_attrib_from_ledger(wallet_handle,
                                                       pool_handle,
                                                       &did,
@@ -478,35 +437,31 @@ impl DidCommandExecutor {
 
     fn set_did_metadata(&self,
                         wallet_handle: i32,
-                        did: String,
+                        did: &str,
                         metadata: String) -> Result<(), IndyError> {
         debug!("set_did_metadata >>> wallet_handle: {:?}, did: {:?}, metadata: {:?}", wallet_handle, did, metadata);
 
-        self.crypto_service.validate_did(&did)?;
+        self.crypto_service.validate_did(did)?;
 
-        self.wallet_service.get_indy_record::<Did>(wallet_handle, &did, &RecordOptions::id())?;
+        let metadata = DidMetadata { value: metadata };
 
-        let tags_json = json!({"metadata": metadata}).to_string();
+        self.wallet_service.upsert_indy_object(wallet_handle, &did, &metadata)?;
 
-        let res = self.wallet_service.add_indy_record_tags::<Did>(wallet_handle, &did, &tags_json)?;
+        debug!("set_did_metadata >>>");
 
-        debug!("set_did_metadata >>> res: {:?}", res);
-
-        Ok(res)
+        Ok(())
     }
 
     fn get_did_metadata(&self,
                         wallet_handle: i32,
-                        did: String) -> Result<String, IndyError> {
+                        did: &str) -> Result<String, IndyError> {
         debug!("get_did_metadata >>> wallet_handle: {:?}, did: {:?}", wallet_handle, did);
 
-        self.crypto_service.validate_did(&did)?;
+        self.crypto_service.validate_did(did)?;
 
-        let res = self.wallet_service.get_indy_record::<Did>(wallet_handle, &did, &RecordOptions::full())?
-            .get_tags()
-            .and_then(|tags_json| serde_json::from_str(&tags_json).ok())
-            .and_then(|tags: serde_json::Value| tags["metadata"].as_str().map(String::from))
-            .ok_or(WalletError::ItemNotFound)?;
+        let metadata = self.wallet_service.get_indy_object::<DidMetadata>(wallet_handle, did, &RecordOptions::id_value())?;
+
+        let res = metadata.value;
 
         debug!("get_did_metadata <<< res: {:?}", res);
 
@@ -514,20 +469,20 @@ impl DidCommandExecutor {
     }
 
     fn abbreviate_verkey(&self,
-                         did: String,
+                         did: &str,
                          verkey: String) -> Result<String, IndyError> {
         info!("abbreviate_verkey >>> did: {:?}, verkey: {:?}", did, verkey);
 
         self.crypto_service.validate_did(&did)?;
         self.crypto_service.validate_key(&verkey)?;
 
-        let did = Base58::decode(&did)?;
-        let dverkey = Base58::decode(&verkey)?;
+        let did = base58::decode(&did)?;
+        let dverkey = base58::decode(&verkey)?;
 
         let (first_part, second_part) = dverkey.split_at(16);
 
         let res = if first_part.eq(did.as_slice()) {
-            format!("~{}", Base58::encode(second_part))
+            format!("~{}", base58::encode(second_part))
         } else {
             verkey
         };
@@ -550,24 +505,28 @@ impl DidCommandExecutor {
 
         let get_nym_reply = get_nym_reply_result?;
 
-        let get_nym_response: Reply<GetNymReplyResult> = Reply::from_json(&get_nym_reply)
+        let get_nym_response: Reply<GetNymReplyResult> = serde_json::from_str(&get_nym_reply)
             .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidState(format!("Invalid GetNymReplyResult json: {:?}", err)))?;
 
         let their_did_info = match get_nym_response.result() {
             GetNymReplyResult::GetNymReplyResultV0(res) => {
-                let gen_nym_result_data = GetNymResultDataV0::from_json(&res.data)
-                    .map_err(map_err_trace!())
-                    .map_err(|_| CommonError::InvalidState(format!("Invalid GetNymResultData json")))?;
+                if let Some(data) = &res.data {
+                    let gen_nym_result_data: GetNymResultDataV0 = serde_json::from_str(data)
+                        .map_err(map_err_trace!())
+                        .map_err(|_| CommonError::InvalidState("Invalid GetNymResultData json".to_string()))?;
 
-                TheirDidInfo::new(gen_nym_result_data.dest, gen_nym_result_data.verkey)
-            },
+                    TheirDidInfo::new(gen_nym_result_data.dest, gen_nym_result_data.verkey)
+                } else {
+                    return Err(WalletError::ItemNotFound.into()); //TODO FIXME use separate error
+                }
+            }
             GetNymReplyResult::GetNymReplyResultV1(res) => TheirDidInfo::new(res.txn.data.did, res.txn.data.verkey)
         };
 
         let their_did = self.crypto_service.create_their_did(&their_did_info)?;
 
-        self.wallet_service.add_indy_object(wallet_handle, &their_did.did, &their_did, "{}")?;
+        self.wallet_service.add_indy_object(wallet_handle, &their_did.did, &their_did, &HashMap::new())?;
 
         trace!("_get_nym_ack <<<");
 
@@ -587,7 +546,7 @@ impl DidCommandExecutor {
 
         let get_attrib_reply = get_attrib_reply_result?;
 
-        let get_attrib_reply: Reply<GetAttrReplyResult> = Reply::from_json(&get_attrib_reply)
+        let get_attrib_reply: Reply<GetAttrReplyResult> = serde_json::from_str(&get_attrib_reply)
             .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidState(format!("Invalid GetAttrReplyResult json {:?}", err)))?;
 
@@ -596,13 +555,13 @@ impl DidCommandExecutor {
             GetAttrReplyResult::GetAttrReplyResultV1(res) => (res.txn.data.raw, res.txn.data.did)
         };
 
-        let attrib_data = AttribData::from_json(&raw)
+        let attrib_data: AttribData = serde_json::from_str(&raw)
             .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidState(format!("Invalid GetAttReply json: {:?}", err)))?;
 
         let endpoint = Endpoint::new(attrib_data.endpoint.ha, attrib_data.endpoint.verkey);
 
-        self.wallet_service.add_indy_object(wallet_handle, &did, &endpoint, "{}")?;
+        self.wallet_service.add_indy_object(wallet_handle, &did, &endpoint, &HashMap::new())?;
 
         trace!("_get_attrib_ack <<<");
 
@@ -610,7 +569,7 @@ impl DidCommandExecutor {
     }
 
     fn _defer_command(&self, cmd: DidCommand) -> i32 {
-        let deferred_cmd_id = SequenceUtils::get_next_id();
+        let deferred_cmd_id = sequence::get_next_id();
         self.deferred_commands.borrow_mut().insert(deferred_cmd_id, cmd);
         deferred_cmd_id
     }
@@ -654,11 +613,11 @@ impl DidCommandExecutor {
     fn _fetch_their_did_from_ledger(&self,
                                     wallet_handle: i32, pool_handle: i32,
                                     did: &str, deferred_cmd: DidCommand) {
-        // Deffer this command until their did is fetched from ledger.
+        // Defer this command until their did is fetched from ledger.
         let deferred_cmd_id = self._defer_command(deferred_cmd);
 
         // TODO we need passing of my_did as identifier
-        let get_nym_request = self.ledger_service.build_get_nym_request(did, did)
+        let get_nym_request = self.ledger_service.build_get_nym_request(None, did)
             .map_err(map_err_trace!())
             .map_err(|err|
                 CommonError::InvalidState(
@@ -683,11 +642,11 @@ impl DidCommandExecutor {
     fn _fetch_attrib_from_ledger(&self,
                                  wallet_handle: i32, pool_handle: i32,
                                  did: &str, deferred_cmd: DidCommand) {
-        // Deffer this command until their did is fetched from ledger.
+        // Defer this command until their did is fetched from ledger.
         let deferred_cmd_id = self._defer_command(deferred_cmd);
 
         // TODO we need passing of my_did as identifier
-        let get_attrib_request = self.ledger_service.build_get_attrib_request(did, did, Some("endpoint"), None, None)
+        let get_attrib_request = self.ledger_service.build_get_attrib_request(None, did, Some("endpoint"), None, None)
             .map_err(map_err_trace!())
             .map_err(|err|
                 CommonError::InvalidState(
@@ -710,17 +669,10 @@ impl DidCommandExecutor {
     }
 
     fn _wallet_get_my_did(&self, wallet_handle: i32, my_did: &str) -> Result<Did, WalletError> {
-        self.wallet_service.get_indy_object(wallet_handle, &my_did, &RecordOptions::id_value(), &mut String::new())
+        self.wallet_service.get_indy_object(wallet_handle, &my_did, &RecordOptions::id_value())
     }
 
     fn _wallet_get_their_did(&self, wallet_handle: i32, their_did: &str) -> Result<TheirDid, WalletError> {
-        self.wallet_service.get_indy_object(wallet_handle, &their_did, &RecordOptions::id_value(), &mut String::new())
-    }
-
-    fn _wallet_get_did_metadata(&self, wallet_handle: i32, did: &str) -> Option<String> {
-        self.wallet_service.get_indy_record::<Did>(wallet_handle, &did, &RecordOptions::full()).ok()
-            .and_then(|rec| rec.get_tags().map(String::from))
-            .and_then(|tags_json| serde_json::from_str(&tags_json).ok())
-            .and_then(|tags: serde_json::Value| tags["metadata"].as_str().map(String::from))
+        self.wallet_service.get_indy_object(wallet_handle, &their_did, &RecordOptions::id_value())
     }
 }

@@ -48,7 +48,7 @@ CLI will support 2 execution modes:
 * Each command will be implemented as Rust module with one public "new" function that returns configured "Command" instance
 * All commands will share one "CommandContext". "CommandContext" will hold application state and contain 2 parts:
   * Pre-defined application part. Part that holds application-level state like command prompt, isExit flag and etc...
-  * Generic command specific part. This part will be key-value storage that will allow commands to store command-speficic data like Indy SDK handles, used DID and etc... 
+  * Generic command specific part. This part will be key-value storage that will allow commands to store command-specific data like Indy SDK handles, used DID and etc... 
 * "Executor" and "Cleaner" functions will get CommandContext as parameter
 * Actual execution of commands will be performed by CommandExecutor class. This class will:
   * Instantiation of shared "CommandContext"
@@ -125,16 +125,22 @@ indy> wallet <command>
 ```
 
 #### Wallet create
-Create new wallet with specified name and pool:
+Create new wallet and attach to Indy CLI:
 ```
-indy> wallet create <wallet name> pool_name=<pool name> key=<key>
+indy> wallet create <wallet name> key [key_derivation_method=<key_derivation_method>] [storage_type=<storage_type>] [storage_config={config json}]
 ```
 TODO: Think about custom wallet types support. Now we force default wallet security model.. 
+
+#### Wallet attach
+Attach existing wallet to Indy CLI:
+```
+indy> wallet attach <wallet name> [storage_type=<storage_type>] [storage_config={config json}]
+```
 
 #### Wallet open
 Open the wallet with specified name and make it available for commands that require wallet. If there was opened wallet it will be closed:
 ```
-indy> wallet open <wallet name> key=<key> [rekey=<rekey>]
+indy> wallet open <wallet name> key [key_derivation_method=<key_derivation_method>] [rekey] [rekey_derivation_method=<rekey_derivation_method>]
 ```
 
 #### Wallet close
@@ -144,15 +150,35 @@ indy> wallet close
 ```
 
 #### Wallet delete
-Delete the opened wallet
+Delete the wallet
 ```
-indy> wallet delete <wallet name> key=<key>
+indy> wallet delete <wallet name> key [key_derivation_method=<key_derivation_method>]
+```
+
+#### Wallet detach
+Detach wallet from Indy CLI
+```
+indy> wallet detach <wallet name>
 ```
 
 #### Wallet list
-List all created wallets with corresponded status (indicates opened one):
+List all attached wallets with corresponded status (indicates opened one):
 ```
 indy> wallet list
+```
+
+### Export wallet
+Exports opened wallet to the specified file.
+
+```indy-cli
+indy> wallet export export_path=<path-to-file> export_key=[<export key>] [export_key_derivation_method=<export_key_derivation_method>]
+```
+
+### Import wallet
+Create new wallet and then import content from the specified file.
+
+```indy-cli
+indy> wallet import <wallet name> key=<key> [key_derivation_method=<key_derivation_method>] export_path=<path-to-file> export_key=<key used for export>  [storage_type=<storage_type>] [storage_config={config json}]
 ```
 
 ### Pool management commands
@@ -169,7 +195,13 @@ indy> pool create [name=]<pool name> gen_txn_file=<gen txn file path>
 #### Connect
 Connect to Indy nodes pool and make it available for operation that require pool access. If there was pool connection it will be disconnected.
 ```
-indy> pool connect [name=]<pool name>
+indy> pool connect [name=]<pool name> [protocol-version=<version>] [timeout=<timeout>] [extended-timeout=<timeout>] [pre-ordered-nodes=<node names>]
+```
+
+#### Refresh
+Refresh a local copy of a pool ledger and updates pool nodes connections.
+```
+indy> pool refresh
 ```
 
 #### Disconnect
@@ -192,7 +224,7 @@ indy> did <subcommand>
 #### New
 Create and store my DID in the opened wallet. Requires opened wallet.
 ```
-indy> did new [did=<did>] [seed=<seed str>] [metadata=<metadata string>]
+indy> did new [did=<did>] [seed=<UTF-8, base64 or hex string>] [metadata=<metadata string>]
 ```
 
 #### List
@@ -210,7 +242,7 @@ indy> did use [did=]<did>
 #### Rotate key
 Rotate keys for used DID. Sends NYM to the ledger with updated keys. Requires opened wallet and connection to pool:
 ```
-indy> did rotate-key [seed=<seed str>]
+indy> did rotate-key [seed=<UTF-8, base64 or hex string>] [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>]
 ```
 
 ### Ledger transactions/messages
@@ -221,7 +253,7 @@ indy> ledger <subcommand>
 #### NYM transaction
 Send NYM transaction
 ```
-ledger nym did=<did-value> [verkey=<verkey-value>] [role=<role-value>] [fees_inputs=<utxo-1,..,utxo-n>] [fees_outputs=(<pay-addr-1>,<amount>,<extra>),..,(<pay-addr-n>,<amount>,<extra>)]
+ledger nym did=<did-value> [verkey=<verkey-value>] [role=<role-value>] [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>]
 ```
 
 #### GET_NYM transaction
@@ -233,7 +265,7 @@ ledger get-nym did=<did-value>
 #### ATTRIB transaction
 Send ATTRIB transaction
 ```
-ledger attrib did=<did-value> [hash=<hash-value>] [raw=<raw-value>] [enc=<enc-value>]  [fees_inputs=<utxo-1,..,utxo-n>] [fees_outputs=(<pay-addr-1>,<amount>,<extra>),..,(<pay-addr-n>,<amount>,<extra>)]
+ledger attrib did=<did-value> [hash=<hash-value>] [raw=<raw-value>] [enc=<enc-value>]  [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>]
 ```
 
 #### GET_ATTRIB transaction
@@ -245,7 +277,7 @@ ledger get-attrib did=<did-value> [raw=<raw-value>] [hash=<hash-value>] [enc=<en
 #### SCHEMA transaction
 Send SCHEMA transaction
 ```
-ledger schema name=<name-value> version=<version-value> attr_names=<attr_names-value>  [fees_inputs=<utxo-1,..,utxo-n>] [fees_outputs=(<pay-addr-1>,<amount>,<extra>),..,(<pay-addr-n>,<amount>,<extra>)]
+ledger schema name=<name-value> version=<version-value> attr_names=<attr_names-value>  [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>]
 ```
 
 #### GET_SCHEMA transaction
@@ -256,7 +288,7 @@ ledger get-schema did=<did-value> name=<name-value> version=<version-value>
 #### CRED_DEF transaction
 Send CRED_DEF transaction
 ```
-ledger cred-def schema_id=<schema_id-value> signature_type=<signature_type-value> primary=<primary-value> [revocation=<revocation-value>]  [fees_inputs=<utxo-1,..,utxo-n>] [fees_outputs=(<pay-addr-1>,<amount>,<extra>),..,(<pay-addr-n>,<amount>,<extra>)]
+ledger cred-def schema_id=<schema_id-value> signature_type=<signature_type-value> [tag=<tag>] primary=<primary-value> [revocation=<revocation-value>]  [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>]
 ```
 
 #### GET_CRED_DEF transaction
@@ -268,13 +300,19 @@ ledger get-cred-def schema_id=<schema_id-value> signature_type=<signature_type-v
 #### NODE transaction
 Send NODE transaction
 ```
-ledger node target=<target-value> node_ip=<node_ip-value> node_port=<node_port-value> client_ip=<client_ip-value> client_port=<client_port-value> alias=<alias-value> blskey=<blskey-value> [services=<services-value>]
+ledger node target=<target-value> alias=<alias-value> [node_ip=<node_ip-value>] [node_port=<node_port-value>] [client_ip=<client_ip-value>] [client_port=<client_port-value>] [blskey=<blskey-value>] [blskey_pop=<blskey-proof-of-possession>] [services=<services-value>]
+```
+
+#### GET_VALIDATOR_INFO transaction
+Send GET_VALIDATOR_INFO transaction to get info from all nodes
+```
+ledger get-validator-info [nodes=<node names>] [timeout=<timeout>]
 ```
 
 #### POOL_UPGRADE transaction
 Send POOL_UPGRADE transaction
 ```
-ledger pool-upgrade name=<name> version=<version> action=<start or cancel> sha256=<sha256> [timeout=<timeout>] [schedule=<schedule>] [justification=<justification>] [reinstall=<true or false (default false)>] [force=<true or false (default false)>]
+ledger pool-upgrade name=<name> version=<version> action=<start or cancel> sha256=<sha256> [timeout=<timeout>] [schedule=<schedule>] [justification=<justification>] [reinstall=<true or false (default false)>] [force=<true or false (default false)>] [package=<package>]
 ```
 
 #### POOL_CONFIG transaction
@@ -286,7 +324,7 @@ ledger pool-config writes=<true or false (default false)> [force=<true or false 
 #### POOL_RESTART transaction
 Send POOL_RESTART transaction
 ```
-ledger pool-restart action=<start or cancel> [datetime=<datetime>]
+ledger pool-restart action=<start or cancel> [datetime=<datetime>] [nodes=<node names>] [timeout=<timeout>]
 ```
 
 #### Custom transaction
@@ -295,28 +333,28 @@ Send custom transaction with user defined json body and optional signature
 ledger custom [txn=]<txn-json-value> [sign=<true|false>]
 ```
 
-#### GET_UTXO transaction
-Send GET_UTXO transaction
+#### GET_PAYMENT_SOURCES transaction
+Send GET_PAYMENT_SOURCES transaction
 ```
-ledger get-utxo payment_address=<payment_address>
+ledger get-payment-sources payment_address=<payment_address>
 ```
 
 #### PAYMENT transaction
 Send PAYMENT transaction
 ```
-ledger get-utxo inputs=<utxo-1>,..,<utxo-n> outputs=(<pay-addr-1>,<amount>,<extra>),..,(<pay-addr-n>,<amount>,<extra>)
+ledger payment inputs=<source-1>,..,<source-n> outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>) [extra=<extra>]
 ```
 
 #### GET_FEES transaction
 Send GET_FEES transaction
 ```
-ledger get-fees payment_address=<payment_address>
+ledger get-fees payment_method=<payment_method>
 ```
 
 #### MINT transaction
 Prepare MINT transaction
 ```
-ledger mint-prepare outputs=(<pay-addr-1>,<amount>,<extra>),..,(<pay-addr-n>,<amount>,<extra>)
+ledger mint-prepare outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>) [extra=<extra>]
 ```
 
 #### SET_FEES transaction
@@ -325,8 +363,14 @@ Prepare SET_FEES transaction
 ledger set-fees-prepare payment_method=<payment_method> fees=<txn-type-1>:<amount-1>,..,<txn-type-n>:<amount-n>
 ```
 
+#### VERIFY_PAYMENT_RECEIPT transaction
+Prepare VERIFY_PAYMENT_RECEIPT transaction
+```
+ledger verify-payment-receipt <receipt>
+```
+
 #### Add multi signature to transaction
-Prepare SET_FEES transaction
+Add multi signature by current DID to transaction
 ```
 ledger sign-multi txn=<txn_json>
 ```
@@ -359,8 +403,8 @@ pool(sandbox):indy> pool list
 
 #### Create and open wallet
 ```
-sandbox|indy> wallet create alice_wallet pool_name=sandbox
-sandbox|indy> wallet open alice_wallet
+sandbox|indy> wallet create alice_wallet key
+sandbox|indy> wallet open alice_wallet key
 pool(sandbox):wallet(alice_wallet):indy> wallet list
 ```
 

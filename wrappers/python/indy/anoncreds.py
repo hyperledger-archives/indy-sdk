@@ -63,7 +63,7 @@ async def issuer_create_and_store_credential_def(wallet_handle: int,
                                                  schema_json: str,
                                                  tag: str,
                                                  signature_type: Optional[str],
-                                                 config_json: str) -> (str, str):
+                                                 config_json: Optional[str]) -> (str, str):
     """
     Create credential definition entity that encapsulates credentials issuer DID, credential schema, secrets used for
     signing credentials and secrets used for credentials revocation.
@@ -81,7 +81,7 @@ async def issuer_create_and_store_credential_def(wallet_handle: int,
     :param signature_type: credential definition type (optional, 'CL' by default) that defines credentials signature and revocation math.
     Supported types are:
         - 'CL': Camenisch-Lysyanskaya credential signature type
-    :param  config_json: type-specific configuration of credential definition as json:
+    :param  config_json: (optional) type-specific configuration of credential definition as json:
         - 'CL':
           - support_revocation: whether to request non-revocation credential (optional, default false)
     :return: 
@@ -108,7 +108,7 @@ async def issuer_create_and_store_credential_def(wallet_handle: int,
     c_schema_json = c_char_p(schema_json.encode('utf-8'))
     c_tag = c_char_p(tag.encode('utf-8'))
     c_signature_type = c_char_p(signature_type.encode('utf-8')) if signature_type is not None else None
-    c_config_json = c_char_p(config_json.encode('utf-8'))
+    c_config_json = c_char_p(config_json.encode('utf-8')) if config_json is not None else None
 
     (credential_def_id, credential_def_json) = await do_call('indy_issuer_create_and_store_credential_def',
                                                              c_wallet_handle,
@@ -486,7 +486,7 @@ async def prover_create_master_secret(wallet_handle: int,
         prover_create_master_secret.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
 
     c_wallet_handle = c_int32(wallet_handle)
-    c_master_secret_name = c_char_p(master_secret_name.encode('utf-8'))if master_secret_name else None
+    c_master_secret_name = c_char_p(master_secret_name.encode('utf-8')) if master_secret_name else None
 
     out_master_secret_id = await do_call('indy_prover_create_master_secret',
                                          c_wallet_handle,
@@ -513,7 +513,7 @@ async def prover_create_credential_req(wallet_handle: int,
     :param wallet_handle: wallet handler (created by open_wallet).
     :param prover_did: a DID of the prover
     :param cred_offer_json: credential offer as a json containing information about the issuer and a credential
-    :param cred_def_json: credential definition json
+    :param cred_def_json: credential definition json related to <cred_def_id> in <cred_offer_json>
     :param master_secret_id: the id of the master secret stored in the wallet
     :return: 
      cred_req_json: Credential request json for creation of credential by Issuer
@@ -572,13 +572,27 @@ async def prover_store_credential(wallet_handle: int,
     """
     Check credential provided by Issuer for the given credential request,
     updates the credential by a master secret and stores in a secure wallet.
+    
+    To support efficient search the following tags will be created for stored credential:
+        {
+            "schema_id": <credential schema id>,
+            "schema_issuer_did": <credential schema issuer did>,
+            "schema_name": <credential schema name>,
+            "schema_version": <credential schema version>,
+            "issuer_did": <credential issuer did>,
+            "cred_def_id": <credential definition id>,
+            "rev_reg_id": <credential revocation registry id>, # "None" as string if not present
+            // for every attribute in <credential values>
+            "attr::<attribute name>::marker": "1",
+            "attr::<attribute name>::value": <attribute raw value>,
+        }
 
     :param wallet_handle: wallet handler (created by open_wallet).
     :param cred_id: (optional, default is a random one) identifier by which credential will be stored in the wallet
     :param cred_req_metadata_json: a credential request metadata created by prover_create_credential_req
     :param cred_json: credential json received from issuer
-    :param cred_def_json: credential definition json
-    :param rev_reg_def_json: revocation registry definition json
+    :param cred_def_json: credential definition json related to <cred_def_id> in <cred_json>
+    :param rev_reg_def_json: revocation registry definition json related to <rev_reg_def_id> in <cred_json>
     :return: cred_id: identifier by which credential is stored in the wallet
     """
 
@@ -597,7 +611,7 @@ async def prover_store_credential(wallet_handle: int,
         prover_store_credential.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
 
     c_wallet_handle = c_int32(wallet_handle)
-    c_cred_id = c_char_p(cred_id.encode('utf-8'))if cred_id else None
+    c_cred_id = c_char_p(cred_id.encode('utf-8')) if cred_id else None
     c_cred_req_metadata_json = c_char_p(cred_req_metadata_json.encode('utf-8'))
     c_cred_json = c_char_p(cred_json.encode('utf-8'))
     c_cred_def_json = c_char_p(cred_def_json.encode('utf-8'))
@@ -617,12 +631,55 @@ async def prover_store_credential(wallet_handle: int,
     return res
 
 
+async def prover_get_credential(wallet_handle: int,
+                                cred_id: str) -> str:
+    """
+    Gets human readable credential by the given id.
+
+    :param wallet_handle: wallet handler (created by open_wallet).
+    :param cred_id: Identifier by which requested credential is stored in the wallet
+    :return:  credential json
+     {
+         "referent": string, // cred_id in the wallet
+         "attrs": {"key1":"raw_value1", "key2":"raw_value2"},
+         "schema_id": string,
+         "cred_def_id": string,
+         "rev_reg_id": Optional<string>,
+         "cred_rev_id": Optional<string>
+     }
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("prover_get_credential: >>> wallet_handle: %r, cred_id: %r",
+                 wallet_handle,
+                 cred_id)
+
+    if not hasattr(prover_get_credential, "cb"):
+        logger.debug("prover_get_credential: Creating callback")
+        prover_get_credential.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_wallet_handle = c_int32(wallet_handle)
+    c_cred_id = c_char_p(cred_id.encode('utf-8'))
+
+    credentials_json = await do_call('indy_prover_get_credential',
+                                     c_wallet_handle,
+                                     c_cred_id,
+                                     prover_get_credential.cb)
+
+    res = credentials_json.decode()
+    logger.debug("prover_get_credential: <<< res: %r", res)
+    return res
+
+
 async def prover_get_credentials(wallet_handle: int,
                                  filter_json: str) -> str:
     """
     Gets human readable credentials according to the filter.
     If filter is NULL, then all credentials are returned.
-    credentials can be filtered by Issuer, credential_def and/or Schema.
+    Credentials can be filtered by tags created during saving of credential.
+
+    NOTE: This method is deprecated because immediately returns all fetched credentials.
+    Use <prover_search_credentials> to fetch records by small batches.
 
     :param wallet_handle: wallet handler (created by open_wallet).
     :param filter_json: filter for credentials
@@ -637,7 +694,7 @@ async def prover_get_credentials(wallet_handle: int,
     :return:  credentials json
      [{
          "referent": string, // cred_id in the wallet
-         "values": <see cred_values_json above>,
+         "attrs": {"key1":"raw_value1", "key2":"raw_value2"},
          "schema_id": string,
          "cred_def_id": string,
          "rev_reg_id": Optional<string>,
@@ -667,10 +724,119 @@ async def prover_get_credentials(wallet_handle: int,
     return res
 
 
+async def prover_search_credentials(wallet_handle: int,
+                                    query_json: str) -> (int, int):
+    """
+    Search for credentials stored in wallet.
+    Credentials can be filtered by tags created during saving of credential.
+
+    Instead of immediately returning of fetched credentials this call returns search_handle that can be used later
+    to fetch records by small batches (with prover_credentials_search_fetch_records).
+
+    :param wallet_handle: wallet handler (created by open_wallet).
+    :param query_json: wql style filter for credentials searching based on tags.
+        where wql query: indy-sdk/doc/design/011-wallet-query-language/README.md
+    :return:
+        search_handle: Search handle that can be used later to fetch records by small batches
+            (with prover_credentials_search_fetch_records)
+        total_count: Total count of records
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("prover_search_credentials: >>> wallet_handle: %r, query_json: %r",
+                 wallet_handle,
+                 query_json)
+
+    if not hasattr(prover_search_credentials, "cb"):
+        logger.debug("prover_search_credentials: Creating callback")
+        prover_search_credentials.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_int32, c_uint))
+
+    c_wallet_handle = c_int32(wallet_handle)
+    c_query_json = c_char_p(query_json.encode('utf-8'))
+
+    res = await do_call('indy_prover_search_credentials',
+                        c_wallet_handle,
+                        c_query_json,
+                        prover_search_credentials.cb)
+
+    logger.debug("prover_search_credentials: <<< res: %r", res)
+    return res
+
+
+async def prover_fetch_credentials(search_handle: int,
+                                   count: int) -> str:
+    """
+    Fetch next credentials for search.
+
+    :param search_handle: Search handle (created by prover_open_credentials_search)
+    :param count: Count of records to fetch
+    :return: credentials_json: List of credentials:
+    [{
+        "referent": string, // cred_id in the wallet
+        "attrs": {"key1":"raw_value1", "key2":"raw_value2"},
+        "schema_id": string,
+        "cred_def_id": string,
+        "rev_reg_id": Optional<string>,
+        "cred_rev_id": Optional<string>
+    }]
+    NOTE: The list of length less than the requested count means credentials search iterator is completed.
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("prover_fetch_credentials: >>> search_handle: %r, count: %r",
+                 search_handle,
+                 count)
+
+    if not hasattr(prover_fetch_credentials, "cb"):
+        logger.debug("prover_fetch_credentials: Creating callback")
+        prover_fetch_credentials.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_search_handle = c_int32(search_handle)
+    c_count = c_uint(count)
+
+    credentials_json = await do_call('indy_prover_fetch_credentials',
+                                     c_search_handle,
+                                     c_count,
+                                     prover_fetch_credentials.cb)
+
+    res = credentials_json.decode()
+    logger.debug("prover_fetch_credentials: <<< res: %r", res)
+    return res
+
+
+async def prover_close_credentials_search(search_handle: int) -> None:
+    """
+    Close credentials search (make search handle invalid)
+
+    :param search_handle: Search handle (created by prover_open_credentials_search)
+    :return: None
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("prover_close_credentials_search: >>> search_handle: %r",
+                 search_handle)
+
+    if not hasattr(prover_close_credentials_search, "cb"):
+        logger.debug("prover_close_credentials_search: Creating callback")
+        prover_close_credentials_search.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32))
+
+    c_search_handle = c_int32(search_handle)
+
+    res = await do_call('indy_prover_close_credentials_search',
+                        c_search_handle,
+                        prover_close_credentials_search.cb)
+
+    logger.debug("prover_close_credentials_search: <<< res: %r", res)
+    return res
+
+
 async def prover_get_credentials_for_proof_req(wallet_handle: int,
                                                proof_request_json: str) -> str:
     """
     Gets human readable credentials matching the given proof request.
+
+    NOTE: This method is deprecated because immediately returns all fetched credentials.
+    Use <prover_search_credentials_for_proof_req> to fetch records by small batches.
 
     :param wallet_handle: wallet handler (created by open_wallet).
     :param proof_request_json: proof request json
@@ -691,12 +857,12 @@ async def prover_get_credentials_for_proof_req(wallet_handle: int,
                            // for date in this interval for each attribute
                            // (can be overridden on attribute level)
         }
-        where:
+    where:
          attr_referent: Proof-request local identifier of requested attribute
          attr_info: Describes requested attribute
              {
                  "name": string, // attribute name, (case insensitive and ignore spaces)
-                 "restrictions": Optional<[<attr_filter>]> // see below,
+                 "restrictions": Optional<[<filter_json>]>, // see above
                                   // if specified, credential must satisfy to one of the given restriction.
                  "non_revoked": Optional<<non_revoc_interval>>, // see below,
                                 // If specified prover must proof non-revocation
@@ -709,7 +875,7 @@ async def prover_get_credentials_for_proof_req(wallet_handle: int,
                  "name": attribute name, (case insensitive and ignore spaces)
                  "p_type": predicate type (Currently >= only)
                  "p_value": predicate value
-                 "restrictions": Optional<[<attr_filter>]> // see below,
+                 "restrictions": Optional<[<filter_json>]>, // see above
                                  // if specified, credential must satisfy to one of the given restriction.
                  "non_revoked": Optional<<non_revoc_interval>>, // see below,
                                 // If specified prover must proof non-revocation
@@ -721,8 +887,7 @@ async def prover_get_credentials_for_proof_req(wallet_handle: int,
                  "from": Optional<int>, // timestamp of interval beginning
                  "to": Optional<int>, // timestamp of interval ending
              }
-         filter: see filter_json above              
-    :return: json with credentials for the given pool request.
+    :return: json with credentials for the given proof request.
              {
                  "requested_attrs": {
                      "<attr_referent>": [{ cred_info: <credential_info>, interval: Optional<non_revoc_interval> }],
@@ -762,6 +927,145 @@ async def prover_get_credentials_for_proof_req(wallet_handle: int,
 
     res = credentials_json.decode()
     logger.debug("prover_get_credentials_for_proof_req: <<< res: %r", res)
+    return res
+
+
+async def prover_search_credentials_for_proof_req(wallet_handle: int,
+                                                  proof_request_json: str,
+                                                  extra_query_json: Optional[str]) -> int:
+    """
+    Search for credentials matching the given proof request.
+
+    Instead of immediately returning of fetched credentials this call returns search_handle that can be used later
+    to fetch records by small batches (with prover_fetch_credentials_for_proof_req).
+
+    :param wallet_handle: wallet handler (created by open_wallet).
+    :param proof_request_json: proof request json
+        {
+            "name": string,
+            "version": string,
+            "nonce": string,
+            "requested_attributes": { // set of requested attributes
+                 "<attr_referent>": <attr_info>, // see below
+                 ...,
+            },
+            "requested_predicates": { // set of requested predicates
+                 "<predicate_referent>": <predicate_info>, // see below
+                 ...,
+             },
+            "non_revoked": Optional<<non_revoc_interval>>, // see below,
+                           // If specified prover must proof non-revocation
+                           // for date in this interval for each attribute
+                           // (can be overridden on attribute level)
+        }
+    :param extra_query_json:(Optional) List of extra queries that will be applied to correspondent attribute/predicate:
+        {
+            "<attr_referent>": <wql query>,
+            "<predicate_referent>": <wql query>,
+        }
+        where wql query: indy-sdk/doc/design/011-wallet-query-language/README.md
+    :return: search_handle: Search handle that can be used later to fetch records by small batches (with prover_fetch_credentials_for_proof_req)
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("prover_search_credentials_for_proof_req: >>> wallet_handle: %r, proof_request_json: %r, "
+                 "extra_query_json: %r",
+                 wallet_handle,
+                 proof_request_json,
+                 extra_query_json)
+
+    if not hasattr(prover_search_credentials_for_proof_req, "cb"):
+        logger.debug("prover_search_credentials_for_proof_req: Creating callback")
+        prover_search_credentials_for_proof_req.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_int32))
+
+    c_wallet_handle = c_int32(wallet_handle)
+    c_proof_request_json = c_char_p(proof_request_json.encode('utf-8'))
+    c_extra_query_json = c_char_p(extra_query_json.encode('utf-8')) if extra_query_json is not None else None
+
+    res = await do_call('indy_prover_search_credentials_for_proof_req',
+                        c_wallet_handle,
+                        c_proof_request_json,
+                        c_extra_query_json,
+                        prover_search_credentials_for_proof_req.cb)
+
+    logger.debug("prover_search_credentials_for_proof_req: <<< res: %r", res)
+    return res
+
+
+async def prover_fetch_credentials_for_proof_req(search_handle: int,
+                                                 item_referent: str,
+                                                 count: int) -> str:
+    """
+    Fetch next records for the requested item using proof request search handle (created by prover_search_credentials_for_proof_req).
+
+    :param search_handle: Search handle (created by prover_search_credentials_for_proof_req)
+    :param item_referent: Referent of attribute/predicate in the proof request
+    :param count: Count of records to fetch
+    :return: credentials_json: List of credentials for the given proof request.
+        [{
+            cred_info: <credential_info>,
+            interval: Optional<non_revoc_interval>
+        }]
+    where credential_info is
+        {
+            "referent": <string>,
+            "attrs": [{"attr_name" : "attr_raw_value"}],
+            "schema_id": string,
+            "cred_def_id": string,
+            "rev_reg_id": Optional<int>,
+            "cred_rev_id": Optional<int>,
+        }
+    NOTE: The list of length less than the requested count means that search iterator correspondent to the requested <item_referent> is completed.
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("prover_fetch_credentials_for_proof_req: >>> search_handle: %r, item_referent: %r, count: %r",
+                 search_handle,
+                 item_referent,
+                 count)
+
+    if not hasattr(prover_fetch_credentials_for_proof_req, "cb"):
+        logger.debug("prover_fetch_credentials_for_proof_req: Creating callback")
+        prover_fetch_credentials_for_proof_req.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_search_handle = c_int32(search_handle)
+    c_item_referent = c_char_p(item_referent.encode('utf-8'))
+    c_count = c_uint(count)
+
+    credentials_json = await do_call('indy_prover_fetch_credentials_for_proof_req',
+                                     c_search_handle,
+                                     c_item_referent,
+                                     c_count,
+                                     prover_fetch_credentials_for_proof_req.cb)
+
+    res = credentials_json.decode()
+    logger.debug("prover_fetch_credentials_for_proof_req: <<< res: %r", res)
+    return res
+
+
+async def prover_close_credentials_search_for_proof_req(search_handle: int) -> None:
+    """
+    Close credentials search for proof request (make search handle invalid)
+
+    :param search_handle: Search handle (created by prover_search_credentials_for_proof_req)
+    :return: None
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("prover_close_credentials_search_for_proof_req: >>> search_handle: %r",
+                 search_handle)
+
+    if not hasattr(prover_close_credentials_search_for_proof_req, "cb"):
+        logger.debug("prover_close_credentials_search_for_proof_req: Creating callback")
+        prover_close_credentials_search_for_proof_req.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32))
+
+    c_search_handle = c_int32(search_handle)
+
+    res = await do_call('indy_prover_close_credentials_search_for_proof_req',
+                        c_search_handle,
+                        prover_close_credentials_search_for_proof_req.cb)
+
+    logger.debug("prover_close_credentials_search_for_proof_req: <<< res: %r", res)
     return res
 
 
@@ -840,11 +1144,12 @@ async def prover_create_proof(wallet_handle: int,
               },
           }
     where
+     wql query: indy-sdk/doc/design/011-wallet-query-language/README.md
      attr_referent: Proof-request local identifier of requested attribute
      attr_info: Describes requested attribute
          {
              "name": string, // attribute name, (case insensitive and ignore spaces)
-             "restrictions": Optional<[<attr_filter>]> // see below,
+             "restrictions": Optional<[<wql query>]>,
                               // if specified, credential must satisfy to one of the given restriction.
              "non_revoked": Optional<<non_revoc_interval>>, // see below,
                             // If specified prover must proof non-revocation
@@ -857,7 +1162,7 @@ async def prover_create_proof(wallet_handle: int,
              "name": attribute name, (case insensitive and ignore spaces)
              "p_type": predicate type (Currently >= only)
              "p_value": predicate value
-             "restrictions": Optional<[<attr_filter>]> // see below,
+             "restrictions": Optional<[<wql query>]>,
                              // if specified, credential must satisfy to one of the given restriction.
              "non_revoked": Optional<<non_revoc_interval>>, // see below,
                             // If specified prover must proof non-revocation

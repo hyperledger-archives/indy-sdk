@@ -44,26 +44,3 @@ async def test_sign_and_submit_request_works_for_invalid_wallet_handle(wallet_ha
                                              nym_request)
 
     assert ErrorCode.WalletInvalidHandle == e.value.error_code
-
-
-@pytest.mark.asyncio
-async def test_sign_and_submit_request_works_for_incompatible_wallet_and_pool(pool_name, pool_handle, wallet_name,
-                                                                              seed_my1, seed_trustee1, credentials):
-    pool_name = "other_" + pool_name
-    wallet_name = "other_" + wallet_name
-
-    await wallet.create_wallet(pool_name, wallet_name, None, None, credentials)
-    wallet_handle = await wallet.open_wallet(wallet_name, None, credentials)
-
-    (my_did, _) = await did.create_and_store_my_did(wallet_handle, json.dumps({"seed": seed_my1}))
-    (trustee_did, _) = await did.create_and_store_my_did(wallet_handle, json.dumps({"seed": seed_trustee1}))
-
-    nym_request = await ledger.build_nym_request(trustee_did, my_did, None, None, None)
-
-    with pytest.raises(IndyError) as e:
-        await ledger.sign_and_submit_request(pool_handle, wallet_handle, trustee_did,
-                                             nym_request)
-
-    assert ErrorCode.WalletIncompatiblePoolError == e.value.error_code
-    await wallet.close_wallet(wallet_handle)
-    await wallet.delete_wallet(wallet_name, credentials)

@@ -22,7 +22,7 @@ impl MerkleTree {
 
     pub fn find_hash<'a>(from: &'a Tree, required_hash: &Vec<u8>) -> Option<&'a Tree> {
         match from {
-            &Tree::Empty {.. } => {
+            &Tree::Empty { .. } => {
                 assert!(false);
                 return None;
             }
@@ -89,7 +89,7 @@ impl MerkleTree {
         let mut new_hash: Vec<u8>;
 
         if old_node != 0 {
-            new_hash = proofs.next().unwrap().to_vec();
+            new_hash = unwrap_opt_or_return!(proofs.next(), Ok(false)).to_vec();
             old_hash = new_hash.clone();
         } else {
             new_hash = self.root_hash().to_vec();
@@ -98,19 +98,19 @@ impl MerkleTree {
 
         while old_node != 0 {
             if old_node % 2 != 0 {
-                let next_proof = proofs.next().unwrap();
+                let next_proof = unwrap_opt_or_return!(proofs.next(), Ok(false));
                 old_hash = Hash::hash_nodes(next_proof, &old_hash)?.to_vec();
                 new_hash = Hash::hash_nodes(next_proof, &new_hash)?.to_vec();
             } else if old_node < new_node {
                 new_hash = Hash::hash_nodes(&new_hash,
-                                            proofs.next().unwrap())?.to_vec();
+                                            unwrap_opt_or_return!(proofs.next(), Ok(false)))?.to_vec();
             }
             old_node = old_node / 2;
             new_node = new_node / 2;
         }
 
         while new_node != 0 {
-            let n = proofs.next().unwrap();
+            let n = unwrap_opt_or_return!(proofs.next(), Ok(false));
             new_hash = Hash::hash_nodes(&new_hash, n)?.to_vec();
             new_node = new_node / 2;
         }
@@ -213,12 +213,9 @@ mod tests {
             "{\"data\":{\"alias\":\"Node3\",\"client_ip\":\"192.168.1.35\",\"client_port\":9706,\"node_ip\":\"192.168.1.35\",\"node_port\":9705,\"services\":[\"VALIDATOR\"]},\"dest\":\"DKVxG2fXXTU8yT5N7hGEbXB3dfdAnYv1JczDUHpmDxya\",\"identifier\":\"2yAeV5ftuasWNgQwVYzeHeTuM7LwwNtPR3Zg9N4JiDgF\",\"txnId\":\"7e9f355dffa78ed24668f0e0e369fd8c224076571c51e2ea8be5f26479edebe4\",\"type\":\"0\"}",
             "{\"data\":{\"alias\":\"Node4\",\"client_ip\":\"192.168.1.35\",\"client_port\":9708,\"node_ip\":\"192.168.1.35\",\"node_port\":9707,\"services\":[\"VALIDATOR\"]},\"dest\":\"4PS3EDQ3dW1tci1Bp6543CfuuebjFrg36kLAUcskGfaA\",\"identifier\":\"FTE95CVthRtrBnK2PYCBbC9LghTcGwi9Zfi1Gz2dnyNx\",\"txnId\":\"aa5e817d7cc626170eca175822029339a444eb0ee8f0bd20d3b0b76e566fb008\",\"type\":\"0\"}"];
         let mut mt = MerkleTree::from_vec(vec![]).unwrap();
-        println!("root(0)={}", mt.root_hash_hex());
-        let mut r = 1;
+
         for i in values {
             mt.append(String::from(i).as_bytes().to_vec()).unwrap();
-            println!("root({})={}", r, mt.root_hash_hex());
-            r += 1;
         }
         assert_eq!(mt.root_hash_hex(), "1285070cf01debc1155cef8dfd5ba54c05abb919a4c08c8632b079fb1e1e5e7c");
     }
@@ -227,16 +224,13 @@ mod tests {
     fn find_hash_works() {
         let values = vec!["1", "2", "3", "4", "5", "6", "7", "8", "9"];
         let mut mt = MerkleTree::from_vec(vec![]).unwrap();
-        println!("root(0)={}", mt.root_hash_hex());
-        let mut r = 1;
+
         for i in values {
             mt.append(String::from(i).as_bytes().to_vec()).unwrap();
-            println!("root({})={}", r, mt.root_hash_hex());
-            r += 1;
         }
 
-        assert!(mt.count == 9);
-        assert!(mt.nodes_count == 8);
+        assert_eq!(mt.count, 9);
+        assert_eq!(mt.nodes_count, 8);
 
         let mut rh: Vec<u8>;
 
@@ -244,19 +238,19 @@ mod tests {
                   0xfe, 0xc0, 0x54, 0xfe, 0x21, 0x9a, 0xb3, 0x57,
                   0xb7, 0x5d, 0x3c, 0x1c, 0xd9, 0xf8, 0xbe, 0x17,
                   0x67, 0xf6, 0x09, 0x0f, 0x9c, 0x86, 0xf9, 0xfd];
-        assert!(MerkleTree::find_hash(&mt.root, &rh) != None);
+        assert_ne!(MerkleTree::find_hash(&mt.root, &rh), None);
 
         rh = vec![0x22, 0x15, 0xe8, 0xac, 0x4e, 0x2b, 0x87, 0x1c,
                   0x2a, 0x48, 0x18, 0x9e, 0x79, 0x73, 0x8c, 0x95,
                   0x6c, 0x08, 0x1e, 0x23, 0xac, 0x2f, 0x24, 0x15,
                   0xbf, 0x77, 0xda, 0x19, 0x9d, 0xfd, 0x92, 0x0c];
-        assert!(MerkleTree::find_hash(&mt.root, &rh) != None);
+        assert_ne!(MerkleTree::find_hash(&mt.root, &rh), None);
 
         rh = vec![0x23, 0x15, 0xe8, 0xac, 0x4e, 0x2b, 0x87, 0x1c,
                   0x2a, 0x48, 0x18, 0x9e, 0x79, 0x73, 0x8c, 0x95,
                   0x6c, 0x08, 0x1e, 0x23, 0xac, 0x2f, 0x24, 0x15,
                   0xbf, 0x77, 0xda, 0x19, 0x9d, 0xfd, 0x92, 0x0d];
-        assert!(MerkleTree::find_hash(&mt.root, &rh) == None);
+        assert_eq!(MerkleTree::find_hash(&mt.root, &rh), None);
     }
 
     #[test]
@@ -265,12 +259,9 @@ mod tests {
             "{\"data\":{\"alias\":\"Node1\",\"client_ip\":\"192.168.1.35\",\"client_port\":9702,\"node_ip\":\"192.168.1.35\",\"node_port\":9701,\"services\":[\"VALIDATOR\"]},\"dest\":\"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv\",\"identifier\":\"FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4\",\"txnId\":\"fea82e10e894419fe2bea7d96296a6d46f50f93f9eeda954ec461b2ed2950b62\",\"type\":\"0\"}",
             "{\"data\":{\"alias\":\"Node2\",\"client_ip\":\"192.168.1.35\",\"client_port\":9704,\"node_ip\":\"192.168.1.35\",\"node_port\":9703,\"services\":[\"VALIDATOR\"]},\"dest\":\"8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb\",\"identifier\":\"8QhFxKxyaFsJy4CyxeYX34dFH8oWqyBv1P4HLQCsoeLy\",\"txnId\":\"1ac8aece2a18ced660fef8694b61aac3af08ba875ce3026a160acbc3a3af35fc\",\"type\":\"0\"}"];
         let mut mt = MerkleTree::from_vec(vec![]).unwrap();
-        println!("root(0)={}", mt.root_hash_hex());
-        let mut r = 1;
+
         for i in values {
             mt.append(String::from(i).as_bytes().to_vec()).unwrap();
-            println!("root({})={}", r, mt.root_hash_hex());
-            r += 1;
         }
 
         let proofs: Vec<Vec<u8>> = vec![
@@ -296,6 +287,24 @@ mod tests {
                                      &proofs).unwrap());
     }
 
+    #[test] // IS-708 Crash while consistency proof include empty 'proof' and invalid root_hash
+    fn consistency_proof_works_for_empty_proof_and_invalid_root_hash() {
+        let values = vec![
+            "{\"data\":{\"alias\":\"Node1\",\"client_ip\":\"192.168.1.35\",\"client_port\":9702,\"node_ip\":\"192.168.1.35\",\"node_port\":9701,\"services\":[\"VALIDATOR\"]},\"dest\":\"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv\",\"identifier\":\"FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4\",\"txnId\":\"fea82e10e894419fe2bea7d96296a6d46f50f93f9eeda954ec461b2ed2950b62\",\"type\":\"0\"}",
+            "{\"data\":{\"alias\":\"Node2\",\"client_ip\":\"192.168.1.35\",\"client_port\":9704,\"node_ip\":\"192.168.1.35\",\"node_port\":9703,\"services\":[\"VALIDATOR\"]},\"dest\":\"8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb\",\"identifier\":\"8QhFxKxyaFsJy4CyxeYX34dFH8oWqyBv1P4HLQCsoeLy\",\"txnId\":\"1ac8aece2a18ced660fef8694b61aac3af08ba875ce3026a160acbc3a3af35fc\",\"type\":\"0\"}"];
+        let mut mt = MerkleTree::from_vec(vec![]).unwrap();
+
+        for i in values {
+            mt.append(String::from(i).as_bytes().to_vec()).unwrap();
+        }
+
+        let proofs: Vec<Vec<u8>> = vec![];
+
+        assert_eq!(false, mt.consistency_proof(&vec![0x77 as u8, 0xf1, 0x5a],
+                                               4,
+                                               &proofs).unwrap());
+    }
+
     #[test]
     fn gen_proof_and_proof_validate_work() {
         let strvals = vec!["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"];
@@ -317,9 +326,7 @@ mod tests {
         let values = strvals.iter().map(|x| String::from(*x).as_bytes().to_vec()).collect::<Vec<_>>();
         let mt = MerkleTree::from_vec(values.clone()).unwrap();
         let serialized = serde_json::to_string(&mt).unwrap();
-        println!("serialize mt: h={}, c={}, rhash={}", mt.height, mt.count, serialized);
         let newmt: MerkleTree = serde_json::from_str(serialized.as_str()).unwrap();
-        println!("serialize newmt: h={}, c={}", newmt.height, newmt.count);
 
         let mut collected = Vec::new();
         for value in &newmt {

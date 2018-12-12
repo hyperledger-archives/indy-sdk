@@ -3,7 +3,7 @@ import pytest
 
 from indy import IndyError
 from indy.error import ErrorCode
-from tests.non_secrets.constants import *
+from tests.non_secrets.common import *
 
 
 @pytest.mark.asyncio

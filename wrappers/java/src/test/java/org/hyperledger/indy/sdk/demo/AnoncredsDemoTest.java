@@ -36,9 +36,10 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 	public Timeout globalTimeout = new Timeout(2, TimeUnit.MINUTES);
 
 	private Pool pool;
+	private String issuerWalletConfig = new JSONObject().put("id", "issuerWallet").toString();
 	private Wallet issuerWallet;
+	private String proverWalletConfig = new JSONObject().put("id", "proverWallet").toString();
 	private Wallet proverWallet;
-	private String poolName;
 	private String masterSecretId = "masterSecretId";
 	private String credentialId1 = "id1";
 	private String credentialId2 = "id2";
@@ -52,28 +53,31 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 
 	@Before
 	public void createWallet() throws Exception {
-		// Create and Open Pool
-		poolName = PoolUtils.createPoolLedgerConfig();
+		// Set protocol version
+		Pool.setProtocolVersion(PROTOCOL_VERSION).get();
 
-		PoolJSONParameters.OpenPoolLedgerJSONParameter config2 = new PoolJSONParameters.OpenPoolLedgerJSONParameter(null, null, null);
+		// Create and Open Pool
+		String poolName = PoolUtils.createPoolLedgerConfig();
+
+		PoolJSONParameters.OpenPoolLedgerJSONParameter config2 = new PoolJSONParameters.OpenPoolLedgerJSONParameter(null, null);
 		pool = Pool.openPoolLedger(poolName, config2.toJson()).get();
 
 		// Issuer Create and Open Wallet
-		Wallet.createWallet(poolName, "issuerWallet", TYPE, null, CREDENTIALS).get();
-		issuerWallet = Wallet.openWallet("issuerWallet", null, CREDENTIALS).get();
+		Wallet.createWallet(issuerWalletConfig, WALLET_CREDENTIALS).get();
+		issuerWallet = Wallet.openWallet(issuerWalletConfig, WALLET_CREDENTIALS).get();
 
 		// Prover Create and Open Wallet
-		Wallet.createWallet(poolName, "proverWallet", TYPE, null, CREDENTIALS).get();
-		proverWallet = Wallet.openWallet("proverWallet", null, CREDENTIALS).get();
+		Wallet.createWallet(proverWalletConfig, WALLET_CREDENTIALS).get();
+		proverWallet = Wallet.openWallet(proverWalletConfig, WALLET_CREDENTIALS).get();
 	}
 
 	@After
 	public void deleteWallet() throws Exception {
 		issuerWallet.closeWallet().get();
-		Wallet.deleteWallet("issuerWallet", CREDENTIALS).get();
+		Wallet.deleteWallet(issuerWalletConfig, WALLET_CREDENTIALS).get();
 
 		proverWallet.closeWallet().get();
-		Wallet.deleteWallet("proverWallet", CREDENTIALS).get();
+		Wallet.deleteWallet(proverWalletConfig, WALLET_CREDENTIALS).get();
 
 		pool.closePoolLedger().get();
 	}
@@ -177,8 +181,9 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 		Wallet issuerGvtWallet = issuerWallet;
 
 		// Issuer2 Create and Open Wallet
-		Wallet.createWallet(poolName, "issuer2Wallet", "default", null, CREDENTIALS).get();
-		Wallet issuerXyzWallet = Wallet.openWallet("issuer2Wallet", null, CREDENTIALS).get();
+		String issuer2WalletConfig = new JSONObject().put("id", "issuer2Wallet").toString();
+		Wallet.createWallet(issuer2WalletConfig, WALLET_CREDENTIALS).get();
+		Wallet issuerXyzWallet = Wallet.openWallet(issuer2WalletConfig, WALLET_CREDENTIALS).get();
 
 		// Issuer1 create GVT Schema
 		AnoncredsResults.IssuerCreateSchemaResult createSchemaResult = Anoncreds.issuerCreateSchema(issuerDid, GVT_SCHEMA_NAME, SCHEMA_VERSION, GVT_SCHEMA_ATTRIBUTES).get();
@@ -303,7 +308,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 
 		// Close and delete Issuer2 Wallet
 		issuerXyzWallet.closeWallet().get();
-		Wallet.deleteWallet("issuer2Wallet", CREDENTIALS).get();
+		Wallet.deleteWallet(issuer2WalletConfig, WALLET_CREDENTIALS).get();
 	}
 
 	@Test

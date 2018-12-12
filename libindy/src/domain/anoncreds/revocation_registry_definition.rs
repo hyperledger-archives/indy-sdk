@@ -1,9 +1,4 @@
-extern crate indy_crypto;
-extern crate serde;
-extern crate serde_json;
-
-use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
-use self::indy_crypto::cl::{RevocationKeyPublic, RevocationKeyPrivate};
+use indy_crypto::cl::{RevocationKeyPublic, RevocationKeyPrivate};
 
 use super::DELIMITER;
 
@@ -19,8 +14,6 @@ pub struct RevocationRegistryConfig {
     pub max_cred_num: Option<u32>
 }
 
-impl<'a> JsonDecodable<'a> for RevocationRegistryConfig {}
-
 #[allow(non_camel_case_types)]
 #[derive(Deserialize, Debug, Serialize, PartialEq, Clone)]
 pub enum IssuanceType {
@@ -34,15 +27,11 @@ impl IssuanceType {
     }
 }
 
-impl<'a> JsonDecodable<'a> for IssuanceType {}
-
 #[allow(non_camel_case_types)]
 #[derive(Deserialize, Debug, Serialize, PartialEq)]
 pub enum RegistryType {
     CL_ACCUM,
 }
-
-impl<'a> JsonDecodable<'a> for RegistryType {}
 
 impl RegistryType {
     pub fn to_str(&self) -> &'static str {
@@ -91,10 +80,6 @@ impl RevocationRegistryDefinition {
     }
 }
 
-impl JsonEncodable for RevocationRegistryDefinition {}
-
-impl<'a> JsonDecodable<'a> for RevocationRegistryDefinition {}
-
 impl From<RevocationRegistryDefinition> for RevocationRegistryDefinitionV1 {
     fn from(rev_reg_def: RevocationRegistryDefinition) -> Self {
         match rev_reg_def {
@@ -118,17 +103,9 @@ pub struct RevocationRegistryDefinitionPrivate {
     pub value: RevocationKeyPrivate
 }
 
-impl JsonEncodable for RevocationRegistryDefinitionPrivate {}
-
-impl<'a> JsonDecodable<'a> for RevocationRegistryDefinitionPrivate {}
-
 #[derive(Debug, Deserialize, Serialize, Clone, NamedType)]
 pub struct RevocationRegistryInfo {
     pub id: String,
     pub curr_id: u32,
     pub used_ids: HashSet<u32>
 }
-
-impl JsonEncodable for RevocationRegistryInfo {}
-
-impl<'a> JsonDecodable<'a> for RevocationRegistryInfo {}

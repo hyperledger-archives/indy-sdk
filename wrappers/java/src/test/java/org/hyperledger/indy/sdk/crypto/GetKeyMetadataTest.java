@@ -2,7 +2,6 @@ package org.hyperledger.indy.sdk.crypto;
 
 import org.hyperledger.indy.sdk.IndyIntegrationTestWithSingleWallet;
 import org.hyperledger.indy.sdk.wallet.WalletItemNotFoundException;
-import org.hyperledger.indy.sdk.wallet.WalletNotFoundException;
 import org.junit.Before;
 import org.junit.Test;
 

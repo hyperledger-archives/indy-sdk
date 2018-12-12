@@ -1,6 +1,8 @@
 #ifndef __indy__mod_included__
 #define __indy__mod_included__
 
+#include "indy_types.h"
+
 typedef enum
 {
     Success = 0,
@@ -87,7 +89,7 @@ typedef enum
     WalletStorageError = 210,
 
     // Error during encryption-related operations
-    WalletEncryptonError = 211,
+    WalletEncryptionError = 211,
 
     // Requested wallet item not found
      WalletItemNotFound = 212,
@@ -123,6 +125,13 @@ typedef enum
     // Timeout for action
     PoolLedgerTimeout = 307,
 
+    // Attempt to open Pool for witch Genesis Transactions are not compatible with set Protocol version.
+    // Call pool.indy_set_protocol_version to set correct Protocol version.
+    PoolIncompatibleProtocolVersion = 308,
+
+    // Item not found on ledger.
+    LedgerNotFound = 309,
+
     // Revocation registry is full and creation of new registry is necessary
     AnoncredsRevocationRegistryFullError = 400,
 
@@ -152,9 +161,37 @@ typedef enum
     PaymentIncompatibleMethodsError = 701,
 
     // Insufficient funds on inputs
-    PaymentInsufficientFundsError = 702
+    PaymentInsufficientFundsError = 702,
+
+    // No such source on a ledger
+    PaymentSourceDoesNotExistError = 703,
+
+    // Operation is not supported for payment method
+    PaymentOperationNotSupportedError = 704,
+
+    // Extra funds on inputs
+    PaymentExtraFundsError = 705
 
 } indy_error_t;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+    /// Set libindy runtime configuration. Can be optionally called to change current params.
+    ///
+    /// #Params
+    /// config: {
+    ///     "crypto_thread_pool_size": <int> - size of thread pool for the most expensive crypto operations. (4 by default)
+    /// }
+    ///
+    /// #Errors
+    /// Common*
+    extern indy_error_t indy_set_runtime_config(const char *  config);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

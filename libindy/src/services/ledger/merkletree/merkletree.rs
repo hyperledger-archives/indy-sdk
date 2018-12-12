@@ -1,6 +1,6 @@
 use services::ledger::merkletree::tree::{ Tree, LeavesIterator, LeavesIntoIterator, TreeLeafData };
 use services::ledger::merkletree::proof::{ Proof, Lemma };
-use utils::crypto::hash::{Hash, HASH_OUTPUT_LEN};
+use utils::crypto::hash::{Hash, HASHBYTES};
 use errors::common::CommonError;
 
 /// A Merkle tree is a binary tree, with values of type `T` at the leafs,
@@ -97,7 +97,7 @@ impl MerkleTree {
     /// Returns the hex root hash of Merkle tree
     pub fn root_hash_hex(&self) -> String {
         let rh = self.root.hash();
-        let mut ret:String = String::with_capacity(HASH_OUTPUT_LEN*2);
+        let mut ret:String = String::with_capacity(HASHBYTES *2);
         for i in rh {
             ret.push_str(&format!("{:02x}", i));
         }

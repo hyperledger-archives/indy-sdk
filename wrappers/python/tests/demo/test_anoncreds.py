@@ -6,10 +6,10 @@ import json
 
 # noinspection PyUnusedLocal
 @pytest.mark.asyncio
-async def test_anoncreds_demo_works(pool_name, wallet_name, path_home, credentials):
+async def test_anoncreds_demo_works(pool_name, path_home, wallet_config, credentials):
     # 1. Create My Wallet and Get Wallet Handle
-    await wallet.create_wallet(pool_name, wallet_name, None, None, credentials)
-    wallet_handle = await wallet.open_wallet(wallet_name, None, credentials)
+    await wallet.create_wallet(wallet_config, credentials)
+    wallet_handle = await wallet.open_wallet(wallet_config, credentials)
 
     # 2. Issuer create credential Definition for Schema
     issuer_did = 'NcYxiDXkpYi6ov5FcYDi1e'
@@ -35,6 +35,7 @@ async def test_anoncreds_demo_works(pool_name, wallet_name, path_home, credentia
                                                      cred_def_json, master_secret_id)
 
     #  6. Issuer create credential for credential Request
+    #  note that encoding is not standardized by Indy except that 32-bit integers are encoded as themselves. IS-786
     cred_values_json = json.dumps({
         "sex": {
             "raw": "male", "encoded": "5944657099558967239210949258394887428692050081607692519917050011144233115103"},
@@ -97,15 +98,15 @@ async def test_anoncreds_demo_works(pool_name, wallet_name, path_home, credentia
 
     # 11. Close wallet
     await wallet.close_wallet(wallet_handle)
-    await wallet.delete_wallet(wallet_name, credentials)
+    await wallet.delete_wallet(wallet_config, credentials)
 
 
 # noinspection PyUnusedLocal
 @pytest.mark.asyncio
-async def test_anoncreds_demo_works_for_revocation_proof(pool_name, wallet_name, path_home, credentials):
+async def test_anoncreds_demo_works_for_revocation_proof(pool_name, path_home, wallet_config, credentials):
     # 1. Create My Wallet and Get Wallet Handle
-    await wallet.create_wallet(pool_name, wallet_name, None, None, credentials)
-    wallet_handle = await wallet.open_wallet(wallet_name, None, credentials)
+    await wallet.create_wallet(wallet_config, credentials)
+    wallet_handle = await wallet.open_wallet(wallet_config, credentials)
 
     issuer_did = 'NcYxiDXkpYi6ov5FcYDi1e'
     prover_did = 'VsKV7grR1BUE29mG2Fm2kX'
@@ -209,4 +210,4 @@ async def test_anoncreds_demo_works_for_revocation_proof(pool_name, wallet_name,
 
     # 14. Close wallet
     await wallet.close_wallet(wallet_handle)
-    await wallet.delete_wallet(wallet_name, credentials)
+    await wallet.delete_wallet(wallet_config, credentials)

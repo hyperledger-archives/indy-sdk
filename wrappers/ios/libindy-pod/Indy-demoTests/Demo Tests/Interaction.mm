@@ -12,6 +12,10 @@
 
 - (void)setUp {
     [super setUp];
+
+    NSError *ret = [[PoolUtils sharedInstance] setProtocolVersion:[TestUtils protocolVersion]];
+    XCTAssertEqual(ret.code, Success, @"PoolUtils::setProtocolVersion() failed!");
+
     // Put setup code here. This method is called before the invocation of each test method in the class.
 }
 
@@ -45,16 +49,12 @@
 
     // Create Issuer wallet, get wallet handle
     IndyHandle issuerWalletHandle = 0;
-    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
-                                                                  xtype:nil
-                                                                 handle:&issuerWalletHandle];
+    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithHandle:&issuerWalletHandle];
     XCTAssertEqual(ret.code, Success, @"createAndOpenWalletWithPoolName() failed!");
 
     // Create Prover wallet, get wallet handle
     IndyHandle proverWalletHandle = 0;
-    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
-                                                                  xtype:nil
-                                                                 handle:&proverWalletHandle];
+    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithHandle:&proverWalletHandle];
     XCTAssertEqual(ret.code, Success, @"createAndOpenWalletWithPoolName() failed!");
 
     // Obtain default trustee did
@@ -321,7 +321,7 @@
                                                            outResponseJson:&revocRegEntryResponse];
     XCTAssertEqual(ret.code, Success, @"signAndSubmitRequestWithPoolHandle() failed!");
     NSDictionary *revocRegEntry = [NSDictionary fromString:revocRegEntryResponse];
-    NSNumber *entryTxnTime = revocRegEntry[@"result"][@"txnTime"];
+    NSNumber *entryTxnTime = revocRegEntry[@"result"][@"txnMetadata"][@"txnTime"];
 
     // Prover gets revocation registry definition from ledger
     NSDictionary *credential = [NSDictionary fromString:credentialJson];

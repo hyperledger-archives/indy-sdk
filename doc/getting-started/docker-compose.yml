@@ -23,7 +23,7 @@ services:
         ipv4_address: 10.0.0.2
     volumes:
        - sandbox:/var/lib/indy/sandbox/
-  jupyther:
+  jupyter:
     build:
       context: .
       dockerfile: getting-started.dockerfile

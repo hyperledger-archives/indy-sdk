@@ -1,31 +1,19 @@
-extern crate env_logger;
+extern crate log4rs;
 extern crate log;
+extern crate libc;
 
-//use self::env_logger::LogBuilder;
-//use self::log::{LogRecord, LogLevelFilter};
-//use std::env;
-use std::sync::{Once, ONCE_INIT};
+use std::error::Error;
+use indy;
 
-pub struct LoggerUtils {}
+pub struct  IndyCliLogger;
 
-static LOGGER_INIT: Once = ONCE_INIT;
+impl IndyCliLogger {
+    pub fn init(path: &str) -> Result<(), String> {
+        log4rs::init_file(path, Default::default())
+            .map_err(|err| format!("Cannot init Indy CLI logger: {}", err.description()))?;
 
-impl LoggerUtils {
-    pub fn init() {
-        // TODO: FIXME: Correct init of logger!!!
-//        LOGGER_INIT.call_once(|| {
-//            let format = |record: &LogRecord| {
-//                format!("{:>5}|{:<30}|{:>35}:{:<4}| {}", record.level(), record.target(), record.location().file(), record.location().line(), record.args())
-//            };
-//            let mut builder = LogBuilder::new();
-//            builder.format(format).filter(None, LogLevelFilter::Off);
-//
-//            if env::var("RUST_LOG").is_ok() {
-//                builder.parse(&env::var("RUST_LOG").unwrap());
-//            }
-//
-//            builder.init().unwrap();
-//        });
+        indy::logger::set_logger(log::logger())
+            .map_err(|_| format!("Cannot init Libindy logger"))
     }
 }
 
@@ -57,12 +45,24 @@ macro_rules! _log_err {
 
 #[macro_export]
 macro_rules! error_err {
-    () => ( _log_err!(::log::LogLevel::Error) );
-    ($($arg:tt)*) => ( _log_err!(::log::LogLevel::Error, $($arg)*) )
+    () => ( _log_err!(::log::Level::Error) );
+    ($($arg:tt)*) => ( _log_err!(::log::Level::Error, $($arg)*) )
 }
 
 #[macro_export]
 macro_rules! trace_err {
-    () => ( _log_err!(::log::LogLevel::Trace) );
-    ($($arg:tt)*) => ( _log_err!(::log::LogLevel::Trace, $($arg)*) )
+    () => ( _log_err!(::log::Level::Trace) );
+    ($($arg:tt)*) => ( _log_err!(::log::Level::Trace, $($arg)*) )
+}
+
+#[cfg(debug_assertions)]
+#[macro_export]
+macro_rules! secret {
+    ($val:expr) => {{ $val }};
+}
+
+#[cfg(not(debug_assertions))]
+#[macro_export]
+macro_rules! secret {
+    ($val:expr) => {{ "_" }};
 }

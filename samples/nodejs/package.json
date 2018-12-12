@@ -1,0 +1,42 @@
+{
+  "name": "samples",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Node.js samples for the indy-sdk",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node src/main.js",
+    "ledger:start": "cd ../../ && docker build -f ci/indy-pool.dockerfile -t indy_pool . && docker run --name indy_pool -itd -p 9701-9708:9701-9708 indy_pool",
+    "ledger:stop": "docker stop indy_pool && docker rm indy_pool"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hyperledger/indy-sdk.git"
+  },
+  "contributors": [
+    {
+      "name": "Spencer Holman",
+      "email": "sah14@byu.edu"
+    },
+    {
+      "name": "Matthew Hailstone",
+      "email": "matthew_hailstone@byu.edu"
+    },
+    {
+      "name": "Xavier NOPRE",
+      "email": "xnopre@twinpeek.net"
+    }
+  ],
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/hyperledger/indy-sdk/issues"
+  },
+  "homepage": "https://github.com/hyperledger/indy-sdk#readme",
+  "dependencies": {
+    "cryptiles": "^4.1.1",
+    "home-dir": "^1.0.0",
+    "indy-sdk": "file:../../wrappers/nodejs",
+    "mkdirp": "^0.5.1"
+  }
+}

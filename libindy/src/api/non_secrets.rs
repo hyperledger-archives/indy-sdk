@@ -1,13 +1,15 @@
 extern crate libc;
 
-use api::ErrorCode;
-use errors::ToErrorCode;
+use api::{ErrorCode, IndyHandle};
 use commands::{Command, CommandExecutor};
 use commands::non_secrets::NonSecretsCommand;
-use utils::cstring::CStringUtils;
+use domain::wallet::Tags;
+use errors::common::CommonError;
+use errors::ToErrorCode;
+use utils::ctypes;
 
+use serde_json;
 use self::libc::c_char;
-
 
 /// Create a new non-secret record in the wallet
 ///
@@ -17,31 +19,31 @@ use self::libc::c_char;
 /// type_: allows to separate different record types collections
 /// id: the id of record
 /// value: the value of record
-/// tags_json: the record tags used for search and storing meta information as json:
+/// tags_json: (optional) the record tags used for search and storing meta information as json:
 ///   {
 ///     "tagName1": <str>, // string tag (will be stored encrypted)
-///     "tagName2": <int>, // int tag (will be stored encrypted)
+///     "tagName2": <str>, // string tag (will be stored encrypted)
 ///     "~tagName3": <str>, // string tag (will be stored un-encrypted)
-///     "~tagName4": <int>, // int tag (will be stored un-encrypted)
+///     "~tagName4": <str>, // string tag (will be stored un-encrypted)
 ///   }
 ///   Note that null means no tags
 ///   If tag name starts with "~" the tag will be stored un-encrypted that will allow
 ///   usage of this tag in complex search queries (comparison, predicates)
 ///   Encrypted tags can be searched only for exact matching
 #[no_mangle]
-pub extern fn indy_add_wallet_record(command_handle: i32,
-                                     wallet_handle: i32,
+pub extern fn indy_add_wallet_record(command_handle: IndyHandle,
+                                     wallet_handle: IndyHandle,
                                      type_: *const c_char,
                                      id: *const c_char,
                                      value: *const c_char,
                                      tags_json: *const c_char,
-                                     cb: Option<extern fn(command_handle_: i32, err: ErrorCode)>) -> ErrorCode {
+                                     cb: Option<extern fn(command_handle_: IndyHandle, err: ErrorCode)>) -> ErrorCode {
     trace!("indy_add_wallet_record: >>> wallet_handle: {:?}, type_: {:?}, id: {:?}, value: {:?}, tags_json: {:?}", wallet_handle, type_, id, value, tags_json);
 
     check_useful_c_str!(type_, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(id, ErrorCode::CommonInvalidParam4);
     check_useful_c_str!(value, ErrorCode::CommonInvalidParam5);
-    check_useful_opt_c_str!(tags_json, ErrorCode::CommonInvalidParam6);
+    check_useful_opt_json!(tags_json, ErrorCode::CommonInvalidParam6, Tags);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
     trace!("indy_add_wallet_record: entities >>> wallet_handle: {:?}, type_: {:?}, id: {:?}, value: {:?}, tags_json: {:?}", wallet_handle, type_, id, value, tags_json);
@@ -77,12 +79,12 @@ pub extern fn indy_add_wallet_record(command_handle: i32,
 /// id: the id of record
 /// value: the new value of record
 #[no_mangle]
-pub extern fn indy_update_wallet_record_value(command_handle: i32,
-                                              wallet_handle: i32,
+pub extern fn indy_update_wallet_record_value(command_handle: IndyHandle,
+                                              wallet_handle: IndyHandle,
                                               type_: *const c_char,
                                               id: *const c_char,
                                               value: *const c_char,
-                                              cb: Option<extern fn(command_handle_: i32, err: ErrorCode)>) -> ErrorCode {
+                                              cb: Option<extern fn(command_handle_: IndyHandle, err: ErrorCode)>) -> ErrorCode {
     trace!("indy_update_wallet_record_value: >>> wallet_handle: {:?}, type_: {:?}, id: {:?}, value: {:?}", wallet_handle, type_, id, value);
 
     check_useful_c_str!(type_, ErrorCode::CommonInvalidParam3);
@@ -123,25 +125,25 @@ pub extern fn indy_update_wallet_record_value(command_handle: i32,
 /// tags_json: the record tags used for search and storing meta information as json:
 ///   {
 ///     "tagName1": <str>, // string tag (will be stored encrypted)
-///     "tagName2": <int>, // int tag (will be stored encrypted)
+///     "tagName2": <str>, // string tag (will be stored encrypted)
 ///     "~tagName3": <str>, // string tag (will be stored un-encrypted)
-///     "~tagName4": <int>, // int tag (will be stored un-encrypted)
+///     "~tagName4": <str>, // string tag (will be stored un-encrypted)
 ///   }
 ///   If tag name starts with "~" the tag will be stored un-encrypted that will allow
 ///   usage of this tag in complex search queries (comparison, predicates)
 ///   Encrypted tags can be searched only for exact matching
 #[no_mangle]
-pub extern fn indy_update_wallet_record_tags(command_handle: i32,
-                                             wallet_handle: i32,
+pub extern fn indy_update_wallet_record_tags(command_handle: IndyHandle,
+                                             wallet_handle: IndyHandle,
                                              type_: *const c_char,
                                              id: *const c_char,
                                              tags_json: *const c_char,
-                                             cb: Option<extern fn(command_handle_: i32, err: ErrorCode)>) -> ErrorCode {
+                                             cb: Option<extern fn(command_handle_: IndyHandle, err: ErrorCode)>) -> ErrorCode {
     trace!("indy_update_wallet_record_tags: >>> wallet_handle: {:?}, type_: {:?}, id: {:?}, tags_json: {:?}", wallet_handle, type_, id, tags_json);
 
     check_useful_c_str!(type_, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(id, ErrorCode::CommonInvalidParam4);
-    check_useful_c_str!(tags_json, ErrorCode::CommonInvalidParam5);
+    check_useful_json!(tags_json, ErrorCode::CommonInvalidParam5, Tags);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
     trace!("indy_update_wallet_record_tags: entities >>> wallet_handle: {:?}, type_: {:?}, id: {:?}, tags_json: {:?}", wallet_handle, type_, id, tags_json);
@@ -177,9 +179,9 @@ pub extern fn indy_update_wallet_record_tags(command_handle: i32,
 /// tags_json: the record tags used for search and storing meta information as json:
 ///   {
 ///     "tagName1": <str>, // string tag (will be stored encrypted)
-///     "tagName2": <int>, // int tag (will be stored encrypted)
+///     "tagName2": <str>, // string tag (will be stored encrypted)
 ///     "~tagName3": <str>, // string tag (will be stored un-encrypted)
-///     "~tagName4": <int>, // int tag (will be stored un-encrypted)
+///     "~tagName4": <str>, // string tag (will be stored un-encrypted)
 ///   }
 ///   If tag name starts with "~" the tag will be stored un-encrypted that will allow
 ///   usage of this tag in complex search queries (comparison, predicates)
@@ -187,17 +189,17 @@ pub extern fn indy_update_wallet_record_tags(command_handle: i32,
 ///   Note if some from provided tags already assigned to the record than
 ///     corresponding tags values will be replaced
 #[no_mangle]
-pub extern fn indy_add_wallet_record_tags(command_handle: i32,
-                                          wallet_handle: i32,
+pub extern fn indy_add_wallet_record_tags(command_handle: IndyHandle,
+                                          wallet_handle: IndyHandle,
                                           type_: *const c_char,
                                           id: *const c_char,
                                           tags_json: *const c_char,
-                                          cb: Option<extern fn(command_handle_: i32, err: ErrorCode)>) -> ErrorCode {
+                                          cb: Option<extern fn(command_handle_: IndyHandle, err: ErrorCode)>) -> ErrorCode {
     trace!("indy_add_wallet_record_tags: >>> wallet_handle: {:?}, type_: {:?}, id: {:?}, tags_json: {:?}", wallet_handle, type_, id, tags_json);
 
     check_useful_c_str!(type_, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(id, ErrorCode::CommonInvalidParam4);
-    check_useful_c_str!(tags_json, ErrorCode::CommonInvalidParam5);
+    check_useful_json!(tags_json, ErrorCode::CommonInvalidParam5, Tags);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
     trace!("indy_add_wallet_record_tags: entities >>> wallet_handle: {:?}, type_: {:?}, id: {:?}, tags_json: {:?}", wallet_handle, type_, id, tags_json);
@@ -233,12 +235,12 @@ pub extern fn indy_add_wallet_record_tags(command_handle: i32,
 /// tag_names_json: the list of tag names to remove from the record as json array:
 ///   ["tagName1", "tagName2", ...]
 #[no_mangle]
-pub extern fn indy_delete_wallet_record_tags(command_handle: i32,
-                                             wallet_handle: i32,
+pub extern fn indy_delete_wallet_record_tags(command_handle: IndyHandle,
+                                             wallet_handle: IndyHandle,
                                              type_: *const c_char,
                                              id: *const c_char,
                                              tag_names_json: *const c_char,
-                                             cb: Option<extern fn(command_handle_: i32, err: ErrorCode)>) -> ErrorCode {
+                                             cb: Option<extern fn(command_handle_: IndyHandle, err: ErrorCode)>) -> ErrorCode {
     trace!("indy_delete_wallet_record_tags: >>> wallet_handle: {:?}, type_: {:?}, id: {:?}, tag_names_json: {:?}", wallet_handle, type_, id, tag_names_json);
 
     check_useful_c_str!(type_, ErrorCode::CommonInvalidParam3);
@@ -277,11 +279,11 @@ pub extern fn indy_delete_wallet_record_tags(command_handle: i32,
 /// type_: record type
 /// id: the id of record
 #[no_mangle]
-pub extern fn indy_delete_wallet_record(command_handle: i32,
-                                        wallet_handle: i32,
+pub extern fn indy_delete_wallet_record(command_handle: IndyHandle,
+                                        wallet_handle: IndyHandle,
                                         type_: *const c_char,
                                         id: *const c_char,
-                                        cb: Option<extern fn(command_handle_: i32, err: ErrorCode)>) -> ErrorCode {
+                                        cb: Option<extern fn(command_handle_: IndyHandle, err: ErrorCode)>) -> ErrorCode {
     trace!("indy_delete_wallet_record: >>> wallet_handle: {:?}, type_: {:?}, id: {:?}", wallet_handle, type_, id);
 
     check_useful_c_str!(type_, ErrorCode::CommonInvalidParam3);
@@ -317,7 +319,7 @@ pub extern fn indy_delete_wallet_record(command_handle: i32,
 /// wallet_handle: wallet handle (created by open_wallet)
 /// type_: allows to separate different record types collections
 /// id: the id of record
-/// options_json: //TODO: FIXME: Think about replacing by bitmaks
+/// options_json: //TODO: FIXME: Think about replacing by bitmask
 ///  {
 ///    retrieveType: (optional, false by default) Retrieve record type,
 ///    retrieveValue: (optional, true by default) Retrieve record value,
@@ -332,12 +334,12 @@ pub extern fn indy_delete_wallet_record(command_handle: i32,
 ///   tags: <tags json>, // present only if retrieveTags set to true
 /// }
 #[no_mangle]
-pub  extern fn indy_get_wallet_record(command_handle: i32,
-                                      wallet_handle: i32,
+pub  extern fn indy_get_wallet_record(command_handle: IndyHandle,
+                                      wallet_handle: IndyHandle,
                                       type_: *const c_char,
                                       id: *const c_char,
                                       options_json: *const c_char,
-                                      cb: Option<extern fn(command_handle_: i32, err: ErrorCode,
+                                      cb: Option<extern fn(command_handle_: IndyHandle, err: ErrorCode,
                                                            record_json: *const c_char)>) -> ErrorCode {
     trace!("indy_get_wallet_record: >>> wallet_handle: {:?}, type_: {:?}, id: {:?}, options_json: {:?}", wallet_handle, type_, id, options_json);
 
@@ -358,7 +360,7 @@ pub  extern fn indy_get_wallet_record(command_handle: i32,
                 Box::new(move |result| {
                     let (err, record_json) = result_to_err_code_1!(result, String::new());
                     trace!("indy_get_wallet_record: record_json: {:?}", record_json);
-                    let record_json = CStringUtils::string_to_cstring(record_json);
+                    let record_json = ctypes::string_to_cstring(record_json);
                     cb(command_handle, err, record_json.as_ptr())
                 })
             )));
@@ -384,10 +386,10 @@ pub  extern fn indy_get_wallet_record(command_handle: i32,
 ///    "tagName": "tagValue",
 ///    $or: {
 ///      "tagName2": { $regex: 'pattern' },
-///      "tagName3": { $gte: 123 },
+///      "tagName3": { $gte: '123' },
 ///    },
 ///  }
-/// options_json: //TODO: FIXME: Think about replacing by bitmaks
+/// options_json: //TODO: FIXME: Think about replacing by bitmask
 ///  {
 ///    retrieveRecords: (optional, true by default) If false only "counts" will be calculated,
 ///    retrieveTotalCount: (optional, false by default) Calculate total count,
@@ -399,13 +401,13 @@ pub  extern fn indy_get_wallet_record(command_handle: i32,
 /// search_handle: Wallet search handle that can be used later
 ///   to fetch records by small batches (with indy_fetch_wallet_search_next_records)
 #[no_mangle]
-pub  extern fn indy_open_wallet_search(command_handle: i32,
-                                       wallet_handle: i32,
+pub  extern fn indy_open_wallet_search(command_handle: IndyHandle,
+                                       wallet_handle: IndyHandle,
                                        type_: *const c_char,
                                        query_json: *const c_char,
                                        options_json: *const c_char,
-                                       cb: Option<extern fn(command_handle_: i32, err: ErrorCode,
-                                                            search_handle: i32)>) -> ErrorCode {
+                                       cb: Option<extern fn(command_handle_: IndyHandle, err: ErrorCode,
+                                                            search_handle: IndyHandle)>) -> ErrorCode {
     trace!("indy_open_wallet_search: >>> wallet_handle: {:?}, type_: {:?}, query_json: {:?}, options_json: {:?}", wallet_handle, type_, query_json, options_json);
 
     check_useful_c_str!(type_, ErrorCode::CommonInvalidParam3);
@@ -448,7 +450,7 @@ pub  extern fn indy_open_wallet_search(command_handle: i32,
 /// #Returns
 /// wallet records json:
 /// {
-///   totalCount: <int>, // present only if retrieveTotalCount set to true
+///   totalCount: <str>, // present only if retrieveTotalCount set to true
 ///   records: [{ // present only if retrieveRecords set to true
 ///       id: "Some id",
 ///       type: "Some type", // present only if retrieveType set to true
@@ -457,11 +459,11 @@ pub  extern fn indy_open_wallet_search(command_handle: i32,
 ///   }],
 /// }
 #[no_mangle]
-pub  extern fn indy_fetch_wallet_search_next_records(command_handle: i32,
-                                                     wallet_handle: i32,
-                                                     wallet_search_handle: i32,
+pub  extern fn indy_fetch_wallet_search_next_records(command_handle: IndyHandle,
+                                                     wallet_handle: IndyHandle,
+                                                     wallet_search_handle: IndyHandle,
                                                      count: usize,
-                                                     cb: Option<extern fn(command_handle_: i32, err: ErrorCode,
+                                                     cb: Option<extern fn(command_handle_: IndyHandle, err: ErrorCode,
                                                                           records_json: *const c_char)>) -> ErrorCode {
     trace!("indy_fetch_wallet_search_next_records: >>> wallet_handle: {:?}, wallet_search_handle: {:?}, count: {:?}", wallet_handle, wallet_search_handle, count);
 
@@ -478,7 +480,7 @@ pub  extern fn indy_fetch_wallet_search_next_records(command_handle: i32,
                 Box::new(move |result| {
                     let (err, records_json) = result_to_err_code_1!(result, String::new());
                     trace!("indy_fetch_wallet_search_next_records: records_json: {:?}", records_json);
-                    let records_json = CStringUtils::string_to_cstring(records_json);
+                    let records_json = ctypes::string_to_cstring(records_json);
                     cb(command_handle, err, records_json.as_ptr())
                 })
             )));
@@ -495,9 +497,9 @@ pub  extern fn indy_fetch_wallet_search_next_records(command_handle: i32,
 /// #Params
 /// wallet_search_handle: wallet search handle
 #[no_mangle]
-pub  extern fn indy_close_wallet_search(command_handle: i32,
-                                        wallet_search_handle: i32,
-                                        cb: Option<extern fn(command_handle_: i32, err: ErrorCode)>) -> ErrorCode {
+pub  extern fn indy_close_wallet_search(command_handle: IndyHandle,
+                                        wallet_search_handle: IndyHandle,
+                                        cb: Option<extern fn(command_handle_: IndyHandle, err: ErrorCode)>) -> ErrorCode {
     trace!("indy_close_wallet_search: >>> wallet_search_handle: {:?}", wallet_search_handle);
 
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);

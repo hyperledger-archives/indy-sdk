@@ -18,6 +18,10 @@
 - (void)setUp {
     [super setUp];
     [TestUtils cleanupStorage];
+
+    ret = [[PoolUtils sharedInstance] setProtocolVersion:[TestUtils protocolVersion]];
+    XCTAssertEqual(ret.code, Success, @"PoolUtils::setProtocolVersion() failed!");
+
     // Put setup code here. This method is called before the invocation of each test method in the class.
 }
 
@@ -28,35 +32,27 @@
 }
 
 - (void)testCryptoDemo {
-    NSString *myWalletName = @"my_wallet4";
-    NSString *theirWalletName = @"their_wallet5";
+    NSString *myWalletConfig = @"{\"id\":\"my_wallet4\"}";
+    NSString *theirWalletConfig = @"{\"id\":\"their_wallet4\"}";
 
     IndyHandle myWalletHandle = 0;
     IndyHandle theirWalletHandle = 0;
 
     //1. Create my wallet
-    ret = [[WalletUtils sharedInstance] createWalletWithPoolName:[TestUtils pool]
-                                                      walletName:myWalletName
-                                                           xtype:[TestUtils defaultType]
-                                                          config:nil];
+    ret = [[WalletUtils sharedInstance] createWalletWithConfig:myWalletConfig];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createWalletWithPoolName() failed for my wallet!");
 
     // 2. Open my wallet
-    ret = [[WalletUtils sharedInstance] openWalletWithName:myWalletName
-                                                    config:nil
+    ret = [[WalletUtils sharedInstance] openWalletWithConfig:myWalletConfig
                                                  outHandle:&myWalletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::openWalletWithName() failed for my wallet!");
 
     // 3. Create Their Wallet
-    ret = [[WalletUtils sharedInstance] createWalletWithPoolName:[TestUtils pool]
-                                                      walletName:theirWalletName
-                                                           xtype:[TestUtils defaultType]
-                                                          config:nil];
+    ret = [[WalletUtils sharedInstance] createWalletWithConfig:theirWalletConfig];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createWalletWithPoolName() failed for their wallet!");
 
     // 4. Open their wallet
-    ret = [[WalletUtils sharedInstance] openWalletWithName:theirWalletName
-                                                    config:nil
+    ret = [[WalletUtils sharedInstance] openWalletWithConfig:theirWalletConfig
                                                  outHandle:&theirWalletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::openWalletWithName() failed for their wallet!");
 
@@ -121,106 +117,5 @@
     ret = [[WalletUtils sharedInstance] closeWalletWithHandle:theirWalletHandle];
 
 }
-
-
-/*
-- (void)testCryptoDemoForKeychainWallet {
-    [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];
-
-    NSString *myWalletName = @"my_wallet5";
-    NSString *theirWalletName = @"their_wallet6";
-
-    IndyHandle myWalletHandle = 0;
-    IndyHandle theirWalletHandle = 0;
-
-    // 0. Register wallet type
-    ret = [[WalletUtils sharedInstance] registerWalletType:[TestUtils keychainType]];
-
-    //1. Create my wallet
-    ret = [[WalletUtils sharedInstance] createWalletWithPoolName:[TestUtils pool]
-                                                      walletName:myWalletName
-                                                           xtype:[TestUtils keychainType]
-                                                          config:nil];
-    XCTAssertEqual(ret.code, Success, @"WalletUtils::createWalletWithPoolName() failed for my wallet!");
-
-    // 2. Open my wallet
-    ret = [[WalletUtils sharedInstance] openWalletWithName:myWalletName
-                                                    config:nil
-                                                 outHandle:&myWalletHandle];
-    XCTAssertEqual(ret.code, Success, @"WalletUtils::openWalletWithName() failed for my wallet!");
-
-    // 3. Create Their Wallet
-    ret = [[WalletUtils sharedInstance] createWalletWithPoolName:[TestUtils pool]
-                                                      walletName:theirWalletName
-                                                           xtype:[TestUtils keychainType]
-                                                          config:nil];
-    XCTAssertEqual(ret.code, Success, @"WalletUtils::createWalletWithPoolName() failed for their wallet!");
-
-    // 4. Open their wallet
-    ret = [[WalletUtils sharedInstance] openWalletWithName:theirWalletName
-                                                    config:nil
-                                                 outHandle:&theirWalletHandle];
-    XCTAssertEqual(ret.code, Success, @"WalletUtils::openWalletWithName() failed for their wallet!");
-
-    // 5. Create My DID
-    NSString *myDid = nil;
-    NSString *myVerkey = nil;
-    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:myWalletHandle
-                                                                    seed:nil
-                                                                outMyDid:&myDid
-                                                             outMyVerkey:&myVerkey];
-    XCTAssertEqual(ret.code, Success, @"createAndStoreMyDid() failed!");
-
-    // 6. Create Their DID
-    NSString *theirDid = nil;
-    NSString *theirVerkey = nil;
-    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:theirWalletHandle
-                                                                    seed:nil
-                                                                outMyDid:&theirDid
-                                                             outMyVerkey:&theirVerkey];
-    XCTAssertEqual(ret.code, Success, @"createAndStoreMyDid() failed!");
-
-    // 7. Store Their DID
-    NSString *theirIdentityJson = [[AnoncredsUtils sharedInstance] toJson:@{
-            @"did": theirDid,
-            @"verkey": theirVerkey
-    }];
-
-    ret = [[DidUtils sharedInstance] storeTheirDidWithWalletHandle:myWalletHandle
-                                                      identityJson:theirIdentityJson];
-    XCTAssertEqual(ret.code, Success, @"IndyDid::storeTheirDid() failed!");
-
-    // 8. Their Sign message
-    NSString *messageJson = [[AnoncredsUtils sharedInstance] toJson:@{
-            @"reqId": @(1496822211362017764),
-            @"identifier": @"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL",
-            @"operation": @{
-                    @"type": @"1",
-                    @"dest": @"VsKV7grR1BUE29mG2Fm2kX",
-                    @"dest": @"GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa"
-            }
-    }];
-    NSData *message = [messageJson dataUsingEncoding:NSUTF8StringEncoding];
-
-    NSData *signature = nil;
-    ret = [[CryptoUtils sharedInstance] signMessage:message
-                                                key:theirVerkey
-                                       walletHandle:theirWalletHandle
-                                       outSignature:&signature];
-
-    XCTAssertEqual(ret.code, Success, @"sign() failed!");
-
-    // 9. I Verify message
-    BOOL verified = false;
-    ret = [[CryptoUtils sharedInstance] verifySignature:signature
-                                             forMessage:message
-                                                    key:theirVerkey
-                                             outIsValid:&verified];
-    XCTAssertEqual(ret.code, Success, @"verifySignature() failed!");
-    XCTAssertEqual(YES, verified, "verifySignature() signature is not valid");
-
-    [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];
-}
-*/
 
 @end

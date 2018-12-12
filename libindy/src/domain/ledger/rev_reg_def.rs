@@ -1,12 +1,5 @@
-extern crate serde;
-extern crate serde_json;
-extern crate indy_crypto;
-
 use super::constants::{REVOC_REG_DEF, GET_REVOC_REG_DEF};
-
-use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
-
-use super::response::GetReplyResultV1;
+use super::response::{GetReplyResultV1, ReplyType};
 use super::super::anoncreds::revocation_registry_definition::{RevocationRegistryDefinitionV1, RevocationRegistryDefinitionValue};
 
 #[derive(Serialize, Debug)]
@@ -35,8 +28,6 @@ impl RevRegDefOperation {
     }
 }
 
-impl JsonEncodable for RevRegDefOperation {}
-
 #[derive(Serialize, PartialEq, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct GetRevRegDefOperation {
@@ -54,8 +45,6 @@ impl GetRevRegDefOperation {
     }
 }
 
-impl JsonEncodable for GetRevRegDefOperation {}
-
 #[derive(Debug, Deserialize)]
 #[serde(untagged)]
 pub enum GetRevocRegDefReplyResult {
@@ -63,7 +52,11 @@ pub enum GetRevocRegDefReplyResult {
     GetRevocRegDefReplyResultV1(GetReplyResultV1<RevocationRegistryDefinitionV1>)
 }
 
-impl<'a> JsonDecodable<'a> for GetRevocRegDefReplyResult {}
+impl ReplyType for GetRevocRegDefReplyResult {
+    fn get_type<'a>() -> &'a str {
+        GET_REVOC_REG_DEF
+    }
+}
 
 #[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -71,5 +64,3 @@ pub struct GetRevocRegDefResultV0 {
     pub seq_no: i32,
     pub data: RevocationRegistryDefinitionV1
 }
-
-impl<'a> JsonDecodable<'a> for GetRevocRegDefResultV0 {}

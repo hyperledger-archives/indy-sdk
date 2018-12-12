@@ -18,6 +18,7 @@ async def test_submit_request_works(pool_handle):
             "type": "105",
             "dest": "Th7MpTaRZVRYnPiabds81Y"
         },
+        "protocolVersion": 2,
         "signature": "4o86XfkiJ4e2r3J6Ufoi17UU3W5Zi9sshV6FjBjkVw4sgEQFQov9dxqDEtLbAJAWffCWd5KfAk164QVo7mYwKkiV"
     }
 
@@ -368,14 +369,15 @@ async def test_get_txn_request_works(pool_handle, wallet_handle, identity_my):
     schema = json.loads(schema_json)
     schema_request = await ledger.build_schema_request(my_did, schema_json)
     schema_response = await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did, schema_request)
-    seq_no = json.loads(schema_response)["result"]["seqNo"]
+    seq_no = json.loads(schema_response)["result"]['txnMetadata']["seqNo"]
 
-    get_txn_request = await ledger.build_get_txn_request(my_did, seq_no)
+    get_txn_request = await ledger.build_get_txn_request(my_did, None, seq_no)
     get_txn_response = json.loads(
         await ensure_previous_request_applied(pool_handle, get_txn_request,
-                                              lambda response: response['result']['data']['seqNo'] is not None))
+                                              lambda response: response['result']['data']['txnMetadata'][
+                                                                   'seqNo'] is not None))
 
-    received_schema = get_txn_response['result']['data']['data']
+    received_schema = get_txn_response['result']['data']['txn']['data']['data']
     assert schema['name'] == received_schema['name']
     assert schema['version'] == received_schema['version']
 
@@ -388,11 +390,11 @@ async def test_get_txn_request_works_for_invalid_seq_no(pool_handle, wallet_hand
         await anoncreds.issuer_create_schema(my_did, "gvt", "1.0", json.dumps(["name", "age", "sex", "height"]))
     schema_request = await ledger.build_schema_request(my_did, schema_json)
     schema_response = await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did, schema_request)
-    schema_id = json.loads(schema_response)["result"]["seqNo"]
+    schema_id = json.loads(schema_response)["result"]['txnMetadata']["seqNo"]
 
     seq_no = schema_id + 1
 
-    get_txn_request = await ledger.build_get_txn_request(my_did, seq_no)
+    get_txn_request = await ledger.build_get_txn_request(my_did, None, seq_no)
     get_txn_response = json.loads(await ledger.submit_request(pool_handle, get_txn_request))
     assert not get_txn_response['result']['data']
 
@@ -403,11 +405,11 @@ async def test_pool_config_request_works(pool_handle, wallet_handle, identity_tr
 
     request = await ledger.build_pool_config_request(did_trustee, False, False)
     response = json.loads(await ledger.sign_and_submit_request(pool_handle, wallet_handle, did_trustee, request))
-    assert not response['result']['writes']
+    assert not response['result']['txn']['data']['writes']
 
     request = await ledger.build_pool_config_request(did_trustee, True, False)
     response = json.loads(await ledger.sign_and_submit_request(pool_handle, wallet_handle, did_trustee, request))
-    assert response['result']['writes']
+    assert response['result']['txn']['data']['writes']
 
 
 @pytest.mark.asyncio
@@ -424,12 +426,12 @@ async def test_pool_upgrade_requests_works(pool_handle, wallet_handle, identity_
 
     request = await ledger.build_pool_upgrade_request(did_trustee, 'upgrade-python', '2.0.0', 'start',
                                                       'f284bdc3c1c9e24a494e285cb387c69510f28de51c15bb93179d9c7f28705398',
-                                                      None, json.dumps(schedule), None, False, False)
+                                                      None, json.dumps(schedule), None, False, False, None)
     await ledger.sign_and_submit_request(pool_handle, wallet_handle, did_trustee, request)
 
     request = await ledger.build_pool_upgrade_request(did_trustee, 'upgrade-python', '2.0.0', 'cancel',
                                                       'ac3eb2cc3ac9e24a494e285cb387c69510f28de51c15bb93179d9c7f28705398',
-                                                      None, None, None, False, False)
+                                                      None, None, None, False, False, None)
     json.loads(await ledger.sign_and_submit_request(pool_handle, wallet_handle, did_trustee, request))
 
 

@@ -35,7 +35,7 @@
         await pool.close_pool_ledger(pool_handle)
 
         print_log('\n14. Deleting created wallet\n')
-        await wallet.delete_wallet(wallet_name, None)
+        await wallet.delete_wallet(wallet_config, wallet_credentials)
 
         print_log('\n15. Deleting pool ledger config\n')
         await pool.delete_pool_ledger_config(pool_name)

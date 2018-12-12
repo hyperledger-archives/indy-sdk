@@ -16,9 +16,10 @@
     [super setUp];
     [TestUtils cleanupStorage];
 
-    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
-                                                                  xtype:nil
-                                                                 handle:&walletHandle];
+    ret = [[PoolUtils sharedInstance] setProtocolVersion:[TestUtils protocolVersion]];
+    XCTAssertEqual(ret.code, Success, @"PoolUtils::setProtocolVersion() failed!");
+
+    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithHandle:&walletHandle];
     // Put setup code here. This method is called before the invocation of each test method in the class.
 }
 
@@ -33,9 +34,10 @@
 NSString *paymentMethod = @"null";
 NSString *paymentAddress = @"pay:null:test";
 NSString *inputs = @"[\"pay:null:1\", \"pay:null:2\"]";
-NSString *outputs = @"[{\"paymentAddress\": \"pay:null:1\", \"amount\":1, \"extra\":\"1\"}, {\"paymentAddress\": \"pay:null:2\", \"amount\":2, \"extra\":\"2\"}]";
+NSString *outputs = @"[{\"recipient\": \"pay:null:1\", \"amount\":1}, {\"recipient\": \"pay:null:2\", \"amount\":2}]";
 NSString *fees = @"{\"txnType1\":1, \"txnType2\":2}";
 NSString *incompatibleInputs = @"[\"pay:PAYMENT_METHOD_1:1\", \"pay:PAYMENT_METHOD_2:1\"]";
+NSString *receipt = @"pay:null:0_PqVjwJC42sxCTJp";
 
 // MARK: - Create Payment Address
 
@@ -67,6 +69,19 @@ NSString *incompatibleInputs = @"[\"pay:PAYMENT_METHOD_1:1\", \"pay:PAYMENT_METH
                                              submitterDid:[TestUtils trusteeDid]
                                                inputsJson:inputs
                                               outputsJson:outputs
+                                                    extra:nil
+                                      requestWithFeesJson:nil
+                                            paymentMethod:nil];
+    XCTAssertEqual(ret.code, PaymentUnknownMethodError);
+}
+
+- (void)testAddRequestFeesWorksForExtra {
+    ret = [[PaymentUtils sharedInstance] addFeesToRequest:@"{}"
+                                             walletHandle:walletHandle
+                                             submitterDid:[TestUtils trusteeDid]
+                                               inputsJson:inputs
+                                              outputsJson:outputs
+                                                    extra:@"Extra data"
                                       requestWithFeesJson:nil
                                             paymentMethod:nil];
     XCTAssertEqual(ret.code, PaymentUnknownMethodError);
@@ -78,6 +93,7 @@ NSString *incompatibleInputs = @"[\"pay:PAYMENT_METHOD_1:1\", \"pay:PAYMENT_METH
                                              submitterDid:[TestUtils trusteeDid]
                                                inputsJson:incompatibleInputs
                                               outputsJson:@"[]"
+                                                    extra:nil
                                       requestWithFeesJson:nil
                                             paymentMethod:nil];
     XCTAssertEqual(ret.code, PaymentIncompatibleMethodsError);
@@ -88,27 +104,27 @@ NSString *incompatibleInputs = @"[\"pay:PAYMENT_METHOD_1:1\", \"pay:PAYMENT_METH
 - (void)testParseResponseWithFeesWorks {
     ret = [[PaymentUtils sharedInstance] parseResponseWithFees:@"{}"
                                                  paymentMethod:paymentMethod
-                                                      utxoJson:nil];
+                                                  receiptsJson:nil];
     XCTAssertEqual(ret.code, PaymentUnknownMethodError);
 }
 
-// MARK: - Build Get UTXO Request
+// MARK: - Build Get Sources Request
 
-- (void)testBuildGetUtxoRequestWorks {
-    ret = [[PaymentUtils sharedInstance] buildGetUtxoRequest:walletHandle
-                                                submitterDid:[TestUtils trusteeDid]
-                                              paymentAddress:paymentAddress
-                                              getUtxoTxnJson:nil
-                                               paymentMethod:nil];
+- (void)testBuildGetPaymentSourcesRequestWorks {
+    ret = [[PaymentUtils sharedInstance] buildGetPaymentSourcesRequest:walletHandle
+                                                          submitterDid:[TestUtils trusteeDid]
+                                                        paymentAddress:paymentAddress
+                                                     getSourcesTxnJson:nil
+                                                         paymentMethod:nil];
     XCTAssertEqual(ret.code, PaymentUnknownMethodError);
 }
 
-// MARK: - Parse Get UTXO Response
+// MARK: - Parse Get Sources Response
 
-- (void)testParseGetUtxoResponseWorks {
-    ret = [[PaymentUtils sharedInstance] parseGetUtxoResponse:@"{}"
-                                                paymentMethod:paymentMethod
-                                                     utxoJson:nil];
+- (void)testParseGetPaymentSourcesResponseWorks {
+    ret = [[PaymentUtils sharedInstance] parseGetPaymentSourcesResponse:@"{}"
+                                                          paymentMethod:paymentMethod
+                                                            sourcesJson:nil];
     XCTAssertEqual(ret.code, PaymentUnknownMethodError);
 }
 
@@ -119,6 +135,7 @@ NSString *incompatibleInputs = @"[\"pay:PAYMENT_METHOD_1:1\", \"pay:PAYMENT_METH
                                                 submitterDid:[TestUtils trusteeDid]
                                                   inputsJson:inputs
                                                  outputsJson:outputs
+                                                       extra:nil
                                               paymentReqJson:nil
                                                paymentMethod:nil];
     XCTAssertEqual(ret.code, PaymentUnknownMethodError);
@@ -129,7 +146,7 @@ NSString *incompatibleInputs = @"[\"pay:PAYMENT_METHOD_1:1\", \"pay:PAYMENT_METH
 - (void)testParsePaymentResponseWorks {
     ret = [[PaymentUtils sharedInstance] parsePaymentResponse:@"{}"
                                                 paymentMethod:paymentMethod
-                                                     utxoJson:nil];
+                                                 receiptsJson:nil];
     XCTAssertEqual(ret.code, PaymentUnknownMethodError);
 }
 
@@ -139,6 +156,7 @@ NSString *incompatibleInputs = @"[\"pay:PAYMENT_METHOD_1:1\", \"pay:PAYMENT_METH
     ret = [[PaymentUtils sharedInstance] buildMintRequest:walletHandle
                                              submitterDid:[TestUtils trusteeDid]
                                               outputsJson:outputs
+                                                    extra:nil
                                               mintReqJson:nil
                                             paymentMethod:nil];
     XCTAssertEqual(ret.code, PaymentUnknownMethodError);
@@ -171,6 +189,26 @@ NSString *incompatibleInputs = @"[\"pay:PAYMENT_METHOD_1:1\", \"pay:PAYMENT_METH
     ret = [[PaymentUtils sharedInstance] parseGetTxnFeesResponse:@"{}"
                                                    paymentMethod:paymentMethod
                                                         feesJson:nil];
+    XCTAssertEqual(ret.code, PaymentUnknownMethodError);
+}
+
+// MARK: - Build Verify Payment Request
+
+- (void)testBuildVerifyPaymentRequestWorks {
+    ret = [[PaymentUtils sharedInstance] buildVerifyPaymentRequest:walletHandle
+                                                      submitterDid:[TestUtils trusteeDid]
+                                                           receipt:receipt
+                                                     verifyReqJson:nil
+                                                     paymentMethod:nil];
+    XCTAssertEqual(ret.code, PaymentUnknownMethodError);
+}
+
+// MARK: - Parse Verify Payment Response
+
+- (void)testParseVerifyPaymentResponseWorks {
+    ret = [[PaymentUtils sharedInstance] parseVerifyPaymentResponse:@"{}"
+                                                      paymentMethod:paymentMethod
+                                                    receiptInfoJson:nil];
     XCTAssertEqual(ret.code, PaymentUnknownMethodError);
 }
 

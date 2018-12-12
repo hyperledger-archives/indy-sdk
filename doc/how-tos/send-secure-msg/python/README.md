@@ -100,7 +100,8 @@ on the command line.
 For example, when the user types `prep Hello, world`, the `msg` parameter of `prep()` receives the value `"Hello, world"`. Prep saves this message into a text file (so you can inspect it--not because it needs to do any file I/O). It then turns around and reads the bytes it has just written, and calls `auth_crypt()` to convert those bytes into a version that is encrypted especially for the private channel between two identities. The receiver will know that the sender created the message, that only the receiver can interpret it, and that it has not been tampered with.
 
 If you like, try running the updated app in your development VM again. When
-prompted for the DID and verkey of the other party, just type two strings (e.g., `x y`) and press enter. Then try typing `prep Hello, world` and inspecting the `input.txt` and `encrypted.dat` files that are created.
+prompted for the DID and verkey of the other party, just paste values produced 
+during a previous run (e.g., `ChST7uE2KH3hscqycs5mVf 7NmnhUTnqqh1xydTSZNZCp1wTt3HAua7gA5T2odzLSTf`) and press enter. Then try typing `prep Hello, world` and inspecting the `input.txt` and `encrypted.dat` files that are created.
 
 Press **CTRL+C** to kill the app.
 
@@ -165,7 +166,8 @@ fail.
 
 Try transmitting the encrypted message over a different channel. For example,
 after Alice writes the message, email `encrypted.dat` or copy it over the network
-or send it as an attachment via Skype or slack. Then copy the received package
+or send it as an attachment via Skype or Slack. Then copy the received package
 into the correct folder with the name `encrypted.dat` and ask Bob to read it.
 
-Try modifying the script so it uses `anon_crypt()` instead of `auth_crypt()`. Notice the outcome.
+Try modifying the script so it uses `anon_crypt()` instead of `auth_crypt()` and 
+`anon_decrypt()` instead of `auth_decrypt()`. Notice the outcome.

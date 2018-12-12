@@ -160,7 +160,7 @@ public enum ErrorCode {
 	/**
 	 * Error during encryption-related operations
 	 */
-	WalletEncryptonError(211),
+	WalletEncryptionError(211),
 
 	/**
 	 * Requested wallet item not found
@@ -195,7 +195,7 @@ public enum ErrorCode {
 	PoolLedgerTerminated(302),
 
 	/**
-	 *  No concensus during ledger operation
+	 *  No consensus during ledger operation
 	 */
 	LedgerNoConsensusError(303),
 
@@ -219,6 +219,17 @@ public enum ErrorCode {
 	 */
 	PoolLedgerTimeout(307),
 
+	/**
+	 * Attempt to open Pool for witch Genesis Transactions are not compatible with set Protocol version.
+	 * Call pool.indy_set_protocol_version to set correct Protocol version.
+	 */
+	PoolIncompatibleProtocolVersion(308),
+
+	/**
+	 * Item not found on ledger.
+	 */
+	LedgerNotFound(309),
+
 	// Crypto errors
 
 	/**
@@ -232,7 +243,7 @@ public enum ErrorCode {
 	AnoncredsInvalidUserRevocId(401),
 
 	/**
-	 * Attempt to generate master secret with dupplicated name
+	 * Attempt to generate master secret with duplicated name
 	 */
 	AnoncredsMasterSecretDuplicateNameError(404),
 
@@ -277,6 +288,21 @@ public enum ErrorCode {
 	 * Insufficient funds on inputs
 	 */
 	InsufficientFundsError(702),
+
+	/**
+	 * No such source on a ledger
+	 */
+	PaymentSourceDoesNotExistError(703),
+
+	/**
+	 * Operation is not supported for payment method
+	 */
+	PaymentOperationNotSupportedError(704),
+
+	/**
+	 * Extra funds on inputs
+	 */
+	ExtraFundsError(705),
 	;
 
 	private int value;

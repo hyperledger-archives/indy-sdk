@@ -1,7 +1,4 @@
-extern crate indy_crypto;
-
-use self::indy_crypto::cl::{Witness, RevocationRegistry};
-use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
+use indy_crypto::cl::{Witness, RevocationRegistry};
 
 use named_type::NamedType;
 
@@ -11,7 +8,3 @@ pub struct RevocationState {
     pub rev_reg: RevocationRegistry,
     pub timestamp: u64
 }
-
-impl JsonEncodable for RevocationState {}
-
-impl<'a> JsonDecodable<'a> for RevocationState {}

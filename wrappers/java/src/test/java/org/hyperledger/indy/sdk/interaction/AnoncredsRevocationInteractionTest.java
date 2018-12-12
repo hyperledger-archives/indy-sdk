@@ -26,18 +26,18 @@ public class AnoncredsRevocationInteractionTest extends IndyIntegrationTestWithP
 	@Rule
 	public Timeout globalTimeout = new Timeout(3, TimeUnit.MINUTES);
 	private Wallet proverWallet;
-	private String proverWalletName = "proverWallet";
+	private String proverWalletConfig = new JSONObject().put("id", "proverWallet").toString();
 
 	@Before
 	public void createProverWallet() throws Exception {
-		Wallet.createWallet(POOL, proverWalletName, TYPE, null, CREDENTIALS).get();
-		proverWallet = Wallet.openWallet(proverWalletName, null, CREDENTIALS).get();
+		Wallet.createWallet(proverWalletConfig, WALLET_CREDENTIALS).get();
+		proverWallet = Wallet.openWallet(proverWalletConfig, WALLET_CREDENTIALS).get();
 	}
 
 	@After
 	public void deleteWalletWallet() throws Exception {
 		proverWallet.closeWallet().get();
-		Wallet.deleteWallet(proverWalletName, CREDENTIALS).get();
+		Wallet.deleteWallet(proverWalletConfig, WALLET_CREDENTIALS).get();
 	}
 
 	@Test
@@ -214,7 +214,7 @@ public class AnoncredsRevocationInteractionTest extends IndyIntegrationTestWithP
 
 		revRegId = revRegInfo2.getId();
 		revocRegDeltaJson = revRegInfo2.getObjectJson();
-		int timestamp = revRegInfo2.getTimestamp();
+		long timestamp = revRegInfo2.getTimestamp();
 
 		// Prover creates RevocationState
 		String revStateJson = Anoncreds.createRevocationState(blobStorageReaderHandle.getBlobStorageReaderHandle(),

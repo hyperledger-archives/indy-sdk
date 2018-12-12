@@ -158,7 +158,7 @@ Future\_Work: After an identity owner receives a challenge from a trustee, an ap
 ```
 
 ## Recovery Share Data Structure
-Recovery shares are formated in JSON with the following fields:
+Recovery shares are formatted in JSON with the following fields:
 
 1. *version* \<string\>: The semantic version of the recovery share data format.
 1. *source\_did*: The identity owner DID that sent this share to the trustee

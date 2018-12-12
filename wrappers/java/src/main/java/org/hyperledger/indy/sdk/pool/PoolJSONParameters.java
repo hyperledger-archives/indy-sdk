@@ -21,11 +21,10 @@ public final class PoolJSONParameters {
 
 	public static class OpenPoolLedgerJSONParameter extends IndyJava.JsonParameter {
 
-		public OpenPoolLedgerJSONParameter(Boolean refreshOnOpen, Boolean autoRefreshTime, Integer networkTimeout) {
+		public OpenPoolLedgerJSONParameter(Integer timeout, Integer extended_timeout) {
 
-			if (refreshOnOpen != null) this.map.put("refresh_on_open", refreshOnOpen);
-			if (autoRefreshTime != null) this.map.put("auto_refresh_time", autoRefreshTime);
-			if (networkTimeout != null) this.map.put("network_timeout", networkTimeout);
+			if (timeout != null) this.map.put("timeout", timeout);
+			if (extended_timeout != null) this.map.put("extended_timeout", extended_timeout);
 		}
 	}
 }

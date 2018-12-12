@@ -38,7 +38,7 @@ public class SignRequestTest extends IndyIntegrationTestWithSingleWallet {
 	}
 
 	@Test
-	public void testSignWorksForUnknowDid() throws Exception {
+	public void testSignWorksForUnknownDid() throws Exception {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(WalletItemNotFoundException.class));
 

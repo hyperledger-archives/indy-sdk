@@ -1,4 +1,5 @@
 import org.hyperledger.indy.sdk.anoncreds.AnoncredsResults;
+import org.hyperledger.indy.sdk.anoncreds.CredentialsSearchForProofReq;
 import org.hyperledger.indy.sdk.pool.Pool;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 import org.json.JSONArray;
@@ -7,6 +8,7 @@ import utils.PoolUtils;
 
 import static org.hyperledger.indy.sdk.anoncreds.Anoncreds.*;
 import static org.junit.Assert.*;
+import static utils.PoolUtils.PROTOCOL_VERSION;
 
 
 class Anoncreds {
@@ -14,24 +16,27 @@ class Anoncreds {
 	static void demo() throws Exception {
 		System.out.println("Anoncreds sample -> started");
 
-		String issuerWalletName = "issuerWallet";
-		String proverWalletName = "trusteeWallet";
 		String issuerDid = "NcYxiDXkpYi6ov5FcYDi1e";
 		String proverDid = "VsKV7grR1BUE29mG2Fm2kX";
+
+		// Set protocol version 2 to work with Indy Node 1.4
+		Pool.setProtocolVersion(PROTOCOL_VERSION).get();
 
 		//1. Create and Open Pool
 		String poolName = PoolUtils.createPoolLedgerConfig();
 		Pool pool = Pool.openPoolLedger(poolName, "{}").get();
 
 		//2. Issuer Create and Open Wallet
+		String issuerWalletConfig = "{\"id\":\"issuerWallet\"}";
 		String issuerWalletCredentials = "{\"key\":\"issuer_wallet_key\"}";
-		Wallet.createWallet(poolName, issuerWalletName, "default", null, issuerWalletCredentials).get();
-		Wallet issuerWallet = Wallet.openWallet(issuerWalletName, null, issuerWalletCredentials).get();
+		Wallet.createWallet(issuerWalletConfig, issuerWalletCredentials).get();
+		Wallet issuerWallet = Wallet.openWallet(issuerWalletConfig, issuerWalletCredentials).get();
 
 		//3. Prover Create and Open Wallet
+		String proverWalletConfig = "{\"id\":\"trusteeWallet\"}";
 		String proverWalletCredentials = "{\"key\":\"prover_wallet_key\"}";
-		Wallet.createWallet(poolName, proverWalletName, "default", null, proverWalletCredentials).get();
-		Wallet proverWallet = Wallet.openWallet(proverWalletName, null, proverWalletCredentials).get();
+		Wallet.createWallet(proverWalletConfig, proverWalletCredentials).get();
+		Wallet proverWallet = Wallet.openWallet(proverWalletConfig, proverWalletCredentials).get();
 
 		//4. Issuer Creates Credential Schema
 		String schemaName = "gvt";
@@ -63,6 +68,7 @@ class Anoncreds {
 		String credReqMetadataJson = createCredReqResult.getCredentialRequestMetadataJson();
 
 		//9. Issuer create Credential
+		//   note that encoding is not standardized by Indy except that 32-bit integers are encoded as themselves. IS-786
 		String credValuesJson = new JSONObject("{\n" +
 				"        \"sex\": {\"raw\": \"male\", \"encoded\": \"594465709955896723921094925839488742869205008160769251991705001\"},\n" +
 				"        \"name\": {\"raw\": \"Alex\", \"encoded\": \"1139481716457488690172217916278103335\"},\n" +
@@ -92,20 +98,21 @@ class Anoncreds {
 				"                    }" +
 				"                  }").toString();
 
-		String credentialsForProofJson = proverGetCredentialsForProofReq(proverWallet, proofRequestJson).get();
+		CredentialsSearchForProofReq credentialsSearch = CredentialsSearchForProofReq.open(proverWallet, proofRequestJson, null).get();
 
-		JSONObject credentialsForProof = new JSONObject(credentialsForProofJson);
-		JSONArray credentialsForAttribute1 = credentialsForProof.getJSONObject("attrs").getJSONArray("attr1_referent");
-		JSONArray credentialsForAttribute2 = credentialsForProof.getJSONObject("attrs").getJSONArray("attr2_referent");
-		JSONArray credentialsForAttribute3 = credentialsForProof.getJSONObject("attrs").getJSONArray("attr3_referent");
-		JSONArray credentialsForPredicate = credentialsForProof.getJSONObject("predicates").getJSONArray("predicate1_referent");
+		JSONArray credentialsForAttribute1 = new JSONArray(credentialsSearch.fetchNextCredentials("attr1_referent", 100).get());
+		String credentialIdForAttribute1 = credentialsForAttribute1.getJSONObject(0).getJSONObject("cred_info").getString("referent");
 
-		assertEquals(credentialsForAttribute1.length(), 1);
-		assertEquals(credentialsForAttribute2.length(), 1);
-		assertEquals(credentialsForAttribute3.length(), 0);
-		assertEquals(credentialsForPredicate.length(), 1);
+		JSONArray credentialsForAttribute2 = new JSONArray(credentialsSearch.fetchNextCredentials("attr2_referent", 100).get());
+		String credentialIdForAttribute2 = credentialsForAttribute2.getJSONObject(0).getJSONObject("cred_info").getString("referent");
 
-		String credentialId = credentialsForAttribute1.getJSONObject(0).getJSONObject("cred_info").getString("referent");
+		JSONArray credentialsForAttribute3 = new JSONArray(credentialsSearch.fetchNextCredentials("attr3_referent", 100).get());
+		assertEquals(0, credentialsForAttribute3.length());
+
+		JSONArray credentialsForPredicate = new JSONArray(credentialsSearch.fetchNextCredentials("predicate1_referent", 100).get());
+		String credentialIdForPredicate = credentialsForPredicate.getJSONObject(0).getJSONObject("cred_info").getString("referent");
+
+		credentialsSearch.close();
 
 		//12. Prover Creates Proof
 		String selfAttestedValue = "8-800-300";
@@ -114,7 +121,7 @@ class Anoncreds {
 				"                                          \"requested_attributes\":{\"attr1_referent\":{\"cred_id\":\"%s\", \"revealed\":true},\n" +
 				"                                                                    \"attr2_referent\":{\"cred_id\":\"%s\", \"revealed\":false}},\n" +
 				"                                          \"requested_predicates\":{\"predicate1_referent\":{\"cred_id\":\"%s\"}}\n" +
-				"                                        }", selfAttestedValue, credentialId, credentialId, credentialId)).toString();
+				"                                        }", selfAttestedValue, credentialIdForAttribute1, credentialIdForAttribute2, credentialIdForPredicate)).toString();
 
 		String schemas = new JSONObject(String.format("{\"%s\":%s}", schemaId, schemaJson)).toString();
 		String credentialDefs = new JSONObject(String.format("{\"%s\":%s}", credDefId, credDefJson)).toString();
@@ -140,11 +147,11 @@ class Anoncreds {
 
 		//14. Close and Delete issuer wallet
 		issuerWallet.closeWallet().get();
-		Wallet.deleteWallet(issuerWalletName, issuerWalletCredentials).get();
+		Wallet.deleteWallet(issuerWalletConfig, issuerWalletCredentials).get();
 
 		//15. Close and Delete prover wallet
 		proverWallet.closeWallet().get();
-		Wallet.deleteWallet(proverWalletName, proverWalletCredentials).get();
+		Wallet.deleteWallet(proverWalletConfig, proverWalletCredentials).get();
 
 		//16. Close pool
 		pool.closePoolLedger().get();

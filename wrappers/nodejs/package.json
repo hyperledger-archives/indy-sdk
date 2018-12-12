@@ -1,6 +1,6 @@
 {
   "name": "indy-sdk",
-  "version": "0.2.5",
+  "version": "1.6.7",
   "description": "Native bindings for hyperledger indy",
   "author": "hyperledger",
   "license": "Apache-2.0",
@@ -39,6 +39,6 @@
     "json-stringify-pretty-compact": "^1.1.0",
     "markdown-escape": "^1.0.2",
     "standard": "^11.0.1",
-    "tmp": "0.0.33"
+    "tempy": "^0.2.1"
   }
 }

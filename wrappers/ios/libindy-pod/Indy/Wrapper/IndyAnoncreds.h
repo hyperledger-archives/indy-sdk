@@ -15,7 +15,7 @@
 
  Schema is public and intended to be shared with all anoncreds workflow actors usually by publishing SCHEMA transaction
  to Indy distributed ledger.
- 
+
  It is IMPORTANT for current version POST Schema in Ledger and after that GET it from Ledger
  with correct seq_no to save compatibility with Ledger.
  After that can call indy_issuer_create_and_store_credential_def to build corresponding Credential Definition.
@@ -24,7 +24,10 @@
  @param name a name the schema
  @param version a version of the schema
  @param attrs a list of schema attributes descriptions
- @param completion Callback that takes command result as parameter. Returns schemaId and schemaJson.
+ @param completion Callback that takes command result as parameter.
+ Returns:
+    schemaId: identifier of created schema
+    schemaJson: schema as json
 */
 + (void)issuerCreateSchemaWithName:(NSString *)name
                            version:(NSString *)version
@@ -66,25 +69,43 @@
                                         completion:(void (^)(NSError *error, NSString *credDefId, NSString *credDefJSON))completion;
 
 /**
- Creates a new revocation registry for the given credential definition.
- Stores it in a secure wallet identifying by the returned key.
+ Create a new revocation registry for the given credential definition as tuple of entities:
+ - Revocation registry definition that encapsulates credentials definition reference, revocation type specific configuration and
+   secrets used for credentials revocation
+ - Revocation registry state that stores the information about revoked entities in a non-disclosing way. The state can be
+   represented as ordered list of revocation registry entries were each entry represents the list of revocation or issuance operations.
+
+ Revocation registry definition entity contains private and public parts. Private part will be stored in the wallet. Public part
+ will be returned as json intended to be shared with all anoncreds workflow actors usually by publishing REVOC_REG_DEF transaction
+ to Indy distributed ledger.
+
+ Revocation registry state is stored on the wallet and also intended to be shared as the ordered list of REVOC_REG_ENTRY transactions.
+ This call initializes the state in the wallet and returns the initial entry.
+
+ Some revocation registry types (for example, 'CL_ACCUM') can require generation of binary blob called tails used to hide information about revoked credentials in public
+ revocation registry and intended to be distributed out of leger (REVOC_REG_DEF transaction will still contain uri and hash of tails).
+ This call requires access to pre-configured blob storage writer instance handle that will allow to write generated tails.
  
  @param walletHandle: wallet handler (created by open_wallet).
  @param issuerDID: a DID of the issuer signing transaction to the Ledger
- @param type: (optional) registry type. Currently only 'CL_ACCUM' is supported.
- @param tag:
+ @param type: (optional, default value depends on credential definition type). Supported types are:
+                - 'CL_ACCUM': Type-3 pairing based accumulator. Default for 'CL' credential definition type
+ @param tag: allows to distinct between revocation registries for the same issuer and credential definition
  @param credDefID: id of stored in ledger credential definition
- @param configJSON: {
-     "issuance_type": (optional) type of issuance. Currently supported:
-         1) ISSUANCE_BY_DEFAULT: all indices are assumed to be issued and initial accumulator is calculated over all indices;
-                                 Revocation Registry is updated only during revocation.
-         2) ISSUANCE_ON_DEMAND: nothing is issued initially accumulator is 1 (used by default);
-     "max_cred_num": maximum number of credentials the new registry can process.
- }
- @param tailsWriterHandle:
- @param tailsWriterConfig:
+ @param configJSON: type-specific configuration of revocation registry as json:
+     - 'CL_ACCUM': {
+         "issuance_type": (optional) type of issuance. Currently supported:
+             1) ISSUANCE_BY_DEFAULT: all indices are assumed to be issued and initial accumulator is calculated over all indices;
+                Revocation Registry is updated only during revocation.
+             2) ISSUANCE_ON_DEMAND: nothing is issued initially accumulator is 1 (used by default);
+         "max_cred_num": maximum number of credentials the new registry can process (optional, default 100000)
+     }
+ @param tailsWriterHandle: handle of blob storage to store tails
  @param completion Callback that takes command result as parameter.
- Returns revocation registry definition json and revocation registry entry json.
+ Returns 
+    revocRegID: identifier of created revocation registry definition
+    revocRegDefJSON: public part of revocation registry definition
+    revocRegEntryJSON: revocation registry entry that defines initial state of revocation registry
  */
 + (void)issuerCreateAndStoreRevocRegForCredentialDefId:(NSString *)credDefID
                                              issuerDID:(NSString *)issuerDID
@@ -96,19 +117,21 @@
                                             completion:(void (^)(NSError *error, NSString *revocRegID, NSString *revocRegDefJSON, NSString *revocRegEntryJSON))completion;
 
 /**
- Create credential offer and store it in wallet.
+ Create credential offer that will be used by Prover for
+ credential request creation. Offer includes nonce and key correctness proof
+ for authentication between protocol steps and integrity checking.
 
- @param cred_def_id: id of stored in ledger credential definition
+ @param credDefID: id of credential definition stored in the wallet
  @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
  @param completion Callback that takes command result as parameter.
  Returns credential offer json:
-  {
-      "schema_id": string,
-      "cred_def_id": string,
-      // Fields below can depend on Cred Def type
-      "nonce": string,
-      "key_correctness_proof" : <key_correctness_proof>
-  }
+     {
+         "schema_id": string,
+         "cred_def_id": string,
+         // Fields below can depend on Cred Def type
+         "nonce": string,
+         "key_correctness_proof" : <key_correctness_proof>
+     }
 */
 + (void)issuerCreateCredentialOfferForCredDefId:(NSString *)credDefID
                                    walletHandle:(IndyHandle)walletHandle
@@ -134,11 +157,11 @@
       "attr1" : {"raw": "value1", "encoded": "value1_as_int" },
       "attr2" : {"raw": "value1", "encoded": "value1_as_int" }
      }
- @param revRegId: (Optional) id of stored in ledger revocation registry definition
+ @param revRegId: (Optional) id of stored revocation registry definition
  @param blobStorageReaderHandle: (Optional) Pre-configured blob storage reader instance handle that will allow to read revocation tails
  @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
  @param completion Callback that takes command result as parameter. 
- Return:
+ Returns:
      credJSON: Credential json containing signed credential values
         {
             "schema_id": string,
@@ -207,7 +230,8 @@
  
  @param masterSecretID (optional, if not present random one will be generated) new master id
  @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
- @param completion Returns error code and id of generated master secret.
+ @param completion Callback that takes command result as parameter. 
+ Returns id of generated master secret.
  
  */
 + (void)proverCreateMasterSecret:(NSString *)masterSecretID
@@ -215,16 +239,15 @@
                       completion:(void (^)(NSError *error, NSString *outMasterSecretId))completion;
 
 /**
- 
- Creates a clam request for the given credential offer.
+ Creates a credential request for the given credential offer.
 
  The method creates a blinded master secret for a master secret identified by a provided name.
- The master secret identified by the name must be already stored in the secure wallet (see prover_create_master_secret)
+ The master secret identified by the name must be already stored in the secure wallet (see proverCreateMasterSecret)
  The blinded master secret is a part of the credential request.
 
  @param proverDID: a DID of the prover
  @param credOfferJSON: credential offer as a json containing information about the issuer and a credential
- @param credentialDefJSON: credential definition json
+ @param credentialDefJSON: credential definition json related to <cred_def_id> in <credOfferJSON> 
  @param masterSecretID: the id of the master secret stored in the wallet
  @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
  @param completion Callback that takes command result as parameter. 
@@ -238,7 +261,7 @@
       "blinded_ms_correctness_proof" : <blinded_ms_correctness_proof>,
       "nonce": string
     }
-    credReqMetadataJSON: Credential request metadata json for processing of received form Issuer credential.
+    credReqMetadataJSON: Credential request metadata json for further processing of received form Issuer credential.
  */
 + (void)proverCreateCredentialReqForCredentialOffer:(NSString *)credOfferJSON
                                   credentialDefJSON:(NSString *)credentialDefJSON
@@ -250,14 +273,30 @@
 /**
  Check credential provided by Issuer for the given credential request,
  updates the credential by a master secret and stores in a secure wallet.
+
+ To support efficient and flexible search the following tags will be created for stored credential:
+     {
+         "schema_id": <credential schema id>,
+         "schema_issuer_did": <credential schema issuer did>,
+         "schema_name": <credential schema name>,
+         "schema_version": <credential schema version>,
+         "issuer_did": <credential issuer did>,
+         "cred_def_id": <credential definition id>,
+         "rev_reg_id": <credential revocation registry id>, // "None" as string if not present
+         // for every attribute in <credential values>
+         "attr::<attribute name>::marker": "1",
+         "attr::<attribute name>::value": <attribute raw value>,
+     }
  
  @param credID: (optional, default is a random one) identifier by which credential will be stored in the wallet
  @param credReqMetadataJSON: a credential request metadata created by proverCreateCredentialReqForCredentialOffer
  @param credJson:  credential json received from issuer
- @param credDefJSON: credential definition json
- @param revRegDefJSON: revocation registry definition json
+ @param credDefJSON: credential definition json related to <cred_def_id> in <credJson>
+ @param revRegDefJSON: revocation registry definition json related to <rev_reg_def_id> in <credJson>
  @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
  @param completion Callback that takes command result as parameter.
+ Returns
+     outCredID: identifier by which credential is stored in the wallet
  */
 + (void)proverStoreCredential:(NSString *)credJson
                        credID:(NSString *)credID
@@ -268,30 +307,54 @@
                    completion:(void (^)(NSError *error, NSString *outCredID))completion;
 
 /**
+ Gets human readable credential by the given id.
+
+ @param credId: Identifier by which requested credential is stored in the wallet
+ @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
+ @param completion Callback that takes command result as parameter.
+ Returns credential json:
+    {
+         "referent": string, // cred_id in the wallet
+         "attrs": {"key1":"raw_value1", "key2":"raw_value2"},
+         "schema_id": string,
+         "cred_def_id": string,
+         "rev_reg_id": Optional<string>,
+         "cred_rev_id": Optional<string>
+     }
+
+ */
++ (void)proverGetCredentialWithId:(NSString *)credId
+                     walletHandle:(IndyHandle)walletHandle
+                       completion:(void (^)(NSError *error, NSString *credentialJSON))completion;
+
+/**
  Gets human readable credentials according to the filter.
  If filter is NULL, then all credentials are returned.
- Credentials can be filtered by Issuer, credential_def and/or Schema.
-  
+ Credentials can be filtered by tags created during saving of credential.
+
+ NOTE: This method is deprecated because immediately returns all fetched credentials. 
+ Use <proverSearchCredentialsForQuery> to fetch records by small batches.
+
  @param filterJSON: filter for credentials
-        {
-            "schema_id": string, (Optional)
-            "schema_issuer_did": string, (Optional)
-            "schema_name": string, (Optional)
-            "schema_version": string, (Optional)
-            "issuer_did": string, (Optional)
-            "cred_def_id": string, (Optional)
-        }
+    {
+        "schema_id": string, (Optional)
+        "schema_issuer_did": string, (Optional)
+        "schema_name": string, (Optional)
+        "schema_version": string, (Optional)
+        "issuer_did": string, (Optional)
+        "cred_def_id": string, (Optional)
+    }
  @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
  @param completion Callback that takes command result as parameter. 
  Returns credentials json. 
-  [{
-      "referent": string, // cred_id in the wallet
-      "values": <see credValuesJSON above>,
-      "schema_id": string,
-      "cred_def_id": string,
-      "rev_reg_id": Optional<string>,
-      "cred_rev_id": Optional<string>
-  }]
+     [{ 
+         "referent": string, // cred_id in the wallet 
+         "attrs": {"key1":"raw_value1", "key2":"raw_value2"}, 
+         "schema_id": string, 
+         "cred_def_id": string, 
+         "rev_reg_id": Optional<string>, 
+         "cred_rev_id": Optional<string> 
+     }]
 
  */
 + (void)proverGetCredentialsForFilter:(NSString *)filterJSON
@@ -299,8 +362,65 @@
                            completion:(void (^)(NSError *error, NSString *credentialsJSON))completion;
 
 /**
+ Search for credentials stored in wallet.
+ Credentials can be filtered by tags created during saving of credential.
+
+ Instead of immediately returning of fetched credentials
+ this call returns search_handle that can be used later
+ to fetch records by small batches (with proverFetchCredentialsWithSearchHandle).
+  
+ @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
+ @param queryJSON Wql style filter for credentials searching based on tags.
+        (indy-sdk/doc/design/011-wallet-query-language/README.md)
+ @param completion Callback that takes command result as parameter. 
+ Returns 
+    searchHandle: Search handle that can be used later to fetch records by small batches (with proverFetchCredentialsWithSearchHandle)
+    totalCount: Total count of records
+
+ */
++ (void)proverSearchCredentialsForQuery:(NSString *)queryJSON
+                            walletHandle:(IndyHandle)walletHandle
+                              completion:(void (^)(NSError *error, IndyHandle searchHandle, NSNumber *totalCount))completion;
+
+/**
+ Fetch next credentials for search.
+  
+ @param searchHandle Search handle (created by proverSearchCredentialsForQuery).
+ @param count Count of credentials to fetch
+ @param completion Callback that takes command result as parameter. 
+ Returns 
+    credentialsJson: List of human readable credentials:
+      [{
+          "referent": string, // cred_id in the wallet
+          "attrs": {"key1":"raw_value1", "key2":"raw_value2"},
+          "schema_id": string,
+          "cred_def_id": string,
+          "rev_reg_id": Optional<string>,
+          "cred_rev_id": Optional<string>
+      }]
+
+      NOTE: The list of length less than the requested count means credentials search iterator is completed.
+ */
++ (void)proverFetchCredentialsWithSearchHandle:(IndyHandle)searchHandle
+                                         count:(NSNumber *)count
+                                    completion:(void (^)(NSError *error, NSString *credentialsJson))completion;
+
+/**
+ Close credentials search (make search handle invalid)
+  
+ @param searchHandle Search handle (created by proverSearchCredentialsForQuery).
+ Returns no result
+
+ */
++ (void)proverCloseCredentialsSearchWithHandle:(IndyHandle)searchHandle
+                                    completion:(void (^)(NSError *error))completion;
+
+/**
  Gets human readable credentials matching the given proof request.
- 
+
+ NOTE: This method is deprecated because immediately returns all fetched credentials. 
+ Use <proverSearchCredentialsForProofRequest> to fetch records by small batches.
+
  @param  proofReqJSON: proof request json
     {
         "name": string,
@@ -319,26 +439,24 @@
                        // for date in this interval for each attribute
                        // (can be overridden on attribute level)
     }
- where 
+ where
  attr_referent: Proof-request local identifier of requested attribute
  attr_info: Describes requested attribute
-    {
-        "name": string, // attribute name, (case insensitive and ignore spaces)
-        "restrictions": Optional<[<attr_filter>]> // see below,
-                         // if specified, credential must satisfy to one of the given restriction.
-        "non_revoked": Optional<<non_revoc_interval>>, // see below,
-                       // If specified prover must proof non-revocation
-                       // for date in this interval this attribute
-                       // (overrides proof level interval)
-    }
+     {
+         "name": string, // attribute name, (case insensitive and ignore spaces)
+         "restrictions": Optional<filterJSON>, // see above
+         "non_revoked": Optional<<non_revoc_interval>>, // see below,
+                        // If specified prover must proof non-revocation
+                        // for date in this interval this attribute
+                        // (overrides proof level interval)
+     }
  predicate_referent: Proof-request local identifier of requested attribute predicate
  predicate_info: Describes requested attribute predicate
      {
          "name": attribute name, (case insensitive and ignore spaces)
-         "p_type": predicate type (Currently >= only)
-         "p_value": predicate value
-         "restrictions": Optional<[<attr_filter>]> // see below,
-                         // if specified, credential must satisfy to one of the given restriction.
+         "p_type": predicate type (Currently ">=" only)
+         "p_value": int predicate value
+         "restrictions": Optional<filterJSON>, // see above,
          "non_revoked": Optional<<non_revoc_interval>>, // see below,
                         // If specified prover must proof non-revocation
                         // for date in this interval this attribute
@@ -349,9 +467,8 @@
          "from": Optional<int>, // timestamp of interval beginning
          "to": Optional<int>, // timestamp of interval ending
      }
- filter: see filterJSON above      
  @param walletHandle Wallet handler (created by IndyWallet::openWalletWithNam).
- @param completion Callback that takes command result as parameter. Returns json with credentials for the given pool request.
+ @param completion Callback that takes command result as parameter. Returns json with credentials for the given proof request.
      {
          "requested_attrs": {
              "<attr_referent>": [{ cred_info: <credential_info>, interval: Optional<non_revoc_interval> }],
@@ -374,6 +491,95 @@
 + (void)proverGetCredentialsForProofReq:(NSString *)proofReqJSON
                            walletHandle:(IndyHandle)walletHandle
                              completion:(void (^)(NSError *error, NSString *credentialsJSON))completion;
+
+/**
+ Search for credentials matching the given proof request.
+
+ Instead of immediately returning of fetched credentials
+ this call returns search_handle that can be used later
+ to fetch records by small batches (with proverFetchCredentialsForProofReqItemReferent).
+
+ @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
+ @param proofReqJSON: proof request json
+    {
+        "name": string,
+        "version": string,
+        "nonce": string,
+        "requested_attributes": { // set of requested attributes
+             "<attr_referent>": <attr_info>, // see above
+             ...,
+        },
+        "requested_predicates": { // set of requested predicates
+             "<predicate_referent>": <predicate_info>, // see above
+             ...,
+         },
+        "non_revoked": Optional<<non_revoc_interval>>, // see above,
+                       // If specified prover must proof non-revocation
+                       // for date in this interval for each attribute
+                       // (can be overridden on attribute level)
+    }
+ @param extraQueryJSON: (Optional) List of extra queries that will be applied to correspondent attribute/predicate:
+    {
+        "<attr_referent>": <wql query>,
+        "<predicate_referent>": <wql query>,
+    }
+ where wql query: indy-sdk/doc/design/011-wallet-query-language/README.md
+ @param completion Callback that takes command result as parameter.
+ Returns
+    searchHandle: Search handle that can be used later to fetch records by small batches (with proverFetchCredentialsForProofReqItemReferent)
+ */
++ (void)proverSearchCredentialsForProofRequest:(NSString *)proofRequest
+                                extraQueryJSON:(NSString *)extraQueryJSON
+                                  walletHandle:(IndyHandle)walletHandle
+                                    completion:(void (^)(NSError *error, IndyHandle searchHandle))completion;
+
+/**
+ Fetch next records for the requested item using proof request search handle (created by proverSearchCredentialsForProofRequest).
+
+ @param searchHandle Search handle (created by proverSearchCredentialsForProofRequest).
+ @param itemReferent Referent of attribute/predicate in the proof request.
+ @param count Count records to fetch.
+ @param completion Callback that takes command result as parameter.
+ Returns 
+    credentialsJson: List of credentials for the given proof request.
+         [{
+             cred_info: <credential_info>,
+             interval: Optional<non_revoc_interval>
+         }]
+    where
+    credential_info:
+         {
+             "referent": <string>,
+             "attrs": {"attr_name" : "attr_raw_value"},
+             "schema_id": string,
+             "cred_def_id": string,
+             "rev_reg_id": Optional<int>,
+             "cred_rev_id": Optional<int>,
+         }
+    non_revoc_interval:
+         {
+             "from": Optional<int>, // timestamp of interval beginning
+             "to": Optional<int>, // timestamp of interval ending
+         }
+      }
+
+    NOTE: The list of length less than the requested count means that search iterator
+    correspondent to the requested <itemReferent> is completed.
+ */
++ (void)proverFetchCredentialsForProofReqItemReferent:(NSString *)itemReferent
+                                         searchHandle:(IndyHandle)searchHandle
+                                                count:(NSNumber *)count
+                                           completion:(void (^)(NSError *error, NSString *credentialsJson))completion;
+
+/**
+ Close credentials search for proof request (make search handle invalid)
+
+ @param searchHandle Search handle (created by proverSearchCredentialsForProofRequest).
+ Returns no result
+
+ */
++ (void)proverCloseCredentialsSearchForProofReqWithHandle:(IndyHandle)searchHandle
+                                               completion:(void (^)(NSError *error))completion;
 
 /**
  Creates a proof according to the given proof request

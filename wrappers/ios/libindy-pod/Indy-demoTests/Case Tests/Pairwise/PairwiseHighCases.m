@@ -19,9 +19,10 @@
     [super setUp];
     [TestUtils cleanupStorage];
 
-    [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
-                                                            xtype:nil
-                                                           handle:&walletHandle];
+    ret = [[PoolUtils sharedInstance] setProtocolVersion:[TestUtils protocolVersion]];
+    XCTAssertEqual(ret.code, Success, @"PoolUtils::setProtocolVersion() failed!");
+
+    [[WalletUtils sharedInstance] createAndOpenWalletWithHandle:&walletHandle];
     // Put setup code here. This method is called before the invocation of each test method in the class.
 }
 
@@ -38,9 +39,9 @@
     // 1. create and store my did
     NSString *myDid;
     ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                             seed:[TestUtils mySeed1]
-                                                                         outMyDid:&myDid
-                                                                      outMyVerkey:nil];
+                                                                    seed:[TestUtils mySeed1]
+                                                                outMyDid:&myDid
+                                                             outMyVerkey:nil];
     XCTAssertEqual(ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create myDid!");
 
     // 2. Store their did
@@ -59,9 +60,9 @@
 
 - (void)testCreatePairwiseWorksForNotFoundMyDid {
     // 1. store their did
-   ret = [[DidUtils sharedInstance] storeTheirDidFromPartsWithWalletHandle:walletHandle
-                                                                            theirDid:[TestUtils trusteeDid]
-                                                                         theirVerkey:[TestUtils trusteeVerkey]];
+    ret = [[DidUtils sharedInstance] storeTheirDidFromPartsWithWalletHandle:walletHandle
+                                                                   theirDid:[TestUtils trusteeDid]
+                                                                theirVerkey:[TestUtils trusteeVerkey]];
     XCTAssertEqual(ret.code, Success, @"DidUtils::storeTheirDidWithWalletHandle() failed!");
 
     // 2. create pairwise
@@ -76,9 +77,9 @@
     // 1. create and store my did
     NSString *myDid;
     ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                             seed:[TestUtils mySeed1]
-                                                                         outMyDid:&myDid
-                                                                      outMyVerkey:nil];
+                                                                    seed:[TestUtils mySeed1]
+                                                                outMyDid:&myDid
+                                                             outMyVerkey:nil];
     XCTAssertEqual(ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create myDid!");
 
     // 2. create pairwise
@@ -95,9 +96,9 @@
     // 1. create and store my did
     NSString *myDid;
     ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                             seed:[TestUtils mySeed1]
-                                                                         outMyDid:&myDid
-                                                                      outMyVerkey:nil];
+                                                                    seed:[TestUtils mySeed1]
+                                                                outMyDid:&myDid
+                                                             outMyVerkey:nil];
     XCTAssertEqual(ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create myDid!");
 
     // 2. create and store their did
@@ -122,7 +123,7 @@
     NSArray *pairwiseList = (NSArray *) [NSDictionary fromString:pairwiseListJson];
     XCTAssertTrue([pairwiseList count] == 1, @"pairwiseList count != 1.");
 
-    NSDictionary *expectedResult = @{@"my_did": myDid, @"their_did":[TestUtils trusteeDid]};
+    NSDictionary *expectedResult = @{@"my_did": myDid, @"their_did": [TestUtils trusteeDid]};
 
     XCTAssertTrue([pairwiseList contains:expectedResult], @"pairwiseList doesn't contain pair: %@", expectedResult);
 }
@@ -131,7 +132,7 @@
     // 1. list pairwise
     NSString *pairwiseListJson;
     ret = [[PairwiseUtils sharedInstance] listPairwiseFromWallet:walletHandle
-                                                          outPairwiseList:&pairwiseListJson];
+                                                 outPairwiseList:&pairwiseListJson];
     XCTAssertEqual(ret.code, Success, @"PairwiseUtils::listPairwiseFromWallet() failed!");
 
     NSArray *pairwiseList = (NSArray *) [NSDictionary fromString:pairwiseListJson];
@@ -144,9 +145,9 @@
     // 1. create and store my did
     NSString *myDid;
     ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                             seed:[TestUtils mySeed1]
-                                                                         outMyDid:&myDid
-                                                                      outMyVerkey:nil];
+                                                                    seed:[TestUtils mySeed1]
+                                                                outMyDid:&myDid
+                                                             outMyVerkey:nil];
     XCTAssertEqual(ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create myDid!");
 
     // 2. create and store their did
@@ -175,8 +176,8 @@
     // 1. Check if pairwise exists
     BOOL exists = false;
     ret = [[PairwiseUtils sharedInstance] pairwiseExistsForDid:[TestUtils trusteeDid]
-                                                           walletHandle:walletHandle
-                                                              outExists:&exists];
+                                                  walletHandle:walletHandle
+                                                     outExists:&exists];
     XCTAssertEqual(ret.code, Success, @"PairwiseUtils::pairwiseExistsForDid() failed!");
     XCTAssertFalse(exists, @"pairwise exists!");
 }
@@ -187,9 +188,9 @@
     // 1. create and store my did
     NSString *myDid;
     ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                             seed:[TestUtils mySeed1]
-                                                                         outMyDid:&myDid
-                                                                      outMyVerkey:nil];
+                                                                    seed:[TestUtils mySeed1]
+                                                                outMyDid:&myDid
+                                                             outMyVerkey:nil];
     XCTAssertEqual(ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create myDid!");
 
     // 2. create and store their did
@@ -214,7 +215,7 @@
 
     NSDictionary *pairwiseInfo = [NSDictionary fromString:pairwiseInfoJson];
 
-    NSDictionary *expectedResult = @{@"my_did": myDid, @"metadata":[TestUtils someMetadata]};
+    NSDictionary *expectedResult = @{@"my_did": myDid, @"metadata": [TestUtils someMetadata]};
 
     XCTAssertTrue([pairwiseInfo contains:expectedResult], @"expectedResult is not contained in pairwiseInfoJson.");
 }
@@ -224,8 +225,8 @@
 
     NSString *pairwiseInfoJson;
     ret = [[PairwiseUtils sharedInstance] getPairwiseForDid:[TestUtils trusteeDid]
-                                                        walletHandle:walletHandle
-                                                     outPairwiseJson:&pairwiseInfoJson];
+                                               walletHandle:walletHandle
+                                            outPairwiseJson:&pairwiseInfoJson];
     XCTAssertEqual(ret.code, WalletItemNotFound, @"PairwiseUtils::getPairwiseForDid() returned wrong error code!");
 }
 
@@ -235,9 +236,9 @@
     // 1. create and store my did
     NSString *myDid;
     ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                             seed:[TestUtils mySeed1]
-                                                                         outMyDid:&myDid
-                                                                      outMyVerkey:nil];
+                                                                    seed:[TestUtils mySeed1]
+                                                                outMyDid:&myDid
+                                                             outMyVerkey:nil];
     XCTAssertEqual(ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create myDid!");
 
     // 2. create and store their did
@@ -281,7 +282,7 @@
 
     NSDictionary *pairwiseInfoWithMetadata = [NSDictionary fromString:pairwiseInfoWithMetadataJson];
 
-    expectedResult = @{@"my_did": myDid, @"metadata":[TestUtils someMetadata]};
+    expectedResult = @{@"my_did": myDid, @"metadata": [TestUtils someMetadata]};
 
     XCTAssertTrue([pairwiseInfoWithMetadata contains:expectedResult], @"expectedResult is not contained in pairwiseInfoWithMetadata.");
 }
@@ -289,8 +290,8 @@
 - (void)testSetPairwiseMetadataWorksForNotCreatedPairwise {
     // 1. Set pairwise metadata
     ret = [[PairwiseUtils sharedInstance] setPairwiseMetadata:[TestUtils someMetadata]
-                                                           forTheirDid:[TestUtils trusteeDid]
-                                                          walletHandle:walletHandle];
+                                                  forTheirDid:[TestUtils trusteeDid]
+                                                 walletHandle:walletHandle];
     XCTAssertEqual(ret.code, WalletItemNotFound, @"PairwiseUtils::setPairwiseMetadata() returned wrong error code!");
 }
 

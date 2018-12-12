@@ -1,7 +1,5 @@
 use serde_json::{Value, from_str, Map};
 use ErrorCode;
-use utils::types::UTXOInfo;
-use serde_json::to_string;
 
 pub fn parse_operation_from_request (req: &str) -> Result<String, ErrorCode> {
     let val = str_to_val(req)?;
@@ -13,13 +11,6 @@ pub fn parse_operation_from_request (req: &str) -> Result<String, ErrorCode> {
         Some(str) => Ok(str.to_string()),
         None => Err(ErrorCode::CommonInvalidStructure)
     }
-}
-
-pub fn serialize_infos(infos: &Vec<UTXOInfo>) -> Result<String, ErrorCode> {
-    to_string(&infos).map_err(|_| {
-        error!("Can't deserialize UTXO Info");
-        ErrorCode::CommonInvalidState
-    })
 }
 
 pub fn val_to_obj<'a>(val: &'a Value) -> Result<&'a Map<String, Value>, ErrorCode> {

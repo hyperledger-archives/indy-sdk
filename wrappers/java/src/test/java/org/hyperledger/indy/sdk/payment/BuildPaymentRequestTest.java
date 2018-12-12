@@ -17,7 +17,7 @@ public class BuildPaymentRequestTest extends PaymentIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(UnknownPaymentMethodException.class));
 
-		Payments.buildPaymentRequest(wallet, DID_TRUSTEE, inputs, outputs).get();
+		Payments.buildPaymentRequest(wallet, DID_TRUSTEE, inputs, outputs, null).get();
 	}
 
 	@Test
@@ -25,7 +25,7 @@ public class BuildPaymentRequestTest extends PaymentIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStructureException.class));
 
-		Payments.buildPaymentRequest(wallet, DID_TRUSTEE, emptyArray, outputs).get();
+		Payments.buildPaymentRequest(wallet, DID_TRUSTEE, emptyArray, outputs, null).get();
 	}
 
 	@Test
@@ -33,7 +33,7 @@ public class BuildPaymentRequestTest extends PaymentIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStructureException.class));
 
-		Payments.buildPaymentRequest(wallet, DID_TRUSTEE, inputs, emptyObject).get();
+		Payments.buildPaymentRequest(wallet, DID_TRUSTEE, inputs, emptyObject, null).get();
 	}
 
 	@Test
@@ -41,7 +41,7 @@ public class BuildPaymentRequestTest extends PaymentIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(IncompatiblePaymentException.class));
 
-		Payments.buildPaymentRequest(wallet, DID_TRUSTEE, incompatibleInputs, outputs).get();
+		Payments.buildPaymentRequest(wallet, DID_TRUSTEE, incompatibleInputs, outputs, null).get();
 	}
 
 	@Test
@@ -49,6 +49,6 @@ public class BuildPaymentRequestTest extends PaymentIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStructureException.class));
 
-		Payments.buildPaymentRequest(wallet, DID_TRUSTEE, invalidInputs, outputs).get();
+		Payments.buildPaymentRequest(wallet, DID_TRUSTEE, invalidInputs, outputs, null).get();
 	}
 }
