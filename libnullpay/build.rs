@@ -1,3 +1,10 @@
+
+// Clippy config
+#![warn(clippy:style)]
+#![warn(clippy:correctness)]
+#![warn(clippy:complexity)]
+#![warn(clippy:perf)]
+
 use std::env;
 use std::path::Path;
 
