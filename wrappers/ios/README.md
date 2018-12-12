@@ -49,13 +49,18 @@ Add pod to target:
    LIBINDY_POD_VERSION - version of libindy-core pod to be built
 1. Run the script. Validate the output that all goes well.
 1. Go to `Podspec` dir.
+    ```
+    cd wrappers/ios/libindy-pod
+    ```
 1. Create directory with name defined in LIBINDY_POD_VERSION:
    
    ```
    mkdir LIBINDY_POD_VERSION
    ```
-1. Copy libindy-core.podspec.json to that new directory from some previous version.
-1. Edit this json -> change version field to LIBINDY_POD_VERSION.
+1. Copy libindy-core.podspec.json to that new directory from some previous version, for example 1.6.8
+    ```
+    cp ../../../Specs/libindy-objc/1.6.8/libindy-objc.podspec.json LIBINDY_POD_VERSION/  
+    ```
 1. Add new directory and file inside to git repository.
 1. Commit to master branch.
 1. for all projects which using libindy-core do not forget to make:
