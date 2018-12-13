@@ -218,17 +218,17 @@ def vcxTesting(file, env_name, network_name, stashBuildResults) {
                     libvcxBuildFinished[env_name]
                 }
                 def jobs = [
-                    "${env_name}-vcx-nodejs-test": {
-                        linuxModuleTesting(file, env_name, network_name, this.&linuxVcxNodejsTesting, stashBuildResults)
-                    }
+                        "${env_name}-vcx-nodejs-test": {
+                            linuxModuleTesting(file, env_name, network_name, this.&linuxVcxNodejsTesting, stashBuildResults)
+                        }
                 ]
                 if (env_name == "Ubuntu") {
                     jobs["${env_name}-vcx-java-test"] = {
-                                linuxModuleTesting(file, env_name, network_name, this.&linuxVcxJavaTesting, stashBuildResults)
+                        linuxModuleTesting(file, env_name, network_name, this.&linuxVcxJavaTesting, stashBuildResults)
                     }
                     jobs["${env_name}-vcx-python-test"] = {
-                                linuxModuleTesting(file, env_name, network_name, this.&linuxVcxPythonTesting, stashBuildResults)
-                            }
+                        linuxModuleTesting(file, env_name, network_name, this.&linuxVcxPythonTesting, stashBuildResults)
+                    }
                 }
                 parallel(jobs)
             },
@@ -1026,17 +1026,16 @@ def pythonWrapperPublishing(testEnv, isRelease, directory) {
 }
 
 def nodejsWrapperPublishing(testEnv, isRelease, directory) {
-    dir(directory) {
-        def version = getSrcVersion("libindy")
-        def suffix = getSuffix(isRelease, "nodejs")
+    def version = getSrcVersion("libindy")
+    def suffix = getSuffix(isRelease, "nodejs")
 
-        testEnv.inside {
-            withCredentials([file(credentialsId: 'npm_credentials', variable: 'credentialsFile')]) {
-                sh 'cp $credentialsFile ~/.npmrc'
+    testEnv.inside {
+        withCredentials([file(credentialsId: 'npm_credentials', variable: 'credentialsFile')]) {
+            sh 'cp $credentialsFile ~/.npmrc'
 
-                sh "npm version --no-git-tag-version $version$suffix"
-                sh 'npm publish'
-            }
+            sh "cd $directory && " +
+                    "npm version --no-git-tag-version $version$suffix &&" +
+                    "npm publish"
         }
     }
 }
