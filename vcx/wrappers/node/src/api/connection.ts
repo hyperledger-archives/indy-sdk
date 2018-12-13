@@ -34,7 +34,7 @@ export interface IRecipientInviteInfo extends IConnectionCreateData {
 }
 
 export interface IConnectOptions {
-  phone?: string
+  data: string
 }
 
 /**
@@ -142,19 +142,17 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
    *
    * Example:
    * ```
-   * phoneNumber = '8019119191'
    * connection = await Connection.create('foobar123')
-   * inviteDetails = await connection.connect({phone: phoneNumber})
+   * inviteDetails = await connection.connect(
+   *     {data: '{"connection_type":"SMS","phone":"5555555555"}',"use_public_did":true})
    * ```
    * @returns {Promise<string}
    */
-  public async connect ({ phone }: IConnectOptions = {}): Promise<string> {
-    const connectionType: string = phone ? 'SMS' : 'QR'
-    const connectionData: string = JSON.stringify({ connection_type: connectionType, phone })
+  public async connect (connectionData: IConnectOptions): Promise<string> {
     try {
       return await createFFICallbackPromise<string>(
           (resolve, reject, cb) => {
-            const rc = rustAPI().vcx_connection_connect(0, this.handle, connectionData, cb)
+            const rc = rustAPI().vcx_connection_connect(0, this.handle, connectionData.data, cb)
             if (rc) {
               reject(rc)
             }

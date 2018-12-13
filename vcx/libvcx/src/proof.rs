@@ -184,6 +184,8 @@ impl Proof {
     }
 
     fn send_proof_request(&mut self, connection_handle: u32) -> Result<u32, ProofError> {
+        trace!("Proof::send_proof_request >>> connection_handle: {}", connection_handle);
+
         if self.state != VcxStateType::VcxStateInitialized {
             warn!("proof {} has invalid state {} for sending proofRequest", self.source_id, self.state as u32);
             return Err(ProofError::ProofNotReadyError())
@@ -218,7 +220,7 @@ impl Proof {
 
         self.proof_request = Some(proof_obj);
         let data = connection::generate_encrypted_payload(&self.prover_vk, &self.remote_vk, &proof_request, "PROOF_REQUEST").map_err(|_| ProofError::ProofConnectionError())?;
-        let title = format!("{} wants you to share {}", settings::get_config_value(settings::CONFIG_INSTITUTION_NAME).map_err(|e| ProofError::CommonError(e))?, self.name);
+        let title = format!("{} wants you to share: {}", settings::get_config_value(settings::CONFIG_INSTITUTION_NAME).map_err(|e| ProofError::CommonError(e))?, self.name);
 
         match messages::send_message().to(&self.prover_did)
             .to_vk(&self.prover_vk)
@@ -289,10 +291,15 @@ impl Proof {
     }
 
     fn update_state(&mut self) -> Result<u32, ProofError> {
+        trace!("Proof::update_state >>>");
         self.get_proof_request_status()
     }
 
-    fn get_state(&self) -> u32 {let state = self.state as u32; state}
+    fn get_state(&self) -> u32 {
+        trace!("Proof::get_state >>>");
+        let state = self.state as u32;
+        state
+    }
 
     fn get_proof_state(&self) -> u32 {let state = self.proof_state as u32; state}
 
@@ -321,6 +328,7 @@ pub fn create_proof(source_id: String,
                     requested_attrs: String,
                     requested_predicates: String,
                     name: String) -> Result<u32, ProofError> {
+    trace!("create_proof >>> source_id: {}, requested_attrs: {}, requested_predicates: {}, name: {}", source_id, requested_attrs, requested_predicates, name);
 
     // TODO: Get this to actually validate as json, not just check length.
     let length = requested_attrs.len();
@@ -458,7 +466,6 @@ pub fn get_proof_uuid(handle: u32) -> Result<String,u32> {
 }
 
 fn parse_proof_payload(payload: &Vec<u8>) -> Result<ProofMessage, u32> {
-    debug!("parsing proof payload: {:?}", payload);
     let data = messages::extract_json_payload(payload)?;
 
     let my_credential_req = ProofMessage::from_str(&data).map_err(|err| {

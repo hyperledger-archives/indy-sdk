@@ -104,6 +104,8 @@ impl IssuerCredential {
     }
 
     fn send_credential_offer(&mut self, connection_handle: u32) -> Result<u32, IssuerCredError> {
+        trace!("IssuerCredential::send_credential_offer >>> connection_handle: {}", connection_handle);
+
         debug!("sending credential offer for issuer_credential {} to connection {}", self.source_id, connection::get_source_id(connection_handle).unwrap_or_default());
         if self.state != VcxStateType::VcxStateInitialized {
             warn!("credential {} has invalid state {} for sending credentialOffer", self.source_id, self.state as u32);
@@ -126,7 +128,14 @@ impl IssuerCredential {
         let cred_json = json!(credential_offer);
         let mut payload = Vec::new();
 
-        if let Some(x) = payment { payload.push(json!(x)); }
+        let connection_name = settings::get_config_value(settings::CONFIG_INSTITUTION_NAME).map_err(|e| IssuerCredError::CommonError(e))?;
+        let title = if let Some(x) = payment {
+            payload.push(json!(x));
+            format!("{} is offering you a credential: {}", connection_name, self.credential_name)
+        } else {
+            format!("{} wants you to pay tokens for: {}", connection_name, self.credential_name)
+        };
+
         payload.push(cred_json);
         let payload = match serde_json::to_string(&payload) {
             Ok(p) => p,
@@ -144,6 +153,8 @@ impl IssuerCredential {
             .edge_agent_payload(&data)
             .agent_did(&self.agent_did)
             .agent_vk(&self.agent_vk)
+            .set_title(&title)
+            .set_detail(&title)
             .status_code(&MessageAccepted.as_string())
             .send_secure() {
             Err(x) => {
@@ -161,6 +172,8 @@ impl IssuerCredential {
     }
 
     fn send_credential(&mut self, connection_handle: u32) -> Result<u32, IssuerCredError> {
+        trace!("IssuerCredential::send_credential >>> connection_handle: {}", connection_handle);
+
         debug!("sending credential for issuer_credential {} to connection {}", self.source_id, connection::get_source_id(connection_handle).unwrap_or_default());
         if self.state != VcxStateType::VcxStateRequestReceived {
             warn!("credential {} has invalid state {} for sending credential", self.source_id, self.state as u32);
@@ -239,12 +252,21 @@ impl IssuerCredential {
     }
 
     fn update_state(&mut self) -> Result<u32, IssuerCredError> {
+        trace!("IssuerCredential::update_state >>>");
         self.get_credential_offer_status()
         //There will probably be more things here once we do other things with the credential
     }
 
+<<<<<<< HEAD
     fn get_state(&self) -> u32 { let state = self.state as u32; state }
 
+=======
+    fn get_state(&self) -> u32 {
+        trace!("IssuerCredential::get_state >>>");
+        let state = self.state as u32;
+        state
+    }
+>>>>>>> 69720b5c7b1686f63d2c49768daa92e31484ab18
     fn get_offer_uid(&self) -> &String { &self.msg_uid }
 
     fn set_offer_uid(&mut self, uid: &str) {self.msg_uid = uid.to_owned();}
@@ -333,6 +355,8 @@ impl IssuerCredential {
     }
 
     fn get_payment_txn(&self) -> Result<payments::PaymentTxn, u32> {
+        trace!("IssuerCredential::get_payment_txn >>>");
+
         match self.payment_address {
             Some(ref payment_address) if self.price > 0 => {
                 Ok(payments::PaymentTxn {
@@ -477,6 +501,8 @@ pub fn issuer_credential_create(cred_def_id: String,
                            credential_name: String,
                            credential_data: String,
                            price: u64) -> Result<u32, IssuerCredError> {
+    trace!("issuer_credential_create >>> cred_def_id: {}, source_id: {}, issuer_did: {}, credential_name: {}, credential_data: {}, price: {}",
+           cred_def_id, source_id, issuer_did, credential_name, credential_data, price);
 
     let mut new_issuer_credential = IssuerCredential {
         credential_id: source_id.to_string(),
