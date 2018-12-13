@@ -339,7 +339,7 @@ impl IssuerCredential {
     }
 
     fn verify_payment(&mut self) -> Result<(), u32> {
-        if self.price > 0 -{
+        if self.price > 0 {
             let invoice_address = self.payment_address.as_ref()
                 .ok_or(error::INVALID_PAYMENT_ADDRESS.code_num)?;
 
@@ -1286,5 +1286,17 @@ pub mod tests {
         assert_eq!("87121", zip["encoded"]);
         assert_eq!("87121", zip["raw"]);
 
+    }
+
+    #[test]
+    fn test_encode_bad_format_returns_error()
+    {
+        static BAD_TEST_CREDENTIAL_DATA: &str =
+            r#"{"format doesnt make sense"}"#;
+
+        match encode_attributes(BAD_TEST_CREDENTIAL_DATA) {
+            Ok(_) => assert!(false, "expected an error from encode_attributes"),
+            Err(_) => {}
+        }
     }
 }
