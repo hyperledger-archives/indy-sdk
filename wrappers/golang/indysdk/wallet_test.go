@@ -235,6 +235,13 @@ func TestImportWallet(t *testing.T) {
 	cleanUp(wh)
 }
 
+func TestImportWalletForNotExistingPath(t *testing.T) {
+	assert := assert.New(t)
+	err := errors.New(utils.GetIndyError(114))
+	assert.Equal(err, indysdk.ImportWallet(config, credential, importConfig))
+	cleanUp(0)
+}
+
 func cleanUp(wh int) {
 	indysdk.CloseWallet(wh)
 	indysdk.DeleteWallet(config, credential)
