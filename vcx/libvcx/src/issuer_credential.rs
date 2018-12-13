@@ -257,16 +257,12 @@ impl IssuerCredential {
         //There will probably be more things here once we do other things with the credential
     }
 
-<<<<<<< HEAD
-    fn get_state(&self) -> u32 { let state = self.state as u32; state }
-
-=======
     fn get_state(&self) -> u32 {
         trace!("IssuerCredential::get_state >>>");
         let state = self.state as u32;
         state
     }
->>>>>>> 69720b5c7b1686f63d2c49768daa92e31484ab18
+
     fn get_offer_uid(&self) -> &String { &self.msg_uid }
 
     fn set_offer_uid(&mut self, uid: &str) {self.msg_uid = uid.to_owned();}
