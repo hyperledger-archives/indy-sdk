@@ -1251,7 +1251,7 @@ def downloadPackagingUtils() {
 }
 
 def setupRust() {
-    sh "rustup default 1.29.0"
+    sh "rustup default 1.31.0"
 }
 
 def androidPublishing() {
