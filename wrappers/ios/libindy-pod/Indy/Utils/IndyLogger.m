@@ -19,6 +19,20 @@ void LogCb(const void *context,
         const char *modulePath,
         const char *file,
         uint32_t line) {
+    
+    #ifdef DEBUG
+        logMessage(level, message, file, line);
+    #else
+        if(@(level) <= @(3)) {
+            logMessage(level, message, file, line);
+        }
+    #endif
+}
+
+void logMessage(uint32_t level,
+        const char *message,
+        const char *file,
+        uint32_t line) {
     NSLog(@"%@    %@:%@ | %@", [levelMappings valueForKey:[NSString stringWithFormat:@"%@", @(level)]],
             [NSString stringWithUTF8String:file],
             @(line),
