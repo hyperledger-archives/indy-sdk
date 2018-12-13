@@ -100,7 +100,6 @@ def staticValidation() {
         'libindy'    : { runValdiationRust('libindy') },
         'libnullpay' : { runValdiationRust('libnullpay') },
         'libvcx'     : { runValdiationRust('vcx/libvcx') }
-        'cli'        : { runValdiationRust('cli') }
     ])
 }
 
@@ -109,7 +108,7 @@ def runValdiationRust(dir) {
         setupRust()
         sh "rustup component add clippy-preview"
         sh "cd ${dir}"
-        sh "cargo clippy"
+        sh "cargo clippy -- -W clippy::style -W clippy::correctness -W clippy::complexity -W clippy::perf"
     }
 }
 
