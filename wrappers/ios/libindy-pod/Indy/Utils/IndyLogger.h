@@ -1,5 +1,5 @@
 //
-//  IndySequenceUtils.h
+//  IndyLogger.h
 //  libindy
 //
 

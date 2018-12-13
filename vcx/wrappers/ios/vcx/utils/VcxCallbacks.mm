@@ -3,11 +3,12 @@
 //  libindy
 //
 
-#include "vcx.h"
 #import "VcxCallbacks.h"
 #import "NSError+VcxError.h"
 #import "VcxTypes.h"
 #import "VcxErrors.h"
+#import "VcxLogger.h"
+#include "vcx.h"
 
 static NSString *commandCallbackKey = @"commandCallback";
 
@@ -28,6 +29,7 @@ static NSString *commandCallbackKey = @"commandCallback";
 
     dispatch_once(&dispatch_once_block, ^{
         instance = [VcxCallbacks new];
+        [VcxLogger setLogger];
     });
 
     return instance;
