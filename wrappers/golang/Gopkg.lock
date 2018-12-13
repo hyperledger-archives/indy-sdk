@@ -18,18 +18,6 @@
   version = "v1.0.0"
 
 [[projects]]
-  branch = "master"
-  digest = "1:e79de2cd2bb6112db35739eeb413f5c4cacb1dee5cb527a6c5af731c8e2952ff"
-  name = "github.com/sasiedu/SSI-Sovrin"
-  packages = [
-    "indy-sdk-wrapper/golang/indysdk",
-    "indy-sdk-wrapper/golang/indysdk/utils",
-    "indy-sdk-wrapper/golang/indysdk/wallet",
-  ]
-  pruneopts = "UT"
-  revision = "fc263a537c76374d9543dd7237d12d29aa09dca4"
-
-[[projects]]
   digest = "1:18752d0b95816a1b777505a97f71c7467a8445b8ffb55631a7bf779f6ba4fa83"
   name = "github.com/stretchr/testify"
   packages = ["assert"]
@@ -40,11 +28,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  input-imports = [
-    "github.com/sasiedu/SSI-Sovrin/indy-sdk-wrapper/golang/indysdk",
-    "github.com/sasiedu/SSI-Sovrin/indy-sdk-wrapper/golang/indysdk/utils",
-    "github.com/sasiedu/SSI-Sovrin/indy-sdk-wrapper/golang/indysdk/wallet",
-    "github.com/stretchr/testify/assert",
-  ]
+  input-imports = ["github.com/stretchr/testify/assert"]
   solver-name = "gps-cdcl"
   solver-version = 1
