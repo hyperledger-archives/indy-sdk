@@ -244,14 +244,18 @@ impl IssuerCredential {
     }
 
     fn get_state(&self) -> u32 { let state = self.state as u32; state }
+
     fn get_offer_uid(&self) -> &String { &self.msg_uid }
+
     fn set_offer_uid(&mut self, uid: &str) {self.msg_uid = uid.to_owned();}
+
     fn set_credential_request(&mut self, credential_request:CredentialRequest) -> Result<u32,u32> {
         self.credential_request = Some(credential_request);
         Ok(error::SUCCESS.code_num)
     }
 
     fn get_credential_attributes(&self) -> &String { &self.credential_attributes}
+
     fn get_source_id(&self) -> &String { &self.source_id }
 
     fn generate_credential(&self, credential_data: &str, did: &str) -> Result<CredentialMessage, IssuerCredError> {
@@ -357,9 +361,12 @@ impl IssuerCredential {
 }
 
 /**
-    Input: json, key/array (of one item)
+    Input: supporting two formats:
     eg:
+    json, key/array (of one item)
     {"address2":["101 Wilson Lane"]}
+    or
+    {}
 
     Output: json: dictionary with key, object of raw and encoded values
     eg:
@@ -389,25 +396,32 @@ pub fn encode_attributes(attributes: &str) -> Result<String, IssuerCredError> {
 
     let mut dictionary = HashMap::new();
 
-    for (attr, vec) in map.iter_mut(){
-        let list = match vec.as_array_mut() {
-            Some(x) => x,
-            None => {
+    for (attr, attr_data) in map.iter_mut(){
+        let first_attr : String = match attr_data {
+            serde_json::Value::Array(array_type) => {
+
+                let i = &array_type[0];
+                let attrib_value = match i.as_str(){
+                    Some(v) => v,
+                    None => {
+                        warn!("Cannot encode attribute: {}", error::INVALID_ATTRIBUTES_STRUCTURE.message);
+                        return Err(IssuerCredError::CommonError(error::INVALID_ATTRIBUTES_STRUCTURE.code_num))
+                    },
+                };
+
+                warn!("Old attribute format detected. See vcx_issuer_create_credential api for additional information.");
+                attrib_value.to_string()
+            },
+            serde_json::Value::String(str_type) => str_type.to_string(),
+            _ => {
                 warn!("Invalid Json for Attribute data");
                 return Err(IssuerCredError::CommonError(INVALID_JSON.code_num))
             }
         };
-        let i = list[0].clone();
-        let value = match i.as_str(){
-            Some(v) => v,
-            None => {
-                warn!("Cannot encode attribute: {}", error::INVALID_ATTRIBUTES_STRUCTURE.message);
-                return Err(IssuerCredError::CommonError(error::INVALID_ATTRIBUTES_STRUCTURE.code_num))
-            },
-        };
-        let encoded = encode(value).map_err(|x| IssuerCredError::CommonError(x))?;
+
+        let encoded = encode(&first_attr).map_err(|x| IssuerCredError::CommonError(x))?;
         let attrib_values = json!({
-            "raw" : value,
+            "raw" : first_attr,
             "encoded": encoded
         });
 
@@ -1043,26 +1057,6 @@ pub mod tests {
     }
 
     #[test]
-    fn test_encode_with_one_attribute_success() {
-
-        let expected = json!({
-          "address2": {
-            "encoded": "68086943237164982734333428280784300550565381723532936263016368251445461241953",
-            "raw": "101 Wilson Lane"
-          }
-        });
-
-        static TEST_CREDENTIAL_DATA: &str =
-        r#"{"address2":["101 Wilson Lane"]}"#;
-
-        let expected_json = serde_json::to_string_pretty(&expected).unwrap();
-
-        let results_json = encode_attributes(TEST_CREDENTIAL_DATA).unwrap();
-
-        assert_eq!(expected_json, results_json, "encode_attributes failed to return expected results");
-    }
-
-    #[test]
     fn test_encode_with_several_attributes_success() {
 
         /*
@@ -1098,6 +1092,158 @@ pub mod tests {
             "state":["UT"],
             "city":["SLC"],
             "address1":["101 Tela Lane"]
+            }"#;
+
+        let results_json = encode_attributes(TEST_CREDENTIAL_DATA).unwrap();
+
+        let results : Value = serde_json::from_str(&results_json).unwrap();
+        let address2 : &Value = &results["address2"];
+
+        assert_eq!("68086943237164982734333428280784300550565381723532936263016368251445461241953", address2["encoded"]);
+        assert_eq!("101 Wilson Lane", address2["raw"]);
+
+        let state : &Value = &results["state"];
+        assert_eq!("93856629670657830351991220989031130499313559332549427637940645777813964461231", state["encoded"]);
+        assert_eq!("UT", state["raw"]);
+
+        let zip : &Value = &results["zip"];
+        assert_eq!("87121", zip["encoded"]);
+        assert_eq!("87121", zip["raw"]);
+
+    }
+
+    #[test]
+    fn test_encode_with_one_attribute_success() {
+
+        let expected = json!({
+          "address2": {
+            "encoded": "68086943237164982734333428280784300550565381723532936263016368251445461241953",
+            "raw": "101 Wilson Lane"
+          }
+        });
+
+        static TEST_CREDENTIAL_DATA: &str =
+        r#"{"address2":["101 Wilson Lane"]}"#;
+
+        let expected_json = serde_json::to_string_pretty(&expected).unwrap();
+
+        let results_json = encode_attributes(TEST_CREDENTIAL_DATA).unwrap();
+
+        assert_eq!(expected_json, results_json, "encode_attributes failed to return expected results");
+    }
+
+    #[test]
+    fn test_encode_with_new_format_several_attributes_success() {
+
+        /*
+        for reference....expectation is encode_attributes returns this:
+
+        let expected = json!({
+          "address2": {
+            "encoded": "68086943237164982734333428280784300550565381723532936263016368251445461241953",
+            "raw": "101 Wilson Lane"
+          },
+          "zip": {
+            "encoded": "87121",
+            "raw": "87121"
+          },
+          "city": {
+            "encoded": "101327353979588246869873249766058188995681113722618593621043638294296500696424",
+            "raw": "SLC"
+          },
+          "address1": {
+            "encoded": "63690509275174663089934667471948380740244018358024875547775652380902762701972",
+            "raw": "101 Tela Lane"
+          },
+          "state": {
+            "encoded": "93856629670657830351991220989031130499313559332549427637940645777813964461231",
+            "raw": "UT"
+          }
+        });
+        */
+
+        static TEST_CREDENTIAL_DATA: &str =
+            r#"{"address2":"101 Wilson Lane",
+            "zip":"87121",
+            "state":"UT",
+            "city":"SLC",
+            "address1":"101 Tela Lane"
+            }"#;
+
+        let results_json = encode_attributes(TEST_CREDENTIAL_DATA).unwrap();
+
+        let results : Value = serde_json::from_str(&results_json).unwrap();
+        let address2 : &Value = &results["address2"];
+
+        assert_eq!("68086943237164982734333428280784300550565381723532936263016368251445461241953", address2["encoded"]);
+        assert_eq!("101 Wilson Lane", address2["raw"]);
+
+        let state : &Value = &results["state"];
+        assert_eq!("93856629670657830351991220989031130499313559332549427637940645777813964461231", state["encoded"]);
+        assert_eq!("UT", state["raw"]);
+
+        let zip : &Value = &results["zip"];
+        assert_eq!("87121", zip["encoded"]);
+        assert_eq!("87121", zip["raw"]);
+
+    }
+
+    #[test]
+    fn test_encode_with_new_format_one_attribute_success() {
+
+        let expected = json!({
+          "address2": {
+            "encoded": "68086943237164982734333428280784300550565381723532936263016368251445461241953",
+            "raw": "101 Wilson Lane"
+          }
+        });
+
+        static TEST_CREDENTIAL_DATA: &str =
+        r#"{"address2": "101 Wilson Lane"}"#;
+
+        let expected_json = serde_json::to_string_pretty(&expected).unwrap();
+
+        let results_json = encode_attributes(TEST_CREDENTIAL_DATA).unwrap();
+
+        assert_eq!(expected_json, results_json, "encode_attributes failed to return expected results");
+    }
+
+    #[test]
+    fn test_encode_with_mixed_format_several_attributes_success() {
+
+        /*
+        for reference....expectation is encode_attributes returns this:
+
+        let expected = json!({
+          "address2": {
+            "encoded": "68086943237164982734333428280784300550565381723532936263016368251445461241953",
+            "raw": "101 Wilson Lane"
+          },
+          "zip": {
+            "encoded": "87121",
+            "raw": "87121"
+          },
+          "city": {
+            "encoded": "101327353979588246869873249766058188995681113722618593621043638294296500696424",
+            "raw": "SLC"
+          },
+          "address1": {
+            "encoded": "63690509275174663089934667471948380740244018358024875547775652380902762701972",
+            "raw": "101 Tela Lane"
+          },
+          "state": {
+            "encoded": "93856629670657830351991220989031130499313559332549427637940645777813964461231",
+            "raw": "UT"
+          }
+        });
+        */
+
+        static TEST_CREDENTIAL_DATA: &str =
+            r#"{"address2":["101 Wilson Lane"],
+            "zip":"87121",
+            "state":"UT",
+            "city":["SLC"],
+            "address1":"101 Tela Lane"
             }"#;
 
         let results_json = encode_attributes(TEST_CREDENTIAL_DATA).unwrap();
