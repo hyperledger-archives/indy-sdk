@@ -7,7 +7,17 @@ Cocoapod will search for spec files in the root Specs folder.
 
 Add pod to target:
     
-    pod 'libindy-objc'                
+    pod 'libindy'
+
+For example  appPods will look like this:
+```
+def appPods
+    pod 'libsodium'
+    pod 'libzmq',"4.2.3"
+    pod 'OpenSSL'
+    pod 'libindy', "1.6.8"
+end
+```        
 
 # How to build
 
@@ -42,11 +52,12 @@ Add pod to target:
    export EVERNYM_REPO_KEY=~/Documents/EvernymRepo
    export LIBINDY_POD_VERSION=0.0.1
    ```
-   OPENSSL_DIR - path to installed openssl library
-   
-   EVERNYM_REPO_KEY - path to file with private key to be authorized on deb server
-   
-   LIBINDY_POD_VERSION - version of libindy-core pod to be built
+    | env prop              | description  
+    | --------------------- |:-------------
+    | OPENSSL_DIR           | path to installed openssl library
+    | EVERNYM_REPO_KEY      | path to file with private key to be authorized on deb server
+    | LIBINDY_POD_VERSION   | version of libindy-core pod to be built
+
 1. Run the script. Validate the output that all goes well.
 1. Go to `Podspec` dir.
     ```
@@ -55,11 +66,11 @@ Add pod to target:
 1. Create directory with name defined in LIBINDY_POD_VERSION:
    
    ```
-   mkdir LIBINDY_POD_VERSION
+   mkdir ${LIBINDY_POD_VERSION}
    ```
-1. Copy libindy-core.podspec.json to that new directory from some previous version, for example 1.6.8
+1. Copy `libindy.podspec.json` to that new directory from some previous version, for example `1.6.8`
     ```
-    cp ../../../Specs/libindy-objc/1.6.8/libindy-objc.podspec.json LIBINDY_POD_VERSION/  
+    cp ../../../Specs/libindy/1.6.8/libindy.podspec.json ${LIBINDY_POD_VERSION}/
     ```
 1. Add new directory and file inside to git repository.
 1. Commit to master branch.
@@ -75,6 +86,10 @@ Add pod to target:
 
 # Creation 
 Run Archive process for `Indy` target. Custom post-action shell script `universal_framework.h` will be triggered and you get universal framework. Then put it to folder: `libindy-objc/Indy.framework` and upload to repo.
+
+```sh
+./universal_framework.h
+```
 
 # Usage
 
