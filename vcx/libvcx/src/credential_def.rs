@@ -306,6 +306,7 @@ pub mod tests {
                                  "{}".to_string()).unwrap()
     }
 
+    #[cfg(feature = "pool_tests")]
     #[test]
     fn test_create_cred_def_without_rev_will_have_no_rev_id() {
         init!("ledger");
