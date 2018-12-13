@@ -339,7 +339,7 @@ impl IssuerCredential {
     }
 
     fn verify_payment(&mut self) -> Result<(), u32> {
-        if self.price > 0 {
+        if self.price > 0 -{
             let invoice_address = self.payment_address.as_ref()
                 .ok_or(error::INVALID_PAYMENT_ADDRESS.code_num)?;
 
@@ -383,10 +383,12 @@ impl IssuerCredential {
 /**
     Input: supporting two formats:
     eg:
-    json, key/array (of one item)
-    {"address2":["101 Wilson Lane"]}
+    perferred format: json, property/values
+    {"address2":"101 Wilson Lane"}
     or
-    {}
+    deprecated format: json, key/array (of one item)
+    {"address2":["101 Wilson Lane"]}
+
 
     Output: json: dictionary with key, object of raw and encoded values
     eg:
