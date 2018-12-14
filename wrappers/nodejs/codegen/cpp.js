@@ -182,6 +182,7 @@ cpp += 'NAN_MODULE_INIT(InitAll) {\n'
 apiFunctions.forEach(function (fn) {
   cpp += '  Nan::Export(target, "' + fn.jsName + '", ' + fn.jsName + ');\n'
 })
+cpp += '  Nan::Export(target, "setRuntimeConfig", setRuntimeConfig);\n'
 cpp += '  Nan::Export(target, "setDefaultLogger", setDefaultLogger);\n'
 cpp += '  Nan::Export(target, "setLogger", setLogger);\n'
 cpp += '}\n'

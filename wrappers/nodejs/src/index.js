@@ -28,6 +28,13 @@ var indy = {}
 
 indy.capi = capi // if you want to skip the json dance, IndyError, and promise support
 
+indy.setRuntimeConfig = function setRuntimeConfig (config) {
+  var err = capi.setRuntimeConfig(toJson(config))
+  if (err !== 0) {
+    throw new IndyError(err)
+  }
+}
+
 indy.setDefaultLogger = function setDefaultLogger (pattern) {
   var err = capi.setDefaultLogger(pattern)
   if (err !== 0) {

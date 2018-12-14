@@ -20,6 +20,7 @@ Native bindings for [Hyperledger Indy](https://www.hyperledger.org/projects/hype
   * [pool](#pool)
   * [wallet](#wallet)
   * [logger](#logger)
+  * [mod](#mod)
 - [Advanced](#advanced)
 - [Contributing](#contributing)
 
@@ -2557,6 +2558,22 @@ Errors: `Common*`
 
 NOTE: This is a synchronous function (does not return a promise) but may call `logFn` asynchronously many times.
 
+### mod
+
+#### setRuntimeConfig \( config \)
+
+Set libindy runtime configuration. Can be optionally called to change current params.
+
+* `config`: Json
+```
+{
+  "crypto_thread_pool_size": <int> - size of thread pool for the most expensive crypto operations. (4 by default)
+}
+```
+
+Errors: `Common*`
+
+NOTE: This is a synchronous function (does not return a promise.)
 
 ## Advanced
 

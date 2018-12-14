@@ -420,6 +420,15 @@ NAN_METHOD(setLogger) {
   info.GetReturnValue().Set(res);
 }
 
+NAN_METHOD(setRuntimeConfig) {
+  INDY_ASSERT_NARGS(setRuntimeConfig, 1)
+  INDY_ASSERT_STRING(setRuntimeConfig, 0, config)
+  const char* config = argToCString(info[0]);
+  indy_error_t res = indy_set_runtime_config(config);
+  delete config;
+  info.GetReturnValue().Set(res);
+}
+
 int32_t argToInt32(v8::Local<v8::Value> arg){
   v8::Maybe<int32_t> v = arg->Int32Value(Nan::GetCurrentContext());
   return v.FromJust();
