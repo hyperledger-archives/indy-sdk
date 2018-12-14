@@ -71,7 +71,7 @@ Object.keys(api.functions).forEach(function (name) {
 
   fn.params.forEach(function (param, i) {
     if (i === 0) {
-      if (param.type !== 'indy_handle_t' ||  !/^command_handle_?$/.test(param.name)) {
+      if (param.type !== 'indy_handle_t' || !/^command_handle_?$/.test(param.name)) {
         throw new Error('Expected a command_handle as the first argument: ' + fn.name + ' but was ' + param.name)
       }
       return
