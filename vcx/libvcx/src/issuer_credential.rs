@@ -415,26 +415,30 @@ pub fn encode_attributes(attributes: &str) -> Result<String, IssuerCredError> {
             return Err(IssuerCredError::CommonError(INVALID_JSON.code_num))
         }
     };
-
+    
     let mut dictionary = HashMap::new();
 
     for (attr, attr_data) in map.iter_mut(){
-        let first_attr : String = match attr_data {
+        let first_attr : &str = match attr_data {
+            // old style input such as {"address2":["101 Wilson Lane"]}
             serde_json::Value::Array(array_type) => {
 
-                let i = &array_type[0];
-                let attrib_value = match i.as_str(){
-                    Some(v) => v,
+                let attrib_value : &str = match array_type.get(0).and_then(serde_json::Value::as_str) {
+                    Some(x) => x,
                     None => {
                         warn!("Cannot encode attribute: {}", error::INVALID_ATTRIBUTES_STRUCTURE.message);
                         return Err(IssuerCredError::CommonError(error::INVALID_ATTRIBUTES_STRUCTURE.code_num))
-                    },
+                    }
                 };
 
                 warn!("Old attribute format detected. See vcx_issuer_create_credential api for additional information.");
-                attrib_value.to_string()
+                attrib_value
             },
-            serde_json::Value::String(str_type) => str_type.to_string(),
+
+            // new style input such as {"address2":"101 Wilson Lane"}
+            serde_json::Value::String(str_type) => str_type,
+
+            // anything else is an error
             _ => {
                 warn!("Invalid Json for Attribute data");
                 return Err(IssuerCredError::CommonError(INVALID_JSON.code_num))
@@ -1121,18 +1125,19 @@ pub mod tests {
         let results_json = encode_attributes(TEST_CREDENTIAL_DATA).unwrap();
 
         let results : Value = serde_json::from_str(&results_json).unwrap();
-        let address2 : &Value = &results["address2"];
 
-        assert_eq!("68086943237164982734333428280784300550565381723532936263016368251445461241953", address2["encoded"]);
+        let address2 : &Value = &results["address2"];
+        assert_eq!(encode("101 Wilson Lane").unwrap(), address2["encoded"]);
         assert_eq!("101 Wilson Lane", address2["raw"]);
 
         let state : &Value = &results["state"];
-        assert_eq!("93856629670657830351991220989031130499313559332549427637940645777813964461231", state["encoded"]);
+        assert_eq!(encode("UT").unwrap(), state["encoded"]);
         assert_eq!("UT", state["raw"]);
 
         let zip : &Value = &results["zip"];
         assert_eq!("87121", zip["encoded"]);
         assert_eq!("87121", zip["raw"]);
+
 
     }
 
@@ -1197,13 +1202,13 @@ pub mod tests {
         let results_json = encode_attributes(TEST_CREDENTIAL_DATA).unwrap();
 
         let results : Value = serde_json::from_str(&results_json).unwrap();
-        let address2 : &Value = &results["address2"];
 
-        assert_eq!("68086943237164982734333428280784300550565381723532936263016368251445461241953", address2["encoded"]);
+        let address2 : &Value = &results["address2"];
+        assert_eq!(encode("101 Wilson Lane").unwrap(), address2["encoded"]);
         assert_eq!("101 Wilson Lane", address2["raw"]);
 
         let state : &Value = &results["state"];
-        assert_eq!("93856629670657830351991220989031130499313559332549427637940645777813964461231", state["encoded"]);
+        assert_eq!(encode("UT").unwrap(), state["encoded"]);
         assert_eq!("UT", state["raw"]);
 
         let zip : &Value = &results["zip"];
@@ -1294,9 +1299,15 @@ pub mod tests {
         static BAD_TEST_CREDENTIAL_DATA: &str =
             r#"{"format doesnt make sense"}"#;
 
-        match encode_attributes(BAD_TEST_CREDENTIAL_DATA) {
-            Ok(_) => assert!(false, "expected an error from encode_attributes"),
-            Err(_) => {}
-        }
+        assert!(encode_attributes(BAD_TEST_CREDENTIAL_DATA).is_err())
+    }
+
+    #[test]
+    fn test_encode_old_format_empty_array_error()
+    {
+        static BAD_TEST_CREDENTIAL_DATA: &str =
+            r#"{"address2":[]}"#;
+
+        assert!(encode_attributes(BAD_TEST_CREDENTIAL_DATA).is_err())
     }
 }
