@@ -1561,6 +1561,8 @@ mod high_cases {
 
             let seq_no = response_metadata["seqNo"].as_u64().unwrap() as i32;
 
+            thread::sleep(std::time::Duration::from_secs(2));
+
             let get_txn_request = ledger::build_get_txn_request(None, seq_no, None).unwrap();
             let get_txn_response = ledger::submit_request(pool_handle, &get_txn_request).unwrap();
 
