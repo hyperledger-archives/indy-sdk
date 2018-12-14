@@ -29,7 +29,6 @@ static NSString *commandCallbackKey = @"commandCallback";
 
     dispatch_once(&dispatch_once_block, ^{
         instance = [VcxCallbacks new];
-        [VcxLogger setLogger];
     });
 
     return instance;

@@ -350,6 +350,8 @@ vcx_error_t vcx_ledger_get_fees(vcx_command_handle_t command_handle, void(*cb)(v
 /**
  * logging
  **/
+vcx_error_t vcx_set_default_logger(const char* pattern);
+
 vcx_error_t vcx_set_logger( const void* context,
                             vcx_bool_t (*enabledFn)(const void*  context,
                                                       vcx_u32_t level,

@@ -29,9 +29,6 @@ static NSString *commandCallbackKey = @"commandCallback";
         instance = [IndyCallbacks new];
     });
 
-
-    [IndyLogger setLogger];
-
     return instance;
 }
 

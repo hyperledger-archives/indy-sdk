@@ -12,39 +12,64 @@
 #import "VcxErrors.h"
 #include "vcx.h"
 
-#define levelMappings @{@"1": @"Error", @"2": @"Warning", @"3": @"Info", @"4": @"Debug", @"5": @"Trace"}
+@interface VcxLogger ()
 
-void LogCb(const void *context,
+@property(strong, readwrite) NSMutableArray *callbacks;
+
+@end
+
+@implementation VcxLogger : NSObject
+
++ (void)setDefaultLogger:(NSString *)pattern {
+    vcx_set_default_logger([pattern UTF8String]);
+}
+
++ (void)setLogger:(id)logCb {
+    [VcxLogger sharedInstance].callbacks[0] = [logCb copy];
+    vcx_set_logger(nil, nil, logCallback, nil);
+}
+
++ (VcxLogger *)sharedInstance {
+    static VcxLogger *instance = nil;
+    static dispatch_once_t dispatch_once_block;
+
+    dispatch_once(&dispatch_once_block, ^{
+        instance = [VcxLogger new];
+    });
+
+    return instance;
+}
+
+- (VcxLogger *)init {
+    self = [super init];
+    if (self) {
+        self.callbacks = [[NSMutableArray alloc] init];
+    }
+    return self;
+}
+
+void logCallback(const void *context,
         uint32_t level,
         const char *target,
         const char *message,
         const char *modulePath,
         const char *file,
         uint32_t line) {
+    id block = [VcxLogger sharedInstance].callbacks[0];
 
-#ifdef DEBUG
-    logMessage(level, message, file, line);
-#else
-    if(@(level) <= @(3)) {
-        logMessage(level, message, file, line);
+    void (^completion)(NSObject *, NSNumber *, NSString *, NSString *, NSString *, NSString *, NSNumber *) =
+    (void (^)(NSObject *context, NSNumber *level, NSString *target, NSString *message, NSString *modulePath, NSString *file, NSNumber *line)) block;
+    NSObject *sarg0 = (__bridge NSObject *) context;
+    NSNumber *sarg1 = @(level);
+    NSString *sarg2 = [NSString stringWithUTF8String:target];
+    NSString *sarg3 = [NSString stringWithUTF8String:message];
+    NSString *sarg4 = [NSString stringWithUTF8String:modulePath];
+    NSString *sarg5 = [NSString stringWithUTF8String:file];
+    NSNumber *sarg6 = @(line);
+
+    if (completion) {
+        completion(sarg0, sarg1, sarg2, sarg3, sarg4, sarg5, sarg6);
     }
-#endif
-}
-
-void logMessage(uint32_t level,
-        const char *message,
-        const char *file,
-        uint32_t line) {
-    NSLog(@"%@    %@:%@ | %@", [levelMappings valueForKey:[NSString stringWithFormat:@"%@", @(level)]],
-            [NSString stringWithUTF8String:file],
-            @(line),
-            [NSString stringWithUTF8String:message]);
-}
-
-@implementation VcxLogger : NSObject
-
-+ (void)setLogger {
-    vcx_set_logger(nil, nil, LogCb, nil);
 }
 
 @end
