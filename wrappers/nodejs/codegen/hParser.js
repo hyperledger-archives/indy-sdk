@@ -243,6 +243,7 @@ api.functions.indy_parse_get_revoc_reg_response.params[1].json = true
 api.functions.indy_parse_get_schema_response.params[1].json = true
 api.functions.indy_submit_action.params[3].json = true
 api.functions.indy_get_response_metadata.params[1].json = true
+api.functions.indy_get_response_metadata.params[2].params[2].json = true
 
 api.functions.indy_build_get_revoc_reg_delta_request.params[3].timestamp = true
 api.functions.indy_build_get_revoc_reg_delta_request.params[4].timestamp = true
@@ -250,4 +251,4 @@ api.functions.indy_build_get_revoc_reg_delta_request.params[4].timestamp = true
 api.functions.indy_issuer_create_credential.params[6].optional = true
 api.functions.indy_submit_action.params[4].optional = true
 
-fs.writeFileSync(path.resolve(__dirname, 'api.json'), stringify(api, {maxLength: 100}), 'utf8')
+fs.writeFileSync(path.resolve(__dirname, 'api.json'), stringify(api, { maxLength: 100 }), 'utf8')

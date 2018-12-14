@@ -123,7 +123,7 @@ NAN_METHOD(issuerCreateCredential) {
   const char* arg2 = argToCString(info[2]);
   const char* arg3 = argToCString(info[3]);
   const char* arg4 = argToCString(info[4]);
-  indy_i32_t arg5 = info[5]->Int32Value();
+  indy_handle_t arg5 = info[5]->Int32Value();
   IndyCallback* icb = argToIndyCb(info[6]);
   indyCalled(icb, indy_issuer_create_credential(icb->handle, arg0, arg1, arg2, arg3, arg4, arg5, issuerCreateCredential_cb));
   delete arg1;
@@ -146,7 +146,7 @@ NAN_METHOD(issuerRevokeCredential) {
   INDY_ASSERT_STRING(issuerRevokeCredential, 3, credRevocId)
   INDY_ASSERT_FUNCTION(issuerRevokeCredential, 4)
   indy_handle_t arg0 = info[0]->Int32Value();
-  indy_i32_t arg1 = info[1]->Int32Value();
+  indy_handle_t arg1 = info[1]->Int32Value();
   const char* arg2 = argToCString(info[2]);
   const char* arg3 = argToCString(info[3]);
   IndyCallback* icb = argToIndyCb(info[4]);
@@ -487,7 +487,7 @@ NAN_METHOD(createRevocationState) {
   INDY_ASSERT_NUMBER(createRevocationState, 3, timestamp)
   INDY_ASSERT_STRING(createRevocationState, 4, credRevId)
   INDY_ASSERT_FUNCTION(createRevocationState, 5)
-  indy_i32_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = info[0]->Int32Value();
   const char* arg1 = argToCString(info[1]);
   const char* arg2 = argToCString(info[2]);
   long long arg3 = info[3]->Uint32Value();
@@ -514,7 +514,7 @@ NAN_METHOD(updateRevocationState) {
   INDY_ASSERT_NUMBER(updateRevocationState, 4, timestamp)
   INDY_ASSERT_STRING(updateRevocationState, 5, credRevId)
   INDY_ASSERT_FUNCTION(updateRevocationState, 6)
-  indy_i32_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = info[0]->Int32Value();
   const char* arg1 = argToCString(info[1]);
   const char* arg2 = argToCString(info[2]);
   const char* arg3 = argToCString(info[3]);
@@ -528,10 +528,10 @@ NAN_METHOD(updateRevocationState) {
   delete arg5;
 }
 
-void openBlobStorageReader_cb(indy_handle_t handle, indy_error_t xerr, indy_i32_t arg0) {
+void openBlobStorageReader_cb(indy_handle_t handle, indy_error_t xerr, indy_handle_t arg0) {
   IndyCallback* icb = IndyCallback::getCallback(handle);
   if(icb != nullptr){
-    icb->cbI32(xerr, arg0);
+    icb->cbHandle(xerr, arg0);
   }
 }
 NAN_METHOD(openBlobStorageReader) {
@@ -547,10 +547,10 @@ NAN_METHOD(openBlobStorageReader) {
   delete arg1;
 }
 
-void openBlobStorageWriter_cb(indy_handle_t handle, indy_error_t xerr, indy_i32_t arg0) {
+void openBlobStorageWriter_cb(indy_handle_t handle, indy_error_t xerr, indy_handle_t arg0) {
   IndyCallback* icb = IndyCallback::getCallback(handle);
   if(icb != nullptr){
-    icb->cbI32(xerr, arg0);
+    icb->cbHandle(xerr, arg0);
   }
 }
 NAN_METHOD(openBlobStorageWriter) {
@@ -1383,7 +1383,7 @@ NAN_METHOD(buildGetTxnRequest) {
   INDY_ASSERT_NARGS(buildGetTxnRequest, 4)
   INDY_ASSERT_STRING(buildGetTxnRequest, 0, submitterDid)
   INDY_ASSERT_STRING(buildGetTxnRequest, 1, ledgerType)
-  INDY_ASSERT_NUMBER(buildGetTxnRequest, 2, data)
+  INDY_ASSERT_NUMBER(buildGetTxnRequest, 2, seqNo)
   INDY_ASSERT_FUNCTION(buildGetTxnRequest, 3)
   const char* arg0 = argToCString(info[0]);
   const char* arg1 = argToCString(info[1]);

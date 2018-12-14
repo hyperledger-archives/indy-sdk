@@ -76,7 +76,7 @@ indy.issuerCreateCredential = function issuerCreateCredential (wh, credOffer, cr
   cb = wrapIndyCallback(cb, function (data) {
     return [fromJson(data[0]), data[1], fromJson(data[2])]
   })
-  capi.issuerCreateCredential(wh, toJson(credOffer), toJson(credReq), toJson(credValues), revRegId, blobStorageReaderHandle == null ? -1 : blobStorageReaderHandle, cb)
+  capi.issuerCreateCredential(wh, toJson(credOffer), toJson(credReq), toJson(credValues), revRegId, blobStorageReaderHandle, cb)
   return cb.promise
 }
 
@@ -446,9 +446,9 @@ indy.buildGetValidatorInfoRequest = function buildGetValidatorInfoRequest (submi
   return cb.promise
 }
 
-indy.buildGetTxnRequest = function buildGetTxnRequest (submitterDid, ledgerType, data, cb) {
+indy.buildGetTxnRequest = function buildGetTxnRequest (submitterDid, ledgerType, seqNo, cb) {
   cb = wrapIndyCallback(cb, fromJson)
-  capi.buildGetTxnRequest(submitterDid, ledgerType, data, cb)
+  capi.buildGetTxnRequest(submitterDid, ledgerType, seqNo, cb)
   return cb.promise
 }
 
