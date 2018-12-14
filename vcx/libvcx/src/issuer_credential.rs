@@ -415,7 +415,7 @@ pub fn encode_attributes(attributes: &str) -> Result<String, IssuerCredError> {
             return Err(IssuerCredError::CommonError(INVALID_JSON.code_num))
         }
     };
-    
+
     let mut dictionary = HashMap::new();
 
     for (attr, attr_data) in map.iter_mut(){
