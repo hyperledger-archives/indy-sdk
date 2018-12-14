@@ -788,16 +788,16 @@ def ubuntuPublishing() {
 
                 libindyDebPublishing(testEnv, libindyVersion)
 
-                pythonWrapperPublishing(testEnv, false, 'wrappers/python')
-                nodejsWrapperPublishing(testEnv, false, 'wrappers/nodejs')
+                pythonWrapperPublishing(testEnv, false, 'wrappers/python', 'libindy')
+                nodejsWrapperPublishing(testEnv, false, 'wrappers/nodejs', 'libindy')
                 javaWrapperPublishing(testEnv, false)
                 rustWrapperPublishing(testEnv, false)
                 libindyCliDebPublishing(testEnv, libindyVersion)
                 libnullpayDebPublishing(testEnv)
                 libvcxDebPublishing(testEnv)
                 vcxJavaWrapperPublishing(testEnv, false)
-                pythonWrapperPublishing(testEnv, false, 'vcx/wrappers/python3')
-                nodejsWrapperPublishing(testEnv, false, 'vcx/wrappers/node')
+                pythonWrapperPublishing(testEnv, false, 'vcx/wrappers/python3', 'vcx/libvcx')
+                nodejsWrapperPublishing(testEnv, false, 'vcx/wrappers/node', 'vcx/libvcx')
             }
             finally {
                 echo 'Publish Ubuntu files: Cleanup'
@@ -858,13 +858,13 @@ def windowsPublishing() {
                 echo 'Publish Indy Cli Windows files'
                 windowsPublishArtifact(testEnv, "cli", "indy-cli", "executable", libindyVersion, "IndyCliWindowsBuildResult")
 
-                def libnullpayVersion = getSrcVersion("libnullpay")
-
                 echo 'Publish Libnullpay Windows files'
+                def libnullpayVersion = getSrcVersion("libnullpay")
                 windowsPublishArtifact(testEnv, "libnullpay", "libnullpay", "lib", libnullpayVersion, "LibnullpayWindowsBuildResult")
 
                 echo 'Publish Libvcx Windows files'
-                windowsPublishArtifact(testEnv, "vcx/libvcx", "libvcx", "lib", libindyVersion, "LibvcxWindowsBuildResult")
+                def libvcxVersion = getSrcVersion("vcx/libvcx")
+                windowsPublishArtifact(testEnv, "vcx/libvcx", "libvcx", "lib", libvcxVersion, "LibvcxWindowsBuildResult")
 
             }
             finally {
@@ -1007,8 +1007,8 @@ def debPublishing(testEnv, directory, packageName, version, inStashName, outStas
     }
 }
 
-def pythonWrapperPublishing(testEnv, isRelease, directory) {
-    def version = getSrcVersion("libindy")
+def pythonWrapperPublishing(testEnv, isRelease, directory, base_library) {
+    def version = getSrcVersion(base_library)
 
     dir(directory) {
         def suffix = getSuffix(isRelease, "Pypi")
@@ -1025,8 +1025,8 @@ def pythonWrapperPublishing(testEnv, isRelease, directory) {
     }
 }
 
-def nodejsWrapperPublishing(testEnv, isRelease, directory) {
-    def version = getSrcVersion("libindy")
+def nodejsWrapperPublishing(testEnv, isRelease, directory, base_library) {
+    def version = getSrcVersion(base_library)
     def suffix = getSuffix(isRelease, "nodejs")
 
     testEnv.inside {
