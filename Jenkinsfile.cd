@@ -218,17 +218,17 @@ def vcxTesting(file, env_name, network_name, stashBuildResults) {
                     libvcxBuildFinished[env_name]
                 }
                 def jobs = [
-                    "${env_name}-vcx-nodejs-test": {
-                        linuxModuleTesting(file, env_name, network_name, this.&linuxVcxNodejsTesting, stashBuildResults)
-                    }
+                        "${env_name}-vcx-nodejs-test": {
+                            linuxModuleTesting(file, env_name, network_name, this.&linuxVcxNodejsTesting, stashBuildResults)
+                        }
                 ]
                 if (env_name == "Ubuntu") {
                     jobs["${env_name}-vcx-java-test"] = {
-                                linuxModuleTesting(file, env_name, network_name, this.&linuxVcxJavaTesting, stashBuildResults)
+                        linuxModuleTesting(file, env_name, network_name, this.&linuxVcxJavaTesting, stashBuildResults)
                     }
                     jobs["${env_name}-vcx-python-test"] = {
-                                linuxModuleTesting(file, env_name, network_name, this.&linuxVcxPythonTesting, stashBuildResults)
-                            }
+                        linuxModuleTesting(file, env_name, network_name, this.&linuxVcxPythonTesting, stashBuildResults)
+                    }
                 }
                 parallel(jobs)
             },
@@ -569,7 +569,8 @@ def windowsTesting() {
                     dir('cli') {
                         bat "sed -i -e \"s/10\\.0\\.0\\.2/${INDY_SDK_SERVER_IP}/g\" docker_pool_transactions_genesis"
 
-                        def featuresArgs = '--features "nullpay_plugin"'
+                        def featuresArgs = ''
+//                      def featuresArgs = '--features "nullpay_plugin"' // disabled because of IS-1109
 
                         echo "Windows Indy Cli Test: Build"
                         withEnv([
@@ -786,7 +787,9 @@ def ubuntuPublishing() {
                 testEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
 
                 libindyDebPublishing(testEnv, libindyVersion)
+
                 pythonWrapperPublishing(testEnv, false, 'wrappers/python')
+                nodejsWrapperPublishing(testEnv, false, 'wrappers/nodejs')
                 javaWrapperPublishing(testEnv, false)
                 rustWrapperPublishing(testEnv, false)
                 libindyCliDebPublishing(testEnv, libindyVersion)
@@ -794,6 +797,7 @@ def ubuntuPublishing() {
                 libvcxDebPublishing(testEnv)
                 vcxJavaWrapperPublishing(testEnv, false)
                 pythonWrapperPublishing(testEnv, false, 'vcx/wrappers/python3')
+                nodejsWrapperPublishing(testEnv, false, 'vcx/wrappers/node')
             }
             finally {
                 echo 'Publish Ubuntu files: Cleanup'
@@ -1021,6 +1025,21 @@ def pythonWrapperPublishing(testEnv, isRelease, directory) {
     }
 }
 
+def nodejsWrapperPublishing(testEnv, isRelease, directory) {
+    def version = getSrcVersion("libindy")
+    def suffix = getSuffix(isRelease, "nodejs")
+
+    testEnv.inside {
+        withCredentials([file(credentialsId: 'npm_credentials', variable: 'credentialsFile')]) {
+            sh 'cp $credentialsFile ~/.npmrc'
+
+            sh "cd $directory && " +
+                    "npm version --no-git-tag-version $version$suffix &&" +
+                    "npm publish"
+        }
+    }
+}
+
 def javaWrapperPublishing(testEnv, isRelease) {
     dir('wrappers/java') {
         echo "Publish To Maven Test: Build docker image"
@@ -1087,6 +1106,9 @@ def publishingRCtoStable() {
                 echo 'Moving Ubuntu RC artifacts to Stable: python wrapper'
                 pythonWrapperPublishing(testEnv, true, 'wrappers/python')
 
+                echo 'Moving Ubuntu RC artifacts to Stable: nodejs wrapper'
+                nodejsWrapperPublishing(testEnv, true, 'wrappers/nodejs')
+
                 echo 'Moving Ubuntu RC artifacts to Stable: java wrapper'
                 javaWrapperPublishing(testEnv, true)
 
@@ -1113,6 +1135,9 @@ def publishingRCtoStable() {
 
                 echo 'Moving Ubuntu RC artifacts to Stable: vcx python wrapper'
                 pythonWrapperPublishing(testEnv, true, 'vcx/wrappers/python3')
+
+                echo 'Moving Ubuntu RC artifacts to Stable: vcx nodejs wrapper'
+                nodejsWrapperPublishing(testEnv, true, 'vcx/wrappers/node')
 
                 echo 'Moving Android RC artifacts to Stable: libindy'
                 publishLibindAndroidFilesRCtoStable(libindyVersion)
@@ -1250,7 +1275,7 @@ def downloadPackagingUtils() {
 }
 
 def setupRust() {
-    sh "rustup default 1.29.0"
+    sh "rustup default 1.31.0"
 }
 
 def androidPublishing() {
