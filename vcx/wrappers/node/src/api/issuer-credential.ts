@@ -19,7 +19,7 @@ export interface IIssuerCredentialCreateData {
 }
 
 export interface IIssuerCredentialVCXAttributes {
-  [ index: string ]: [ string ]
+  [ index: string ]: string
 }
 
 export interface IIssuerCredentialParams {

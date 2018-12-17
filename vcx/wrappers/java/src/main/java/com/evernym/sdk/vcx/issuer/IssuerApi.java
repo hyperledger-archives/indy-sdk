@@ -39,13 +39,6 @@ public class IssuerApi extends VcxJava.API {
         ParamGuard.notNullOrWhiteSpace(sourceId, "credentialDefId");
         ParamGuard.notNullOrWhiteSpace(sourceId, "SchemaId");
 
-        // TODO: FIXME Redundent mapping. Actually there is a BUG in LIBVCX. It accepts and pass credential values in the invalid format.
-        JSONObject credentialDataObj = new JSONObject(credentialData);
-        for (Map.Entry<String, Object> entry : credentialDataObj.toMap().entrySet()) {
-            credentialDataObj.put(entry.getKey(), Collections.singletonList(entry.getValue()));
-        }
-        String credentialDataJson = credentialDataObj.toString();
-
         logger.debug("issuerCreateCredential() called with: sourceId = [" + sourceId + "], credentialDefId = [" + credentialDefId + "], issuerId = [" + issuerId + "], credentialData = [" + credentialData + "], credentialName = [" + credentialName + "], price = [" + price + "]");
         //TODO: Check for more mandatory params in vcx to add in PamaGuard
         CompletableFuture<Integer> future = new CompletableFuture<>();
@@ -56,7 +49,7 @@ public class IssuerApi extends VcxJava.API {
                 sourceId,
                 credentialDefId,
                 issuerId,
-                credentialDataJson,
+                credentialData,
                 credentialName,
                 price,
                 issuerCreateCredentialCB);
