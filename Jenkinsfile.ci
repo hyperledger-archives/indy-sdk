@@ -27,6 +27,7 @@ def staticValidation() {
         'libindy'    : { runValdiationRust('libindy') },
         'libnullpay' : { runValdiationRust('libnullpay') },
         'libvcx'     : { runValdiationRust('vcx/libvcx') }
+        'cli'        : { runValdiationRust('cli') }
     ])
 }
 
