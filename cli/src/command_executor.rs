@@ -871,6 +871,9 @@ mod tests {
 
     #[test]
     pub fn execute_works() {
+        use indy;
+        indy::logger::set_default_logger(Some("trace")).unwrap();
+
         let cmd_executor = CommandExecutor::build()
             .add_group(test_group::new())
             .add_command(test_command::new())
