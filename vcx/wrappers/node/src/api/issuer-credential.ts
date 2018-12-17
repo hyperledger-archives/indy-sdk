@@ -66,8 +66,7 @@ export class IssuerCredential extends VCXBaseWithState<IIssuerCredentialData> {
   public static async create ({ attr, sourceId, credDefId,
                          credentialName, price }: IIssuerCredentialCreateData): Promise<IssuerCredential> {
     try {
-      const attrsVCX: IIssuerCredentialVCXAttributes = Object.keys(attr)
-      .reduce((accum, attrKey) => ({ ...accum, [attrKey]: attr[attrKey] }), {})
+      const attrsVCX: IIssuerCredentialVCXAttributes = attr
       const credential = new IssuerCredential(sourceId, { credDefId, credentialName, attr: attrsVCX, price })
       const attrsStringified = JSON.stringify(attrsVCX)
       const commandHandle = 0
