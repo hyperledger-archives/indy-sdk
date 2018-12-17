@@ -201,7 +201,7 @@ fn _print_help() {
     println_acc!("\tLoad plugins in Libindy.");
     println_acc!("\tUsage: indy-cli --plugins <lib-1-name>:<init-func-1-name>,...,<lib-n-name>:<init-func-n-name>");
     println!();
-    println_acc!("\tInit logger according to a config file.");
+    println_acc!("\tInit logger according to a config file. \n\tIndy Cli uses `log4rs` logging framework: https://crates.io/crates/log4rs");
     println_acc!("\tUsage: indy-cli --logger-config <path-to-config-file>");
     println!();
 }
