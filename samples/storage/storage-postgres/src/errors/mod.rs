@@ -1,12 +1,6 @@
-pub mod anoncreds;
 pub mod common;
-pub mod ledger;
-pub mod pool;
 pub mod crypto;
-pub mod indy;
 pub mod wallet;
-pub mod did;
-pub mod payments;
 
 use api::ErrorCode;
 
