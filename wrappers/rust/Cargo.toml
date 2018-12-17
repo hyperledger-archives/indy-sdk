@@ -24,7 +24,6 @@ crate-type = ["rlib"]
 
 [dependencies]
 failure = "0.1.2"
-backtrace = "=0.3.9" # remove after will be solved: https://github.com/alexcrichton/backtrace-rs/issues/136
 futures = "0.1.24"
 lazy_static = "0.2"
 log = { version = "0.4.1", features = ["std"] }
