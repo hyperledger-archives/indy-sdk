@@ -87,12 +87,12 @@ pub fn delete_wallet(wallet_name: &str) -> Result<(), u32> {
     wallet::delete_wallet(&config,&settings::get_wallet_credentials()).wait().map_err(map_rust_indy_sdk_error_code)
 }
 
-pub fn add_record(xtype: &str, id: &str, value: &str, tags: &str) -> Result<(), u32> {
-    trace!("add_record >>> xtype: {}, id: {}, value: {}, tags: {}", xtype, id, value, tags);
+pub fn add_record(xtype: &str, id: &str, value: &str, tags: Option<&str>) -> Result<(), u32> {
+    trace!("add_record >>> xtype: {}, id: {}, value: {}, tags: {:?}", xtype, id, value, tags);
 
     if settings::test_indy_mode_enabled() { return Ok(()) }
 
-    wallet::add_wallet_record(get_wallet_handle(), xtype, id, value, Some(tags))
+    wallet::add_wallet_record(get_wallet_handle(), xtype, id, value, tags)
         .wait()
         .map_err(map_rust_indy_sdk_error_code)
 }
@@ -190,7 +190,7 @@ pub mod tests {
         let xtype = "type1";
         let id = "id1";
         let value = "value1";
-        add_record(xtype, id, value, "{}").unwrap();
+        add_record(xtype, id, value, None).unwrap();
 
         export(handle, &dir, &backup_key).unwrap();
         dir
@@ -269,7 +269,7 @@ pub mod tests {
         open_wallet(&settings::DEFAULT_WALLET_NAME).unwrap();
 
         // If wallet was successfully imported, there will be an error trying to add this duplicate record
-        assert_eq!(add_record(xtype, id, value, "{}"), Err(error::DUPLICATE_WALLET_RECORD.code_num));
+        assert_eq!(add_record(xtype, id, value, None), Err(error::DUPLICATE_WALLET_RECORD.code_num));
         thread::sleep(Duration::from_secs(1));
         ::api::vcx::vcx_shutdown(true);
         delete_import_wallet_path(export_path);
@@ -373,7 +373,7 @@ pub mod tests {
         let id = "123";
         let wallet_n = "test_add_new_record_with_no_tag";
 
-        add_record(record_type, id, record, "{}").unwrap();
+        add_record(record_type, id, record, None).unwrap();
     }
 
     #[test]
@@ -385,8 +385,8 @@ pub mod tests {
         let id = "123";
         let wallet_n = "test_add_duplicate_record_fails";
 
-        add_record(record_type, id, record, "{}").unwrap();
-        let rc = add_record(record_type, id, record, "{}");
+        add_record(record_type, id, record, None).unwrap();
+        let rc = add_record(record_type, id, record, None);
         assert_eq!(rc, Err(error::DUPLICATE_WALLET_RECORD.code_num));
     }
 
@@ -400,8 +400,8 @@ pub mod tests {
         let id = "123";
         let wallet_n = "test_add_duplicate_record_fails";
 
-        add_record(record_type, id, record, "{}").unwrap();
-        add_record(record_type2, id, record, "{}").unwrap();
+        add_record(record_type, id, record, None).unwrap();
+        add_record(record_type2, id, record, None).unwrap();
     }
 
     #[test]
@@ -436,7 +436,7 @@ pub mod tests {
         }).to_string();
         let expected_retrieved_record = format!(r#"{{"type":"{}","id":"{}","value":"{}","tags":null}}"#, record_type, id, record);
 
-        add_record(record_type, id, record, "{}").unwrap();
+        add_record(record_type, id, record, None).unwrap();
         let retrieved_record = get_record(record_type, id, &options).unwrap();
 
         assert_eq!(retrieved_record, expected_retrieved_record);
@@ -445,12 +445,12 @@ pub mod tests {
     #[test]
     fn test_delete_record_fails_with_no_record() {
         init!("false");
-        let wallet_n = "test_delete_record_fails_with_no_record";
         let record_type = "Type";
         let id = "123";
 
         let rc = delete_record(record_type, id);
         assert_eq!(rc, Err(error::WALLET_RECORD_NOT_FOUND.code_num));
+
     }
 
     #[test]
@@ -467,7 +467,7 @@ pub mod tests {
             "retrieveTags": false
         }).to_string();
 
-        add_record(record_type, id, record, "{}").unwrap();
+        add_record(record_type, id, record, None).unwrap();
         delete_record(record_type, id).unwrap();
         let rc = get_record(record_type, id, &options);
         assert_eq!(rc, Err(error::WALLET_RECORD_NOT_FOUND.code_num));
@@ -503,7 +503,7 @@ pub mod tests {
         let expected_initial_record = format!(r#"{{"type":"{}","id":"{}","value":"{}","tags":null}}"#, record_type, id, initial_record);
         let expected_updated_record = format!(r#"{{"type":"{}","id":"{}","value":"{}","tags":null}}"#, record_type, id, changed_record);
 
-        add_record(record_type, id, initial_record, "{}").unwrap();
+        add_record(record_type, id, initial_record, None).unwrap();
         let initial_record = get_record(record_type, id, &options).unwrap();
         update_record_value(record_type, id, changed_record).unwrap();
         let changed_record = get_record(record_type, id, &options).unwrap();
