@@ -29,17 +29,19 @@ public class ProofApi extends VcxJava.API {
             String sourceId,
             String requestedAttrs,
             String requestedPredicates,
+            String revocationInterval,
             String name
     ) throws VcxException {
         ParamGuard.notNull(sourceId, "sourceId");
         ParamGuard.notNull(requestedAttrs, "requestedAttrs");
         ParamGuard.notNull(requestedPredicates, "requestedPredicates");
+        ParamGuard.notNull(revocationInterval, "revocationInterval");
         ParamGuard.notNull(name, "name");
-        logger.debug("proofCreate() called with: sourceId = [" + sourceId + "], requestedAttrs = [" + requestedAttrs + "], requestedPredicates = [" + requestedPredicates + "], name = [" + name + "]");
+        logger.debug("proofCreate() called with: sourceId = [" + sourceId + "], requestedAttrs = [" + requestedAttrs + "], requestedPredicates = [" + requestedPredicates + "], revocationInterval = [" + revocationInterval + "], name = [" + name + "]");
         CompletableFuture<Integer> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
         if (requestedPredicates.isEmpty()) requestedPredicates = "[]";
-        int result = LibVcx.api.vcx_proof_create(commandHandle, sourceId, requestedAttrs, requestedPredicates, name, vcxProofCreateCB);
+        int result = LibVcx.api.vcx_proof_create(commandHandle, sourceId, requestedAttrs, requestedPredicates, revocationInterval, name, vcxProofCreateCB);
         checkResult(result);
 
         return future;
