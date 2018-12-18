@@ -1,6 +1,6 @@
 # Rotate a Key
 
-Indy-SDK Developer Walkthrough #2, NodEJS Edition
+Indy-SDK Developer Walkthrough #2, NodeJS Edition
 
 [ [Python](../python/README.md) | [Java](../java/README.md) | [.NET](../../not-yet-written.md) | [Objective C](../../not-yet-written.md) | [Rust](../rust/README.md)]
 
