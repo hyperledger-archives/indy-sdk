@@ -26,16 +26,16 @@ Please See the section [Release channels](../README.md/#release-channels) for mo
 ### OSX
 
 To build libvcx for OSX and iOS using scripts do the following steps --
-1) Add the following environment variables to your .bash_profile
-export PKG_CONFIG_ALLOW_CROSS=1
-export CARGO_INCREMENTAL=1
-export RUST_LOG=indy=trace
-export RUST_TEST_THREADS=1
-for i in `ls -t /usr/local/Cellar/openssl/`; do export OPENSSL_DIR=/usr/local/Cellar/openssl/$i; break; done
-export PYTHONPATH=/Users/[your_username]/[path_to_sdk]/vcx/libvcx/vcx-indy-sdk/wrappers/python:/Users/[your_username]/[path_to_sdk]/vcx/wrappers/python3:${PYTHONPATH}
-#it is important that the $HOME/.cargo/bin comes first in the PATH
-export PATH="$HOME/.cargo/bin:$PATH"
-export PKG_CONFIG_PATH=/usr/lib/pkgconfig:/usr/local/Cellar/zeromq/4.2.5/lib/pkgconfig:/usr/local/Cellar/libsodium/1.0.12/lib/pkgconfig
+1) Add the following environment variables to your .bash_profile  
+export PKG_CONFIG_ALLOW_CROSS=1  
+export CARGO_INCREMENTAL=1  
+export RUST_LOG=indy=trace  
+export RUST_TEST_THREADS=1  
+for i in `ls -t /usr/local/Cellar/openssl/`; do export OPENSSL_DIR=/usr/local/Cellar/openssl/$i; break; done  
+export PYTHONPATH=/Users/[your_username]/[path_to_sdk]/vcx/libvcx/vcx-indy-sdk/wrappers/python:/Users/[your_username]/[path_to_sdk]/vcx/wrappers/python3:${PYTHONPATH}  
+`# it is important that the $HOME/.cargo/bin comes first in the PATH`  
+export PATH="$HOME/.cargo/bin:$PATH"  
+export PKG_CONFIG_PATH=/usr/lib/pkgconfig:/usr/local/Cellar/zeromq/4.2.5/lib/pkgconfig:/usr/local/Cellar/libsodium/1.0.12/lib/pkgconfig  
 2) git clone this repository
 3) cd sdk/vcx/libvcx/build/macos
 4) ./mac.01.libindy.setup.sh

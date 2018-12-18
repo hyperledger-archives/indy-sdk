@@ -19,7 +19,7 @@ export interface IIssuerCredentialCreateData {
 }
 
 export interface IIssuerCredentialVCXAttributes {
-  [ index: string ]: [ string ]
+  [ index: string ]: string
 }
 
 export interface IIssuerCredentialParams {
@@ -70,8 +70,7 @@ export class IssuerCredential extends VCXBaseWithState<IIssuerCredentialData> {
   public static async create ({ attr, sourceId, credDefHandle,
                          credentialName, price }: IIssuerCredentialCreateData): Promise<IssuerCredential> {
     try {
-      const attrsVCX: IIssuerCredentialVCXAttributes = Object.keys(attr)
-      .reduce((accum, attrKey) => ({ ...accum, [attrKey]: [attr[attrKey]] }), {})
+      const attrsVCX: IIssuerCredentialVCXAttributes = attr
       const credential = new IssuerCredential(sourceId, { credDefHandle, credentialName, attr: attrsVCX, price })
       const attrsStringified = JSON.stringify(attrsVCX)
       const commandHandle = 0
