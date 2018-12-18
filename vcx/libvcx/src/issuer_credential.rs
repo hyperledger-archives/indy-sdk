@@ -2,6 +2,7 @@ extern crate rand;
 extern crate serde_json;
 extern crate libc;
 
+use std::collections::HashMap;
 use api::VcxStateType;
 use messages;
 use settings;
