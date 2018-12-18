@@ -163,7 +163,7 @@ test('anoncreds', async function (t) {
   // Revoke the credential
   var revocedDelta = await indy.issuerRevokeCredential(wh, blobReaderHandle, revocRegId, revId)
 
-  var mergedDelta = await indy.issuerMergeRevocationRegistryDeltas(revDelta, revocedDelta)
+  await indy.issuerMergeRevocationRegistryDeltas(revDelta, revocedDelta)
 
   await indy.closeWallet(wh)
   await indy.deleteWallet(walletConfig, walletCredentials)
