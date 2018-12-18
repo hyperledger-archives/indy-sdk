@@ -1,6 +1,9 @@
-indy-cli (1.6.7) unstable; urgency=medium
+indy-cli (1.6.8) unstable; urgency=medium
 
 [ Hyperledger ]
+
+* 1.6.8
+    * Update CLI help
 
 * 1.6.7
     * Supported setting fees in `did rotate-key` command.

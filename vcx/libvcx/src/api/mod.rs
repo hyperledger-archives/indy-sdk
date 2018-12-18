@@ -10,8 +10,8 @@ pub mod schema;
 pub mod credential;
 pub mod disclosed_proof;
 pub mod wallet;
-#[cfg(test)]
-mod return_types_u32;
+pub mod logger;
+pub mod return_types_u32;
 
 use std::fmt;
 
@@ -99,9 +99,9 @@ enum_number!(ProofStateType
 
 #[repr(C)]
 pub struct VcxStatus {
-    pub handle: ::std::os::raw::c_int,
-    pub status: ::std::os::raw::c_int,
-    pub msg: *mut ::std::os::raw::c_char,
+    pub handle: libc::c_int,
+    pub status: libc::c_int,
+    pub msg: *mut libc::c_char,
 }
 
 

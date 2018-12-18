@@ -1,0 +1,22 @@
+[package]
+name = "save-schema-and-cred-def"
+version = "0.1.0"
+authors = ["matt raffel <matt.raffel@evernym.com>"]
+description = "Demonstrates using Rust wrapper for LibIndy through creating Schema and Credential Definition"
+
+[[bin]]
+name = "save-schema-and-cred-def"
+path = "src/save-schema-and-cred-def.rs"
+
+[[bin]]
+name = "template"
+path = "src/template.rs"
+
+[dependencies]
+indy = "1.6.7"
+lazy_static = "0.2"
+log = "0.4.1"
+log-panics = "2.0.0"
+serde = "1.0"
+serde_derive = "1.0"
+serde_json = "1.0"

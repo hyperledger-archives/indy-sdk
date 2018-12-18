@@ -1,7 +1,7 @@
 use super::environment;
-use super::logger;
 
 use std::fs;
+use indy::logger::set_default_logger;
 
 pub fn cleanup_indy_home() {
     let path = environment::indy_home_path();
@@ -24,7 +24,7 @@ pub fn cleanup_storage() {
 
 pub fn setup() {
     cleanup_storage();
-    logger::set_default_indy_logger();
+    set_default_logger(None).ok();
 }
 
 pub fn tear_down() {

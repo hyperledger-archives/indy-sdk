@@ -6,8 +6,6 @@ pub mod logger;
 pub mod term;
 #[cfg(test)]
 pub mod test;
-pub mod sequence;
-pub mod cstring;
 pub mod table;
 
 #[macro_export] //TODO move to more relevant place

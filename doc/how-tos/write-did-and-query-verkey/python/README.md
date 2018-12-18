@@ -2,7 +2,7 @@
 
 Indy-SDK Developer Walkthrough #1, Python Edition
 
-[ [Java](../java/README.md) | [.NET](../../not-yet-written.md) | [Node.js](../../not-yet-written.md) | [Objective C](../../not-yet-written.md) ]
+[ [Java](../java/README.md) | [.NET](../cs/README.md) | [Node.js](../nodejs/README.md) | [Objective C](../../not-yet-written.md) | [Rust](../rust/README.md)]
 
 
 ## Prerequisites
@@ -80,7 +80,7 @@ material are created that the genesis transactions expect. In a production indy 
 such as the Sovrin "live" network, the bootstrapping steward identities
 would not have known the seeds.
 
-## Step 4
+### Step 4
 
 Now that preparations are complete, we can finally write the DID and verkey
 for our trust anchor identity to the ledger.
@@ -90,7 +90,7 @@ Copy the contents of [step4.py](step4.py) into
 
 Save the updated version of `write_did.py`.
 
-## Step 5
+### Step 5
 
 Once we have an identity on the ledger, we can query it.
 
@@ -104,7 +104,7 @@ this block is comments and boilerplate cleanup **(which you should not omit!)**.
 You should see similarities between the way this query "transaction" and
 the preceding write transaction are bundled, sent, and awaited.
 
-## Step 6
+### Step 6
 
 Run the completed demo and observe the whole sequence.
 
@@ -140,10 +140,10 @@ Error `WalletAlreadyExistsError`.
 Delete wallet before creating:
 ```python
 try:
-    await wallet.create_wallet(pool_name, wallet_name, None, None, wallet_credentials)
+    await wallet.create_wallet(wallet_config, wallet_credentials)
 except IndyError:
     await wallet.delete_wallet(wallet_name, wallet_credentials)
-    await wallet.create_wallet(pool_name, wallet_name, None, None, wallet_credentials)
+    await wallet.create_wallet(wallet_config, wallet_credentials)
 ```
 
 Error `CommonIOError`. Make sure that you have set `genesis_file_path` to point 

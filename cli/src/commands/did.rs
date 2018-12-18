@@ -2,7 +2,7 @@ use command_executor::{Command, CommandContext, CommandMetadata, CommandParams, 
 use commands::*;
 use utils::table::print_list_table;
 
-use libindy::ErrorCode;
+use indy::ErrorCode;
 
 use libindy::did::Did;
 use libindy::ledger::Ledger;
@@ -57,7 +57,7 @@ pub mod new_command {
             JSONValue::from(json).to_string()
         };
 
-        trace!(r#"Did::new try: config {:?}"#, config);
+        trace!(r#"Did::new try: config {:?}"#, secret!(&config));
 
         let res =
             Did::new(wallet_handle, config.as_str())
@@ -234,7 +234,7 @@ pub mod rotate_key_command {
                         .and_then(|did_info| {
                             let temp_verkey = match did_info["tempVerkey"].as_str() {
                                 Some(temp_verkey) => Ok(temp_verkey.to_owned()),
-                                None => Err(println_err!("Unable to resume, did you started rotate-key previously?"))
+                                None => Err(println_err!("Unable to resume, have you already run rotate-key?"))
                             }?;
                             let verkey = match did_info["verkey"].as_str() {
                                 Some(verkey) => Ok(verkey.to_owned()),
@@ -249,6 +249,18 @@ pub mod rotate_key_command {
 
             match ledger_verkey {
                 Some(ledger_verkey) => {
+                    // if ledger verkey is abbreviated, abbreviate other also.
+                    let (temp_verkey, curr_verkey) = if ledger_verkey.starts_with('~') {
+                        let temp_verkey = Did::abbreviate_verkey(&did, &temp_verkey)
+                            .map_err(|_e|println_err!("Invalid temp verkey: {}", temp_verkey))?;
+                        let curr_verkey = Did::abbreviate_verkey(&did, &curr_verkey)
+                            .map_err(|_e|println_err!("Invalid current verkey: {}", curr_verkey))?;
+                        Ok((temp_verkey, curr_verkey))
+                    }
+                    else {
+                        Ok((temp_verkey, curr_verkey))
+                    }?;
+
                     println_succ!("Verkey on ledger: {}", ledger_verkey);
                     println_succ!("Current verkey in wallet: {}", curr_verkey);
                     println_succ!("Temp verkey in wallet: {}", temp_verkey);

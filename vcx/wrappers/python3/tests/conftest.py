@@ -1,8 +1,12 @@
+import logging
 import pytest
+import time
 from vcx.api.vcx_init import vcx_init
 from vcx.common import shutdown as vcx_shutdown
 
 flag = False
+
+logging.basicConfig(level=logging.DEBUG)
 
 
 @pytest.mark.asyncio
@@ -26,3 +30,8 @@ async def cleanup():
 
     return _shutdown
 
+
+@pytest.fixture(scope='session', autouse=True)
+def wait_libindy():
+    yield
+    time.sleep(1) # FIXME IS-1060

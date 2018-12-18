@@ -88,15 +88,18 @@ class Connection(VcxStateful):
                                              json.dumps(data),
                                              data.get('source_id'))
 
-    async def connect(self, phone_number: Optional[str]) -> str:
+    async def connect(self, options: str) -> str:
         """
         Connect securely and privately to the endpoint represented by the object.
 
-        :param phone_number: optional phone number that will receive SMS with invite details
-        Example:
-        phone_number = '8019119191'
-        connection = await Connection.create('foobar123')
-        invite_details = await connection.connect(phone_number)
+        :param options: detailed connection options
+        Example options:
+        {"connection_type":"SMS","phone":"5555555555","use_public_did":true}
+        or:
+        {"connection_type":"QR"}
+        Example code:
+        connection = await Connection.create('Sally')
+        invite_details = await connection.connect('{"connection_type":"QR"}')
         :return: the invite details sent via SMS or ready to be sent via some other mechanism (QR for example)
         """
         if not hasattr(Connection.connect, "cb"):
@@ -104,9 +107,7 @@ class Connection(VcxStateful):
             Connection.connect.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
 
         c_connection_handle = c_uint32(self.handle)
-        connection_data = {'connection_type': 'SMS', 'phone': phone_number} if phone_number \
-            else {'connection_type': 'QR'}
-        c_connection_data = c_char_p(json.dumps(connection_data).encode('utf-8'))
+        c_connection_data = c_char_p(options.encode('utf-8'))
         invite_details = await do_call('vcx_connection_connect',
                                        c_connection_handle,
                                        c_connection_data,

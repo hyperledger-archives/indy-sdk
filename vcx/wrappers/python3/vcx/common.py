@@ -3,9 +3,8 @@ from ctypes import *
 import asyncio
 import itertools
 import logging
-import os
 from .error import VcxError, ErrorCode
-from vcx.cdll import _cdll, LIBRARY
+from vcx.cdll import _cdll
 
 _futures = {}
 _futures_counter = itertools.count()
@@ -34,10 +33,20 @@ def do_call(name: str, *args):
     return future
 
 
+def do_call_sync(name: str, *args):
+    logger = logging.getLogger(__name__)
+    logger.debug("do_call_sync: >>> name: %s, args: %s", name, args)
+
+    err = getattr(_cdll(), name)(*args)
+
+    logger.debug("do_call_sync: <<< %s", err)
+    return err
+
+
 def release(name, handle):
     logger = logging.getLogger(__name__)
 
-    err = getattr(_cdll(), name)(handle)
+    err = do_call_sync(name, handle)
 
     logger.debug("release: Function %s returned err: %i", name, err)
 
@@ -46,24 +55,11 @@ def release(name, handle):
         raise VcxError(ErrorCode(err))
 
 
-def error_message(error_code: int) -> str:
-    logger = logging.getLogger(__name__)
-
-    name = 'vcx_error_c_message'
-    c_error_code = c_uint32(error_code)
-    c_err_msg = getattr(_cdll(), name)(c_error_code)
-
-    err_msg = cast(c_err_msg , c_char_p).value.decode()
-    logger.debug("error_message: Function %s returned error_message: %s", name, err_msg)
-
-    return err_msg
-
-
 def get_version() -> str:
     logger = logging.getLogger(__name__)
 
     name = 'vcx_version'
-    c_version = getattr(_cdll(), name)()
+    c_version = do_call_sync(name)
 
     version = cast(c_version , c_char_p).value.decode()
     logger.debug("error_message: Function %s returned version: %s", name, version)
@@ -78,14 +74,14 @@ def update_institution_info(institution_name: str, logo_url: str) -> None:
     c_name = c_char_p(institution_name.encode('utf-8'))
     c_logo_url = c_char_p(logo_url.encode('utf-8'))
 
-    getattr(_cdll(), name)(c_name, c_logo_url)
+    do_call_sync(name, c_name, c_logo_url)
     logger.debug("vcx_init_with_config completed")
 
 
 def shutdown(delete_wallet: bool):
     c_delete = c_bool(delete_wallet)
     name = 'vcx_shutdown'
-    err = getattr(_cdll(), name)(c_delete)
+    err = do_call_sync(name, c_delete)
 
     if err != ErrorCode.Success:
         raise VcxError(ErrorCode(err))
@@ -93,7 +89,7 @@ def shutdown(delete_wallet: bool):
 
 def mint_tokens():
     name = 'vcx_mint_tokens'
-    getattr(_cdll(), name)(None, None)
+    do_call_sync(name, None, None)
 
 
 def create_cb(cb_type: CFUNCTYPE, transform_fn=None):
@@ -131,7 +127,4 @@ def _cxs_loop_callback(command_handle: int, err, *args):
                 res = args
 
             future.set_result(res)
-
-
-
 

@@ -6,9 +6,11 @@ import com.evernym.sdk.vcx.VcxException;
 import com.evernym.sdk.vcx.VcxJava;
 import com.sun.jna.Callback;
 
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.*;
 import java9.util.concurrent.CompletableFuture;
 
 public class IssuerApi extends VcxJava.API {
@@ -36,6 +38,14 @@ public class IssuerApi extends VcxJava.API {
         ParamGuard.notNullOrWhiteSpace(sourceId, "sourceId");
         ParamGuard.notNullOrWhiteSpace(sourceId, "credentialDefId");
         ParamGuard.notNullOrWhiteSpace(sourceId, "SchemaId");
+
+        // TODO: FIXME Redundent mapping. Actually there is a BUG in LIBVCX. It accepts and pass credential values in the invalid format.
+        JSONObject credentialDataObj = new JSONObject(credentialData);
+        for (Map.Entry<String, Object> entry : credentialDataObj.toMap().entrySet()) {
+            credentialDataObj.put(entry.getKey(), Collections.singletonList(entry.getValue()));
+        }
+        String credentialDataJson = credentialDataObj.toString();
+
         logger.debug("issuerCreateCredential() called with: sourceId = [" + sourceId + "], credentialDefId = [" + credentialDefId + "], issuerId = [" + issuerId + "], credentialData = [" + credentialData + "], credentialName = [" + credentialName + "], price = [" + price + "]");
         //TODO: Check for more mandatory params in vcx to add in PamaGuard
         CompletableFuture<Integer> future = new CompletableFuture<>();
@@ -46,7 +56,7 @@ public class IssuerApi extends VcxJava.API {
                 sourceId,
                 credentialDefId,
                 issuerId,
-                credentialData,
+                credentialDataJson,
                 credentialName,
                 price,
                 issuerCreateCredentialCB);
@@ -103,7 +113,7 @@ public class IssuerApi extends VcxJava.API {
         logger.debug("issuerCredntialUpdateState() called with: credentialHandle = [" + credentialHandle + "]");
         CompletableFuture<Integer> future = new CompletableFuture<>();
         int issue = addFuture(future);
-        int result = LibVcx.api.vcx_connection_get_state(issue, credentialHandle, issuerCredntialUpdateStateCB);
+        int result = LibVcx.api.vcx_credential_update_state(issue, credentialHandle, issuerCredntialUpdateStateCB);
         checkResult(result);
         return future;
     }

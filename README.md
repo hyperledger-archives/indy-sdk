@@ -44,6 +44,7 @@ Indy SDK provides libindy wrappers for the following programming languages and p
 * [iOS](wrappers/ios/README.md)
 * [NodeJS](wrappers/nodejs/README.md)
 * [.Net](wrappers/dotnet/README.md)
+* [Rust](wrappers/rust/README.md)
 
 
 ### Indy CLI
@@ -70,12 +71,21 @@ A set of libvcx wrappers for developing vcx-based applications in your favorite 
 
 Indy SDK provides libvcx wrappers for the following programming languages and platforms:
 
-* [Java](/vcx/wrappers/java/vcx/README.md)
+* [Java](/vcx/wrappers/java/README.md)
 * [Python](/vcx/wrappers/python3/README.md)
 * [iOS](vcx/wrappers/ios/README.md)
 * [NodeJS](/vcx/wrappers/node/README.md)
 
 These wrappers are currently in **experimental** state and it is not part of official releases.
+
+##### Example use
+For the main workflow example check [VCX Python demo](https://github.com/hyperledger/indy-sdk/tree/master/vcx/wrappers/python3/demo).
+
+### Dummy Cloud Agent
+[Dummy Cloud Agent](/vcx/dummy-cloud-agent/README.md) is simple implementation of VCX compatible Cloud Agent. 
+The main purpose of this implementation is VCX testing, demos and documentation of VCX protocol. 
+There is an parallel work on providing reference implementation of Agent2Agent protocol in indy-agent repo. 
+We plan to migrate to this protocol and implementation soon.
 
 ## How-To Tutorials
 
@@ -317,3 +327,12 @@ to simplify their transition to API of Libindy 1.4.0.
 * We use developer certificate of origin (DCO) in all hyperledger repositories,
   so to get your pull requests accepted, you must certify your commits by signing off on each commit.
   More information can be found in [Signing Commits](doc/signing-commits.md) article.
+
+
+#### Notes
+* Libindy implements multithreading approach based on **mpsc channels**. 
+If your application needs to use Libindy from multiple processes you should keep in mind the following restrictions:
+    * Fork - duplicates only the main thread. So, child threads will not be duplicated.
+      If any out-of-process requirements are possible, the caller must fork first **before any calls to Libindy**
+      (otherwise the command from a child thread will hang). Fork is only available on Unix. 
+    * Popen - spawns a new OS level process which will create its own child threads. Popen is cross-platform.

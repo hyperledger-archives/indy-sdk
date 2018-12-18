@@ -242,6 +242,7 @@ api.functions.indy_parse_get_revoc_reg_delta_response.params[1].json = true
 api.functions.indy_parse_get_revoc_reg_response.params[1].json = true
 api.functions.indy_parse_get_schema_response.params[1].json = true
 api.functions.indy_submit_action.params[3].json = true
+api.functions.indy_get_response_metadata.params[1].json = true
 
 api.functions.indy_build_get_revoc_reg_delta_request.params[3].timestamp = true
 api.functions.indy_build_get_revoc_reg_delta_request.params[4].timestamp = true

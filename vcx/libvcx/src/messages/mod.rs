@@ -16,7 +16,6 @@ pub mod update_message;
 use std::u8;
 use settings;
 use utils::libindy::crypto;
-use utils::libindy::wallet;
 use utils::error;
 use self::rmp_serde::encode;
 use self::create_key::CreateKeyMsg;
@@ -193,7 +192,7 @@ pub fn bundle_for_agency(message: Vec<u8>, did: &str) -> Result<Vec<u8>, u32> {
     let my_vk = settings::get_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY)?;
 
     trace!("pre encryption msg: {:?}", message);
-    let msg = crypto::prep_msg(wallet::get_wallet_handle(), &my_vk, &agent_vk, &message[..])?;
+    let msg = crypto::prep_msg(&my_vk, &agent_vk, &message[..])?;
 
     debug!("forwarding agency bundle to {}", did);
     let outer = Forward {
@@ -211,7 +210,7 @@ pub fn bundle_for_agency(message: Vec<u8>, did: &str) -> Result<Vec<u8>, u32> {
 
 pub fn bundle_for_agent(message: Vec<u8>, pw_vk: &str, agent_did: &str, agent_vk: &str) -> Result<Vec<u8>, u32> {
     debug!("pre encryption msg: {:?}", message);
-    let msg = crypto::prep_msg(wallet::get_wallet_handle(), &pw_vk, agent_vk, &message[..])?;
+    let msg = crypto::prep_msg(&pw_vk, agent_vk, &message[..])?;
 
     /* forward to did */
     debug!("forwarding agent bundle to {}", agent_did);

@@ -4,15 +4,18 @@ import random
 from ctypes import cdll
 from time import sleep
 
-from vcx.api.vcx_init import vcx_init_with_config
+import logging
+
 from vcx.api.connection import Connection
+from vcx.api.credential_def import CredentialDef
 from vcx.api.issuer_credential import IssuerCredential
 from vcx.api.proof import Proof
 from vcx.api.schema import Schema
-from vcx.api.credential_def import CredentialDef
-from vcx.state import State, ProofState
 from vcx.api.utils import vcx_agent_provision
+from vcx.api.vcx_init import vcx_init_with_config
+from vcx.state import State, ProofState
 
+# logging.basicConfig(level=logging.DEBUG) uncomment to get logs
 
 # 'agency_url': URL of the agency
 # 'agency_did':  public DID of the agency
@@ -21,13 +24,13 @@ from vcx.api.utils import vcx_agent_provision
 # 'wallet_key': encryption key for encoding wallet
 # 'payment_method': method that will be used for payments
 provisionConfig = {
-  'agency_url': 'http://sbx-eas.pdev.evernym.com',
-  'agency_did': 'HB7qFQyFxx4ptjKqioEtd8',
-  'agency_verkey': '9pJkfHyfJMZjUjS7EZ2q2HX55CbFQPKpQ9eTjSAUMLU8',
-  'wallet_name': 'faber_wallet',
-  'wallet_key': '123',
-  'enterprise_seed': '000000000000000000000000Trustee1',
+  'agency_url':'http://localhost:8080',
+  'agency_did':'VsKV7grR1BUE29mG2Fm2kX',
+  'agency_verkey':'Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR',
+  'wallet_name':'faber_wallet',
+  'wallet_key':'123',
   'payment_method': 'null',
+  'enterprise_seed':'000000000000000000000000Trustee1'
 }
 
 

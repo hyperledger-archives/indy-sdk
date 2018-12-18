@@ -1,6 +1,6 @@
 extern crate libloading;
 
-use libindy::ErrorCode;
+use indy::ErrorCode;
 
 use command_executor::{Command, CommandContext, CommandParams, CommandMetadata, CommandResult};
 use commands::get_str_param;

@@ -15,7 +15,7 @@ namespace Hyperledger.Indy.CryptoApi
         /// <param name="cb">Callback that takes command result as parameter.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_create_key(int command_handle, IntPtr wallet_handle, string key_json, CreateKeyCompletedDelegate cb);
+        internal static extern int indy_create_key(int command_handle, int wallet_handle, string key_json, CreateKeyCompletedDelegate cb);
 
         /// <summary>
         /// Delegate to be used on completion of calls to indy_create_key.
@@ -35,7 +35,7 @@ namespace Hyperledger.Indy.CryptoApi
         /// <param name="cb">Callback that takes command result as parameter.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_set_key_metadata(int command_handle, IntPtr wallet_handle, string verkey, string metadata, IndyMethodCompletedDelegate cb);
+        internal static extern int indy_set_key_metadata(int command_handle, int wallet_handle, string verkey, string metadata, IndyMethodCompletedDelegate cb);
 
         /// <summary>
         /// Retrieves the meta information for the giving key in the wallet.
@@ -46,7 +46,7 @@ namespace Hyperledger.Indy.CryptoApi
         /// <param name="cb">Callback that takes command result as parameter.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_get_key_metadata(int command_handle, IntPtr wallet_handle, string verkey, GetKeyMetadataCompletedDelegate cb);
+        internal static extern int indy_get_key_metadata(int command_handle, int wallet_handle, string verkey, GetKeyMetadataCompletedDelegate cb);
 
         /// <summary>
         /// Delegate to be used on completion of calls to indy_get_key_metadata.
@@ -67,7 +67,7 @@ namespace Hyperledger.Indy.CryptoApi
         /// <param name="cb">Callback that takes command result as parameter.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_crypto_sign(int command_handle, IntPtr wallet_handle, string signer_vk, byte[] message_raw, int message_len, SignCompletedDelegate cb);
+        internal static extern int indy_crypto_sign(int command_handle, int wallet_handle, string signer_vk, byte[] message_raw, int message_len, SignCompletedDelegate cb);
 
         /// <summary>
         /// Delegate to be used on completion of calls to indy_crypto_sign.
@@ -112,7 +112,7 @@ namespace Hyperledger.Indy.CryptoApi
         /// <param name="msg_len">message length</param>
         /// <param name="cb">Callback that takes command result as parameter.</param>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_crypto_auth_crypt(int command_handle, IntPtr wallet_handle, string sender_vk, string recipient_vk, byte[] msg_data, int msg_len, EncryptCompletedDelegate cb);
+        internal static extern int indy_crypto_auth_crypt(int command_handle, int wallet_handle, string sender_vk, string recipient_vk, byte[] msg_data, int msg_len, EncryptCompletedDelegate cb);
 
         /// <summary>
         /// Delegate to be used on completion of calls to indy_crypto_auth_crypt and indy_crypto_anon_crypt
@@ -130,7 +130,7 @@ namespace Hyperledger.Indy.CryptoApi
         /// <param name="encrypted_len">Encrypted length.</param>
         /// <param name="cb">Callback that takes command result as parameter.</param>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_crypto_auth_decrypt(int command_handle, IntPtr wallet_handle, string recipient_vk, byte[] encrypted_msg, int encrypted_len, AuthDecryptCompletedDelegate cb);
+        internal static extern int indy_crypto_auth_decrypt(int command_handle, int wallet_handle, string recipient_vk, byte[] encrypted_msg, int encrypted_len, AuthDecryptCompletedDelegate cb);
 
         /// <summary>
         /// Delegate to be used on completion of calls to indy_crypto_auth_decrypt
@@ -160,7 +160,7 @@ namespace Hyperledger.Indy.CryptoApi
         /// <param name="cb">Callback that takes command result as parameter.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_crypto_anon_decrypt(int command_handle, IntPtr wallet_handle, string recipient_vk, byte[] encrypted_msg, int encrypted_len, AnonDecryptCompletedDelegate cb);
+        internal static extern int indy_crypto_anon_decrypt(int command_handle, int wallet_handle, string recipient_vk, byte[] encrypted_msg, int encrypted_len, AnonDecryptCompletedDelegate cb);
 
         /// <summary>
         /// Delegate to be used on completion of calls to indy_crypto_anon_decrypt.
