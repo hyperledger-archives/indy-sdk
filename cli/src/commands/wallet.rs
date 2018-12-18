@@ -554,6 +554,7 @@ pub mod tests {
 
     const WALLET: &'static str = "wallet";
     const WALLET_KEY: &'static str = "wallet_key";
+    const WALLET_KEY_RAW: &'static str = "6nxtSiXFvBd593Y2DCed2dYvRY1PGK9WMtxCBjLzKgbw";
     const EXPORT_KEY: &'static str = "export_key";
 
     mod create {
@@ -567,7 +568,8 @@ pub mod tests {
                 let cmd = create_command::new();
                 let mut params = CommandParams::new();
                 params.insert("name", WALLET.to_string());
-                params.insert("key", WALLET_KEY.to_string());
+                params.insert("key", WALLET_KEY_RAW.to_string());
+                params.insert("key_derivation_method", "raw".to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
 
@@ -590,7 +592,8 @@ pub mod tests {
                 let cmd = create_command::new();
                 let mut params = CommandParams::new();
                 params.insert("name", WALLET.to_string());
-                params.insert("key", WALLET_KEY.to_string());
+                params.insert("key", WALLET_KEY_RAW.to_string());
+                params.insert("key_derivation_method", "raw".to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
             }
             delete_wallet(&ctx);
@@ -619,7 +622,8 @@ pub mod tests {
                 let cmd = create_command::new();
                 let mut params = CommandParams::new();
                 params.insert("name", WALLET.to_string());
-                params.insert("key", WALLET_KEY.to_string());
+                params.insert("key", WALLET_KEY_RAW.to_string());
+                params.insert("key_derivation_method", "raw".to_string());
                 params.insert("storage_type", storage_type.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
@@ -643,7 +647,8 @@ pub mod tests {
                 let cmd = create_command::new();
                 let mut params = CommandParams::new();
                 params.insert("name", WALLET.to_string());
-                params.insert("key", WALLET_KEY.to_string());
+                params.insert("key", WALLET_KEY_RAW.to_string());
+                params.insert("key_derivation_method", "raw".to_string());
                 params.insert("storage_config", config.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
@@ -677,7 +682,14 @@ pub mod tests {
 
             assert_eq!(wallets[0]["id"].as_str().unwrap(), WALLET);
 
-            delete_wallet(&ctx);
+            {
+                let cmd = delete_command::new();
+                let mut params = CommandParams::new();
+                params.insert("name", WALLET.to_string());
+                params.insert("key", WALLET_KEY.to_string());
+                params.insert("key_derivation_method", "argon2m".to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
             TestUtils::cleanup_storage();
         }
 
@@ -795,7 +807,8 @@ pub mod tests {
                 let cmd = open_command::new();
                 let mut params = CommandParams::new();
                 params.insert("name", WALLET.to_string());
-                params.insert("key", WALLET_KEY.to_string());
+                params.insert("key", WALLET_KEY_RAW.to_string());
+                params.insert("key_derivation_method", "raw".to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
             ensure_opened_wallet_handle(&ctx).unwrap();
@@ -814,7 +827,8 @@ pub mod tests {
                 let cmd = open_command::new();
                 let mut params = CommandParams::new();
                 params.insert("name", WALLET.to_string());
-                params.insert("key", WALLET_KEY.to_string());
+                params.insert("key", WALLET_KEY_RAW.to_string());
+                params.insert("key_derivation_method", "raw".to_string());
                 cmd.execute(&ctx, &params).unwrap(); //TODO: we close and open same wallet
             }
             close_and_delete_wallet(&ctx);
@@ -962,7 +976,8 @@ pub mod tests {
                 let cmd = delete_command::new();
                 let mut params = CommandParams::new();
                 params.insert("name", WALLET.to_string());
-                params.insert("key", WALLET_KEY.to_string());
+                params.insert("key", WALLET_KEY_RAW.to_string());
+                params.insert("key_derivation_method", "raw".to_string());
                 cmd.execute(&CommandContext::new(), &params).unwrap();
             }
             let wallets = _list_wallets();
@@ -1373,7 +1388,8 @@ pub mod tests {
         let create_cmd = create_command::new();
         let mut params = CommandParams::new();
         params.insert("name", WALLET.to_string());
-        params.insert("key", WALLET_KEY.to_string());
+        params.insert("key", WALLET_KEY_RAW.to_string());
+        params.insert("key_derivation_method", "raw".to_string());
         create_cmd.execute(&ctx, &params).unwrap();
     }
 
@@ -1389,14 +1405,16 @@ pub mod tests {
             let create_cmd = create_command::new();
             let mut params = CommandParams::new();
             params.insert("name", WALLET.to_string());
-            params.insert("key", WALLET_KEY.to_string());
+            params.insert("key", WALLET_KEY_RAW.to_string());
+            params.insert("key_derivation_method", "raw".to_string());
             create_cmd.execute(&ctx, &params).unwrap();
         }
         {
             let cmd = open_command::new();
             let mut params = CommandParams::new();
             params.insert("name", WALLET.to_string());
-            params.insert("key", WALLET_KEY.to_string());
+            params.insert("key", WALLET_KEY_RAW.to_string());
+            params.insert("key_derivation_method", "raw".to_string());
             cmd.execute(&ctx, &params).unwrap();
         }
 
@@ -1408,7 +1426,8 @@ pub mod tests {
             let cmd = open_command::new();
             let mut params = CommandParams::new();
             params.insert("name", WALLET.to_string());
-            params.insert("key", WALLET_KEY.to_string());
+            params.insert("key", WALLET_KEY_RAW.to_string());
+            params.insert("key_derivation_method", "raw".to_string());
             cmd.execute(&ctx, &params).unwrap();
         }
 
@@ -1426,7 +1445,8 @@ pub mod tests {
             let cmd = delete_command::new();
             let mut params = CommandParams::new();
             params.insert("name", WALLET.to_string());
-            params.insert("key", WALLET_KEY.to_string());
+            params.insert("key", WALLET_KEY_RAW.to_string());
+            params.insert("key_derivation_method", "raw".to_string());
             cmd.execute(&CommandContext::new(), &params).unwrap();
         }
     }
@@ -1444,7 +1464,8 @@ pub mod tests {
             let cmd = delete_command::new();
             let mut params = CommandParams::new();
             params.insert("name", WALLET.to_string());
-            params.insert("key", WALLET_KEY.to_string());
+            params.insert("key", WALLET_KEY_RAW.to_string());
+            params.insert("key_derivation_method", "raw".to_string());
             cmd.execute(&ctx, &params).unwrap();
         }
     }

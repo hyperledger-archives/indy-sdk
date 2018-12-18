@@ -29,6 +29,8 @@ pub struct AttrInfo {
     pub name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub restrictions: Option<Vec<Filter>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub non_revoked: Option<NonRevokedInterval>
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -44,15 +46,24 @@ pub struct Filter {
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct PredicateInfo {
     pub name: String,
+    //Todo: Update p_type to use Enum
     pub p_type: String,
     pub p_value: i32,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub restrictions: Option<Vec<Filter>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub non_revoked: Option<NonRevokedInterval>
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct ProofPredicates {
     predicates: Vec<PredicateInfo>
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq, Hash)]
+pub struct NonRevokedInterval {
+    pub from: Option<u64>,
+    pub to: Option<u64>
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -63,6 +74,7 @@ pub struct ProofRequestData{
     data_version: String,
     pub requested_attributes: HashMap<String, AttrInfo>,
     pub requested_predicates: HashMap<String, PredicateInfo>,
+    pub non_revoked: Option<NonRevokedInterval>
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -75,6 +87,8 @@ pub struct ProofRequestMessage{
     #[serde(skip_serializing, default)]
     validate_rc: u32,
     pub msg_ref_id: Option<String>,
+    from_timestamp: Option<u64>,
+    to_timestamp: Option<u64>
 }
 
 impl ProofPredicates {
@@ -102,9 +116,12 @@ impl ProofRequestMessage {
                 data_version: String::new(),
                 requested_attributes:HashMap::new(),
                 requested_predicates: HashMap::new(),
+                non_revoked: None
             },
             validate_rc: 0,
             msg_ref_id: None,
+            from_timestamp: None,
+            to_timestamp: None,
         }
     }
 
@@ -196,6 +213,16 @@ impl ProofRequestMessage {
         self
     }
 
+    pub fn from_timestamp(&mut self, from: Option<u64>) -> &mut Self {
+        self.from_timestamp = from;
+        self
+    }
+
+    pub fn to_timestamp(&mut self, to: Option<u64>) -> &mut Self {
+        self.to_timestamp = to;
+        self
+    }
+
     pub fn serialize_message(&mut self) -> Result<String, u32> {
         if self.validate_rc != error::SUCCESS.code_num {
             return Err(self.validate_rc)
@@ -235,6 +262,7 @@ mod tests {
             data_version: String::new(),
             requested_attributes: HashMap::new(),
             requested_predicates: HashMap::new(),
+            non_revoked: None
         };
         assert_eq!(request.proof_request_data, proof_data);
     }
@@ -259,6 +287,8 @@ mod tests {
             .proof_data_version(data_version)
             .requested_attrs(REQUESTED_ATTRS)
             .requested_predicates(REQUESTED_PREDICATES)
+            .to_timestamp(Some(100))
+            .from_timestamp(Some(1))
             .clone();
 
         let serialized_msg = request.serialize_message().unwrap();
@@ -267,6 +297,8 @@ mod tests {
         assert!(serialized_msg.contains(r#"proof_request_data":{"nonce":"123432421212","name":"Test","version":"3.75","requested_attributes""#));
 
         assert!(serialized_msg.contains(r#""age":{"name":"age","restrictions":[{"schema_id":"6XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11","schema_issuer_did":"6XFh8yBzrpJQmNyZzgoTqB","schema_name":"Faber Student Info","schema_version":"1.0","issuer_did":"8XFh8yBzrpJQmNyZzgoTqB","cred_def_id":"8XFh8yBzrpJQmNyZzgoTqB:3:CL:1766"},{"schema_id":"5XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11","schema_issuer_did":"5XFh8yBzrpJQmNyZzgoTqB","schema_name":"BYU Student Info","schema_version":"1.0","issuer_did":"66Fh8yBzrpJQmNyZzgoTqB","cred_def_id":"66Fh8yBzrpJQmNyZzgoTqB:3:CL:1766"}]}"#));
+        assert!(serialized_msg.contains(r#""to_timestamp":100"#));
+        assert!(serialized_msg.contains(r#""from_timestamp":1"#));
     }
 
     #[test]
