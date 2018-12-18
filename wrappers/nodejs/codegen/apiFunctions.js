@@ -50,6 +50,9 @@ Object.keys(api.functions).forEach(function (name) {
   if (name === 'indy_register_payment_method') {
     return
   }
+  if (name === 'indy_set_runtime_config') {
+    return
+  }
 
   var fn = Object.assign({}, api.functions[name], {
     name: name,
@@ -68,8 +71,8 @@ Object.keys(api.functions).forEach(function (name) {
 
   fn.params.forEach(function (param, i) {
     if (i === 0) {
-      if (param.type !== 'indy_handle_t' || !/command_han.le$/.test(param.name)) {
-        throw new Error('Expected a command_handle as the first argument: ' + fn.name)
+      if (param.type !== 'indy_handle_t' || !/^command_handle_?$/.test(param.name)) {
+        throw new Error('Expected a command_handle as the first argument: ' + fn.name + ' but was ' + param.name)
       }
       return
     }
@@ -77,7 +80,7 @@ Object.keys(api.functions).forEach(function (name) {
       if (!param.hasOwnProperty('params')) {
         throw new Error('Expected a callback as the as the last argument: ' + fn.name)
       }
-      if (param.params[0].type !== 'indy_handle_t' || !/command_handle$/.test(param.params[0].name) || param.params[1].type !== 'indy_error_t') {
+      if (param.params[0].type !== 'indy_handle_t' || !/^command_handle_?$/.test(param.params[0].name) || param.params[1].type !== 'indy_error_t') {
         throw new Error('Callback doesn\'t have the standard handle + err: ' + fn.name)
       }
       param.params.forEach(function (param, i) {
