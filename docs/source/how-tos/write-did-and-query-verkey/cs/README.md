@@ -2,7 +2,7 @@
 
 Indy-SDK Developer Walkthrough #1, C# Edition
 
-[ [Python](../python/README.md) | [Java](../java/README.md) | [Node.js](../../not-yet-written.md) | [Objective C](../../not-yet-written.md)  | [Rust](../rust/README.md)]
+[ [Python](../python/README.md) | [Java](../java/README.md) | [Node.js](../nodejs/README.md) | [Objective C](../../not-yet-written.md)  | [Rust](../rust/README.md)]
 
 
 ## Prerequisites
@@ -78,7 +78,7 @@ material are created that the genesis transactions expect. In a production indy 
 such as the Sovrin "live" network, the bootstrapping steward identities
 would not have known the seeds.
 
-## Step 4
+### Step 4
 
 Now that preparations are complete, we can finally write the DID and verkey
 for our trust anchor identity to the ledger.
@@ -88,7 +88,7 @@ Copy the contents of [step4.partial](step4.partial) into
 
 Save the updated version of `WriteDIDAndQueryVerkey.cs`.
 
-## Step 5
+### Step 5
 
 Once we have an identity on the ledger, we can query it.
 
@@ -102,7 +102,7 @@ this block is comments and boilerplate cleanup **(which you should not omit!)**.
 You should see similarities between the way this query "transaction" and
 the preceding write transaction are bundled and sent.
 
-## Step 6
+### Step 6
 
 Run the completed demo and observe the whole sequence.
 
