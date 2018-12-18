@@ -61,7 +61,7 @@ it should finish successfully.
 To build libvcx on your own you can follow these steps --
 1) Install rust and rustup (https://www.rust-lang.org/install.html).
 2) Install or build libindy (https://repo.evernym.com/libindy/).
-    - As of now there is no distribution channel for OSX for LibIndy. [You have to build it manually.](https://github.com/hyperledger/indy-sdk/blob/master/doc/mac-build.md) 
+    - As of now there is no distribution channel for OSX for LibIndy. [You have to build it manually.](https://github.com/hyperledger/indy-sdk/blob/master/docs/source/build-guides/mac-build.md) 
     - Copy generated `libindy.dylib` file to `/usr/local/lib`
         - Or create a symlink in `/usr/local/lib` pointing to newly generated `libindy.dylib`, this will help in updating the libindy in future.
 3) Clone this repo to your local machine.
@@ -139,7 +139,7 @@ The following wrappers are tested and complete.
 * [NodeJS](wrappers/node/README.md)
 
 ## Getting started guide
-[The tutorial](docs/getting-started/getting-started.md) which introduces Libvcx and explains how the whole ecosystem works, and how the functions in the SDK can be used to construct rich clients.
+[The tutorial](docs/source/getting-started/getting-started.md) which introduces Libvcx and explains how the whole ecosystem works, and how the functions in the SDK can be used to construct rich clients.
 
 ### Example use
 For the main workflow example check [demo](https://github.com/hyperledger/indy-sdk/tree/master/vcx/wrappers/python3/demo).

@@ -9,10 +9,11 @@ package-lock.json
 .cache
 .DS_Store
 Podfile.lock
+.vscode/
 _build/
 
 /wrappers/python/venv/
 
-.vscode/
-toc.rst
+
+
 
