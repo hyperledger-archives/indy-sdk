@@ -57,8 +57,6 @@ test('anoncreds', async function (t) {
     age: {'raw': '28', 'encoded': '28'}
   }, revocRegId, blobReaderHandle)
   t.not(typeof cred, 'string')
-  t.truthy(/^true /.test(revDelta.value.prevAccum))
-  t.truthy(/^false /.test(revDelta.value.accum))
 
   // Prover process and store credential
   var outCredId = await indy.proverStoreCredential(wh, 'cred_1_id', credReqMetadata, cred, credDef, revocRegDef)
@@ -164,12 +162,8 @@ test('anoncreds', async function (t) {
 
   // Revoke the credential
   var revocedDelta = await indy.issuerRevokeCredential(wh, blobReaderHandle, revocRegId, revId)
-  t.truthy(/^false /.test(revocedDelta.value.prevAccum))
-  t.truthy(/^true /.test(revocedDelta.value.accum))
 
   var mergedDelta = await indy.issuerMergeRevocationRegistryDeltas(revDelta, revocedDelta)
-  t.truthy(/^true /.test(mergedDelta.value.prevAccum))
-  t.truthy(/^true /.test(mergedDelta.value.accum))
 
   await indy.closeWallet(wh)
   await indy.deleteWallet(walletConfig, walletCredentials)
