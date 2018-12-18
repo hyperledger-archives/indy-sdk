@@ -121,9 +121,10 @@ mod tests {
         let institution_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
         let (faber, alice) = ::connection::tests::create_connected_connections();
 
-        let (schema_id, _, cred_def_id, _) = ::utils::libindy::anoncreds::tests::create_and_store_credential_def(::utils::constants::DEFAULT_SCHEMA_ATTRS);
+        let (_, cred_def_handle) = ::credential_def::tests::create_cred_def_real(false);
+
         let credential_data = r#"{"address1": ["123 Main St"], "address2": ["Suite 3"], "city": ["Draper"], "state": ["UT"], "zip": ["84000"]}"#;
-        let credential_offer = ::issuer_credential::issuer_credential_create(cred_def_id.clone(),
+        let credential_offer = ::issuer_credential::issuer_credential_create(cred_def_handle,
                                                                              "1".to_string(),
                                                                              institution_did.clone(),
                                                                              "credential_name".to_string(),

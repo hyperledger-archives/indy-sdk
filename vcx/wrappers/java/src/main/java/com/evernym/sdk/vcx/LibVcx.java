@@ -178,7 +178,7 @@ public abstract class LibVcx {
         /**
          * Creates a proof object.  Populates a handle to the new proof.
          */
-        public int vcx_proof_create(int command_handle, String source_id, String requested_attrs, String requested_predicates, String name, Callback cb);
+        public int vcx_proof_create(int command_handle, String source_id, String requested_attrs, String requested_predicates, String revocationInterval, String name, Callback cb);
 
         /**
          * Asynchronously send a proof request to the connection.
