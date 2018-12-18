@@ -24,13 +24,14 @@ Find the other Indy docs at https://hyperledger-indy.readthedocs.io
 .. toctree::
   :maxdepth: 1
   :hidden:
-
+  
   getting-started/index.rst
   concepts/index.rst
   how-tos/README.md
   build-guides/index.rst
   migration-guides/index.rst
   architecture/index.rst
+
 
 .. toctree::
   :caption: Contributors
