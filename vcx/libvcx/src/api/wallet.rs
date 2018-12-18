@@ -158,7 +158,7 @@ pub extern fn vcx_wallet_add_record(command_handle: u32,
           command_handle, type_, id, value, tags_json);
 
     spawn(move|| {
-        match wallet::add_record(&type_, &id, &value, &tags_json) {
+        match wallet::add_record(&type_, &id, &value, Some(&tags_json)) {
             Ok(x) => {
                 trace!("vcx_wallet_add_record(command_handle: {}, rc: {})",
                       command_handle, error_string(0));
