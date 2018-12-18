@@ -39,12 +39,12 @@ If you'd like to link to a file outside of the docs/ folder, you'll need to prov
 Here are the quick steps to achieve this on a local machine without depending on ReadTheDocs. Note: Instructions may differ depending on your OS.
 Run these commands within the repository folder
 ```bash
-cd docs/source # Be in this directory. Makefile sits there.
+cd docs/ # Be in this directory. Makefile sits there.
 pip install -r requirements.txt
 make html
 ```
 
-This will generate all the html files in `docs/source/_build/html` which you can then browse locally in your browser. Every time you make a change to the documentation you will need to rerun `make html`.
+This will generate all the html files in `docs/_build/html` which you can then browse locally in your browser. Every time you make a change to the documentation you will need to rerun `make html`.
 
 ## Additional Instructions
 This section is to be used for repo maintainers to add additional documentation guidelines or instructions. 
