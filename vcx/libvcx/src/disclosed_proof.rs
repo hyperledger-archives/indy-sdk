@@ -8,20 +8,19 @@ use connection;
 use messages;
 use messages::GeneralMessage;
 use messages::proofs::proof_message::{ProofMessage };
-use messages::proofs::proof_request::{ ProofRequestMessage };
+use messages::proofs::proof_request::{ ProofRequestMessage, ProofRequestData, NonRevokedInterval };
 use messages::extract_json_payload;
 use messages::to_u8;
-
-use credential_def::{ retrieve_credential_def };
-use schema::{ LedgerSchema };
+use time;
 
 use utils::libindy::anoncreds;
 use utils::libindy::crypto;
-use utils::serde_utils;
+use utils::libindy::anoncreds::{ get_rev_reg_def_json, get_rev_reg_delta_json };
 
 use settings;
 use utils::httpclient;
 use utils::constants::{ DEFAULT_SERIALIZE_VERSION, CREDS_FROM_PROOF_REQ, DEFAULT_GENERATED_PROOF };
+use utils::libindy::cache::{get_rev_reg_cache, set_rev_reg_cache, RevRegCache, RevState};
 
 use serde_json::{Value};
 
@@ -75,33 +74,191 @@ pub struct RequestedCreds {
 
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
 pub struct CredInfo {
+    pub requested_attr: String,
     pub referent: String,
     pub schema_id: String,
     pub cred_def_id: String,
+    pub rev_reg_id: Option<String>,
+    pub cred_rev_id: Option<String>,
+    pub revocation_interval: Option<NonRevokedInterval>,
+    pub tails_file: Option<String>,
+    pub timestamp: Option<u64>
 }
 
-fn credential_def_identifiers(credentials: &str) -> Result<Vec<(String, String, String, String)>, ProofError> {
+fn credential_def_identifiers(credentials: &str, proof_req: &ProofRequestData)
+    -> Result<Vec<CredInfo>, ProofError> {
+
     let mut rtn = Vec::new();
 
     let credentials: Value = serde_json::from_str(credentials)
-        .or(Err(ProofError::CommonError(error::INVALID_JSON.code_num)))?;
+        .or(Err(ProofError::InvalidJson()))?;
 
     if let Value::Object(ref attrs) = credentials["attrs"] {
         for (requested_attr, value) in attrs {
-            if let Some(ref attr_obj) = value.get("cred_info") {
-                rtn.push((
-                    requested_attr.to_string(),
-                    serde_utils::get_value_to_string("referent", attr_obj)
-                        .map_err(|e| ProofError::CommonError(e))?,
-                    serde_utils::get_value_to_string("schema_id", attr_obj)
-                             .map_err(|e| ProofError::CommonError(e))?,
-                    serde_utils::get_value_to_string("cred_def_id", attr_obj)
-                             .map_err(|e| ProofError::CommonError(e))?
-                 ));
+            if let (Some(referent), Some(schema_id), Some(cred_def_id)) =
+            (value["credential"]["cred_info"]["referent"].as_str(),
+             value["credential"]["cred_info"]["schema_id"].as_str(),
+             value["credential"]["cred_info"]["cred_def_id"].as_str()) {
+
+                let rev_reg_id = value["credential"]["cred_info"]["rev_reg_id"]
+                    .as_str()
+                    .map(|x| x.to_string());
+
+                let cred_rev_id = value["credential"]["cred_info"]["cred_rev_id"]
+                    .as_str()
+                    .map(|x| x.to_string());
+
+                let tails_file = value["tails_file"]
+                    .as_str()
+                    .map(|x| x.to_string());
+
+                rtn.push(
+                    CredInfo {
+                        requested_attr: requested_attr.to_string(),
+                        referent: referent.to_string(),
+                        schema_id: schema_id.to_string(),
+                        cred_def_id: cred_def_id.to_string(),
+                        revocation_interval: _get_revocation_interval(&requested_attr, &proof_req)?,
+                        timestamp: None,
+                        rev_reg_id,
+                        cred_rev_id,
+                        tails_file,
+                    }
+                );
+            } else { return Err(ProofError::InvalidCredData()) }
+        }
+    }
+
+    Ok(rtn)
+}
+
+fn _get_revocation_interval(attr_name: &str, proof_req: &ProofRequestData)
+    -> Result<Option<NonRevokedInterval>, ProofError> {
+
+    if let Some(ref attr) = proof_req.requested_attributes.get(attr_name) {
+
+        if let Some(ref interval) = attr.non_revoked {
+            return Ok(Some(NonRevokedInterval {from: interval.from, to: interval.to}))
+        }
+        else if let Some(ref interval) = proof_req.non_revoked {
+            return Ok(Some(NonRevokedInterval { from: interval.from, to: interval.to }))
+        }
+
+        return Ok(None)
+    }
+    // Todo: Handle case for predicates
+
+    Err(ProofError::InvalidCredData())
+}
+
+// Also updates timestamp in credentials_identifiers
+fn build_rev_states_json(credentials_identifiers: &mut Vec<CredInfo>) -> Result<String, ProofError> {
+    let mut rtn: Value = json!({});
+    let mut timestamps: HashMap<String, u64> = HashMap::new();
+
+    for cred_info in credentials_identifiers.iter_mut() {
+        if let (Some(rev_reg_id), Some(cred_rev_id), Some(tails_file)) =
+        (&cred_info.rev_reg_id, &cred_info.cred_rev_id, &cred_info.tails_file) {
+
+            if rtn.get(&rev_reg_id).is_none() {
+                let (from, to) = if let Some(ref interval) = cred_info.revocation_interval
+                    { (interval.from, interval.to) }
+                else { (None, None )};
+
+//                let from = from.unwrap_or(0);
+//                let to = to.unwrap_or(time::get_time().sec as u64);
+                let cache = get_rev_reg_cache(&rev_reg_id);
+
+                let (rev_state_json, timestamp) = if let Some(cached_rev_state) = cache.rev_state {
+                    if cached_rev_state.timestamp >= from.unwrap_or(0)
+                        && cached_rev_state.timestamp <= to.unwrap_or(time::get_time().sec as u64) {
+                        (cached_rev_state.value, cached_rev_state.timestamp)
+                    } else {
+                        let from = match from {
+                            Some(from) if from >= cached_rev_state.timestamp => {
+                                Some(cached_rev_state.timestamp)
+                            },
+                            _ => None
+                        };
+
+                        let (_, rev_reg_def_json) = get_rev_reg_def_json(&rev_reg_id)
+                            .map_err(|e| ProofError::CommonError(e))?;
+
+                        let (rev_reg_id, rev_reg_delta_json, timestamp) = get_rev_reg_delta_json(
+                            &rev_reg_id,
+                            from,
+                            to
+                        ).map_err(|e| ProofError::CommonError(e))?;
+
+                        let rev_state_json = anoncreds::libindy_prover_update_revocation_state(
+                            &rev_reg_def_json,
+                            &cached_rev_state.value,
+                            &rev_reg_delta_json,
+                            &cred_rev_id,
+                            &tails_file
+                        ).map_err(|e| ProofError::CommonError(e))?;
+
+                        if timestamp > cached_rev_state.timestamp {
+                            let new_cache = RevRegCache {
+                                rev_state: Some(RevState {
+                                    timestamp: timestamp,
+                                    value: rev_state_json.clone()
+                                })
+                            };
+                            set_rev_reg_cache(&rev_reg_id, &new_cache);
+                        }
+
+                        (rev_state_json, timestamp)
+                    }
+                } else {
+                    let (_, rev_reg_def_json) = get_rev_reg_def_json(&rev_reg_id)
+                        .map_err(|e| ProofError::CommonError(e))?;
+
+                    let (rev_reg_id, rev_reg_delta_json, timestamp) = get_rev_reg_delta_json(
+                        &rev_reg_id,
+                        None,
+                        to
+                    ).map_err(|e| ProofError::CommonError(e))?;
+
+                    let rev_state_json = anoncreds::libindy_prover_create_revocation_state(
+                        &rev_reg_def_json,
+                        &rev_reg_delta_json,
+                        &cred_rev_id,
+                        &tails_file
+                    ).map_err(|e| ProofError::CommonError(e))?;
+
+                    let new_cache = RevRegCache {
+                        rev_state: Some(RevState {
+                            timestamp: timestamp,
+                            value: rev_state_json.clone()
+                        })
+                    };
+                    set_rev_reg_cache(&rev_reg_id, &new_cache);
+
+                    (rev_state_json, timestamp)
+                };
+
+                let rev_state_json: Value = serde_json::from_str(&rev_state_json)
+                    .or(Err(ProofError::InvalidJson()))?;
+
+                // TODO: proover should be able to create multiple states of same revocation policy for different timestamps
+                // see ticket IS-1108
+                rtn[rev_reg_id.to_string()] = json!({timestamp.to_string(): rev_state_json});
+                cred_info.timestamp = Some(timestamp);
+
+                // Cache timestamp for future attributes that have the same rev_reg_id
+                timestamps.insert(rev_reg_id.to_string(), timestamp);
+            }
+
+            // If the rev_reg_id is already in the map, timestamp may not be updated on cred_info
+            if cred_info.timestamp.is_none() {
+                cred_info.timestamp = timestamps.get(rev_reg_id).map(|x| x.clone());
             }
         }
     }
-    Ok(rtn)
+
+    Ok(rtn.to_string())
+
 }
 
 impl DisclosedProof {
@@ -121,60 +278,54 @@ impl DisclosedProof {
         trace!("DisclosedProof::set_state >>>");
         if settings::test_indy_mode_enabled() {return Ok(CREDS_FROM_PROOF_REQ.to_string())}
 
-        let proof_req = self.proof_request.as_ref().ok_or(ProofError::ProofNotReadyError())?;
+        let proof_req = self.proof_request
+            .as_ref()
+            .ok_or(ProofError::ProofNotReadyError())?;
+
         let indy_proof_req = serde_json::to_string(&proof_req.proof_request_data)
-            .or(Err(ProofError::CommonError(error::INVALID_JSON.code_num)))?;
+            .or(Err(ProofError::InvalidJson()))?;
 
         anoncreds::libindy_prover_get_credentials_for_proof_req(&indy_proof_req)
             .map_err(|err| ProofError::CommonError(err))
     }
 
-    fn _find_schemas(&self, credentials_identifiers: &Vec<(String, String, String, String)>) -> Result<String, ProofError> {
-        if credentials_identifiers.len() == 0 { return Ok("{}".to_string()); }
+    fn build_schemas_json(&self, credentials_identifiers: &Vec<CredInfo>) -> Result<String, ProofError> {
+        let mut rtn: Value = json!({});
 
-        let mut rtn: HashMap<String, Value> = HashMap::new();
+        for ref cred_info in credentials_identifiers {
+            if rtn.get(&cred_info.schema_id).is_none() {
+                let (_, schema_json) = anoncreds::get_schema_json(&cred_info.schema_id)
+                    .or( Err(ProofError::InvalidSchema()))?;
 
-        for &(ref attr_id, ref cred_uuid, ref schema_id, ref cred_def_id) in credentials_identifiers {
-            if !rtn.contains_key(schema_id) {
-                let schema = LedgerSchema::new_from_ledger(schema_id).or( Err(ProofError::InvalidSchema()))?;
-                let schema_json = serde_json::from_str(&schema.schema_json).or(Err(ProofError::InvalidSchema()))?;
-                rtn.insert(schema_id.to_owned(), schema_json);
+                let schema_json = serde_json::from_str(&schema_json)
+                    .or(Err(ProofError::InvalidSchema()))?;
+
+                rtn[cred_info.schema_id.to_owned()] = schema_json;
             }
         }
-
-        match rtn.is_empty() {
-            false => Ok(serde_json::to_string(&rtn)
-                .or(Err(ProofError::CommonError(error::INVALID_JSON.code_num)))?),
-            true => Err(ProofError::CommonError(error::INVALID_JSON.code_num))
-        }
+        Ok(rtn.to_string())
     }
 
-    fn _find_credential_def(&self, credentials_identifiers: &Vec<(String, String, String, String)>) -> Result<String, ProofError> {
-        if credentials_identifiers.len() == 0 { return Ok("{}".to_string()); }
+    fn build_cred_def_json(&self, credentials_identifiers: &Vec<CredInfo>) -> Result<String, ProofError> {
+        let mut rtn: Value = json!({});
 
-        let mut rtn: HashMap<String, Value> = HashMap::new();
-
-        for &(ref attr_id, ref cred_uuid, ref schema_id, ref cred_def_id) in credentials_identifiers {
-            if !rtn.contains_key(cred_def_id) {
-                let (_, credential_def) = retrieve_credential_def(cred_def_id)
+        for ref cred_info in credentials_identifiers {
+            if rtn.get(&cred_info.cred_def_id).is_none() {
+                let (_, credential_def) = anoncreds::get_cred_def_json(&cred_info.cred_def_id)
                     .or(Err(ProofError::InvalidCredData()))?;
+
                 let credential_def = serde_json::from_str(&credential_def)
                     .or(Err(ProofError::InvalidCredData()))?;
-                rtn.insert(cred_def_id.to_owned(), credential_def);
+
+                rtn[cred_info.cred_def_id.to_owned()] = credential_def;
             }
         }
-
-        match rtn.is_empty() {
-            false => Ok(serde_json::to_string(&rtn)
-                .or(Err(ProofError::CommonError(error::INVALID_JSON.code_num)))?),
-            true => Err(ProofError::CommonError(error::INVALID_JSON.code_num))
-        }
-
+        Ok(rtn.to_string())
     }
 
-    fn _build_requested_credentials(&self,
-                                    credentials_identifiers: &Vec<(String, String, String, String)>,
-                                    self_attested_attrs: &str) -> Result<String, ProofError> {
+    fn build_requested_credentials_json(&self,
+                                        credentials_identifiers: &Vec<CredInfo>,
+                                        self_attested_attrs: &str) -> Result<String, ProofError> {
         let mut rtn: Value = json!({
               "self_attested_attributes":{},
               "requested_attributes":{},
@@ -183,10 +334,9 @@ impl DisclosedProof {
         //Todo: need to do same for predicates and self_attested
         //Todo: need to handle if the attribute is not revealed
         if let Value::Object(ref mut map) = rtn["requested_attributes"] {
-            for &(ref attr_id, ref cred_uuid, ref schema_id, ref cred_def_id) in credentials_identifiers {
-
-                let insert_val = json!({"cred_id": cred_uuid, "revealed": true});
-                map.insert(attr_id.to_owned(), insert_val);
+            for ref cred_info in credentials_identifiers {
+                let insert_val = json!({"cred_id": cred_info.referent, "revealed": true, "timestamp": cred_info.timestamp});
+                map.insert(cred_info.requested_attr.to_owned(), insert_val);
             }
         }
 
@@ -194,10 +344,7 @@ impl DisclosedProof {
             .or(Err(ProofError::CommonError(error::INVALID_JSON.code_num)))?;
         rtn["self_attested_attributes"] = self_attested_attrs;
 
-        let rtn = serde_json::to_string(&rtn)
-            .or(Err(ProofError::CommonError(error::INVALID_JSON.code_num)))?;
-
-        Ok(rtn)
+        Ok(rtn.to_string())
     }
 
     fn generate_proof(&mut self, credentials: &str, self_attested_attrs: &str) -> Result<u32, ProofError> {
@@ -212,18 +359,22 @@ impl DisclosedProof {
             .or(Err(ProofError::CommonError(error::INVALID_JSON.code_num)))?;
 
 
-        let credentials_identifiers = credential_def_identifiers(credentials)?;
-        let requested_credentials = self._build_requested_credentials(&credentials_identifiers,
-                                                                      self_attested_attrs)?;
-        let schemas = self._find_schemas(&credentials_identifiers)?;
-        let credential_defs_json = self._find_credential_def(&credentials_identifiers)?;
-        let revoc_regs_json = Some("{}");
+        let mut credentials_identifiers = credential_def_identifiers(credentials,
+                                                                     &proof_req.proof_request_data)?;
+
+        let revoc_states_json = build_rev_states_json(&mut credentials_identifiers)?;
+        let requested_credentials = self.build_requested_credentials_json(&credentials_identifiers,
+                                                                          self_attested_attrs)?;
+
+        let schemas_json = self.build_schemas_json(&credentials_identifiers)?;
+        let credential_defs_json = self.build_cred_def_json(&credentials_identifiers)?;
+
         let proof = anoncreds::libindy_prover_create_proof(&proof_req_data_json,
                                                            &requested_credentials,
                                                           &self.link_secret_alias,
-                                                           &schemas,
+                                                           &schemas_json,
                                                           &credential_defs_json,
-                                                          revoc_regs_json).map_err(|ec| ProofError::CommonError(ec))?;
+                                                          Some(&revoc_states_json)).map_err(|ec| ProofError::CommonError(ec))?;
         let mut proof_msg = ProofMessage::new();
         proof_msg.libindy_proof = proof;
         self.proof = Some(proof_msg);
@@ -498,8 +649,28 @@ mod tests {
     extern crate serde_json;
 
     use super::*;
-    use utils::constants::{ ADDRESS_CRED_ID, LICENCE_CRED_ID, ADDRESS_SCHEMA_ID, ADDRESS_CRED_DEF_ID, CRED_DEF_ID, SCHEMA_ID };
     use serde_json::Value;
+    use utils::constants::{ ADDRESS_CRED_ID, LICENCE_CRED_ID, ADDRESS_SCHEMA_ID,
+                            ADDRESS_CRED_DEF_ID, CRED_DEF_ID, SCHEMA_ID, ADDRESS_CRED_REV_ID,
+                            ADDRESS_REV_REG_ID, REV_REG_ID, CRED_REV_ID, TEST_TAILS_FILE, REV_STATE_JSON };
+    #[cfg(feature = "pool_tests")]
+    use time;
+
+    fn proof_req_no_interval() -> ProofRequestData {
+        let proof_req = json!({
+            "nonce": "123432421212",
+            "name": "proof_req_1",
+            "version": "0.1",
+            "requested_attributes": {
+                "address1_1": { "name": "address1" },
+                "zip_2": { "name": "zip" },
+                "height_1": { "name": "height" }
+            },
+            "requested_predicates": {},
+        }).to_string();
+
+        serde_json::from_str(&proof_req).unwrap()
+    }
 
     #[test]
     fn test_create_proof() {
@@ -558,12 +729,35 @@ mod tests {
     #[test]
     fn test_find_schemas() {
         init!("true");
-        let cred1 = ("height_1".to_string(), LICENCE_CRED_ID.to_string(), SCHEMA_ID.to_string(), CRED_DEF_ID.to_string() );
-        let cred2 = ("zip_2".to_string(), ADDRESS_CRED_ID.to_string(), ADDRESS_SCHEMA_ID.to_string(), ADDRESS_CRED_DEF_ID.to_string() );
-        let creds = vec![cred1, cred2];
 
         let proof: DisclosedProof = Default::default();
-        let schemas = proof._find_schemas(&creds).unwrap();
+        assert_eq!(proof.build_schemas_json(&Vec::new()), Ok("{}".to_string()));
+
+        let cred1 = CredInfo {
+            requested_attr: "height_1".to_string(),
+            referent: LICENCE_CRED_ID.to_string(),
+            schema_id: SCHEMA_ID.to_string(),
+            cred_def_id: CRED_DEF_ID.to_string(),
+            rev_reg_id: Some(REV_REG_ID.to_string()),
+            cred_rev_id: Some(CRED_REV_ID.to_string()),
+            revocation_interval: None,
+            tails_file: None,
+            timestamp: None,
+        };
+        let cred2 = CredInfo {
+            requested_attr: "zip_2".to_string(),
+            referent: ADDRESS_CRED_ID.to_string(),
+            schema_id: ADDRESS_SCHEMA_ID.to_string(),
+            cred_def_id: ADDRESS_CRED_DEF_ID.to_string(),
+            rev_reg_id: Some(ADDRESS_REV_REG_ID.to_string()),
+            cred_rev_id: Some(ADDRESS_CRED_REV_ID.to_string()),
+            revocation_interval: None,
+            tails_file: None,
+            timestamp: None,
+        };
+        let creds = vec![cred1, cred2];
+
+        let schemas = proof.build_schemas_json(&creds).unwrap();
         assert!(schemas.len() > 0);
         assert!(schemas.contains(r#""id":"2hoqvcwupRTUNkXn6ArYzs:2:test-licence:4.4.4","name":"test-licence""#));
     }
@@ -572,22 +766,51 @@ mod tests {
     fn test_find_schemas_fails() {
         init!("false");
 
-        let mut credential_ids = Vec::new();
-        credential_ids.push(("1".to_string(), "2".to_string(), "3".to_string(), "4".to_string()));
+        let credential_ids = vec![CredInfo {
+            requested_attr: "1".to_string(),
+            referent: "2".to_string(),
+            schema_id: "3".to_string(),
+            cred_def_id: "3".to_string(),
+            rev_reg_id: Some("4".to_string()),
+            cred_rev_id: Some("5".to_string()),
+            revocation_interval: None,
+            tails_file: None,
+            timestamp: None,
+        }];
         let proof: DisclosedProof = Default::default();
-        assert_eq!(proof._find_schemas(&credential_ids).err(),
+        assert_eq!(proof.build_schemas_json(&credential_ids).err(),
                    Some(ProofError::InvalidSchema()));
     }
 
     #[test]
     fn test_find_credential_def() {
         init!("true");
-        let cred1 = ("height_1".to_string(), LICENCE_CRED_ID.to_string(), SCHEMA_ID.to_string(), CRED_DEF_ID.to_string() );
-        let cred2 = ("zip_2".to_string(), ADDRESS_CRED_ID.to_string(), ADDRESS_SCHEMA_ID.to_string(), ADDRESS_CRED_DEF_ID.to_string() );
+        let cred1 = CredInfo {
+            requested_attr: "height_1".to_string(),
+            referent: LICENCE_CRED_ID.to_string(),
+            schema_id: SCHEMA_ID.to_string(),
+            cred_def_id: CRED_DEF_ID.to_string(),
+            rev_reg_id: Some(REV_REG_ID.to_string()),
+            cred_rev_id: Some(CRED_REV_ID.to_string()),
+            revocation_interval: None,
+            tails_file: None,
+            timestamp: None,
+        };
+        let cred2 = CredInfo {
+            requested_attr: "zip_2".to_string(),
+            referent: ADDRESS_CRED_ID.to_string(),
+            schema_id: ADDRESS_SCHEMA_ID.to_string(),
+            cred_def_id: ADDRESS_CRED_DEF_ID.to_string(),
+            rev_reg_id: Some(ADDRESS_REV_REG_ID.to_string()),
+            cred_rev_id: Some(ADDRESS_CRED_REV_ID.to_string()),
+            revocation_interval: None,
+            tails_file: None,
+            timestamp: None,
+        };
         let creds = vec![cred1, cred2];
 
         let proof: DisclosedProof = Default::default();
-        let credential_def = proof._find_credential_def(&creds).unwrap();
+        let credential_def = proof.build_cred_def_json(&creds).unwrap();
         assert!(credential_def.len() > 0);
         assert!(credential_def.contains(r#""id":"2hoqvcwupRTUNkXn6ArYzs:3:CL:2471","schemaId":"2471""#));
     }
@@ -596,18 +819,47 @@ mod tests {
     fn test_find_credential_def_fails() {
         init!("false");
 
-        let mut credential_ids = Vec::new();
-        credential_ids.push(("1".to_string(), "2".to_string(), "3".to_string(), "4".to_string()));
+        let credential_ids = vec![CredInfo {
+            requested_attr: "1".to_string(),
+            referent: "2".to_string(),
+            schema_id: "3".to_string(),
+            cred_def_id: "3".to_string(),
+            rev_reg_id: Some("4".to_string()),
+            cred_rev_id: Some("5".to_string()),
+            revocation_interval: None,
+            tails_file: None,
+            timestamp: None,
+        }];
         let proof: DisclosedProof = Default::default();
-        assert_eq!(proof._find_credential_def(&credential_ids).err(),
+        assert_eq!(proof.build_cred_def_json(&credential_ids).err(),
                    Some(ProofError::InvalidCredData()));
     }
 
     #[test]
     fn test_build_requested_credentials() {
         init!("true");
-        let cred1 = ("height_1".to_string(), LICENCE_CRED_ID.to_string(), SCHEMA_ID.to_string(), CRED_DEF_ID.to_string() );
-        let cred2 = ("zip_2".to_string(), ADDRESS_CRED_ID.to_string(), ADDRESS_SCHEMA_ID.to_string(), ADDRESS_CRED_DEF_ID.to_string() );
+        let cred1 = CredInfo {
+            requested_attr: "height_1".to_string(),
+            referent: LICENCE_CRED_ID.to_string(),
+            schema_id: SCHEMA_ID.to_string(),
+            cred_def_id: CRED_DEF_ID.to_string(),
+            rev_reg_id: Some(REV_REG_ID.to_string()),
+            cred_rev_id: Some(CRED_REV_ID.to_string()),
+            revocation_interval: None,
+            tails_file: None,
+            timestamp: Some(800),
+        };
+        let cred2 = CredInfo {
+            requested_attr: "zip_2".to_string(),
+            referent: ADDRESS_CRED_ID.to_string(),
+            schema_id: ADDRESS_SCHEMA_ID.to_string(),
+            cred_def_id: ADDRESS_CRED_DEF_ID.to_string(),
+            rev_reg_id: Some(ADDRESS_REV_REG_ID.to_string()),
+            cred_rev_id: Some(ADDRESS_CRED_REV_ID.to_string()),
+            revocation_interval: None,
+            tails_file: None,
+            timestamp: Some(800),
+        };
         let creds = vec![cred1, cred2];
         let self_attested_attrs = json!({
             "self_attested_attr_3": "my self attested 1",
@@ -620,14 +872,14 @@ mod tests {
                   "self_attested_attr_4": "my self attested 2",
               },
               "requested_attributes":{
-                  "height_1": {"cred_id": LICENCE_CRED_ID, "revealed": true },
-                  "zip_2": {"cred_id": ADDRESS_CRED_ID, "revealed": true },
+                  "height_1": {"cred_id": LICENCE_CRED_ID, "revealed": true, "timestamp": 800},
+                  "zip_2": {"cred_id": ADDRESS_CRED_ID, "revealed": true, "timestamp": 800},
               },
               "requested_predicates":{}
         });
 
         let proof: DisclosedProof = Default::default();
-        let requested_credential = proof._build_requested_credentials(&creds, &self_attested_attrs).unwrap();
+        let requested_credential = proof.build_requested_credentials_json(&creds, &self_attested_attrs).unwrap();
         assert_eq!(test.to_string(), requested_credential);
     }
 
@@ -645,7 +897,7 @@ mod tests {
     #[test]
     fn test_retrieve_credentials() {
         init!("ledger");
-        ::utils::libindy::anoncreds::tests::create_and_store_credential(::utils::constants::DEFAULT_SCHEMA_ATTRS);
+        ::utils::libindy::anoncreds::tests::create_and_store_credential(::utils::constants::DEFAULT_SCHEMA_ATTRS, false);
         let (_, _, req, _) = ::utils::libindy::anoncreds::tests::create_proof();
 
         let mut proof_req = ProofRequestMessage::create();
@@ -654,14 +906,42 @@ mod tests {
         proof.proof_request = Some(proof_req);
 
         let retrieved_creds = proof.retrieve_credentials().unwrap();
+        println!("retrieved_creds: {}", retrieved_creds);
         assert!(retrieved_creds.len() > 500);
+    }
+
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn test_retrieve_credentials_emtpy() {
+        init!("ledger");
+
+        let mut req = json!({
+           "nonce":"123432421212",
+           "name":"proof_req_1",
+           "version":"0.1",
+           "requested_attributes": json!({}),
+           "requested_predicates": json!({}),
+        });
+        let mut proof_req = ProofRequestMessage::create();
+        let mut proof: DisclosedProof = Default::default();
+        proof_req.proof_request_data = serde_json::from_str(&req.to_string()).unwrap();
+        proof.proof_request = Some(proof_req.clone());
+
+        let retrieved_creds = proof.retrieve_credentials().unwrap();
+        assert_eq!(retrieved_creds, "{}".to_string());
+
+        req["requested_attributes"]["address1_1"] = json!({"name": "address1"});
+        proof_req.proof_request_data = serde_json::from_str(&req.to_string()).unwrap();
+        proof.proof_request = Some(proof_req);
+        let retrieved_creds = proof.retrieve_credentials().unwrap();
+        assert_eq!(retrieved_creds, json!({"attrs":{"address1_1":[]}}).to_string());
     }
 
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_case_for_proof_req_doesnt_matter_for_retrieve_creds() {
         init!("ledger");
-        ::utils::libindy::anoncreds::tests::create_and_store_credential(::utils::constants::DEFAULT_SCHEMA_ATTRS);
+        ::utils::libindy::anoncreds::tests::create_and_store_credential(::utils::constants::DEFAULT_SCHEMA_ATTRS, false);
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
         let mut req = json!({
            "nonce":"123432421212",
@@ -711,50 +991,178 @@ mod tests {
 
     #[test]
     fn test_credential_def_identifiers() {
-        let cred1 = ("height_1".to_string(), LICENCE_CRED_ID.to_string(), SCHEMA_ID.to_string(), CRED_DEF_ID.to_string() );
-        let cred2 = ("zip_2".to_string(), ADDRESS_CRED_ID.to_string(), ADDRESS_SCHEMA_ID.to_string(), ADDRESS_CRED_DEF_ID.to_string() );
+        let cred1 = CredInfo {
+            requested_attr: "height_1".to_string(),
+            referent: LICENCE_CRED_ID.to_string(),
+            schema_id: SCHEMA_ID.to_string(),
+            cred_def_id: CRED_DEF_ID.to_string(),
+            rev_reg_id: Some(REV_REG_ID.to_string()),
+            cred_rev_id: Some(CRED_REV_ID.to_string()),
+            revocation_interval: Some(NonRevokedInterval { from: Some(123), to: Some(456) }),
+            tails_file: Some(TEST_TAILS_FILE.to_string()),
+            timestamp: None,
+        };
+        let cred2 = CredInfo {
+            requested_attr: "zip_2".to_string(),
+            referent: ADDRESS_CRED_ID.to_string(),
+            schema_id: ADDRESS_SCHEMA_ID.to_string(),
+            cred_def_id: ADDRESS_CRED_DEF_ID.to_string(),
+            rev_reg_id: Some(ADDRESS_REV_REG_ID.to_string()),
+            cred_rev_id: Some(ADDRESS_CRED_REV_ID.to_string()),
+            revocation_interval: Some(NonRevokedInterval { from: None, to: Some(987) }),
+            tails_file: None,
+            timestamp: None,
+        };
         let selected_credentials : Value = json!({
            "attrs":{
               "height_1":{
-                "cred_info":{
-                   "referent":LICENCE_CRED_ID,
-                   "attrs":{
-                      "sex":"male",
-                      "age":"111",
-                      "name":"Bob",
-                      "height":"4'11"
-                   },
-                   "schema_id": SCHEMA_ID,
-                   "cred_def_id": CRED_DEF_ID,
-                   "rev_reg_id":null,
-                   "cred_rev_id":null
+                "credential": {
+                    "cred_info":{
+                       "referent":LICENCE_CRED_ID,
+                       "attrs":{
+                          "sex":"male",
+                          "age":"111",
+                          "name":"Bob",
+                          "height":"4'11"
+                       },
+                       "schema_id": SCHEMA_ID,
+                       "cred_def_id": CRED_DEF_ID,
+                       "rev_reg_id":REV_REG_ID,
+                       "cred_rev_id":CRED_REV_ID
+                    },
+                    "interval":null
                 },
-                "interval":null
+                "tails_file": TEST_TAILS_FILE,
               },
               "zip_2":{
-                "cred_info":{
-                   "referent":ADDRESS_CRED_ID,
-                   "attrs":{
-                      "address1":"101 Tela Lane",
-                      "address2":"101 Wilson Lane",
-                      "zip":"87121",
-                      "state":"UT",
-                      "city":"SLC"
-                   },
-                   "schema_id":ADDRESS_SCHEMA_ID,
-                   "cred_def_id":ADDRESS_CRED_DEF_ID,
-                   "rev_reg_id":null,
-                   "cred_rev_id":null
+                "credential": {
+                    "cred_info":{
+                       "referent":ADDRESS_CRED_ID,
+                       "attrs":{
+                          "address1":"101 Tela Lane",
+                          "address2":"101 Wilson Lane",
+                          "zip":"87121",
+                          "state":"UT",
+                          "city":"SLC"
+                       },
+                       "schema_id":ADDRESS_SCHEMA_ID,
+                       "cred_def_id":ADDRESS_CRED_DEF_ID,
+                       "rev_reg_id":ADDRESS_REV_REG_ID,
+                       "cred_rev_id":ADDRESS_CRED_REV_ID
+                    },
+                    "interval":null
                 },
-                "interval":null
              }
+           },
+           "predicates":{ }
+        });
+        let proof_req = json!({
+            "nonce": "123432421212",
+            "name": "proof_req_1",
+            "version": "0.1",
+            "requested_attributes": {
+                "zip_2": { "name": "zip" },
+                "height_1": { "name": "height", "non_revoked": {"from": 123, "to": 456} }
+            },
+            "requested_predicates": {},
+            "non_revoked": {"to": 987}
+        }).to_string();
+
+        let creds = credential_def_identifiers(&selected_credentials.to_string(), &serde_json::from_str(&proof_req).unwrap()).unwrap();
+        assert_eq!(creds, vec![cred1, cred2]);
+    }
+
+    #[test]
+    fn test_credential_def_identifiers_failure() {
+        // selected credentials has incorrect json
+        assert_eq!(credential_def_identifiers("", &proof_req_no_interval()), Err(ProofError::InvalidJson()));
+
+
+        // No Creds
+        assert_eq!(credential_def_identifiers("{}", &proof_req_no_interval()), Ok(Vec::new()));
+        assert_eq!(credential_def_identifiers(r#"{"attrs":{}}"#, &proof_req_no_interval()), Ok(Vec::new()));
+
+        // missing cred info
+        let selected_credentials : Value = json!({
+           "attrs":{
+              "height_1":{ "interval":null }
            },
            "predicates":{
 
            }
         });
-        let creds = credential_def_identifiers(&selected_credentials.to_string()).unwrap();
-        assert_eq!(creds, vec![cred1, cred2]);
+        assert_eq!(credential_def_identifiers(&selected_credentials.to_string(), &proof_req_no_interval()), Err(ProofError::InvalidCredData()));
+
+        // Optional Revocation
+        let mut selected_credentials : Value = json!({
+           "attrs":{
+              "height_1":{
+                "credential": {
+                    "cred_info":{
+                       "referent":LICENCE_CRED_ID,
+                       "attrs":{
+                          "sex":"male",
+                          "age":"111",
+                          "name":"Bob",
+                          "height":"4'11"
+                       },
+                       "schema_id": SCHEMA_ID,
+                       "cred_def_id": CRED_DEF_ID,
+                       "cred_rev_id":CRED_REV_ID
+                    },
+                    "interval":null
+                },
+                "tails_file": TEST_TAILS_FILE,
+              },
+           },
+           "predicates":{ }
+        });
+        let creds = vec![CredInfo {
+            requested_attr: "height_1".to_string(),
+            referent: LICENCE_CRED_ID.to_string(),
+            schema_id: SCHEMA_ID.to_string(),
+            cred_def_id: CRED_DEF_ID.to_string(),
+            rev_reg_id: None,
+            cred_rev_id: Some(CRED_REV_ID.to_string()),
+            revocation_interval: None,
+            tails_file: Some(TEST_TAILS_FILE.to_string()),
+            timestamp: None,
+        }];
+        assert_eq!(&credential_def_identifiers(&selected_credentials.to_string(), &proof_req_no_interval()).unwrap(), &creds);
+
+        // rev_reg_id is null
+        selected_credentials["attrs"]["height_1"]["cred_info"]["rev_reg_id"] = serde_json::Value::Null;
+        assert_eq!(&credential_def_identifiers(&selected_credentials.to_string(), &proof_req_no_interval()).unwrap(), &creds);
+
+        // Missing schema ID
+        let mut selected_credentials : Value = json!({
+           "attrs":{
+              "height_1":{
+                "credential": {
+                    "cred_info":{
+                       "referent":LICENCE_CRED_ID,
+                       "attrs":{
+                          "sex":"male",
+                          "age":"111",
+                          "name":"Bob",
+                          "height":"4'11"
+                       },
+                       "cred_def_id": CRED_DEF_ID,
+                       "rev_reg_id":REV_REG_ID,
+                       "cred_rev_id":CRED_REV_ID
+                    },
+                    "interval":null
+                },
+                "tails_file": TEST_TAILS_FILE
+              },
+           },
+           "predicates":{ }
+        });
+        assert_eq!(credential_def_identifiers(&selected_credentials.to_string(), &proof_req_no_interval()), Err(ProofError::InvalidCredData()));
+
+        // Schema Id is null
+        selected_credentials["attrs"]["height_1"]["cred_info"]["schema_id"] = serde_json::Value::Null;
+        assert_eq!(credential_def_identifiers(&selected_credentials.to_string(), &proof_req_no_interval()), Err(ProofError::InvalidCredData()));
     }
 
     #[cfg(feature = "pool_tests")]
@@ -762,65 +1170,44 @@ mod tests {
     fn test_generate_proof() {
         init!("ledger");
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
-        let (schema_id, _, cred_def_id, _, _, _, _, cred_id) = ::utils::libindy::anoncreds::tests::create_and_store_credential(::utils::constants::DEFAULT_SCHEMA_ATTRS);
-
+        let (schema_id, _, cred_def_id, _, _, _, _, cred_id, _, _) = ::utils::libindy::anoncreds::tests::create_and_store_credential(::utils::constants::DEFAULT_SCHEMA_ATTRS, true);
         let mut proof_req = ProofRequestMessage::create();
+        let to = time::get_time().sec;
         let indy_proof_req = json!({
-           "nonce":"123432421212",
-           "name":"proof_req_1",
-           "version":"0.1",
-           "requested_attributes": json!({
-               "address1_1": json!({
-                   "name":"address1",
-                   "restrictions": [json!({ "issuer_did": did })]
-               }),
-               "zip_2": json!({
-                   "name":"zip",
-                   "restrictions": [json!({ "issuer_did": did })]
-               }),
-               "self_attested_attr_3": json!({
+            "nonce": "123432421212",
+            "name": "proof_req_1",
+            "version": "0.1",
+            "requested_attributes": {
+                "address1_1": {
+                    "name": "address1",
+                    "restrictions": [{"issuer_did": did}],
+                    "non_revoked":  {"from": 123, "to": to}
+                },
+                "zip_2": { "name": "zip" }
+            },
+            "self_attested_attr_3": json!({
                    "name":"self_attested_attr",
-               }),
-           }),
-           "requested_predicates": json!({}),
+             }),
+            "requested_predicates": {},
+            "non_revoked": {"from": 098, "to": to}
         }).to_string();
         proof_req.proof_request_data = serde_json::from_str(&indy_proof_req).unwrap();
 
+        let mut proof: DisclosedProof = Default::default();
+        proof.proof_request = Some(proof_req);
+        proof.link_secret_alias = "main".to_string();
+
+        let all_creds: Value = serde_json::from_str(&proof.retrieve_credentials().unwrap()).unwrap();
         let selected_credentials : Value = json!({
            "attrs":{
-              "address1_1":{
-                "cred_info":{
-                   "referent":cred_id,
-                   "attrs":{
-                      "sex":"male",
-                      "age":"111",
-                      "name":"Bob",
-                      "height":"4'11"
-                   },
-                   "schema_id": schema_id,
-                   "cred_def_id": cred_def_id,
-                   "rev_reg_id":null,
-                   "cred_rev_id":null
-                },
-                "interval":null
+              "address1_1": {
+                "credential": all_creds["attrs"]["address1_1"][0],
+                "tails_file": TEST_TAILS_FILE
               },
-              "zip_2":{
-                "cred_info":{
-                   "referent":cred_id,
-                   "attrs":{
-                      "address1":"101 Tela Lane",
-                      "address2":"101 Wilson Lane",
-                      "zip":"87121",
-                      "state":"UT",
-                      "city":"SLC"
-                   },
-                   "schema_id":schema_id,
-                   "cred_def_id":cred_def_id,
-                   "rev_reg_id":null,
-                   "cred_rev_id":null
-                },
-                "interval":null
-             }
+              "zip_2": {
+                "credential": all_creds["attrs"]["zip_2"][0],
+                "tails_file": TEST_TAILS_FILE
+              },
            },
            "predicates":{ }
         });
@@ -829,11 +1216,7 @@ mod tests {
               "self_attested_attr_3":"attested_val"
         });
 
-        let mut proof: DisclosedProof = Default::default();
-        proof.proof_request = Some(proof_req);
-        proof.link_secret_alias = "main".to_string();
         let generated_proof = proof.generate_proof(&selected_credentials.to_string(), &self_attested.to_string());
-
         assert!(generated_proof.is_ok());
     }
 
@@ -873,5 +1256,289 @@ mod tests {
         let generated_proof = proof.generate_proof(&selected_credentials.to_string(), &self_attested.to_string());
 
         assert!(generated_proof.is_ok());
+    }
+
+    #[test]
+    fn test_build_rev_states_json() {
+        init!("true");
+
+        let cred1 = CredInfo {
+            requested_attr: "height".to_string(),
+            referent: "abc".to_string(),
+            schema_id: SCHEMA_ID.to_string(),
+            cred_def_id: CRED_DEF_ID.to_string(),
+            rev_reg_id: Some(REV_REG_ID.to_string()),
+            cred_rev_id: Some(CRED_REV_ID.to_string()),
+            tails_file: Some(TEST_TAILS_FILE.to_string()),
+            revocation_interval: None,
+            timestamp: None,
+        };
+        let mut cred_info = vec![cred1];
+        let states = build_rev_states_json(cred_info.as_mut()).unwrap();
+        let rev_state_json: Value = serde_json::from_str(REV_STATE_JSON).unwrap();
+        let expected = json!({REV_REG_ID: {"1": rev_state_json}}).to_string();
+        assert_eq!(states, expected);
+        assert!(cred_info[0].timestamp.is_some());
+    }
+
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn test_build_rev_states_json_empty() {
+        init!("ledger");
+
+        // empty vector
+        assert_eq!(build_rev_states_json(Vec::new().as_mut()), Ok("{}".to_string()));
+
+        // no rev_reg_id
+        let cred1 = CredInfo {
+            requested_attr: "height_1".to_string(),
+            referent: LICENCE_CRED_ID.to_string(),
+            schema_id: SCHEMA_ID.to_string(),
+            cred_def_id: CRED_DEF_ID.to_string(),
+            rev_reg_id: None,
+            cred_rev_id: Some(CRED_REV_ID.to_string()),
+            tails_file: Some(TEST_TAILS_FILE.to_string()),
+            revocation_interval: None,
+            timestamp: None,
+        };
+        assert_eq!(build_rev_states_json(vec![cred1].as_mut()), Ok("{}".to_string()));
+    }
+
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn test_build_rev_states_json_real_no_cache() {
+        init!("ledger");
+
+        let attrs = r#"["address1","address2","city","state","zip"]"#;
+        let (schema_id, _, cred_def_id, _, _, _, _, cred_id, rev_reg_id, cred_rev_id) =
+            ::utils::libindy::anoncreds::tests::create_and_store_credential(attrs, true);
+        let cred2 = CredInfo {
+            requested_attr: "height".to_string(),
+            referent: cred_id,
+            schema_id,
+            cred_def_id,
+            rev_reg_id: rev_reg_id.clone(),
+            cred_rev_id: cred_rev_id,
+            tails_file: Some(TEST_TAILS_FILE.to_string()),
+            revocation_interval: None,
+            timestamp: None,
+        };
+        let rev_reg_id = rev_reg_id.unwrap();
+
+        // assert cache is empty
+        let cache = get_rev_reg_cache(&rev_reg_id);
+        assert_eq!(cache.rev_state, None);
+
+        let (_, rev_reg_def_json) = get_rev_reg_def_json(&rev_reg_id).unwrap();
+        let states = build_rev_states_json(vec![cred2].as_mut()).unwrap();
+        assert!(states.contains(&rev_reg_id));
+
+        // check if this value is in cache now.
+        let states: Value = serde_json::from_str(&states).unwrap();
+        let state: HashMap<String, Value> = serde_json::from_value(states[&rev_reg_id].clone()).unwrap();
+
+        let cache = get_rev_reg_cache(&rev_reg_id);
+        let cache_rev_state = cache.rev_state.unwrap();
+        let cache_rev_state_value: Value = serde_json::from_str(&cache_rev_state.value).unwrap();
+        assert_eq!(cache_rev_state.timestamp, state.keys().next().unwrap().parse::<u64>().unwrap());
+        assert_eq!(cache_rev_state_value.to_string(), state.values().next().unwrap().to_string());
+    }
+
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn test_build_rev_states_json_real_cached() {
+        init!("ledger");
+
+        let current_timestamp = time::get_time().sec as u64;
+        let cached_rev_state = "{\"some\": \"json\"}".to_string();
+
+        let attrs = r#"["address1","address2","city","state","zip"]"#;
+        let (schema_id, _, cred_def_id, _, _, _, _, cred_id, rev_reg_id, cred_rev_id) =
+            ::utils::libindy::anoncreds::tests::create_and_store_credential(attrs, true);
+        let cred2 = CredInfo {
+            requested_attr: "height".to_string(),
+            referent: cred_id,
+            schema_id,
+            cred_def_id,
+            rev_reg_id: rev_reg_id.clone(),
+            cred_rev_id: cred_rev_id,
+            tails_file: Some(TEST_TAILS_FILE.to_string()),
+            revocation_interval: None,
+            timestamp: None,
+        };
+        let rev_reg_id = rev_reg_id.unwrap();
+
+        let cached_data = RevRegCache {
+            rev_state: Some(RevState {
+                timestamp: current_timestamp,
+                value: cached_rev_state.clone()
+            })
+        };
+        set_rev_reg_cache(&rev_reg_id, &cached_data);
+
+        // assert data is successfully cached.
+        let cache = get_rev_reg_cache(&rev_reg_id);
+        assert_eq!(cache, cached_data);
+
+        let (_, rev_reg_def_json) = get_rev_reg_def_json(&rev_reg_id).unwrap();
+        let states = build_rev_states_json(vec![cred2].as_mut()).unwrap();
+        assert!(states.contains(&rev_reg_id));
+
+        // assert cached data is unchanged.
+        let cache = get_rev_reg_cache(&rev_reg_id);
+        assert_eq!(cache, cached_data);
+
+        // check if this value is in cache now.
+        let states: Value = serde_json::from_str(&states).unwrap();
+        let state: HashMap<String, Value> = serde_json::from_value(states[&rev_reg_id].clone()).unwrap();
+
+        let cache_rev_state = cache.rev_state.unwrap();
+        let cache_rev_state_value: Value = serde_json::from_str(&cache_rev_state.value).unwrap();
+        assert_eq!(cache_rev_state.timestamp, state.keys().next().unwrap().parse::<u64>().unwrap());
+        assert_eq!(cache_rev_state_value.to_string(), state.values().next().unwrap().to_string());
+    }
+
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn test_build_rev_states_json_real_with_older_cache() {
+        init!("ledger");
+
+        let current_timestamp = time::get_time().sec as u64;
+        let cached_timestamp = current_timestamp - 100;
+        let cached_rev_state = "{\"witness\":{\"omega\":\"false 4EB689DBDAE225 FC38FAD7549614 4AC8A549FD9181 A0CB12A018A1E4 389AB6077 E3BEEAE339E4AB 6093D4ED283F8C E80FD10792CA95 B7BB34E9C94A71 38B0A50E8 A4CC4E92C647C7 D7CDE25CA4E7FC 989FDFE67CB7E1 3258A466E510F 115D0252B 6DA64072164D74 A362947A407C05 F6FE09C9594EA5 D4B79F1118365B 10E3A3B5C F202E3FBF14C7D D3B853BD0D2C7F F8280DF8077824 8EC52A2C1AAF34 557B397B 2F076040B424B6 A78DCB575E12C4 4AD53B979BEBEA CFA3116B3EF4F7 4AC1A050\"},\"rev_reg\":{\"accum\":\"false 807F2E4FE37503 25061ECE2AEDC7 B817E9C472CAD0 BE7DB235FC93DA 18A48A2E2 384CCC29B752BF F73E321FBED41F 4BA715451480B8 D8B4890E27D28B 19812E064 F4336412ADD6A 6475C908CA99DF 16F967040879 ED78FBC8CF5A8D 13A9692EF 4825C1FE8F93D2 BD6F32C4F1EF05 412C7C81BD8504 C03EB626CCB4D6 11A526C2D B39B1F382F1E4A 95AD912FA7330F 59352944DC0B20 814EC778FE3F89 320DB263 F80F85DEFAF259 18FD0F7FF2C34B 7EF1F727649E2 282DD0C87056AC 45FD07C9\"},\"timestamp\":100}".to_string();
+
+        let attrs = r#"["address1","address2","city","state","zip"]"#;
+        let (schema_id, _, cred_def_id, _, _, _, _, cred_id, rev_reg_id, cred_rev_id) =
+            ::utils::libindy::anoncreds::tests::create_and_store_credential(attrs, true);
+        let cred2 = CredInfo {
+            requested_attr: "height".to_string(),
+            referent: cred_id,
+            schema_id,
+            cred_def_id,
+            rev_reg_id: rev_reg_id.clone(),
+            cred_rev_id: cred_rev_id,
+            tails_file: Some(TEST_TAILS_FILE.to_string()),
+            revocation_interval: Some(NonRevokedInterval{from: Some(cached_timestamp + 1), to: None}),
+            timestamp: None,
+        };
+        let rev_reg_id = rev_reg_id.unwrap();
+
+        let cached_data = RevRegCache {
+            rev_state: Some(RevState {
+                timestamp: cached_timestamp,
+                value: cached_rev_state.clone()
+            })
+        };
+        set_rev_reg_cache(&rev_reg_id, &cached_data);
+
+        // assert data is successfully cached.
+        let cache = get_rev_reg_cache(&rev_reg_id);
+        assert_eq!(cache, cached_data);
+
+        let (_, rev_reg_def_json) = get_rev_reg_def_json(&rev_reg_id).unwrap();
+        let states = build_rev_states_json(vec![cred2].as_mut()).unwrap();
+        assert!(states.contains(&rev_reg_id));
+
+        // assert cached data is updated.
+        let cache = get_rev_reg_cache(&rev_reg_id);
+        assert_ne!(cache, cached_data);
+
+        // check if this value is in cache now.
+        let states: Value = serde_json::from_str(&states).unwrap();
+        let state: HashMap<String, Value> = serde_json::from_value(states[&rev_reg_id].clone()).unwrap();
+
+        let cache_rev_state = cache.rev_state.unwrap();
+        let cache_rev_state_value: Value = serde_json::from_str(&cache_rev_state.value).unwrap();
+        assert_eq!(cache_rev_state.timestamp, state.keys().next().unwrap().parse::<u64>().unwrap());
+        assert_eq!(cache_rev_state_value.to_string(), state.values().next().unwrap().to_string());
+    }
+
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn test_build_rev_states_json_real_with_newer_cache() {
+        init!("ledger");
+
+        let current_timestamp = time::get_time().sec as u64;
+        let cached_timestamp = current_timestamp + 100;
+        let cached_rev_state = "{\"witness\":{\"omega\":\"false 4EB689DBDAE225 FC38FAD7549614 4AC8A549FD9181 A0CB12A018A1E4 389AB6077 E3BEEAE339E4AB 6093D4ED283F8C E80FD10792CA95 B7BB34E9C94A71 38B0A50E8 A4CC4E92C647C7 D7CDE25CA4E7FC 989FDFE67CB7E1 3258A466E510F 115D0252B 6DA64072164D74 A362947A407C05 F6FE09C9594EA5 D4B79F1118365B 10E3A3B5C F202E3FBF14C7D D3B853BD0D2C7F F8280DF8077824 8EC52A2C1AAF34 557B397B 2F076040B424B6 A78DCB575E12C4 4AD53B979BEBEA CFA3116B3EF4F7 4AC1A050\"},\"rev_reg\":{\"accum\":\"false 807F2E4FE37503 25061ECE2AEDC7 B817E9C472CAD0 BE7DB235FC93DA 18A48A2E2 384CCC29B752BF F73E321FBED41F 4BA715451480B8 D8B4890E27D28B 19812E064 F4336412ADD6A 6475C908CA99DF 16F967040879 ED78FBC8CF5A8D 13A9692EF 4825C1FE8F93D2 BD6F32C4F1EF05 412C7C81BD8504 C03EB626CCB4D6 11A526C2D B39B1F382F1E4A 95AD912FA7330F 59352944DC0B20 814EC778FE3F89 320DB263 F80F85DEFAF259 18FD0F7FF2C34B 7EF1F727649E2 282DD0C87056AC 45FD07C9\"},\"timestamp\":100}".to_string();
+
+        let attrs = r#"["address1","address2","city","state","zip"]"#;
+        let (schema_id, _, cred_def_id, _, _, _, _, cred_id, rev_reg_id, cred_rev_id) =
+            ::utils::libindy::anoncreds::tests::create_and_store_credential(attrs, true);
+        let cred2 = CredInfo {
+            requested_attr: "height".to_string(),
+            referent: cred_id,
+            schema_id,
+            cred_def_id,
+            rev_reg_id: rev_reg_id.clone(),
+            cred_rev_id: cred_rev_id,
+            tails_file: Some(TEST_TAILS_FILE.to_string()),
+            revocation_interval: Some(NonRevokedInterval{from: None, to: Some(cached_timestamp - 1)}),
+            timestamp: None,
+        };
+        let rev_reg_id = rev_reg_id.unwrap();
+
+        let cached_data = RevRegCache {
+            rev_state: Some(RevState {
+                timestamp: cached_timestamp,
+                value: cached_rev_state.clone()
+            })
+        };
+        set_rev_reg_cache(&rev_reg_id, &cached_data);
+
+        // assert data is successfully cached.
+        let cache = get_rev_reg_cache(&rev_reg_id);
+        assert_eq!(cache, cached_data);
+
+        let (_, rev_reg_def_json) = get_rev_reg_def_json(&rev_reg_id).unwrap();
+        let states = build_rev_states_json(vec![cred2].as_mut()).unwrap();
+        assert!(states.contains(&rev_reg_id));
+
+        // assert cached data is unchanged.
+        let cache = get_rev_reg_cache(&rev_reg_id);
+        assert_eq!(cache, cached_data);
+
+        // check if this value is not in cache.
+        let states: Value = serde_json::from_str(&states).unwrap();
+        let state: HashMap<String, Value> = serde_json::from_value(states[&rev_reg_id].clone()).unwrap();
+
+        let cache_rev_state = cache.rev_state.unwrap();
+        let cache_rev_state_value: Value = serde_json::from_str(&cache_rev_state.value).unwrap();
+        assert_ne!(cache_rev_state.timestamp, state.keys().next().unwrap().parse::<u64>().unwrap());
+        assert_ne!(cache_rev_state_value.to_string(), state.values().next().unwrap().to_string());
+    }
+
+    #[test]
+    fn test_get_credential_intervals_from_proof_req() {
+
+        let proof_req = json!({
+            "nonce": "123432421212",
+            "name": "proof_req_1",
+            "version": "0.1",
+            "requested_attributes": {
+                "address1_1": {
+                    "name": "address1",
+                    "non_revoked":  {"from": 123, "to": 456}
+                },
+                "zip_2": { "name": "zip" }
+            },
+            "requested_predicates": {},
+            "non_revoked": {"from": 098, "to": 123}
+        });
+        let proof_req: ProofRequestData = serde_json::from_value(proof_req).unwrap();
+
+        // Attribute not found in proof req
+        assert_eq!(_get_revocation_interval("not here", &proof_req), Err(ProofError::InvalidCredData()));
+
+        // attribute interval overrides proof request interval
+        let interval = Some(NonRevokedInterval {from: Some(123), to: Some(456)});
+        assert_eq!(_get_revocation_interval("address1_1", &proof_req), Ok(interval));
+
+        // when attribute interval is None, defaults to proof req interval
+        let interval = Some(NonRevokedInterval {from: Some(098), to: Some(123)});
+        assert_eq!(_get_revocation_interval("zip_2", &proof_req), Ok(interval));
+
+        // No interval provided for attribute or proof req
+        assert_eq!(_get_revocation_interval("address1_1", &proof_req_no_interval()), Ok(None));
     }
 }
