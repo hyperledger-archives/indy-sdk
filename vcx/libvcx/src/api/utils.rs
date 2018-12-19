@@ -10,6 +10,7 @@ use utils::cstring::CStringUtils;
 use utils::error;
 use utils::error::error_string;
 use utils::threadpool::spawn;
+use utils::timeout::TimeoutUtils;
 use std::thread;
 
 #[derive(Deserialize, Debug, Clone)]
@@ -409,7 +410,7 @@ mod tests {
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         let result = vcx_agent_provision_async(cb.command_handle, c_config, Some(cb.get_callback()));
         assert_eq!(0, result);
-        let result = cb.receive(Some(Duration::from_secs(2)));
+        let result = cb.receive(Some(TimeoutUtils::medium_timeout()));
         assert_eq!(result, Err(error::INVALID_WALLET_CREATION.code_num));
     }
 
