@@ -72,7 +72,7 @@ export class IssuerCredential extends VCXBaseWithState<IIssuerCredentialData> {
     try {
       const attrsVCX: IIssuerCredentialVCXAttributes = attr
       const credential = new IssuerCredential(sourceId, { credDefHandle, credentialName, attr: attrsVCX, price })
-      const attrsStringified = JSON.stringify(attrsVCX)
+      const attrsStringified = attrsVCX ? JSON.stringify(attrsVCX) : attrsVCX
       const commandHandle = 0
       const issuerDid = null
       await credential._create((cb) => rustAPI().vcx_issuer_create_credential(
