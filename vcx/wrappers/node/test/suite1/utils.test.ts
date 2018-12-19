@@ -105,13 +105,11 @@ describe('utils:', () => {
     it('should have a one-to-one mapping for each code', async () => {
       let max = 0
       for (const ec in VCXCode) {
-        if (typeof VCXCode[ec] == 'number') {
-          if (parseInt(VCXCode[ec]) > max ) {
-            max = parseInt(VCXCode[ec])
-          }
+        if (typeof VCXCode[ec] === 'number' && Number(VCXCode[ec]) > max) {
+          max = Number(VCXCode[ec])
         }
       }
-      assert(errorMessage(max+1) === errorMessage(1001))
+      assert.equal(errorMessage(max + 1), errorMessage(1001))
     })
   })
 

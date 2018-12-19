@@ -7,9 +7,9 @@
 #import "IndyCallbacks.h"
 #import "NSError+IndyError.h"
 #import "IndyTypes.h"
+#import "IndyLogger.h"
 
 static NSString *commandCallbackKey = @"commandCallback";
-
 
 @interface IndyCallbacks ()
 

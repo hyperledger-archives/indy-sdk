@@ -174,7 +174,7 @@ async function run() {
     let transcriptCredOfferJson = await indy.issuerCreateCredentialOffer(faberWallet, faberTranscriptCredDefId);
 
     console.log("\"Faber\" -> Get key for Alice did");
-    let aliceFaberVerkey = await indy.keyForDid(poolHandle, acmeWallet, faberAliceConnectionResponse['did']);
+    let aliceFaberVerkey = await indy.keyForDid(poolHandle, faberWallet, faberAliceConnectionResponse['did']);
 
     console.log("\"Faber\" -> Authcrypt \"Transcript\" Credential Offer for Alice");
     let authcryptedTranscriptCredOffer = await indy.cryptoAuthCrypt(faberWallet, faberAliceKey, aliceFaberVerkey, Buffer.from(JSON.stringify(transcriptCredOfferJson),'utf8'));

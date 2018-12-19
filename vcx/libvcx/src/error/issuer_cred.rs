@@ -1,5 +1,5 @@
 use std::fmt;
-use utils::error::{NO_PAYMENT_INFORMATION, OBJECT_CACHE_ERROR, INVALID_CREDENTIAL_JSON, NOT_READY, INVALID_ISSUER_CREDENTIAL_HANDLE, INVALID_CREDENTIAL_REQUEST, INVALID_JSON};
+use utils::error::{INVALID_REVOCATION_DETAILS, NO_PAYMENT_INFORMATION, OBJECT_CACHE_ERROR, INVALID_CREDENTIAL_JSON, NOT_READY, INVALID_ISSUER_CREDENTIAL_HANDLE, INVALID_CREDENTIAL_REQUEST, INVALID_JSON};
 use error::ToErrorCode;
 use serde_json;
 
@@ -13,6 +13,7 @@ pub enum IssuerCredError {
     InvalidCred(),
     NoPaymentInformation(),
     InvalidJson(),
+    InvalidRevocationInfo(),
 }
 
 impl fmt::Display for IssuerCredError {
@@ -26,6 +27,7 @@ impl fmt::Display for IssuerCredError {
             IssuerCredError::InvalidJson() => write!(f, "{}", INVALID_JSON.message),
             IssuerCredError::NoPaymentInformation() => write!(f, "{}", NO_PAYMENT_INFORMATION.message),
             IssuerCredError::CreateError() => write!(f, "Could not create issuer credential"),
+            IssuerCredError::InvalidRevocationInfo() => write!(f, "{}",INVALID_REVOCATION_DETAILS.message),
         }
     }
 }
@@ -39,6 +41,7 @@ impl ToErrorCode for IssuerCredError {
             IssuerCredError::InvalidCred() => INVALID_CREDENTIAL_JSON.code_num,
             IssuerCredError::CreateError() => OBJECT_CACHE_ERROR.code_num,
             IssuerCredError::NoPaymentInformation() => NO_PAYMENT_INFORMATION.code_num,
+            IssuerCredError::InvalidRevocationInfo() => INVALID_REVOCATION_DETAILS.code_num,
             IssuerCredError::CommonError(x) => x,
         }
     }
