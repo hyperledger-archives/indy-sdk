@@ -10,7 +10,6 @@ use utils::cstring::CStringUtils;
 use utils::error;
 use utils::error::error_string;
 use utils::threadpool::spawn;
-use utils::timeout::TimeoutUtils;
 use std::thread;
 
 #[derive(Deserialize, Debug, Clone)]
@@ -351,6 +350,7 @@ mod tests {
     use std::ffi::CString;
     use std::time::Duration;
     use api::return_types_u32;
+    use utils::timeout::TimeoutUtils;
 
     #[test]
     fn test_provision_agent() {
