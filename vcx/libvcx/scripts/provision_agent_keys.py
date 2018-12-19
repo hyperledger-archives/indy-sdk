@@ -14,6 +14,7 @@ def parse_args():
     parser.add_argument("AGENCY_URL")
     parser.add_argument("WALLET_KEY")
     parser.add_argument("--wallet-name", help="optional name for libindy wallet")
+    parser.add_argument("--wallet-type", help="optional type of libindy wallet")
     parser.add_argument("--agent-seed", help="optional seed used to create enterprise->agent DID/VK")
     parser.add_argument("--enterprise-seed", help="optional seed used to create enterprise DID/VK")
     parser.add_argument("--verbose", action="store_true")
@@ -56,6 +57,7 @@ def register_agent(args):
         'agency_verkey':agency_info['verKey'],
         'wallet_key':args.WALLET_KEY,
         'wallet_name':args.wallet_name,
+        'wallet_type':args.wallet_type,
         'agent_seed':args.agent_seed,
         'enterprise_seed':args.enterprise_seed})
 
