@@ -6,18 +6,18 @@ var initTestPool = require('./helpers/initTestPool')
 test('payments', async function (t) {
   var pool = await initTestPool()
 
-  var walletConfig = {'id': 'wallet-' + cuid()}
-  var walletCredentials = {'key': 'key'}
+  var walletConfig = { 'id': 'wallet-' + cuid() }
+  var walletCredentials = { 'key': 'key' }
   await indy.createWallet(walletConfig, walletCredentials)
 
   var wh = await indy.openWallet(walletConfig, walletCredentials)
 
-  var [trusteeDid] = await indy.createAndStoreMyDid(wh, {seed: '000000000000000000000000Trustee1'})
+  var [trusteeDid] = await indy.createAndStoreMyDid(wh, { seed: '000000000000000000000000Trustee1' })
 
   var paymentMethod = 'null'
   var paymentAddress = 'pay:null:test'
   var inputs = ['pay:null:1']
-  var outputs = [{'recipient': 'pay:null:1', 'amount': 1}]
+  var outputs = [{ 'recipient': 'pay:null:1', 'amount': 1 }]
 
   var err = await t.throws(indy.createPaymentAddress(wh, paymentMethod, {}))
   t.is(err.indyName, 'PaymentUnknownMethodError')
@@ -45,7 +45,7 @@ test('payments', async function (t) {
   err = await t.throws(indy.buildMintReq(wh, trusteeDid, outputs, null))
   t.is(err.indyName, 'PaymentUnknownMethodError')
 
-  var fees = {'txnType1': 1, 'txnType2': 2}
+  var fees = { 'txnType1': 1, 'txnType2': 2 }
 
   err = await t.throws(indy.buildSetTxnFeesReq(wh, trusteeDid, paymentMethod, fees))
   t.is(err.indyName, 'PaymentUnknownMethodError')
