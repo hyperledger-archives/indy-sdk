@@ -459,6 +459,8 @@ mod tests {
         use std::time::Duration;
 
         init!("agency");
+        use utils::logger::LibvcxDefaultLogger;
+        LibvcxDefaultLogger::init_testing_logger();
         let institution_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
         let (faber, alice) = ::connection::tests::create_connected_connections();
 
