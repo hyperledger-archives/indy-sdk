@@ -35,7 +35,8 @@ use utils::threadpool::spawn;
 /// #Returns
 /// Error code as a u32
 ///
-/// # Example credential_data -> "{"state":["UT"]}"
+/// # Example crendetial_data -> "{"state":"UT"}"
+/// # Example credential_data -> "{"state":["UT"]}"  please note: this format is deprecated
 #[no_mangle]
 #[allow(unused_variables, unused_mut)]
 pub extern fn vcx_issuer_create_credential(command_handle: u32,

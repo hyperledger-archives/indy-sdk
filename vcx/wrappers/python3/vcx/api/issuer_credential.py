@@ -41,7 +41,6 @@ class IssuerCredential(VcxStateful):
             price = 1
             issuer_credential = await IssuerCredential.create(source_id, attrs, cred_def_handle, name, price)
         """
-        attrs = {k: [v] for k, v in attrs.items()}
         constructor_params = (source_id, attrs, cred_def_handle, name, price)
 
         c_source_id = c_char_p(source_id.encode('utf-8'))
