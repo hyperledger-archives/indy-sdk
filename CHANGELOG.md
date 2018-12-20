@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.7.0 - 2018-12-21
+* Added VCX - a library built over libindy for **V**erifiable **C**redentials e**X**change. API is EXPERIMENTAL.
+    * At the current moment mobile builds are not available - they should be added in future releases.
+* Added Logging API
+    * Added function `indy_get_logger` for plugins to give their logging to libindy
+    * Added function `indy_set_logger` for client apps and wrappers to receive logs from libindy
+    * Integrated libindy logging into Slf4j for Java wrapper and into python logging facade
+* Updated API of Rust wrapper. Now there is no three methods for each API call, there is only one that returns Future.
+* Introduced multithreading for Wallet API and CRED_DEF generation 
+* Bugfixes
+
 ## 1.6.8 - 2018-11-22
 * Fix State Proof verification for some types of GET requests to the ledger
 * Additional clean-up for secrets in logs

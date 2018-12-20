@@ -1,6 +1,6 @@
 #!/bin/sh
 
-export LIBINDY_IOS_BUILD_URL="https://repo.sovrin.org/ios/libindy/stable/libindy-core/1.6.8/libindy.tar.gz"
+export LIBINDY_IOS_BUILD_URL="https://repo.sovrin.org/ios/libindy/stable/libindy-core/1.7.0/libindy.tar.gz"
 
 export LIBINDY_FILE=$(basename ${LIBINDY_IOS_BUILD_URL})
 export LIBINDY_VERSION=$(basename $(dirname ${LIBINDY_IOS_BUILD_URL}))
