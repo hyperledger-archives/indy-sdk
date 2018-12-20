@@ -54,11 +54,6 @@ async function run() {
         "version": "1.0",
         "attrNames": ["age", "sex", "height", "name"]
     }
-    const schemaKey = {
-        "name": schema["name"],
-        "version": schema["version"],
-        "did": schema["dest"],
-    }
     const [credDefId, credDef] = await indy.issuerCreateAndStoreCredentialDef(issuerWalletHandle, issuerDid, schema, "tag1", "CL", '{"support_revocation": false}')
 
     // 4.
