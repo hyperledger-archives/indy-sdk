@@ -94,8 +94,9 @@ export interface IFFIEntryPoint {
   vcx_issuer_credential_serialize: (commandId: number, handle: number, cb: any) => number,
   vcx_issuer_credential_update_state: (commandId: number, handle: number, cb: any) => number,
   vcx_issuer_credential_get_state: (commandId: number, handle: number, cb: any) => number,
-  vcx_issuer_create_credential: (commandId: number, sourceId: string, credDefId: string, issuerDid: string | null,
+  vcx_issuer_create_credential: (commandId: number, sourceId: string, credDefHandle: number, issuerDid: string | null,
                                  attr: string, credentialName: string, price: string, cb: any) => number,
+  vcx_issuer_revoke_credential: (commandId: number, handle: number, cb: any) => number,
   vcx_issuer_send_credential: (commandId: number, credentialHandle: number, connectionHandle: number, cb: any) =>
    number,
   vcx_issuer_send_credential_offer: (commandId: number, credentialHandle: number, connectionHandle: number, cb: any) =>
@@ -104,7 +105,7 @@ export interface IFFIEntryPoint {
 
   // proof
   vcx_proof_create: (commandId: number, sourceId: string, attrs: string, predicates: string,
-                     name: string, cb: any) => number,
+                     revocationInterval: string, name: string, cb: any) => number,
   vcx_proof_deserialize: (commandId: number, data: string, cb: any) => number,
   vcx_get_proof: (commandId: number, proofHandle: number, connectionHandle: number, cb: any) => number,
   vcx_proof_release: (handle: number) => number,
@@ -234,7 +235,8 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
   vcx_issuer_credential_update_state: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CREDENTIAL_HANDLE, FFI_CALLBACK_PTR]],
   vcx_issuer_credential_get_state: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CREDENTIAL_HANDLE, FFI_CALLBACK_PTR]],
   vcx_issuer_create_credential: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_SOURCE_ID,
-    FFI_STRING_DATA, FFI_STRING_DATA, FFI_STRING_DATA, FFI_STRING_DATA, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
+    FFI_CREDENTIALDEF_HANDLE, FFI_STRING_DATA, FFI_STRING_DATA, FFI_STRING_DATA, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
+  vcx_issuer_revoke_credential: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CREDENTIAL_HANDLE, FFI_CALLBACK_PTR]],
   vcx_issuer_send_credential: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CREDENTIAL_HANDLE, FFI_CONNECTION_HANDLE,
     FFI_CALLBACK_PTR]],
   vcx_issuer_send_credential_offer: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CREDENTIAL_HANDLE, FFI_CONNECTION_HANDLE,
@@ -244,7 +246,7 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
 
   // proof
   vcx_proof_create: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_SOURCE_ID, FFI_STRING_DATA, FFI_STRING_DATA,
-    FFI_STRING_DATA, FFI_CALLBACK_PTR]],
+    FFI_STRING_DATA, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
   vcx_proof_deserialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
   vcx_get_proof: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_PROOF_HANDLE, FFI_CONNECTION_HANDLE,
     FFI_CALLBACK_PTR]],// tslint:disable-line

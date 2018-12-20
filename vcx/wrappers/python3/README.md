@@ -23,3 +23,7 @@ python3 generateDocs.py
 
 ### Example use
 For the main workflow example check [Python demo](https://github.com/hyperledger/indy-sdk/tree/master/vcx/wrappers/python3/demo).
+
+#### Logging
+The Python wrapper uses default Python logging module. So, to enable logs you need just to configure its usual way. 
+Note: there is an additional log level=0 that is equal to `trace` level.

@@ -9,8 +9,8 @@ var indyHomeDir = require('home-dir')('.indy_client')
 test('wallet', async function (t) {
   var pool = await initTestPool()
 
-  var walletConfig = {'id': 'wallet-' + cuid()}
-  var walletCredentials = {'key': 'key'}
+  var walletConfig = { 'id': 'wallet-' + cuid() }
+  var walletCredentials = { 'key': 'key' }
   await indy.createWallet(walletConfig, walletCredentials)
 
   var err = await t.throws(indy.createWallet(walletConfig, walletCredentials))
@@ -54,7 +54,7 @@ test('wallet', async function (t) {
   await indy.deleteWallet(walletConfig, walletCredentials)
 
   var key = await indy.generateWalletKey({})
-  walletCredentials = {'key': key, 'key_derivation_method': 'RAW'}
+  walletCredentials = { 'key': key, 'key_derivation_method': 'RAW' }
   await indy.createWallet(walletConfig, walletCredentials)
   await indy.deleteWallet(walletConfig, walletCredentials)
 
