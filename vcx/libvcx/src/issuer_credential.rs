@@ -688,6 +688,7 @@ pub fn get_credential_attributes(handle:u32) -> Result<String, u32> {
         Ok(i.get_credential_attributes().clone())
     })
 }
+
 pub fn get_source_id(handle: u32) -> Result<String, u32> {
     ISSUER_CREDENTIAL_MAP.get(handle,|i|{
         Ok(i.get_source_id().clone())
@@ -1180,7 +1181,6 @@ pub mod tests {
         assert!(credential.rev_cred_payment_txn.is_some());
     }
 
-
     #[test]
     fn test_encode_with_several_attributes_success() {
 
@@ -1391,8 +1391,7 @@ pub mod tests {
     }
 
     #[test]
-    fn test_encode_bad_format_returns_error()
-    {
+    fn test_encode_bad_format_returns_error() {
         static BAD_TEST_CREDENTIAL_DATA: &str =
             r#"{"format doesnt make sense"}"#;
 
@@ -1400,8 +1399,7 @@ pub mod tests {
     }
 
     #[test]
-    fn test_encode_old_format_empty_array_error()
-    {
+    fn test_encode_old_format_empty_array_error() {
         static BAD_TEST_CREDENTIAL_DATA: &str =
             r#"{"address2":[]}"#;
 
