@@ -274,6 +274,10 @@ pub mod tests {
     use utils::constants::{SCHEMA_ID, CRED_DEF_ID};
     use super::*;
     use settings;
+    use std::{
+        thread::sleep,
+        time::Duration
+    };
 
     static CREDENTIAL_DEF_NAME: &str = "Test Credential Definition";
     static ISSUER_DID: &str = "4fUDR9R7fjwELRvH9JT6HH";
@@ -287,6 +291,7 @@ pub mod tests {
             revocation_details["tails_file"] = json!("/tmp/tails_file.txt");
             revocation_details["max_creds"] = json!(10);
         }
+        sleep(Duration::from_secs(2));
         let cred_def_handle = create_new_credentialdef("1".to_string(),
                                                        CREDENTIAL_DEF_NAME.to_string(),
                                                        did,
