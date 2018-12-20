@@ -237,7 +237,7 @@ Example:
         "schema_id": string,
         "cred_def_id": string,
         "rev_reg_def_id", Optional<string>,
-        "values": <see credValues above>,
+        "values": <see cred_values_json above>,
         // Fields below can depend on Cred Def type
         "signature": <signature>,
         "signature_correctness_proof": <signature_correctness_proof>
@@ -840,8 +840,8 @@ Creates keys pair and stores in the wallet.
 * `key`: Json - Key information as json. Example:
 ```
 {
-	 "seed": string, (optional) Seed that allows deterministic key creation (if not set random one will be created). 
-	                            Can be UTF-8, base64 or hex string.
+    "seed": string, (optional) Seed that allows deterministic key creation (if not set random one will be created).
+                               Can be UTF-8, base64 or hex string.
     "crypto_type": string, // Optional (if not set then ed25519 curve is used); Currently only 'ed25519' value is supported for this field.
 }
 ````
@@ -985,20 +985,7 @@ Saves the Identity DID with keys in a secured Wallet, so that it can be used to 
 and encrypt transactions.
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
-* `did`: Json - Identity information as json. Example:
-```
-{
-    "did": string, (optional;
-            if not provided and cid param is false then the first 16 bit of the verkey will be used as a new DID;
-            if not provided and cid is true then the full verkey will be used as a new DID;
-            if provided, then keys will be replaced - key rotation use case)
-	"seed": string, (optional) Seed that allows deterministic key creation (if not set random one will be created). 
-	                           Can be UTF-8, base64 or hex string.
-    "crypto_type": string, (optional; if not set then ed25519 curve is used;
-              currently only 'ed25519' value is supported for this field)
-    "cid": bool, (optional; if not set then false is used;)
-}
-````
+* `did`: Json
 * __->__ [ `did`: String, `verkey`: String ] - did: DID generated and stored in the wallet
 verkey: The DIDs verification key
 
@@ -1010,16 +997,8 @@ Generated temporary keys \(signing and encryption keys\) for an existing
 DID \(owned by the caller of the library\).
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
-* `did`: String
-* `identity`: Json - Identity information as json. Example:
-```
-{
-	"seed": string, (optional) Seed that allows deterministic key creation (if not set random one will be created). 
-	                           Can be UTF-8, base64 or hex string.
-    "crypto_type": string, (optional; if not set then ed25519 curve is used;
-              currently only 'ed25519' value is supported for this field)
-}
-````
+* `did`: String - target did to rotate keys.
+* `identity`: Json
 * __->__ `verkey`: String - verkey: The DIDs verification key
 
 Errors: `Common*`, `Wallet*`, `Crypto*`
@@ -1211,8 +1190,8 @@ Errors: `Common*`, `Ledger*`
 Send action to particular nodes of validator pool.
 
 The list of requests can be send:
-* POOL_RESTART
-* GET_VALIDATOR_INFO
+POOL\_RESTART
+GET\_VALIDATOR\_INFO
 
 The request is sent to the nodes as is. It's assumed that it's already prepared.
 
@@ -1259,7 +1238,7 @@ Errors: `Common*`, `Wallet*`, `Ledger*`, `Crypto*`
 Builds a request to get a DDO.
 
 * `submitterDid`: String - \(Optional\) DID of the read request sender \(if not provided then default Libindy DID will be used\).
-* `targetDid`: String - Id of Identity stored in secured Wallet.
+* `targetDid`: String - Target DID as base58-encoded string for 16 or 32 bit DID value.
 * __->__ `requestResult`: Json
 
 Errors: `Common*`
@@ -1450,7 +1429,7 @@ Errors: `Common*`
 
 Builds a GET\_VALIDATOR\_INFO request.
 
-* `submitterDid`: String - Id of Identity stored in secured Wallet.
+* `submitterDid`: String - DID of the read request sender.
 * __->__ `request`: Json
 
 Errors: `Common*`
@@ -1461,10 +1440,10 @@ Builds a GET\_TXN request. Request to get any transaction by its seq\_no.
 
 * `submitterDid`: String - \(Optional\) DID of the read request sender \(if not provided then default Libindy DID will be used\).
 * `ledgerType`: String - \(Optional\) type of the ledger the requested transaction belongs to:
-    * DOMAIN - used default,
-    * POOL,
-    * CONFIG
-    * any number
+DOMAIN - used default,
+POOL,
+CONFIG
+any number
 * `seqNo`: Number - requested transaction sequence number as it's stored on Ledger.
 * __->__ `request`: Json
 
@@ -1494,7 +1473,7 @@ Builds a POOL\_RESTART request.
 
 Errors: `Common*`
 
-#### buildPoolUpgradeRequest \( submitterDid, name, version, action, sha256, timeout, schedule, justification, reinstall, force, package \) -&gt; request
+#### buildPoolUpgradeRequest \( submitterDid, name, version, action, sha256, timeout, schedule, justification, reinstall, force, package\_ \) -&gt; request
 
 Builds a POOL\_UPGRADE request. Request to upgrade the Pool \(sent by Trustee\).
 It upgrades the specified Nodes \(either all nodes in the Pool, or some specific ones\).
@@ -1510,8 +1489,8 @@ Must be greater than existing one \(or equal if reinstall flag is True\).
 * `justification`: String - \(Optional\) justification string for this particular Upgrade.
 * `reinstall`: Boolean - Whether it's allowed to re-install the same version. False by default.
 * `force`: Boolean - Whether we should apply transaction \(schedule Upgrade\) without waiting
-* `package`: String - \(Optional\) Package to be upgraded.
 for consensus of this transaction.
+* `package_`: String
 * __->__ `request`: Json
 
 Errors: `Common*`
@@ -2014,7 +1993,7 @@ with at least one output that corresponds to payment address that user owns.
     amount: <int>, // amount
   }]
 ````
-* `extra`: String - Optional information for payment operation
+* `extra`: String - \/\/ optional information for payment operation
 * __->__ [ `reqWithFees`: Json, `paymentMethod`: String ] - req\_with\_fees\_json - modified Indy request with added fees info
 payment\_method - used payment method
 
@@ -2087,7 +2066,7 @@ Note that each source should reference payment address
     amount: <int>, // amount
   }]
 ````
-* `extra`: String - Optional information for payment operation
+* `extra`: String - \/\/ optional information for payment operation
 * __->__ [ `paymentReq`: Json, `paymentMethod`: String ] - payment\_req\_json - Indy request for doing payment
 payment\_method - used payment method
 
@@ -2123,7 +2102,7 @@ according to this payment method.
     amount: <int>, // amount
   }]
 ````
-* `extra`: String - Optional information for mint operation
+* `extra`: String - \/\/ optional information for mint operation
 * __->__ [ `mintReq`: Json, `paymentMethod`: String ] - mint\_req\_json - Indy request for doing minting
 payment\_method - used payment method
 
@@ -2186,18 +2165,15 @@ Parses Indy response with information to verify receipt
 
 * `paymentMethod`: String - payment method to use
 * `resp`: Json - response of the ledger for verify txn
-* __->__ `txn`: Json
-```
-{
-    sources: [<str>, ]
-    receipts: [ {
-        recipient: <str>, // payment address of recipient
-        receipt: <str>, // receipt that can be used for payment referencing and verification
-        amount: <int>, // amount
-    } ],
-    extra: <str>, //optional data
+* __->__ `txn`: Json - txn\_json: {
+sources: \[&lt;str&gt;, \]
+receipts: \[ {
+recipient: &lt;str&gt;, \/\/ payment address of recipient
+receipt: &lt;str&gt;, \/\/ receipt that can be used for payment referencing and verification
+amount: &lt;int&gt;, \/\/ amount
+} \],
+extra: &lt;str&gt;, \/\/optional data
 }
-```
 
 
 ### pool
@@ -2393,16 +2369,7 @@ Errors: `Common*`, `Wallet*`
 Exports opened wallet
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
-* `exportConfig`: JSON - settings for export operation
-```
-  {
-    "path": <string>, Path of the file that contains exported wallet content
-    "key": <string>, Passphrase used to derive export key
-    "key_derivation_method": optional<string> algorithm to use for export key derivation:
-                             ARGON2I_MOD (used by default)
-                             ARGON2I_INT - less secured but faster  
-  }
-```
+* `exportConfig`: Json
 * __->__ void
 
 Errors: `Common*`, `Wallet*`
@@ -2447,12 +2414,6 @@ This can be seen as an createWallet call with additional content import
 }
 ````
 * `importConfig`: Json
-```
-  {
-    "path": <string>, Path of the file that contains exported wallet content
-    "key": <string>, Passphrase used to derive export key
-  }
-```
 * __->__ void
 
 Errors: `Common*`, `Wallet*`
