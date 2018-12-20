@@ -13,6 +13,7 @@ use serde_json;
 
 use self::owning_ref::OwningHandle;
 use std::rc::Rc;
+use std::time::Duration;
 
 use errors::wallet::WalletStorageError;
 use errors::common::CommonError;
@@ -1083,7 +1084,7 @@ impl WalletStorageType for PostgresStorageType {
             Ok(manager) => manager,
             Err(_) => return Err(WalletStorageError::NotFound)
         };
-        let pool = match r2d2::Pool::builder().max_size(2).build(manager) {
+        let pool = match r2d2::Pool::builder().min_idle(Some(0)).max_size(2).idle_timeout(Some(Duration::new(5, 0))).build(manager) {
             Ok(pool) => pool,
             Err(_) => return Err(WalletStorageError::NotFound)
         };
