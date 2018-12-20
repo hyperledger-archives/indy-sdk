@@ -322,7 +322,8 @@ mod tests {
         let config_path = "/tmp/test_init.json";
         let content = json!({
             "wallet_name": settings::DEFAULT_WALLET_NAME,
-            "wallet_key": settings::DEFAULT_WALLET_KEY
+            "wallet_key": settings::DEFAULT_WALLET_KEY,
+            "wallet_key_derivation": settings::DEFAULT_WALLET_KEY_DERIVATION,
         }).to_string();
 
         settings::write_config_to_file(&content, config_path).unwrap();
@@ -395,7 +396,8 @@ mod tests {
 
         let content = json!({
             "wallet_name": settings::DEFAULT_WALLET_NAME,
-            "wallet_key": settings::DEFAULT_WALLET_KEY
+            "wallet_key": settings::DEFAULT_WALLET_KEY,
+            "wallet_key_derivation": settings::DEFAULT_WALLET_KEY_DERIVATION,
         }).to_string();
 
         let cb = return_types_u32::Return_U32::new().unwrap();
@@ -553,14 +555,16 @@ mod tests {
         let import_config = json!({
             settings::CONFIG_WALLET_NAME: settings::DEFAULT_WALLET_NAME,
             settings::CONFIG_WALLET_KEY: settings::DEFAULT_WALLET_KEY,
-            settings::CONFIG_EXPORTED_WALLET_PATH: export_path,
+            settings::CONFIG_WALLET_KEY_DERIVATION: settings::DEFAULT_WALLET_KEY_DERIVATION,
             settings::CONFIG_WALLET_BACKUP_KEY: settings::DEFAULT_WALLET_BACKUP_KEY,
+            settings::CONFIG_EXPORTED_WALLET_PATH: export_path,
         }).to_string();
         import(&import_config).unwrap();
 
         let content = json!({
             "wallet_name": settings::DEFAULT_WALLET_NAME,
             "wallet_key": settings::DEFAULT_WALLET_KEY,
+            "wallet_key_derivation": settings::DEFAULT_WALLET_KEY_DERIVATION,
         }).to_string();
 
         let cb = return_types_u32::Return_U32::new().unwrap();
@@ -586,6 +590,7 @@ mod tests {
         let import_config = json!({
             settings::CONFIG_WALLET_NAME: settings::DEFAULT_WALLET_NAME,
             settings::CONFIG_WALLET_KEY: settings::DEFAULT_WALLET_KEY,
+            settings::CONFIG_WALLET_KEY_DERIVATION: settings::DEFAULT_WALLET_KEY_DERIVATION,
             settings::CONFIG_EXPORTED_WALLET_PATH: export_path,
             settings::CONFIG_WALLET_BACKUP_KEY: settings::DEFAULT_WALLET_BACKUP_KEY,
         }).to_string();
@@ -593,7 +598,8 @@ mod tests {
 
         let content = json!({
             "wallet_name": "different_wallet_name",
-            "wallet_key": settings::DEFAULT_WALLET_KEY
+            "wallet_key": settings::DEFAULT_WALLET_KEY,
+            "wallet_key_derivation": settings::DEFAULT_WALLET_KEY_DERIVATION,
         }).to_string();
 
         let cb = return_types_u32::Return_U32::new().unwrap();
@@ -620,6 +626,7 @@ mod tests {
         let content = json!({
             "wallet_name": settings::DEFAULT_WALLET_NAME,
             "wallet_key": settings::DEFAULT_WALLET_KEY,
+            "wallet_key_derivation": settings::DEFAULT_WALLET_KEY_DERIVATION,
         }).to_string();
 
         let cb = return_types_u32::Return_U32::new().unwrap();
