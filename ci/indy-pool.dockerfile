@@ -24,11 +24,11 @@ RUN echo "deb https://repo.sovrin.org/deb xenial $indy_stream" >> /etc/apt/sourc
 
 RUN useradd -ms /bin/bash -u $uid indy
 
-ARG indy_plenum_ver=1.6.520
+ARG indy_plenum_ver=1.6.641
 ARG indy_anoncreds_ver=1.0.32
-ARG indy_node_ver=1.6.576
-ARG python3_indy_crypto_ver=0.4.3
-ARG indy_crypto_ver=0.4.3
+ARG indy_node_ver=1.6.740
+ARG python3_indy_crypto_ver=0.4.5
+ARG indy_crypto_ver=0.4.5
 
 RUN apt-get update -y && apt-get install -y \
         indy-plenum=${indy_plenum_ver} \
@@ -85,7 +85,7 @@ USER indy
 RUN awk '{if (index($1, "NETWORK_NAME") != 0) {print("NETWORK_NAME = \"sandbox\"")} else print($0)}' /etc/indy/indy_config.py> /tmp/indy_config.py
 RUN mv /tmp/indy_config.py /etc/indy/indy_config.py
 
-ARG pool_ip=127.0.0.1
+ARG pool_ip=10.0.0.2
 
 RUN generate_indy_pool_transactions --nodes 4 --clients 5 --nodeNum 1 2 3 4 --ips="$pool_ip,$pool_ip,$pool_ip,$pool_ip"
 
