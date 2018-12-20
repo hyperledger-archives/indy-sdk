@@ -2,7 +2,7 @@ use settings;
 use std::io::Read;
 use std::sync::Mutex;
 use reqwest;
-use reqwest::header::{ContentType};
+use reqwest::header::{CONTENT_TYPE};
 use std::env;
 lazy_static!{
     static ref NEXT_U8_RESPONSE: Mutex<Vec<Vec<u8>>> = Mutex::new(vec![]);
@@ -20,7 +20,7 @@ pub fn post_u8(body_content: &Vec<u8>) -> Result<Vec<u8>,String> {
     }
     let client = reqwest::ClientBuilder::new().build().or(Err("Preparing Post failed".to_string()))?;
     debug!("Posting encrypted bundle to: \"{}\"", url);
-    let mut response = match  client.post(&url).body(body_content.to_owned()).header(ContentType::octet_stream()).send() {
+    let mut response = match  client.post(&url).body(body_content.to_owned()).header(CONTENT_TYPE, "octet_stream").send() {
         Ok(result) => {
             trace!("got the result");
             result

@@ -70,6 +70,7 @@ pub struct Config {
     agency_verkey: String,
     wallet_name: Option<String>,
     wallet_key: String,
+    wallet_type: Option<String>,
     agent_seed: Option<String>,
     enterprise_seed: Option<String>,
     wallet_key_derivation: Option<String>,
@@ -83,7 +84,6 @@ pub fn connect_register_provision(config: &str) -> Result<String,u32> {
 
     trace!("***Registering with agency");
     let my_config: Config = serde_json::from_str(&config).or(Err(error::INVALID_CONFIGURATION.code_num))?;
-
     let (wallet_name_string, wallet_name) = match my_config.wallet_name {
         Some(x) => (format!("\"wallet_name\":\"{}\",", x), x),
         None => ("".to_string(), settings::DEFAULT_WALLET_NAME.to_string()),
@@ -98,8 +98,11 @@ pub fn connect_register_provision(config: &str) -> Result<String,u32> {
     if let Some(_key_derivation) = &my_config.wallet_key_derivation {
         settings::set_config_value(settings::CONFIG_WALLET_KEY_DERIVATION, _key_derivation);
     }
+    if let Some(_wallet_type) = &my_config.wallet_type {
+        settings::set_config_value(settings::CONFIG_WALLET_TYPE, _wallet_type);
+    }
 
-    wallet::init_wallet(&wallet_name)?;
+    wallet::init_wallet(&wallet_name, my_config.wallet_type.as_ref().map(String::as_str))?;
     trace!("initialized wallet");
 
     match ::utils::libindy::anoncreds::libindy_prover_create_master_secret(::settings::DEFAULT_LINK_SECRET_ALIAS) {

@@ -7,6 +7,7 @@ pub mod callback_u32;
 pub mod pool;
 pub mod crypto;
 pub mod payments;
+pub mod cache;
 pub mod logger;
 
 pub mod error_codes;
@@ -72,6 +73,6 @@ mod tests {
         wallet::close_wallet().unwrap();
         pool::close().unwrap();
         init_pool().unwrap();
-        wallet::init_wallet(settings::DEFAULT_WALLET_NAME).unwrap();
+        wallet::init_wallet(settings::DEFAULT_WALLET_NAME, None).unwrap();
     }
 }

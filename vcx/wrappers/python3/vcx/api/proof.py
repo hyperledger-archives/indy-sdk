@@ -24,15 +24,17 @@ class Proof(VcxStateful):
         self._proof_state = x
 
     @staticmethod
-    async def create(source_id: str, name: str, requested_attrs: list):
+    async def create(source_id: str, name: str, requested_attrs: list, revocation_interval: dict):
         """
          Builds a generic proof object
         :param source_id: Tag associated by user of sdk
         :param name: Name of the Proof
         :param requested_attrs: Attributes associated with the Proof
+        :param revocation_interval: interval applied to all requested attributes indicating when the claim must be valid (NOT revoked)
         Example:
         name = "proof name"
         requested_attrs = [{"name": "age", "restrictions": [{"schema_id": "6XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11", "schema_name":"Faber Student Info", "schema_version":"1.0", "schema_issuer_did":"6XFh8yBzrpJQmNyZzgoTqB", "issuer_did":"8XFh8yBzrpJQmNyZzgoTqB", "cred_def_id": "8XFh8yBzrpJQmNyZzgoTqB:3:CL:1766" }, { "schema_id": "5XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11", "schema_name":"BYU Student Info", "schema_version":"1.0", "schema_issuer_did":"5XFh8yBzrpJQmNyZzgoTqB", "issuer_did":"66Fh8yBzrpJQmNyZzgoTqB", "cred_def_id": "66Fh8yBzrpJQmNyZzgoTqB:3:CL:1766" } ] }, { "name":"name", "restrictions": [ { "schema_id": "6XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11", "schema_name":"Faber Student Info", "schema_version":"1.0", "schema_issuer_did":"6XFh8yBzrpJQmNyZzgoTqB", "issuer_did":"8XFh8yBzrpJQmNyZzgoTqB", "cred_def_id": "8XFh8yBzrpJQmNyZzgoTqB:3:CL:1766" }, { "schema_id": "5XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11", "schema_name":"BYU Student Info", "schema_version":"1.0", "schema_issuer_did":"5XFh8yBzrpJQmNyZzgoTqB", "issuer_did":"66Fh8yBzrpJQmNyZzgoTqB", "cred_def_id": "66Fh8yBzrpJQmNyZzgoTqB:3:CL:1766"}]}]
+        revocation_interval = {"from": 1, "to": 2}  // Both values are optional
         proof = await Proof.create(source_id, name, requested_attrs)
         :return: Proof Object
         """
@@ -42,7 +44,8 @@ class Proof(VcxStateful):
         c_name = c_char_p(name.encode('utf-8'))
         c_req_predicates = c_char_p('[]'.encode('utf-8'))
         c_req_attrs = c_char_p(json.dumps(requested_attrs).encode('utf-8'))
-        c_params = (c_source_id, c_req_attrs, c_req_predicates, c_name)
+        c_revocation_interval = c_char_p(json.dumps(revocation_interval).encode('utf-8'))
+        c_params = (c_source_id, c_req_attrs, c_req_predicates, c_revocation_interval, c_name)
 
         return await Proof._create("vcx_proof_create",
                                    constructor_params,
