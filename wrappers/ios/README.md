@@ -87,4 +87,10 @@ For 0.1.1 and 0.1.2 versions:
 All wrapper types and classes have prefix `Indy`.
 
 #### Troubleshooting
-Use environment variable `RUST_LOG={info|debug|trace}` to output logs of Libindy.
+* Enable Logging - Use environment variable `RUST_LOG={info|debug|trace}` to output logs of Libindy.
+* OpenSSL cp: file.tgz: No such file or directory - 
+```
+sudo gem uninstall cocoapods-downloader
+sudo gem install cocoapods-downloader -v 1.2.0
+```
+* Multiple commands produce `*/Debug-iphonesimulator/Indy-demo.app/PlugIns/Indy-demoTests.xctest/Info.plist` - remove **Info.plist** from there: Solution -> Target -> Build phases -> **Copy Bundle Resources** 
