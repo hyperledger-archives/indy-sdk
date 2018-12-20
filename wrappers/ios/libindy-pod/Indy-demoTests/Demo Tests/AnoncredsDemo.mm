@@ -1,6 +1,7 @@
 #import <Foundation/Foundation.h>
 #import <XCTest/XCTest.h>
 #import <Indy/Indy.h>
+#import <Indy/IndyLogger.h>
 #import "TestUtils.h"
 #import "BlobStorageUtils.h"
 

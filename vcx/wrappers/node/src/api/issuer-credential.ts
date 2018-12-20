@@ -10,7 +10,7 @@ import { PaymentManager } from './vcx-payment-txn'
 
 export interface IIssuerCredentialCreateData {
   sourceId: string,
-  credDefId: string,
+  credDefHandle: number,
   attr: {
     [ index: string ]: string
   },
@@ -23,7 +23,7 @@ export interface IIssuerCredentialVCXAttributes {
 }
 
 export interface IIssuerCredentialParams {
-  credDefId: string,
+  credDefHandle: number,
   credentialName: string,
   attr: IIssuerCredentialVCXAttributes,
   price: string
@@ -43,7 +43,11 @@ export interface IIssuerCredentialData {
   state: StateType
   msg_uid: string
   cred_def_id: string
+  cred_def_handle: number
   price: string
+  tails_file?: string
+  cred_rev_id?: string
+  rev_reg_id?: string
 }
 
 // tslint:disable max-classes-per-file
@@ -63,19 +67,19 @@ export class IssuerCredential extends VCXBaseWithState<IIssuerCredentialData> {
    * ```
    * @returns {Promise<IssuerCredential>} An Issuer credential Object
    */
-  public static async create ({ attr, sourceId, credDefId,
+  public static async create ({ attr, sourceId, credDefHandle,
                          credentialName, price }: IIssuerCredentialCreateData): Promise<IssuerCredential> {
     try {
       const attrsVCX: IIssuerCredentialVCXAttributes = Object.keys(attr)
       .reduce((accum, attrKey) => ({ ...accum, [attrKey]: [attr[attrKey]] }), {})
-      const credential = new IssuerCredential(sourceId, { credDefId, credentialName, attr: attrsVCX, price })
+      const credential = new IssuerCredential(sourceId, { credDefHandle, credentialName, attr: attrsVCX, price })
       const attrsStringified = JSON.stringify(attrsVCX)
       const commandHandle = 0
       const issuerDid = null
       await credential._create((cb) => rustAPI().vcx_issuer_create_credential(
         commandHandle,
         sourceId,
-        credDefId,
+        credDefHandle,
         issuerDid,
         attrsStringified,
         credentialName,
@@ -102,11 +106,11 @@ export class IssuerCredential extends VCXBaseWithState<IIssuerCredentialData> {
    */
   public static async deserialize (credentialData: ISerializedData<IIssuerCredentialData>) {
     try {
-      const { data: { credential_name, price, credential_attributes, cred_def_id } } = credentialData
+      const { data: { credential_name, price, credential_attributes, cred_def_handle } } = credentialData
       const attr: IIssuerCredentialVCXAttributes = JSON.parse(credential_attributes)
       const params: IIssuerCredentialParams = {
         attr,
-        credDefId: cred_def_id,
+        credDefHandle: cred_def_handle,
         credentialName: credential_name,
         price
       }
@@ -127,14 +131,14 @@ export class IssuerCredential extends VCXBaseWithState<IIssuerCredentialData> {
   protected _getStFn = rustAPI().vcx_issuer_credential_get_state
   protected _serializeFn = rustAPI().vcx_issuer_credential_serialize
   protected _deserializeFn = rustAPI().vcx_issuer_credential_deserialize
-  private _credDefId: string
+  private _credDefHandle: number
   private _credentialName: string
   private _attr: IIssuerCredentialVCXAttributes
   private _price: string
 
-  constructor (sourceId: string, { credDefId, credentialName, attr, price }: IIssuerCredentialParams) {
+  constructor (sourceId: string, { credDefHandle, credentialName, attr, price }: IIssuerCredentialParams) {
     super(sourceId)
-    this._credDefId = credDefId
+    this._credDefHandle = credDefHandle
     this._credentialName = credentialName
     this._attr = attr
     this._price = price
@@ -218,8 +222,48 @@ export class IssuerCredential extends VCXBaseWithState<IIssuerCredentialData> {
     }
   }
 
-  get credDefId () {
-    return this._credDefId
+  /**
+   * Revokes credential.
+   *
+   * Credential is made up of the data sent during Credential Offer
+   * ```
+   * connection = await connectionCreateConnect()
+   * issuerCredential = await issuerCredentialCreate()
+   * await issuerCredential.sendOffer(connection)
+   * await issuerCredential.updateState()
+   * assert.equal(await issuerCredential.getState(), StateType.RequestReceived)
+   * await issuerCredential.sendCredential(connection)
+   * await issuerCredential.revokeCredential()
+   * ```
+   *
+   */
+  public async revokeCredential (): Promise<void> {
+    try {
+      await createFFICallbackPromise<void>(
+        (resolve, reject, cb) => {
+          const rc = rustAPI().vcx_issuer_revoke_credential(0, this.handle, cb)
+          if (rc) {
+            reject(rc)
+          }
+        },
+        (resolve, reject) => Callback(
+          'void',
+          ['uint32', 'uint32'],
+          (xcommandHandle: number, err: number) => {
+            if (err) {
+              reject(err)
+              return
+            }
+            resolve()
+          })
+      )
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
+
+  get credDefHandle () {
+    return this._credDefHandle
   }
 
   get attr () {

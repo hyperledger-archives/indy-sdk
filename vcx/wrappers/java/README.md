@@ -49,3 +49,6 @@ The jar will be present in `indy-sdk/vcx/wrappers/java/vcx/build/libs`
 - run `./gradlew clean assemble --project-dir=android` in folder `indy-sdk/vcx/wrappers/java/vcx`
 
 Aar will be present in `indy-sdk/vcx/wrappers/java/vcx/android/build/outputs/aar`
+
+#### Logging
+The Java wrapper uses slf4j as a facade for various logging frameworks, such as java.util.logging, logback and log4j.
