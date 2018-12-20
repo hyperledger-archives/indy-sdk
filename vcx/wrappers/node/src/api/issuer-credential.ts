@@ -19,7 +19,7 @@ export interface IIssuerCredentialCreateData {
 }
 
 export interface IIssuerCredentialVCXAttributes {
-  [ index: string ]: [ string ]
+  [ index: string ]: string
 }
 
 export interface IIssuerCredentialParams {
@@ -70,10 +70,9 @@ export class IssuerCredential extends VCXBaseWithState<IIssuerCredentialData> {
   public static async create ({ attr, sourceId, credDefHandle,
                          credentialName, price }: IIssuerCredentialCreateData): Promise<IssuerCredential> {
     try {
-      const attrsVCX: IIssuerCredentialVCXAttributes = Object.keys(attr)
-      .reduce((accum, attrKey) => ({ ...accum, [attrKey]: [attr[attrKey]] }), {})
+      const attrsVCX: IIssuerCredentialVCXAttributes = attr
       const credential = new IssuerCredential(sourceId, { credDefHandle, credentialName, attr: attrsVCX, price })
-      const attrsStringified = JSON.stringify(attrsVCX)
+      const attrsStringified = attrsVCX ? JSON.stringify(attrsVCX) : attrsVCX
       const commandHandle = 0
       const issuerDid = null
       await credential._create((cb) => rustAPI().vcx_issuer_create_credential(
