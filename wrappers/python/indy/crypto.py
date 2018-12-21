@@ -169,7 +169,7 @@ async def crypto_verify(signer_vk: str,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("crypto_verify: >>> my_vk: %r, signed_msg: %r",
+    logger.debug("crypto_verify: >>> my_vk: %r, signed_msg: %r, signature: %r",
                  signer_vk,
                  msg,
                  signature)

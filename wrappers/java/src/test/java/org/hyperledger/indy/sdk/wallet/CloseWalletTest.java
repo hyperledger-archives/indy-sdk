@@ -2,7 +2,6 @@ package org.hyperledger.indy.sdk.wallet;
 
 import org.hyperledger.indy.sdk.IndyIntegrationTest;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.isA;
@@ -34,17 +33,8 @@ public class CloseWalletTest extends IndyIntegrationTest {
 	}
 
 	@Test
-	@Ignore
-	public void testCloseWalletWorksForPlugged() throws Exception {
-		Wallet.createWallet(PLUGGED_WALLET_CONFIG, WALLET_CREDENTIALS).get();
-
-		Wallet wallet = Wallet.openWallet(PLUGGED_WALLET_CONFIG, WALLET_CREDENTIALS).get();
-		wallet.closeWallet().get();
-	}
-
-	@Test
 	public void testAutoCloseWorks() throws Exception {
-		Wallet.createWallet(WALLET_CONFIG, WALLET_CREDENTIALS);
+		Wallet.createWallet(WALLET_CONFIG, WALLET_CREDENTIALS).get();
 		try (Wallet wallet = Wallet.openWallet(WALLET_CONFIG, WALLET_CREDENTIALS).get()) {
 			assertNotNull(wallet);
 		}

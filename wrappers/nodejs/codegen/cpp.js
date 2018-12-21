@@ -119,29 +119,29 @@ apiFunctions.forEach(function (fn) {
 
     switch (type) {
       case 'String':
-        cpp += '  const char* arg' + i + ' = argToCString(info[' + i + ']);\n'
+        cpp += `  const char* arg${i} = argToCString(info[${i}]);\n`
         break
       case 'IndyHandle':
-        cpp += '  indy_handle_t arg' + i + ' = info[' + i + ']->Int32Value();\n'
+        cpp += `  indy_handle_t arg${i} = argToInt32(info[${i}]);\n`
         break
       case 'indy_u32_t':
-        cpp += '  indy_u32_t arg' + i + ' = info[' + i + ']->Uint32Value();\n'
+        cpp += `  indy_u32_t arg${i} = argToUInt32(info[${i}]);\n`
         break
       case 'indy_i32_t':
-        cpp += '  indy_i32_t arg' + i + ' = info[' + i + ']->Int32Value();\n'
+        cpp += `  indy_i32_t arg${i} = argToInt32(info[${i}]);\n`
         break
       case 'indy_u64_t':
-        cpp += '  indy_u64_t arg' + i + ' = (indy_u64_t)info[' + i + ']->Uint32Value();\n'
+        cpp += `  indy_u64_t arg${i} = (indy_u64_t)argToUInt32(info[${i}]);\n`
         break
       case 'Timestamp':
-        cpp += '  long long arg' + i + ' = info[' + i + ']->Uint32Value();\n'
+        cpp += `  long long arg${i} = argToUInt32(info[${i}]);\n`
         break
       case 'Boolean':
-        cpp += '  indy_bool_t arg' + i + ' = info[' + i + ']->IsTrue();\n'
+        cpp += `  indy_bool_t arg${i} = info[${i}]->IsTrue();\n`
         break
       case 'Buffer':
-        cpp += '  const indy_u8_t* arg' + i + 'data = (indy_u8_t*)node::Buffer::Data(info[' + i + ']->ToObject());\n'
-        cpp += '  indy_u32_t arg' + i + 'len = node::Buffer::Length(info[' + i + ']);\n'
+        cpp += `  const indy_u8_t* arg${i}data = (indy_u8_t*)argToBufferData(info[${i}]);\n`
+        cpp += `  indy_u32_t arg${i}len = node::Buffer::Length(info[${i}]);\n`
         break
       default:
         throw new Error('Unhandled argument reading type: ' + type)
@@ -182,6 +182,9 @@ cpp += 'NAN_MODULE_INIT(InitAll) {\n'
 apiFunctions.forEach(function (fn) {
   cpp += '  Nan::Export(target, "' + fn.jsName + '", ' + fn.jsName + ');\n'
 })
+cpp += '  Nan::Export(target, "setRuntimeConfig", setRuntimeConfig);\n'
+cpp += '  Nan::Export(target, "setDefaultLogger", setDefaultLogger);\n'
+cpp += '  Nan::Export(target, "setLogger", setLogger);\n'
 cpp += '}\n'
 cpp += 'NODE_MODULE(indynodejs, InitAll)\n'
 

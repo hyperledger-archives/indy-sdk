@@ -46,9 +46,11 @@ pub struct DidMetadata {
 }
 
 #[derive(Serialize, Clone, Debug, NamedType)]
+#[serde(rename_all = "camelCase")]
 pub struct DidWithMeta {
     pub did: String,
     pub verkey: String,
+    pub temp_verkey: Option<String>,
     pub metadata: Option<String>
 }
 

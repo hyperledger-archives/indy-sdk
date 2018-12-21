@@ -1,3 +1,4 @@
+#[macro_use]
 pub mod callbacks;
 #[macro_use]
 pub mod cstring;

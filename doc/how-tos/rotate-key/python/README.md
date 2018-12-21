@@ -2,7 +2,7 @@
 
 Indy-SDK Developer Walkthrough #2, Python Edition
 
-[ [Java](../java/README.md) | [.NET](../../not-yet-written.md) | [Node.js](../../not-yet-written.md) | [Objective C](../../not-yet-written.md) ]
+[ [Java](../java/README.md) | [.NET](../../not-yet-written.md) | [Node.js](../nodejs/README.md) | [Objective C](../../not-yet-written.md) | [Rust](../rust/README.md)]
 
 
 ## Prerequisites
@@ -27,7 +27,7 @@ Install the required python packages by executing `$ pip install python3-indy as
 ### Step 2
 
 This how-to builds on the work in
-["Write DID and Query Verkey"](../write-did-and-query-verkey/python/README.md).
+["Write DID and Query Verkey"](../../write-did-and-query-verkey/python/README.md).
 Rather than duplicate our explanation of those steps here, we will simply
 copy that code as our starting point.
 

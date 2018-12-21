@@ -1,6 +1,6 @@
-﻿using System;
+﻿using Hyperledger.Indy.Utils;
+using System;
 using System.Threading.Tasks;
-using Hyperledger.Indy.Utils;
 using static Hyperledger.Indy.PaymentsApi.NativeMethods;
 
 namespace Hyperledger.Indy.PaymentsApi
@@ -30,7 +30,7 @@ namespace Hyperledger.Indy.PaymentsApi
             ParseVerifyPaymentResponseCallback = ParseVerifyPaymentResponseHandler;
         }
 
-        ErrorCode CreatePaymentAddressHandler(int command_handle, IntPtr wallet_handle, string config, PaymentMethodResultDelegate cb)
+        ErrorCode CreatePaymentAddressHandler(int command_handle, int wallet_handle, string config, PaymentMethodResultDelegate cb)
         {
             CreatePaymentAddressAsync(config)
                 .ContinueWith(paymentAddress =>
@@ -42,7 +42,7 @@ namespace Hyperledger.Indy.PaymentsApi
             return ErrorCode.Success;
         }
 
-        ErrorCode AddRequestFeesHandler(int command_handle, IntPtr wallet_handle, string submitter_did, string req_json, string inputs_json, string outputs_json, string extra, PaymentMethodResultDelegate cb)
+        ErrorCode AddRequestFeesHandler(int command_handle, int wallet_handle, string submitter_did, string req_json, string inputs_json, string outputs_json, string extra, PaymentMethodResultDelegate cb)
         {
             AddRequestFeesAsync(submitter_did, req_json, inputs_json, outputs_json, extra)
                 .ContinueWith(reqWithFeesJson =>
@@ -66,7 +66,7 @@ namespace Hyperledger.Indy.PaymentsApi
             return ErrorCode.Success;
         }
 
-        ErrorCode BuildGetPaymentSourcesRequstHandler(int command_handle, IntPtr wallet_handle, string submitter_did, string payment_address, PaymentMethodResultDelegate cb)
+        ErrorCode BuildGetPaymentSourcesRequstHandler(int command_handle, int wallet_handle, string submitter_did, string payment_address, PaymentMethodResultDelegate cb)
         {
             BuildGetPaymentSourcesRequestAsync(submitter_did, payment_address)
                 .ContinueWith(getUtxoTxnJson =>
@@ -90,7 +90,7 @@ namespace Hyperledger.Indy.PaymentsApi
             return ErrorCode.Success;
         }
 
-        ErrorCode BuildPaymentRequestHandler(int command_handle, IntPtr wallet_handle, string submitter_did, string inputs_json, string outputs_json, string extra, PaymentMethodResultDelegate cb)
+        ErrorCode BuildPaymentRequestHandler(int command_handle, int wallet_handle, string submitter_did, string inputs_json, string outputs_json, string extra, PaymentMethodResultDelegate cb)
         {
             BuildPaymentRequestAsync(submitter_did, inputs_json, outputs_json, extra)
                 .ContinueWith(paymentReqJson =>
@@ -114,7 +114,7 @@ namespace Hyperledger.Indy.PaymentsApi
             return ErrorCode.Success;
         }
 
-        ErrorCode BuildMintReqHandler(int command_handle, IntPtr wallet_handle, string submitter_did, string outputs_json, string extra, PaymentMethodResultDelegate cb)
+        ErrorCode BuildMintReqHandler(int command_handle, int wallet_handle, string submitter_did, string outputs_json, string extra, PaymentMethodResultDelegate cb)
         {
             BuildMintRequestAsync(submitter_did, outputs_json, extra)
                 .ContinueWith(mintReqJson =>
@@ -126,7 +126,7 @@ namespace Hyperledger.Indy.PaymentsApi
             return ErrorCode.Success;
         }
 
-        ErrorCode BuildSetTxnFeesReqHandler(int command_handle, IntPtr wallet_handle, string submitter_did, string fees_json, PaymentMethodResultDelegate cb)
+        ErrorCode BuildSetTxnFeesReqHandler(int command_handle, int wallet_handle, string submitter_did, string fees_json, PaymentMethodResultDelegate cb)
         {
             BuildSetTxnFeesAsync(submitter_did, fees_json)
                 .ContinueWith(setTxnFeesJson =>
@@ -138,7 +138,7 @@ namespace Hyperledger.Indy.PaymentsApi
             return ErrorCode.Success;
         }
 
-        ErrorCode BuildGetTxnFeesReqHandler(int command_handle, IntPtr wallet_handle, string submitter_did, PaymentMethodResultDelegate cb)
+        ErrorCode BuildGetTxnFeesReqHandler(int command_handle, int wallet_handle, string submitter_did, PaymentMethodResultDelegate cb)
         {
             BuildGetTxnFeesAsync(submitter_did)
                 .ContinueWith(getTxnFeesJson =>
@@ -162,7 +162,7 @@ namespace Hyperledger.Indy.PaymentsApi
             return ErrorCode.Success;
         }
 
-        ErrorCode BuildVerifyPaymentRequestHandler(int command_handle, IntPtr wallet_handle, string submitterDid, string receipt, PaymentMethodResultDelegate cb)
+        ErrorCode BuildVerifyPaymentRequestHandler(int command_handle, int wallet_handle, string submitterDid, string receipt, PaymentMethodResultDelegate cb)
         {
             BuildVerifyPaymentRequestAsync(submitterDid, receipt)
                 .ContinueWith(feesJson =>

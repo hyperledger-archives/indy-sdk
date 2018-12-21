@@ -11,7 +11,7 @@ Pull requests welcome!
 ### How to install
     pip install python3-indy
     
-Note that before you can use python wrapper you must install  c-callable SDK. 
+Note that before you can use python wrapper you must install c-callable SDK. 
 See the section "Installing the SDK" in the [Indy SDK documentation](../../README.md#installing-the-sdk) 
  
 ### How to build
@@ -40,5 +40,6 @@ Then run
 ### Example use
 For the main workflow examples check tests in demo folder: https://github.com/hyperledger/indy-sdk/tree/master/wrappers/python/tests/demo
 
-#### Troubleshooting
-Use environment variable `RUST_LOG={info|debug|trace}` to output logs of Libindy.
+#### Logging
+The Python wrapper uses default Python logging module. So, to enable logs you need just to configure its usual way. 
+Note: there is an additional log level=0 that is equal to Libindy `trace` level.

@@ -2,7 +2,7 @@
 
 Indy-SDK Developer Walkthrough #4, Python Edition
 
-[ [Java](../java/README.md) | [.NET](../../not-yet-written.md) | [Node.js](../../not-yet-written.md) | [Objective C](../../not-yet-written.md) ]
+[ [Java](../java/README.md) | [.NET](../../not-yet-written.md) | [Node.js](../../not-yet-written.md) | [Objective C](../../not-yet-written.md) | [Rust](../rust/README.md)]
 
 
 ## Prerequisites
@@ -37,7 +37,7 @@ to create a trust anchor identity that has privileges to create schemas
 and credential definitions.
 
 All of these steps are similar to those in simpler how-tos, such as
-["Write a DID and Query Its Verkey"](../../write-did-and-query-verkey/python/readme.md).
+["Write a DID and Query Its Verkey"](../../write-did-and-query-verkey/python/README.md).
 We'll get this housekeeping out of
 the way in a single step here, rather than dwelling on its details.
 

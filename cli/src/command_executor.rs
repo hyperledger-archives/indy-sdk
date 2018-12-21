@@ -1,5 +1,6 @@
 extern crate rpassword;
 extern crate libloading;
+extern crate log4rs;
 
 use unescape::unescape;
 

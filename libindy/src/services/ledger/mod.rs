@@ -14,7 +14,7 @@ use domain::ledger::rev_reg::{RevRegEntryOperation, GetRevRegOperation, GetRevRe
 use domain::ledger::pool::{PoolConfigOperation, PoolUpgradeOperation, PoolRestartOperation};
 use domain::ledger::node::{NodeOperation, NodeOperationData};
 use domain::ledger::txn::{GetTxnOperation, LedgerType};
-use domain::ledger::response::{Message, Reply};
+use domain::ledger::response::{Message, Reply, ReplyType, ResponseMetadata};
 use domain::ledger::validator_info::GetValidatorInfoOperation;
 use domain::anoncreds::DELIMITER;
 use domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinition, RevocationRegistryDefinitionV1};
@@ -542,12 +542,69 @@ impl LedgerService {
         Ok(res)
     }
 
-    pub fn parse_response<T>(response: &str) -> Result<Reply<T>, LedgerError> where T: DeserializeOwned {
-        trace!("parse_response >>> response {:?}", response);
+    pub fn get_response_metadata(&self, response: &str) -> Result<String, LedgerError> {
+        info!("get_response_metadata >>> response: {:?}", response);
 
-        let message: Message<T> = serde_json::from_str(&response)
+        let message: Message<serde_json::Value> = serde_json::from_str(response)
             .map_err(|err|
                 LedgerError::InvalidTransaction(format!("Cannot deserialize transaction Response: {:?}", err)))?;
+
+        let response_object: Reply<serde_json::Value> = LedgerService::handle_response_message_type(message)?;
+        let response_result = response_object.result();
+
+        let response_metadata = match response_result["ver"].as_str() {
+            None => LedgerService::parse_transaction_metadata_v0(&response_result),
+            Some("1") => LedgerService::parse_transaction_metadata_v1(&response_result),
+            ver @ _ => return Err(LedgerError::InvalidTransaction(format!("Unsupported transaction response version: {:?}", ver)))
+        };
+
+        let res = serde_json::to_string(&response_metadata)
+            .map_err(|err|
+                LedgerError::CommonError(CommonError::InvalidState(format!("Cannot serialize ResponseMetadata {:?}.", err))))?;
+
+        info!("get_response_metadata <<< res: {:?}", res);
+
+        Ok(res)
+    }
+
+    fn parse_transaction_metadata_v0(message: &serde_json::Value) -> ResponseMetadata {
+        ResponseMetadata {
+            seq_no: message["seqNo"].as_u64(),
+            txn_time: message["txnTime"].as_u64(),
+            last_txn_time: message["state_proof"]["multi_signature"]["value"]["timestamp"].as_u64(),
+            last_seq_no: None,
+        }
+    }
+
+    fn parse_transaction_metadata_v1(message: &serde_json::Value) -> ResponseMetadata {
+        ResponseMetadata {
+            seq_no: message["txnMetadata"]["seqNo"].as_u64(),
+            txn_time: message["txnMetadata"]["txnTime"].as_u64(),
+            last_txn_time: message["multiSignature"]["signedState"]["stateMetadata"]["timestamp"].as_u64(),
+            last_seq_no: None,
+        }
+    }
+
+    pub fn parse_response<T>(response: &str) -> Result<Reply<T>, LedgerError> where T: DeserializeOwned + ReplyType + ::std::fmt::Debug {
+        trace!("parse_response >>> response {:?}", response);
+
+        let message: serde_json::Value = serde_json::from_str(&response)
+            .map_err(|err|
+                LedgerError::InvalidTransaction(format!("Cannot deserialize transaction Response: {:?}", err)))?;
+
+        if message["op"] == json!("REPLY") && message["result"]["type"] != json!(T::get_type()) {
+            return Err(LedgerError::InvalidTransaction(format!("Invalid response type: {:?}", message)));
+        }
+
+        let message: Message<T> = serde_json::from_value(message)
+            .map_err(|err|
+                LedgerError::NotFound(format!("Cannot deserialize transaction Response: {:?}", err)))?;
+
+        LedgerService::handle_response_message_type(message)
+    }
+
+    fn handle_response_message_type<T>(message: Message<T>) -> Result<Reply<T>, LedgerError> where T: DeserializeOwned + ::std::fmt::Debug {
+        trace!("handle_response_message_type >>> message {:?}", message);
 
         match message {
             Message::Reject(response) | Message::ReqNACK(response) =>
@@ -626,7 +683,7 @@ mod tests {
             "verkey": VERKEY,
         });
 
-        let request = ledger_service.build_nym_request(IDENTIFIER, DEST,Some(VERKEY), Some("some_alias"), Some("")).unwrap();
+        let request = ledger_service.build_nym_request(IDENTIFIER, DEST, Some(VERKEY), Some("some_alias"), Some("")).unwrap();
         check_request(&request, expected_result);
     }
 
@@ -674,7 +731,7 @@ mod tests {
             "hash": "hash"
         });
 
-        let request = ledger_service.build_attrib_request(IDENTIFIER, DEST,Some("hash"), None, None).unwrap();
+        let request = ledger_service.build_attrib_request(IDENTIFIER, DEST, Some("hash"), None, None).unwrap();
         check_request(&request, expected_result);
     }
 
@@ -716,7 +773,7 @@ mod tests {
             "enc": "enc"
         });
 
-        let request = ledger_service.build_get_attrib_request(Some(IDENTIFIER), DEST,  None, None, Some("enc")).unwrap();
+        let request = ledger_service.build_get_attrib_request(Some(IDENTIFIER), DEST, None, None, Some("enc")).unwrap();
         check_request(&request, expected_result);
     }
 

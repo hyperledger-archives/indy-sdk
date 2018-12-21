@@ -1,7 +1,7 @@
-﻿using System;
-using System.Threading.Tasks;
-using Hyperledger.Indy.Utils;
+﻿using Hyperledger.Indy.Utils;
 using Hyperledger.Indy.WalletApi;
+using System;
+using System.Threading.Tasks;
 using static Hyperledger.Indy.NonSecretsApi.NativeMethods;
 using static Hyperledger.Indy.Utils.CallbackHelper;
 #if __IOS__
@@ -20,7 +20,7 @@ namespace Hyperledger.Indy.NonSecretsApi
 #if __IOS__
         [MonoPInvokeCallback(typeof(GetRecordCompletedDelegate))]
 #endif
-        static void GetRecordCallback(int xcommand_handle, int err, string value)
+        private static void GetRecordCallbackMethod(int xcommand_handle, int err, string value)
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
@@ -29,11 +29,12 @@ namespace Hyperledger.Indy.NonSecretsApi
 
             taskCompletionSource.SetResult(value);
         }
+        private static GetRecordCompletedDelegate GetRecordCallback = GetRecordCallbackMethod;
 
 #if __IOS__
         [MonoPInvokeCallback(typeof(OpenWalletSearchCompletedDelegate))]
 #endif
-        static void OpenSearchCallback(int xcommand_handle, int err, IntPtr search_handle)
+        private static void OpenSearchCallbackMethod(int xcommand_handle, int err, int search_handle)
         {
             var taskCompletionSource = PendingCommands.Remove<WalletSearch>(xcommand_handle);
 
@@ -42,11 +43,12 @@ namespace Hyperledger.Indy.NonSecretsApi
 
             taskCompletionSource.SetResult(new WalletSearch(search_handle));
         }
+        private static OpenWalletSearchCompletedDelegate OpenSearchCallback = OpenSearchCallbackMethod;
 
 #if __IOS__
         [MonoPInvokeCallback(typeof(FetchNextRecordCompletedDelegate))]
 #endif
-        static void FetchNextCallback(int xcommand_handle, int err, string records_json)
+        private static void FetchNextCallbackMethod(int xcommand_handle, int err, string records_json)
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
@@ -55,6 +57,7 @@ namespace Hyperledger.Indy.NonSecretsApi
 
             taskCompletionSource.SetResult(records_json);
         }
+        private static FetchNextRecordCompletedDelegate FetchNextCallback = FetchNextCallbackMethod;
 
         #endregion
 

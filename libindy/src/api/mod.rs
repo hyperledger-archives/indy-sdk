@@ -1,4 +1,5 @@
 extern crate libc;
+extern crate serde_json;
 
 pub mod anoncreds;
 pub mod crypto;
@@ -10,6 +11,17 @@ pub mod wallet;
 pub mod blob_storage;
 pub mod non_secrets;
 pub mod payments;
+pub mod logger;
+
+use self::libc::c_char;
+
+use domain::IndyConfig;
+use errors::common::CommonError;
+use errors::ToErrorCode;
+
+use utils::ctypes;
+
+pub type IndyHandle = i32;
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 #[repr(i32)]
@@ -184,6 +196,9 @@ pub enum ErrorCode
     // Call pool.indy_set_protocol_version to set correct Protocol version.
     PoolIncompatibleProtocolVersion = 308,
 
+    // Item not found on ledger.
+    LedgerNotFound = 309,
+
     // Revocation registry is full and creation of new registry is necessary
     AnoncredsRevocationRegistryFullError = 400,
 
@@ -223,4 +238,28 @@ pub enum ErrorCode
 
     // Extra funds on inputs
     PaymentExtraFundsError = 705
+}
+
+/// Set libindy runtime configuration. Can be optionally called to change current params.
+///
+/// #Params
+/// config: {
+///     "crypto_thread_pool_size": <int> - size of thread pool for the most expensive crypto operations. (4 by default)
+/// }
+///
+/// #Errors
+/// Common*
+#[no_mangle]
+pub extern fn indy_set_runtime_config(config: *const c_char) -> ErrorCode {
+    trace!("indy_set_runtime_config >>> config: {:?}", config);
+
+    check_useful_json!(config, ErrorCode::CommonInvalidParam1, IndyConfig);
+
+    ::commands::indy_set_runtime_config(config);
+
+    let res = ErrorCode::Success;
+
+    trace!("indy_set_runtime_config: <<< res: {:?}", res);
+
+    res
 }

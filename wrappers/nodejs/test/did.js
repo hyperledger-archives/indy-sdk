@@ -5,16 +5,16 @@ var initTestPool = require('./helpers/initTestPool')
 
 test('did', async function (t) {
   var pool = await initTestPool()
-  var walletConfig = {'id': 'wallet-' + cuid()}
-  var walletCredentials = {'key': 'key'}
+  var walletConfig = { 'id': 'wallet-' + cuid() }
+  var walletCredentials = { 'key': 'key' }
   await indy.createWallet(walletConfig, walletCredentials)
   var wh = await indy.openWallet(walletConfig, walletCredentials)
 
   // List, create, and get
   t.deepEqual(await indy.listMyDidsWithMeta(wh), [])
-  var [did, verkey] = await indy.createAndStoreMyDid(wh, {seed: '000000000000000000000000Steward1'})
+  var [did, verkey] = await indy.createAndStoreMyDid(wh, { seed: '000000000000000000000000Steward1' })
   t.deepEqual(await indy.listMyDidsWithMeta(wh), [
-    {did: did, metadata: null, verkey: verkey}
+    { did: did, metadata: null, verkey: verkey, tempVerkey: null }
   ])
   t.is(await indy.keyForLocalDid(wh, did), verkey)
   t.is(await indy.keyForDid(pool.handle, wh, did), verkey)
@@ -33,7 +33,7 @@ test('did', async function (t) {
   verkey = verkey2
 
   // Store
-  await indy.storeTheirDid(wh, {did: 'VsKV7grR1BUE29mG2Fm2kX', verkey: 'GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa'})
+  await indy.storeTheirDid(wh, { did: 'VsKV7grR1BUE29mG2Fm2kX', verkey: 'GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa' })
 
   // Endpoint
   var endpoint = '127.0.0.1:9700'
@@ -51,7 +51,8 @@ test('did', async function (t) {
   t.deepEqual(data, {
     did: did,
     metadata: metadata,
-    verkey: verkey
+    verkey: verkey,
+    tempVerkey: null
   })
   t.deepEqual(await indy.listMyDidsWithMeta(wh), [data])
 

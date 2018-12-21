@@ -273,7 +273,7 @@ mod tests {
         use super::*;
         use std::path;
         use api::ErrorCode;
-        use std::os::raw::c_char;
+        use libc::c_char;
 
         #[test]
         fn pool_service_new_works() {
@@ -543,11 +543,10 @@ mod tests {
 
         use services::pool::rust_base58::{FromBase58, ToBase58};
         use utils::crypto::ed25519_sign;
-        use std::thread;
         use super::*;
         use self::indy_crypto::bls::{Generator, SignKey, VerKey};
 
-        pub static POLL_TIMEOUT: i64 = 5_000; /* in ms */
+        pub static POLL_TIMEOUT: i64 = 1_000; /* in ms */
 
         pub fn node() -> NodeTransactionV1 {
             let blskey = VerKey::new(&Generator::from_bytes(&"3LHpUjiyFC2q2hD7MnwwNmVXiuaFbQx2XkAFJWzswCjgN1utjsCeLzHsKk1nJvFEaS4fcrUmVAkdhtPCYbrVyATZcmzwJReTcJqwqBCPTmTQ9uWPwz6rEncKb2pYYYFcdHa8N17HzVyTqKfgPi4X9pMetfT3A5xCHq54R2pDNYWVLDX".from_base58().unwrap()).unwrap(),
@@ -617,7 +616,7 @@ mod tests {
             }
         }
 
-        pub fn start(gt: &mut NodeTransactionV1) -> thread::JoinHandle<Vec<String>> {
+        pub fn start(gt: &mut NodeTransactionV1) -> zmq::Socket {
             let (vk, sk) = sodiumoxide::crypto::sign::ed25519::gen_keypair();
             let (vk, sk) = (ed25519_sign::PublicKey::from_slice(&vk[..]).unwrap(), ed25519_sign::SecretKey::from_slice(&sk[..]).unwrap());
             let pkc = ed25519_sign::vk_to_curve25519(&vk).expect("Invalid pkc");
@@ -638,25 +637,20 @@ mod tests {
 
             gt.txn.data.data.client_port = Some(parts[0].parse::<u64>().unwrap());
 
-            let handle = thread::spawn(move || {
-                let mut received_msgs: Vec<String> = Vec::new();
+            s
+        }
 
-                loop {
-                    let poll_res = s.poll(zmq::POLLIN, POLL_TIMEOUT).expect("poll");
-                    if poll_res == 1 {
-                        let v = s.recv_multipart(zmq::DONTWAIT).expect("recv mulp");
-                        trace!("Node emulator poll recv {:?}", v);
-                        s.send_multipart(&[v[0].as_slice(), "po".as_bytes()], zmq::DONTWAIT).expect("send mulp");
-                        received_msgs.push(String::from_utf8(v[1].clone()).unwrap());
-                    } else {
-                        warn!("Node emulator poll return {}", poll_res);
-                        break
-                    }
-                }
-
-                received_msgs
-            });
-            handle
+        pub fn next(s: &zmq::Socket) -> Option<String> {
+            let poll_res = s.poll(zmq::POLLIN, POLL_TIMEOUT).expect("poll");
+            if poll_res == 1 {
+                let v = s.recv_multipart(zmq::DONTWAIT).expect("recv mulp");
+                trace!("Node emulator poll recv {:?}", v);
+                s.send_multipart(&[v[0].as_slice(), "po".as_bytes()], zmq::DONTWAIT).expect("send mulp");
+                Some(String::from_utf8(v[1].clone()).unwrap())
+            } else {
+                warn!("Node emulator poll return {}", poll_res);
+                None
+            }
         }
     }
 }

@@ -38,7 +38,7 @@ NAN_METHOD(issuerCreateAndStoreCredentialDef) {
   INDY_ASSERT_STRING(issuerCreateAndStoreCredentialDef, 4, signatureType)
   INDY_ASSERT_STRING(issuerCreateAndStoreCredentialDef, 5, config)
   INDY_ASSERT_FUNCTION(issuerCreateAndStoreCredentialDef, 6)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   const char* arg1 = argToCString(info[1]);
   const char* arg2 = argToCString(info[2]);
   const char* arg3 = argToCString(info[3]);
@@ -69,13 +69,13 @@ NAN_METHOD(issuerCreateAndStoreRevocReg) {
   INDY_ASSERT_STRING(issuerCreateAndStoreRevocReg, 5, config)
   INDY_ASSERT_NUMBER(issuerCreateAndStoreRevocReg, 6, tailsWriterHandle)
   INDY_ASSERT_FUNCTION(issuerCreateAndStoreRevocReg, 7)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   const char* arg1 = argToCString(info[1]);
   const char* arg2 = argToCString(info[2]);
   const char* arg3 = argToCString(info[3]);
   const char* arg4 = argToCString(info[4]);
   const char* arg5 = argToCString(info[5]);
-  indy_handle_t arg6 = info[6]->Int32Value();
+  indy_handle_t arg6 = argToInt32(info[6]);
   IndyCallback* icb = argToIndyCb(info[7]);
   indyCalled(icb, indy_issuer_create_and_store_revoc_reg(icb->handle, arg0, arg1, arg2, arg3, arg4, arg5, arg6, issuerCreateAndStoreRevocReg_cb));
   delete arg1;
@@ -96,7 +96,7 @@ NAN_METHOD(issuerCreateCredentialOffer) {
   INDY_ASSERT_NUMBER(issuerCreateCredentialOffer, 0, wh)
   INDY_ASSERT_STRING(issuerCreateCredentialOffer, 1, credDefId)
   INDY_ASSERT_FUNCTION(issuerCreateCredentialOffer, 2)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   const char* arg1 = argToCString(info[1]);
   IndyCallback* icb = argToIndyCb(info[2]);
   indyCalled(icb, indy_issuer_create_credential_offer(icb->handle, arg0, arg1, issuerCreateCredentialOffer_cb));
@@ -118,12 +118,12 @@ NAN_METHOD(issuerCreateCredential) {
   INDY_ASSERT_STRING(issuerCreateCredential, 4, revRegId)
   INDY_ASSERT_NUMBER(issuerCreateCredential, 5, blobStorageReaderHandle)
   INDY_ASSERT_FUNCTION(issuerCreateCredential, 6)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   const char* arg1 = argToCString(info[1]);
   const char* arg2 = argToCString(info[2]);
   const char* arg3 = argToCString(info[3]);
   const char* arg4 = argToCString(info[4]);
-  indy_i32_t arg5 = info[5]->Int32Value();
+  indy_handle_t arg5 = argToInt32(info[5]);
   IndyCallback* icb = argToIndyCb(info[6]);
   indyCalled(icb, indy_issuer_create_credential(icb->handle, arg0, arg1, arg2, arg3, arg4, arg5, issuerCreateCredential_cb));
   delete arg1;
@@ -145,8 +145,8 @@ NAN_METHOD(issuerRevokeCredential) {
   INDY_ASSERT_STRING(issuerRevokeCredential, 2, revRegId)
   INDY_ASSERT_STRING(issuerRevokeCredential, 3, credRevocId)
   INDY_ASSERT_FUNCTION(issuerRevokeCredential, 4)
-  indy_handle_t arg0 = info[0]->Int32Value();
-  indy_i32_t arg1 = info[1]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
+  indy_handle_t arg1 = argToInt32(info[1]);
   const char* arg2 = argToCString(info[2]);
   const char* arg3 = argToCString(info[3]);
   IndyCallback* icb = argToIndyCb(info[4]);
@@ -185,7 +185,7 @@ NAN_METHOD(proverCreateMasterSecret) {
   INDY_ASSERT_NUMBER(proverCreateMasterSecret, 0, wh)
   INDY_ASSERT_STRING(proverCreateMasterSecret, 1, masterSecretId)
   INDY_ASSERT_FUNCTION(proverCreateMasterSecret, 2)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   const char* arg1 = argToCString(info[1]);
   IndyCallback* icb = argToIndyCb(info[2]);
   indyCalled(icb, indy_prover_create_master_secret(icb->handle, arg0, arg1, proverCreateMasterSecret_cb));
@@ -206,7 +206,7 @@ NAN_METHOD(proverCreateCredentialReq) {
   INDY_ASSERT_STRING(proverCreateCredentialReq, 3, credDef)
   INDY_ASSERT_STRING(proverCreateCredentialReq, 4, masterSecretId)
   INDY_ASSERT_FUNCTION(proverCreateCredentialReq, 5)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   const char* arg1 = argToCString(info[1]);
   const char* arg2 = argToCString(info[2]);
   const char* arg3 = argToCString(info[3]);
@@ -234,7 +234,7 @@ NAN_METHOD(proverStoreCredential) {
   INDY_ASSERT_STRING(proverStoreCredential, 4, credDef)
   INDY_ASSERT_STRING(proverStoreCredential, 5, revRegDef)
   INDY_ASSERT_FUNCTION(proverStoreCredential, 6)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   const char* arg1 = argToCString(info[1]);
   const char* arg2 = argToCString(info[2]);
   const char* arg3 = argToCString(info[3]);
@@ -260,7 +260,7 @@ NAN_METHOD(proverGetCredentials) {
   INDY_ASSERT_NUMBER(proverGetCredentials, 0, wh)
   INDY_ASSERT_STRING(proverGetCredentials, 1, filter)
   INDY_ASSERT_FUNCTION(proverGetCredentials, 2)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   const char* arg1 = argToCString(info[1]);
   IndyCallback* icb = argToIndyCb(info[2]);
   indyCalled(icb, indy_prover_get_credentials(icb->handle, arg0, arg1, proverGetCredentials_cb));
@@ -278,7 +278,7 @@ NAN_METHOD(proverGetCredential) {
   INDY_ASSERT_NUMBER(proverGetCredential, 0, wh)
   INDY_ASSERT_STRING(proverGetCredential, 1, credId)
   INDY_ASSERT_FUNCTION(proverGetCredential, 2)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   const char* arg1 = argToCString(info[1]);
   IndyCallback* icb = argToIndyCb(info[2]);
   indyCalled(icb, indy_prover_get_credential(icb->handle, arg0, arg1, proverGetCredential_cb));
@@ -296,7 +296,7 @@ NAN_METHOD(proverSearchCredentials) {
   INDY_ASSERT_NUMBER(proverSearchCredentials, 0, wh)
   INDY_ASSERT_STRING(proverSearchCredentials, 1, query)
   INDY_ASSERT_FUNCTION(proverSearchCredentials, 2)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   const char* arg1 = argToCString(info[1]);
   IndyCallback* icb = argToIndyCb(info[2]);
   indyCalled(icb, indy_prover_search_credentials(icb->handle, arg0, arg1, proverSearchCredentials_cb));
@@ -314,8 +314,8 @@ NAN_METHOD(proverFetchCredentials) {
   INDY_ASSERT_NUMBER(proverFetchCredentials, 0, sh)
   INDY_ASSERT_NUMBER(proverFetchCredentials, 1, count)
   INDY_ASSERT_FUNCTION(proverFetchCredentials, 2)
-  indy_handle_t arg0 = info[0]->Int32Value();
-  indy_u32_t arg1 = info[1]->Uint32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
+  indy_u32_t arg1 = argToUInt32(info[1]);
   IndyCallback* icb = argToIndyCb(info[2]);
   indyCalled(icb, indy_prover_fetch_credentials(icb->handle, arg0, arg1, proverFetchCredentials_cb));
 }
@@ -330,7 +330,7 @@ NAN_METHOD(proverCloseCredentialsSearch) {
   INDY_ASSERT_NARGS(proverCloseCredentialsSearch, 2)
   INDY_ASSERT_NUMBER(proverCloseCredentialsSearch, 0, sh)
   INDY_ASSERT_FUNCTION(proverCloseCredentialsSearch, 1)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   IndyCallback* icb = argToIndyCb(info[1]);
   indyCalled(icb, indy_prover_close_credentials_search(icb->handle, arg0, proverCloseCredentialsSearch_cb));
 }
@@ -346,7 +346,7 @@ NAN_METHOD(proverGetCredentialsForProofReq) {
   INDY_ASSERT_NUMBER(proverGetCredentialsForProofReq, 0, wh)
   INDY_ASSERT_STRING(proverGetCredentialsForProofReq, 1, proofRequest)
   INDY_ASSERT_FUNCTION(proverGetCredentialsForProofReq, 2)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   const char* arg1 = argToCString(info[1]);
   IndyCallback* icb = argToIndyCb(info[2]);
   indyCalled(icb, indy_prover_get_credentials_for_proof_req(icb->handle, arg0, arg1, proverGetCredentialsForProofReq_cb));
@@ -365,7 +365,7 @@ NAN_METHOD(proverSearchCredentialsForProofReq) {
   INDY_ASSERT_STRING(proverSearchCredentialsForProofReq, 1, proofRequest)
   INDY_ASSERT_STRING(proverSearchCredentialsForProofReq, 2, extraQuery)
   INDY_ASSERT_FUNCTION(proverSearchCredentialsForProofReq, 3)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   const char* arg1 = argToCString(info[1]);
   const char* arg2 = argToCString(info[2]);
   IndyCallback* icb = argToIndyCb(info[3]);
@@ -386,9 +386,9 @@ NAN_METHOD(proverFetchCredentialsForProofReq) {
   INDY_ASSERT_STRING(proverFetchCredentialsForProofReq, 1, itemReferent)
   INDY_ASSERT_NUMBER(proverFetchCredentialsForProofReq, 2, count)
   INDY_ASSERT_FUNCTION(proverFetchCredentialsForProofReq, 3)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   const char* arg1 = argToCString(info[1]);
-  indy_u32_t arg2 = info[2]->Uint32Value();
+  indy_u32_t arg2 = argToUInt32(info[2]);
   IndyCallback* icb = argToIndyCb(info[3]);
   indyCalled(icb, indy_prover_fetch_credentials_for_proof_req(icb->handle, arg0, arg1, arg2, proverFetchCredentialsForProofReq_cb));
   delete arg1;
@@ -404,7 +404,7 @@ NAN_METHOD(proverCloseCredentialsSearchForProofReq) {
   INDY_ASSERT_NARGS(proverCloseCredentialsSearchForProofReq, 2)
   INDY_ASSERT_NUMBER(proverCloseCredentialsSearchForProofReq, 0, sh)
   INDY_ASSERT_FUNCTION(proverCloseCredentialsSearchForProofReq, 1)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   IndyCallback* icb = argToIndyCb(info[1]);
   indyCalled(icb, indy_prover_close_credentials_search_for_proof_req(icb->handle, arg0, proverCloseCredentialsSearchForProofReq_cb));
 }
@@ -425,7 +425,7 @@ NAN_METHOD(proverCreateProof) {
   INDY_ASSERT_STRING(proverCreateProof, 5, credentialDefs)
   INDY_ASSERT_STRING(proverCreateProof, 6, revStates)
   INDY_ASSERT_FUNCTION(proverCreateProof, 7)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   const char* arg1 = argToCString(info[1]);
   const char* arg2 = argToCString(info[2]);
   const char* arg3 = argToCString(info[3]);
@@ -487,10 +487,10 @@ NAN_METHOD(createRevocationState) {
   INDY_ASSERT_NUMBER(createRevocationState, 3, timestamp)
   INDY_ASSERT_STRING(createRevocationState, 4, credRevId)
   INDY_ASSERT_FUNCTION(createRevocationState, 5)
-  indy_i32_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   const char* arg1 = argToCString(info[1]);
   const char* arg2 = argToCString(info[2]);
-  long long arg3 = info[3]->Uint32Value();
+  long long arg3 = argToUInt32(info[3]);
   const char* arg4 = argToCString(info[4]);
   IndyCallback* icb = argToIndyCb(info[5]);
   indyCalled(icb, indy_create_revocation_state(icb->handle, arg0, arg1, arg2, arg3, arg4, createRevocationState_cb));
@@ -514,11 +514,11 @@ NAN_METHOD(updateRevocationState) {
   INDY_ASSERT_NUMBER(updateRevocationState, 4, timestamp)
   INDY_ASSERT_STRING(updateRevocationState, 5, credRevId)
   INDY_ASSERT_FUNCTION(updateRevocationState, 6)
-  indy_i32_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   const char* arg1 = argToCString(info[1]);
   const char* arg2 = argToCString(info[2]);
   const char* arg3 = argToCString(info[3]);
-  long long arg4 = info[4]->Uint32Value();
+  long long arg4 = argToUInt32(info[4]);
   const char* arg5 = argToCString(info[5]);
   IndyCallback* icb = argToIndyCb(info[6]);
   indyCalled(icb, indy_update_revocation_state(icb->handle, arg0, arg1, arg2, arg3, arg4, arg5, updateRevocationState_cb));
@@ -528,10 +528,10 @@ NAN_METHOD(updateRevocationState) {
   delete arg5;
 }
 
-void openBlobStorageReader_cb(indy_handle_t handle, indy_error_t xerr, indy_i32_t arg0) {
+void openBlobStorageReader_cb(indy_handle_t handle, indy_error_t xerr, indy_handle_t arg0) {
   IndyCallback* icb = IndyCallback::getCallback(handle);
   if(icb != nullptr){
-    icb->cbI32(xerr, arg0);
+    icb->cbHandle(xerr, arg0);
   }
 }
 NAN_METHOD(openBlobStorageReader) {
@@ -547,10 +547,10 @@ NAN_METHOD(openBlobStorageReader) {
   delete arg1;
 }
 
-void openBlobStorageWriter_cb(indy_handle_t handle, indy_error_t xerr, indy_i32_t arg0) {
+void openBlobStorageWriter_cb(indy_handle_t handle, indy_error_t xerr, indy_handle_t arg0) {
   IndyCallback* icb = IndyCallback::getCallback(handle);
   if(icb != nullptr){
-    icb->cbI32(xerr, arg0);
+    icb->cbHandle(xerr, arg0);
   }
 }
 NAN_METHOD(openBlobStorageWriter) {
@@ -577,7 +577,7 @@ NAN_METHOD(createKey) {
   INDY_ASSERT_NUMBER(createKey, 0, wh)
   INDY_ASSERT_STRING(createKey, 1, key)
   INDY_ASSERT_FUNCTION(createKey, 2)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   const char* arg1 = argToCString(info[1]);
   IndyCallback* icb = argToIndyCb(info[2]);
   indyCalled(icb, indy_create_key(icb->handle, arg0, arg1, createKey_cb));
@@ -596,7 +596,7 @@ NAN_METHOD(setKeyMetadata) {
   INDY_ASSERT_STRING(setKeyMetadata, 1, verkey)
   INDY_ASSERT_STRING(setKeyMetadata, 2, metadata)
   INDY_ASSERT_FUNCTION(setKeyMetadata, 3)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   const char* arg1 = argToCString(info[1]);
   const char* arg2 = argToCString(info[2]);
   IndyCallback* icb = argToIndyCb(info[3]);
@@ -616,7 +616,7 @@ NAN_METHOD(getKeyMetadata) {
   INDY_ASSERT_NUMBER(getKeyMetadata, 0, wh)
   INDY_ASSERT_STRING(getKeyMetadata, 1, verkey)
   INDY_ASSERT_FUNCTION(getKeyMetadata, 2)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   const char* arg1 = argToCString(info[1]);
   IndyCallback* icb = argToIndyCb(info[2]);
   indyCalled(icb, indy_get_key_metadata(icb->handle, arg0, arg1, getKeyMetadata_cb));
@@ -635,9 +635,9 @@ NAN_METHOD(cryptoSign) {
   INDY_ASSERT_STRING(cryptoSign, 1, signerVk)
   INDY_ASSERT_UINT8ARRAY(cryptoSign, 2, messageRaw)
   INDY_ASSERT_FUNCTION(cryptoSign, 3)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   const char* arg1 = argToCString(info[1]);
-  const indy_u8_t* arg2data = (indy_u8_t*)node::Buffer::Data(info[2]->ToObject());
+  const indy_u8_t* arg2data = (indy_u8_t*)argToBufferData(info[2]);
   indy_u32_t arg2len = node::Buffer::Length(info[2]);
   IndyCallback* icb = argToIndyCb(info[3]);
   indyCalled(icb, indy_crypto_sign(icb->handle, arg0, arg1, arg2data, arg2len, cryptoSign_cb));
@@ -657,9 +657,9 @@ NAN_METHOD(cryptoVerify) {
   INDY_ASSERT_UINT8ARRAY(cryptoVerify, 2, signatureRaw)
   INDY_ASSERT_FUNCTION(cryptoVerify, 3)
   const char* arg0 = argToCString(info[0]);
-  const indy_u8_t* arg1data = (indy_u8_t*)node::Buffer::Data(info[1]->ToObject());
+  const indy_u8_t* arg1data = (indy_u8_t*)argToBufferData(info[1]);
   indy_u32_t arg1len = node::Buffer::Length(info[1]);
-  const indy_u8_t* arg2data = (indy_u8_t*)node::Buffer::Data(info[2]->ToObject());
+  const indy_u8_t* arg2data = (indy_u8_t*)argToBufferData(info[2]);
   indy_u32_t arg2len = node::Buffer::Length(info[2]);
   IndyCallback* icb = argToIndyCb(info[3]);
   indyCalled(icb, indy_crypto_verify(icb->handle, arg0, arg1data, arg1len, arg2data, arg2len, cryptoVerify_cb));
@@ -679,10 +679,10 @@ NAN_METHOD(cryptoAuthCrypt) {
   INDY_ASSERT_STRING(cryptoAuthCrypt, 2, recipientVk)
   INDY_ASSERT_UINT8ARRAY(cryptoAuthCrypt, 3, messageRaw)
   INDY_ASSERT_FUNCTION(cryptoAuthCrypt, 4)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   const char* arg1 = argToCString(info[1]);
   const char* arg2 = argToCString(info[2]);
-  const indy_u8_t* arg3data = (indy_u8_t*)node::Buffer::Data(info[3]->ToObject());
+  const indy_u8_t* arg3data = (indy_u8_t*)argToBufferData(info[3]);
   indy_u32_t arg3len = node::Buffer::Length(info[3]);
   IndyCallback* icb = argToIndyCb(info[4]);
   indyCalled(icb, indy_crypto_auth_crypt(icb->handle, arg0, arg1, arg2, arg3data, arg3len, cryptoAuthCrypt_cb));
@@ -702,9 +702,9 @@ NAN_METHOD(cryptoAuthDecrypt) {
   INDY_ASSERT_STRING(cryptoAuthDecrypt, 1, recipientVk)
   INDY_ASSERT_UINT8ARRAY(cryptoAuthDecrypt, 2, encryptedMsgRaw)
   INDY_ASSERT_FUNCTION(cryptoAuthDecrypt, 3)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   const char* arg1 = argToCString(info[1]);
-  const indy_u8_t* arg2data = (indy_u8_t*)node::Buffer::Data(info[2]->ToObject());
+  const indy_u8_t* arg2data = (indy_u8_t*)argToBufferData(info[2]);
   indy_u32_t arg2len = node::Buffer::Length(info[2]);
   IndyCallback* icb = argToIndyCb(info[3]);
   indyCalled(icb, indy_crypto_auth_decrypt(icb->handle, arg0, arg1, arg2data, arg2len, cryptoAuthDecrypt_cb));
@@ -723,7 +723,7 @@ NAN_METHOD(cryptoAnonCrypt) {
   INDY_ASSERT_UINT8ARRAY(cryptoAnonCrypt, 1, messageRaw)
   INDY_ASSERT_FUNCTION(cryptoAnonCrypt, 2)
   const char* arg0 = argToCString(info[0]);
-  const indy_u8_t* arg1data = (indy_u8_t*)node::Buffer::Data(info[1]->ToObject());
+  const indy_u8_t* arg1data = (indy_u8_t*)argToBufferData(info[1]);
   indy_u32_t arg1len = node::Buffer::Length(info[1]);
   IndyCallback* icb = argToIndyCb(info[2]);
   indyCalled(icb, indy_crypto_anon_crypt(icb->handle, arg0, arg1data, arg1len, cryptoAnonCrypt_cb));
@@ -742,9 +742,9 @@ NAN_METHOD(cryptoAnonDecrypt) {
   INDY_ASSERT_STRING(cryptoAnonDecrypt, 1, recipientVk)
   INDY_ASSERT_UINT8ARRAY(cryptoAnonDecrypt, 2, encryptedMsg)
   INDY_ASSERT_FUNCTION(cryptoAnonDecrypt, 3)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   const char* arg1 = argToCString(info[1]);
-  const indy_u8_t* arg2data = (indy_u8_t*)node::Buffer::Data(info[2]->ToObject());
+  const indy_u8_t* arg2data = (indy_u8_t*)argToBufferData(info[2]);
   indy_u32_t arg2len = node::Buffer::Length(info[2]);
   IndyCallback* icb = argToIndyCb(info[3]);
   indyCalled(icb, indy_crypto_anon_decrypt(icb->handle, arg0, arg1, arg2data, arg2len, cryptoAnonDecrypt_cb));
@@ -762,7 +762,7 @@ NAN_METHOD(createAndStoreMyDid) {
   INDY_ASSERT_NUMBER(createAndStoreMyDid, 0, wh)
   INDY_ASSERT_STRING(createAndStoreMyDid, 1, did)
   INDY_ASSERT_FUNCTION(createAndStoreMyDid, 2)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   const char* arg1 = argToCString(info[1]);
   IndyCallback* icb = argToIndyCb(info[2]);
   indyCalled(icb, indy_create_and_store_my_did(icb->handle, arg0, arg1, createAndStoreMyDid_cb));
@@ -781,7 +781,7 @@ NAN_METHOD(replaceKeysStart) {
   INDY_ASSERT_STRING(replaceKeysStart, 1, did)
   INDY_ASSERT_STRING(replaceKeysStart, 2, identity)
   INDY_ASSERT_FUNCTION(replaceKeysStart, 3)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   const char* arg1 = argToCString(info[1]);
   const char* arg2 = argToCString(info[2]);
   IndyCallback* icb = argToIndyCb(info[3]);
@@ -801,7 +801,7 @@ NAN_METHOD(replaceKeysApply) {
   INDY_ASSERT_NUMBER(replaceKeysApply, 0, wh)
   INDY_ASSERT_STRING(replaceKeysApply, 1, did)
   INDY_ASSERT_FUNCTION(replaceKeysApply, 2)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   const char* arg1 = argToCString(info[1]);
   IndyCallback* icb = argToIndyCb(info[2]);
   indyCalled(icb, indy_replace_keys_apply(icb->handle, arg0, arg1, replaceKeysApply_cb));
@@ -819,7 +819,7 @@ NAN_METHOD(storeTheirDid) {
   INDY_ASSERT_NUMBER(storeTheirDid, 0, wh)
   INDY_ASSERT_STRING(storeTheirDid, 1, identity)
   INDY_ASSERT_FUNCTION(storeTheirDid, 2)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   const char* arg1 = argToCString(info[1]);
   IndyCallback* icb = argToIndyCb(info[2]);
   indyCalled(icb, indy_store_their_did(icb->handle, arg0, arg1, storeTheirDid_cb));
@@ -838,8 +838,8 @@ NAN_METHOD(keyForDid) {
   INDY_ASSERT_NUMBER(keyForDid, 1, wh)
   INDY_ASSERT_STRING(keyForDid, 2, did)
   INDY_ASSERT_FUNCTION(keyForDid, 3)
-  indy_handle_t arg0 = info[0]->Int32Value();
-  indy_handle_t arg1 = info[1]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
+  indy_handle_t arg1 = argToInt32(info[1]);
   const char* arg2 = argToCString(info[2]);
   IndyCallback* icb = argToIndyCb(info[3]);
   indyCalled(icb, indy_key_for_did(icb->handle, arg0, arg1, arg2, keyForDid_cb));
@@ -857,7 +857,7 @@ NAN_METHOD(keyForLocalDid) {
   INDY_ASSERT_NUMBER(keyForLocalDid, 0, wh)
   INDY_ASSERT_STRING(keyForLocalDid, 1, did)
   INDY_ASSERT_FUNCTION(keyForLocalDid, 2)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   const char* arg1 = argToCString(info[1]);
   IndyCallback* icb = argToIndyCb(info[2]);
   indyCalled(icb, indy_key_for_local_did(icb->handle, arg0, arg1, keyForLocalDid_cb));
@@ -877,7 +877,7 @@ NAN_METHOD(setEndpointForDid) {
   INDY_ASSERT_STRING(setEndpointForDid, 2, address)
   INDY_ASSERT_STRING(setEndpointForDid, 3, transportKey)
   INDY_ASSERT_FUNCTION(setEndpointForDid, 4)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   const char* arg1 = argToCString(info[1]);
   const char* arg2 = argToCString(info[2]);
   const char* arg3 = argToCString(info[3]);
@@ -900,8 +900,8 @@ NAN_METHOD(getEndpointForDid) {
   INDY_ASSERT_NUMBER(getEndpointForDid, 1, poolHandle)
   INDY_ASSERT_STRING(getEndpointForDid, 2, did)
   INDY_ASSERT_FUNCTION(getEndpointForDid, 3)
-  indy_handle_t arg0 = info[0]->Int32Value();
-  indy_handle_t arg1 = info[1]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
+  indy_handle_t arg1 = argToInt32(info[1]);
   const char* arg2 = argToCString(info[2]);
   IndyCallback* icb = argToIndyCb(info[3]);
   indyCalled(icb, indy_get_endpoint_for_did(icb->handle, arg0, arg1, arg2, getEndpointForDid_cb));
@@ -920,7 +920,7 @@ NAN_METHOD(setDidMetadata) {
   INDY_ASSERT_STRING(setDidMetadata, 1, did)
   INDY_ASSERT_STRING(setDidMetadata, 2, metadata)
   INDY_ASSERT_FUNCTION(setDidMetadata, 3)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   const char* arg1 = argToCString(info[1]);
   const char* arg2 = argToCString(info[2]);
   IndyCallback* icb = argToIndyCb(info[3]);
@@ -940,7 +940,7 @@ NAN_METHOD(getDidMetadata) {
   INDY_ASSERT_NUMBER(getDidMetadata, 0, wh)
   INDY_ASSERT_STRING(getDidMetadata, 1, did)
   INDY_ASSERT_FUNCTION(getDidMetadata, 2)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   const char* arg1 = argToCString(info[1]);
   IndyCallback* icb = argToIndyCb(info[2]);
   indyCalled(icb, indy_get_did_metadata(icb->handle, arg0, arg1, getDidMetadata_cb));
@@ -958,7 +958,7 @@ NAN_METHOD(getMyDidWithMeta) {
   INDY_ASSERT_NUMBER(getMyDidWithMeta, 0, wh)
   INDY_ASSERT_STRING(getMyDidWithMeta, 1, myDid)
   INDY_ASSERT_FUNCTION(getMyDidWithMeta, 2)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   const char* arg1 = argToCString(info[1]);
   IndyCallback* icb = argToIndyCb(info[2]);
   indyCalled(icb, indy_get_my_did_with_meta(icb->handle, arg0, arg1, getMyDidWithMeta_cb));
@@ -975,7 +975,7 @@ NAN_METHOD(listMyDidsWithMeta) {
   INDY_ASSERT_NARGS(listMyDidsWithMeta, 2)
   INDY_ASSERT_NUMBER(listMyDidsWithMeta, 0, wh)
   INDY_ASSERT_FUNCTION(listMyDidsWithMeta, 1)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   IndyCallback* icb = argToIndyCb(info[1]);
   indyCalled(icb, indy_list_my_dids_with_meta(icb->handle, arg0, listMyDidsWithMeta_cb));
 }
@@ -1012,8 +1012,8 @@ NAN_METHOD(signAndSubmitRequest) {
   INDY_ASSERT_STRING(signAndSubmitRequest, 2, submitterDid)
   INDY_ASSERT_STRING(signAndSubmitRequest, 3, request)
   INDY_ASSERT_FUNCTION(signAndSubmitRequest, 4)
-  indy_handle_t arg0 = info[0]->Int32Value();
-  indy_handle_t arg1 = info[1]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
+  indy_handle_t arg1 = argToInt32(info[1]);
   const char* arg2 = argToCString(info[2]);
   const char* arg3 = argToCString(info[3]);
   IndyCallback* icb = argToIndyCb(info[4]);
@@ -1033,7 +1033,7 @@ NAN_METHOD(submitRequest) {
   INDY_ASSERT_NUMBER(submitRequest, 0, poolHandle)
   INDY_ASSERT_STRING(submitRequest, 1, request)
   INDY_ASSERT_FUNCTION(submitRequest, 2)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   const char* arg1 = argToCString(info[1]);
   IndyCallback* icb = argToIndyCb(info[2]);
   indyCalled(icb, indy_submit_request(icb->handle, arg0, arg1, submitRequest_cb));
@@ -1053,10 +1053,10 @@ NAN_METHOD(submitAction) {
   INDY_ASSERT_STRING(submitAction, 2, nodes)
   INDY_ASSERT_NUMBER(submitAction, 3, timeout)
   INDY_ASSERT_FUNCTION(submitAction, 4)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   const char* arg1 = argToCString(info[1]);
   const char* arg2 = argToCString(info[2]);
-  indy_i32_t arg3 = info[3]->Int32Value();
+  indy_i32_t arg3 = argToInt32(info[3]);
   IndyCallback* icb = argToIndyCb(info[4]);
   indyCalled(icb, indy_submit_action(icb->handle, arg0, arg1, arg2, arg3, submitAction_cb));
   delete arg1;
@@ -1075,7 +1075,7 @@ NAN_METHOD(signRequest) {
   INDY_ASSERT_STRING(signRequest, 1, submitterDid)
   INDY_ASSERT_STRING(signRequest, 2, request)
   INDY_ASSERT_FUNCTION(signRequest, 3)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   const char* arg1 = argToCString(info[1]);
   const char* arg2 = argToCString(info[2]);
   IndyCallback* icb = argToIndyCb(info[3]);
@@ -1096,7 +1096,7 @@ NAN_METHOD(multiSignRequest) {
   INDY_ASSERT_STRING(multiSignRequest, 1, submitterDid)
   INDY_ASSERT_STRING(multiSignRequest, 2, request)
   INDY_ASSERT_FUNCTION(multiSignRequest, 3)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   const char* arg1 = argToCString(info[1]);
   const char* arg2 = argToCString(info[2]);
   IndyCallback* icb = argToIndyCb(info[3]);
@@ -1383,11 +1383,11 @@ NAN_METHOD(buildGetTxnRequest) {
   INDY_ASSERT_NARGS(buildGetTxnRequest, 4)
   INDY_ASSERT_STRING(buildGetTxnRequest, 0, submitterDid)
   INDY_ASSERT_STRING(buildGetTxnRequest, 1, ledgerType)
-  INDY_ASSERT_NUMBER(buildGetTxnRequest, 2, data)
+  INDY_ASSERT_NUMBER(buildGetTxnRequest, 2, seqNo)
   INDY_ASSERT_FUNCTION(buildGetTxnRequest, 3)
   const char* arg0 = argToCString(info[0]);
   const char* arg1 = argToCString(info[1]);
-  indy_i32_t arg2 = info[2]->Int32Value();
+  indy_i32_t arg2 = argToInt32(info[2]);
   IndyCallback* icb = argToIndyCb(info[3]);
   indyCalled(icb, indy_build_get_txn_request(icb->handle, arg0, arg1, arg2, buildGetTxnRequest_cb));
   delete arg0;
@@ -1461,7 +1461,7 @@ NAN_METHOD(buildPoolUpgradeRequest) {
   const char* arg2 = argToCString(info[2]);
   const char* arg3 = argToCString(info[3]);
   const char* arg4 = argToCString(info[4]);
-  indy_i32_t arg5 = info[5]->Int32Value();
+  indy_i32_t arg5 = argToInt32(info[5]);
   const char* arg6 = argToCString(info[6]);
   const char* arg7 = argToCString(info[7]);
   indy_bool_t arg8 = info[8]->IsTrue();
@@ -1572,7 +1572,7 @@ NAN_METHOD(buildGetRevocRegRequest) {
   INDY_ASSERT_FUNCTION(buildGetRevocRegRequest, 3)
   const char* arg0 = argToCString(info[0]);
   const char* arg1 = argToCString(info[1]);
-  long long arg2 = info[2]->Uint32Value();
+  long long arg2 = argToUInt32(info[2]);
   IndyCallback* icb = argToIndyCb(info[3]);
   indyCalled(icb, indy_build_get_revoc_reg_request(icb->handle, arg0, arg1, arg2, buildGetRevocRegRequest_cb));
   delete arg0;
@@ -1610,8 +1610,8 @@ NAN_METHOD(buildGetRevocRegDeltaRequest) {
   INDY_ASSERT_FUNCTION(buildGetRevocRegDeltaRequest, 4)
   const char* arg0 = argToCString(info[0]);
   const char* arg1 = argToCString(info[1]);
-  long long arg2 = info[2]->Uint32Value();
-  long long arg3 = info[3]->Uint32Value();
+  long long arg2 = argToUInt32(info[2]);
+  long long arg3 = argToUInt32(info[3]);
   IndyCallback* icb = argToIndyCb(info[4]);
   indyCalled(icb, indy_build_get_revoc_reg_delta_request(icb->handle, arg0, arg1, arg2, arg3, buildGetRevocRegDeltaRequest_cb));
   delete arg0;
@@ -1634,6 +1634,22 @@ NAN_METHOD(parseGetRevocRegDeltaResponse) {
   delete arg0;
 }
 
+void getResponseMetadata_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbString(xerr, arg0);
+  }
+}
+NAN_METHOD(getResponseMetadata) {
+  INDY_ASSERT_NARGS(getResponseMetadata, 2)
+  INDY_ASSERT_STRING(getResponseMetadata, 0, response)
+  INDY_ASSERT_FUNCTION(getResponseMetadata, 1)
+  const char* arg0 = argToCString(info[0]);
+  IndyCallback* icb = argToIndyCb(info[1]);
+  indyCalled(icb, indy_get_response_metadata(icb->handle, arg0, getResponseMetadata_cb));
+  delete arg0;
+}
+
 void addWalletRecord_cb(indy_handle_t handle, indy_error_t xerr) {
   IndyCallback* icb = IndyCallback::getCallback(handle);
   if(icb != nullptr){
@@ -1648,7 +1664,7 @@ NAN_METHOD(addWalletRecord) {
   INDY_ASSERT_STRING(addWalletRecord, 3, value)
   INDY_ASSERT_STRING(addWalletRecord, 4, tags)
   INDY_ASSERT_FUNCTION(addWalletRecord, 5)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   const char* arg1 = argToCString(info[1]);
   const char* arg2 = argToCString(info[2]);
   const char* arg3 = argToCString(info[3]);
@@ -1674,7 +1690,7 @@ NAN_METHOD(updateWalletRecordValue) {
   INDY_ASSERT_STRING(updateWalletRecordValue, 2, id)
   INDY_ASSERT_STRING(updateWalletRecordValue, 3, value)
   INDY_ASSERT_FUNCTION(updateWalletRecordValue, 4)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   const char* arg1 = argToCString(info[1]);
   const char* arg2 = argToCString(info[2]);
   const char* arg3 = argToCString(info[3]);
@@ -1698,7 +1714,7 @@ NAN_METHOD(updateWalletRecordTags) {
   INDY_ASSERT_STRING(updateWalletRecordTags, 2, id)
   INDY_ASSERT_STRING(updateWalletRecordTags, 3, tags)
   INDY_ASSERT_FUNCTION(updateWalletRecordTags, 4)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   const char* arg1 = argToCString(info[1]);
   const char* arg2 = argToCString(info[2]);
   const char* arg3 = argToCString(info[3]);
@@ -1722,7 +1738,7 @@ NAN_METHOD(addWalletRecordTags) {
   INDY_ASSERT_STRING(addWalletRecordTags, 2, id)
   INDY_ASSERT_STRING(addWalletRecordTags, 3, tags)
   INDY_ASSERT_FUNCTION(addWalletRecordTags, 4)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   const char* arg1 = argToCString(info[1]);
   const char* arg2 = argToCString(info[2]);
   const char* arg3 = argToCString(info[3]);
@@ -1746,7 +1762,7 @@ NAN_METHOD(deleteWalletRecordTags) {
   INDY_ASSERT_STRING(deleteWalletRecordTags, 2, id)
   INDY_ASSERT_STRING(deleteWalletRecordTags, 3, tagNames)
   INDY_ASSERT_FUNCTION(deleteWalletRecordTags, 4)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   const char* arg1 = argToCString(info[1]);
   const char* arg2 = argToCString(info[2]);
   const char* arg3 = argToCString(info[3]);
@@ -1769,7 +1785,7 @@ NAN_METHOD(deleteWalletRecord) {
   INDY_ASSERT_STRING(deleteWalletRecord, 1, type)
   INDY_ASSERT_STRING(deleteWalletRecord, 2, id)
   INDY_ASSERT_FUNCTION(deleteWalletRecord, 3)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   const char* arg1 = argToCString(info[1]);
   const char* arg2 = argToCString(info[2]);
   IndyCallback* icb = argToIndyCb(info[3]);
@@ -1791,7 +1807,7 @@ NAN_METHOD(getWalletRecord) {
   INDY_ASSERT_STRING(getWalletRecord, 2, id)
   INDY_ASSERT_STRING(getWalletRecord, 3, options)
   INDY_ASSERT_FUNCTION(getWalletRecord, 4)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   const char* arg1 = argToCString(info[1]);
   const char* arg2 = argToCString(info[2]);
   const char* arg3 = argToCString(info[3]);
@@ -1815,7 +1831,7 @@ NAN_METHOD(openWalletSearch) {
   INDY_ASSERT_STRING(openWalletSearch, 2, query)
   INDY_ASSERT_STRING(openWalletSearch, 3, options)
   INDY_ASSERT_FUNCTION(openWalletSearch, 4)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   const char* arg1 = argToCString(info[1]);
   const char* arg2 = argToCString(info[2]);
   const char* arg3 = argToCString(info[3]);
@@ -1838,9 +1854,9 @@ NAN_METHOD(fetchWalletSearchNextRecords) {
   INDY_ASSERT_NUMBER(fetchWalletSearchNextRecords, 1, walletSearchHandle)
   INDY_ASSERT_NUMBER(fetchWalletSearchNextRecords, 2, count)
   INDY_ASSERT_FUNCTION(fetchWalletSearchNextRecords, 3)
-  indy_handle_t arg0 = info[0]->Int32Value();
-  indy_handle_t arg1 = info[1]->Int32Value();
-  indy_u32_t arg2 = info[2]->Uint32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
+  indy_handle_t arg1 = argToInt32(info[1]);
+  indy_u32_t arg2 = argToUInt32(info[2]);
   IndyCallback* icb = argToIndyCb(info[3]);
   indyCalled(icb, indy_fetch_wallet_search_next_records(icb->handle, arg0, arg1, arg2, fetchWalletSearchNextRecords_cb));
 }
@@ -1855,7 +1871,7 @@ NAN_METHOD(closeWalletSearch) {
   INDY_ASSERT_NARGS(closeWalletSearch, 2)
   INDY_ASSERT_NUMBER(closeWalletSearch, 0, walletSearchHandle)
   INDY_ASSERT_FUNCTION(closeWalletSearch, 1)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   IndyCallback* icb = argToIndyCb(info[1]);
   indyCalled(icb, indy_close_wallet_search(icb->handle, arg0, closeWalletSearch_cb));
 }
@@ -1871,7 +1887,7 @@ NAN_METHOD(isPairwiseExists) {
   INDY_ASSERT_NUMBER(isPairwiseExists, 0, wh)
   INDY_ASSERT_STRING(isPairwiseExists, 1, theirDid)
   INDY_ASSERT_FUNCTION(isPairwiseExists, 2)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   const char* arg1 = argToCString(info[1]);
   IndyCallback* icb = argToIndyCb(info[2]);
   indyCalled(icb, indy_is_pairwise_exists(icb->handle, arg0, arg1, isPairwiseExists_cb));
@@ -1891,7 +1907,7 @@ NAN_METHOD(createPairwise) {
   INDY_ASSERT_STRING(createPairwise, 2, myDid)
   INDY_ASSERT_STRING(createPairwise, 3, metadata)
   INDY_ASSERT_FUNCTION(createPairwise, 4)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   const char* arg1 = argToCString(info[1]);
   const char* arg2 = argToCString(info[2]);
   const char* arg3 = argToCString(info[3]);
@@ -1912,7 +1928,7 @@ NAN_METHOD(listPairwise) {
   INDY_ASSERT_NARGS(listPairwise, 2)
   INDY_ASSERT_NUMBER(listPairwise, 0, wh)
   INDY_ASSERT_FUNCTION(listPairwise, 1)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   IndyCallback* icb = argToIndyCb(info[1]);
   indyCalled(icb, indy_list_pairwise(icb->handle, arg0, listPairwise_cb));
 }
@@ -1928,7 +1944,7 @@ NAN_METHOD(getPairwise) {
   INDY_ASSERT_NUMBER(getPairwise, 0, wh)
   INDY_ASSERT_STRING(getPairwise, 1, theirDid)
   INDY_ASSERT_FUNCTION(getPairwise, 2)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   const char* arg1 = argToCString(info[1]);
   IndyCallback* icb = argToIndyCb(info[2]);
   indyCalled(icb, indy_get_pairwise(icb->handle, arg0, arg1, getPairwise_cb));
@@ -1947,7 +1963,7 @@ NAN_METHOD(setPairwiseMetadata) {
   INDY_ASSERT_STRING(setPairwiseMetadata, 1, theirDid)
   INDY_ASSERT_STRING(setPairwiseMetadata, 2, metadata)
   INDY_ASSERT_FUNCTION(setPairwiseMetadata, 3)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   const char* arg1 = argToCString(info[1]);
   const char* arg2 = argToCString(info[2]);
   IndyCallback* icb = argToIndyCb(info[3]);
@@ -1968,7 +1984,7 @@ NAN_METHOD(createPaymentAddress) {
   INDY_ASSERT_STRING(createPaymentAddress, 1, paymentMethod)
   INDY_ASSERT_STRING(createPaymentAddress, 2, config)
   INDY_ASSERT_FUNCTION(createPaymentAddress, 3)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   const char* arg1 = argToCString(info[1]);
   const char* arg2 = argToCString(info[2]);
   IndyCallback* icb = argToIndyCb(info[3]);
@@ -1987,7 +2003,7 @@ NAN_METHOD(listPaymentAddresses) {
   INDY_ASSERT_NARGS(listPaymentAddresses, 2)
   INDY_ASSERT_NUMBER(listPaymentAddresses, 0, wh)
   INDY_ASSERT_FUNCTION(listPaymentAddresses, 1)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   IndyCallback* icb = argToIndyCb(info[1]);
   indyCalled(icb, indy_list_payment_addresses(icb->handle, arg0, listPaymentAddresses_cb));
 }
@@ -2007,7 +2023,7 @@ NAN_METHOD(addRequestFees) {
   INDY_ASSERT_STRING(addRequestFees, 4, outputs)
   INDY_ASSERT_STRING(addRequestFees, 5, extra)
   INDY_ASSERT_FUNCTION(addRequestFees, 6)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   const char* arg1 = argToCString(info[1]);
   const char* arg2 = argToCString(info[2]);
   const char* arg3 = argToCString(info[3]);
@@ -2053,7 +2069,7 @@ NAN_METHOD(buildGetPaymentSourcesRequest) {
   INDY_ASSERT_STRING(buildGetPaymentSourcesRequest, 1, submitterDid)
   INDY_ASSERT_STRING(buildGetPaymentSourcesRequest, 2, paymentAddress)
   INDY_ASSERT_FUNCTION(buildGetPaymentSourcesRequest, 3)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   const char* arg1 = argToCString(info[1]);
   const char* arg2 = argToCString(info[2]);
   IndyCallback* icb = argToIndyCb(info[3]);
@@ -2095,7 +2111,7 @@ NAN_METHOD(buildPaymentReq) {
   INDY_ASSERT_STRING(buildPaymentReq, 3, outputs)
   INDY_ASSERT_STRING(buildPaymentReq, 4, extra)
   INDY_ASSERT_FUNCTION(buildPaymentReq, 5)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   const char* arg1 = argToCString(info[1]);
   const char* arg2 = argToCString(info[2]);
   const char* arg3 = argToCString(info[3]);
@@ -2140,7 +2156,7 @@ NAN_METHOD(buildMintReq) {
   INDY_ASSERT_STRING(buildMintReq, 2, outputs)
   INDY_ASSERT_STRING(buildMintReq, 3, extra)
   INDY_ASSERT_FUNCTION(buildMintReq, 4)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   const char* arg1 = argToCString(info[1]);
   const char* arg2 = argToCString(info[2]);
   const char* arg3 = argToCString(info[3]);
@@ -2164,7 +2180,7 @@ NAN_METHOD(buildSetTxnFeesReq) {
   INDY_ASSERT_STRING(buildSetTxnFeesReq, 2, paymentMethod)
   INDY_ASSERT_STRING(buildSetTxnFeesReq, 3, fees)
   INDY_ASSERT_FUNCTION(buildSetTxnFeesReq, 4)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   const char* arg1 = argToCString(info[1]);
   const char* arg2 = argToCString(info[2]);
   const char* arg3 = argToCString(info[3]);
@@ -2187,7 +2203,7 @@ NAN_METHOD(buildGetTxnFeesReq) {
   INDY_ASSERT_STRING(buildGetTxnFeesReq, 1, submitterDid)
   INDY_ASSERT_STRING(buildGetTxnFeesReq, 2, paymentMethod)
   INDY_ASSERT_FUNCTION(buildGetTxnFeesReq, 3)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   const char* arg1 = argToCString(info[1]);
   const char* arg2 = argToCString(info[2]);
   IndyCallback* icb = argToIndyCb(info[3]);
@@ -2227,7 +2243,7 @@ NAN_METHOD(buildVerifyPaymentReq) {
   INDY_ASSERT_STRING(buildVerifyPaymentReq, 1, submitterDid)
   INDY_ASSERT_STRING(buildVerifyPaymentReq, 2, receipt)
   INDY_ASSERT_FUNCTION(buildVerifyPaymentReq, 3)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   const char* arg1 = argToCString(info[1]);
   const char* arg2 = argToCString(info[2]);
   IndyCallback* icb = argToIndyCb(info[3]);
@@ -2303,7 +2319,7 @@ NAN_METHOD(refreshPoolLedger) {
   INDY_ASSERT_NARGS(refreshPoolLedger, 2)
   INDY_ASSERT_NUMBER(refreshPoolLedger, 0, handle)
   INDY_ASSERT_FUNCTION(refreshPoolLedger, 1)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   IndyCallback* icb = argToIndyCb(info[1]);
   indyCalled(icb, indy_refresh_pool_ledger(icb->handle, arg0, refreshPoolLedger_cb));
 }
@@ -2331,7 +2347,7 @@ NAN_METHOD(closePoolLedger) {
   INDY_ASSERT_NARGS(closePoolLedger, 2)
   INDY_ASSERT_NUMBER(closePoolLedger, 0, handle)
   INDY_ASSERT_FUNCTION(closePoolLedger, 1)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   IndyCallback* icb = argToIndyCb(info[1]);
   indyCalled(icb, indy_close_pool_ledger(icb->handle, arg0, closePoolLedger_cb));
 }
@@ -2362,7 +2378,7 @@ NAN_METHOD(setProtocolVersion) {
   INDY_ASSERT_NARGS(setProtocolVersion, 2)
   INDY_ASSERT_NUMBER(setProtocolVersion, 0, protocolVersion)
   INDY_ASSERT_FUNCTION(setProtocolVersion, 1)
-  indy_u64_t arg0 = (indy_u64_t)info[0]->Uint32Value();
+  indy_u64_t arg0 = (indy_u64_t)argToUInt32(info[0]);
   IndyCallback* icb = argToIndyCb(info[1]);
   indyCalled(icb, indy_set_protocol_version(icb->handle, arg0, setProtocolVersion_cb));
 }
@@ -2416,7 +2432,7 @@ NAN_METHOD(exportWallet) {
   INDY_ASSERT_NUMBER(exportWallet, 0, wh)
   INDY_ASSERT_STRING(exportWallet, 1, exportConfig)
   INDY_ASSERT_FUNCTION(exportWallet, 2)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   const char* arg1 = argToCString(info[1]);
   IndyCallback* icb = argToIndyCb(info[2]);
   indyCalled(icb, indy_export_wallet(icb->handle, arg0, arg1, exportWallet_cb));
@@ -2455,7 +2471,7 @@ NAN_METHOD(closeWallet) {
   INDY_ASSERT_NARGS(closeWallet, 2)
   INDY_ASSERT_NUMBER(closeWallet, 0, wh)
   INDY_ASSERT_FUNCTION(closeWallet, 1)
-  indy_handle_t arg0 = info[0]->Int32Value();
+  indy_handle_t arg0 = argToInt32(info[0]);
   IndyCallback* icb = argToIndyCb(info[1]);
   indyCalled(icb, indy_close_wallet(icb->handle, arg0, closeWallet_cb));
 }
@@ -2573,6 +2589,7 @@ NAN_MODULE_INIT(InitAll) {
   Nan::Export(target, "parseGetRevocRegResponse", parseGetRevocRegResponse);
   Nan::Export(target, "buildGetRevocRegDeltaRequest", buildGetRevocRegDeltaRequest);
   Nan::Export(target, "parseGetRevocRegDeltaResponse", parseGetRevocRegDeltaResponse);
+  Nan::Export(target, "getResponseMetadata", getResponseMetadata);
   Nan::Export(target, "addWalletRecord", addWalletRecord);
   Nan::Export(target, "updateWalletRecordValue", updateWalletRecordValue);
   Nan::Export(target, "updateWalletRecordTags", updateWalletRecordTags);
@@ -2616,5 +2633,8 @@ NAN_MODULE_INIT(InitAll) {
   Nan::Export(target, "closeWallet", closeWallet);
   Nan::Export(target, "deleteWallet", deleteWallet);
   Nan::Export(target, "generateWalletKey", generateWalletKey);
+  Nan::Export(target, "setRuntimeConfig", setRuntimeConfig);
+  Nan::Export(target, "setDefaultLogger", setDefaultLogger);
+  Nan::Export(target, "setLogger", setLogger);
 }
 NODE_MODULE(indynodejs, InitAll)

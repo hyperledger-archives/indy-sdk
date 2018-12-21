@@ -42,7 +42,7 @@ fn _serialize_signature(v: Value, is_top_level: bool) -> Result<String, CommonEr
                 if key == "raw" || key == "hash" || key == "enc" {
                     let mut ctx = Hash::new_context()?;
                     ctx.update(&value.as_str().ok_or(CommonError::InvalidState("Cannot update hash context".to_string()))?.as_bytes())?;
-                    value = Value::String(ctx.finish2()?.as_ref().to_hex());
+                    value = Value::String(ctx.finish()?.as_ref().to_hex());
                 }
                 result = result + key + ":" + &_serialize_signature(value, false)?;
                 in_middle = true;

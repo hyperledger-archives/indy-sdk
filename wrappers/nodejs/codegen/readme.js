@@ -162,7 +162,7 @@ function parseDocString (docs) {
           break
         }
         i++
-        if (/^- xcommand_handle:/.test(line)) {
+        if (/^- command_handle_?:/.test(line)) {
           // ignore line
         } else if (/^- err:/.test(line)) {
           // ignore line
@@ -260,7 +260,7 @@ function parseDocStringParams (params) {
       return
     }
     if (!ast[o.name]) {
-      ast[o.name] = {text: '', optional: false}
+      ast[o.name] = { text: '', optional: false }
     }
     ast[o.name].text += o.text + '\n'
     ast[o.name].optional = ast[o.name].optional || o.optional

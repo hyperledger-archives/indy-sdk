@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "es2016",
+    "module": "commonjs",
+    "sourceMap": true,
+    "outDir": "./dist",
+    "declaration": true,
+    "baseUrl": "./",
+    "strict": true,
+    "strictFunctionTypes": false,
+    "noUnusedLocals": true,
+    "preserveConstEnums": true
+  },
+  "include": [
+    "./src/**/*", "test/suite3/logging.2.test.ts", "test/suite3/logging.1.test.ts"
+  ],
+}

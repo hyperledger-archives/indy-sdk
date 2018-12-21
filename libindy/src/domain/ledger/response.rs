@@ -70,3 +70,20 @@ pub enum Message<T> {
     #[serde(rename = "REJECT")]
     Reject(Response)
 }
+
+pub trait ReplyType {
+    fn get_type<'a>() -> &'a str;
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct ResponseMetadata {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub seq_no: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub txn_time: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub last_txn_time: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub last_seq_no: Option<u64>,
+}
