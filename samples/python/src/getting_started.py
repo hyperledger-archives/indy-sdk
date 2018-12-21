@@ -5,6 +5,9 @@ from indy import anoncreds, crypto, did, ledger, pool, wallet
 import json
 import logging
 from typing import Optional
+import argparse
+import sys
+from ctypes import *
 
 from indy.error import ErrorCode, IndyError
 
@@ -12,6 +15,30 @@ from src.utils import get_pool_genesis_txn_path, run_coroutine, PROTOCOL_VERSION
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
+
+parser = argparse.ArgumentParser(description='Run python getting-started scenario (Alice/Faber)')
+parser.add_argument('-t', '--storage_type', help='load custom wallet storage plug-in')
+parser.add_argument('-l', '--library', help='dynamic library to load for plug-in')
+parser.add_argument('-e', '--entrypoint', help='entry point for dynamic library')
+parser.add_argument('-c', '--config', help='entry point for dynamic library')
+parser.add_argument('-s', '--creds', help='entry point for dynamic library')
+
+args = parser.parse_args()
+
+
+# check if we need to dyna-load a custom wallet storage plug-in
+if args.storage_type:
+    if not (args.library and args.entrypoint):
+        parser.print_help()
+        sys.exit(0)
+    stg_lib = CDLL(args.library)
+    result = stg_lib[args.entrypoint]()
+    if result != 0:
+        print("Error unable to load wallet storage", result)
+        parser.print_help()
+        sys.exit(0)
+
+    print("Success, loaded wallet storage", args.storage_type)
 
 
 async def run():
@@ -107,7 +134,7 @@ async def run():
     logger.info("== Getting Trust Anchor credentials - Thrift Onboarding  ==")
     logger.info("------------------------------")
 
-    thrift_wallet_config = json.dumps({"id": " thrift_wallet"})
+    thrift_wallet_config = json.dumps({"id": "thrift_wallet"})
     thrift_wallet_credentials = json.dumps({"key": "thrift_wallet_key"})
     thrift_wallet, steward_thrift_key, thrift_steward_did, thrift_steward_key, _ = \
         await onboarding(pool_handle, "Sovrin Steward", steward_wallet, steward_did, "Thrift", None,
@@ -179,7 +206,7 @@ async def run():
     logger.info("== Getting Transcript with Faber - Onboarding ==")
     logger.info("------------------------------")
 
-    alice_wallet_config = json.dumps({"id": " alice_wallet"})
+    alice_wallet_config = json.dumps({"id": "alice_wallet"})
     alice_wallet_credentials = json.dumps({"key": "alice_wallet_key"})
     alice_wallet, faber_alice_key, alice_faber_did, alice_faber_key, faber_alice_connection_response \
         = await onboarding(pool_handle, "Faber", faber_wallet, faber_did, "Alice", None, alice_wallet_config,
@@ -696,23 +723,23 @@ async def run():
 
     logger.info("\"Government\" -> Close and Delete wallet")
     await wallet.close_wallet(government_wallet)
-    await wallet.delete_wallet(government_wallet_config, government_wallet_credentials)
+    await wallet.delete_wallet(wallet_config("delete", government_wallet_config), wallet_credentials("delete", government_wallet_credentials))
 
     logger.info("\"Faber\" -> Close and Delete wallet")
     await wallet.close_wallet(faber_wallet)
-    await wallet.delete_wallet(faber_wallet_config, faber_wallet_credentials)
+    await wallet.delete_wallet(wallet_config("delete", faber_wallet_config), wallet_credentials("delete", faber_wallet_credentials))
 
     logger.info("\"Acme\" -> Close and Delete wallet")
     await wallet.close_wallet(acme_wallet)
-    await wallet.delete_wallet(acme_wallet_config, acme_wallet_credentials)
+    await wallet.delete_wallet(wallet_config("delete", acme_wallet_config), wallet_credentials("delete", acme_wallet_credentials))
 
     logger.info("\"Thrift\" -> Close and Delete wallet")
     await wallet.close_wallet(thrift_wallet)
-    await wallet.delete_wallet(thrift_wallet_config, thrift_wallet_credentials)
+    await wallet.delete_wallet(wallet_config("delete", thrift_wallet_config), wallet_credentials("delete", thrift_wallet_credentials))
 
     logger.info("\"Alice\" -> Close and Delete wallet")
     await wallet.close_wallet(alice_wallet)
-    await wallet.delete_wallet(alice_wallet_config, alice_wallet_credentials)
+    await wallet.delete_wallet(wallet_config("delete", alice_wallet_config), wallet_credentials("delete", alice_wallet_credentials))
 
     logger.info("Close and Delete pool")
     await pool.close_pool_ledger(pool_handle)
@@ -738,11 +765,11 @@ async def onboarding(pool_handle, _from, from_wallet, from_did, to, to_wallet: O
     if not to_wallet:
         logger.info("\"{}\" -> Create wallet".format(to))
         try:
-            await wallet.create_wallet(to_wallet_config, to_wallet_credentials)
+            await wallet.create_wallet(wallet_config("create", to_wallet_config), wallet_credentials("create", to_wallet_credentials))
         except IndyError as ex:
             if ex.error_code == ErrorCode.PoolLedgerConfigAlreadyExistsError:
                 pass
-        to_wallet = await wallet.open_wallet(to_wallet_config, to_wallet_credentials)
+        to_wallet = await wallet.open_wallet(wallet_config("open", to_wallet_config), wallet_credentials("open", to_wallet_credentials))
 
     logger.info("\"{}\" -> Create and store in Wallet \"{} {}\" DID".format(to, to, _from))
     (to_from_did, to_from_key) = await did.create_and_store_my_did(to_wallet, "{}")
@@ -774,6 +801,24 @@ async def onboarding(pool_handle, _from, from_wallet, from_did, to, to_wallet: O
 
     return to_wallet, from_to_key, to_from_did, to_from_key, decrypted_connection_response
 
+def wallet_config(operation, wallet_config_str):
+    if not args.storage_type:
+        return wallet_config_str
+    wallet_config_json = json.loads(wallet_config_str)
+    wallet_config_json['storage_type'] = args.storage_type
+    if args.config:
+        wallet_config_json['storage_config'] = json.loads(args.config)
+    #print(operation, json.dumps(wallet_config_json))
+    return json.dumps(wallet_config_json)
+
+def wallet_credentials(operation, wallet_credentials_str):
+    if not args.storage_type:
+        return wallet_credentials_str
+    wallet_credentials_json = json.loads(wallet_credentials_str)
+    if args.creds:
+        wallet_credentials_json['storage_credentials'] = json.loads(args.creds)
+    #print(operation, json.dumps(wallet_credentials_json))
+    return json.dumps(wallet_credentials_json)
 
 async def get_verinym(pool_handle, _from, from_wallet, from_did, from_to_key,
                       to, to_wallet, to_from_did, to_from_key, role):
