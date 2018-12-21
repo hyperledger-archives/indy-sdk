@@ -14,6 +14,8 @@ version you can check migration guides history:
 
 * [Notes](#notes)
 * [Libindy 1.6 to 1.7.0 migration](#libindy-16-to-170-migration-guide)
+    * [Logger API](#logger-api)
+    * [Libindy API](#libindy-api)
 
 ## Notes
 
@@ -38,8 +40,8 @@ You don't need this endpoints if you use libindy through the wrapper -- in Java,
 
 <table>
     <tr>  
-      <th>v1.6.0 - Wallet API</th>
-      <th>v1.7.0 - Wallet API</th>
+      <th>v1.6.0 - Logger API</th>
+      <th>v1.7.0 - Logger API</th>
     </tr>
     <tr>
       <th colspan="2">
@@ -99,19 +101,44 @@ You don't need this endpoints if you use libindy through the wrapper -- in Java,
       </td>
       <td>
           <pre>
-              pub extern fn indy_get_logger(context_p: *mut *const c_void,
-                                            enabled_cb_p: *mut Option<fn(context: *const c_void,
-                                                                         level: u32,
-                                                                         target: *const c_char) -> bool>,
-                                            log_cb_p: *mut Option<fn(context: *const c_void,
-                                                                     level: u32,
-                                                                     target: *const c_char,
-                                                                     message: *const c_char,
-                                                                     module_path: *const c_char,
-                                                                     file: *const c_char,
-                                                                     line: u32)>,
-                                            flush_cb_p: *mut Option<fn(context: *const c_void)>)
+              indy_get_logger(context_p: *mut *const c_void,
+                              enabled_cb_p: *mut Option<fn(context: *const c_void,
+                                                           level: u32,
+                                                           target: *const c_char) -> bool>,
+                              log_cb_p: *mut Option<fn(context: *const c_void,
+                                                       level: u32,
+                                                       target: *const c_char,
+                                                       message: *const c_char,
+                                                       module_path: *const c_char,
+                                                       file: *const c_char,
+                                                       line: u32)>,
+                              flush_cb_p: *mut Option<fn(context: *const c_void)>)
           </pre>
+      </td>
+    </tr>
+</table>
+
+### Libindy API
+
+The main purpose of this API is to set Liibndy configuration.
+<table>
+    <tr>  
+      <th>v1.6.0 - Libindy API</th>
+      <th>v1.7.0 - Libindy API</th>
+    </tr>
+    <tr>
+      <th colspan="2">
+          <a href="https://github.com/hyperledger/indy-sdk/blob/v1.7.0/libindy/src/api/mod.rs#L243">
+              Set libindy runtime configuration.
+          </a>
+      </th>
+    <tr>
+    <tr>
+      <td>
+          <b>NEW</b>
+      </td>
+      <td>
+          <pre>indy_set_runtime_config(config: *const c_char) -> ErrorCode</pre>
       </td>
     </tr>
 </table>

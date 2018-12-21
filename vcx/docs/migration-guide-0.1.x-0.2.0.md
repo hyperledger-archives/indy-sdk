@@ -7,16 +7,17 @@ to simplify their transition to LibVCX 0.1.x from LibVCX 0.2.
 
 * [Notes](#notes)
 * [API]()
-    * [Credential Definition API](#credential-definition-api-mapping)
-    * [Wallet API](#wallet-api-mapping)
-    * [Issuer Credential API](#issuer-credetial-api-mapping)
-    * [Proof API](#proof-api-mapping)
+    * [Credential Definition API](#credential-definition-api)
+    * [Wallet API](#wallet-api)
+    * [Issuer Credential API](#issuer-credetial-api)
+    * [Proof API](#proof-api)
+    * [logger API](#logger-api)
     
 ### Notes
 
-In the following tables, there are mappings for each LibVCX API part of how 0.1.2097319 functionality maps to 0.2.0. 
+In the following tables, there are mappings for each LibVCX API part of how 0.1.x functionality maps to 0.2.0. 
 
-Functions from version 0.1.2097319 are listed in the left column, and the equivalent 0.2.0 function is placed in the right column. 
+Functions from version 0.1.x are listed in the left column, and the equivalent 0.2.0 function is placed in the right column. 
 
 * If some function had been added, the word 'NEW' would be placed in the left column.
 * If some function had been deleted, the word 'DELETED' would be placed in the right column.
@@ -45,12 +46,14 @@ Functions from version 0.1.2097319 are listed in the left column, and the equiva
     <tr>
       <td>
         <pre>
-          get_payment_txn(handle: u32) -> Result&lt;PaymentTxn, CredDefError&gt;
+get_payment_txn(handle: u32) 
+            -> Result&lt;PaymentTxn, CredDefError&gt;
         </pre>  
       </td>
       <td>
         <pre>
-          get_cred_def_payment_txn(handle: u32) -> Result&lt;PaymentTxn, CredDefError&gt;
+get_cred_def_payment_txn(handle: u32) 
+            -> Result&lt;PaymentTxn, CredDefError&gt;
         </pre>
       </td>
     </tr>
@@ -69,7 +72,8 @@ Functions from version 0.1.2097319 are listed in the left column, and the equiva
       </td>
       <td>
         <pre>
-          get_rev_reg_id(handle: u32) -> Result&lt;Option&lt;String&gt;, CredDefError&gt;
+get_rev_reg_id(handle: u32) 
+            -> Result&lt;Option&lt;String&gt;, CredDefError&gt;
         </pre>
       </td>
     </tr>
@@ -88,7 +92,8 @@ Functions from version 0.1.2097319 are listed in the left column, and the equiva
       </td>
       <td>
         <pre>
-          get_tails_file(handle: u32) -> Result&lt;Option&lt;String&gt;, CredDefError&gt;
+get_tails_file(handle: u32) 
+            -> Result&lt;Option&lt;String&gt;, CredDefError&gt;
         </pre>
       </td>
     </tr>
@@ -107,7 +112,8 @@ Functions from version 0.1.2097319 are listed in the left column, and the equiva
       </td>
       <td>
         <pre>
-          get_rev_reg_def(handle: u32) -> Result&lt;Option&lt;String&gt;, CredDefError&gt;
+get_rev_reg_def(handle: u32) 
+            -> Result&lt;Option&lt;String&gt;, CredDefError&gt;
         </pre>
       </td>
     </tr>
@@ -126,7 +132,8 @@ Functions from version 0.1.2097319 are listed in the left column, and the equiva
       </td>
       <td>
         <pre>
-          get_rev_reg_def_payment_txn(handle: u32) -> Result&lt;Option&lt;String&gt;, CredDefError&gt;
+get_rev_reg_def_payment_txn(handle: u32) 
+            -> Result&lt;Option&lt;String&gt;, CredDefError&gt;
         </pre>
       </td>
     </tr>
@@ -145,7 +152,8 @@ Functions from version 0.1.2097319 are listed in the left column, and the equiva
       </td>
       <td>
         <pre>
-          get_rev_reg_delta_payment_txn(handle: u32) -> Result&lt;Option&lt;String&gt;, CredDefError&gt;
+get_rev_reg_delta_payment_txn(handle: u32) 
+            -> Result&lt;Option&lt;String&gt;, CredDefError&gt;
         </pre>
       </td>
     </tr>
@@ -164,7 +172,8 @@ Functions from version 0.1.2097319 are listed in the left column, and the equiva
       </td>
       <td>
         <pre>
-          find_handle(cred_def_id: &str) -> Result&lt;u32, CredDefError&gt;
+find_handle(cred_def_id: &str) 
+            -> Result&lt;u32, CredDefError&gt;
         </pre>
       </td>
     </tr>
@@ -191,19 +200,23 @@ There are no actual API changes, but there is one new parameter available for `v
     <tr>
       <td>
         <pre>
-          vcx_issuer_create_credential(command_handle: u32,
-                                                source_id: *const c_char,
-                                                cred_def_handle: u32,
-                                                issuer_did: *const c_char,
-                                                credential_data: *const c_char,
-                                                credential_name: *const c_char,
-                                                price: *const c_char,
-                                                cb: Option&lt;extern fn(xcommand_handle: u32, err: u32, credential_handle: u32)&gt;) -> u32
+vcx_issuer_create_credential(
+    command_handle: u32,
+    source_id: *const c_char,
+    cred_def_handle: u32,
+    issuer_did: *const c_char,
+    credential_data: *const c_char,
+    credential_name: *const c_char,
+    price: *const c_char,
+    cb: Option&lt;fn(xcommand_handle: u32, 
+                  err: u32, 
+                  credential_handle: u32)&gt;) -> u32
         </pre>  
       </td>
       <td>
         <pre>
-            Changed the format of param credential_data -- was "{"state":["UT"]}", now "{"state":"UT"}"
+Changed the format of param credential_data. 
+was "{"state":["UT"]}", now "{"state":"UT"}"
         </pre>
       </td>
     </tr>
@@ -222,9 +235,11 @@ There are no actual API changes, but there is one new parameter available for `v
       </td>
       <td>
         <pre>
-           vcx_issuer_revoke_credential(command_handle: u32,
-                                        credential_handle: u32,
-                                        cb: Option&lt;extern fn(xcommand_handle: u32, err: u32)&gt;) -> u32
+vcx_issuer_revoke_credential(
+        command_handle: u32,
+        credential_handle: u32,
+        cb: Option&lt;fn(xcommand_handle: u32, 
+                      err: u32)&gt;) -> u32
         </pre>
       </td>
     </tr>
@@ -243,7 +258,8 @@ There are no actual API changes, but there is one new parameter available for `v
       </td>
       <td>
         <pre>
-          revoke_credential(handle: u32) -> Result&lt;(), u32&gt;
+revoke_credential(handle: u32) 
+                -> Result&lt;(), u32&gt;
         </pre>
       </td>
     </tr>
@@ -266,23 +282,147 @@ There are no actual API changes, but there is one new parameter available for `v
     <tr>
         <td>
             <pre>
-                vcx_proof_create(command_handle: u32,
-                                 source_id: *const c_char,
-                                 requested_attrs: *const c_char,
-                                 requested_predicates: *const c_char,
-                                 name: *const c_char,
-                                 cb: Option&lt;extern fn(xcommand_handle: u32, err: u32, proof_handle: u32)&gt;) -> u32
+vcx_proof_create(
+        command_handle: u32,
+        source_id: *const c_char,
+        requested_attrs: *const c_char,
+        requested_predicates: *const c_char,
+        name: *const c_char,
+        cb: Option&lt;extern fn(xcommand_handle: u32, 
+                             err: u32, 
+                             proof_handle: u32)&gt;) -> u32
             </pre> 
         </td>
         <td>
             <pre>
-                vcx_proof_create(command_handle: u32,
-                                 source_id: *const c_char,
-                                 requested_attrs: *const c_char,
-                                 requested_predicates: *const c_char,
-                                 revocation_interval: *const c_char,
-                                 name: *const c_char,
-                                 cb: Option&lt;extern fn(xcommand_handle: u32, err: u32, proof_handle: u32)&gt;) -> u32
+vcx_proof_create(
+        command_handle: u32,
+        source_id: *const c_char,
+        requested_attrs: *const c_char,
+        requested_predicates: *const c_char,
+        revocation_interval: *const c_char,
+        name: *const c_char,
+        cb: Option&lt;extern fn(xcommand_handle: u32, 
+                             err: u32, 
+                             proof_handle: u32)&gt;) -> u32
             </pre> 
         </td>
     </tr>
+    <tr>
+      <td>
+        <pre>
+vcx_disclosed_proof_generate_proof(
+             proof_handle: u32,
+             selected_credentials: *const c_char,
+             self_attested_attrs: *const c_char,
+             cb: Option<extern fn(xcommand_handle: u32, 
+                                  err: u32)>) -> u32
+        </pre>  
+      </td>
+      <td>
+        <pre>
+Changed the format of param selected_credentials. 
+was "{
+    "attrs":{
+        "attr_key": "cred_info":{}
+    }
+}", 
+now "{
+    "attrs":{
+        "attr_key":{
+            "credential":{"cred_info":{},"tails_file": Optional(string)}
+        }
+    }
+}"
+        </pre>
+      </td>
+    </tr>
+</table>
+    
+    
+### Logger API
+
+The main purpose of this API is to forward logs of libvcx and wrappers to its consumers. 
+It is needed if you consume libvcx as a `.so` or `.dll` - so you can forward logs from libvcx to your logging framework.
+You don't need this endpoints if you use libvcx through the wrapper -- in Java and Python wrappers they are already forwarded to `slf4j` for Java, `log` crate for Rust and default logging facade for python.     
+libvcx sets the same log function for libindy as well.
+
+<table>
+    <tr>  
+      <th>v0.1.x - Logger API</th>
+      <th>v0.2.0 - Logger API</th>
+    </tr>
+    <tr>
+      <th colspan="2">
+          <a href="https://github.com/hyperledger/indy-sdk/blob/v1.7.0/vcx/libvcx/src/api/logger.rs#L41">
+              Set custom logger implementation
+          </a>
+      </th>
+    <tr>
+    <tr>
+      <td>
+          <b>NEW</b>
+      </td>
+      <td>
+          <pre>
+              vcx_set_logger(context: *const c_void,
+                             enabled: Option<fn(context: *const c_void,
+                                                level: u32,
+                                                target: *const c_char) -> bool>,
+                             log: Option<fn(context: *const c_void,
+                                             level: u32,
+                                             target: *const c_char,
+                                             message: *const c_char,
+                                             module_path: *const c_char,
+                                             file: *const c_char,
+                                             line: u32)>,
+                              flush: Option<fn(context: *const c_void)>) -> ErrorCode
+          </pre>
+      </td>
+    </tr>
+    <tr>
+      <th colspan="2">
+          <a href="https://github.com/hyperledger/indy-sdk/blob/v1.7.0/vcx/libvcx/src/api/logger.rs#L21">
+              Set default logger implementation.
+          </a>
+      </th>
+    <tr>
+    <tr>
+      <td>
+          <b>NEW</b>
+      </td>
+      <td>
+          <pre>
+              vcx_set_default_logger(pattern: *const c_char) -> ErrorCode
+          </pre>
+      </td>
+    </tr>
+    <tr>
+      <th colspan="2">
+          <a href="https://github.com/hyperledger/indy-sdk/blob/v1.7.0/vcx/libvcx/src/api/logger.rs#L76">
+              Get the currently used logger.
+          </a>
+      </th>
+    <tr>
+    <tr>
+      <td>
+          <b>NEW</b>
+      </td>
+      <td>
+          <pre>
+              vcx_get_logger(context_p: *mut *const c_void,
+                             enabled_cb_p: *mut Option<fn(context: *const c_void,
+                                                          level: u32,
+                                                          target: *const c_char) -> bool>,
+                             log_cb_p: *mut Option<fn(context: *const c_void,
+                                                      level: u32,
+                                                      target: *const c_char,
+                                                      message: *const c_char,
+                                                      module_path: *const c_char,
+                                                      file: *const c_char,
+                                                      line: u32)>,
+                             flush_cb_p: *mut Option<fn(context: *const c_void)>)
+          </pre>
+      </td>
+    </tr>
+</table>
