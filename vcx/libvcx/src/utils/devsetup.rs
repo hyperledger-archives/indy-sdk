@@ -4,6 +4,7 @@ macro_rules! init {
     ::utils::threadpool::init();
     ::settings::clear_config();
     ::settings::set_config_value(::settings::CONFIG_WALLET_KEY,::settings::DEFAULT_WALLET_KEY);
+    ::settings::set_config_value(::settings::CONFIG_WALLET_KEY_DERIVATION,::settings::DEFAULT_WALLET_KEY_DERIVATION);
     ::utils::libindy::wallet::tests::delete_test_wallet(::settings::DEFAULT_WALLET_NAME);
 
     match $x {
@@ -171,6 +172,7 @@ pub mod tests {
 
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_WALLET_KEY,settings::DEFAULT_WALLET_KEY);
+        settings::set_config_value(settings::CONFIG_WALLET_KEY_DERIVATION,settings::DEFAULT_WALLET_KEY_DERIVATION);
         settings::set_config_value(settings::CONFIG_WALLET_NAME, settings::DEFAULT_WALLET_NAME);
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
         settings::set_config_value(settings::CONFIG_GENESIS_PATH, settings::DEFAULT_GENESIS_PATH);
@@ -225,6 +227,7 @@ pub mod tests {
         settings::clear_config();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
         settings::set_config_value(settings::CONFIG_WALLET_KEY, settings::DEFAULT_WALLET_KEY);
+        settings::set_config_value(settings::CONFIG_WALLET_KEY_DERIVATION, settings::DEFAULT_WALLET_KEY_DERIVATION);
         let enterprise_wallet_name = format!("{}_{}", constants::ENTERPRISE_PREFIX, settings::DEFAULT_WALLET_NAME);
         let seed1 = create_new_seed();
         let config = json!({
@@ -233,6 +236,7 @@ pub mod tests {
             "agency_verkey": AGENCY_VERKEY.to_string(),
             "wallet_name": enterprise_wallet_name,
             "wallet_key": settings::DEFAULT_WALLET_KEY.to_string(),
+            "wallet_key_derivation": settings::DEFAULT_WALLET_KEY_DERIVATION,
             "enterprise_seed": seed1,
             "agent_seed": seed1,
             "name": "institution".to_string(),
@@ -251,6 +255,7 @@ pub mod tests {
             "agency_verkey": C_AGENCY_VERKEY.to_string(),
             "wallet_name": consumer_wallet_name,
             "wallet_key": settings::DEFAULT_WALLET_KEY.to_string(),
+            "wallet_key_derivation": settings::DEFAULT_WALLET_KEY_DERIVATION.to_string(),
             "enterprise_seed": seed2,
             "agent_seed": seed2,
             "name": "consumer".to_string(),
