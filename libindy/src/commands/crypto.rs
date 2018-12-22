@@ -67,14 +67,14 @@ pub enum CryptoCommand {
     PackMessage(
         Vec<u8>, // plaintext message
         String, // list of receiver's keys
-        Option<String>, // senders object
+        Option<String>, // senders verkey
         i32, //wallet handle
-        Box<Fn(Result<String /*JWM serialized as string*/>) + Send>,
+        Box<Fn(Result<Vec<u8>>) + Send>,
     ),
     UnpackMessage(
-        String, // JWE
+        Vec<u8>, // JWE
         i32,    // wallet handle
-        Box<Fn(Result<(String, /*plaintext*/ String, /*sender_vk*/)>) + Send>,
+        Box<Fn(Result<Vec<u8>>) + Send>,
     ),
 }
 
@@ -131,13 +131,13 @@ impl CryptoCommandExecutor {
                 info!("AnonymousDecrypt command received");
                 cb(self.anonymous_decrypt(wallet_handle, &my_vk, &encrypted_msg));
             }
-            CryptoCommand::PackMessage(message, receivers, sender, wallet_handle, cb) => {
+            CryptoCommand::PackMessage(message, receivers, sender_vk, wallet_handle, cb) => {
                 info!("PackMessage command received");
-                cb(self.pack_msg(message, &receivers, sender, wallet_handle));
+                cb(self.pack_msg(message, &receivers, sender_vk, wallet_handle));
             }
-            CryptoCommand::UnpackMessage(jwe, wallet_handle, cb) => {
+            CryptoCommand::UnpackMessage(jwe_json, wallet_handle, cb) => {
                 info!("UnpackMessage command received");
-                cb(self.unpack_msg(&jwe, wallet_handle));
+                cb(self.unpack_msg(jwe_json, wallet_handle));
             }
         };
     }
@@ -290,10 +290,10 @@ impl CryptoCommandExecutor {
         receivers: &str,
         sender_vk: Option<String>,
         wallet_handle: i32
-    ) -> Result<String> {
+    ) -> Result<Vec<u8>> {
 
         //generate symmetrical key
-        let sym_key = chacha20poly1305_ietf::gen_key();
+        let cek = chacha20poly1305_ietf::gen_key();
 
         //list of ceks used to construct JWE later
         let mut encrypted_recipients_struct: Vec<Recipient> = vec![];
@@ -319,15 +319,15 @@ impl CryptoCommandExecutor {
                         )
                     )?;
 
-                //encrypt sym_key for recipient
+                //encrypt cek for recipient
                 for their_vk in receiver_list {
-                    let enc_sym_key = self.crypto_service
-                        .authenticated_encrypt(&my_key, &their_vk, &sym_key[..])?;
+                    let enc_cek = self.crypto_service
+                        .authenticated_encrypt(&my_key, &their_vk, &cek[..])?;
 
                     //create recipient struct and push to encrypted list
                     encrypted_recipients_struct.push(
                         Recipient {
-                            encrypted_key: base64::encode(enc_sym_key.as_slice()),
+                            encrypted_key: base64::encode(enc_cek.as_slice()),
                             header: Header {
                                 kid: base64::encode(&their_vk.as_bytes())
                             }
@@ -353,7 +353,7 @@ impl CryptoCommandExecutor {
 
                 // encrypt ciphertext and integrity protect "protected" field
                 let (iv, ciphertext, tag) = self.crypto_service
-                    .encrypt_plaintext(message, &base64_protected, &sym_key);
+                    .encrypt_plaintext(message, &base64_protected, &cek);
 
                 //construct JWE struct
                 let jwe_struct = JWE {
@@ -364,7 +364,7 @@ impl CryptoCommandExecutor {
                 };
 
                 //convert JWE struct to a string and return
-                serde_json::to_string(&jwe_struct)
+                serde_json::to_vec(&jwe_struct)
                     .map_err(|err|
                         IndyError::CryptoError(
                             CryptoError::CommonError(
@@ -391,17 +391,17 @@ impl CryptoCommandExecutor {
                         )
                     )?;
 
-                //encrypt sym_key for recipient
+                //encrypt cek for recipient
                 for their_vk in receiver_list {
 
                     //encrypt sender verkey
-                    let enc_sym_key = self.crypto_service
-                        .crypto_box_seal(&their_vk, &sym_key[..])?;
+                    let enc_cek = self.crypto_service
+                        .crypto_box_seal(&their_vk, &cek[..])?;
 
                     //create recipient struct and push to encrypted list
                     encrypted_recipients_struct.push(
                         Recipient {
-                            encrypted_key: base64::encode(enc_sym_key.as_slice()),
+                            encrypted_key: base64::encode(enc_cek.as_slice()),
                             header: Header {
                                 kid: base64::encode(&their_vk.as_bytes())
                             }
@@ -428,7 +428,7 @@ impl CryptoCommandExecutor {
 
                 // encrypt ciphertext
                 let (iv, ciphertext, tag) = self.crypto_service
-                    .encrypt_plaintext(message, &protected_encoded, &sym_key);
+                    .encrypt_plaintext(message, &protected_encoded, &cek);
 
                 //serialize JWE struct
                 let jwe_struct = JWE {
@@ -439,7 +439,7 @@ impl CryptoCommandExecutor {
                 };
 
                 //return JWE_json
-                return serde_json::to_string(&jwe_struct)
+                serde_json::to_vec(&jwe_struct)
                     .map_err(|err|
                         IndyError::CryptoError(
                             CryptoError::CommonError(
@@ -455,12 +455,12 @@ impl CryptoCommandExecutor {
 
     pub fn unpack_msg(
         &self,
-        jwe_json: &str,
+        jwe_json: Vec<u8>,
         wallet_handle: i32
-    ) -> Result<(String, String)> {
+    ) -> Result<Vec<u8>> {
 
         //serialize JWE to struct
-        let jwe_struct : JWE = serde_json::from_str(jwe_json)
+        let jwe_struct : JWE = serde_json::from_slice(jwe_json.as_slice())
             .map_err(|err|
                 IndyError::CryptoError(
                     CryptoError::CommonError(
@@ -503,85 +503,97 @@ impl CryptoCommandExecutor {
 
             if key_in_wallet_result.is_ok() {
                 //TODO change to move this to a separate function and return recipient rather than
-                // putting logic inside the for loop for loops have no way to return values in rust
+                // putting logic inside the for loop. For loops have no way to return values in rust.
 
                 //decode encrypted_key
                 let encrypted_key_vec = base64::decode(&recipient.encrypted_key)?;
 
-                //get sym_key and sender data
-                let (sender, sym_key) = match protected_struct.alg.as_ref() {
+                //get cek and sender data
+                let (sender_verkey, cek) = match protected_struct.alg.as_ref() {
                     "Authcrypt" => {
 
                         //get my key based on kid
                         let my_key = self.wallet_service
                             .get_indy_object(wallet_handle, &recipient.header.kid, &RecordOptions::id_value())?;
 
-                        //decrypt sym_key
-                        let (sender_vk , sym_key_as_vec) = self.crypto_service
+                        //decrypt cek
+                        let (sender_vk , cek_as_vec) = self.crypto_service
                             .authenticated_decrypt(&my_key, encrypted_key_vec.as_slice())?;
 
                         //convert to chacha Key struct
-                        let sym_key : chacha20poly1305_ietf::Key = chacha20poly1305_ietf::Key::from_slice(&sym_key_as_vec[..])
+                        let cek : chacha20poly1305_ietf::Key = chacha20poly1305_ietf::Key::from_slice(&cek_as_vec[..])
                             .map_err(|err|
                                 IndyError::CryptoError(
                                     CryptoError::CommonError(
                                         CommonError::InvalidStructure(
-                                            format!("Failed to decrypt sym_key {}", err)
+                                            format!("Failed to decrypt cek {}", err)
                                         )
                                     )
                                 )
                             )?;
 
-                        Ok((sender_vk, sym_key))
-                    },
+                        Ok((Some(sender_vk), cek))
+                    }, //close authcrypt option
 
                     "Anoncrypt" => {
                         //get my private key
                         let my_key = self.wallet_service
                             .get_indy_object(wallet_handle, &recipient.header.kid, &RecordOptions::id_value())?;
 
-                        //decrypt sym_key
-                        let sym_key_as_vec = self.crypto_service
+                        //decrypt cek
+                        let cek_as_vec = self.crypto_service
                             .crypto_box_seal_open(&my_key, encrypted_key_vec.as_slice())?;
 
                         //convert to chacha Key struct
-                        let sym_key : chacha20poly1305_ietf::Key = chacha20poly1305_ietf::Key::from_slice(&sym_key_as_vec[..])
+                        let cek : chacha20poly1305_ietf::Key = chacha20poly1305_ietf::Key::from_slice(&cek_as_vec[..])
                             .map_err(|err|
                                 IndyError::CryptoError(
                                     CryptoError::CommonError(
                                         CommonError::InvalidStructure(
-                                            format!("Failed to decrypt sym_key {}", err)
+                                            format!("Failed to decrypt cek {}", err)
                                         )
                                     )
                                 )
                             )?;
 
-                        Ok((String::from(""), sym_key ))
-                    },
+                        Ok((None, cek ))
+                    }, //close Anoncrypt option
 
                     _ => Err(
                             IndyError::CryptoError(
                                 CryptoError::CommonError(
                                     CommonError::InvalidStructure(
-                                        format!("Failed to deserialize sym_key encryption alg")
+                                        format!("Failed to deserialize cek encryption alg")
                                     )
                                 )
                             )
                         )
-                }?;
+                }?; //close cek and sender_data match statement
 
                 let message = self.crypto_service
                     .decrypt_ciphertext(&jwe_struct.ciphertext,
                                         &jwe_struct.protected,
                                         &jwe_struct.iv,
                                         &jwe_struct.tag,
-                                        &sym_key)?;
+                                        &cek)?;
 
-                return Ok((message, sender))
+                let res = UnpackMessage {
+                    message,
+                    sender_verkey
+                };
+
+                return serde_json::to_vec(&res)
+                    .map_err(|err|
+                        IndyError::CommonError(
+                            CommonError::InvalidStructure(
+                                format!("Failed to serialize message {}", err)
+                            )
+                        )
+                    )
             } // close if statement if a kid matches a verkey found in wallet
         } // close for loop searching through recipients on kid
 
-        //If it gets to this point no verkey was found in wallet that matches a kid
+        // If it gets to this point no verkey was found in wallet that matches a kid so return Error
         return Err(IndyError::WalletError(WalletError::ItemNotFound))
     }
 }

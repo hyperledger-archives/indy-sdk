@@ -452,12 +452,12 @@ impl CryptoService {
     pub fn encrypt_plaintext(&self,
                              plaintext: Vec<u8>,
                              aad: &str,
-                             sym_key: &chacha20poly1305_ietf::Key)
+                             cek: &chacha20poly1305_ietf::Key)
     -> (String, String, String) {
 
         //encrypt message with aad
         let (ciphertext, iv, tag) = gen_nonce_and_encrypt_detached(
-            plaintext.as_slice(), aad.as_bytes(), &sym_key);
+            plaintext.as_slice(), aad.as_bytes(), &cek);
 
         //base64 url encode data
         let iv_encoded = base64::encode(&iv[..]);
@@ -474,7 +474,7 @@ impl CryptoService {
         aad: &str,
         iv: &str,
         tag: &str,
-        sym_key: &chacha20poly1305_ietf::Key,
+        cek: &chacha20poly1305_ietf::Key,
     ) -> Result<String, CryptoError> {
 
         //convert ciphertext to bytes
@@ -512,7 +512,7 @@ impl CryptoService {
         //decrypt message
         let plaintext_bytes =
             chacha20poly1305_ietf::decrypt_detached(ciphertext_as_bytes,
-                                                    sym_key,
+                                                    cek,
                                                     &nonce,
                                                     &tag,
                                                     Some(aad.as_bytes()))
@@ -534,7 +534,6 @@ impl CryptoService {
 mod tests {
     use super::*;
     use domain::crypto::did::MyDidInfo;
-    use utils::crypto::randombytes::randombytes;
     use utils::crypto::chacha20poly1305_ietf::gen_key;
 
     #[test]
@@ -812,14 +811,14 @@ mod tests {
         let service: CryptoService = CryptoService::new();
         let plaintext = "Hello World".as_bytes().to_vec();
         let aad = "Random authenticated additional data";
-        let sym_key = gen_key();
+        let cek = gen_key();
 
         let (expected_ciphertext, iv_encoded, tag) = service
-            .encrypt_plaintext(plaintext.clone(), aad, &sym_key);
+            .encrypt_plaintext(plaintext.clone(), aad, &cek);
 
 
         let expected_plaintext = service
-            .decrypt_ciphertext(&expected_ciphertext, aad, &iv_encoded, &tag, &sym_key).unwrap();
+            .decrypt_ciphertext(&expected_ciphertext, aad, &iv_encoded, &tag, &cek).unwrap();
 
         assert_eq!(expected_plaintext.as_bytes().to_vec(), plaintext);
     }
@@ -830,14 +829,14 @@ mod tests {
         let service: CryptoService = CryptoService::new();
         let plaintext = "".as_bytes().to_vec();
         let aad = "Random authenticated additional data";
-        let sym_key = gen_key();
+        let cek = gen_key();
 
         let (expected_ciphertext, iv_encoded, tag) = service
-            .encrypt_plaintext(plaintext.clone(), aad, &sym_key);
+            .encrypt_plaintext(plaintext.clone(), aad, &cek);
 
 
         let expected_plaintext = service
-            .decrypt_ciphertext(&expected_ciphertext, aad, &iv_encoded, &tag, &sym_key).unwrap();
+            .decrypt_ciphertext(&expected_ciphertext, aad, &iv_encoded, &tag, &cek).unwrap();
 
         assert_eq!(expected_plaintext.as_bytes().to_vec(), plaintext);
     }
@@ -847,16 +846,16 @@ mod tests {
         let service: CryptoService = CryptoService::new();
         let plaintext = "Hello World".as_bytes().to_vec();
         let aad = "Random authenticated additional data";
-        let sym_key = gen_key();
+        let cek = gen_key();
 
         let (expected_ciphertext, _, tag) = service
-            .encrypt_plaintext(plaintext, aad, &sym_key);
+            .encrypt_plaintext(plaintext, aad, &cek);
 
         //convert values to base64 encoded strings
         let bad_iv_input = "invalid_iv";
 
         let expected_error = service
-            .decrypt_ciphertext(&expected_ciphertext, bad_iv_input, &tag, aad, &sym_key);
+            .decrypt_ciphertext(&expected_ciphertext, bad_iv_input, &tag, aad, &cek);
         assert!(expected_error.is_err());
     }
 
@@ -865,32 +864,32 @@ mod tests {
         let service: CryptoService = CryptoService::new();
         let plaintext = "Hello World".as_bytes().to_vec();
         let aad = "Random authenticated additional data";
-        let sym_key = gen_key();
+        let cek = gen_key();
 
         let (_, iv_encoded, tag) = service
-            .encrypt_plaintext(plaintext, aad, &sym_key);
+            .encrypt_plaintext(plaintext, aad, &cek);
 
         let bad_ciphertext= base64::encode("bad_ciphertext".as_bytes());
 
         let expected_error = service
-            .decrypt_ciphertext(&bad_ciphertext, &iv_encoded, &tag, aad, &sym_key);
+            .decrypt_ciphertext(&bad_ciphertext, &iv_encoded, &tag, aad, &cek);
         assert!(expected_error.is_err());
     }
 
     #[test]
-    pub fn test_encrypt_plaintext_and_decrypt_ciphertext_wrong_sym_key_fails() {
+    pub fn test_encrypt_plaintext_and_decrypt_ciphertext_wrong_cek_fails() {
         let service: CryptoService = CryptoService::new();
         let plaintext = "Hello World".as_bytes().to_vec();
         let aad = "Random authenticated additional data";
-        let sym_key = chacha20poly1305_ietf::gen_key();
+        let cek = chacha20poly1305_ietf::gen_key();
 
         let (expected_ciphertext, iv_encoded, tag) = service
-            .encrypt_plaintext(plaintext, aad, &sym_key);
+            .encrypt_plaintext(plaintext, aad, &cek);
 
-        let bad_sym_key= gen_key();
+        let bad_cek= gen_key();
 
         let expected_error = service
-            .decrypt_ciphertext(&expected_ciphertext, &iv_encoded, &tag, aad, &bad_sym_key);
+            .decrypt_ciphertext(&expected_ciphertext, &iv_encoded, &tag, aad, &bad_cek);
         assert!(expected_error.is_err());
     }
 
@@ -899,15 +898,15 @@ mod tests {
         let service: CryptoService = CryptoService::new();
         let plaintext = "Hello World".as_bytes().to_vec();
         let aad = "Random authenticated additional data";
-        let sym_key = gen_key();
+        let cek = gen_key();
 
-        let (expected_ciphertext, iv_encoded, tag) = service
-            .encrypt_plaintext(plaintext, aad, &sym_key);
+        let (expected_ciphertext, iv_encoded, _) = service
+            .encrypt_plaintext(plaintext, aad, &cek);
 
         let bad_tag = "bad_tag".to_string();
 
         let expected_error = service
-            .decrypt_ciphertext(&expected_ciphertext, &iv_encoded, &bad_tag, aad, &sym_key);
+            .decrypt_ciphertext(&expected_ciphertext, &iv_encoded, &bad_tag, aad, &cek);
         assert!(expected_error.is_err());
     }
 
@@ -916,15 +915,15 @@ mod tests {
         let service: CryptoService = CryptoService::new();
         let plaintext = "Hello World".as_bytes().to_vec();
         let aad = "Random authenticated additional data";
-        let sym_key = gen_key();
+        let cek = gen_key();
 
         let (expected_ciphertext, iv_encoded, tag) = service
-            .encrypt_plaintext(plaintext, aad, &sym_key);
+            .encrypt_plaintext(plaintext, aad, &cek);
 
         let bad_aad = "bad aad";
 
         let expected_error = service
-            .decrypt_ciphertext(&expected_ciphertext, &iv_encoded, &tag, bad_aad, &sym_key);
+            .decrypt_ciphertext(&expected_ciphertext, &iv_encoded, &tag, bad_aad, &cek);
         assert!(expected_error.is_err());
     }
 }

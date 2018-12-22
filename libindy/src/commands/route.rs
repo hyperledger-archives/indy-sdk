@@ -78,7 +78,7 @@ impl RouteCommandExecutor {
         })?;
 
         //encrypt ciphertext
-        let (sym_key, iv, ciphertext) = self.crypto_service.encrypt_ciphertext(message);
+        let (cek, iv, ciphertext) = self.crypto_service.encrypt_ciphertext(message);
 
         //convert sender_vk to Key
         let my_key = &ws
@@ -90,7 +90,7 @@ impl RouteCommandExecutor {
 
         for their_vk in recv_keys {
             auth_recipients.push(
-                self.auth_encrypt_recipient(my_key, their_vk, &sym_key, cs.clone())
+                self.auth_encrypt_recipient(my_key, their_vk, &cek, cs.clone())
                     .map_err(|err| {
                         RouteError::PackError(format!("Failed to push auth recipient {}", err))
                     })?,
@@ -116,13 +116,13 @@ impl RouteCommandExecutor {
         })?;
 
         //encrypt ciphertext
-        let (sym_key, iv, ciphertext) = self.encrypt_ciphertext(message);
+        let (cek, iv, ciphertext) = self.encrypt_ciphertext(message);
 
         //encrypt ceks
         let mut anon_recipients: Vec<AnonRecipient> = vec![];
         for their_vk in recv_keys {
             let anon_recipient =
-                self.anon_encrypt_recipient(their_vk, sym_key.clone(), cs.clone())?;
+                self.anon_encrypt_recipient(their_vk, cek.clone(), cs.clone())?;
             anon_recipients.push(anon_recipient);
         }
 
@@ -162,14 +162,14 @@ impl RouteCommandExecutor {
                 .map_err(|err| RouteError::UnpackError(format!("Can't find my_key: {:?}", err)))?;
 
             //decrypt recipient header
-            let (ephem_sym_key, sender_vk) =
+            let (ephem_cek, sender_vk) =
                 self.crypto_service.auth_decrypt_recipient(my_key, recipient_struct)?;
 
             // decode
             let message = self.crypto_service.decrypt_ciphertext(
                 &auth_ames_struct.ciphertext,
                 &auth_ames_struct.iv,
-                &ephem_sym_key,
+                &ephem_cek,
             )?;
 
             Ok((message, sender_vk))
@@ -191,13 +191,13 @@ impl RouteCommandExecutor {
                 .map_err(|err| RouteError::UnpackError(format!("Can't find my_key: {:?}", err)))?;
 
             //decrypt recipient header
-            let ephem_sym_key = self.crypto_service.anon_decrypt_recipient(my_key, recipient_struct)?;
+            let ephem_cek = self.crypto_service.anon_decrypt_recipient(my_key, recipient_struct)?;
 
             //decrypt message
             let message = self.crypto_service.decrypt_ciphertext(
                 &auth_ames_struct.ciphertext,
                 &auth_ames_struct.iv,
-                &ephem_sym_key,
+                &ephem_cek,
             )?;
 
             //return message and no key
