@@ -12,7 +12,6 @@ pub mod blob_storage;
 pub mod non_secrets;
 pub mod payments;
 pub mod logger;
-// pub mod agent;
 
 use self::libc::c_char;
 
@@ -240,26 +239,6 @@ pub enum ErrorCode
     // Extra funds on inputs
     PaymentExtraFundsError = 705,
 
-    // Failed to perform Encryption or Decryption while routing messages
-    RouteEncryptionError = 800,
-
-    // Failed to Encode the data properly while routing messages
-    RouteEncodeError = 801,
-
-    //Failed to Decode the data properly while routing messages
-    RouteDecodeError = 802,
-
-    // Failed to unpack the JWM
-    RouteUnpackError = 803,
-
-    // Failed to pack the JWM
-    RoutePackError = 804,
-
-    // Key was included when it shouldn't have been
-    RouteMissingKeyError = 805,
-
-    // Failed to serialize a JWM based on the parameters provided
-    RouteSerializationError = 806
 }
 
 /// Set libindy runtime configuration. Can be optionally called to change current params.

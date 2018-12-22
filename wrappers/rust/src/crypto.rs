@@ -288,7 +288,6 @@ fn _anon_decrypt(command_handle: IndyHandle, wallet_handle: IndyHandle, recipien
 pub fn pack_message(wallet_handle: IndyHandle, message: &[u8], receiver_keys: &str, sender: &str) -> Box<Future<Item=Vec<u8>, Error=ErrorCode>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
 
-    println!("got to rust/src/crypto.rs");
     let err= _pack_message(command_handle, wallet_handle, message, receiver_keys, sender, cb);
 
     ResultHandler::slice(command_handle, err, receiver)
@@ -298,7 +297,7 @@ fn _pack_message(command_handle: IndyHandle, wallet_handle: IndyHandle, message:
     let receiver_keys = c_str!(receiver_keys);
     let sender = c_str!(sender);
 
-    let res = ErrorCode::from(unsafe {
+    ErrorCode::from(unsafe {
         crypto::indy_pack_message(command_handle,
                                   wallet_handle,
                                   message.as_ptr() as *const u8,
@@ -306,11 +305,8 @@ fn _pack_message(command_handle: IndyHandle, wallet_handle: IndyHandle, message:
                                   receiver_keys.as_ptr(),
                                   sender.as_ptr(),
                                   cb)
-    });
+    })
 
-    println!("got to unsafe call");
-
-    res
 }
 
 /// Unpacks a message packed using indy_pack_message which follows the wire message format HIPE

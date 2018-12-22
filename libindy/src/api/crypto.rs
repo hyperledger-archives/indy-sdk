@@ -623,7 +623,7 @@ pub  extern fn indy_crypto_anon_decrypt(command_handle: IndyHandle,
 /// Ledger*
 /// Crypto*
 #[no_mangle]
-pub fn indy_pack_message(
+pub extern fn indy_pack_message(
     command_handle: i32,
     wallet_handle: i32,
     message: *const u8,
@@ -694,7 +694,7 @@ pub fn indy_pack_message(
 /// Ledger*
 /// Crypto*
 #[no_mangle]
-pub fn indy_unpack_message(
+pub extern fn indy_unpack_message(
     command_handle: i32,
     wallet_handle: i32,
     jwe_data: *const u8,
