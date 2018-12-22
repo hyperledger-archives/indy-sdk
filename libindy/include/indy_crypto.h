@@ -317,6 +317,123 @@ extern "C" {
                                                                       indy_u32_t        decrypted_msg_len)
                                                  );
 
+
+    /// Packs a message
+    ///
+    /// Note to use DID keys with this function you can call indy_key_for_did to get key id (verkey)
+    /// for specific DID.
+    ///
+    /// #Params
+    /// command_handle: command handle to map callback to user context.
+    /// message: a pointer to the first byte of the message to be packed
+    /// message_len: the length of the message
+    /// receivers: a string in the format of a json list which will contain the list of receiver's keys
+    ///                the message is being encrypted for.
+    ///                Example:
+    ///                "[<receiver edge_agent_1 verkey>, <receiver edge_agent_2 verkey>]"
+    /// sender: the sender's verkey as a string When "" is used in this parameter, anoncrypt is used
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// a JWE using authcrypt alg is defined below:
+    /// {
+    ///    "protected": "b64URLencoded({
+    ///        "enc": "xsalsa20poly1305",
+    ///        "typ": "JWM/1.0",
+    ///        "alg": "authcrypt",
+    ///        "recipients": [
+    ///            {
+    ///                "encrypted_key": anoncrypt(encrypted_cek|sender_vk|nonce)
+    ///                "header": {
+    ///                    "kid": "b64URLencode(ver_key)"
+    ///                }
+    ///            },
+    ///        ],
+    ///    })"
+    ///    "iv": <b64URLencode()>,
+    ///    "ciphertext": <b64URLencode(encrypt({'@type'...}, cek)>,
+    ///    "tag": <b64URLencode()>
+    /// }
+    ///
+    /// Alternative example in using anoncrypt alg is defined below:
+    /// {
+    ///    "protected": "b64URLencode({
+    ///        "enc": "xsalsa20poly1305",
+    ///        "typ": "JWM/1.0",
+    ///        "alg": "anoncrypt",
+    ///        "recipients": [
+    ///            {
+    ///                "encrypted_key": <b64URLencode(anoncrypt(cek))>,
+    ///                "header": {
+    ///                    "kid": "b64URLencode(ver_key)"
+    ///                }
+    ///            },
+    ///        ],
+    ///    })"
+    ///    "iv": <b64URLencode(iv)>,
+    ///    "ciphertext": <b64URLencode(encrypt({'@type'...}, cek)>,
+    ///    "tag": <b64URLencode(authentication tag)>
+    /// }
+    ///
+    ///
+    /// #Errors
+    /// Common*
+    /// Wallet*
+    /// Ledger*
+    /// Crypto*
+    extern indy_error_t indy_crypto_pack_message(indy_handle_t      command_handle,
+                                                 indy_handle_t      wallet_handle,
+                                                 const indy_u8_t*   message,
+                                                 indy_u32_t         message_len,
+                                                 const char *       receiver_keys,
+                                                 const char *       sender,
+
+                                                 void           (*cb)(indy_handle_t     command_handle_,
+                                                                      indy_error_t      err,
+                                                                      const indy_u8_t*  jwe_msg_raw,
+                                                                      indy_u32_t        jwe_msg_len)
+                                                 );
+
+
+    /// Unpacks a message packed using indy_pack_message which follows the wire message format HIPE
+    ///
+    ///
+    /// #Params
+    /// command_handle: command handle to map callback to user context.
+    /// jwe_data: a pointer to the first byte of the JWE to be unpacked
+    /// jwe_len: the length of the JWE message in bytes
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// if authcrypt was used to pack the message returns this json structure:
+    /// {
+    ///     message: <decrypted message>,
+    ///     sender_verkey: <sender_verkey>
+    /// }
+    ///
+    /// OR
+    ///
+    /// if anoncrypt was used to pack the message returns this json structure:
+    /// {
+    ///     message: <decrypted message>,
+    /// }
+    ///
+    ///
+    /// #Errors
+    /// Common*
+    /// Wallet*
+    /// Ledger*
+    /// Crypto*
+    extern indy_error_t indy_crypto_unpack_message(indy_handle_t      command_handle,
+                                                   indy_handle_t      wallet_handle,
+                                                   const indy_u8_t*   jwe_msg,
+                                                   indy_u32_t         jwe_len,
+
+                                                   void           (*cb)(indy_handle_t     command_handle_,
+                                                                        indy_error_t      err,
+                                                                        const indy_u8_t*  res_json_raw,
+                                                                        indy_u32_t        res_json_len)
+                                                   );
 #ifdef __cplusplus
 }
 #endif

@@ -566,26 +566,26 @@ pub  extern fn indy_crypto_anon_decrypt(command_handle: IndyHandle,
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
-/// message: the message which is going to be packed up
+/// message: a pointer to the first byte of the message to be packed
+/// message_len: the length of the message
 /// receivers: a string in the format of a json list which will contain the list of receiver's keys
 ///                the message is being encrypted for.
 ///                Example:
 ///                "[<receiver edge_agent_1 verkey>, <receiver edge_agent_2 verkey>]"
-/// sender: a string in the form
+/// sender: the sender's verkey as a string When "" is used in this parameter, anoncrypt is used
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
-/// a JWE in using authcrypt alg is defined below:
+/// a JWE using authcrypt alg is defined below:
 /// {
-///    "protected": "b64URLencode({
+///    "protected": "b64URLencoded({
 ///        "enc": "xsalsa20poly1305",
 ///        "typ": "JWM/1.0",
 ///        "alg": "authcrypt",
 ///        "recipients": [
 ///            {
-///                "encrypted_key": <b64URLencode(encrypt(cek))>,
+///                "encrypted_key": anoncrypt(encrypted_cek|sender_vk|nonce)
 ///                "header": {
-///                    "sender": <b64URLencode(anoncrypt(sender_pubkey))>,
 ///                    "kid": "b64URLencode(ver_key)"
 ///                }
 ///            },
@@ -604,7 +604,7 @@ pub  extern fn indy_crypto_anon_decrypt(command_handle: IndyHandle,
 ///        "alg": "anoncrypt",
 ///        "recipients": [
 ///            {
-///                "encrypted_key": <b64URLencode(encrypt(cek))>,
+///                "encrypted_key": <b64URLencode(anoncrypt(cek))>,
 ///                "header": {
 ///                    "kid": "b64URLencode(ver_key)"
 ///                }
@@ -622,45 +622,37 @@ pub  extern fn indy_crypto_anon_decrypt(command_handle: IndyHandle,
 /// Wallet*
 /// Ledger*
 /// Crypto*
-/// Agent*
-
-
 #[no_mangle]
 pub fn indy_pack_message(
     command_handle: i32,
     wallet_handle: i32,
-    msg_data: *const u8,
-    msg_len: u32,
+    message: *const u8,
+    message_len: u32,
     receiver_keys: *const c_char,
     sender: *const c_char,
-    cb: Option<extern "C" fn(xcommand_handle: i32, err: ErrorCode, jwe: *const c_char)>,
+    cb: Option<extern "C" fn(xcommand_handle: i32, err: ErrorCode, jwe_data: *const u8, jwe_len: u32)>,
 ) -> ErrorCode {
-    trace!("indy_pack_message: >>> msg_data: {:?}, msg_len: {:?}, receiver_keys: {:?}, sender: {:?}",
-           msg_data, msg_len, receiver_keys, sender);
+    trace!("indy_pack_message: >>> wallet_handle: {:?}, message: {:?}, message_len {:?},\
+            receiver_keys: {:?}, sender: {:?}", wallet_handle, message, message_len, receiver_keys, sender);
 
-    check_useful_c_byte_array!(msg_data, msg_len, ErrorCode::CommonInvalidParam2, ErrorCode::CommonInvalidParam3);
+    check_useful_c_byte_array!(message, message_len, ErrorCode::CommonInvalidParam2, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(receiver_keys, ErrorCode::CommonInvalidParam4);
     check_useful_opt_c_str!(sender, ErrorCode::CommonInvalidParam5);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
-    trace!("indy_pack_message: entities >>> msg_data: {:?}, msg_len: {:?}, receiver_keys: {:?}, sender: {:?}",
-           msg_data, msg_len, receiver_keys, sender);
+    trace!("indy_pack_message: entities >>> wallet_handle: {:?}, message: {:?}, message_len {:?},\
+            receiver_keys: {:?}, sender: {:?}", wallet_handle, message, message_len, receiver_keys, sender);
 
     let result = CommandExecutor::instance().send(Command::Crypto(CryptoCommand::PackMessage(
-        msg_data,
+        message,
         receiver_keys,
         sender,
         wallet_handle,
         Box::new(move |result| {
-            let (err, jwe) = result_to_err_code_1!(result, String::new());
-            trace!(
-                "indy_auth_pack_message: cb command_handle: {:?}, err: {:?}, jwe: {:?}",
-                command_handle,
-                err,
-                jwe
-            );
-            let jwe = ctypes::string_to_cstring(jwe);
-            cb(command_handle, err, jwe.as_ptr())
+            let (err, jwe) = result_to_err_code_1!(result, Vec::new());
+            trace!("indy_auth_pack_message: jwe: {:?}", jwe);
+            let (jwe_data, jwe_len) = ctypes::vec_to_pointer(&jwe);
+            cb(command_handle, err, jwe_data, jwe_len)
         }),
     )));
 
@@ -671,52 +663,78 @@ pub fn indy_pack_message(
     res
 }
 
-//update function to return key used
+
+/// Unpacks a message packed using indy_pack_message which follows the wire message format
+///
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+/// jwe_data: a pointer to the first byte of the JWE to be unpacked
+/// jwe_len: the length of the JWE message in bytes
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// if authcrypt was used to pack the message returns this json structure:
+/// {
+///     message: <decrypted message>,
+///     sender_verkey: <sender_verkey>
+/// }
+///
+/// OR
+///
+/// if anoncrypt was used to pack the message returns this json structure:
+/// {
+///     message: <decrypted message>,
+/// }
+///
+///
+/// #Errors
+/// Common*
+/// Wallet*
+/// Ledger*
+/// Crypto*
 #[no_mangle]
 pub fn indy_unpack_message(
     command_handle: i32,
     wallet_handle: i32,
-    jwe: *const c_char,
+    jwe_data: *const u8,
+    jwe_len: u32,
     cb: Option<
         extern "C" fn(
             xcommand_handle: i32,
             err: ErrorCode,
-            plaintext: *const c_char,
-            sender_vk: *const c_char,
+            res_json_data : *const u8,
+            res_json_len : u32
         ),
     >,
 ) -> ErrorCode {
     trace!(
-        "indy_unpack_message: >>> wallet_handle: {:?}, jwe: {:?}",
+        "indy_unpack_message: >>> wallet_handle: {:?}, jwe_data: {:?}, jwe_len {:?}",
         wallet_handle,
-        jwe
+        jwe_data,
+        jwe_len
     );
 
-    check_useful_c_str!(jwe, ErrorCode::CommonInvalidParam3);
+    check_useful_c_byte_array!(jwe_data, jwe_len, ErrorCode::CommonInvalidParam2, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     trace!(
-        "indy_unpack_message: entities >>> wallet_handle: {:?}, jwe: {:?}",
+        "indy_unpack_message: entities >>> wallet_handle: {:?}, jwe_data: {:?}, jwe_len {:?}",
         wallet_handle,
-        jwe
+        jwe_data,
+        jwe_len
     );
 
     let result = CommandExecutor::instance().send(Command::Crypto(CryptoCommand::UnpackMessage(
-        jwe,
+        jwe_data,
         wallet_handle,
         Box::new(move |result| {
-            let (err, plaintext, sender_vk) =
-                result_to_err_code_2!(result, String::new(), String::new());
-            trace!(
-                "indy_unpack_message: cb command_handle: {:?}, err: {:?}, plaintext: {:?}, sender_vk: {:?}",
-                command_handle,
-                err,
-                plaintext,
-                sender_vk
+            let (err, res_json) = result_to_err_code_1!(result, Vec::new());
+            trace!("indy_unpack_message: cb command_handle: {:?}, err: {:?}, res_json: {:?}",
+                command_handle, err, res_json
             );
-            let plaintext = ctypes::string_to_cstring(plaintext);
-            let sender_vk = ctypes::string_to_cstring(sender_vk);
-            cb(command_handle, err, plaintext.as_ptr(), sender_vk.as_ptr())
+            let (res_json_data, res_json_len) = ctypes::vec_to_pointer(&res_json);
+            cb(command_handle, err, res_json_data, res_json_len)
         }),
     )));
 
