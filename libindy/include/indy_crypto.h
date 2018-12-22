@@ -381,18 +381,18 @@ extern "C" {
     /// Wallet*
     /// Ledger*
     /// Crypto*
-    extern indy_error_t indy_crypto_pack_message(indy_handle_t      command_handle,
-                                                 indy_handle_t      wallet_handle,
-                                                 const indy_u8_t*   message,
-                                                 indy_u32_t         message_len,
-                                                 const char *       receiver_keys,
-                                                 const char *       sender,
+    extern indy_error_t indy_pack_message(indy_handle_t      command_handle,
+                                          indy_handle_t      wallet_handle,
+                                          const indy_u8_t*   message,
+                                          indy_u64_t         message_len,
+                                          const char *       receiver_keys,
+                                          const char *       sender,
 
-                                                 void           (*cb)(indy_handle_t     command_handle_,
-                                                                      indy_error_t      err,
-                                                                      const indy_u8_t*  jwe_msg_raw,
-                                                                      indy_u32_t        jwe_msg_len)
-                                                 );
+                                          void           (*cb)(indy_handle_t     command_handle_,
+                                                               indy_error_t      err,
+                                                               const indy_u8_t*  jwe_msg_raw,
+                                                               indy_u64_t        jwe_msg_len)
+                                          );
 
 
     /// Unpacks a message packed using indy_pack_message which follows the wire message format HIPE
@@ -424,16 +424,16 @@ extern "C" {
     /// Wallet*
     /// Ledger*
     /// Crypto*
-    extern indy_error_t indy_crypto_unpack_message(indy_handle_t      command_handle,
-                                                   indy_handle_t      wallet_handle,
-                                                   const indy_u8_t*   jwe_msg,
-                                                   indy_u32_t         jwe_len,
+    extern indy_error_t indy_unpack_message(indy_handle_t      command_handle,
+                                            indy_handle_t      wallet_handle,
+                                            const indy_u8_t*   jwe_msg,
+                                            indy_u64_t         jwe_len,
 
-                                                   void           (*cb)(indy_handle_t     command_handle_,
-                                                                        indy_error_t      err,
-                                                                        const indy_u8_t*  res_json_raw,
-                                                                        indy_u32_t        res_json_len)
-                                                   );
+                                            void           (*cb)(indy_handle_t     command_handle_,
+                                                                 indy_error_t      err,
+                                                                 const indy_u8_t*  res_json_raw,
+                                                                 indy_u64_t        res_json_len)
+                                            );
 #ifdef __cplusplus
 }
 #endif

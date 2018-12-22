@@ -486,8 +486,8 @@ mod high_cases {
             let receiver_keys = serde_json::to_string(&rec_key_vec).unwrap();
 
             let message = "Hello World".as_bytes();
-            crypto::pack_message(wallet_handle, message, &receiver_keys, &verkey).unwrap();
-
+            let res = crypto::pack_message(wallet_handle, message, &receiver_keys, &verkey);
+            assert!(res.is_ok());
             utils::tear_down_with_wallet(wallet_handle);
         }
 
