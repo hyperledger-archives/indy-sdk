@@ -491,6 +491,20 @@ mod high_cases {
             utils::tear_down_with_wallet(wallet_handle);
         }
 
+        #[test]
+        fn indy_pack_message_works_empty_message() {
+                        let (wallet_handle, verkey) = setup_with_key();
+
+            let rec_key_vec = vec![VERKEY_MY1, VERKEY_MY2, VERKEY_TRUSTEE];
+            let receiver_keys = serde_json::to_string(&rec_key_vec).unwrap();
+
+            let message = "".as_bytes();
+            let res = crypto::pack_message(wallet_handle, message, &receiver_keys, &verkey);
+            assert_eq!(ErrorCode::CommonInvalidParam3, res.unwrap_err());
+
+            utils::tear_down_with_wallet(wallet_handle);
+        }
+
     }
 
     mod unpack_message {
