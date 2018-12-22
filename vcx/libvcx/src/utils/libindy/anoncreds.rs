@@ -488,6 +488,7 @@ pub mod tests {
     use utils::constants::*;
     use std::thread;
     use std::time::Duration;
+    #[cfg(feature = "pool_tests")]
     use utils::error::LIBINDY_INVALID_STRUCTURE;
     #[cfg(feature = "pool_tests")]
     use utils::constants::{TEST_TAILS_FILE};

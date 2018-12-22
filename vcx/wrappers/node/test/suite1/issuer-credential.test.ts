@@ -50,7 +50,7 @@ describe('IssuerCredential:', () => {
     it('throws: missing attr', async () => {
       const { attr, ...data } = await dataIssuerCredentialCreate()
       const error = await shouldThrow(() => IssuerCredential.create(data as any))
-      assert.equal(error.vcxCode, VCXCode.UNKNOWN_ERROR)
+      assert.equal(error.vcxCode, VCXCode.INVALID_OPTION)
     })
 
     it('throws: missing credentialName', async () => {
@@ -69,7 +69,7 @@ describe('IssuerCredential:', () => {
     it('throws: invalid attr', async () => {
       const { attr, ...data } = await dataIssuerCredentialCreate()
       const error = await shouldThrow(() => IssuerCredential.create({ attr: null as any, ...data }))
-      assert.equal(error.vcxCode, VCXCode.UNKNOWN_ERROR)
+      assert.equal(error.vcxCode, VCXCode.INVALID_OPTION)
     })
   })
 
