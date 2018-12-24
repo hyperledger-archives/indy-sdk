@@ -1274,8 +1274,16 @@ def downloadPackagingUtils() {
     git branch: 'master', credentialsId: 'evernym-github-machine-user', url: 'https://github.com/evernym/sovrin-packaging'
 }
 
+def shell(command) {
+    if (isUnix()) {
+        sh command
+    } else {
+        bat command
+    }
+}
+
 def setupRust() {
-    sh "rustup default 1.31.0"
+    shell("rustup default 1.31.0")
 }
 
 def androidPublishing() {

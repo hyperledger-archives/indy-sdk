@@ -698,8 +698,16 @@ def closePool(env_name, network_name, poolInst) {
     step([$class: 'WsCleanup'])
 }
 
+def shell(command) {
+    if (isUnix()) {
+        sh command
+    } else {
+        bat command
+    }
+}
+
 def setupRust() {
-    sh "rustup default 1.31.0"
+    shell("rustup default 1.31.0")
 }
 
 def setupRustIOS() {
