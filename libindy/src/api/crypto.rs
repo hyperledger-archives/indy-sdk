@@ -637,7 +637,7 @@ pub extern fn indy_pack_message(
 
     check_useful_c_byte_array!(message, message_len, ErrorCode::CommonInvalidParam2, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(receiver_keys, ErrorCode::CommonInvalidParam4);
-    check_useful_opt_c_str!(sender, ErrorCode::CommonInvalidParam5);
+    check_useful_c_str_empty_accepted!(sender, ErrorCode::CommonInvalidParam5);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
     trace!("indy_pack_message: entities >>> wallet_handle: {:?}, message: {:?}, message_len {:?},\
