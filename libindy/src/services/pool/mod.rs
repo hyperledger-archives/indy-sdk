@@ -161,15 +161,14 @@ impl PoolService {
     }
 
     pub fn send_action(&self, handle: i32, msg: &str, nodes: Option<&str>, timeout: Option<i32>) -> Result<i32, PoolError> {
-        let cmd_id: i32 = sequence::get_next_id();
-
         let pools = self.open_pools.try_borrow().map_err(CommonError::from)?;
-        match pools.get(&handle) {
-            Some(ref pool) => self._send_msg(cmd_id, msg, &pool.cmd_socket, nodes, timeout)?,
-            None => return Err(PoolError::InvalidHandle(format!("No pool with requested handle {}", handle)))
+        if let Some(ref pool) = pools.get(&handle) {
+            let cmd_id: i32 = sequence::get_next_id();
+            self._send_msg(cmd_id, msg, &pool.cmd_socket, nodes, timeout)?;
+            Ok(cmd_id)
+        } else {
+            Err(PoolError::InvalidHandle(format!("No pool with requested handle {}", handle)))
         }
-
-        Ok(cmd_id)
     }
 
     pub fn register_sp_parser(txn_type: &str,
