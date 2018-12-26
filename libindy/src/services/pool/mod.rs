@@ -205,15 +205,7 @@ impl PoolService {
     }
 
     pub fn refresh(&self, handle: i32) -> Result<i32, PoolError> {
-        let cmd_id: i32 = sequence::get_next_id();
-
-        let pools = self.open_pools.try_borrow().map_err(CommonError::from)?;
-        match pools.get(&handle) {
-            Some(ref pool) => self._send_msg(cmd_id, "refresh", &pool.cmd_socket, None, None)?,
-            None => return Err(PoolError::InvalidHandle(format!("No pool with requested handle {}", handle)))
-        };
-
-        Ok(cmd_id)
+        self.send_action(handle, "refresh", None, None)
     }
 
     fn _send_msg(&self, cmd_id: i32, msg: &str, socket: &Socket, nodes: Option<&str>, timeout: Option<i32>) -> Result<(), PoolError> {
