@@ -225,7 +225,7 @@ def iosTesting() {
                 echo "iOS Test: Checkout scm"
                 checkout scm
 
-                echo "iOS Test: setup rust, brew and simulators"
+                echo "iOS Test: setup env"
                 setupRust()
                 setupRustIOS()
                 setupBrewPackages()
