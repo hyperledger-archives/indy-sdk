@@ -5,14 +5,14 @@ var initTestPool = require('./helpers/initTestPool')
 
 test('pairwise', async function (t) {
   var pool = await initTestPool()
-  var walletConfig = {'id': 'wallet-' + cuid()}
-  var walletCredentials = {'key': 'key'}
+  var walletConfig = { 'id': 'wallet-' + cuid() }
+  var walletCredentials = { 'key': 'key' }
   await indy.createWallet(walletConfig, walletCredentials)
   var wh = await indy.openWallet(walletConfig, walletCredentials)
 
   var [theirDid, theirVerkey] = await indy.createAndStoreMyDid(wh, {})
   var [myDid] = await indy.createAndStoreMyDid(wh, {})
-  await indy.storeTheirDid(wh, {did: theirDid, verkey: theirVerkey})
+  await indy.storeTheirDid(wh, { did: theirDid, verkey: theirVerkey })
 
   t.deepEqual(await indy.listPairwise(wh), [])
 
@@ -23,7 +23,7 @@ test('pairwise', async function (t) {
   t.true(await indy.isPairwiseExists(wh, theirDid))
 
   t.deepEqual(await indy.listPairwise(wh), [
-    {my_did: myDid, their_did: theirDid, metadata: 'wat'}
+    { my_did: myDid, their_did: theirDid, metadata: 'wat' }
   ])
 
   t.deepEqual(await indy.getPairwise(wh, theirDid), {

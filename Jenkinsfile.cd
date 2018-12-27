@@ -218,17 +218,17 @@ def vcxTesting(file, env_name, network_name, stashBuildResults) {
                     libvcxBuildFinished[env_name]
                 }
                 def jobs = [
-                    "${env_name}-vcx-nodejs-test": {
-                        linuxModuleTesting(file, env_name, network_name, this.&linuxVcxNodejsTesting, stashBuildResults)
-                    }
+                        "${env_name}-vcx-nodejs-test": {
+                            linuxModuleTesting(file, env_name, network_name, this.&linuxVcxNodejsTesting, stashBuildResults)
+                        }
                 ]
                 if (env_name == "Ubuntu") {
                     jobs["${env_name}-vcx-java-test"] = {
-                                linuxModuleTesting(file, env_name, network_name, this.&linuxVcxJavaTesting, stashBuildResults)
+                        linuxModuleTesting(file, env_name, network_name, this.&linuxVcxJavaTesting, stashBuildResults)
                     }
                     jobs["${env_name}-vcx-python-test"] = {
-                                linuxModuleTesting(file, env_name, network_name, this.&linuxVcxPythonTesting, stashBuildResults)
-                            }
+                        linuxModuleTesting(file, env_name, network_name, this.&linuxVcxPythonTesting, stashBuildResults)
+                    }
                 }
                 parallel(jobs)
             },
@@ -569,7 +569,8 @@ def windowsTesting() {
                     dir('cli') {
                         bat "sed -i -e \"s/10\\.0\\.0\\.2/${INDY_SDK_SERVER_IP}/g\" docker_pool_transactions_genesis"
 
-                        def featuresArgs = '--features "nullpay_plugin"'
+                        def featuresArgs = ''
+//                      def featuresArgs = '--features "nullpay_plugin"' // disabled because of IS-1109
 
                         echo "Windows Indy Cli Test: Build"
                         withEnv([
@@ -657,59 +658,96 @@ def linuxAndroidOnEmulatorTesting(env_name, network_name, testEnv, stashBuildRes
 }
 
 def iosTesting() {
+
+    def setupRustIOS = {
+        sh "rustup target add aarch64-apple-ios armv7-apple-ios armv7s-apple-ios i386-apple-ios x86_64-apple-ios"
+    }
+
+    def cleanSimulators = {
+        sh '''
+            xcrun simctl list devices | grep 'IndySDK' | awk '{print $4}' | sed -n  's/(\\(.*\\))/\\1/p'
+            xcrun simctl list devices | grep 'IndySDK' | awk '{print $4}' | sed -n  's/(\\(.*\\))/\\1/p' | xargs xcrun simctl delete
+        '''
+    }
+
+    def createSimulators = {
+        sh '''
+            xcrun simctl create "iPhone X IndySDK" "iPhone X" "11.2"
+        '''
+    }
+
     node('macos') {
         stage('iOS Test') {
             try {
                 echo "iOS Test: Checkout scm"
                 checkout scm
 
-                echo "iOS Test: Running pool"
-                sh "docker rm -f indy_pool || true"
-                sh "docker build -f ci/indy-pool.dockerfile -t indy_pool ci"
-                sh "docker run -d --name indy_pool -p 9701-9708:9701-9708 indy_pool"
-
+                echo "iOS Test: setup rust, brew and simulators"
                 setupRust()
                 setupRustIOS()
                 setupBrewPackages()
+                cleanSimulators()
+                createSimulators()
 
-                echo "iOS Test: Building Libindy Universal iOS Pod"
-                buildIOSPod("libindy", "")
+                withEnv([
+                    "BUNDLE_PATH=$HOME/.gem.indy_sdk"
+                ]) {
+                    dir('wrappers/ios') {
+                        echo "iOS Test: Installing ruby, bundler and gems"
 
-                dir('wrappers/ios/libindy-pod') {
-                    echo "iOS Test: Installing dependencies (pods)"
+                        sh '''
+                            rbenv install -s $(cat .ruby-version)
 
-                    withEnv([
-                            "GEM_PATH=$HOME/.gem.indy_sdk",
-                            "GEM_HOME=$HOME/.gem.indy_sdk"
-                    ]) {
-                        sh "pod install --repo-update"
+                            gem install bundler
+                            bundler exec gem env
+
+                            bundler install
+                            bundler list
+                        '''
                     }
+
+                    dir('wrappers/ios/libindy-pod') {
+                        echo "iOS Test: Installing dependencies (pods)"
+                        sh "bundler exec pod install --repo-update"
+                    }
+
+                    echo "iOS Test: Building Libindy Universal iOS Pod"
+                    buildIOSPod("libindy", "")
+
+                    echo "iOS Test: Running pool"
+                    sh "docker rm -f indy_pool || true"
+                    sh "docker build -f ci/indy-pool.dockerfile -t indy_pool ci"
+                    sh "docker run -d --name indy_pool -p 9701-9708:9701-9708 indy_pool"
+
+                    // FIXME replace this hack (manually rewrite installed pod)
+                    sh "rm -f wrappers/ios/libindy-pod/Pods/libindy/*.[ah]"
+                    sh "cp libindy/out_pod/*.[ah] wrappers/ios/libindy-pod/Pods/libindy"
+
+                    dir('wrappers/ios/libindy-pod') {
+                        echo "iOS Test: Testing"
+                        sh "xcodebuild test -workspace Indy.xcworkspace -scheme Indy-demo -destination 'platform=iOS Simulator,name=iPhone X IndySDK,OS=11.2'"
+                    }
+
+                    stash includes: 'libindy/out_pod/libindy.tar.gz', name: "LibindyUniversalIOSPod"
+
+                    echo "iOS Test: Building Libindy iOS Pod for aarch64-apple-ios and armv7-apple-ios"
+                    buildIOSPod("libindy", "aarch64-apple-ios armv7-apple-ios")
+                    stash includes: 'libindy/out_pod/libindy.tar.gz', name: "LibindyMiniIOSPod"
+
+                    echo "iOS Test: Building Libnullpay Universal iOS Pod"
+                    buildIOSPod("libnullpay", "")
+                    stash includes: 'libnullpay/out_pod/libnullpay.tar.gz', name: "LibnullpayUniversalIOSPod"
+
+                    echo "iOS Test: Building Libnullpay iOS Pod for aarch64-apple-ios and armv7-apple-ios"
+                    buildIOSPod("libnullpay", "aarch64-apple-ios armv7-apple-ios")
+                    stash includes: 'libnullpay/out_pod/libnullpay.tar.gz', name: "LibnullpayMiniIOSPod"
                 }
-
-                // FIXME replace this hack (manually rewrite installed pod)
-                sh "rm -f wrappers/ios/libindy-pod/Pods/libindy/*.[ah]"
-                sh "cp libindy/out_pod/*.[ah] wrappers/ios/libindy-pod/Pods/libindy"
-
-                dir('wrappers/ios/libindy-pod') {
-                    echo "iOS Test: Testing"
-                    sh "xcodebuild test -workspace Indy.xcworkspace -scheme Indy-demo -destination 'platform=iOS Simulator,name=iPhone X IndySDK,OS=11.2'"
-                }
-
-                stash includes: 'libindy/out_pod/libindy.tar.gz', name: "LibindyUniversalIOSPod"
-
-                echo "iOS Test: Building Libindy iOS Pod for aarch64-apple-ios and armv7-apple-ios"
-                buildIOSPod("libindy", "aarch64-apple-ios armv7-apple-ios")
-                stash includes: 'libindy/out_pod/libindy.tar.gz', name: "LibindyMiniIOSPod"
-
-                echo "iOS Test: Building Libnullpay Universal iOS Pod"
-                buildIOSPod("libnullpay", "")
-                stash includes: 'libnullpay/out_pod/libnullpay.tar.gz', name: "LibnullpayUniversalIOSPod"
-
-                echo "iOS Test: Building Libnullpay iOS Pod for aarch64-apple-ios and armv7-apple-ios"
-                buildIOSPod("libnullpay", "aarch64-apple-ios armv7-apple-ios")
-                stash includes: 'libnullpay/out_pod/libnullpay.tar.gz', name: "LibnullpayMiniIOSPod"
 
             } finally {
+                try {
+                    cleanSimulators()
+                } catch (ignore) {
+                }
                 try {
                     sh "docker stop indy_pool"
                 } catch (ignore) {
@@ -786,14 +824,17 @@ def ubuntuPublishing() {
                 testEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
 
                 libindyDebPublishing(testEnv, libindyVersion)
-                pythonWrapperPublishing(testEnv, false, 'wrappers/python')
+
+                pythonWrapperPublishing(testEnv, false, 'wrappers/python', 'libindy')
+                nodejsWrapperPublishing(testEnv, false, 'wrappers/nodejs', 'libindy')
                 javaWrapperPublishing(testEnv, false)
                 rustWrapperPublishing(testEnv, false)
                 libindyCliDebPublishing(testEnv, libindyVersion)
                 libnullpayDebPublishing(testEnv)
                 libvcxDebPublishing(testEnv)
                 vcxJavaWrapperPublishing(testEnv, false)
-                pythonWrapperPublishing(testEnv, false, 'vcx/wrappers/python3')
+                pythonWrapperPublishing(testEnv, false, 'vcx/wrappers/python3', 'vcx/libvcx')
+                nodejsWrapperPublishing(testEnv, false, 'vcx/wrappers/node', 'vcx/libvcx')
             }
             finally {
                 echo 'Publish Ubuntu files: Cleanup'
@@ -854,13 +895,13 @@ def windowsPublishing() {
                 echo 'Publish Indy Cli Windows files'
                 windowsPublishArtifact(testEnv, "cli", "indy-cli", "executable", libindyVersion, "IndyCliWindowsBuildResult")
 
-                def libnullpayVersion = getSrcVersion("libnullpay")
-
                 echo 'Publish Libnullpay Windows files'
+                def libnullpayVersion = getSrcVersion("libnullpay")
                 windowsPublishArtifact(testEnv, "libnullpay", "libnullpay", "lib", libnullpayVersion, "LibnullpayWindowsBuildResult")
 
                 echo 'Publish Libvcx Windows files'
-                windowsPublishArtifact(testEnv, "vcx/libvcx", "libvcx", "lib", libindyVersion, "LibvcxWindowsBuildResult")
+                def libvcxVersion = getSrcVersion("vcx/libvcx")
+                windowsPublishArtifact(testEnv, "vcx/libvcx", "libvcx", "lib", libvcxVersion, "LibvcxWindowsBuildResult")
 
             }
             finally {
@@ -1003,8 +1044,8 @@ def debPublishing(testEnv, directory, packageName, version, inStashName, outStas
     }
 }
 
-def pythonWrapperPublishing(testEnv, isRelease, directory) {
-    def version = getSrcVersion("libindy")
+def pythonWrapperPublishing(testEnv, isRelease, directory, base_library) {
+    def version = getSrcVersion(base_library)
 
     dir(directory) {
         def suffix = getSuffix(isRelease, "Pypi")
@@ -1017,6 +1058,21 @@ def pythonWrapperPublishing(testEnv, isRelease, directory) {
                 sh "python3.5 -m twine upload dist/* --config-file .pypirc"
 
             }
+        }
+    }
+}
+
+def nodejsWrapperPublishing(testEnv, isRelease, directory, base_library) {
+    def version = getSrcVersion(base_library)
+    def suffix = getSuffix(isRelease, "nodejs")
+
+    testEnv.inside {
+        withCredentials([file(credentialsId: 'npm_credentials', variable: 'credentialsFile')]) {
+            sh 'cp $credentialsFile ~/.npmrc'
+
+            sh "cd $directory && " +
+                    "npm version --no-git-tag-version $version$suffix &&" +
+                    "npm publish"
         }
     }
 }
@@ -1087,6 +1143,9 @@ def publishingRCtoStable() {
                 echo 'Moving Ubuntu RC artifacts to Stable: python wrapper'
                 pythonWrapperPublishing(testEnv, true, 'wrappers/python')
 
+                echo 'Moving Ubuntu RC artifacts to Stable: nodejs wrapper'
+                nodejsWrapperPublishing(testEnv, true, 'wrappers/nodejs')
+
                 echo 'Moving Ubuntu RC artifacts to Stable: java wrapper'
                 javaWrapperPublishing(testEnv, true)
 
@@ -1113,6 +1172,9 @@ def publishingRCtoStable() {
 
                 echo 'Moving Ubuntu RC artifacts to Stable: vcx python wrapper'
                 pythonWrapperPublishing(testEnv, true, 'vcx/wrappers/python3')
+
+                echo 'Moving Ubuntu RC artifacts to Stable: vcx nodejs wrapper'
+                nodejsWrapperPublishing(testEnv, true, 'vcx/wrappers/node')
 
                 echo 'Moving Android RC artifacts to Stable: libindy'
                 publishLibindAndroidFilesRCtoStable(libindyVersion)
@@ -1249,8 +1311,16 @@ def downloadPackagingUtils() {
     git branch: 'master', credentialsId: 'evernym-github-machine-user', url: 'https://github.com/evernym/sovrin-packaging'
 }
 
+def shell(command) {
+    if (isUnix()) {
+        sh command
+    } else {
+        bat command
+    }
+}
+
 def setupRust() {
-    sh "rustup default 1.29.0"
+    shell("rustup default 1.31.0")
 }
 
 def androidPublishing() {
@@ -1387,10 +1457,6 @@ def androidBuildAsTesting() {
             }
         }
     }
-}
-
-def setupRustIOS() {
-    sh "rustup target add aarch64-apple-ios armv7-apple-ios armv7s-apple-ios i386-apple-ios x86_64-apple-ios"
 }
 
 def setupBrewPackages() {
