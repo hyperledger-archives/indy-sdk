@@ -385,12 +385,12 @@ impl CryptoCommandExecutor {
                     encrypted_recipients_struct.push(Recipient {
                         encrypted_key: base64::encode(enc_cek.as_slice()),
                         header: Header {
-                            kid: base64::encode(&their_vk.as_bytes()),
+                            kid: their_vk,
                         },
                     });
                 } // end for-loop
 
-                self._format_pack_message(encrypted_recipients_struct, message, &cek)
+                self._format_pack_message(encrypted_recipients_struct, message, &cek, false)
             }
             false => {
                 //authcrypt
@@ -398,7 +398,7 @@ impl CryptoCommandExecutor {
                 let my_key = self.wallet_service.get_indy_object(
                     wallet_handle,
                     sender_vk,
-                    &RecordOptions::id_value(),
+                    &RecordOptions::id_value()
                 )?;
 
                 //encrypt cek for recipient
@@ -411,12 +411,12 @@ impl CryptoCommandExecutor {
                     encrypted_recipients_struct.push(Recipient {
                         encrypted_key: base64::encode(enc_cek.as_slice()),
                         header: Header {
-                            kid: base64::encode(&their_vk.as_bytes()),
+                            kid:their_vk,
                         },
                     });
                 } // end for-loop
 
-                self._format_pack_message(encrypted_recipients_struct, message, &cek)
+                self._format_pack_message(encrypted_recipients_struct, message, &cek, true)
             }
         }
     }
@@ -429,6 +429,7 @@ impl CryptoCommandExecutor {
                 err
             )))
         })?;
+
 
         //decode protected data
         let protected_decoded_vec = base64::decode(&jwe_struct.protected)?;
@@ -450,15 +451,17 @@ impl CryptoCommandExecutor {
 
         //search through recipients_list and check if one of the kid matches a verkey in the wallet
         for recipient in protected_struct.recipients {
-            let key_in_wallet_result = self.wallet_service.get_indy_object::<KeyMetadata>(
-                wallet_handle,
-                &recipient.header.kid,
-                &RecordOptions::id_value(),
-            );
 
-            if key_in_wallet_result.is_ok() {
-                //TODO change to move this to a separate function and return recipient rather than
-                // putting logic inside the for loop. For loops have no way to return values in rust.
+                let my_key_res = self.wallet_service.get_indy_object(
+                    wallet_handle,
+                    &recipient.header.kid,
+                    &RecordOptions::id_value()
+                ).map_err(|err| IndyError::WalletError(err));
+
+
+            if my_key_res.is_ok() {
+                //TODO change to move this to a separate function and return recipient rather than putting logic inside the for loop.
+                // For loops have no way to return values in rust
 
                 //decode encrypted_key
                 let encrypted_key_vec = base64::decode(&recipient.encrypted_key)?;
@@ -467,12 +470,9 @@ impl CryptoCommandExecutor {
                 let (sender_verkey, cek) =
                     match protected_struct.alg.as_ref() {
                         "Authcrypt" => {
+
                             //get my key based on kid
-                            let my_key = self.wallet_service.get_indy_object(
-                                wallet_handle,
-                                &recipient.header.kid,
-                                &RecordOptions::id_value(),
-                            )?;
+                            let my_key = my_key_res.unwrap();
 
                             //decrypt cek
                             let (sender_vk, cek_as_vec) = self
@@ -554,12 +554,19 @@ impl CryptoCommandExecutor {
         encrypted_recipients_struct: Vec<Recipient>,
         message: Vec<u8>,
         cek: &chacha20poly1305_ietf::Key,
+        alg_is_authcrypt: bool
     ) -> Result<Vec<u8>> {
+
+        let alg_val= match alg_is_authcrypt {
+            true => String::from("Authcrypt"),
+            false => String::from("Anoncrypt")
+        };
+
         //structure protected and base64URL encode it
         let protected_struct = Protected {
             enc: "xchacha20poly1305".to_string(),
             typ: "JWM/1.0".to_string(),
-            alg: "Authcrypt".to_string(),
+            alg: alg_val,
             recipients: encrypted_recipients_struct,
         };
         let protected_encoded = serde_json::to_string(&protected_struct).map_err(|err| {
@@ -572,7 +579,7 @@ impl CryptoCommandExecutor {
         let base64_protected = base64::encode(protected_encoded.as_bytes());
 
         // encrypt ciphertext and integrity protect "protected" field
-        let (iv, ciphertext, tag) =
+        let (ciphertext, iv, tag) =
             self.crypto_service
                 .encrypt_plaintext(message, &base64_protected, cek);
 
