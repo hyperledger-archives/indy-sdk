@@ -4,7 +4,7 @@ use std::fmt::{Display, Formatter};
 
 use api::ErrorCode;
 use errors::ToErrorCode;
-use errors::common::CommonError;
+use errors::prelude::*;
 
 #[derive(Debug)]
 pub enum PaymentsError {

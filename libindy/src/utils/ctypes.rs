@@ -71,20 +71,14 @@ macro_rules! check_useful_json {
 
 macro_rules! parse_json {
     ($x:ident, $e:expr, $t:ty) => {
-        if $x.is_empty() {
-            return $e
-        }
 
-        let $x: $t = match
-            serde_json::from_str::<$t>($x)
-                .map_err(map_err_trace!())
-                .map_err(|err|
-                    CommonError::InvalidStructure(
-                        format!("Invalid $t json: {:?}", err)))
-            {
-                Ok(ok) => ok,
-                Err(err) => return err.to_error_code(),
-            };
+        let r = serde_json::from_str::<$t>($x)
+                    .to_indy(::errors::IndyErrorKind::InvalidStructure, "Invalid $t json");
+
+        let $x: $t = match r {
+            Ok(ok) => ok,
+            Err(err) => return err.to_error_code(),
+        };
     }
 }
 

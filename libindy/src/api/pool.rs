@@ -4,7 +4,7 @@ use api::{ErrorCode, IndyHandle};
 use commands::{Command, CommandExecutor};
 use commands::pool::PoolCommand;
 use domain::pool::{PoolConfig, PoolOpenConfig};
-use errors::common::CommonError;
+use errors::prelude::*;
 use errors::ToErrorCode;
 use utils::ctypes;
 

@@ -1,7 +1,7 @@
 extern crate libc;
 
 use api::{ErrorCode, IndyHandle};
-use errors::common::CommonError;
+use errors::prelude::*;
 use errors::ToErrorCode;
 use commands::{Command, CommandExecutor};
 use commands::ledger::LedgerCommand;

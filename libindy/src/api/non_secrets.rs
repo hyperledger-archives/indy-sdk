@@ -4,7 +4,7 @@ use api::{ErrorCode, IndyHandle};
 use commands::{Command, CommandExecutor};
 use commands::non_secrets::NonSecretsCommand;
 use domain::wallet::Tags;
-use errors::common::CommonError;
+use errors::prelude::*;
 use errors::ToErrorCode;
 use utils::ctypes;
 

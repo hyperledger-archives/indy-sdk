@@ -1,10 +1,5 @@
-extern crate libc;
-extern crate serde_json;
-extern crate base64;
-
-use errors::indy::IndyError;
+use errors::IndyError;
 use services::blob_storage::BlobStorageService;
-
 use std::rc::Rc;
 use std::result;
 

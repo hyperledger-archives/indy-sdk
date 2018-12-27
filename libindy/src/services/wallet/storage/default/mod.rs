@@ -1,26 +1,24 @@
 extern crate owning_ref;
 extern crate sodiumoxide;
 
-mod query;
-mod transaction;
-
 use std;
 use std::fs;
+use std::rc::Rc;
 
 use rusqlite;
 use serde_json;
 
-use self::owning_ref::OwningHandle;
-use std::rc::Rc;
-
-use utils::environment;
-use errors::wallet::WalletStorageError;
-use errors::common::CommonError;
+use errors::prelude::*;
 use services::wallet::language;
+use utils::environment;
 
-use super::{StorageIterator, WalletStorageType, WalletStorage, StorageRecord, EncryptedValue, Tag, TagName};
+use super::{EncryptedValue, StorageIterator, StorageRecord, Tag, TagName, WalletStorage, WalletStorageType};
 use super::super::{RecordOptions, SearchOptions};
 
+use self::owning_ref::OwningHandle;
+
+mod query;
+mod transaction;
 
 const _SQLITE_DB: &str = "sqlite.db";
 const _PLAIN_TAGS_QUERY: &str = "SELECT name, value from tags_plaintext where item_id = ?";
@@ -99,30 +97,33 @@ struct TagRetriever<'a> {
 type TagRetrieverOwned = OwningHandle<Rc<rusqlite::Connection>, Box<TagRetriever<'static>>>;
 
 impl<'a> TagRetriever<'a> {
-    fn new_owned(conn: Rc<rusqlite::Connection>) -> Result<TagRetrieverOwned, WalletStorageError> {
+    fn new_owned(conn: Rc<rusqlite::Connection>) -> IndyResult<TagRetrieverOwned> {
         OwningHandle::try_new(conn.clone(), |conn| -> Result<_, rusqlite::Error> {
             let (plain_tags_stmt, encrypted_tags_stmt) = unsafe {
                 ((*conn).prepare(_PLAIN_TAGS_QUERY)?,
                  (*conn).prepare(_ENCRYPTED_TAGS_QUERY)?)
             };
+
             let tr = TagRetriever {
                 plain_tags_stmt,
                 encrypted_tags_stmt,
             };
+
             Ok(Box::new(tr))
-        }).map_err(WalletStorageError::from)
+        }).map_err(IndyError::from)
     }
 
-    fn retrieve(&mut self, id: i64) -> Result<Vec<Tag>, WalletStorageError> {
+    fn retrieve(&mut self, id: i64) -> IndyResult<Vec<Tag>> {
         let mut tags = Vec::new();
-
         let mut plain_results = self.plain_tags_stmt.query(&[&id])?;
+
         while let Some(res) = plain_results.next() {
             let row = res?;
             tags.push(Tag::PlainText(row.get(0), row.get(1)));
         }
 
         let mut encrypted_results = self.encrypted_tags_stmt.query(&[&id])?;
+
         while let Some(res) = encrypted_results.next() {
             let row = res?;
             tags.push(Tag::Encrypted(row.get(0), row.get(1)));
@@ -151,12 +152,12 @@ impl SQLiteStorageIterator {
            args: &[&rusqlite::types::ToSql],
            options: RecordOptions,
            tag_retriever: Option<TagRetrieverOwned>,
-           total_count: Option<usize>) -> Result<SQLiteStorageIterator, WalletStorageError> {
+           total_count: Option<usize>) -> IndyResult<SQLiteStorageIterator> {
         let mut iter = SQLiteStorageIterator {
             rows: None,
             tag_retriever,
             options,
-            total_count
+            total_count,
         };
 
         if let Some(stmt) = stmt {
@@ -167,13 +168,14 @@ impl SQLiteStorageIterator {
                     },
             )?);
         }
+
         Ok(iter)
     }
 }
 
 
 impl StorageIterator for SQLiteStorageIterator {
-    fn next(&mut self) -> Result<Option<StorageRecord>, WalletStorageError> {
+    fn next(&mut self) -> IndyResult<Option<StorageRecord>> {
         // if records are not requested.
         if self.rows.is_none() {
             return Ok(None);
@@ -182,34 +184,36 @@ impl StorageIterator for SQLiteStorageIterator {
         match self.rows.as_mut().unwrap().next() {
             Some(Ok(row)) => {
                 let name = row.get(1);
+
                 let value = if self.options.retrieve_value {
                     Some(EncryptedValue::new(row.get(2), row.get(3)))
                 } else {
                     None
                 };
+
                 let tags = if self.options.retrieve_tags {
                     match self.tag_retriever {
                         Some(ref mut tag_retriever) => Some(tag_retriever.retrieve(row.get(0))?),
-                        None => return Err(WalletStorageError::CommonError(
-                            CommonError::InvalidState("Fetch tags option set and tag retriever is None".to_string())
-                        ))
+                        None => return Err(err_msg(IndyErrorKind::InvalidState, "Fetch tags option set and tag retriever is None"))
                     }
                 } else {
                     None
                 };
+
                 let type_ = if self.options.retrieve_type {
                     Some(row.get(4))
                 } else {
                     None
                 };
+
                 Ok(Some(StorageRecord::new(name, value, type_, tags)))
             }
-            Some(Err(err)) => Err(WalletStorageError::from(err)),
+            Some(Err(err)) => Err(err.into()),
             None => Ok(None)
         }
     }
 
-    fn get_total_count(&self) -> Result<Option<usize>, WalletStorageError> {
+    fn get_total_count(&self) -> IndyResult<Option<usize>> {
         Ok(self.total_count)
     }
 }
@@ -233,9 +237,8 @@ impl SQLiteStorageType {
     }
 
     fn _db_path(id: &str, config: Option<&Config>) -> std::path::PathBuf {
-
         let mut path = match config {
-            Some(Config {path: Some(ref path)}) => std::path::PathBuf::from(path),
+            Some(Config { path: Some(ref path) }) => std::path::PathBuf::from(path),
             _ => environment::wallet_home_path()
         };
 
@@ -250,7 +253,7 @@ impl WalletStorage for SQLiteStorage {
     ///
     /// Tries to fetch values and/or tags from the storage.
     /// Returns Result with StorageEntity object which holds requested data in case of success or
-    /// Result with WalletStorageError in case of failure.
+    /// Result with IndyError in case of failure.
     ///
     ///
     /// # Arguments
@@ -265,34 +268,39 @@ impl WalletStorage for SQLiteStorage {
     /// Result that can be either:
     ///
     ///  * `StorageEntity` - Contains name, optional value and optional tags
-    ///  * `WalletStorageError`
+    ///  * `IndyError`
     ///
     /// # Errors
     ///
-    /// Any of the following `WalletStorageError` type_ of errors can be throw by this method:
+    /// Any of the following `IndyError` type_ of errors can be throw by this method:
     ///
-    ///  * `WalletStorageError::Closed` - Storage is closed
-    ///  * `WalletStorageError::ItemNotFound` - Item is not found in database
+    ///  * `IndyError::Closed` - Storage is closed
+    ///  * `IndyError::ItemNotFound` - Item is not found in database
     ///  * `IOError("IO error during storage operation:...")` - Failed connection or SQL query
     ///
-    fn get(&self, type_: &[u8], id: &[u8], options: &str) -> Result<StorageRecord, WalletStorageError> {
+    fn get(&self, type_: &[u8], id: &[u8], options: &str) -> IndyResult<StorageRecord> {
         let options: RecordOptions = if options == "{}" { // FIXME:
             RecordOptions::default()
         } else {
-            serde_json::from_str(options)?
+            serde_json::from_str(options)
+                .to_indy(IndyErrorKind::InvalidStructure, "RecordOptions is malformed json")?
         };
+
+
         let res: Result<(i64, Vec<u8>, Vec<u8>), rusqlite::Error> = self.conn.query_row(
             "SELECT id, value, key FROM items where type = ?1 AND name = ?2",
             &[&type_.to_vec(), &id.to_vec()],
             |row| {
                 (row.get(0), row.get(1), row.get(2))
-            }
+            },
         );
+
         let item = match res {
             Ok(entity) => entity,
-            Err(rusqlite::Error::QueryReturnedNoRows) => return Err(WalletStorageError::ItemNotFound),
-            Err(err) => return Err(WalletStorageError::from(err))
+            Err(rusqlite::Error::QueryReturnedNoRows) => return Err(err_msg(IndyErrorKind::WalletItemNotFound, "Walelt item not found")),
+            Err(err) => return Err(IndyError::from(err))
         };
+
         let value = if options.retrieve_value
             { Some(EncryptedValue::new(item.1, item.2)) } else { None };
         let type_ = if options.retrieve_type { Some(type_.clone()) } else { None };
@@ -325,7 +333,7 @@ impl WalletStorage for SQLiteStorage {
     ///
     /// inserts value and tags into storage.
     /// Returns Result with () on success or
-    /// Result with WalletStorageError in case of failure.
+    /// Result with IndyError in case of failure.
     ///
     ///
     /// # Arguments
@@ -341,25 +349,24 @@ impl WalletStorage for SQLiteStorage {
     /// Result that can be either:
     ///
     ///  * `()`
-    ///  * `WalletStorageError`
+    ///  * `IndyError`
     ///
     /// # Errors
     ///
-    /// Any of the following `WalletStorageError` class of errors can be throw by this method:
+    /// Any of the following `IndyError` class of errors can be throw by this method:
     ///
-    ///  * `WalletStorageError::Closed` - Storage is closed
-    ///  * `WalletStorageError::ItemAlreadyExists` - Item is already present in database
+    ///  * `IndyError::Closed` - Storage is closed
+    ///  * `IndyError::ItemAlreadyExists` - Item is already present in database
     ///  * `IOError("IO error during storage operation:...")` - Failed connection or SQL query
     ///
-    fn add(&self, type_: &[u8], id: &[u8], value: &EncryptedValue, tags: &[Tag]) -> Result<(), WalletStorageError> {
+    fn add(&self, type_: &[u8], id: &[u8], value: &EncryptedValue, tags: &[Tag]) -> IndyResult<()> {
         let tx: transaction::Transaction = transaction::Transaction::new(&self.conn, rusqlite::TransactionBehavior::Deferred)?;
         let res = tx.prepare_cached("INSERT INTO items (type, name, value, key) VALUES (?1, ?2, ?3, ?4)")?
             .insert(&[&type_.to_vec(), &id.to_vec(), &value.data, &value.key]);
 
         let id = match res {
             Ok(entity) => entity,
-            Err(rusqlite::Error::SqliteFailure(_, _)) => return Err(WalletStorageError::ItemAlreadyExists),
-            Err(err) => return Err(WalletStorageError::from(err))
+            Err(err) => return Err(IndyError::from(err))
         };
 
         if !tags.is_empty() {
@@ -375,31 +382,29 @@ impl WalletStorage for SQLiteStorage {
         }
 
         tx.commit()?;
-
         Ok(())
     }
 
-    fn update(&self, type_: &[u8], id: &[u8], value: &EncryptedValue) -> Result<(), WalletStorageError> {
+    fn update(&self, type_: &[u8], id: &[u8], value: &EncryptedValue) -> IndyResult<()> {
         let res = self.conn.prepare_cached("UPDATE items SET value = ?1, key = ?2 WHERE type = ?3 AND name = ?4")?
             .execute(&[&value.data, &value.key, &type_.to_vec(), &id.to_vec()]);
 
         match res {
-            Ok(1) => Ok(()),
-            Ok(0) => Err(WalletStorageError::ItemNotFound),
-            Ok(count) => Err(WalletStorageError::CommonError(CommonError::InvalidState(format!("SQLite returned update row count: {}", count)))),
-            Err(err) => Err(WalletStorageError::from(err)),
+            Ok(_) => Ok(()),
+            Err(rusqlite::Error::QueryReturnedNoRows) => return Err(err_msg(IndyErrorKind::WalletItemNotFound, "Item to update not found")),
+            Err(err) => Err(err.into()),
         }
     }
 
-    fn add_tags(&self, type_: &[u8], id: &[u8], tags: &[Tag]) -> Result<(), WalletStorageError> {
+    fn add_tags(&self, type_: &[u8], id: &[u8], tags: &[Tag]) -> IndyResult<()> {
         let tx: transaction::Transaction = transaction::Transaction::new(&self.conn, rusqlite::TransactionBehavior::Deferred)?;
 
         let res = tx.prepare_cached("SELECT id FROM items WHERE type = ?1 AND name = ?2")?
             .query_row(&[&type_.to_vec(), &id.to_vec()], |row| row.get(0));
 
         let item_id: i64 = match res {
-            Err(rusqlite::Error::QueryReturnedNoRows) => return Err(WalletStorageError::ItemNotFound),
-            Err(err) => return Err(WalletStorageError::from(err)),
+            Err(rusqlite::Error::QueryReturnedNoRows) => return Err(err_msg(IndyErrorKind::WalletItemNotFound, "Item to update not found")),
+            Err(err) => return Err(IndyError::from(err)),
             Ok(id) => id
         };
 
@@ -419,15 +424,15 @@ impl WalletStorage for SQLiteStorage {
         Ok(())
     }
 
-    fn update_tags(&self, type_: &[u8], id: &[u8], tags: &[Tag]) -> Result<(), WalletStorageError> {
+    fn update_tags(&self, type_: &[u8], id: &[u8], tags: &[Tag]) -> IndyResult<()> {
         let tx: transaction::Transaction = transaction::Transaction::new(&self.conn, rusqlite::TransactionBehavior::Deferred)?;
 
         let res = tx.prepare_cached("SELECT id FROM items WHERE type = ?1 AND name = ?2")?
             .query_row(&[&type_.to_vec(), &id.to_vec()], |row| row.get(0));
 
         let item_id: i64 = match res {
-            Err(rusqlite::Error::QueryReturnedNoRows) => return Err(WalletStorageError::ItemNotFound),
-            Err(err) => return Err(WalletStorageError::from(err)),
+            Err(rusqlite::Error::QueryReturnedNoRows) => return Err(err_msg(IndyErrorKind::WalletItemNotFound, "Item to update not found")),
+            Err(err) => return Err(IndyError::from(err)),
             Ok(id) => id
         };
 
@@ -450,13 +455,13 @@ impl WalletStorage for SQLiteStorage {
         Ok(())
     }
 
-    fn delete_tags(&self, type_: &[u8], id: &[u8], tag_names: &[TagName]) -> Result<(), WalletStorageError> {
+    fn delete_tags(&self, type_: &[u8], id: &[u8], tag_names: &[TagName]) -> IndyResult<()> {
         let res = self.conn.prepare_cached("SELECT id FROM items WHERE type =?1 AND name = ?2")?
             .query_row(&[&type_.to_vec(), &id.to_vec()], |row| row.get(0));
 
         let item_id: i64 = match res {
-            Err(rusqlite::Error::QueryReturnedNoRows) => return Err(WalletStorageError::ItemNotFound),
-            Err(err) => return Err(WalletStorageError::from(err)),
+            Err(rusqlite::Error::QueryReturnedNoRows) => return Err(err_msg(IndyErrorKind::WalletItemNotFound, "Item to delete not found")),
+            Err(err) => return Err(IndyError::from(err)),
             Ok(id) => id
         };
 
@@ -472,15 +477,15 @@ impl WalletStorage for SQLiteStorage {
                 };
             }
         }
-        tx.commit()?;
 
+        tx.commit()?;
         Ok(())
     }
 
     ///
     /// deletes value and tags into storage.
     /// Returns Result with () on success or
-    /// Result with WalletStorageError in case of failure.
+    /// Result with IndyError in case of failure.
     ///
     ///
     /// # Arguments
@@ -493,70 +498,70 @@ impl WalletStorage for SQLiteStorage {
     /// Result that can be either:
     ///
     ///  * `()`
-    ///  * `WalletStorageError`
+    ///  * `IndyError`
     ///
     /// # Errors
     ///
-    /// Any of the following `WalletStorageError` type_ of errors can be throw by this method:
+    /// Any of the following `IndyError` type_ of errors can be throw by this method:
     ///
-    ///  * `WalletStorageError::Closed` - Storage is closed
-    ///  * `WalletStorageError::ItemNotFound` - Item is not found in database
+    ///  * `IndyError::Closed` - Storage is closed
+    ///  * `IndyError::ItemNotFound` - Item is not found in database
     ///  * `IOError("IO error during storage operation:...")` - Failed connection or SQL query
     ///
-    fn delete(&self, type_: &[u8], id: &[u8]) -> Result<(), WalletStorageError> {
+    fn delete(&self, type_: &[u8], id: &[u8]) -> IndyResult<()> {
         let row_count = self.conn.execute(
             "DELETE FROM items where type = ?1 AND name = ?2",
-            &[&type_.to_vec(), &id.to_vec()]
+            &[&type_.to_vec(), &id.to_vec()],
         )?;
+
         if row_count == 1 {
             Ok(())
         } else {
-            Err(WalletStorageError::ItemNotFound)
+            Err(err_msg(IndyErrorKind::WalletItemNotFound, "Item to delete not found"))
         }
     }
 
-    fn get_storage_metadata(&self) -> Result<Vec<u8>, WalletStorageError> {
+    fn get_storage_metadata(&self) -> IndyResult<Vec<u8>> {
         let res: Result<Vec<u8>, rusqlite::Error> = self.conn.query_row(
             "SELECT value FROM metadata",
             &[],
-            |row| { row.get(0) }
+            |row| { row.get(0) },
         );
 
         match res {
             Ok(entity) => Ok(entity),
-            Err(rusqlite::Error::QueryReturnedNoRows) => return Err(WalletStorageError::ItemNotFound),
-            Err(err) => return Err(WalletStorageError::from(err))
+            Err(rusqlite::Error::QueryReturnedNoRows) => return Err(err_msg(IndyErrorKind::WalletItemNotFound, "Wallet item not found")),
+            Err(err) => return Err(IndyError::from(err))
         }
     }
 
-    fn set_storage_metadata(&self, metadata: &[u8]) -> Result<(), WalletStorageError> {
-        match self.conn.execute("UPDATE metadata SET value = ?1", &[&metadata.to_vec()]) {
-            Ok(_) => Ok(()),
-            Err(error) => {
-                Err(WalletStorageError::IOError(format!("Error occurred while inserting the keys: {}", error)))
-            }
-        }
+    fn set_storage_metadata(&self, metadata: &[u8]) -> IndyResult<()> {
+        self.conn.execute("UPDATE metadata SET value = ?1", &[&metadata.to_vec()])?;
+        Ok(())
     }
 
-    fn get_all(&self) -> Result<Box<StorageIterator>, WalletStorageError> {
+    fn get_all(&self) -> IndyResult<Box<StorageIterator>> {
         let statement = self._prepare_statement("SELECT id, name, value, key, type FROM items;")?;
+
         let fetch_options = RecordOptions {
             retrieve_type: true,
             retrieve_value: true,
             retrieve_tags: true,
         };
-        let tag_retriever = Some(TagRetriever::new_owned(self.conn.clone())?);
 
+        let tag_retriever = Some(TagRetriever::new_owned(self.conn.clone())?);
         let storage_iterator = SQLiteStorageIterator::new(Some(statement), &[], fetch_options, tag_retriever, None)?;
+
         Ok(Box::new(storage_iterator))
     }
 
-    fn search(&self, type_: &[u8], query: &language::Operator, options: Option<&str>) -> Result<Box<StorageIterator>, WalletStorageError> {
+    fn search(&self, type_: &[u8], query: &language::Operator, options: Option<&str>) -> IndyResult<Box<StorageIterator>> {
         let type_ = type_.to_vec(); // FIXME
 
         let search_options = match options {
             None => SearchOptions::default(),
-            Some(option_str) => serde_json::from_str(option_str)?
+            Some(option_str) => serde_json::from_str(option_str)
+                .to_indy(IndyErrorKind::InvalidStructure, "Search options is malformed json")?
         };
 
         let total_count: Option<usize> = if search_options.retrieve_total_count {
@@ -568,7 +573,7 @@ impl WalletStorage for SQLiteStorage {
                 |row| {
                     let x: i64 = row.get(0);
                     Some(x as usize)
-                }
+                },
             )?
         } else { None };
 
@@ -596,17 +601,15 @@ impl WalletStorage for SQLiteStorage {
         }
     }
 
-    fn close(&mut self) -> Result<(), WalletStorageError> {
+    fn close(&mut self) -> IndyResult<()> {
         Ok(())
     }
 }
 
 impl SQLiteStorage {
-    fn _prepare_statement(&self, sql: &str) -> Result<
-        OwningHandle<Rc<rusqlite::Connection>, Box<rusqlite::Statement<'static>>>,
-        WalletStorageError> {
+    fn _prepare_statement(&self, sql: &str) -> IndyResult<OwningHandle<Rc<rusqlite::Connection>, Box<rusqlite::Statement<'static>>>> {
         OwningHandle::try_new(self.conn.clone(), |conn| {
-            unsafe { (*conn).prepare(sql) }.map(Box::new).map_err(WalletStorageError::from)
+            unsafe { (*conn).prepare(sql) }.map(Box::new).map_err(IndyError::from)
         })
     }
 }
@@ -628,29 +631,29 @@ impl WalletStorageType for SQLiteStorageType {
     /// Result that can be either:
     ///
     ///  * `()`
-    ///  * `WalletStorageError`
+    ///  * `IndyError`
     ///
     /// # Errors
     ///
-    /// Any of the following `WalletStorageError` type_ of errors can be throw by this method:
+    /// Any of the following `IndyError` type_ of errors can be throw by this method:
     ///
-    ///  * `WalletStorageError::NotFound` - File with the provided id not found
+    ///  * `IndyError::NotFound` - File with the provided id not found
     ///  * `IOError(..)` - Deletion of the file form the file-system failed
     ///
-    fn delete_storage(&self, id: &str, config: Option<&str>, _credentials: Option<&str>) -> Result<(), WalletStorageError> {
+    fn delete_storage(&self, id: &str, config: Option<&str>, _credentials: Option<&str>) -> IndyResult<()> {
         let config = config
             .map(serde_json::from_str::<Config>)
             .map_or(Ok(None), |v| v.map(Some))
-            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize config: {:?}", err)))?;
+            .to_indy(IndyErrorKind::InvalidStructure, "Malformed config json")?;
 
         let db_file_path = SQLiteStorageType::_db_path(id, config.as_ref());
 
-        if db_file_path.exists() {
-            std::fs::remove_dir_all(db_file_path.parent().unwrap())?;
-            Ok(())
-        } else {
-            Err(WalletStorageError::NotFound)
+        if !db_file_path.exists() {
+            return Err(err_msg(IndyErrorKind::WalletNotFound, "Wallet storage file isn't found"));
         }
+
+        std::fs::remove_dir_all(db_file_path.parent().unwrap())?;
+        Ok(())
     }
 
     ///
@@ -669,11 +672,11 @@ impl WalletStorageType for SQLiteStorageType {
     /// Result that can be either:
     ///
     ///  * `()`
-    ///  * `WalletStorageError`
+    ///  * `IndyError`
     ///
     /// # Errors
     ///
-    /// Any of the following `WalletStorageError` type_ of errors can be throw by this method:
+    /// Any of the following `IndyError` type_ of errors can be throw by this method:
     ///
     ///  * `AlreadyExists` - File with a given name already exists on the path
     ///  * `IOError("IO error during storage operation:...")` - Connection to the DB failed
@@ -681,17 +684,16 @@ impl WalletStorageType for SQLiteStorageType {
     ///  * `IOError("Error occurred while inserting the keys...")` - Insertion of keys failed
     ///  * `IOError(..)` - Deletion of the file form the file-system failed
     ///
-    fn create_storage(&self, id: &str, config: Option<&str>, _credentials: Option<&str>, metadata: &[u8]) -> Result<(), WalletStorageError> {
-
+    fn create_storage(&self, id: &str, config: Option<&str>, _credentials: Option<&str>, metadata: &[u8]) -> IndyResult<()> {
         let config = config
             .map(serde_json::from_str::<Config>)
             .map_or(Ok(None), |v| v.map(Some))
-            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize config: {:?}", err)))?;
+            .to_indy(IndyErrorKind::InvalidStructure, "Malformed config json")?;
 
         let db_path = SQLiteStorageType::_db_path(id, config.as_ref());
 
         if db_path.exists() {
-            return Err(WalletStorageError::AlreadyExists);
+            return Err(err_msg(IndyErrorKind::WalletAlreadyExists, "Wallet database file already exists"));
         }
 
         fs::DirBuilder::new()
@@ -705,12 +707,12 @@ impl WalletStorageType for SQLiteStorageType {
                 Ok(_) => Ok(()),
                 Err(error) => {
                     std::fs::remove_file(db_path)?;
-                    Err(WalletStorageError::IOError(format!("Error occurred while inserting the keys: {}", error)))
+                    Err(error.into())
                 }
             },
             Err(error) => {
                 std::fs::remove_file(db_path)?;
-                Err(WalletStorageError::IOError(format!("Error occurred while creating wallet file: {}", error)))
+                Err(error.into())
             }
         }
     }
@@ -733,26 +735,25 @@ impl WalletStorageType for SQLiteStorageType {
     /// Result that can be either:
     ///
     ///  * `(Box<Storage>, Vec<u8>)` - Tuple of `SQLiteStorage` and `encryption keys`
-    ///  * `WalletStorageError`
+    ///  * `IndyError`
     ///
     /// # Errors
     ///
-    /// Any of the following `WalletStorageError` type_ of errors can be throw by this method:
+    /// Any of the following `IndyError` type_ of errors can be throw by this method:
     ///
-    ///  * `WalletStorageError::NotFound` - File with the provided id not found
+    ///  * `IndyError::NotFound` - File with the provided id not found
     ///  * `IOError("IO error during storage operation:...")` - Failed connection or SQL query
     ///
-    fn open_storage(&self, id: &str, config: Option<&str>, _credentials: Option<&str>) -> Result<Box<WalletStorage>, WalletStorageError> {
-
+    fn open_storage(&self, id: &str, config: Option<&str>, _credentials: Option<&str>) -> IndyResult<Box<WalletStorage>> {
         let config = config
             .map(serde_json::from_str::<Config>)
             .map_or(Ok(None), |v| v.map(Some))
-            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize config: {:?}", err)))?;
+            .to_indy(IndyErrorKind::InvalidStructure, "Malformed config json")?;
 
         let db_file_path = SQLiteStorageType::_db_path(id, config.as_ref());
 
         if !db_file_path.exists() {
-            return Err(WalletStorageError::NotFound);
+            return Err(err_msg(IndyErrorKind::WalletNotFound, "No wallet database exists"));
         }
 
         let conn = rusqlite::Connection::open(db_file_path.as_path())?;
@@ -761,7 +762,7 @@ impl WalletStorageType for SQLiteStorageType {
         let journal_mode: String = conn.query_row(
             "PRAGMA journal_mode = WAL",
             &[],
-            |row| { row.get(0) }
+            |row| { row.get(0) },
         )?;
 
         // if journal mode is set to WAL, set synchronous to FULL for safety reasons.
@@ -774,13 +775,23 @@ impl WalletStorageType for SQLiteStorageType {
     }
 }
 
+impl From<rusqlite::Error> for IndyError {
+    fn from(err: rusqlite::Error) -> IndyError {
+        match &err {
+            &rusqlite::Error::SqliteFailure(libsqlite3_sys::Error { code: libsqlite3_sys::ErrorCode::ConstraintViolation, extended_code: _ }, _) => err.to_indy(IndyErrorKind::WalletAlreadyExists, "Wallet item already exists"),
+            &rusqlite::Error::SqliteFailure(libsqlite3_sys::Error { code: libsqlite3_sys::ErrorCode::SystemIOFailure, extended_code: _ }, _) => err.to_indy(IndyErrorKind::IOError, "IO error during access sqlite database"),
+            _ => err.to_indy(IndyErrorKind::InvalidState, "Unexpected sqlite error"),
+        }
+    }
+}
+
 
 #[cfg(test)]
 mod tests {
+    use utils::test;
+
     use super::*;
     use super::super::Tag;
-
-    use utils::test;
 
     #[test]
     fn sqlite_storage_type_create_works() {
@@ -810,7 +821,7 @@ mod tests {
         storage_type.create_storage(_wallet_id(), None, None, &_metadata()).unwrap();
 
         let res = storage_type.create_storage(_wallet_id(), None, None, &_metadata());
-        assert_match!(Err(WalletStorageError::AlreadyExists), res);
+        assert_kind!(IndyErrorKind::WalletAlreadyExists, res);
     }
 
     #[test]
@@ -842,7 +853,7 @@ mod tests {
         storage_type.create_storage(_wallet_id(), None, None, &_metadata()).unwrap();
 
         let res = storage_type.delete_storage("unknown", None, None);
-        assert_match!(Err(WalletStorageError::NotFound), res);
+        assert_kind!(IndyErrorKind::WalletNotFound, res);
 
         storage_type.delete_storage(_wallet_id(), None, None).unwrap();
     }
@@ -866,7 +877,7 @@ mod tests {
         let storage_type = SQLiteStorageType::new();
 
         let res = storage_type.open_storage("unknown", Some("{}"), Some("{}"));
-        assert_match!(Err(WalletStorageError::NotFound), res);
+        assert_kind!(IndyErrorKind::WalletNotFound, res);
     }
 
     #[test]
@@ -878,10 +889,10 @@ mod tests {
         storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
 
         let res = storage.add(&_type1(), &_id1(), &_value1(), &_tags());
-        assert_match!(Err(WalletStorageError::ItemAlreadyExists), res);
+        assert_kind!(IndyErrorKind::WalletItemAlreadyExists, res);
 
         let res = storage.add(&_type1(), &_id1(), &_value1(), &_tags());
-        assert_match!(Err(WalletStorageError::ItemAlreadyExists), res);
+        assert_kind!(IndyErrorKind::WalletItemAlreadyExists, res);
     }
 
     #[test]
@@ -920,7 +931,7 @@ mod tests {
         storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
 
         let res = storage.add(&_type1(), &_id1(), &_value2(), &_tags());
-        assert_match!(Err(WalletStorageError::ItemAlreadyExists), res);
+        assert_kind!(IndyErrorKind::WalletItemAlreadyExists, res);
     }
 
     #[test]
@@ -947,7 +958,7 @@ mod tests {
         storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
 
         let res = storage.get(&_type1(), &_id2(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##);
-        assert_match!(Err(WalletStorageError::ItemNotFound), res)
+        assert_kind!(IndyErrorKind::WalletItemNotFound, res);
     }
 
     #[test]
@@ -963,7 +974,7 @@ mod tests {
 
         storage.delete(&_type1(), &_id1()).unwrap();
         let res = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##);
-        assert_match!(Err(WalletStorageError::ItemNotFound), res);
+        assert_kind!(IndyErrorKind::WalletItemNotFound, res);
     }
 
     #[test]
@@ -974,7 +985,7 @@ mod tests {
         storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
 
         let res = storage.delete(&_type1(), &_id2());
-        assert_match!(Err(WalletStorageError::ItemNotFound), res);
+        assert_kind!(IndyErrorKind::WalletItemNotFound, res);
     }
 
     #[test]
@@ -985,7 +996,7 @@ mod tests {
 
         storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
         let res = storage.delete(&_type2(), &_id2());
-        assert_match!(Err(WalletStorageError::ItemNotFound), res);
+        assert_kind!(IndyErrorKind::WalletItemNotFound, res);
     }
 
     #[test]
@@ -1049,7 +1060,7 @@ mod tests {
         assert_eq!(record.value.unwrap(), _value1());
 
         let res = storage.update(&_type1(), &_id2(), &_value2());
-        assert_match!(Err(WalletStorageError::ItemNotFound), res)
+        assert_kind!(IndyErrorKind::WalletItemNotFound, res);
     }
 
     #[test]
@@ -1063,7 +1074,7 @@ mod tests {
         assert_eq!(record.value.unwrap(), _value1());
 
         let res = storage.update(&_type2(), &_id1(), &_value2());
-        assert_match!(Err(WalletStorageError::ItemNotFound), res)
+        assert_kind!(IndyErrorKind::WalletItemNotFound, res);
     }
 
     #[test]
@@ -1095,7 +1106,7 @@ mod tests {
         storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
 
         let res = storage.add_tags(&_type1(), &_id2(), &_new_tags());
-        assert_match!(Err(WalletStorageError::ItemNotFound), res)
+        assert_kind!(IndyErrorKind::WalletItemNotFound, res);
     }
 
     #[test]
@@ -1106,7 +1117,7 @@ mod tests {
         storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
 
         let res = storage.add_tags(&_type2(), &_id1(), &_new_tags());
-        assert_match!(Err(WalletStorageError::ItemNotFound), res)
+        assert_kind!(IndyErrorKind::WalletItemNotFound, res);
     }
 
     #[test]
@@ -1158,7 +1169,7 @@ mod tests {
         storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
 
         let res = storage.update_tags(&_type1(), &_id2(), &_new_tags());
-        assert_match!(Err(WalletStorageError::ItemNotFound), res);
+        assert_kind!(IndyErrorKind::WalletItemNotFound, res);
     }
 
     #[test]
@@ -1169,7 +1180,7 @@ mod tests {
         storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
 
         let res = storage.update_tags(&_type1(), &_id2(), &_new_tags());
-        assert_match!(Err(WalletStorageError::ItemNotFound), res);
+        assert_kind!(IndyErrorKind::WalletItemNotFound, res);
     }
 
     #[test]
@@ -1240,7 +1251,7 @@ mod tests {
 
         let tag_names = vec![TagName::OfEncrypted(tag_name1.clone()), TagName::OfPlain(tag_name2.clone())];
         let res = storage.delete_tags(&_type2(), &_id1(), &tag_names);
-        assert_match!(Err(WalletStorageError::ItemNotFound), res);
+        assert_kind!(IndyErrorKind::WalletItemNotFound, res);
     }
 
     #[test]
@@ -1261,7 +1272,7 @@ mod tests {
 
         let tag_names = vec![TagName::OfEncrypted(tag_name1.clone()), TagName::OfPlain(tag_name2.clone())];
         let res = storage.delete_tags(&_type1(), &_id2(), &tag_names);
-        assert_match!(Err(WalletStorageError::ItemNotFound), res);
+        assert_kind!(IndyErrorKind::WalletItemNotFound, res);
     }
 
     fn _cleanup() {

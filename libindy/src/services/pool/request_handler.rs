@@ -1,13 +1,19 @@
 extern crate rust_base58;
 
+use std::cell::RefCell;
+use std::collections::HashMap;
+use std::collections::HashSet;
+use std::iter::FromIterator;
+use std::rc::Rc;
+
+use rmp_serde;
+use serde_json;
+use serde_json::Value as SJsonValue;
+
 use commands::Command;
 use commands::CommandExecutor;
 use commands::ledger::LedgerCommand;
-use errors::common::CommonError;
-use errors::pool::PoolError;
-use self::rust_base58::FromBase58;
-use serde_json;
-use serde_json::Value as SJsonValue;
+use errors::prelude::*;
 use services::ledger::merkletree::merkletree::MerkleTree;
 use services::pool::catchup::{build_catchup_req, CatchupProgress, check_cons_proofs, check_nodes_responses_on_status};
 use services::pool::events::NetworkerEvent;
@@ -19,15 +25,10 @@ use services::pool::state_proof;
 use services::pool::types::CatchupRep;
 use services::pool::types::HashableValue;
 
-use rmp_serde;
-use std::cell::RefCell;
-use std::collections::HashMap;
-use std::collections::HashSet;
-use std::iter::FromIterator;
-use std::rc::Rc;
 use super::indy_crypto::bls::Generator;
 use super::indy_crypto::bls::VerKey;
 
+use self::rust_base58::FromBase58;
 
 struct RequestSM<T: Networker> {
     f: usize,
@@ -235,7 +236,7 @@ impl<T: Networker> RequestSM<T> {
                                 (RequestState::finish(), Some(PoolEvent::Synced(merkle)))
                             }
                             Err(e) => {
-                                _send_replies(&cmd_ids, Err(PoolError::CommonError(e)));
+                                _send_replies(&cmd_ids, Err(e));
                                 (RequestState::finish(), None)
                             }
                         }
@@ -255,17 +256,14 @@ impl<T: Networker> RequestSM<T> {
                                         state.networker.borrow_mut().process_event(Some(NetworkerEvent::SendAllRequest(msg, req_id, timeout, Some(nodes_to_send.clone()))));
                                         (RequestState::Full((Some(nodes_to_send), state).into()), None)
                                     } else {
-                                        _send_replies(&cmd_ids, Err(PoolError::CommonError(CommonError::InvalidStructure(
-                                            format!("There is no known node in list to send {:?}, known nodes are {:?}",
-                                                    nodes_to_send, nodes.keys())
-                                        ))));
+                                        _send_replies(&cmd_ids, Err(err_msg(IndyErrorKind::InvalidStructure,
+                                                                            format!("There is no known node in list to send {:?}, known nodes are {:?}",
+                                                                                    nodes_to_send, nodes.keys()))));
                                         (RequestState::finish(), None)
                                     }
                                 }
                                 Err(err) => {
-                                    _send_replies(&cmd_ids, Err(PoolError::CommonError(CommonError::InvalidStructure(
-                                        format!("Invalid list of nodes to send {:?}", err)
-                                    ))));
+                                    _send_replies(&cmd_ids, Err(err.to_indy(IndyErrorKind::InvalidStructure, "Invalid list of nodes to send")));
                                     (RequestState::finish(), None)
                                 }
                             }
@@ -304,7 +302,7 @@ impl<T: Networker> RequestSM<T> {
                                 (RequestState::Consensus(state), None)
                             } else {
                                 //TODO: maybe we should change the error, but it was made to escape changing of ErrorCode returned to client
-                                _send_replies(&cmd_ids, Err(PoolError::Timeout));
+                                _send_replies(&cmd_ids, Err(err_msg(IndyErrorKind::PoolTimeout, "Consensus is impossible")));
                                 state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
                                 (RequestState::finish(), None)
                             }
@@ -324,7 +322,7 @@ impl<T: Networker> RequestSM<T> {
                             state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
                             (RequestState::Consensus(state.into()), None)
                         } else {
-                            _send_replies(&cmd_ids, Err(PoolError::Timeout));
+                            _send_replies(&cmd_ids, Err(err_msg(IndyErrorKind::PoolTimeout, "Consensus is impossible")));
                             state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
                             (RequestState::finish(), None)
                         }
@@ -336,7 +334,7 @@ impl<T: Networker> RequestSM<T> {
                             (RequestState::Consensus(state.into()), None)
                         } else {
                             //TODO: maybe we should change the error, but it was made to escape changing of ErrorCode returned to client
-                            _send_replies(&cmd_ids, Err(PoolError::Timeout));
+                            _send_replies(&cmd_ids, Err(err_msg(IndyErrorKind::PoolTimeout, "Consensus is impossible")));
                             state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
                             (RequestState::finish(), None)
                         }
@@ -616,7 +614,7 @@ impl<T: Networker> SingleState<T> {
             RequestState::Single(self)
         } else {
             //TODO: maybe we should change the error, but it was made to escape changing of ErrorCode returned to client
-            _send_replies(cmd_ids, Err(PoolError::Timeout));
+            _send_replies(cmd_ids, Err(err_msg(IndyErrorKind::PoolTimeout, "Consensus is impossible")));
             self.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
             RequestState::finish()
         }
@@ -641,24 +639,22 @@ fn _parse_nack(denied_nodes: &mut HashSet<String>, f: usize, raw_msg: &str, cmd_
     }
 }
 
-fn _process_catchup_reply(rep: &mut CatchupRep, merkle: &MerkleTree, target_mt_root: &Vec<u8>, target_mt_size: usize, pool_name: &str) -> Result<MerkleTree, PoolError> {
+fn _process_catchup_reply(rep: &mut CatchupRep, merkle: &MerkleTree, target_mt_root: &Vec<u8>, target_mt_size: usize, pool_name: &str) -> IndyResult<MerkleTree> {
     let mut txns_to_drop = vec![];
     let mut merkle = merkle.clone();
+
     while !rep.txns.is_empty() {
         let key = rep.min_tx()?;
         let txn = rep.txns.remove(&key.to_string()).unwrap();
-        if let Ok(txn_bytes) = rmp_serde::to_vec_named(&txn) {
-            merkle.append(txn_bytes.clone())?;
-            txns_to_drop.push(txn_bytes);
-        } else {
-            return Err(PoolError::CommonError(CommonError::InvalidStructure("Invalid transaction -- can not transform to bytes".to_string()))).map_err(map_err_trace!());
-        }
+
+        let txn = rmp_serde::to_vec_named(&txn)
+            .to_indy(IndyErrorKind::InvalidStructure, "Invalid transaction -- can not transform to bytes")?;
+
+        merkle.append(txn.clone())?;
+        txns_to_drop.push(txn);
     }
 
-    if let Err(err) = check_cons_proofs(&merkle, &rep.consProof, target_mt_root, target_mt_size).map_err(map_err_trace!()) {
-        return Err(PoolError::CommonError(err));
-    }
-
+    check_cons_proofs(&merkle, &rep.consProof, target_mt_root, target_mt_size)?;
     merkle_tree_factory::dump_new_txns(pool_name, &txns_to_drop)?;
     Ok(merkle)
 }
@@ -668,10 +664,10 @@ fn _send_ok_replies(cmd_ids: &Vec<i32>, msg: &str) {
 }
 
 fn _finish_request(cmd_ids: &Vec<i32>) {
-    _send_replies(cmd_ids, Err(PoolError::Terminate))
+    _send_replies(cmd_ids, Err(err_msg(IndyErrorKind::PoolTimeout, "Consensus is impossible")))
 }
 
-fn _send_replies(cmd_ids: &Vec<i32>, msg: Result<String, PoolError>) {
+fn _send_replies(cmd_ids: &Vec<i32>, msg: IndyResult<String>) {
     cmd_ids.into_iter().for_each(|id| {
         CommandExecutor::instance().send(
             Command::Ledger(
@@ -680,17 +676,19 @@ fn _send_replies(cmd_ids: &Vec<i32>, msg: Result<String, PoolError>) {
     });
 }
 
-fn _get_msg_result_without_state_proof(msg: &str) -> Result<(SJsonValue, SJsonValue), CommonError> {
-    let msg_result: SJsonValue = match serde_json::from_str::<SJsonValue>(msg) {
-        Ok(raw_msg) => raw_msg["result"].clone(),
-        Err(err) => return Err(CommonError::InvalidStructure(format!("Invalid response structure: {:?}", err))).map_err(map_err_err!())
-    };
+fn _get_msg_result_without_state_proof(msg: &str) -> IndyResult<(SJsonValue, SJsonValue)> {
+    let msg = serde_json::from_str::<SJsonValue>(msg)
+        .to_indy(IndyErrorKind::InvalidStructure, "Response is malformed json")?;
+
+    let msg_result = msg["result"].clone();
 
     let mut msg_result_without_proof: SJsonValue = msg_result.clone();
     msg_result_without_proof.as_object_mut().map(|obj| obj.remove("state_proof"));
+
     if msg_result_without_proof["data"].is_object() {
         msg_result_without_proof["data"].as_object_mut().map(|obj| obj.remove("stateProofFrom"));
     }
+
     Ok((msg_result, msg_result_without_proof))
 }
 
@@ -714,8 +712,9 @@ pub mod tests {
     use services::ledger::merkletree::tree::Tree;
     use services::pool::networker::MockNetworker;
     use services::pool::types::{ConsistencyProof, LedgerStatus, Reply, ReplyResultV1, ReplyTxnV1, ReplyV1, Response, ResponseMetadata, ResponseV1};
-    use super::*;
     use utils::test;
+
+    use super::*;
 
     const MESSAGE: &'static str = "message";
     const REQ_ID: &'static str = "1";

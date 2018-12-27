@@ -1,6 +1,3 @@
-extern crate libc;
-extern crate serde_json;
-
 pub mod anoncreds;
 pub mod crypto;
 pub mod ledger;
@@ -13,17 +10,17 @@ pub mod non_secrets;
 pub mod payments;
 pub mod logger;
 
-use self::libc::c_char;
+use libc::c_char;
 
 use domain::IndyConfig;
-use errors::common::CommonError;
+use errors::prelude::*;
 use errors::ToErrorCode;
 
 use utils::ctypes;
 
 pub type IndyHandle = i32;
 
-#[derive(Debug, PartialEq, Copy, Clone)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
 #[repr(i32)]
 pub enum ErrorCode
 {
