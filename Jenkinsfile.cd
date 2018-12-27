@@ -1034,7 +1034,7 @@ def nodejsWrapperPublishing(testEnv, isRelease, directory, base_library) {
             sh 'cp $credentialsFile ~/.npmrc'
 
             sh "cd $directory && " +
-                    "npm version --no-git-tag-version $version$suffix &&" +
+                    "npm version --no-git-tag-version --allow-same-version $version$suffix &&" +
                     "npm publish"
         }
     }
@@ -1093,6 +1093,7 @@ def publishingRCtoStable() {
 
                 def libindyVersion = getSrcVersion("libindy")
                 def libnullpayVersion = getSrcVersion("libnullpay")
+                def libvcxVersion = getSrcVersion("vcx/libvcx")
 
                 echo 'Moving Windows RC artifacts to Stable: libindy'
                 publishLibindyWindowsFilesRCtoStable(libindyVersion)
@@ -1104,10 +1105,10 @@ def publishingRCtoStable() {
                 publishLibindyDebRCtoStable(testEnv, libindyVersion)
 
                 echo 'Moving Ubuntu RC artifacts to Stable: python wrapper'
-                pythonWrapperPublishing(testEnv, true, 'wrappers/python')
+                pythonWrapperPublishing(testEnv, true, 'wrappers/python', 'libindy')
 
                 echo 'Moving Ubuntu RC artifacts to Stable: nodejs wrapper'
-                nodejsWrapperPublishing(testEnv, true, 'wrappers/nodejs')
+                nodejsWrapperPublishing(testEnv, true, 'wrappers/nodejs', 'libindy')
 
                 echo 'Moving Ubuntu RC artifacts to Stable: java wrapper'
                 javaWrapperPublishing(testEnv, true)
@@ -1127,6 +1128,9 @@ def publishingRCtoStable() {
                 echo 'Moving Ubuntu RC artifacts to Stable: libnullpay'
                 publishLibnullpayDebRCtoStable(testEnv)
 
+                echo 'Moving Windows RC artifacts to Stable: libvcx'
+                publishLibVCXWindowsFilesRCtoStable(libvcxVersion)
+
                 echo 'Moving Ubuntu RC artifacts to Stable: libvcx'
                 publishLibvcxDebRCtoStable(testEnv)
 
@@ -1134,10 +1138,10 @@ def publishingRCtoStable() {
                 vcxJavaWrapperPublishing(testEnv, true)
 
                 echo 'Moving Ubuntu RC artifacts to Stable: vcx python wrapper'
-                pythonWrapperPublishing(testEnv, true, 'vcx/wrappers/python3')
+                pythonWrapperPublishing(testEnv, true, 'vcx/wrappers/python3', 'vcx/libvcx')
 
                 echo 'Moving Ubuntu RC artifacts to Stable: vcx nodejs wrapper'
-                nodejsWrapperPublishing(testEnv, true, 'vcx/wrappers/node')
+                nodejsWrapperPublishing(testEnv, true, 'vcx/wrappers/node', 'vcx/libvcx')
 
                 echo 'Moving Android RC artifacts to Stable: libindy'
                 publishLibindAndroidFilesRCtoStable(libindyVersion)
@@ -1168,6 +1172,10 @@ def publishLibindyCliWindowsFilesRCtoStable(version) {
 
 def publishLibnullpayWindowsFilesRCtoStable(libnullpayVersion) {
     publishWindowsFilesRCtoStable("libnullpay", libnullpayVersion)
+}
+
+def publishLibVCXWindowsFilesRCtoStable(libvcxVersion) {
+    publishWindowsFilesRCtoStable("libvcx", libvcxVersion)
 }
 
 def publishLibindAndroidFilesRCtoStable(version) {
