@@ -62,7 +62,7 @@ async def main():
 
     print("#5 Create a connection to alice and print out the invite details")
     connection_to_alice = await Connection.create('alice')
-    await connection_to_alice.connect(None)
+    await connection_to_alice.connect('{"use_public_did": true}')
     await connection_to_alice.update_state()
     details = await connection_to_alice.invite_details(False)
     print("**invite details**")
