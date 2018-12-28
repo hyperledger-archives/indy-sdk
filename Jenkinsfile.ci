@@ -89,7 +89,8 @@ def windowsTesting() {
                     dir('cli') {
                         bat "PowerShell.exe \"&{(Get-Content -Path docker_pool_transactions_genesis -Raw) -replace '10\\.0\\.0\\.2','$INDY_SDK_SERVER_IP'} | Set-Content -Path docker_pool_transactions_genesis\""
 
-                        def featuresArgs = '--features "nullpay_plugin"'
+                        def featuresArgs = ''
+//                      def featuresArgs = '--features "nullpay_plugin"' // disabled because of IS-1109
 
                         echo "Windows Indy Cli Test: Build"
                         withEnv([
