@@ -787,7 +787,7 @@ mod tests {
         _cleanup();
 
         let storage_type = SQLiteStorageType::new();
-        storage_type.create_storage(_wallet_id(), None, None, &_metadata()).unwrap();
+        storage_type.create_storage("sqlite_storage_type_create_works", None, None, &_metadata()).unwrap();
     }
 
     #[test]
@@ -799,7 +799,7 @@ mod tests {
         }).to_string();
 
         let storage_type = SQLiteStorageType::new();
-        storage_type.create_storage(_wallet_id(), Some(&config), None, &_metadata()).unwrap();
+        storage_type.create_storage("sqlite_storage_type_create_works_for_custom_path", Some(&config), None, &_metadata()).unwrap();
     }
 
     #[test]
@@ -807,9 +807,9 @@ mod tests {
         _cleanup();
 
         let storage_type = SQLiteStorageType::new();
-        storage_type.create_storage(_wallet_id(), None, None, &_metadata()).unwrap();
+        storage_type.create_storage("sqlite_storage_type_create_works_for_twice", None, None, &_metadata()).unwrap();
 
-        let res = storage_type.create_storage(_wallet_id(), None, None, &_metadata());
+        let res = storage_type.create_storage("sqlite_storage_type_create_works_for_twice", None, None, &_metadata());
         assert_match!(Err(WalletStorageError::AlreadyExists), res);
     }
 
@@ -828,9 +828,9 @@ mod tests {
         _cleanup();
 
         let storage_type = SQLiteStorageType::new();
-        storage_type.create_storage(_wallet_id(), None, None, &_metadata()).unwrap();
+        storage_type.create_storage("sqlite_storage_type_delete_works", None, None, &_metadata()).unwrap();
 
-        storage_type.delete_storage(_wallet_id(), None, None).unwrap();
+        storage_type.delete_storage("sqlite_storage_type_delete_works", None, None).unwrap();
     }
 
 
@@ -839,12 +839,12 @@ mod tests {
         _cleanup();
 
         let storage_type = SQLiteStorageType::new();
-        storage_type.create_storage(_wallet_id(), None, None, &_metadata()).unwrap();
+        storage_type.create_storage("sqlite_storage_type_delete_works_for_non_existing", None, None, &_metadata()).unwrap();
 
         let res = storage_type.delete_storage("unknown", None, None);
         assert_match!(Err(WalletStorageError::NotFound), res);
 
-        storage_type.delete_storage(_wallet_id(), None, None).unwrap();
+        storage_type.delete_storage("sqlite_storage_type_delete_works_for_non_existing", None, None).unwrap();
     }
 
     #[test]
@@ -917,9 +917,9 @@ mod tests {
         _cleanup();
 
         let storage = _storage();
-        storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
+        storage.add(&_type1(), "sqlite_storage_set_get_works_for_twice".as_ref(), &_value1(), &_tags()).unwrap();
 
-        let res = storage.add(&_type1(), &_id1(), &_value2(), &_tags());
+        let res = storage.add(&_type1(), "sqlite_storage_set_get_works_for_twice".as_ref(), &_value2(), &_tags());
         assert_match!(Err(WalletStorageError::ItemAlreadyExists), res);
     }
 
@@ -927,13 +927,15 @@ mod tests {
     fn sqlite_storage_set_get_works_for_reopen() {
         _cleanup();
 
+        let id1 = Vec::from("sqlite_storage_set_get_works_for_reopen");
+        let wallet_id = "sqlite_storage_set_get_works_for_reopen";
+        let storage = _storage_with_id(wallet_id);
         {
-            _storage().add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
+            storage.add(&_type1(), &id1, &_value1(), &_tags()).unwrap();
         }
-
         let storage_type = SQLiteStorageType::new();
-        let storage = storage_type.open_storage(_wallet_id(), Some("{}"), Some("{}")).unwrap();
-        let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
+        let storage = storage_type.open_storage(wallet_id, Some("{}"), Some("{}")).unwrap();
+        let record = storage.get(&_type1(), &id1, r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
 
         assert_eq!(record.value.unwrap(), _value1());
         assert_eq!(_sort(record.tags.unwrap()), _sort(_tags()));
@@ -944,7 +946,7 @@ mod tests {
         _cleanup();
 
         let storage = _storage();
-        storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
+        storage.add(&_type1(), "sqlite_storage_get_works_for_wrong_key".as_ref(), &_value1(), &_tags()).unwrap();
 
         let res = storage.get(&_type1(), &_id2(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##);
         assert_match!(Err(WalletStorageError::ItemNotFound), res)
@@ -955,14 +957,17 @@ mod tests {
         _cleanup();
 
         let storage = _storage();
-        storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
 
-        let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
+        let id1: Vec<u8> = Vec::from("sqlite_storage_delete_works");
+
+        storage.add(&_type1(), &id1, &_value1(), &_tags()).unwrap();
+
+        let record = storage.get(&_type1(), &id1, r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
         assert_eq!(record.value.unwrap(), _value1());
         assert_eq!(_sort(record.tags.unwrap()), _sort(_tags()));
 
-        storage.delete(&_type1(), &_id1()).unwrap();
-        let res = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##);
+        storage.delete(&_type1(), &id1).unwrap();
+        let res = storage.get(&_type1(), &id1, r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##);
         assert_match!(Err(WalletStorageError::ItemNotFound), res);
     }
 
@@ -1268,14 +1273,22 @@ mod tests {
         test::cleanup_storage()
     }
 
-    fn _wallet_id() -> &'static str {
-        "w1"
+    fn _storage_with_id(wallet_id: &str) -> Box<WalletStorage> {
+        let storage_type = SQLiteStorageType::new();
+        storage_type.create_storage(&wallet_id, None, None, &_metadata()).unwrap();
+        storage_type.open_storage(&wallet_id, None, None).unwrap()
     }
 
     fn _storage() -> Box<WalletStorage> {
         let storage_type = SQLiteStorageType::new();
-        storage_type.create_storage(_wallet_id(), None, None, &_metadata()).unwrap();
-        storage_type.open_storage(_wallet_id(), None, None).unwrap()
+        use rand::Rng;
+        let mut rng = rand::thread_rng();
+        let i: i32 = rng.gen();
+        let s = i.to_string();
+        let mut wallet_id = "w".to_string();
+        wallet_id.push_str(&s);
+        storage_type.create_storage(&wallet_id, None, None, &_metadata()).unwrap();
+        storage_type.open_storage(&wallet_id, None, None).unwrap()
     }
 
     fn _storage_custom() -> Box<WalletStorage> {
@@ -1285,8 +1298,15 @@ mod tests {
             "path": _custom_path()
         }).to_string();
 
-        storage_type.create_storage(_wallet_id(), Some(&config), None, &_metadata()).unwrap();
-        storage_type.open_storage(_wallet_id(), Some(&config), None).unwrap()
+        use rand::Rng;
+        let mut rng = rand::thread_rng();
+        let i: i32 = rng.gen();
+        let s = i.to_string();
+        let mut wallet_id = "w".to_string();
+        wallet_id.push_str(&s);
+
+        storage_type.create_storage(&wallet_id, Some(&config), None, &_metadata()).unwrap();
+        storage_type.open_storage(&wallet_id, Some(&config), None).unwrap()
     }
 
     fn _metadata() -> Vec<u8> {

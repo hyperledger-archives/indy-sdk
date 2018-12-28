@@ -368,14 +368,6 @@ mod tests {
         test::cleanup_storage()
     }
 
-    fn _wallet1_id() -> &'static str {
-        "w1"
-    }
-
-    fn _wallet2_id() -> &'static str {
-        "w2"
-    }
-
     fn _wallet(id: &str) -> Wallet {
         let storage_type = SQLiteStorageType::new();
         let master_key = _master_key();
@@ -404,11 +396,23 @@ mod tests {
     }
 
     fn _wallet1() -> Wallet {
-        _wallet(_wallet1_id())
+        use rand::Rng;
+        let mut rng = rand::thread_rng();
+        let i: i32 = rng.gen();
+        let s = i.to_string();
+        let mut w = "w".to_string();
+        w.push_str(&s);
+        _wallet(&w)
     }
 
     fn _wallet2() -> Wallet {
-        _wallet(_wallet2_id())
+        use rand::Rng;
+        let mut rng = rand::thread_rng();
+        let i: i32 = rng.gen();
+        let s = i.to_string();
+        let mut w = "v".to_string();
+        w.push_str(&s);
+        _wallet(&w)
     }
 
     fn _assert_is_empty(wallet: &Wallet) {
