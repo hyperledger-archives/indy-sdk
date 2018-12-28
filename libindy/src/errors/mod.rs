@@ -112,7 +112,20 @@ impl Fail for IndyError {
 
 impl fmt::Display for IndyError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        fmt::Display::fmt(&self.inner, f)
+        let mut first = true;
+
+        // FIXME: It seems like a bug in failure. I can't use iter_chain for context to solve deprecation warning.
+        #[allow(deprecated)]
+        for cause in self.inner.causes() {
+            if first {
+                first = false;
+                writeln!(f, "Error: {}", cause)?;
+            } else {
+                writeln!(f, "  caused by: {}", cause)?;
+            }
+        }
+
+        Ok(())
     }
 }
 
@@ -240,7 +253,7 @@ impl From<IndyErrorKind> for ErrorCode {
             IndyErrorKind::WalletStorageError => ErrorCode::WalletStorageError,
             IndyErrorKind::WalletEncryptionError => ErrorCode::WalletEncryptionError,
             IndyErrorKind::WalletItemNotFound => ErrorCode::WalletItemNotFound,
-            IndyErrorKind::WalletItemAlreadyExists => ErrorCode::WalletAlreadyExistsError,
+            IndyErrorKind::WalletItemAlreadyExists => ErrorCode::WalletItemAlreadyExists,
             IndyErrorKind::WalletQueryError => ErrorCode::WalletQueryError,
             IndyErrorKind::DIDAlreadyExists => ErrorCode::DidAlreadyExistsError,
             IndyErrorKind::UnknownPaymentMethodType => ErrorCode::PaymentUnknownMethodError,
