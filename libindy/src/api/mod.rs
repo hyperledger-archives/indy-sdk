@@ -14,7 +14,6 @@ use libc::c_char;
 
 use domain::IndyConfig;
 use errors::prelude::*;
-use errors::ToErrorCode;
 
 use utils::ctypes;
 

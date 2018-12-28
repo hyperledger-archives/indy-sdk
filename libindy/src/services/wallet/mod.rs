@@ -871,7 +871,7 @@ mod tests {
 
         let wallet_service = WalletService::new();
         let res = wallet_service.create_wallet(&_config_unknown(), &RAW_CREDENTIAL, (&RAW_KDD, &RAW_MASTER_KEY));
-        assert_kind!(IndyErrorKind::UnknownCrypto, res);
+        assert_kind!(IndyErrorKind::UnknownWalletStorageType, res);
     }
 
     #[test]
@@ -1248,7 +1248,7 @@ mod tests {
         let wallet_handle = wallet_service.open_wallet(&_config(), &RAW_CREDENTIAL).unwrap();
 
         let res = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(false, true, false));
-        assert_kind!(IndyErrorKind::InvalidWalletHandle, res);
+        assert_kind!(IndyErrorKind::WalletItemNotFound, res);
     }
 
     #[test]

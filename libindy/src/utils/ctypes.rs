@@ -77,7 +77,7 @@ macro_rules! parse_json {
 
         let $x: $t = match r {
             Ok(ok) => ok,
-            Err(err) => return err.to_error_code(),
+            Err(err) => return err.into(),
         };
     }
 }

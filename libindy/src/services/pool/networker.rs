@@ -724,7 +724,7 @@ pub mod networker_tests {
             rn.zaddr = "invalid_address".to_string();
 
             let res = rn.connect(&zmq::Context::new(), &zmq::CurveKeyPair::new().unwrap());
-            assert_kind!(IndyErrorKind::InvalidStructure, res);
+            assert_kind!(IndyErrorKind::IOError, res);
         }
     }
 
@@ -894,7 +894,7 @@ pub mod networker_tests {
             let mut conn = PoolConnection::new(vec![rn], POOL_CON_ACTIVE_TO, vec![]);
 
             let res = conn._get_socket(0);
-            assert_kind!(IndyErrorKind::InvalidStructure, res);
+            assert_kind!(IndyErrorKind::IOError, res);
         }
 
         #[test]
@@ -1001,7 +1001,7 @@ pub mod networker_tests {
             let mut conn = PoolConnection::new(vec![rn], POOL_CON_ACTIVE_TO, vec![]);
 
             let res = conn.send_request(Some(NetworkerEvent::SendOneRequest(MESSAGE.to_string(), REQ_ID.to_string(), POOL_ACK_TIMEOUT)));
-            assert_kind!(IndyErrorKind::InvalidStructure, res);
+            assert_kind!(IndyErrorKind::IOError, res);
         }
     }
 }

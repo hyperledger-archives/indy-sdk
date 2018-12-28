@@ -4,7 +4,6 @@ use self::libc::c_char;
 use api::{ErrorCode, IndyHandle};
 use commands::{Command, CommandExecutor};
 use commands::payments::PaymentsCommand;
-use errors::ToErrorCode;
 use services::payments::PaymentsMethodCBs;
 use utils::ctypes;
 
@@ -392,7 +391,7 @@ pub extern fn indy_register_payment_method(command_handle: IndyHandle,
                     payment_method,
                     cbs,
                     Box::new(move |result| {
-                        cb(command_handle, result.to_error_code());
+                        cb(command_handle, result.into());
                     }))
             ));
 

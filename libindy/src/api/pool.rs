@@ -5,7 +5,6 @@ use commands::{Command, CommandExecutor};
 use commands::pool::PoolCommand;
 use domain::pool::{PoolConfig, PoolOpenConfig};
 use errors::prelude::*;
-use errors::ToErrorCode;
 use utils::ctypes;
 
 use serde_json;

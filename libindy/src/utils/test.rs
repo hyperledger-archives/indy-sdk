@@ -55,9 +55,9 @@ macro_rules! assert_match {
 #[cfg(test)]
 macro_rules! assert_kind {
     ($kind:expr, $var:expr) => (
-        assert!(match $var {
-            Err(ref e) if e.kind() == $kind => true,
-            _ => false
-        })
+        match $var {
+            Err(e) => assert_eq!($kind, e.kind()),
+            _ => assert!(false, "Result expected to be error")
+        }
     );
 }

@@ -390,8 +390,9 @@ impl WalletStorage for SQLiteStorage {
             .execute(&[&value.data, &value.key, &type_.to_vec(), &id.to_vec()]);
 
         match res {
-            Ok(_) => Ok(()),
-            Err(rusqlite::Error::QueryReturnedNoRows) => return Err(err_msg(IndyErrorKind::WalletItemNotFound, "Item to update not found")),
+            Ok(1) => Ok(()),
+            Ok(0) => return Err(err_msg(IndyErrorKind::WalletItemNotFound, "Item to update not found")),
+            Ok(_) => return Err(err_msg(IndyErrorKind::InvalidState, "More than one row update. Seems wallet structure is inconsistent")),
             Err(err) => Err(err.into()),
         }
     }
@@ -778,7 +779,7 @@ impl WalletStorageType for SQLiteStorageType {
 impl From<rusqlite::Error> for IndyError {
     fn from(err: rusqlite::Error) -> IndyError {
         match &err {
-            &rusqlite::Error::SqliteFailure(libsqlite3_sys::Error { code: libsqlite3_sys::ErrorCode::ConstraintViolation, extended_code: _ }, _) => err.to_indy(IndyErrorKind::WalletAlreadyExists, "Wallet item already exists"),
+            &rusqlite::Error::SqliteFailure(libsqlite3_sys::Error { code: libsqlite3_sys::ErrorCode::ConstraintViolation, extended_code: _ }, _) => err.to_indy(IndyErrorKind::WalletItemAlreadyExists, "Wallet item already exists"),
             &rusqlite::Error::SqliteFailure(libsqlite3_sys::Error { code: libsqlite3_sys::ErrorCode::SystemIOFailure, extended_code: _ }, _) => err.to_indy(IndyErrorKind::IOError, "IO error during access sqlite database"),
             _ => err.to_indy(IndyErrorKind::InvalidState, "Unexpected sqlite error"),
         }

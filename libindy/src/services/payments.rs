@@ -429,7 +429,6 @@ mod cbs {
 
     use commands::{Command, CommandExecutor};
     use commands::payments::PaymentsCommand;
-    use errors::ToErrorCode;
     use self::libc::c_char;
     use std::ffi::CStr;
     use std::sync::Mutex;
@@ -523,7 +522,7 @@ mod cbs {
                 Err(err.into())
             };
             CommandExecutor::instance().send(Command::Payments(
-                builder(cmd_handle, result))).to_error_code()
+                builder(cmd_handle, result))).into()
         }))
     }
 

@@ -5,7 +5,6 @@ extern crate log;
 use self::libc::{c_void, c_char};
 
 use api::ErrorCode;
-use errors::ToErrorCode;
 
 use utils::logger::{EnabledCB, LogCB, FlushCB, LibindyLogger, LibindyDefaultLogger, LOGGER_STATE};
 use utils::ctypes;

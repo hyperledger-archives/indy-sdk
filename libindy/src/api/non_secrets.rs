@@ -5,7 +5,6 @@ use commands::{Command, CommandExecutor};
 use commands::non_secrets::NonSecretsCommand;
 use domain::wallet::Tags;
 use errors::prelude::*;
-use errors::ToErrorCode;
 use utils::ctypes;
 
 use serde_json;

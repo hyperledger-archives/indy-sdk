@@ -10,30 +10,12 @@ use log;
 use api::ErrorCode;
 
 pub mod prelude {
-    pub use super::{err_msg, IndyError, IndyErrorExt, IndyErrorKind, IndyResult, IndyResultExt, ToErrorCode};
+    pub use super::{err_msg, IndyError, IndyErrorExt, IndyErrorKind, IndyResult, IndyResultExt};
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
 pub enum IndyErrorKind {
     // Common errors
-    #[fail(display = "Invalid param 1")]
-    InvalidParam1,
-    #[fail(display = "Invalid param 2")]
-    InvalidParam2,
-    #[fail(display = "Invalid param 3")]
-    InvalidParam3,
-    #[fail(display = "Invalid param 4")]
-    InvalidParam4,
-    #[fail(display = "Invalid param 5")]
-    InvalidParam5,
-    #[fail(display = "Invalid param 6")]
-    InvalidParam6,
-    #[fail(display = "Invalid param 7")]
-    InvalidParam7,
-    #[fail(display = "Invalid param 8")]
-    InvalidParam8,
-    #[fail(display = "Invalid param 8")]
-    InvalidParam9,
     #[fail(display = "Invalid library state")]
     InvalidState,
     #[fail(display = "Invalid structure")]
@@ -42,7 +24,7 @@ pub enum IndyErrorKind {
     IOError,
     // Anoncreds errors
     #[fail(display = "Duplicated master secret")]
-    MasterSecretDuplicateNameError,
+    MasterSecretDuplicateName,
     #[fail(display = "Proof rejected")]
     ProofRejected,
     #[fail(display = "Revocation registry is full")]
@@ -210,41 +192,28 @@ impl From<IndyCryptoError> for IndyError {
     }
 }
 
-pub trait ToErrorCode {
-    fn to_error_code(&self) -> ErrorCode;
-}
-
-impl<T> ToErrorCode for Result<(), T> where T: ToErrorCode {
-    fn to_error_code(&self) -> ErrorCode {
-        match self {
-            &Ok(()) => ErrorCode::Success,
-            &Err(ref err) => err.to_error_code(),
+impl<T> From<IndyResult<T>> for ErrorCode {
+    fn from(r: Result<T, IndyError>) -> ErrorCode {
+        match r {
+            Ok(_) => ErrorCode::Success,
+            Err(err) => err.into(),
         }
     }
 }
 
-impl ToErrorCode for IndyError {
-    fn to_error_code(&self) -> ErrorCode {
-        self.kind().to_error_code()
+impl From<IndyError> for ErrorCode {
+    fn from(code: IndyError) -> ErrorCode {
+        code.kind().into()
     }
 }
 
-impl ToErrorCode for IndyErrorKind {
-    fn to_error_code(&self) -> ErrorCode {
-        match self {
-            IndyErrorKind::InvalidParam1 => ErrorCode::CommonInvalidParam1,
-            IndyErrorKind::InvalidParam2 => ErrorCode::CommonInvalidParam2,
-            IndyErrorKind::InvalidParam3 => ErrorCode::CommonInvalidParam3,
-            IndyErrorKind::InvalidParam4 => ErrorCode::CommonInvalidParam4,
-            IndyErrorKind::InvalidParam5 => ErrorCode::CommonInvalidParam5,
-            IndyErrorKind::InvalidParam6 => ErrorCode::CommonInvalidParam6,
-            IndyErrorKind::InvalidParam7 => ErrorCode::CommonInvalidParam7,
-            IndyErrorKind::InvalidParam8 => ErrorCode::CommonInvalidParam8,
-            IndyErrorKind::InvalidParam9 => ErrorCode::CommonInvalidParam9,
+impl From<IndyErrorKind> for ErrorCode {
+    fn from(code: IndyErrorKind) -> ErrorCode {
+        match code {
             IndyErrorKind::InvalidState => ErrorCode::CommonInvalidState,
             IndyErrorKind::InvalidStructure => ErrorCode::CommonInvalidStructure,
             IndyErrorKind::IOError => ErrorCode::CommonIOError,
-            IndyErrorKind::MasterSecretDuplicateNameError => ErrorCode::AnoncredsMasterSecretDuplicateNameError,
+            IndyErrorKind::MasterSecretDuplicateName => ErrorCode::AnoncredsMasterSecretDuplicateNameError,
             IndyErrorKind::ProofRejected => ErrorCode::AnoncredsProofRejected,
             IndyErrorKind::RevocationRegistryFull => ErrorCode::AnoncredsRevocationRegistryFullError,
             IndyErrorKind::InvalidUserRevocId => ErrorCode::AnoncredsInvalidUserRevocId,
@@ -281,19 +250,57 @@ impl ToErrorCode for IndyErrorKind {
 }
 
 impl From<ErrorCode> for IndyResult<()> {
-    fn from(_err: ErrorCode) -> IndyResult<()> {
-        // FIXME: Implement
-        unimplemented!()
+    fn from(err: ErrorCode) -> IndyResult<()> {
+        if err == ErrorCode::Success {
+            Ok(())
+        } else {
+            err.into()
+        }
     }
 }
 
 impl From<ErrorCode> for IndyError {
     fn from(err: ErrorCode) -> IndyError {
-        if err == ErrorCode::Success {
-            err_msg(IndyErrorKind::InvalidState, "Try to interpret success as an error")
-        } else {
-            unimplemented!()
-        }
+        let kind = match err {
+            ErrorCode::CommonInvalidState => IndyErrorKind::InvalidState,
+            ErrorCode::CommonInvalidStructure => IndyErrorKind::InvalidStructure,
+            ErrorCode::CommonIOError => IndyErrorKind::IOError,
+            ErrorCode::AnoncredsMasterSecretDuplicateNameError => IndyErrorKind::MasterSecretDuplicateName,
+            ErrorCode::AnoncredsProofRejected => IndyErrorKind::ProofRejected,
+            ErrorCode::AnoncredsRevocationRegistryFullError => IndyErrorKind::RevocationRegistryFull,
+            ErrorCode::AnoncredsInvalidUserRevocId => IndyErrorKind::InvalidUserRevocId,
+            ErrorCode::AnoncredsCredentialRevoked => IndyErrorKind::CredentialRevoked,
+            ErrorCode::AnoncredsCredDefAlreadyExistsError => IndyErrorKind::CredDefAlreadyExists,
+            ErrorCode::LedgerNoConsensusError => IndyErrorKind::NoConsensus,
+            ErrorCode::LedgerInvalidTransaction => IndyErrorKind::InvalidTransaction,
+            ErrorCode::LedgerNotFound => IndyErrorKind::LedgerItemNotFound,
+            ErrorCode::PoolLedgerNotCreatedError => IndyErrorKind::PoolNotCreated,
+            ErrorCode::PoolLedgerInvalidPoolHandle => IndyErrorKind::InvalidPoolHandle,
+            ErrorCode::PoolLedgerTerminated => IndyErrorKind::PoolTerminated,
+            ErrorCode::PoolLedgerTimeout => IndyErrorKind::PoolTimeout,
+            ErrorCode::PoolLedgerConfigAlreadyExistsError => IndyErrorKind::PoolConfigAlreadyExists,
+            ErrorCode::PoolIncompatibleProtocolVersion => IndyErrorKind::PoolIncompatibleProtocolVersion,
+            ErrorCode::UnknownCryptoTypeError => IndyErrorKind::UnknownCrypto,
+            ErrorCode::WalletInvalidHandle => IndyErrorKind::InvalidWalletHandle,
+            ErrorCode::WalletUnknownTypeError => IndyErrorKind::UnknownWalletStorageType,
+            ErrorCode::WalletTypeAlreadyRegisteredError => IndyErrorKind::WalletStorageTypeAlreadyRegistered,
+            ErrorCode::WalletAlreadyExistsError => IndyErrorKind::WalletAlreadyExists,
+            ErrorCode::WalletNotFoundError => IndyErrorKind::WalletNotFound,
+            ErrorCode::WalletAlreadyOpenedError => IndyErrorKind::WalletAlreadyOpened,
+            ErrorCode::WalletAccessFailed => IndyErrorKind::WalletAccessFailed,
+            ErrorCode::WalletDecodingError => IndyErrorKind::WalletEncodingError,
+            ErrorCode::WalletStorageError => IndyErrorKind::WalletStorageError,
+            ErrorCode::WalletEncryptionError => IndyErrorKind::WalletEncryptionError,
+            ErrorCode::WalletItemNotFound => IndyErrorKind::WalletItemNotFound,
+            ErrorCode::WalletItemAlreadyExists => IndyErrorKind::WalletItemAlreadyExists,
+            ErrorCode::WalletQueryError => IndyErrorKind::WalletQueryError,
+            ErrorCode::DidAlreadyExistsError => IndyErrorKind::DIDAlreadyExists,
+            ErrorCode::PaymentUnknownMethodError => IndyErrorKind::UnknownPaymentMethodType,
+            ErrorCode::PaymentIncompatibleMethodsError => IndyErrorKind::IncompatiblePaymentMethods,
+            code => return err_msg(IndyErrorKind::InvalidState, format!("Trying to interpret unsupported error code as error: {:?}", code)),
+        };
+
+        err_msg(kind, format!("Plugin returned error"))
     }
 }
 

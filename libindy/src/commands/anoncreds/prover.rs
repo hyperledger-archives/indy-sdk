@@ -232,7 +232,7 @@ impl ProverCommandExecutor {
         let master_secret_id = master_secret_id.map(String::from).unwrap_or(uuid::Uuid::new_v4().to_string());
 
         if self.wallet_service.record_exists::<MasterSecret>(wallet_handle, &master_secret_id)? {
-            return Err(err_msg(IndyErrorKind::MasterSecretDuplicateNameError, format!("MasterSecret already exists {}", master_secret_id)));
+            return Err(err_msg(IndyErrorKind::MasterSecretDuplicateName, format!("MasterSecret already exists {}", master_secret_id)));
         }
 
         let master_secret = self.anoncreds_service.prover.new_master_secret()?;

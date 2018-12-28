@@ -5,7 +5,6 @@ use commands::{Command, CommandExecutor};
 use commands::crypto::CryptoCommand;
 use domain::crypto::key::KeyInfo;
 use errors::prelude::*;
-use errors::ToErrorCode;
 use utils::ctypes;
 
 use serde_json;

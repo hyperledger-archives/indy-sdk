@@ -2,7 +2,6 @@ extern crate libc;
 
 use api::{ErrorCode, IndyHandle};
 use errors::prelude::*;
-use errors::ToErrorCode;
 use commands::{Command, CommandExecutor};
 use commands::ledger::LedgerCommand;
 use domain::anoncreds::credential_definition::CredentialDefinition;

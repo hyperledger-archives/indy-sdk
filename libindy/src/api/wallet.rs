@@ -5,7 +5,6 @@ use commands::{Command, CommandExecutor};
 use commands::wallet::WalletCommand;
 use domain::wallet::{Config, Credentials, ExportConfig, KeyConfig};
 use errors::prelude::*;
-use errors::ToErrorCode;
 use utils::ctypes;
 
 use serde_json;
