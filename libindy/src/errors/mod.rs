@@ -97,6 +97,8 @@ pub enum IndyErrorKind {
 
 #[derive(Debug, Clone)]
 pub struct IndyError {
+    // FIXME: We have to use Arc as for now we clone messages in pool service
+    // FIXME: In theory we can avoid sync by refactoring of pool service
     inner: Arc<Context<IndyErrorKind>>
 }
 
