@@ -170,29 +170,21 @@ impl PoolService {
         Ok(pool_id)
     }
 
+
     pub fn send_tx(&self, handle: i32, msg: &str) -> IndyResult<i32> {
-        let cmd_id: i32 = sequence::get_next_id();
-
-        let pools = self.open_pools.try_borrow()?;
-
-        match pools.get(&handle) {
-            Some(ref pool) => self._send_msg(cmd_id, msg, &pool.cmd_socket, None, None)?,
-            None => return Err(err_msg(IndyErrorKind::InvalidPoolHandle, format!("No pool with requested handle {}", handle)))
-        }
-
-        Ok(cmd_id)
+        self.send_action(handle, msg, None, None)
     }
 
     pub fn send_action(&self, handle: i32, msg: &str, nodes: Option<&str>, timeout: Option<i32>) -> IndyResult<i32> {
-        let cmd_id: i32 = sequence::get_next_id();
-
         let pools = self.open_pools.try_borrow()?;
-        match pools.get(&handle) {
-            Some(ref pool) => self._send_msg(cmd_id, msg, &pool.cmd_socket, nodes, timeout)?,
-            None => return Err(err_msg(IndyErrorKind::InvalidPoolHandle, format!("No pool with requested handle {}", handle)))
-        }
 
-        Ok(cmd_id)
+        if let Some(ref pool) = pools.get(&handle) {
+            let cmd_id: i32 = sequence::get_next_id();
+            self._send_msg(cmd_id, msg, &pool.cmd_socket, nodes, timeout)?;
+            Ok(cmd_id)
+        } else {
+            Err(err_msg(IndyErrorKind::InvalidPoolHandle, format!("No pool with requested handle {}", handle)))
+        }
     }
 
     pub fn register_sp_parser(txn_type: &str,
@@ -230,15 +222,7 @@ impl PoolService {
     }
 
     pub fn refresh(&self, handle: i32) -> IndyResult<i32> {
-        let cmd_id: i32 = sequence::get_next_id();
-        let pools = self.open_pools.try_borrow()?;
-
-        match pools.get(&handle) {
-            Some(ref pool) => self._send_msg(cmd_id, "refresh", &pool.cmd_socket, None, None)?,
-            None => return Err(err_msg(IndyErrorKind::InvalidPoolHandle, format!("No pool with requested handle {}", handle)))
-        };
-
-        Ok(cmd_id)
+        self.send_action(handle, "refresh", None, None)
     }
 
     fn _send_msg(&self, cmd_id: i32, msg: &str, socket: &Socket, nodes: Option<&str>, timeout: Option<i32>) -> IndyResult<()> {
