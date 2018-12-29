@@ -71,6 +71,9 @@ macro_rules! check_useful_json {
 
 macro_rules! parse_json {
     ($x:ident, $e:expr, $t:ty) => {
+        if $x.is_empty() {
+           return $e
+        }
 
         let r = serde_json::from_str::<$t>($x)
                     .to_indy(::errors::IndyErrorKind::InvalidStructure, "Invalid $t json");

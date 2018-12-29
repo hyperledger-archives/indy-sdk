@@ -116,9 +116,7 @@ impl fmt::Display for IndyError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut first = true;
 
-        // FIXME: It seems like a bug in failure. I can't use iter_chain for context to solve deprecation warning.
-        #[allow(deprecated)]
-        for cause in self.inner.causes() {
+        for cause in Fail::iter_chain(self.inner.as_ref()) {
             if first {
                 first = false;
                 writeln!(f, "Error: {}", cause)?;
