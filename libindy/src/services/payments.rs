@@ -1,14 +1,15 @@
-use api::ErrorCode;
-use api::payments::*;
-use errors::prelude::*;
-use serde_json;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::ffi::{CString, NulError};
 use std::ptr::null;
-use utils::ctypes;
 
+use serde_json;
+
+use api::ErrorCode;
+use api::payments::*;
+use errors::prelude::*;
+use utils::ctypes;
 
 pub struct PaymentsService {
     methods: RefCell<HashMap<String, PaymentsMethod>>
@@ -339,7 +340,7 @@ impl PaymentsService {
 
         if input_methods_set.len() != 1 {
             error!("Unable to identify payment method from inputs");
-            return Err(err_msg(IndyErrorKind::InvalidStructure, "Unable to identify payment method from inputs"));
+            return Err(err_msg(IndyErrorKind::IncompatiblePaymentMethods, "Unable to identify payment method from inputs"));
         }
 
         let res = Ok(input_methods_set.into_iter().next().unwrap());
@@ -415,7 +416,7 @@ impl PaymentsService {
 pub struct Output {
     pub recipient: String,
     amount: u64,
-    extra: Option<String>
+    extra: Option<String>,
 }
 
 impl From<NulError> for IndyError {
@@ -427,12 +428,15 @@ impl From<NulError> for IndyError {
 mod cbs {
     extern crate libc;
 
-    use commands::{Command, CommandExecutor};
-    use commands::payments::PaymentsCommand;
-    use self::libc::c_char;
     use std::ffi::CStr;
     use std::sync::Mutex;
+
+    use commands::{Command, CommandExecutor};
+    use commands::payments::PaymentsCommand;
+
     use super::*;
+
+    use self::libc::c_char;
 
     pub fn create_address_cb(cmd_handle: i32, wallet_handle: i32) -> Option<extern fn(command_handle: i32,
                                                                                       err: ErrorCode,
@@ -513,8 +517,8 @@ mod cbs {
     }
 
     fn send_ack(cmd_handle: i32, builder: Box<Fn(i32, IndyResult<String>) -> PaymentsCommand + Send>) -> Option<extern fn(command_handle: i32,
-                                                                                                                                     err: ErrorCode,
-                                                                                                                                     c_str: *const c_char) -> ErrorCode> {
+                                                                                                                          err: ErrorCode,
+                                                                                                                          c_str: *const c_char) -> ErrorCode> {
         cbs::_closure_to_cb_str(cmd_handle, Box::new(move |err, mint_req_json| -> ErrorCode {
             let result = if err == ErrorCode::Success {
                 Ok(mint_req_json)

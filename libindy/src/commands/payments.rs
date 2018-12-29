@@ -359,7 +359,7 @@ impl PaymentsCommandExecutor {
                 );
             }
             Err(error) => {
-                cb(Err(IndyError::from(error)))
+                cb(Err(error))
             }
         };
         trace!("add_request_fees <<<");

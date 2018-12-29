@@ -664,7 +664,7 @@ fn _send_ok_replies(cmd_ids: &Vec<i32>, msg: &str) {
 }
 
 fn _finish_request(cmd_ids: &Vec<i32>) {
-    _send_replies(cmd_ids, Err(err_msg(IndyErrorKind::PoolTimeout, "Consensus is impossible")))
+    _send_replies(cmd_ids, Err(err_msg(IndyErrorKind::PoolTerminated, "Pool is terminated")))
 }
 
 fn _send_replies(cmd_ids: &Vec<i32>, msg: IndyResult<String>) {
