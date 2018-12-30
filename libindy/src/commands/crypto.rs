@@ -1,12 +1,11 @@
-use domain::crypto::combo_box::ComboBox;
+use std::collections::HashMap;
+use std::rc::Rc;
+use std::str;
+
 use domain::crypto::key::{Key, KeyInfo, KeyMetadata};
 use errors::prelude::*;
 use services::crypto::CryptoService;
 use services::wallet::{RecordOptions, WalletService};
-use std::collections::HashMap;
-use std::rc::Rc;
-use std::str;
-use utils::crypto::base64;
 
 pub enum CryptoCommand {
     CreateKey(
@@ -165,12 +164,7 @@ impl CryptoCommandExecutor {
 
         let my_key: Key = self.wallet_service.get_indy_object(wallet_handle, my_vk, &RecordOptions::id_value())?;
 
-        let msg = self.crypto_service.create_combo_box(&my_key, &their_vk, msg)?;
-
-        let msg = msg.to_msg_pack()
-            .to_indy(IndyErrorKind::InvalidState, "Can't serialize ComboBox")?;
-
-        let res = self.crypto_service.encrypt_sealed(&their_vk, &msg)?;
+        let res = self.crypto_service.authenticated_encrypt(&my_key, their_vk, msg)?;
 
         debug!("authenticated_encrypt <<< res: {:?}", res);
 
@@ -187,23 +181,9 @@ impl CryptoCommandExecutor {
 
         let my_key: Key = self.wallet_service.get_indy_object(wallet_handle, my_vk, &RecordOptions::id_value())?;
 
-        let decrypted_msg = self.crypto_service.decrypt_sealed(&my_key, &msg)?;
-
-        let parsed_msg = ComboBox::from_msg_pack(decrypted_msg.as_slice())
-            .to_indy(IndyErrorKind::InvalidStructure, "Can't deserialize ComboBox")?;
-
-        let doc: Vec<u8> = base64::decode(&parsed_msg.msg)
-            .to_indy(IndyErrorKind::InvalidStructure, "Can't decode internal msg filed from base64")?;
-
-        let nonce: Vec<u8> = base64::decode(&parsed_msg.nonce)
-            .to_indy(IndyErrorKind::InvalidStructure, "Can't decode nonce from base64")?;
-
-        let decrypted_msg = self.crypto_service.decrypt(&my_key, &parsed_msg.sender, &doc, &nonce)?;
-
-        let res = (parsed_msg.sender, decrypted_msg);
+        let res = self.crypto_service.authenticated_decrypt(&my_key, &msg)?;
 
         debug!("authenticated_decrypt <<< res: {:?}", res);
-
         Ok(res)
     }
 
@@ -214,7 +194,7 @@ impl CryptoCommandExecutor {
 
         self.crypto_service.validate_key(their_vk)?;
 
-        let res = self.crypto_service.encrypt_sealed(their_vk, &msg)?;
+        let res = self.crypto_service.crypto_box_seal(their_vk, &msg)?;
 
         debug!("anonymous_encrypt <<< res: {:?}", res);
 
@@ -231,7 +211,7 @@ impl CryptoCommandExecutor {
 
         let my_key: Key = self.wallet_service.get_indy_object(wallet_handle, &my_vk, &RecordOptions::id_value())?;
 
-        let res = self.crypto_service.decrypt_sealed(&my_key, &encrypted_msg)?;
+        let res = self.crypto_service.crypto_box_seal_open(&my_key, &encrypted_msg)?;
 
         debug!("anonymous_decrypt <<< res: {:?}", res);
 
