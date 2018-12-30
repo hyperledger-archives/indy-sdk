@@ -3,6 +3,7 @@ from .libindy import do_call, create_cb
 from ctypes import *
 
 import logging
+import json
 
 
 async def create_key(wallet_handle: int,
@@ -388,3 +389,54 @@ async def anon_decrypt(wallet_handle: int,
 
     logger.debug("crypto_box_seal_open: <<< res: %r", decrypted_message)
     return decrypted_message
+
+async def pack_message(wallet_handle: int, 
+                       message: str, 
+                       receiver_verkeys: list,
+                       sender_verkey: str ) -> str:
+    """
+    Packs a message by encrypting the message and serializes it in a JWE-like format
+
+    Note to use DID keys with this function you can call indy_key_for_did to get key id (verkey)
+    for specific DID.
+
+    #Params
+    command_handle: command handle to map callback to user context.
+    message: the message being sent as a string. If it's JSON formatted it should be in string format, not a JSON object
+    receivers: a list of recipient verkey's as strings
+    sender: the sender's verkey as a string When "" is passed in this parameter, anoncrypt is used
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("pack_message: >>> wallet_handle: %r, message: %r, receiver_verkeys: %r, sender_verkey: %r",
+                 wallet_handle,
+                 message,
+                 receiver_verkeys,
+                 sender_verkey)
+
+    def transform_cb(arr_ptr: POINTER(c_uint8), arr_len: c_uint32):
+        return bytes(arr_ptr[:arr_len])
+
+    if not hasattr(pack_message, "cb"):
+        logger.debug("pack_message: Creating callback")
+        pack_message.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, POINTER(c_uint8), c_uint32), transform_cb)
+
+    c_wallet_handle = c_int32(wallet_handle)
+    msg_bytes = message.encode("utf-8")
+    c_msg_len = c_uint32(len(msg_bytes))
+    c_receiver_verkeys = c_char_p(json.dumps(receiver_keys).encode('utf-8'))
+    c_sender_vk = c_char_p(sender_vk.encode('utf-8'))
+    pack_message_bytes = await do_call('indy_pack_message',
+                                      c_wallet_handle,
+                                      msg_bytes,
+                                      c_msg_len,
+                                      c_receiver_verkeys,
+                                      c_sender_vk,
+                                      pack_message.cb)
+    
+    #catch decoding error
+    pack_message = pack_message_bytes.decode('utf-8')
+
+    logger.debug("pack_message: <<< res: %r", pack_message)
+    return pack_message
+

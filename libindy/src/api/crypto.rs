@@ -624,8 +624,8 @@ pub  extern fn indy_crypto_anon_decrypt(command_handle: IndyHandle,
 /// Crypto*
 #[no_mangle]
 pub extern fn indy_pack_message(
-    command_handle: i32,
-    wallet_handle: i32,
+    command_handle: IndyHandle,
+    wallet_handle: IndyHandle,
     message: *const u8,
     message_len: u32,
     receiver_keys: *const c_char,
