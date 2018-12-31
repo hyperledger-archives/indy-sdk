@@ -84,12 +84,13 @@ def windowsTesting() {
                         }
                     }
 
-                    bat "copy $WORKSPACE\\libnullpay\\target\\debug\\nullpay.dll $WORKSPACE\\cli"
+                    bat "PowerShell.exe \"Copy-Item $WORKSPACE/libnullpay/target/debug/nullpay.dll -Destination $WORKSPACE/cli\""
 
                     dir('cli') {
-                        bat "sed -i -e \"s/10\\.0\\.0\\.2/${INDY_SDK_SERVER_IP}/g\" docker_pool_transactions_genesis"
+                        bat "PowerShell.exe \"&{(Get-Content -Path docker_pool_transactions_genesis -Raw) -replace '10\\.0\\.0\\.2','$INDY_SDK_SERVER_IP'} | Set-Content -Path docker_pool_transactions_genesis\""
 
-                        def featuresArgs = '--features "nullpay_plugin"'
+                        def featuresArgs = ''
+//                      def featuresArgs = '--features "nullpay_plugin"' // disabled because of IS-1109
 
                         echo "Windows Indy Cli Test: Build"
                         withEnv([
@@ -108,10 +109,16 @@ def windowsTesting() {
                         }
                     }
 
-                    bat "copy $WORKSPACE\\libnullpay\\target\\debug\\nullpay.dll $WORKSPACE\\vcx\\libvcx"
+                    bat "PowerShell.exe \"Copy-Item $WORKSPACE/libnullpay/target/debug/nullpay.dll -Destination $WORKSPACE/vcx/libvcx\""
 
                     dir('vcx/libvcx') {
                         echo "Windows Libvcx Test: Build"
+
+                        // FIXME remove that once https://jira.hyperledger.org/browse/IS-1127 is resolved
+                        bat """
+                            PowerShell.exe "&{(Get-Content -Path src/settings.rs -Raw) -replace '/tmp/test_init.json','./test_init.json'} | Set-Content -Path src/settings.rs"
+                        """
+
                         withEnv([
                                 "OPENSSL_DIR=$WORKSPACE\\libindy\\prebuilt",
                                 "RUST_BACKTRACE=1"
@@ -201,45 +208,82 @@ def androidTesting() {
 }
 
 def iosTesting() {
+
+    def setupRustIOS ={
+        sh "rustup target add x86_64-apple-ios"
+    }
+
+    def cleanSimulators = {
+        sh '''
+            xcrun simctl list devices | grep 'IndySDK' | awk '{print $4}' | sed -n  's/(\\(.*\\))/\\1/p'
+            xcrun simctl list devices | grep 'IndySDK' | awk '{print $4}' | sed -n  's/(\\(.*\\))/\\1/p' | xargs xcrun simctl delete
+        '''
+    }
+
+    def createSimulators = {
+        sh '''
+            xcrun simctl create "iPhone X IndySDK" "iPhone X" "11.2"
+        '''
+    }
+
     node('macos') {
         stage('iOS Test') {
             try {
                 echo "iOS Test: Checkout scm"
                 checkout scm
 
-                echo "iOS Test: Running pool"
-                sh "docker rm -f indy_pool || true"
-                sh "docker build -f ci/indy-pool.dockerfile -t indy_pool ci"
-                sh "docker run -d --name indy_pool -p 9701-9708:9701-9708 indy_pool"
-
+                echo "iOS Test: setup rust, brew and simulators"
                 setupRust()
                 setupRustIOS()
                 setupBrewPackages()
+                cleanSimulators()
+                createSimulators()
 
-                sh 'chmod -R 777 ci'
-                echo "iOS Test: build libindy pod"
-                sh "ci/ios-build.sh libindy x86_64-apple-ios"
+                withEnv([
+                    "BUNDLE_PATH=$HOME/.gem.indy_sdk"
+                ]) {
+                    dir('wrappers/ios') {
+                        echo "iOS Test: Installing ruby, bundler and gems"
 
-                dir('wrappers/ios/libindy-pod') {
-                    echo "iOS Test: Installing dependencies (pods)"
+                        sh '''
+                            rbenv install -s $(cat .ruby-version)
 
-                    withEnv([
-                            "GEM_PATH=$HOME/.gem.indy_sdk",
-                            "GEM_HOME=$HOME/.gem.indy_sdk"
-                    ]) {
-                        sh "pod install --repo-update"
+                            gem install bundler
+                            bundler exec gem env
+
+                            bundler install
+                            bundler list
+                        '''
+                    }
+
+                    dir('wrappers/ios/libindy-pod') {
+                        echo "iOS Test: Installing dependencies (pods)"
+                        sh "bundler exec pod install --repo-update"
+                    }
+
+                    echo "iOS Test: Running pool"
+                    sh "docker rm -f indy_pool || true"
+                    sh "docker build -f ci/indy-pool.dockerfile -t indy_pool ci"
+                    sh "docker run -d --name indy_pool -p 9701-9708:9701-9708 indy_pool"
+
+                    sh 'chmod -R 777 ci'
+                    echo "iOS Test: build libindy pod"
+                    sh "ci/ios-build.sh libindy x86_64-apple-ios"
+
+                    // FIXME replace this hack (manually rewrite installed pod)
+                    sh "rm -f wrappers/ios/libindy-pod/Pods/libindy/*.[ah]"
+                    sh "cp libindy/out_pod/*.[ah] wrappers/ios/libindy-pod/Pods/libindy"
+
+                    dir('wrappers/ios/libindy-pod') {
+                        echo "iOS Test: Testing"
+                        sh "xcodebuild test -workspace Indy.xcworkspace -scheme Indy-demo -destination 'platform=iOS Simulator,name=iPhone X IndySDK,OS=11.2'"
                     }
                 }
-
-                // FIXME replace this hack (manually rewrite installed pod)
-                sh "rm -f wrappers/ios/libindy-pod/Pods/libindy/*.[ah]"
-                sh "cp libindy/out_pod/*.[ah] wrappers/ios/libindy-pod/Pods/libindy"
-
-                dir('wrappers/ios/libindy-pod') {
-                    echo "iOS Test: Testing"
-                    sh "xcodebuild test -workspace Indy.xcworkspace -scheme Indy-demo -destination 'platform=iOS Simulator,name=iPhone X IndySDK,OS=11.2'"
-                }
             } finally {
+                try {
+                    cleanSimulators()
+                } catch (ignore) {
+                }
                 try {
                     sh "docker stop indy_pool"
                 } catch (ignore) {
@@ -698,12 +742,16 @@ def closePool(env_name, network_name, poolInst) {
     step([$class: 'WsCleanup'])
 }
 
-def setupRust() {
-    sh "rustup default 1.31.0"
+def shell(command) {
+    if (isUnix()) {
+        sh command
+    } else {
+        bat command
+    }
 }
 
-def setupRustIOS() {
-    sh "rustup target add x86_64-apple-ios"
+def setupRust() {
+    shell("rustup default 1.31.0")
 }
 
 def setupBrewPackages() {
