@@ -1,7 +1,7 @@
 use postgres::types::ToSql;
 
 use errors::wallet::WalletQueryError;
-use wallet_storage::language::{Operator,TagName,TargetValue};
+use language::{Operator,TagName,TargetValue};
 
 
 // Translates Wallet Query Language to SQL

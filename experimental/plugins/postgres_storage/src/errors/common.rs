@@ -6,7 +6,7 @@ use std::cell::{BorrowError, BorrowMutError};
 use std::error::Error;
 use std::{fmt, io};
 
-use api::ErrorCode;
+use libindy::ErrorCode;
 use errors::ToErrorCode;
 
 use self::indy_crypto::errors::IndyCryptoError;

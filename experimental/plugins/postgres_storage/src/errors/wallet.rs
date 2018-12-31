@@ -11,7 +11,7 @@ use std::str::Utf8Error;
 use postgres;
 use serde_json;
 
-use api::ErrorCode;
+use libindy::ErrorCode;
 use errors::common::CommonError;
 use errors::ToErrorCode;
 

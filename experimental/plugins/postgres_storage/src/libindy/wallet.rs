@@ -1,5 +1,5 @@
 
-use api::ErrorCode;
+use libindy::ErrorCode;
 
 use libc::c_char;
 use utils::callbacks;

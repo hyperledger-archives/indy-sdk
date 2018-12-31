@@ -2,7 +2,7 @@ pub mod common;
 pub mod crypto;
 pub mod wallet;
 
-use api::ErrorCode;
+use libindy::ErrorCode;
 
 pub trait ToErrorCode {
     fn to_error_code(&self) -> ErrorCode;

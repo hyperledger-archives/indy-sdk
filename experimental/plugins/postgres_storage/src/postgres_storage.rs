@@ -3,10 +3,6 @@ extern crate sodiumoxide;
 extern crate r2d2;
 extern crate r2d2_postgres;
 
-mod query;
-mod transaction;
-pub mod storage;
-
 use postgres;
 use self::r2d2_postgres::{TlsMode, PostgresConnectionManager};
 use serde_json;
@@ -17,10 +13,11 @@ use std::time::Duration;
 
 use errors::wallet::WalletStorageError;
 use errors::common::CommonError;
-use wallet_storage::language;
+use wql::language;
+use wql::query;
+use wql::transaction;
 
-use wallet_storage::storage::{StorageIterator, WalletStorage, StorageRecord, EncryptedValue, Tag, TagName};
-use self::storage::WalletStorageType;
+use wql::storage::{StorageIterator, WalletStorage, StorageRecord, EncryptedValue, Tag, TagName};
 
 fn default_true() -> bool { true }
 
@@ -310,6 +307,12 @@ pub struct PostgresCredentials {
 #[derive(Debug)]
 pub struct PostgresStorage {
     pool: r2d2::Pool<PostgresConnectionManager>,
+}
+
+pub trait WalletStorageType {
+    fn create_storage(&self, id: &str, config: Option<&str>, credentials: Option<&str>, metadata: &[u8]) -> Result<(), WalletStorageError>;
+    fn open_storage(&self, id: &str, config: Option<&str>, credentials: Option<&str>) -> Result<Box<PostgresStorage>, WalletStorageError>;
+    fn delete_storage(&self, id: &str, config: Option<&str>, credentials: Option<&str>) -> Result<(), WalletStorageError>;
 }
 
 pub struct PostgresStorageType {}

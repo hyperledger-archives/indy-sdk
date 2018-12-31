@@ -1,6 +1,6 @@
 
 use errors::wallet::WalletStorageError;
-use wallet_storage::language;
+use language;
 
 use errors::common::CommonError;
 use utils::crypto::chacha20poly1305_ietf;

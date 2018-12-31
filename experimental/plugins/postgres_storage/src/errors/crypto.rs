@@ -6,7 +6,7 @@ use std::str;
 
 use errors::common::CommonError;
 
-use api::ErrorCode;
+use libindy::ErrorCode;
 use errors::ToErrorCode;
 
 #[derive(Debug)]
