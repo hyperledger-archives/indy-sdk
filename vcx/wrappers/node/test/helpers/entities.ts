@@ -48,7 +48,11 @@ export const connectionCreateConnect = async (data = dataConnectionCreate()) => 
 export const dataCredentialDefCreate = (): ICredentialDefCreateData => ({
   name: 'testCredentialDefName',
   paymentHandle: 0,
-  revocation: false,
+  revocationDetails: {
+    maxCreds: undefined,
+    supportRevocation: false,
+    tailsFile: undefined
+  },
   schemaId: 'testCredentialDefSchemaId',
   sourceId: 'testCredentialDefSourceId'
 })
@@ -196,23 +200,39 @@ export const disclosedProofCreateWithMsgId = async (data?: IDisclosedProofCreate
   return disclousedProof
 }
 
-export const dataIssuerCredentialCreate = (): IIssuerCredentialCreateData => ({
-  attr: {
-    key1: 'value1',
-    key2: 'value2',
-    key3: 'value3'
-  },
-  credDefId: 'testCredentialCredDefId',
-  credentialName: 'Credential Name',
-  price: '1',
-  sourceId: 'testCredentialSourceId'
-})
+export const dataIssuerCredentialCreate = async (): Promise<IIssuerCredentialCreateData> => {
+  const credDef = await credentialDefCreate()
+  return {
+    attr: {
+      key1: 'value1',
+      key2: 'value2',
+      key3: 'value3'
+    },
+    credDefHandle: Number(credDef.handle),
+    credentialName: 'Credential Name',
+    price: '1',
+    sourceId: 'testCredentialSourceId'
+  }
+}
 
-export const issuerCredentialCreate = async (data = dataIssuerCredentialCreate()) => {
+// export const dataIssuerCredentialCreate = (): IIssuerCredentialCreateData => ({
+//   attr: {
+//     key1: 'value1',
+//     key2: 'value2',
+//     key3: 'value3'
+//   },
+//   credDefHandle: 1,
+//   credentialName: 'Credential Name',
+//   price: '1',
+//   sourceId: 'testCredentialSourceId'
+// })
+
+export const issuerCredentialCreate = async (_data = dataIssuerCredentialCreate()) => {
+  const data = await _data
   const issuerCredential = await IssuerCredential.create(data)
   assert.notEqual(issuerCredential.handle, undefined)
   assert.equal(issuerCredential.sourceId, data.sourceId)
-  assert.equal(issuerCredential.credDefId, data.credDefId)
+  assert.equal(issuerCredential.credDefHandle, data.credDefHandle)
   assert.equal(issuerCredential.credentialName, data.credentialName)
   assert.equal(issuerCredential.price, data.price)
   return issuerCredential
@@ -224,6 +244,10 @@ export const dataProofCreate = (): IProofCreateData => ({
     { name: 'attr2' }
   ],
   name: 'Proof',
+  revocationInterval: {
+    from: undefined,
+    to: undefined
+  },
   sourceId: 'testProofSourceId'
 })
 
