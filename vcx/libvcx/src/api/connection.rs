@@ -458,13 +458,17 @@ pub extern fn vcx_connection_release(connection_handle: u32) -> u32 {
 
     let source_id = get_source_id(connection_handle).unwrap_or_default();
     match release(connection_handle) {
-        Ok(_) => trace!("vcx_connection_release(connection_handle: {}, rc: {}), source_id: {:?}",
-                       connection_handle, error_string(0), source_id),
-        Err(e) => warn!("vcx_connection_release(connection_handle: {}), rc: {}), source_id: {:?}",
-                        connection_handle, error_string(e.to_error_code()), source_id),
-    };
-
-    error::SUCCESS.code_num
+        Ok(c) => {
+            trace!("vcx_connection_release(connection_handle: {}, rc: {}), source_id: {:?}",
+                       connection_handle, error_string(0), source_id);
+            c
+        },
+        Err(e) => {
+            warn!("vcx_connection_release(connection_handle: {}), rc: {}), source_id: {:?}",
+                        connection_handle, error_string(e.to_error_code()), source_id);
+            e.to_error_code()
+        },
+    }
 }
 
 #[cfg(test)]
@@ -562,6 +566,8 @@ mod tests {
 
         let rc = vcx_connection_release(handle);
         assert_eq!(rc, error::SUCCESS.code_num);
+        let unknown_handle = handle + 1;
+        assert_eq!(vcx_connection_release(unknown_handle), error::INVALID_CONNECTION_HANDLE.code_num);
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         let rc = vcx_connection_connect(0,handle, CString::new("{}").unwrap().into_raw(),Some(cb.get_callback()));
         assert_eq!(rc, error::INVALID_CONNECTION_HANDLE.code_num);
@@ -605,4 +611,5 @@ mod tests {
         assert_eq!(vcx_connection_delete_connection(cb.command_handle, connection_handle, Some(cb.get_callback())), error::SUCCESS.code_num);
         cb.receive(Some(Duration::from_secs(10))).unwrap();
     }
+
 }
