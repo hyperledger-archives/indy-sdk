@@ -515,4 +515,12 @@ mod tests {
         assert_eq!(j["version"], "1.0");
         assert_eq!(schema.get_source_id(), source_id);
     }
+
+    #[test]
+    fn test_vcx_schema_release() {
+        init!("true");
+        let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
+        let handle = schema::create_new_schema("testid", did, "name".to_string(),"1.0".to_string(),"[\"name\":\"male\"]".to_string()).unwrap();
+        
+    }
 }
