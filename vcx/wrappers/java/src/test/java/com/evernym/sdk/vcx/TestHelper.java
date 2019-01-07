@@ -79,7 +79,7 @@ class TestHelper {
                 "testCredentialDefSchemaId",
                 null,
                 "tag1",
-                "{\"support_revocation\":false}'",
+                "{\"support_revocation\":false, \"tails_file\": \"/tmp/tailsfile.txt\", \"max_creds\": 1}",
                 0
                 ));
     }

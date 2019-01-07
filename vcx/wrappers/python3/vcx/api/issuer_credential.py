@@ -22,40 +22,39 @@ class IssuerCredential(VcxStateful):
         self.logger.debug("Deleted {} obj: {}".format(IssuerCredential, self.handle))
 
     @staticmethod
-    async def create(source_id: str, attrs: dict, cred_def_id: str, name: str, price: str):
+    async def create(source_id: str, attrs: dict, cred_def_handle: int, name: str, price: str):
         """
             Creates a Class representing an Issuer Credential
             :param source_id: Tag associated by user of sdk
             :param attrs: attributes that will form the credential
-            :param cred_def_id: Credential Def Id (from ledger)
+            :param cred_def_handle: Handle from previously created credential def object
             :param name: Name given to the Credential
             :param price: Price, in tokens, required as payment for the issuance of the credential.
 
             Example:
             source_id = '1'
-            cred_def_id = 'cred_def_id1'
+            cred_def_handle = 1
             attrs = {'key': 'value', 'key2': 'value2', 'key3': 'value3'}
             name = 'Credential Name'
             issuer_did = '8XFh8yBzrpJQmNyZzgoTqB'
             phone_number = '8019119191'
             price = 1
-            issuer_credential = await IssuerCredential.create(source_id, attrs, cred_def_id, name, price)
+            issuer_credential = await IssuerCredential.create(source_id, attrs, cred_def_handle, name, price)
         """
-        attrs = {k: [v] for k, v in attrs.items()}
-        constructor_params = (source_id, attrs, cred_def_id, name, price)
+        constructor_params = (source_id, attrs, cred_def_handle, name, price)
 
         c_source_id = c_char_p(source_id.encode('utf-8'))
-        c_cred_def_id = c_char_p(cred_def_id.encode('utf-8'))
+        c_cred_def_handle = c_uint32(cred_def_handle)
         c_price = c_char_p(price.encode('utf-8'))
         # default institution_did in config is used as issuer_did
         c_issuer_did = None
         c_data = c_char_p(json.dumps(attrs).encode('utf-8'))
         c_name = c_char_p(name.encode('utf-8'))
-        c_params = (c_source_id, c_cred_def_id, c_issuer_did, c_data, c_name, c_price)
+        c_params = (c_source_id, c_cred_def_handle, c_issuer_did, c_data, c_name, c_price)
 
         return await IssuerCredential._create("vcx_issuer_create_credential",
-                                         constructor_params,
-                                         c_params)
+                                              constructor_params,
+                                              c_params)
 
     @staticmethod
     async def deserialize(data: dict):
@@ -179,6 +178,23 @@ class IssuerCredential(VcxStateful):
                       c_credential_handle,
                       c_connection_handle,
                       IssuerCredential.send_credential.cb)
+
+    async def revoke_credential(self):
+        """
+        Revokes a credential.
+        :return: None
+            Example:
+            credential.revoke_credential()
+        """
+        if not hasattr(IssuerCredential.revoke_credential, "cb"):
+            self.logger.debug("vcx_issuer_revoke_credential: Creating callback")
+            IssuerCredential.revoke_credential.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32))
+
+        c_credential_handle = c_uint32(self.handle)
+
+        await do_call('vcx_issuer_revoke_credential',
+                      c_credential_handle,
+                      IssuerCredential.revoke_credential.cb)
 
     async def get_payment_txn(self):
         """

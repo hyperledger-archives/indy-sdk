@@ -5,8 +5,8 @@ var initTestPool = require('./helpers/initTestPool')
 
 test('crypto', async function (t) {
   var pool = await initTestPool()
-  var walletConfig = {'id': 'wallet-' + cuid()}
-  var walletCredentials = {'key': 'key'}
+  var walletConfig = { 'id': 'wallet-' + cuid() }
+  var walletCredentials = { 'key': 'key' }
   await indy.createWallet(walletConfig, walletCredentials)
   var wh = await indy.openWallet(walletConfig, walletCredentials)
 
@@ -18,7 +18,7 @@ test('crypto', async function (t) {
   t.is(typeof verkey, 'string')
 
   var seed1 = '00000000000000000000000000000My1'
-  verkey = await indy.createKey(wh, {'seed': seed1})
+  verkey = await indy.createKey(wh, { 'seed': seed1 })
   t.is(typeof verkey, 'string')
 
   // Sign + Verify
@@ -35,8 +35,8 @@ test('crypto', async function (t) {
   t.is(metadata, 'foobar')
 
   // Auth
-  var [, stewardVerkey] = await indy.createAndStoreMyDid(wh, {seed: '000000000000000000000000Steward1'})
-  var [, trusteeVerkey] = await indy.createAndStoreMyDid(wh, {seed: '000000000000000000000000Trustee1'})
+  var [, stewardVerkey] = await indy.createAndStoreMyDid(wh, { seed: '000000000000000000000000Steward1' })
+  var [, trusteeVerkey] = await indy.createAndStoreMyDid(wh, { seed: '000000000000000000000000Trustee1' })
 
   var encrypted = await indy.cryptoAuthCrypt(wh, stewardVerkey, trusteeVerkey, message)
   t.true(Buffer.isBuffer(encrypted))
