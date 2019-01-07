@@ -72,10 +72,10 @@ describe('CredentialDef:', () => {
     })
 
     // TODO: Enable once https://evernym.atlassian.net/browse/EN-668 is resolved
-    it.skip('throws: not initialized', async () => {
+    it('throws: not initialized', async () => {
       const credentialDef = new CredentialDef(null as any, {} as any)
       const error = await shouldThrow(() => credentialDef.release())
-      assert.equal(error.vcxCode, VCXCode.UNKNOWN_ERROR)
+      assert.equal(error.vcxCode, VCXCode.INVALID_CREDENTIAL_DEF_HANDLE)
     })
   })
 

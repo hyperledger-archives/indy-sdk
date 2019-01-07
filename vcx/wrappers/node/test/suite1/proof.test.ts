@@ -116,10 +116,10 @@ describe('Proof:', () => {
     })
 
     // TODO: Enable once https://evernym.atlassian.net/browse/EN-668 is resolved
-    it.skip('throws: not initialized', async () => {
+    it('throws: not initialized', async () => {
       const proof = new Proof(null as any, {} as any)
       const error = await shouldThrow(() => proof.release())
-      assert.equal(error.vcxCode, VCXCode.UNKNOWN_ERROR)
+      assert.equal(error.vcxCode, VCXCode.INVALID_PROOF_HANDLE)
     })
   })
 

@@ -133,10 +133,10 @@ describe('DisclosedProof', () => {
     })
 
     // TODO: Enable once https://evernym.atlassian.net/browse/EN-668 is resolved
-    it.skip('throws: not initialized', async () => {
+    it('throws: not initialized', async () => {
       const disclosedProof = new (DisclosedProof as any)()
       const error = await shouldThrow(() => disclosedProof.release())
-      assert.equal(error.vcxCode, VCXCode.UNKNOWN_ERROR)
+      assert.equal(error.vcxCode, VCXCode.INVALID_DISCLOSED_PROOF_HANDLE)
     })
   })
 
