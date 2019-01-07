@@ -37,6 +37,8 @@ struct UpdateMessagesResponse {
 impl UpdateMessages{
 
     pub fn send_secure(&mut self) -> Result<(), u32> {
+        trace!("UpdateMessages::send >>>");
+
         let data = encode::to_vec_named(&self).or(Err(error::UNKNOWN_ERROR.code_num))?;
         trace!("update_message content: {:?}", data);
 
@@ -78,6 +80,7 @@ fn parse_update_messages_response(response: Vec<u8>) -> Result<(), u32> {
 }
 
 pub fn update_agency_messages(status_code: &str, msg_json: &str) -> Result<(), u32> {
+    trace!("update_agency_messages >>> status_code: {:?}, msg_json: {:?}", status_code, msg_json);
 
     debug!("updating agency messages {} to status code: {}", msg_json, status_code);
     let uids_by_conns: Vec<UIDsByConn> = serde_json::from_str(msg_json)
@@ -118,9 +121,10 @@ mod tests {
         let institution_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
         let (faber, alice) = ::connection::tests::create_connected_connections();
 
-        let (schema_id, _, cred_def_id, _) = ::utils::libindy::anoncreds::tests::create_and_store_credential_def(::utils::constants::DEFAULT_SCHEMA_ATTRS);
+        let (_, cred_def_handle) = ::credential_def::tests::create_cred_def_real(false);
+
         let credential_data = r#"{"address1": ["123 Main St"], "address2": ["Suite 3"], "city": ["Draper"], "state": ["UT"], "zip": ["84000"]}"#;
-        let credential_offer = ::issuer_credential::issuer_credential_create(cred_def_id.clone(),
+        let credential_offer = ::issuer_credential::issuer_credential_create(cred_def_handle,
                                                                              "1".to_string(),
                                                                              institution_did.clone(),
                                                                              "credential_name".to_string(),

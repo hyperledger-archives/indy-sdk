@@ -70,6 +70,7 @@ pub struct Config {
     agency_verkey: String,
     wallet_name: Option<String>,
     wallet_key: String,
+    wallet_type: Option<String>,
     agent_seed: Option<String>,
     enterprise_seed: Option<String>,
     wallet_key_derivation: Option<String>,
@@ -79,10 +80,10 @@ pub struct Config {
 }
 
 pub fn connect_register_provision(config: &str) -> Result<String,u32> {
+    trace!("connect_register_provision >>> config: {:?}", config);
 
     trace!("***Registering with agency");
     let my_config: Config = serde_json::from_str(&config).or(Err(error::INVALID_CONFIGURATION.code_num))?;
-
     let (wallet_name_string, wallet_name) = match my_config.wallet_name {
         Some(x) => (format!("\"wallet_name\":\"{}\",", x), x),
         None => ("".to_string(), settings::DEFAULT_WALLET_NAME.to_string()),
@@ -97,8 +98,11 @@ pub fn connect_register_provision(config: &str) -> Result<String,u32> {
     if let Some(_key_derivation) = &my_config.wallet_key_derivation {
         settings::set_config_value(settings::CONFIG_WALLET_KEY_DERIVATION, _key_derivation);
     }
+    if let Some(_wallet_type) = &my_config.wallet_type {
+        settings::set_config_value(settings::CONFIG_WALLET_TYPE, _wallet_type);
+    }
 
-    wallet::init_wallet(&wallet_name)?;
+    wallet::init_wallet(&wallet_name, my_config.wallet_type.as_ref().map(String::as_str))?;
     trace!("initialized wallet");
 
     match ::utils::libindy::anoncreds::libindy_prover_create_master_secret(::settings::DEFAULT_LINK_SECRET_ALIAS) {
@@ -114,9 +118,18 @@ pub fn connect_register_provision(config: &str) -> Result<String,u32> {
     let seed_opt = if seed.len() > 0 {Some(seed.as_ref())} else {None};
     let (my_did, my_vk) = create_and_store_my_did(seed_opt)?;
 
+    let issuer_did;
+    let issuer_vk;
     let issuer_seed = my_config.enterprise_seed.as_ref().unwrap_or(&String::new()).to_string();
-    let issuer_seed_opt = if issuer_seed.len() > 0 {Some(issuer_seed.as_ref())} else {None};
-    let (issuer_did, issuer_vk) = create_and_store_my_did(issuer_seed_opt)?;
+    if issuer_seed != seed {
+        let issuer_seed_opt = if issuer_seed.len() > 0 { Some(issuer_seed.as_ref()) } else { None };
+        let (did1, vk1) = create_and_store_my_did(issuer_seed_opt)?;
+        issuer_did = did1;
+        issuer_vk = vk1;
+    } else {
+        issuer_did = my_did.clone();
+        issuer_vk = my_vk.clone();
+    }
 
     settings::set_config_value(settings::CONFIG_INSTITUTION_DID,&my_did);
     settings::set_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY,&my_vk);
@@ -220,6 +233,8 @@ pub fn connect_register_provision(config: &str) -> Result<String,u32> {
 }
 
 pub fn update_agent_info(id: &str, value: &str) -> Result<(), u32> {
+    trace!("update_agent_info >>> id: {}, value: {}", id, value);
+
     let new_config = UpdateAgentMsg {
         msg_type: MsgType { name: "UPDATE_COM_METHOD".to_string(), ver: "1.0".to_string(), },
         com_method: ComMethod { id: id.to_string(), e_type: 1, value: value.to_string(), },

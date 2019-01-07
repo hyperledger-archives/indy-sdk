@@ -5,8 +5,8 @@ import { StateType } from './common'
 import { VCXBase } from './vcx-base'
 
 export abstract class VCXBaseWithState<SerializedData> extends VCXBase<SerializedData> {
-  protected abstract _updateStFn: (commandHandle: number, handle: string, cb: ICbRef) => number
-  protected abstract _getStFn: (commandHandle: number, handle: string, cb: ICbRef) => number
+  protected abstract _updateStFn: (commandHandle: number, handle: number, cb: ICbRef) => number
+  protected abstract _getStFn: (commandHandle: number, handle: number, cb: ICbRef) => number
 
   /**
    *

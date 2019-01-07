@@ -18,7 +18,7 @@ export interface ICredentialDefCreateData {
   sourceId: string,
   name: string,
   schemaId: string,
-  revocation: boolean,
+  revocationDetails: IRevocationDetails,
   paymentHandle: number
 }
 
@@ -39,6 +39,13 @@ export interface ICredentialDefDataObj {
 export interface ICredentialDefParams {
   schemaId: string,
   name: string,
+  tailsFile?: string
+}
+
+export interface IRevocationDetails {
+  maxCreds?: number,
+  supportRevocation?: boolean,
+  tailsFile?: string,
 }
 
 // tslint:disable max-classes-per-file
@@ -68,13 +75,21 @@ export class CredentialDef extends VCXBase<ICredentialDefData> {
   public static async create ({
     name,
     paymentHandle,
+    revocationDetails,
     schemaId,
     sourceId
   }: ICredentialDefCreateData): Promise<CredentialDef> {
     // Todo: need to add params for tag and config
-    const credentialDef = new CredentialDef(sourceId, { name, schemaId })
+    const tailsFile = revocationDetails.tailsFile
+    const credentialDef = new CredentialDef(sourceId, { name, schemaId, tailsFile })
     const commandHandle = 0
     const issuerDid = null
+    const revocation = {
+      max_creds: revocationDetails.maxCreds,
+      support_revocation: revocationDetails.supportRevocation,
+      tails_file: revocationDetails.tailsFile
+    }
+
     try {
       await credentialDef._create((cb) => rustAPI().vcx_credentialdef_create(
         commandHandle,
@@ -83,7 +98,7 @@ export class CredentialDef extends VCXBase<ICredentialDefData> {
         schemaId,
         issuerDid,
         'tag1',
-        '{"support_revocation":false}',
+        JSON.stringify(revocation),
         paymentHandle,
       cb
       ))
@@ -127,12 +142,14 @@ export class CredentialDef extends VCXBase<ICredentialDefData> {
   private _name: string
   private _schemaId: string
   private _credDefId: string | null
+  private _tailsFile: string | undefined
 
-  constructor (sourceId: string, { name, schemaId }: ICredentialDefParams) {
+  constructor (sourceId: string, { name, schemaId, tailsFile }: ICredentialDefParams) {
     super(sourceId)
     this._name = name
     this._schemaId = schemaId
     this._credDefId = null
+    this._tailsFile = tailsFile
   }
 
   /**
@@ -189,7 +206,11 @@ export class CredentialDef extends VCXBase<ICredentialDefData> {
     return this._credDefId
   }
 
-  protected _setHandle (handle: string) {
+  get tailsFile () {
+    return this._tailsFile
+  }
+
+  protected _setHandle (handle: number) {
     super._setHandle(handle)
     this.paymentManager = new CredentialDefPaymentManager({ handle })
   }

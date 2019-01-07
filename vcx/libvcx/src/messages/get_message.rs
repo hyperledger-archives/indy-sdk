@@ -48,6 +48,8 @@ pub struct GetMessages {
 impl GetMessages{
 
     pub fn create() -> GetMessages {
+        trace!("GetMessages::create_message >>>");
+
         GetMessages {
             to_did: String::new(),
             to_vk: String::new(),
@@ -90,6 +92,8 @@ impl GetMessages{
     }
 
     pub fn send_secure(&mut self) -> Result<Vec<Message>, u32> {
+        trace!("GetMessages::send >>>");
+
         let data = match self.msgpack() {
             Ok(x) => x,
             Err(x) => return Err(x),
@@ -106,6 +110,8 @@ impl GetMessages{
     }
 
     pub fn download_messages(&mut self) -> Result<Vec<ConnectionMessages>, u32> {
+        trace!("GetMessages::download >>>");
+
         if self.validate_rc != error::SUCCESS.code_num {
             return Err(self.validate_rc)
         }
@@ -238,6 +244,7 @@ pub struct GetMessagesResponse {
 }
 
 fn parse_get_messages_response(response: Vec<u8>) -> Result<Vec<Message>, u32> {
+    trace!("parse_get_messages_response >>>");
     let data = unbundle_from_agency(response)?;
 
     trace!("get_message response: {:?}", data[0]);
@@ -270,6 +277,8 @@ pub struct ConnectionMessages {
 }
 
 fn parse_get_connection_messages_response(response: Vec<u8>) -> Result<Vec<ConnectionMessages>, u32> {
+    trace!("parse_get_connection_messages_response >>>");
+
     let data = unbundle_from_agency(response)?;
 
     trace!("parse_get_connection_message response: {:?}", data[0]);
@@ -299,6 +308,8 @@ fn parse_get_connection_messages_response(response: Vec<u8>) -> Result<Vec<Conne
 }
 
 pub fn get_connection_messages(pw_did: &str, pw_vk: &str, agent_did: &str, agent_vk: &str, msg_uid: Option<Vec<String>>) -> Result<Vec<Message>, u32> {
+    trace!("get_connection_messages >>> pw_did: {}, pw_vk: {}, agent_vk: {}, msg_uid: {:?}",
+           pw_did, pw_vk, agent_vk, msg_uid);
 
     match get_messages()
         .to(&pw_did)
@@ -323,6 +334,9 @@ pub fn get_connection_messages(pw_did: &str, pw_vk: &str, agent_did: &str, agent
 }
 
 pub fn get_ref_msg(msg_id: &str, pw_did: &str, pw_vk: &str, agent_did: &str, agent_vk: &str) -> Result<(String, Vec<u8>), u32> {
+    trace!("get_ref_msg >>> msg_id: {}, pw_did: {}, pw_vk: {}, agent_did: {}, agent_vk: {}",
+           msg_id, pw_did, pw_vk, agent_did, agent_vk);
+
     let message = get_connection_messages(pw_did, pw_vk, agent_did, agent_vk, Some(vec![msg_id.to_string()]))?;
     trace!("checking for ref_msg: {:?}", message);
 
@@ -347,6 +361,8 @@ pub fn get_ref_msg(msg_id: &str, pw_did: &str, pw_vk: &str, agent_did: &str, age
 }
 
 pub fn download_messages(pairwise_dids: Option<Vec<String>>, status_codes: Option<Vec<String>>, uids: Option<Vec<String>>) -> Result<Vec<ConnectionMessages>, u32> {
+    trace!("download_messages >>> pairwise_dids: {:?}, status_codes: {:?}, uids: {:?}",
+           pairwise_dids, status_codes, uids);
 
     if settings::test_agency_mode_enabled() {
         ::utils::httpclient::set_next_u8_response(::utils::constants::GET_ALL_MESSAGES_RESPONSE.to_vec());
@@ -445,9 +461,10 @@ mod tests {
         init!("agency");
         let institution_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
         let (faber, alice) = ::connection::tests::create_connected_connections();
-        let (schema_id, _, cred_def_id, _) = ::utils::libindy::anoncreds::tests::create_and_store_credential_def(::utils::constants::DEFAULT_SCHEMA_ATTRS);
+
+        let (_, cred_def_handle) = ::credential_def::tests::create_cred_def_real(false);
         let credential_data = r#"{"address1": ["123 Main St"], "address2": ["Suite 3"], "city": ["Draper"], "state": ["UT"], "zip": ["84000"]}"#;
-        let credential_offer = ::issuer_credential::issuer_credential_create(cred_def_id.clone(),
+        let credential_offer = ::issuer_credential::issuer_credential_create(cred_def_handle,
                                                                            "1".to_string(),
                                                                            institution_did.clone(),
                                                                            "credential_name".to_string(),

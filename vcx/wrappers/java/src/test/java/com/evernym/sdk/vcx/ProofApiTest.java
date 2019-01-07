@@ -31,7 +31,7 @@ public class ProofApiTest {
     @Test
     @DisplayName("create a proof")
     void createProof() throws VcxException, ExecutionException, InterruptedException {
-        int result = TestHelper.getResultFromFuture(ProofApi.proofCreate(sourceId, TestHelper.convertToValidJson(attr), "", name));
+        int result = TestHelper.getResultFromFuture(ProofApi.proofCreate(sourceId, TestHelper.convertToValidJson(attr), "", "{}", name));
         assert (result != 0);
     }
 
@@ -39,7 +39,7 @@ public class ProofApiTest {
     @DisplayName("throw illegal argument exception if invalid arguments are provided")
     void throwIllegalArgumentxException() {
         Assertions.assertThrows(IllegalArgumentException.class, () -> {
-            TestHelper.getResultFromFuture(ProofApi.proofCreate(sourceId, TestHelper.convertToValidJson(attr), null, name));
+            TestHelper.getResultFromFuture(ProofApi.proofCreate(sourceId, TestHelper.convertToValidJson(attr), null, "{}", name));
         });
     }
 
@@ -47,14 +47,14 @@ public class ProofApiTest {
     @DisplayName("throw illegal argument exception if no or null arguments are provided")
     void throwIllegalArgumentxException1() {
         Assertions.assertThrows(IllegalArgumentException.class, () -> {
-            TestHelper.getResultFromFuture(ProofApi.proofCreate(null, null, null, null));
+            TestHelper.getResultFromFuture(ProofApi.proofCreate(null, null, null, null, null));
         });
     }
 
     @Test
     @DisplayName("serialise a proof")
     void serialiseProof() throws VcxException, ExecutionException, InterruptedException {
-        int proofHandle = TestHelper.getResultFromFuture(ProofApi.proofCreate(sourceId, TestHelper.convertToValidJson(attr), "", name));
+        int proofHandle = TestHelper.getResultFromFuture(ProofApi.proofCreate(sourceId, TestHelper.convertToValidJson(attr), "", "{}", name));
         assert (proofHandle != 0);
         String serialisedProof = TestHelper.getResultFromFuture(ProofApi.proofSerialize(proofHandle));
         assert (serialisedProof.contains(sourceId));
@@ -73,7 +73,7 @@ public class ProofApiTest {
     @Test
     @DisplayName("deserialise a proof")
     void deserialiseProof() throws VcxException, ExecutionException, InterruptedException {
-        int proofHandle = TestHelper.getResultFromFuture(ProofApi.proofCreate(sourceId, TestHelper.convertToValidJson(attr), "", name));
+        int proofHandle = TestHelper.getResultFromFuture(ProofApi.proofCreate(sourceId, TestHelper.convertToValidJson(attr), "", "{}", name));
         assert (proofHandle != 0);
         String serialisedProof = TestHelper.getResultFromFuture(ProofApi.proofSerialize(proofHandle));
         assert (serialisedProof.contains(sourceId));
@@ -92,7 +92,7 @@ public class ProofApiTest {
     @Test
     @DisplayName("release a proof")
     void releaseProof() throws VcxException, ExecutionException, InterruptedException {
-        int proofHandle = TestHelper.getResultFromFuture(ProofApi.proofCreate(sourceId, TestHelper.convertToValidJson(attr), "", name));
+        int proofHandle = TestHelper.getResultFromFuture(ProofApi.proofCreate(sourceId, TestHelper.convertToValidJson(attr), "", "{}", name));
         assert (proofHandle != 0);
         ProofApi.proofRelease(proofHandle);
         Assertions.assertThrows(InvalidProofHandleException.class, () -> {
@@ -103,7 +103,7 @@ public class ProofApiTest {
     @Test
     @DisplayName("update state of proof")
     void updateState() throws VcxException, ExecutionException, InterruptedException {
-        int proofHandle = TestHelper.getResultFromFuture(ProofApi.proofCreate(sourceId, TestHelper.convertToValidJson(attr), "", name));
+        int proofHandle = TestHelper.getResultFromFuture(ProofApi.proofCreate(sourceId, TestHelper.convertToValidJson(attr), "", "{}", name));
         assert (proofHandle != 0);
         int result = TestHelper.getResultFromFuture(ProofApi.proofUpdateState(proofHandle));
         assert(result==1);
@@ -122,7 +122,7 @@ public class ProofApiTest {
     @Test
     @DisplayName("get state of proof")
     void getState() throws VcxException, ExecutionException, InterruptedException {
-        int proofHandle = TestHelper.getResultFromFuture(ProofApi.proofCreate(sourceId, TestHelper.convertToValidJson(attr), "", name));
+        int proofHandle = TestHelper.getResultFromFuture(ProofApi.proofCreate(sourceId, TestHelper.convertToValidJson(attr), "", "{}", name));
         assert (proofHandle != 0);
         int result = TestHelper.getResultFromFuture(ProofApi.proofGetState(proofHandle));
         assert(result==1);
@@ -133,7 +133,9 @@ public class ProofApiTest {
     @DisplayName("request proof")
     void requestProof() throws VcxException, ExecutionException, InterruptedException {
         int connectionHandle = TestHelper.getResultFromFuture(ConnectionApi.vcxConnectionCreate(sourceId));
-        int proofHandle = TestHelper.getResultFromFuture(ProofApi.proofCreate(sourceId, TestHelper.convertToValidJson(attr), "", name));
+        String payload= "{ 'connection_type': 'SMS', 'phone':'7202200000' }";
+        TestHelper.getResultFromFuture(ConnectionApi.vcxConnectionConnect(connectionHandle,TestHelper.convertToValidJson(payload)));
+        int proofHandle = TestHelper.getResultFromFuture(ProofApi.proofCreate(sourceId, TestHelper.convertToValidJson(attr), "", "{}", name));
         assert (proofHandle != 0);
         TestHelper.getResultFromFuture(ProofApi.proofSendRequest(proofHandle,connectionHandle));
         int result = TestHelper.getResultFromFuture(ProofApi.proofGetState(proofHandle));
@@ -145,7 +147,7 @@ public class ProofApiTest {
     @DisplayName("request proof to invalid connection handle")
     void requestProofToInvalidConnection() {
         Assertions.assertThrows(InvalidConnectionHandleException.class, () -> {
-            int proofHandle = TestHelper.getResultFromFuture(ProofApi.proofCreate(sourceId, TestHelper.convertToValidJson(attr), "", name));
+            int proofHandle = TestHelper.getResultFromFuture(ProofApi.proofCreate(sourceId, TestHelper.convertToValidJson(attr), "", "{}", name));
             assert (proofHandle != 0);
             TestHelper.getResultFromFuture(ProofApi.proofSendRequest(proofHandle,0));
         });
@@ -160,7 +162,7 @@ public class ProofApiTest {
 //        String payload= "{ 'connection_type': 'SMS', 'phone':'8019119191' }";
 //        String inviteDetials = TestHelper.getResultFromFuture(ConnectionApi.vcxConnectionConnect(connectionHandle,TestHelper.convertToValidJson(payload)));
 //
-//        int proofHandle = TestHelper.getResultFromFuture(ProofApi.proofCreate(sourceId, TestHelper.convertToValidJson(attr), "", name));
+//        int proofHandle = TestHelper.getResultFromFuture(ProofApi.proofCreate(sourceId, TestHelper.convertToValidJson(attr), "", "{}", name));
 //        assert (proofHandle != 0);
 //        String serialisedProof = TestHelper.getResultFromFuture(ProofApi.proofSerialize(proofHandle));
 //        DocumentContext json = JsonPath.parse(serialisedProof);

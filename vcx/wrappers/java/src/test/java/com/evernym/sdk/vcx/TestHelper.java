@@ -62,6 +62,7 @@ class TestHelper {
             throw new VcxException("Unable to create connection handle",0);
         }else{
 //            System.out.println("Connection created with connection handle => "  + result);
+
             return result;
         }
 
@@ -78,7 +79,7 @@ class TestHelper {
                 "testCredentialDefSchemaId",
                 null,
                 "tag1",
-                "{\"support_revocation\":false}'",
+                "{\"support_revocation\":false, \"tails_file\": \"/tmp/tailsfile.txt\", \"max_creds\": 1}",
                 0
                 ));
     }

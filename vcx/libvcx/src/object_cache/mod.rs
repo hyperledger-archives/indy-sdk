@@ -9,7 +9,7 @@ use std::ops::DerefMut;
 use utils::error;
 
 pub struct ObjectCache<T>{
-    store: Mutex<HashMap<u32, Mutex<T>>>,
+    pub store: Mutex<HashMap<u32, Mutex<T>>>,
 }
 
 impl<T> Default for ObjectCache<T> {

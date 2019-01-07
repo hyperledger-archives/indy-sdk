@@ -25,7 +25,7 @@ pub fn sign_and_submit_request(pool_handle: i32, wallet_handle: i32, submitter_d
 }
 
 pub fn submit_request_with_retries(pool_handle: i32, request_json: &str, previous_response: &str) -> Result<String, ErrorCode> {
-    _submit_retry(_extract_seq_no_from_reply(previous_response).unwrap(), || {
+    _submit_retry(extract_seq_no_from_reply(previous_response).unwrap(), || {
         submit_request(pool_handle, request_json)
     })
 }
@@ -46,9 +46,11 @@ pub fn multi_sign_request(wallet_handle: i32, submitter_did: &str, request_json:
     ledger::multi_sign_request(wallet_handle, submitter_did, request_json).wait()
 }
 
-fn _extract_seq_no_from_reply(reply: &str) -> Result<u64, &'static str> {
-    ::serde_json::from_str::<::serde_json::Value>(reply).map_err(|_| "Reply isn't valid JSON")?
-        ["result"]["txnMetadata"]["seqNo"]
+pub fn extract_seq_no_from_reply(reply: &str) -> Result<u64, &'static str> {
+    let metadata = get_response_metadata(reply).map_err(|_| "Can not get Metadata from Reply")?;
+
+    ::serde_json::from_str::<::serde_json::Value>(&metadata).map_err(|_| "Metadata isn't valid JSON")?
+        ["seqNo"]
         .as_u64().ok_or("Missed seqNo in reply")
 }
 
@@ -58,7 +60,7 @@ fn _submit_retry<F>(minimal_timestamp: u64, submit_action: F) -> Result<String, 
     let action_result = loop {
         let action_result = submit_action()?;
 
-        let retry = _extract_seq_no_from_reply(&action_result)
+        let retry = extract_seq_no_from_reply(&action_result)
             .map(|received_timestamp| received_timestamp < minimal_timestamp)
             .unwrap_or(true);
 
@@ -192,6 +194,10 @@ pub fn register_transaction_parser_for_sp(txn_type: &str, parse: CustomTransacti
         };
 
     super::results::result_to_empty(err, receiver)
+}
+
+pub fn get_response_metadata(response: &str) -> Result<String, ErrorCode> {
+    ledger::get_response_metadata(response).wait()
 }
 
 pub fn post_entities() -> (&'static str, &'static str, &'static str) {
