@@ -57,18 +57,13 @@ pub extern fn vcx_credentialdef_create(command_handle: u32,
     check_useful_c_str!(tag, error::INVALID_OPTION.code_num);
     check_useful_c_str!(revocation_details, error::INVALID_OPTION.code_num);
 
-    debug!("Parameters to vcx_credentialdef_create are valid");
-
     let issuer_did: String = if !issuer_did.is_null() {
         check_useful_c_str!(issuer_did, error::INVALID_OPTION.code_num);
         issuer_did.to_owned()
     } else {
         match settings::get_config_value(settings::CONFIG_INSTITUTION_DID) {
             Ok(x) => x,
-            Err(x) => { 
-                error!("Invalid {} set", settings::CONFIG_INSTITUTION_DID);
-                return x
-            },
+            Err(x) => return x,
         }
     };
     

@@ -458,10 +458,10 @@ pub extern fn vcx_connection_release(connection_handle: u32) -> u32 {
 
     let source_id = get_source_id(connection_handle).unwrap_or_default();
     match release(connection_handle) {
-        Ok(c) => {
+        Ok(_) => {
             trace!("vcx_connection_release(connection_handle: {}, rc: {}), source_id: {:?}",
-                       connection_handle, error_string(0), source_id);
-            c
+                       connection_handle, error_string(error::SUCCESS.code_num), source_id);
+            error::SUCCESS.code_num
         },
         Err(e) => {
             warn!("vcx_connection_release(connection_handle: {}), rc: {}), source_id: {:?}",
