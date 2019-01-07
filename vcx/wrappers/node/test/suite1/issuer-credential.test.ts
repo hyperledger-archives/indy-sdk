@@ -60,7 +60,7 @@ describe('IssuerCredential:', () => {
     })
 
     // TODO: Enable once https://evernym.atlassian.net/browse/EN-665 is resolved
-    it.skip('throws: missing price', async () => {
+    it('throws: missing price', async () => {
       const { price, ...data } = await dataIssuerCredentialCreate()
       const error = await shouldThrow(() => IssuerCredential.create(data as any))
       assert.equal(error.vcxCode, VCXCode.INVALID_OPTION)
@@ -139,10 +139,10 @@ describe('IssuerCredential:', () => {
     })
 
     // TODO: Enable once https://evernym.atlassian.net/browse/EN-668 is resolved
-    it.skip('throws: not initialized', async () => {
+    it('throws: not initialized', async () => {
       const issuerCredential = new IssuerCredential(null as any, {} as any)
       const error = await shouldThrow(() => issuerCredential.release())
-      assert.equal(error.vcxCode, VCXCode.UNKNOWN_ERROR)
+      assert.equal(error.vcxCode, VCXCode.INVALID_ISSUER_CREDENTIAL_HANDLE)
     })
   })
 
@@ -263,6 +263,7 @@ describe('IssuerCredential:', () => {
 
   describe('GC:', function () {
     this.timeout(TIMEOUT_GC)
+    console.log("TIMEOUT_GC: ", TIMEOUT_GC)
 
     const issuerCredentialCreateAndDelete = async () => {
       let issuerCredential: IssuerCredential | null = await issuerCredentialCreate()

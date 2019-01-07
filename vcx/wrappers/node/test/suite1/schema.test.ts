@@ -147,10 +147,10 @@ describe('Schema:', () => {
     })
 
     // TODO: Enable once https://evernym.atlassian.net/browse/EN-668 is resolved
-    it.skip('throws: not initialized', async () => {
+    it('throws: not initialized', async () => {
       const schema = new Schema(null as any, {} as any)
       const error = await shouldThrow(() => schema.release())
-      assert.equal(error.vcxCode, VCXCode.UNKNOWN_ERROR)
+      assert.equal(error.vcxCode, VCXCode.INVALID_SCHEMA_HANDLE)
     })
   })
 

@@ -107,10 +107,10 @@ describe('Connection:', () => {
     })
 
     // TODO: Enable once https://evernym.atlassian.net/browse/EN-668 is resolved
-    it.skip('throws: not initialized', async () => {
+    it('throws: not initialized', async () => {
       const connection = new (Connection as any)()
       const error = await shouldThrow(() => connection.release())
-      assert.equal(error.vcxCode, VCXCode.UNKNOWN_ERROR)
+      assert.equal(error.vcxCode, VCXCode.INVALID_CONNECTION_HANDLE)
     })
   })
 
@@ -183,7 +183,7 @@ describe('Connection:', () => {
       connection = null
       return handle
     }
-    it('calls release', async () => {
+    it('calls release on deleted handle', async () => {
       const handle = await connectionCreateCheckAndDelete()
       await gcTest({
         handle,
