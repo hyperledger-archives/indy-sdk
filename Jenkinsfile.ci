@@ -33,11 +33,10 @@ def staticValidation() {
 
 def runValdiationRust(dir) {
     node('ubuntu') {
-        setupRust()
-        sh "rustup component add clippy-preview"
-
-        sh "cd ${dir}"
-        sh "cargo clippy -- -W clippy::style -W clippy::correctness -W clippy::complexity -W clippy::perf"
+        def testEnv = buildTestEnv("ci/static-validation.dockerfile ci", "static-validation-ubuntu")
+        testEnv.inside {
+            sh "cargo clippy --manifest-path ${dir}/Cargo.toml -- -W clippy::style -W clippy::correctness -W clippy::complexity -W clippy::perf"
+        }
     }
 }
 
