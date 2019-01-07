@@ -99,7 +99,7 @@ def staticValidation() {
     parallel([
         'libindy'    : { runValdiationRust('libindy') },
         'libnullpay' : { runValdiationRust('libnullpay') },
-        'libvcx'     : { runValdiationRust('vcx/libvcx') }
+        'libvcx'     : { runValdiationRust('vcx/libvcx') },
         'cli'        : { runValdiationRust('cli') }
     ])
 }
