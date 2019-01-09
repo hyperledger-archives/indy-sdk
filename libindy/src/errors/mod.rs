@@ -91,8 +91,16 @@ pub enum IndyErrorKind {
     // Payments errors
     #[fail(display = "Unknown payment method type")]
     UnknownPaymentMethodType,
-    #[fail(display = "Plugged payment method error")]
+    #[fail(display = "No method were scraped from inputs/outputs or more than one were scraped")]
     IncompatiblePaymentMethods,
+    #[fail(display = "Payment insufficient funds on inputs")]
+    PaymentInsufficientFunds,
+    #[fail(display = "Payment Source does not exist")]
+    PaymentSourceDoesNotExist,
+    #[fail(display = "Payment operation not supported")]
+    PaymentOperationNotSupported,
+    #[fail(display = "Payment extra funds")]
+    PaymentExtraFunds,
 }
 
 #[derive(Debug, Clone)]
@@ -258,6 +266,10 @@ impl From<IndyErrorKind> for ErrorCode {
             IndyErrorKind::DIDAlreadyExists => ErrorCode::DidAlreadyExistsError,
             IndyErrorKind::UnknownPaymentMethodType => ErrorCode::PaymentUnknownMethodError,
             IndyErrorKind::IncompatiblePaymentMethods => ErrorCode::PaymentIncompatibleMethodsError,
+            IndyErrorKind::PaymentInsufficientFunds => ErrorCode::PaymentInsufficientFundsError,
+            IndyErrorKind::PaymentSourceDoesNotExist => ErrorCode::PaymentSourceDoesNotExistError,
+            IndyErrorKind::PaymentOperationNotSupported => ErrorCode::PaymentOperationNotSupportedError,
+            IndyErrorKind::PaymentExtraFunds => ErrorCode::PaymentExtraFundsError,
         }
     }
 }
@@ -267,7 +279,7 @@ impl From<ErrorCode> for IndyResult<()> {
         if err == ErrorCode::Success {
             Ok(())
         } else {
-            err.into()
+            Err(err.into())
         }
     }
 }
@@ -310,7 +322,11 @@ impl From<ErrorCode> for IndyError {
             ErrorCode::DidAlreadyExistsError => IndyErrorKind::DIDAlreadyExists,
             ErrorCode::PaymentUnknownMethodError => IndyErrorKind::UnknownPaymentMethodType,
             ErrorCode::PaymentIncompatibleMethodsError => IndyErrorKind::IncompatiblePaymentMethods,
-            code => return err_msg(IndyErrorKind::InvalidState, format!("Trying to interpret unsupported error code as error: {:?}", code)),
+            ErrorCode::PaymentInsufficientFundsError => IndyErrorKind::PaymentInsufficientFunds,
+            ErrorCode::PaymentSourceDoesNotExistError => IndyErrorKind::PaymentSourceDoesNotExist,
+            ErrorCode::PaymentOperationNotSupportedError => IndyErrorKind::PaymentOperationNotSupported,
+            ErrorCode::PaymentExtraFundsError => IndyErrorKind::PaymentExtraFunds,
+            code => return err_msg(IndyErrorKind::InvalidState, format!("Trying to interpret unsupported error code as error: {:?}", code))
         };
 
         err_msg(kind, format!("Plugin returned error"))
