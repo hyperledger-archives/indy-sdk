@@ -20,7 +20,7 @@ use domain::anoncreds::DELIMITER;
 use domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinition, RevocationRegistryDefinitionV1};
 use domain::anoncreds::revocation_registry::RevocationRegistry;
 use domain::anoncreds::revocation_registry_delta::{RevocationRegistryDelta, RevocationRegistryDeltaV1};
-use domain::anoncreds::schema::{Schema, SchemaV1};
+use domain::anoncreds::schema::{Schema, SchemaV1, MAX_ATTRIBUTES_COUNT};
 use domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionV1};
 
 use indy_crypto::cl::RevocationRegistryDelta as CryproRevocationRegistryDelta;
@@ -148,6 +148,11 @@ impl LedgerService {
 
     pub fn build_schema_request(&self, identifier: &str, schema: SchemaV1) -> Result<String, CommonError> {
         info!("build_schema_request >>> identifier: {:?}, schema: {:?}", identifier, schema);
+
+        if schema.attr_names.len() > MAX_ATTRIBUTES_COUNT {
+            return Err(CommonError::InvalidStructure(
+                format!("The number of Schema attributes {} cannot be greater than {}", schema.attr_names.len(), MAX_ATTRIBUTES_COUNT)));
+        }
 
         let schema_data = SchemaOperationData::new(schema.name, schema.version, schema.attr_names);
 
@@ -803,6 +808,24 @@ mod tests {
 
         let request = ledger_service.build_schema_request(IDENTIFIER, data).unwrap();
         check_request(&request, expected_result);
+    }
+
+    #[test]
+    fn build_schema_request_works_for_attrs_count_more_than_acceptable() {
+        let ledger_service = LedgerService::new();
+
+        let attr_names: AttributeNames = (0..MAX_ATTRIBUTES_COUNT + 1).map(|i| i.to_string()).collect();
+
+        let data = SchemaV1 {
+            id: Schema::schema_id(IDENTIFIER, "name", "1.0"),
+            name: "name".to_string(),
+            version: "1.0".to_string(),
+            attr_names,
+            seq_no: None,
+        };
+
+        let res = ledger_service.build_schema_request(IDENTIFIER, data);
+        assert_match!(Err(CommonError::InvalidStructure(_)), res);
     }
 
     #[test]
