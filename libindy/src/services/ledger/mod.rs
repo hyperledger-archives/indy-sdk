@@ -821,7 +821,7 @@ mod tests {
         };
 
         let res = ledger_service.build_schema_request(IDENTIFIER, data);
-        assert_match!(Err(CommonError::InvalidStructure(_)), res);
+        assert_kind!(IndyErrorKind::InvalidStructure, res);
     }
 
     #[test]
