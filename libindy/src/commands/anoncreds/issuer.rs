@@ -41,7 +41,7 @@ use domain::anoncreds::revocation_registry_delta::{
     RevocationRegistryDelta,
     RevocationRegistryDeltaV1,
 };
-use domain::anoncreds::schema::{AttributeNames, Schema, SchemaV1};
+use domain::anoncreds::schema::{AttributeNames, Schema, SchemaV1, MAX_ATTRIBUTES_COUNT};
 use domain::wallet::Tags;
 use errors::prelude::*;
 use services::anoncreds::AnoncredsService;
@@ -209,6 +209,11 @@ impl IssuerCommandExecutor {
         debug!("create_schema >>> issuer_did: {:?}, name: {:?}, version: {:?}, attrs: {:?}", issuer_did, name, version, attrs);
 
         self.crypto_service.validate_did(issuer_did)?;
+
+        if attrs.len() > MAX_ATTRIBUTES_COUNT {
+            return Err(err_msg(IndyErrorKind::InvalidStructure,
+                               format!("The number of Schema attributes {} cannot be greater than {}", attrs.len(), MAX_ATTRIBUTES_COUNT)));
+        }
 
         let schema_id = Schema::schema_id(issuer_did, name, version);
 

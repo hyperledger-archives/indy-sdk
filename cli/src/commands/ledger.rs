@@ -271,7 +271,7 @@ pub mod schema_command {
     command!(CommandMetadata::build("schema", "Send Schema transaction to the Ledger.")
                 .add_required_param("name", "Schema name")
                 .add_required_param("version", "Schema version")
-                .add_required_param("attr_names", "Schema attributes split by comma")
+                .add_required_param("attr_names", "Schema attributes split by comma (the number of attributes should be less or equal than 125)")
                 .add_optional_param("fees_inputs","The list of source inputs")
                 .add_optional_param("fees_outputs","The list of outputs in the following format: (recipient, amount)")
                 .add_optional_param("extra","Optional information for fees payment operation")
