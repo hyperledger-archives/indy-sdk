@@ -106,7 +106,8 @@ def staticValidation() {
 
 def runValdiationRust(dir) {
     node('ubuntu') {
-        def testEnv = buildTestEnv("ci/static-validation.dockerfile ci", "static-validation-ubuntu")
+        checkout scm
+        def testEnv = dockerBuild("static-validation-ubuntu", "ci/static-validation.dockerfile ci")
         testEnv.inside {
             sh "cargo clippy --manifest-path ${dir}/Cargo.toml -- -W clippy::style -W clippy::correctness -W clippy::complexity -W clippy::perf"
         }
