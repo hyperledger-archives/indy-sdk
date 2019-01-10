@@ -22,7 +22,7 @@ use utils::threadpool::spawn;
 ///
 /// version: version of schema
 ///
-/// schema_data: list of attributes that will make up the schema
+/// schema_data: list of attributes that will make up the schema (the number of attributes should be less or equal than 125)
 ///
 /// # Example schema_data -> "["attr1", "attr2", "attr3"]"
 ///
