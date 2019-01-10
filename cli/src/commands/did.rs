@@ -660,40 +660,30 @@ pub mod tests {
 
     mod did_rotate_key {
         use super::*;
-        use std::thread::sleep;
-        use std::time::Duration;
         #[cfg(feature = "nullpay_plugin")]
         use commands::common::tests::load_null_payment_plugin;
         #[cfg(feature = "nullpay_plugin")]
         use commands::ledger::tests::{set_fees, create_address_and_mint_sources, get_source_input, FEES, OUTPUT};
 
         fn ensure_nym_written(ctx: &CommandContext, did: &str, verkey: &str) {
-            let pool_handle = ensure_connected_pool_handle(ctx).unwrap();
             let wallet_handle = ensure_opened_wallet_handle(ctx).unwrap();
-            let mut cnt = 0;
-            while cnt <= 3 {
-                let res = req_for_nym(pool_handle, wallet_handle, did);
-                if let Some(verkey_received) = res {
-                    if verkey == verkey_received {
-                        break;
-                    }
+            let request = Ledger::build_get_nym_request(None, did).unwrap();
+            let request = Ledger::sign_request(wallet_handle, did, &request).unwrap();
+            submit_retry(ctx, &request, |response| {
+                let res = req_for_nym(response);
+                match res {
+                    Some(ref verkey_received) if verkey_received == verkey => Ok(()),
+                    _ => Err(())
                 }
-                cnt += 1;
-                sleep(Duration::from_secs(5));
-            }
-            if cnt >= 3 {
-                assert!(false);
-            }
+            }).unwrap()
         }
 
-        fn req_for_nym(pool_handle: i32, wallet_handle: i32, did: &str) -> Option<String> {
-            let request = Ledger::build_get_nym_request(None, did).unwrap();
-            let response = Ledger::sign_and_submit_request(pool_handle, wallet_handle, did, &request).unwrap();
-            let parsed = serde_json::from_str::<serde_json::Value>(&response)?;
+        fn req_for_nym(response: &str) -> Option<String> {
+            let parsed = serde_json::from_str::<serde_json::Value>(&response).ok()?;
             let parsed = parsed.as_object()?;
             let data = parsed.get("result")?;
             let data = data.as_object()?.get("data")?.as_str()?;
-            let data = serde_json::from_str::<serde_json::Value>(data)?;
+            let data = serde_json::from_str::<serde_json::Value>(data).ok()?;
             let verkey = data.get("verkey")?.as_str()?.clone();
             Some(verkey.to_string())
         }
