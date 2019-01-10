@@ -110,7 +110,7 @@ After that can call issuerCreateAndStoreCredentialDef to build corresponding Cre
 * `issuerDid`: String - DID of schema issuer
 * `name`: String - a name the schema
 * `version`: String - a version of the schema
-* `attrNames`: Json
+* `attrNames`: Json - a list of schema attributes descriptions (the number of attributes should be less or equal than 125)
 * __->__ [ `id`: String, `schema`: Json ] - schema\_id: identifier of created schema
 schema\_json: schema as json
 
@@ -1328,7 +1328,7 @@ Builds a SCHEMA request. Request to add Credential's schema.
 {
     id: identifier of schema
     attrNames: array of attribute name strings
-    name: Schema's name string
+    name: Schema's name string (the number of attributes should be less or equal than 125)
     version: Schema's version string,
     ver: Version of the Schema json
 }
