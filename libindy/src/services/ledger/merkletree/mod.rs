@@ -1,12 +1,10 @@
-extern crate serde_json;
-
 pub mod tree;
 pub mod proof;
 pub mod merkletree;
 
 use self::tree::*;
 use self::merkletree::*;
-use errors::common::CommonError;
+use errors::prelude::*;
 use utils::crypto::hash::Hash;
 
 impl MerkleTree {
@@ -61,7 +59,7 @@ impl MerkleTree {
 
     pub fn consistency_proof(&self,
                              new_root_hash: &Vec<u8>, new_size: usize,
-                             proof: &Vec<Vec<u8>>) -> Result<bool, CommonError> {
+                             proof: &Vec<Vec<u8>>) -> IndyResult<bool> {
         if self.count == 0 {
             // empty old tree
             return Ok(true);
@@ -128,7 +126,7 @@ impl MerkleTree {
         return Ok(true);
     }
 
-    pub fn append(&mut self, node: TreeLeafData) -> Result<(), CommonError> {
+    pub fn append(&mut self, node: TreeLeafData) -> IndyResult<()> {
         if self.count == 0 {
             // empty tree
             self.root = Tree::new_leaf(node)?;
@@ -203,7 +201,6 @@ mod tests {
 
     use super::*;
     use self::rust_base58::FromBase58;
-    use self::serde_json;
 
     #[test]
     fn append_works() {

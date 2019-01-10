@@ -1,6 +1,6 @@
 use services::ledger::merkletree::tree::{Tree, TreeLeafData};
 use utils::crypto::hash::Hash;
-use errors::common::CommonError;
+use errors::prelude::*;
 
 /// An inclusion proof represent the fact that a `value` is a member
 /// of a `MerkleTree` with root hash `root_hash`.
@@ -29,7 +29,7 @@ impl Proof {
 
     /// Checks whether this inclusion proof is well-formed,
     /// and whether its root hash matches the given `root_hash`.
-    pub fn validate(&self, root_hash: &[u8]) -> Result<bool, CommonError> {
+    pub fn validate(&self, root_hash: &[u8]) -> IndyResult<bool> {
         if self.root_hash != root_hash || self.lemma.node_hash != root_hash {
             return Ok(false)
         }
@@ -37,7 +37,7 @@ impl Proof {
         Ok(self.validate_lemma(&self.lemma)?)
     }
 
-    fn validate_lemma(&self, lemma: &Lemma) -> Result<bool, CommonError> {
+    fn validate_lemma(&self, lemma: &Lemma) -> IndyResult<bool> {
         match lemma.sub_lemma {
 
             None =>

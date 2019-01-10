@@ -1,9 +1,7 @@
-extern crate sodiumoxide;
 extern crate libc;
+extern crate sodiumoxide;
 
-use errors::common::CommonError;
-use errors::crypto::CryptoError;
-
+use errors::prelude::*;
 use self::sodiumoxide::crypto::box_;
 
 
@@ -15,25 +13,23 @@ sodium_type!(Nonce, box_::Nonce, NONCEBYTES);
 sodium_type!(PublicKey, box_::PublicKey, PUBLICKEYBYTES);
 sodium_type!(SecretKey, box_::SecretKey, SECRETKEYBYTES);
 
-pub fn encrypt(secret_key: &SecretKey, public_key: &PublicKey, doc: &[u8], nonce: &Nonce) -> Result<Vec<u8>, CryptoError> {
+pub fn encrypt(secret_key: &SecretKey, public_key: &PublicKey, doc: &[u8], nonce: &Nonce) -> Result<Vec<u8>, IndyError> {
     Ok(box_::seal(
         doc,
         &nonce.0,
         &public_key.0,
-        &secret_key.0
+        &secret_key.0,
     ))
 }
 
-pub fn decrypt(secret_key: &SecretKey, public_key: &PublicKey, doc: &[u8], nonce: &Nonce) -> Result<Vec<u8>, CryptoError> {
+pub fn decrypt(secret_key: &SecretKey, public_key: &PublicKey, doc: &[u8], nonce: &Nonce) -> Result<Vec<u8>, IndyError> {
     box_::open(
         doc,
         &nonce.0,
         &public_key.0,
-        &secret_key.0
+        &secret_key.0,
     )
-        .map_err(|err|
-            CryptoError::CommonError(
-                CommonError::InvalidStructure(format!("Unable to decrypt data: {:?}", err))))
+        .map_err(|_| IndyError::from_msg(IndyErrorKind::InvalidStructure, "Unable to open sodium _box"))
 }
 
 pub fn gen_nonce() -> Nonce {
