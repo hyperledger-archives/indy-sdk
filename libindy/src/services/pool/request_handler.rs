@@ -946,8 +946,7 @@ pub mod tests {
                 let request_handler_ref = request_handler.request_wrapper.as_ref().unwrap();
                 assert_match!(RequestState::Finish(_), request_handler_ref.state);
             }
-
-
+            
             request_handler.process_event(Some(RequestEvent::Reject(Response::default(), "{}".to_string(), NODE_4.to_string(), REQ_ID.to_string())));
 
             assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
