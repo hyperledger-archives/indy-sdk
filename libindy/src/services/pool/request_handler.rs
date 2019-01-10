@@ -283,7 +283,10 @@ impl<T: Networker> RequestSM<T> {
             }
             RequestState::Consensus(mut state) => {
                 match re {
-                    RequestEvent::Reply(_, raw_msg, node_alias, req_id) => {
+                    RequestEvent::Reply(_, raw_msg, node_alias, req_id) |
+                    RequestEvent::ReqNACK(_, raw_msg, node_alias, req_id) |
+                    RequestEvent::Reject(_, raw_msg, node_alias, req_id)
+                        => {
                         if let Ok((_, result_without_proof)) = _get_msg_result_without_state_proof(&raw_msg) {
                             let hashable = HashableValue { inner: result_without_proof };
 
@@ -314,19 +317,6 @@ impl<T: Networker> RequestSM<T> {
                         state.networker.borrow_mut().process_event(Some(NetworkerEvent::ExtendTimeout(req_id, node_alias, extended_timeout)));
                         (RequestState::Consensus(state), None)
                     }
-                    RequestEvent::ReqNACK(_, raw_msg, node_alias, req_id) | RequestEvent::Reject(_, raw_msg, node_alias, req_id) => {
-                        if _parse_nack(&mut state.denied_nodes, f, &raw_msg, &cmd_ids, &node_alias) {
-                            state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
-                            (RequestState::finish(), None)
-                        } else if state.is_consensus_reachable(f, nodes.len()) {
-                            state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
-                            (RequestState::Consensus(state.into()), None)
-                        } else {
-                            _send_replies(&cmd_ids, Err(err_msg(IndyErrorKind::PoolTimeout, "Consensus is impossible")));
-                            state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
-                            (RequestState::finish(), None)
-                        }
-                    }
                     RequestEvent::Timeout(req_id, node_alias) => {
                         state.timeout_nodes.insert(node_alias.clone());
                         if state.is_consensus_reachable(f, nodes.len()) {
@@ -348,7 +338,9 @@ impl<T: Networker> RequestSM<T> {
             }
             RequestState::Single(mut state) => {
                 match re {
-                    RequestEvent::Reply(_, raw_msg, node_alias, req_id) => {
+                    RequestEvent::Reply(_, raw_msg, node_alias, req_id) |
+                    RequestEvent::ReqNACK(_, raw_msg, node_alias, req_id) |
+                    RequestEvent::Reject(_, raw_msg, node_alias, req_id) => {
                         trace!("reply on single request");
                         state.timeout_nodes.remove(&node_alias);
                         if let Ok((result, result_without_proof)) = _get_msg_result_without_state_proof(&raw_msg) {
@@ -375,15 +367,6 @@ impl<T: Networker> RequestSM<T> {
                     RequestEvent::ReqACK(_, _, node_alias, req_id) => {
                         state.networker.borrow_mut().process_event(Some(NetworkerEvent::ExtendTimeout(req_id, node_alias, extended_timeout)));
                         (RequestState::Single(state), None)
-                    }
-                    RequestEvent::ReqNACK(_, raw_msg, node_alias, req_id) | RequestEvent::Reject(_, raw_msg, node_alias, req_id) => {
-                        state.timeout_nodes.remove(&node_alias);
-                        if _parse_nack(&mut state.denied_nodes, f, &raw_msg, &cmd_ids, &node_alias) {
-                            state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
-                            (RequestState::finish(), None)
-                        } else {
-                            (state.try_to_continue(req_id, node_alias, &cmd_ids, nodes.len(), timeout), None)
-                        }
                     }
                     RequestEvent::Timeout(req_id, node_alias) => {
                         state.timeout_nodes.insert(node_alias.clone());
@@ -720,6 +703,8 @@ pub mod tests {
     const REQ_ID: &'static str = "1";
     const NODE: &'static str = "n1";
     const NODE_2: &'static str = "n2";
+    const NODE_3: &'static str = "n3";
+    const NODE_4: &'static str = "n4";
     const SIMPLE_REPLY: &'static str = r#"{"result":{}}"#;
     const POOL: &'static str = "pool1";
 
@@ -935,6 +920,7 @@ pub mod tests {
 
     mod consensus_state {
         use super::*;
+        use utils::logger::{LibindyDefaultLogger};
 
         #[test]
         fn request_handler_process_reply_event_from_consensus_state_works_for_consensus_reached() {
@@ -942,6 +928,24 @@ pub mod tests {
             request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), SIMPLE_REPLY.to_string(), NODE.to_string(), REQ_ID.to_string())));
             assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
+        }
+
+        #[test]
+        fn request_handler_process_reply_event_from_consensus_state_works_for_consensus_reached_with_mixed_msgs() {
+
+            LibindyDefaultLogger::init(None);
+
+            let mut request_handler = _request_handler(1, 4);
+
+            request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), REQ_ID.to_string())));
+            request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), SIMPLE_REPLY.to_string(), NODE.to_string(), REQ_ID.to_string())));
+            request_handler.process_event(Some(RequestEvent::Reject(Response::default(), "{}".to_string(), NODE_2.to_string(), REQ_ID.to_string())));
+            request_handler.process_event(Some(RequestEvent::ReqNACK(Response::default(), "{}".to_string(), NODE_3.to_string(), REQ_ID.to_string())));
+
+            request_handler.process_event(Some(RequestEvent::Reject(Response::default(), "{}".to_string(), NODE_4.to_string(), REQ_ID.to_string())));
+
+            assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
+
         }
 
         #[test]
