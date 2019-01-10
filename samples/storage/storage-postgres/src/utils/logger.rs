@@ -17,7 +17,7 @@ use self::libc::{c_void, c_char};
 use std::ffi::CString;
 use std::ptr;
 
-use errors::common::CommonError;
+use errors::prelude::*;
 use utils::ctypes;
 
 pub static mut LOGGER_STATE: LoggerState = LoggerState::Default;

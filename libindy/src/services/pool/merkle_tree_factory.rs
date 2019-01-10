@@ -1,22 +1,23 @@
 extern crate byteorder;
 extern crate rmp_serde;
 
-use domain::ledger::request::ProtocolVersion;
-use errors::common::CommonError;
-use errors::pool::PoolError;
-use self::byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
-use serde_json;
-use serde_json::Value as SJsonValue;
-use services::ledger::merkletree::merkletree::MerkleTree;
-use services::pool::types::{NodeTransaction, NodeTransactionV0, NodeTransactionV1};
 use std::{fs, io};
 use std::collections::HashMap;
 use std::io::{BufRead, Read, Write};
 use std::path::PathBuf;
-use std::str::from_utf8;
+
+use serde_json;
+use serde_json::Value as SJsonValue;
+
+use domain::ledger::request::ProtocolVersion;
+use errors::prelude::*;
+use services::ledger::merkletree::merkletree::MerkleTree;
+use services::pool::types::{NodeTransaction, NodeTransactionV0, NodeTransactionV1};
 use utils::environment;
 
-pub fn create(pool_name: &str) -> Result<MerkleTree, PoolError> {
+use self::byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
+
+pub fn create(pool_name: &str) -> IndyResult<MerkleTree> {
     let mut p = environment::pool_path(pool_name);
 
     let mut p_stored = p.clone();
@@ -30,7 +31,7 @@ pub fn create(pool_name: &str) -> Result<MerkleTree, PoolError> {
 
         if !p.exists() {
             trace!("here");
-            return Err(PoolError::NotCreated(format!("Pool is not created for name: {:?}", pool_name)));
+            return Err(err_msg(IndyErrorKind::PoolNotCreated, format!("Pool is not created for name: {:?}", pool_name)));
         }
 
         _from_genesis(&p)
@@ -40,164 +41,174 @@ pub fn create(pool_name: &str) -> Result<MerkleTree, PoolError> {
     }
 }
 
-pub fn drop_cache(pool_name: &str) -> Result<(), PoolError> {
+pub fn drop_cache(pool_name: &str) -> IndyResult<()> {
     let mut p = environment::pool_path(pool_name);
 
     p.push("stored");
     p.set_extension("btxn");
     if p.exists() {
         warn!("Cache is invalid -- dropping it!");
-        fs::remove_file(p).map_err(CommonError::IOError).map_err(PoolError::from)?;
+        fs::remove_file(p)
+            .to_indy(IndyErrorKind::IOError, "Can't drop pool ledger cache file")?;
         Ok(())
     } else {
-        Err(PoolError::CommonError(CommonError::InvalidState("Can't recover to genesis -- no txns stored. Possible problems in genesis txns.".to_string())))
+        Err(err_msg(IndyErrorKind::InvalidState, "Can't recover to genesis -- no txns stored. Possible problems in genesis txns."))
     }
 }
 
-fn _from_cache(file_name: &PathBuf) -> Result<MerkleTree, PoolError> {
-    let mut mt = MerkleTree::from_vec(Vec::new()).map_err(map_err_trace!())?;
+fn _from_cache(file_name: &PathBuf) -> IndyResult<MerkleTree> {
+    let mut mt = MerkleTree::from_vec(Vec::new())?;
 
-    let mut f = fs::File::open(file_name).map_err(map_err_trace!())?;
+    let mut f = fs::File::open(file_name)
+        .to_indy(IndyErrorKind::IOError, "Can't open pool ledger cache file")?;
 
-    trace!("start recover from cache");
-    while let Ok(bytes) = f.read_u64::<LittleEndian>().map_err(CommonError::IOError).map_err(PoolError::from) {
-        if bytes == 0 {
-            continue;
-        }
+    trace!("Start recover from cache");
+
+    loop {
+        let bytes = match f.read_u64::<LittleEndian>() {
+            Ok(bytes) => bytes,
+            Err(ref e) if e.kind() == io::ErrorKind::UnexpectedEof => break,
+            Err(e) => Err(e.to_indy(IndyErrorKind::IOError, "Can't read from pool ledger cache file"))?
+        };
+
         trace!("bytes: {:?}", bytes);
         let mut buf = vec![0; bytes as usize];
-        f.read(buf.as_mut()).map_err(map_err_trace!())?;
-        mt.append(buf.to_vec()).map_err(map_err_trace!())?;
+
+        match f.read_exact(buf.as_mut()) {
+            Ok(()) => (),
+            Err(e) => match e.kind() {
+                    io::ErrorKind::UnexpectedEof => Err(e.to_indy(IndyErrorKind::InvalidState, "Malformed pool ledger cache file"))?,
+                    _  => Err(e.to_indy(IndyErrorKind::IOError, "Can't read from pool ledger cache file"))?,
+            }
+        }
+
+        mt.append(buf.to_vec())?;
     }
+
     Ok(mt)
 }
 
-fn _from_genesis(file_name: &PathBuf) -> Result<MerkleTree, PoolError> {
-    let mut mt = MerkleTree::from_vec(Vec::new()).map_err(map_err_trace!())?;
+fn _from_genesis(file_name: &PathBuf) -> IndyResult<MerkleTree> {
+    let mut mt = MerkleTree::from_vec(Vec::new())?;
 
-    let f = fs::File::open(file_name).map_err(map_err_trace!())?;
+    let f = fs::File::open(file_name)
+        .to_indy(IndyErrorKind::IOError, "Can't open genesis txn file")?;
 
     let reader = io::BufReader::new(&f);
+
     for line in reader.lines() {
-        let line: String = line.map_err(map_err_trace!())?.trim().to_string();
-        if line.is_empty() { continue };
-        let genesis_txn: SJsonValue = serde_json::from_str(line.as_str())
-            .map_err(|err| CommonError::InvalidStructure(format!("Can't deserialize Genesis Transaction file: {:?}", err)))?;
-        let bytes = rmp_serde::encode::to_vec_named(&genesis_txn)
-            .map_err(|err| CommonError::InvalidStructure(format!("Can't deserialize Genesis Transaction file: {:?}", err)))?;
-        mt.append(bytes).map_err(map_err_trace!())?;
+        let line: String = line
+            .to_indy(IndyErrorKind::IOError, "Can't read from genesis txn file")?;
+
+        if line.trim().is_empty() { continue; };
+        mt.append(_parse_txn_from_json(&line)?)?;
     }
+
     Ok(mt)
 }
 
-pub fn dump_new_txns(pool_name: &str, txns: &Vec<Vec<u8>>) -> Result<(), PoolError> {
+pub fn dump_new_txns(pool_name: &str, txns: &Vec<Vec<u8>>) -> IndyResult<()> {
     let mut p = environment::pool_path(pool_name);
-
     p.push("stored");
     p.set_extension("btxn");
+
     if !p.exists() {
         _dump_genesis_to_stored(&p, pool_name)?;
     }
 
-    let mut file = fs::OpenOptions::new().append(true).open(p)
-        .map_err(|e| CommonError::IOError(e))
-        .map_err(map_err_err!())?;
+    let mut file = fs::OpenOptions::new()
+        .append(true)
+        .open(p)
+        .to_indy(IndyErrorKind::IOError, "Can't open pool ledger cache file")?;
 
     _dump_vec_to_file(txns, &mut file)
 }
 
-fn _dump_genesis_to_stored(p: &PathBuf, pool_name: &str) -> Result<(), PoolError> {
-    let mut file = fs::File::create(p)
-        .map_err(|e| CommonError::IOError(e))
-        .map_err(map_err_err!())?;
-
+fn _dump_genesis_to_stored(p: &PathBuf, pool_name: &str) -> IndyResult<()> {
     let mut p_genesis = environment::pool_path(pool_name);
     p_genesis.push(pool_name);
     p_genesis.set_extension("txn");
 
     if !p_genesis.exists() {
         trace!("here");
-        return Err(PoolError::NotCreated(format!("Pool is not created for name: {:?}", pool_name)));
+        Err(err_msg(IndyErrorKind::PoolNotCreated, format!("Pool is not created for name: {:?}", pool_name)))?;
     }
+
+    let mut file = fs::File::create(p)
+        .to_indy(IndyErrorKind::IOError, "Can't create pool ledger cache file")?;
 
     let genesis_vec = _genesis_to_binary(&p_genesis)?;
     _dump_vec_to_file(&genesis_vec, &mut file)
 }
 
-fn _dump_vec_to_file(v: &Vec<Vec<u8>>, file: &mut fs::File) -> Result<(), PoolError> {
-    v.into_iter().map(|vec| {
-        file.write_u64::<LittleEndian>(vec.len() as u64).map_err(map_err_trace!())?;
-        file.write_all(vec).map_err(map_err_trace!())
-    }).fold(Ok(()), |acc, next| {
-        match (acc, next) {
-            (Err(e), _) => Err(e),
-            (_, Err(e)) => Err(PoolError::CommonError(CommonError::IOError(e))),
-            _ => Ok(()),
-        }
-    })
+fn _dump_vec_to_file(v: &Vec<Vec<u8>>, file: &mut fs::File) -> IndyResult<()> {
+    for ref line in v {
+        file.write_u64::<LittleEndian>(line.len() as u64)
+            .to_indy(IndyErrorKind::IOError, "Can't write to pool ledger cache file")?;
+
+        file.write_all(line)
+            .to_indy(IndyErrorKind::IOError, "Can't write to pool ledger cache file")?;
+    }
+
+    Ok(())
 }
 
-fn _genesis_to_binary(p: &PathBuf) -> Result<Vec<Vec<u8>>, PoolError> {
-    let f = fs::File::open(p).map_err(map_err_trace!())?;
+fn _genesis_to_binary(p: &PathBuf) -> IndyResult<Vec<Vec<u8>>> {
+    let f = fs::File::open(p)
+        .to_indy(IndyErrorKind::IOError, "Can't open genesis txn file")?;
+
     let reader = io::BufReader::new(&f);
-    reader
-        .lines()
-        .into_iter()
-        .map(|res| {
-            let line = res.map_err(map_err_trace!())?;
-            _parse_txn_from_json(line.trim().as_bytes()).map_err(PoolError::from).map_err(map_err_err!())
-        })
-        .fold(Ok(Vec::new()), |acc, next| {
-            match (acc, next) {
-                (Err(e), _) | (_, Err(e)) => Err(e),
-                (Ok(mut acc), Ok(res)) => {
-                    let mut vec = vec![];
-                    vec.append(&mut acc);
-                    vec.push(res);
-                    Ok(vec)
-                }
-            }
-        })
+    let mut txns: Vec<Vec<u8>> = vec![];
+
+    for line in reader.lines() {
+        let line = line
+            .to_indy(IndyErrorKind::IOError, "Can't read from genesis txn file")?;
+
+        txns.push(_parse_txn_from_json(&line)?);
+    }
+
+    Ok(txns)
 }
 
-fn _parse_txn_from_json(txn: &[u8]) -> Result<Vec<u8>, CommonError> {
-    let txn_str = from_utf8(txn).map_err(|_| CommonError::InvalidStructure(format!("Can't parse valid UTF-8 string from this array: {:?}", txn)))?;
+fn _parse_txn_from_json(txn: &str) -> IndyResult<Vec<u8>> {
+    let txn = txn.trim();
 
-    if txn_str.trim().is_empty() {
+    if txn.is_empty() {
         return Ok(vec![]);
     }
 
-    let genesis_txn: SJsonValue = serde_json::from_str(txn_str.trim())
-        .map_err(|err| CommonError::InvalidStructure(format!("Can't deserialize Genesis Transaction file: {:?}", err)))?;
-    rmp_serde::encode::to_vec_named(&genesis_txn)
-        .map_err(|err| CommonError::InvalidStructure(format!("Can't deserialize Genesis Transaction file: {:?}", err)))
+    let txn: SJsonValue = serde_json::from_str(txn)
+        .to_indy(IndyErrorKind::InvalidStructure, "Genesis txn is mailformed json")?;
+
+    rmp_serde::encode::to_vec_named(&txn)
+        .to_indy(IndyErrorKind::InvalidState, "Can't encode genesis txn as message pack")
 }
 
-pub fn build_node_state(merkle_tree: &MerkleTree) -> Result<HashMap<String, NodeTransactionV1>, PoolError> {
+pub fn build_node_state(merkle_tree: &MerkleTree) -> IndyResult<HashMap<String, NodeTransactionV1>> {
     let mut gen_tnxs: HashMap<String, NodeTransactionV1> = HashMap::new();
 
     for gen_txn in merkle_tree {
-        let gen_txn: NodeTransaction =
-            rmp_serde::decode::from_slice(gen_txn.as_slice())
-                .map_err(|e|
-                    CommonError::InvalidState(format!("MerkleTree contains invalid data {:?}", e)))?;
+        let gen_txn: NodeTransaction = rmp_serde::decode::from_slice(gen_txn.as_slice())
+            .to_indy(IndyErrorKind::InvalidState, "MerkleTree contains invalid item")?;
 
         let protocol_version = ProtocolVersion::get();
 
         let mut gen_txn = match gen_txn {
             NodeTransaction::NodeTransactionV0(txn) => {
                 if protocol_version != 1 {
-                    return Err(PoolError::PoolIncompatibleProtocolVersion(
-                        format!("Libindy PROTOCOL_VERSION is {} but Pool Genesis Transactions are of version {}.\
-                             Call indy_set_protocol_version(1) to set correct PROTOCOL_VERSION", protocol_version, NodeTransactionV0::VERSION)));
+                    Err(err_msg(IndyErrorKind::PoolIncompatibleProtocolVersion,
+                                format!("Libindy PROTOCOL_VERSION is {} but Pool Genesis Transactions are of version {}.\
+                                         Call indy_set_protocol_version(1) to set correct PROTOCOL_VERSION",
+                                        protocol_version, NodeTransactionV0::VERSION)))?;
                 }
                 NodeTransactionV1::from(txn)
             }
             NodeTransaction::NodeTransactionV1(txn) => {
                 if protocol_version != 2 {
-                    return Err(PoolError::PoolIncompatibleProtocolVersion(
-                        format!("Libindy PROTOCOL_VERSION is {} but Pool Genesis Transactions are of version {}.\
-                             Call indy_set_protocol_version(2) to set correct PROTOCOL_VERSION", protocol_version, NodeTransactionV1::VERSION)));
+                    return Err(err_msg(IndyErrorKind::PoolIncompatibleProtocolVersion,
+                                       format!("Libindy PROTOCOL_VERSION is {} but Pool Genesis Transactions are of version {}.\
+                                                Call indy_set_protocol_version(2) to set correct PROTOCOL_VERSION",
+                                               protocol_version, NodeTransactionV1::VERSION)));
                 }
                 txn
             }
@@ -212,18 +223,21 @@ pub fn build_node_state(merkle_tree: &MerkleTree) -> Result<HashMap<String, Node
     Ok(gen_tnxs)
 }
 
-pub fn from_file(txn_file: &str) -> Result<MerkleTree, PoolError> {
+pub fn from_file(txn_file: &str) -> IndyResult<MerkleTree> {
     _from_genesis(&PathBuf::from(txn_file))
 }
 
 
 #[cfg(test)]
 mod tests {
-    use byteorder::LittleEndian;
-    use domain::ledger::request::ProtocolVersion;
     use std::fs;
-    use super::*;
+
+    use byteorder::LittleEndian;
+
+    use domain::ledger::request::ProtocolVersion;
     use utils::test;
+
+    use super::*;
 
     fn _set_protocol_version(version: usize) {
         ProtocolVersion::set(version);
@@ -258,7 +272,7 @@ mod tests {
 
         let merkle_tree = super::create("test").unwrap();
         let res = super::build_node_state(&merkle_tree);
-        assert_match!(Err(PoolError::PoolIncompatibleProtocolVersion(_)), res);
+        assert_kind!(IndyErrorKind::PoolIncompatibleProtocolVersion, res);
     }
 
     #[test]
@@ -297,7 +311,7 @@ mod tests {
     #[test]
     fn pool_worker_restore_merkle_tree_works_from_genesis_txns() {
         test::cleanup_storage();
-        
+
         let node_txns = test::gen_txns();
         let txns_src = format!("{}\n{}",
                                node_txns[0].replace(environment::test_pool_ip().as_str(), "10.0.0.2"),
@@ -376,6 +390,6 @@ mod tests {
 
         let merkle_tree = super::create("test").unwrap();
         let res = super::build_node_state(&merkle_tree);
-        assert_match!(Err(PoolError::PoolIncompatibleProtocolVersion(_)), res);
+        assert_kind!(IndyErrorKind::PoolIncompatibleProtocolVersion, res);
     }
 }

@@ -2,6 +2,7 @@
 
 extern crate base64;
 extern crate byteorder;
+extern crate failure;
 
 #[macro_use]
 extern crate log;
@@ -31,6 +32,7 @@ extern crate time;
 extern crate libc;
 extern crate rand;
 extern crate rusqlite;
+extern crate uuid;
 
 #[macro_use]
 extern crate derivative;

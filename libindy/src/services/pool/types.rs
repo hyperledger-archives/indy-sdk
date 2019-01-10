@@ -4,12 +4,12 @@ extern crate serde;
 extern crate serde_json;
 extern crate time;
 
-use errors::common::CommonError;
 use std::cmp::Eq;
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
-use utils::crypto::verkey_builder::build_full_verkey;
 
+use errors::prelude::*;
+use utils::crypto::verkey_builder::build_full_verkey;
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub struct NodeData {
@@ -31,6 +31,7 @@ fn string_or_number<'de, D>(deserializer: D) -> Result<Option<u64>, D::Error>
     where D: serde::Deserializer<'de>
 {
     let deser_res: Result<serde_json::Value, _> = serde::Deserialize::deserialize(deserializer);
+
     match deser_res {
         Ok(serde_json::Value::String(s)) => match s.parse::<u64>() {
             Ok(num) => Ok(Some(num)),
@@ -162,34 +163,42 @@ impl From<NodeTransactionV0> for NodeTransactionV1 {
 }
 
 impl NodeTransactionV1 {
-    pub fn update(&mut self, other: &mut NodeTransactionV1) -> Result<(), CommonError> {
+    pub fn update(&mut self, other: &mut NodeTransactionV1) -> IndyResult<()> {
         assert_eq!(self.txn.data.dest, other.txn.data.dest);
         assert_eq!(self.txn.data.data.alias, other.txn.data.data.alias);
 
         if let Some(ref mut client_ip) = other.txn.data.data.client_ip {
             self.txn.data.data.client_ip = Some(client_ip.to_owned());
         }
+
         if let Some(ref mut client_port) = other.txn.data.data.client_port {
             self.txn.data.data.client_port = Some(client_port.to_owned());
         }
+
         if let Some(ref mut node_ip) = other.txn.data.data.node_ip {
             self.txn.data.data.node_ip = Some(node_ip.to_owned());
         }
+
         if let Some(ref mut node_port) = other.txn.data.data.node_port {
             self.txn.data.data.node_port = Some(node_port.to_owned());
         }
+
         if let Some(ref mut blskey) = other.txn.data.data.blskey {
             self.txn.data.data.blskey = Some(blskey.to_owned());
         }
+
         if let Some(ref mut blskey_pop) = other.txn.data.data.blskey_pop {
             self.txn.data.data.blskey_pop = Some(blskey_pop.to_owned());
         }
+
         if let Some(ref mut services) = other.txn.data.data.services {
             self.txn.data.data.services = Some(services.to_owned());
         }
+
         if other.txn.data.verkey.is_some() {
             self.txn.data.verkey = Some(build_full_verkey(&self.txn.data.dest, other.txn.data.verkey.as_ref().map(String::as_str))?);
         }
+
         Ok(())
     }
 }
@@ -236,17 +245,20 @@ pub struct CatchupRep {
 }
 
 impl CatchupRep {
-    pub fn min_tx(&self) -> Result<usize, CommonError> {
+    pub fn min_tx(&self) -> IndyResult<usize> {
         let mut min = None;
+
         for (k, _) in self.txns.iter() {
             let val = k.parse::<usize>()
-                .map_err(|err| CommonError::InvalidStructure(format!("{:?}", err)))?;
+                .to_indy(IndyErrorKind::InvalidStructure, "Invalid key in catchup reply")?;
+
             match min {
                 None => min = Some(val),
                 Some(m) => if val < m { min = Some(val) }
             }
         }
-        min.ok_or(CommonError::InvalidStructure("Empty Map".to_string()))
+
+        min.ok_or(err_msg(IndyErrorKind::InvalidStructure, "Empty map"))
     }
 }
 
@@ -373,11 +385,12 @@ pub enum Message {
 }
 
 impl Message {
-    pub fn from_raw_str(str: &str) -> Result<Message, CommonError> {
+    pub fn from_raw_str(str: &str) -> IndyResult<Message> {
         match str {
             "po" => Ok(Message::Pong),
             "pi" => Ok(Message::Ping),
-            _ => serde_json::from_str::<Message>(str).map_err(|err| CommonError::InvalidStructure(format!("Invalid message: {}", err))),
+            _ => serde_json::from_str::<Message>(str)
+                .to_indy(IndyErrorKind::InvalidStructure, "Malformed message json"),
         }
     }
 }
@@ -446,12 +459,13 @@ pub struct RemoteNode {
 }
 
 pub trait MinValue {
-    fn get_min_index(&self) -> Result<usize, CommonError>;
+    fn get_min_index(&self) -> IndyResult<usize>;
 }
 
 impl MinValue for Vec<(CatchupRep, usize)> {
-    fn get_min_index(&self) -> Result<usize, CommonError> {
+    fn get_min_index(&self) -> IndyResult<usize> {
         let mut res = None;
+
         for (index, &(ref catchup_rep, _)) in self.iter().enumerate() {
             match res {
                 None => { res = Some((catchup_rep, index)); }
@@ -460,7 +474,8 @@ impl MinValue for Vec<(CatchupRep, usize)> {
                 }
             }
         }
-        Ok(res.ok_or(CommonError::InvalidStructure("Element not Found".to_string()))?.1)
+
+        Ok(res.ok_or(err_msg(IndyErrorKind::InvalidStructure, "Element not Found"))?.1)
     }
 }
 

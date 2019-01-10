@@ -2,8 +2,7 @@ extern crate libc;
 extern crate serde_json;
 
 use api::{ErrorCode, IndyHandle};
-use errors::common::CommonError;
-use errors::ToErrorCode;
+use errors::prelude::*;
 use commands::{Command, CommandExecutor};
 use commands::anoncreds::AnoncredsCommand;
 use commands::anoncreds::issuer::IssuerCommand;
