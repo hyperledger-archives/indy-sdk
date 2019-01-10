@@ -43,7 +43,7 @@ git clone https://github.com/hyperledger/indy-sdk.git
 ### Binary deps
 
 - https://www.npcglib.org/~stathis/downloads/openssl-1.0.2k-vs2017.7z
-- https://download.libsodium.org/libsodium/releases/libsodium-1.0.14-msvc.zip
+- https://download.libsodium.org/libsodium/releases/old/libsodium-1.0.14-msvc.zip
 
 ### Source deps
 
