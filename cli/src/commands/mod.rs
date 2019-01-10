@@ -240,6 +240,7 @@ pub fn set_connected_pool(ctx: &CommandContext, value: Option<(i32, String)>) {
     ctx.set_sub_prompt(1, value.map(|value| format!("pool({})", value.1)));
 }
 
+#[cfg(test)]
 pub fn submit_retry<F, T, E>(ctx: &CommandContext, request: &str, parser: F) -> Result<(), ()>
     where F: Fn(&str) -> Result<T, E> {
     const SUBMIT_RETRY_CNT: usize = 3;
