@@ -1,7 +1,7 @@
 extern crate sodiumoxide;
 
 use self::sodiumoxide::crypto::aead::chacha20poly1305_ietf;
-use errors::common::CommonError::InvalidStructure;
+use errors::{IndyError, IndyErrorKind}::InvalidStructure;
 use errors::crypto::CryptoError;
 
 pub const KEYBYTES: usize = chacha20poly1305_ietf::KEYBYTES;

@@ -1,7 +1,6 @@
 extern crate libc;
 
 use api::{ErrorCode, IndyHandle};
-use errors::ToErrorCode;
 use commands::{Command, CommandExecutor};
 use commands::pairwise::PairwiseCommand;
 use utils::ctypes;

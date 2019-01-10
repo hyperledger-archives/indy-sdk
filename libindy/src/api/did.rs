@@ -5,8 +5,7 @@ use commands::{Command, CommandExecutor};
 use commands::did::DidCommand;
 use domain::crypto::did::{MyDidInfo, TheirDidInfo};
 use domain::crypto::key::KeyInfo;
-use errors::common::CommonError;
-use errors::ToErrorCode;
+use errors::prelude::*;
 use utils::ctypes;
 
 use serde_json;

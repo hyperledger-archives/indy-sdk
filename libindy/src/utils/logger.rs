@@ -17,7 +17,7 @@ use self::libc::{c_void, c_char};
 use std::ffi::CString;
 use std::ptr;
 
-use errors::common::CommonError;
+use errors::prelude::*;
 use utils::ctypes;
 
 pub static mut LOGGER_STATE: LoggerState = LoggerState::Default;
@@ -115,7 +115,7 @@ unsafe impl Sync for LibindyLogger {}
 unsafe impl Send for LibindyLogger {}
 
 impl LibindyLogger {
-    pub fn init(context: *const c_void, enabled: Option<EnabledCB>, log: LogCB, flush: Option<FlushCB>) -> Result<(), CommonError> {
+    pub fn init(context: *const c_void, enabled: Option<EnabledCB>, log: LogCB, flush: Option<FlushCB>) -> Result<(), IndyError> {
         let logger = LibindyLogger::new(context, enabled, log, flush);
 
         log::set_boxed_logger(Box::new(logger))?;
@@ -136,7 +136,7 @@ impl LibindyLogger {
 pub struct LibindyDefaultLogger;
 
 impl LibindyDefaultLogger {
-    pub fn init(pattern: Option<String>) -> Result<(), CommonError> {
+    pub fn init(pattern: Option<String>) -> Result<(), IndyError> {
         let pattern = pattern.or(env::var("RUST_LOG").ok());
 
         log_panics::init(); //Logging of panics is essential for android. As android does not log to stdout for native code
