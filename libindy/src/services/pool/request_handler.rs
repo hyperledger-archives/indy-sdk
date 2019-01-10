@@ -920,7 +920,6 @@ pub mod tests {
 
     mod consensus_state {
         use super::*;
-        use utils::logger::{LibindyDefaultLogger};
 
         #[test]
         fn request_handler_process_reply_event_from_consensus_state_works_for_consensus_reached() {
@@ -933,14 +932,21 @@ pub mod tests {
         #[test]
         fn request_handler_process_reply_event_from_consensus_state_works_for_consensus_reached_with_mixed_msgs() {
 
-            LibindyDefaultLogger::init(None);
-
+            // the test will use 4 nodes, each node replying with a response to the "custom consensus request" message
+            // some nodes accept, some reject and some nack.  the end result is consensus should not be reached
             let mut request_handler = _request_handler(1, 4);
 
             request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), SIMPLE_REPLY.to_string(), NODE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Reject(Response::default(), "{}".to_string(), NODE_2.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::ReqNACK(Response::default(), "{}".to_string(), NODE_3.to_string(), REQ_ID.to_string())));
+
+            // test state is already Finished because already have 2 nodes not in consensus
+            {
+                let request_handler_ref = request_handler.request_wrapper.as_ref().unwrap();
+                assert_match!(RequestState::Finish(_), request_handler_ref.state);
+            }
+
 
             request_handler.process_event(Some(RequestEvent::Reject(Response::default(), "{}".to_string(), NODE_4.to_string(), REQ_ID.to_string())));
 
