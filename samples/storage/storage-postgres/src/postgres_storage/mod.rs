@@ -15,7 +15,7 @@ use self::owning_ref::OwningHandle;
 use std::rc::Rc;
 
 use errors::wallet::WalletStorageError;
-use errors::common::CommonError;
+use errors::prelude::*;
 use wallet_storage::language;
 
 use wallet_storage::storage::{StorageIterator, WalletStorage, StorageRecord, EncryptedValue, Tag, TagName};

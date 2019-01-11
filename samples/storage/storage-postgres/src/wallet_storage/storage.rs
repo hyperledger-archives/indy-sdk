@@ -2,7 +2,7 @@
 use errors::wallet::WalletStorageError;
 use wallet_storage::language;
 
-use errors::common::CommonError;
+use errors::prelude::*;
 use utils::crypto::chacha20poly1305_ietf;
 
 
