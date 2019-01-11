@@ -23,7 +23,7 @@
  @param issuerDID DID of schema issuer
  @param name a name the schema
  @param version a version of the schema
- @param attrs a list of schema attributes descriptions
+ @param attrs a list of schema attributes descriptions (the number of attributes should be less or equal than 125)
  @param completion Callback that takes command result as parameter.
  Returns:
     schemaId: identifier of created schema
