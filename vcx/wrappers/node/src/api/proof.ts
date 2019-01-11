@@ -10,6 +10,7 @@ export interface IProofCreateData {
   sourceId: string,
   attrs: IProofAttr[],
   name: string,
+  revocationInterval: IRevocationInterval
 }
 
 export interface IProofConstructorData {
@@ -83,6 +84,11 @@ export interface IProofPredicate {
   restrictions?: IFilter[],
 }
 
+export interface IRevocationInterval {
+  from?: number,
+  to?: number
+}
+
 /**
  * Class representing a Proof
  */
@@ -97,7 +103,8 @@ export class Proof extends VCXBaseWithState<IProofData> {
    *     { name: 'attr1' },
    *     { name: 'attr2' }],
    *   name: 'Proof',
-   *   sourceId: 'testProofSourceId'
+   *   sourceId: 'testProofSourceId',
+   *   revocationInterval: {from: 1, to: 2}
    * }
    * proof1 = await Proof.create(data)
    * ```
@@ -111,6 +118,7 @@ export class Proof extends VCXBaseWithState<IProofData> {
         proof.sourceId,
         JSON.stringify(createDataRest.attrs),
         JSON.stringify([]),
+        JSON.stringify(createDataRest.revocationInterval),
         createDataRest.name,
         cb
       ))

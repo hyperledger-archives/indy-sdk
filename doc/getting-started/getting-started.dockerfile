@@ -20,13 +20,13 @@ RUN pip3 install -U \
 	pip \
 	setuptools \
 	jupyter \
-	python3-indy==1.6.2-dev-720
+	python3-indy==1.6.8-dev-906
 
 RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 68DB5E88 \
     && add-apt-repository "deb https://repo.sovrin.org/sdk/deb xenial master" \
     && apt-get update \
     && apt-get install -y \
-    libindy=1.6.2~720
+    libindy=1.6.8~906
 
 USER indy
 

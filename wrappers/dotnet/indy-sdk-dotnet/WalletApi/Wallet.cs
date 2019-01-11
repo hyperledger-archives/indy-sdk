@@ -363,15 +363,15 @@ namespace Hyperledger.Indy.WalletApi
         }
 
         /// <summary>
-        /// Whether or not the close function has been called.
+        /// Status indicating whether or not the wallet is open.
         /// </summary>
-        private bool _requiresClose = false;
+        public bool IsOpen { get; private set; }
 
         /// <summary>
         /// Gets the SDK handle for the Wallet instance.
         /// </summary>
         internal int Handle { get; }
-
+        
         /// <summary>
         /// Initializes a new Wallet instance with the specified handle.
         /// </summary>
@@ -379,7 +379,7 @@ namespace Hyperledger.Indy.WalletApi
         private Wallet(int handle)
         {
             Handle = handle;
-            _requiresClose = true;
+            IsOpen = true;
         }
 
         /// <summary>
@@ -388,7 +388,7 @@ namespace Hyperledger.Indy.WalletApi
         /// <returns>An asynchronous <see cref="Task"/> with no return value that completes when the operation completes.</returns>
         public Task CloseAsync()
         {
-            _requiresClose = false;
+            IsOpen = false;
 
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
@@ -410,7 +410,7 @@ namespace Hyperledger.Indy.WalletApi
         /// </summary>
         public async void Dispose()
         {
-            if (_requiresClose)
+            if (IsOpen)
                 await CloseAsync();
         }
 
@@ -419,7 +419,7 @@ namespace Hyperledger.Indy.WalletApi
         /// </summary>
         ~Wallet()
         {
-            if (_requiresClose)
+            if (IsOpen)
             {
                 NativeMethods.indy_close_wallet(
                    -1,

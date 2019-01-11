@@ -1,7 +1,7 @@
 use std::fmt;
 use error::ToErrorCode;
 use utils::error::{INVALID_JSON, INVALID_PROOF_HANDLE, INVALID_PROOF, INVALID_PROOF_CREDENTIAL_DATA, INVALID_SCHEMA,
-NOT_READY, INVALID_CONNECTION_HANDLE, CONNECTION_ERROR, FAILED_PROOF_COMPLIANCE, CREATE_PROOF_ERROR };
+NOT_READY, INVALID_CONNECTION_HANDLE, CONNECTION_ERROR, FAILED_PROOF_COMPLIANCE, CREATE_PROOF_ERROR, INVALID_REVOCATION_TIMESTAMP, INVALID_REVOCATION_DETAILS};
 
 
 #[derive(Debug)]
@@ -10,14 +10,15 @@ pub enum ProofError{
     InvalidProof(),
     InvalidCredData(),
     InvalidSchema(),
+    InvalidRevocationInfo(),
     ProofNotReadyError(),
     ProofMessageError(u32),
     ProofConnectionError(),
-    // TODO: this could take a parameter
     CreateProofError(),
     InvalidConnection(),
     FailedProofCompliance(),
     InvalidJson(),
+    InvalidTimestamp(),
     CommonError(u32),
 }
 
@@ -35,6 +36,8 @@ impl fmt::Display for ProofError {
             ProofError::CreateProofError() => write!(f, "{}", CREATE_PROOF_ERROR.message),
             ProofError::ProofMessageError(x) => write!(f, "Proof Error: Message Error value: , {}", x),
             ProofError::InvalidJson() => write!(f, "{}", INVALID_JSON.message),
+            ProofError::InvalidTimestamp() => write!(f, "{}", INVALID_REVOCATION_TIMESTAMP.message),
+            ProofError::InvalidRevocationInfo() => write!(f, "{}",INVALID_REVOCATION_DETAILS.message),
             ProofError::CommonError(x) => write!(f, "This Proof Error Common Error had value: {}", x),
         }
     }
@@ -53,12 +56,14 @@ impl ToErrorCode for ProofError {
             ProofError::InvalidProof() => INVALID_PROOF.code_num,
             ProofError::InvalidSchema() => INVALID_SCHEMA.code_num,
             ProofError::InvalidCredData() => INVALID_PROOF_CREDENTIAL_DATA.code_num,
+            ProofError::InvalidRevocationInfo() => INVALID_REVOCATION_DETAILS.code_num,
             ProofError::InvalidConnection() => CONNECTION_ERROR.code_num,
             ProofError::CreateProofError() => CREATE_PROOF_ERROR.code_num,
             ProofError::ProofNotReadyError() => NOT_READY.code_num,
             ProofError::ProofConnectionError() => INVALID_CONNECTION_HANDLE.code_num,
             ProofError::FailedProofCompliance() => FAILED_PROOF_COMPLIANCE.code_num,
             ProofError::InvalidJson() => INVALID_JSON.code_num,
+            ProofError::InvalidTimestamp() => INVALID_REVOCATION_TIMESTAMP.code_num,
             ProofError::ProofMessageError(x) => x,
             ProofError::CommonError(x) => x,
         }

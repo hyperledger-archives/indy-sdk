@@ -1,0 +1,80 @@
+@startuml
+
+actor "Issuer" as I
+actor "Prover" as P
+actor "Verifier" as V
+
+participant "Ledger" as L
+participant "Tails" as T
+
+note over I, V
+- Open pool handles
+- Create wallets
+- Create DIDs
+end note
+
+== Standard init of schema, credential definition and share of this data ==
+
+I -> I : Creates credential schema
+I -> L : Posts credential schema to ledger
+L -> I : Gets credential schema from ledger
+I -> I : Creates credential definition
+I -> L : Posts credential definition
+I -> T : Open tails writer
+I -> I : Creates revocation registry
+I -> L : Posts revocation registry definition to ledger
+I -> L : Posts revocation registry entry to ledger
+
+note over I, V
+Issuer share public data (schema ID, credential definition, ...)
+end note
+
+P -> L : Gets schema from ledger
+V -> L : Gets schema from ledger
+
+== Credential request and issue ==
+
+I -> I : Creates credential offer
+I --> P : Transfers credential offer to prover
+L -> P : Gets credential definition from ledger
+P -> P : Creates master secret
+P -> P : Creates credential request
+P --> I : Transfers credential request
+I -> T : Opens tails reader
+I -> I : Creates credential
+I -> L : Posts revocation registry delta to ledger
+I -> P : Transfers credential
+L -> P : Gets revocation regisgtry definition from ledger
+P -> P : Stores credential
+
+== Proof ==
+
+V -> V : Creates proof request
+V --> P : Transfers proof request
+P -> P : Gets credentials for proof request
+P -> T : Opens tails reader
+L -> P : Gets recovation registry delta
+P -> P :Creates revocation state
+P -> P : Creates proof
+P --> V : Transfers proof
+L -> V : Gets credential definition from ledger
+L -> V : Gets revocation registry definition
+L -> V : Gets revocation registry value
+V -> V : Verifies proof (true)
+
+== Revocation ==
+
+I -> I : Revocates credential
+I -> L : Posts revocation registry delta to ledger
+
+== Proof verification after revocation ==
+
+L -> V : Gets revocation registry value
+V -> V : Verifies proof (false)
+
+== Proof verification at timestamp before revocation ==
+
+L -> V : Gets revocation registry value with timestamp of proof reception
+V -> V : Verifies proof (true)
+
+@enduml

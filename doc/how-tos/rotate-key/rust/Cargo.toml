@@ -2,7 +2,7 @@
 name = "rotate-key"
 version = "0.1.0"
 authors = ["matt raffel <matt.raffel@evernym.com>"]
-description = "Demonstrates using Rust wrapper for LibIndy through creating and retrieving DIDs"
+description = "Demonstrates using Rust wrapper for LibIndy through changing the verkey that the ledger associates with a DID"
 
 [[bin]]
 name = "rotate-key"

@@ -22,7 +22,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
                  "          }";
 
             var credentialsSearch = await AnonCreds.ProverSearchCredentialsForProofRequestAsync(wallet, proofRequest);
-            var credentialsForAttribute1 = await credentialsSearch.NextAsync(100, "attr1_referent");
+            var credentialsForAttribute1 = await credentialsSearch.NextAsync("attr1_referent", 100);
             var jsonArray = JArray.Parse(credentialsForAttribute1);
 
             Assert.AreEqual(2, jsonArray.Count);
@@ -44,7 +44,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
                  "          }";
 
             var credentialsSearch = await AnonCreds.ProverSearchCredentialsForProofRequestAsync(wallet, proofRequest);
-            var credentialsForAttribute1 = await credentialsSearch.NextAsync(100, "attr1_referent");
+            var credentialsForAttribute1 = await credentialsSearch.NextAsync("attr1_referent", 100);
             var jsonArray = JArray.Parse(credentialsForAttribute1);
 
             Assert.AreEqual(0, jsonArray.Count);
@@ -68,7 +68,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
             var extraQuery = "{\"attr1_referent\": { \"attr::name::value\": \"Alex\"}}";
 
             var credentialsSearch = await AnonCreds.ProverSearchCredentialsForProofRequestAsync(wallet, proofRequest, extraQuery);
-            var credentialsForAttribute1 = await credentialsSearch.NextAsync(100, "attr1_referent");
+            var credentialsForAttribute1 = await credentialsSearch.NextAsync("attr1_referent", 100);
             var jsonArray = JArray.Parse(credentialsForAttribute1);
 
             Assert.AreEqual(1, jsonArray.Count);
