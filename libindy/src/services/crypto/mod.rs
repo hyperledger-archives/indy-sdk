@@ -344,10 +344,16 @@ impl CryptoService {
         };
 
         //TODO check about removing msg_pack dependency
-        let msg_pack = combo_box.to_msg_pack()
-            .map_err(|e| CommonError::InvalidState(format!("Can't serialize ComboBox: {:?}", e)))?;
-
-        let res = self.crypto_box_seal(&their_vk, &msg_pack)?;
+        let combo_box_str = serde_json::to_string(&combo_box)
+            .map_err(|err|
+                CryptoError::CommonError(
+                    CommonError::InvalidStructure(
+                        format!("Failed to encode combo_box {}", err)
+                    )
+                )
+            )?;
+        let combo_box_encoded = base64::encode(combo_box_str.as_bytes());
+        let res = self.crypto_box_seal(&their_vk, combo_box_encoded.as_bytes())?;
 
         Ok(res)
     }
@@ -355,8 +361,25 @@ impl CryptoService {
     pub fn authenticated_decrypt(&self, my_key: &Key, doc: &[u8]) -> Result<(String, Vec<u8>), CryptoError> {
         let decrypted_msg = self.crypto_box_seal_open(&my_key, &doc)?;
 
-        let parsed_msg = ComboBox::from_msg_pack(decrypted_msg.as_slice())
-            .map_err(|err| CommonError::InvalidStructure(format!("Can't deserialize ComboBox: {:?}", err)))?;
+        let combo_box_encoded_str = String::from_utf8(decrypted_msg)
+            .map_err(|err|
+                CryptoError::CommonError(
+                    CommonError::InvalidStructure(
+                        format!("failed to decode combo_box to utf-8 {}", err)
+                    )
+                )
+            )?;
+        let combo_box_decoded = base64::decode(&combo_box_encoded_str)
+            .map_err(|err| CryptoError::CommonError(err))?;
+
+        let parsed_msg : ComboBox = serde_json::from_slice(combo_box_decoded.as_slice())
+            .map_err(|err|
+                CryptoError::CommonError(
+                    CommonError::InvalidStructure(
+                        format!("Failed to serialize combo_box {}", err)
+                    )
+                )
+            )?;
 
         let doc: Vec<u8> = base64::decode(&parsed_msg.msg)
             .map_err(|err| CommonError::InvalidStructure(format!("Can't decode internal msg filed from base64 {}", err)))?;
