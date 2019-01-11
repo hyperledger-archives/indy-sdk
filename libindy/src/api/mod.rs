@@ -11,6 +11,7 @@ pub mod payments;
 pub mod logger;
 
 use libc::c_char;
+use std::ptr;
 
 use domain::IndyConfig;
 use errors::prelude::*;
@@ -256,6 +257,32 @@ pub extern fn indy_set_runtime_config(config: *const c_char) -> ErrorCode {
     let res = ErrorCode::Success;
 
     trace!("indy_set_runtime_config: <<< res: {:?}", res);
+
+    res
+}
+
+/// Get details for last occurred error
+///
+/// #Params
+/// * `error_json_p` - Reference that will contain error details (if any error has occurred before)
+///  in the format:
+/// {
+///     "backtrace": str - error backtrace
+///     "massage": str - human-readable message
+/// }
+///
+#[no_mangle]
+pub extern fn indy_get_last_error(command_handle: IndyHandle,
+                                  error_json_p: *mut *const c_char) -> ErrorCode {
+    trace!("indy_get_last_error >>> command_handle: {:?}, error_json_p: {:?}", command_handle, error_json_p);
+
+    LAST_ERROR.with(|err| unsafe {
+        *error_json_p = err.borrow().as_ref().map(|err| err.as_ptr()).unwrap_or(ptr::null());
+    });
+
+    let res = ErrorCode::Success;
+
+    trace!("indy_get_last_error: <<< res: {:?}", res);
 
     res
 }

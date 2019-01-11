@@ -36,12 +36,12 @@ use self::libc::c_char;
 /// Wallet*
 /// Crypto*
 #[no_mangle]
-pub  extern fn indy_create_key(command_handle: IndyHandle,
-                               wallet_handle: IndyHandle,
-                               key_json: *const c_char,
-                               cb: Option<extern fn(command_handle_: IndyHandle,
-                                                    err: ErrorCode,
-                                                    verkey: *const c_char)>) -> ErrorCode {
+pub extern fn indy_create_key(command_handle: IndyHandle,
+                              wallet_handle: IndyHandle,
+                              key_json: *const c_char,
+                              cb: Option<extern fn(command_handle_: IndyHandle,
+                                                   err: ErrorCode,
+                                                   verkey: *const c_char)>) -> ErrorCode {
     trace!("indy_create_key: >>> wallet_handle: {:?}, key_json: {:?}", wallet_handle, key_json);
 
     check_useful_json!(key_json, ErrorCode::CommonInvalidParam3, KeyInfo);
@@ -54,14 +54,14 @@ pub  extern fn indy_create_key(command_handle: IndyHandle,
             wallet_handle,
             key_json,
             Box::new(move |result| {
-                let (err, verkey) = result_to_err_code_1!(result, String::new());
+                let (err, verkey) = prepare_result_1!(result, String::new());
                 trace!("indy_create_key: verkey: {:?}", verkey);
                 let verkey = ctypes::string_to_cstring(verkey);
                 cb(command_handle, err, verkey.as_ptr())
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_create_key: <<< res: {:?}", res);
 
@@ -108,13 +108,13 @@ pub  extern fn indy_set_key_metadata(command_handle: IndyHandle,
             verkey,
             metadata,
             Box::new(move |result| {
-                let err = result_to_err_code!(result);
+                let err = prepare_result!(result);
                 trace!("indy_set_key_metadata: ");
                 cb(command_handle, err)
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_set_key_metadata: <<< res: {:?}", res);
 
@@ -159,14 +159,14 @@ pub  extern fn indy_get_key_metadata(command_handle: IndyHandle,
             wallet_handle,
             verkey,
             Box::new(move |result| {
-                let (err, metadata) = result_to_err_code_1!(result, String::new());
+                let (err, metadata) = prepare_result_1!(result, String::new());
                 trace!("indy_get_key_metadata: metadata: {:?}", metadata);
                 let metadata = ctypes::string_to_cstring(metadata);
                 cb(command_handle, err, metadata.as_ptr())
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_get_key_metadata: <<< res: {:?}", res);
 
@@ -219,14 +219,14 @@ pub  extern fn indy_crypto_sign(command_handle: IndyHandle,
             signer_vk,
             message_raw,
             Box::new(move |result| {
-                let (err, signature) = result_to_err_code_1!(result, Vec::new());
+                let (err, signature) = prepare_result_1!(result, Vec::new());
                 trace!("indy_crypto_sign: signature: {:?}", signature);
                 let (signature_raw, signature_len) = ctypes::vec_to_pointer(&signature);
                 cb(command_handle, err, signature_raw, signature_len)
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_crypto_sign: <<< res: {:?}", res);
 
@@ -282,13 +282,13 @@ pub  extern fn indy_crypto_verify(command_handle: IndyHandle,
             message_raw,
             signature_raw,
             Box::new(move |result| {
-                let (err, valid) = result_to_err_code_1!(result, false);
+                let (err, valid) = prepare_result_1!(result, false);
                 trace!("indy_crypto_verify: valid: {:?}", valid);
                 cb(command_handle, err, valid)
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_crypto_verify: <<< res: {:?}", res);
 
@@ -352,14 +352,14 @@ pub  extern fn indy_crypto_auth_crypt(command_handle: IndyHandle,
             recipient_vk,
             msg_data,
             Box::new(move |result| {
-                let (err, encrypted_msg) = result_to_err_code_1!(result, Vec::new());
+                let (err, encrypted_msg) = prepare_result_1!(result, Vec::new());
                 trace!("indy_crypto_auth_crypt: encrypted_msg: {:?}", encrypted_msg);
                 let (encrypted_msg_raw, encrypted_msg_len) = ctypes::vec_to_pointer(&encrypted_msg);
                 cb(command_handle, err, encrypted_msg_raw, encrypted_msg_len)
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_crypto_auth_crypt: <<< res: {:?}", res);
 
@@ -419,7 +419,7 @@ pub  extern fn indy_crypto_auth_decrypt(command_handle: IndyHandle,
             recipient_vk,
             encrypted_msg,
             Box::new(move |result| {
-                let (err, sender_vk, msg) = result_to_err_code_2!(result, String::new(), Vec::new());
+                let (err, sender_vk, msg) = prepare_result_2!(result, String::new(), Vec::new());
                 trace!("indy_crypto_auth_decrypt: sender_vk: {:?}, msg: {:?}", sender_vk, msg);
                 let (msg_data, msg_len) = ctypes::vec_to_pointer(&msg);
                 let sender_vk = ctypes::string_to_cstring(sender_vk);
@@ -427,7 +427,7 @@ pub  extern fn indy_crypto_auth_decrypt(command_handle: IndyHandle,
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_crypto_auth_decrypt: <<< res: {:?}", res);
 
@@ -480,14 +480,14 @@ pub  extern fn indy_crypto_anon_crypt(command_handle: IndyHandle,
             recipient_vk,
             msg_data,
             Box::new(move |result| {
-                let (err, encrypted_msg) = result_to_err_code_1!(result, Vec::new());
+                let (err, encrypted_msg) = prepare_result_1!(result, Vec::new());
                 trace!("indy_crypto_anon_crypt: encrypted_msg: {:?}", encrypted_msg);
                 let (encrypted_msg_raw, encrypted_msg_len) = ctypes::vec_to_pointer(&encrypted_msg);
                 cb(command_handle, err, encrypted_msg_raw, encrypted_msg_len)
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_crypto_anon_crypt: <<< res: {:?}", res);
 
@@ -544,14 +544,14 @@ pub  extern fn indy_crypto_anon_decrypt(command_handle: IndyHandle,
             recipient_vk,
             encrypted_msg,
             Box::new(move |result| {
-                let (err, msg) = result_to_err_code_1!(result, Vec::new());
+                let (err, msg) = prepare_result_1!(result, Vec::new());
                 trace!("indy_crypto_anon_decrypt: msg: {:?}", msg);
                 let (msg_data, msg_len) = ctypes::vec_to_pointer(&msg);
                 cb(command_handle, err, msg_data, msg_len)
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_crypto_anon_decrypt: <<< res: {:?}", res);
 

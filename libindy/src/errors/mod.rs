@@ -2,15 +2,18 @@ use std::cell;
 use std::fmt;
 use std::io;
 use std::sync::Arc;
+use std::ffi::CString;
+use std::cell::RefCell;
 
 use failure::{Backtrace, Context, Fail};
 use indy_crypto::errors::IndyCryptoError;
 use log;
 
 use api::ErrorCode;
+use utils::ctypes;
 
 pub mod prelude {
-    pub use super::{err_msg, IndyError, IndyErrorExt, IndyErrorKind, IndyResult, IndyResultExt};
+    pub use super::{err_msg, IndyError, IndyErrorExt, IndyErrorKind, IndyResult, IndyResultExt, LAST_ERROR, set_last_error};
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
@@ -20,6 +23,8 @@ pub enum IndyErrorKind {
     InvalidState,
     #[fail(display = "Invalid structure")]
     InvalidStructure,
+    #[fail(display = "Invalid parameter {}", 0)]
+    InvalidParam(u32),
     #[fail(display = "IO error")]
     IOError,
     // Anoncreds errors
@@ -233,6 +238,37 @@ impl From<IndyErrorKind> for ErrorCode {
         match code {
             IndyErrorKind::InvalidState => ErrorCode::CommonInvalidState,
             IndyErrorKind::InvalidStructure => ErrorCode::CommonInvalidStructure,
+            IndyErrorKind::InvalidParam(num) =>
+                match num {
+                    1 => ErrorCode::CommonInvalidParam1,
+                    2 => ErrorCode::CommonInvalidParam2,
+                    3 => ErrorCode::CommonInvalidParam3,
+                    4 => ErrorCode::CommonInvalidParam4,
+                    5 => ErrorCode::CommonInvalidParam5,
+                    6 => ErrorCode::CommonInvalidParam6,
+                    7 => ErrorCode::CommonInvalidParam7,
+                    8 => ErrorCode::CommonInvalidParam8,
+                    9 => ErrorCode::CommonInvalidParam9,
+                    10 => ErrorCode::CommonInvalidParam10,
+                    11 => ErrorCode::CommonInvalidParam11,
+                    12 => ErrorCode::CommonInvalidParam12,
+                    13 => ErrorCode::CommonInvalidParam13,
+                    14 => ErrorCode::CommonInvalidParam14,
+                    15 => ErrorCode::CommonInvalidParam15,
+                    16 => ErrorCode::CommonInvalidParam16,
+                    17 => ErrorCode::CommonInvalidParam17,
+                    18 => ErrorCode::CommonInvalidParam18,
+                    19 => ErrorCode::CommonInvalidParam19,
+                    20 => ErrorCode::CommonInvalidParam20,
+                    21 => ErrorCode::CommonInvalidParam21,
+                    22 => ErrorCode::CommonInvalidParam22,
+                    23 => ErrorCode::CommonInvalidParam23,
+                    24 => ErrorCode::CommonInvalidParam24,
+                    25 => ErrorCode::CommonInvalidParam25,
+                    26 => ErrorCode::CommonInvalidParam26,
+                    27 => ErrorCode::CommonInvalidParam27,
+                    _ => ErrorCode::CommonInvalidState
+                },
             IndyErrorKind::IOError => ErrorCode::CommonIOError,
             IndyErrorKind::MasterSecretDuplicateName => ErrorCode::AnoncredsMasterSecretDuplicateNameError,
             IndyErrorKind::ProofRejected => ErrorCode::AnoncredsProofRejected,
@@ -286,9 +322,42 @@ impl From<ErrorCode> for IndyResult<()> {
 
 impl From<ErrorCode> for IndyError {
     fn from(err: ErrorCode) -> IndyError {
-        let kind = match err {
+        err_msg(err.into(), format!("Plugin returned error"))
+    }
+}
+
+impl From<ErrorCode> for IndyErrorKind {
+    fn from(err: ErrorCode) -> IndyErrorKind {
+        match err {
             ErrorCode::CommonInvalidState => IndyErrorKind::InvalidState,
             ErrorCode::CommonInvalidStructure => IndyErrorKind::InvalidStructure,
+            ErrorCode::CommonInvalidParam1 => IndyErrorKind::InvalidParam(1),
+            ErrorCode::CommonInvalidParam2 => IndyErrorKind::InvalidParam(2),
+            ErrorCode::CommonInvalidParam3 => IndyErrorKind::InvalidParam(3),
+            ErrorCode::CommonInvalidParam4 => IndyErrorKind::InvalidParam(4),
+            ErrorCode::CommonInvalidParam5 => IndyErrorKind::InvalidParam(5),
+            ErrorCode::CommonInvalidParam6 => IndyErrorKind::InvalidParam(6),
+            ErrorCode::CommonInvalidParam7 => IndyErrorKind::InvalidParam(7),
+            ErrorCode::CommonInvalidParam8 => IndyErrorKind::InvalidParam(8),
+            ErrorCode::CommonInvalidParam9 => IndyErrorKind::InvalidParam(9),
+            ErrorCode::CommonInvalidParam10 => IndyErrorKind::InvalidParam(10),
+            ErrorCode::CommonInvalidParam11 => IndyErrorKind::InvalidParam(11),
+            ErrorCode::CommonInvalidParam12 => IndyErrorKind::InvalidParam(12),
+            ErrorCode::CommonInvalidParam13 => IndyErrorKind::InvalidParam(13),
+            ErrorCode::CommonInvalidParam14 => IndyErrorKind::InvalidParam(14),
+            ErrorCode::CommonInvalidParam15 => IndyErrorKind::InvalidParam(15),
+            ErrorCode::CommonInvalidParam16 => IndyErrorKind::InvalidParam(16),
+            ErrorCode::CommonInvalidParam17 => IndyErrorKind::InvalidParam(17),
+            ErrorCode::CommonInvalidParam18 => IndyErrorKind::InvalidParam(18),
+            ErrorCode::CommonInvalidParam19 => IndyErrorKind::InvalidParam(19),
+            ErrorCode::CommonInvalidParam20 => IndyErrorKind::InvalidParam(20),
+            ErrorCode::CommonInvalidParam21 => IndyErrorKind::InvalidParam(21),
+            ErrorCode::CommonInvalidParam22 => IndyErrorKind::InvalidParam(22),
+            ErrorCode::CommonInvalidParam23 => IndyErrorKind::InvalidParam(23),
+            ErrorCode::CommonInvalidParam24 => IndyErrorKind::InvalidParam(24),
+            ErrorCode::CommonInvalidParam25 => IndyErrorKind::InvalidParam(25),
+            ErrorCode::CommonInvalidParam26 => IndyErrorKind::InvalidParam(26),
+            ErrorCode::CommonInvalidParam27 => IndyErrorKind::InvalidParam(27),
             ErrorCode::CommonIOError => IndyErrorKind::IOError,
             ErrorCode::AnoncredsMasterSecretDuplicateNameError => IndyErrorKind::MasterSecretDuplicateName,
             ErrorCode::AnoncredsProofRejected => IndyErrorKind::ProofRejected,
@@ -326,13 +395,10 @@ impl From<ErrorCode> for IndyError {
             ErrorCode::PaymentSourceDoesNotExistError => IndyErrorKind::PaymentSourceDoesNotExist,
             ErrorCode::PaymentOperationNotSupportedError => IndyErrorKind::PaymentOperationNotSupported,
             ErrorCode::PaymentExtraFundsError => IndyErrorKind::PaymentExtraFunds,
-            code => return err_msg(IndyErrorKind::InvalidState, format!("Trying to interpret unsupported error code as error: {:?}", code))
-        };
-
-        err_msg(kind, format!("Plugin returned error"))
+            _code => IndyErrorKind::InvalidState
+        }
     }
 }
-
 
 pub type IndyResult<T> = Result<T, IndyError>;
 
@@ -358,5 +424,19 @@ impl<E> IndyErrorExt for E where E: Fail
     fn to_indy<D>(self, kind: IndyErrorKind, msg: D) -> IndyError where D: fmt::Display + Send + Sync + 'static {
         self.context(msg).context(kind).into()
     }
+}
+
+thread_local! {
+    pub static LAST_ERROR: RefCell<Option<CString>> = RefCell::new(None);
+}
+
+pub fn set_last_error(err: &IndyError) {
+    LAST_ERROR.with(|error| {
+        let error_json = json!({
+            "massage": err.to_string(),
+            "backtrace": err.backtrace().map(|bt| bt.to_string())
+        }).to_string();
+        error.replace(Some(ctypes::string_to_cstring(error_json)));
+    });
 }
 
