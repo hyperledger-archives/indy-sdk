@@ -681,10 +681,9 @@ pub mod tests {
         fn req_for_nym(response: &str) -> Option<String> {
             let parsed = serde_json::from_str::<serde_json::Value>(&response).ok()?;
             let parsed = parsed.as_object()?;
-            let data = parsed.get("result")?;
-            let data = data.as_object()?.get("data")?.as_str()?;
-            let data = serde_json::from_str::<serde_json::Value>(data).ok()?;
-            let verkey = data.get("verkey")?.as_str()?.clone();
+            let data = parsed["result"]["data"].as_str()?;
+            let data = serde_json::from_str::<serde_json::Value>(&data).ok()?;
+            let verkey = data["verkey"].as_str()?;
             Some(verkey.to_string())
         }
 
