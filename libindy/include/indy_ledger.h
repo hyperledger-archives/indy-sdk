@@ -313,7 +313,7 @@ extern "C" {
     /// data: Credential schema.
     /// {
     ///     id: identifier of schema
-    ///     attrNames: array of attribute name strings
+    ///     attrNames: array of attribute name strings (the number of attributes should be less or equal than 125)
     ///     name: Schema's name string
     ///     version: Schema's version string,
     ///     ver: Version of the Schema json
@@ -910,6 +910,50 @@ extern "C" {
                                                                                      const char*   revoc_reg_delta_json,
                                                                                      unsigned long long      timestamp)
                                                                );
+
+
+    /// Parse transaction response to fetch metadata.
+    /// The important use case for this method is validation of Node's response freshens.
+    ///
+    /// Distributed Ledgers can reply with outdated information for consequence read request after write.
+    /// To reduce pool load libindy sends read requests to one random node in the pool.
+    /// Consensus validation is performed based on validation of nodes multi signature for current ledger Merkle Trie root.
+    /// This multi signature contains information about the latest ldeger's transaction ordering time and sequence number that this method returns.
+    ///
+    /// If node that returned response for some reason is out of consensus and has outdated ledger
+    /// it can be caught by analysis of the returned latest ledger's transaction ordering time and sequence number.
+    ///
+    /// There are two ways to filter outdated responses:
+    ///     1) based on "seqNo" - sender knows the sequence number of transaction that he consider as a fresh enough.
+    ///     2) based on "txnTime" - sender knows the timestamp that he consider as a fresh enough.
+    ///
+    /// Note: response of GET_VALIDATOR_INFO request isn't supported
+    ///
+    ///
+    /// #Params
+    /// command_handle: command handle to map callback to caller context.
+    /// response: response of write or get request.
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// response metadata.
+    /// {
+    ///     "seqNo": Option<u64> - transaction sequence number,
+    ///     "txnTime": Option<u64> - transaction ordering time,
+    ///     "lastSeqNo": Option<u64> - the latest transaction seqNo for particular Node,
+    ///     "lastTxnTime": Option<u64> - the latest transaction ordering time for particular Node
+    /// }
+    ///
+    /// #Errors
+    /// Common*
+    /// Ledger*
+    extern indy_error_t indy_get_response_metadata(indy_handle_t command_handle,
+                                                   const char *  response,
+
+                                                   void           (*cb)(indy_handle_t command_handle_,
+                                                                        indy_error_t  err,
+                                                                        const char*   response_metadata)
+                                                  );
 
 #ifdef __cplusplus
 }

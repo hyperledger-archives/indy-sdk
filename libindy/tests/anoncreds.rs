@@ -34,7 +34,7 @@ use indy::ErrorCode;
 use utils::inmem_wallet::InmemWallet;
 use utils::constants::*;
 
-use utils::domain::anoncreds::schema::Schema;
+use utils::domain::anoncreds::schema::{Schema, AttributeNames, MAX_ATTRIBUTES_COUNT};
 use utils::domain::anoncreds::credential_definition::CredentialDefinition;
 use utils::domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinition;
 use utils::domain::anoncreds::credential::CredentialInfo;
@@ -3144,6 +3144,17 @@ mod medium_cases {
                                                       GVT_SCHEMA_NAME,
                                                       SCHEMA_VERSION,
                                                       GVT_SCHEMA_ATTRIBUTES);
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+        }
+
+        #[test]
+        fn issuer_create_schema_works_for_attrs_count_more_than_acceptable() {
+            let attr_names: AttributeNames = (0..MAX_ATTRIBUTES_COUNT + 1).map(|i| i.to_string()).collect();
+
+            let res = anoncreds::issuer_create_schema(ISSUER_DID,
+                                                      GVT_SCHEMA_NAME,
+                                                      SCHEMA_VERSION,
+                                                      &serde_json::to_string(&attr_names).unwrap());
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
         }
     }

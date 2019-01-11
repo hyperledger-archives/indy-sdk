@@ -1,6 +1,6 @@
 from ctypes import *
-from vcx.common import do_call, create_cb, error_message
-from vcx.error import VcxError, ErrorCode
+from vcx.common import do_call, create_cb
+from vcx.error import VcxError, ErrorCode, error_message
 from vcx.api.vcx_base import VcxBase
 
 import json
@@ -13,7 +13,7 @@ class Schema(VcxBase):
     Attributes:
         source_id: user generated unique identifier
         schema_id: the ledger ID of the schema
-        attrs: attribute/value pairs
+        attrs: attribute/value pairs (the number of attributes should be less or equal than 125)
         version: version of the schema
     """
 

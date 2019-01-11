@@ -4,23 +4,24 @@ macro_rules! init {
     ::utils::threadpool::init();
     ::settings::clear_config();
     ::settings::set_config_value(::settings::CONFIG_WALLET_KEY,::settings::DEFAULT_WALLET_KEY);
+    ::settings::set_config_value(::settings::CONFIG_WALLET_KEY_DERIVATION,::settings::DEFAULT_WALLET_KEY_DERIVATION);
     ::utils::libindy::wallet::tests::delete_test_wallet(::settings::DEFAULT_WALLET_NAME);
 
     match $x {
         "true" => {
             ::settings::set_defaults();
             ::settings::set_config_value(::settings::CONFIG_ENABLE_TEST_MODE,"true");
-            ::utils::libindy::wallet::init_wallet(::settings::DEFAULT_WALLET_NAME).unwrap();
+            ::utils::libindy::wallet::init_wallet(::settings::DEFAULT_WALLET_NAME, None).unwrap();
         },
         "false" => {
             ::settings::set_defaults();
             ::settings::set_config_value(::settings::CONFIG_ENABLE_TEST_MODE,"false");
-            ::utils::libindy::wallet::init_wallet(::settings::DEFAULT_WALLET_NAME).unwrap();
+            ::utils::libindy::wallet::init_wallet(::settings::DEFAULT_WALLET_NAME, None).unwrap();
         },
         "indy" => {
             ::settings::set_defaults();
             ::settings::set_config_value(::settings::CONFIG_ENABLE_TEST_MODE,"indy");
-            ::utils::libindy::wallet::init_wallet(::settings::DEFAULT_WALLET_NAME).unwrap();
+            ::utils::libindy::wallet::init_wallet(::settings::DEFAULT_WALLET_NAME, None).unwrap();
         },
         "ledger" => {
             ::settings::set_config_value(::settings::CONFIG_ENABLE_TEST_MODE,"false");
@@ -56,6 +57,7 @@ macro_rules! teardown {
 
 #[cfg(test)]
 pub mod tests {
+    extern crate rand;
     extern crate serde_json;
     extern crate libloading;
     extern crate libc;
@@ -80,11 +82,11 @@ pub mod tests {
 
     /* dev */
     /*
-    pub const AGENCY_ENDPOINT: &'static str = "https://enym-eagency.pdev.evernym.com";
+    pub const AGENCY_ENDPOINT: &'static str = "http://int-eas.pdev.evernym.com";
     pub const AGENCY_DID: &'static str = "YRuVCckY6vfZfX9kcQZe3u";
     pub const AGENCY_VERKEY: &'static str = "J8Yct6FwmarXjrE2khZesUXRVVSVczSoa9sFaGe6AD2v";
 
-    pub const C_AGENCY_ENDPOINT: &'static str = "https://cagency.pdev.evernym.com";
+    pub const C_AGENCY_ENDPOINT: &'static str = "http://int-agency.pdev.evernym.com";
     pub const C_AGENCY_DID: &'static str = "dTLdJqRZLwMuWSogcKfBT";
     pub const C_AGENCY_VERKEY: &'static str = "LsPQTDHi294TexkFmZK9Q9vW4YGtQRuLV8wuyZi94yH";
     */
@@ -108,8 +110,15 @@ pub mod tests {
     pub const C_AGENCY_VERKEY: &'static str = "Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR";
 
     pub fn set_trustee_did() {
-        let (my_did, _) = ::utils::libindy::signus::create_and_store_my_did(Some(TRUSTEE)).unwrap();
-        let did = settings::set_config_value(settings::CONFIG_INSTITUTION_DID, &my_did);
+        let (my_did, my_vk) = ::utils::libindy::signus::create_and_store_my_did(Some(TRUSTEE)).unwrap();
+        settings::set_config_value(settings::CONFIG_INSTITUTION_DID, &my_did);
+        settings::set_config_value(settings::CONFIG_INSTITUTION_VERKEY, &my_vk);
+    }
+
+    pub fn create_new_seed() -> String {
+
+        let x = rand::random::<u32>();
+        format!("{:032}", x)
     }
 
     pub fn init_plugin(library: &str, initializer: &str) {
@@ -142,8 +151,15 @@ pub mod tests {
         });
     }
 
+    #[cfg(all(unix, test))]
     fn _load_lib(library: &str) -> libloading::Result<libloading::Library> {
-        libloading::os::unix::Library::open(Some(library), libc::RTLD_NOW | libc::RTLD_NODELETE).map(libloading::Library::from)
+        libloading::os::unix::Library::open(Some(library), libc::RTLD_NOW | libc::RTLD_NODELETE)
+            .map(libloading::Library::from)
+    }
+
+    #[cfg(any(not(unix), not(test)))]
+    fn _load_lib(library: &str) -> libloading::Result<libloading::Library> {
+        libloading::Library::new(library)
     }
 
     pub fn setup_ledger_env() {
@@ -156,13 +172,14 @@ pub mod tests {
 
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_WALLET_KEY,settings::DEFAULT_WALLET_KEY);
+        settings::set_config_value(settings::CONFIG_WALLET_KEY_DERIVATION,settings::DEFAULT_WALLET_KEY_DERIVATION);
         settings::set_config_value(settings::CONFIG_WALLET_NAME, settings::DEFAULT_WALLET_NAME);
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
         settings::set_config_value(settings::CONFIG_GENESIS_PATH, settings::DEFAULT_GENESIS_PATH);
 
         pool::tests::open_sandbox_pool();
 
-        wallet::init_wallet(settings::DEFAULT_WALLET_NAME).unwrap();
+        wallet::init_wallet(settings::DEFAULT_WALLET_NAME, None).unwrap();
 
         ::utils::libindy::anoncreds::libindy_prover_create_master_secret(settings::DEFAULT_LINK_SECRET_ALIAS).unwrap();
         set_trustee_did();
@@ -204,17 +221,24 @@ pub mod tests {
     }
 
     pub fn setup_local_env() {
+        use indy::ledger;
+        use futures::Future;
+
         settings::clear_config();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
         settings::set_config_value(settings::CONFIG_WALLET_KEY, settings::DEFAULT_WALLET_KEY);
+        settings::set_config_value(settings::CONFIG_WALLET_KEY_DERIVATION, settings::DEFAULT_WALLET_KEY_DERIVATION);
         let enterprise_wallet_name = format!("{}_{}", constants::ENTERPRISE_PREFIX, settings::DEFAULT_WALLET_NAME);
+        let seed1 = create_new_seed();
         let config = json!({
             "agency_url": AGENCY_ENDPOINT.to_string(),
             "agency_did": AGENCY_DID.to_string(),
             "agency_verkey": AGENCY_VERKEY.to_string(),
             "wallet_name": enterprise_wallet_name,
             "wallet_key": settings::DEFAULT_WALLET_KEY.to_string(),
-            "enterprise_seed": TRUSTEE.to_string(),
+            "wallet_key_derivation": settings::DEFAULT_WALLET_KEY_DERIVATION,
+            "enterprise_seed": seed1,
+            "agent_seed": seed1,
             "name": "institution".to_string(),
             "logo": "http://www.logo.com".to_string(),
             "path": constants::GENESIS_PATH.to_string(),
@@ -224,13 +248,16 @@ pub mod tests {
         ::api::vcx::vcx_shutdown(false);
 
         let consumer_wallet_name = format!("{}_{}", constants::CONSUMER_PREFIX, settings::DEFAULT_WALLET_NAME);
+        let seed2 = create_new_seed();
         let config = json!({
             "agency_url": C_AGENCY_ENDPOINT.to_string(),
             "agency_did": C_AGENCY_DID.to_string(),
             "agency_verkey": C_AGENCY_VERKEY.to_string(),
             "wallet_name": consumer_wallet_name,
             "wallet_key": settings::DEFAULT_WALLET_KEY.to_string(),
-            "enterprise_seed": TRUSTEE.to_string(),
+            "wallet_key_derivation": settings::DEFAULT_WALLET_KEY_DERIVATION.to_string(),
+            "enterprise_seed": seed2,
+            "agent_seed": seed2,
             "name": "consumer".to_string(),
             "logo": "http://www.logo.com".to_string(),
             "path": constants::GENESIS_PATH.to_string(),
@@ -245,6 +272,25 @@ pub mod tests {
         }
         pool::tests::open_sandbox_pool();
 
+        // grab the generated did and vk from the consumer and enterprise
+        set_consumer();
+        let did2 = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
+        let vk2 = settings::get_config_value(settings::CONFIG_INSTITUTION_VERKEY).unwrap();
+        set_institution();
+        let did1 = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
+        let vk1 = settings::get_config_value(settings::CONFIG_INSTITUTION_VERKEY).unwrap();
+        settings::clear_config();
+
+        // make enterprise and consumer trustees on the ledger
+        wallet::init_wallet(settings::DEFAULT_WALLET_NAME, None).unwrap();
+        let (trustee_did, _) = ::utils::libindy::signus::create_and_store_my_did(Some(TRUSTEE)).unwrap();
+        let req_nym = ledger::build_nym_request(&trustee_did, &did1, Some(&vk1), None, Some("TRUSTEE")).wait().unwrap();
+        ::utils::libindy::ledger::libindy_sign_and_submit_request(&trustee_did, &req_nym).unwrap();
+        let req_nym = ledger::build_nym_request(&trustee_did, &did2, Some(&vk2), None, Some("TRUSTEE")).wait().unwrap();
+        ::utils::libindy::ledger::libindy_sign_and_submit_request(&trustee_did, &req_nym).unwrap();
+        wallet::delete_wallet(settings::DEFAULT_WALLET_NAME, None).unwrap();
+
+        // as trustees, mint tokens into each wallet
         set_consumer();
         ::utils::libindy::payments::tests::token_setup(None, None);
 
@@ -253,7 +299,7 @@ pub mod tests {
     }
 
     fn _config_with_wallet_handle(wallet_n: &str, config: &str) -> String {
-        let wallet_handle = wallet::open_wallet(wallet_n).unwrap();
+        let wallet_handle = wallet::open_wallet(wallet_n, None).unwrap();
         let mut config: serde_json::Value = serde_json::from_str(config).unwrap();
         config[settings::CONFIG_WALLET_HANDLE] = json!(wallet_handle.to_string());
         config.to_string()
@@ -263,19 +309,19 @@ pub mod tests {
     #[test]
     fn test_local_env() {
         init!("ledger");
-        ::utils::libindy::anoncreds::tests::create_and_store_credential(::utils::constants::DEFAULT_SCHEMA_ATTRS);
+        ::utils::libindy::anoncreds::tests::create_and_store_credential(::utils::constants::DEFAULT_SCHEMA_ATTRS, false);
     }
 
     pub fn setup_wallet_env(test_name: &str) -> Result<i32, String> {
         use utils::libindy::wallet::init_wallet;
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
-        init_wallet(test_name).map_err(|e| format!("Unable to init_wallet in tests: {}", e))
+        init_wallet(test_name, None).map_err(|e| format!("Unable to init_wallet in tests: {}", e))
     }
 
     pub fn cleanup_wallet_env(test_name: &str) -> Result<(), String> {
         use utils::libindy::wallet::delete_wallet;
         println!("Deleting Wallet");
-        delete_wallet(test_name).or(Err(format!("Unable to delete wallet: {}", test_name)))
+        delete_wallet(test_name, None).or(Err(format!("Unable to delete wallet: {}", test_name)))
     }
 
     #[cfg(feature = "agency")]
@@ -318,12 +364,12 @@ pub mod tests {
         //wallet::open_wallet(wallet_name).unwrap();
         set_institution();
 
-        let alice = build_connection("alice").unwrap();
+        let alice = create_connection("alice").unwrap();
         connect(alice, Some("{}".to_string())).unwrap();
         let details = get_invite_details(alice, false).unwrap();
         //BE CONSUMER AND ACCEPT INVITE FROM INSTITUTION
         ::utils::devsetup::tests::set_consumer();
-        let faber = build_connection_with_invite("faber", &details).unwrap();
+        let faber = create_connection_with_invite("faber", &details).unwrap();
         assert_eq!(VcxStateType::VcxStateRequestReceived as u32, get_state(faber));
         connect(faber, Some("{}".to_string())).unwrap();
         //BE INSTITUTION AND CHECK THAT INVITE WAS ACCEPTED

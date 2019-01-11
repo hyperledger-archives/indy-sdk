@@ -20,6 +20,7 @@ Native bindings for [Hyperledger Indy](https://www.hyperledger.org/projects/hype
   * [pool](#pool)
   * [wallet](#wallet)
   * [logger](#logger)
+  * [mod](#mod)
 - [Advanced](#advanced)
 - [Contributing](#contributing)
 
@@ -109,7 +110,7 @@ After that can call issuerCreateAndStoreCredentialDef to build corresponding Cre
 * `issuerDid`: String - DID of schema issuer
 * `name`: String - a name the schema
 * `version`: String - a version of the schema
-* `attrNames`: Json
+* `attrNames`: Json - a list of schema attributes descriptions (the number of attributes should be less or equal than 125)
 * __->__ [ `id`: String, `schema`: Json ] - schema\_id: identifier of created schema
 schema\_json: schema as json
 
@@ -229,7 +230,7 @@ Example:
     }
 ````
 * `revRegId`: String - id of revocation registry stored in the wallet
-* `blobStorageReaderHandle`: Number - configuration of blob storage reader handle that will allow to read revocation tails
+* `blobStorageReaderHandle`: Handle (Number) - configuration of blob storage reader handle that will allow to read revocation tails
 * __->__ [ `cred`: Json, `credRevocId`: String, `revocRegDelta`: Json ] - cred\_json: Credential json containing signed credential values
 ```
     {
@@ -258,7 +259,7 @@ This call returns revoc registry delta as json file intended to be shared as REV
 Note that it is possible to accumulate deltas to reduce ledger load.
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
-* `blobStorageReaderHandle`: Number
+* `blobStorageReaderHandle`: Handle (Number)
 * `revRegId`: String - id of revocation registry stored in wallet
 * `credRevocId`: String - local id for revocation info
 * __->__ `revocRegDelta`: Json - revoc\_reg\_delta\_json: Revocation registry delta json with a revoked credential
@@ -771,7 +772,7 @@ Errors: `Annoncreds*`, `Common*`, `Wallet*`
 
 Create revocation state for a credential in the particular time moment.
 
-* `blobStorageReaderHandle`: Number - configuration of blob storage reader handle that will allow to read revocation tails
+* `blobStorageReaderHandle`: Handle (Number) - configuration of blob storage reader handle that will allow to read revocation tails
 * `revRegDef`: Json - revocation registry definition json
 * `revRegDelta`: Json - revocation registry definition delta json
 * `timestamp`: Timestamp (Number) - time represented as a total number of seconds from Unix Epoch
@@ -792,7 +793,7 @@ Errors: `Common*`, `Wallet*`, `Anoncreds*`
 Create new revocation state for a credential based on existed state
 at the particular time moment \(to reduce calculation time\).
 
-* `blobStorageReaderHandle`: Number - configuration of blob storage reader handle that will allow to read revocation tails
+* `blobStorageReaderHandle`: Handle (Number) - configuration of blob storage reader handle that will allow to read revocation tails
 * `revState`: Json - revocation registry state json
 * `revRegDef`: Json - revocation registry definition json
 * `revRegDelta`: Json - revocation registry definition delta json
@@ -817,7 +818,7 @@ Errors: `Common*`, `Wallet*`, `Anoncreds*`
 
 * `type`: String
 * `config`: Json
-* __->__ `handle`: Number
+* __->__ `handle`: Handle (Number)
 
 
 #### openBlobStorageWriter \( type, config \) -&gt; handle
@@ -826,7 +827,7 @@ Errors: `Common*`, `Wallet*`, `Anoncreds*`
 
 * `type`: String
 * `config`: Json
-* __->__ `handle`: Number
+* __->__ `handle`: Handle (Number)
 
 
 ### crypto
@@ -1145,6 +1146,8 @@ Retrieves the information about the giving DID in the wallet.
 * __->__ `didWithMeta`: Json - did\_with\_meta: {
 "did": string - DID stored in the wallet,
 "verkey": string - The DIDs transport key \(ver key, key id\),
+"tempVerkey": string - Temporary DIDs transport key \(ver key, key id\), exist only during the rotation of the keys.
+After rotation is done, it becomes a new verkey.
 "metadata": string - The meta information stored with the DID
 }
 
@@ -1215,9 +1218,10 @@ The request is sent to the nodes as is. It's assumed that it's already prepared.
 
 * `poolHandle`: Handle (Number) - pool handle \(created by open\_pool\_ledger\).
 * `request`: Json - Request data json.
-* `nodes`: Json - (Optional) List of node names to send the request. 
-["Node1", "Node2",...."NodeN"]
-* `timeout`: Number - (Optional) Time to wait respond from nodes (override the default timeout) (in sec).
+* `nodes`: Json - \(Optional\) List of node names to send the request.
+\["Node1", "Node2",...."NodeN"\]
+* `timeout`: Number - \(Optional\) Time to wait respond from nodes \(override the default timeout\) \(in sec\).
+Pass -1 to use default timeout
 * __->__ `requestResult`: Json
 
 Errors: `Common*`, `Ledger*`
@@ -1324,7 +1328,7 @@ Builds a SCHEMA request. Request to add Credential's schema.
 {
     id: identifier of schema
     attrNames: array of attribute name strings
-    name: Schema's name string
+    name: Schema's name string (the number of attributes should be less or equal than 125)
     version: Schema's version string,
     ver: Version of the Schema json
 }
@@ -1451,7 +1455,7 @@ Builds a GET\_VALIDATOR\_INFO request.
 
 Errors: `Common*`
 
-#### buildGetTxnRequest \( submitterDid, ledgerType, data \) -&gt; request
+#### buildGetTxnRequest \( submitterDid, ledgerType, seqNo \) -&gt; request
 
 Builds a GET\_TXN request. Request to get any transaction by its seq\_no.
 
@@ -1461,7 +1465,7 @@ Builds a GET\_TXN request. Request to get any transaction by its seq\_no.
     * POOL,
     * CONFIG
     * any number
-* `data`: Number
+* `seqNo`: Number - requested transaction sequence number as it's stored on Ledger.
 * __->__ `request`: Json
 
 Errors: `Common*`
@@ -1666,6 +1670,38 @@ Parse a GET\_REVOC\_REG\_DELTA response to get Revocation Registry Delta in the 
 
 Errors: `Common*`
 
+#### getResponseMetadata \( response \) -&gt; responseMetadata
+
+Parse transaction response to fetch metadata.
+The important use case for this method is validation of Node's response freshens.
+
+Distributed Ledgers can reply with outdated information for consequence read request after write.
+To reduce pool load libindy sends read requests to one random node in the pool.
+Consensus validation is performed based on validation of nodes multi signature for current ledger Merkle Trie root.
+This multi signature contains information about the latest ldeger's transaction ordering time and sequence number that this method returns.
+
+If node that returned response for some reason is out of consensus and has outdated ledger
+it can be caught by analysis of the returned latest ledger's transaction ordering time and sequence number.
+
+There are two ways to filter outdated responses:
+1\) based on "seqNo" - sender knows the sequence number of transaction that he consider as a fresh enough.
+2\) based on "txnTime" - sender knows the timestamp that he consider as a fresh enough.
+
+Note: response of GET\_VALIDATOR\_INFO request isn't supported
+
+* `response`: Json - response of write or get request.
+* __->__ `responseMetadata`: Json - response metadata.
+```
+{
+    "seqNo": Option<u64> - transaction sequence number,
+    "txnTime": Option<u64> - transaction ordering time,
+    "lastSeqNo": Option<u64> - the latest transaction seqNo for particular Node,
+    "lastTxnTime": Option<u64> - the latest transaction ordering time for particular Node
+}
+````
+
+Errors: `Common*`, `Ledger*`
+
 ### non_secrets
 
 #### addWalletRecord \( wh, type, id, value, tags \) -&gt; void
@@ -1676,7 +1712,7 @@ Create a new non-secret record in the wallet
 * `type`: String - allows to separate different record types collections
 * `id`: String - the id of record
 * `value`: String - the value of record
-* `tags`: Json - the record tags used for search and storing meta information as json:
+* `tags`: Json - \(optional\) the record tags used for search and storing meta information as json:
 ```
   {
     "tagName1": <str>, // string tag (will be stored encrypted)
@@ -1965,7 +2001,7 @@ Format of inputs is specific for payment method. Usually it should reference pay
 with at least one output that corresponds to payment address that user owns.
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
-* `submitterDid`: String - (Option) DID of request sender
+* `submitterDid`: String - \(Optional\) DID of request sender
 * `req`: Json - initial transaction request as json
 * `inputs`: Json - The list of payment sources as json array:
 \["source1", ...\]
@@ -2006,7 +2042,7 @@ Builds Indy request for getting sources list for payment address
 according to this payment method.
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
-* `submitterDid`: String - (Option) DID of request sender
+* `submitterDid`: String - \(Optional\) DID of request sender
 * `paymentAddress`: String - target payment address
 * __->__ [ `getSourcesTxn`: Json, `paymentMethod`: String ] - get\_sources\_txn\_json - Indy request for getting sources list for payment address
 payment\_method - used payment method
@@ -2040,7 +2076,7 @@ Format of inputs is specific for payment method. Usually it should reference pay
 with at least one output that corresponds to payment address that user owns.
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
-* `submitterDid`: String - (Option) DID of request sender
+* `submitterDid`: String - \(Optional\) DID of request sender
 * `inputs`: Json - The list of payment sources as json array:
 \["source1", ...\]
 Note that each source should reference payment address
@@ -2079,7 +2115,7 @@ Builds Indy request for doing minting
 according to this payment method.
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
-* `submitterDid`: String - (Option) DID of request sender
+* `submitterDid`: String - \(Optional\) DID of request sender
 * `outputs`: Json - The list of outputs as json array:
 ```
   [{
@@ -2097,7 +2133,7 @@ payment\_method - used payment method
 Builds Indy request for setting fees for transactions in the ledger
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
-* `submitterDid`: String - (Option) DID of request sender
+* `submitterDid`: String - \(Optional\) DID of request sender
 * `paymentMethod`: String - payment method to use
 fees\_json {
 txnType1: amount1,
@@ -2114,7 +2150,7 @@ txnTypeN: amountN,
 Builds Indy get request for getting fees for transactions in the ledger
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
-* `submitterDid`: String - (Option) DID of request sender
+* `submitterDid`: String - \(Optional\) DID of request sender
 * `paymentMethod`: String - payment method to use
 * __->__ `getTxnFees`: Json - get\_txn\_fees\_json - Indy request for getting fees for transactions in the ledger
 
@@ -2138,7 +2174,7 @@ txnTypeN: amountN,
 Builds Indy request for information to verify the payment receipt
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
-* `submitterDid`: String - (Option) DID of request sender
+* `submitterDid`: String - \(Optional\) DID of request sender
 * `receipt`: String - payment receipt to verify
 * __->__ [ `verifyTxn`: Json, `paymentMethod`: String ] - verify\_txn\_json: Indy request for verification receipt
 payment\_method: used payment method
@@ -2286,13 +2322,16 @@ Create a new secure wallet.
 * `credentials`: Json - Wallet credentials json
 ```
 {
-  "key": string, Passphrase used to derive wallet master key
+  "key": string, Key or passphrase used for wallet key derivation.
+                 Look to key_derivation_method param for information about supported key derivation methods.
   "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
                          Can be optional if storage supports default configuration.
                          For 'default' storage type should be empty.
-  "key_derivation_method": optional<string> algorithm to use for master key derivation:
-                           ARGON2I_MOD (used by default)
-                           ARGON2I_INT - less secured but faster
+  "key_derivation_method": optional<string> Algorithm to use for wallet key derivation:
+                         ARGON2I_MOD - derive secured wallet master key (used by default)
+                         ARGON2I_INT - derive secured wallet master key (less secured but faster)
+                         RAW - raw wallet key master provided (skip derivation).
+                               RAW keys can be generated with generateWalletKey call
 }
 ````
 * __->__ void
@@ -2326,17 +2365,22 @@ Wallet must be previously created with createWallet method.
 * `credentials`: Json - Wallet credentials json
 ```
   {
-      "key": string, Passphrase used to derive current wallet master key
-      "rekey": optional<string>, If present than wallet master key will be rotated to a new one
-                                 derived from this passphrase.
+      "key": string, Key or passphrase used for wallet key derivation.
+                     Look to key_derivation_method param for information about supported key derivation methods.
+      "rekey": optional<string>, If present than wallet master key will be rotated to a new one.
       "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
                              Can be optional if storage supports default configuration.
-      "key_derivation_method": optional<string> algorithm to use for master key derivation:
-                               ARGON2I_MOD (used by default)
-                               ARGON2I_INT - less secured but faster}
-      "rekey_derivation_method": optional<string> algorithm to use for master rekey derivation:
-                               ARGON2I_MOD (used by default)
-                               ARGON2I_INT - less secured but faster
+                             For 'default' storage type should be empty.
+      "key_derivation_method": optional<string> Algorithm to use for wallet key derivation:
+                         ARGON2I_MOD - derive secured wallet master key (used by default)
+                         ARGON2I_INT - derive secured wallet master key (less secured but faster)
+                         RAW - raw wallet key master provided (skip derivation).
+                               RAW keys can be generated with generateWalletKey call
+      "rekey_derivation_method": optional<string> Algorithm to use for wallet rekey derivation:
+                         ARGON2I_MOD - derive secured wallet master rekey (used by default)
+                         ARGON2I_INT - derive secured wallet master rekey (less secured but faster)
+                         RAW - raw wallet rekey master provided (skip derivation).
+                               RAW keys can be generated with generateWalletKey call
   }
 ````
 * __->__ `handle`: Handle (Number) - err: Error code
@@ -2390,13 +2434,16 @@ This can be seen as an createWallet call with additional content import
 * `credentials`: Json - Wallet credentials json
 ```
 {
-  "key": string, Passphrase used to derive wallet master key
+  "key": string, Key or passphrase used for wallet key derivation.
+                 Look to key_derivation_method param for information about supported key derivation methods.
   "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
                          Can be optional if storage supports default configuration.
                          For 'default' storage type should be empty.
-  "key_derivation_method": optional<string> algorithm to use for master key derivation:
-                           ARGON2I_MOD (used by default)
-                           ARGON2I_INT - less secured but faster
+  "key_derivation_method": optional<string> Algorithm to use for wallet key derivation:
+                            ARGON2I_MOD - derive secured wallet master key (used by default)
+                            ARGON2I_INT - derive secured wallet master key (less secured but faster)
+                            RAW - raw wallet key master provided (skip derivation).
+                               RAW keys can be generated with generateWalletKey call
 }
 ````
 * `importConfig`: Json
@@ -2444,16 +2491,36 @@ Deletes created wallet.
 * `credentials`: Json - Wallet credentials json
 ```
 {
-  "key": string, Passphrase used to derive wallet master key
+  "key": string, Key or passphrase used for wallet key derivation.
+                 Look to key_derivation_method param for information about supported key derivation methods.
   "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
                          Can be optional if storage supports default configuration.
                          For 'default' storage type should be empty.
-  "key_derivation_method": optional<string> algorithm to use for master key derivation:
-                           ARGON2I_MOD (used by default)
-                           ARGON2I_INT - less secured but faster
+  "key_derivation_method": optional<string> Algorithm to use for wallet key derivation:
+                            ARGON2I_MOD - derive secured wallet master key (used by default)
+                            ARGON2I_INT - derive secured wallet master key (less secured but faster)
+                            RAW - raw wallet key master provided (skip derivation).
+                               RAW keys can be generated with generateWalletKey call
 }
 ````
 * __->__ void
+
+Errors: `Common*`, `Wallet*`
+
+#### generateWalletKey \( config \) -&gt; key
+
+Generate wallet master key.
+Returned key is compatible with "RAW" key derivation method.
+It allows to avoid expensive key derivation for use cases when wallet keys can be stored in a secure enclave.
+
+* `config`: Json - \(optional\) key configuration json.
+```
+{
+  "seed": string, (optional) Seed that allows deterministic key creation (if not set random one will be created).
+                             Can be UTF-8, base64 or hex string.
+}
+````
+* __->__ `key`: String - err: Error code
 
 Errors: `Common*`, `Wallet*`
 
@@ -2491,6 +2558,22 @@ Errors: `Common*`
 
 NOTE: This is a synchronous function (does not return a promise) but may call `logFn` asynchronously many times.
 
+### mod
+
+#### setRuntimeConfig \( config \)
+
+Set libindy runtime configuration. Can be optionally called to change current params.
+
+* `config`: Json
+```
+{
+  "crypto_thread_pool_size": <int> - size of thread pool for the most expensive crypto operations. (4 by default)
+}
+```
+
+Errors: `Common*`
+
+NOTE: This is a synchronous function (does not return a promise.)
 
 ## Advanced
 

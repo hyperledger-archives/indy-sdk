@@ -5,7 +5,7 @@ from vcx.api.disclosed_proof import DisclosedProof
 from vcx.api.connection import Connection
 import json
 
-phone_number = '8019119191'
+connection_options = '{"connection_type":"SMS","phone":"8019119191","use_public_did":true}'
 source_id = '1'
 msg_id = '1'
 request = {
@@ -95,7 +95,7 @@ async def test_create_disclosed_proof():
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_create_disclosed_proof_with_msgid():
     connection = await Connection.create(source_id)
-    await connection.connect(phone_number)
+    await connection.connect(connection_options)
 
     disclosed_proof = await DisclosedProof.create_with_msgid(source_id, connection, msg_id)
     assert disclosed_proof.source_id == source_id
@@ -190,7 +190,7 @@ async def test_disclosed_proof_release():
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_send_proof():
     connection = await Connection.create(source_id)
-    await connection.connect(phone_number)
+    await connection.connect(connection_options)
     disclosed_proof = await DisclosedProof.deserialize(proof_with_version)
     await disclosed_proof.send_proof(connection)
     assert await disclosed_proof.get_state() == State.Accepted
@@ -210,6 +210,7 @@ async def test_send_proof_with_bad_connection():
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_get_requests():
     connection = await Connection.create(source_id)
+    await connection.connect(connection_options)
     await DisclosedProof.get_requests(connection)
 
 

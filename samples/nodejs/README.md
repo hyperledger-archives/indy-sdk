@@ -20,7 +20,7 @@ Inside `samples/nodejs/` :
 * `npm install` to install all NodeJS dependencies 
 * `npm run ledger:start` to start the ledger Docker container (needed for some samples). You must have docker installed.
 * `node main.js` to run all scripts
-  * Or `node <filename.js> --run` to run a specific sample
+  * Or `node <filename.js>` to run a specific sample
 * `npm run ledger:stop` to stop and remove the ledger Docker container
  
 ### Troubleshooting

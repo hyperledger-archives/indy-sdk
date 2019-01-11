@@ -22,7 +22,7 @@ Save the doc as `rotate-key.rs`.
 ### Step 2
 
 This how-to builds on the work in
-["Write DID and Query Verkey"](../write-did-and-query-verkey/../not-yet-written.md).
+["Write DID and Query Verkey"](../../write-did-and-query-verkey/rust/README.md).
 Rather than duplicate our explanation of those steps here, we will simply
 copy that code as our starting point.
 

@@ -25,19 +25,19 @@ describe('Connection:', () => {
   describe('connect:', () => {
     it('success: without phone', async () => {
       const connection = await connectionCreate()
-      const inviteDetails = await connection.connect()
+      const inviteDetails = await connection.connect({ data: '{"connection_type":"QR"}' })
       assert.notEqual(inviteDetails, '')
     })
 
     it('success: with phone', async () => {
       const connection = await connectionCreate()
-      const inviteDetails = await connection.connect({ phone: '7202200000' })
+      const inviteDetails = await connection.connect({ data: '{"connection_type":"SMS","phone":"7202200000"}' })
       assert.notEqual(inviteDetails, '')
     })
 
     it('throws: not initialized', async () => {
       const connection = new (Connection as any)()
-      const err = await shouldThrow(async () => connection.connect())
+      const err = await shouldThrow(async () => connection.connect({ data: '{"connection_type":"QR"}' }))
       assert.equal(err.vcxCode, VCXCode.INVALID_CONNECTION_HANDLE)
     })
   })
@@ -74,6 +74,7 @@ describe('Connection:', () => {
 
     it('throws: connection deleted', async () => {
       const connection = await connectionCreate()
+      await connection.connect({ data: '{"connection_type":"QR"}' })
       await connection.delete()
       const error = await shouldThrow(() => connection.serialize())
       assert.equal(error.vcxCode, VCXCode.INVALID_CONNECTION_HANDLE)

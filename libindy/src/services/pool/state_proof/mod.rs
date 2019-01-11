@@ -468,7 +468,7 @@ mod tests {
     extern crate libc;
 
     use self::hex::FromHex;
-    use std::os::raw::c_char;
+    use self::libc::c_char;
 
     #[test]
     fn state_proof_nodes_parse_and_get_works() {

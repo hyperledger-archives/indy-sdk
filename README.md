@@ -32,7 +32,7 @@ rewritten but still contains some useful ideas.
 
 The major artifact of the SDK is a C-callable library that provides the basic building blocks for 
 the creation of applications on the top of [Hyperledger Indy](https://www.hyperledger.org/projects/hyperledger-indy).
-It is available for most popular desktop, mobile and server platfrorms.
+It is available for most popular desktop, mobile and server platforms.
 
 ### Libindy wrappers
 
@@ -327,3 +327,12 @@ to simplify their transition to API of Libindy 1.4.0.
 * We use developer certificate of origin (DCO) in all hyperledger repositories,
   so to get your pull requests accepted, you must certify your commits by signing off on each commit.
   More information can be found in [Signing Commits](doc/signing-commits.md) article.
+
+
+#### Notes
+* Libindy implements multithreading approach based on **mpsc channels**. 
+If your application needs to use Libindy from multiple processes you should keep in mind the following restrictions:
+    * Fork - duplicates only the main thread. So, child threads will not be duplicated.
+      If any out-of-process requirements are possible, the caller must fork first **before any calls to Libindy**
+      (otherwise the command from a child thread will hang). Fork is only available on Unix. 
+    * Popen - spawns a new OS level process which will create its own child threads. Popen is cross-platform.

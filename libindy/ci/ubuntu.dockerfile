@@ -39,7 +39,7 @@ RUN pip3 install -U \
 	deb-pkg-tools
 
 RUN cd /tmp && \
-   curl https://download.libsodium.org/libsodium/releases/libsodium-1.0.14.tar.gz | tar -xz && \
+   curl https://download.libsodium.org/libsodium/releases/old/libsodium-1.0.14.tar.gz | tar -xz && \
     cd /tmp/libsodium-1.0.14 && \
     ./configure --disable-shared && \
     make && \
@@ -55,7 +55,7 @@ RUN apt-get install -y zip
 RUN useradd -ms /bin/bash -u $uid indy
 USER indy
 
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.27.0
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.31.0
 ENV PATH /home/indy/.cargo/bin:$PATH
 
 WORKDIR /home/indy
