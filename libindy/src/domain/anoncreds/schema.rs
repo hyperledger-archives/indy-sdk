@@ -3,6 +3,7 @@ use super::DELIMITER;
 use std::collections::{HashMap, HashSet};
 
 pub const SCHEMA_MARKER: &'static str = "2";
+pub const MAX_ATTRIBUTES_COUNT: usize = 125;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]

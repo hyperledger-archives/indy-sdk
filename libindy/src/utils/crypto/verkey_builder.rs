@@ -1,8 +1,8 @@
-use errors::common::CommonError;
+use errors::prelude::*;
 use utils::crypto::base58;
 
 
-pub fn build_full_verkey(dest: &str, verkey: Option<&str>) -> Result<String, CommonError> {
+pub fn build_full_verkey(dest: &str, verkey: Option<&str>) -> Result<String, IndyError> {
     if let Some(verkey) = verkey {
         let (verkey, crypto_type) = if verkey.contains(':') {
             let splits: Vec<&str> = verkey.split(':').collect();

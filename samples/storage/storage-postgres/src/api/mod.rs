@@ -1,4 +1,4 @@
-//use errors::common::CommonError;
+//use errors::prelude::*;
 //use errors::ToErrorCode;
 
 #[derive(Debug, PartialEq, Copy, Clone)]

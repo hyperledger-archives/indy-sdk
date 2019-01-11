@@ -2,7 +2,7 @@ use std::string;
 
 use serde_json;
 
-use errors::wallet::WalletQueryError;
+use errors::prelude::*;
 use utils::crypto::base64;
 
 #[derive(Debug, PartialEq, Hash, Clone)]
@@ -13,9 +13,9 @@ pub enum TagName {
 
 
 impl TagName {
-    fn from(s: String) -> Result<TagName, WalletQueryError> {
+    fn from(s: String) -> IndyResult<TagName> {
         if s.is_empty() || s.starts_with("~") && s.len() == 1 {
-            return Err(WalletQueryError::StructureErr("Tag name must not be empty".to_string()));
+            return Err(err_msg(IndyErrorKind::WalletQueryError, "Tag name must not be empty"));
         }
 
         if s.starts_with("~") {
@@ -74,7 +74,7 @@ pub enum Operator {
 
 
 impl Operator {
-    pub fn transform(self, f: &Fn(Operator) -> Result<Operator, WalletQueryError>) -> Result<Operator, WalletQueryError> {
+    pub fn transform(self, f: &Fn(Operator) -> IndyResult<Operator>) -> IndyResult<Operator> {
         match self {
             Operator::And(operators) => Ok(Operator::And(Operator::transform_list_operators(operators, f)?)),
             Operator::Or(operators) => Ok(Operator::Or(Operator::transform_list_operators(operators, f)?)),
@@ -83,7 +83,7 @@ impl Operator {
         }
     }
 
-    fn transform_list_operators(operators: Vec<Operator>, f: &Fn(Operator) -> Result<Operator, WalletQueryError>) -> Result<Vec<Operator>, WalletQueryError> {
+    fn transform_list_operators(operators: Vec<Operator>, f: &Fn(Operator) -> IndyResult<Operator>) -> IndyResult<Vec<Operator>> {
         let mut transformed = Vec::new();
 
         for operator in operators {
@@ -157,16 +157,19 @@ impl string::ToString for Operator {
     }
 }
 
-pub fn parse_from_json(json: &str) -> Result<Operator, WalletQueryError> {
-    if let serde_json::Value::Object(map) = serde_json::from_str(json)? {
+pub fn parse_from_json(json: &str) -> IndyResult<Operator> {
+    let query = serde_json::from_str::<serde_json::Value>(json)
+        .to_indy(IndyErrorKind::WalletQueryError, "Query is malformed json")?;
+
+    if let serde_json::Value::Object(map) = query {
         parse(map)
     } else {
-        Err(WalletQueryError::StructureErr("Query must be JSON object".to_string()))
+        Err(err_msg(IndyErrorKind::WalletQueryError, "Query must be JSON object"))
     }
 }
 
 
-fn parse(map: serde_json::Map<String, serde_json::Value>) -> Result<Operator, WalletQueryError> {
+fn parse(map: serde_json::Map<String, serde_json::Value>) -> IndyResult<Operator> {
     let mut operators: Vec<Operator> = Vec::new();
 
     for (key, value) in map.into_iter() {
@@ -179,7 +182,7 @@ fn parse(map: serde_json::Map<String, serde_json::Value>) -> Result<Operator, Wa
 }
 
 
-fn parse_operator(key: String, value: serde_json::Value) -> Result<Operator, WalletQueryError> {
+fn parse_operator(key: String, value: serde_json::Value) -> IndyResult<Operator> {
     match (&*key, value) {
         ("$and", serde_json::Value::Array(values)) => {
             let mut operators: Vec<Operator> = Vec::new();
@@ -189,13 +192,13 @@ fn parse_operator(key: String, value: serde_json::Value) -> Result<Operator, Wal
                     let suboperator = parse(map)?;
                     operators.push(suboperator);
                 } else {
-                    return Err(WalletQueryError::StructureErr("$and must be array of JSON objects".to_string()));
+                    return Err(err_msg(IndyErrorKind::WalletQueryError, "$and must be array of JSON objects"));
                 }
             }
 
             Ok(Operator::And(operators))
         }
-        ("$and", _) => Err(WalletQueryError::StructureErr("$and must be array of JSON objects".to_string())),
+        ("$and", _) => Err(err_msg(IndyErrorKind::WalletQueryError, "$and must be array of JSON objects")),
         ("$or", serde_json::Value::Array(values)) => {
             let mut operators: Vec<Operator> = Vec::new();
 
@@ -204,75 +207,75 @@ fn parse_operator(key: String, value: serde_json::Value) -> Result<Operator, Wal
                     let suboperator = parse(map)?;
                     operators.push(suboperator);
                 } else {
-                    return Err(WalletQueryError::StructureErr("$or must be array of JSON objects".to_string()));
+                    return Err(err_msg(IndyErrorKind::WalletQueryError, "$or must be array of JSON objects"));
                 }
             }
 
             Ok(Operator::Or(operators))
         }
-        ("$or", _) => Err(WalletQueryError::StructureErr("$or must be array of JSON objects".to_string())),
+        ("$or", _) => Err(err_msg(IndyErrorKind::WalletQueryError, "$or must be array of JSON objects")),
         ("$not", serde_json::Value::Object(map)) => {
             let operator = parse(map)?;
             Ok(Operator::Not(Box::new(operator)))
         }
-        ("$not", _) => Err(WalletQueryError::StructureErr("$not must be JSON object".to_string())),
+        ("$not", _) => Err(err_msg(IndyErrorKind::WalletQueryError, "$not must be JSON object")),
         (_, serde_json::Value::String(value)) => Ok(Operator::Eq(TagName::from(key)?, TargetValue::from(value))),
         (_, serde_json::Value::Object(map)) => {
             if map.len() == 1 {
                 let (operator_name, value) = map.into_iter().next().unwrap();
                 parse_single_operator(operator_name, key, value)
             } else {
-                Err(WalletQueryError::StructureErr(format!("{} value must be JSON object of length 1", key)))
+                Err(err_msg(IndyErrorKind::WalletQueryError, format!("{} value must be JSON object of length 1", key)))
             }
         }
-        (_, _) => Err(WalletQueryError::StructureErr(format!("Unsupported value for key: {}", key)))
+        (_, _) => Err(err_msg(IndyErrorKind::WalletQueryError, format!("Unsupported value for key: {}", key)))
     }
 }
 
-fn parse_single_operator(operator_name: String, key: String, value: serde_json::Value) -> Result<Operator, WalletQueryError> {
+fn parse_single_operator(operator_name: String, key: String, value: serde_json::Value) -> IndyResult<Operator> {
     match (&*operator_name, value) {
         ("$neq", serde_json::Value::String(s)) => Ok(Operator::Neq(TagName::from(key)?, TargetValue::from(s))),
-        ("$neq", _) => Err(WalletQueryError::ValueErr("$neq must be used with string".to_string())),
+        ("$neq", _) => Err(err_msg(IndyErrorKind::WalletQueryError, "$neq must be used with string")),
         ("$gt", serde_json::Value::String(s)) => {
             let target_name = TagName::from(key)?;
             match target_name {
                 TagName::PlainTagName(_) => Ok(Operator::Gt(target_name, TargetValue::from(s))),
-                TagName::EncryptedTagName(_) => Err(WalletQueryError::StructureErr("$gt must be used only for nonencrypted tag".to_string()))
+                TagName::EncryptedTagName(_) => Err(err_msg(IndyErrorKind::WalletQueryError, "$gt must be used only for nonencrypted tag"))
             }
         }
-        ("$gt", _) => Err(WalletQueryError::ValueErr("$gt must be used with string".to_string())),
+        ("$gt", _) => Err(err_msg(IndyErrorKind::WalletQueryError, "$gt must be used with string")),
         ("$gte", serde_json::Value::String(s)) => {
             let target_name = TagName::from(key)?;
             match target_name {
                 TagName::PlainTagName(_) => Ok(Operator::Gte(target_name, TargetValue::from(s))),
-                TagName::EncryptedTagName(_) => Err(WalletQueryError::StructureErr("$gte must be used only for nonencrypted tag".to_string()))
+                TagName::EncryptedTagName(_) => Err(err_msg(IndyErrorKind::WalletQueryError, "$gte must be used only for nonencrypted tag"))
             }
         }
-        ("$gte", _) => Err(WalletQueryError::ValueErr("$gte must be used with string".to_string())),
+        ("$gte", _) => Err(err_msg(IndyErrorKind::WalletQueryError, "$gte must be used with string")),
         ("$lt", serde_json::Value::String(s)) => {
             let target_name = TagName::from(key)?;
             match target_name {
                 TagName::PlainTagName(_) => Ok(Operator::Lt(target_name, TargetValue::from(s))),
-                TagName::EncryptedTagName(_) => Err(WalletQueryError::StructureErr("$lt must be used only for nonencrypted tag".to_string()))
+                TagName::EncryptedTagName(_) => Err(err_msg(IndyErrorKind::WalletQueryError, "$lt must be used only for nonencrypted tag"))
             }
         }
-        ("$lt", _) => Err(WalletQueryError::ValueErr("$lt must be used with string".to_string())),
+        ("$lt", _) => Err(err_msg(IndyErrorKind::WalletQueryError, "$lt must be used with string")),
         ("$lte", serde_json::Value::String(s)) => {
             let target_name = TagName::from(key)?;
             match target_name {
                 TagName::PlainTagName(_) => Ok(Operator::Lte(target_name, TargetValue::from(s))),
-                TagName::EncryptedTagName(_) => Err(WalletQueryError::StructureErr("$lte must be used only for nonencrypted tag".to_string()))
+                TagName::EncryptedTagName(_) => Err(err_msg(IndyErrorKind::WalletQueryError, "$lte must be used only for nonencrypted tag"))
             }
         }
-        ("$lte", _) => Err(WalletQueryError::ValueErr("$lte must be used with string".to_string())),
+        ("$lte", _) => Err(err_msg(IndyErrorKind::WalletQueryError, "$lte must be used with string")),
         ("$like", serde_json::Value::String(s)) => {
             let target_name = TagName::from(key)?;
             match target_name {
                 TagName::PlainTagName(_) => Ok(Operator::Like(target_name, TargetValue::from(s))),
-                TagName::EncryptedTagName(_) => Err(WalletQueryError::StructureErr("$like must be used only for nonencrypted tag".to_string()))
+                TagName::EncryptedTagName(_) => Err(err_msg(IndyErrorKind::WalletQueryError, "$like must be used only for nonencrypted tag"))
             }
         }
-        ("$like", _) => Err(WalletQueryError::ValueErr("$like must be used with string".to_string())),
+        ("$like", _) => Err(err_msg(IndyErrorKind::WalletQueryError, "$like must be used with string")),
         ("$in", serde_json::Value::Array(values)) => {
             let mut target_values: Vec<TargetValue> = Vec::new();
 
@@ -280,14 +283,14 @@ fn parse_single_operator(operator_name: String, key: String, value: serde_json::
                 if let serde_json::Value::String(s) = v {
                     target_values.push(TargetValue::from(s));
                 } else {
-                    return Err(WalletQueryError::ValueErr("$in must be used with array of strings".to_string()));
+                    return Err(err_msg(IndyErrorKind::WalletQueryError, "$in must be used with array of strings"));
                 }
             }
 
             Ok(Operator::In(TagName::from(key)?, target_values))
         }
-        ("$in", _) => Err(WalletQueryError::ValueErr("$in must be used with array of strings".to_string())),
-        (_, _) => Err(WalletQueryError::ValueErr(format!("Bad operator: {}", operator_name)))
+        ("$in", _) => Err(err_msg(IndyErrorKind::WalletQueryError, "$in must be used with array of strings")),
+        (_, _) => Err(err_msg(IndyErrorKind::WalletQueryError, format!("Unknown operator: {}", operator_name)))
     }
 }
 
