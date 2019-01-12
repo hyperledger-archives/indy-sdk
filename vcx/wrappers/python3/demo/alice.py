@@ -8,7 +8,7 @@ import logging
 from vcx.api.connection import Connection
 from vcx.api.credential import Credential
 from vcx.api.disclosed_proof import DisclosedProof
-from vcx.api.utils import vcx_agent_provision
+from vcx.api.utils import vcx_agent_provision, vcx_messages_download
 from vcx.api.vcx_init import vcx_init_with_config
 from vcx.state import State
 
@@ -30,6 +30,9 @@ async def main():
     payment_plugin = cdll.LoadLibrary("libnullpay.dylib")
     payment_plugin.nullpay_init()
 
+    handled_offers = []
+    handled_requests = []
+
     print("#7 Provision an agent and wallet, get back configuration details")
     config = await vcx_agent_provision(json.dumps(provisionConfig))
     config = json.loads(config)
@@ -50,15 +53,70 @@ async def main():
     await connection_to_faber.connect('{"use_public_did": true}')
     await connection_to_faber.update_state()
 
-    print("#11 Wait for faber.py to issue a credential offer")
-    sleep(10)
-    offers = await Credential.get_offers(connection_to_faber)
+    print("Serialize connection")
+    connection_data = await connection_to_faber.serialize()
+    connection_to_faber.release()
+    connection_to_faber = None
 
-    # Create a credential object from the credential offer
-    credential = await Credential.create('credential', offers[0])
+    option = input('Poll messages? [Y/n] ')
+    while option != 'N' and option != 'n':
+        print("Deserialize connection")
+        my_connection = await Connection.deserialize(connection_data)
+        sleep(2)
+
+        await handle_messages(my_connection, handled_offers, handled_requests)
+
+        sleep(2)
+        print("Serialize connection")
+        connection_data = await my_connection.serialize()
+        my_connection.release()
+        my_connection = None
+
+        option = input('Poll messages? [Y/n] ')
+
+    print("Done, pause before exiting program")
+    sleep(10)
+
+
+async def handle_messages(my_connection, handled_offers, handled_requests):
+    print("Check for and handle offers")
+    offers = await Credential.get_offers(my_connection)
+
+    for offer in offers:
+        handled = False
+        for handled_offer in handled_offers:
+            if offer[0]['msg_ref_id'] == handled_offer['msg_ref_id']:
+                handled = True
+                break
+        if not handled:
+            save_offer = offer[0].copy()
+            await handle_credential_offer(my_connection, offer)
+            handled_offers.append(save_offer)
+
+    print("Check for and handle proof requests")
+    requests = await DisclosedProof.get_requests(my_connection)
+    for request in requests:
+        print("request", type(request), request)
+        handled = False
+        for handled_request in handled_requests:
+            print("handled_request", type(handled_request), handled_request)
+            if request['msg_ref_id'] == handled_request['msg_ref_id']:
+                handled = True
+                break
+        if not handled:
+            save_request = request.copy()
+            await handle_proof_request(my_connection, request)
+            handled_requests.append(save_request)
+
+
+async def handle_credential_offer(my_connection, offer):
+    print("Handling offer ...")
+
+    print("Create a credential object from the credential offer")
+    credential = await Credential.create('credential', offer)
 
     print("#15 After receiving credential offer, send credential request")
-    await credential.send_request(connection_to_faber, 0)
+    await credential.send_request(my_connection, 0)
 
     print("#16 Poll agency and accept credential offer from faber")
     credential_state = await credential.get_state()
@@ -67,11 +125,14 @@ async def main():
         await credential.update_state()
         credential_state = await credential.get_state()
 
-    print("#22 Poll agency for a proof request")
-    requests = await DisclosedProof.get_requests(connection_to_faber)
+    print("Accepted")
+
+
+async def handle_proof_request(my_connection, request):
+    print("Handling proof request ...")
 
     print("#23 Create a Disclosed proof object from proof request")
-    proof = await DisclosedProof.create('proof', requests[0])
+    proof = await DisclosedProof.create('proof', request)
 
     print("#24 Query for credentials in the wallet that satisfy the proof request")
     credentials = await proof.get_creds()
@@ -86,9 +147,15 @@ async def main():
     await proof.generate_proof(credentials, {})
 
     print("#26 Send the proof to faber")
-    await proof.send_proof(connection_to_faber)
+    await proof.send_proof(my_connection)
+
+    proof_state = await proof.get_state()
+    print("proof_state", proof_state)
+
+    print("Sent")
 
 
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()
     loop.run_until_complete(main())
+

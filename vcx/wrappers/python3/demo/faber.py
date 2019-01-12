@@ -72,10 +72,39 @@ async def main():
     print("#6 Poll agency and wait for alice to accept the invitation (start alice.py now)")
     connection_state = await connection_to_alice.get_state()
     while connection_state != State.Accepted:
-        sleep(2)
+        sleep(5)
         await connection_to_alice.update_state()
         connection_state = await connection_to_alice.get_state()
 
+    print("Serialize connection")
+    connection_data = await connection_to_alice.serialize()
+    connection_to_alice.release()
+    connection_to_alice = None
+
+    option = input('(1) Issue Credential, (2) Send Proof Request, (X) Exit? [1/2/X] ')
+    while option != 'X' and option != 'x':
+        print("Deserialize connection")
+        my_connection = await Connection.deserialize(connection_data)
+        sleep(2)
+
+        if option == '1':
+            await send_credential_request(my_connection, cred_def_handle)
+        elif option == '2':
+            await send_proof_request(my_connection, config['institution_did'])
+
+        sleep(2)
+        print("Serialize connection")
+        connection_data = await my_connection.serialize()
+        my_connection.release()
+        my_connection = None
+
+        option = input('(1) Issue Credential, (2) Send Proof Request, (X) Exit? [1/2/X] ')
+
+    print("Done, pause before exiting program")
+    sleep(10)
+
+
+async def send_credential_request(my_connection, cred_def_handle):
     schema_attrs = {
         'name': 'alice',
         'date': '05-2018',
@@ -86,7 +115,7 @@ async def main():
     credential = await IssuerCredential.create('alice_degree', schema_attrs, cred_def_handle, 'cred', '0')
 
     print("#13 Issue credential offer to alice")
-    await credential.send_offer(connection_to_alice)
+    await credential.send_offer(my_connection)
     await credential.update_state()
 
     print("#14 Poll agency and wait for alice to send a credential request")
@@ -97,7 +126,7 @@ async def main():
         credential_state = await credential.get_state()
 
     print("#17 Issue credential to alice")
-    await credential.send_credential(connection_to_alice)
+    await credential.send_credential(my_connection)
 
     print("#18 Wait for alice to accept credential")
     await credential.update_state()
@@ -107,17 +136,21 @@ async def main():
         await credential.update_state()
         credential_state = await credential.get_state()
 
+    print("Done")
+
+
+async def send_proof_request(my_connection, institution_did):
     proof_attrs = [
-        {'name': 'name', 'restrictions': [{'issuer_did': config['institution_did']}]},
-        {'name': 'date', 'restrictions': [{'issuer_did': config['institution_did']}]},
-        {'name': 'degree', 'restrictions': [{'issuer_did': config['institution_did']}]}
+        {'name': 'name', 'restrictions': [{'issuer_did': institution_did}]},
+        {'name': 'date', 'restrictions': [{'issuer_did': institution_did}]},
+        {'name': 'degree', 'restrictions': [{'issuer_did': institution_did}]}
     ]
 
     print("#19 Create a Proof object")
     proof = await Proof.create('proof_uuid', 'proof_from_alice', proof_attrs, {})
 
     print("#20 Request proof of degree from alice")
-    await proof.request_proof(connection_to_alice)
+    await proof.request_proof(my_connection)
 
     print("#21 Poll agency and wait for alice to provide proof")
     proof_state = await proof.get_state()
@@ -127,13 +160,15 @@ async def main():
         proof_state = await proof.get_state()
 
     print("#27 Process the proof provided by alice")
-    await proof.get_proof(connection_to_alice)
+    await proof.get_proof(my_connection)
 
     print("#28 Check if proof is valid")
     if proof.proof_state == ProofState.Verified:
         print("proof is verified!!")
     else:
         print("could not verify proof :(")
+
+    print("Done")
 
 
 if __name__ == '__main__':
