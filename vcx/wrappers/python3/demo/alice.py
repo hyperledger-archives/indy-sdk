@@ -27,7 +27,7 @@ provisionConfig = {
 
 async def main():
 
-    payment_plugin = cdll.LoadLibrary("libnullpay.so")
+    payment_plugin = cdll.LoadLibrary("libnullpay.dylib")
     payment_plugin.nullpay_init()
 
     print("#7 Provision an agent and wallet, get back configuration details")
