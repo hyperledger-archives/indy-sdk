@@ -139,7 +139,7 @@ fn _finish_init(command_handle: u32, cb: extern fn(xcommand_handle: u32, err: u3
             }
         }
 
-        match wallet::open_wallet(&wallet_name, wallet_type.as_ref().map(String::as_str)) {
+        match wallet::open_wallet(&wallet_name, wallet_type.as_ref().map(String::as_str), None, None) {
             Ok(_) => {
                 debug!("Init Wallet Successful");
                 cb(command_handle, error::SUCCESS.code_num);

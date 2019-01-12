@@ -102,7 +102,7 @@ pub fn connect_register_provision(config: &str) -> Result<String,u32> {
         settings::set_config_value(settings::CONFIG_WALLET_TYPE, _wallet_type);
     }
 
-    wallet::init_wallet(&wallet_name, my_config.wallet_type.as_ref().map(String::as_str))?;
+    wallet::init_wallet(&wallet_name, my_config.wallet_type.as_ref().map(String::as_str), None, None)?;
     trace!("initialized wallet");
 
     match ::utils::libindy::anoncreds::libindy_prover_create_master_secret(::settings::DEFAULT_LINK_SECRET_ALIAS) {
