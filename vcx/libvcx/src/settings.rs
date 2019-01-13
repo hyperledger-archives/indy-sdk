@@ -250,12 +250,27 @@ pub fn set_config_value(key: &str, value: &str) {
     SETTINGS.write().unwrap().insert(key.to_string(), value.to_string());
 }
 
-pub fn get_wallet_credentials() -> String {
+pub fn get_wallet_config(wallet_name: &str, wallet_type: Option<&str>, storage_config: Option<&str>) -> String {
+    let mut config = json!({
+        "id": wallet_name,
+        "storage_type": wallet_type
+    });
+    
+    let storage_config = get_config_value(CONFIG_WALLET_STORAGE_CONFIG).ok();
+    if let Some(_config) = storage_config { config["storage_config"] = serde_json::from_str(&_config).unwrap(); }
+
+    config.to_string()
+}
+
+pub fn get_wallet_credentials(storage_creds: Option<&str>) -> String {
     let key = get_config_value(CONFIG_WALLET_KEY).unwrap_or(UNINITIALIZED_WALLET_KEY.to_string());
     let mut credentials = json!({"key": key});
 
     let key_derivation = get_config_value(CONFIG_WALLET_KEY_DERIVATION).ok();
     if let Some(_key) = key_derivation { credentials["key_derivation_method"] = json!(_key); }
+
+    let storage_creds = get_config_value(CONFIG_WALLET_STORAGE_CREDS).ok();
+    if let Some(_creds) = storage_creds { credentials["storage_credentials"] = serde_json::from_str(&_creds).unwrap(); }
 
     credentials.to_string()
 }

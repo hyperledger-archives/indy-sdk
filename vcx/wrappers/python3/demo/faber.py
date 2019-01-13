@@ -1,3 +1,4 @@
+import sys
 import asyncio
 import json
 import random
@@ -27,11 +28,28 @@ provisionConfig = {
   'agency_url':'http://localhost:8080',
   'agency_did':'VsKV7grR1BUE29mG2Fm2kX',
   'agency_verkey':'Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR',
-  'wallet_name':'faber_wallet',
+  'wallet_name':'faber_wallet_' + str(random.randint(100, 999)),
   'wallet_key':'123',
   'payment_method': 'null',
   'enterprise_seed':'000000000000000000000000Trustee1'
 }
+
+
+if len(sys.argv) > 1:
+    if sys.argv[1] == '--postgres':
+        # load postgres dll and configure postgres wallet
+        print("Initializing postgres wallet")
+        stg_lib = cdll.LoadLibrary("libindystrgpostgres.dylib")
+        result = stg_lib.postgresstorage_init()
+        if result != 0:
+            print("Error unable to load postgres wallet storage", result)
+            sys.exit(0)
+
+        provisionConfig['wallet_type'] = 'postgres_storage'
+        provisionConfig['storage_config'] = '{"url":"localhost:5432"}'
+        provisionConfig['storage_credentials'] = '{"account":"postgres","password":"mysecretpassword","admin_account":"postgres","admin_password":"mysecretpassword"}'
+
+        print("Success, loaded postgres wallet storage")
 
 
 async def main():

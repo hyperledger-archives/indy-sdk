@@ -14,15 +14,12 @@ pub static mut WALLET_HANDLE: i32 = 0;
 
 pub fn get_wallet_handle() -> i32 { unsafe { WALLET_HANDLE } }
 
-pub fn create_wallet(wallet_name: &str, wallet_type: Option<&str>, _storage_config: Option<&str>, _storage_creds: Option<&str>) -> Result<(), u32> {
+pub fn create_wallet(wallet_name: &str, wallet_type: Option<&str>, storage_config: Option<&str>, storage_creds: Option<&str>) -> Result<(), u32> {
     trace!("creating wallet: {}", wallet_name);
 
-    let config = json!({
-        "id": wallet_name,
-        "storage_type": wallet_type
-    }).to_string();
+    let config = settings::get_wallet_config(wallet_name, wallet_type, storage_config);
 
-    let credentials = settings::get_wallet_credentials();
+    let credentials = settings::get_wallet_credentials(storage_creds);
 
     match wallet::create_wallet(&config, &credentials).wait() {
         Ok(x) => Ok(()),
@@ -36,19 +33,16 @@ pub fn create_wallet(wallet_name: &str, wallet_type: Option<&str>, _storage_conf
     }
 }
 
-pub fn open_wallet(wallet_name: &str, wallet_type: Option<&str>, _storage_config: Option<&str>, _storage_creds: Option<&str>) -> Result<i32, u32> {
+pub fn open_wallet(wallet_name: &str, wallet_type: Option<&str>, storage_config: Option<&str>, storage_creds: Option<&str>) -> Result<i32, u32> {
     trace!("open_wallet >>> wallet_name: {}", wallet_name);
     if settings::test_indy_mode_enabled() {
         unsafe {WALLET_HANDLE = 1;}
         return Ok(1);
     }
 
-    let config = json!({
-        "id": wallet_name,
-        "storage_type": wallet_type
-    }).to_string();
+    let config = settings::get_wallet_config(wallet_name, wallet_type, storage_config);
 
-    let credentials = settings::get_wallet_credentials();
+    let credentials = settings::get_wallet_credentials(storage_creds);
 
     let handle = wallet::open_wallet(&config, &credentials)
         .wait()
@@ -80,7 +74,7 @@ pub fn close_wallet() -> Result<(), u32> {
     result
 }
 
-pub fn delete_wallet(wallet_name: &str, wallet_type: Option<&str>) -> Result<(), u32> {
+pub fn delete_wallet(wallet_name: &str, wallet_type: Option<&str>, storage_config: Option<&str>, storage_creds: Option<&str>) -> Result<(), u32> {
     trace!("delete_wallet >>> wallet_name: {}", wallet_name);
 
     if settings::test_indy_mode_enabled() {
@@ -93,12 +87,11 @@ pub fn delete_wallet(wallet_name: &str, wallet_type: Option<&str>) -> Result<(),
         Err(x) => (),
     };
 
-    let config = json!({
-        "id": wallet_name,
-        "storage_type": wallet_type
-    }).to_string();
+    let config = settings::get_wallet_config(wallet_name, wallet_type, storage_config);
 
-    wallet::delete_wallet(&config,&settings::get_wallet_credentials()).wait().map_err(map_rust_indy_sdk_error_code)
+    let credentials = settings::get_wallet_credentials(storage_creds);
+
+    wallet::delete_wallet(&config,&credentials).wait().map_err(map_rust_indy_sdk_error_code)
 }
 
 pub fn add_record(xtype: &str, id: &str, value: &str, tags: Option<&str>) -> Result<(), u32> {
@@ -170,8 +163,8 @@ pub fn import(config: &str) -> Result<(), WalletError> {
     let backup_key = settings::get_config_value(settings::CONFIG_WALLET_BACKUP_KEY)
         .or(Err(WalletError::CommonError(error::MISSING_BACKUP_KEY.code_num)))?;
 
-    let config = json!({"id":name}).to_string();
-    let credentials = settings::get_wallet_credentials();
+    let config = settings::get_wallet_config(&name, None, None);
+    let credentials = settings::get_wallet_credentials(None);
     let import_config = json!({"key": backup_key, "path": exported_wallet_path }).to_string();
 
     match wallet::import_wallet(&config, &credentials, &import_config).wait() {
@@ -221,7 +214,7 @@ pub mod tests {
             Err(_) => (),
         };
 
-        match delete_wallet(name, None) {
+        match delete_wallet(name, None, None, None) {
             Ok(_) => (),
             Err(_) => (),
         };
@@ -260,12 +253,12 @@ pub mod tests {
 
         // Delete fails
         ::api::vcx::vcx_shutdown(false);
-        assert_eq!(delete_wallet(wallet_n, None), Err(error::UNKNOWN_LIBINDY_ERROR.code_num));
+        assert_eq!(delete_wallet(wallet_n, None, None, None), Err(error::UNKNOWN_LIBINDY_ERROR.code_num));
 
         // Delete works
         settings::set_config_value(settings::CONFIG_WALLET_KEY, settings::DEFAULT_WALLET_KEY);
         settings::set_config_value(settings::CONFIG_WALLET_KEY_DERIVATION, settings::DEFAULT_WALLET_KEY_DERIVATION);
-        assert!(delete_wallet(wallet_n, None).is_ok());
+        assert!(delete_wallet(wallet_n, None, None, None).is_ok());
     }
 
     #[test]
