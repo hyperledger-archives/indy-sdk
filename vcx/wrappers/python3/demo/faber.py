@@ -119,7 +119,7 @@ async def main():
         option = input('(1) Issue Credential, (2) Send Proof Request, (X) Exit? [1/2/X] ')
 
     print("Done, pause before exiting program")
-    sleep(10)
+    sleep(2)
 
 
 async def send_credential_request(my_connection, cred_def_handle):
@@ -134,25 +134,37 @@ async def send_credential_request(my_connection, cred_def_handle):
 
     print("#13 Issue credential offer to alice")
     await credential.send_offer(my_connection)
-    await credential.update_state()
 
-    print("#14 Poll agency and wait for alice to send a credential request")
-    credential_state = await credential.get_state()
-    while credential_state != State.RequestReceived:
-        sleep(2)
-        await credential.update_state()
-        credential_state = await credential.get_state()
+    # serialize/deserialize credential - waiting for Alice to rspond with Credential Request
+    credential_data = await credential.serialize()
+
+    while True:
+        print("#14 Poll agency and wait for alice to send a credential request")
+        my_credential = await IssuerCredential.deserialize(credential_data)
+        await my_credential.update_state()
+        credential_state = await my_credential.get_state()
+        if credential_state == State.RequestReceived:
+            break
+        else:
+            credential_data = await my_credential.serialize()
+            sleep(2)
 
     print("#17 Issue credential to alice")
-    await credential.send_credential(my_connection)
+    await my_credential.send_credential(my_connection)
 
-    print("#18 Wait for alice to accept credential")
-    await credential.update_state()
-    credential_state = await credential.get_state()
-    while credential_state != State.Accepted:
-        sleep(2)
-        await credential.update_state()
-        credential_state = await credential.get_state()
+    # serialize/deserialize credential - waiting for Alice to accept credential
+    credential_data = await my_credential.serialize()
+
+    while True:
+        print("#18 Wait for alice to accept credential")
+        my_credential2 = await IssuerCredential.deserialize(credential_data)
+        await my_credential2.update_state()
+        credential_state = await my_credential2.get_state()
+        if credential_state == State.Accepted:
+            break
+        else:
+            credential_data = await my_credential2.serialize()
+            sleep(2)
 
     print("Done")
 
@@ -170,18 +182,25 @@ async def send_proof_request(my_connection, institution_did):
     print("#20 Request proof of degree from alice")
     await proof.request_proof(my_connection)
 
-    print("#21 Poll agency and wait for alice to provide proof")
-    proof_state = await proof.get_state()
-    while proof_state != State.Accepted:
-        sleep(2)
-        await proof.update_state()
-        proof_state = await proof.get_state()
+    # serialize/deserialize proof
+    proof_data = await proof.serialize()
+
+    while True:
+        print("#21 Poll agency and wait for alice to provide proof")
+        my_proof = await Proof.deserialize(proof_data)
+        await my_proof.update_state()
+        proof_state = await my_proof.get_state()
+        if proof_state == State.Accepted:
+            break
+        else:
+            proof_data = await my_proof.serialize()
+            sleep(2)
 
     print("#27 Process the proof provided by alice")
-    await proof.get_proof(my_connection)
+    await my_proof.get_proof(my_connection)
 
     print("#28 Check if proof is valid")
-    if proof.proof_state == ProofState.Verified:
+    if my_proof.proof_state == ProofState.Verified:
         print("proof is verified!!")
     else:
         print("could not verify proof :(")

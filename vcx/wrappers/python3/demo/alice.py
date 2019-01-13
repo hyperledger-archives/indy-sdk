@@ -93,7 +93,7 @@ async def main():
         option = input('Poll messages? [Y/n] ')
 
     print("Done, pause before exiting program")
-    sleep(10)
+    sleep(2)
 
 
 async def handle_messages(my_connection, handled_offers, handled_requests):
@@ -108,6 +108,7 @@ async def handle_messages(my_connection, handled_offers, handled_requests):
                 break
         if not handled:
             save_offer = offer[0].copy()
+            print(" >>> handling offer", save_offer['msg_ref_id'])
             await handle_credential_offer(my_connection, offer)
             handled_offers.append(save_offer)
 
@@ -117,12 +118,12 @@ async def handle_messages(my_connection, handled_offers, handled_requests):
         print("request", type(request), request)
         handled = False
         for handled_request in handled_requests:
-            print("handled_request", type(handled_request), handled_request)
             if request['msg_ref_id'] == handled_request['msg_ref_id']:
                 handled = True
                 break
         if not handled:
             save_request = request.copy()
+            print(" >>> handling proof", save_request['msg_ref_id'])
             await handle_proof_request(my_connection, request)
             handled_requests.append(save_request)
 
@@ -136,12 +137,19 @@ async def handle_credential_offer(my_connection, offer):
     print("#15 After receiving credential offer, send credential request")
     await credential.send_request(my_connection, 0)
 
-    print("#16 Poll agency and accept credential offer from faber")
-    credential_state = await credential.get_state()
-    while credential_state != State.Accepted:
-        sleep(2)
-        await credential.update_state()
-        credential_state = await credential.get_state()
+    # serialize/deserialize credential - wait for Faber to send credential
+    credential_data = await credential.serialize()
+
+    while True:
+        print("#16 Poll agency and accept credential offer from faber")
+        my_credential = await Credential.deserialize(credential_data)
+        await my_credential.update_state()
+        credential_state = await my_credential.get_state()
+        if credential_state == State.Accepted:
+            break
+        else:
+            credential_data = await my_credential.serialize()
+            sleep(2)
 
     print("Accepted")
 
@@ -155,6 +163,7 @@ async def handle_proof_request(my_connection, request):
     print("#24 Query for credentials in the wallet that satisfy the proof request")
     credentials = await proof.get_creds()
 
+    # TODO list credentials and let Alice select
     # Use the first available credentials to satisfy the proof request
     for attr in credentials['attrs']:
         credentials['attrs'][attr] = {
@@ -164,10 +173,24 @@ async def handle_proof_request(my_connection, request):
     print("#25 Generate the proof")
     await proof.generate_proof(credentials, {})
 
+    # TODO figure out why this always segfaults
     print("#26 Send the proof to faber")
     await proof.send_proof(my_connection)
 
-    proof_state = await proof.get_state()
+    # serialize/deserialize proof
+    proof_data = await proof.serialize()
+
+    while True:
+        print("#27 Poll agency and wait for faber to accept proof")
+        my_proof = await DisclosedProof.deserialize(proof_data)
+        await my_proof.update_state()
+        proof_state = await my_proof.get_state()
+        if proof_state == State.Accepted:
+            break
+        else:
+            proof_data = await my_proof.serialize()
+            sleep(2)
+
     print("proof_state", proof_state)
 
     print("Sent")
