@@ -87,12 +87,22 @@ async def main():
     print(json.dumps(details))
     print("******************")
 
-    print("#6 Poll agency and wait for alice to accept the invitation (start alice.py now)")
-    connection_state = await connection_to_alice.get_state()
-    while connection_state != State.Accepted:
-        sleep(5)
+    connection_data = await connection_to_alice.serialize()
+    connection_to_alice.release()
+    connection_to_alice = None
+
+    while True:
+        print("#6 Poll agency and wait for alice to accept the invitation (start alice.py now)")
+        connection_to_alice = await Connection.deserialize(connection_data)
         await connection_to_alice.update_state()
         connection_state = await connection_to_alice.get_state()
+        if connection_state == State.Accepted:
+            break
+        else:
+            connection_data = await connection_to_alice.serialize()
+            connection_to_alice.release()
+            connection_to_alice = None
+            sleep(5)
 
     print("Serialize connection")
     connection_data = await connection_to_alice.serialize()
