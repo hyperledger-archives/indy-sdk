@@ -45,13 +45,13 @@ pub extern fn indy_create_pool_ledger_config(command_handle: IndyHandle,
             config_name,
             config,
             Box::new(move |result| {
-                let err = result_to_err_code!(result);
+                let err = prepare_result!(result);
                 trace!("indy_create_pool_ledger_config:");
                 cb(command_handle, err)
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_create_pool_ledger_config: <<< res: {:?}", res);
 
@@ -101,13 +101,13 @@ pub extern fn indy_open_pool_ledger(command_handle: IndyHandle,
             config_name,
             config,
             Box::new(move |result| {
-                let (err, pool_handle) = result_to_err_code_1!(result, 0);
+                let (err, pool_handle) = prepare_result_1!(result, 0);
                 trace!("indy_open_pool_ledger: pool_handle: {:?}", pool_handle);
                 cb(command_handle, err, pool_handle)
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_open_pool_ledger: <<< res: {:?}", res);
 
@@ -140,13 +140,13 @@ pub extern fn indy_refresh_pool_ledger(command_handle: IndyHandle,
         .send(Command::Pool(PoolCommand::Refresh(
             handle,
             Box::new(move |result| {
-                let err = result_to_err_code!(result);
+                let err = prepare_result!(result);
                 trace!("indy_refresh_pool_ledger:");
                 cb(command_handle, err)
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_refresh_pool_ledger: <<< res: {:?}", res);
 
@@ -175,14 +175,14 @@ pub extern fn indy_list_pools(command_handle: IndyHandle,
     let result = CommandExecutor::instance()
         .send(Command::Pool(PoolCommand::List(
             Box::new(move |result| {
-                let (err, pools) = result_to_err_code_1!(result, String::new());
+                let (err, pools) = prepare_result_1!(result, String::new());
                 trace!("indy_list_pools: pools: {:?}", pools);
                 let pools = ctypes::string_to_cstring(pools);
                 cb(command_handle, err, pools.as_ptr())
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_list_pools: <<< res: {:?}", res);
 
@@ -215,13 +215,13 @@ pub extern fn indy_close_pool_ledger(command_handle: IndyHandle,
         .send(Command::Pool(PoolCommand::Close(
             handle,
             Box::new(move |result| {
-                let err = result_to_err_code!(result);
+                let err = prepare_result!(result);
                 trace!("indy_close_pool_ledger:");
                 cb(command_handle, err)
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_close_pool_ledger: <<< res: {:?}", res);
 
@@ -255,13 +255,13 @@ pub extern fn indy_delete_pool_ledger_config(command_handle: IndyHandle,
         .send(Command::Pool(PoolCommand::Delete(
             config_name,
             Box::new(move |result| {
-                let err = result_to_err_code!(result);
+                let err = prepare_result!(result);
                 trace!("indy_delete_pool_ledger_config:");
                 cb(command_handle, err)
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_delete_pool_ledger_config: <<< res: {:?}", res);
 
@@ -301,13 +301,13 @@ pub extern fn indy_set_protocol_version(command_handle: IndyHandle,
             PoolCommand::SetProtocolVersion(
             protocol_version,
             Box::new(move |result| {
-                let err = result_to_err_code!(result);
+                let err = prepare_result!(result);
                 trace!("indy_set_protocol_version:");
                 cb(command_handle, err)
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_set_protocol_version: <<< res: {:?}", res);
 

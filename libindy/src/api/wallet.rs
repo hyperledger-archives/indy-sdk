@@ -131,13 +131,13 @@ pub extern fn indy_register_wallet_storage(command_handle: IndyHandle,
                 fetch_search_next_record,
                 free_search,
                 Box::new(move |result| {
-                    let err = result_to_err_code!(result);
+                    let err = prepare_result!(result);
                     trace!("indy_register_wallet_type: cb command_handle: {:?}, err: {:?}", command_handle, err);
                     cb(command_handle, err)
                 })
             )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
     trace!("indy_register_wallet_type: <<< res: {:?}", res);
     res
 }
@@ -202,13 +202,13 @@ pub extern fn indy_create_wallet(command_handle: IndyHandle,
             config,
             credentials,
             Box::new(move |result| {
-                let err = result_to_err_code!(result);
+                let err = prepare_result!(result);
                 trace!("indy_create_wallet: cb command_handle: {:?}, err: {:?}", command_handle, err);
                 cb(command_handle, err)
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
     trace!("indy_create_wallet: <<< res: {:?}", res);
     res
 }
@@ -284,14 +284,14 @@ pub extern fn indy_open_wallet(command_handle: IndyHandle,
             config,
             credentials,
             Box::new(move |result| {
-                let (err, handle) = result_to_err_code_1!(result, 0);
+                let (err, handle) = prepare_result_1!(result, 0);
                 trace!("indy_open_wallet: cb command_handle: {:?} err: {:?}, handle: {:?}",
                        command_handle, err, handle);
                 cb(command_handle, err, handle)
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
     trace!("indy_open_wallet: <<< res: {:?}", res);
     res
 }
@@ -336,13 +336,13 @@ pub extern fn indy_export_wallet(command_handle: IndyHandle,
             wallet_handle,
             export_config,
             Box::new(move |result| {
-                let err = result_to_err_code!(result);
+                let err = prepare_result!(result);
                 trace!("indy_export_wallet: cb command_handle: {:?} err: {:?}", command_handle, err);
                 cb(command_handle, err)
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
     trace!("indy_export_wallet: <<< res: {:?}", res);
     res
 }
@@ -418,13 +418,13 @@ pub extern fn indy_import_wallet(command_handle: IndyHandle,
             credentials,
             import_config,
             Box::new(move |result| {
-                let err = result_to_err_code!(result);
+                let err = prepare_result!(result);
                 trace!("indy_import_wallet: cb command_handle: {:?}, err: {:?}", command_handle, err);
                 cb(command_handle, err)
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
     trace!("indy_import_wallet: <<< res: {:?}", res);
     res
 }
@@ -457,13 +457,13 @@ pub extern fn indy_close_wallet(command_handle: IndyHandle,
         .send(Command::Wallet(WalletCommand::Close(
             wallet_handle,
             Box::new(move |result| {
-                let err = result_to_err_code!(result);
+                let err = prepare_result!(result);
                 trace!("indy_close_wallet: cb command_handle: {:?}, err: {:?}", command_handle, err);
                 cb(command_handle, err)
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
     trace!("indy_close_wallet: <<< res: {:?}", res);
     res
 }
@@ -527,13 +527,13 @@ pub extern fn indy_delete_wallet(command_handle: IndyHandle,
             config,
             credentials,
             Box::new(move |result| {
-                let err = result_to_err_code!(result);
+                let err = prepare_result!(result);
                 trace!("indy_delete_wallet: cb command_handle: {:?}, err: {:?}", command_handle, err);
                 cb(command_handle, err)
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
     trace!("indy_delete_wallet: <<< res: {:?}", res);
     res
 }
@@ -573,14 +573,14 @@ pub extern fn indy_generate_wallet_key(command_handle: IndyHandle,
         .send(Command::Wallet(WalletCommand::GenerateKey(
             config,
             Box::new(move |result| {
-                let (err, key) = result_to_err_code_1!(result, String::new());
+                let (err, key) = prepare_result_1!(result, String::new());
                 trace!("indy_generate_wallet_key: key: {:?}", key);
                 let key = ctypes::string_to_cstring(key);
                 cb(command_handle, err, key.as_ptr())
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
     trace!("indy_generate_wallet_key: <<< res: {:?}", res);
     res
 }

@@ -187,7 +187,9 @@ extern "C" {
     ///
     /// #Errors
     /// Common*
-    extern indy_error_t indy_set_runtime_config(const char *  config);
+    extern indy_error_t indy_set_runtime_config(const char * config);
+
+    extern void indy_get_current_error(const char * error_json_p);
 
 #ifdef __cplusplus
 }
