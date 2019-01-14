@@ -4,8 +4,7 @@ use api::{ErrorCode, IndyHandle};
 use commands::{Command, CommandExecutor};
 use commands::wallet::WalletCommand;
 use domain::wallet::{Config, Credentials, ExportConfig, KeyConfig};
-use errors::common::CommonError;
-use errors::ToErrorCode;
+use errors::prelude::*;
 use utils::ctypes;
 
 use serde_json;

@@ -1,8 +1,7 @@
 extern crate libc;
 
 use api::{ErrorCode, IndyHandle};
-use errors::common::CommonError;
-use errors::ToErrorCode;
+use errors::prelude::*;
 use commands::{Command, CommandExecutor};
 use commands::ledger::LedgerCommand;
 use domain::anoncreds::credential_definition::CredentialDefinition;
@@ -594,7 +593,7 @@ pub extern fn indy_build_get_attrib_request(command_handle: IndyHandle,
 /// data: Credential schema.
 /// {
 ///     id: identifier of schema
-///     attrNames: array of attribute name strings
+///     attrNames: array of attribute name strings (the number of attributes should be less or equal than 125)
 ///     name: Schema's name string
 ///     version: Schema's version string,
 ///     ver: Version of the Schema json

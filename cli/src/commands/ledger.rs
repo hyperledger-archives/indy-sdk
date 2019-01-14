@@ -271,7 +271,7 @@ pub mod schema_command {
     command!(CommandMetadata::build("schema", "Send Schema transaction to the Ledger.")
                 .add_required_param("name", "Schema name")
                 .add_required_param("version", "Schema version")
-                .add_required_param("attr_names", "Schema attributes split by comma")
+                .add_required_param("attr_names", "Schema attributes split by comma (the number of attributes should be less or equal than 125)")
                 .add_optional_param("fees_inputs","The list of source inputs")
                 .add_optional_param("fees_outputs","The list of outputs in the following format: (recipient, amount)")
                 .add_optional_param("extra","Optional information for fees payment operation")
@@ -4434,7 +4434,7 @@ pub mod tests {
 
     fn _ensure_nym_added(ctx: &CommandContext, did: &str) {
         let request = Ledger::build_get_nym_request(None, did).unwrap();
-        _submit_retry(ctx, &request, |response| {
+        submit_retry(ctx, &request, |response| {
             serde_json::from_str::<Response<ReplyResult<String>>>(&response)
                 .and_then(|response| serde_json::from_str::<serde_json::Value>(&response.result.unwrap().data))
         }).unwrap();
@@ -4443,7 +4443,7 @@ pub mod tests {
     fn _ensure_attrib_added(ctx: &CommandContext, did: &str, raw: Option<&str>, hash: Option<&str>, enc: Option<&str>) {
         let attr = if raw.is_some() { Some("endpoint") } else { None };
         let request = Ledger::build_get_attrib_request(None, did, attr, hash, enc).unwrap();
-        _submit_retry(ctx, &request, |response| {
+        submit_retry(ctx, &request, |response| {
             serde_json::from_str::<Response<ReplyResult<String>>>(&response)
                 .map_err(|_| ())
                 .and_then(|response| {
@@ -4456,7 +4456,7 @@ pub mod tests {
     fn _ensure_schema_added(ctx: &CommandContext, did: &str) {
         let id = build_schema_id(did, "gvt", "1.0");
         let request = Ledger::build_get_schema_request(None, &id).unwrap();
-        _submit_retry(ctx, &request, |response| {
+        submit_retry(ctx, &request, |response| {
             let schema: serde_json::Value = serde_json::from_str(&response).unwrap();
             schema["result"]["seqNo"].as_i64().ok_or(())
         }).unwrap();
@@ -4465,27 +4465,9 @@ pub mod tests {
     fn _ensure_cred_def_added(ctx: &CommandContext, did: &str, schema_id: &str) {
         let id = build_cred_def_id(did, schema_id, "CL", "TAG");
         let request = Ledger::build_get_cred_def_request(None, &id).unwrap();
-        _submit_retry(ctx, &request, |response| {
+        submit_retry(ctx, &request, |response| {
             let cred_def: serde_json::Value = serde_json::from_str(&response).unwrap();
             cred_def["result"]["seqNo"].as_i64().ok_or(())
         }).unwrap();
-    }
-
-    fn _submit_retry<F, T, E>(ctx: &CommandContext, request: &str, parser: F) -> Result<(), ()>
-        where F: Fn(&str) -> Result<T, E> {
-        const SUBMIT_RETRY_CNT: usize = 3;
-        const SUBMIT_TIMEOUT_SEC: u64 = 2;
-
-        let pool_handle = ensure_connected_pool_handle(ctx).unwrap();
-
-        for _ in 0..SUBMIT_RETRY_CNT {
-            let response = Ledger::submit_request(pool_handle, request).unwrap();
-            if parser(&response).is_ok() {
-                return Ok(());
-            }
-            ::std::thread::sleep(::std::time::Duration::from_secs(SUBMIT_TIMEOUT_SEC));
-        }
-
-        return Err(());
     }
 }

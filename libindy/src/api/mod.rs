@@ -1,6 +1,3 @@
-extern crate libc;
-extern crate serde_json;
-
 pub mod anoncreds;
 pub mod crypto;
 pub mod ledger;
@@ -13,17 +10,16 @@ pub mod non_secrets;
 pub mod payments;
 pub mod logger;
 
-use self::libc::c_char;
+use libc::c_char;
 
 use domain::IndyConfig;
-use errors::common::CommonError;
-use errors::ToErrorCode;
+use errors::prelude::*;
 
 use utils::ctypes;
 
 pub type IndyHandle = i32;
 
-#[derive(Debug, PartialEq, Copy, Clone)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
 #[repr(i32)]
 pub enum ErrorCode
 {
@@ -251,7 +247,7 @@ pub enum ErrorCode
 /// Common*
 #[no_mangle]
 pub extern fn indy_set_runtime_config(config: *const c_char) -> ErrorCode {
-    trace!("indy_init >>> config: {:?}", config);
+    trace!("indy_set_runtime_config >>> config: {:?}", config);
 
     check_useful_json!(config, ErrorCode::CommonInvalidParam1, IndyConfig);
 
@@ -259,7 +255,7 @@ pub extern fn indy_set_runtime_config(config: *const c_char) -> ErrorCode {
 
     let res = ErrorCode::Success;
 
-    trace!("indy_init: <<< res: {:?}", res);
+    trace!("indy_set_runtime_config: <<< res: {:?}", res);
 
     res
 }

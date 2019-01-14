@@ -241,6 +241,7 @@ pub mod tests {
         teardown!("false");
         ::api::vcx::vcx_shutdown(true);
         let wallet_n = settings::DEFAULT_WALLET_NAME;
+        settings::set_config_value(settings::CONFIG_WALLET_KEY, settings::DEFAULT_WALLET_KEY);
         settings::set_config_value(settings::CONFIG_WALLET_KEY_DERIVATION, settings::DEFAULT_WALLET_KEY_DERIVATION);
         create_wallet(wallet_n, None).unwrap();
 
@@ -249,6 +250,7 @@ pub mod tests {
         assert_eq!(open_wallet(wallet_n, None), Err(error::UNKNOWN_LIBINDY_ERROR.code_num));
 
         // Open works when set
+        settings::set_config_value(settings::CONFIG_WALLET_KEY, settings::DEFAULT_WALLET_KEY);
         settings::set_config_value(settings::CONFIG_WALLET_KEY_DERIVATION, settings::DEFAULT_WALLET_KEY_DERIVATION);
         assert!(open_wallet(wallet_n, None).is_ok());
 
@@ -257,6 +259,7 @@ pub mod tests {
         assert_eq!(delete_wallet(wallet_n, None), Err(error::UNKNOWN_LIBINDY_ERROR.code_num));
 
         // Delete works
+        settings::set_config_value(settings::CONFIG_WALLET_KEY, settings::DEFAULT_WALLET_KEY);
         settings::set_config_value(settings::CONFIG_WALLET_KEY_DERIVATION, settings::DEFAULT_WALLET_KEY_DERIVATION);
         assert!(delete_wallet(wallet_n, None).is_ok());
     }
