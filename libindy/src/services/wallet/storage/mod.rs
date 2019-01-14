@@ -1,7 +1,7 @@
 pub mod default;
 pub mod plugged;
 
-use errors::wallet::WalletStorageError;
+use errors::prelude::*;
 use services::wallet::language;
 use services::wallet::wallet::EncryptedValue;
 
@@ -37,27 +37,27 @@ impl StorageRecord {
 }
 
 pub trait StorageIterator {
-    fn next(&mut self) -> Result<Option<StorageRecord>, WalletStorageError>;
-    fn get_total_count(&self) -> Result<Option<usize>, WalletStorageError>;
+    fn next(&mut self) -> Result<Option<StorageRecord>, IndyError>;
+    fn get_total_count(&self) -> Result<Option<usize>, IndyError>;
 }
 
 pub trait WalletStorage {
-    fn get(&self, type_: &[u8], id: &[u8], options: &str) -> Result<StorageRecord, WalletStorageError>;
-    fn add(&self, type_: &[u8], id: &[u8], value: &EncryptedValue, tags: &[Tag]) -> Result<(), WalletStorageError>;
-    fn update(&self, type_: &[u8], id: &[u8], value: &EncryptedValue) -> Result<(), WalletStorageError>;
-    fn add_tags(&self, type_: &[u8], id: &[u8], tags: &[Tag]) -> Result<(), WalletStorageError>;
-    fn update_tags(&self, type_: &[u8], id: &[u8], tags: &[Tag]) -> Result<(), WalletStorageError>;
-    fn delete_tags(&self, type_: &[u8], id: &[u8], tag_names: &[TagName]) -> Result<(), WalletStorageError>;
-    fn delete(&self, type_: &[u8], id: &[u8]) -> Result<(), WalletStorageError>;
-    fn get_storage_metadata(&self) -> Result<Vec<u8>, WalletStorageError>;
-    fn set_storage_metadata(&self, metadata: &[u8]) -> Result<(), WalletStorageError>;
-    fn get_all(&self) -> Result<Box<StorageIterator>, WalletStorageError>;
-    fn search(&self, type_: &[u8], query: &language::Operator, options: Option<&str>) -> Result<Box<StorageIterator>, WalletStorageError>;
-    fn close(&mut self) -> Result<(), WalletStorageError>;
+    fn get(&self, type_: &[u8], id: &[u8], options: &str) -> Result<StorageRecord, IndyError>;
+    fn add(&self, type_: &[u8], id: &[u8], value: &EncryptedValue, tags: &[Tag]) -> Result<(), IndyError>;
+    fn update(&self, type_: &[u8], id: &[u8], value: &EncryptedValue) -> Result<(), IndyError>;
+    fn add_tags(&self, type_: &[u8], id: &[u8], tags: &[Tag]) -> Result<(), IndyError>;
+    fn update_tags(&self, type_: &[u8], id: &[u8], tags: &[Tag]) -> Result<(), IndyError>;
+    fn delete_tags(&self, type_: &[u8], id: &[u8], tag_names: &[TagName]) -> Result<(), IndyError>;
+    fn delete(&self, type_: &[u8], id: &[u8]) -> Result<(), IndyError>;
+    fn get_storage_metadata(&self) -> Result<Vec<u8>, IndyError>;
+    fn set_storage_metadata(&self, metadata: &[u8]) -> Result<(), IndyError>;
+    fn get_all(&self) -> Result<Box<StorageIterator>, IndyError>;
+    fn search(&self, type_: &[u8], query: &language::Operator, options: Option<&str>) -> Result<Box<StorageIterator>, IndyError>;
+    fn close(&mut self) -> Result<(), IndyError>;
 }
 
 pub trait WalletStorageType {
-    fn create_storage(&self, id: &str, config: Option<&str>, credentials: Option<&str>, metadata: &[u8]) -> Result<(), WalletStorageError>;
-    fn open_storage(&self, id: &str, config: Option<&str>, credentials: Option<&str>) -> Result<Box<WalletStorage>, WalletStorageError>;
-    fn delete_storage(&self, id: &str, config: Option<&str>, credentials: Option<&str>) -> Result<(), WalletStorageError>;
+    fn create_storage(&self, id: &str, config: Option<&str>, credentials: Option<&str>, metadata: &[u8]) -> Result<(), IndyError>;
+    fn open_storage(&self, id: &str, config: Option<&str>, credentials: Option<&str>) -> Result<Box<WalletStorage>, IndyError>;
+    fn delete_storage(&self, id: &str, config: Option<&str>, credentials: Option<&str>) -> Result<(), IndyError>;
 }

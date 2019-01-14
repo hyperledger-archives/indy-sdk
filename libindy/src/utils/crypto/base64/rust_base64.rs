@@ -1,14 +1,17 @@
 extern crate base64;
 
-use errors::common::CommonError;
+use errors::prelude::*;
+use failure::ResultExt;
 
 pub fn encode(doc: &[u8]) -> String {
     base64::encode(doc)
 }
 
-pub fn decode(doc: &str) -> Result<Vec<u8>, CommonError> {
+pub fn decode(doc: &str) -> Result<Vec<u8>, IndyError> {
     base64::decode(doc)
-        .map_err(|err| CommonError::InvalidStructure(format!("{}", err)))
+        .context("Invalid base64 sequence")
+        .context(IndyErrorKind::InvalidStructure)
+        .map_err(|err| err.into())
 }
 
 #[cfg(test)]

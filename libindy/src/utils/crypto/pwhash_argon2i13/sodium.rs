@@ -1,14 +1,12 @@
-extern crate sodiumoxide;
-extern crate libc;
 extern crate errno;
+extern crate libc;
 extern crate serde;
-
-use errors::common::CommonError;
-
-use self::sodiumoxide::crypto::pwhash;
-use self::libc::{size_t, c_ulonglong, c_int};
+extern crate sodiumoxide;
 
 use domain::wallet::KeyDerivationMethod;
+use errors::prelude::*;
+use self::libc::{c_int, c_ulonglong, size_t};
+use self::sodiumoxide::crypto::pwhash;
 
 pub const SALTBYTES: usize = pwhash::SALTBYTES;
 
@@ -18,12 +16,12 @@ pub fn gen_salt() -> Salt {
     Salt(pwhash::gen_salt())
 }
 
-pub fn pwhash<'a>(key: &'a mut [u8], passwd: &[u8], salt: &Salt, key_derivation_method: &KeyDerivationMethod) -> Result<&'a [u8], CommonError> {
+pub fn pwhash<'a>(key: &'a mut [u8], passwd: &[u8], salt: &Salt, key_derivation_method: &KeyDerivationMethod) -> Result<&'a [u8], IndyError> {
     let (opslimit, memlimit) = unsafe {
         match key_derivation_method {
             KeyDerivationMethod::ARGON2I_MOD => (crypto_pwhash_argon2i_opslimit_moderate(), crypto_pwhash_argon2i_memlimit_moderate()),
             KeyDerivationMethod::ARGON2I_INT => (crypto_pwhash_argon2i_opslimit_interactive(), crypto_pwhash_argon2i_memlimit_interactive()),
-            KeyDerivationMethod::RAW => return Err(CommonError::InvalidStructure("RAW key derivation method is not acceptable".to_string()))
+            KeyDerivationMethod::RAW => return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, "RAW key derivation method is not acceptable"))
         }
     };
 
@@ -43,7 +41,7 @@ pub fn pwhash<'a>(key: &'a mut [u8], passwd: &[u8], salt: &Salt, key_derivation_
     if res == 0 {
         Ok(key)
     } else {
-        Err(CommonError::InvalidStructure(format!("{:?}", errno::errno())))
+        Err(IndyError::from_msg(IndyErrorKind::InvalidState, "Sodium pwhash failed"))
     }
 }
 
@@ -67,8 +65,8 @@ extern {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use rmp_serde;
+    use super::*;
 
     #[test]
     fn get_salt_works() {

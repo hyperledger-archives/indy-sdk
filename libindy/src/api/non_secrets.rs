@@ -4,8 +4,7 @@ use api::{ErrorCode, IndyHandle};
 use commands::{Command, CommandExecutor};
 use commands::non_secrets::NonSecretsCommand;
 use domain::wallet::Tags;
-use errors::common::CommonError;
-use errors::ToErrorCode;
+use errors::prelude::*;
 use utils::ctypes;
 
 use serde_json;
@@ -57,13 +56,13 @@ pub extern fn indy_add_wallet_record(command_handle: IndyHandle,
                 value,
                 tags_json,
                 Box::new(move |result| {
-                    let err = result_to_err_code!(result);
+                    let err = prepare_result!(result);
                     trace!("indy_add_wallet_record:");
                     cb(command_handle, err)
                 })
             )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_add_wallet_record: <<< res: {:?}", res);
 
@@ -102,13 +101,13 @@ pub extern fn indy_update_wallet_record_value(command_handle: IndyHandle,
                 id,
                 value,
                 Box::new(move |result| {
-                    let err = result_to_err_code!(result);
+                    let err = prepare_result!(result);
                     trace!("indy_update_wallet_record_value:");
                     cb(command_handle, err)
                 })
             )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_update_wallet_record_value: <<< res: {:?}", res);
 
@@ -156,13 +155,13 @@ pub extern fn indy_update_wallet_record_tags(command_handle: IndyHandle,
                 id,
                 tags_json,
                 Box::new(move |result| {
-                    let err = result_to_err_code!(result);
+                    let err = prepare_result!(result);
                     trace!("indy_update_wallet_record_tags:");
                     cb(command_handle, err)
                 })
             )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_update_wallet_record_tags: <<< res: {:?}", res);
 
@@ -212,13 +211,13 @@ pub extern fn indy_add_wallet_record_tags(command_handle: IndyHandle,
                 id,
                 tags_json,
                 Box::new(move |result| {
-                    let err = result_to_err_code!(result);
+                    let err = prepare_result!(result);
                     trace!("indy_add_wallet_record_tags:");
                     cb(command_handle, err)
                 })
             )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_add_wallet_record_tags: <<< res: {:?}", res);
 
@@ -258,13 +257,13 @@ pub extern fn indy_delete_wallet_record_tags(command_handle: IndyHandle,
                 id,
                 tag_names_json,
                 Box::new(move |result| {
-                    let err = result_to_err_code!(result);
+                    let err = prepare_result!(result);
                     trace!("indy_delete_wallet_record_tags:");
                     cb(command_handle, err)
                 })
             )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_delete_wallet_record_tags: <<< res: {:?}", res);
 
@@ -299,13 +298,13 @@ pub extern fn indy_delete_wallet_record(command_handle: IndyHandle,
                 type_,
                 id,
                 Box::new(move |result| {
-                    let err = result_to_err_code!(result);
+                    let err = prepare_result!(result);
                     trace!("indy_delete_wallet_record:");
                     cb(command_handle, err)
                 })
             )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_delete_wallet_record: <<< res: {:?}", res);
 
@@ -358,14 +357,14 @@ pub  extern fn indy_get_wallet_record(command_handle: IndyHandle,
                 id,
                 options_json,
                 Box::new(move |result| {
-                    let (err, record_json) = result_to_err_code_1!(result, String::new());
+                    let (err, record_json) = prepare_result_1!(result, String::new());
                     trace!("indy_get_wallet_record: record_json: {:?}", record_json);
                     let record_json = ctypes::string_to_cstring(record_json);
                     cb(command_handle, err, record_json.as_ptr())
                 })
             )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_get_wallet_record: <<< res: {:?}", res);
 
@@ -425,13 +424,13 @@ pub  extern fn indy_open_wallet_search(command_handle: IndyHandle,
                 query_json,
                 options_json,
                 Box::new(move |result| {
-                    let (err, handle) = result_to_err_code_1!(result, 0);
+                    let (err, handle) = prepare_result_1!(result, 0);
                     trace!("indy_open_wallet_search: handle: {:?}", handle);
                     cb(command_handle, err, handle)
                 })
             )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_open_wallet_search: <<< res: {:?}", res);
 
@@ -478,14 +477,14 @@ pub  extern fn indy_fetch_wallet_search_next_records(command_handle: IndyHandle,
                 wallet_search_handle,
                 count,
                 Box::new(move |result| {
-                    let (err, records_json) = result_to_err_code_1!(result, String::new());
+                    let (err, records_json) = prepare_result_1!(result, String::new());
                     trace!("indy_fetch_wallet_search_next_records: records_json: {:?}", records_json);
                     let records_json = ctypes::string_to_cstring(records_json);
                     cb(command_handle, err, records_json.as_ptr())
                 })
             )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_fetch_wallet_search_next_records: <<< res: {:?}", res);
 
@@ -511,13 +510,13 @@ pub  extern fn indy_close_wallet_search(command_handle: IndyHandle,
             NonSecretsCommand::CloseSearch(
                 wallet_search_handle,
                 Box::new(move |result| {
-                    let err = result_to_err_code!(result);
+                    let err = prepare_result!(result);
                     trace!("indy_close_wallet_search:");
                     cb(command_handle, err)
                 })
             )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_close_wallet_search: <<< res: {:?}", res);
 

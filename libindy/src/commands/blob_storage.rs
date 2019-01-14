@@ -1,24 +1,17 @@
-extern crate libc;
-extern crate serde_json;
-extern crate base64;
-
-use errors::indy::IndyError;
 use services::blob_storage::BlobStorageService;
-
 use std::rc::Rc;
-use std::result;
 
-type Result<T> = result::Result<T, IndyError>;
+use errors::prelude::*;
 
 pub enum BlobStorageCommand {
     OpenReader(
         String, // type
         String, // config
-        Box<Fn(Result<i32 /* handle */>) + Send>),
+        Box<Fn(IndyResult<i32 /* handle */>) + Send>),
     OpenWriter(
         String, // writer type
         String, // writer config JSON
-        Box<Fn(Result<i32 /* handle */>) + Send>),
+        Box<Fn(IndyResult<i32 /* handle */>) + Send>),
 }
 
 pub struct BlobStorageCommandExecutor {
@@ -45,7 +38,7 @@ impl BlobStorageCommandExecutor {
         }
     }
 
-    fn open_reader(&self, type_: &str, config: &str) -> Result<i32> {
+    fn open_reader(&self, type_: &str, config: &str) -> IndyResult<i32> {
         debug!("open_reader >>> type_: {:?}, config: {:?}", type_, config);
 
         let res = self.blob_storage_service.open_reader(type_, config).map_err(IndyError::from);
@@ -55,7 +48,7 @@ impl BlobStorageCommandExecutor {
         res
     }
 
-    fn open_writer(&self, type_: &str, config: &str) -> Result<i32> {
+    fn open_writer(&self, type_: &str, config: &str) -> IndyResult<i32> {
         debug!("open_writer >>> type_: {:?}, config: {:?}", type_, config);
 
         let res = self.blob_storage_service.open_writer(type_, config).map_err(IndyError::from);
