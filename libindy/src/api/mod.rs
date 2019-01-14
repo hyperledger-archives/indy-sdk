@@ -287,7 +287,7 @@ pub extern fn indy_set_runtime_config(config: *const c_char) -> ErrorCode {
 pub extern fn indy_get_current_error(error_json_p: *mut *const c_char) {
     trace!("indy_get_current_error >>> error_json_p: {:?}", error_json_p);
 
-    let error = get_last_error_c_json();
+    let error = get_current_error_c_json();
     unsafe { *error_json_p = error };
 
     trace!("indy_get_current_error: <<<");

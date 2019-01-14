@@ -4,7 +4,7 @@ macro_rules! prepare_result {
         match $result {
             Ok(_) => ErrorCode::Success,
             Err(err) => {
-                set_last_error(&err);
+                set_current_error(&err);
                 err.into()
             }
         }
@@ -17,7 +17,7 @@ macro_rules! prepare_result_1 {
         match $result {
             Ok(res) => (ErrorCode::Success, res),
             Err(err) => {
-                set_last_error(&err);
+                set_current_error(&err);
                 (err.into(), $default_value)
             }
         }
@@ -30,7 +30,7 @@ macro_rules! prepare_result_2 {
         match $result {
             Ok((res1, res2)) => (ErrorCode::Success, res1, res2),
             Err(err) => {
-                set_last_error(&err);
+                set_current_error(&err);
                 (err.into(), $default_value1, $default_value2)
             }
         }
@@ -43,7 +43,7 @@ macro_rules! prepare_result_3 {
         match $result {
             Ok((res1, res2, res3)) => (ErrorCode::Success, res1, res2, res3),
             Err(err) => {
-                set_last_error(&err);
+                set_current_error(&err);
                 (err.into(), $default_value1, $default_value2, $default_value3)
             }
         }
@@ -56,7 +56,7 @@ macro_rules! prepare_result_4 {
         match $result {
             Ok((res1, res2, res3, res4)) => (ErrorCode::Success, res1, res2, res3, res4),
             Err(err) => {
-                set_last_error(&err);
+                set_current_error(&err);
                 (err.into(), $default_value1, $default_value2, $default_value3, $default_value4)
             }
         }
