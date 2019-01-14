@@ -91,7 +91,6 @@ pub fn libindy_issuer_create_credential(cred_offer_json: &str,
         },
         None => -1,
     };
-
     anoncreds::issuer_create_credential(get_wallet_handle(),
                                         cred_offer_json,
                                         cred_req_json,
@@ -493,7 +492,6 @@ pub mod tests {
     use utils::error::LIBINDY_INVALID_STRUCTURE;
     #[cfg(feature = "pool_tests")]
     use utils::constants::{TEST_TAILS_FILE};
-    use utils::logger::LibvcxDefaultLogger;
 
 
     pub fn create_schema(attr_list: &str) -> (String, String) {
