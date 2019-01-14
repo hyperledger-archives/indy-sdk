@@ -3,6 +3,7 @@ extern crate libc;
 use api::{ErrorCode, IndyHandle};
 use commands::{Command, CommandExecutor};
 use commands::blob_storage::BlobStorageCommand;
+use errors::prelude::*;
 use utils::ctypes;
 
 use self::libc::c_char;
@@ -27,13 +28,13 @@ pub extern fn indy_open_blob_storage_reader(command_handle: IndyHandle,
             type_,
             config_json,
             Box::new(move |result| {
-                let (err, handle) = result_to_err_code_1!(result, 0);
+                let (err, handle) = prepare_result_1!(result, 0);
                 trace!("indy_open_blob_storage_reader: handle: {:?}", handle);
                 cb(command_handle, err, handle)
             }),
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_open_blob_storage_reader: <<< res: {:?}", res);
 
@@ -60,13 +61,13 @@ pub extern fn indy_open_blob_storage_writer(command_handle: IndyHandle,
             type_,
             config_json,
             Box::new(move |result| {
-                let (err, handle) = result_to_err_code_1!(result, 0);
+                let (err, handle) = prepare_result_1!(result, 0);
                 trace!("indy_open_blob_storage_writer: handle: {:?}", handle);
                 cb(command_handle, err, handle)
             }),
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_open_blob_storage_writer: <<< res: {:?}", res);
 
