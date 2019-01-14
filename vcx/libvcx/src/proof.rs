@@ -862,7 +862,7 @@ mod tests {
         let credentials = vec![cred1, cred2];
         let rev_reg_defs_json = proof.build_rev_reg_defs_json(&credentials).unwrap();
 
-        let json: Value = serde_json::from_str(REV_DEF_JSON).unwrap();
+        let json: Value = serde_json::from_str(&rev_def_json()).unwrap();
         let expected = json!({REV_REG_ID:json}).to_string();
         assert_eq!(rev_reg_defs_json, expected);
     }
