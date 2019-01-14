@@ -7,10 +7,13 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.sun.jna.ptr.PointerByReference;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
+
+import org.json.JSONObject;
 
 /**
  * Common functionality for the APIs, JSON parameters, and results used
@@ -36,7 +39,7 @@ public class IndyJava {
 
 		/**
 		 * Generates and returns a new command handle.
-		 * 
+		 *
 		 * @return The new command handle.
 		 */
 		protected static int newCommandHandle() {
@@ -46,14 +49,14 @@ public class IndyJava {
 
 		/**
 		 * Adds a future to track.
-		 * 
+		 *
 		 * @param future The future to track.
 		 * @return The command handle the future is being tracked against.
 		 */
 		protected static int addFuture(CompletableFuture<?> future) {
 
 			int commandHandle = newCommandHandle();
-			assert(! futures.containsKey(Integer.valueOf(commandHandle)));
+			assert (! futures.containsKey(Integer.valueOf(commandHandle)));
 			futures.put(Integer.valueOf(commandHandle), future);
 
 			return commandHandle;
@@ -61,14 +64,14 @@ public class IndyJava {
 
 		/**
 		 * Stops tracking the future associated with the provided command handle and returns it.
-		 * 
+		 *
 		 * @param xcommand_handle The command handle for the future to stop tracking.
 		 * @return The future associated with the command handle.
 		 */
 		protected static CompletableFuture<?> removeFuture(int xcommand_handle) {
 
 			CompletableFuture<?> future = futures.remove(Integer.valueOf(xcommand_handle));
-			assert(future != null);
+			assert (future != null);
 
 			return future;
 		}
@@ -81,13 +84,25 @@ public class IndyJava {
 		 * Sets the provided future with an exception if the error code provided does not indicate success.
 		 *
 		 * @param future The future.
-		 * @param err The error value to check.
-		 * @return true if the error code indeicated Success, otherwise false.
+		 * @param err    The error value to check.
+		 * @return true if the error code indicated Success, otherwise false.
 		 */
 		protected static boolean checkResult(CompletableFuture<?> future, int err) {
 
 			ErrorCode errorCode = ErrorCode.valueOf(err);
-			if (! ErrorCode.Success.equals(errorCode)) { future.completeExceptionally(IndyException.fromSdkError(err)); return false; }
+			if (! ErrorCode.Success.equals(errorCode)) {
+
+				PointerByReference errorDetailsJson = new PointerByReference();
+
+				LibIndy.api.indy_get_current_error(errorDetailsJson);
+
+				JSONObject errorDetails = new JSONObject(errorDetailsJson.getValue().getString(0));
+
+				IndyException indyException = IndyException.fromSdkErrorParts(err, errorDetails.optString("message"), errorDetails.optString("backtrace"));
+				future.completeExceptionally(indyException);
+				
+				return false;
+			}
 
 			return true;
 		}
@@ -132,7 +147,7 @@ public class IndyJava {
 
 		/**
 		 * Converts the map of parameters to a JSON string.
-		 * 
+		 *
 		 * @return The JSON string.
 		 */
 		public final String toJson() {

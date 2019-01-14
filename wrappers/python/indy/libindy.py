@@ -192,8 +192,11 @@ def set_runtime_config(config: str):
      Set libindy runtime configuration. Can be optionally called to change current params.
 
      :param config: {
-         "crypto_thread_pool_size": <int> - size of thread pool for the most expensive crypto operations. (4 by default)
-     }
+      "crypto_thread_pool_size": Optional<int> - size of thread pool for the most expensive crypto operations. (4 by default)
+      "collect_backtrace": Optional<bool> - whether errors backtrace should be collected.
+          Capturing of backtrace can affect library performance.
+          NOTE: must be set before invocation of any other API functions.
+      }
     """
 
     logger = logging.getLogger(__name__)

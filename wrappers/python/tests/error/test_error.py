@@ -10,7 +10,7 @@ from indy.error import ErrorCode
 
 
 @pytest.mark.asyncio
-async def test_get_current_error(wallet_handle, identity_trustee1, verkey_my2, message):
+async def test_error(wallet_handle, identity_trustee1, verkey_my2, message):
     (_, key) = identity_trustee1
 
     invalid_key = crypto.auth_crypt(wallet_handle, key, 'CnEDk___MnmiHXEV1WFgbV___eYnPqs___TdcZaNhFVW', message)

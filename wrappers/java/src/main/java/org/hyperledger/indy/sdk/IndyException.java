@@ -18,6 +18,8 @@ public class IndyException extends Exception {
 
 	private static final long serialVersionUID = 2650355290834266477L;
 	private int sdkErrorCode;
+	private String sdkMessage;
+	private String sdkBacktrace;
 
 	/**
 	 * Initializes a new IndyException with the specified message.
@@ -37,6 +39,38 @@ public class IndyException extends Exception {
 	 */
 	public int getSdkErrorCode() {
 		return sdkErrorCode;
+	}
+
+	/**
+	 * Sets the SDK error message for the exception.
+	 */
+	private void setSdkMessage(String sdkMessage) {
+		this.sdkMessage = sdkMessage;
+	}
+
+	/**
+	 * Gets the SDK error backtrace for the exception.
+	 *
+	 * @return The SDK backtrace.
+	 */
+	public String getSdkMessage() {
+		return sdkMessage;
+	}
+
+	/**
+	 * Sets the SDK error backtrace for the exception.
+	 */
+	private void setSdkBacktrace(String sdkBacktrace) {
+		this.sdkBacktrace = sdkBacktrace;
+	}
+
+	/**
+	 * Gets the SDK error backtrace for the exception.
+	 *
+	 * @return The SDK backtrace.
+	 */
+	public String getSdkBacktrace() {
+		return sdkBacktrace;
 	}
 
 	/**
@@ -154,6 +188,21 @@ public class IndyException extends Exception {
 				String message = String.format("An unmapped error with the code '%s' was returned by the SDK.", sdkErrorCode);
 				return new IndyException(message, sdkErrorCode);
 		}
+	}
+
+	/**
+	 * Initializes a new IndyException using the specified SDK error code.
+	 *
+	 * @param sdkErrorCode The SDK error code to construct the exception from.
+	 * @param sdkMessage The SDK error message to construct the exception from.
+	 * @param sdkBacktrace The SDK error backtrace to construct the exception from.
+	 * @return IndyException correspondent to SDK error code
+	 */
+	public static IndyException fromSdkErrorParts(int sdkErrorCode, String sdkMessage, String sdkBacktrace){
+		IndyException indyException = IndyException.fromSdkError(sdkErrorCode);
+		indyException.setSdkMessage(sdkMessage);
+		indyException.setSdkBacktrace(sdkBacktrace);
+		return indyException;
 	}
 }
 
