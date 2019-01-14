@@ -4,16 +4,19 @@ use std::io;
 use std::sync::Arc;
 use std::ffi::CString;
 use std::cell::RefCell;
+use std::ptr;
+
 
 use failure::{Backtrace, Context, Fail};
 use indy_crypto::errors::IndyCryptoError;
 use log;
+use libc::c_char;
 
 use api::ErrorCode;
 use utils::ctypes;
 
 pub mod prelude {
-    pub use super::{err_msg, IndyError, IndyErrorExt, IndyErrorKind, IndyResult, IndyResultExt, LAST_ERROR, set_last_error};
+    pub use super::{err_msg, IndyError, IndyErrorExt, IndyErrorKind, IndyResult, IndyResultExt, set_last_error, get_last_error_c_json};
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
@@ -427,16 +430,25 @@ impl<E> IndyErrorExt for E where E: Fail
 }
 
 thread_local! {
-    pub static LAST_ERROR: RefCell<Option<CString>> = RefCell::new(None);
+    pub static LAST_ERROR_C_JSON: RefCell<Option<CString>> = RefCell::new(None);
 }
 
 pub fn set_last_error(err: &IndyError) {
-    LAST_ERROR.with(|error| {
+    LAST_ERROR_C_JSON.with(|error| {
         let error_json = json!({
-            "massage": err.to_string(),
+            "message": err.to_string(),
             "backtrace": err.backtrace().map(|bt| bt.to_string())
         }).to_string();
         error.replace(Some(ctypes::string_to_cstring(error_json)));
     });
 }
 
+pub fn get_last_error_c_json() -> *const c_char {
+    let mut value = ptr::null();
+
+    LAST_ERROR_C_JSON.with(|err|
+        err.borrow().as_ref().map(|err| value = err.as_ptr())
+    );
+    
+    value
+}
