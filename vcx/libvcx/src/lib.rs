@@ -2,6 +2,7 @@
 #![allow(unused_variables)]
 #![allow(dead_code)]
 #![crate_name = "vcx"]
+//this is needed for some large json macro invocations
 #![recursion_limit="128"]
 extern crate serde;
 extern crate rand;
