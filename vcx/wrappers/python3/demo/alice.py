@@ -7,6 +7,9 @@ from time import sleep
 
 import logging
 
+from indy import wallet
+from indy.error import ErrorCode, IndyError
+
 from vcx.api.connection import Connection
 from vcx.api.credential import Credential
 from vcx.api.disclosed_proof import DisclosedProof
@@ -26,24 +29,41 @@ provisionConfig = {
     'enterprise_seed': '000000000000000000000000Trustee1'
 }
 
-if len(sys.argv) > 1:
-    if sys.argv[1] == '--postgres':
-        # load postgres dll and configure postgres wallet
-        print("Initializing postgres wallet")
-        stg_lib = cdll.LoadLibrary("libindystrgpostgres.dylib")
-        result = stg_lib.postgresstorage_init()
-        if result != 0:
-            print("Error unable to load postgres wallet storage", result)
-            sys.exit(0)
+if len(sys.argv) > 1 and sys.argv[1] == '--postgres':
+    # load postgres dll and configure postgres wallet
+    print("Initializing postgres wallet")
+    stg_lib = cdll.LoadLibrary("libindystrgpostgres.dylib")
+    result = stg_lib.postgresstorage_init()
+    if result != 0:
+        print("Error unable to load postgres wallet storage", result)
+        sys.exit(0)
 
-        provisionConfig['wallet_type'] = 'postgres_storage'
-        provisionConfig['storage_config'] = '{"url":"localhost:5432"}'
-        provisionConfig['storage_credentials'] = '{"account":"postgres","password":"mysecretpassword","admin_account":"postgres","admin_password":"mysecretpassword"}'
+    provisionConfig['wallet_type'] = 'postgres_storage'
+    provisionConfig['storage_config'] = '{"url":"localhost:5432"}'
+    provisionConfig['storage_credentials'] = '{"account":"postgres","password":"mysecretpassword","admin_account":"postgres","admin_password":"mysecretpassword"}'
 
-        print("Success, loaded postgres wallet storage")
+    print("Success, loaded postgres wallet storage")
 
 
 async def main():
+    if len(sys.argv) > 1 and sys.argv[1] == '--postgres':
+        # create wallet in advance
+        print("Provision postgres wallet in advance")
+        wallet_config = {
+            'id': provisionConfig['wallet_name'],
+            'storage_type': provisionConfig['wallet_type'],
+            'storage_config': json.loads(provisionConfig['storage_config']),
+        }
+        wallet_creds = {
+            'key': provisionConfig['wallet_key'],
+            'storage_credentials': json.loads(provisionConfig['storage_credentials']),
+        }
+        try:
+            await wallet.create_wallet(json.dumps(wallet_config), json.dumps(wallet_creds))
+        except IndyError as ex:
+            if ex.error_code == ErrorCode.PoolLedgerConfigAlreadyExistsError:
+                pass
+        print("Postgres wallet provisioned")
 
     payment_plugin = cdll.LoadLibrary("libnullpay.dylib")
     payment_plugin.nullpay_init()
