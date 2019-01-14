@@ -12,7 +12,7 @@ use postgres;
 use serde_json;
 
 use api::ErrorCode;
-use errors::common::CommonError;
+use errors::prelude::*;
 use errors::ToErrorCode;
 
 #[derive(Debug)]

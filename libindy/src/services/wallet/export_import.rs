@@ -1,21 +1,22 @@
-use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use std::io;
-use std::io::{Write, Read, BufWriter, BufReader};
+use std::io::{BufReader, BufWriter, Read, Write};
 use std::time::{SystemTime, UNIX_EPOCH};
+
+use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use rmp_serde;
 
+use domain::wallet::export_import::{EncryptionMethod, Header, Record};
 use domain::wallet::KeyDerivationMethod;
-use domain::wallet::export_import::{Header, EncryptionMethod, Record};
-use errors::common::CommonError;
-use utils::crypto::hash::{hash, HASHBYTES};
-use utils::crypto::{chacha20poly1305_ietf, pwhash_argon2i13};
+use errors::prelude::*;
 use services::wallet::encryption::KeyDerivationData;
+use utils::crypto::{chacha20poly1305_ietf, pwhash_argon2i13};
+use utils::crypto::hash::{hash, HASHBYTES};
 
-use super::{WalletError, Wallet, WalletRecord};
+use super::{Wallet, WalletRecord};
 
 const CHUNK_SIZE: usize = 1024;
 
-pub(super) fn export_continue(wallet: &Wallet, writer: &mut Write, version: u32, key: chacha20poly1305_ietf::Key, key_data: &KeyDerivationData) -> Result<(), WalletError> {
+pub(super) fn export_continue(wallet: &Wallet, writer: &mut Write, version: u32, key: chacha20poly1305_ietf::Key, key_data: &KeyDerivationData) -> IndyResult<()> {
     let nonce = chacha20poly1305_ietf::gen_nonce();
     let chunk_size = CHUNK_SIZE;
 
@@ -43,7 +44,7 @@ pub(super) fn export_continue(wallet: &Wallet, writer: &mut Write, version: u32,
     };
 
     let header = rmp_serde::to_vec(&header)
-        .map_err(|err| CommonError::InvalidState(format!("Can't serialize header: {:?}", err)))?;
+        .to_indy(IndyErrorKind::InvalidState, "Can't serialize wallet export file header")?;
 
     // Write plain
     let mut writer = BufWriter::new(writer);
@@ -62,14 +63,14 @@ pub(super) fn export_continue(wallet: &Wallet, writer: &mut Write, version: u32,
 
     while let Some(WalletRecord { type_, id, value, tags }) = records.next()? {
         let record = Record {
-            type_: type_.ok_or(CommonError::InvalidState("No type fetched for exported record".to_string()))?,
+            type_: type_.ok_or(err_msg(IndyErrorKind::InvalidState, "No type fetched for exported record"))?,
             id,
-            value: value.ok_or(CommonError::InvalidState("No value fetched for exported record".to_string()))?,
-            tags: tags.ok_or(CommonError::InvalidState("No tags fetched for exported record".to_string()))?,
+            value: value.ok_or(err_msg(IndyErrorKind::InvalidState, "No value fetched for exported record"))?,
+            tags: tags.ok_or(err_msg(IndyErrorKind::InvalidState, "No tags fetched for exported record"))?,
         };
 
         let record = rmp_serde::to_vec(&record)
-            .map_err(|err| CommonError::InvalidState(format!("Can't serialize record: {:?}", err)))?;
+            .to_indy(IndyErrorKind::InvalidState, "Can't serialize record")?;
 
         writer.write_u32::<LittleEndian>(record.len() as u32)?;
         writer.write_all(&record)?;
@@ -81,30 +82,30 @@ pub(super) fn export_continue(wallet: &Wallet, writer: &mut Write, version: u32,
 }
 
 #[cfg(test)]
-fn import<T>(wallet: &Wallet, reader: T, passphrase: &str) -> Result<(), WalletError> where T: Read {
+fn import<T>(wallet: &Wallet, reader: T, passphrase: &str) -> IndyResult<()> where T: Read {
     let (reader, import_key_derivation_data, nonce, chunk_size, header_bytes) = preparse_file_to_import(reader, passphrase)?;
     let import_key = import_key_derivation_data.calc_master_key()?;
     finish_import(wallet, reader, import_key, nonce, chunk_size, header_bytes)
 }
 
-pub(super) fn preparse_file_to_import<T>(reader: T, passphrase: &str) -> Result<(BufReader<T>, KeyDerivationData, chacha20poly1305_ietf::Nonce, usize, Vec<u8>), WalletError> where T: Read {
+pub(super) fn preparse_file_to_import<T>(reader: T, passphrase: &str) -> IndyResult<(BufReader<T>, KeyDerivationData, chacha20poly1305_ietf::Nonce, usize, Vec<u8>)> where T: Read {
     // Reads plain
     let mut reader = BufReader::new(reader);
 
     let header_len = reader.read_u32::<LittleEndian>().map_err(_map_io_err)? as usize;
 
     if header_len == 0 {
-        Err(CommonError::InvalidStructure("Invalid header length".to_string()))?;
+        Err(err_msg(IndyErrorKind::InvalidStructure, "Invalid header length"))?;
     }
 
     let mut header_bytes = vec![0u8; header_len];
     reader.read_exact(&mut header_bytes).map_err(_map_io_err)?;
 
     let header: Header = rmp_serde::from_slice(&header_bytes)
-        .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize header: {}", err)))?;
+        .to_indy(IndyErrorKind::InvalidStructure, "Header is malformed json")?;
 
     if header.version != 0 {
-        Err(CommonError::InvalidStructure("Unsupported version".to_string()))?;
+        Err(err_msg(IndyErrorKind::InvalidStructure, "Unsupported version"))?;
     }
 
     let key_derivation_method = match header.encryption_method {
@@ -116,10 +117,10 @@ pub(super) fn preparse_file_to_import<T>(reader: T, passphrase: &str) -> Result<
     let (import_key_derivation_data, nonce, chunk_size) = match header.encryption_method {
         EncryptionMethod::ChaCha20Poly1305IETF { salt, nonce, chunk_size } | EncryptionMethod::ChaCha20Poly1305IETFInteractive { salt, nonce, chunk_size } => {
             let salt = pwhash_argon2i13::Salt::from_slice(&salt)
-                .map_err(|err| CommonError::InvalidStructure(format!("Invalid salt: {:?}", err)))?;
+                .to_indy(IndyErrorKind::InvalidStructure, "Invalid salt")?;
 
             let nonce = chacha20poly1305_ietf::Nonce::from_slice(&nonce)
-                .map_err(|err| CommonError::InvalidStructure(format!("Invalid nonce: {:?}", err)))?;
+                .to_indy(IndyErrorKind::InvalidStructure, "Invalid nonce")?;
 
             let passphrase = passphrase.to_owned();
 
@@ -135,7 +136,7 @@ pub(super) fn preparse_file_to_import<T>(reader: T, passphrase: &str) -> Result<
         }
         EncryptionMethod::ChaCha20Poly1305IETFRaw { nonce, chunk_size } => {
             let nonce = chacha20poly1305_ietf::Nonce::from_slice(&nonce)
-                .map_err(|err| CommonError::InvalidStructure(format!("Invalid nonce: {:?}", err)))?;
+                .to_indy(IndyErrorKind::InvalidStructure, "Invalid nonce")?;
 
             let key_data = KeyDerivationData::Raw(passphrase.to_owned());
 
@@ -146,7 +147,7 @@ pub(super) fn preparse_file_to_import<T>(reader: T, passphrase: &str) -> Result<
     Ok((reader, import_key_derivation_data, nonce, chunk_size, header_bytes))
 }
 
-pub(super) fn finish_import<T>(wallet: &Wallet, reader: BufReader<T>, key: chacha20poly1305_ietf::Key, nonce: chacha20poly1305_ietf::Nonce, chunk_size: usize, header_bytes: Vec<u8>) -> Result<(), WalletError> where T: Read {
+pub(super) fn finish_import<T>(wallet: &Wallet, reader: BufReader<T>, key: chacha20poly1305_ietf::Key, nonce: chacha20poly1305_ietf::Nonce, chunk_size: usize, header_bytes: Vec<u8>) -> IndyResult<()> where T: Read {
     // Reads encrypted
     let mut reader = chacha20poly1305_ietf::Reader::new(reader, key, nonce, chunk_size);
 
@@ -154,7 +155,7 @@ pub(super) fn finish_import<T>(wallet: &Wallet, reader: BufReader<T>, key: chach
     reader.read_exact(&mut header_hash).map_err(_map_io_err)?;
 
     if hash(&header_bytes)? != header_hash {
-        Err(CommonError::InvalidStructure("Invalid header hash".to_string()))?;
+        Err(err_msg(IndyErrorKind::InvalidStructure, "Invalid header hash"))?;
     }
 
     loop {
@@ -168,7 +169,7 @@ pub(super) fn finish_import<T>(wallet: &Wallet, reader: BufReader<T>, key: chach
         reader.read_exact(&mut record).map_err(_map_io_err)?;
 
         let record: Record = rmp_serde::from_slice(&record)
-            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize record: {}", err)))?;
+            .to_indy(IndyErrorKind::InvalidStructure, "Record is malformed msgpack")?;
 
         wallet.add(&record.type_, &record.id, &record.value, &record.tags)?;
     }
@@ -176,33 +177,34 @@ pub(super) fn finish_import<T>(wallet: &Wallet, reader: BufReader<T>, key: chach
     Ok(())
 }
 
-fn _map_io_err(e: io::Error) -> CommonError {
+fn _map_io_err(e: io::Error) -> IndyError {
     match e {
         ref e if e.kind() == io::ErrorKind::UnexpectedEof
-            || e.kind() == io::ErrorKind::InvalidData => CommonError::InvalidStructure("Invalid export file format".to_string()),
-        e => CommonError::IOError(e),
+            || e.kind() == io::ErrorKind::InvalidData => err_msg(IndyErrorKind::InvalidStructure, "Invalid export file format"),
+        e => e.to_indy(IndyErrorKind::IOError, "Can't read export file"),
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use std::collections::HashMap;
+    use std::rc::Rc;
 
     use serde_json;
-    use std::rc::Rc;
-    use std::collections::HashMap;
 
     use domain::wallet::{Metadata, MetadataArgon};
+    use services::wallet::encryption;
+    use services::wallet::storage::default::SQLiteStorageType;
+    use services::wallet::storage::WalletStorageType;
+    use services::wallet::wallet::{Keys, Wallet};
     use utils::crypto::pwhash_argon2i13;
     use utils::test;
-    use services::wallet::encryption;
-    use services::wallet::storage::WalletStorageType;
-    use services::wallet::storage::default::SQLiteStorageType;
-    use services::wallet::wallet::{Keys, Wallet};
 
-    fn export(wallet: &Wallet, writer: &mut Write, passphrase: &str, version: u32, key_derivation_method: &KeyDerivationMethod) -> Result<(), WalletError> {
+    use super::*;
+
+    fn export(wallet: &Wallet, writer: &mut Write, passphrase: &str, version: u32, key_derivation_method: &KeyDerivationMethod) -> IndyResult<()> {
         if version != 0 {
-            Err(CommonError::InvalidState("Unsupported version".to_string()))?;
+            Err(err_msg(IndyErrorKind::InvalidState, "Unsupported version"))?;
         }
 
         let key_data = KeyDerivationData::from_passphrase_with_new_salt(passphrase, key_derivation_method);
@@ -272,7 +274,7 @@ mod tests {
         _cleanup();
 
         let res = import(&_wallet1(), &mut "".as_bytes(), _passphrase());
-        assert_match!(Err(WalletError::CommonError(CommonError::InvalidStructure(_))), res);
+        assert_eq!(IndyErrorKind::InvalidStructure, res.unwrap_err().kind());
     }
 
     #[test]
@@ -280,7 +282,7 @@ mod tests {
         _cleanup();
 
         let res = import(&_wallet1(), &mut "\x00".as_bytes(), _passphrase());
-        assert_match!(Err(WalletError::CommonError(CommonError::InvalidStructure(_))), res);
+        assert_eq!(IndyErrorKind::InvalidStructure, res.unwrap_err().kind());
     }
 
     #[test]
@@ -288,7 +290,7 @@ mod tests {
         _cleanup();
 
         let res = import(&_wallet1(), &mut "\x00\x20small".as_bytes(), _passphrase());
-        assert_match!(Err(WalletError::CommonError(CommonError::InvalidStructure(_))), res);
+        assert_eq!(IndyErrorKind::InvalidStructure, res.unwrap_err().kind());
     }
 
     #[test]
@@ -305,7 +307,7 @@ mod tests {
         };
 
         let res = import(&_wallet1(), &mut output.as_slice(), _passphrase());
-        assert_match!(Err(WalletError::CommonError(CommonError::InvalidStructure(_))), res);
+        assert_eq!(IndyErrorKind::InvalidStructure, res.unwrap_err().kind());
     }
 
     #[test]
@@ -320,7 +322,7 @@ mod tests {
         _change_byte(&mut output, pos);
 
         let res = import(&mut _wallet2(), &mut output.as_slice(), _passphrase());
-        assert_match!(Err(WalletError::CommonError(CommonError::InvalidStructure(_))), res);
+        assert_eq!(IndyErrorKind::InvalidStructure, res.unwrap_err().kind());
     }
 
     #[test]
@@ -335,7 +337,7 @@ mod tests {
         _change_byte(&mut output, pos);
 
         let res = import(&mut _wallet2(), &mut output.as_slice(), _passphrase());
-        assert_match!(Err(WalletError::CommonError(CommonError::InvalidStructure(_))), res);
+        assert_eq!(IndyErrorKind::InvalidStructure, res.unwrap_err().kind());
     }
 
     #[test]
@@ -348,7 +350,7 @@ mod tests {
         output.pop().unwrap();
 
         let res = import(&mut _wallet2(), &mut output.as_slice(), _passphrase());
-        assert_match!(Err(WalletError::CommonError(CommonError::InvalidStructure(_))), res);
+        assert_eq!(IndyErrorKind::InvalidStructure, res.unwrap_err().kind());
     }
 
     #[test]
@@ -361,7 +363,7 @@ mod tests {
         output.push(10);
 
         let res = import(&mut _wallet2(), &mut output.as_slice(), _passphrase());
-        assert_match!(Err(WalletError::CommonError(CommonError::InvalidStructure(_))), res);
+        assert_eq!(IndyErrorKind::InvalidStructure, res.unwrap_err().kind());
     }
 
     fn _cleanup() {
@@ -390,7 +392,7 @@ mod tests {
             });
 
             serde_json::to_vec(&metadata)
-                .map_err(|err| CommonError::InvalidState(format!("Cannot serialize wallet metadata: {:?}", err))).unwrap()
+                .to_indy(IndyErrorKind::InvalidState, "Cannot serialize wallet metadata").unwrap()
         };
 
         storage_type.create_storage(id,

@@ -1,6 +1,6 @@
 extern crate base64;
 
-use errors::common::CommonError;
+use errors::prelude::*;
 
 pub fn encode(doc: &[u8]) -> String {
     base64::encode(doc)
