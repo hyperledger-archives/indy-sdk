@@ -1,3 +1,5 @@
+import json
+
 from .error import ErrorCode, IndyError
 
 from ctypes import *
@@ -28,10 +30,11 @@ def do_call(name: str, *args):
                                  *args)
 
     logger.debug("do_call: Function %s returned err: %i", name, err)
-
-    if err != ErrorCode.Success:
+    error = IndyError(ErrorCode(err))
+    if error.error_code != ErrorCode.Success:
         logger.warning("_do_call: Function %s returned error %i", name, err)
-        future.set_exception(IndyError(ErrorCode(err)))
+        _set_error_details(error)
+        future.set_exception(error)
 
     logger.debug("do_call: <<< %s", future)
     return future
@@ -54,7 +57,10 @@ def create_cb(cb_type: CFUNCTYPE, transform_fn=None):
     def _cb(command_handle: int, err: int, *args):
         if transform_fn:
             args = transform_fn(*args)
-        _indy_callback(command_handle, err, *args)
+        error = IndyError(ErrorCode(err))
+        if error.error_code != ErrorCode.Success:
+            _set_error_details(error)
+        _indy_callback(command_handle, error, *args)
 
     res = cb_type(_cb)
 
@@ -62,9 +68,23 @@ def create_cb(cb_type: CFUNCTYPE, transform_fn=None):
     return res
 
 
-def _indy_callback(command_handle: int, err: int, *args):
+def _set_error_details(error: IndyError):
     logger = logging.getLogger(__name__)
-    logger.debug("_indy_callback: >>> command_handle: %i, err %i, args: %s", command_handle, err, args)
+    logger.debug("_set_error_details: >>> error %s", error)
+
+    error_c = c_char_p()
+    getattr(_cdll(), 'indy_get_current_error')(byref(error_c))
+
+    error_details = json.loads(error_c.value.decode())
+    error.message = error_details['message']
+    error.backtrace = error_details['backtrace']
+
+    logger.debug("_set_error_details: <<<")
+
+
+def _indy_callback(command_handle: int, err: IndyError, *args):
+    logger = logging.getLogger(__name__)
+    logger.debug("_indy_callback: >>> command_handle: %i, err %s, args: %s", command_handle, err, args)
 
     (event_loop, future) = _futures[command_handle]
     event_loop.call_soon_threadsafe(_indy_loop_callback, command_handle, err, *args)
@@ -74,16 +94,16 @@ def _indy_callback(command_handle: int, err: int, *args):
 
 def _indy_loop_callback(command_handle: int, err, *args):
     logger = logging.getLogger(__name__)
-    logger.debug("_indy_loop_callback: >>> command_handle: %i, err %i, args: %s", command_handle, err, args)
+    logger.debug("_indy_loop_callback: >>> command_handle: %i, err %s, args: %s", command_handle, err, args)
 
     (event_loop, future) = _futures.pop(command_handle)
 
     if future.cancelled():
         logger.debug("_indy_loop_callback: Future was cancelled earlier")
     else:
-        if err != ErrorCode.Success:
-            logger.warning("_indy_loop_callback: Function returned error %i", err)
-            future.set_exception(IndyError(ErrorCode(err)))
+        if err.error_code != ErrorCode.Success:
+            logger.warning("_indy_loop_callback: Function returned error %s", err)
+            future.set_exception(err)
         else:
             if len(args) == 0:
                 res = None

@@ -1,4 +1,5 @@
 from enum import IntEnum
+from typing import Optional
 
 
 class ErrorCode(IntEnum):
@@ -165,13 +166,17 @@ class ErrorCode(IntEnum):
 
     # Operation is not supported for payment method
     PaymentOperationNotSupportedError = 704,
-    
+
     # Extra funds on inputs
     PaymentExtraFundsError = 705
 
 
 class IndyError(Exception):
     # error_code: ErrorCode
+    # message: Optional[str]
+    # backtrace: str
 
-    def __init__(self, error_code: ErrorCode):
+    def __init__(self, error_code: ErrorCode, message: Optional[str] = None, backtrace: Optional[str] = None):
         self.error_code = error_code
+        self.message = message
+        self.backtrace = backtrace
