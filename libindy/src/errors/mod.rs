@@ -4,16 +4,19 @@ use std::io;
 use std::sync::Arc;
 use std::ffi::CString;
 use std::cell::RefCell;
+use std::ptr;
+
 
 use failure::{Backtrace, Context, Fail};
 use indy_crypto::errors::IndyCryptoError;
 use log;
+use libc::c_char;
 
 use api::ErrorCode;
 use utils::ctypes;
 
 pub mod prelude {
-    pub use super::{err_msg, IndyError, IndyErrorExt, IndyErrorKind, IndyResult, IndyResultExt, LAST_ERROR, set_last_error};
+    pub use super::{err_msg, IndyError, IndyErrorExt, IndyErrorKind, IndyResult, IndyResultExt, set_last_error, get_last_error};
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
@@ -433,10 +436,15 @@ thread_local! {
 pub fn set_last_error(err: &IndyError) {
     LAST_ERROR.with(|error| {
         let error_json = json!({
-            "massage": err.to_string(),
+            "message": err.to_string(),
             "backtrace": err.backtrace().map(|bt| bt.to_string())
         }).to_string();
         error.replace(Some(ctypes::string_to_cstring(error_json)));
     });
 }
 
+pub fn get_last_error(error_json_p: *mut *const c_char) {
+    LAST_ERROR.with(|err| unsafe {
+        *error_json_p = err.borrow().as_ref().map(|err| err.as_ptr()).unwrap_or(ptr::null());
+    });
+}

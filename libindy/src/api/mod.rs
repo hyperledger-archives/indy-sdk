@@ -11,7 +11,6 @@ pub mod payments;
 pub mod logger;
 
 use libc::c_char;
-use std::ptr;
 
 use domain::IndyConfig;
 use errors::prelude::*;
@@ -241,7 +240,8 @@ pub enum ErrorCode
 ///
 /// #Params
 /// config: {
-///     "crypto_thread_pool_size": <int> - size of thread pool for the most expensive crypto operations. (4 by default)
+///     "crypto_thread_pool_size": Optional<int> - size of thread pool for the most expensive crypto operations. (4 by default)
+///     "collect_backtrace": Optional<bool> - whether backtrace should be collected
 /// }
 ///
 /// #Errors
@@ -261,28 +261,32 @@ pub extern fn indy_set_runtime_config(config: *const c_char) -> ErrorCode {
     res
 }
 
-/// Get details for last occurred error
+/// Get details for last occurred error.
+///
+/// This function should be called in two places to handle both cases of error occurrence:
+///     1) synchronous  - in the same application thread
+///     2) asynchronous - inside of function callback
+///
+/// NOTE: Error is stored until the next one occurs in the same execution thread.
 ///
 /// #Params
 /// * `error_json_p` - Reference that will contain error details (if any error has occurred before)
 ///  in the format:
 /// {
-///     "backtrace": str - error backtrace
-///     "massage": str - human-readable message
+///     "backtrace": Optional<str> - error backtrace.
+///         Collecting of backtrace can be enabled by:
+///             1) setting environment variable `RUST_BACKTRACE=1`
+///             2) calling `indy_set_runtime_config` API function with `collect_backtrace: true`
+///     "message": str - human-readable error description
 /// }
 ///
 #[no_mangle]
-pub extern fn indy_get_last_error(command_handle: IndyHandle,
-                                  error_json_p: *mut *const c_char) -> ErrorCode {
-    trace!("indy_get_last_error >>> command_handle: {:?}, error_json_p: {:?}", command_handle, error_json_p);
+pub extern fn indy_get_current_error(error_json_p: *mut *const c_char) {
+    trace!("indy_get_current_error >>> error_json_p: {:?}", error_json_p);
 
-    LAST_ERROR.with(|err| unsafe {
-        *error_json_p = err.borrow().as_ref().map(|err| err.as_ptr()).unwrap_or(ptr::null());
-    });
+    let res = get_last_error(error_json_p);
 
-    let res = ErrorCode::Success;
-
-    trace!("indy_get_last_error: <<< res: {:?}", res);
+    trace!("indy_get_current_error: <<< res: {:?}", res);
 
     res
 }
