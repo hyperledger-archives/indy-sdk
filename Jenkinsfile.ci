@@ -114,11 +114,6 @@ def windowsTesting() {
                     dir('vcx/libvcx') {
                         echo "Windows Libvcx Test: Build"
 
-                        // FIXME remove that once https://jira.hyperledger.org/browse/IS-1127 is resolved
-                        bat """
-                            PowerShell.exe "&{(Get-Content -Path src/settings.rs -Raw) -replace '/tmp/test_init.json','./test_init.json'} | Set-Content -Path src/settings.rs"
-                        """
-
                         withEnv([
                                 "OPENSSL_DIR=$WORKSPACE\\libindy\\prebuilt",
                                 "RUST_BACKTRACE=1"

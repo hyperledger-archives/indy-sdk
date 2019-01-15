@@ -1,6 +1,7 @@
 extern crate indy_crypto;
 extern crate threadpool;
 
+use std::env;
 use std::rc::Rc;
 use std::sync::{Mutex, MutexGuard};
 use std::sync::mpsc::{channel, Sender};
@@ -58,7 +59,14 @@ lazy_static! {
 }
 
 pub fn indy_set_runtime_config(config: IndyConfig) {
-    THREADPOOL.lock().unwrap().set_num_threads(config.crypto_thread_pool_size)
+    if let Some(crypto_thread_pool_size) = config.crypto_thread_pool_size {
+        THREADPOOL.lock().unwrap().set_num_threads(crypto_thread_pool_size);
+    }
+    match config.collect_backtrace {
+        Some(true) => env::set_var("RUST_BACKTRACE", "1"),
+        Some(false) => env::set_var("RUST_BACKTRACE", "0"),
+        _ => {}
+    }
 }
 
 pub struct CommandExecutor {
