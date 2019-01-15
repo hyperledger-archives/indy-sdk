@@ -30,10 +30,9 @@ def do_call(name: str, *args):
                                  *args)
 
     logger.debug("do_call: Function %s returned err: %i", name, err)
-    error = IndyError(ErrorCode(err))
-    if error.error_code != ErrorCode.Success:
+    if err != ErrorCode.Success:
         logger.warning("_do_call: Function %s returned error %i", name, err)
-        _set_error_details(error)
+        error = _get_indy_error(err)
         future.set_exception(error)
 
     logger.debug("do_call: <<< %s", future)
@@ -57,9 +56,7 @@ def create_cb(cb_type: CFUNCTYPE, transform_fn=None):
     def _cb(command_handle: int, err: int, *args):
         if transform_fn:
             args = transform_fn(*args)
-        error = IndyError(ErrorCode(err))
-        if error.error_code != ErrorCode.Success:
-            _set_error_details(error)
+        error = _get_indy_error(err)
         _indy_callback(command_handle, error, *args)
 
     res = cb_type(_cb)
@@ -68,18 +65,26 @@ def create_cb(cb_type: CFUNCTYPE, transform_fn=None):
     return res
 
 
-def _set_error_details(error: IndyError):
+def _get_indy_error(err: int) -> IndyError:
+    if err == ErrorCode.Success:
+        return IndyError(ErrorCode(err))
+    else:
+        error_details = _get_error_details()
+        error = IndyError(ErrorCode(err), error_details['message'])
+        error.indy_backtrace = error_details['backtrace']
+        return error
+
+
+def _get_error_details() -> dict:
     logger = logging.getLogger(__name__)
-    logger.debug("_set_error_details: >>> error %s", error)
+    logger.debug("_get_error_details: >>>")
 
     error_c = c_char_p()
     getattr(_cdll(), 'indy_get_current_error')(byref(error_c))
-
     error_details = json.loads(error_c.value.decode())
-    error.message = error_details['message']
-    error.backtrace = error_details['backtrace']
 
-    logger.debug("_set_error_details: <<<")
+    logger.debug("_get_error_details: <<< error_details: %s", error_details)
+    return error_details
 
 
 def _indy_callback(command_handle: int, err: IndyError, *args):

@@ -172,11 +172,14 @@ class ErrorCode(IntEnum):
 
 
 class IndyError(Exception):
-    # error_code: ErrorCode
-    # message: Optional[str]
-    # backtrace: str
+    # error_code: ErrorCode - libindy error code
+    # message: Optional[str] - human-readable error description
+    # indy_backtrace: Optional[str] - error backtrace.
+    #         Collecting of backtrace can be enabled by:
+    #             1) setting environment variable `RUST_BACKTRACE=1`
+    #             2) calling `set_runtime_config` function with `collect_backtrace: true`
 
-    def __init__(self, error_code: ErrorCode, message: Optional[str] = None, backtrace: Optional[str] = None):
+    def __init__(self, error_code: ErrorCode, message: Optional[str] = None, indy_backtrace: Optional[str] = None):
         self.error_code = error_code
         self.message = message
-        self.backtrace = backtrace
+        self.indy_backtrace = indy_backtrace
