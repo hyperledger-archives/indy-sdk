@@ -24,6 +24,8 @@ use std::error::Error;
 
 pub const DEFAULT_CRYPTO_TYPE: &'static str = "ed25519";
 
+//TODO fix this crypto trait so it matches the functions below
+//TODO create a second crypto trait for additional functions
 trait CryptoType {
     fn crypto_box(&self, sk: &ed25519_sign::SecretKey, vk: &ed25519_sign::PublicKey, doc: &[u8], nonce: &ed25519_box::Nonce) -> Result<Vec<u8>, CryptoError>;
     fn crypto_box_open(&self, sk: &ed25519_sign::SecretKey, vk: &ed25519_sign::PublicKey, doc: &[u8], nonce: &ed25519_box::Nonce) -> Result<Vec<u8>, CryptoError>;
@@ -196,6 +198,22 @@ impl CryptoService {
         Ok(valid)
     }
 
+    pub fn create_combo_box(&self, my_key: &Key, their_vk: &str, doc: &[u8]) -> Result<ComboBox, CryptoError> {
+        trace!("create_combo_box >>> my_key: {:?}, their_vk: {:?}, doc: {:?}", my_key, their_vk, doc);
+
+        let (msg, nonce) = self.crypto_box(my_key, their_vk, doc)?;
+
+        let res = ComboBox {
+            msg: base64::encode(msg.as_slice()),
+            sender: my_key.verkey.to_string(),
+            nonce: base64::encode(nonce.as_slice())
+        };
+
+        trace!("create_combo_box <<< res: {:?}", res);
+
+        Ok(res)
+    }
+
     pub fn crypto_box(&self, my_key: &Key, their_vk: &str, doc: &[u8]) -> Result<(Vec<u8>, Vec<u8>), CryptoError> {
         trace!("crypto_box >>> my_key: {:?}, their_vk: {:?}, doc: {:?}", my_key, their_vk, doc);
 
@@ -334,6 +352,7 @@ impl CryptoService {
         Ok(decrypted_doc)
     }
 
+    //This function is used by unpack only. Authdecrypt uses the command layer to implement
     pub fn authenticated_encrypt(&self, my_key: &Key, their_vk: &str, doc: &[u8]) -> Result<Vec<u8>, CryptoError> {
         let (msg, nonce) = self.crypto_box(my_key, their_vk, doc)?;
 
@@ -344,42 +363,20 @@ impl CryptoService {
         };
 
         //TODO check about removing msg_pack dependency
-        let combo_box_str = serde_json::to_string(&combo_box)
-            .map_err(|err|
-                CryptoError::CommonError(
-                    CommonError::InvalidStructure(
-                        format!("Failed to encode combo_box {}", err)
-                    )
-                )
-            )?;
-        let combo_box_encoded = base64::encode(combo_box_str.as_bytes());
-        let res = self.crypto_box_seal(&their_vk, combo_box_encoded.as_bytes())?;
+        let msg = combo_box.to_base64()
+            .map_err(|e| CommonError::InvalidState(format!("Can't serialize ComboBox: {:?}", e)))?;
+
+        let res = self.crypto_box_seal(&their_vk, msg.as_bytes())?;
 
         Ok(res)
     }
 
+    //This function is used by pack only. Authcrypt uses the command layer to implement
     pub fn authenticated_decrypt(&self, my_key: &Key, doc: &[u8]) -> Result<(String, Vec<u8>), CryptoError> {
         let decrypted_msg = self.crypto_box_seal_open(&my_key, &doc)?;
 
-        let combo_box_encoded_str = String::from_utf8(decrypted_msg)
-            .map_err(|err|
-                CryptoError::CommonError(
-                    CommonError::InvalidStructure(
-                        format!("failed to decode combo_box to utf-8 {}", err)
-                    )
-                )
-            )?;
-        let combo_box_decoded = base64::decode(&combo_box_encoded_str)
-            .map_err(|err| CryptoError::CommonError(err))?;
-
-        let parsed_msg : ComboBox = serde_json::from_slice(combo_box_decoded.as_slice())
-            .map_err(|err|
-                CryptoError::CommonError(
-                    CommonError::InvalidStructure(
-                        format!("Failed to serialize combo_box {}", err)
-                    )
-                )
-            )?;
+        let parsed_msg = ComboBox::from_base64(decrypted_msg)
+            .map_err(|err| CommonError::InvalidStructure(format!("Can't deserialize ComboBox: {:?}", err)))?;
 
         let doc: Vec<u8> = base64::decode(&parsed_msg.msg)
             .map_err(|err| CommonError::InvalidStructure(format!("Can't decode internal msg filed from base64 {}", err)))?;
@@ -585,7 +582,7 @@ mod tests {
         let did = Some("NcYxiDXkpYi6ov5FcYDi1e".to_string());
         let crypto_type = Some("type".to_string());
 
-        let did_info = MyDidInfo { did: did.clone(), cid: None, seed: None, crypto_type: crypto_type };
+        let did_info = MyDidInfo { did: did.clone(), cid: None, seed: None, crypto_type };
 
         assert!(service.create_my_did(&did_info).is_err());
     }
