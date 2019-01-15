@@ -215,8 +215,7 @@ impl Credential {
         match self.state {
             VcxStateType::VcxStateOfferSent => {
                 //Check for messages
-                let result = self._check_msg();
-                println!("*******************result {:?}", result);
+                let _ = self._check_msg();
             },
             VcxStateType::VcxStateAccepted => {
                 //Check for revocation
