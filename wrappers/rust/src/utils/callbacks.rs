@@ -1,33 +1,55 @@
 #![warn(dead_code)]
-use {ErrorCode, IndyHandle};
+
+use {ErrorCode, IndyHandle, IndyError};
 
 use libc::c_char;
 
 use std::collections::HashMap;
 use std::ffi::CStr;
 use std::sync::Mutex;
+use std::ptr;
 
 use futures::*;
 use futures::sync::oneshot;
+use ffi::indy_get_current_error;
+
+
+#[derive(Deserialize)]
+struct ErrorDetails {
+    message: String,
+    backtrace: Option<String>
+}
+
+fn to_indy_error(err: ErrorCode) -> IndyError {
+    let mut error_json_p: *const c_char = ptr::null();
+
+    unsafe { indy_get_current_error(&mut error_json_p); }
+    let error_json = rust_str!(error_json_p);
+
+    match ::serde_json::from_str::<ErrorDetails>(&error_json) {
+        Ok(error) => IndyError::new(err, error.message, error.backtrace),
+        Err(err) => IndyError::new(ErrorCode::CommonInvalidState, err.to_string(), None)
+    }
+}
 
 lazy_static! {
-    static ref CALLBACKS_EMPTY: Mutex<HashMap<IndyHandle, oneshot::Sender<Result<(), ErrorCode>>>> = Default::default();
-    static ref CALLBACKS_SLICE: Mutex<HashMap<IndyHandle, oneshot::Sender<Result<Vec<u8>, ErrorCode>>>> = Default::default();
-    static ref CALLBACKS_HANDLE: Mutex<HashMap<IndyHandle, oneshot::Sender<Result<IndyHandle, ErrorCode>>>> = Default::default();
-    static ref CALLBACKS_BOOL: Mutex<HashMap<IndyHandle, oneshot::Sender<Result<bool, ErrorCode>>>> = Default::default();
-    static ref CALLBACKS_STR_SLICE: Mutex<HashMap<IndyHandle, oneshot::Sender<Result<(String, Vec<u8>), ErrorCode>>>> = Default::default();
-    static ref CALLBACKS_HANDLE_USIZE: Mutex<HashMap<IndyHandle, oneshot::Sender<Result<(IndyHandle, usize), ErrorCode>>>> = Default::default();
-    static ref CALLBACKS_STR_STR_U64: Mutex<HashMap<IndyHandle, oneshot::Sender<Result<(String, String, u64), ErrorCode>>>> = Default::default();
-    static ref CALLBACKS_STR: Mutex<HashMap<IndyHandle, oneshot::Sender<Result<String, ErrorCode>>>> = Default::default();
-    static ref CALLBACKS_STR_STR: Mutex<HashMap<IndyHandle, oneshot::Sender<Result<(String, String), ErrorCode>>>> = Default::default();
-    static ref CALLBACKS_STR_OPTSTR: Mutex<HashMap<IndyHandle, oneshot::Sender<Result<(String, Option<String>), ErrorCode>>>> = Default::default();
-    static ref CALLBACKS_STR_STR_STR: Mutex<HashMap<IndyHandle, oneshot::Sender<Result<(String, String, String), ErrorCode>>>> = Default::default();
-    static ref CALLBACKS_STR_OPTSTR_OPTSTR: Mutex<HashMap<IndyHandle, oneshot::Sender<Result<(String, Option<String>, Option<String>), ErrorCode>>>> = Default::default();
+    static ref CALLBACKS_EMPTY: Mutex<HashMap<IndyHandle, oneshot::Sender<Result<(), IndyError>>>> = Default::default();
+    static ref CALLBACKS_SLICE: Mutex<HashMap<IndyHandle, oneshot::Sender<Result<Vec<u8>, IndyError>>>> = Default::default();
+    static ref CALLBACKS_HANDLE: Mutex<HashMap<IndyHandle, oneshot::Sender<Result<IndyHandle, IndyError>>>> = Default::default();
+    static ref CALLBACKS_BOOL: Mutex<HashMap<IndyHandle, oneshot::Sender<Result<bool, IndyError>>>> = Default::default();
+    static ref CALLBACKS_STR_SLICE: Mutex<HashMap<IndyHandle, oneshot::Sender<Result<(String, Vec<u8>), IndyError>>>> = Default::default();
+    static ref CALLBACKS_HANDLE_USIZE: Mutex<HashMap<IndyHandle, oneshot::Sender<Result<(IndyHandle, usize), IndyError>>>> = Default::default();
+    static ref CALLBACKS_STR_STR_U64: Mutex<HashMap<IndyHandle, oneshot::Sender<Result<(String, String, u64), IndyError>>>> = Default::default();
+    static ref CALLBACKS_STR: Mutex<HashMap<IndyHandle, oneshot::Sender<Result<String, IndyError>>>> = Default::default();
+    static ref CALLBACKS_STR_STR: Mutex<HashMap<IndyHandle, oneshot::Sender<Result<(String, String), IndyError>>>> = Default::default();
+    static ref CALLBACKS_STR_OPTSTR: Mutex<HashMap<IndyHandle, oneshot::Sender<Result<(String, Option<String>), IndyError>>>> = Default::default();
+    static ref CALLBACKS_STR_STR_STR: Mutex<HashMap<IndyHandle, oneshot::Sender<Result<(String, String, String), IndyError>>>> = Default::default();
+    static ref CALLBACKS_STR_OPTSTR_OPTSTR: Mutex<HashMap<IndyHandle, oneshot::Sender<Result<(String, Option<String>, Option<String>), IndyError>>>> = Default::default();
 }
 
 macro_rules! cb_ec {
     ($name:ident($($cr:ident:$crt:ty),*)->$rrt:ty, $cbs:ident, $res:expr) => (
-    pub fn $name() -> (sync::oneshot::Receiver<Result<$rrt, ErrorCode>>,
+    pub fn $name() -> (sync::oneshot::Receiver<Result<$rrt, IndyError>>,
                           IndyHandle,
                           Option<extern fn(command_handle: IndyHandle, err: i32, $($crt),*)>) {
         extern fn callback(command_handle: IndyHandle, err: i32, $($cr:$crt),*) {
@@ -37,7 +59,7 @@ macro_rules! cb_ec {
             };
 
             let res = if err != 0 {
-                Err(ErrorCode::from(err))
+                Err(to_indy_error(ErrorCode::from(err)))
             } else {
                 Ok($res)
             };
@@ -103,11 +125,11 @@ macro_rules! result_handler {
     ($name:ident($res_type:ty), $map:ident) => (
     pub fn $name(command_handle: IndyHandle,
                  err: ErrorCode,
-                 rx: sync::oneshot::Receiver<Result<$res_type, ErrorCode>>) -> Box<Future<Item=$res_type, Error= ErrorCode>> {
+                 rx: sync::oneshot::Receiver<Result<$res_type, IndyError>>) -> Box<Future<Item=$res_type, Error= IndyError>> {
         if err != ErrorCode::Success {
             let mut callbacks = $map.lock().unwrap();
             callbacks.remove(&command_handle).unwrap();
-            Box::new(future::err(ErrorCode::from(err)))
+            Box::new(future::err(to_indy_error(err)))
         } else {
             Box::new(rx
                 .map_err(|_| panic!("channel error!"))

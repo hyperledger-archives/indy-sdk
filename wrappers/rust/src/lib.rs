@@ -3,11 +3,14 @@ extern crate futures;
 extern crate lazy_static;
 extern crate log;
 extern crate libc;
-#[macro_use]
 extern crate failure;
 extern crate num_traits;
 #[macro_use]
 extern crate num_derive;
+extern crate serde;
+#[macro_use]
+extern crate serde_derive;
+extern crate serde_json;
 
 extern crate indy_sys as ffi;
 
@@ -29,8 +32,12 @@ pub mod wallet;
 mod utils;
 
 use std::ffi::CString;
+use std::fmt;
 
 pub type IndyHandle = i32;
+
+use failure::{Backtrace, Fail};
+
 
 /// Set libindy runtime configuration. Can be optionally called to change current params.
 ///
@@ -297,5 +304,37 @@ impl From<i32> for ErrorCode {
 impl Into<i32> for ErrorCode {
     fn into(self) -> i32 {
         num_traits::ToPrimitive::to_i32(&self).unwrap()
+    }
+}
+
+#[derive(Debug)]
+pub struct IndyError {
+    pub error_code: ErrorCode,
+    pub message: String,
+    pub indy_backtrace: Option<String>
+}
+
+impl Fail for IndyError {
+    fn cause(&self) -> Option<&Fail> {
+        self.error_code.cause()
+    }
+
+    fn backtrace(&self) -> Option<&Backtrace> { self.error_code.backtrace() }
+}
+
+impl fmt::Display for IndyError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        writeln!(f, "Error Code: {}\n Error: {}", self.error_code, self.message)?;
+        Ok(())
+    }
+}
+
+impl IndyError {
+    pub fn new(error_code: ErrorCode, indy_message: String, indy_backtrace: Option<String>) -> Self {
+        IndyError {
+            error_code,
+            message: indy_message,
+            indy_backtrace,
+        }
     }
 }
