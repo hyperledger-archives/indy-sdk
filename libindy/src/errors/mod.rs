@@ -16,7 +16,7 @@ use api::ErrorCode;
 use utils::ctypes;
 
 pub mod prelude {
-    pub use super::{err_msg, IndyError, IndyErrorExt, IndyErrorKind, IndyResult, IndyResultExt, set_last_error, get_last_error_c_json};
+    pub use super::{err_msg, IndyError, IndyErrorExt, IndyErrorKind, IndyResult, IndyResultExt, set_current_error, get_current_error_c_json};
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
@@ -430,11 +430,11 @@ impl<E> IndyErrorExt for E where E: Fail
 }
 
 thread_local! {
-    pub static LAST_ERROR_C_JSON: RefCell<Option<CString>> = RefCell::new(None);
+    pub static CURRENT_ERROR_C_JSON: RefCell<Option<CString>> = RefCell::new(None);
 }
 
-pub fn set_last_error(err: &IndyError) {
-    LAST_ERROR_C_JSON.with(|error| {
+pub fn set_current_error(err: &IndyError) {
+    CURRENT_ERROR_C_JSON.with(|error| {
         let error_json = json!({
             "message": err.to_string(),
             "backtrace": err.backtrace().map(|bt| bt.to_string())
@@ -443,10 +443,10 @@ pub fn set_last_error(err: &IndyError) {
     });
 }
 
-pub fn get_last_error_c_json() -> *const c_char {
+pub fn get_current_error_c_json() -> *const c_char {
     let mut value = ptr::null();
 
-    LAST_ERROR_C_JSON.with(|err|
+    CURRENT_ERROR_C_JSON.with(|err|
         err.borrow().as_ref().map(|err| value = err.as_ptr())
     );
     

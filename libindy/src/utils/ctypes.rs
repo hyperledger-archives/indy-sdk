@@ -32,13 +32,13 @@ macro_rules! check_useful_c_str {
         let $x = match ctypes::c_str_to_string($x) {
             Ok(Some(val)) => val.to_string(),
             _ => {
-                set_last_error(&err_msg($e.into(), "Invalid pointer has been passed"));
+                set_current_error(&err_msg($e.into(), "Invalid pointer has been passed"));
                 return $e
             }
         };
 
         if $x.is_empty() {
-            set_last_error(&err_msg($e.into(), "Empty string has been passed"));
+            set_current_error(&err_msg($e.into(), "Empty string has been passed"));
             return $e
         }
     }
@@ -50,7 +50,7 @@ macro_rules! check_useful_opt_json {
             Ok(Some(val)) => Some(val),
             Ok(None) => None,
             _ => {
-                set_last_error(&err_msg($e.into(), "Invalid pointer has been passed"));
+                set_current_error(&err_msg($e.into(), "Invalid pointer has been passed"));
                 return $e
             },
         };
@@ -70,7 +70,7 @@ macro_rules! check_useful_json {
         let $x = match ctypes::c_str_to_string($x) {
             Ok(Some(val)) => val,
             _ => {
-                set_last_error(&err_msg($e.into(), "Invalid pointer has been passed"));
+                set_current_error(&err_msg($e.into(), "Invalid pointer has been passed"));
                 return $e
             },
         };
@@ -91,7 +91,7 @@ macro_rules! parse_json {
         let $x: $t = match r {
             Ok(ok) => ok,
             Err(err) => {
-                set_last_error(&err);
+                set_current_error(&err);
                 return err.into()
             }
         };
@@ -103,7 +103,7 @@ macro_rules! check_useful_c_str_empty_accepted {
         let $x = match ctypes::c_str_to_string($x) {
             Ok(Some(val)) => val.to_string(),
             _ => {
-                set_last_error(&err_msg($e.into(), "Invalid pointer has been passed"));
+                set_current_error(&err_msg($e.into(), "Invalid pointer has been passed"));
                 return $e
             }
         };
@@ -115,7 +115,7 @@ macro_rules! check_useful_opt_c_str {
         let $x = match ctypes::c_str_to_string($x) {
             Ok(opt_val) => opt_val.map(String::from),
             Err(_) => {
-                set_last_error(&err_msg($e.into(), "Invalid pointer has been passed"));
+                set_current_error(&err_msg($e.into(), "Invalid pointer has been passed"));
                 return $e
             }
         };
@@ -126,12 +126,12 @@ macro_rules! check_useful_opt_c_str {
 macro_rules! check_useful_c_byte_array {
     ($ptr:ident, $len:expr, $err1:expr, $err2:expr) => {
         if $ptr.is_null() {
-            set_last_error(&err_msg($err1.into(), "Invalid pointer has been passed"));
+            set_current_error(&err_msg($err1.into(), "Invalid pointer has been passed"));
             return $err1;
         }
 
         if $len <= 0 {
-            set_last_error(&err_msg($err2.into(), "Array length must be greater than 0"));
+            set_current_error(&err_msg($err2.into(), "Array length must be greater than 0"));
             return $err2;
         }
 
