@@ -13,7 +13,6 @@ use self::regex::Regex;
 use command_executor::{CommandContext, CommandParams};
 
 use std;
-use libindy::ledger::Ledger;
 
 pub fn get_str_param<'a>(name: &'a str, params: &'a CommandParams) -> Result<&'a str, ()> {
     match params.get(name) {
@@ -239,6 +238,9 @@ pub fn set_connected_pool(ctx: &CommandContext, value: Option<(i32, String)>) {
     ctx.set_string_value("CONNECTED_POOL_NAME", value.as_ref().map(|value| value.1.to_owned()));
     ctx.set_sub_prompt(1, value.map(|value| format!("pool({})", value.1)));
 }
+
+#[cfg(test)]
+use libindy::ledger::Ledger;
 
 #[cfg(test)]
 pub fn submit_retry<F, T, E>(ctx: &CommandContext, request: &str, parser: F) -> Result<(), ()>
