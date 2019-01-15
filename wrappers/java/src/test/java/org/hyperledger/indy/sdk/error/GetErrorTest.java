@@ -23,7 +23,7 @@ public class GetErrorTest extends IndyIntegrationTestWithSingleWallet {
 		} catch (ExecutionException e) {
 			InvalidStructureException ex = (InvalidStructureException) e.getCause();
 			assertEquals(ex.getSdkErrorCode(), ErrorCode.CommonInvalidStructure.value());
-			assertFalse(ex.getSdkMessage().isEmpty());
+			assertFalse(ex.getMessage().isEmpty());
 		}
 
 		try {
@@ -32,7 +32,7 @@ public class GetErrorTest extends IndyIntegrationTestWithSingleWallet {
 		} catch (ExecutionException e) {
 			InvalidParameterException ex = (InvalidParameterException) e.getCause();
 			assertEquals(ex.getSdkErrorCode(), ErrorCode.CommonInvalidParam5.value());
-			assertFalse(ex.getSdkMessage().isEmpty());
+			assertFalse(ex.getMessage().isEmpty());
 		}
 	}
 }

@@ -56,22 +56,6 @@ public class IndyException extends Exception {
 	}
 
 	/**
-	 * Sets the SDK error message for the exception.
-	 */
-	private void setSdkMessage(String sdkMessage) {
-		this.sdkMessage = sdkMessage;
-	}
-
-	/**
-	 * Gets the SDK error backtrace for the exception.
-	 *
-	 * @return The SDK backtrace.
-	 */
-	public String getSdkMessage() {
-		return sdkMessage;
-	}
-
-	/**
 	 * Sets the SDK error backtrace for the exception.
 	 */
 	private void setSdkBacktrace(String sdkBacktrace) {
