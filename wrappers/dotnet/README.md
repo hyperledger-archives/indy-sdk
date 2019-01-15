@@ -9,7 +9,7 @@ Pull requests welcome!
 
 ### Documentation
 
-Documentation for the .NET wrapper is available [here](http://hyperledger.github.io/indy-sdk/wrappers/dotnet/docs/index.html).
+Documentation for the .NET wrapper is available [here](https://github.com/hyperledger/indy-sdk/blob/master/wrappers/dotnet/docs/index.html).
 
 ### How to build
 
