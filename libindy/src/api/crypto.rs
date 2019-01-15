@@ -296,6 +296,7 @@ pub  extern fn indy_crypto_verify(command_handle: IndyHandle,
     res
 }
 
+/// **** THIS FUNCTION WILL BE DEPRECATED USE indy_pack_message() INSTEAD ****
 /// Encrypt a message by authenticated-encryption scheme.
 ///
 /// Sender can encrypt a confidential message specifically for Recipient, using Sender's public key.
@@ -367,6 +368,68 @@ pub  extern fn indy_crypto_auth_crypt(command_handle: IndyHandle,
     res
 }
 
+/// **** THIS FUNCTION WILL BE DEPRECATED USE indy_pack_message() INSTEAD ****
+/// Encrypts a message by anonymous-encryption scheme.
+///
+/// Sealed boxes are designed to anonymously send messages to a Recipient given its public key.
+/// Only the Recipient can decrypt these messages, using its private key.
+/// While the Recipient can verify the integrity of the message, it cannot verify the identity of the Sender.
+///
+/// Note to use DID keys with this function you can call indy_key_for_did to get key id (verkey)
+/// for specific DID.
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+/// recipient_vk: verkey of message recipient
+/// message_raw: a pointer to first byte of message that to be encrypted
+/// message_len: a message length
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// an encrypted message as a pointer to array of bytes
+///
+/// #Errors
+/// Common*
+/// Wallet*
+/// Ledger*
+/// Crypto*
+#[no_mangle]
+pub  extern fn indy_crypto_anon_crypt(command_handle: IndyHandle,
+                                      recipient_vk: *const c_char,
+                                      msg_data: *const u8,
+                                      msg_len: u32,
+                                      cb: Option<extern fn(command_handle_: IndyHandle,
+                                                           err: ErrorCode,
+                                                           encrypted_msg: *const u8,
+                                                           encrypted_len: u32)>) -> ErrorCode {
+    trace!("indy_crypto_anon_crypt: >>> recipient_vk: {:?}, msg_data: {:?}, msg_len: {:?}", recipient_vk, msg_data, msg_len);
+
+    check_useful_c_str!(recipient_vk, ErrorCode::CommonInvalidParam2);
+    check_useful_c_byte_array!(msg_data, msg_len, ErrorCode::CommonInvalidParam3, ErrorCode::CommonInvalidParam4);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
+
+    trace!("indy_crypto_anon_crypt: entities >>> recipient_vk: {:?}, msg_data: {:?}, msg_len: {:?}", recipient_vk, msg_data, msg_len);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Crypto(CryptoCommand::AnonymousEncrypt(
+            recipient_vk,
+            msg_data,
+            Box::new(move |result| {
+                let (err, encrypted_msg) = result_to_err_code_1!(result, Vec::new());
+                trace!("indy_crypto_anon_crypt: encrypted_msg: {:?}", encrypted_msg);
+                let (encrypted_msg_raw, encrypted_msg_len) = ctypes::vec_to_pointer(&encrypted_msg);
+                cb(command_handle, err, encrypted_msg_raw, encrypted_msg_len)
+            })
+        )));
+
+    let res = result_to_err_code!(result);
+
+    trace!("indy_crypto_anon_crypt: <<< res: {:?}", res);
+
+    res
+}
+
+/// **** THIS FUNCTION WILL BE DEPRECATED USE indy_unpack_message() INSTEAD ****
 /// Decrypt a message by authenticated-encryption scheme.
 ///
 /// Sender can encrypt a confidential message specifically for Recipient, using Sender's public key.
@@ -435,66 +498,7 @@ pub  extern fn indy_crypto_auth_decrypt(command_handle: IndyHandle,
     res
 }
 
-/// Encrypts a message by anonymous-encryption scheme.
-///
-/// Sealed boxes are designed to anonymously send messages to a Recipient given its public key.
-/// Only the Recipient can decrypt these messages, using its private key.
-/// While the Recipient can verify the integrity of the message, it cannot verify the identity of the Sender.
-///
-/// Note to use DID keys with this function you can call indy_key_for_did to get key id (verkey)
-/// for specific DID.
-///
-/// #Params
-/// command_handle: command handle to map callback to user context.
-/// recipient_vk: verkey of message recipient
-/// message_raw: a pointer to first byte of message that to be encrypted
-/// message_len: a message length
-/// cb: Callback that takes command result as parameter.
-///
-/// #Returns
-/// an encrypted message as a pointer to array of bytes
-///
-/// #Errors
-/// Common*
-/// Wallet*
-/// Ledger*
-/// Crypto*
-#[no_mangle]
-pub  extern fn indy_crypto_anon_crypt(command_handle: IndyHandle,
-                                      recipient_vk: *const c_char,
-                                      msg_data: *const u8,
-                                      msg_len: u32,
-                                      cb: Option<extern fn(command_handle_: IndyHandle,
-                                                           err: ErrorCode,
-                                                           encrypted_msg: *const u8,
-                                                           encrypted_len: u32)>) -> ErrorCode {
-    trace!("indy_crypto_anon_crypt: >>> recipient_vk: {:?}, msg_data: {:?}, msg_len: {:?}", recipient_vk, msg_data, msg_len);
-
-    check_useful_c_str!(recipient_vk, ErrorCode::CommonInvalidParam2);
-    check_useful_c_byte_array!(msg_data, msg_len, ErrorCode::CommonInvalidParam3, ErrorCode::CommonInvalidParam4);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
-
-    trace!("indy_crypto_anon_crypt: entities >>> recipient_vk: {:?}, msg_data: {:?}, msg_len: {:?}", recipient_vk, msg_data, msg_len);
-
-    let result = CommandExecutor::instance()
-        .send(Command::Crypto(CryptoCommand::AnonymousEncrypt(
-            recipient_vk,
-            msg_data,
-            Box::new(move |result| {
-                let (err, encrypted_msg) = result_to_err_code_1!(result, Vec::new());
-                trace!("indy_crypto_anon_crypt: encrypted_msg: {:?}", encrypted_msg);
-                let (encrypted_msg_raw, encrypted_msg_len) = ctypes::vec_to_pointer(&encrypted_msg);
-                cb(command_handle, err, encrypted_msg_raw, encrypted_msg_len)
-            })
-        )));
-
-    let res = result_to_err_code!(result);
-
-    trace!("indy_crypto_anon_crypt: <<< res: {:?}", res);
-
-    res
-}
-
+/// **** THIS FUNCTION WILL BE DEPRECATED USE indy_unpack_message() INSTEAD ****
 /// Decrypts a message by anonymous-encryption scheme.
 ///
 /// Sealed boxes are designed to anonymously send messages to a Recipient given its public key.
