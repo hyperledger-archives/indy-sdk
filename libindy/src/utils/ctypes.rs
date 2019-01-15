@@ -82,6 +82,7 @@ macro_rules! check_useful_json {
 macro_rules! parse_json {
     ($x:ident, $e:expr, $t:ty) => {
         if $x.is_empty() {
+           set_current_error(&err_msg($e.into(), "Empty string has been passed"));
            return $e
         }
 

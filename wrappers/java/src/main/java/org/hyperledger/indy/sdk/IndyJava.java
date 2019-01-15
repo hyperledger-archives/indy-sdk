@@ -98,7 +98,7 @@ public class IndyJava {
 
 				JSONObject errorDetails = new JSONObject(errorDetailsJson.getValue().getString(0));
 
-				IndyException indyException = IndyException.fromSdkErrorParts(err, errorDetails.optString("message"), errorDetails.optString("backtrace"));
+				IndyException indyException = IndyException.fromSdkError(err, errorDetails.optString("message"), errorDetails.optString("backtrace"));
 				future.completeExceptionally(indyException);
 				
 				return false;

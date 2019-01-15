@@ -15,7 +15,18 @@ public class WalletInputException extends IndyException
 	 * Initializes a new WalletInputException.
 	 */
 	public WalletInputException()
+	{
+		super(message, ErrorCode.WalletInputError.value());
+	}
+
+	/**
+	 * Initializes a new WalletInputException.
+	 *
+	 * @param sdkMessage The SDK error message.
+	 * @param sdkBacktrace The SDK error backtrace.
+	 */
+	public WalletInputException(String sdkMessage, String sdkBacktrace)
     {
-    	super(message, ErrorCode.WalletInputError.value());
+    	super(sdkMessage, ErrorCode.WalletInputError.value(), sdkBacktrace);
     }
 }
