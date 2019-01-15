@@ -8,7 +8,7 @@ use utils::constants::{ LIBINDY_CRED_OFFER, REQUESTED_ATTRIBUTES, ATTRS, REV_STA
 use utils::error::{ INVALID_PROOF_REQUEST, INVALID_ATTRIBUTES_STRUCTURE, INVALID_CONFIGURATION, INVALID_JSON, DUPLICATE_SCHEMA, UNKNOWN_SCHEMA_REJECTION } ;
 use utils::libindy::{ error_codes::map_rust_indy_sdk_error_code, mock_libindy_rc, wallet::get_wallet_handle };
 use utils::libindy::payments::{pay_for_txn, PaymentTxn};
-use utils::constants::{ SCHEMA_ID, SCHEMA_JSON, SCHEMA_TXN_TYPE, CRED_DEF_ID, CRED_DEF_JSON, CRED_DEF_TXN_TYPE, REV_REG_DEF_TXN_TYPE, REV_REG_DELTA_TXN_TYPE, REVOC_REG_TYPE, REV_DEF_JSON, REV_REG_ID, REV_REG_DELTA_JSON, REV_REG_JSON};
+use utils::constants::{ SCHEMA_ID, SCHEMA_JSON, SCHEMA_TXN_TYPE, CRED_DEF_ID, CRED_DEF_JSON, CRED_DEF_TXN_TYPE, REV_REG_DEF_TXN_TYPE, REV_REG_DELTA_TXN_TYPE, REVOC_REG_TYPE, rev_def_json, REV_REG_ID, REV_REG_DELTA_JSON, REV_REG_JSON};
 use utils::libindy::ledger::{libindy_build_schema_request, libindy_build_get_schema_request, libindy_submit_request, libindy_parse_get_cred_def_response, libindy_parse_get_schema_response, libindy_build_create_credential_def_txn, libindy_build_get_credential_def_txn};
 use indy::anoncreds;
 use indy::blob_storage;
@@ -91,7 +91,6 @@ pub fn libindy_issuer_create_credential(cred_offer_json: &str,
         },
         None => -1,
     };
-
     anoncreds::issuer_create_credential(get_wallet_handle(),
                                         cred_offer_json,
                                         cred_req_json,
@@ -409,7 +408,7 @@ pub fn create_rev_reg_def(issuer_did: &str, cred_def_id: &str, tails_file: &str,
     -> Result<(String, String, String, Option<PaymentTxn>), u32> {
     debug!("creating revocation registry definition with issuer_did: {}, cred_def_id: {}, tails_file_path: {}, max_creds: {}",
            issuer_did, cred_def_id, tails_file, max_creds);
-    if settings::test_indy_mode_enabled() { return Ok((REV_REG_ID.to_string(), REV_DEF_JSON.to_string(), "".to_string(), None)); }
+    if settings::test_indy_mode_enabled() { return Ok((REV_REG_ID.to_string(), rev_def_json(), "".to_string(), None)); }
 
     let (rev_reg_id, rev_reg_def_json, rev_reg_entry_json) = libindy_create_and_store_revoc_reg(
         issuer_did,
@@ -426,7 +425,7 @@ pub fn create_rev_reg_def(issuer_did: &str, cred_def_id: &str, tails_file: &str,
 }
 
 pub fn get_rev_reg_def_json(rev_reg_id: &str) -> Result<(String, String), u32> {
-    if settings::test_indy_mode_enabled() { return Ok((REV_REG_ID.to_string(), REV_DEF_JSON.to_string())); }
+    if settings::test_indy_mode_enabled() { return Ok((REV_REG_ID.to_string(), rev_def_json())); }
 
     let submitter_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
 
@@ -481,6 +480,7 @@ pub fn revoke_credential(tails_file: &str, rev_reg_id: &str, cred_rev_id: &str)
 #[cfg(test)]
 pub mod tests {
     use super::*;
+    use utils::get_temp_dir_path;
     extern crate serde_json;
     extern crate rand;
     use rand::Rng;
@@ -531,7 +531,7 @@ pub mod tests {
         /* create cred-def */
         let mut revocation_details = json!({"support_revocation":support_rev});
         if support_rev {
-            revocation_details["tails_file"] = json!(TEST_TAILS_FILE);
+            revocation_details["tails_file"] = json!(get_temp_dir_path(Some(TEST_TAILS_FILE)).to_str().unwrap().to_string());
             revocation_details["max_creds"] = json!(10);
         }
         let handle = ::credential_def::create_new_credentialdef("1".to_string(),
@@ -572,9 +572,10 @@ pub mod tests {
         let encoded_attributes = ::issuer_credential::encode_attributes(&credential_data).unwrap();
         let (rev_def_json, tails_file) = if revocation {
             let (id, json) = get_rev_reg_def_json(&rev_reg_id.clone().unwrap()).unwrap();
-            (Some(json), Some(TEST_TAILS_FILE.to_string()))
+            (Some(json), Some(get_temp_dir_path(Some(TEST_TAILS_FILE)).to_str().unwrap().to_string().to_string()))
 
         } else { (None, None) };
+
         let (cred, cred_rev_id, _) = ::utils::libindy::anoncreds::libindy_issuer_create_credential(&offer, &req, &encoded_attributes, rev_reg_id.clone(), tails_file).unwrap();
         /* store cred */
         let cred_id = ::utils::libindy::anoncreds::libindy_prover_store_credential(None, &req_meta, &cred, &cred_def_json, rev_def_json).unwrap();
@@ -734,13 +735,13 @@ pub mod tests {
     #[test]
     fn test_issuer_revoke_credential(){
         init!("ledger");
-        let rc = libindy_issuer_revoke_credential(TEST_TAILS_FILE, "", "");
+        let rc = libindy_issuer_revoke_credential(get_temp_dir_path(Some(TEST_TAILS_FILE)).to_str().unwrap(), "", "");
         assert!(rc.is_err());
 
         let (_, _, cred_def_id, _, _, _, _, cred_id, rev_reg_id, cred_rev_id)
         = create_and_store_credential(::utils::constants::DEFAULT_SCHEMA_ATTRS, true);
+        let rc = ::utils::libindy::anoncreds::libindy_issuer_revoke_credential(get_temp_dir_path(Some(TEST_TAILS_FILE)).to_str().unwrap(), &rev_reg_id.unwrap(), &cred_rev_id.unwrap());
 
-        let rc = ::utils::libindy::anoncreds::libindy_issuer_revoke_credential(TEST_TAILS_FILE, &rev_reg_id.unwrap(), &cred_rev_id.unwrap());
         assert!(rc.is_ok());
     }
 
@@ -761,7 +762,11 @@ pub mod tests {
         let (_, schema_json) = get_schema_json(&schema_id).unwrap();
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
 
-        let revocation_details = json!({"support_revocation": true, "tails_file": "/tmp/tails.txt", "max_creds": 2}).to_string();
+        let revocation_details = json!({
+            "support_revocation": true,
+            "tails_file": get_temp_dir_path(Some("tails.txt")).to_str().unwrap(),
+            "max_creds": 2
+        }).to_string();
         create_cred_def(&did, &schema_json, "tag_1", None, Some(true)).unwrap();
     }
 
@@ -776,7 +781,7 @@ pub mod tests {
         // revoc_reg_def will fail in libindy because cred_Def doesn't have revocation keys
         let (_, _, cred_def_id, _, _, _) = ::utils::libindy::anoncreds::tests::create_and_store_credential_def(::utils::constants::DEFAULT_SCHEMA_ATTRS, false);
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
-        let rc = create_rev_reg_def(&did, &cred_def_id, "/tmp/path.txt", 2);
+        let rc = create_rev_reg_def(&did, &cred_def_id, get_temp_dir_path(Some("path.txt")).to_str().unwrap(), 2);
 
         assert_eq!(rc, Err(LIBINDY_INVALID_STRUCTURE.code_num));
     }
@@ -791,9 +796,9 @@ pub mod tests {
         let (_, schema_json) = get_schema_json(&schema_id).unwrap();
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
 
-        let revocation_details = json!({"support_revocation": true, "tails_file": "/tmp/tails.txt", "max_creds": 2}).to_string();
+        let revocation_details = json!({"support_revocation": true, "tails_file": get_temp_dir_path(Some("tails.txt")).to_str().unwrap(), "max_creds": 2}).to_string();
         let (id, payment) = create_cred_def(&did, &schema_json, "tag_1", None, Some(true)).unwrap();
-        create_rev_reg_def(&did, &id, "/tmp/tails.txt", 2).unwrap();
+        create_rev_reg_def(&did, &id, "tails.txt", 2).unwrap();
     }
 
     #[cfg(feature = "pool_tests")]
@@ -872,7 +877,7 @@ pub mod tests {
         assert_eq!(first_rev_reg_delta,  test_same_delta);
         assert_eq!(first_timestamp, test_same_timestamp);
 
-        let (payment, revoked_rev_reg_delta) = revoke_credential(TEST_TAILS_FILE, &rev_reg_id, cred_rev_id.unwrap().as_str()).unwrap();
+        let (payment, revoked_rev_reg_delta) = revoke_credential(get_temp_dir_path(Some(TEST_TAILS_FILE)).to_str().unwrap(), &rev_reg_id, cred_rev_id.unwrap().as_str()).unwrap();
 
         // Delta should change after revocation
         let (_, second_rev_reg_delta, _) = get_rev_reg_delta_json(&rev_reg_id, Some(first_timestamp+1), None).unwrap();

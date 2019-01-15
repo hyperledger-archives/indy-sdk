@@ -3,6 +3,7 @@ extern crate libc;
 use api::{ErrorCode, IndyHandle};
 use commands::{Command, CommandExecutor};
 use commands::pairwise::PairwiseCommand;
+use errors::prelude::*;
 use utils::ctypes;
 
 use self::libc::c_char;
@@ -40,13 +41,13 @@ pub  extern fn indy_is_pairwise_exists(command_handle: IndyHandle,
             wallet_handle,
             their_did,
             Box::new(move |result| {
-                let (err, exists) = result_to_err_code_1!(result, false);
+                let (err, exists) = prepare_result_1!(result, false);
                 trace!("indy_is_pairwise_exists: exists: {:?}", exists);
                 cb(command_handle, err, exists)
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_is_pairwise_exists: <<< res: {:?}", res);
 
@@ -94,13 +95,13 @@ pub  extern fn indy_create_pairwise(command_handle: IndyHandle,
             my_did,
             metadata,
             Box::new(move |result| {
-                let err = result_to_err_code!(result);
+                let err = prepare_result!(result);
                 trace!("indy_create_pairwise:");
                 cb(command_handle, err)
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_create_pairwise: <<< res: {:?}", res);
 
@@ -136,14 +137,14 @@ pub  extern fn indy_list_pairwise(command_handle: IndyHandle,
         .send(Command::Pairwise(PairwiseCommand::ListPairwise(
             wallet_handle,
             Box::new(move |result| {
-                let (err, list_pairwise) = result_to_err_code_1!(result, String::new());
+                let (err, list_pairwise) = prepare_result_1!(result, String::new());
                 trace!("indy_list_pairwise: list_pairwise: {:?}", list_pairwise);
                 let list_pairwise = ctypes::string_to_cstring(list_pairwise);
                 cb(command_handle, err, list_pairwise.as_ptr())
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_list_pairwise: <<< res: {:?}", res);
 
@@ -183,14 +184,14 @@ pub  extern fn indy_get_pairwise(command_handle: IndyHandle,
             wallet_handle,
             their_did,
             Box::new(move |result| {
-                let (err, pairwise_info_json) = result_to_err_code_1!(result, String::new());
+                let (err, pairwise_info_json) = prepare_result_1!(result, String::new());
                 trace!("indy_get_pairwise: pairwise_info_json: {:?}", pairwise_info_json);
                 let pairwise_info_json = ctypes::string_to_cstring(pairwise_info_json);
                 cb(command_handle, err, pairwise_info_json.as_ptr())
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_get_pairwise: <<< res: {:?}", res);
 
@@ -233,13 +234,13 @@ pub  extern fn indy_set_pairwise_metadata(command_handle: IndyHandle,
             their_did,
             metadata,
             Box::new(move |result| {
-                let err = result_to_err_code!(result);
+                let err = prepare_result!(result);
                 trace!("indy_set_pairwise_metadata:");
                 cb(command_handle, err)
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_set_pairwise_metadata: <<< res: {:?}", res);
 
