@@ -1,0 +1,79 @@
+#!groovy
+
+
+def testing () {
+    node('ubuntu') {
+        stage("Checking out source code") {
+            checkout scm
+        }
+
+        def image = docker.build("indy-sdk-kcov", "-f ci/code_coverage.dockerfile")
+
+        image.inside {
+            sh "cd libindy"
+            sh "cargo test --no-run"
+            sh '''
+                for i in $(find target/debug -maxdepth 1 -executable -type f | grep -v '\\.so\$')
+                do
+                    RUST_TEST_THREADS=1 kcov --exclude-pattern=$CARGO_HOME,/usr/lib --verify test_coverage \$i
+                done
+            '''
+
+        }
+
+        def kcov = setup_kcov()
+        coverage('libindy')
+#        parallel([
+#            'libindy'    : { coverage('libindy') },
+#            'libnullpay' : { coverage('libnullpay') },
+#            'libvcx'     : { coverage('vcx/libvcx') }
+#        ])
+    }
+}
+
+testing()
+
+def coverage (dir) {
+    sh "echo In ${dir}..."
+    build_tests(dir)
+    withEnv(['PATH="$(pwd)/kcov/build/src/":$PATH']) {
+        collect_coverage(dir)
+    }
+}
+
+def setup_kcov () {
+    stage("Kcov Setup") {
+        sh '''
+            
+            if [ ! -d kcov ]; then
+                git clone 'https://github.com/SimonKagstrom/kcov.git'
+                cd kcov
+            else
+                cd kcov
+                git pull
+            fi
+
+            mkdir -p build
+            cd build
+
+            cmake ..
+            make
+        '''
+    }
+    current_dir = sh 'pwd'
+    return current_dir + 'kcov/build/src/kcov'
+}
+
+def build_tests (dir) {
+    stage('Build Tests') {
+        sh "echo In ${dir}..."
+        sh "cd ${dir}; cargo test --no-run"
+    }
+}
+
+def collect_coverage (dir) {
+    stage('Collect Coverage') {
+        sh "echo In ${dir}..."
+        sh "cd ${dir}; for i in \$(find target/debug -maxdepth 1 -executable -type f | grep -v '\\.so\$'); do; RUST_TEST_THREADS=1 kcov --exclude-pattern=$CARGO_HOME,/usr/lib --verify test_coverage \$i; done"
+    }
+}
