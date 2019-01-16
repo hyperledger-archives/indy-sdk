@@ -1,4 +1,6 @@
 pub mod wallet;
+//use errors::common::CommonError;
+//use errors::ToErrorCode;
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 #[repr(i32)]

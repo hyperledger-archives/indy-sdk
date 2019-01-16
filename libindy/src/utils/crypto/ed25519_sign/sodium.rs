@@ -1,7 +1,7 @@
 extern crate sodiumoxide;
 extern crate libc;
 
-use errors::crypto::CryptoError;
+use errors::prelude::*;
 
 use self::libc::c_int;
 use self::sodiumoxide::crypto::sign;
@@ -35,7 +35,7 @@ extern {
 }
 
 
-pub fn create_key_pair_for_signature(seed: Option<&Seed>) -> Result<(PublicKey, SecretKey), CryptoError> {
+pub fn create_key_pair_for_signature(seed: Option<&Seed>) -> Result<(PublicKey, SecretKey), IndyError> {
     let (public_key, secret_key) =
         sign::keypair_from_seed(
             &seed.unwrap_or(
@@ -46,7 +46,7 @@ pub fn create_key_pair_for_signature(seed: Option<&Seed>) -> Result<(PublicKey, 
     Ok((PublicKey(public_key), SecretKey(secret_key)))
 }
 
-pub fn sign(secret_key: &SecretKey, doc: &[u8]) -> Result<Signature, CryptoError> {
+pub fn sign(secret_key: &SecretKey, doc: &[u8]) -> Result<Signature, IndyError> {
     Ok(Signature(
         sign::sign_detached(
             doc,
@@ -54,7 +54,7 @@ pub fn sign(secret_key: &SecretKey, doc: &[u8]) -> Result<Signature, CryptoError
     )
 }
 
-pub fn verify(public_key: &PublicKey, doc: &[u8], signature: &Signature) -> Result<bool, CryptoError> {
+pub fn verify(public_key: &PublicKey, doc: &[u8], signature: &Signature) -> Result<bool, IndyError> {
     Ok(sign::verify_detached(
         &signature.0,
         doc,
@@ -62,7 +62,7 @@ pub fn verify(public_key: &PublicKey, doc: &[u8], signature: &Signature) -> Resu
     ))
 }
 
-pub fn sk_to_curve25519(sk: &SecretKey) -> Result<ed25519_box::SecretKey, CryptoError> {
+pub fn sk_to_curve25519(sk: &SecretKey) -> Result<ed25519_box::SecretKey, IndyError> {
     let mut to: [u8; ENC_SECRETKEYBYTES] = [0; ENC_SECRETKEYBYTES];
     unsafe {
         crypto_sign_ed25519_sk_to_curve25519(&mut to, &(sk.0).0);
@@ -70,7 +70,7 @@ pub fn sk_to_curve25519(sk: &SecretKey) -> Result<ed25519_box::SecretKey, Crypto
     ed25519_box::SecretKey::from_slice(&to)
 }
 
-pub fn vk_to_curve25519(pk: &PublicKey) -> Result<ed25519_box::PublicKey, CryptoError> {
+pub fn vk_to_curve25519(pk: &PublicKey) -> Result<ed25519_box::PublicKey, IndyError> {
     let mut to: [u8; ENC_PUBLICKEYBYTES] = [0; ENC_PUBLICKEYBYTES];
     unsafe {
         crypto_sign_ed25519_pk_to_curve25519(&mut to, &(pk.0).0);
