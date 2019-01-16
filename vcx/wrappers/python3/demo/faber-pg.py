@@ -67,8 +67,6 @@ async def main():
             'key': provisionConfig['wallet_key'],
             'storage_credentials': json.loads(provisionConfig['storage_credentials']),
         }
-        print('wallet_config', wallet_config)
-        print('wallet_creds', wallet_creds)
         try:
             await wallet.create_wallet(json.dumps(wallet_config), json.dumps(wallet_creds))
         except IndyError as ex:
