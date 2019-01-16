@@ -238,3 +238,25 @@ pub fn set_connected_pool(ctx: &CommandContext, value: Option<(i32, String)>) {
     ctx.set_string_value("CONNECTED_POOL_NAME", value.as_ref().map(|value| value.1.to_owned()));
     ctx.set_sub_prompt(1, value.map(|value| format!("pool({})", value.1)));
 }
+
+#[cfg(test)]
+use libindy::ledger::Ledger;
+
+#[cfg(test)]
+pub fn submit_retry<F, T, E>(ctx: &CommandContext, request: &str, parser: F) -> Result<(), ()>
+    where F: Fn(&str) -> Result<T, E> {
+    const SUBMIT_RETRY_CNT: usize = 3;
+    const SUBMIT_TIMEOUT_SEC: u64 = 2;
+
+    let pool_handle = ensure_connected_pool_handle(ctx).unwrap();
+
+    for _ in 0..SUBMIT_RETRY_CNT {
+        let response = Ledger::submit_request(pool_handle, request).unwrap();
+        if parser(&response).is_ok() {
+            return Ok(());
+        }
+        ::std::thread::sleep(::std::time::Duration::from_secs(SUBMIT_TIMEOUT_SEC));
+    }
+
+    return Err(());
+}

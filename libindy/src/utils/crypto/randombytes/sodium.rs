@@ -1,9 +1,8 @@
-extern crate sodiumoxide;
 extern crate libc;
+extern crate sodiumoxide;
 
+use errors::prelude::*;
 use self::libc::size_t;
-use errors::common::CommonError;
-
 use utils::crypto::memzero::memzero;
 
 pub const SEEDBYTES: usize = 32; // randombytes_seedbytes
@@ -11,14 +10,18 @@ pub const SEEDBYTES: usize = 32; // randombytes_seedbytes
 pub struct Seed([u8; SEEDBYTES]);
 
 impl Seed {
-    pub fn from_slice(bytes: &[u8]) -> Result<Seed, CommonError> {
+    pub fn from_slice(bytes: &[u8]) -> Result<Seed, IndyError> {
         if bytes.len() != SEEDBYTES {
-            return Err(CommonError::InvalidStructure(format!("Invalid Seed bytes")));
+            return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure,
+                                           format!("Invalid seed length, expected: {:}, provided: {}", SEEDBYTES, bytes.len())));
         }
+
         let mut seed = Seed([0; SEEDBYTES]);
+
         for (ni, &bsi) in seed.0.iter_mut().zip(bytes.iter()) {
             *ni = bsi
         }
+
         Ok(seed)
     }
 }

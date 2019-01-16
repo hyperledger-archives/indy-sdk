@@ -339,6 +339,7 @@ pub mod rotate_key_command {
 }
 
 fn _get_current_verkey(pool_handle: i32, pool_name: &str, wallet_handle: i32, wallet_name: &str, did: &str) -> Result<Option<String>, ()> {
+    //TODO: There nym is requested. Due to freshness issues response might be stale or outdated. Something should be done with it
     let response_json = Ledger::build_get_nym_request(Some(did), did)
         .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, did, &request))
         .map_err(|err| handle_transaction_error(err, Some(did), Some(pool_name), Some(wallet_name)))?;
@@ -664,6 +665,27 @@ pub mod tests {
         #[cfg(feature = "nullpay_plugin")]
         use commands::ledger::tests::{set_fees, create_address_and_mint_sources, get_source_input, FEES, OUTPUT};
 
+        fn ensure_nym_written(ctx: &CommandContext, did: &str, verkey: &str) {
+            let wallet_handle = ensure_opened_wallet_handle(ctx).unwrap();
+            let request = Ledger::build_get_nym_request(None, did).unwrap();
+            let request = Ledger::sign_request(wallet_handle, did, &request).unwrap();
+            submit_retry(ctx, &request, |response| {
+                let res = req_for_nym(response);
+                match res {
+                    Some(ref verkey_received) if verkey_received == verkey => Ok(()),
+                    _ => Err(())
+                }
+            }).unwrap()
+        }
+
+        fn req_for_nym(response: &str) -> Option<String> {
+            let parsed = serde_json::from_str::<serde_json::Value>(&response).ok()?;
+            let data = parsed["result"]["data"].as_str()?;
+            let data = serde_json::from_str::<serde_json::Value>(&data).ok()?;
+            let verkey = data["verkey"].as_str()?;
+            Some(verkey.to_string())
+        }
+
         #[test]
         pub fn rotate_works() {
             TestUtils::cleanup_storage();
@@ -677,6 +699,7 @@ pub mod tests {
             let (did, verkey) = Did::new(wallet_handle, "{}").unwrap();
             use_did(&ctx, DID_TRUSTEE);
             send_nym(&ctx, &did, &verkey, None);
+            ensure_nym_written(&ctx, &did, &verkey);
             use_did(&ctx, &did);
 
             let did_info = get_did_info(wallet_handle, &did);
@@ -713,6 +736,7 @@ pub mod tests {
             let new_verkey = Did::replace_keys_start(wallet_handle, &did, "{}").unwrap();
             let request = Ledger::build_nym_request(&did, &did, Some(&new_verkey), None, None).unwrap();
             Ledger::sign_and_submit_request(pool_handle, wallet_handle, &did, &request).unwrap();
+            ensure_nym_written(&ctx, &did, &new_verkey);
 
             let did_info = get_did_info(wallet_handle, &did);
             assert_eq!(did_info["verkey"].as_str().unwrap(), verkey);
@@ -746,7 +770,7 @@ pub mod tests {
             use_did(&ctx, DID_TRUSTEE);
             send_nym(&ctx, &did, &verkey, None);
             use_did(&ctx, &did);
-
+            ensure_nym_written(&ctx, &did, &verkey);
 
             let new_verkey = Did::replace_keys_start(wallet_handle, &did, "{}").unwrap();
 

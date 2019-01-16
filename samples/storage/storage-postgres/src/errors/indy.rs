@@ -1,7 +1,7 @@
 use errors::anoncreds::AnoncredsError;
-use errors::common::CommonError;
+use errors::prelude::*;
 use errors::ledger::LedgerError;
-use errors::pool::PoolError;
+
 use errors::crypto::CryptoError;
 use errors::wallet::WalletError;
 use errors::did::DidError;

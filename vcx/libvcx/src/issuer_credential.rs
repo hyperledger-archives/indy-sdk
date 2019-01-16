@@ -707,6 +707,7 @@ pub mod tests {
                                        libindy_issuer_create_credential_offer,
                                        libindy_prover_create_credential_req },
                           wallet::get_wallet_handle, wallet},
+                 get_temp_dir_path,
     };
     use error::{ issuer_cred::IssuerCredError };
 
@@ -1158,7 +1159,7 @@ pub mod tests {
         init!("true");
         let mut credential = create_standard_issuer_credential();
 
-        credential.tails_file = Some(TEST_TAILS_FILE.to_string());
+        credential.tails_file = Some(get_temp_dir_path(Some(TEST_TAILS_FILE)).to_str().unwrap().to_string());
         credential.cred_rev_id = None;
         credential.rev_reg_id = None;
         assert_eq!(credential.revoke_cred(), Err(IssuerCredError::InvalidRevocationInfo()));
@@ -1171,7 +1172,7 @@ pub mod tests {
         credential.rev_reg_id = Some(REV_REG_ID.to_string());
         assert_eq!(credential.revoke_cred(), Err(IssuerCredError::InvalidRevocationInfo()));
 
-        credential.tails_file = Some(TEST_TAILS_FILE.to_string());
+        credential.tails_file = Some(get_temp_dir_path(Some(TEST_TAILS_FILE)).to_str().unwrap().to_string());
         credential.cred_rev_id = Some(CRED_REV_ID.to_string());
         credential.rev_reg_id = Some(REV_REG_ID.to_string());
         credential.rev_cred_payment_txn = None;
