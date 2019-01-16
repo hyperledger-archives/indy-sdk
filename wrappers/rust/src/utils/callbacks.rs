@@ -20,7 +20,7 @@ struct ErrorDetails {
     backtrace: Option<String>
 }
 
-fn to_indy_error(err: ErrorCode) -> IndyError {
+pub(crate) fn to_indy_error(err: ErrorCode) -> IndyError {
     let mut error_json_p: *const c_char = ptr::null();
 
     unsafe { indy_get_current_error(&mut error_json_p); }
