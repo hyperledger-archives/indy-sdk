@@ -72,10 +72,13 @@ pub mod create_command {
 
                 Ok(println_succ!("Wallet \"{}\" has been created", id))
             }
-            Err(ErrorCode::CommonInvalidStructure) => Err(println_err!("Invalid key has been provided")),
-            Err(ErrorCode::WalletAlreadyExistsError) => Err(println_err!("Wallet \"{}\" already exists", id)),
-            Err(ErrorCode::CommonIOError) => Err(println_err!("Invalid wallet name  \"{}\"", id)),
-            Err(err) => return Err(println_err!("Indy SDK error occurred {:?}", err)),
+            Err(err) => {
+                match err.error_code {
+                    ErrorCode::WalletAlreadyExistsError => Err(println_err!("Wallet \"{}\" already exists", id)),
+                    ErrorCode::CommonIOError => Err(println_err!("Invalid wallet name \"{}\"", id)),
+                    _ => Err(handle_indy_error(err, None, None, Some(&id)))
+                }
+            }
         };
 
         trace!("execute << {:?}", res);
@@ -172,7 +175,7 @@ pub mod open_command {
                 if let Some((handle, id)) = get_opened_wallet(ctx) {
                     match Wallet::close_wallet(handle) {
                         Ok(()) => Ok(println_succ!("Wallet \"{}\" has been closed", id)),
-                        Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
+                        Err(err) => Err(handle_indy_error(err, None, None, None))
                     }
                 } else {
                     Ok(())
@@ -186,12 +189,11 @@ pub mod open_command {
                     }
                     Err(err) => {
                         set_opened_wallet(ctx, None);
-                        match err {
-                            ErrorCode::CommonInvalidStructure => Err(println_err!("Invalid key or config has been provided")),
+                        match err.error_code {
                             ErrorCode::WalletAlreadyOpenedError => Err(println_err!("Wallet \"{}\" already opened", id)),
                             ErrorCode::WalletAccessFailed => Err(println_err!("Cannot open wallet \"{}\". Invalid key has been provided", id)),
                             ErrorCode::WalletNotFoundError => Err(println_err!("Wallet \"{}\" not found or unavailable", id)),
-                            err => Err(println_err!("Indy SDK error occurred {:?}", err)),
+                            _ => Err(handle_indy_error(err, None, None, Some(&id))),
                         }
                     }
                 }
@@ -210,7 +212,7 @@ pub mod open_command {
                     set_opened_wallet(ctx, Some((handle, name.clone())));
                     println_succ!("Wallet \"{}\" has been closed", name)
                 }
-                Err(err) => println_err!("Indy SDK error occurred {:?}", err),
+                Err(err) => handle_indy_error(err, None, None, None)
             }
         }
 
@@ -271,7 +273,7 @@ pub mod close_command {
                         set_active_did(ctx, None);
                         Ok(println_succ!("Wallet \"{}\" has been closed", name))
                     }
-                    Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
+                    Err(err) => Err(handle_indy_error(err, None, None, None))
                 }
             });
 
@@ -314,12 +316,13 @@ pub mod delete_command {
 
                 Ok(println_succ!("Wallet \"{}\" has been deleted", id))
             }
-            Err(ErrorCode::CommonIOError) => Err(println_err!("Wallet \"{}\" not found or unavailable", id)),
-            Err(ErrorCode::WalletNotFoundError) => Err(println_err!("Wallet \"{}\" not found or unavailable", id)),
-            Err(ErrorCode::WalletAccessFailed) => Err(println_err!("Cannot delete wallet \"{}\". Invalid key has been provided ", id)),
-            Err(ErrorCode::CommonInvalidStructure) => Err(println_err!("Invalid key has been provided")),
-            Err(ErrorCode::CommonInvalidState) => Err(println_err!("Wallet {:?} is opened", id)),
-            Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
+            Err(err) => {
+                match err.error_code {
+                    ErrorCode::WalletNotFoundError => Err(println_err!("Wallet \"{}\" not found or unavailable", id)),
+                    ErrorCode::WalletAccessFailed => Err(println_err!("Cannot delete wallet \"{}\". Invalid key has been provided ", id)),
+                    _ => Err(handle_indy_error(err, None, None, Some(&id)))
+                }
+            }
         };
 
         trace!("execute << {:?}", res);
@@ -392,9 +395,7 @@ pub mod export_command {
 
         let res = match res {
             Ok(()) => Ok(println_succ!("Wallet \"{}\" has been exported to the file \"{}\"", wallet_name, export_path)),
-            Err(ErrorCode::CommonInvalidStructure) => Err(println_err!("Can not export Wallet: Invalid export file or encryption key")),
-            Err(ErrorCode::CommonIOError) => Err(println_err!("Can not export Wallet: Path \"{}\" is invalid or file already exists", export_path)),
-            Err(err) => return Err(println_err!("Indy SDK error occurred {:?}", err)),
+            Err(err) => Err(handle_indy_error(err, None, None, Some(wallet_name.as_ref())))
         };
 
         trace!("execute << {:?}", res);
@@ -444,7 +445,7 @@ pub mod import_command {
         }
 
         trace!("Wallet::import_wallet try: config {}, import_config {}", config, secret!(&import_config));
-        
+
         let res = Wallet::import_wallet(config.as_str(),
                                         credentials.as_str(),
                                         import_config.as_str(),
@@ -458,10 +459,7 @@ pub mod import_command {
                     .map_err(|err| println_err!("Cannot store \"{}\" config file: {:?}", id, err))?;
                 Ok(println_succ!("Wallet \"{}\" has been created", id))
             }
-            Err(ErrorCode::WalletAlreadyExistsError) => Err(println_err!("Wallet \"{}\" already exists", id)),
-            Err(ErrorCode::CommonIOError) => Err(println_err!("Can not import Wallet from file: \"{}\"", export_path)),
-            Err(ErrorCode::CommonInvalidStructure) => Err(println_err!("Can not import Wallet: Invalid file format or encryption key")),
-            Err(err) => return Err(println_err!("Indy SDK error occurred {:?}", err)),
+            Err(err) => Err(handle_indy_error(err, None, None, Some(id)))
         };
 
         trace!("execute << {:?}", res);

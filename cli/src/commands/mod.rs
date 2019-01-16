@@ -11,9 +11,9 @@ pub mod payment_address;
 use self::regex::Regex;
 
 use command_executor::{CommandContext, CommandParams};
+use indy::{ErrorCode, IndyError};
 
 use std;
-use libindy::ledger::Ledger;
 
 pub fn get_str_param<'a>(name: &'a str, params: &'a CommandParams) -> Result<&'a str, ()> {
     match params.get(name) {
@@ -239,6 +239,25 @@ pub fn set_connected_pool(ctx: &CommandContext, value: Option<(i32, String)>) {
     ctx.set_string_value("CONNECTED_POOL_NAME", value.as_ref().map(|value| value.1.to_owned()));
     ctx.set_sub_prompt(1, value.map(|value| format!("pool({})", value.1)));
 }
+
+pub fn handle_indy_error(err: IndyError, submitter_did: Option<&str>, pool_name: Option<&str>, wallet_name: Option<&str>) {
+    match err.error_code {
+        ErrorCode::WalletAlreadyExistsError => println_err!("Wallet \"{}\" already exists", wallet_name.unwrap_or("")),
+        ErrorCode::WalletInvalidHandle => println_err!("Wallet: \"{}\" not found", wallet_name.unwrap_or("")),
+        ErrorCode::WalletItemNotFound => println_err!("Submitter DID: \"{}\" not found", submitter_did.unwrap_or("")),
+        ErrorCode::WalletIncompatiblePoolError =>
+            println_err!("Wallet \"{}\" is incompatible with pool \"{}\".", wallet_name.unwrap_or(""), pool_name.unwrap_or("")),
+        ErrorCode::PoolLedgerInvalidPoolHandle => println_err!("Pool: \"{}\" not found", pool_name.unwrap_or("")),
+        ErrorCode::PoolLedgerNotCreatedError => println_err!("Pool \"{}\" does not exist.", pool_name.unwrap_or("")),
+        ErrorCode::PoolLedgerTerminated => println_err!("Pool \"{}\" does not exist.", pool_name.unwrap_or("")),
+        ErrorCode::PoolLedgerTimeout => println_err!("Transaction response has not been received"),
+        ErrorCode::DidAlreadyExistsError => println_err!("Did already exists"),
+        _ => println_err!("{}", err.message),
+    }
+}
+
+#[cfg(test)]
+use libindy::ledger::Ledger;
 
 #[cfg(test)]
 pub fn submit_retry<F, T, E>(ctx: &CommandContext, request: &str, parser: F) -> Result<(), ()>

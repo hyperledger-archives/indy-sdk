@@ -158,7 +158,14 @@ impl IndyError {
     pub fn extend<D>(self, msg: D) -> IndyError
         where D: fmt::Display + fmt::Debug + Send + Sync + 'static {
         let kind = self.kind();
-        self.to_indy(kind, msg)
+        let inner = Arc::try_unwrap(self.inner).unwrap();
+        IndyError { inner: Arc::new(inner.map(|_| msg).context(kind)) }
+    }
+
+    pub fn extend_with_type<D>(self, kind: IndyErrorKind, msg: D) -> IndyError
+        where D: fmt::Display + fmt::Debug + Send + Sync + 'static {
+        let inner = Arc::try_unwrap(self.inner).unwrap();
+        IndyError { inner: Arc::new(inner.map(|_| msg).context(kind)) }
     }
 }
 

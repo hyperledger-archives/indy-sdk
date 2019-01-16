@@ -87,7 +87,7 @@ macro_rules! parse_json {
         }
 
         let r = serde_json::from_str::<$t>($x)
-                    .to_indy(::errors::IndyErrorKind::InvalidStructure, "Invalid $t json has been passed");
+                    .to_indy(::errors::IndyErrorKind::InvalidStructure, format!("Invalid {} json has been passed", stringify!($t)));
 
         let $x: $t = match r {
             Ok(ok) => ok,
