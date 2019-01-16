@@ -57,7 +57,7 @@ mod high_cases {
 
             let pool_name = "";
             let res = pool::create_pool_ledger_config(pool_name, None);
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidParam2);
+            assert_eq!(res.unwrap_err().error_code, ErrorCode::CommonInvalidParam2);
 
             utils::tear_down();
         }
@@ -94,7 +94,7 @@ mod high_cases {
 
             let txn_file_path = pool::create_genesis_txn_file_for_test_pool("pool_create", Some(0), None);
             let pool_config = pool::pool_config_json(txn_file_path.as_path());
-            assert_eq!(ErrorCode::CommonInvalidStructure, pool::create_pool_ledger_config("pool_create", Some(pool_config.as_str())).unwrap_err());
+            assert_eq!(ErrorCode::CommonInvalidStructure, pool::create_pool_ledger_config("pool_create", Some(pool_config.as_str())).unwrap_err().error_code);
 
             utils::tear_down();
         }
@@ -148,7 +148,7 @@ mod high_cases {
             pool::create_and_open_pool_ledger(pool_name).unwrap();
 
             let res = pool::open_pool_ledger(pool_name, None);
-            assert_eq!(ErrorCode::PoolLedgerInvalidPoolHandle, res.unwrap_err());
+            assert_eq!(ErrorCode::PoolLedgerInvalidPoolHandle, res.unwrap_err().error_code);
 
             utils::tear_down();
         }
@@ -258,7 +258,7 @@ mod high_cases {
             let pool_handle = utils::setup_with_pool();
 
             pool::close(pool_handle).unwrap();
-            assert_eq!(pool::close(pool_handle).unwrap_err(), ErrorCode::PoolLedgerInvalidPoolHandle);
+            assert_eq!(pool::close(pool_handle).unwrap_err().error_code, ErrorCode::PoolLedgerInvalidPoolHandle);
 
             utils::tear_down();
         }
@@ -286,7 +286,7 @@ mod high_cases {
 
             pool::close(pool_handle).unwrap();
 
-            assert_eq!(submit_fut.wait().unwrap_err(), ErrorCode::PoolLedgerTerminated);
+            assert_eq!(submit_fut.wait().unwrap_err().error_code, ErrorCode::PoolLedgerTerminated);
 
             /* Now any request to API can failed, if pool::close works incorrect in case of pending requests.
                For example try to delete the pool. */
@@ -319,7 +319,7 @@ mod high_cases {
 
             let pool_handle = pool::create_and_open_pool_ledger(POOL).unwrap();
 
-            assert_eq!(pool::delete(POOL).unwrap_err(), ErrorCode::CommonInvalidState);
+            assert_eq!(pool::delete(POOL).unwrap_err().error_code, ErrorCode::CommonInvalidState);
 
             pool::close(pool_handle).unwrap();
 
@@ -361,7 +361,7 @@ mod medium_cases {
             let config = r#"{}"#.to_string();
 
             let res = pool::create_pool_ledger_config(POOL, Some(config.as_str()));
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+            assert_eq!(res.unwrap_err().error_code, ErrorCode::CommonInvalidStructure);
 
             utils::tear_down();
         }
@@ -373,7 +373,7 @@ mod medium_cases {
             let config = r#"{"genesis_txn": "path"}"#.to_string();
 
             let res = pool::create_pool_ledger_config(POOL, Some(config.as_str()));
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonIOError);
+            assert_eq!(res.unwrap_err().error_code, ErrorCode::CommonIOError);
 
             utils::tear_down();
         }
@@ -388,7 +388,7 @@ mod medium_cases {
             pool::create_pool_ledger_config(POOL, Some(pool_config.as_str())).unwrap();
             let res = pool::create_pool_ledger_config(POOL, Some(pool_config.as_str()));
 
-            assert_eq!(res.unwrap_err(), ErrorCode::PoolLedgerConfigAlreadyExistsError);
+            assert_eq!(res.unwrap_err().error_code, ErrorCode::PoolLedgerConfigAlreadyExistsError);
 
             utils::tear_down();
         }
@@ -414,7 +414,7 @@ mod medium_cases {
             utils::setup();
 
             let res = pool::open_pool_ledger(POOL, None);
-            assert_eq!(res.unwrap_err(), ErrorCode::PoolLedgerNotCreatedError);
+            assert_eq!(res.unwrap_err().error_code, ErrorCode::PoolLedgerNotCreatedError);
 
             utils::tear_down();
         }
@@ -425,7 +425,7 @@ mod medium_cases {
             utils::setup();
 
             let res = pool::open_pool_ledger(POOL, None);
-            assert_eq!(res.unwrap_err(), ErrorCode::PoolLedgerNotCreatedError);
+            assert_eq!(res.unwrap_err().error_code, ErrorCode::PoolLedgerNotCreatedError);
 
             let pool_handle = pool::create_and_open_pool_ledger(POOL).unwrap();
 
@@ -447,7 +447,7 @@ mod medium_cases {
             pool::create_pool_ledger_config(pool_name, Some(pool_config.as_str())).unwrap();
 
             let res = pool::open_pool_ledger(pool_name, Some(pool_config.as_str()));
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidState);
+            assert_eq!(res.unwrap_err().error_code, ErrorCode::CommonInvalidState);
 
             utils::tear_down();
         }
@@ -465,7 +465,7 @@ mod medium_cases {
             pool::create_pool_ledger_config(pool_name, Some(pool_config.as_str())).unwrap();
 
             let res = pool::open_pool_ledger(pool_name, None);
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidState);
+            assert_eq!(res.unwrap_err().error_code, ErrorCode::CommonInvalidState);
 
             utils::tear_down();
         }
@@ -484,7 +484,7 @@ mod medium_cases {
             pool::create_pool_ledger_config(name, Some(pool_config.as_str())).unwrap();
 
             let res = pool::open_pool_ledger(name, Some(config));
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+            assert_eq!(res.unwrap_err().error_code, ErrorCode::CommonInvalidStructure);
 
             utils::tear_down();
         }
@@ -501,7 +501,7 @@ mod medium_cases {
             pool::create_pool_ledger_config(POOL, Some(pool_config.as_str())).unwrap();
 
             let res = pool::open_pool_ledger(POOL, None);
-            assert_eq!(res.unwrap_err(), ErrorCode::PoolIncompatibleProtocolVersion);
+            assert_eq!(res.unwrap_err().error_code, ErrorCode::PoolIncompatibleProtocolVersion);
 
             utils::tear_down();
         }
@@ -518,7 +518,7 @@ mod medium_cases {
             pool::create_pool_ledger_config(POOL, Some(pool_config.as_str())).unwrap();
 
             let res = pool::open_pool_ledger(POOL, None);
-            assert_eq!(res.unwrap_err(), ErrorCode::PoolLedgerTimeout);
+            assert_eq!(res.unwrap_err().error_code, ErrorCode::PoolLedgerTimeout);
 
             utils::tear_down();
         }
@@ -533,7 +533,7 @@ mod medium_cases {
             let pool_handle = utils::setup_with_pool();
 
             let res = pool::close(pool_handle + 1);
-            assert_eq!(res.unwrap_err(), ErrorCode::PoolLedgerInvalidPoolHandle);
+            assert_eq!(res.unwrap_err().error_code, ErrorCode::PoolLedgerInvalidPoolHandle);
 
             utils::tear_down_with_pool(pool_handle);
         }
@@ -547,7 +547,7 @@ mod medium_cases {
             utils::setup();
 
             let res = pool::delete(POOL);
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonIOError);
+            assert_eq!(res.unwrap_err().error_code, ErrorCode::CommonIOError);
 
             utils::tear_down();
         }
@@ -560,7 +560,7 @@ mod medium_cases {
             pool::close(pool_handle).unwrap();
             pool::delete(POOL).unwrap();
             let res = pool::delete(POOL);
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonIOError);
+            assert_eq!(res.unwrap_err().error_code, ErrorCode::CommonIOError);
 
             utils::tear_down();
         }
@@ -578,7 +578,7 @@ mod medium_cases {
 
             let invalid_pool_handle = pool_handle + 1;
             let res = pool::refresh(invalid_pool_handle);
-            assert_eq!(res.unwrap_err(), ErrorCode::PoolLedgerInvalidPoolHandle);
+            assert_eq!(res.unwrap_err().error_code, ErrorCode::PoolLedgerInvalidPoolHandle);
 
             pool::close(pool_handle).unwrap();
 
@@ -592,7 +592,7 @@ mod medium_cases {
         #[test]
         fn indy_set_protocol_version_works_for_unsupported() {
             let res = pool::set_protocol_version(0);
-            assert_eq!(res.unwrap_err(), ErrorCode::PoolIncompatibleProtocolVersion);
+            assert_eq!(res.unwrap_err().error_code, ErrorCode::PoolIncompatibleProtocolVersion);
         }
     }
 }

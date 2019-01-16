@@ -67,7 +67,7 @@ mod high_cases {
 
             did::store_their_did_from_parts(wallet_handle, DID_TRUSTEE, VERKEY_TRUSTEE).unwrap();
 
-            assert_eq!(ErrorCode::WalletItemNotFound, pairwise::create_pairwise(wallet_handle, DID_TRUSTEE, DID, None).unwrap_err());
+            assert_eq!(ErrorCode::WalletItemNotFound, pairwise::create_pairwise(wallet_handle, DID_TRUSTEE, DID, None).unwrap_err().error_code);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -78,7 +78,7 @@ mod high_cases {
 
             let (my_did, _) = did::create_and_store_my_did(wallet_handle, Some(MY1_SEED)).unwrap();
 
-            assert_eq!(ErrorCode::WalletItemNotFound, pairwise::create_pairwise(wallet_handle, DID, &my_did, None).unwrap_err());
+            assert_eq!(ErrorCode::WalletItemNotFound, pairwise::create_pairwise(wallet_handle, DID, &my_did, None).unwrap_err().error_code);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -89,7 +89,7 @@ mod high_cases {
 
             did::store_their_did_from_parts(wallet_handle, DID_TRUSTEE, VERKEY_TRUSTEE).unwrap();
 
-            assert_eq!(ErrorCode::WalletInvalidHandle, pairwise::create_pairwise(wallet_handle + 1, DID_TRUSTEE, &my_did, None).unwrap_err());
+            assert_eq!(ErrorCode::WalletInvalidHandle, pairwise::create_pairwise(wallet_handle + 1, DID_TRUSTEE, &my_did, None).unwrap_err().error_code);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -103,7 +103,7 @@ mod high_cases {
             pairwise::create_pairwise(wallet_handle, DID_TRUSTEE, &my_did, Some(METADATA)).unwrap();
 
             let res = pairwise::create_pairwise(wallet_handle, DID_TRUSTEE, &my_did, None);
-            assert_eq!(ErrorCode::WalletItemAlreadyExists, res.unwrap_err());
+            assert_eq!(ErrorCode::WalletItemAlreadyExists, res.unwrap_err().error_code);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -149,7 +149,7 @@ mod high_cases {
 
             pairwise::create_pairwise(wallet_handle, DID_TRUSTEE, &my_did, None).unwrap();
 
-            assert_eq!(ErrorCode::WalletInvalidHandle, pairwise::list_pairwise(wallet_handle + 1).unwrap_err());
+            assert_eq!(ErrorCode::WalletInvalidHandle, pairwise::list_pairwise(wallet_handle + 1).unwrap_err().error_code);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -188,7 +188,7 @@ mod high_cases {
 
             pairwise::create_pairwise(wallet_handle, DID_TRUSTEE, &my_did, None).unwrap();
 
-            assert_eq!(ErrorCode::WalletInvalidHandle, pairwise::pairwise_exists(wallet_handle + 1, DID_TRUSTEE).unwrap_err());
+            assert_eq!(ErrorCode::WalletInvalidHandle, pairwise::pairwise_exists(wallet_handle + 1, DID_TRUSTEE).unwrap_err().error_code);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -215,7 +215,7 @@ mod high_cases {
         fn indy_get_pairwise_works_for_not_created_pairwise() {
             let wallet_handle = utils::setup_with_wallet();
 
-            assert_eq!(ErrorCode::WalletItemNotFound, pairwise::get_pairwise(wallet_handle, DID_TRUSTEE).unwrap_err());
+            assert_eq!(ErrorCode::WalletItemNotFound, pairwise::get_pairwise(wallet_handle, DID_TRUSTEE).unwrap_err().error_code);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -228,7 +228,7 @@ mod high_cases {
 
             pairwise::create_pairwise(wallet_handle, DID_TRUSTEE, &my_did, None).unwrap();
 
-            assert_eq!(ErrorCode::WalletInvalidHandle, pairwise::get_pairwise(wallet_handle + 1, DID_TRUSTEE).unwrap_err());
+            assert_eq!(ErrorCode::WalletInvalidHandle, pairwise::get_pairwise(wallet_handle + 1, DID_TRUSTEE).unwrap_err().error_code);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -281,7 +281,7 @@ mod high_cases {
         fn indy_set_pairwise_metadata_works_for_not_created_pairwise() {
             let wallet_handle = utils::setup_with_wallet();
 
-            assert_eq!(ErrorCode::WalletItemNotFound, pairwise::set_pairwise_metadata(wallet_handle, DID_TRUSTEE, Some(METADATA)).unwrap_err());
+            assert_eq!(ErrorCode::WalletItemNotFound, pairwise::set_pairwise_metadata(wallet_handle, DID_TRUSTEE, Some(METADATA)).unwrap_err().error_code);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -294,7 +294,7 @@ mod high_cases {
 
             pairwise::create_pairwise(wallet_handle, DID_TRUSTEE, &my_did, None).unwrap();
 
-            assert_eq!(ErrorCode::WalletInvalidHandle, pairwise::set_pairwise_metadata(wallet_handle + 1, DID_TRUSTEE, Some(METADATA)).unwrap_err());
+            assert_eq!(ErrorCode::WalletInvalidHandle, pairwise::set_pairwise_metadata(wallet_handle + 1, DID_TRUSTEE, Some(METADATA)).unwrap_err().error_code);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
