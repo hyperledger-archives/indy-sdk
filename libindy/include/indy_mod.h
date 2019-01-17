@@ -1,6 +1,8 @@
 #ifndef __indy__mod_included__
 #define __indy__mod_included__
 
+#include "indy_types.h"
+
 typedef enum
 {
     Success = 0,
@@ -77,6 +79,27 @@ typedef enum
     // Attempt to open encrypted wallet with invalid credentials
     WalletAccessFailed = 207,
 
+    // Input provided to wallet operations is considered not valid
+    WalletInputError = 208,
+
+    // Decoding of wallet data during input/output failed
+    WalletDecodingError = 209,
+
+    // Storage error occurred during wallet operation
+    WalletStorageError = 210,
+
+    // Error during encryption-related operations
+    WalletEncryptionError = 211,
+
+    // Requested wallet item not found
+     WalletItemNotFound = 212,
+
+    // Returned if wallet's add_record operation is used with record name that already exists
+    WalletItemAlreadyExists = 213,
+
+    // Returned if provided wallet query is invalid
+    WalletQueryError = 214,
+
     // Ledger errors
     // Trying to open pool ledger that wasn't created before
     PoolLedgerNotCreatedError = 300,
@@ -102,6 +125,13 @@ typedef enum
     // Timeout for action
     PoolLedgerTimeout = 307,
 
+    // Attempt to open Pool for witch Genesis Transactions are not compatible with set Protocol version.
+    // Call pool.indy_set_protocol_version to set correct Protocol version.
+    PoolIncompatibleProtocolVersion = 308,
+
+    // Item not found on ledger.
+    LedgerNotFound = 309,
+
     // Revocation registry is full and creation of new registry is necessary
     AnoncredsRevocationRegistryFullError = 400,
 
@@ -122,9 +152,48 @@ typedef enum
     UnknownCryptoTypeError = 500,
 
     // Attempt to create duplicate did
-    DidAlreadyExistsError = 600
+    DidAlreadyExistsError = 600,
+
+    // Unknown payment method was given
+    PaymentUnknownMethodError = 700,
+
+    //No method were scraped from inputs/outputs or more than one were scraped
+    PaymentIncompatibleMethodsError = 701,
+
+    // Insufficient funds on inputs
+    PaymentInsufficientFundsError = 702,
+
+    // No such source on a ledger
+    PaymentSourceDoesNotExistError = 703,
+
+    // Operation is not supported for payment method
+    PaymentOperationNotSupportedError = 704,
+
+    // Extra funds on inputs
+    PaymentExtraFundsError = 705
 
 } indy_error_t;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+    /// Set libindy runtime configuration. Can be optionally called to change current params.
+    ///
+    /// #Params
+    /// config: {
+    ///     "crypto_thread_pool_size": <int> - size of thread pool for the most expensive crypto operations. (4 by default)
+    /// }
+    ///
+    /// #Errors
+    /// Common*
+    extern indy_error_t indy_set_runtime_config(const char * config);
+
+    extern void indy_get_current_error(const char * error_json_p);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

@@ -17,7 +17,7 @@ async def test_replace_keys_apply_works_without_calling_replace_start(wallet_han
     (_did, _) = await did.create_and_store_my_did(wallet_handle, "{}")
     with pytest.raises(IndyError) as e:
         await did.replace_keys_apply(wallet_handle, _did)
-    assert ErrorCode.WalletNotFoundError == e.value.error_code
+    assert ErrorCode.WalletItemNotFound == e.value.error_code
 
 
 @pytest.mark.asyncio
@@ -26,7 +26,7 @@ async def test_replace_keys_apply_works_for_unknown_did(wallet_handle, did_my1):
     await did.replace_keys_start(wallet_handle, _did, "{}")
     with pytest.raises(IndyError) as e:
         await did.replace_keys_apply(wallet_handle, did_my1)
-    assert ErrorCode.WalletNotFoundError == e.value.error_code
+    assert ErrorCode.WalletItemNotFound == e.value.error_code
 
 
 @pytest.mark.asyncio

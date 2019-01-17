@@ -20,7 +20,7 @@ namespace Hyperledger.Indy.Utils
         }
 
         /// <summary>
-        /// Guards against null and strings containing nothing but whitepsace.
+        /// Guards against null and strings containing nothing but whitespace.
         /// </summary>
         /// <param name="param">The parameter to check.</param>
         /// <param name="paramName">The name of the parameter.</param>

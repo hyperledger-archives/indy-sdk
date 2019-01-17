@@ -28,13 +28,7 @@ public class LedgerIntegrationTest extends IndyIntegrationTestWithPoolAndSingleW
 	static String credDefId;
 	static String revRegDefId;
 
-	@Before
-	public void setUp() throws Exception {
-		InitHelper.init();
-		postEntities();
-	}
-
-	private void postEntities() throws Exception {
+	void postEntities() throws Exception {
 
 		if (entitiesPosted) {
 			return;

@@ -14,7 +14,7 @@ Pre-Built binaries can be downloaded from https://repo.sovrin.org/:
 
 On Ubuntu it is recommended to install packages with APT (change stable to `master` or `rc` if needed):
 ```
-apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 68DB5E88
+sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 68DB5E88
 sudo add-apt-repository "deb https://repo.sovrin.org/sdk/deb xenial stable"
 sudo apt-get update
 sudo apt-get install -y indy-cli
@@ -32,7 +32,12 @@ by beginning the line with a `#`.
 
 ### Getting help
 The most simple way is just start cli by `indy-cli` command and put `help` command. Also you can look to
-[Indy CLI Design](../doc/cli-design.md) doc that contains the list of commands and architecture overview.
+[Indy CLI Design](../doc/design/001-cli) doc that contains the list of commands and architecture overview.
+
+### Options
+* -h and --help - Print usage.
+* --logger-config - Init logger according to a config file (default no logger initialized).
+* --plugins - Load plugins in Libindy (usage: <lib-1-name>:<init-func-1-name>,...,<lib-n-name>:<init-func-n-name>).
 
 ### Old python-based CLI migration
 It is possible to import did's stored in the wallet of deprecated python-based CLI tool.

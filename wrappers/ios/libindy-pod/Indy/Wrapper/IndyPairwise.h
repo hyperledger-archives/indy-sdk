@@ -67,7 +67,7 @@
 /**
  Store pairwise metadata for theirDid in wallet.
  
- @param metadata Meradata for theirDid.
+ @param metadata Metadata for theirDid.
  @param walletHandle Handle of wallet, where metadata will be stored.
  @param completion Completion block, returns error.
  */

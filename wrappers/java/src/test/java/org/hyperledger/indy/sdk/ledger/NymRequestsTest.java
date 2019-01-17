@@ -62,6 +62,11 @@ public class NymRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet 
 	}
 
 	@Test
+	public void testBuildGetNymRequestWorksForDefaultSubmitter() throws Exception {
+		Ledger.buildGetNymRequest(null, dest).get();
+	}
+
+	@Test
 	public void testNymRequestWorksWithoutSignature() throws Exception {
 		DidResults.CreateAndStoreMyDidResult result = Did.createAndStoreMyDid(wallet, "{}").get();
 		String did = result.getDid();

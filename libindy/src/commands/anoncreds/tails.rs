@@ -3,19 +3,18 @@ extern crate indy_crypto;
 extern crate sha2;
 extern crate rust_base58;
 
-use errors::common::CommonError;
+use errors::prelude::*;
 use services::blob_storage::BlobStorageService;
-use domain::revocation_registry_definition::RevocationRegistryDefinitionV1;
+use domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinitionV1;
 
 use self::indy_crypto::cl::{Tail, RevocationTailsAccessor, RevocationTailsGenerator};
 use self::indy_crypto::errors::IndyCryptoError;
-use self::digest::Input;
 
 use self::rust_base58::{ToBase58, FromBase58};
 
 use std::rc::Rc;
 
-const _TAILS_BLOB_TAG_SZ: usize = 2;
+const TAILS_BLOB_TAG_SZ: u8 = 2;
 const TAIL_SIZE: usize = Tail::BYTES_REPR_SIZE;
 
 pub struct SDKTailsAccessor {
@@ -26,13 +25,14 @@ pub struct SDKTailsAccessor {
 impl SDKTailsAccessor {
     pub fn new(tails_service: Rc<BlobStorageService>,
                tails_reader_handle: i32,
-               rev_reg_def: &RevocationRegistryDefinitionV1) -> Result<SDKTailsAccessor, CommonError> {
+               rev_reg_def: &RevocationRegistryDefinitionV1) -> IndyResult<SDKTailsAccessor> {
         let tails_hash = rev_reg_def.value.tails_hash.from_base58()
-            .map_err(|_| CommonError::InvalidState(format!("Invalid base58 for Tails hash")))?;
+            .map_err(|_| err_msg(IndyErrorKind::InvalidState, "Invalid base58 for Tails hash"))?;
 
         let tails_reader_handle = tails_service.open_blob(tails_reader_handle,
                                                           &rev_reg_def.value.tails_location,
                                                           tails_hash.as_slice())?;
+
         Ok(SDKTailsAccessor {
             tails_service,
             tails_reader_handle
@@ -52,37 +52,41 @@ impl Drop for SDKTailsAccessor {
 
 impl RevocationTailsAccessor for SDKTailsAccessor {
     fn access_tail(&self, tail_id: u32, accessor: &mut FnMut(&Tail)) -> Result<(), IndyCryptoError> {
+        debug!("access_tail >>> tail_id: {:?}",tail_id);
+
         let tail_bytes = self.tails_service
             .read(self.tails_reader_handle,
                   TAIL_SIZE,
-                  TAIL_SIZE * tail_id as usize)  // + _TAILS_BLOB_TAG_SZ
+                  TAIL_SIZE * tail_id as usize + TAILS_BLOB_TAG_SZ as usize)
             .map_err(|_|
-                IndyCryptoError::InvalidState("Can't read tail bytes from blob storage".to_owned()))?; //TODO
+                IndyCryptoError::InvalidState("Can't read tail bytes from blob storage".to_owned()))?; // FIXME: IO error should be returned
+
         let tail = Tail::from_bytes(tail_bytes.as_slice())?;
         accessor(&tail);
-        Ok(())
+
+        let res = ();
+        debug!("access_tail <<< res: {:?}",res);
+        Ok(res)
     }
 }
 
 pub fn store_tails_from_generator(service: Rc<BlobStorageService>,
                                   writer_handle: i32,
-                                  rtg: &mut RevocationTailsGenerator) -> Result<(String, String), CommonError> {
-    trace!("store_tails_from_generator ---> start");
+                                  rtg: &mut RevocationTailsGenerator) -> IndyResult<(String, String)> {
+    debug!("store_tails_from_generator >>> writer_handle: {:?}",writer_handle);
 
     let blob_handle = service.create_blob(writer_handle)?;
 
-    let mut hasher = sha2::Sha256::default();
-
-    //FIXME store version/tag/meta at start of the Tail's BLOB
+    let version = vec![0u8, TAILS_BLOB_TAG_SZ];
+    service.append(blob_handle, version.as_slice())?;
 
     while let Some(tail) = rtg.next()? {
         let tail_bytes = tail.to_bytes()?;
-        hasher.process(tail_bytes.as_slice());
         service.append(blob_handle, tail_bytes.as_slice())?;
     }
 
     let res = service.finalize(blob_handle).map(|(location, hash)| (location, hash.to_base58()))?;
 
-    trace!("finalize ---> end");
+    debug!("store_tails_from_generator <<< res: {:?}", res);
     Ok(res)
 }

@@ -20,7 +20,7 @@ async def test_crypto_sign_works(wallet_handle, key_my1, message):
 async def test_crypto_sign_works_for_unknown_signer(wallet_handle, message, verkey_my1):
     with pytest.raises(IndyError) as e:
         await crypto.crypto_sign(wallet_handle, verkey_my1, message)
-    assert ErrorCode.WalletNotFoundError == e.value.error_code
+    assert ErrorCode.WalletItemNotFound == e.value.error_code
 
 
 @pytest.mark.asyncio

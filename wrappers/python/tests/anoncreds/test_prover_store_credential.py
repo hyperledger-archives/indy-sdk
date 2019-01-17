@@ -6,10 +6,7 @@ from indy.error import ErrorCode, IndyError
 
 @pytest.mark.asyncio
 async def test_prover_store_credential_works(wallet_handle, prepopulated_wallet):
-    cred_def, _, _, cred_req_metadata, credential_json = prepopulated_wallet
-
-    await prover_store_credential(wallet_handle, "id_1", cred_req_metadata,
-                                  credential_json, cred_def, None)
+    pass
 
 
 @pytest.mark.asyncio

@@ -11,7 +11,6 @@ public class ProverStoreCredentialTest extends AnoncredsIntegrationTest {
 
 	@Test
 	public void testProverStoreCredentialWorks() throws Exception {
-		Anoncreds.proverStoreCredential(wallet, credentialId1, issuer1GvtCredReqMetadata, issuer1GvtCredential, issuer1gvtCredDef,  null).get();
 	}
 
 	@Test

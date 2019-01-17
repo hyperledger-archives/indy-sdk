@@ -1,0 +1,114 @@
+@startuml
+skinparam sequenceArrowThickness 2
+skinparam roundcorner 15
+skinparam maxmessagesize 100
+skinparam sequence {
+	ArrowColor grey
+	LifeLineBorderColor grey
+    ParticipantBorderColor grey
+	boxbordercolor white
+	ParticipantFontSize 17
+	actorfontsize 17
+	boxfontsize 17
+	boxfontcolor grey
+	ActorBorderColor grey
+    Actorbackgroundcolor white
+}
+
+actor Alice as al
+participant "Alice's\nEdge Agent" as aea
+participant "Alice's\nCloud Agent" as aca
+participant "Issuers\nAgent" as aci
+participant "Issuer" as iss
+participant "Ledger" as le
+note over al, le #f0f0e0
+Assumptions: Alice no longer has any agent policy
+keys to use for control over her agent policy registry
+on the ledger. An attacker has compromised the
+agent policy registry and locked out Alice.
+end note
+
+== agent recovery ==
+
+note over al, le #f0f0e0
+Alice performs agent recovery by completing all steps in
+<b>Offline Recovery</b> diagram or <b>Social Recovery</b> diagram
+She can't complete the portion to update the agent policy registry
+because she is locked out
+end note
+
+== create new agent policy registry ==
+
+aea -> aea: generate policy registry address **//P'//**
+aea -> aea: store **//P'//**
+
+note over al, le #77ccff
+include <b>Update Agent Policy Registry</b> diagram
+(with all authorizations)
+end note
+
+== revoke claims ==
+
+note over al, le
+Alice revokes all her claims that include
+the old agent policy address <i>P</i> as
+a blinded attribute. Alice also petitions
+the Issuers to reissue her claims.
+
+How to invalidate claims that are not revocable?
+end note
+
+al -> aea: revoke claim
+
+aea -[#blue]> aca: \nrevoke claim message
+note right
+Claim with claim schema <i>S</i> and
+claim index <i>S<sub>i</sub></i>
+end note
+
+par2
+aca -[#blue]>aci: \n\nforward
+else
+aci -[#blue]>iss:\n\nnotify issuer
+end
+
+iss --> iss: verify alice
+note right
+Issuer authenticates Alice
+using the same methods as before
+when Alice was issued the claim
+end note
+iss -[#blue]> aci: revoke claim
+note right
+Add claim index <i>S<sub>i</sub></i>
+to the non-revocation accumulator <i>S<sub>O</sub></i>
+corresponding to claim schema <i>S</i>. Sign
+transaction with Issuer accumulator private key.
+end note
+aci -[#blue]> le: forward revoke claim
+note right
+Adds claim index <i>S<sub>i</sub></i> to the
+non-revocation accumulator corresponding to
+claim schema <i>S</i>.
+end note
+le -> le: update accumulator
+le -[#blue]> aci: result
+
+aci -[#blue]> iss: forward result
+
+par2
+aci -[#blue]> aca: \nack
+else
+aca -[#blue]> aea: \n
+else
+aea -> al: \n
+end
+
+== reissue claims ==
+
+note over al, le #77ccff
+Alice completes <b>Issue Claim</b> diagram
+for each claim with new policy address <i>P</i>
+end note
+
+@enduml

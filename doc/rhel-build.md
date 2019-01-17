@@ -42,12 +42,12 @@ dnf install -y \
 For Amazon Linux 2017.03 or other distributions without `libsodium` available in system repositories:
 ```
 cd /tmp
-curl https://download.libsodium.org/libsodium/releases/libsodium-1.0.12.tar.gz | tar -xz
-cd /tmp/libsodium-1.0.12
+curl https://download.libsodium.org/libsodium/releases/old/libsodium-1.0.14.tar.gz | tar -xz
+cd /tmp/libsodium-1.0.14
 ./configure
 make
 make install
-rm -rf /tmp/libsodium-1.0.12
+rm -rf /tmp/libsodium-1.0.14
 
 export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/local/lib/pkgconfig
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
@@ -93,24 +93,7 @@ command above will tell `rustc` to also check `../libindy/target/{BUILD_TYPE}` f
 
 ## Running integration tests
 ### Starting up
-Start local nodes pool on `127.0.0.1:9701-9708` with Docker:
-
-```
-docker build -f ci/indy-pool.dockerfile -t indy_pool .
-docker run -itd -p 9701-9709:9701-9709 indy_pool
-```
-
-In some environments, this approach with mapping of local ports to container ports
-can't be applied. Dockerfile `ci/indy-pool.dockerfile` supports optional `pool_ip` param
-that allows changing ip of pool nodes in generated pool configuration. The following
-commands allow to start local nodes pool in custom docker network and access this pool by
-custom ip in docker network:
-
-```
-docker network create --subnet 10.0.0.0/8 indy_pool_network
-docker build --build-arg pool_ip=10.0.0.2 -f ci/indy-pool.dockerfile -t indy_pool .
-docker run -d --ip="10.0.0.2" --net=indy_pool_network indy_pool
-```
+[Start local nodes pool with Docker](https://github.com/hyperledger/indy-sdk/blob/master/README.md#how-to-start-local-nodes-pool-with-docker)
 
 This may be useful if you want to launch integration tests inside another container attached to
 the same docker network.

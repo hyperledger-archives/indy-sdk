@@ -14,8 +14,11 @@ RUN apt-get update && \
 RUN add-apt-repository ppa:jonathonf/python-3.6
 RUN apt-get update && \
       apt-get install -y \
-      python3.6 \
-      python3-pip
+      python3.5 \
+      python3-pip \
+      vim
+
+RUN pip3 install -U pip
 
 ARG indy_sdk_deb
 RUN echo ${indy_sdk_deb}
@@ -24,5 +27,5 @@ ADD ${indy_sdk_deb} indy-sdk.deb
 RUN dpkg -i indy-sdk.deb || apt-get install -y -f
 
 RUN useradd -ms /bin/bash indy
-WORKDIR /home/indy
 USER indy
+WORKDIR /home/indy

@@ -1,5 +1,33 @@
-#[macro_use]
-mod utils;
+extern crate indy_crypto;
+extern crate threadpool;
+
+use std::env;
+use std::rc::Rc;
+use std::sync::{Mutex, MutexGuard};
+use std::sync::mpsc::{channel, Sender};
+use std::thread;
+
+use commands::anoncreds::{AnoncredsCommand, AnoncredsCommandExecutor};
+use commands::blob_storage::{BlobStorageCommand, BlobStorageCommandExecutor};
+use commands::crypto::{CryptoCommand, CryptoCommandExecutor};
+use commands::did::{DidCommand, DidCommandExecutor};
+use commands::ledger::{LedgerCommand, LedgerCommandExecutor};
+use commands::non_secrets::{NonSecretsCommand, NonSecretsCommandExecutor};
+use commands::pairwise::{PairwiseCommand, PairwiseCommandExecutor};
+use commands::payments::{PaymentsCommand, PaymentsCommandExecutor};
+use commands::pool::{PoolCommand, PoolCommandExecutor};
+use commands::wallet::{WalletCommand, WalletCommandExecutor};
+use domain::IndyConfig;
+use errors::prelude::*;
+use services::anoncreds::AnoncredsService;
+use services::blob_storage::BlobStorageService;
+use services::crypto::CryptoService;
+use services::ledger::LedgerService;
+use services::payments::PaymentsService;
+use services::pool::PoolService;
+use services::wallet::WalletService;
+
+use self::threadpool::ThreadPool;
 
 pub mod anoncreds;
 pub mod blob_storage;
@@ -9,30 +37,8 @@ pub mod pool;
 pub mod did;
 pub mod wallet;
 pub mod pairwise;
-
-use commands::anoncreds::{AnoncredsCommand, AnoncredsCommandExecutor};
-use commands::blob_storage::{BlobStorageCommand, BlobStorageCommandExecutor};
-use commands::crypto::{CryptoCommand, CryptoCommandExecutor};
-use commands::ledger::{LedgerCommand, LedgerCommandExecutor};
-use commands::pool::{PoolCommand, PoolCommandExecutor};
-use commands::did::{DidCommand, DidCommandExecutor};
-use commands::wallet::{WalletCommand, WalletCommandExecutor};
-use commands::pairwise::{PairwiseCommand, PairwiseCommandExecutor};
-
-use errors::common::CommonError;
-
-use services::anoncreds::AnoncredsService;
-use services::blob_storage::BlobStorageService;
-use services::pool::PoolService;
-use services::wallet::WalletService;
-use services::crypto::CryptoService;
-use services::ledger::LedgerService;
-
-use std::error::Error;
-use std::sync::mpsc::{Sender, channel};
-use std::rc::Rc;
-use std::thread;
-use std::sync::{Mutex, MutexGuard};
+pub mod non_secrets;
+pub mod payments;
 
 pub enum Command {
     Exit,
@@ -43,7 +49,24 @@ pub enum Command {
     Pool(PoolCommand),
     Did(DidCommand),
     Wallet(WalletCommand),
-    Pairwise(PairwiseCommand)
+    Pairwise(PairwiseCommand),
+    NonSecrets(NonSecretsCommand),
+    Payments(PaymentsCommand)
+}
+
+lazy_static! {
+    static ref THREADPOOL: Mutex<ThreadPool> = Mutex::new(ThreadPool::new(4));
+}
+
+pub fn indy_set_runtime_config(config: IndyConfig) {
+    if let Some(crypto_thread_pool_size) = config.crypto_thread_pool_size {
+        THREADPOOL.lock().unwrap().set_num_threads(crypto_thread_pool_size);
+    }
+    match config.collect_backtrace {
+        Some(true) => env::set_var("RUST_BACKTRACE", "1"),
+        Some(false) => env::set_var("RUST_BACKTRACE", "0"),
+        _ => {}
+    }
 }
 
 pub struct CommandExecutor {
@@ -62,7 +85,6 @@ impl CommandExecutor {
     }
 
     fn new() -> CommandExecutor {
-        ::utils::logger::LoggerUtils::init();
         let (sender, receiver) = channel();
 
         CommandExecutor {
@@ -74,6 +96,7 @@ impl CommandExecutor {
                 let blob_storage_service = Rc::new(BlobStorageService::new());
                 let crypto_service = Rc::new(CryptoService::new());
                 let ledger_service = Rc::new(LedgerService::new());
+                let payments_service = Rc::new(PaymentsService::new());
                 let pool_service = Rc::new(PoolService::new());
                 let wallet_service = Rc::new(WalletService::new());
 
@@ -81,10 +104,12 @@ impl CommandExecutor {
                 let crypto_command_executor = CryptoCommandExecutor::new(wallet_service.clone(), crypto_service.clone());
                 let ledger_command_executor = LedgerCommandExecutor::new(pool_service.clone(), crypto_service.clone(), wallet_service.clone(), ledger_service.clone());
                 let pool_command_executor = PoolCommandExecutor::new(pool_service.clone());
-                let did_command_executor = DidCommandExecutor::new(pool_service.clone(), wallet_service.clone(), crypto_service.clone(), ledger_service.clone());
-                let wallet_command_executor = WalletCommandExecutor::new(wallet_service.clone());
+                let did_command_executor = DidCommandExecutor::new(wallet_service.clone(), crypto_service.clone(), ledger_service.clone());
+                let wallet_command_executor = WalletCommandExecutor::new(wallet_service.clone(), crypto_service.clone());
                 let pairwise_command_executor = PairwiseCommandExecutor::new(wallet_service.clone());
                 let blob_storage_command_executor = BlobStorageCommandExecutor::new(blob_storage_service.clone());
+                let non_secret_command_executor = NonSecretsCommandExecutor::new(wallet_service.clone());
+                let payments_command_executor = PaymentsCommandExecutor::new(payments_service.clone(), wallet_service.clone(), crypto_service.clone());
 
                 loop {
                     match receiver.recv() {
@@ -120,6 +145,14 @@ impl CommandExecutor {
                             info!("PairwiseCommand command received");
                             pairwise_command_executor.execute(cmd);
                         }
+                        Ok(Command::NonSecrets(cmd)) => {
+                            info!("NonSecretCommand command received");
+                            non_secret_command_executor.execute(cmd);
+                        }
+                        Ok(Command::Payments(cmd)) => {
+                            info!("PaymentsCommand command received");
+                            payments_command_executor.execute(cmd);
+                        }
                         Ok(Command::Exit) => {
                             info!("Exit command received");
                             break
@@ -134,9 +167,10 @@ impl CommandExecutor {
         }
     }
 
-    pub fn send(&self, cmd: Command) -> Result<(), CommonError> {
-        self.sender.send(cmd).map_err(|err|
-            CommonError::InvalidState(err.description().to_string()))
+    pub fn send(&self, cmd: Command) -> IndyResult<()> {
+        self.sender
+            .send(cmd)
+            .map_err(|err| err_msg(IndyErrorKind::InvalidState, format!("Can't send msg to CommandExecutor: {}", err)))
     }
 }
 

@@ -7,9 +7,9 @@
 #import "IndyCallbacks.h"
 #import "NSError+IndyError.h"
 #import "IndyTypes.h"
+#import "IndyLogger.h"
 
 static NSString *commandCallbackKey = @"commandCallback";
-
 
 @interface IndyCallbacks ()
 
@@ -203,6 +203,25 @@ void IndyWrapperCommonNumberCallback(indy_handle_t xcommand_handle,
         dispatch_async(dispatch_get_main_queue(), ^{
             NSError *error = [NSError errorFromIndyError:err];
             completion(error, (NSNumber *) sarg1);
+        });
+    }
+}
+
+
+void IndyWrapperCommonHandleNumberCallback(indy_handle_t xcommand_handle,
+        indy_error_t err,
+        indy_i32_t handle,
+        uint32_t count) {
+    id block = [[IndyCallbacks sharedInstance] commandCompletionFor:xcommand_handle];
+    [[IndyCallbacks sharedInstance] deleteCommandHandleFor:xcommand_handle];
+
+    void (^completion)(NSError *, IndyHandle, NSNumber *) = (void (^)(NSError *, IndyHandle, NSNumber *arg2)) block;
+    NSNumber *sarg2 = @(count);
+
+    if (completion) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            NSError *error = [NSError errorFromIndyError:err];
+            completion(error, (IndyHandle) handle, (NSNumber *) sarg2);
         });
     }
 }

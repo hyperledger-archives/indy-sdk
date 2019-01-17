@@ -41,22 +41,6 @@ public class Pool extends IndyJava.API implements AutoCloseable {
 	 */
 
 	/**
-	 * Callback used when createPoolLedgerConfig completes.
-	 */
-	private static Callback createPoolLedgerConfigCb = new Callback() {
-
-		@SuppressWarnings({"unused", "unchecked"})
-		public void callback(int xcommand_handle, int err) {
-
-			CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
-
-			Void result = null;
-			future.complete(result);
-		}
-	};
-
-	/**
 	 * Callback used when openPoolLedger completes.
 	 */
 	private static Callback openPoolLedgerCb = new Callback() {
@@ -65,7 +49,7 @@ public class Pool extends IndyJava.API implements AutoCloseable {
 		public void callback(int xcommand_handle, int err, int pool_handle) {
 
 			CompletableFuture<Pool> future = (CompletableFuture<Pool>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			Pool pool = new Pool(pool_handle);
 
@@ -75,47 +59,15 @@ public class Pool extends IndyJava.API implements AutoCloseable {
 	};
 
 	/**
-	 * Callback used when refreshPoolLedger completes.
+	 * Callback used when void function completes.
 	 */
-	private static Callback refreshPoolLedgerCb = new Callback() {
+	private static Callback voidCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err) {
 
 			CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
-
-			Void result = null;
-			future.complete(result);
-		}
-	};
-
-	/**
-	 * Callback used when closePoolLedger completes.
-	 */
-	private static Callback closePoolLedgerCb = new Callback() {
-
-		@SuppressWarnings({"unused", "unchecked"})
-		public void callback(int xcommand_handle, int err) {
-
-			CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
-
-			Void result = null;
-			future.complete(result);
-		}
-	};
-
-	/**
-	 * Callback used when deletePoolLedgerConfig completes.
-	 */
-	private static Callback deletePoolLedgerConfigCb = new Callback() {
-
-		@SuppressWarnings({"unused", "unchecked"})
-		public void callback(int xcommand_handle, int err) {
-
-			CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			Void result = null;
 			future.complete(result);
@@ -146,10 +98,10 @@ public class Pool extends IndyJava.API implements AutoCloseable {
 		int result = LibIndy.api.indy_create_pool_ledger_config(
 				commandHandle, 
 				configName, 
-				config, 
-				createPoolLedgerConfigCb);
+				config,
+				voidCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -158,7 +110,16 @@ public class Pool extends IndyJava.API implements AutoCloseable {
 	 * Opens pool ledger and performs connecting to pool nodes.
 	 * 
 	 * @param configName Name of the pool ledger configuration.
-	 * @param config Runtime pool configuration json. If NULL, then default config will be used.
+	 * @param config Runtime pool configuration json. Optional. If NULL, then default config will be used.
+	 *               Example:
+	 * {
+	 *     "timeout": int (optional), timeout for network request (in sec).
+	 *     "extended_timeout": int (optional), extended timeout for network request (in sec).
+	 *     "preordered_nodes": array[string] -  (optional), names of nodes which will have a priority during request sending:
+	 *         [ "name_of_1st_prior_node",  "name_of_2nd_prior_node", .... ]
+	 *         Note: Not specified nodes will be placed in a random way.
+	 * }
+	 *
 	 * @return A future that resolves to an opened Pool instance.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
@@ -177,7 +138,7 @@ public class Pool extends IndyJava.API implements AutoCloseable {
 				config, 
 				openPoolLedgerCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -201,10 +162,10 @@ public class Pool extends IndyJava.API implements AutoCloseable {
 
 		int result = LibIndy.api.indy_refresh_pool_ledger(
 				commandHandle, 
-				handle, 
-				refreshPoolLedgerCb);
+				handle,
+				voidCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -228,10 +189,10 @@ public class Pool extends IndyJava.API implements AutoCloseable {
 
 		int result = LibIndy.api.indy_close_pool_ledger(
 				commandHandle, 
-				handle, 
-				closePoolLedgerCb);
+				handle,
+				voidCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -253,10 +214,41 @@ public class Pool extends IndyJava.API implements AutoCloseable {
 
 		int result = LibIndy.api.indy_delete_pool_ledger_config(
 				commandHandle, 
-				configName, 
-				deletePoolLedgerConfigCb);
+				configName,
+				voidCb);
 
-		checkResult(result);
+		checkResult(future, result);
+
+		return future;
+	}
+
+	/**
+	 * Set PROTOCOL_VERSION to specific version.
+	 *
+	 * There is a global property PROTOCOL_VERSION that used in every request to the pool and
+	 * specified version of Indy Node which Libindy works.
+	 *
+	 * By default PROTOCOL_VERSION=1.
+	 *
+	 * @param protocolVersion Protocol version will be used:
+	 *      1 - for Indy Node 1.3
+	 *      2 - for Indy Node 1.4 and greater
+	 *
+	 * @return A future that does not resolve a value.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<Void> setProtocolVersion(
+			int protocolVersion) throws IndyException {
+
+		CompletableFuture<Void> future = new CompletableFuture<Void>();
+		int commandHandle = addFuture(future);
+
+		int result = LibIndy.api.indy_set_protocol_version(
+				commandHandle,
+				protocolVersion,
+				voidCb);
+
+		checkResult(future, result);
 
 		return future;
 	}

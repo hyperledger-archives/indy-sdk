@@ -1,4 +1,22 @@
-libindy (1.3.1) unstable; urgency=medium
+libindy (1.6.8) unstable; urgency=medium
 
-  [ Hyperledger ]
-  * encryption option for default wallet is added
+[ Hyperledger ]
+
+* 1.6.8
+    * Fix State Proof verification for some types of GET requests to the ledger
+    * Additional clean-up for secrets in logs
+
+* 1.6.7
+    * Supported hexadecimal seed for did and key creation.
+    * Removed TGB role.
+    * Bugfixes.
+
+* 1.6.6
+    * Fixed Android build rustflags. Now all architectures have same flags.
+
+* 1.6.5
+    * Fixed `ARGON2I` constants usage to be compatible with the latest sodium.
+    * Parameter `submitter_did` set as the optional field for:
+        * Ledger API `indy_build_get_*` functions (except `indy_build_get_validator_info_request`).
+        * all functions in Payment API.
+    * Fixed Android build rustflags for all architectures for libc linking.

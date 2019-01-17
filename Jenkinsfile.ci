@@ -1,11 +1,16 @@
 #!groovy
 
+
+libindyBuildFinished = ["Ubuntu": false, "RedHat": false]
+libvcxBuildFinished = ["Ubuntu": false, "RedHat": false]
+
 testing()
 
 def testing() {
     stage('Testing') {
         parallel([
                 'ubuntu-test' : { ubuntuTesting() },
+                'android-test': { androidTesting() },
                 'macos-test'  : { macosTesting() },
                 'ios-test'    : { iosTesting() },
                 'redhat-test' : { rhelTesting() },
@@ -45,12 +50,13 @@ def windowsTesting() {
                                 "PATH=$WORKSPACE\\libindy\\prebuilt\\lib;$PATH",
                                 "RUST_BACKTRACE=1"
                         ]) {
+                            bat "cargo build --features fatal_warnings"
                             bat "cargo test --no-run"
 
                             echo "Windows Libindy Test: Run tests"
                             withEnv([
                                     "RUST_TEST_THREADS=1",
-                                    "RUST_LOG=indy::,zmq=trace",
+                                    "RUST_LOG=indy::=debug,zmq=trace",
                                     "TEST_POOL_IP=$INDY_SDK_SERVER_IP"
                             ]) {
                                 bat "cargo test"
@@ -58,24 +64,68 @@ def windowsTesting() {
                         }
                     }
 
-                    dir('cli') {
-                        bat "sed -i -e \"s/10\\.0\\.0\\.2/${INDY_SDK_SERVER_IP}/g\" docker_pool_transactions_genesis"
+                    dir('libnullpay') {
+                        echo "Windows Libnullpay Test: Build"
+                        withEnv([
+                                "RUST_BACKTRACE=1"
+                        ]) {
+                            bat "cargo build --features fatal_warnings"
+                            bat "cargo test --no-run"
 
-                        bat "copy $WORKSPACE\\libindy\\target\\debug\\indy.dll $WORKSPACE\\libindy\\prebuilt\\lib"
-                        bat "copy $WORKSPACE\\libindy\\target\\debug\\indy.lib $WORKSPACE\\libindy\\prebuilt\\lib"
+                            echo "Windows Libnullpay Test: Run tests"
+                            withEnv([
+                                    "RUST_TEST_THREADS=1",
+                                    "RUST_LOG=indy::=debug,zmq=trace",
+                                    "TEST_POOL_IP=$INDY_SDK_SERVER_IP",
+                                    "PATH=$WORKSPACE\\libindy\\target\\debug;$PATH",
+                            ]) {
+                                bat "cargo test"
+                            }
+                        }
+                    }
+
+                    bat "PowerShell.exe \"Copy-Item $WORKSPACE/libnullpay/target/debug/nullpay.dll -Destination $WORKSPACE/cli\""
+
+                    dir('cli') {
+                        bat "PowerShell.exe \"&{(Get-Content -Path docker_pool_transactions_genesis -Raw) -replace '10\\.0\\.0\\.2','$INDY_SDK_SERVER_IP'} | Set-Content -Path docker_pool_transactions_genesis\""
+
+                        def featuresArgs = ''
+//                      def featuresArgs = '--features "nullpay_plugin"' // disabled because of IS-1109
 
                         echo "Windows Indy Cli Test: Build"
                         withEnv([
-                                "INDY_DIR=$WORKSPACE\\libindy\\prebuilt",
                                 "RUST_BACKTRACE=1"
                         ]) {
-                            bat "cargo test --no-run"
+                            bat "cargo test $featuresArgs --no-run"
 
                             echo "Windows Indy Cli Test: Run tests"
                             withEnv([
                                     "RUST_TEST_THREADS=1",
-                                    "RUST_LOG=indy::,zmq=trace",
+                                    "RUST_LOG=indy::=debug,zmq=trace",
                                     "TEST_POOL_IP=$INDY_SDK_SERVER_IP"
+                            ]) {
+                                bat "cargo test $featuresArgs"
+                            }
+                        }
+                    }
+
+                    bat "PowerShell.exe \"Copy-Item $WORKSPACE/libnullpay/target/debug/nullpay.dll -Destination $WORKSPACE/vcx/libvcx\""
+
+                    dir('vcx/libvcx') {
+                        echo "Windows Libvcx Test: Build"
+
+                        withEnv([
+                                "OPENSSL_DIR=$WORKSPACE\\libindy\\prebuilt",
+                                "RUST_BACKTRACE=1"
+                        ]) {
+                            bat "cargo build --features fatal_warnings"
+                            bat "cargo test --no-run"
+
+                            echo "Windows Libvcx Test: Run tests"
+                            withEnv([
+                                    "RUST_TEST_THREADS=1",
+                                    "RUST_LOG=vcx=debug,indy::=debug",
+                                    "PATH=$WORKSPACE\\libindy\\target\\debug;$PATH",
                             ]) {
                                 bat "cargo test"
                             }
@@ -108,13 +158,20 @@ def macosTesting() {
                 echo "MacOS Test: Checkout scm"
                 checkout scm
 
-                dir('libindy') {
-                    echo "MacOS Test: Build"
-                    setupRust()
-                    setupBrewPackages()
-                    sh "cargo build"
-                    // TODO testing
-                }
+                setupRust()
+                setupBrewPackages()
+
+                macosModuleBuilding('libindy') // TODO: testing
+
+                sh "cp libindy/target/debug/libindy.dylib libnullpay"
+                sh "cp libindy/target/debug/libindy.dylib vcx/libvcx"
+
+                macosModuleBuilding('libnullpay') // TODO: testing
+
+                sh "cp libnullpay/target/debug/libnullpay.dylib vcx/libvcx"
+
+                macosModuleBuilding('vcx/libvcx')
+                macosModuleTesting('vcx/libvcx')
 
                 //TODO wrappers testing
             } finally {
@@ -124,41 +181,104 @@ def macosTesting() {
     }
 }
 
+def macosModuleBuilding(library) {
+    dir(library) {
+        echo "MacOS ${library} Testing: Build"
+        sh "LIBRARY_PATH=./ cargo build --features fatal_warnings"
+        sh "LIBRARY_PATH=./ cargo test --no-run"
+    }
+}
+
+def macosModuleTesting(library) {
+    dir(library) {
+        echo "MacOS ${library} Testing: Run Tests"
+        sh "LIBRARY_PATH=./ RUST_TEST_THREADS=1 cargo test"
+    }
+}
+
+def androidTesting() {
+    env_name = "android_on_linux"
+    network_name = "pool_network"
+    linuxModuleTesting("ci/ubuntu.dockerfile ci", env_name, network_name, this.&linuxAndroidOnEmulatorTesting)
+}
+
 def iosTesting() {
+
+    def setupRustIOS ={
+        sh "rustup target add x86_64-apple-ios"
+    }
+
+    def cleanSimulators = {
+        sh '''
+            xcrun simctl list devices | grep 'IndySDK' | awk '{print $4}' | sed -n  's/(\\(.*\\))/\\1/p'
+            xcrun simctl list devices | grep 'IndySDK' | awk '{print $4}' | sed -n  's/(\\(.*\\))/\\1/p' | xargs xcrun simctl delete
+        '''
+    }
+
+    def createSimulators = {
+        sh '''
+            xcrun simctl create "iPhone X IndySDK" "iPhone X" "11.2"
+        '''
+    }
+
     node('macos') {
         stage('iOS Test') {
             try {
                 echo "iOS Test: Checkout scm"
                 checkout scm
 
-                echo "iOS Test: Running pool"
-                sh "docker rm -f indy_pool || true"
-                sh "docker build -f ci/indy-pool.dockerfile -t indy_pool ci"
-                sh "docker run -d --name indy_pool -p 9701-9708:9701-9708 indy_pool"
-
+                echo "iOS Test: setup rust, brew and simulators"
                 setupRust()
                 setupRustIOS()
                 setupBrewPackages()
+                cleanSimulators()
+                createSimulators()
 
-                dir('libindy') {
-                    echo 'iOS Test: build libindy pod'
-                    sh './build-libindy-ios.sh x86_64-apple-ios'
-                }
+                withEnv([
+                    "BUNDLE_PATH=$HOME/.gem.indy_sdk"
+                ]) {
+                    dir('wrappers/ios') {
+                        echo "iOS Test: Installing ruby, bundler and gems"
 
-                dir('wrappers/ios/libindy-pod') {
-                    echo "iOS Test: Installing dependencies (pods)"
-                    sh "pod install --repo-update"
-                }
+                        sh '''
+                            rbenv install -s $(cat .ruby-version)
 
-                // FIXME replace this hack (manually rewrite installed pod)
-                sh "rm -f wrappers/ios/libindy-pod/Pods/libindy/*.[ah]"
-                sh "cp libindy/out_libindy_pod/*.[ah] wrappers/ios/libindy-pod/Pods/libindy"
+                            gem install bundler
+                            bundler exec gem env
 
-                dir('wrappers/ios/libindy-pod') {
-                    echo "iOS Test: Testing"
-                    sh "xcodebuild test -workspace Indy.xcworkspace -scheme Indy-demo -destination 'platform=iOS Simulator,name=iPhone X IndySDK,OS=11.2'"
+                            bundler install
+                            bundler list
+                        '''
+                    }
+
+                    dir('wrappers/ios/libindy-pod') {
+                        echo "iOS Test: Installing dependencies (pods)"
+                        sh "bundler exec pod install --repo-update"
+                    }
+
+                    echo "iOS Test: Running pool"
+                    sh "docker rm -f indy_pool || true"
+                    sh "docker build -f ci/indy-pool.dockerfile -t indy_pool ci"
+                    sh "docker run -d --name indy_pool -p 9701-9708:9701-9708 indy_pool"
+
+                    sh 'chmod -R 777 ci'
+                    echo "iOS Test: build libindy pod"
+                    sh "ci/ios-build.sh libindy x86_64-apple-ios"
+
+                    // FIXME replace this hack (manually rewrite installed pod)
+                    sh "rm -f wrappers/ios/libindy-pod/Pods/libindy/*.[ah]"
+                    sh "cp libindy/out_pod/*.[ah] wrappers/ios/libindy-pod/Pods/libindy"
+
+                    dir('wrappers/ios/libindy-pod') {
+                        echo "iOS Test: Testing"
+                        sh "xcodebuild test -workspace Indy.xcworkspace -scheme Indy-demo -destination 'platform=iOS Simulator,name=iPhone X IndySDK,OS=11.2'"
+                    }
                 }
             } finally {
+                try {
+                    cleanSimulators()
+                } catch (ignore) {
+                }
                 try {
                     sh "docker stop indy_pool"
                 } catch (ignore) {
@@ -174,22 +294,90 @@ def iosTesting() {
 }
 
 def ubuntuTesting() {
-    node('ubuntu') {
-        stage('Ubuntu Test') {
-            linuxTesting("ci/ubuntu.dockerfile ci", "Ubuntu", "pool_network")
-        }
+    stage('Ubuntu Test') {
+        linuxTesting("ci/ubuntu.dockerfile ci", "Ubuntu", "pool_network")
     }
 }
 
 def rhelTesting() {
-    node('ubuntu') {
-        stage('RedHat Test') {
-            linuxTesting("ci/amazon.dockerfile ci", "RedHat", "pool_network")
-        }
+    stage('RedHat Test') {
+        linuxTesting("ci/amazon.dockerfile ci", "RedHat", "pool_network")
     }
 }
 
 def linuxTesting(file, env_name, network_name) {
+    parallel([
+            failFast                                  : true,
+            "${env_name} Test: build and test libindy": {
+                node('ubuntu') {
+                    linuxLibindyBuild(file, env_name, network_name)
+                }
+            },
+            "${env_name} Test: test other components" : {
+                waitUntil {
+                    libindyBuildFinished[env_name]
+                }
+                def jobs = [
+                        "${env_name}-nodejs-test"     : {
+                            linuxModuleTesting(file, env_name, network_name, this.&linuxNodejsTesting)
+                        },
+                        "${env_name}-cli-test"        : {
+                            linuxModuleTesting(file, env_name, network_name, this.&linuxCLITesting)
+                        },
+                        "${env_name}-rust-test"       : {
+                            linuxModuleTesting(file, env_name, network_name, this.&linuxRustTesting)
+                        },
+                        "${env_name}-vcx-test"        : {
+                            vcxTesting(file, env_name, network_name)
+                        },
+                        "${env_name}-cloud-agent-test": {
+                            linuxModuleTesting(file, env_name, network_name, this.&linuxCloudAgentTesting)
+                        }
+                ]
+                if (env_name == "Ubuntu") {
+                    jobs["${env_name}-java-test"] = {
+                        linuxModuleTesting(file, env_name, network_name, this.&linuxJavaTesting)
+                    }
+                    jobs["${env_name}-python-test"] = {
+                        linuxModuleTesting(file, env_name, network_name, this.&linuxPythonTesting)
+                    }
+                }
+                parallel(jobs)
+            },
+    ])
+}
+
+def vcxTesting(file, env_name, network_name) {
+    parallel([
+            failFast                                     : true,
+            "${env_name} Test: build and test libvcx"    : {
+                node('ubuntu') {
+                    linuxVcxBuild(file, env_name, network_name)
+                }
+            },
+            "${env_name} Test: test other vcx components": {
+                waitUntil {
+                    libvcxBuildFinished[env_name]
+                }
+                def jobs = [
+                        "${env_name}-vcx-nodejs-test": {
+                            linuxModuleTesting(file, env_name, network_name, this.&linuxVcxNodejsTesting)
+                        }
+                ]
+                if (env_name == "Ubuntu") {
+                    jobs["${env_name}-vcx-java-test"] = {
+                        linuxModuleTesting(file, env_name, network_name, this.&linuxVcxJavaTesting)
+                    }
+                    jobs["${env_name}-vcx-python-test"] = {
+                        linuxModuleTesting(file, env_name, network_name, this.&linuxVcxPythonTesting)
+                    }
+                }
+                parallel(jobs)
+            },
+    ])
+}
+
+def linuxLibindyBuild(file, env_name, network_name) {
     def poolInst
     try {
         echo "${env_name} Test: Checkout csm"
@@ -197,44 +385,124 @@ def linuxTesting(file, env_name, network_name) {
 
         poolInst = openPool(env_name, network_name)
 
-        def testEnv
+        def testEnv = buildTestEnv(file, env_name)
 
-        dir('libindy') {
-            echo "${env_name} Libindy Test: Build docker image"
-            testEnv = dockerBuild('libindy', file)
-
-            testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
-                echo "${env_name} Libindy Test: Build"
-                sh "cargo build"
-            }
+        testEnv.inside {
+            echo "${env_name} Libindy Test: Build"
+            sh '''
+                cd libindy
+                cargo build --features "fatal_warnings sodium_static"
+            '''
         }
 
         sh "cp libindy/target/debug/libindy.so wrappers/java/lib"
         sh "cp libindy/target/debug/libindy.so wrappers/python"
+        sh "cp libindy/target/debug/libindy.so wrappers/nodejs"
+        sh "cp libindy/target/debug/libindy.so wrappers/rust"
         sh "cp libindy/target/debug/libindy.so cli"
+        sh "cp libindy/target/debug/libindy.so libnullpay"
+        sh "cp libindy/target/debug/libindy.so vcx/libvcx"
+        sh "cp libindy/target/debug/libindy.so vcx/wrappers/node"
+        sh "cp libindy/target/debug/libindy.so vcx/wrappers/java"
+        sh "cp libindy/target/debug/libindy.so vcx/wrappers/python3"
+        sh "cp libindy/target/debug/libindy.so vcx/dummy-cloud-agent"
+
+        testEnv.inside {
+            echo "${env_name} Libnullpay Test: Build"
+            sh '''
+                cd libnullpay
+                LIBRARY_PATH=./ cargo build --features fatal_warnings
+            '''
+        }
+
+        sh "cp libnullpay/target/debug/libnullpay.so cli"
+        sh "cp libnullpay/target/debug/libnullpay.so vcx/libvcx"
+        sh "cp libnullpay/target/debug/libnullpay.so vcx/wrappers/node"
+        sh "cp libnullpay/target/debug/libnullpay.so vcx/wrappers/java"
+        sh "cp libnullpay/target/debug/libnullpay.so vcx/wrappers/python3"
 
         stash includes: 'wrappers/java/lib/libindy.so', name: "LibindyJavaSO${env_name}"
         stash includes: 'wrappers/python/libindy.so', name: "LibindyPythonSO${env_name}"
+        stash includes: 'wrappers/nodejs/libindy.so', name: "LibindyNodejsSO${env_name}"
+        stash includes: 'wrappers/rust/libindy.so', name: "LibindyRustSO${env_name}"
         stash includes: 'cli/libindy.so', name: "LibindyCliSO${env_name}"
+        stash includes: 'cli/libnullpay.so', name: "LibnullpayCliSO${env_name}"
+        stash includes: 'vcx/libvcx/libindy.so,vcx/libvcx/libnullpay.so', name: "VCXLibindyAndLibnullpaySO${env_name}"
+        stash includes: 'vcx/wrappers/node/libindy.so,vcx/wrappers/node/libnullpay.so', name: "VcxNodeLibindyAndLibnullpaySO${env_name}"
+        stash includes: 'vcx/wrappers/java/libindy.so,vcx/wrappers/java/libnullpay.so', name: "VcxJavaLibindyAndLibnullpaySO${env_name}"
+        stash includes: 'vcx/wrappers/python3/libindy.so,vcx/wrappers/python3/libnullpay.so', name: "VcxPythonLibindyAndLibnullpaySO${env_name}"
+        stash includes: 'vcx/dummy-cloud-agent/libindy.so', name: "LibindyCloudAgentSO${env_name}"
 
-        parallel([
-                "${env_name}-libindy-test": {
-                    dir('libindy') {
-                        testEnv.inside("--network=${network_name}") {
-                            echo "${env_name} Libindy Test: Test"
+        libindyBuildFinished[env_name] = true
 
-                            echo "${env_name} Libindy Test: Build Test"
-                            sh "RUST_BACKTRACE=1 cargo test --no-run"
+        echo "${env_name} Libindy Test: Test"
+        testEnv.inside("--network=${network_name}") {
+            sh '''
+                cd libindy
+                RUST_BACKTRACE=1 cargo test --no-run --features sodium_static
+                RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --features sodium_static
+            '''
+        }
 
-                            echo "${env_name} Libindy Test: Run tests"
-                            sh "RUST_BACKTRACE=1 RUST_LOG=indy::,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test"
-                        }
-                    }
-                },
-                "${env_name}-java-test"   : { linuxModuleTesting(file, env_name, network_name, this.&linuxJavaTesting) },
-                "${env_name}-python-test" : { linuxModuleTesting(file, env_name, network_name, this.&linuxPythonTesting) },
-                "${env_name}-cli-test"    : { linuxModuleTesting(file, env_name, network_name, this.&linuxCLITesting) }
-        ])
+        echo "${env_name} Libnullpay Test: Test"
+        testEnv.inside("--network=${network_name}") {
+            sh '''
+                cd libnullpay
+                LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --no-run
+                LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test
+            '''
+        }
+    }
+
+    finally {
+        closePool(env_name, network_name, poolInst)
+    }
+}
+
+def linuxVcxBuild(file, env_name, network_name) {
+    def poolInst
+    try {
+        echo "${env_name} Test: Checkout csm"
+        checkout scm
+
+        poolInst = openPool(env_name, network_name)
+
+        def testEnv = buildTestEnv(file, env_name)
+
+        unstash name: "VCXLibindyAndLibnullpaySO${env_name}"
+
+        echo "${env_name} Libvcx Test: Build"
+        testEnv.inside {
+            sh '''
+                cd vcx/libvcx
+                LIBRARY_PATH=./ cargo build --features fatal_warnings
+            '''
+        }
+
+        sh "cp vcx/libvcx/target/debug/libvcx.so vcx/wrappers/node"
+        sh "cp vcx/libvcx/target/debug/libvcx.so vcx/wrappers/java"
+        sh "cp vcx/libvcx/target/debug/libvcx.so vcx/wrappers/python3"
+
+        stash includes: 'vcx/wrappers/node/libvcx.so', name: "VcxNodeLibvcxSO${env_name}"
+        stash includes: 'vcx/wrappers/java/libvcx.so', name: "VcxJavaLibvcxSO${env_name}"
+        stash includes: 'vcx/wrappers/python3/libvcx.so', name: "VcxPythonLibvcxSO${env_name}"
+
+        libvcxBuildFinished[env_name] = true
+
+        testEnv.inside("--network=${network_name}") {
+            echo "${env_name} Libvcx Test: Run Cloud Agent"
+            sh '''
+                cp vcx/libvcx/libindy.so vcx/dummy-cloud-agent
+                cd vcx/dummy-cloud-agent
+                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy=info cargo run sample-config.json &
+            '''
+
+            echo "${env_name} Libvcx Test: Run tests"
+            sh '''
+                cd vcx/libvcx
+                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=vcx=debug,indy=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --features "pool_tests agency"
+            '''
+        }
     }
     finally {
         closePool(env_name, network_name, poolInst)
@@ -250,16 +518,25 @@ def linuxModuleTesting(file, env_name, network_name, module_tester) {
 
             poolInst = openPool(env_name, network_name)
 
-            def testEnv
-
-            dir('libindy') {
-                echo "${env_name} Libindy Test: Build docker image"
-                testEnv = dockerBuild('libindy', file)
-            }
+            def testEnv = buildTestEnv(file, env_name)
 
             module_tester(env_name, network_name, testEnv)
         } finally {
             closePool(env_name, network_name, poolInst)
+        }
+    }
+}
+
+def linuxAndroidOnEmulatorTesting(env_name, network_name, testEnv) {
+    dir('libindy') {
+        sh 'chmod -R 777 ci/*.sh'
+        sh 'chmod -R 777 *.sh'
+
+        def emu_arch = "x86"
+
+        echo "${env_name} Libindy Test: Test on ${emu_arch} emulator"
+        testEnv.inside("--network=${network_name}") {
+            sh "./android.test.sh ${emu_arch} --release"
         }
     }
 }
@@ -270,7 +547,7 @@ def linuxJavaTesting(env_name, network_name, testEnv) {
         testEnv.inside("--network=${network_name}") {
             echo "${env_name} Libindy Test: Test java wrapper"
 
-            sh "RUST_LOG=indy::,zmq=trace TEST_POOL_IP=10.0.0.2 mvn clean test"
+            sh "TEST_POOL_IP=10.0.0.2 mvn clean test"
         }
     }
 }
@@ -283,7 +560,65 @@ def linuxPythonTesting(env_name, network_name, testEnv) {
 
             sh '''
                 python3.5 -m pip install --user -e .
-                LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_LOG=indy::,zmq=trace TEST_POOL_IP=10.0.0.2 python3.5 -m pytest
+                LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} TEST_POOL_IP=10.0.0.2 python3.5 -m pytest
+            '''
+        }
+    }
+}
+
+def linuxNodejsTesting(env_name, network_name, testEnv) {
+    unstash name: "LibindyNodejsSO${env_name}"
+    testEnv.inside("--network=${network_name}") {
+        echo "${env_name} Libindy Test: Test nodejs wrapper"
+
+        sh '''
+                cd wrappers/nodejs
+                npm run prepare
+                npm install
+                LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_LOG=indy::=debug TEST_POOL_IP=10.0.0.2 npm test
+            '''
+    }
+}
+
+def linuxVcxNodejsTesting(env_name, network_name, testEnv) {
+    unstash name: "VcxNodeLibvcxSO${env_name}"
+    unstash name: "VcxNodeLibindyAndLibnullpaySO${env_name}"
+
+    testEnv.inside("--network=${network_name}") {
+        echo "${env_name} Vcx Test: Test nodejs wrapper"
+        sh '''
+            cd vcx/wrappers/node/
+            npm i
+            npm run compile
+            LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} LIBVCX_PATH=./ npm test
+        '''
+    }
+}
+
+def linuxVcxJavaTesting(env_name, network_name, testEnv) {
+    unstash name: "VcxJavaLibvcxSO${env_name}"
+    unstash name: "VcxJavaLibindyAndLibnullpaySO${env_name}"
+
+    dir('vcx/wrappers/java') {
+        echo "${env_name} Vcx Test: Test java wrapper"
+
+        testEnv.inside("--network=${network_name}") {
+            sh 'LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH}  ./gradlew --no-daemon test'
+        }
+    }
+}
+
+def linuxVcxPythonTesting(env_name, network_name, testEnv) {
+    unstash name: "VcxPythonLibvcxSO${env_name}"
+    unstash name: "VcxPythonLibindyAndLibnullpaySO${env_name}"
+
+    dir('vcx/wrappers/python3') {
+        testEnv.inside("--network=${network_name}") {
+            echo "${env_name} Vcx Test: Test python wrapper"
+
+            sh '''
+                    python3.5 -m pip install --user pytest==3.6.4 pytest-asyncio
+                    LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} python3.5 -m pytest -s
             '''
         }
     }
@@ -291,14 +626,42 @@ def linuxPythonTesting(env_name, network_name, testEnv) {
 
 def linuxCLITesting(env_name, network_name, testEnv) {
     unstash name: "LibindyCliSO${env_name}"
-    dir('cli') {
-        testEnv.inside("--network=${network_name}") {
-            echo "${env_name} Indy Cli Test: Build"
-            sh "LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --no-run"
+    unstash name: "LibnullpayCliSO${env_name}"
 
-            echo "${env_name} Indy Cli Test: Run tests"
-            sh 'LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test'
+    echo "${env_name} Indy Cli Test: tests"
+    testEnv.inside("--network=${network_name}") {
+        sh '''
+            cd cli
+            LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --features "nullpay_plugin" --no-run
+            LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --features "nullpay_plugin"
+        '''
+    }
+}
+
+def linuxRustTesting(env_name, network_name, testEnv) {
+    unstash name: "LibindyRustSO${env_name}"
+
+    dir('wrappers/rust') {
+        testEnv.inside("--network=${network_name}") {
+            echo "${env_name} Indy Rust wrapper Test: Build"
+            sh 'LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --no-run'
+
+            echo "${env_name} Indy Rust wrupper Test: Run tests"
+            sh 'LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test'
         }
+    }
+}
+
+def linuxCloudAgentTesting(env_name, network_name, testEnv) {
+    unstash name: "LibindyCloudAgentSO${env_name}"
+
+    echo "${env_name} Cloud Agent Test: tests"
+    testEnv.inside {
+        sh '''
+            cd vcx/dummy-cloud-agent
+            LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --no-run
+            LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::=debug RUST_TEST_THREADS=1 cargo test
+        '''
     }
 }
 
@@ -314,6 +677,13 @@ def getUserUid() {
     return sh(returnStdout: true, script: 'id -u').trim()
 }
 
+def buildTestEnv(file, env_name) {
+    dir('libindy') {
+        echo "${env_name} Build test environment"
+        return dockerBuild('libindy', file)
+    }
+}
+
 def dockerBuild(name, file = 'ci/ubuntu.dockerfile ci', customParams = '') {
     return docker.build("$name-test", "--build-arg uid=${getUserUid()} ${customParams} -f $file")
 }
@@ -321,7 +691,7 @@ def dockerBuild(name, file = 'ci/ubuntu.dockerfile ci', customParams = '') {
 def dockerClean(env_name, network_name) {
     try {
         try {
-            sh "docker ps --format '{{.ID}}' --filter network=${network_name} | xargs docker rm -f || true" //TODO: FIXME
+            sh "docker ps --format '{{.ID}}' --filter network=${network_name} | xargs docker rm -f || true"//TODO: FIXME
         } catch (error) {
             echo "${env_name} Test: error while force clean-up network ${network_name} - ${error}"
         }
@@ -367,12 +737,16 @@ def closePool(env_name, network_name, poolInst) {
     step([$class: 'WsCleanup'])
 }
 
-def setupRust() {
-    sh "rustup default 1.25.0"
+def shell(command) {
+    if (isUnix()) {
+        sh command
+    } else {
+        bat command
+    }
 }
 
-def setupRustIOS() {
-    sh "rustup target add x86_64-apple-ios"
+def setupRust() {
+    shell("rustup default 1.31.0")
 }
 
 def setupBrewPackages() {
@@ -380,4 +754,3 @@ def setupBrewPackages() {
     sh "brew switch openssl 1.0.2l"
     sh "brew switch zeromq 4.2.3"
 }
-

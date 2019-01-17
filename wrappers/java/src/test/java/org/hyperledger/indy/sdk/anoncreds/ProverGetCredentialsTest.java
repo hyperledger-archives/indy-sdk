@@ -1,7 +1,7 @@
 package org.hyperledger.indy.sdk.anoncreds;
 
 
-import org.hyperledger.indy.sdk.InvalidStructureException;
+import org.hyperledger.indy.sdk.wallet.WalletInvalidQueryException;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.Test;
@@ -93,7 +93,7 @@ public class ProverGetCredentialsTest extends AnoncredsIntegrationTest {
 	public void testProverGetCredentialsWorksForInvalidFilterJson() throws Exception {
 
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(InvalidStructureException.class));
+		thrown.expectCause(isA(WalletInvalidQueryException.class));
 
 		JSONObject json = new JSONObject();
 		String filter = json.put("issuer_did", 1).toString();

@@ -1,18 +1,18 @@
-extern crate indy_crypto;
 extern crate rust_base58;
 
-use std::path::PathBuf;
 use std::fs;
 use std::fs::File;
 use std::io::Write;
+use std::path::PathBuf;
 
-use self::rust_base58::ToBase58;
+use serde_json;
+
+use errors::prelude::*;
+use utils::environment;
 
 use super::{WritableBlob, Writer, WriterType};
-use errors::common::CommonError;
-use utils::environment::EnvironmentUtils;
 
-use self::indy_crypto::utils::json::JsonDecodable;
+use self::rust_base58::ToBase58;
 
 #[allow(dead_code)]
 pub struct DefaultWriter {
@@ -28,18 +28,17 @@ struct DefaultWriterConfig {
     uri_pattern: String,
 }
 
-impl<'a> JsonDecodable<'a> for DefaultWriterConfig {}
-
 impl WriterType for DefaultWriterType {
-    fn open(&self, config: &str) -> Result<Box<Writer>, CommonError> {
-        let config: DefaultWriterConfig = DefaultWriterConfig::from_json(config)
-            .map_err(map_err_trace!())?;
+    fn open(&self, config: &str) -> IndyResult<Box<Writer>> {
+        let config: DefaultWriterConfig = serde_json::from_str(config)
+            .to_indy(IndyErrorKind::InvalidStructure, "Can't deserialize DefaultWriterConfig")?;
+
         Ok(Box::new(config))
     }
 }
 
 impl Writer for DefaultWriterConfig {
-    fn create(&self, id: i32) -> Result<Box<WritableBlob>, CommonError> {
+    fn create(&self, id: i32) -> IndyResult<Box<WritableBlob>> {
         let path = PathBuf::from(&self.base_dir);
 
         fs::DirBuilder::new()
@@ -59,7 +58,7 @@ impl Writer for DefaultWriterConfig {
 }
 
 impl WritableBlob for DefaultWriter {
-    fn append(&mut self, bytes: &[u8]) -> Result<usize, CommonError> {
+    fn append(&mut self, bytes: &[u8]) -> IndyResult<usize> {
         trace!("append >>>");
 
         let res = self.file.write(bytes)
@@ -69,7 +68,7 @@ impl WritableBlob for DefaultWriter {
         Ok(res)
     }
 
-    fn finalize(&mut self, hash: &[u8]) -> Result<String, CommonError> {
+    fn finalize(&mut self, hash: &[u8]) -> IndyResult<String> {
         trace!("finalize >>>");
 
         self.file.flush().map_err(map_err_trace!())?;
@@ -97,7 +96,7 @@ impl WritableBlob for DefaultWriter {
 }
 
 fn tmp_storage_file(id: i32) -> PathBuf {
-    EnvironmentUtils::tmp_file_path(&format!("def_storage_tmp_{}", id))
+    environment::tmp_file_path(&format!("def_storage_tmp_{}", id))
 }
 
 pub struct DefaultWriterType {}

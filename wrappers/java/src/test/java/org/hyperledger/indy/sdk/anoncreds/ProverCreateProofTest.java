@@ -1,7 +1,7 @@
 package org.hyperledger.indy.sdk.anoncreds;
 
 import org.hyperledger.indy.sdk.InvalidStructureException;
-import org.hyperledger.indy.sdk.wallet.WalletValueNotFoundException;
+import org.hyperledger.indy.sdk.wallet.WalletItemNotFoundException;
 import org.junit.Test;
 import org.json.JSONObject;
 import java.util.concurrent.ExecutionException;
@@ -56,7 +56,7 @@ public class ProverCreateProofTest extends AnoncredsIntegrationTest {
 		String revocStatesJson = new JSONObject().toString();
 
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(WalletValueNotFoundException.class));
+		thrown.expectCause(isA(WalletItemNotFoundException.class));
 
 		Anoncreds.proverCreateProof(wallet, proofRequest, new JSONObject(requestedCredentialsJson).toString(),
 				"wrong_master_secret", schemasJson, credentialDefsJson, revocStatesJson).get();
@@ -68,7 +68,7 @@ public class ProverCreateProofTest extends AnoncredsIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStructureException.class));
 
-		String schemasJson = new JSONObject().toString();;
+		String schemasJson = new JSONObject().toString();
 		String credentialDefsJson = new JSONObject().put(issuer1gvtCredDefId, issuer1gvtCredDef).toString();
 		String revocStatesJson = new JSONObject().toString();
 

@@ -7,10 +7,10 @@ from indy.error import ErrorCode
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("wallet_handle_cleanup", [False])
-async def test_close_wallet_works(wallet_name, wallet_handle):
+async def test_close_wallet_works(wallet_config, wallet_handle, credentials):
     await wallet.close_wallet(wallet_handle)
 
-    wallet_handle = await wallet.open_wallet(wallet_name, None, None)
+    wallet_handle = await wallet.open_wallet(wallet_config, credentials)
     await wallet.close_wallet(wallet_handle)
 
 

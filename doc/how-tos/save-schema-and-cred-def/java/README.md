@@ -2,12 +2,12 @@
 
 Indy-SDK Developer Walkthrough #4, Java Edition
 
-[ [Python](../python/README.md) | [.NET](../dotnet/README.md) | [Node.js](../node/README.md) | [Objective C](../objectivec/README.md) ]
+[ [Python](../python/README.md) | [.NET](../../not-yet-written.md) | [Node.js](../../not-yet-written.md) | [Objective C](../../not-yet-written.md) | [Rust](../rust/README.md)]
 
 
 ## Prerequisites
 
-Setup your workstation with an indy development virtual machine (VM). See [prerequisites](../../prerequisites).
+Setup your workstation with an indy development virtual machine (VM). See [prerequisites](../../prerequisites.md).
 
 
 ## Steps
@@ -95,5 +95,5 @@ Run the [finished code](SaveSchemaAndCredDef.java) and observe the whole sequenc
 
 ## More experiments
 
-You might try the ["Issue a Credential"](../../issue-cred/java/README.md)
+You might try the ["Issue a Credential"](../../issue-cred/../not-yet-written.md)
 how-to, which can be done in only one step once you complete this one.

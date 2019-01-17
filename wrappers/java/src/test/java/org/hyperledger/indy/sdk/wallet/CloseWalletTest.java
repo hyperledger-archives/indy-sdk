@@ -14,8 +14,8 @@ public class CloseWalletTest extends IndyIntegrationTest {
 
 	@Test
 	public void testCloseWalletWorks() throws Exception {
-		Wallet.createWallet(POOL, WALLET, TYPE, null, null).get();
-		Wallet wallet = Wallet.openWallet(WALLET, null, null).get();
+		Wallet.createWallet(WALLET_CONFIG, WALLET_CREDENTIALS).get();
+		Wallet wallet = Wallet.openWallet(WALLET_CONFIG, WALLET_CREDENTIALS).get();
 
 		wallet.closeWallet().get();
 	}
@@ -25,28 +25,20 @@ public class CloseWalletTest extends IndyIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidWalletException.class));
 
-		Wallet.createWallet(POOL, WALLET, TYPE, null, null).get();
-		Wallet wallet = Wallet.openWallet(WALLET, null, null).get();
+		Wallet.createWallet(WALLET_CONFIG, WALLET_CREDENTIALS).get();
+		Wallet wallet = Wallet.openWallet(WALLET_CONFIG, WALLET_CREDENTIALS).get();
 
 		wallet.closeWallet().get();
-		wallet.closeWallet().get();
-	}
-
-	@Test
-	public void testCloseWalletWorksForPlugged() throws Exception {
-		Wallet.createWallet(POOL, WALLET, "inmem", null, null).get();
-
-		Wallet wallet = Wallet.openWallet(WALLET, null, null).get();
 		wallet.closeWallet().get();
 	}
 
 	@Test
 	public void testAutoCloseWorks() throws Exception {
-		Wallet.createWallet(POOL, WALLET, TYPE, null, null);
-		try (Wallet wallet = Wallet.openWallet(WALLET, null, null).get()) {
+		Wallet.createWallet(WALLET_CONFIG, WALLET_CREDENTIALS).get();
+		try (Wallet wallet = Wallet.openWallet(WALLET_CONFIG, WALLET_CREDENTIALS).get()) {
 			assertNotNull(wallet);
 		}
-		Wallet wallet = Wallet.openWallet(WALLET, null, null).get();
+		Wallet wallet = Wallet.openWallet(WALLET_CONFIG, WALLET_CREDENTIALS).get();
 		wallet.closeWallet().get();
 	}
 }

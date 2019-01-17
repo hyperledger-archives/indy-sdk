@@ -1,17 +1,18 @@
 extern crate indy_crypto;
 
 use std::collections::HashMap;
-use errors::common::CommonError;
-use self::indy_crypto::cl::{CredentialPublicKey};
-use self::indy_crypto::cl::verifier::Verifier as CryptoVerifier;
+
+use domain::anoncreds::credential_definition::CredentialDefinitionV1 as CredentialDefinition;
+use domain::anoncreds::proof::{Proof, RequestedProof};
+use domain::anoncreds::proof_request::{AttributeInfo, PredicateInfo, ProofRequest};
+use domain::anoncreds::revocation_registry::RevocationRegistryV1;
+use domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinitionV1;
+use domain::anoncreds::schema::SchemaV1;
+use errors::prelude::*;
 use services::anoncreds::helpers::*;
 
-use domain::schema::SchemaV1;
-use domain::credential_definition::CredentialDefinitionV1 as CredentialDefinition;
-use domain::revocation_registry_definition::RevocationRegistryDefinitionV1;
-use domain::proof::{Proof, RequestedProof};
-use domain::proof_request::{ProofRequest, AttributeInfo, PredicateInfo};
-use domain::revocation_registry::RevocationRegistryV1;
+use self::indy_crypto::cl::CredentialPublicKey;
+use self::indy_crypto::cl::verifier::Verifier as CryptoVerifier;
 
 pub struct Verifier {}
 
@@ -26,28 +27,42 @@ impl Verifier {
                   schemas: &HashMap<String, SchemaV1>,
                   cred_defs: &HashMap<String, CredentialDefinition>,
                   rev_reg_defs: &HashMap<String, RevocationRegistryDefinitionV1>,
-                  rev_regs: &HashMap<String, HashMap<u64, RevocationRegistryV1>>) -> Result<bool, CommonError> {
+                  rev_regs: &HashMap<String, HashMap<u64, RevocationRegistryV1>>) -> IndyResult<bool> {
         trace!("verify >>> full_proof: {:?}, proof_req: {:?}, schemas: {:?}, cred_defs: {:?}, rev_reg_defs: {:?} rev_regs: {:?}",
                full_proof, proof_req, schemas, cred_defs, rev_reg_defs, rev_regs);
 
         let mut proof_verifier = CryptoVerifier::new_proof_verifier()?;
+        let non_credential_schema = build_non_credential_schema()?;
 
         for sub_proof_index in 0..full_proof.identifiers.len() {
             let identifier = full_proof.identifiers[sub_proof_index].clone();
+
             let schema: &SchemaV1 = schemas.get(&identifier.schema_id)
-                .ok_or(CommonError::InvalidStructure(format!("Schema not found for id: {:?}", identifier.schema_id)))?;
+                .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("Schema not found for id: {:?}", identifier.schema_id)))?;
+
             let cred_def: &CredentialDefinition = cred_defs.get(&identifier.cred_def_id)
-                .ok_or(CommonError::InvalidStructure(format!("CredentialDefinition not found for id: {:?}", identifier.cred_def_id)))?;
+                .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("CredentialDefinition not found for id: {:?}", identifier.cred_def_id)))?;
 
             let (rev_reg_def, rev_reg) = if cred_def.value.revocation.is_some() {
-                let timestamp = identifier.timestamp.clone().ok_or(CommonError::InvalidStructure(format!("Timestamp not found")))?;
-                let rev_reg_id = identifier.rev_reg_id.clone().ok_or(CommonError::InvalidStructure(format!("Revocation Registry Id not found")))?;
-                let rev_reg_def = Some(rev_reg_defs.get(&rev_reg_id)
-                    .ok_or(CommonError::InvalidStructure(format!("RevocationRegistryDefinition not found for id: {:?}", identifier.rev_reg_id)))?);
-                let rev_regs_for_cred = rev_regs.get(&rev_reg_id)
-                    .ok_or(CommonError::InvalidStructure(format!("RevocationRegistry not found for id: {:?}", rev_reg_id)))?;
-                let rev_reg = Some(rev_regs_for_cred.get(&timestamp)
-                    .ok_or(CommonError::InvalidStructure(format!("RevocationRegistry not found for timestamp: {:?}", timestamp)))?);
+                let timestamp = identifier.timestamp
+                    .clone()
+                    .ok_or(err_msg(IndyErrorKind::InvalidStructure, "Timestamp not found"))?;
+
+                let rev_reg_id = identifier.rev_reg_id
+                    .clone()
+                    .ok_or(err_msg(IndyErrorKind::InvalidStructure, "Revocation Registry Id not found"))?;
+
+                let rev_reg_def = Some(rev_reg_defs
+                    .get(&rev_reg_id)
+                    .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("RevocationRegistryDefinition not found for id: {:?}", identifier.rev_reg_id)))?);
+
+                let rev_regs_for_cred = rev_regs
+                    .get(&rev_reg_id)
+                    .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("RevocationRegistry not found for id: {:?}", rev_reg_id)))?;
+
+                let rev_reg = Some(rev_regs_for_cred
+                    .get(&timestamp)
+                    .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("RevocationRegistry not found for timestamp: {:?}", timestamp)))?);
 
                 (rev_reg_def, rev_reg)
             } else { (None, None) };
@@ -62,6 +77,7 @@ impl Verifier {
 
             proof_verifier.add_sub_proof_request(&sub_proof_request,
                                                  &credential_schema,
+                                                 &non_credential_schema,
                                                  &credential_pub_key,
                                                  rev_reg_def.as_ref().map(|r_reg_def| &r_reg_def.value.public_keys.accum_key),
                                                  rev_reg.as_ref().map(|r_reg| &r_reg.value))?;
@@ -76,7 +92,7 @@ impl Verifier {
 
     fn _get_revealed_attributes_for_credential(sub_proof_index: usize,
                                                requested_proof: &RequestedProof,
-                                               proof_req: &ProofRequest) -> Result<Vec<AttributeInfo>, CommonError> {
+                                               proof_req: &ProofRequest) -> IndyResult<Vec<AttributeInfo>> {
         trace!("_get_revealed_attributes_for_credential >>> sub_proof_index: {:?}, requested_credentials: {:?}, proof_req: {:?}",
                sub_proof_index, requested_proof, proof_req);
 
@@ -95,7 +111,7 @@ impl Verifier {
 
     fn _get_predicates_for_credential(sub_proof_index: usize,
                                       requested_proof: &RequestedProof,
-                                      proof_req: &ProofRequest) -> Result<Vec<PredicateInfo>, CommonError> {
+                                      proof_req: &ProofRequest) -> IndyResult<Vec<PredicateInfo>> {
         trace!("_get_predicates_for_credential >>> sub_proof_index: {:?}, requested_credentials: {:?}, proof_req: {:?}",
                sub_proof_index, requested_proof, proof_req);
 

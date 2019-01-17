@@ -1,10 +1,10 @@
 extern crate libc;
 
-use api::ErrorCode;
-use errors::ToErrorCode;
+use api::{ErrorCode, IndyHandle};
 use commands::{Command, CommandExecutor};
 use commands::pairwise::PairwiseCommand;
-use utils::cstring::CStringUtils;
+use errors::prelude::*;
+use utils::ctypes;
 
 use self::libc::c_char;
 
@@ -24,24 +24,34 @@ use self::libc::c_char;
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub  extern fn indy_is_pairwise_exists(command_handle: i32,
-                                       wallet_handle: i32,
+pub  extern fn indy_is_pairwise_exists(command_handle: IndyHandle,
+                                       wallet_handle: IndyHandle,
                                        their_did: *const c_char,
-                                       cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, exists: bool)>) -> ErrorCode {
+                                       cb: Option<extern fn(command_handle_: IndyHandle,
+                                                            err: ErrorCode, exists: bool)>) -> ErrorCode {
+    trace!("indy_is_pairwise_exists: >>> wallet_handle: {:?}, their_did: {:?}", wallet_handle, their_did);
+
     check_useful_c_str!(their_did, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    trace!("indy_is_pairwise_exists: entities >>> wallet_handle: {:?}, their_did: {:?}", wallet_handle, their_did);
 
     let result = CommandExecutor::instance()
         .send(Command::Pairwise(PairwiseCommand::PairwiseExists(
             wallet_handle,
             their_did,
             Box::new(move |result| {
-                let (err, exists) = result_to_err_code_1!(result, false);
+                let (err, exists) = prepare_result_1!(result, false);
+                trace!("indy_is_pairwise_exists: exists: {:?}", exists);
                 cb(command_handle, err, exists)
             })
         )));
 
-    result_to_err_code!(result)
+    let res = prepare_result!(result);
+
+    trace!("indy_is_pairwise_exists: <<< res: {:?}", res);
+
+    res
 }
 
 
@@ -62,16 +72,21 @@ pub  extern fn indy_is_pairwise_exists(command_handle: i32,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub  extern fn indy_create_pairwise(command_handle: i32,
-                                    wallet_handle: i32,
+pub  extern fn indy_create_pairwise(command_handle: IndyHandle,
+                                    wallet_handle: IndyHandle,
                                     their_did: *const c_char,
                                     my_did: *const c_char,
                                     metadata: *const c_char,
-                                    cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode {
+                                    cb: Option<extern fn(command_handle_: IndyHandle,
+                                                         err: ErrorCode)>) -> ErrorCode {
+    trace!("indy_create_pairwise: >>> wallet_handle: {:?}, their_did: {:?}, my_did: {:?}, metadata: {:?}", wallet_handle, their_did, my_did, metadata);
+
     check_useful_c_str!(their_did, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(my_did, ErrorCode::CommonInvalidParam4);
     check_useful_opt_c_str!(metadata, ErrorCode::CommonInvalidParam5);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
+
+    trace!("indy_create_pairwise: entities >>> wallet_handle: {:?}, their_did: {:?}, my_did: {:?}, metadata: {:?}", wallet_handle, their_did, my_did, metadata);
 
     let result = CommandExecutor::instance()
         .send(Command::Pairwise(PairwiseCommand::CreatePairwise(
@@ -80,12 +95,17 @@ pub  extern fn indy_create_pairwise(command_handle: i32,
             my_did,
             metadata,
             Box::new(move |result| {
-                let err = result_to_err_code!(result);
+                let err = prepare_result!(result);
+                trace!("indy_create_pairwise:");
                 cb(command_handle, err)
             })
         )));
 
-    result_to_err_code!(result)
+    let res = prepare_result!(result);
+
+    trace!("indy_create_pairwise: <<< res: {:?}", res);
+
+    res
 }
 
 /// Get list of saved pairwise.
@@ -102,22 +122,33 @@ pub  extern fn indy_create_pairwise(command_handle: i32,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub  extern fn indy_list_pairwise(command_handle: i32,
-                                  wallet_handle: i32,
-                                  cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, list_pairwise: *const c_char)>) -> ErrorCode {
+pub  extern fn indy_list_pairwise(command_handle: IndyHandle,
+                                  wallet_handle: IndyHandle,
+                                  cb: Option<extern fn(command_handle_: IndyHandle,
+                                                       err: ErrorCode,
+                                                       list_pairwise: *const c_char)>) -> ErrorCode {
+    trace!("indy_list_pairwise: >>> wallet_handle: {:?}", wallet_handle);
+
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
+
+    trace!("indy_list_pairwise: entities >>> wallet_handle: {:?}", wallet_handle);
 
     let result = CommandExecutor::instance()
         .send(Command::Pairwise(PairwiseCommand::ListPairwise(
             wallet_handle,
             Box::new(move |result| {
-                let (err, list_pairwise) = result_to_err_code_1!(result, String::new());
-                let list_pairwise = CStringUtils::string_to_cstring(list_pairwise);
+                let (err, list_pairwise) = prepare_result_1!(result, String::new());
+                trace!("indy_list_pairwise: list_pairwise: {:?}", list_pairwise);
+                let list_pairwise = ctypes::string_to_cstring(list_pairwise);
                 cb(command_handle, err, list_pairwise.as_ptr())
             })
         )));
 
-    result_to_err_code!(result)
+    let res = prepare_result!(result);
+
+    trace!("indy_list_pairwise: <<< res: {:?}", res);
+
+    res
 }
 
 /// Gets pairwise information for specific their_did.
@@ -135,25 +166,36 @@ pub  extern fn indy_list_pairwise(command_handle: i32,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub  extern fn indy_get_pairwise(command_handle: i32,
-                                 wallet_handle: i32,
+pub  extern fn indy_get_pairwise(command_handle: IndyHandle,
+                                 wallet_handle: IndyHandle,
                                  their_did: *const c_char,
-                                 cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, pairwise_info_json: *const c_char)>) -> ErrorCode {
+                                 cb: Option<extern fn(command_handle_: IndyHandle,
+                                                      err: ErrorCode,
+                                                      pairwise_info_json: *const c_char)>) -> ErrorCode {
+    trace!("indy_get_pairwise: >>> wallet_handle: {:?}, their_did: {:?}", wallet_handle, their_did);
+
     check_useful_c_str!(their_did, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    trace!("indy_get_pairwise: entities >>> wallet_handle: {:?}, their_did: {:?}", wallet_handle, their_did);
 
     let result = CommandExecutor::instance()
         .send(Command::Pairwise(PairwiseCommand::GetPairwise(
             wallet_handle,
             their_did,
             Box::new(move |result| {
-                let (err, pairwise_info_json) = result_to_err_code_1!(result, String::new());
-                let pairwise_info_json = CStringUtils::string_to_cstring(pairwise_info_json);
+                let (err, pairwise_info_json) = prepare_result_1!(result, String::new());
+                trace!("indy_get_pairwise: pairwise_info_json: {:?}", pairwise_info_json);
+                let pairwise_info_json = ctypes::string_to_cstring(pairwise_info_json);
                 cb(command_handle, err, pairwise_info_json.as_ptr())
             })
         )));
 
-    result_to_err_code!(result)
+    let res = prepare_result!(result);
+
+    trace!("indy_get_pairwise: <<< res: {:?}", res);
+
+    res
 }
 
 /// Save some data in the Wallet for pairwise associated with Did.
@@ -172,14 +214,19 @@ pub  extern fn indy_get_pairwise(command_handle: i32,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub  extern fn indy_set_pairwise_metadata(command_handle: i32,
-                                          wallet_handle: i32,
+pub  extern fn indy_set_pairwise_metadata(command_handle: IndyHandle,
+                                          wallet_handle: IndyHandle,
                                           their_did: *const c_char,
                                           metadata: *const c_char,
-                                          cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode {
+                                          cb: Option<extern fn(command_handle_: IndyHandle,
+                                                               err: ErrorCode)>) -> ErrorCode {
+    trace!("indy_set_pairwise_metadata: >>> wallet_handle: {:?}, their_did: {:?}, metadata: {:?}", wallet_handle, their_did, metadata);
+
     check_useful_c_str!(their_did, ErrorCode::CommonInvalidParam3);
     check_useful_opt_c_str!(metadata, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
+
+    trace!("indy_set_pairwise_metadata: entities >>> wallet_handle: {:?}, their_did: {:?}, metadata: {:?}", wallet_handle, their_did, metadata);
 
     let result = CommandExecutor::instance()
         .send(Command::Pairwise(PairwiseCommand::SetPairwiseMetadata(
@@ -187,10 +234,15 @@ pub  extern fn indy_set_pairwise_metadata(command_handle: i32,
             their_did,
             metadata,
             Box::new(move |result| {
-                let err = result_to_err_code!(result);
+                let err = prepare_result!(result);
+                trace!("indy_set_pairwise_metadata:");
                 cb(command_handle, err)
             })
         )));
 
-    result_to_err_code!(result)
+    let res = prepare_result!(result);
+
+    trace!("indy_set_pairwise_metadata: <<< res: {:?}", res);
+
+    res
 }

@@ -115,6 +115,11 @@ public class AttribRequestsTest extends IndyIntegrationTestWithPoolAndSingleWall
 	}
 
 	@Test
+	public void testBuildGetAttribRequestWorksForDefaultSubmitter() throws Exception {
+		Ledger.buildGetAttribRequest(null, DID_TRUSTEE, "endpoint", null, null).get();
+	}
+
+	@Test
 	public void testSendAttribRequestWorksWithoutSignature() throws Exception {
 		DidResults.CreateAndStoreMyDidResult trusteeDidResult = Did.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
 		String trusteeDid = trusteeDidResult.getDid();

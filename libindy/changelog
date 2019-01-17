@@ -1,9 +1,0 @@
-1.3.0
-- Initial revision
-
-1.4.0
-- Improved supported Revocation of Anoncreds API
-- Changed APIs of the cryptographic part.
-- Ledger API changes
-    * Added parsers for transactions related to Anoncreds
-    * Added transaction builders for Pool manipulation transactions

@@ -2,12 +2,12 @@
 
 Indy-SDK Developer Walkthrough #2, Java Edition
 
-[ [Python](../python/README.md) | [.NET](../dotnet/README.md) | [Node.js](../node/README.md) | [Objective C](../objectivec/README.md) ]
+[ [Python](../python/README.md) | [.NET](../../not-yet-written.md) | [Node.js](../nodejs/README.md) | [Objective C](../../not-yet-written.md) | [Rust](../rust/README.md)]
 
 
 ## Prerequisites
 
-Setup your workstation with an indy development virtual machine (VM). See [prerequisites](../prerequisites.md).
+Setup your workstation with an indy development virtual machine (VM). See [prerequisites](../../prerequisites.md).
 
 ## Steps
 
@@ -22,7 +22,7 @@ Save the doc as `RotateKey.java`.
 ### Step 2
 
 This how-to builds on the work in
-["Write DID and Query Verkey"](../write-did-and-query-verkey/java/README.md).
+["Write DID and Query Verkey"](../../write-did-and-query-verkey/java/README.md).
 Rather than duplicate our explanation of those steps here, we will simply
 copy that code as our starting point.
 

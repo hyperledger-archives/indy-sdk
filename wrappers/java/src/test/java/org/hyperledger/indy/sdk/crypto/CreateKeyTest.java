@@ -15,8 +15,7 @@ public class CreateKeyTest extends IndyIntegrationTestWithSingleWallet {
 
 	@Test
 	public void testCreateKeyWorksForSeed() throws Exception {
-		String paramJson = new CryptoJSONParameters.CreateKeyJSONParameter(MY1_SEED, null).toJson();
-		String senderVk = Crypto.createKey(wallet, paramJson).get();
+		String senderVk = Crypto.createKey(wallet, MY1_IDENTITY_KEY_JSON).get();
 		assertEquals(32, Base58.decode(senderVk).length);
 	}
 

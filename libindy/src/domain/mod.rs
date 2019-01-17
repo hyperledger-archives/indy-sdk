@@ -1,16 +1,12 @@
-pub mod credential;
-pub mod credential_definition;
-pub mod credential_for_proof_request;
-pub mod credential_offer;
-pub mod credential_request;
-pub mod filter;
-pub mod proof;
-pub mod proof_request;
-pub mod requested_credential;
-pub mod revocation_registry_definition;
-pub mod revocation_registry_delta;
-pub mod revocation_registry;
-pub mod revocation_state;
-pub mod schema;
+pub mod anoncreds;
+pub mod crypto;
+pub mod ledger;
+pub mod pairwise;
+pub mod pool;
+pub mod wallet;
 
-pub const DELIMITER: &'static str = ":";
+#[derive(Debug, Serialize, Deserialize)]
+pub struct IndyConfig {
+    pub crypto_thread_pool_size : Option<usize>,
+    pub collect_backtrace: Option<bool>
+}

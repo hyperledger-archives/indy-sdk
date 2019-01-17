@@ -11,23 +11,25 @@
 
 + (WalletUtils *)sharedInstance;
 
-- (NSError *)registerWalletType:(NSString *)xtype;
+- (NSError *)createAndOpenWalletWithHandle:(IndyHandle *)handle;
 
-- (NSError *)createAndOpenWalletWithPoolName:(NSString *)poolName
-                                       xtype:(NSString *)xtype
-                                      handle:(IndyHandle *)handle;
+- (NSError *)createWalletWithConfig:(NSString *)config;
 
-- (NSError *)createWalletWithPoolName:(NSString *)poolName
-                           walletName:(NSString *)walletName
-                                xtype:(NSString *)xtype
-                               config:(NSString *)config;
+- (NSError *)deleteWalletWithConfig:(NSString *)config;
 
-- (NSError *)deleteWalletWithName:(NSString *)walletName;
-
-- (NSError *)openWalletWithName:(NSString *)walletName
-                         config:(NSString *)config
-                      outHandle:(IndyHandle *)handle;
+- (NSError *)openWalletWithConfig:(NSString *)config
+                        outHandle:(IndyHandle *)handle;
 
 - (NSError *)closeWalletWithHandle:(IndyHandle)walletHandle;
+
+- (NSError *)exportWalletWithHandle:(IndyHandle)walletHandle
+                   exportConfigJson:(NSString *)exportConfigJson;
+
+- (NSError *)importWalletWithConfig:(NSString *)config
+                   importConfigJson:(NSString *)importConfigJson;
+
+
+- (NSError *)generateWalletKeyForConfig:(NSString *)configJson
+                                    key:(NSString **)key;
 
 @end

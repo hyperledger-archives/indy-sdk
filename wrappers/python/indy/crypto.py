@@ -13,8 +13,8 @@ async def create_key(wallet_handle: int,
     :param wallet_handle: Wallet handle (created by open_wallet).
     :param key_json: Key information as json. Example:
         {
-            "seed": string, // Optional (if not set random one will be used);
-                    Seed information that allows deterministic key creation.
+	        "seed": string, (optional) Seed that allows deterministic key creation (if not set random one will be created).
+	                                   Can be UTF-8, base64 or hex string.
             "crypto_type": string, // Optional (if not set then ed25519 curve is used);
                     Currently only 'ed25519' value is supported for this field.
         }
@@ -169,7 +169,7 @@ async def crypto_verify(signer_vk: str,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("crypto_verify: >>> my_vk: %r, signed_msg: %r",
+    logger.debug("crypto_verify: >>> my_vk: %r, signed_msg: %r, signature: %r",
                  signer_vk,
                  msg,
                  signature)
@@ -226,7 +226,7 @@ async def auth_crypt(wallet_handle: int,
                  msg)
 
     def transform_cb(arr_ptr: POINTER(c_uint8), arr_len: c_uint32):
-        return bytes(arr_ptr[:arr_len])
+        return bytes(arr_ptr[:arr_len]),
 
     if not hasattr(auth_crypt, "cb"):
         logger.debug("auth_crypt: Creating callback")
@@ -291,7 +291,7 @@ async def auth_decrypt(wallet_handle: int,
     (sender_vk, msg) = await do_call('indy_crypto_auth_decrypt',
                                      c_wallet_handle,
                                      c_recipient_vk,
-                                     bytes(encrypted_msg),
+                                     encrypted_msg,
                                      c_encrypted_msg_len,
                                      auth_decrypt.cb)
 
@@ -325,7 +325,7 @@ async def anon_crypt(recipient_vk: str,
                  msg)
 
     def transform_cb(arr_ptr: POINTER(c_uint8), arr_len: c_uint32):
-        return bytes(arr_ptr[:arr_len])
+        return bytes(arr_ptr[:arr_len]),
 
     if not hasattr(anon_crypt, "cb"):
         logger.debug("anon_crypt: Creating callback")
@@ -382,7 +382,7 @@ async def anon_decrypt(wallet_handle: int,
     decrypted_message = await do_call('indy_crypto_anon_decrypt',
                                       c_wallet_handle,
                                       c_recipient_vk,
-                                      bytes(encrypted_msg),
+                                      encrypted_msg,
                                       c_encrypted_msg_len,
                                       anon_decrypt.cb)
 

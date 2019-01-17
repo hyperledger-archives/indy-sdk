@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" contentScriptType="application/ecmascript" contentStyleType="text/css" height="344px" preserveAspectRatio="none" style="width:576px;height:344px;" version="1.1" viewBox="0 0 576 344" width="576px" zoomAndPan="magnify"><defs><filter height="300%" id="f1s0gseue6cebi" width="300%" x="-1" y="-1"><feGaussianBlur result="blurOut" stdDeviation="2.0"/><feColorMatrix in="blurOut" result="blurOut2" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .4 0"/><feOffset dx="4.0" dy="4.0" in="blurOut2" result="blurOut3"/><feBlend in="SourceGraphic" in2="blurOut3" mode="normal"/></filter></defs><g><!--cluster Payment Method Plugin--><polygon fill="#FFFFFF" filter="url(#f1s0gseue6cebi)" points="22,24,193,24,200,47.6094,240,47.6094,240,234,22,234,22,24" style="stroke: #000000; stroke-width: 1.5;"/><line style="stroke: #000000; stroke-width: 1.5;" x1="22" x2="200" y1="47.6094" y2="47.6094"/><text fill="#000000" font-family="sans-serif" font-size="14" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="165" x="26" y="40.5332">Payment Method Plugin</text><!--cluster Storage Plugin--><polygon fill="#FFFFFF" filter="url(#f1s0gseue6cebi)" points="392,24,501,24,508,47.6094,554,47.6094,554,234,392,234,392,24" style="stroke: #000000; stroke-width: 1.5;"/><line style="stroke: #000000; stroke-width: 1.5;" x1="392" x2="508" y1="47.6094" y2="47.6094"/><text fill="#000000" font-family="sans-serif" font-size="14" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="103" x="396" y="40.5332">Storage Plugin</text><!--cluster Indy CLI--><polygon fill="#FFFFFF" filter="url(#f1s0gseue6cebi)" points="264,133,325,133,332,156.6094,368,156.6094,368,332,264,332,264,133" style="stroke: #000000; stroke-width: 1.5;"/><line style="stroke: #000000; stroke-width: 1.5;" x1="264" x2="332" y1="156.6094" y2="156.6094"/><text fill="#000000" font-family="sans-serif" font-size="14" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="55" x="268" y="149.5332">Indy CLI</text><!--entity payment_method_plugin--><rect fill="#FEFECE" filter="url(#f1s0gseue6cebi)" height="37.6094" style="stroke: #A80036; stroke-width: 1.5;" width="169" x="50.5" y="60"/><rect fill="#FEFECE" height="5" style="stroke: #A80036; stroke-width: 1.5;" width="10" x="45.5" y="65"/><rect fill="#FEFECE" height="5" style="stroke: #A80036; stroke-width: 1.5;" width="10" x="45.5" y="87.6094"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="149" x="60.5" y="84.5332">Payment Method Plugin</text><!--entity i_payment_method_plugin_init--><ellipse cx="131" cy="188" fill="#FEFECE" filter="url(#f1s0gseue6cebi)" rx="8" ry="8" style="stroke: #A80036; stroke-width: 2.0;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="171" x="45.5" y="219.5332">Payment Method Plugin Init</text><!--entity storage_plugin--><rect fill="#FEFECE" filter="url(#f1s0gseue6cebi)" height="37.6094" style="stroke: #A80036; stroke-width: 1.5;" width="113" x="412.5" y="60"/><rect fill="#FEFECE" height="5" style="stroke: #A80036; stroke-width: 1.5;" width="10" x="407.5" y="65"/><rect fill="#FEFECE" height="5" style="stroke: #A80036; stroke-width: 1.5;" width="10" x="407.5" y="87.6094"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="93" x="422.5" y="84.5332">Storage Plugin</text><!--entity i_storage_plugin_init--><ellipse cx="473" cy="188" fill="#FEFECE" filter="url(#f1s0gseue6cebi)" rx="8" ry="8" style="stroke: #A80036; stroke-width: 2.0;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="115" x="415.5" y="219.5332">Storage Plugin Init</text><!--entity libindy--><rect fill="#FEFECE" filter="url(#f1s0gseue6cebi)" height="37.6094" style="stroke: #A80036; stroke-width: 1.5;" width="65" x="283.5" y="169"/><rect fill="#FEFECE" height="5" style="stroke: #A80036; stroke-width: 1.5;" width="10" x="278.5" y="174"/><rect fill="#FEFECE" height="5" style="stroke: #A80036; stroke-width: 1.5;" width="10" x="278.5" y="196.6094"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="45" x="293.5" y="193.5332">Libindy</text><!--entity cli--><rect fill="#FEFECE" filter="url(#f1s0gseue6cebi)" height="37.6094" style="stroke: #A80036; stroke-width: 1.5;" width="71" x="280.5" y="278"/><rect fill="#FEFECE" height="5" style="stroke: #A80036; stroke-width: 1.5;" width="10" x="275.5" y="283"/><rect fill="#FEFECE" height="5" style="stroke: #A80036; stroke-width: 1.5;" width="10" x="275.5" y="305.6094"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="51" x="290.5" y="302.5332">Indy CLI</text><!--link payment_method_plugin to i_payment_method_plugin_init--><path d="M134.321,98.151 C133.526,119.441 132.224,154.248 131.51,173.364 " fill="none" id="payment_method_plugin-i_payment_method_plugin_init" style="stroke: #A80036; stroke-width: 1.0; stroke-dasharray: 7.0,7.0;"/><polygon fill="#A80036" points="131.308,178.761,135.642,169.917,131.4951,173.7645,127.6476,169.6176,131.308,178.761" style="stroke: #A80036; stroke-width: 1.0;"/><!--link storage_plugin to i_storage_plugin_init--><path d="M469.679,98.151 C470.474,119.441 471.776,154.248 472.49,173.364 " fill="none" id="storage_plugin-i_storage_plugin_init" style="stroke: #A80036; stroke-width: 1.0; stroke-dasharray: 7.0,7.0;"/><polygon fill="#A80036" points="472.692,178.761,476.3524,169.6176,472.5049,173.7645,468.358,169.917,472.692,178.761" style="stroke: #A80036; stroke-width: 1.0;"/><!--link payment_method_plugin to libindy--><path d="M185.022,98.101 C202.909,105.429 222.867,114.622 240,125 C259.038,136.531 278.448,152.45 292.887,165.27 " fill="none" id="payment_method_plugin-libindy" style="stroke: #A80036; stroke-width: 1.0;"/><polygon fill="#A80036" points="296.823,168.798,292.7913,159.8122,293.0999,165.4606,287.4514,165.7692,296.823,168.798" style="stroke: #A80036; stroke-width: 1.0;"/><!--link storage_plugin to libindy--><path d="M435.326,98.172 C421.59,105.969 405.739,115.467 392,125 C373.969,137.511 354.83,153.139 340.27,165.575 " fill="none" id="storage_plugin-libindy" style="stroke: #A80036; stroke-width: 1.0;"/><polygon fill="#A80036" points="336.289,168.992,345.7235,166.1652,340.083,165.7353,340.5128,160.0948,336.289,168.992" style="stroke: #A80036; stroke-width: 1.0;"/><!--link libindy to cli--><path d="M316,212.214 C316,231.872 316,259.666 316,277.7599 " fill="none" id="libindy-cli" style="stroke: #A80036; stroke-width: 1.0;"/><polygon fill="#A80036" points="316,207.151,312,216.151,316,212.151,320,216.151,316,207.151" style="stroke: #A80036; stroke-width: 1.0;"/><!--link cli to i_payment_method_plugin_init--><path d="M284.571,277.8219 C243.608,254.1299 173.759,213.731 144.509,196.813 " fill="none" id="cli-i_payment_method_plugin_init" style="stroke: #A80036; stroke-width: 1.0;"/><polygon fill="#A80036" points="140.174,194.306,145.9599,202.2761,144.5015,196.8105,149.9671,195.3521,140.174,194.306" style="stroke: #A80036; stroke-width: 1.0;"/><!--link cli to i_storage_plugin_init--><path d="M342.525,277.9227 C376.339,254.8774 433.52,215.907 459.47,198.221 " fill="none" id="cli-i_storage_plugin_init" style="stroke: #A80036; stroke-width: 1.0;"/><polygon fill="#A80036" points="463.649,195.373,453.9593,197.1363,459.5173,198.1889,458.4647,203.7469,463.649,195.373" style="stroke: #A80036; stroke-width: 1.0;"/><!--
+@startuml cli-plugins
+
+package "Payment Method Plugin" { 
+    [Payment Method Plugin] as payment_method_plugin
+
+    () "Payment Method Plugin Init" as i_payment_method_plugin_init
+    payment_method_plugin  ..> i_payment_method_plugin_init
+}
+
+package "Storage Plugin" { 
+    [Storage Plugin] as storage_plugin
+
+    () "Storage Plugin Init" as i_storage_plugin_init
+    storage_plugin  ..> i_storage_plugin_init
+}
+
+package "Indy CLI" {
+    [Libindy] as libindy
+    [Indy CLI] as cli
+
+    payment_method_plugin  - -> libindy
+    storage_plugin  - -> libindy
+    libindy  <- - cli
+
+    cli - -> i_payment_method_plugin_init
+    cli - -> i_storage_plugin_init
+    
+}
+
+@enduml 
+
+PlantUML version 1.2017.20(Mon Dec 11 19:57:05 MSK 2017)
+(GPL source distribution)
+Java Runtime: Java(TM) SE Runtime Environment
+JVM: Java HotSpot(TM) 64-Bit Server VM
+Java Version: 1.8.0_151-b12
+Operating System: Windows 10
+OS Version: 10.0
+Default Encoding: Cp1252
+Language: en
+Country: US
+--></g></svg>

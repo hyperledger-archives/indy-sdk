@@ -292,6 +292,27 @@
     }
 }
 
++ (void)proverGetCredentialWithId:(NSString *)credId
+                     walletHandle:(IndyHandle)walletHandle
+                       completion:(void (^)(NSError *error, NSString *credentialJSON))completion {
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = indy_prover_get_credential(handle,
+            walletHandle,
+            [credId UTF8String],
+            IndyWrapperCommonStringCallback
+    );
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret], nil);
+        });
+    }
+}
+
 + (void)proverGetCredentialsForFilter:(NSString *)filterJSON
                          walletHandle:(IndyHandle)walletHandle
                            completion:(void (^)(NSError *error, NSString *credentialsJSON))completion {
@@ -313,6 +334,67 @@
     }
 }
 
++ (void)proverSearchCredentialsForQuery:(NSString *)queryJSON
+                            walletHandle:(IndyHandle)walletHandle
+                              completion:(void (^)(NSError *error, IndyHandle searchHandle, NSNumber *totalCount))completion {
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = indy_prover_search_credentials(handle,
+            walletHandle,
+            [queryJSON UTF8String],
+            IndyWrapperCommonHandleNumberCallback
+    );
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret], 0, nil);
+        });
+    }
+}
+
++ (void)proverFetchCredentialsWithSearchHandle:(IndyHandle)searchHandle
+                                         count:(NSNumber *)count
+                                    completion:(void (^)(NSError *error, NSString *credentialsJson))completion {
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = indy_prover_fetch_credentials(handle,
+            searchHandle,
+            [count unsignedIntValue],
+            IndyWrapperCommonStringCallback
+    );
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret], nil);
+        });
+    }
+}
+
++ (void)proverCloseCredentialsSearchWithHandle:(IndyHandle)searchHandle
+                                    completion:(void (^)(NSError *error))completion {
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = indy_prover_close_credentials_search(handle,
+            searchHandle,
+            IndyWrapperCommonCallback
+    );
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret]);
+        });
+    }
+}
+
 + (void)proverGetCredentialsForProofReq:(NSString *)proofReqJSON
                            walletHandle:(IndyHandle)walletHandle
                              completion:(void (^)(NSError *error, NSString *credentialsJSON))completion {
@@ -330,6 +412,71 @@
 
         dispatch_async(dispatch_get_main_queue(), ^{
             completion([NSError errorFromIndyError:ret], nil);
+        });
+    }
+}
+
++ (void)proverSearchCredentialsForProofRequest:(NSString *)proofRequest
+                                extraQueryJSON:(NSString *)extraQueryJSON
+                                  walletHandle:(IndyHandle)walletHandle
+                                    completion:(void (^)(NSError *error, IndyHandle searchHandle))completion {
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = indy_prover_search_credentials_for_proof_req(handle,
+            walletHandle,
+            [proofRequest UTF8String],
+            [extraQueryJSON UTF8String],
+            IndyWrapperCommonHandleCallback
+    );
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret], 0);
+        });
+    }
+}
+
++ (void)proverFetchCredentialsForProofReqItemReferent:(NSString *)itemReferent
+                                         searchHandle:(IndyHandle)searchHandle
+                                                count:(NSNumber *)count
+                                           completion:(void (^)(NSError *error, NSString *credentialsJson))completion {
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = indy_prover_fetch_credentials_for_proof_req(handle,
+            searchHandle,
+            [itemReferent UTF8String],
+            [count unsignedIntValue],
+            IndyWrapperCommonStringCallback
+    );
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret], nil);
+        });
+    }
+}
+
++ (void)proverCloseCredentialsSearchForProofReqWithHandle:(IndyHandle)searchHandle
+                                               completion:(void (^)(NSError *error))completion {
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = indy_prover_close_credentials_search_for_proof_req(handle,
+            searchHandle,
+            IndyWrapperCommonCallback
+    );
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret]);
         });
     }
 }

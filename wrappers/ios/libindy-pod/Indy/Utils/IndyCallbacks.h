@@ -53,6 +53,11 @@ extern void IndyWrapperCommonNumberCallback(indy_handle_t xcommand_handle,
         indy_error_t err,
         indy_i32_t handle);
 
+extern void IndyWrapperCommonHandleNumberCallback(indy_handle_t xcommand_handle,
+        indy_error_t err,
+        indy_i32_t handle,
+        uint32_t count);
+
 extern void IndyWrapperCommonStringOptStringOptStringCallback(indy_handle_t xcommand_handle,
         indy_error_t err,
         const char *const arg1,

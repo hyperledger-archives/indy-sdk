@@ -13,6 +13,10 @@
 - (void)setUp {
     [super setUp];
     [TestUtils cleanupStorage];
+
+    ret = [[PoolUtils sharedInstance] setProtocolVersion:[TestUtils protocolVersion]];
+    XCTAssertEqual(ret.code, Success, @"PoolUtils::setProtocolVersion() failed!");
+
     // Put setup code here. This method is called before the invocation of each test method in the class.
 }
 
@@ -219,8 +223,7 @@
                     @"primary": @{
                             @"n": @"1",
                             @"s": @"2",
-                            @"rms": @"3",
-                            @"r": @{@"height": @"1"},
+                            @"r": @{@"height": @"1",@"master_secret": @"1"},
                             @"rctxt": @"1",
                             @"z": @"1"
                     }
@@ -234,6 +237,7 @@
                     @"data": @{
                             @"type": @"102",
                             @"signature_type": @"CL",
+                            @"tag": @"TAG1",
                             @"primary": data[@"value"][@"primary"]
                     }
             }
@@ -251,7 +255,7 @@
 }
 
 - (void)testBuildGetCredDefRequestWorks {
-    NSString *id = @"NcYxiDXkpYi6ov5FcYDi1e:03:CL:1";
+    NSString *id = @"NcYxiDXkpYi6ov5FcYDi1e:03:CL:1:TAG";
 
     NSDictionary *expectedResult = @{
             @"identifier": [TestUtils issuerDid],
@@ -259,6 +263,7 @@
                     @"ref": @(1),
                     @"type": @"108",
                     @"signature_type": @"CL",
+                    @"teg": @"TAG1",
                     @"origin": [TestUtils issuerDid]
             }
     };
@@ -291,7 +296,7 @@
                     @"tailsLocation": @"http://tails.location.com",
                     @"publicKeys": @{
                             @"accumKey": @{
-                                    @"z": @"1111 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
+                                    @"z": @"1 0000000000000000000000000000000000000000000000000000000000001111 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000"
                             }
                     }
             }
@@ -343,7 +348,7 @@
 - (void)testBuildRevocRegEntryRequestWorks {
     NSDictionary *data = @{
             @"value": @{
-                    @"accum": @"false 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
+                    @"accum": @"1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000"
             },
             @"ver": @"1.0"
     };
@@ -354,7 +359,7 @@
                     @"revocRegDefId": @"RevocRegID",
                     @"revocDefType": @"CL_ACCUM",
                     @"value": @{
-                            @"accum": @"false 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
+                            @"accum": @"1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000"
                     }
             }
     };
@@ -447,6 +452,7 @@
                                                                   justification:nil
                                                                       reinstall:false
                                                                           force:false
+                                                                       package_:nil
                                                                      resultJson:&requestJson];
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildPoolConfigRequestWithSubmitterDid() failed");
 
@@ -480,6 +486,7 @@
                                                                   justification:nil
                                                                       reinstall:false
                                                                           force:false
+                                                                       package_:nil
                                                                      resultJson:&requestJson];
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildPoolConfigRequestWithSubmitterDid() failed");
 
@@ -529,6 +536,29 @@
     NSDictionary *request = [NSDictionary fromString:requestJson];
 
     XCTAssertTrue([request contains:expectedResult], @"request doesn't contain expectedResult");
+}
+
+- (void)testBuildGetValidatorInfo {
+    [TestUtils cleanupStorage];
+    NSString *identifier = @"NcYxiDXkpYi6ov5FcYDi1e";
+
+    NSMutableDictionary *expectedResult = [NSMutableDictionary new];
+
+    expectedResult[@"operation"] = [NSMutableDictionary new];
+    expectedResult[@"operation"][@"type"] = @"119";
+
+
+    NSString *getValidatorInfoJson;
+    NSError *ret = [[LedgerUtils sharedInstance] buildGetValidatorInfo:identifier
+                                                            resultJson:&getValidatorInfoJson];
+    XCTAssertEqual(ret.code, Success, @"LedgerUtils::builGetValidatorInfo failed");
+    XCTAssertNotNil(getValidatorInfoJson, @"getValidatorInfoJson is nil!");
+    NSLog(@"getValidatorInfoJson: %@", getValidatorInfoJson);
+
+    NSDictionary *request = [NSDictionary fromString:getValidatorInfoJson];
+    XCTAssertTrue([request contains:expectedResult], @"request doesn't contain expectedResult");
+
+    [TestUtils cleanupStorage];
 }
 
 // MARK: Pool config
@@ -591,15 +621,17 @@
 
 - (void)testBuildGetTxnRequest {
     NSDictionary *expectedResult = @{
-            @"identifier":[TestUtils trusteeDid],
-            @"operation":@{
-                    @"type":@"3",
-                    @"data":@(1)
+            @"identifier": [TestUtils trusteeDid],
+            @"operation": @{
+                    @"type": @"3",
+                    @"data": @(1),
+                    @"ledgerId": @(1)
             }
     };
 
     NSString *requestJson;
     NSError *ret = [[LedgerUtils sharedInstance] buildGetTxnRequestWithSubmitterDid:[TestUtils trusteeDid]
+                                                                         ledgerType:nil
                                                                                data:@(1)
                                                                          resultJson:&requestJson];
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildGetTxnRequestWithSubmitterDid() failed");

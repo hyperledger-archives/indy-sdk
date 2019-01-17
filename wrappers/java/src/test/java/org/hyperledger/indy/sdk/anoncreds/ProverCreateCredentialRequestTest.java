@@ -1,7 +1,7 @@
 package org.hyperledger.indy.sdk.anoncreds;
 
 import org.hyperledger.indy.sdk.InvalidStructureException;
-import org.hyperledger.indy.sdk.wallet.WalletValueNotFoundException;
+import org.hyperledger.indy.sdk.wallet.WalletItemNotFoundException;
 import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.isA;
@@ -12,7 +12,6 @@ public class ProverCreateCredentialRequestTest extends AnoncredsIntegrationTest 
 
 	@Test
 	public void testProverCreateAndStoreCredentialReqWorks() throws Exception {
-		Anoncreds.proverCreateCredentialReq(wallet, proverDid, issuer1GvtCredOffer, issuer1gvtCredDef, masterSecretId).get();
 	}
 
 	@Test
@@ -39,7 +38,7 @@ public class ProverCreateCredentialRequestTest extends AnoncredsIntegrationTest 
 	public void testProverCreateAndStoreCredentialReqWorksForInvalidMasterSecret() throws Exception {
 
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(WalletValueNotFoundException.class));
+		thrown.expectCause(isA(WalletItemNotFoundException.class));
 
 		Anoncreds.proverCreateCredentialReq(wallet, proverDid, issuer1GvtCredOffer, issuer1gvtCredDef, masterSecretId + "a").get();
 	}

@@ -1,14 +1,20 @@
-use indy::api::ErrorCode;
+extern crate indy_sys;
+extern crate indyrs;
+
+use self::indy_sys::Error;
+use self::indyrs::ErrorCode;
 
 use std::sync::mpsc::Receiver;
 
-pub fn result_to_empty(err: ErrorCode, receiver: Receiver<ErrorCode>) -> Result<(), ErrorCode> {
+pub fn result_to_empty(err: Error, receiver: Receiver<Error>) -> Result<(), ErrorCode> {
+    let err = ErrorCode::from(err as i32);
     if err != ErrorCode::Success {
         return Err(err);
     }
 
     let err = receiver.recv().unwrap();
 
+    let err = ErrorCode::from(err as i32);
     if err != ErrorCode::Success {
         return Err(err);
     }
@@ -28,6 +34,20 @@ pub fn result_to_int(err: ErrorCode, receiver: Receiver<(ErrorCode, i32)>) -> Re
     }
 
     Ok(val)
+}
+
+pub fn result_to_int_usize(err: ErrorCode, receiver: Receiver<(ErrorCode, i32, usize)>) -> Result<(i32, usize), ErrorCode> {
+    if err != ErrorCode::Success {
+        return Err(err);
+    }
+
+    let (err, val, val_2) = receiver.recv().unwrap();
+
+    if err != ErrorCode::Success {
+        return Err(err);
+    }
+
+    Ok((val, val_2))
 }
 
 pub fn result_to_bool(err: ErrorCode, receiver: Receiver<(ErrorCode, bool)>) -> Result<bool, ErrorCode> {

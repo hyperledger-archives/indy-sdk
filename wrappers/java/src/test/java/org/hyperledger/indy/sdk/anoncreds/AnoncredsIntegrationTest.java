@@ -29,23 +29,23 @@ public class AnoncredsIntegrationTest {
 	static String xyzSchema;
 	static String issuer1gvtCredDefId;
 	static String issuer1gvtCredDef;
-	static String issuer1xyzCredDefId;
 	static String issuer1xyzCredDef;
 	static String issuer1GvtCredOffer;
 	static String issuer2GvtCredOffer;
 	static String issuer1GvtCredReq;
 	static String issuer1GvtCredReqMetadata;
-	static String issuer1GvtCredential;
+	String CREDENTIALS = "{\"key\":\"8dvfYSt5d1taSd6yJdpjq4emkwsPDDLYxkNFysFD2cZY\", \"key_derivation_method\":\"RAW\"}";
 	String masterSecretId = "master_secret_name";
 	String issuerDid = "NcYxiDXkpYi6ov5FcYDi1e";
 	String proverDid = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
-	String defaultCredentialDefitionConfig = "{\"support_revocation\":false}";
+	String defaultCredentialDefinitionConfig = "{\"support_revocation\":false}";
 	String tag = "tag1";
 	String gvtSchemaName = "gvt";
 	String schemaVersion = "1.0";
 	String gvtSchemaAttributes = "[\"name\", \"age\", \"sex\", \"height\"]";
 	String credentialId1 = "id1";
 	String credentialId2 = "id2";
+	// note that encoding is not standardized by Indy except that 32-bit integers are encoded as themselves. IS-786
 	String gvtCredentialValuesJson = new JSONObject("{\n" +
 			"               \"sex\":{\"raw\":\"male\",\"encoded\":\"5944657099558967239210949258394887428692050081607692519917050011144233115103\"},\n" +
 			"               \"name\":{\"raw\":\"Alex\",\"encoded\":\"1139481716457488690172217916278103335\"},\n" +
@@ -82,10 +82,13 @@ public class AnoncredsIntegrationTest {
 
 		StorageUtils.cleanupStorage();
 
-		String walletName = "anoncredsCommonWallet";
+		String walletConfig =
+				new JSONObject()
+						.put("id", "anoncredsCommonWallet")
+						.toString();
 
-		Wallet.createWallet("default", walletName, "default", null, null).get();
-		wallet = Wallet.openWallet(walletName, null, null).get();
+		Wallet.createWallet(walletConfig, CREDENTIALS).get();
+		wallet = Wallet.openWallet(walletConfig, CREDENTIALS).get();
 
 		AnoncredsResults.IssuerCreateSchemaResult createSchemaResult =
 				Anoncreds.issuerCreateSchema(issuerDid, gvtSchemaName, schemaVersion, gvtSchemaAttributes).get();
@@ -100,20 +103,20 @@ public class AnoncredsIntegrationTest {
 
 		//Issue GVT issuer1GvtCredential by Issuer1
 		IssuerCreateAndStoreCredentialDefResult issuer1CreateGvtCredDefResult =
-				Anoncreds.issuerCreateAndStoreCredentialDef(wallet, issuerDid, gvtSchema, tag, null, defaultCredentialDefitionConfig).get();
+				Anoncreds.issuerCreateAndStoreCredentialDef(wallet, issuerDid, gvtSchema, tag, null, defaultCredentialDefinitionConfig).get();
 		issuer1gvtCredDefId = issuer1CreateGvtCredDefResult.getCredDefId();
 		issuer1gvtCredDef = issuer1CreateGvtCredDefResult.getCredDefJson();
 
 		//Issue XYZ issuer1GvtCredential by Issuer1
 		IssuerCreateAndStoreCredentialDefResult issuer1CreateXyzCredDefResult =
-				Anoncreds.issuerCreateAndStoreCredentialDef(wallet, issuerDid, xyzSchema, tag, null, defaultCredentialDefitionConfig).get();
-		issuer1xyzCredDefId = issuer1CreateXyzCredDefResult.getCredDefId();
+				Anoncreds.issuerCreateAndStoreCredentialDef(wallet, issuerDid, xyzSchema, tag, null, defaultCredentialDefinitionConfig).get();
+		String issuer1xyzCredDefId = issuer1CreateXyzCredDefResult.getCredDefId();
 		issuer1xyzCredDef = issuer1CreateXyzCredDefResult.getCredDefJson();
 
 		//Issue GVT issuer1GvtCredential by Issuer2
 		String issuerDid2 = "VsKV7grR1BUE29mG2Fm2kX";
 		AnoncredsResults.IssuerCreateAndStoreCredentialDefResult issuer2CreateGvtCredDefResult =
-				Anoncreds.issuerCreateAndStoreCredentialDef(wallet, issuerDid2, gvtSchema, tag, null, defaultCredentialDefitionConfig).get();
+				Anoncreds.issuerCreateAndStoreCredentialDef(wallet, issuerDid2, gvtSchema, tag, null, defaultCredentialDefinitionConfig).get();
 		String issuer2gvtCredDefId = issuer2CreateGvtCredDefResult.getCredDefId();
 		String issuer2gvtCredDef = issuer2CreateGvtCredDefResult.getCredDefJson();
 
@@ -130,7 +133,7 @@ public class AnoncredsIntegrationTest {
 
 		AnoncredsResults.IssuerCreateCredentialResult createCredResult =
 				Anoncreds.issuerCreateCredential(wallet, issuer1GvtCredOffer, issuer1GvtCredReq, gvtCredentialValuesJson, null, - 1).get();
-		issuer1GvtCredential = createCredResult.getCredentialJson();
+		String issuer1GvtCredential = createCredResult.getCredentialJson();
 
 		Anoncreds.proverStoreCredential(wallet, credentialId1, issuer1GvtCredReqMetadata, issuer1GvtCredential, issuer1gvtCredDef, null).get();
 

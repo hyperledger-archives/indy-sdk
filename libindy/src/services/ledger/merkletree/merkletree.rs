@@ -1,7 +1,7 @@
-use services::ledger::merkletree::tree::{ Tree, LeavesIterator, LeavesIntoIterator, TreeLeafData };
-use services::ledger::merkletree::proof::{ Proof, Lemma };
-use utils::crypto::hash::{Hash, HASH_OUTPUT_LEN};
-use errors::common::CommonError;
+use errors::prelude::*;
+use services::ledger::merkletree::proof::{Lemma, Proof};
+use services::ledger::merkletree::tree::{LeavesIntoIterator, LeavesIterator, Tree, TreeLeafData};
+use utils::crypto::hash::{Hash, HASHBYTES};
 
 /// A Merkle tree is a binary tree, with values of type `T` at the leafs,
 /// and where every internal node holds the hash of the concatenation of the hashes of its children nodes.
@@ -25,7 +25,7 @@ impl MerkleTree {
 
     /// Constructs a Merkle Tree from a vector of data blocks.
     /// Returns `None` if `values` is empty.
-    pub fn from_vec(values: Vec<TreeLeafData>) -> Result<Self, CommonError> {
+    pub fn from_vec(values: Vec<TreeLeafData>) -> IndyResult<Self> {
 
         if values.is_empty() {
             return Ok(MerkleTree {
@@ -97,7 +97,7 @@ impl MerkleTree {
     /// Returns the hex root hash of Merkle tree
     pub fn root_hash_hex(&self) -> String {
         let rh = self.root.hash();
-        let mut ret:String = String::with_capacity(HASH_OUTPUT_LEN*2);
+        let mut ret:String = String::with_capacity(HASHBYTES *2);
         for i in rh {
             ret.push_str(&format!("{:02x}", i));
         }
@@ -121,7 +121,7 @@ impl MerkleTree {
 
     /// Generate an inclusion proof for the given value.
     /// Returns `None` if the given value is not found in the tree.
-    pub fn gen_proof(&self, value: TreeLeafData) -> Result<Option<Proof>, CommonError> {
+    pub fn gen_proof(&self, value: TreeLeafData) -> IndyResult<Option<Proof>> {
 
         let root_hash  = self.root_hash().clone();
         let leaf_hash  = Hash::hash_leaf(&value)?;

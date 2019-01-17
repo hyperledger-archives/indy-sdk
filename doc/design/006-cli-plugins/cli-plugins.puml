@@ -1,0 +1,30 @@
+@startuml cli-plugins
+
+package "Payment Method Plugin" { 
+    [Payment Method Plugin] as payment_method_plugin
+
+    () "Payment Method Plugin Init" as i_payment_method_plugin_init
+    payment_method_plugin  ..> i_payment_method_plugin_init
+}
+
+package "Storage Plugin" { 
+    [Storage Plugin] as storage_plugin
+
+    () "Storage Plugin Init" as i_storage_plugin_init
+    storage_plugin  ..> i_storage_plugin_init
+}
+
+package "Indy CLI" {
+    [Libindy] as libindy
+    [Indy CLI] as cli
+
+    payment_method_plugin  --> libindy
+    storage_plugin  --> libindy
+    libindy  <-- cli
+
+    cli --> i_payment_method_plugin_init
+    cli --> i_storage_plugin_init
+    
+}
+
+@enduml 

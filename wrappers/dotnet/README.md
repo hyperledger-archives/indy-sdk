@@ -31,3 +31,6 @@ the SDK for your specific platform in the [Building Indy SDK](../../README.md#bu
 ### Example use
 
 For a sample project that contains executable demo code showing various usages of the .NET SDK wrapper see the [.NET Sample](../../samples/dotnet/README.md).
+
+#### Troubleshooting
+Use environment variable `RUST_LOG={info|debug|trace}` to output logs of Libindy.

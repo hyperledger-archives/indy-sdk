@@ -2,12 +2,12 @@
 
 Indy-SDK Developer Walkthrough #1, Java Edition
 
-[ [Python](../python/README.md) | [.NET](../dotnet/README.md) | [Node.js](../node/README.md) | [Objective C](../objectivec/README.md) ]
+[ [Python](../python/README.md) | [.NET](../cs/README.md) | [Node.js](../nodejs/README.md) | [Objective C](../../not-yet-written.md)  | [Rust](../rust/README.md)]
 
 
 ## Prerequisites
 
-Setup your workstation with an indy development virtual machine (VM). See [prerequisites](../../prerequisites).
+Setup your workstation with an indy development virtual machine (VM). See [prerequisites](../../prerequisites.md).
 
 
 ## Steps
@@ -55,7 +55,8 @@ Save the updated version of `WriteDIDAndQueryVerkey.java`.
 Study the changes.
 
 A few operations in indy [can only be done by identities (DIDs) with
-special roles](https://docs.google.com/spreadsheets/d/1TWXF7NtBjSOaUIBeIH77SyZnawfo91cJ_ns4TR-wsq4/edit?usp=sharing). For example, an DID that is a *steward* can add a node (the one
+special roles](https://docs.google.com/spreadsheets/d/1TWXF7NtBjSOaUIBeIH77SyZnawfo91cJ_ns4TR-wsq4/edit?usp=sharing). 
+For example, a DID that is a *steward* can add a node (the one
 they own) to the validator pool, and can create DIDs with a *trust anchor*
 role. A trust anchor DID can add arbitrary DIDs to the ledger.
 
@@ -77,7 +78,7 @@ material are created that the genesis transactions expect. In a production indy 
 such as the Sovrin "live" network, the bootstrapping steward identities
 would not have known the seeds.
 
-## Step 4
+### Step 4
 
 Now that preparations are complete, we can finally write the DID and verkey
 for our trust anchor identity to the ledger.
@@ -87,7 +88,7 @@ Copy the contents of [step4.java](step4.java) into
 
 Save the updated version of `WriteDIDAndQueryVerkey.java`.
 
-## Step 5
+### Step 5
 
 Once we have an identity on the ledger, we can query it.
 
@@ -101,7 +102,7 @@ this block is comments and boilerplate cleanup **(which you should not omit!)**.
 You should see similarities between the way this query "transaction" and
 the preceding write transaction are bundled and sent.
 
-## Step 6
+### Step 6
 
 Run the completed demo and observe the whole sequence.
 

@@ -28,7 +28,7 @@ public class SchemaRequestsTest extends LedgerIntegrationTest {
 	public void testBuildGetSchemaRequestWorks() throws Exception {
 		String id = String.format("%s:1:%s:%s", DID, GVT_SCHEMA_NAME, SCHEMA_VERSION);
 
-		String expectedResult = "\"operation\":{\"type\":\"107\",\"dest\":\"8wZcEriaNLNKtteJvx7f8i\",\"data\":{\"name\":\"gvt\",\"version\":\"1.0\"}}";
+		String expectedResult = "\"operation\":{\"type\":\"107\",\"dest\":\"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW\",\"data\":{\"name\":\"gvt\",\"version\":\"1.0\"}}";
 
 		String getSchemaRequest = Ledger.buildGetSchemaRequest(DID, id).get();
 
@@ -37,18 +37,16 @@ public class SchemaRequestsTest extends LedgerIntegrationTest {
 
 	@Test
 	public void testSchemaRequestWorksWithoutSignature() throws Exception {
-		String did = createStoreAndPublishDidFromTrustee();
-
-		String schemaRequest = Ledger.buildSchemaRequest(did, SCHEMA_DATA).get();
+		String schemaRequest = Ledger.buildSchemaRequest(DID, SCHEMA_DATA).get();
 		String response = Ledger.submitRequest(pool, schemaRequest).get();
 		checkResponseType(response, "REQNACK");
 	}
 
 	@Test(timeout = PoolUtils.TEST_TIMEOUT_FOR_REQUEST_ENSURE)
 	public void testSchemaRequestsWorks() throws Exception {
-		String did = createStoreAndPublishDidFromTrustee();
+		postEntities();
 
-		String getSchemaRequest = Ledger.buildGetSchemaRequest(did, String.valueOf(schemaId)).get();
+		String getSchemaRequest = Ledger.buildGetSchemaRequest(DID, String.valueOf(schemaId)).get();
 		String getSchemaResponse = PoolUtils.ensurePreviousRequestApplied(pool, getSchemaRequest, response -> {
 			JSONObject getSchemaResponseObject = new JSONObject(response);
 			return ! getSchemaResponseObject.getJSONObject("result").isNull("seqNo");

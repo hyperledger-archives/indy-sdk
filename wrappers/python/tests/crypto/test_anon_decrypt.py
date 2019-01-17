@@ -28,7 +28,7 @@ async def test_parse_msg_msg_works_for_unknown_recipient_vk(wallet_handle, verke
     encrypted_msg = await crypto.anon_crypt(verkey_my1, message)
     with pytest.raises(IndyError) as e:
         await crypto.anon_decrypt(wallet_handle, verkey_my1, encrypted_msg)
-    assert ErrorCode.WalletNotFoundError == e.value.error_code
+    assert ErrorCode.WalletItemNotFound == e.value.error_code
 
 
 @pytest.mark.asyncio

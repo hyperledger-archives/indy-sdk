@@ -1,10 +1,14 @@
 extern crate serde_json;
+extern crate regex;
 
 pub mod common;
 pub mod did;
 pub mod pool;
 pub mod wallet;
 pub mod ledger;
+pub mod payment_address;
+
+use self::regex::Regex;
 
 use command_executor::{CommandContext, CommandParams};
 
@@ -84,8 +88,9 @@ pub fn get_opt_bool_param(key: &str, params: &CommandParams) -> Result<Option<bo
 
 pub fn get_str_array_param<'a>(name: &'a str, params: &'a CommandParams) -> Result<Vec<&'a str>, ()> {
     match params.get(name) {
-        Some(v) => Ok(v.split(",").collect::<Vec<&'a str>>()),
-        None => Err(println_err!("No required \"{}\" parameter present", name))
+        None => Err(println_err!("No required \"{}\" parameter present", name)),
+        Some(v) if v.is_empty() => Err(println_err!("No required \"{}\" parameter present", name)),
+        Some(v) => Ok(v.split(",").collect::<Vec<&'a str>>())
     }
 }
 
@@ -109,6 +114,44 @@ pub fn get_object_param<'a>(name: &'a str, params: &'a CommandParams) -> Result<
             println_err!("No required \"{}\" parameter present", name);
             Err(())
         }
+    }
+}
+
+pub fn get_opt_object_param<'a>(name: &'a str, params: &'a CommandParams) -> Result<Option<serde_json::Value>, ()> {
+    match params.get(name) {
+        Some(_) => Ok(Some(get_object_param(name, params)?)),
+        None => Ok(None)
+    }
+}
+
+fn extract_array_tuples<'a>(param: &'a str) -> Vec<String> {
+    let re = Regex::new(r#"\(([^\(\)]+)\),?"#).unwrap();
+    re.captures_iter(param).map(|c| c[1].to_string()).collect::<Vec<String>>()
+}
+
+pub fn get_str_tuple_array_param<'a>(name: &'a str, params: &'a CommandParams) -> Result<Vec<String>, ()> {
+    match params.get(name) {
+        Some(v) if !v.is_empty() => {
+            let tuples = extract_array_tuples(v);
+            if tuples.len() == 0 {
+                Err(println_err!("Parameter \"{}\" has invalid format", name))
+            } else {
+                Ok(tuples)
+            }
+        }
+        _ => Err(println_err!("No required \"{}\" parameter present", name))
+    }
+}
+
+pub fn get_opt_str_tuple_array_param<'a>(name: &'a str, params: &'a CommandParams) -> Result<Option<Vec<String>>, ()> {
+    match params.get(name) {
+        Some(v) =>
+            if v.is_empty() {
+                Ok(Some(Vec::<String>::new()))
+            } else {
+                Ok(Some(extract_array_tuples(v)))
+            },
+        None => Ok(None)
     }
 }
 
@@ -194,4 +237,26 @@ pub fn set_connected_pool(ctx: &CommandContext, value: Option<(i32, String)>) {
     ctx.set_int_value("CONNECTED_POOL_HANDLE", value.as_ref().map(|value| value.0.to_owned()));
     ctx.set_string_value("CONNECTED_POOL_NAME", value.as_ref().map(|value| value.1.to_owned()));
     ctx.set_sub_prompt(1, value.map(|value| format!("pool({})", value.1)));
+}
+
+#[cfg(test)]
+use libindy::ledger::Ledger;
+
+#[cfg(test)]
+pub fn submit_retry<F, T, E>(ctx: &CommandContext, request: &str, parser: F) -> Result<(), ()>
+    where F: Fn(&str) -> Result<T, E> {
+    const SUBMIT_RETRY_CNT: usize = 3;
+    const SUBMIT_TIMEOUT_SEC: u64 = 2;
+
+    let pool_handle = ensure_connected_pool_handle(ctx).unwrap();
+
+    for _ in 0..SUBMIT_RETRY_CNT {
+        let response = Ledger::submit_request(pool_handle, request).unwrap();
+        if parser(&response).is_ok() {
+            return Ok(());
+        }
+        ::std::thread::sleep(::std::time::Duration::from_secs(SUBMIT_TIMEOUT_SEC));
+    }
+
+    return Err(());
 }

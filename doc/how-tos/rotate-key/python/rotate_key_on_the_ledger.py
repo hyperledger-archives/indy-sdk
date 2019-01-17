@@ -20,14 +20,20 @@ import asyncio
 import json
 import pprint
 
-from indy import pool, ledger, wallet, signus
+from indy import pool, ledger, wallet, did
 from indy.error import IndyError
+
+from src.utils import get_pool_genesis_txn_path, PROTOCOL_VERSION
 
 
 pool_name = 'pool'
-wallet_name = 'wallet'
-genesis_file_path = '/home/vagrant/code/evernym/indy-sdk/cli/docker_pool_transactions_genesis'
+genesis_file_path = get_pool_genesis_txn_path(pool_name)
 
+wallet_config = json.dumps({"id": "wallet"})
+wallet_credentials = json.dumps({"key": "wallet_key"})
+
+# Set protocol version to 2 to work with the current version of Indy Node
+PROTOCOL_VERSION = 2
 
 def print_log(value_color="", value_noncolor=""):
     """set the colors for text."""
@@ -38,10 +44,12 @@ def print_log(value_color="", value_noncolor=""):
 
 async def rotate_key_on_the_ledger():
     try:
+        await pool.set_protocol_version(PROTOCOL_VERSION)
+
         # 1.
         print_log('1. Creates a new local pool ledger configuration that is used '
                   'later when connecting to ledger.\n')
-        pool_config = json.dumps({'genesis_txn': genesis_file_path})
+        pool_config = json.dumps({'genesis_txn': str(genesis_file_path)})
         await pool.create_pool_ledger_config(config_name=pool_name, config=pool_config)
 
         # 2.
@@ -50,23 +58,23 @@ async def rotate_key_on_the_ledger():
 
         # 3.
         print_log('\n3. Creating new secure wallet with the given unique name\n')
-        await wallet.create_wallet(pool_name, wallet_name, None, None, None)
+        await wallet.create_wallet(wallet_config, wallet_credentials)
 
         # 4.
         print_log('\n4. Open wallet and get handle from libindy to use in methods that require wallet access\n')
-        wallet_handle = await wallet.open_wallet(wallet_name, None, None)
+        wallet_handle = await wallet.open_wallet(wallet_config, wallet_credentials)
 
         # 5.
         print_log('\n5. Generating and storing steward DID and verkey\n')
         steward_seed = '000000000000000000000000Steward1'
         did_json = json.dumps({'seed': steward_seed})
-        steward_did, steward_verkey = await signus.create_and_store_my_did(wallet_handle, did_json)
+        steward_did, steward_verkey = await did.create_and_store_my_did(wallet_handle, did_json)
         print_log('Steward DID: ', steward_did)
         print_log('Steward Verkey: ', steward_verkey)
 
         # 6.
         print_log('\n6. Generating and storing trust anchor DID and verkey\n')
-        trust_anchor_did, trust_anchor_verkey = await signus.create_and_store_my_did(wallet_handle, "{}")
+        trust_anchor_did, trust_anchor_verkey = await did.create_and_store_my_did(wallet_handle, "{}")
         print_log('Trust Anchor DID: ', trust_anchor_did)
         print_log('Trust Anchor Verkey: ', trust_anchor_verkey)
 
@@ -91,7 +99,7 @@ async def rotate_key_on_the_ledger():
 
         # 9.
         print_log('\n9. Generating new verkey of trust anchor in wallet\n')
-        new_verkey = await signus.replace_keys_start(wallet_handle, trust_anchor_did, "{}")
+        new_verkey = await did.replace_keys_start(wallet_handle, trust_anchor_did, "{}")
         print_log('New Trust Anchor Verkey: ', new_verkey)
 
         # 10.
@@ -108,11 +116,11 @@ async def rotate_key_on_the_ledger():
 
         # 12.
         print_log('\n12. Apply new verkey in wallet\n')
-        await signus.replace_keys_apply(wallet_handle, trust_anchor_did)
+        await did.replace_keys_apply(wallet_handle, trust_anchor_did)
 
         # 13.
         print_log('\n13. Reading new verkey from wallet\n')
-        verkey_in_wallet = await signus.key_for_local_did(wallet_handle, trust_anchor_did)
+        verkey_in_wallet = await did.key_for_local_did(wallet_handle, trust_anchor_did)
         print_log('Trust Anchor Verkey in wallet: ', verkey_in_wallet)
 
         # 14.
@@ -144,7 +152,7 @@ async def rotate_key_on_the_ledger():
 
         # 18.
         print_log('\n18. Deleting created wallet\n')
-        await wallet.delete_wallet(wallet_name, None)
+        await wallet.delete_wallet(wallet_config, wallet_credentials)
 
         # 19.
         print_log('\n19. Deleting pool ledger config')

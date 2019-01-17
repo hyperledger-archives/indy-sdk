@@ -1,29 +1,37 @@
-extern crate indy;
-
-// Workaround to share some utils code based on indy sdk types between tests and indy sdk
-use indy::api as api;
-
-extern crate rust_base58;
-#[macro_use]
-extern crate serde_derive;
-#[macro_use]
-extern crate serde_json;
 #[macro_use]
 extern crate lazy_static;
-extern crate log;
+
+#[macro_use]
+extern crate named_type_derive;
+
+#[macro_use]
+extern crate derivative;
+
+#[macro_use]
+extern crate serde_derive;
+
+#[macro_use]
+extern crate serde_json;
+
+extern crate byteorder;
+extern crate indyrs as indy;
+extern crate indyrs as api;
+extern crate indy_crypto;
+extern crate uuid;
+extern crate named_type;
+extern crate rmp_serde;
+extern crate rust_base58;
+extern crate time;
+extern crate serde;
 
 #[macro_use]
 mod utils;
 
-use utils::wallet::WalletUtils;
-use utils::did::DidUtils;
-use utils::test::TestUtils;
-use utils::pool::PoolUtils;
-use utils::ledger::LedgerUtils;
+use utils::{wallet, did, pool, ledger};
 use utils::constants::*;
 use utils::types::ResponseType;
 
-use indy::api::ErrorCode;
+use self::indy::ErrorCode;
 
 #[cfg(feature = "local_nodes_pool")]
 use std::thread;
@@ -39,124 +47,75 @@ mod high_cases {
 
         #[test]
         fn indy_key_for_did_works_for_my_did() {
-            TestUtils::cleanup_storage();
+            let wallet_handle = utils::setup_with_wallet();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let (did, verkey) = did::create_and_store_my_did(wallet_handle, Some(MY1_SEED)).unwrap();
 
-            let (did, verkey) = DidUtils::create_and_store_my_did(wallet_handle, Some(MY1_SEED)).unwrap();
-
-            let received_verkey = DidUtils::key_for_did(-1, wallet_handle, &did).unwrap();
+            let received_verkey = did::key_for_did(-1, wallet_handle, &did).unwrap();
             assert_eq!(verkey, received_verkey);
 
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-
-            TestUtils::cleanup_storage();
+            utils::tear_down_with_wallet(wallet_handle);
         }
 
         #[test]
         fn indy_key_for_did_works_for_their_did() {
-            TestUtils::cleanup_storage();
+            let wallet_handle = utils::setup_with_wallet();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            did::store_their_did_from_parts(wallet_handle, DID, VERKEY).unwrap();
 
-            DidUtils::store_their_did_from_parts(wallet_handle, DID, VERKEY).unwrap();
-
-            let received_verkey = DidUtils::key_for_did(-1, wallet_handle, DID).unwrap();
+            let received_verkey = did::key_for_did(-1, wallet_handle, DID).unwrap();
             assert_eq!(VERKEY, received_verkey);
 
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-
-            TestUtils::cleanup_storage();
+            utils::tear_down_with_wallet(wallet_handle);
         }
 
         #[test]
         fn indy_key_for_did_works_for_get_key_from_ledger() {
-            TestUtils::cleanup_storage();
+            let (trustee_wallet_handle, pool_handle, trustee_did) = utils::setup_trustee();
+            let (did, verkey) = did::create_and_store_my_did(trustee_wallet_handle, None).unwrap();
 
-            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
-            let trustee_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let nym_request = ledger::build_nym_request(&trustee_did, &did, Some(&verkey), None, None).unwrap();
+            let nym_resp = ledger::sign_and_submit_request(pool_handle, trustee_wallet_handle, &trustee_did, &nym_request).unwrap();
 
-            let (trustee_did, _) = DidUtils::create_and_store_my_did(trustee_wallet_handle, Some(TRUSTEE_SEED)).unwrap();
-            let (did, verkey) = DidUtils::create_and_store_my_did(trustee_wallet_handle, None).unwrap();
+            let get_nym_request = ledger::build_get_nym_request(Some(&did), &did).unwrap();
+            ledger::submit_request_with_retries(pool_handle, &get_nym_request, &nym_resp).unwrap();
 
-            let nym_request = LedgerUtils::build_nym_request(&trustee_did, &did, Some(&verkey), None, None).unwrap();
-            let nym_resp = LedgerUtils::sign_and_submit_request(pool_handle, trustee_wallet_handle, &trustee_did, &nym_request).unwrap();
-
-            let get_nym_request = LedgerUtils::build_get_nym_request(&did, &did).unwrap();
-            LedgerUtils::submit_request_with_retries(pool_handle, &get_nym_request, &nym_resp).unwrap();
-
-            let received_verkey = DidUtils::key_for_did(pool_handle, wallet_handle, &did).unwrap();
+            let wallet_handle = wallet::create_and_open_default_wallet().unwrap();
+            let received_verkey = did::key_for_did(pool_handle, wallet_handle, &did).unwrap();
             assert_eq!(verkey, received_verkey);
 
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-            PoolUtils::close(pool_handle).unwrap();
-
-            TestUtils::cleanup_storage();
+            wallet::close_wallet(trustee_wallet_handle).unwrap();
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
         }
 
         #[test]
         fn indy_key_for_did_works_for_unknown_did() {
-            TestUtils::cleanup_storage();
+            let (wallet_handle, pool_handle) = utils::setup_with_wallet_and_pool();
 
-            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let res = did::key_for_did(pool_handle, wallet_handle, DID);
+            assert_eq!(ErrorCode::WalletItemNotFound, res.unwrap_err());
 
-            let res = DidUtils::key_for_did(pool_handle, wallet_handle, DID);
-            assert_eq!(ErrorCode::CommonInvalidState, res.unwrap_err());
-
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-            PoolUtils::close(pool_handle).unwrap();
-
-            TestUtils::cleanup_storage();
-        }
-
-        #[test]
-        fn indy_key_for_did_works_for_incompatible_wallet_and_pool() {
-            TestUtils::cleanup_storage();
-
-            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
-            let wallet_handle = WalletUtils::create_and_open_wallet("other pool", None).unwrap();
-
-            let res = DidUtils::key_for_did(pool_handle, wallet_handle, DID_TRUSTEE);
-            assert_eq!(ErrorCode::WalletIncompatiblePoolError, res.unwrap_err());
-
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-            PoolUtils::close(pool_handle).unwrap();
-
-            TestUtils::cleanup_storage();
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
         }
 
         #[test]
         fn indy_key_for_did_works_for_invalid_pool_handle() {
-            TestUtils::cleanup_storage();
+            let (wallet_handle, pool_handle) = utils::setup_with_wallet_and_pool();
 
-            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
-
-            let res = DidUtils::key_for_did(pool_handle + 1, wallet_handle, DID_TRUSTEE);
+            let res = did::key_for_did(pool_handle + 1, wallet_handle, DID_TRUSTEE);
             assert_eq!(ErrorCode::PoolLedgerInvalidPoolHandle, res.unwrap_err());
 
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-            PoolUtils::close(pool_handle).unwrap();
-
-            TestUtils::cleanup_storage();
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
         }
 
         #[test]
         fn indy_key_for_did_works_for_invalid_wallet_handle() {
-            TestUtils::cleanup_storage();
+            let (wallet_handle, did) = utils::setup_did();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
-
-            let (did, _) = DidUtils::create_and_store_my_did(wallet_handle, Some(MY1_SEED)).unwrap();
-
-            let res = DidUtils::key_for_did(-1, wallet_handle + 1, &did);
+            let res = did::key_for_did(-1, wallet_handle + 1, &did);
             assert_eq!(ErrorCode::WalletInvalidHandle, res.unwrap_err());
 
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-
-            TestUtils::cleanup_storage();
+            utils::tear_down_with_wallet(wallet_handle);
         }
     }
 
@@ -165,64 +124,46 @@ mod high_cases {
 
         #[test]
         fn indy_key_for_local_did_works_for_my_did() {
-            TestUtils::cleanup_storage();
+            let wallet_handle = utils::setup_with_wallet();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let (did, verkey) = did::create_and_store_my_did(wallet_handle, Some(MY1_SEED)).unwrap();
 
-            let (did, verkey) = DidUtils::create_and_store_my_did(wallet_handle, Some(MY1_SEED)).unwrap();
-
-            let received_verkey = DidUtils::key_for_local_did(wallet_handle, &did).unwrap();
+            let received_verkey = did::key_for_local_did(wallet_handle, &did).unwrap();
             assert_eq!(verkey, received_verkey);
 
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-
-            TestUtils::cleanup_storage();
+            utils::tear_down_with_wallet(wallet_handle);
         }
 
         #[test]
         fn indy_key_for_local_did_works_for_their_did() {
-            TestUtils::cleanup_storage();
+            let wallet_handle = utils::setup_with_wallet();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            did::store_their_did_from_parts(wallet_handle, DID, VERKEY).unwrap();
 
-            DidUtils::store_their_did_from_parts(wallet_handle, DID, VERKEY).unwrap();
-
-            let received_verkey = DidUtils::key_for_local_did(wallet_handle, DID).unwrap();
+            let received_verkey = did::key_for_local_did(wallet_handle, DID).unwrap();
             assert_eq!(VERKEY, received_verkey);
 
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-
-            TestUtils::cleanup_storage();
+            utils::tear_down_with_wallet(wallet_handle);
         }
 
         #[test]
         fn indy_key_for_local_did_works_for_unknown_did() {
-            TestUtils::cleanup_storage();
+            let wallet_handle = utils::setup_with_wallet();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let res = did::key_for_local_did(wallet_handle, DID);
+            assert_eq!(ErrorCode::WalletItemNotFound, res.unwrap_err());
 
-            let res = DidUtils::key_for_local_did(wallet_handle, DID);
-            assert_eq!(ErrorCode::WalletNotFoundError, res.unwrap_err());
-
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-
-            TestUtils::cleanup_storage();
+            utils::tear_down_with_wallet(wallet_handle);
         }
 
         #[test]
         fn indy_key_for_local_did_works_for_invalid_wallet_handle() {
-            TestUtils::cleanup_storage();
+            let (wallet_handle, did) = utils::setup_did();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
-
-            let (did, _) = DidUtils::create_and_store_my_did(wallet_handle, Some(MY1_SEED)).unwrap();
-
-            let res = DidUtils::key_for_local_did(wallet_handle + 1, &did);
+            let res = did::key_for_local_did(wallet_handle + 1, &did);
             assert_eq!(ErrorCode::WalletInvalidHandle, res.unwrap_err());
 
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-
-            TestUtils::cleanup_storage();
+            utils::tear_down_with_wallet(wallet_handle);
         }
     }
 
@@ -231,84 +172,62 @@ mod high_cases {
 
         #[test]
         fn indy_set_endpoint_for_did_works() {
-            TestUtils::cleanup_storage();
+            let wallet_handle = utils::setup_with_wallet();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            did::set_endpoint_for_did(wallet_handle, DID, ENDPOINT, VERKEY).unwrap();
 
-            DidUtils::set_endpoint_for_did(wallet_handle, DID, ENDPOINT, VERKEY).unwrap();
-
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-
-            TestUtils::cleanup_storage();
+            utils::tear_down_with_wallet(wallet_handle);
         }
 
         #[test]
         fn indy_set_endpoint_for_did_works_for_replace() {
-            TestUtils::cleanup_storage();
+            let (wallet_handle, pool_handle) = utils::setup_with_wallet_and_pool();
 
-            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
-
-            DidUtils::set_endpoint_for_did(wallet_handle, DID, ENDPOINT, VERKEY).unwrap();
-            let (endpoint, key) = DidUtils::get_endpoint_for_did(wallet_handle, pool_handle, DID).unwrap();
+            did::set_endpoint_for_did(wallet_handle, DID, ENDPOINT, VERKEY).unwrap();
+            let (endpoint, key) = did::get_endpoint_for_did(wallet_handle, pool_handle, DID).unwrap();
             assert_eq!(ENDPOINT, endpoint);
             assert_eq!(VERKEY, key.unwrap());
 
             let new_endpoint = "10.10.10.1:9710";
-            DidUtils::set_endpoint_for_did(wallet_handle, DID, new_endpoint, VERKEY_MY2).unwrap();
-            let (updated_endpoint, updated_key) = DidUtils::get_endpoint_for_did(wallet_handle, pool_handle, DID).unwrap();
+            did::set_endpoint_for_did(wallet_handle, DID, new_endpoint, VERKEY_MY2).unwrap();
+            let (updated_endpoint, updated_key) = did::get_endpoint_for_did(wallet_handle, pool_handle, DID).unwrap();
             assert_eq!(new_endpoint, updated_endpoint);
             assert_eq!(VERKEY_MY2, updated_key.unwrap());
 
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-            PoolUtils::close(pool_handle).unwrap();
-
-            TestUtils::cleanup_storage();
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
         }
 
         #[test]
         fn indy_set_endpoint_for_did_works_for_invalid_did() {
-            TestUtils::cleanup_storage();
+            let wallet_handle = utils::setup_with_wallet();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
-
-            let res = DidUtils::set_endpoint_for_did(wallet_handle, INVALID_BASE58_DID, ENDPOINT, VERKEY);
+            let res = did::set_endpoint_for_did(wallet_handle, INVALID_BASE58_DID, ENDPOINT, VERKEY);
             assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
 
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-
-            TestUtils::cleanup_storage();
+            utils::tear_down_with_wallet(wallet_handle);
         }
 
         #[test]
         fn indy_set_endpoint_for_did_works_for_invalid_transport_key() {
-            TestUtils::cleanup_storage();
+            let wallet_handle = utils::setup_with_wallet();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
-
-            let res = DidUtils::set_endpoint_for_did(wallet_handle, DID, ENDPOINT, INVALID_BASE58_VERKEY);
+            let res = did::set_endpoint_for_did(wallet_handle, DID, ENDPOINT, INVALID_BASE58_VERKEY);
             assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
 
-            let res = DidUtils::set_endpoint_for_did(wallet_handle, DID, ENDPOINT, INVALID_VERKEY_LENGTH);
+            let res = did::set_endpoint_for_did(wallet_handle, DID, ENDPOINT, INVALID_VERKEY_LENGTH);
             assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
 
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-
-            TestUtils::cleanup_storage();
+            utils::tear_down_with_wallet(wallet_handle);
         }
 
         #[test]
         fn indy_set_endpoint_for_did_works_for_invalid_handle() {
-            TestUtils::cleanup_storage();
+            let wallet_handle = utils::setup_with_wallet();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
-
-            let res = DidUtils::set_endpoint_for_did(wallet_handle + 1, DID, ENDPOINT, VERKEY);
+            let res = did::set_endpoint_for_did(wallet_handle + 1, DID, ENDPOINT, VERKEY);
             assert_eq!(ErrorCode::WalletInvalidHandle, res.unwrap_err());
 
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-
-            TestUtils::cleanup_storage();
+            utils::tear_down_with_wallet(wallet_handle);
         }
     }
 
@@ -317,140 +236,81 @@ mod high_cases {
 
         #[test]
         fn indy_get_endpoint_for_did_works() {
-            TestUtils::cleanup_storage();
+            let wallet_handle = utils::setup_with_wallet();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            did::set_endpoint_for_did(wallet_handle, DID, ENDPOINT, VERKEY).unwrap();
 
-            DidUtils::set_endpoint_for_did(wallet_handle, DID, ENDPOINT, VERKEY).unwrap();
-
-            let (endpoint, key) = DidUtils::get_endpoint_for_did(wallet_handle, -1, DID).unwrap();
+            let (endpoint, key) = did::get_endpoint_for_did(wallet_handle, -1, DID).unwrap();
             assert_eq!(ENDPOINT, endpoint);
             assert_eq!(VERKEY, key.unwrap());
 
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-
-            TestUtils::cleanup_storage();
+            utils::tear_down_with_wallet(wallet_handle);
         }
 
         #[test]
         fn indy_get_endpoint_for_did_works_from_ledger() {
-            TestUtils::cleanup_storage();
+            let (wallet_handle, pool_handle, trustee_did) = utils::setup_trustee();
 
-            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
-
-            let (trustee_did, _) = DidUtils::create_and_store_my_did(wallet_handle, Some(TRUSTEE_SEED)).unwrap();
-
-            let attrib_data = format!(r#"{{"endpoint":{{"ha":"{}", "verkey":"{}"}}}}"#, ENDPOINT, VERKEY_TRUSTEE);
-            let attrib_request = LedgerUtils::build_attrib_request(&trustee_did, &trustee_did,
-                                                                   None, Some(&attrib_data), None).unwrap();
-
-            let attrib_req_resp = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &attrib_request).unwrap();
-
-            let get_attrib_req = LedgerUtils::build_get_attrib_request(&trustee_did, &trustee_did, Some("endpoint"), None, None).unwrap();
-            LedgerUtils::submit_request_with_retries(pool_handle, &get_attrib_req, &attrib_req_resp).unwrap();
+            let attrib_data = json!({"endpoint": {"ha": ENDPOINT, "verkey": VERKEY_TRUSTEE}}).to_string();
+            let attrib_request = ledger::build_attrib_request(&trustee_did, &trustee_did, None, Some(&attrib_data), None).unwrap();
+            ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &attrib_request).unwrap();
 
             thread::sleep(std::time::Duration::from_millis(1000));
 
-            let (endpoint, key) = DidUtils::get_endpoint_for_did(wallet_handle, pool_handle, &trustee_did).unwrap();
+            let (endpoint, key) = did::get_endpoint_for_did(wallet_handle, pool_handle, &trustee_did).unwrap();
             assert_eq!(ENDPOINT, endpoint);
             assert_eq!(VERKEY_TRUSTEE, key.unwrap());
 
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-            PoolUtils::close(pool_handle).unwrap();
-
-            TestUtils::cleanup_storage();
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
         }
 
         #[test]
         fn indy_get_endpoint_for_did_works_from_ledger_for_address_only() {
-            TestUtils::cleanup_storage();
+            let (wallet_handle, pool_handle, trustee_did) = utils::setup_trustee();
 
-            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
-
-            let (trustee_did, _) = DidUtils::create_and_store_my_did(wallet_handle, Some(TRUSTEE_SEED)).unwrap();
-
-            let attrib_data = format!(r#"{{"endpoint":{{"ha":"{}"}}}}"#, ENDPOINT);
-            let attrib_request = LedgerUtils::build_attrib_request(&trustee_did, &trustee_did,
-                                                                   None, Some(&attrib_data), None).unwrap();
-
-            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &attrib_request).unwrap();
+            let attrib_data = json!({"endpoint": {"ha": ENDPOINT}}).to_string();
+            let attrib_request = ledger::build_attrib_request(&trustee_did, &trustee_did, None, Some(&attrib_data), None).unwrap();
+            ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &attrib_request).unwrap();
 
             thread::sleep(std::time::Duration::from_millis(1000));
 
-            let (endpoint, key) = DidUtils::get_endpoint_for_did(wallet_handle, pool_handle, &trustee_did).unwrap();
+            let (endpoint, key) = did::get_endpoint_for_did(wallet_handle, pool_handle, &trustee_did).unwrap();
             assert_eq!(ENDPOINT, endpoint);
             assert_eq!(None, key);
 
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-            PoolUtils::close(pool_handle).unwrap();
-
-            TestUtils::cleanup_storage();
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
         }
 
         #[test]
         fn indy_get_endpoint_for_did_works_for_unknown_did() {
-            TestUtils::cleanup_storage();
+            let (wallet_handle, pool_handle) = utils::setup_with_wallet_and_pool();
 
-            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
-
-            let res = DidUtils::get_endpoint_for_did(wallet_handle, pool_handle, DID);
+            let res = did::get_endpoint_for_did(wallet_handle, pool_handle, DID);
             assert_eq!(ErrorCode::CommonInvalidState, res.unwrap_err());
 
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-            PoolUtils::close(pool_handle).unwrap();
-
-            TestUtils::cleanup_storage();
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
         }
 
         #[test]
         fn indy_get_endpoint_for_did_works_invalid_poll_handle() {
-            TestUtils::cleanup_storage();
+            let (wallet_handle, pool_handle) = utils::setup_with_wallet_and_pool();
 
-            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
-
-            let res = DidUtils::get_endpoint_for_did(wallet_handle, pool_handle + 1, DID);
+            let res = did::get_endpoint_for_did(wallet_handle, pool_handle + 1, DID);
             assert_eq!(ErrorCode::PoolLedgerInvalidPoolHandle, res.unwrap_err());
 
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-            PoolUtils::close(pool_handle).unwrap();
-
-            TestUtils::cleanup_storage();
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
         }
 
         #[test]
         fn indy_get_endpoint_for_did_works_invalid_wallet_handle() {
-            TestUtils::cleanup_storage();
+            let wallet_handle = utils::setup_with_wallet();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            did::set_endpoint_for_did(wallet_handle, DID, ENDPOINT, VERKEY).unwrap();
 
-            DidUtils::set_endpoint_for_did(wallet_handle, DID, ENDPOINT, VERKEY).unwrap();
-
-            let res = DidUtils::get_endpoint_for_did(wallet_handle + 1, -1, DID);
+            let res = did::get_endpoint_for_did(wallet_handle + 1, -1, DID);
             assert_eq!(ErrorCode::WalletInvalidHandle, res.unwrap_err());
 
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-
-            TestUtils::cleanup_storage();
-        }
-
-        #[test]
-        fn indy_get_endpoint_for_did_works_incompatible_wallet_and_pool() {
-            TestUtils::cleanup_storage();
-
-            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
-            let wallet_handle = WalletUtils::create_and_open_wallet("other_pool", None).unwrap();
-
-            let res = DidUtils::get_endpoint_for_did(wallet_handle, pool_handle, DID);
-            assert_eq!(ErrorCode::WalletIncompatiblePoolError, res.unwrap_err());
-
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-            PoolUtils::close(pool_handle).unwrap();
-
-            TestUtils::cleanup_storage();
+            utils::tear_down_with_wallet(wallet_handle);
         }
     }
 
@@ -459,77 +319,76 @@ mod high_cases {
 
         #[test]
         fn indy_set_did_metadata_works() {
-            TestUtils::cleanup_storage();
+            let (wallet_handle, did) = utils::setup_did();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            did::set_did_metadata(wallet_handle, &did, METADATA).unwrap();
 
-            DidUtils::set_did_metadata(wallet_handle, DID, METADATA).unwrap();
+            utils::tear_down_with_wallet(wallet_handle);
+        }
 
-            WalletUtils::close_wallet(wallet_handle).unwrap();
+        #[test]
+        fn indy_set_did_metadata_works_for_their_did() {
+            let wallet_handle = utils::setup_with_wallet();
 
-            TestUtils::cleanup_storage();
+            did::store_their_did_from_parts(wallet_handle, DID, VERKEY).unwrap();
+
+            did::set_did_metadata(wallet_handle, DID, METADATA).unwrap();
+
+            utils::tear_down_with_wallet(wallet_handle);
         }
 
         #[test]
         fn indy_set_did_metadata_works_for_replace() {
-            TestUtils::cleanup_storage();
+            let (wallet_handle, did) = utils::setup_did();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
-
-            DidUtils::set_did_metadata(wallet_handle, DID, METADATA).unwrap();
-            let metadata = DidUtils::get_did_metadata(wallet_handle, DID).unwrap();
+            did::set_did_metadata(wallet_handle, &did, METADATA).unwrap();
+            let metadata = did::get_did_metadata(wallet_handle, &did).unwrap();
             assert_eq!(METADATA.to_string(), metadata);
 
             let new_metadata = "updated metadata";
-            DidUtils::set_did_metadata(wallet_handle, DID, new_metadata).unwrap();
-            let updated_metadata = DidUtils::get_did_metadata(wallet_handle, DID).unwrap();
+            did::set_did_metadata(wallet_handle, &did, new_metadata).unwrap();
+            let updated_metadata = did::get_did_metadata(wallet_handle, &did).unwrap();
             assert_eq!(new_metadata, updated_metadata);
 
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-
-            TestUtils::cleanup_storage();
+            utils::tear_down_with_wallet(wallet_handle);
         }
 
         #[test]
         fn indy_set_did_metadata_works_for_empty_string() {
-            TestUtils::cleanup_storage();
+            let (wallet_handle, did) = utils::setup_did();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            did::set_did_metadata(wallet_handle, &did, "").unwrap();
 
-            DidUtils::set_did_metadata(wallet_handle, DID, "").unwrap();
-
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-
-            TestUtils::cleanup_storage();
+            utils::tear_down_with_wallet(wallet_handle);
         }
 
         #[test]
         fn indy_set_did_metadata_works_for_invalid_did() {
-            TestUtils::cleanup_storage();
+            let wallet_handle = utils::setup_with_wallet();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
-
-            let res = DidUtils::set_did_metadata(wallet_handle, INVALID_BASE58_DID, METADATA);
+            let res = did::set_did_metadata(wallet_handle, INVALID_BASE58_DID, METADATA);
             assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
 
-            WalletUtils::close_wallet(wallet_handle).unwrap();
+            utils::tear_down_with_wallet(wallet_handle);
+        }
 
-            TestUtils::cleanup_storage();
+        #[test]
+        fn indy_set_did_metadata_works_for_unknown_did() {
+            let wallet_handle = utils::setup_with_wallet();
+
+            did::set_did_metadata(wallet_handle, &DID, METADATA).unwrap();
+
+            utils::tear_down_with_wallet(wallet_handle);
         }
 
         #[test]
         fn indy_set_did_metadata_works_for_invalid_handle() {
-            TestUtils::cleanup_storage();
+            let (wallet_handle, did) = utils::setup_did();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
-
-            let invalid_wallet_handle = wallet_handle + 1;
-            let res = DidUtils::set_did_metadata(invalid_wallet_handle, DID, METADATA);
+            let res = did::set_did_metadata(wallet_handle + 1, &did, METADATA);
             assert_eq!(ErrorCode::WalletInvalidHandle, res.unwrap_err());
 
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-
-            TestUtils::cleanup_storage();
+            utils::tear_down_with_wallet(wallet_handle);
         }
     }
 
@@ -538,64 +397,119 @@ mod high_cases {
 
         #[test]
         fn indy_get_did_metadata_works() {
-            TestUtils::cleanup_storage();
+            let (wallet_handle, did) = utils::setup_did();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            did::set_did_metadata(wallet_handle, &did, METADATA).unwrap();
 
-            DidUtils::set_did_metadata(wallet_handle, DID, METADATA).unwrap();
-
-            let metadata = DidUtils::get_did_metadata(wallet_handle, DID).unwrap();
+            let metadata = did::get_did_metadata(wallet_handle, &did).unwrap();
             assert_eq!(METADATA.to_string(), metadata);
 
-            WalletUtils::close_wallet(wallet_handle).unwrap();
+            utils::tear_down_with_wallet(wallet_handle);
+        }
 
-            TestUtils::cleanup_storage();
+        #[test]
+        fn indy_get_did_metadata_works_for_their_did() {
+            let (wallet_handle, did) = utils::setup_did();
+
+            did::store_their_did_from_parts(wallet_handle, &did, VERKEY).unwrap();
+
+            did::set_did_metadata(wallet_handle, &did, METADATA).unwrap();
+
+            let metadata = did::get_did_metadata(wallet_handle, &did).unwrap();
+            assert_eq!(METADATA.to_string(), metadata);
+
+            utils::tear_down_with_wallet(wallet_handle);
         }
 
         #[test]
         fn indy_get_did_metadata_works_for_empty_string() {
-            TestUtils::cleanup_storage();
+            let (wallet_handle, did) = utils::setup_did();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            did::set_did_metadata(wallet_handle, &did, "").unwrap();
 
-            DidUtils::set_did_metadata(wallet_handle, DID, "").unwrap();
-
-            let metadata = DidUtils::get_did_metadata(wallet_handle, DID).unwrap();
+            let metadata = did::get_did_metadata(wallet_handle, &did).unwrap();
             assert_eq!("", metadata);
 
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-
-            TestUtils::cleanup_storage();
+            utils::tear_down_with_wallet(wallet_handle);
         }
 
         #[test]
         fn indy_get_did_metadata_works_for_no_metadata() {
-            TestUtils::cleanup_storage();
+            let (wallet_handle, did) = utils::setup_did();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let res = did::get_did_metadata(wallet_handle, &did);
+            assert_eq!(ErrorCode::WalletItemNotFound, res.unwrap_err());
 
-            let res = DidUtils::get_did_metadata(wallet_handle, DID);
-            assert_eq!(ErrorCode::WalletNotFoundError, res.unwrap_err());
+            utils::tear_down_with_wallet(wallet_handle);
+        }
 
-            WalletUtils::close_wallet(wallet_handle).unwrap();
+        #[test]
+        fn indy_get_did_metadata_works_for_unknown_did() {
+            let wallet_handle = utils::setup_with_wallet();
 
-            TestUtils::cleanup_storage();
+            let res = did::get_did_metadata(wallet_handle, DID);
+            assert_eq!(ErrorCode::WalletItemNotFound, res.unwrap_err());
+
+            utils::tear_down_with_wallet(wallet_handle);
         }
 
         #[test]
         fn indy_get_did_metadata_works_for_invalid_handle() {
-            TestUtils::cleanup_storage();
+            let (wallet_handle, did) = utils::setup_did();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            did::set_did_metadata(wallet_handle, &did, METADATA).unwrap();
 
-            DidUtils::set_did_metadata(wallet_handle, DID, METADATA).unwrap();
-
-            let res = DidUtils::get_did_metadata(wallet_handle + 1, DID);
+            let res = did::get_did_metadata(wallet_handle + 1, &did);
             assert_eq!(ErrorCode::WalletInvalidHandle, res.unwrap_err());
 
-            WalletUtils::close_wallet(wallet_handle).unwrap();
+            utils::tear_down_with_wallet(wallet_handle);
+        }
+    }
 
-            TestUtils::cleanup_storage();
+    mod get_my_did_metadata {
+        use super::*;
+
+        #[test]
+        fn indy_get_my_did_metadata_works() {
+            let (wallet_handle, did) = utils::setup_did();
+
+            did::set_did_metadata(wallet_handle, &did, METADATA).unwrap();
+
+            did::get_my_did_with_metadata(wallet_handle, &did).unwrap();
+
+            utils::tear_down_with_wallet(wallet_handle);
+        }
+
+
+        #[test]
+        fn indy_get_my_did_metadata_works_for_no_metadata() {
+            let (wallet_handle, did) = utils::setup_did();
+
+            did::get_my_did_with_metadata(wallet_handle, &did).unwrap();
+
+            utils::tear_down_with_wallet(wallet_handle);
+        }
+
+        #[test]
+        fn indy_get_my_did_metadata_works_with_temp_verkey() {
+            let (wallet_handle, did) = utils::setup_did();
+
+            did::set_did_metadata(wallet_handle, &did, METADATA).unwrap();
+            did::replace_keys_start(wallet_handle, &did, "{}").unwrap();
+
+            did::get_my_did_with_metadata(wallet_handle, &did).unwrap();
+
+            utils::tear_down_with_wallet(wallet_handle);
+        }
+
+        #[test]
+        fn indy_get_my_did_metadata_works_for_unknown_did() {
+            let wallet_handle = utils::setup_with_wallet();
+
+            let res = did::get_my_did_with_metadata(wallet_handle, DID);
+            assert_eq!(ErrorCode::WalletItemNotFound, res.unwrap_err());
+
+            utils::tear_down_with_wallet(wallet_handle);
         }
     }
 
@@ -605,108 +519,91 @@ mod high_cases {
 
         #[test]
         fn indy_create_my_did_works_for_empty_json() {
-            TestUtils::cleanup_storage();
+            let wallet_handle = utils::setup_with_wallet();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
-
-            let (my_did, my_verkey) = DidUtils::create_my_did(wallet_handle, "{}").unwrap();
+            let (my_did, my_verkey) = did::create_my_did(wallet_handle, "{}").unwrap();
 
             assert_eq!(my_did.from_base58().unwrap().len(), 16);
             assert_eq!(my_verkey.from_base58().unwrap().len(), 32);
 
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-
-            TestUtils::cleanup_storage();
+            utils::tear_down_with_wallet(wallet_handle);
         }
 
         #[test]
         fn indy_create_my_did_works_with_seed() {
-            TestUtils::cleanup_storage();
+            let wallet_handle = utils::setup_with_wallet();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
-
-            let (my_did, my_verkey) = DidUtils::create_and_store_my_did(wallet_handle, Some(MY1_SEED)).unwrap();
+            let (my_did, my_verkey) = did::create_and_store_my_did(wallet_handle, Some(MY1_SEED)).unwrap();
 
             assert_eq!(my_did, DID_MY1);
             assert_eq!(my_verkey, VERKEY_MY1);
 
-            WalletUtils::close_wallet(wallet_handle).unwrap();
+            utils::tear_down_with_wallet(wallet_handle);
+        }
 
-            TestUtils::cleanup_storage();
+        #[test]
+        fn indy_create_my_did_works_with_hex_seed() {
+            let wallet_handle = utils::setup_with_wallet();
+
+            let (my_did, my_verkey) = did::create_and_store_my_did(wallet_handle, Some("94a823a6387cdd30d8f7687d95710ebab84c6e277b724790a5b221440beb7df6")).unwrap();
+
+            assert_eq!(my_did, "HWvjYf77k1dqQAk6sE4gaS");
+            assert_eq!(my_verkey, "A16wi1xHBu5KT4SqNhZXrKZfoQbXJCbDozgSTJhUgu9x");
+
+            utils::tear_down_with_wallet(wallet_handle);
         }
 
         #[test]
         fn indy_create_my_did_works_as_cid() {
-            TestUtils::cleanup_storage();
+            let wallet_handle = utils::setup_with_wallet();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
-
-            let (my_did, my_verkey) = DidUtils::create_my_did(wallet_handle, r#"{"seed":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","cid":true}"#).unwrap();
+            let (my_did, my_verkey) = did::create_my_did(wallet_handle, r#"{"seed":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","cid":true}"#).unwrap();
 
             assert_eq!(my_did, VERKEY);
             assert_eq!(my_verkey, VERKEY);
 
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-
-            TestUtils::cleanup_storage();
+            utils::tear_down_with_wallet(wallet_handle);
         }
 
         #[test]
         fn indy_create_my_did_works_with_passed_did() {
-            TestUtils::cleanup_storage();
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let wallet_handle = utils::setup_with_wallet();
 
-            let (my_did, my_verkey) = DidUtils::create_my_did(wallet_handle,
-                                                              &format!(r#"{{"did":"{}","seed":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}}"#, DID)).unwrap();
-
+            let (my_did, my_verkey) = did::create_my_did(wallet_handle, &format!(r#"{{"did":"{}","seed":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}}"#, DID)).unwrap();
             assert_eq!(my_did, DID);
             assert_eq!(my_verkey, VERKEY);
 
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-
-            TestUtils::cleanup_storage();
+            utils::tear_down_with_wallet(wallet_handle);
         }
 
         #[test]
         fn indy_create_my_did_works_for_exists_crypto_type() {
-            TestUtils::cleanup_storage();
+            let wallet_handle = utils::setup_with_wallet();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            did::create_my_did(wallet_handle, r#"{"crypto_type":"ed25519"}"#).unwrap();
 
-            DidUtils::create_my_did(wallet_handle, r#"{"crypto_type":"ed25519"}"#).unwrap();
-
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-
-            TestUtils::cleanup_storage();
+            utils::tear_down_with_wallet(wallet_handle);
         }
 
         #[test]
         fn indy_create_my_did_works_for_invalid_wallet_handle() {
-            TestUtils::cleanup_storage();
+            let wallet_handle = utils::setup_with_wallet();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
-
-            let res = DidUtils::create_my_did(wallet_handle + 1, "{}");
+            let res = did::create_my_did(wallet_handle + 1, "{}");
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
 
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-
-            TestUtils::cleanup_storage();
+            utils::tear_down_with_wallet(wallet_handle);
         }
 
         #[test]
         fn indy_create_my_did_works_for_duplicate() {
-            TestUtils::cleanup_storage();
+            let wallet_handle = utils::setup_with_wallet();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
-
-            let (my_did, _) = DidUtils::create_my_did(wallet_handle, "{}").unwrap();
-            let res = DidUtils::create_my_did(wallet_handle, &format!(r#"{{"did":{:?}}}"#, my_did));
+            let (my_did, _) = did::create_my_did(wallet_handle, "{}").unwrap();
+            let res = did::create_my_did(wallet_handle, &format!(r#"{{"did":{:?}}}"#, my_did));
             assert_eq!(res.unwrap_err(), ErrorCode::DidAlreadyExistsError);
 
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-
-            TestUtils::cleanup_storage();
+            utils::tear_down_with_wallet(wallet_handle);
         }
     }
 
@@ -715,52 +612,40 @@ mod high_cases {
 
         #[test]
         fn indy_replace_keys_start_works() {
-            TestUtils::cleanup_storage();
+            let wallet_handle = utils::setup_with_wallet();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let (my_did, my_verkey) = did::create_and_store_my_did(wallet_handle, None).unwrap();
 
-            let (my_did, my_verkey) = DidUtils::create_my_did(wallet_handle, "{}").unwrap();
-
-            let new_verkey = DidUtils::replace_keys_start(wallet_handle, &my_did, "{}").unwrap();
+            let new_verkey = did::replace_keys_start(wallet_handle, &my_did, "{}").unwrap();
 
             assert_ne!(new_verkey, my_verkey);
 
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-
-            TestUtils::cleanup_storage();
+            utils::tear_down_with_wallet(wallet_handle);
         }
 
         #[test]
         fn indy_replace_keys_start_works_for_invalid_wallet_handle() {
-            TestUtils::cleanup_storage();
+            let wallet_handle = utils::setup_with_wallet();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let (my_did, _) = did::create_and_store_my_did(wallet_handle, None).unwrap();
 
-            let (my_did, _) = DidUtils::create_my_did(wallet_handle, "{}").unwrap();
-
-            let res = DidUtils::replace_keys_start(wallet_handle + 1, &my_did, "{}");
+            let res = did::replace_keys_start(wallet_handle + 1, &my_did, "{}");
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
 
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-
-            TestUtils::cleanup_storage();
+            utils::tear_down_with_wallet(wallet_handle);
         }
 
         #[test]
         fn indy_replace_keys_start_works_for_seed() {
-            TestUtils::cleanup_storage();
+            let wallet_handle = utils::setup_with_wallet();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let (my_did, my_verkey) = did::create_and_store_my_did(wallet_handle, None).unwrap();
 
-            let (my_did, my_verkey) = DidUtils::create_my_did(wallet_handle, "{}").unwrap();
-
-            let new_verkey = DidUtils::replace_keys_start(wallet_handle, &my_did, r#"{"seed":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}"#).unwrap();
+            let new_verkey = did::replace_keys_start(wallet_handle, &my_did, r#"{"seed":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}"#).unwrap();
             assert_eq!(new_verkey, VERKEY);
             assert_ne!(my_verkey, new_verkey);
 
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-
-            TestUtils::cleanup_storage();
+            utils::tear_down_with_wallet(wallet_handle);
         }
     }
 
@@ -769,70 +654,44 @@ mod high_cases {
 
         #[test]
         fn indy_replace_keys_apply_works() {
-            TestUtils::cleanup_storage();
+            let wallet_handle = utils::setup_with_wallet();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let (my_did, my_verkey) = did::create_and_store_my_did(wallet_handle, None).unwrap();
 
-            let (my_did, my_verkey) = DidUtils::create_my_did(wallet_handle, "{}").unwrap();
-
-            let new_verkey = DidUtils::replace_keys_start(wallet_handle, &my_did, "{}").unwrap();
+            let new_verkey = did::replace_keys_start(wallet_handle, &my_did, "{}").unwrap();
 
             assert_ne!(new_verkey, my_verkey);
 
-            DidUtils::replace_keys_apply(wallet_handle, &my_did).unwrap();
+            did::replace_keys_apply(wallet_handle, &my_did).unwrap();
 
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-
-            TestUtils::cleanup_storage();
+            utils::tear_down_with_wallet(wallet_handle);
         }
 
         #[test]
         fn indy_replace_keys_apply_works_without_calling_replace_start() {
-            TestUtils::cleanup_storage();
+            let (wallet_handle, my_did) = utils::setup_did();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            assert_eq!(did::replace_keys_apply(wallet_handle, &my_did).unwrap_err(), ErrorCode::WalletItemNotFound);
 
-            let (my_did, _) = DidUtils::create_my_did(wallet_handle, "{}").unwrap();
-
-            assert_eq!(DidUtils::replace_keys_apply(wallet_handle, &my_did).unwrap_err(), ErrorCode::WalletNotFoundError);
-
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-
-            TestUtils::cleanup_storage();
+            utils::tear_down_with_wallet(wallet_handle);
         }
 
         #[test]
         fn indy_replace_keys_apply_works_for_unknown_did() {
-            TestUtils::cleanup_storage();
+            let wallet_handle = utils::setup_with_wallet();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            assert_eq!(did::replace_keys_apply(wallet_handle, DID).unwrap_err(), ErrorCode::WalletItemNotFound);
 
-            let (my_did, _) = DidUtils::create_my_did(wallet_handle, "{}").unwrap();
-
-            DidUtils::replace_keys_start(wallet_handle, &my_did, "{}").unwrap();
-
-            assert_eq!(DidUtils::replace_keys_apply(wallet_handle, DID).unwrap_err(), ErrorCode::WalletNotFoundError);
-
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-
-            TestUtils::cleanup_storage();
+            utils::tear_down_with_wallet(wallet_handle);
         }
 
         #[test]
         fn indy_replace_keys_apply_works_for_invalid_wallet_handle() {
-            TestUtils::cleanup_storage();
+            let wallet_handle = utils::setup_with_wallet();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            assert_eq!(did::replace_keys_apply(wallet_handle + 1, DID).unwrap_err(), ErrorCode::WalletInvalidHandle);
 
-            let (my_did, _) = DidUtils::create_my_did(wallet_handle, "{}").unwrap();
-
-            DidUtils::replace_keys_start(wallet_handle, &my_did, "{}").unwrap();
-
-            assert_eq!(DidUtils::replace_keys_apply(wallet_handle + 1, &my_did).unwrap_err(), ErrorCode::WalletInvalidHandle);
-
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-
-            TestUtils::cleanup_storage();
+            utils::tear_down_with_wallet(wallet_handle);
         }
     }
 
@@ -841,149 +700,143 @@ mod high_cases {
 
         #[test]
         fn indy_store_their_did_works_for_did_only() {
-            TestUtils::cleanup_storage();
+            let wallet_handle = utils::setup_with_wallet();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let identity_json = json!({"did": DID}).to_string();
+            did::store_their_did(wallet_handle, &identity_json).unwrap();
 
-            let identity_json = format!(r#"{{"did":"{}"}}"#, DID);
-            DidUtils::store_their_did(wallet_handle, &identity_json).unwrap();
-
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-
-            TestUtils::cleanup_storage();
+            utils::tear_down_with_wallet(wallet_handle);
         }
 
         #[test]
         fn indy_store_their_did_works_for_verkey() {
-            TestUtils::cleanup_storage();
+            let wallet_handle = utils::setup_with_wallet();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let identity_json = json!({"did": DID, "verkey": VERKEY}).to_string();
+            did::store_their_did(wallet_handle, &identity_json).unwrap();
 
-            let identity_json = format!(r#"{{"did":"{}", "verkey":"{}"}}"#, DID, VERKEY);
-            DidUtils::store_their_did(wallet_handle, &identity_json).unwrap();
-
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-
-            TestUtils::cleanup_storage();
+            utils::tear_down_with_wallet(wallet_handle);
         }
 
         #[test]
         fn indy_store_their_did_works_for_verkey_with_crypto_type() {
-            TestUtils::cleanup_storage();
+            let wallet_handle = utils::setup_with_wallet();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let identity_json = json!({"did": DID, "verkey": VERKEY.to_owned() + ":ed25519"}).to_string();
+            did::store_their_did(wallet_handle, &identity_json).unwrap();
 
-            let verkey = VERKEY.to_owned() + ":ed25519";
-            let identity_json = format!(r#"{{"did":"{}", "verkey":"{}"}}"#, DID, verkey);
-            DidUtils::store_their_did(wallet_handle, &identity_json).unwrap();
-
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-
-            TestUtils::cleanup_storage();
+            utils::tear_down_with_wallet(wallet_handle);
         }
 
         #[test]
         fn indy_create_my_did_works_for_invalid_seed() {
-            TestUtils::cleanup_storage();
+            let wallet_handle = utils::setup_with_wallet();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
-
-            let res = DidUtils::create_my_did(wallet_handle, r#"{"seed":"seed"}"#);
+            let res = did::create_my_did(wallet_handle, r#"{"seed":"seed"}"#);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
 
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-
-            TestUtils::cleanup_storage();
+            utils::tear_down_with_wallet(wallet_handle);
         }
 
         #[test]
         fn indy_store_their_did_works_for_invalid_wallet_handle() {
-            TestUtils::cleanup_storage();
+            let wallet_handle = utils::setup_with_wallet();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
-
-            let identity_json = format!(r#"{{"did":"{}"}}"#, DID);
-            let res = DidUtils::store_their_did(wallet_handle + 1, &identity_json);
+            let identity_json = json!({"did": DID}).to_string();
+            let res = did::store_their_did(wallet_handle + 1, &identity_json);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
 
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-
-            TestUtils::cleanup_storage();
+            utils::tear_down_with_wallet(wallet_handle);
         }
 
         #[test]
         fn indy_store_their_did_works_for_abbreviated_verkey() {
-            TestUtils::cleanup_storage();
-
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let wallet_handle = utils::setup_with_wallet();
 
             let identity_json = r#"{"did":"8wZcEriaNLNKtteJvx7f8i", "verkey":"~NcYxiDXkpYi6ov5FcYDi1e"}"#;
-            DidUtils::store_their_did(wallet_handle, identity_json).unwrap();
+            did::store_their_did(wallet_handle, identity_json).unwrap();
 
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-
-            TestUtils::cleanup_storage();
+            utils::tear_down_with_wallet(wallet_handle);
         }
 
         #[test]
         fn indy_create_my_did_works_for_invalid_json() {
-            TestUtils::cleanup_storage();
+            let wallet_handle = utils::setup_with_wallet();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
-
-            let res = DidUtils::create_my_did(wallet_handle, r#"{"seed":123}"#);
+            let res = did::create_my_did(wallet_handle, r#"{"seed":123}"#);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
 
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-
-            TestUtils::cleanup_storage();
+            utils::tear_down_with_wallet(wallet_handle);
         }
 
         #[test]
         fn indy_store_their_did_works_for_invalid_did() {
-            TestUtils::cleanup_storage();
+            let wallet_handle = utils::setup_with_wallet();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
-
-            let res = DidUtils::store_their_did(wallet_handle, &format!(r#"{{"did":"{:?}"}}"#, INVALID_BASE58_DID));
+            let identity_json = json!({"did": INVALID_BASE58_DID}).to_string();
+            let res = did::store_their_did(wallet_handle, &identity_json);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
 
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-
-            TestUtils::cleanup_storage();
+            utils::tear_down_with_wallet(wallet_handle);
         }
 
         #[test]
         fn indy_store_their_did_works_for_invalid_verkey() {
-            TestUtils::cleanup_storage();
+            let wallet_handle = utils::setup_with_wallet();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
-
-            let identity_json = r#"{"did":"did", "verkey":"invalid_base58string"}"#;
-
-            let res = DidUtils::store_their_did(wallet_handle, identity_json);
+            let identity_json = json!({"did": "did", "verkey":"invalid_base58string"}).to_string();
+            let res = did::store_their_did(wallet_handle, &identity_json);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
 
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-
-            TestUtils::cleanup_storage();
+            utils::tear_down_with_wallet(wallet_handle);
         }
 
 
         #[test]
         fn indy_store_their_did_works_for_verkey_with_invalid_crypto_type() {
-            TestUtils::cleanup_storage();
+            let wallet_handle = utils::setup_with_wallet();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
-
-            let verkey = VERKEY.to_owned() + ":crypto_type";
-            let identity_json = format!(r#"{{"did":"{}", "verkey":"{}"}}"#, DID, verkey);
-            let res = DidUtils::store_their_did(wallet_handle, &identity_json);
+            let identity_json = json!({"did": DID, "verkey": VERKEY.to_owned() + ":crypto_type"}).to_string();
+            let res = did::store_their_did(wallet_handle, &identity_json);
             assert_eq!(ErrorCode::UnknownCryptoTypeError, res.unwrap_err());
 
-            WalletUtils::close_wallet(wallet_handle).unwrap();
+            utils::tear_down_with_wallet(wallet_handle);
+        }
 
-            TestUtils::cleanup_storage();
+        #[test]
+        fn indy_store_their_did_works_twice() {
+            let wallet_handle = utils::setup_with_wallet();
+
+            let identity_json = json!({"did": DID}).to_string();
+            did::store_their_did(wallet_handle, &identity_json).unwrap();
+
+            let res = did::store_their_did(wallet_handle, &identity_json);
+            assert_eq!(ErrorCode::WalletItemAlreadyExists, res.unwrap_err());
+
+            utils::tear_down_with_wallet(wallet_handle);
+        }
+
+        #[test]
+        fn indy_store_their_did_works_for_is_802() {
+            let wallet_handle = utils::setup_with_wallet();
+
+            let identity_json = json!({"did": DID, "verkey": VERKEY}).to_string();
+
+            // 1. Try 'storeTheirDid' operation with say did1 and verkey1
+            did::store_their_did(wallet_handle, &identity_json).unwrap();
+
+            // 2. Repeat above operation (with same did and ver key used in #1)
+            // but this time catch and swallow the exception (it will throw the exception WalletItemAlreadyExistsException)
+            let res = did::store_their_did(wallet_handle, &identity_json);
+            assert_eq!(ErrorCode::WalletItemAlreadyExists, res.unwrap_err());
+
+            // 3. Then, now if you try 'storeTheirDid' operation
+            // (either with same did and verkey or you can choose different did and verkey),
+            // in IS-802 it fails with error 'Storage error occurred during wallet operation.'
+            let res = did::store_their_did(wallet_handle, &identity_json);
+            assert_eq!(ErrorCode::WalletItemAlreadyExists, res.unwrap_err());
+
+            utils::tear_down_with_wallet(wallet_handle);
         }
     }
 
@@ -992,71 +845,53 @@ mod high_cases {
 
         #[test]
         fn indy_replace_keys_demo() {
-            TestUtils::cleanup_storage();
-
             // 1. Create and open pool
-            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
-
             // 2. Create and open wallet
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
-
             // 3. Generate did from Trustee seed
-            let (trustee_did, _) = DidUtils::create_and_store_my_did(wallet_handle, Some(TRUSTEE_SEED)).unwrap();
+            let (wallet_handle, pool_handle, trustee_did) = utils::setup_trustee();
+
             // 4. Generate my did
-            let (my_did, my_verkey) = DidUtils::create_my_did(wallet_handle, "{}").unwrap();
+            let (my_did, my_verkey) = did::create_my_did(wallet_handle, "{}").unwrap();
 
             // 5. Send Nym request to Ledger
-            let nym_request = LedgerUtils::build_nym_request(&trustee_did, &my_did, Some(&my_verkey), None, None).unwrap();
-            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
+            let nym_request = ledger::build_nym_request(&trustee_did, &my_did, Some(&my_verkey), None, None).unwrap();
+            ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
 
             // 6. Start replacing of keys
-            let new_verkey = DidUtils::replace_keys_start(wallet_handle, &my_did, "{}").unwrap();
+            let new_verkey = did::replace_keys_start(wallet_handle, &my_did, "{}").unwrap();
 
             // 7. Send Nym request to Ledger with new verkey
-            let nym_request = LedgerUtils::build_nym_request(&my_did, &my_did, Some(&new_verkey), None, None).unwrap();
-            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &nym_request).unwrap();
+            let nym_request = ledger::build_nym_request(&my_did, &my_did, Some(&new_verkey), None, None).unwrap();
+            ledger::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &nym_request).unwrap();
 
             // 8. Send Schema request before apply replacing of keys
-            let schema_request = LedgerUtils::build_schema_request(&my_did, SCHEMA_DATA).unwrap();
-            let response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &schema_request).unwrap();
-            PoolUtils::check_response_type(&response, ResponseType::REQNACK);
+            let schema_request = ledger::build_schema_request(&my_did, SCHEMA_DATA).unwrap();
+            let response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &schema_request).unwrap();
+            pool::check_response_type(&response, ResponseType::REQNACK);
 
             // 9. Apply replacing of keys
-            DidUtils::replace_keys_apply(wallet_handle, &my_did).unwrap();
+            did::replace_keys_apply(wallet_handle, &my_did).unwrap();
 
             // 10. Send Schema request
-            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &schema_request).unwrap();
+            ledger::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &schema_request).unwrap();
 
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-            PoolUtils::close(pool_handle).unwrap();
-
-            TestUtils::cleanup_storage();
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
         }
 
         #[test]
         fn indy_replace_keys_without_nym_transaction() {
-            TestUtils::cleanup_storage();
+            let (wallet_handle, pool_handle) = utils::setup_with_wallet_and_pool();
 
-            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let (my_did, _) = did::create_store_and_publish_my_did_from_trustee(wallet_handle, pool_handle).unwrap();
 
-            let (trustee_did, _) = DidUtils::create_and_store_my_did(wallet_handle, Some(TRUSTEE_SEED)).unwrap();
-            let (my_did, my_verkey) = DidUtils::create_my_did(wallet_handle, "{}").unwrap();
+            did::replace_keys_start(wallet_handle, &my_did, "{}").unwrap();
+            did::replace_keys_apply(wallet_handle, &my_did).unwrap();
 
-            let nym_request = LedgerUtils::build_nym_request(&trustee_did, &my_did, Some(&my_verkey), None, None).unwrap();
-            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
+            let schema_request = ledger::build_schema_request(&my_did, SCHEMA_DATA).unwrap();
+            let response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &schema_request).unwrap();
+            pool::check_response_type(&response, ResponseType::REQNACK);
 
-            DidUtils::replace_keys_start(wallet_handle, &my_did, "{}").unwrap();
-            DidUtils::replace_keys_apply(wallet_handle, &my_did).unwrap();
-
-            let schema_request = LedgerUtils::build_schema_request(&my_did, SCHEMA_DATA).unwrap();
-            let response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &schema_request).unwrap();
-            PoolUtils::check_response_type(&response, ResponseType::REQNACK);
-
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-            PoolUtils::close(pool_handle).unwrap();
-
-            TestUtils::cleanup_storage();
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
         }
     }
 
@@ -1065,43 +900,39 @@ mod high_cases {
 
         #[test]
         fn indy_abbreviate_verkey_works_for_abbr_key() {
-            TestUtils::cleanup_storage();
+            let wallet_handle = utils::setup_with_wallet();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let (did, verkey) = did::create_my_did(wallet_handle, "{}").unwrap();
 
-            let (did, verkey) = DidUtils::create_my_did(wallet_handle, "{}").unwrap();
-
-            let abbr_verkey = DidUtils::abbreviate_verkey(&did, &verkey).unwrap();
+            let abbr_verkey = did::abbreviate_verkey(&did, &verkey).unwrap();
 
             assert_ne!(verkey, abbr_verkey);
 
-            TestUtils::cleanup_storage();
+            utils::tear_down_with_wallet(wallet_handle);
         }
 
         #[test]
         fn indy_abbreviate_verkey_works_for_not_abbr_key() {
-            TestUtils::cleanup_storage();
+            let wallet_handle = utils::setup_with_wallet();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let (did, verkey) = did::create_my_did(wallet_handle, &format!(r#"{{"did":{:?}}}"#, DID_TRUSTEE)).unwrap();
 
-            let (did, verkey) = DidUtils::create_my_did(wallet_handle, &format!(r#"{{"did":{:?}}}"#, DID_TRUSTEE)).unwrap();
-
-            let full_verkey = DidUtils::abbreviate_verkey(&did, &verkey).unwrap();
+            let full_verkey = did::abbreviate_verkey(&did, &verkey).unwrap();
 
             assert_eq!(verkey, full_verkey);
 
-            TestUtils::cleanup_storage();
+            utils::tear_down_with_wallet(wallet_handle);
         }
 
         #[test]
         fn indy_abbreviate_verkey_works_for_invalid_did() {
-            let res = DidUtils::abbreviate_verkey(INVALID_BASE58_DID, VERKEY_TRUSTEE);
+            let res = did::abbreviate_verkey(INVALID_BASE58_DID, VERKEY_TRUSTEE);
             assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
         }
 
         #[test]
         fn indy_abbreviate_verkey_works_for_invalid_verkey() {
-            let res = DidUtils::abbreviate_verkey(DID_TRUSTEE, INVALID_BASE58_VERKEY);
+            let res = did::abbreviate_verkey(DID_TRUSTEE, INVALID_BASE58_VERKEY);
             assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
         }
     }

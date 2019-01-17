@@ -16,8 +16,7 @@ async def test_build_cred_def_request_works_for_correct_data_json(did_trustee):
             "primary": {
                 "n": "1",
                 "s": "2",
-                "rms": "3",
-                "r": {"name": "1"},
+                "r": {"name": "1", "master_secret": "3"},
                 "rctxt": "1",
                 "z": "1"
             }
@@ -29,10 +28,11 @@ async def test_build_cred_def_request_works_for_correct_data_json(did_trustee):
         "operation": {
             "ref": 1,
             "data": {
-                "primary": {"n": "1", "s": "2", "rms": "3", "r": {"name": "1"}, "rctxt": "1", "z": "1"}
+                "primary": {"n": "1", "s": "2", "r": {"name": "1", "master_secret": "3"}, "rctxt": "1", "z": "1"}
             },
             "type": "102",
-            "signature_type": "CL"
+            "signature_type": "CL",
+            "tag": "TAG_1"
         }
     }
 

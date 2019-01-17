@@ -1,0 +1,12 @@
+
+[profile.release]
+debug = false
+panic = 'unwind'
+incremental = false
+lto = true
+rpath = false
+debug-assertions = false
+overflow-checks = false
+# codegen-units = 1
+# The opt-level "z" is still only available for nightly rustc/rustup builds
+# opt-level = "z"
