@@ -3,7 +3,7 @@ extern crate serde_json;
 
 use std::collections::HashMap;
 use std::sync::RwLock;
-use utils::error;
+use utils::{get_temp_dir_path, error};
 use std::path::Path;
 use url::Url;
 use messages::validation;
@@ -41,8 +41,8 @@ pub static CONFIG_PAYMENT_METHOD: &'static str = "payment_method";
 pub static DEFAULT_PROTOCOL_VERSION: usize = 2;
 pub static MAX_SUPPORTED_PROTOCOL_VERSION: usize = 2;
 pub static UNINITIALIZED_WALLET_KEY: &str = "<KEY_IS_NOT_SET>";
-pub static DEFAULT_GENESIS_PATH: &str = "/tmp/genesis.txn";
-pub static DEFAULT_EXPORTED_WALLET_PATH: &str = "/tmp/wallet.txn";
+pub static DEFAULT_GENESIS_PATH: &str = "genesis.txn";
+pub static DEFAULT_EXPORTED_WALLET_PATH: &str = "wallet.txn";
 pub static DEFAULT_WALLET_NAME: &str = "LIBVCX_SDK_WALLET";
 pub static DEFAULT_POOL_NAME: &str = "pool1";
 pub static DEFAULT_LINK_SECRET_ALIAS: &str = "main";
@@ -99,7 +99,8 @@ pub fn set_defaults() -> u32 {
     settings.insert(CONFIG_WALLET_KEY_DERIVATION.to_string(),DEFAULT_WALLET_KEY_DERIVATION.to_string());
     settings.insert(CONFIG_LINK_SECRET_ALIAS.to_string(), DEFAULT_LINK_SECRET_ALIAS.to_string());
     settings.insert(CONFIG_PROTOCOL_VERSION.to_string(), DEFAULT_PROTOCOL_VERSION.to_string());
-    settings.insert(CONFIG_EXPORTED_WALLET_PATH.to_string(), DEFAULT_EXPORTED_WALLET_PATH.to_string());
+    settings.insert(CONFIG_EXPORTED_WALLET_PATH.to_string(),
+                    get_temp_dir_path(Some(DEFAULT_EXPORTED_WALLET_PATH)).to_str().unwrap_or("").to_string());
     settings.insert(CONFIG_WALLET_BACKUP_KEY.to_string(), DEFAULT_WALLET_BACKUP_KEY.to_string());
     settings.insert(CONFIG_THREADPOOL_SIZE.to_string(), DEFAULT_THREADPOOL_SIZE.to_string());
     settings.insert(CONFIG_PAYMENT_METHOD.to_string(), DEFAULT_PAYMENT_METHOD.to_string());
@@ -313,6 +314,7 @@ pub fn clear_config() {
 #[cfg(test)]
 pub mod tests {
     use super::*;
+    use utils::get_temp_dir_path;
 
     #[test]
     fn test_bad_path() {
@@ -322,7 +324,8 @@ pub mod tests {
 
     #[test]
     fn test_read_config_file() {
-        let config_path = "/tmp/test_init.json";
+        let config_path_buf = get_temp_dir_path(Some("test_init.json"));
+        let config_path = config_path_buf.to_str().unwrap();
 
         let content = json!({
             "pool_name" : "pool1",
@@ -345,7 +348,8 @@ pub mod tests {
 
     #[test]
     fn test_process_file() {
-        let config_path = "/tmp/test_init.json";
+        let config_path_buf = get_temp_dir_path(Some("test_init.json"));
+        let config_path = config_path_buf.to_str().unwrap();
 
         let content = json!({
             "pool_name" : "pool1",

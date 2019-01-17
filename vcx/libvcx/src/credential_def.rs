@@ -271,7 +271,10 @@ pub fn release_all() {
 
 #[cfg(test)]
 pub mod tests {
-    use utils::constants::{SCHEMA_ID, CRED_DEF_ID};
+    use utils::{
+        constants::{SCHEMA_ID, CRED_DEF_ID},
+        get_temp_dir_path
+    };
     use super::*;
     use settings;
     use std::{
@@ -288,7 +291,7 @@ pub mod tests {
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
         let mut revocation_details = json!({"support_revocation":revoc});
         if revoc {
-            revocation_details["tails_file"] = json!("/tmp/tails_file.txt");
+            revocation_details["tails_file"] = json!(get_temp_dir_path(Some("tails_file.txt")).to_str().unwrap());
             revocation_details["max_creds"] = json!(10);
         }
         sleep(Duration::from_secs(2));
@@ -385,7 +388,7 @@ pub mod tests {
         let (schema_id, _) = ::utils::libindy::anoncreds::tests::create_and_write_test_schema(::utils::constants::DEFAULT_SCHEMA_ATTRS);
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
 
-        let revocation_details = json!({"support_revocation": true, "tails_file": "/tmp/tails.txt", "max_creds": 2}).to_string();
+        let revocation_details = json!({"support_revocation": true, "tails_file": get_temp_dir_path(Some("tails.txt")).to_str().unwrap(), "max_creds": 2}).to_string();
         let handle = create_new_credentialdef("1".to_string(),
                                               wallet_name.to_string(),
                                               did,
