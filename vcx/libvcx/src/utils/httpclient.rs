@@ -20,6 +20,7 @@ pub fn post_u8(body_content: &Vec<u8>) -> Result<Vec<u8>,String> {
     }
     let client = reqwest::ClientBuilder::new().build().or(Err("Preparing Post failed".to_string()))?;
     debug!("Posting encrypted bundle to: \"{}\"", url);
+    println!("Posting encrypted bundle to: \"{}\"", url);
     let mut response = match  client.post(&url).body(body_content.to_owned()).header(CONTENT_TYPE, "octet_stream").send() {
         Ok(result) => {
             trace!("got the result");
