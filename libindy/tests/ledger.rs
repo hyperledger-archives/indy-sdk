@@ -62,7 +62,7 @@ mod high_cases {
             let (wallet_handle, pool_handle) = utils::setup_with_wallet_and_pool();
 
             let res = ledger::submit_request(pool_handle + 1, REQUEST);
-            assert_eq!(res.unwrap_err().error_code, ErrorCode::PoolLedgerInvalidPoolHandle);
+            assert_code!(ErrorCode::PoolLedgerInvalidPoolHandle, res);
 
             utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
         }
@@ -73,7 +73,7 @@ mod high_cases {
             let (wallet_handle, pool_handle, trustee_did) = utils::setup_trustee();
 
             let res = ledger::sign_and_submit_request(pool_handle + 1, wallet_handle, &trustee_did, REQUEST);
-            assert_eq!(res.unwrap_err().error_code, ErrorCode::PoolLedgerInvalidPoolHandle);
+            assert_code!(ErrorCode::PoolLedgerInvalidPoolHandle, res);
 
             utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
         }
@@ -84,7 +84,7 @@ mod high_cases {
             let (wallet_handle, pool_handle, trustee_did) = utils::setup_trustee();
 
             let res = ledger::sign_and_submit_request(pool_handle, wallet_handle + 1, &trustee_did, REQUEST);
-            assert_eq!(res.unwrap_err().error_code, ErrorCode::WalletInvalidHandle);
+            assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
         }
@@ -170,7 +170,7 @@ mod high_cases {
 
             let get_nym_request = ledger::build_get_nym_request(Some(&trustee_did), DID_MY1).unwrap();
             let res = ledger::submit_action(pool_handle, &get_nym_request, None, None);
-            assert_eq!(res.unwrap_err().error_code, ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
         }
@@ -184,7 +184,7 @@ mod high_cases {
             let get_validator_info_request = ledger::sign_request(wallet_handle, &trustee_did, &get_validator_info_request).unwrap();
 
             let res = ledger::submit_action(pool_handle + 1, &get_validator_info_request, None, None);
-            assert_eq!(res.unwrap_err().error_code, ErrorCode::PoolLedgerInvalidPoolHandle);
+            assert_code!(ErrorCode::PoolLedgerInvalidPoolHandle, res);
 
             utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
         }
@@ -240,7 +240,7 @@ mod high_cases {
             let wallet_handle = utils::setup_with_wallet();
 
             let res = ledger::sign_request(wallet_handle, DID, REQUEST);
-            assert_eq!(res.unwrap_err().error_code, ErrorCode::WalletItemNotFound);
+            assert_code!(ErrorCode::WalletItemNotFound, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -250,7 +250,7 @@ mod high_cases {
             let (wallet_handle, my_did) = utils::setup_did();
 
             let res = ledger::sign_request(wallet_handle, &my_did, "1495034346617224651");
-            assert_eq!(res.unwrap_err().error_code, ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -260,7 +260,7 @@ mod high_cases {
             let (wallet_handle, my_did) = utils::setup_did();
 
             let res = ledger::sign_request(wallet_handle + 1, &my_did, MESSAGE);
-            assert_eq!(res.unwrap_err().error_code, ErrorCode::WalletInvalidHandle);
+            assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -293,7 +293,7 @@ mod high_cases {
             let wallet_handle = utils::setup_with_wallet();
 
             let res = ledger::multi_sign_request(wallet_handle, DID, REQUEST);
-            assert_eq!(res.unwrap_err().error_code, ErrorCode::WalletItemNotFound);
+            assert_code!(ErrorCode::WalletItemNotFound, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -303,7 +303,7 @@ mod high_cases {
             let (wallet_handle, my_did) = utils::setup_did();
 
             let res = ledger::multi_sign_request(wallet_handle, &my_did, "1495034346617224651");
-            assert_eq!(res.unwrap_err().error_code, ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -483,7 +483,7 @@ mod high_cases {
         #[cfg(feature = "local_nodes_pool")]
         fn indy_build_attrib_requests_works_for_missed_attribute() {
             let res = ledger::build_attrib_request(&IDENTIFIER, &DEST, None, None, None);
-            assert_eq!(res.unwrap_err().error_code, ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
 
         #[test]
@@ -1619,7 +1619,7 @@ mod high_cases {
             utils::setup();
 
             let res = ledger::get_response_metadata("{}");
-            assert_eq!(ErrorCode::LedgerInvalidTransaction, res.unwrap_err().error_code);
+            assert_code!(ErrorCode::LedgerInvalidTransaction, res);
 
             utils::tear_down();
         }
@@ -1677,7 +1677,7 @@ mod medium_cases {
             let (wallet_handle, pool_handle) = utils::setup_with_wallet_and_pool();
 
             let res = ledger::sign_and_submit_request(pool_handle, wallet_handle, &DID, REQUEST);
-            assert_eq!(res.unwrap_err().error_code, ErrorCode::WalletItemNotFound);
+            assert_code!(ErrorCode::WalletItemNotFound, res);
 
             utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
         }
@@ -1688,7 +1688,7 @@ mod medium_cases {
             let pool_handle = utils::setup_with_pool();
 
             let res = ledger::submit_request(pool_handle, "request");
-            assert_eq!(res.unwrap_err().error_code, ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             utils::tear_down_with_pool(pool_handle);
         }
@@ -1699,7 +1699,7 @@ mod medium_cases {
             let (wallet_handle, pool_handle, did) = utils::setup_trustee();
 
             let res = ledger::sign_and_submit_request(pool_handle, wallet_handle, &did, "request");
-            assert_eq!(res.unwrap_err().error_code, ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
         }
@@ -1718,7 +1718,7 @@ mod medium_cases {
 
             let nodes = r#"["Other Node"]"#;
             let res = ledger::submit_action(pool_handle, &get_validator_info_request, Some(nodes), None);
-            assert_eq!(res.unwrap_err().error_code, ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
         }
@@ -1733,7 +1733,7 @@ mod medium_cases {
 
             let nodes = r#""Node1""#;
             let res = ledger::submit_action(pool_handle, &get_validator_info_request, Some(nodes), None);
-            assert_eq!(res.unwrap_err().error_code, ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
         }
@@ -1784,7 +1784,7 @@ mod medium_cases {
         #[cfg(feature = "local_nodes_pool")]
         fn indy_build_nym_requests_works_for_wrong_role() {
             let res = ledger::build_nym_request(&IDENTIFIER, &DEST, None, None, Some("WRONG_ROLE"));
-            assert_eq!(res.unwrap_err().error_code, ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
 
         #[test]
@@ -1837,28 +1837,28 @@ mod medium_cases {
         #[cfg(feature = "local_nodes_pool")]
         fn indy_build_nym_request_works_for_invalid_submitter_identifier() {
             let res = ledger::build_nym_request(INVALID_IDENTIFIER, IDENTIFIER, None, None, None);
-            assert_eq!(res.unwrap_err().error_code, ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_build_nym_request_works_for_invalid_target_identifier() {
             let res = ledger::build_nym_request(IDENTIFIER, INVALID_IDENTIFIER, None, None, None);
-            assert_eq!(res.unwrap_err().error_code, ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_build_get_nym_request_works_for_invalid_submitter_identifier() {
             let res = ledger::build_get_nym_request(Some(INVALID_IDENTIFIER), IDENTIFIER);
-            assert_eq!(res.unwrap_err().error_code, ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_build_get_nym_request_works_for_invalid_target_identifier() {
             let res = ledger::build_get_nym_request(Some(IDENTIFIER), INVALID_IDENTIFIER);
-            assert_eq!(res.unwrap_err().error_code, ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
 
         #[test]
@@ -1944,28 +1944,28 @@ mod medium_cases {
         #[cfg(feature = "local_nodes_pool")]
         fn indy_build_attrib_request_works_for_invalid_submitter_did() {
             let res = ledger::build_attrib_request(INVALID_IDENTIFIER, IDENTIFIER, None, Some(ATTRIB_RAW_DATA), None);
-            assert_eq!(res.unwrap_err().error_code, ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_build_attrib_request_works_for_invalid_target_did() {
             let res = ledger::build_attrib_request(IDENTIFIER, INVALID_IDENTIFIER, None, Some(ATTRIB_RAW_DATA), None);
-            assert_eq!(res.unwrap_err().error_code, ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_build_get_attrib_request_works_for_invalid_submitter_identifier() {
             let res = ledger::build_get_attrib_request(Some(INVALID_IDENTIFIER), IDENTIFIER, Some("endpoint"), None, None);
-            assert_eq!(res.unwrap_err().error_code, ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_build_get_attrib_request_works_for_invalid_target_identifier() {
             let res = ledger::build_get_attrib_request(Some(IDENTIFIER), INVALID_IDENTIFIER, Some("endpoint"), None, None);
-            assert_eq!(res.unwrap_err().error_code, ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
     }
 
@@ -1976,35 +1976,35 @@ mod medium_cases {
         #[cfg(feature = "local_nodes_pool")]
         fn indy_build_schema_requests_works_for_missed_field_in_data_json() {
             let res = ledger::build_schema_request(IDENTIFIER, r#"{"name":"name"}"#);
-            assert_eq!(res.unwrap_err().error_code, ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_build_schema_requests_works_for_invalid_data_json_format() {
             let res = ledger::build_schema_request(IDENTIFIER, r#"{"name":"name", "keys":"name"}"#);
-            assert_eq!(res.unwrap_err().error_code, ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_build_schema_requests_works_for_invalid_submitter_identifier() {
             let res = ledger::build_schema_request(INVALID_IDENTIFIER, SCHEMA_DATA);
-            assert_eq!(res.unwrap_err().error_code, ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_build_get_schema_requests_works_for_invalid_id() {
             let res = ledger::build_get_schema_request(Some(IDENTIFIER), "invalid_schema_id");
-            assert_eq!(res.unwrap_err().error_code, ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_build_get_schema_requests_works_for_invalid_submitter_identifier() {
             let res = ledger::build_get_schema_request(Some(INVALID_IDENTIFIER), &anoncreds::gvt_schema_id());
-            assert_eq!(res.unwrap_err().error_code, ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
 
         #[test]
@@ -2029,7 +2029,7 @@ mod medium_cases {
             let get_schema_response = ledger::submit_request(pool_handle, &get_schema_request).unwrap();
 
             let res = ledger::parse_get_schema_response(&get_schema_response);
-            assert_eq!(res.unwrap_err().error_code, ErrorCode::LedgerNotFound);
+            assert_code!(ErrorCode::LedgerNotFound, res);
 
             utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
         }
@@ -2045,7 +2045,7 @@ mod medium_cases {
             let get_schema_response = ledger::submit_request(pool_handle, &get_schema_request).unwrap();
 
             let res = ledger::parse_get_cred_def_response(&get_schema_response);
-            assert_eq!(res.unwrap_err().error_code, ErrorCode::LedgerInvalidTransaction);
+            assert_code!(ErrorCode::LedgerInvalidTransaction, res);
 
             utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
         }
@@ -2059,7 +2059,7 @@ mod medium_cases {
             let get_schema_response = ledger::submit_request(pool_handle, &get_schema_request).unwrap();
 
             let res = ledger::parse_get_cred_def_response(&get_schema_response);
-            assert_eq!(res.unwrap_err().error_code, ErrorCode::LedgerInvalidTransaction);
+            assert_code!(ErrorCode::LedgerInvalidTransaction, res);
 
             utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
         }
@@ -2071,14 +2071,14 @@ mod medium_cases {
         #[test]
         fn indy_build_node_request_works_for_missed_fields_in_data_json() {
             let res = ledger::build_node_request(IDENTIFIER, DEST, r#"{ }"#);
-            assert_eq!(res.unwrap_err().error_code, ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
 
         #[test]
         fn indy_build_node_request_works_for_wrong_service() {
             let data = r#"{"node_ip":"10.0.0.100", "node_port": 1, "client_ip": "10.0.0.100", "client_port": 1, "alias":"some", "services": ["SERVICE"], "blskey": "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW", "blskey_pop": "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"}"#;
             let res = ledger::build_node_request(IDENTIFIER, DEST, data);
-            assert_eq!(res.unwrap_err().error_code, ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
 
         #[test]
@@ -2143,19 +2143,19 @@ mod medium_cases {
         fn indy_build_cred_def_request_works_for_invalid_data_json() {
             let data = r#"{"primary":{"n":"1","s":"2","rms":"3","r":{"name":"1"}}}"#;
             let res = ledger::build_cred_def_txn(IDENTIFIER, data);
-            assert_eq!(res.unwrap_err().error_code, ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
 
         #[test]
         fn indy_build_cred_def_request_works_for_invalid_submitter_did() {
             let res = ledger::build_cred_def_txn(INVALID_IDENTIFIER, &anoncreds::credential_def_json());
-            assert_eq!(res.unwrap_err().error_code, ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
 
         #[test]
         fn indy_build_get_cred_def_request_works_for_invalid_submitter_did() {
             let res = ledger::build_get_cred_def_request(Some(INVALID_IDENTIFIER), &anoncreds::issuer_1_gvt_cred_def_id());
-            assert_eq!(res.unwrap_err().error_code, ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
     }
 }

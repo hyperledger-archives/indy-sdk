@@ -21,6 +21,7 @@ pub mod sequence;
 
 #[cfg(test)]
 #[macro_use]
+#[allow(unused_macros)]
 pub mod test;
 
 #[macro_use]
