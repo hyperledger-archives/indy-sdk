@@ -7,30 +7,9 @@ use libc::c_char;
 use std::collections::HashMap;
 use std::ffi::CStr;
 use std::sync::Mutex;
-use std::ptr;
 
 use futures::*;
 use futures::sync::oneshot;
-use ffi::indy_get_current_error;
-
-
-#[derive(Deserialize)]
-struct ErrorDetails {
-    message: String,
-    backtrace: Option<String>
-}
-
-pub(crate) fn to_indy_error(err: ErrorCode) -> IndyError {
-    let mut error_json_p: *const c_char = ptr::null();
-
-    unsafe { indy_get_current_error(&mut error_json_p); }
-    let error_json = rust_str!(error_json_p);
-
-    match ::serde_json::from_str::<ErrorDetails>(&error_json) {
-        Ok(error) => IndyError::new(err, error.message, error.backtrace),
-        Err(err) => IndyError::new(ErrorCode::CommonInvalidState, err.to_string(), None)
-    }
-}
 
 lazy_static! {
     static ref CALLBACKS_EMPTY: Mutex<HashMap<IndyHandle, oneshot::Sender<Result<(), IndyError>>>> = Default::default();
@@ -59,7 +38,7 @@ macro_rules! cb_ec {
             };
 
             let res = if err != 0 {
-                Err(to_indy_error(ErrorCode::from(err)))
+                Err(IndyError::new(ErrorCode::from(err)))
             } else {
                 Ok($res)
             };
@@ -129,7 +108,7 @@ macro_rules! result_handler {
         if err != ErrorCode::Success {
             let mut callbacks = $map.lock().unwrap();
             callbacks.remove(&command_handle).unwrap();
-            Box::new(future::err(to_indy_error(err)))
+            Box::new(future::err(IndyError::new(err)))
         } else {
             Box::new(rx
                 .map_err(|_| panic!("channel error!"))

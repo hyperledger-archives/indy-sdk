@@ -18,6 +18,7 @@ extern crate indy_sys as ffi;
 mod macros;
 
 pub use futures::future;
+use libc::c_char;
 
 pub mod anoncreds;
 pub mod blob_storage;
@@ -33,6 +34,8 @@ mod utils;
 
 use std::ffi::CString;
 use std::fmt;
+use std::ptr;
+use std::ffi::CStr;
 
 pub type IndyHandle = i32;
 
@@ -330,11 +333,29 @@ impl fmt::Display for IndyError {
 }
 
 impl IndyError {
-    pub fn new(error_code: ErrorCode, indy_message: String, indy_backtrace: Option<String>) -> Self {
-        IndyError {
-            error_code,
-            message: indy_message,
-            indy_backtrace,
+    pub(crate) fn new(error_code: ErrorCode) -> Self {
+        let mut error_json_p: *const c_char = ptr::null();
+
+        unsafe { ffi::indy_get_current_error(&mut error_json_p); }
+        let error_json = rust_str!(error_json_p);
+
+        match ::serde_json::from_str::<ErrorDetails>(&error_json) {
+            Ok(error) => IndyError {
+                error_code,
+                message: error.message,
+                indy_backtrace: error.backtrace,
+            },
+            Err(err) => IndyError {
+                error_code: ErrorCode::CommonInvalidState,
+                message: err.to_string(),
+                indy_backtrace: None,
+            }
         }
     }
+}
+
+#[derive(Deserialize)]
+struct ErrorDetails {
+    message: String,
+    backtrace: Option<String>
 }

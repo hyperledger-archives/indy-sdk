@@ -7,13 +7,10 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.sun.jna.ptr.PointerByReference;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
-
-import org.json.JSONObject;
 
 /**
  * Common functionality for the APIs, JSON parameters, and results used
@@ -92,13 +89,7 @@ public class IndyJava {
 			ErrorCode errorCode = ErrorCode.valueOf(err);
 			if (! ErrorCode.Success.equals(errorCode)) {
 
-				PointerByReference errorDetailsJson = new PointerByReference();
-
-				LibIndy.api.indy_get_current_error(errorDetailsJson);
-
-				JSONObject errorDetails = new JSONObject(errorDetailsJson.getValue().getString(0));
-
-				IndyException indyException = IndyException.fromSdkError(err, errorDetails.optString("message"), errorDetails.optString("backtrace"));
+				IndyException indyException = IndyException.fromSdkError(err);
 				future.completeExceptionally(indyException);
 				
 				return false;

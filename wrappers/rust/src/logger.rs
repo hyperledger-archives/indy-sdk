@@ -9,7 +9,6 @@ use log::{Log, Record, Metadata, Level};
 use std::ptr::null;
 
 use utils::ctypes::c_str_to_string;
-use utils::callbacks::to_indy_error;
 
 static mut LOGGER: Option<Box<(&'static Log)>> = None;
 
@@ -29,7 +28,7 @@ pub fn set_default_logger(pattern: Option<&str>) -> Result<(), IndyError> {
 
     match res {
         ErrorCode::Success => Ok(()),
-        err => Err(to_indy_error(err))
+        err => Err(IndyError::new(err))
     }
 }
 
@@ -62,7 +61,7 @@ pub fn set_logger(logger: &'static Log) -> Result<(), IndyError> {
 
     match res {
         ErrorCode::Success => Ok(()),
-        err => Err(to_indy_error(err))
+        err => Err(IndyError::new(err))
     }
 }
 
