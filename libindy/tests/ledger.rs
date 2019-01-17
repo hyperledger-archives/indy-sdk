@@ -1774,14 +1774,10 @@ mod medium_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_send_nym_request_works_for_different_roles() {
-            logger::set_default_logger();
 
             let (wallet_handle, pool_handle, trustee_did) = utils::setup_trustee();
 
             for role in ["STEWARD", "TRUSTEE", "TRUST_ANCHOR", "NETWORK_MONITOR"].iter() {
-                {
-                    trace!("\n\n----------------\n      testing for '{}'", role);
-                }
 
                 let (my_did, _) = did::create_and_store_my_did(wallet_handle, None).unwrap();
                 let nym_request = ledger::build_nym_request(&trustee_did, &my_did, None, None, Some(role)).unwrap();
