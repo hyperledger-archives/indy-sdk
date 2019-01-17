@@ -112,6 +112,7 @@ async def main():
     connection_data = await connection_to_alice.serialize()
     connection_to_alice.release()
     connection_to_alice = None
+    print(connection_data)
 
     while True:
         print("#6 Poll agency and wait for alice to accept the invitation (start alice.py now)")
