@@ -79,7 +79,10 @@ pub mod tests {
     use super::*;
     use std::fs;
     use std::io::Write;
-    use utils::constants::{POOL, GENESIS_PATH};
+    use utils::{
+        constants::{POOL, GENESIS_PATH},
+        get_temp_dir_path
+    };
 
     pub fn delete_test_pool() {
         match delete(POOL) {
@@ -90,7 +93,7 @@ pub mod tests {
 
     pub fn open_sandbox_pool() -> u32 {
         create_genesis_txn_file();
-        create_pool_ledger_config(POOL, GENESIS_PATH).unwrap();
+        create_pool_ledger_config(POOL, get_temp_dir_path(Some(GENESIS_PATH)).to_str().unwrap()).unwrap();
         open_pool_ledger(POOL, None).unwrap()
     }
 
@@ -107,7 +110,7 @@ pub mod tests {
         let node_txns = get_txns(&test_pool_ip);
         let txn_file_data = node_txns[0..4].join("\n");
 
-        let mut f = fs::File::create(GENESIS_PATH).unwrap();
+        let mut f = fs::File::create(get_temp_dir_path(Some(GENESIS_PATH)).to_str().unwrap()).unwrap();
         f.write_all(txn_file_data.as_bytes()).unwrap();
         f.flush().unwrap();
         f.sync_all().unwrap();

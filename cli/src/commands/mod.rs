@@ -260,6 +260,9 @@ pub fn handle_indy_error(err: IndyError, submitter_did: Option<&str>, pool_name:
 use libindy::ledger::Ledger;
 
 #[cfg(test)]
+use libindy::ledger::Ledger;
+
+#[cfg(test)]
 pub fn submit_retry<F, T, E>(ctx: &CommandContext, request: &str, parser: F) -> Result<(), ()>
     where F: Fn(&str) -> Result<T, E> {
     const SUBMIT_RETRY_CNT: usize = 3;
