@@ -1092,7 +1092,7 @@ def javaWrapperPublishing(testEnv, isRelease) {
 
             sh "sed -i -E -e 'H;1h;\$!d;x' -e \"s/<version>([0-9,.]+)</<version>\\1$suffix</\" pom.xml"
 
-            withCredentials([file(credentialsId: 'artifactory-evernym-settings', variable: 'settingsFile')]) {
+            withCredentials([file(credentialsId: 'maven-settings', variable: 'settingsFile')]) {
                 sh 'cp $settingsFile .'
 
                 sh "mvn clean deploy -DskipTests --settings settings.xml"
@@ -1109,7 +1109,7 @@ def vcxJavaWrapperPublishing(testEnv, isRelease) {
 
         testEnv.inside {
             echo "Publish To Maven Test: Test"
-            withCredentials([file(credentialsId: 'artifactory-evernym-settings', variable: 'settingsFile')]) {
+            withCredentials([file(credentialsId: 'maven-settings', variable: 'settingsFile')]) {
                 sh 'cp $settingsFile .'
 
                 sh "ci/buildJar.sh ${version}${suffix}"
