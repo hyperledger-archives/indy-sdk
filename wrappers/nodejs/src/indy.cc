@@ -2886,7 +2886,7 @@ NAN_METHOD(setRuntimeConfig) {
 NAN_METHOD(getCurrentError) {
   INDY_ASSERT_NARGS(getCurrentError, 0)
   const char* ptr = nullptr;
-  indy_get_current_error(ptr);
+  indy_get_current_error(&ptr);
   v8::Local<v8::Value> res = toJSString(ptr);
   info.GetReturnValue().Set(res);
 }

@@ -212,7 +212,7 @@ extern "C" {
     ///     "message": str - human-readable error description
     /// }
     ///
-    extern void indy_get_current_error(const char * &error_json_p);
+    extern void indy_get_current_error(const char ** error_json_p);
 
 #ifdef __cplusplus
 }
