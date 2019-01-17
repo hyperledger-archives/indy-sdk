@@ -1431,6 +1431,7 @@ fn get_role_title(role: &serde_json::Value) -> serde_json::Value {
         Some("0") => "TRUSTEE",
         Some("2") => "STEWARD",
         Some("101") => "TRUST_ANCHOR",
+        Some("201") => "NETWORK_MONITOR",
         _ => "-"
     }.to_string())
 }

@@ -13,6 +13,9 @@ extern crate serde_derive;
 #[macro_use]
 extern crate serde_json;
 
+#[macro_use]
+extern crate log;
+
 extern crate byteorder;
 extern crate hex;
 extern crate indyrs as indy;
@@ -32,7 +35,7 @@ mod utils;
 
 use self::indy::ErrorCode;
 #[cfg(feature = "local_nodes_pool")]
-use utils::{pool, ledger, did, anoncreds};
+use utils::{pool, ledger, did, anoncreds, logger};
 use utils::types::*;
 use utils::constants::*;
 
@@ -1740,7 +1743,9 @@ mod medium_cases {
     }
 
     mod nym_requests {
+
         use super::*;
+
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
@@ -1769,9 +1774,15 @@ mod medium_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_send_nym_request_works_for_different_roles() {
+            logger::set_default_logger();
+
             let (wallet_handle, pool_handle, trustee_did) = utils::setup_trustee();
 
-            for role in ["STEWARD", "TRUSTEE", "TRUST_ANCHOR"].iter() {
+            for role in ["STEWARD", "TRUSTEE", "TRUST_ANCHOR", "NETWORK_MONITOR"].iter() {
+                {
+                    trace!("\n\n----------------\n      testing for '{}'", role);
+                }
+
                 let (my_did, _) = did::create_and_store_my_did(wallet_handle, None).unwrap();
                 let nym_request = ledger::build_nym_request(&trustee_did, &my_did, None, None, Some(role)).unwrap();
                 ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
