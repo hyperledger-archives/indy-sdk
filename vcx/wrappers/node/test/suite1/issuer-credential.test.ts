@@ -7,14 +7,11 @@ import {
   dataIssuerCredentialCreate,
   issuerCredentialCreate
 } from 'helpers/entities'
-import { gcTest } from 'helpers/gc'
-import { TIMEOUT_GC } from 'helpers/test-constants'
 import { initVcxTestMode, shouldThrow } from 'helpers/utils'
 import {
   Connection,
   IssuerCredential,
   IssuerCredentialPaymentManager,
-  rustAPI,
   StateType,
   VCXCode,
   VCXMock,
@@ -92,15 +89,6 @@ describe('IssuerCredential:', () => {
       assert.equal(error.vcxCode, VCXCode.INVALID_ISSUER_CREDENTIAL_HANDLE)
     })
 
-    it('throws: issuerCredential released', async () => {
-      const issuerCredential = await issuerCredentialCreate()
-      const { data } = await issuerCredential.serialize()
-      assert.ok(data)
-      assert.equal(data.source_id, issuerCredential.sourceId)
-      assert.equal(await issuerCredential.release(), VCXCode.SUCCESS)
-      const error = await shouldThrow(() => issuerCredential.serialize())
-      assert.equal(error.vcxCode, VCXCode.INVALID_ISSUER_CREDENTIAL_HANDLE)
-    })
   })
 
   describe('deserialize:', () => {
@@ -127,22 +115,6 @@ describe('IssuerCredential:', () => {
         source_id: 'Invalid'
       } } as any))
       assert.equal(error.vcxCode, VCXCode.INVALID_JSON)
-    })
-  })
-
-  describe('release:', () => {
-    it('success', async () => {
-      const issuerCredential = await issuerCredentialCreate()
-      assert.equal(await issuerCredential.release(), VCXCode.SUCCESS)
-      const errorSerialize = await shouldThrow(() => issuerCredential.serialize())
-      assert.equal(errorSerialize.vcxCode, VCXCode.INVALID_ISSUER_CREDENTIAL_HANDLE)
-    })
-
-    // TODO: Enable once https://evernym.atlassian.net/browse/EN-668 is resolved
-    it('throws: not initialized', async () => {
-      const issuerCredential = new IssuerCredential(null as any, {} as any)
-      const error = await shouldThrow(() => issuerCredential.release())
-      assert.equal(error.vcxCode, VCXCode.INVALID_ISSUER_CREDENTIAL_HANDLE)
     })
   })
 
@@ -261,22 +233,4 @@ describe('IssuerCredential:', () => {
     })
   })
 
-  describe.skip('GC:', function () {
-    this.timeout(TIMEOUT_GC)
-
-    const issuerCredentialCreateAndDelete = async () => {
-      let issuerCredential: IssuerCredential | null = await issuerCredentialCreate()
-      const handle = issuerCredential.handle
-      issuerCredential = null
-      return handle
-    }
-    it('calls release', async () => {
-      const handle = await issuerCredentialCreateAndDelete()
-      await gcTest({
-        handle,
-        serialize: rustAPI().vcx_issuer_credential_serialize,
-        stopCode: VCXCode.INVALID_ISSUER_CREDENTIAL_HANDLE
-      })
-    })
-  })
 })
