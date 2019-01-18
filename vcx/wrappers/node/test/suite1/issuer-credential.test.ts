@@ -261,9 +261,8 @@ describe('IssuerCredential:', () => {
     })
   })
 
-  describe('GC:', function () {
+  describe.skip('GC:', function () {
     this.timeout(TIMEOUT_GC)
-    console.log("TIMEOUT_GC: ", TIMEOUT_GC)
 
     const issuerCredentialCreateAndDelete = async () => {
       let issuerCredential: IssuerCredential | null = await issuerCredentialCreate()
