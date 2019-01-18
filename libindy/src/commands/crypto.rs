@@ -16,6 +16,7 @@ use std::result;
 use std::str;
 use utils::crypto::base64;
 use utils::crypto::chacha20poly1305_ietf;
+use domain::crypto::combo_box::ComboBox;
 
 type Result<T> = result::Result<T, IndyError>;
 
@@ -203,6 +204,7 @@ impl CryptoCommandExecutor {
         Ok(res)
     }
 
+    //TODO begin deprecation process this function. It will be replaced by pack
     fn authenticated_encrypt(
         &self,
         wallet_handle: i32,
@@ -210,10 +212,7 @@ impl CryptoCommandExecutor {
         their_vk: &str,
         msg: &[u8],
     ) -> Result<Vec<u8>> {
-        debug!(
-            "authenticated_encrypt >>> wallet_handle: {:?}, my_vk: {:?}, their_vk: {:?}, msg: {:?}",
-            wallet_handle, my_vk, their_vk, msg
-        );
+        debug!("authenticated_encrypt >>> wallet_handle: {:?}, my_vk: {:?}, their_vk: {:?}, msg: {:?}", wallet_handle, my_vk, their_vk, msg);
 
         self.crypto_service.validate_key(my_vk)?;
         self.crypto_service.validate_key(their_vk)?;
@@ -224,25 +223,26 @@ impl CryptoCommandExecutor {
             &RecordOptions::id_value(),
         )?;
 
-        let res = self
-            .crypto_service
-            .authenticated_encrypt(&my_key, their_vk, msg)?;
+        let msg = self.crypto_service.create_combo_box(&my_key, &their_vk, msg)?;
+
+        let msg = msg.to_msg_pack()
+            .map_err(|e| CommonError::InvalidState(format!("Can't serialize ComboBox: {:?}", e)))?;
+
+        let res = self.crypto_service.crypto_box_seal(&their_vk, &msg)?;
 
         debug!("authenticated_encrypt <<< res: {:?}", res);
 
         Ok(res)
     }
 
+    //TODO begin deprecation process this function. It will be replaced by unpack
     fn authenticated_decrypt(
         &self,
         wallet_handle: i32,
         my_vk: &str,
         msg: &[u8],
     ) -> Result<(String, Vec<u8>)> {
-        debug!(
-            "authenticated_decrypt >>> wallet_handle: {:?}, my_vk: {:?}, msg: {:?}",
-            wallet_handle, my_vk, msg
-        );
+        debug!("authenticated_decrypt >>> wallet_handle: {:?}, my_vk: {:?}, msg: {:?}", wallet_handle, my_vk, msg);
 
         self.crypto_service.validate_key(my_vk)?;
 
@@ -252,7 +252,20 @@ impl CryptoCommandExecutor {
             &RecordOptions::id_value(),
         )?;
 
-        let res = self.crypto_service.authenticated_decrypt(&my_key, &msg)?;
+        let decrypted_msg = self.crypto_service.crypto_box_seal_open(&my_key, &msg)?;
+
+        let parsed_msg = ComboBox::from_msg_pack(decrypted_msg.as_slice())
+            .map_err(|err| CommonError::InvalidStructure(format!("Can't deserialize ComboBox: {:?}", err)))?;
+
+        let doc: Vec<u8> = base64::decode(&parsed_msg.msg)
+            .map_err(|err| CommonError::InvalidStructure(format!("Can't decode internal msg filed from base64 {}", err)))?;
+
+        let nonce: Vec<u8> = base64::decode(&parsed_msg.nonce)
+            .map_err(|err| CommonError::InvalidStructure(format!("Can't decode nonce from base64 {}", err)))?;
+
+        let decrypted_msg = self.crypto_service.crypto_box_open(&my_key, &parsed_msg.sender, &doc, &nonce)?;
+
+        let res = (parsed_msg.sender, decrypted_msg);
 
         debug!("authenticated_decrypt <<< res: {:?}", res);
 
