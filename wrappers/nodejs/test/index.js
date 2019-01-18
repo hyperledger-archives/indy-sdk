@@ -16,7 +16,7 @@ test('wrapper essentials', async function (t) {
   t.is(err.message, 'CommonInvalidParam3')
   t.is(err.indyCode, 102)
   t.is(err.indyName, 'CommonInvalidParam3')
-  t.is(err.indyMessage, 'Error: Invalid parameter 3\n  caused by: Invalid pointer has been passed\n')
+  t.is(err.indyMessage, 'Error: Invalid parameter 3\n  Caused by: Invalid pointer has been passed\n')
   t.is(err.indyBacktrace, '')
   t.is(typeof err.indyCurrentErrorJson, 'string')
   t.is(err.indyCurrentErrorJson[0], '{')
