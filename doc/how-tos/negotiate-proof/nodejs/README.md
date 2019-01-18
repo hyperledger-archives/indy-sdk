@@ -1,8 +1,8 @@
 # Negotiate a Proof
 
-Indy-SDK Developer Walkthrough #5, Python Edition
+Indy-SDK Developer Walkthrough #5, NodeJS Edition
 
-[ [Rust](../rust/README.md) | [Java](../../not-yet-written.md) | [.NET](../../not-yet-written.md) | [Node.js](../nodejs/README.md) | [Objective C](../../not-yet-written.md) ]
+[ [Python](../python/README.md) | [Rust](../rust/README.md) | [Java](../../not-yet-written.md) | [.NET](../../not-yet-written.md) | [Objective C](../../not-yet-written.md) ]
 
 
 ## Prerequisites
@@ -15,24 +15,24 @@ Setup your workstation with an indy development virtual machine (VM). See [prere
 ### Step 1
 
 In your normal workstation operating system (not the VM), open a python editor of your
-choice and paste the code from [template.py](template.py)
+choice and paste the code from [template.js](template.js)
 into a new doc. We will be modifying this code in later steps.
 
-Save the doc as `negotiate_proof.py`.
+Save the doc as `negotiateProof.js`.
 
 This is a very simple app framework into which you'll plug the code
 you'll be writing.
 
 ### Step 2
 
-This how-to builds on the work in ["Issue Credential"](../issue-credential/../not-yet-written.md).
+This how-to builds on the work in ["Issue Credential"](../../issue-credential/README.md).
 Rather than duplicate our explanation of those steps here, we will simply
 copy that code as our starting point.
 
-Copy the contents of [step2.py](step2.py) into
-`negotiate_proof.py` on top of the `Step 2 code goes here` placeholder comment.
+Copy the contents of [step2.js](step2.js) into
+`negotiateProof.js` on top of the `Step 2 code goes here` placeholder comment.
 
-Save the updated version of `negotiate_proof.py`.
+Save the updated version of `negotiateProof.js`.
 
 ### Step 3
 
@@ -57,10 +57,10 @@ to add index-driven search to indy wallets. Visit
 [#indy-sdk on Rocket.Chat](https://chat.hyperledger.org/channel/indy-sdk)
 to learn more.)
 
-Copy the contents of [step3.py](step3.py) into
-`negotiate_proof.py` on top of the `Step 3 code goes here` placeholder comment.
+Copy the contents of [step3.js](step3.js) into
+`negotiateProof.js` on top of the `Step 3 code goes here` placeholder comment.
 
-Save the updated version of `negotiate_proof.py`.
+Save the updated version of `negotiateProof.js`.
 
 ### Step 4
 
@@ -68,27 +68,27 @@ At this point, the holder becomes a *prover* by generating and presenting
 a proof. This is done by building some JSON that selects the credentials
 (out of those identified as valid candidates in the previous step),
 that the prover wishes to use to satisfy the request. The prover calls
-`anoncreds.prover_create_proof()` with appropriate parameters, and the
+`indy.proverCreateProof()` with appropriate parameters, and the
 proof is created.
 
-Copy the contents of [step4.py](step4.py) into
-`negotiate_proof.py` on top of the `Step 4 code goes here` placeholder comment.
+Copy the contents of [step4.js](step4.js) into
+`negotiateProof.js` on top of the `Step 4 code goes here` placeholder comment.
 
-Save the updated version of `negotiate_proof.py`.
+Save the updated version of `negotiateProof.js`.
 
 ### Step 6
 
 Finally, the verifier needs to check to be sure the proof that's presented
-satisfies their criteria. This is easy; just call `anoncreds.verifier_verify_proof()`.
+satisfies their criteria. This is easy; just call `indy.verifierVerifyProof()`.
 
-Copy the contents of [step5.py](step5.py) into
-`negotiate_proof.py` on top of the `Step 5 code goes here` placeholder comment.
+Copy the contents of [step5.js](step5.js) into
+`negotiateProof.js` on top of the `Step 5 code goes here` placeholder comment.
 
-Save the updated version of `negotiate_proof.py`.
+Save the updated version of `negotiateProof.js`.
 
 ### Step 6
 
-Run the [finished code](negotiate_proof.py) and observe the whole sequence.
+Run the [finished code](negotiateProof.js) and observe the whole sequence.
 
 ## More experiments
 

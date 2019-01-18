@@ -179,7 +179,7 @@ pub fn import(config: &str) -> Result<(), WalletError> {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use utils::error;
+    use utils::{get_temp_dir_path, error};
     use std::thread;
     use std::time::Duration;
     use utils::devsetup::tests::setup_wallet_env;
@@ -313,7 +313,9 @@ pub mod tests {
 
         // Missing exported_wallet_path
         assert_eq!(import(&config.to_string()), Err(WalletError::CommonError(error::MISSING_EXPORTED_WALLET_PATH.code_num)));
-        config[settings::CONFIG_EXPORTED_WALLET_PATH] = serde_json::to_value(settings::DEFAULT_EXPORTED_WALLET_PATH).unwrap();
+        config[settings::CONFIG_EXPORTED_WALLET_PATH] = serde_json::to_value(
+            get_temp_dir_path(Some(settings::DEFAULT_EXPORTED_WALLET_PATH)).to_str().unwrap()
+        ).unwrap();
 
         // Missing backup_key
         assert_eq!(import(&config.to_string()), Err(WalletError::CommonError(error::MISSING_BACKUP_KEY.code_num)));

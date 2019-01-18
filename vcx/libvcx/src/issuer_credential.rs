@@ -81,11 +81,13 @@ pub struct CredentialOffer {
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct CredentialMessage {
     pub libindy_cred: String,
-    pub rev_reg_def_json: Option<String>,
+    pub rev_reg_def_json: String,
     pub cred_def_id: String,
     pub msg_type: String,
     pub claim_offer_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub cred_revoc_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub revoc_reg_delta_json: Option<String>,
     pub version: String,
     pub from_did: String,
@@ -309,7 +311,10 @@ impl IssuerCredential {
             version: String::from("0.1"),
             msg_type: String::from("CRED"),
             libindy_cred: cred,
-            rev_reg_def_json: self.rev_reg_def_json.clone(),
+            rev_reg_def_json: match self.rev_reg_def_json {
+                Some(_) => self.rev_reg_def_json.clone().unwrap(),
+                None => String::new(),
+            },
             cred_def_id: self.cred_def_id.clone(),
             cred_revoc_id,
             revoc_reg_delta_json,
@@ -707,6 +712,7 @@ pub mod tests {
                                        libindy_issuer_create_credential_offer,
                                        libindy_prover_create_credential_req },
                           wallet::get_wallet_handle, wallet},
+                 get_temp_dir_path,
     };
     use error::{ issuer_cred::IssuerCredError };
 
@@ -1158,7 +1164,7 @@ pub mod tests {
         init!("true");
         let mut credential = create_standard_issuer_credential();
 
-        credential.tails_file = Some(TEST_TAILS_FILE.to_string());
+        credential.tails_file = Some(get_temp_dir_path(Some(TEST_TAILS_FILE)).to_str().unwrap().to_string());
         credential.cred_rev_id = None;
         credential.rev_reg_id = None;
         assert_eq!(credential.revoke_cred(), Err(IssuerCredError::InvalidRevocationInfo()));
@@ -1171,7 +1177,7 @@ pub mod tests {
         credential.rev_reg_id = Some(REV_REG_ID.to_string());
         assert_eq!(credential.revoke_cred(), Err(IssuerCredError::InvalidRevocationInfo()));
 
-        credential.tails_file = Some(TEST_TAILS_FILE.to_string());
+        credential.tails_file = Some(get_temp_dir_path(Some(TEST_TAILS_FILE)).to_str().unwrap().to_string());
         credential.cred_rev_id = Some(CRED_REV_ID.to_string());
         credential.rev_reg_id = Some(REV_REG_ID.to_string());
         credential.rev_cred_payment_txn = None;

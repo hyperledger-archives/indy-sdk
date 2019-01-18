@@ -9,5 +9,5 @@ to generate a zero-knowledge proof based on the credential.
   [Rust](rust/README.md) 
   [Java](../not-yet-written.md) | 
   [.NET](../not-yet-written.md) | 
-  [Node.js](../not-yet-written.md) | 
+  [Node.js](nodejs/README.md) | 
   [Objective C](../not-yet-written.md) ]
