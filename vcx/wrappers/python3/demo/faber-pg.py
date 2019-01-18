@@ -4,6 +4,7 @@ import json
 import random
 from ctypes import cdll
 from time import sleep
+import platform
 
 import logging
 
@@ -20,6 +21,17 @@ from vcx.api.vcx_init import vcx_init_with_config
 from vcx.state import State, ProofState
 
 # logging.basicConfig(level=logging.DEBUG) uncomment to get logs
+
+def file_ext():
+    if platform.system() == 'Linux':
+        return '.so'
+    elif platform.system() == 'Darwin':
+        return '.dylib'
+    elif platform.system() == 'Windows':
+        return '.dll'
+    else:
+        return '.so'
+
 
 # 'agency_url': URL of the agency
 # 'agency_did':  public DID of the agency
@@ -41,7 +53,7 @@ provisionConfig = {
 if len(sys.argv) > 1 and sys.argv[1] == '--postgres':
     # load postgres dll and configure postgres wallet
     print("Initializing postgres wallet")
-    stg_lib = cdll.LoadLibrary("libindystrgpostgres.dylib")
+    stg_lib = cdll.LoadLibrary("libindystrgpostgres" + file_ext())
     result = stg_lib.postgresstorage_init()
     if result != 0:
         print("Error unable to load postgres wallet storage", result)
@@ -74,7 +86,7 @@ async def main():
                 pass
         print("Postgres wallet provisioned")
 
-    payment_plugin = cdll.LoadLibrary("libnullpay.dylib")
+    payment_plugin = cdll.LoadLibrary("libnullpay" + file_ext())
     payment_plugin.nullpay_init()
 
     print("#1 Provision an agent and wallet, get back configuration details")
