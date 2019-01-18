@@ -56,7 +56,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         ruby \
         ruby-dev \
         rubygems \
-    && gem install --no-ri --no-rdoc fpm -v $FPM_VERSION \
+    && gem install --no-ri --no-rdoc fpm \
     && rm -rf /var/lib/apt/lists/*
 
 RUN useradd -ms /bin/bash -u $uid indy
