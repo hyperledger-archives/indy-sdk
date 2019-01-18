@@ -137,7 +137,7 @@ impl fmt::Display for IndyError {
                 first = false;
                 writeln!(f, "Error: {}", cause)?;
             } else {
-                writeln!(f, "  caused by: {}", cause)?;
+                writeln!(f, "  Caused by: {}", cause)?;
             }
         }
 
@@ -162,7 +162,7 @@ impl IndyError {
         IndyError { inner: Arc::new(inner.map(|_| msg).context(kind)) }
     }
 
-    pub fn extend_with_type<D>(self, kind: IndyErrorKind, msg: D) -> IndyError
+    pub fn map<D>(self, kind: IndyErrorKind, msg: D) -> IndyError
         where D: fmt::Display + fmt::Debug + Send + Sync + 'static {
         let inner = Arc::try_unwrap(self.inner).unwrap();
         IndyError { inner: Arc::new(inner.map(|_| msg).context(kind)) }
