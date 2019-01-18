@@ -8,7 +8,7 @@
 1. Check the boxes for the _Desktop development with C++_ and _Linux Development with C++_
 1. In the summary portion on the right hand side also check _C++/CLI support_
 1. Click install
-1. Download git-scm for windows [here](https://git-scm.com/downloads/win)
+1. Download git-scm for windows [here](https://git-scm.com/download/win)
 1. Install git for windows using:
    1. _Use Git from Git Bash Only_ so it doesn't change any path settings of the command prompt
    1. _Checkout as is, commit Unix-style line endings_. You shouldn't be commiting anything anyway but just in case
