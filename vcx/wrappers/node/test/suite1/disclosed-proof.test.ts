@@ -205,7 +205,7 @@ describe('DisclosedProof', () => {
     })
   })
 
-  describe('GC:', function () {
+  describe.skip('GC:', function () {
     this.timeout(TIMEOUT_GC)
 
     const disclosedProofCreateAndDelete = async () => {

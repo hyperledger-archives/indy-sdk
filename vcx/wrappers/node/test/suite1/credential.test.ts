@@ -244,7 +244,7 @@ describe('Credential:', () => {
     })
   })
 
-  describe('GC:', function () {
+  describe.skip('GC:', function () {
     this.timeout(TIMEOUT_GC)
 
     const credentialCreateAndDelete = async () => {
