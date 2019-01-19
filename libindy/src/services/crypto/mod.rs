@@ -352,45 +352,6 @@ impl CryptoService {
         Ok(decrypted_doc)
     }
 
-    //This function is used by unpack only. Authdecrypt uses the command layer to implement
-    pub fn authenticated_encrypt(&self, my_key: &Key, their_vk: &str, doc: &[u8]) -> Result<Vec<u8>, CryptoError> {
-        let (msg, nonce) = self.crypto_box(my_key, their_vk, doc)?;
-
-        let combo_box = ComboBox {
-            msg: base64::encode(msg.as_slice()),
-            sender: my_key.verkey.to_string(),
-            nonce: base64::encode(nonce.as_slice())
-        };
-
-        //TODO check about removing msg_pack dependency
-        let msg = combo_box.to_base64()
-            .map_err(|e| CommonError::InvalidState(format!("Can't serialize ComboBox: {:?}", e)))?;
-
-        let res = self.crypto_box_seal(&their_vk, msg.as_bytes())?;
-
-        Ok(res)
-    }
-
-    //This function is used by pack only. Authcrypt uses the command layer to implement
-    pub fn authenticated_decrypt(&self, my_key: &Key, doc: &[u8]) -> Result<(String, Vec<u8>), CryptoError> {
-        let decrypted_msg = self.crypto_box_seal_open(&my_key, &doc)?;
-
-        let parsed_msg = ComboBox::from_base64(decrypted_msg)
-            .map_err(|err| CommonError::InvalidStructure(format!("Can't deserialize ComboBox: {:?}", err)))?;
-
-        let doc: Vec<u8> = base64::decode(&parsed_msg.msg)
-            .map_err(|err| CommonError::InvalidStructure(format!("Can't decode internal msg filed from base64 {}", err)))?;
-
-        let nonce: Vec<u8> = base64::decode(&parsed_msg.nonce)
-            .map_err(|err| CommonError::InvalidStructure(format!("Can't decode nonce from base64 {}", err)))?;
-
-        let decrypted_msg = self.crypto_box_open(&my_key, &parsed_msg.sender, &doc, &nonce)?;
-
-        let res = (parsed_msg.sender, decrypted_msg);
-
-        Ok(res)
-    }
-
     pub fn convert_seed(&self, seed: Option<&str>) -> Result<Option<ed25519_sign::Seed>, CryptoError> {
         trace!("convert_seed >>> seed: {:?}", secret!(seed));
 

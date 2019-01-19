@@ -13,10 +13,15 @@ pub struct Recipient {
     pub header: Header
 }
 
-
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct Header {
-    pub kid: String
+    pub kid: String,
+    #[serde(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub nonce: Option<String>,
+    #[serde(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sender: Option<String>
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]

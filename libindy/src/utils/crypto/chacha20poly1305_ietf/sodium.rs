@@ -1,4 +1,5 @@
 extern crate sodiumoxide;
+extern crate zeroize;
 
 use self::sodiumoxide::crypto::aead::chacha20poly1305_ietf;
 use self::sodiumoxide::utils;
@@ -22,6 +23,19 @@ sodium_type!(Tag, chacha20poly1305_ietf::Tag, TAGBYTES);
 impl Nonce {
     pub fn increment(&mut self) {
         utils::increment_le(&mut (self.0).0);
+    }
+}
+
+impl zeroize::Zeroize for Key {
+    #[inline]
+    fn zeroize(&mut self) {
+        self.0.zeroize();
+    }
+}
+
+impl ::std::ops::Drop for Key {
+    fn drop(&mut self) {
+        self.0.zeroize();
     }
 }
 

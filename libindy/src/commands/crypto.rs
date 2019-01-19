@@ -1,5 +1,6 @@
 extern crate indy_crypto;
 extern crate serde_json;
+extern crate zeroize;
 
 use std::collections::HashMap;
 
@@ -365,11 +366,6 @@ impl CryptoCommandExecutor {
         sender_vk: &str,
         wallet_handle: i32,
     ) -> Result<Vec<u8>> {
-        //generate cek
-        let cek = chacha20poly1305_ietf::gen_key();
-
-        //list of ceks used to construct JWE later
-        let mut encrypted_recipients_struct: Vec<Recipient> = vec![];
 
         //parse receivers to structs
         let receiver_list: Vec<String> = serde_json::from_str(receivers).map_err(|err| {
@@ -385,191 +381,98 @@ impl CryptoCommandExecutor {
                 "No receiver keys found"
             ))));
         }
-
+        
         match sender_vk.is_empty() {
             true => {
-                // anoncrypt
-                //encrypt cek for recipient
-                for their_vk in receiver_list {
-                    //encrypt sender verkey
-                    let enc_cek = self.crypto_service.crypto_box_seal(&their_vk, &cek[..])?;
-
-                    //create recipient struct and push to encrypted list
-                    encrypted_recipients_struct.push(Recipient {
-                        encrypted_key: base64::encode(enc_cek.as_slice()),
-                        header: Header {
-                            kid: their_vk,
-                        },
-                    });
-                } // end for-loop
-
-                self._format_pack_message(encrypted_recipients_struct, message, &cek, false)
+                //returns anoncrypted pack_message format. See Wire message format HIPE for details
+                self._pack_anoncrypt(message, receiver_list)
             }
             false => {
-                //authcrypt
-                //get my_key from my wallet
-                let my_key = self.wallet_service.get_indy_object(
-                    wallet_handle,
-                    sender_vk,
-                    &RecordOptions::id_value()
-                )?;
-
-                //encrypt cek for recipient
-                for their_vk in receiver_list {
-                    let enc_cek =
-                        self.crypto_service
-                            .authenticated_encrypt(&my_key, &their_vk, &cek[..])?;
-
-                    //create recipient struct and push to encrypted list
-                    encrypted_recipients_struct.push(Recipient {
-                        encrypted_key: base64::encode(enc_cek.as_slice()),
-                        header: Header {
-                            kid:their_vk,
-                        },
-                    });
-                } // end for-loop
-
-                self._format_pack_message(encrypted_recipients_struct, message, &cek, true)
+                //returns authcrypted pack_message format. See Wire message format HIPE for details
+                self._pack_authcrypt(message, receiver_list, sender_vk, wallet_handle)
             }
         }
     }
 
-    pub fn unpack_msg(&self, jwe_json: Vec<u8>, wallet_handle: i32) -> Result<Vec<u8>> {
-        //serialize JWE to struct
-        let jwe_struct: JWE = serde_json::from_slice(jwe_json.as_slice()).map_err(|err| {
-            IndyError::CommonError(CommonError::InvalidStructure(format!(
-                "Failed to deserialize auth ames {}",
-                err
-            )))
-        })?;
+    fn _pack_anoncrypt(&self, message: Vec<u8>, receiver_list: Vec<String>) -> Result<Vec<u8>> {
+        let mut encrypted_recipients_struct : Vec<Recipient> = vec![];
+        let cek = chacha20poly1305_ietf::gen_key();
 
+        for their_vk in receiver_list {
 
-        //decode protected data
-        let protected_decoded_vec = base64::decode(&jwe_struct.protected)?;
-        let protected_decoded_str = String::from_utf8(protected_decoded_vec).map_err(|err| {
-            IndyError::CommonError(CommonError::InvalidStructure(format!(
-                "Failed to utf8 encode data {}",
-                err
-            )))
-        })?;
+            //generate cek
+            let cek = chacha20poly1305_ietf::gen_key();
 
-        //convert protected_data_str to struct
-        let protected_struct: Protected =
-            serde_json::from_str(&protected_decoded_str).map_err(|err| {
-                IndyError::CommonError(CommonError::InvalidStructure(format!(
-                    "Failed to deserialize protected data {}",
-                    err
-                )))
-            })?;
+            //encrypt sender verkey
+            let enc_cek = self.crypto_service.crypto_box_seal(&their_vk, &cek[..])?;
 
-        //search through recipients_list and check if one of the kid matches a verkey in the wallet
-        for recipient in protected_struct.recipients {
+            //create recipient struct and push to encrypted list
+            encrypted_recipients_struct.push(Recipient {
+                encrypted_key: base64::encode(enc_cek.as_slice()),
+                header: Header {
+                    kid: their_vk,
+                    sender: None,
+                    nonce: None
+                },
+            });
+        } // end for-loop
+        let base64_protected = self._base64_encode_protected(encrypted_recipients_struct, false)?;
 
-                let my_key_res = self.wallet_service.get_indy_object(
-                    wallet_handle,
-                    &recipient.header.kid,
-                    &RecordOptions::id_value()
-                ).map_err(|err| IndyError::WalletError(err));
+        // encrypt ciphertext and integrity protect "protected" field
+        let (ciphertext, iv, tag) =
+            self.crypto_service
+                .encrypt_plaintext(message, &base64_protected, &cek);
 
+        //clear cek from memory
+        cek.drop();
 
-            if my_key_res.is_ok() {
-                //TODO change to move this to a separate function and return recipient rather than putting logic inside the for loop.
-                // For loops have no way to return values in rust
-
-                //decode encrypted_key
-                let encrypted_key_vec = base64::decode(&recipient.encrypted_key)?;
-
-                //get cek and sender data
-                let (sender_verkey, cek) =
-                    match protected_struct.alg.as_ref() {
-                        "Authcrypt" => {
-
-                            //get my key based on kid
-                            let my_key = my_key_res.unwrap();
-
-                            //decrypt cek
-                            let (sender_vk, cek_as_vec) = self
-                                .crypto_service
-                                .authenticated_decrypt(&my_key, encrypted_key_vec.as_slice())?;
-
-                            //convert to chacha Key struct
-                            let cek: chacha20poly1305_ietf::Key =
-                                chacha20poly1305_ietf::Key::from_slice(&cek_as_vec[..]).map_err(
-                                    |err| {
-                                        IndyError::CommonError(CommonError::InvalidStructure(
-                                            format!("Failed to decrypt cek {}", err),
-                                        ))
-                                    },
-                                )?;
-
-                            Ok((Some(sender_vk), cek))
-                        } //close authcrypt option
-
-                        "Anoncrypt" => {
-                            //get my private key
-                            let my_key = self.wallet_service.get_indy_object(
-                                wallet_handle,
-                                &recipient.header.kid,
-                                &RecordOptions::id_value(),
-                            )?;
-
-                            //decrypt cek
-                            let cek_as_vec = self
-                                .crypto_service
-                                .crypto_box_seal_open(&my_key, encrypted_key_vec.as_slice())?;
-
-                            //convert to chacha Key struct
-                            let cek: chacha20poly1305_ietf::Key =
-                                chacha20poly1305_ietf::Key::from_slice(&cek_as_vec[..]).map_err(
-                                    |err| {
-                                        IndyError::CommonError(CommonError::InvalidStructure(
-                                            format!("Failed to decrypt cek {}", err),
-                                        ))
-                                    },
-                                )?;
-
-                            Ok((None, cek))
-                        } //close Anoncrypt option
-
-                        _ => Err(IndyError::CommonError(CommonError::InvalidStructure(
-                            format!("Failed to deserialize cek encryption alg"),
-                        ))),
-                    }?; //close cek and sender_data match statement
-
-                let message = self.crypto_service.decrypt_ciphertext(
-                    &jwe_struct.ciphertext,
-                    &jwe_struct.protected,
-                    &jwe_struct.iv,
-                    &jwe_struct.tag,
-                    &cek,
-                )?;
-
-                let res = UnpackMessage {
-                    message,
-                    sender_verkey,
-                };
-
-                return serde_json::to_vec(&res).map_err(|err| {
-                    IndyError::CommonError(CommonError::InvalidStructure(format!(
-                        "Failed to serialize message {}",
-                        err
-                    )))
-                });
-            } // close if statement if a kid matches a verkey found in wallet
-        } // close for loop searching through recipients on kid
-
-        // If it gets to this point no verkey was found in wallet that matches a kid so return Error
-        return Err(IndyError::WalletError(WalletError::ItemNotFound));
+        self._format_pack_message(&base64_protected, &ciphertext, &iv, &tag)
     }
 
-    fn _format_pack_message(
-        &self,
-        encrypted_recipients_struct: Vec<Recipient>,
-        message: Vec<u8>,
-        cek: &chacha20poly1305_ietf::Key,
-        alg_is_authcrypt: bool
-    ) -> Result<Vec<u8>> {
+    fn _pack_authcrypt(&self, message: Vec<u8>, receiver_list: Vec<String>, sender_vk: &str, wallet_handle: i32) -> Result<Vec<u8>> {
+        //get my_key from my wallet
+        let my_key = self.wallet_service.get_indy_object(
+            wallet_handle,
+            sender_vk,
+            &RecordOptions::id_value()
+        )?;
 
+        let mut encrypted_recipients_struct : Vec<Recipient> = vec![];
+
+        //generate cek
+        let cek = chacha20poly1305_ietf::gen_key();
+
+        //encrypt cek for recipient
+        for their_vk in receiver_list {
+            let (enc_cek, nonce) = self.crypto_service.crypto_box(&my_key, &their_vk, &cek[..])?;
+
+            let enc_sender = self.crypto_service.crypto_box_seal(&their_vk, sender_vk.as_bytes())?;
+
+            //create recipient struct and push to encrypted list
+            encrypted_recipients_struct.push(Recipient {
+                encrypted_key: base64::encode(enc_cek.as_slice()),
+                header: Header {
+                    kid:their_vk,
+                    sender: Some(base64::encode(enc_sender.as_slice())),
+                    nonce: Some(base64::encode(nonce.as_slice()))
+                },
+            });
+        } // end for-loop
+
+        let base64_protected = self._base64_encode_protected(encrypted_recipients_struct, true)?;
+
+        // encrypt ciphertext and integrity protect "protected" field
+        let (ciphertext, iv, tag) =
+            self.crypto_service
+                .encrypt_plaintext(message, &base64_protected, &cek);
+
+        //clear cek from memory
+        cek.drop();
+
+        self._format_pack_message(&base64_protected, &ciphertext, &iv, &tag)
+    }
+
+    fn _base64_encode_protected(&self, encrypted_recipients_struct: Vec<Recipient>, alg_is_authcrypt: bool) -> Result<String> {
         let alg_val= match alg_is_authcrypt {
             true => String::from("Authcrypt"),
             false => String::from("Anoncrypt")
@@ -589,22 +492,25 @@ impl CryptoCommandExecutor {
             )))
         })?;
 
-        let base64_protected = base64::encode(protected_encoded.as_bytes());
+        Ok(base64::encode(protected_encoded.as_bytes()))
+    }
 
-        // encrypt ciphertext and integrity protect "protected" field
-        let (ciphertext, iv, tag) =
-            self.crypto_service
-                .encrypt_plaintext(message, &base64_protected, cek);
+    fn _format_pack_message(
+        &self,
+        base64_protected: &str,
+        ciphertext: &str,
+        iv: &str,
+        tag: &str
+    ) -> Result<Vec<u8>> {
 
-        //construct JWE struct
+        //serialize pack message and return as vector of bytes
         let jwe_struct = JWE {
-            protected: base64_protected,
-            iv,
-            ciphertext,
-            tag,
+            protected: base64_protected.to_string(),
+            iv: iv.to_string(),
+            ciphertext: ciphertext.to_string(),
+            tag: tag.to_string()
         };
 
-        //convert JWE struct to a string and return
         serde_json::to_vec(&jwe_struct).map_err(|err| {
             IndyError::CommonError(CommonError::InvalidStructure(format!(
                 "Failed to serialize JWE {}",
@@ -612,4 +518,148 @@ impl CryptoCommandExecutor {
             )))
         })
     }
+
+    //TODO refactor this function to reduce it's size
+    pub fn unpack_msg(&self, jwe_json: Vec<u8>, wallet_handle: i32) -> Result<Vec<u8>> {
+        //serialize JWE to struct
+        let jwe_struct: JWE = serde_json::from_slice(jwe_json.as_slice()).map_err(|err| {
+            IndyError::CommonError(CommonError::InvalidStructure(format!(
+                "Failed to deserialize JWE {}",
+                err
+            )))
+        })?;
+        //decode protected data
+        let protected_decoded_vec = base64::decode(&jwe_struct.protected)?;
+        let protected_decoded_str = String::from_utf8(protected_decoded_vec).map_err(|err| {
+            IndyError::CommonError(CommonError::InvalidStructure(format!(
+                "Failed to utf8 encode data {}",
+                err
+            )))
+        })?;
+        //convert protected_data_str to struct
+        let protected_struct: Protected = serde_json::from_str(&protected_decoded_str).map_err(|err| {
+            IndyError::CommonError(CommonError::InvalidStructure(format!(
+                "Failed to deserialize protected data {}",
+                err
+            )))
+        })?;
+
+        //extract recipient that matches a key in the wallet
+        let (recipient, is_auth_recipient) = self._find_correct_recipient(protected_struct, wallet_handle)?;
+
+        //get cek and sender data
+        let (sender_verkey, cek) =
+            match is_auth_recipient {
+                true => self._unpack_authcrypt(recipient, wallet_handle),
+                false=> self._unpack_anoncrypt(recipient, wallet_handle),
+            }?; //close cek and sender_data match statement
+
+        //decrypt message
+        let message = self.crypto_service.decrypt_ciphertext(
+            &jwe_struct.ciphertext,
+            &jwe_struct.protected,
+            &jwe_struct.iv,
+            &jwe_struct.tag,
+            &cek,
+        )?;
+
+        //zero out memory of cek
+        cek.drop();
+
+        //serialize and return decrypted message
+        let res = UnpackMessage {
+            message,
+            sender_verkey,
+        };
+
+        return serde_json::to_vec(&res).map_err(|err| {
+            IndyError::CommonError(CommonError::InvalidStructure(format!(
+                "Failed to serialize message {}",
+                err
+            )))
+        });
+    }
+
+    fn _find_correct_recipient(&self, protected_struct: Protected, wallet_handle: i32) -> Result<(Recipient, bool)>{
+        for recipient in protected_struct.recipients {
+            let my_key_res = self.wallet_service.get_indy_object(
+                wallet_handle,
+                &recipient.header.kid,
+                &RecordOptions::id_value()
+            ).map_err(|err| IndyError::WalletError(err));
+
+
+            if my_key_res.is_ok() {
+                match recipient.header.sender {
+                    Some(_) => return Ok((recipient, true)),
+                    None => return Ok((recipient, false))
+                }
+            }
+        }
+        return Err(IndyError::WalletError(WalletError::ItemNotFound));
+    }
+
+    fn _unpack_authcrypt(&self, recipient: Recipient, wallet_handle: i32) -> Result<(Option<String>, chacha20poly1305_ietf::Key)> {
+        let encrypted_key_vec = base64::decode(&recipient.encrypted_key)?;
+        let nonce = base64::decode(&recipient.header.nonce.unwrap())?;
+        let enc_sender_vk = base64::decode(&recipient.header.sender.unwrap())?;
+
+        //get my private key
+        let my_key = self.wallet_service.get_indy_object(
+            wallet_handle,
+            &recipient.header.kid,
+            &RecordOptions::id_value(),
+        )?;
+
+        let sender_vk_vec = self.crypto_service.crypto_box_seal_open(&my_key, enc_sender_vk.as_slice())?;
+        let sender_vk = String::from_utf8(sender_vk_vec)
+            .map_err(|err| IndyError::CommonError(CommonError::InvalidStructure(format!("Failed to utf-8 encode sender_vk {}", err))))?;
+
+        let cek_as_vec = self.crypto_service.crypto_box_open(
+            &my_key,
+            &sender_vk,
+            encrypted_key_vec.as_slice(),
+            nonce.as_slice())?;
+
+        //convert to chacha Key struct
+        let cek: chacha20poly1305_ietf::Key =
+            chacha20poly1305_ietf::Key::from_slice(&cek_as_vec[..]).map_err(
+                |err| {
+                    IndyError::CommonError(CommonError::InvalidStructure(
+                        format!("Failed to decrypt cek {}", err),
+                    ))
+                },
+            )?;
+
+        Ok((Some(sender_vk), cek))
+    }
+
+    fn _unpack_anoncrypt(&self, recipient: Recipient, wallet_handle: i32) -> Result<(Option<String>, chacha20poly1305_ietf::Key)> {
+        let encrypted_key_vec = base64::decode(&recipient.encrypted_key)?;
+
+        //get my private key
+        let my_key = self.wallet_service.get_indy_object(
+            wallet_handle,
+            &recipient.header.kid,
+            &RecordOptions::id_value(),
+        )?;
+
+        //decrypt cek
+        let cek_as_vec = self
+            .crypto_service
+            .crypto_box_seal_open(&my_key, encrypted_key_vec.as_slice())?;
+
+        //convert to chacha Key struct
+        let cek: chacha20poly1305_ietf::Key =
+            chacha20poly1305_ietf::Key::from_slice(&cek_as_vec[..]).map_err(
+                |err| {
+                    IndyError::CommonError(CommonError::InvalidStructure(
+                        format!("Failed to decrypt cek {}", err),
+                    ))
+                },
+            )?;
+
+        Ok((None, cek))
+    }
+
 }
