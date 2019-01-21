@@ -1,4 +1,4 @@
-var capi = require('bindings')('indynodejs')
+var capi = require('./indyBinding')
 var wrapIndyCallback = require('./wrapIndyCallback')
 var IndyError = require('./IndyError')
 

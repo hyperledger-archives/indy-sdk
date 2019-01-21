@@ -2882,6 +2882,16 @@ NAN_METHOD(setRuntimeConfig) {
   info.GetReturnValue().Set(res);
 }
 
+
+NAN_METHOD(getCurrentError) {
+  INDY_ASSERT_NARGS(getCurrentError, 0)
+  const char* ptr = nullptr;
+  indy_get_current_error(&ptr);
+  v8::Local<v8::Value> res = toJSString(ptr);
+  info.GetReturnValue().Set(res);
+}
+
+
 ////////////////////////////////////////////////////////////////////////////////
 //
 // Logger
@@ -3104,6 +3114,7 @@ NAN_MODULE_INIT(InitAll) {
   Nan::Export(target, "deleteWallet", deleteWallet);
   Nan::Export(target, "generateWalletKey", generateWalletKey);
   Nan::Export(target, "setRuntimeConfig", setRuntimeConfig);
+  Nan::Export(target, "getCurrentError", getCurrentError);
   Nan::Export(target, "setDefaultLogger", setDefaultLogger);
   Nan::Export(target, "setLogger", setLogger);
 }

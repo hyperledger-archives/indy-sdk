@@ -8,6 +8,7 @@
 @interface NSDictionary (JSON)
 
 - (NSString*) toString;
++ (NSDictionary*) fromString:(NSString*) s;
 - (BOOL) contains:(NSDictionary*) dict;
 
 @end
