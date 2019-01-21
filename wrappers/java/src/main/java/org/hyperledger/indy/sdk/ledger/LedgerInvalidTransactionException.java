@@ -15,7 +15,18 @@ public class LedgerInvalidTransactionException extends IndyException
 	 * Initializes a new LedgerInvalidTransactionException.
 	 */
 	public LedgerInvalidTransactionException()
+	{
+		super(message, ErrorCode.LedgerInvalidTransaction.value());
+	}
+
+	/**
+	 * Initializes a new LedgerInvalidTransactionException.
+	 *
+	 * @param sdkMessage The SDK error message.
+	 * @param sdkBacktrace The SDK error backtrace.
+	 */
+	public LedgerInvalidTransactionException(String sdkMessage, String sdkBacktrace)
     {
-    	super(message, ErrorCode.LedgerInvalidTransaction.value());
+    	super(sdkMessage, ErrorCode.LedgerInvalidTransaction.value(), sdkBacktrace);
     }
 }

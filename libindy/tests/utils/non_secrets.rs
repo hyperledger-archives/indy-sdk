@@ -1,6 +1,6 @@
 extern crate futures;
 
-use indy::ErrorCode;
+use indy::IndyError;
 use self::futures::Future;
 use serde_json;
 
@@ -36,43 +36,43 @@ pub const TAGS_3: &'static str = r#"{"tagName1":"str1","tagName2":"str2","tagNam
 pub const TAGS_4: &'static str = r#"{"tagName1":"somestr","~tagName2":"4","~tagName3":"5"}"#;
 pub const TAGS_5: &'static str = r#"{"tagName1":"prefix_str2","~tagName2":"str3","~tagName3":"6"}"#;
 
-pub fn add_wallet_record(wallet_handle: i32, type_: &str, id: &str, value: &str, tags_json: Option<&str>) -> Result<(), ErrorCode> {
+pub fn add_wallet_record(wallet_handle: i32, type_: &str, id: &str, value: &str, tags_json: Option<&str>) -> Result<(), IndyError> {
     wallet::add_wallet_record(wallet_handle, type_, id, value, tags_json).wait()
 }
 
-pub fn update_wallet_record_value(wallet_handle: i32, type_: &str, id: &str, value: &str) -> Result<(), ErrorCode> {
+pub fn update_wallet_record_value(wallet_handle: i32, type_: &str, id: &str, value: &str) -> Result<(), IndyError> {
     wallet::update_wallet_record_value(wallet_handle, type_, id, value).wait()
 }
 
-pub fn update_wallet_record_tags(wallet_handle: i32, type_: &str, id: &str, tags_json: &str) -> Result<(), ErrorCode> {
+pub fn update_wallet_record_tags(wallet_handle: i32, type_: &str, id: &str, tags_json: &str) -> Result<(), IndyError> {
     wallet::update_wallet_record_tags(wallet_handle, type_, id, tags_json).wait()
 }
 
-pub fn add_wallet_record_tags(wallet_handle: i32, type_: &str, id: &str, tags_json: &str) -> Result<(), ErrorCode> {
+pub fn add_wallet_record_tags(wallet_handle: i32, type_: &str, id: &str, tags_json: &str) -> Result<(), IndyError> {
     wallet::add_wallet_record_tags(wallet_handle, type_, id, tags_json).wait()
 }
 
-pub fn delete_wallet_record_tags(wallet_handle: i32, type_: &str, id: &str, tag_names_json: &str) -> Result<(), ErrorCode> {
+pub fn delete_wallet_record_tags(wallet_handle: i32, type_: &str, id: &str, tag_names_json: &str) -> Result<(), IndyError> {
     wallet::delete_wallet_record_tags(wallet_handle, type_, id, tag_names_json).wait()
 }
 
-pub fn delete_wallet_record(wallet_handle: i32, type_: &str, id: &str) -> Result<(), ErrorCode> {
+pub fn delete_wallet_record(wallet_handle: i32, type_: &str, id: &str) -> Result<(), IndyError> {
     wallet::delete_wallet_record(wallet_handle, type_, id).wait()
 }
 
-pub fn get_wallet_record(wallet_handle: i32, type_: &str, id: &str, options_json: &str) -> Result<String, ErrorCode> {
+pub fn get_wallet_record(wallet_handle: i32, type_: &str, id: &str, options_json: &str) -> Result<String, IndyError> {
     wallet::get_wallet_record(wallet_handle, type_, id, options_json).wait()
 }
 
-pub fn open_wallet_search(wallet_handle: i32, type_: &str, query_json: &str, options_json: &str) -> Result<i32, ErrorCode> {
+pub fn open_wallet_search(wallet_handle: i32, type_: &str, query_json: &str, options_json: &str) -> Result<i32, IndyError> {
     wallet::open_wallet_search(wallet_handle, type_, query_json, options_json).wait()
 }
 
-pub fn fetch_wallet_search_next_records(wallet_handle: i32, wallet_search_handle: i32, count: usize) -> Result<String, ErrorCode> {
+pub fn fetch_wallet_search_next_records(wallet_handle: i32, wallet_search_handle: i32, count: usize) -> Result<String, IndyError> {
     wallet::fetch_wallet_search_next_records(wallet_handle, wallet_search_handle, count).wait()
 }
 
-pub fn close_wallet_search(wallet_search_handle: i32) -> Result<(), ErrorCode> {
+pub fn close_wallet_search(wallet_search_handle: i32) -> Result<(), IndyError> {
     wallet::close_wallet_search(wallet_search_handle).wait()
 }
 
