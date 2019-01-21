@@ -539,12 +539,18 @@ pub extern fn vcx_credential_release(handle: u32) -> u32 {
 
     let source_id = credential::get_source_id(handle).unwrap_or_default();
     match credential::release(handle) {
-        Ok(_) => trace!("vcx_credential_release(handle: {}, rc: {}), source_id: {:?}",
-                       handle, error_string(0), source_id),
-        Err(e) => error!("vcx_credential_release(handle: {}, rc: {}), source_id: {:?}",
-                         handle, error_string(e.to_error_code()), source_id),
-    };
-    error::SUCCESS.code_num
+        Ok(_) => {
+            trace!("vcx_credential_release(handle: {}, rc: {}), source_id: {:?}",
+                       handle, error_string(0), source_id);
+            error::SUCCESS.code_num
+        },
+
+        Err(e) => {
+            error!("vcx_credential_release(handle: {}, rc: {}), source_id: {:?}",
+                         handle, error_string(e.to_error_code()), source_id);
+            e.to_error_code()
+        }
+    }
 }
 
 /// Retrieve the txn associated with paying for the credential
@@ -755,5 +761,13 @@ mod tests {
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         vcx_credential_get_payment_txn(cb.command_handle, handle, Some(cb.get_callback()));
         cb.receive(Some(Duration::from_secs(10))).unwrap();
+    }
+    
+    #[test]
+    fn test_vcx_credential_release() {
+        init!("true");
+        let handle = credential::from_string(::utils::constants::FULL_CREDENTIAL_SERIALIZED).unwrap();
+        let unknown_handle = handle + 1;
+        assert_eq!(vcx_credential_release(unknown_handle), error::INVALID_CREDENTIAL_HANDLE.code_num);
     }
 }

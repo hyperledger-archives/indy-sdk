@@ -547,7 +547,10 @@ pub fn delete_connection(handle: u32) -> Result<u32, ConnectionError> {
                 return Err(e.to_error_code());
             }
         }
-    }).or(Err(ConnectionError::CannotDeleteConnection())).and(release(handle))
+    })
+    .or(Err(ConnectionError::CannotDeleteConnection()))
+    .and(release(handle))
+    .and_then(|_| Ok(error::SUCCESS.code_num))
 }
 
 pub fn connect(handle: u32, options: Option<String>) -> Result<u32, ConnectionError> {
@@ -602,10 +605,10 @@ pub fn from_string(connection_data: &str) -> Result<u32, ConnectionError> {
     Ok(new_handle)
 }
 
-pub fn release(handle: u32) -> Result<u32, ConnectionError> {
+pub fn release(handle: u32) -> Result<(), ConnectionError> {
     match CONNECTION_MAP.release(handle) {
-        Ok(_) => Ok(ConnectionError::CommonError(error::SUCCESS.code_num).to_error_code()),
-        Err(_) => Err(ConnectionError::InvalidHandle())
+        Ok(_) => Ok(()),
+        Err(_) => Err(ConnectionError::InvalidHandle()),
     }
 }
 
@@ -1151,5 +1154,13 @@ pub mod tests {
         let details: InviteDetail = serde_json::from_str(INVITE_DETAIL_STRING).unwrap();
         assert_eq!(set_invite_details(1, &details).err(), Some(ConnectionError::InvalidHandle()));
         assert_eq!(set_pw_verkey(1, "blah").err(), Some(ConnectionError::InvalidHandle()));
+    }
+
+    #[test]
+    fn test_connection_release_returns_unit() {
+        init!("true");
+        let details = r#"{"id":"njjmmdg","s":{"d":"JZho9BzVAEk8jJ1hwrrDiZ","dp":{"d":"JDF8UHPBTXigvtJWeeMJzx","k":"AP5SzUaHHhF5aLmyKHB3eTqUaREGKyVttwo5T4uwEkM4","s":"JHSvITBMZiTEhpK61EDIWjQOLnJ8iGQ3FT1nfyxNNlxSngzp1eCRKnGC/RqEWgtot9M5rmTC8QkZTN05GGavBg=="},"l":"https://robohash.org/123","n":"Evernym","v":"AaEDsDychoytJyzk4SuzHMeQJGCtQhQHDitaic6gtiM1"},"sa":{"d":"YRuVCckY6vfZfX9kcQZe3u","e":"52.38.32.107:80/agency/msg","v":"J8Yct6FwmarXjrE2khZesUXRVVSVczSoa9sFaGe6AD2v"},"sc":"MS-101","sm":"message created","t":"there"}"#;
+        let handle = create_connection_with_invite("alice",&details).unwrap();
+        assert_eq!(release(handle),Ok(()));
     }
 }
