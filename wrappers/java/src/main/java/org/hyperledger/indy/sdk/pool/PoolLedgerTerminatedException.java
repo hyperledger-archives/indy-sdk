@@ -14,8 +14,19 @@ public class PoolLedgerTerminatedException extends IndyException
 	/**
 	 * Initializes a new PoolLedgerTerminatedException.
 	 */
-	public PoolLedgerTerminatedException() 
+	public PoolLedgerTerminatedException()
+	{
+		super(message, ErrorCode.PoolLedgerTerminated.value());
+	}
+
+	/**
+	 * Initializes a new PoolLedgerTerminatedException.
+	 *
+	 * @param sdkMessage The SDK error message.
+	 * @param sdkBacktrace The SDK error backtrace.
+	 */
+	public PoolLedgerTerminatedException(String sdkMessage, String sdkBacktrace)
     {
-    	super(message, ErrorCode.PoolLedgerTerminated.value());
+    	super(sdkMessage, ErrorCode.PoolLedgerTerminated.value(), sdkBacktrace);
     }
 }

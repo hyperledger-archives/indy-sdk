@@ -108,7 +108,7 @@ mod create_new_did {
     #[test]
     fn create_did_with_invalid_wallet_handle() {
         let result = did::create_and_store_my_did(INVALID_HANDLE, "{}").wait();
-        assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err());
+        assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err().error_code);
     }
 
     #[test]
@@ -141,7 +141,7 @@ mod replace_keys_start {
     fn replace_keys_start_invalid_wallet() {
         let result = did::replace_keys_start(INVALID_HANDLE, DID_1, "{}").wait();
 
-        assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err());
+        assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err().error_code);
     }
 
     #[test]
@@ -176,7 +176,7 @@ mod replace_keys_start {
 
         let result = did::replace_keys_start(wallet.handle, &did, &config).wait();
 
-        assert_eq!(ErrorCode::UnknownCryptoTypeError, result.unwrap_err());
+        assert_eq!(ErrorCode::UnknownCryptoTypeError, result.unwrap_err().error_code);
     }
 
     #[test]
@@ -184,7 +184,7 @@ mod replace_keys_start {
         let wallet = Wallet::new();
         let result = did::replace_keys_start(wallet.handle, DID_1, "{}").wait();
 
-        assert_eq!(ErrorCode::WalletItemNotFound, result.unwrap_err());
+        assert_eq!(ErrorCode::WalletItemNotFound, result.unwrap_err().error_code);
     }
 }
 
@@ -226,7 +226,7 @@ mod replace_keys_apply {
 
         let result = did::replace_keys_apply(wallet.handle, &did).wait();
 
-        assert_eq!(ErrorCode::WalletItemNotFound, result.unwrap_err());
+        assert_eq!(ErrorCode::WalletItemNotFound, result.unwrap_err().error_code);
     }
 
     #[test]
@@ -235,13 +235,13 @@ mod replace_keys_apply {
 
         let result = did::replace_keys_apply(wallet.handle, DID_1).wait();
 
-        assert_eq!(ErrorCode::WalletItemNotFound, result.unwrap_err());
+        assert_eq!(ErrorCode::WalletItemNotFound, result.unwrap_err().error_code);
     }
 
     #[test]
     fn replace_keys_apply_invalid_wallet() {
         let result = did::replace_keys_apply(INVALID_HANDLE, DID_1).wait();
-        assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err());
+        assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err().error_code);
     }
 }
 
@@ -300,14 +300,14 @@ mod test_store_their_did {
 
         let result = did::store_their_did(wallet.handle, "{}").wait();
 
-        assert_eq!(ErrorCode::CommonInvalidStructure, result.unwrap_err());
+        assert_eq!(ErrorCode::CommonInvalidStructure, result.unwrap_err().error_code);
     }
 
     #[test]
     fn store_their_did_invalid_handle() {
         let config = json!({"did": DID_1, "verkey": VERKEY_1}).to_string();
         let result = did::store_their_did(INVALID_HANDLE, &config).wait();
-        assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err());
+        assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err().error_code);
     }
 
     #[test]
@@ -330,7 +330,7 @@ mod test_store_their_did {
 
         let result = did::store_their_did(wallet.handle, &config).wait();
 
-        assert_eq!(ErrorCode::CommonInvalidStructure, result.unwrap_err());
+        assert_eq!(ErrorCode::CommonInvalidStructure, result.unwrap_err().error_code);
     }
 
     #[test]
@@ -343,7 +343,7 @@ mod test_store_their_did {
 
         let result = did::store_their_did(wallet.handle, &config).wait();
 
-        assert_eq!(ErrorCode::CommonInvalidStructure, result.unwrap_err());
+        assert_eq!(ErrorCode::CommonInvalidStructure, result.unwrap_err().error_code);
     }
 
     #[test]
@@ -356,7 +356,7 @@ mod test_store_their_did {
 
         let result = did::store_their_did(wallet.handle, &config).wait();
 
-        assert_eq!(ErrorCode::UnknownCryptoTypeError, result.unwrap_err());
+        assert_eq!(ErrorCode::UnknownCryptoTypeError, result.unwrap_err().error_code);
     }
 
     #[test]
@@ -368,7 +368,7 @@ mod test_store_their_did {
 
         let result = did::store_their_did(wallet.handle, &config).wait();
 
-        assert_eq!(ErrorCode::WalletItemAlreadyExists, result.unwrap_err());
+        assert_eq!(ErrorCode::WalletItemAlreadyExists, result.unwrap_err().error_code);
     }
 
     #[test]
@@ -384,10 +384,10 @@ mod test_store_their_did {
         did::store_their_did(wallet.handle, &config).wait().unwrap();
 
         let result = did::store_their_did(wallet.handle, &config).wait();
-        assert_eq!(ErrorCode::WalletItemAlreadyExists, result.unwrap_err());
+        assert_eq!(ErrorCode::WalletItemAlreadyExists, result.unwrap_err().error_code);
 
         let result = did::store_their_did(wallet.handle, &config).wait();
-        assert_eq!(ErrorCode::WalletItemAlreadyExists, result.unwrap_err());
+        assert_eq!(ErrorCode::WalletItemAlreadyExists, result.unwrap_err().error_code);
     }
 }
 
@@ -422,13 +422,13 @@ mod test_get_verkey_local {
         let wallet = Wallet::new();
         let result = did::key_for_local_did(wallet.handle, DID_1).wait();
 
-        assert_eq!(ErrorCode::WalletItemNotFound, result.unwrap_err());
+        assert_eq!(ErrorCode::WalletItemNotFound, result.unwrap_err().error_code);
     }
 
     #[test]
     fn get_verkey_local_invalid_wallet() {
         let result = did::key_for_local_did(INVALID_HANDLE, DID_1).wait();
-        assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err());
+        assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err().error_code);
     }
 }
 
@@ -485,7 +485,7 @@ mod test_get_verkey_ledger {
             &did
         ).wait();
 
-        assert_eq!(ErrorCode::WalletItemNotFound, result.unwrap_err());
+        assert_eq!(ErrorCode::WalletItemNotFound, result.unwrap_err().error_code);
     }
 
     #[test]
@@ -516,13 +516,13 @@ mod test_get_verkey_ledger {
 
         let result = did::key_for_did(-1, wallet.handle, DID_1).wait();
 
-        assert_eq!(ErrorCode::PoolLedgerInvalidPoolHandle, result.unwrap_err());
+        assert_eq!(ErrorCode::PoolLedgerInvalidPoolHandle, result.unwrap_err().error_code);
     }
 
     #[test]
     fn get_verkey_invalid_wallet() {
         let result = did::key_for_did(-1, INVALID_HANDLE, DID_1).wait();
-        assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err());
+        assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err().error_code);
     }
 }
 
@@ -595,7 +595,7 @@ mod test_set_metadata {
 
         let result = did::set_did_metadata(wallet.handle, "InvalidDid", METADATA).wait();
 
-        assert_eq!(ErrorCode::CommonInvalidStructure, result.unwrap_err());
+        assert_eq!(ErrorCode::CommonInvalidStructure, result.unwrap_err().error_code);
     }
 
     #[test]
@@ -612,7 +612,7 @@ mod test_set_metadata {
     #[test]
     fn set_metadata_invalid_wallet() {
         let result = did::set_did_metadata(INVALID_HANDLE, DID_1, METADATA).wait();
-        assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err());
+        assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err().error_code);
     }
 }
 
@@ -666,7 +666,7 @@ mod test_get_metadata {
 
         let result = did::get_did_metadata(wallet.handle, &did).wait();
 
-        assert_eq!(ErrorCode::WalletItemNotFound, result.unwrap_err());
+        assert_eq!(ErrorCode::WalletItemNotFound, result.unwrap_err().error_code);
     }
 
     #[test]
@@ -675,13 +675,13 @@ mod test_get_metadata {
 
         let result = did::get_did_metadata(wallet.handle, DID_1).wait();
 
-        assert_eq!(ErrorCode::WalletItemNotFound, result.unwrap_err());
+        assert_eq!(ErrorCode::WalletItemNotFound, result.unwrap_err().error_code);
     }
 
     #[test]
     fn get_metadata_invalid_wallet() {
         let result = did::get_did_metadata(INVALID_HANDLE, DID_1).wait();
-        assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err());
+        assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err().error_code);
     }
 }
 
@@ -742,7 +742,7 @@ mod test_get_endpoint {
                 }
             },
             Err(ec) => {
-                error_code = ec;
+                error_code = ec.error_code;
             }
         }
 
@@ -782,7 +782,7 @@ mod test_get_endpoint {
         match indy::did::get_endpoint_for_did(wallet.handle, pool_handle, &did).wait() {
             Ok(_) => { },
             Err(ec) => {
-                error_code = ec;
+                error_code = ec.error_code;
             }
         }
 
@@ -817,13 +817,13 @@ mod test_abbreviate_verkey {
     #[test]
     fn abbreviate_verkey_invalid_did() {
         let result = did::abbreviate_verkey("InvalidDid", VERKEY_1).wait();
-        assert_eq!(ErrorCode::CommonInvalidStructure, result.unwrap_err());
+        assert_eq!(ErrorCode::CommonInvalidStructure, result.unwrap_err().error_code);
     }
 
     #[test]
     fn abbreviate_verkey_invalid_verkey() {
         let result = did::abbreviate_verkey(DID_1, "InvalidVerkey").wait();
-        assert_eq!(ErrorCode::CommonInvalidStructure, result.unwrap_err());
+        assert_eq!(ErrorCode::CommonInvalidStructure, result.unwrap_err().error_code);
     }
 }
 
@@ -938,7 +938,7 @@ mod test_list_with_metadata {
     #[test]
     fn list_with_metadata_invalid_wallet() {
         let result = did::list_my_dids_with_metadata(INVALID_HANDLE).wait();
-        assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err());
+        assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err().error_code);
     }
 }
 

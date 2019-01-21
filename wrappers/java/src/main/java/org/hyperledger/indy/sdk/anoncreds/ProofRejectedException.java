@@ -14,8 +14,19 @@ public class ProofRejectedException extends IndyException
 	/**
 	 * Initializes a new ProofRejectionException.
 	 */
-	public ProofRejectedException() 
+	public ProofRejectedException()
+	{
+		super(message, ErrorCode.AnoncredsProofRejected.value());
+	}
+
+	/**
+	 * Initializes a new ProofRejectionException.
+	 *
+	 * @param sdkMessage The SDK error message.
+	 * @param sdkBacktrace The SDK error backtrace.
+	 */
+	public ProofRejectedException(String sdkMessage, String sdkBacktrace)
     {
-    	super(message, ErrorCode.AnoncredsProofRejected.value());
+    	super(sdkMessage, ErrorCode.AnoncredsProofRejected.value(), sdkBacktrace);
     }
 }
