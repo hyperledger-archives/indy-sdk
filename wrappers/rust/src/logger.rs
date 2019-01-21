@@ -1,4 +1,4 @@
-use ErrorCode;
+use {ErrorCode, IndyError};
 
 use std::ffi::CString;
 
@@ -19,7 +19,7 @@ static mut LOGGER: Option<Box<(&'static Log)>> = None;
 ///
 /// # Arguments
 /// * `pattern` - (optional) pattern that corresponds with the log messages to show.
-pub fn set_default_logger(pattern: Option<&str>) -> Result<(), ErrorCode> {
+pub fn set_default_logger(pattern: Option<&str>) -> Result<(), IndyError> {
     let pattern_str = opt_c_str!(pattern);
 
     let res = ErrorCode::from(unsafe {
@@ -28,7 +28,7 @@ pub fn set_default_logger(pattern: Option<&str>) -> Result<(), ErrorCode> {
 
     match res {
         ErrorCode::Success => Ok(()),
-        err => Err(err)
+        err => Err(IndyError::new(err))
     }
 }
 
@@ -36,10 +36,16 @@ pub fn set_default_logger(pattern: Option<&str>) -> Result<(), ErrorCode> {
 ///
 /// # Arguments
 /// * `logger` - reference to logger used by application.
-pub fn set_logger(logger: &'static Log) -> Result<(), ErrorCode> {
+pub fn set_logger(logger: &'static Log) -> Result<(), IndyError> {
     {
         unsafe {
-            if LOGGER.is_some() { return Err(ErrorCode::CommonInvalidState); }
+            if LOGGER.is_some() {
+                return Err(IndyError {
+                    error_code: ErrorCode::CommonInvalidState,
+                    message: "Logger is already set".to_string(),
+                    indy_backtrace: None,
+                });
+            }
             LOGGER = Some(Box::new(logger));
         }
     }
@@ -55,7 +61,7 @@ pub fn set_logger(logger: &'static Log) -> Result<(), ErrorCode> {
 
     match res {
         ErrorCode::Success => Ok(()),
-        err => Err(err)
+        err => Err(IndyError::new(err))
     }
 }
 

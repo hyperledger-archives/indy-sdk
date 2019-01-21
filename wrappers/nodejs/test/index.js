@@ -5,11 +5,21 @@ var did = 'VsKV7grR1BUE29mG2Fm2kX'
 var verkey = 'GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa'
 var abbrVerkey = '~HYwqs2vrTc8Tn4uBV7NBTe'
 
+test.before('test getCurrentError before any errors', function (t) {
+  t.is(indy.capi.getCurrentError(), null)
+})
+
 test('wrapper essentials', async function (t) {
   t.is(await indy.abbreviateVerkey(did, verkey), abbrVerkey)
 
   var err = await t.throws(indy.abbreviateVerkey())
   t.is(err.message, 'CommonInvalidParam3')
+  t.is(err.indyCode, 102)
+  t.is(err.indyName, 'CommonInvalidParam3')
+  t.is(err.indyMessage, 'Error: Invalid parameter 3\n  Caused by: Invalid pointer has been passed\n')
+  t.is(err.indyBacktrace, '')
+  t.is(typeof err.indyCurrentErrorJson, 'string')
+  t.is(err.indyCurrentErrorJson[0], '{')
 
   err = await t.throws(function () {
     indy.abbreviateVerkey(1, verkey)

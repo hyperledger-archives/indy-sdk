@@ -2,7 +2,7 @@ extern crate futures;
 
 use self::futures::Future;
 use super::indy;
-use indy::ErrorCode;
+use indy::IndyError;
 use utils::rand::random_string;
 
 static USEFUL_CREDENTIALS : &'static str =  r#"{"key":"8dvfYSt5d1taSd6yJdpjq4emkwsPDDLYxkNFysFD2cZY", "key_derivation_method":"RAW"}"#;
@@ -58,23 +58,23 @@ impl Wallet {
 
     /* private instance methods for open/create/etc...*/
 
-    fn open(&mut self) -> Result<i32, ErrorCode> {
+    fn open(&mut self) -> Result<i32, IndyError> {
         let config : String = Wallet::create_wallet_config(&self.name);
         let handle = indy::wallet::open_wallet(&config, USEFUL_CREDENTIALS).wait()?;
         self.handle = handle;
         return Ok(handle);
     }
 
-    fn create(&self) -> Result<(), ErrorCode> {
+    fn create(&self) -> Result<(), IndyError> {
         let config = Wallet::create_wallet_config(&self.name);
         return indy::wallet::create_wallet(&config, USEFUL_CREDENTIALS).wait()
     }
 
-    fn close(&self) -> Result<(), ErrorCode> {
+    fn close(&self) -> Result<(), IndyError> {
         indy::wallet::close_wallet(self.handle).wait()
     }
 
-    fn delete(&self) -> Result<(), ErrorCode> {
+    fn delete(&self) -> Result<(), IndyError> {
         let config : String = Wallet::create_wallet_config(&self.name);
         return indy::wallet::delete_wallet(&config, USEFUL_CREDENTIALS).wait()
     }

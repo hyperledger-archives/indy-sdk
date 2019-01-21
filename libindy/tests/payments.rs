@@ -580,7 +580,7 @@ mod medium_cases {
                                                         None,
             ).unwrap_err();
 
-            assert_eq!(err, ErrorCode::CommonInvalidParam3);
+            assert_eq!(ErrorCode::CommonInvalidParam3, err);
 
             utils::tear_down();
         }
@@ -593,9 +593,9 @@ mod medium_cases {
         fn create_payment_address_works_for_non_existent_plugin() {
             let wallet_handle = setup();
 
-            let res = payments::create_payment_address(wallet_handle, EMPTY_OBJECT, WRONG_PAYMENT_METHOD_NAME).unwrap_err();
+            let res = payments::create_payment_address(wallet_handle, EMPTY_OBJECT, WRONG_PAYMENT_METHOD_NAME);
 
-            assert_eq!(res, ErrorCode::UnknownPaymentMethod);
+            assert_code!(ErrorCode::UnknownPaymentMethod, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -604,9 +604,9 @@ mod medium_cases {
         fn create_payment_address_works_for_invalid_wallet_handle() {
             let wallet_handle = setup();
 
-            let res = payments::create_payment_address(wallet_handle + 1, EMPTY_OBJECT, WRONG_PAYMENT_METHOD_NAME).unwrap_err();
+            let res = payments::create_payment_address(wallet_handle + 1, EMPTY_OBJECT, WRONG_PAYMENT_METHOD_NAME);
 
-            assert_eq!(res, ErrorCode::WalletInvalidHandle);
+            assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -617,9 +617,9 @@ mod medium_cases {
 
             payments::mock_method::create_payment_address::inject_mock(ErrorCode::WalletAccessFailed, "");
 
-            let err = payments::create_payment_address(wallet_handle, EMPTY_OBJECT, PAYMENT_METHOD_NAME).unwrap_err();
+            let err = payments::create_payment_address(wallet_handle, EMPTY_OBJECT, PAYMENT_METHOD_NAME);
 
-            assert_eq!(err, ErrorCode::WalletAccessFailed);
+            assert_code!(ErrorCode::WalletAccessFailed, err);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -632,9 +632,9 @@ mod medium_cases {
         fn list_payment_addresses_works_for_nonexistent_wallet() {
             let wallet_handle = setup();
 
-            let err = payments::list_payment_addresses(wallet_handle + 1).unwrap_err();
+            let err = payments::list_payment_addresses(wallet_handle + 1);
 
-            assert_eq!(err, ErrorCode::WalletInvalidHandle);
+            assert_code!(ErrorCode::WalletInvalidHandle, err);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -652,9 +652,9 @@ mod medium_cases {
                                                  INPUTS_UNKNOWN_METHOD,
                                                  EMPTY_ARRAY,
                                                  None,
-            ).unwrap_err();
+            );
 
-            assert_eq!(err, ErrorCode::UnknownPaymentMethod);
+            assert_code!(ErrorCode::UnknownPaymentMethod, err);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -669,9 +669,9 @@ mod medium_cases {
                                                  EMPTY_ARRAY,
                                                  CORRECT_OUTPUTS,
                                                  None,
-            ).unwrap_err();
+            );
 
-            assert_eq!(err, ErrorCode::CommonInvalidStructure);
+            assert_code!( ErrorCode::CommonInvalidStructure, err);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -685,9 +685,9 @@ mod medium_cases {
                                                  r#"["pay"]"#,
                                                  EMPTY_ARRAY,
                                                  None,
-            ).unwrap_err();
+            );
 
-            assert_eq!(err, ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, err);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -701,9 +701,9 @@ mod medium_cases {
                                                  CORRECT_INPUTS,
                                                  INCOMPATIBLE_OUTPUTS,
                                                  None,
-            ).unwrap_err();
+            );
 
-            assert_eq!(err, ErrorCode::IncompatiblePaymentError);
+            assert_code!(ErrorCode::IncompatiblePaymentError, err);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -717,9 +717,9 @@ mod medium_cases {
                                                  INCOMPATIBLE_INPUTS,
                                                  EMPTY_ARRAY,
                                                  None,
-            ).unwrap_err();
+            );
 
-            assert_eq!(err, ErrorCode::IncompatiblePaymentError);
+            assert_code!(ErrorCode::IncompatiblePaymentError, err);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -734,9 +734,9 @@ mod medium_cases {
                                                  r#"["pay:null1:1"]"#,
                                                  r#"[{"recipient": "pay:null2:1", "amount":1, "extra":"1"}]"#,
                                                  None,
-            ).unwrap_err();
+            );
 
-            assert_eq!(err, ErrorCode::IncompatiblePaymentError);
+            assert_code!(ErrorCode::IncompatiblePaymentError, err);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -751,9 +751,9 @@ mod medium_cases {
                                                  r#"["pay:null1:1", 1]"#,
                                                  EMPTY_ARRAY,
                                                  None,
-            ).unwrap_err();
+            );
 
-            assert_eq!(err, ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, err);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -768,9 +768,9 @@ mod medium_cases {
                                                  r#"["pay:null1"]"#,
                                                  EMPTY_ARRAY,
                                                  None,
-            ).unwrap_err();
+            );
 
-            assert_eq!(err, ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, err);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -785,9 +785,9 @@ mod medium_cases {
                                                  CORRECT_INPUTS,
                                                  EMPTY_ARRAY,
                                                  None,
-            ).unwrap_err();
+            );
 
-            assert_eq!(err, ErrorCode::WalletInvalidHandle);
+            assert_code!(ErrorCode::WalletInvalidHandle, err);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -802,9 +802,9 @@ mod medium_cases {
                                                  CORRECT_INPUTS,
                                                  EMPTY_ARRAY,
                                                  None,
-            ).unwrap_err();
+            );
 
-            assert_eq!(err, ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, err);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -819,9 +819,9 @@ mod medium_cases {
                                                  EQUAL_INPUTS,
                                                  EMPTY_ARRAY,
                                                  None,
-            ).unwrap_err();
+            );
 
-            assert_eq!(err, ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, err);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -835,9 +835,9 @@ mod medium_cases {
                                                  CORRECT_INPUTS,
                                                  EQUAL_OUTPUTS,
                                                  None,
-            ).unwrap_err();
+            );
 
-            assert_eq!(err, ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, err);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -853,9 +853,9 @@ mod medium_cases {
                                                  EMPTY_OBJECT,
                                                  CORRECT_INPUTS,
                                                  CORRECT_OUTPUTS,
-                                                 None).unwrap_err();
+                                                 None);
 
-            assert_eq!(err, ErrorCode::WalletAccessFailed);
+            assert_code!(ErrorCode::WalletAccessFailed, err);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -869,9 +869,9 @@ mod medium_cases {
             utils::setup();
             payments::mock_method::init();
 
-            let err = payments::parse_response_with_fees(WRONG_PAYMENT_METHOD_NAME, CORRECT_OUTPUTS).unwrap_err();
+            let err = payments::parse_response_with_fees(WRONG_PAYMENT_METHOD_NAME, CORRECT_OUTPUTS);
 
-            assert_eq!(err, ErrorCode::UnknownPaymentMethod);
+            assert_code!(ErrorCode::UnknownPaymentMethod, err);
 
             utils::tear_down();
         }
@@ -882,9 +882,9 @@ mod medium_cases {
 
             payments::mock_method::parse_response_with_fees::inject_mock(ErrorCode::WalletAccessFailed, "");
 
-            let err = payments::parse_response_with_fees(PAYMENT_METHOD_NAME, EMPTY_OBJECT).unwrap_err();
+            let err = payments::parse_response_with_fees(PAYMENT_METHOD_NAME, EMPTY_OBJECT);
 
-            assert_eq!(err, ErrorCode::WalletAccessFailed);
+            assert_code!(ErrorCode::WalletAccessFailed, err);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -897,9 +897,9 @@ mod medium_cases {
         pub fn build_get_payment_sources_request_works_for_nonexistent_plugin() {
             let wallet_handle = setup();
 
-            let err = payments::build_get_payment_sources_request(wallet_handle, Some(IDENTIFIER), "pay:null1:test").unwrap_err();
+            let err = payments::build_get_payment_sources_request(wallet_handle, Some(IDENTIFIER), "pay:null1:test");
 
-            assert_eq!(err, ErrorCode::UnknownPaymentMethod);
+            assert_code!(ErrorCode::UnknownPaymentMethod, err);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -908,9 +908,9 @@ mod medium_cases {
         pub fn build_get_payment_sources_request_works_for_malformed_payment_address() {
             let wallet_handle = setup();
 
-            let err = payments::build_get_payment_sources_request(wallet_handle, Some(IDENTIFIER), "pay:null1").unwrap_err();
+            let err = payments::build_get_payment_sources_request(wallet_handle, Some(IDENTIFIER), "pay:null1");
 
-            assert_eq!(err, ErrorCode::IncompatiblePaymentError);
+            assert_code!(ErrorCode::IncompatiblePaymentError, err);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -919,8 +919,8 @@ mod medium_cases {
         pub fn build_get_payment_sources_request_works_for_invalid_wallet_handle() {
             let wallet_handle = setup();
 
-            let err = payments::build_get_payment_sources_request(wallet_handle + 1, Some(IDENTIFIER), CORRECT_PAYMENT_ADDRESS).unwrap_err();
-            assert_eq!(err, ErrorCode::WalletInvalidHandle);
+            let err = payments::build_get_payment_sources_request(wallet_handle + 1, Some(IDENTIFIER), CORRECT_PAYMENT_ADDRESS);
+            assert_code!(ErrorCode::WalletInvalidHandle, err);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -929,9 +929,9 @@ mod medium_cases {
         pub fn build_get_payment_sources_request_works_for_invalid_submitter_did() {
             let wallet_handle = setup();
 
-            let err = payments::build_get_payment_sources_request(wallet_handle, Some(INVALID_IDENTIFIER), CORRECT_PAYMENT_ADDRESS).unwrap_err();
+            let err = payments::build_get_payment_sources_request(wallet_handle, Some(INVALID_IDENTIFIER), CORRECT_PAYMENT_ADDRESS);
 
-            assert_eq!(err, ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, err);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -945,9 +945,9 @@ mod medium_cases {
             let err = payments::build_get_payment_sources_request(wallet_handle,
                                                                   Some(IDENTIFIER),
                                                                   CORRECT_PAYMENT_ADDRESS,
-            ).unwrap_err();
+            );
 
-            assert_eq!(err, ErrorCode::WalletAccessFailed);
+            assert_code!(ErrorCode::WalletAccessFailed, err);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -961,9 +961,9 @@ mod medium_cases {
             utils::setup();
             payments::mock_method::init();
 
-            let err = payments::parse_get_payment_sources_response(WRONG_PAYMENT_METHOD_NAME, CORRECT_OUTPUTS).unwrap_err();
+            let err = payments::parse_get_payment_sources_response(WRONG_PAYMENT_METHOD_NAME, CORRECT_OUTPUTS);
 
-            assert_eq!(err, ErrorCode::UnknownPaymentMethod);
+            assert_code!(ErrorCode::UnknownPaymentMethod, err);
 
             utils::tear_down();
         }
@@ -974,9 +974,9 @@ mod medium_cases {
 
             payments::mock_method::parse_get_payment_sources_response::inject_mock(ErrorCode::WalletAccessFailed, "");
 
-            let err = payments::parse_get_payment_sources_response(PAYMENT_METHOD_NAME, EMPTY_OBJECT).unwrap_err();
+            let err = payments::parse_get_payment_sources_response(PAYMENT_METHOD_NAME, EMPTY_OBJECT);
 
-            assert_eq!(err, ErrorCode::WalletAccessFailed);
+            assert_code!(ErrorCode::WalletAccessFailed, err);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -996,7 +996,7 @@ mod medium_cases {
                                                   CORRECT_OUTPUTS,
                                                   None);
 
-            assert_eq!(ErrorCode::WalletInvalidHandle, res.unwrap_err());
+            assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -1011,7 +1011,7 @@ mod medium_cases {
                                                   CORRECT_OUTPUTS,
                                                   None);
 
-            assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -1025,9 +1025,9 @@ mod medium_cases {
                                                   EMPTY_ARRAY,
                                                   CORRECT_OUTPUTS,
                                                   None,
-            ).unwrap_err();
+            );
 
-            assert_eq!(err, ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, err);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -1041,9 +1041,9 @@ mod medium_cases {
                                                   CORRECT_INPUTS,
                                                   EMPTY_ARRAY,
                                                   None,
-            ).unwrap_err();
+            );
 
-            assert_eq!(err, ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, err);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -1057,7 +1057,7 @@ mod medium_cases {
                                                   INPUTS_UNKNOWN_METHOD,
                                                   OUTPUTS_UNKNOWN_METHOD,
                                                   None);
-            assert_eq!(ErrorCode::UnknownPaymentMethod, res.unwrap_err());
+            assert_code!(ErrorCode::UnknownPaymentMethod, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -1072,7 +1072,7 @@ mod medium_cases {
                                                   inputs,
                                                   CORRECT_OUTPUTS,
                                                   None);
-            assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -1086,7 +1086,7 @@ mod medium_cases {
                                                   INCOMPATIBLE_INPUTS,
                                                   CORRECT_OUTPUTS,
                                                   None);
-            assert_eq!(ErrorCode::IncompatiblePaymentError, res.unwrap_err());
+            assert_code!(ErrorCode::IncompatiblePaymentError, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -1100,7 +1100,7 @@ mod medium_cases {
                                                   CORRECT_INPUTS,
                                                   INCOMPATIBLE_OUTPUTS,
                                                   None);
-            assert_eq!(ErrorCode::IncompatiblePaymentError, res.unwrap_err());
+            assert_code!(ErrorCode::IncompatiblePaymentError, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -1117,7 +1117,7 @@ mod medium_cases {
                                                   outputs,
                                                   None);
 
-            assert_eq!(ErrorCode::IncompatiblePaymentError, res.unwrap_err());
+            assert_code!(ErrorCode::IncompatiblePaymentError, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -1132,7 +1132,7 @@ mod medium_cases {
                                                   CORRECT_OUTPUTS,
                                                   None);
 
-            assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -1147,7 +1147,7 @@ mod medium_cases {
                                                   OUTPUTS_INVALID_FORMAT,
                                                   None);
 
-            assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -1163,7 +1163,7 @@ mod medium_cases {
                                                   None,
             );
 
-            assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -1179,7 +1179,7 @@ mod medium_cases {
                                                   None,
             );
 
-            assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -1195,9 +1195,9 @@ mod medium_cases {
                                                   CORRECT_INPUTS,
                                                   CORRECT_OUTPUTS,
                                                   None,
-            ).unwrap_err();
+            );
 
-            assert_eq!(err, ErrorCode::WalletAccessFailed);
+            assert_code!(ErrorCode::WalletAccessFailed, err);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -1214,7 +1214,7 @@ mod medium_cases {
             let res = payments::parse_payment_response(WRONG_PAYMENT_METHOD_NAME,
                                                        PAYMENT_RESPONSE);
 
-            assert_eq!(ErrorCode::UnknownPaymentMethod, res.unwrap_err());
+            assert_code!(ErrorCode::UnknownPaymentMethod, res);
 
             utils::tear_down();
         }
@@ -1225,9 +1225,9 @@ mod medium_cases {
 
             payments::mock_method::parse_payment_response::inject_mock(ErrorCode::WalletAccessFailed, "");
 
-            let err = payments::parse_payment_response(PAYMENT_METHOD_NAME, EMPTY_OBJECT).unwrap_err();
+            let err = payments::parse_payment_response(PAYMENT_METHOD_NAME, EMPTY_OBJECT);
 
-            assert_eq!(err, ErrorCode::WalletAccessFailed);
+            assert_code!(ErrorCode::WalletAccessFailed, err);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -1245,7 +1245,7 @@ mod medium_cases {
                                                EMPTY_ARRAY,
                                                None);
 
-            assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -1259,7 +1259,7 @@ mod medium_cases {
                                                OUTPUTS_UNKNOWN_METHOD,
                                                None);
 
-            assert_eq!(ErrorCode::UnknownPaymentMethod, res.unwrap_err());
+            assert_code!(ErrorCode::UnknownPaymentMethod, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -1274,7 +1274,7 @@ mod medium_cases {
                                                CORRECT_OUTPUTS,
                                                None);
 
-            assert_eq!(ErrorCode::WalletInvalidHandle, res.unwrap_err());
+            assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -1288,7 +1288,7 @@ mod medium_cases {
                                                CORRECT_OUTPUTS,
                                                None);
 
-            assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -1302,7 +1302,7 @@ mod medium_cases {
                                                OUTPUTS_INVALID_FORMAT,
                                                None);
 
-            assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -1317,7 +1317,7 @@ mod medium_cases {
                                                outputs,
                                                None);
 
-            assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -1330,7 +1330,7 @@ mod medium_cases {
                                                Some(IDENTIFIER),
                                                EQUAL_OUTPUTS,
                                                None);
-            assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -1343,7 +1343,7 @@ mod medium_cases {
                                                INCOMPATIBLE_OUTPUTS,
                                                None);
 
-            assert_eq!(ErrorCode::IncompatiblePaymentError, res.unwrap_err());
+            assert_code!(ErrorCode::IncompatiblePaymentError, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -1357,9 +1357,9 @@ mod medium_cases {
                                                Some(IDENTIFIER),
                                                CORRECT_OUTPUTS,
                                                None,
-            ).unwrap_err();
+            );
 
-            assert_eq!(err, ErrorCode::WalletAccessFailed);
+            assert_code!(ErrorCode::WalletAccessFailed, err);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -1377,7 +1377,7 @@ mod medium_cases {
                                                        WRONG_PAYMENT_METHOD_NAME,
                                                        CORRECT_FEES);
 
-            assert_eq!(res.unwrap_err(), ErrorCode::UnknownPaymentMethod);
+            assert_code!(ErrorCode::UnknownPaymentMethod, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -1392,7 +1392,7 @@ mod medium_cases {
                                                        PAYMENT_METHOD_NAME,
                                                        CORRECT_FEES);
 
-            assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
+            assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -1406,7 +1406,7 @@ mod medium_cases {
                                                        PAYMENT_METHOD_NAME,
                                                        CORRECT_FEES);
 
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -1421,7 +1421,7 @@ mod medium_cases {
                                                        PAYMENT_METHOD_NAME,
                                                        fees);
 
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -1436,9 +1436,9 @@ mod medium_cases {
                                                        Some(IDENTIFIER),
                                                        PAYMENT_METHOD_NAME,
                                                        CORRECT_FEES,
-            ).unwrap_err();
+            );
 
-            assert_eq!(err, ErrorCode::WalletAccessFailed);
+            assert_code!(ErrorCode::WalletAccessFailed, err);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -1456,7 +1456,7 @@ mod medium_cases {
                                                        Some(IDENTIFIER),
                                                        PAYMENT_METHOD_NAME);
 
-            assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
+            assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -1469,7 +1469,7 @@ mod medium_cases {
                                                        Some(INVALID_IDENTIFIER),
                                                        PAYMENT_METHOD_NAME);
 
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -1482,7 +1482,7 @@ mod medium_cases {
                                                        Some(IDENTIFIER),
                                                        WRONG_PAYMENT_METHOD_NAME);
 
-            assert_eq!(res.unwrap_err(), ErrorCode::UnknownPaymentMethod);
+            assert_code!(ErrorCode::UnknownPaymentMethod, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -1496,9 +1496,9 @@ mod medium_cases {
             let err = payments::build_get_txn_fees_req(wallet_handle,
                                                        Some(IDENTIFIER),
                                                        PAYMENT_METHOD_NAME,
-            ).unwrap_err();
+            );
 
-            assert_eq!(err, ErrorCode::WalletAccessFailed);
+            assert_code!(ErrorCode::WalletAccessFailed, err);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -1515,7 +1515,7 @@ mod medium_cases {
             let res = payments::parse_get_txn_fees_response(WRONG_PAYMENT_METHOD_NAME,
                                                             GET_TXN_FEES_RESPONSE);
 
-            assert_eq!(res.unwrap_err(), ErrorCode::UnknownPaymentMethod);
+            assert_code!(ErrorCode::UnknownPaymentMethod, res);
 
             utils::tear_down();
         }
@@ -1526,9 +1526,9 @@ mod medium_cases {
 
             payments::mock_method::parse_get_txn_fees_response::inject_mock(ErrorCode::WalletAccessFailed, "");
 
-            let err = payments::parse_get_txn_fees_response(PAYMENT_METHOD_NAME, EMPTY_OBJECT).unwrap_err();
+            let err = payments::parse_get_txn_fees_response(PAYMENT_METHOD_NAME, EMPTY_OBJECT);
 
-            assert_eq!(err, ErrorCode::WalletAccessFailed);
+            assert_code!(ErrorCode::WalletAccessFailed, err);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -1543,9 +1543,9 @@ mod medium_cases {
 
             payments::mock_method::build_verify_payment_req::inject_mock(ErrorCode::Success, TEST_RES_STRING);
 
-            let ec = payments::build_verify_payment_req(wallet_handle, Some(IDENTIFIER), "pay:null1:test").unwrap_err();
+            let ec = payments::build_verify_payment_req(wallet_handle, Some(IDENTIFIER), "pay:null1:test");
 
-            assert_eq!(ec, ErrorCode::UnknownPaymentMethod);
+            assert_code!(ErrorCode::UnknownPaymentMethod, ec);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -1556,9 +1556,9 @@ mod medium_cases {
 
             payments::mock_method::build_verify_payment_req::inject_mock(ErrorCode::Success, TEST_RES_STRING);
 
-            let ec = payments::build_verify_payment_req(wallet_handle, Some(IDENTIFIER), "pay:null1").unwrap_err();
+            let ec = payments::build_verify_payment_req(wallet_handle, Some(IDENTIFIER), "pay:null1");
 
-            assert_eq!(ec, ErrorCode::IncompatiblePaymentError);
+            assert_code!(ErrorCode::IncompatiblePaymentError, ec);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -1567,8 +1567,8 @@ mod medium_cases {
         pub fn build_verify_payment_req_works_for_invalid_wallet_handle() {
             let wallet_handle = setup();
 
-            let err = payments::build_verify_payment_req(wallet_handle + 1, Some(IDENTIFIER), CORRECT_PAYMENT_ADDRESS).unwrap_err();
-            assert_eq!(err, ErrorCode::WalletInvalidHandle);
+            let err = payments::build_verify_payment_req(wallet_handle + 1, Some(IDENTIFIER), CORRECT_PAYMENT_ADDRESS);
+            assert_code!(ErrorCode::WalletInvalidHandle, err);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -1577,9 +1577,9 @@ mod medium_cases {
         pub fn build_verify_payment_req_works_for_invalid_submitter_did() {
             let wallet_handle = setup();
 
-            let err = payments::build_verify_payment_req(wallet_handle, Some(INVALID_IDENTIFIER), CORRECT_PAYMENT_ADDRESS).unwrap_err();
+            let err = payments::build_verify_payment_req(wallet_handle, Some(INVALID_IDENTIFIER), CORRECT_PAYMENT_ADDRESS);
 
-            assert_eq!(err, ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, err);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -1593,9 +1593,9 @@ mod medium_cases {
             let err = payments::build_verify_payment_req(wallet_handle,
                                                          Some(IDENTIFIER),
                                                          CORRECT_PAYMENT_ADDRESS,
-            ).unwrap_err();
+            );
 
-            assert_eq!(err, ErrorCode::WalletAccessFailed);
+            assert_code!(ErrorCode::WalletAccessFailed, err);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -1609,9 +1609,9 @@ mod medium_cases {
             utils::setup();
             payments::mock_method::init();
 
-            let err = payments::parse_verify_payment_response(WRONG_PAYMENT_METHOD_NAME, CORRECT_OUTPUTS).unwrap_err();
+            let err = payments::parse_verify_payment_response(WRONG_PAYMENT_METHOD_NAME, CORRECT_OUTPUTS);
 
-            assert_eq!(err, ErrorCode::UnknownPaymentMethod);
+            assert_code!(ErrorCode::UnknownPaymentMethod, err);
 
             utils::tear_down();
         }
@@ -1622,9 +1622,9 @@ mod medium_cases {
 
             payments::mock_method::parse_verify_payment_response::inject_mock(ErrorCode::WalletAccessFailed, "");
 
-            let err = payments::parse_verify_payment_response(PAYMENT_METHOD_NAME, EMPTY_OBJECT).unwrap_err();
+            let err = payments::parse_verify_payment_response(PAYMENT_METHOD_NAME, EMPTY_OBJECT);
 
-            assert_eq!(err, ErrorCode::WalletAccessFailed);
+            assert_code!(ErrorCode::WalletAccessFailed, err);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
