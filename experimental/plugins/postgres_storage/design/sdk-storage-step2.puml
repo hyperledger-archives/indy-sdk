@@ -1,0 +1,49 @@
+@startuml
+
+package Indy-SDK <<Folder >> {
+  class AnonCreds
+  class Wallet
+  class PostgresStorage #Wheat
+  class DefaultStorage
+  class PlugInStorage
+  class InmemStorage
+
+  AnonCreds -down-> Wallet
+  Wallet -down-> PostgresStorage
+  Wallet -down-> DefaultStorage
+  Wallet -down-> PlugInStorage
+  PlugInStorage -down-> InmemStorage
+
+  package UnitTests <<Folder>> {
+    class AnonCredsTests
+    class PostgresStorageTests #Wheat
+    class DefaultStorageTests
+    class PlugInStorageTests
+  }
+
+  AnonCredsTests -down-> AnonCreds
+  PostgresStorageTests -down-> PostgresStorage
+  DefaultStorageTests -down-> DefaultStorage
+  PlugInStorageTests -down-> InmemStorage
+  AnonCredsTests .down.> DefaultStorage
+  AnonCredsTests .down.> PostgresStorage
+}
+
+package InmemStorageSO <<Folder>> {
+  class InmemPlugInStorage #Wheat
+}
+
+PlugInStorage .down.> InmemPlugInStorage
+AnonCredsTests .down.> InmemPlugInStorage
+
+note top of AnonCredsTests
+Run unit tests using parameters to specify Wallet Storage:
+  * STG_CONFIG - json configuration string to pass to the wallet on creation and open
+  * STG_CREDS - json credentials string to pass to the wallet on creation and open
+  * STG_TYPE - storage type to create
+  * STG_LIB - c-callable library to load (contains a plug-in storage)
+              (if specified will dynamically load and register a wallet storage)
+  * STG_FN_PREFIX - prefix for all plug-in functions (allows standard function naming)
+end note
+
+@enduml
