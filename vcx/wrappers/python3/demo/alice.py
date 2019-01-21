@@ -15,13 +15,13 @@ from vcx.state import State
 # logging.basicConfig(level=logging.DEBUG) uncomment to get logs
 
 provisionConfig = {
-  'agency_url':'http://localhost:8080',
-  'agency_did':'VsKV7grR1BUE29mG2Fm2kX',
-  'agency_verkey':'Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR',
-  'wallet_name':'alice_wallet',
-  'wallet_key':'123',
-  'payment_method': 'null',
-  'enterprise_seed':'000000000000000000000000Trustee1'
+    'agency_url': 'http://localhost:8080',
+    'agency_did': 'VsKV7grR1BUE29mG2Fm2kX',
+    'agency_verkey': 'Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR',
+    'wallet_name': 'alice_wallet',
+    'wallet_key': '123',
+    'payment_method': 'null',
+    'enterprise_seed': '000000000000000000000000Trustee1'
 }
 
 
@@ -37,7 +37,7 @@ async def main():
     config['institution_name'] = 'alice'
     config['institution_logo_url'] = 'http://robohash.org/456'
     config['genesis_path'] = 'docker.txn'
-    
+
     print("#8 Initialize libvcx with new configuration")
     await vcx_init_with_config(json.dumps(config))
 
@@ -47,7 +47,7 @@ async def main():
     print("#10 Convert to valid json and string and create a connection to faber")
     jdetails = json.loads(details)
     connection_to_faber = await Connection.create_with_details('faber', json.dumps(jdetails))
-    await connection_to_faber.connect(None)
+    await connection_to_faber.connect('{"use_public_did": true}')
     await connection_to_faber.update_state()
 
     print("#11 Wait for faber.py to issue a credential offer")
@@ -78,7 +78,9 @@ async def main():
 
     # Use the first available credentials to satisfy the proof request
     for attr in credentials['attrs']:
-        credentials['attrs'][attr] = credentials['attrs'][attr][0]
+        credentials['attrs'][attr] = {
+            'credential': credentials['attrs'][attr][0]
+        }
 
     print("#25 Generate the proof")
     await proof.generate_proof(credentials, {})

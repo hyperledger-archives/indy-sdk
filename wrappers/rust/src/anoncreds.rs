@@ -31,7 +31,7 @@ use ffi::{ResponseStringStringCB,
 /// * `issuer_did`: DID of schema issuer
 /// * `name`: a name the schema
 /// * `version`: a version of the schema
-/// * `attrs`: a list of schema attributes descriptions
+/// * `attrs`: a list of schema attributes descriptions (the number of attributes should be less or equal than 125)
 ///
 /// # Returns
 /// * `schema_id`: identifier of created schema
