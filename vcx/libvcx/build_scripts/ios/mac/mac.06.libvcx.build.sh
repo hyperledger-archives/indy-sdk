@@ -24,7 +24,9 @@ if [ "$DEBUG_SYMBOLS" = "nodebug" ]; then
     sed -i .bak 's/debug = true/debug = false/' Cargo.toml
 fi
 
-IOS_TARGETS="aarch64-apple-ios,armv7-apple-ios,armv7s-apple-ios,i386-apple-ios,x86_64-apple-ios"
+# removing 'armv7s-apple-ios' from the master build, as its not currently
+# required, just a 'nice to have'
+IOS_TARGETS="aarch64-apple-ios,armv7-apple-ios,i386-apple-ios,x86_64-apple-ios"
 if [ ! -z "$2" ]; then
     IOS_TARGETS=$2
 fi

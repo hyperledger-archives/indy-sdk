@@ -17,6 +17,20 @@ public class VcxApi extends VcxJava.API {
     private VcxApi() {
     }
 
+//    public static int initSovToken() throws VcxException {
+//        logger.debug("initSovToken()");
+//        int result = LibVcx.api.sovtoken_init();
+//        checkResult(result);
+//        return result;
+//    }
+
+     public static int initNullPay() throws VcxException {
+         logger.debug("initNullPay()");
+         int result = LibVcx.api.nullpay_init();
+         checkResult(result);
+         return result;
+     }
+
     private static Callback vcxIniWithConfigCB = new Callback() {
         @SuppressWarnings({"unused", "unchecked"})
         public void callback(int commandHandle, int err) {

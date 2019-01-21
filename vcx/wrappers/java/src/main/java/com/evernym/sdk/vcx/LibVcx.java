@@ -27,6 +27,12 @@ public abstract class LibVcx {
         public int vcx_reset();
 
     /**
+     * Sovtoken & nullpay
+     */
+//        public int sovtoken_init();
+        public int nullpay_init();
+
+    /**
      * Helper API for testing purposes.
      */
         public void vcx_set_next_agency_response(int msg);
@@ -431,6 +437,7 @@ public abstract class LibVcx {
         } catch (UnsatisfiedLinkError ex) {
             // Library could not be found in standard OS locations.
             // Call init(File file) explicitly with absolute library path.
+            ex.printStackTrace();
         }
     }
 

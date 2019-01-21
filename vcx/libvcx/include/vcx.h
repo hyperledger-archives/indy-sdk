@@ -40,6 +40,23 @@ typedef enum
   invalid = 2,
 } vcx_proof_state_t;
 
+// Initialize sovtoken plugin
+//
+// #Returns
+// Success
+//vcx_error_t sovtoken_init();
+vcx_error_t nullpay_init();
+
+// Reset libvcx to a pre-configured state, releasing/deleting any handles and freeing memory
+//
+// libvcx will be inoperable and must be initialized again with vcx_init_with_config
+//
+// #Params
+// delete: specify whether wallet/pool should be deleted
+//
+// #Returns
+// Successt();
+//vcx_error_t nullpay_init();
 
 // Provision an agent in the agency, populate configuration and wallet for this agent.
 // NOTE: for synchronous call use vcx_provision_agent

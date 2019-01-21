@@ -311,6 +311,14 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
 
 @implementation ConnectMeVcx
 
+//- (int)initSovToken {
+//    return sovtoken_init();
+//}
+
+- (int)initNullPay {
+    return nullpay_init();
+}
+
 - (void)initWithConfig:(NSString *)config
             completion:(void (^)(NSError *error))completion
 {
