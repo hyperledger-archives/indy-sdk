@@ -64,7 +64,7 @@ mod open_pool {
         let pool_handle = indy::pool::open_pool_ledger(&setup.pool_name, None).wait().unwrap();
 
         let ec = indy::pool::open_pool_ledger(&setup.pool_name, None).wait().unwrap_err();
-        assert_eq!(ec, ErrorCode::PoolLedgerInvalidPoolHandle);
+        assert_eq!(ec.error_code, ErrorCode::PoolLedgerInvalidPoolHandle);
 
         indy::pool::close_pool_ledger(pool_handle).wait().unwrap();
     }
@@ -166,7 +166,7 @@ mod close_pool {
 
         indy::pool::close_pool_ledger(pool_handle).wait().unwrap();
         let ec = indy::pool::close_pool_ledger(pool_handle).wait().unwrap_err();
-        assert_eq!(ec, ErrorCode::PoolLedgerInvalidPoolHandle);
+        assert_eq!(ec.error_code, ErrorCode::PoolLedgerInvalidPoolHandle);
     }
 
     #[test]
@@ -205,7 +205,7 @@ mod close_pool {
         indy::pool::close_pool_ledger(pool_handle).wait().unwrap();
 
         let res = _request_future.wait();
-        assert_eq!(res.unwrap_err(), ErrorCode::PoolLedgerTerminated);
+        assert_eq!(res.unwrap_err().error_code, ErrorCode::PoolLedgerTerminated);
     }
 
 }
@@ -258,7 +258,7 @@ mod test_pool_create_config {
         let name = test_pool_name();
         let result = pool::create_pool_ledger_config(&name, Some("{}")).wait();
 
-        assert_eq!(ErrorCode::CommonInvalidStructure, result.unwrap_err());
+        assert_eq!(ErrorCode::CommonInvalidStructure, result.unwrap_err().error_code);
         assert_pool_not_exists(&name);
     }
 
@@ -269,7 +269,7 @@ mod test_pool_create_config {
         let config = json!({"genesis_txn": "/nonexist15794345"}).to_string();
         let result = pool::create_pool_ledger_config(&name, Some(&config)).wait();
 
-        assert_eq!(ErrorCode::CommonIOError, result.unwrap_err());
+        assert_eq!(ErrorCode::CommonIOError, result.unwrap_err().error_code);
         assert_pool_not_exists(&name);
     }
 
@@ -281,7 +281,7 @@ mod test_pool_create_config {
 
         let result = pool::create_pool_ledger_config(&name, Some(&config)).wait();
 
-        assert_eq!(ErrorCode::CommonInvalidStructure, result.unwrap_err());
+        assert_eq!(ErrorCode::CommonInvalidStructure, result.unwrap_err().error_code);
         assert_pool_not_exists(&name);
     }
 
@@ -292,7 +292,7 @@ mod test_pool_create_config {
         let (config, _file) = test_genesis_config();
         let result = pool::create_pool_ledger_config("", Some(&config)).wait();
 
-        assert_eq!(ErrorCode::CommonInvalidParam2, result.unwrap_err());
+        assert_eq!(ErrorCode::CommonInvalidParam2, result.unwrap_err().error_code);
         assert_pool_not_exists(&name);
     }
 
@@ -306,7 +306,7 @@ mod test_pool_create_config {
         assert_eq!((), result.unwrap());
 
         let result = pool::create_pool_ledger_config(&name, Some(&config)).wait();
-        assert_eq!(ErrorCode::PoolLedgerConfigAlreadyExistsError, result.unwrap_err());
+        assert_eq!(ErrorCode::PoolLedgerConfigAlreadyExistsError, result.unwrap_err().error_code);
 
         assert_pool_exists(&name);
         pool::delete_pool_ledger(&name).wait().unwrap();
@@ -350,7 +350,7 @@ mod test_delete_config {
     /* Error deleting non existent pool_config. */
     fn delete_pool_not_exist() {
         let result = pool::delete_pool_ledger(NON_EXISTENT_NAME).wait();
-        assert_eq!(ErrorCode::CommonIOError, result.unwrap_err());
+        assert_eq!(ErrorCode::CommonIOError, result.unwrap_err().error_code);
     }
 
     #[test]
@@ -366,7 +366,7 @@ mod test_delete_config {
         let pool_handle = pool::open_pool_ledger(&pool_name, Some(&config)).wait().unwrap();
 
         let result = pool::delete_pool_ledger(&pool_name).wait();
-        assert_eq!(ErrorCode::CommonInvalidState, result.unwrap_err());
+        assert_eq!(ErrorCode::CommonInvalidState, result.unwrap_err().error_code);
         assert_pool_exists(&pool_name);
 
         pool::close_pool_ledger(pool_handle).wait().unwrap();
@@ -408,12 +408,12 @@ mod test_set_protocol_version {
     /* Error setting invalid protocol version. */
     fn set_invalid_versions() {
         let result = pool::set_protocol_version(0).wait();
-        assert_eq!(ErrorCode::PoolIncompatibleProtocolVersion, result.unwrap_err());
+        assert_eq!(ErrorCode::PoolIncompatibleProtocolVersion, result.unwrap_err().error_code);
         assert_protocol_version_set(1);
 
         let next_protocol_version = *VALID_VERSIONS.last().unwrap() + 1;
         let result = pool::set_protocol_version(next_protocol_version).wait();
-        assert_eq!(ErrorCode::PoolIncompatibleProtocolVersion, result.unwrap_err());
+        assert_eq!(ErrorCode::PoolIncompatibleProtocolVersion, result.unwrap_err().error_code);
         assert_protocol_version_set(1);
     }
 

@@ -15,7 +15,18 @@ public class PoolIncompatibleProtocolVersionException extends IndyException
 	 * Initializes a new PoolIncompatibleProtocolVersionException.
 	 */
 	public PoolIncompatibleProtocolVersionException()
+	{
+		super(message, ErrorCode.PoolLedgerNotCreatedError.value());
+	}
+
+	/**
+	 * Initializes a new PoolIncompatibleProtocolVersionException.
+	 *
+	 * @param sdkMessage The SDK error message.
+	 * @param sdkBacktrace The SDK error backtrace.
+	 */
+	public PoolIncompatibleProtocolVersionException(String sdkMessage, String sdkBacktrace)
     {
-    	super(message, ErrorCode.PoolLedgerNotCreatedError.value());
+    	super(sdkMessage, ErrorCode.PoolLedgerNotCreatedError.value(), sdkBacktrace);
     }
 }

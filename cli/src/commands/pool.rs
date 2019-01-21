@@ -3,7 +3,7 @@ extern crate serde_json;
 use command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata};
 use commands::*;
 
-use indy::ErrorCode;
+use indy::{ErrorCode, IndyError};
 use libindy::pool::Pool;
 use utils::table::print_list_table;
 
@@ -45,10 +45,13 @@ pub mod create_command {
 
         let res = match res {
             Ok(()) => Ok(println_succ!("Pool config \"{}\" has been created", name)),
-            Err(ErrorCode::CommonInvalidStructure) => Err(println_err!("Pool genesis file is invalid or does not exist.")),
-            Err(ErrorCode::CommonIOError) => Err(println_err!("Pool genesis file is invalid or does not exist.")),
-            Err(ErrorCode::PoolLedgerConfigAlreadyExistsError) => Err(println_err!("Pool config \"{}\" already exists", name)),
-            Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
+            Err(err) => {
+                match err.error_code {
+                    ErrorCode::CommonIOError => Err(println_err!("Pool genesis file is invalid or does not exist.")),
+                    ErrorCode::PoolLedgerConfigAlreadyExistsError => Err(println_err!("Pool config \"{}\" already exists", name)),
+                    _ => Err(handle_indy_error(err, None, Some(&name), None)),
+                }
+            }
         };
 
         trace!("execute << {:?}", res);
@@ -97,10 +100,7 @@ pub mod connect_command {
                             set_connected_pool(ctx, None);
                             Ok(println_succ!("Pool \"{}\" has been disconnected", name))
                         }
-                        Err(ErrorCode::PoolLedgerNotCreatedError) => Err(println_err!("Pool \"{}\" does not exist.", name)),
-                        Err(ErrorCode::PoolLedgerTerminated) => Err(println_err!("Pool \"{}\" does not exist.", name)),
-                        Err(ErrorCode::CommonInvalidStructure) => Err(println_err!("Invalid pool ledger config.")),
-                        Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err))
+                        Err(err) => Err(handle_indy_error(err, None, None, Some(name.as_ref())))
                     }
                 } else {
                     Ok(())
@@ -109,9 +109,9 @@ pub mod connect_command {
             .and_then(|_| {
                 match Pool::set_protocol_version(protocol_version) {
                     Ok(_) => Ok(()),
-                    Err(ErrorCode::PoolIncompatibleProtocolVersion) =>
+                    Err(IndyError { error_code: ErrorCode::PoolIncompatibleProtocolVersion, .. }) =>
                         Err(println_err!("Unsupported Protocol Version has been specified \"{}\".", protocol_version)),
-                    Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
+                    Err(err) => Err(handle_indy_error(err, None, Some(&name), None)),
                 }
             })
             .and_then(|_| {
@@ -120,14 +120,16 @@ pub mod connect_command {
                         set_connected_pool(ctx, Some((handle, name.to_owned())));
                         Ok(println_succ!("Pool \"{}\" has been connected", name))
                     }
-                    Err(ErrorCode::PoolLedgerNotCreatedError) => Err(println_err!("Pool \"{}\" does not exist.", name)),
-                    Err(ErrorCode::CommonIOError) => Err(println_err!("Pool \"{}\" does not exist.", name)),
-                    Err(ErrorCode::PoolLedgerTerminated) => Err(println_err!("Pool \"{}\" does not exist.", name)),
-                    Err(ErrorCode::PoolLedgerTimeout) => Err(println_err!("Pool \"{}\" has not been connected.", name)),
-                    Err(ErrorCode::PoolIncompatibleProtocolVersion) =>
-                        Err(println_err!("Pool \"{}\" is not compatible with Protocol Version \"{}\".", name, protocol_version)),
-                    Err(ErrorCode::LedgerNotFound) => Err(println_err!("Item not found in pool \"{}\"", name)),
-                    Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
+                    Err(err) => {
+                        match err.error_code {
+                            ErrorCode::PoolLedgerNotCreatedError => Err(println_err!("Pool \"{}\" does not exist.", name)),
+                            ErrorCode::PoolLedgerTimeout => Err(println_err!("Pool \"{}\" has not been connected.", name)),
+                            ErrorCode::PoolIncompatibleProtocolVersion =>
+                                Err(println_err!("Pool \"{}\" is not compatible with Protocol Version \"{}\".", name, protocol_version)),
+                            ErrorCode::LedgerNotFound => Err(println_err!("Item not found in pool \"{}\"", name)),
+                            _ => Err(handle_indy_error(err, None, Some(&name), None)),
+                        }
+                    }
                 }
             });
 
@@ -144,7 +146,7 @@ pub mod connect_command {
                     set_connected_pool(ctx, Some((handle, name.to_owned())));
                     println_succ!("Pool \"{}\" has been disconnected", name)
                 }
-                Err(err) => println_err!("Indy SDK error occurred {:?}", err),
+                Err(err) => handle_indy_error(err, None, None, None),
             }
         }
 
@@ -176,8 +178,7 @@ pub mod list_command {
 
                 Ok(())
             }
-            Err(ErrorCode::CommonIOError) => Err(println_succ!("There is no opened pool now")),
-            Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
+            Err(err) => Err(handle_indy_error(err, None, None, None))
         };
 
         trace!("execute << {:?}", res);
@@ -199,7 +200,7 @@ pub mod refresh_command {
 
         let res = match Pool::refresh(pool_handle) {
             Ok(_) => Ok(println_succ!("Pool \"{}\"  has been refreshed", pool_name)),
-            Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
+            Err(err) => Err(handle_indy_error(err, None, None, None))
         };
 
         trace!("execute << {:?}", res);
@@ -228,7 +229,7 @@ pub mod disconnect_command {
                 set_connected_pool(ctx, None);
                 Ok(println_succ!("Pool \"{}\" has been disconnected", name))
             }
-            Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
+            Err(err) => Err(handle_indy_error(err, None, Some(&name), None))
         };
 
         trace!("execute << {:?}", res);
@@ -258,9 +259,12 @@ pub mod delete_command {
 
         let res = match res {
             Ok(()) => Ok(println_succ!("Pool \"{}\" has been deleted.", name)),
-            Err(ErrorCode::CommonInvalidState) => Err(println_err!("Connected pool cannot be deleted. Please disconnect first.")),
-            Err(ErrorCode::CommonIOError) => Err(println_err!("Pool \"{}\" does not exist.", name)),
-            Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
+            Err(err) => {
+                match err.error_code {
+                    ErrorCode::CommonIOError => Err(println_err!("Pool \"{}\" does not exist.", name)),
+                    _ => Err(handle_indy_error(err, None, Some(&name), None))
+                }
+            }
         };
 
         trace!("execute << {:?}", res);

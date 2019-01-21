@@ -70,7 +70,7 @@ pub extern fn indy_issuer_create_schema(command_handle: IndyHandle,
     trace!("indy_issuer_create_schema: entity >>> issuer_did: {:?}, name: {:?}, version: {:?}, attrs: {:?}", issuer_did, name, version, attrs);
 
     if attrs.is_empty() {
-        trace!("indy_issuer_create_schema: >>> List of Schema attributes is empty");
+        set_current_error(&err_msg(IndyErrorKind::InvalidStructure, "Empty list of Schema attributes has been passed"));
         return ErrorCode::CommonInvalidStructure;
     }
 
