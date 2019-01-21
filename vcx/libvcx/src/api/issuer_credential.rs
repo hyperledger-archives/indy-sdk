@@ -430,12 +430,17 @@ pub extern fn vcx_issuer_credential_release(credential_handle: u32) -> u32 {
     info!("vcx_issuer_credential_release >>>");
     let source_id = issuer_credential::get_source_id(credential_handle).unwrap_or_default();
     match issuer_credential::release(credential_handle) {
-        Ok(_) => trace!("(vcx_issuer_credential_release credential_handle: {}, rc: {}), source_id: {}",
-                       credential_handle, error_string(0), source_id),
-        Err(e) => warn!("(vcx_issuer_credential_release credential_handle: {}, rc: {}), source_id: {}",
-                       credential_handle, error_string(e.to_error_code()), source_id),
-    };
-    error::SUCCESS.code_num
+        Ok(_) => {
+            trace!("(vcx_issuer_credential_release credential_handle: {}, rc: {}), source_id: {}",
+                       credential_handle, error_string(0), source_id);
+            error::SUCCESS.code_num
+        },
+        Err(e) => {
+            warn!("(vcx_issuer_credential_release credential_handle: {}, rc: {}), source_id: {}",
+                       credential_handle, error_string(e.to_error_code()), source_id);
+            e.to_error_code()
+        },
+    }
 }
 
 /// Retrieve the txn associated with paying for the issuer_credential
@@ -657,6 +662,18 @@ mod tests {
         cb.receive(Some(Duration::from_secs(10))).is_err();
     }
 
+    fn create_default_issuer_credential() -> u32 {
+        let cb = return_types_u32::Return_U32_U32::new().unwrap();
+        assert_eq!(vcx_issuer_create_credential(cb.command_handle,
+            CString::new(DEFAULT_CREDENTIAL_NAME).unwrap().into_raw(),
+            ::credential_def::tests::create_cred_def_fake(),
+            ptr::null(),
+            CString::new(DEFAULT_ATTR).unwrap().into_raw(),
+            CString::new(DEFAULT_CREDENTIAL_NAME).unwrap().into_raw(),
+            CString::new("1").unwrap().into_raw(),
+            Some(cb.get_callback())), error::SUCCESS.code_num);
+       cb.receive(Some(Duration::from_secs(10))).unwrap()
+    }
     #[test]
     fn test_vcx_issuer_credential_serialize_deserialize() {
         init!("true");
@@ -803,5 +820,13 @@ mod tests {
                                               Some(cb.get_callback())),
                    error::SUCCESS.code_num);
         cb.receive(Some(Duration::from_secs(10))).unwrap();
+    }
+
+    #[test]
+    fn test_vcx_issuer_credential_release() {
+        init!("true");
+        let handle = create_default_issuer_credential();
+        let unknown_handle = handle + 1;
+        assert_eq!(vcx_issuer_credential_release(unknown_handle), error::INVALID_ISSUER_CREDENTIAL_HANDLE.code_num);
     }
 }
