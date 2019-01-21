@@ -5,7 +5,7 @@ use futures::Future;
 
 use utils::libindy::wallet::get_wallet_handle;
 use utils::constants::{SUBMIT_SCHEMA_RESPONSE, TRANSFER_TXN_TYPE};
-use utils::libindy::error_codes::map_rust_indy_sdk_error_code;
+use utils::libindy::error_codes::map_rust_indy_sdk_error;
 #[allow(unused_imports)]
 use utils::libindy::ledger::{libindy_submit_request, libindy_sign_and_submit_request, libindy_sign_request};
 use utils::error;
@@ -107,7 +107,7 @@ pub fn create_address(seed: Option<String>) -> Result<String, u32> {
 
     payments::create_payment_address(get_wallet_handle() as i32, settings::get_payment_method().as_str(), &config)
         .wait()
-        .map_err(map_rust_indy_sdk_error_code)
+        .map_err(map_rust_indy_sdk_error)
 }
 
 pub fn get_address_info(address: &str) -> Result<AddressInfo, u32> {
@@ -138,13 +138,13 @@ pub fn get_address_info(address: &str) -> Result<AddressInfo, u32> {
 
     let (txn, _) = payments::build_get_payment_sources_request(get_wallet_handle() as i32, Some(&did), address)
         .wait()
-        .map_err(map_rust_indy_sdk_error_code)?;
+        .map_err(map_rust_indy_sdk_error)?;
 
     let response = libindy_sign_and_submit_request(&did, &txn)?;
 
     let response = payments::parse_get_payment_sources_response(settings::get_payment_method().as_str(), &response)
         .wait()
-        .map_err(map_rust_indy_sdk_error_code)?;
+        .map_err(map_rust_indy_sdk_error)?;
 
     trace!("indy_parse_get_utxo_response() --> {}", response);
     let utxo: Vec<UTXO> = serde_json::from_str(&response).or(Err(error::INVALID_JSON.code_num))?;
@@ -163,7 +163,7 @@ pub fn list_addresses() -> Result<Vec<String>, u32> {
 
     let addresses = payments::list_payment_addresses(get_wallet_handle() as i32)
         .wait()
-        .map_err(map_rust_indy_sdk_error_code)?;
+        .map_err(map_rust_indy_sdk_error)?;
 
     trace!("--> {}", addresses);
     Ok(serde_json::from_str(&addresses).or(Err(error::INVALID_JSON.code_num))?)
@@ -202,12 +202,12 @@ pub fn get_ledger_fees() -> Result<String, u32> {
 
     let response = match payments::build_get_txn_fees_req(get_wallet_handle() as i32, Some(&did), settings::get_payment_method().as_str()).wait() {
         Ok(txn) => libindy_sign_and_submit_request(&did, &txn)?,
-        Err(x) => return Err(map_rust_indy_sdk_error_code(x)),
+        Err(x) => return Err(map_rust_indy_sdk_error(x)),
     };
 
     let res = payments::parse_get_txn_fees_response(settings::get_payment_method().as_str(), &response)
         .wait()
-        .map_err(map_rust_indy_sdk_error_code);
+        .map_err(map_rust_indy_sdk_error);
     res
 }
 
@@ -258,7 +258,7 @@ fn _submit_fees_request(req: &str, inputs: &str, outputs: &str) -> Result<(Strin
         Ok((req, payment_method)) => {
             (libindy_submit_request(&req)?, payment_method)
         }
-        Err(x) => return Err(map_rust_indy_sdk_error_code(x)),
+        Err(x) => return Err(map_rust_indy_sdk_error(x)),
     };
 
     let parsed_response = match payments::parse_response_with_fees(&payment_method, &response).wait() {
@@ -300,8 +300,8 @@ pub fn pay_a_payee(price: u64, address: &str) -> Result<(PaymentTxn, String), Pa
             Ok((payment, result))
         }
         Err(ec) => {
-            error!("error: {:?}", ec);
-            Err(PaymentError::CommonError(ec as u32))
+            error!("error: {:?}", ec.message);
+            Err(PaymentError::CommonError(ec.error_code as u32))
         }
     }
 }
@@ -415,7 +415,7 @@ pub fn mint_tokens_and_set_fees(number_of_addresses: Option<u32>, tokens_per_add
     if fees.is_some() {
         let txn = payments::build_set_txn_fees_req(get_wallet_handle() as i32, Some(&did_1), settings::get_payment_method().as_str(), fees.unwrap())
             .wait()
-            .map_err(map_rust_indy_sdk_error_code)?;
+            .map_err(map_rust_indy_sdk_error)?;
 
         let sign1 = ::utils::libindy::ledger::multisign_request(&did_1, &txn).unwrap();
         let sign2 = ::utils::libindy::ledger::multisign_request(&did_2, &sign1).unwrap();
@@ -436,7 +436,7 @@ fn add_new_trustee_did() -> Result<(String, String), u32> {
     let (did, verkey) = ::utils::libindy::signus::create_and_store_my_did(None).unwrap();
     let req_nym = ledger::build_nym_request(&institution_did, &did, Some(&verkey), None, Some("TRUSTEE"))
         .wait()
-        .map_err(map_rust_indy_sdk_error_code)?;
+        .map_err(map_rust_indy_sdk_error)?;
     ::utils::libindy::ledger::libindy_sign_and_submit_request(&institution_did, &req_nym)?;
     Ok((did, verkey))
 }

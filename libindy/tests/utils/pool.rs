@@ -8,7 +8,7 @@ use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
-use indy::ErrorCode;
+use indy::{ErrorCode, IndyError};
 use indy::pool;
 use self::futures::Future;
 use serde_json;
@@ -110,12 +110,12 @@ pub fn pool_config_json(txn_file_path: &Path) -> String {
     serde_json::to_string(&config).unwrap()
 }
 
-pub fn create_pool_ledger_config(pool_name: &str, pool_config: Option<&str>) -> Result<(), ErrorCode> {
+pub fn create_pool_ledger_config(pool_name: &str, pool_config: Option<&str>) -> Result<(), IndyError> {
     pool::create_pool_ledger_config(pool_name, pool_config).wait()
 }
 
 #[cfg(feature = "local_nodes_pool")]
-pub fn open_pool_ledger(pool_name: &str, config: Option<&str>) -> Result<i32, ErrorCode> {
+pub fn open_pool_ledger(pool_name: &str, config: Option<&str>) -> Result<i32, IndyError> {
     pool::open_pool_ledger(pool_name, config).wait()
 }
 
@@ -163,7 +163,7 @@ fn _dump_genesis_txns_to_cache(pool_name: &str, node_txns: &Vec<String>) -> Resu
     Ok(())
 }
 
-pub fn create_and_open_pool_ledger(pool_name: &str) -> Result<i32, ErrorCode> {
+pub fn create_and_open_pool_ledger(pool_name: &str) -> Result<i32, IndyError> {
     set_protocol_version(PROTOCOL_VERSION).unwrap();
     let txn_file_path = create_genesis_txn_file_for_test_pool(pool_name, None, None);
     let pool_config = pool_config_json(txn_file_path.as_path());
@@ -171,19 +171,19 @@ pub fn create_and_open_pool_ledger(pool_name: &str) -> Result<i32, ErrorCode> {
     open_pool_ledger(pool_name, None)
 }
 
-pub fn refresh(pool_handle: i32) -> Result<(), ErrorCode> {
+pub fn refresh(pool_handle: i32) -> Result<(), IndyError> {
     pool::refresh_pool_ledger(pool_handle).wait()
 }
 
-pub fn close(pool_handle: i32) -> Result<(), ErrorCode> {
+pub fn close(pool_handle: i32) -> Result<(), IndyError> {
     pool::close_pool_ledger(pool_handle).wait()
 }
 
-pub fn delete(pool_name: &str) -> Result<(), ErrorCode> {
+pub fn delete(pool_name: &str) -> Result<(), IndyError> {
     pool::delete_pool_ledger(pool_name).wait()
 }
 
-pub fn set_protocol_version(protocol_version: usize) -> Result<(), ErrorCode> {
+pub fn set_protocol_version(protocol_version: usize) -> Result<(), IndyError> {
     pool::set_protocol_version(protocol_version).wait()
 }
 
