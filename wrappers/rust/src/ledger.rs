@@ -178,6 +178,7 @@ fn _build_get_ddo_request(command_handle: IndyHandle, submitter_did: Option<&str
 ///                             TRUSTEE
 ///                             STEWARD
 ///                             TRUST_ANCHOR
+///                             NETWORK_MONITOR
 ///                             empty string to reset role
 ///
 /// # Returns

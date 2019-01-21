@@ -1255,6 +1255,7 @@ null \(common USER\)
 TRUSTEE
 STEWARD
 TRUST\_ANCHOR
+NETWORK\_MONITOR
 empty string to reset role
 * __->__ `request`: Json
 

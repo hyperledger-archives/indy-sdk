@@ -1749,7 +1749,8 @@ mod medium_cases {
             let (my_did, _) = did::create_and_store_my_did(wallet_handle, None).unwrap();
 
             let nym_request = ledger::build_nym_request(&trustee_did, &my_did, None, None, None).unwrap();
-            ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
+            let response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
+            pool::check_response_type(&response, ResponseType::REPLY);
 
             utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
         }
@@ -1761,7 +1762,8 @@ mod medium_cases {
             let (my_did, my_verkey) = did::create_and_store_my_did(wallet_handle, None).unwrap();
 
             let nym_request = ledger::build_nym_request(&trustee_did, &my_did, Some(&my_verkey), Some("some_alias"), Some("STEWARD")).unwrap();
-            ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
+            let response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
+            pool::check_response_type(&response, ResponseType::REPLY);
 
             utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
         }
@@ -1774,7 +1776,8 @@ mod medium_cases {
             for role in ["STEWARD", "TRUSTEE", "TRUST_ANCHOR", "NETWORK_MONITOR"].iter() {
                 let (my_did, _) = did::create_and_store_my_did(wallet_handle, None).unwrap();
                 let nym_request = ledger::build_nym_request(&trustee_did, &my_did, None, None, Some(role)).unwrap();
-                ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
+                let response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
+                pool::check_response_type(&response, ResponseType::REPLY);
             }
 
             utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
