@@ -51,7 +51,16 @@ pub mod create_command {
         let storage_credentials = get_opt_object_param("storage_credentials", params).map_err(error_err!())?;
 
         let config: String = json!({ "id": id.clone(), "storage_type": storage_type, "storage_config": storage_config }).to_string();
-        let credentials: String = json!({ "key": key.clone(), "key_derivation_method": map_key_derivation_method(key_derivation_method)?, "storage_credentials": storage_credentials }).to_string();
+
+        let credentials = {
+            let mut json = JSONMap::new();
+
+            json.insert("key".to_string(), serde_json::Value::String(key.to_string()));
+            json.insert("key_derivation_method".to_string(), serde_json::Value::String(map_key_derivation_method(key_derivation_method)?.to_string()));
+            update_json_map_opt_key!(json, "storage_credentials", storage_credentials);
+
+            JSONValue::from(json).to_string()
+        };
 
         if _wallet_config_path(id).exists() {
             return Err(println_err!("Wallet \"{}\" is already attached to CLI", id));
@@ -163,8 +172,7 @@ pub mod open_command {
 
             update_json_map_opt_key!(json, "rekey", rekey);
             json.insert("rekey_derivation_method".to_string(), serde_json::Value::String(map_key_derivation_method(rekey_derivation_method)?.to_string()));
-
-            storage_credentials.map(|creds| json.insert("storage_credentials".to_string(), creds));
+            update_json_map_opt_key!(json, "storage_credentials", storage_credentials);
 
             JSONValue::from(json).to_string()
         };
@@ -314,8 +322,7 @@ pub mod delete_command {
 
             json.insert("key".to_string(), serde_json::Value::String(key.to_string()));
             json.insert("key_derivation_method".to_string(), serde_json::Value::String(map_key_derivation_method(key_derivation_method)?.to_string()));
-
-            storage_credentials.map(|creds| json.insert("storage_credentials".to_string(), creds));
+            update_json_map_opt_key!(json, "storage_credentials", storage_credentials);
 
             JSONValue::from(json).to_string()
         };
@@ -448,8 +455,17 @@ pub mod import_command {
         let storage_credentials = get_opt_object_param("storage_credentials", params).map_err(error_err!())?;
 
         let config: String = json!({ "id": id.clone(), "storage_type": storage_type, "storage_config": storage_config }).to_string();
-        let credentials: String = json!({ "key": key.clone(), "key_derivation_method": map_key_derivation_method(key_derivation_method)?, "storage_credentials": storage_credentials }).to_string();
         let import_config: String = json!({ "path": export_path.clone(), "key": export_key.clone()}).to_string();
+
+        let credentials = {
+            let mut json = JSONMap::new();
+
+            json.insert("key".to_string(), serde_json::Value::String(key.to_string()));
+            json.insert("key_derivation_method".to_string(), serde_json::Value::String(map_key_derivation_method(key_derivation_method)?.to_string()));
+            update_json_map_opt_key!(json, "storage_credentials", storage_credentials);
+
+            JSONValue::from(json).to_string()
+        };
 
         if _wallet_config_path(id).exists() {
             return Err(println_err!("Wallet \"{}\" is already attached to CLI", id));
