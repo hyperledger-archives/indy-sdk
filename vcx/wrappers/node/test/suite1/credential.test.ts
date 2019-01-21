@@ -10,10 +10,8 @@ import {
   dataCredentialCreateWithMsgId,
   dataCredentialCreateWithOffer
 } from 'helpers/entities'
-import { gcTest } from 'helpers/gc'
-import { TIMEOUT_GC } from 'helpers/test-constants'
 import { initVcxTestMode, shouldThrow } from 'helpers/utils'
-import { Credential, CredentialPaymentManager, rustAPI, StateType, VCXCode, VCXMock, VCXMockMessage } from 'src'
+import { Credential, CredentialPaymentManager, StateType, VCXCode, VCXMock, VCXMockMessage } from 'src'
 
 describe('Credential:', () => {
   before(() => initVcxTestMode())
@@ -98,15 +96,6 @@ describe('Credential:', () => {
       assert.equal(error.vcxCode, VCXCode.INVALID_CREDENTIAL_HANDLE)
     })
 
-    it('throws: credential released', async () => {
-      const credential = await credentialCreateWithOffer()
-      const { data } = await credential.serialize()
-      assert.ok(data)
-      assert.equal(data.source_id, credential.sourceId)
-      assert.equal(await credential.release(), VCXCode.SUCCESS)
-      const error = await shouldThrow(() => credential.serialize())
-      assert.equal(error.vcxCode, VCXCode.INVALID_CREDENTIAL_HANDLE)
-    })
   })
 
   describe('deserialize:', () => {
@@ -123,22 +112,6 @@ describe('Credential:', () => {
       const error = await shouldThrow(async () => Credential.deserialize({
         data: { source_id: 'Invalid' } } as any))
       assert.equal(error.vcxCode, VCXCode.INVALID_JSON)
-    })
-  })
-
-  describe('release:', () => {
-    it('success', async () => {
-      const credential = await credentialCreateWithOffer()
-      assert.equal(await credential.release(), VCXCode.SUCCESS)
-      const errorSerialize = await shouldThrow(() => credential.serialize())
-      assert.equal(errorSerialize.vcxCode, VCXCode.INVALID_CREDENTIAL_HANDLE)
-    })
-
-    // TODO: Enable once https://evernym.atlassian.net/browse/EN-668 is resolved
-    it.skip('throws: not initialized', async () => {
-      const credential = new Credential(null as any)
-      const error = await shouldThrow(() => credential.release())
-      assert.equal(error.vcxCode, VCXCode.UNKNOWN_ERROR)
     })
   })
 
@@ -244,22 +217,4 @@ describe('Credential:', () => {
     })
   })
 
-  describe('GC:', function () {
-    this.timeout(TIMEOUT_GC)
-
-    const credentialCreateAndDelete = async () => {
-      let credential: Credential | null = await credentialCreateWithOffer()
-      const handle = credential.handle
-      credential = null
-      return handle
-    }
-    it('calls release', async () => {
-      const handle = await credentialCreateAndDelete()
-      await gcTest({
-        handle,
-        serialize: rustAPI().vcx_credential_serialize,
-        stopCode: VCXCode.INVALID_CREDENTIAL_HANDLE
-      })
-    })
-  })
 })

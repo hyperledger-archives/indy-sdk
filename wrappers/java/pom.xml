@@ -44,9 +44,9 @@
 
 	<distributionManagement>
 		<repository>
-			<id>artifactory-evernym</id>
-			<name>artifactory-evernym</name>
-			<url>https://repo.evernym.com/artifactory/libindy-maven-local</url>
+			<id>${mavenRepo.id}</id>
+			<name>${mavenRepo.name}</name>
+			<url>${mavenRepo.url}</url>
 		</repository>
 	</distributionManagement>
 
@@ -176,7 +176,6 @@
 			<groupId>org.json</groupId>
 			<artifactId>json</artifactId>
 			<version>20160810</version>
-			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.slf4j</groupId>
@@ -194,6 +193,11 @@
 			<artifactId>log4j</artifactId>
 			<version>1.2.17</version>
 			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.json</groupId>
+			<artifactId>json</artifactId>
+			<version>20180130</version>
 		</dependency>
 	</dependencies>
 </project>

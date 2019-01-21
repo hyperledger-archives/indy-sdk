@@ -51,7 +51,16 @@ pub mod create_command {
         let storage_credentials = get_opt_object_param("storage_credentials", params).map_err(error_err!())?;
 
         let config: String = json!({ "id": id.clone(), "storage_type": storage_type, "storage_config": storage_config }).to_string();
-        let credentials: String = json!({ "key": key.clone(), "key_derivation_method": map_key_derivation_method(key_derivation_method)?, "storage_credentials": storage_credentials }).to_string();
+
+        let credentials = {
+            let mut json = JSONMap::new();
+
+            json.insert("key".to_string(), serde_json::Value::String(key.to_string()));
+            json.insert("key_derivation_method".to_string(), serde_json::Value::String(map_key_derivation_method(key_derivation_method)?.to_string()));
+            update_json_map_opt_key!(json, "storage_credentials", storage_credentials);
+
+            JSONValue::from(json).to_string()
+        };
 
         if _wallet_config_path(id).exists() {
             return Err(println_err!("Wallet \"{}\" is already attached to CLI", id));
@@ -72,10 +81,13 @@ pub mod create_command {
 
                 Ok(println_succ!("Wallet \"{}\" has been created", id))
             }
-            Err(ErrorCode::CommonInvalidStructure) => Err(println_err!("Invalid key has been provided")),
-            Err(ErrorCode::WalletAlreadyExistsError) => Err(println_err!("Wallet \"{}\" already exists", id)),
-            Err(ErrorCode::CommonIOError) => Err(println_err!("Invalid wallet name  \"{}\"", id)),
-            Err(err) => return Err(println_err!("Indy SDK error occurred {:?}", err)),
+            Err(err) => {
+                match err.error_code {
+                    ErrorCode::WalletAlreadyExistsError => Err(println_err!("Wallet \"{}\" already exists", id)),
+                    ErrorCode::CommonIOError => Err(println_err!("Invalid wallet name \"{}\"", id)),
+                    _ => Err(handle_indy_error(err, None, None, Some(&id)))
+                }
+            }
         };
 
         trace!("execute << {:?}", res);
@@ -160,8 +172,7 @@ pub mod open_command {
 
             update_json_map_opt_key!(json, "rekey", rekey);
             json.insert("rekey_derivation_method".to_string(), serde_json::Value::String(map_key_derivation_method(rekey_derivation_method)?.to_string()));
-
-            storage_credentials.map(|creds| json.insert("storage_credentials".to_string(), creds));
+            update_json_map_opt_key!(json, "storage_credentials", storage_credentials);
 
             JSONValue::from(json).to_string()
         };
@@ -172,7 +183,7 @@ pub mod open_command {
                 if let Some((handle, id)) = get_opened_wallet(ctx) {
                     match Wallet::close_wallet(handle) {
                         Ok(()) => Ok(println_succ!("Wallet \"{}\" has been closed", id)),
-                        Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
+                        Err(err) => Err(handle_indy_error(err, None, None, None))
                     }
                 } else {
                     Ok(())
@@ -186,12 +197,11 @@ pub mod open_command {
                     }
                     Err(err) => {
                         set_opened_wallet(ctx, None);
-                        match err {
-                            ErrorCode::CommonInvalidStructure => Err(println_err!("Invalid key or config has been provided")),
+                        match err.error_code {
                             ErrorCode::WalletAlreadyOpenedError => Err(println_err!("Wallet \"{}\" already opened", id)),
                             ErrorCode::WalletAccessFailed => Err(println_err!("Cannot open wallet \"{}\". Invalid key has been provided", id)),
                             ErrorCode::WalletNotFoundError => Err(println_err!("Wallet \"{}\" not found or unavailable", id)),
-                            err => Err(println_err!("Indy SDK error occurred {:?}", err)),
+                            _ => Err(handle_indy_error(err, None, None, Some(&id))),
                         }
                     }
                 }
@@ -210,7 +220,7 @@ pub mod open_command {
                     set_opened_wallet(ctx, Some((handle, name.clone())));
                     println_succ!("Wallet \"{}\" has been closed", name)
                 }
-                Err(err) => println_err!("Indy SDK error occurred {:?}", err),
+                Err(err) => handle_indy_error(err, None, None, None)
             }
         }
 
@@ -271,7 +281,7 @@ pub mod close_command {
                         set_active_did(ctx, None);
                         Ok(println_succ!("Wallet \"{}\" has been closed", name))
                     }
-                    Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
+                    Err(err) => Err(handle_indy_error(err, None, None, None))
                 }
             });
 
@@ -291,6 +301,7 @@ pub mod delete_command {
                                     argon2m - derive secured wallet key (used by default)
                                     argon2i - derive secured wallet key (less secured but faster)
                                     raw - raw key provided (skip derivation)")
+                .add_optional_param("storage_credentials", "The list of key:value pairs defined by storage type.")
                 .add_example("wallet delete wallet1 key")
                 .finalize()
     );
@@ -301,11 +312,20 @@ pub mod delete_command {
         let id = get_str_param("name", params).map_err(error_err!())?;
         let key = get_str_param("key", params).map_err(error_err!())?;
         let key_derivation_method = get_opt_str_param("key_derivation_method", params).map_err(error_err!())?;
+        let storage_credentials = get_opt_object_param("storage_credentials", params).map_err(error_err!())?;
 
         let config = _read_wallet_config(id)
             .map_err(|_| println_err!("Wallet \"{}\" isn't attached to CLI", id))?;
 
-        let credentials: String = json!({ "key": key.clone(), "key_derivation_method": map_key_derivation_method(key_derivation_method)? }).to_string();
+        let credentials = {
+            let mut json = JSONMap::new();
+
+            json.insert("key".to_string(), serde_json::Value::String(key.to_string()));
+            json.insert("key_derivation_method".to_string(), serde_json::Value::String(map_key_derivation_method(key_derivation_method)?.to_string()));
+            update_json_map_opt_key!(json, "storage_credentials", storage_credentials);
+
+            JSONValue::from(json).to_string()
+        };
 
         let res = match Wallet::delete_wallet(config.as_str(), credentials.as_str()) {
             Ok(()) => {
@@ -314,12 +334,13 @@ pub mod delete_command {
 
                 Ok(println_succ!("Wallet \"{}\" has been deleted", id))
             }
-            Err(ErrorCode::CommonIOError) => Err(println_err!("Wallet \"{}\" not found or unavailable", id)),
-            Err(ErrorCode::WalletNotFoundError) => Err(println_err!("Wallet \"{}\" not found or unavailable", id)),
-            Err(ErrorCode::WalletAccessFailed) => Err(println_err!("Cannot delete wallet \"{}\". Invalid key has been provided ", id)),
-            Err(ErrorCode::CommonInvalidStructure) => Err(println_err!("Invalid key has been provided")),
-            Err(ErrorCode::CommonInvalidState) => Err(println_err!("Wallet {:?} is opened", id)),
-            Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
+            Err(err) => {
+                match err.error_code {
+                    ErrorCode::WalletNotFoundError => Err(println_err!("Wallet \"{}\" not found or unavailable", id)),
+                    ErrorCode::WalletAccessFailed => Err(println_err!("Cannot delete wallet \"{}\". Invalid key has been provided ", id)),
+                    _ => Err(handle_indy_error(err, None, None, Some(&id)))
+                }
+            }
         };
 
         trace!("execute << {:?}", res);
@@ -392,9 +413,7 @@ pub mod export_command {
 
         let res = match res {
             Ok(()) => Ok(println_succ!("Wallet \"{}\" has been exported to the file \"{}\"", wallet_name, export_path)),
-            Err(ErrorCode::CommonInvalidStructure) => Err(println_err!("Can not export Wallet: Invalid export file or encryption key")),
-            Err(ErrorCode::CommonIOError) => Err(println_err!("Can not export Wallet: Path \"{}\" is invalid or file already exists", export_path)),
-            Err(err) => return Err(println_err!("Indy SDK error occurred {:?}", err)),
+            Err(err) => Err(handle_indy_error(err, None, None, Some(wallet_name.as_ref())))
         };
 
         trace!("execute << {:?}", res);
@@ -436,15 +455,24 @@ pub mod import_command {
         let storage_credentials = get_opt_object_param("storage_credentials", params).map_err(error_err!())?;
 
         let config: String = json!({ "id": id.clone(), "storage_type": storage_type, "storage_config": storage_config }).to_string();
-        let credentials: String = json!({ "key": key.clone(), "key_derivation_method": map_key_derivation_method(key_derivation_method)?, "storage_credentials": storage_credentials }).to_string();
         let import_config: String = json!({ "path": export_path.clone(), "key": export_key.clone()}).to_string();
+
+        let credentials = {
+            let mut json = JSONMap::new();
+
+            json.insert("key".to_string(), serde_json::Value::String(key.to_string()));
+            json.insert("key_derivation_method".to_string(), serde_json::Value::String(map_key_derivation_method(key_derivation_method)?.to_string()));
+            update_json_map_opt_key!(json, "storage_credentials", storage_credentials);
+
+            JSONValue::from(json).to_string()
+        };
 
         if _wallet_config_path(id).exists() {
             return Err(println_err!("Wallet \"{}\" is already attached to CLI", id));
         }
 
         trace!("Wallet::import_wallet try: config {}, import_config {}", config, secret!(&import_config));
-        
+
         let res = Wallet::import_wallet(config.as_str(),
                                         credentials.as_str(),
                                         import_config.as_str(),
@@ -458,10 +486,7 @@ pub mod import_command {
                     .map_err(|err| println_err!("Cannot store \"{}\" config file: {:?}", id, err))?;
                 Ok(println_succ!("Wallet \"{}\" has been created", id))
             }
-            Err(ErrorCode::WalletAlreadyExistsError) => Err(println_err!("Wallet \"{}\" already exists", id)),
-            Err(ErrorCode::CommonIOError) => Err(println_err!("Can not import Wallet from file: \"{}\"", export_path)),
-            Err(ErrorCode::CommonInvalidStructure) => Err(println_err!("Can not import Wallet: Invalid file format or encryption key")),
-            Err(err) => return Err(println_err!("Indy SDK error occurred {:?}", err)),
+            Err(err) => Err(handle_indy_error(err, None, None, Some(id)))
         };
 
         trace!("execute << {:?}", res);
