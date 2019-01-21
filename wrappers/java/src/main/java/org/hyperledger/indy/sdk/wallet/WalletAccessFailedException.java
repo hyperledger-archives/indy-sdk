@@ -14,8 +14,18 @@ public class WalletAccessFailedException extends IndyException
 	/**
 	 * Initializes a new WalletAccessFailedException.
 	 */
-	public WalletAccessFailedException()
+	public WalletAccessFailedException() {
+		super(message, ErrorCode.WalletAccessFailed.value());
+	}
+
+	/**
+	 * Initializes a new WalletAccessFailedException.
+	 *
+	 * @param sdkMessage The SDK error message.
+	 * @param sdkBacktrace The SDK error backtrace.
+	 */
+	public WalletAccessFailedException(String sdkMessage, String sdkBacktrace)
     {
-    	super(message, ErrorCode.WalletAccessFailed.value());
+    	super(sdkMessage, ErrorCode.WalletAccessFailed.value(), sdkBacktrace);
     }
 }

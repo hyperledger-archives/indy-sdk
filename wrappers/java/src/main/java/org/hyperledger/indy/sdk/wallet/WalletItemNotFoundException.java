@@ -14,8 +14,18 @@ public class WalletItemNotFoundException extends IndyException
 	/**
 	 * Initializes a new WalletItemNotFoundException.
 	 */
-	public WalletItemNotFoundException()
+	public WalletItemNotFoundException() {
+		super(message, ErrorCode.WalletItemNotFound.value());
+	}
+
+	/**
+	 * Initializes a new WalletItemNotFoundException.
+	 *
+	 * @param sdkMessage The SDK error message.
+	 * @param sdkBacktrace The SDK error backtrace.
+	 */
+	public WalletItemNotFoundException(String sdkMessage, String sdkBacktrace)
     {
-    	super(message, ErrorCode.WalletItemNotFound.value());
+    	super(sdkMessage, ErrorCode.WalletItemNotFound.value(), sdkBacktrace);
     }
 }
