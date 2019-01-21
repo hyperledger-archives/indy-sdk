@@ -1,9 +1,12 @@
-#[macro_use] extern crate serde_json;
-#[macro_use] extern crate serde_derive;
+#[macro_use]
+extern crate serde_json;
+#[macro_use]
+extern crate serde_derive;
 extern crate rmp_serde;
 extern crate byteorder;
 extern crate indyrs as indy;
 extern crate futures;
+
 #[macro_use]
 mod utils;
 
@@ -13,7 +16,10 @@ use futures::Future;
 use utils::wallet::Wallet;
 use utils::constants::{DID_TRUSTEE, VERKEY_TRUSTEE, METADATA, DID};
 
+extern crate failure;
+
 use indy::ErrorCode;
+
 
 mod create_pairwise {
     use super::*;
@@ -27,6 +33,7 @@ mod create_pairwise {
         let (did, _) = indy::did::create_and_store_my_did(wallet.handle, "{}").wait().unwrap();
         indy::pairwise::create_pairwise(wallet.handle, DID_TRUSTEE, &did, Some(METADATA)).wait().unwrap();
     }
+
     #[test]
     pub fn create_pairwise_works_for_empty_metadata() {
         let wallet = Wallet::new();
@@ -36,6 +43,7 @@ mod create_pairwise {
         let (did, _) = indy::did::create_and_store_my_did(wallet.handle, "{}").wait().unwrap();
         indy::pairwise::create_pairwise(wallet.handle, DID_TRUSTEE, &did, None).wait().unwrap();
     }
+
     #[test]
     pub fn create_pairwise_works_for_not_found_my_did() {
         let wallet = Wallet::new();
@@ -43,7 +51,7 @@ mod create_pairwise {
         indy::did::store_their_did(wallet.handle, &their_identity_json).wait().unwrap();
 
         let ec = indy::pairwise::create_pairwise(wallet.handle, DID_TRUSTEE, DID, Some(METADATA)).wait().unwrap_err();
-        assert_eq!(ec, ErrorCode::WalletItemNotFound);
+        assert_eq!(ec.error_code, ErrorCode::WalletItemNotFound);
     }
 
     #[test]
@@ -52,7 +60,7 @@ mod create_pairwise {
 
         let (did, _) = indy::did::create_and_store_my_did(wallet.handle, "{}").wait().unwrap();
         let ec = indy::pairwise::create_pairwise(wallet.handle, DID_TRUSTEE, &did, Some(METADATA)).wait().unwrap_err();
-        assert_eq!(ec, ErrorCode::WalletItemNotFound);
+        assert_eq!(ec.error_code, ErrorCode::WalletItemNotFound);
     }
 
     #[test]
@@ -63,7 +71,7 @@ mod create_pairwise {
 
         let (did, _) = indy::did::create_and_store_my_did(wallet.handle, "{}").wait().unwrap();
         let ec = indy::pairwise::create_pairwise(wallet.handle + 1, DID_TRUSTEE, &did, Some(METADATA)).wait().unwrap_err();
-        assert_eq!(ec, ErrorCode::WalletInvalidHandle);
+        assert_eq!(ec.error_code, ErrorCode::WalletInvalidHandle);
     }
 
     #[test]
@@ -76,7 +84,7 @@ mod create_pairwise {
         indy::pairwise::create_pairwise(wallet.handle, DID_TRUSTEE, &did, Some(METADATA)).wait().unwrap();
 
         let ec = indy::pairwise::create_pairwise(wallet.handle, DID_TRUSTEE, &did, None).wait().unwrap_err();
-        assert_eq!(ec, ErrorCode::WalletItemAlreadyExists);
+        assert_eq!(ec.error_code, ErrorCode::WalletItemAlreadyExists);
     }
 }
 
@@ -119,7 +127,7 @@ mod list_pairwise {
         indy::pairwise::create_pairwise(wallet.handle, DID_TRUSTEE, &did, None).wait().unwrap();
 
         let ec = indy::pairwise::list_pairwise(wallet.handle + 1).wait().unwrap_err();
-        assert_eq!(ec, ErrorCode::WalletInvalidHandle);
+        assert_eq!(ec.error_code, ErrorCode::WalletInvalidHandle);
     }
 }
 
@@ -154,7 +162,7 @@ mod pairwise_exists {
         let (did, _) = indy::did::create_and_store_my_did(wallet.handle, "{}").wait().unwrap();
         indy::pairwise::create_pairwise(wallet.handle, DID_TRUSTEE, &did, Some(METADATA)).wait().unwrap();
 
-        assert_eq!(ErrorCode::WalletInvalidHandle, indy::pairwise::is_pairwise_exists(wallet.handle + 1, DID_TRUSTEE).wait().unwrap_err());
+        assert_eq!(ErrorCode::WalletInvalidHandle, indy::pairwise::is_pairwise_exists(wallet.handle + 1, DID_TRUSTEE).wait().unwrap_err().error_code);
     }
 }
 
@@ -181,7 +189,7 @@ mod get_pairwise {
 
         let ec = indy::pairwise::get_pairwise(wallet.handle, DID_TRUSTEE).wait().unwrap_err();
 
-        assert_eq!(ec, ErrorCode::WalletItemNotFound);
+        assert_eq!(ec.error_code, ErrorCode::WalletItemNotFound);
     }
 
     #[test]
@@ -195,7 +203,7 @@ mod get_pairwise {
 
         let ec = indy::pairwise::get_pairwise(wallet.handle + 1, DID_TRUSTEE).wait().unwrap_err();
 
-        assert_eq!(ec, ErrorCode::WalletInvalidHandle);
+        assert_eq!(ec.error_code, ErrorCode::WalletInvalidHandle);
     }
 }
 
@@ -250,7 +258,7 @@ mod set_pairwise_metadata {
 
         let ec = indy::pairwise::set_pairwise_metadata(wallet.handle, DID_TRUSTEE, Some(METADATA)).wait().unwrap_err();
 
-        assert_eq!(ec, ErrorCode::WalletItemNotFound);
+        assert_eq!(ec.error_code, ErrorCode::WalletItemNotFound);
     }
 
     #[test]
@@ -264,6 +272,6 @@ mod set_pairwise_metadata {
 
         let ec = indy::pairwise::set_pairwise_metadata(wallet.handle + 1, DID_TRUSTEE, Some(METADATA)).wait().unwrap_err();
 
-        assert_eq!(ec, ErrorCode::WalletInvalidHandle);
+        assert_eq!(ec.error_code, ErrorCode::WalletInvalidHandle);
     }
 }

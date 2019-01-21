@@ -54,11 +54,10 @@ impl Keys {
     pub fn deserialize_encrypted(bytes: &[u8], master_key: &chacha20poly1305_ietf::Key) -> IndyResult<Keys> {
         extern crate rmp_serde;
 
-        let mut decrypted = decrypt_merged(bytes, master_key)
-            .to_indy(IndyErrorKind::WalletAccessFailed, "Invalid master key provided")?; // FIXME: review kind
+        let mut decrypted = decrypt_merged(bytes, master_key)?;
 
         let keys: Keys = rmp_serde::from_slice(&decrypted)
-            .to_indy(IndyErrorKind::WalletAccessFailed, "Invalid master key provided")?; // FIXME: review kind
+                .to_indy(IndyErrorKind::InvalidStructure, "Invalid bytes for Key")?;
 
         memzero(&mut decrypted[..]);
         Ok(keys)

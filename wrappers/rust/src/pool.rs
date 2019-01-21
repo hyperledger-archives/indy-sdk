@@ -1,4 +1,4 @@
-use {ErrorCode, IndyHandle};
+use {ErrorCode, IndyHandle, IndyError};
 
 use std::ffi::CString;
 use std::ptr::null;
@@ -20,7 +20,7 @@ use futures::Future;
 /// {
 ///     "genesis_txn": string (required), A path to genesis transaction file.
 /// }
-pub fn create_pool_ledger_config(pool_name: &str, pool_config: Option<&str>) -> Box<Future<Item=(), Error=ErrorCode>> {
+pub fn create_pool_ledger_config(pool_name: &str, pool_config: Option<&str>) -> Box<Future<Item=(), Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
     let err = _create_pool_ledger_config(command_handle, pool_name, pool_config, cb);
@@ -56,7 +56,7 @@ fn _create_pool_ledger_config(command_handle: IndyHandle, pool_name: &str, pool_
 ///
 /// # Returns
 /// Handle to opened pool to use in methods that require pool connection.
-pub fn open_pool_ledger(pool_name: &str, config: Option<&str>) -> Box<Future<Item=IndyHandle, Error=ErrorCode>> {
+pub fn open_pool_ledger(pool_name: &str, config: Option<&str>) -> Box<Future<Item=IndyHandle, Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_handle();
 
     let err = _open_pool_ledger(command_handle, pool_name, config, cb);
@@ -75,7 +75,7 @@ fn _open_pool_ledger(command_handle: IndyHandle, pool_name: &str, config: Option
 ///
 /// # Arguments
 /// * `handle` - pool handle returned by open_ledger
-pub fn refresh_pool_ledger(pool_handle: IndyHandle) -> Box<Future<Item=(), Error=ErrorCode>> {
+pub fn refresh_pool_ledger(pool_handle: IndyHandle) -> Box<Future<Item=(), Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
     let err = _refresh_pool_ledger(command_handle, pool_handle, cb);
@@ -88,7 +88,7 @@ fn _refresh_pool_ledger(command_handle: IndyHandle, pool_handle: IndyHandle, cb:
 }
 
 /// Lists names of created pool ledgers
-pub fn list_pools() -> Box<Future<Item=String, Error=ErrorCode>> {
+pub fn list_pools() -> Box<Future<Item=String, Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
     let err = _list_pools(command_handle, cb);
@@ -104,7 +104,7 @@ fn _list_pools(command_handle: IndyHandle, cb: Option<ResponseStringCB>) -> Erro
 ///
 /// # Arguments
 /// * `handle` - pool handle returned by open_ledger.
-pub fn close_pool_ledger(pool_handle: IndyHandle) -> Box<Future<Item=(), Error=ErrorCode>> {
+pub fn close_pool_ledger(pool_handle: IndyHandle) -> Box<Future<Item=(), Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
     let err = _close_pool_ledger(command_handle, pool_handle, cb);
@@ -120,7 +120,7 @@ fn _close_pool_ledger(command_handle: IndyHandle, pool_handle: IndyHandle, cb: O
 ///
 /// # Arguments
 /// * `config_name` - Name of the pool ledger configuration to delete.
-pub fn delete_pool_ledger(pool_name: &str) -> Box<Future<Item=(), Error=ErrorCode>> {
+pub fn delete_pool_ledger(pool_name: &str) -> Box<Future<Item=(), Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
     let err = _delete_pool_ledger(command_handle, pool_name, cb);
@@ -145,7 +145,7 @@ fn _delete_pool_ledger(command_handle: IndyHandle, pool_name: &str, cb: Option<R
 /// * `protocol_version` - Protocol version will be used:
 ///     1 - for Indy Node 1.3
 ///     2 - for Indy Node 1.4
-pub fn set_protocol_version(protocol_version: usize) -> Box<Future<Item=(), Error=ErrorCode>> {
+pub fn set_protocol_version(protocol_version: usize) -> Box<Future<Item=(), Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
     let err = _set_protocol_version(command_handle, protocol_version, cb);

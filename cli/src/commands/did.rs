@@ -12,9 +12,7 @@ use serde_json::Value as JSONValue;
 use serde_json::Map as JSONMap;
 
 use commands::ledger::{
-    handle_transaction_error,
     handle_transaction_response,
-    handle_build_request_error,
     set_request_fees,
     parse_response_with_fees,
     print_response_receipts,
@@ -74,10 +72,7 @@ pub mod new_command {
                 println_succ!("Did \"{}\" has been created with \"{}\" verkey", did, vk);
                 Ok(did)
             }
-            Err(ErrorCode::DidAlreadyExistsError) => Err(println_err!("Did already exists")),
-            Err(ErrorCode::UnknownCryptoTypeError) => Err(println_err!("Unknown crypto type")),
-            Err(ErrorCode::CommonInvalidStructure) => Err(println_err!("Invalid format of command params. Please check format of posted JSONs, Keys, DIDs and etc...")),
-            Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
+            Err(err) => Err(handle_indy_error(err, None, None, None))
         };
 
         let res = if let Some(metadata) = metadata {
@@ -85,8 +80,7 @@ pub mod new_command {
                 let res = Did::set_metadata(wallet_handle, &did, metadata);
                 match res {
                     Ok(()) => Ok(println_succ!("Metadata has been saved for DID \"{}\"", did)),
-                    Err(ErrorCode::CommonInvalidStructure) => Err(println_err!("Invalid format of command params. Please check format of posted JSONs, Keys, DIDs and etc...")),
-                    Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
+                    Err(err) => Err(handle_indy_error(err, None, None, None))
                 }
             })
         } else {
@@ -149,7 +143,7 @@ pub mod import_command {
                                 Ok((did, vk)) =>
                                     println_succ!("Did \"{}\" has been created with \"{}\" verkey", did, vk),
                                 Err(err) =>
-                                    println_warn!("Indy SDK error occured {:?} while importing DID {}", err, did)
+                                    println_warn!("Indy SDK error occured {} while importing DID {}", err.message, did)
                             }
                         }
                         Ok(())
@@ -187,9 +181,12 @@ pub mod use_command {
                 set_active_did(ctx, Some(did.to_owned()));
                 Ok(println_succ!("Did \"{}\" has been set as active", did))
             }
-            Err(ErrorCode::CommonInvalidStructure) => Err(println_err!("Invalid DID format")),
-            Err(ErrorCode::WalletItemNotFound) => Err(println_err!("Requested DID not found")),
-            Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err))
+            Err(err) => {
+                match err.error_code {
+                    ErrorCode::WalletItemNotFound => Err(println_err!("Requested DID not found")),
+                    _ => Err(handle_indy_error(err, Some(&did), None, None)),
+                }
+            }
         };
 
         trace!("execute << {:?}", res);
@@ -227,10 +224,10 @@ pub mod rotate_key_command {
         let (new_verkey, update_ledger) = if resume {
             // get temp and current verkey from wallet.
             let (temp_verkey, curr_verkey) = Did::get_did_with_meta(wallet_handle, &did)
-                .map_err(|e|println_err!("Unable to get did: {:?}", e))
+                .map_err(|e| println_err!("Unable to get did: {}", e.message))
                 .and_then(|did_info| {
                     serde_json::from_str::<JSONValue>(&did_info)
-                        .map_err(|e|println_err!("{}", e))
+                        .map_err(|e| println_err!("{}", e))
                         .and_then(|did_info| {
                             let temp_verkey = match did_info["tempVerkey"].as_str() {
                                 Some(temp_verkey) => Ok(temp_verkey.to_owned()),
@@ -252,12 +249,11 @@ pub mod rotate_key_command {
                     // if ledger verkey is abbreviated, abbreviate other also.
                     let (temp_verkey, curr_verkey) = if ledger_verkey.starts_with('~') {
                         let temp_verkey = Did::abbreviate_verkey(&did, &temp_verkey)
-                            .map_err(|_e|println_err!("Invalid temp verkey: {}", temp_verkey))?;
+                            .map_err(|_e| println_err!("Invalid temp verkey: {}", temp_verkey))?;
                         let curr_verkey = Did::abbreviate_verkey(&did, &curr_verkey)
-                            .map_err(|_e|println_err!("Invalid current verkey: {}", curr_verkey))?;
+                            .map_err(|_e| println_err!("Invalid current verkey: {}", curr_verkey))?;
                         Ok((temp_verkey, curr_verkey))
-                    }
-                    else {
+                    } else {
                         Ok((temp_verkey, curr_verkey))
                     }?;
 
@@ -268,19 +264,17 @@ pub mod rotate_key_command {
                     if ledger_verkey == temp_verkey {
                         // ledger is updated, need to apply change to wallet.
                         Ok((temp_verkey, false))
-                    }
-                    else if ledger_verkey == curr_verkey {
+                    } else if ledger_verkey == curr_verkey {
                         // ledger have old state, send nym request and apply change to wallet.
                         Ok((temp_verkey, true))
-                    }
-                    else { // some invalid state
+                    } else {
+                        // some invalid state
                         Err(println_err!("Unable to resume, verkey on ledger is completely different from verkey in wallet"))
                     }
-                },
+                }
                 None => Err(println_err!("No verkey on ledger for did: {}", did))
             }?
-        }
-        else {
+        } else {
             let identity_json = {
                 let mut json = JSONMap::new();
                 update_json_map_opt_key!(json, "seed", seed);
@@ -289,8 +283,12 @@ pub mod rotate_key_command {
 
             let new_verkey = match Did::replace_keys_start(wallet_handle, &did, &identity_json) {
                 Ok(request) => Ok(request),
-                Err(ErrorCode::WalletItemNotFound) => Err(println_err!("Active DID: \"{}\" not found", did)),
-                Err(_) => return Err(println_err!("Invalid format of command params. Please check format of posted JSONs, Keys, DIDs and etc...")),
+                Err(err) => {
+                    match err.error_code {
+                        ErrorCode::WalletItemNotFound => Err(println_err!("Active DID: \"{}\" not found", did)),
+                        _ => Err(handle_indy_error(err, Some(&did), Some(&pool_name), Some(&wallet_name))),
+                    }
+                }
             }?;
 
             (new_verkey, true)
@@ -298,18 +296,18 @@ pub mod rotate_key_command {
 
         let receipts = if update_ledger {
             let mut request = Ledger::build_nym_request(&did, &did, Some(&new_verkey), None, None)
-                .map_err(|err| handle_build_request_error(err))?;
+                .map_err(|err| handle_indy_error(err, Some(&did), Some(&pool_name), Some(&wallet_name)))?;
 
             let payment_method = set_request_fees(&mut request, wallet_handle, Some(&did), &fees_inputs, &fees_outputs, extra)?;
 
             let response_json = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &did, &request)
                 .map_err(|err| {
-                    match err {
+                    match err.error_code {
                         ErrorCode::PoolLedgerTimeout => {
                             println_err!("Transaction response has not beed received");
                             println_err!("Use command `did rotate-key resume=true` to complete");
                         }
-                        err => handle_transaction_error(err, Some(&did), Some(&pool_name), Some(&wallet_name))
+                        _ => handle_indy_error(err, Some(&did), Some(&pool_name), Some(&wallet_name))
                     }
                 })?;
 
@@ -319,7 +317,7 @@ pub mod rotate_key_command {
             handle_transaction_response(response)?;
 
             parse_response_with_fees(&response_json, payment_method)?
-        } else {None};
+        } else { None };
 
         match Did::replace_keys_apply(wallet_handle, &did)
             .and_then(|_| Did::abbreviate_verkey(&did, &new_verkey)) {
@@ -327,8 +325,12 @@ pub mod rotate_key_command {
                 println_succ!("Verkey for did \"{}\" has been updated", did);
                 println_succ!("New verkey is \"{}\"", vk)
             }),
-            Err(ErrorCode::WalletItemNotFound) => Err(println_err!("Active DID: \"{}\" not found", did)),
-            Err(_) => return Err(println_err!("Invalid format of command params. Please check format of posted JSONs, Keys, DIDs and etc...")),
+            Err(err) => {
+                match err.error_code {
+                    ErrorCode::WalletItemNotFound => Err(println_err!("Active DID: \"{}\" not found", did)),
+                    _ => Err(handle_indy_error(err, Some(&did), Some(&pool_name), Some(&wallet_name))),
+                }
+            }
         }?;
 
         let res = print_response_receipts(receipts);
@@ -342,7 +344,7 @@ fn _get_current_verkey(pool_handle: i32, pool_name: &str, wallet_handle: i32, wa
     //TODO: There nym is requested. Due to freshness issues response might be stale or outdated. Something should be done with it
     let response_json = Ledger::build_get_nym_request(Some(did), did)
         .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, did, &request))
-        .map_err(|err| handle_transaction_error(err, Some(did), Some(pool_name), Some(wallet_name)))?;
+        .map_err(|err| handle_indy_error(err, Some(did), Some(pool_name), Some(wallet_name)))?;
     let response: Response<serde_json::Value> = serde_json::from_str::<Response<serde_json::Value>>(&response_json)
         .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
     let result = handle_transaction_response(response)?;
@@ -372,7 +374,7 @@ pub mod list_command {
                     match Did::abbreviate_verkey(did_info["did"].as_str().unwrap_or(""),
                                                  did_info["verkey"].as_str().unwrap_or("")) {
                         Ok(vk) => did_info["verkey"] = serde_json::Value::String(vk),
-                        Err(err) => return Err(println_err!("Indy SDK error occurred {:?}", err))
+                        Err(err) => return Err(handle_indy_error(err, None, None, None))
                     }
                 }
 
@@ -386,7 +388,7 @@ pub mod list_command {
                 }
                 Ok(())
             }
-            Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
+            Err(err) => Err(handle_indy_error(err, None, None, None)),
         };
 
         trace!("execute << {:?}", res);

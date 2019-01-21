@@ -1,0 +1,43 @@
+@startuml
+
+package IndySDK <<Folder >> {
+  package IndySDK::Wallet {
+    class Wallet::DefaultStorage
+    class Wallet::PostgresStorage #Wheat
+    class Wallet::PlugInStorage
+
+    package Wallet::Common <<Folder>> {
+      class Common::Language
+      class Common::Query
+      class Common::Transaction
+    }
+
+    Wallet::DefaultStorage -down-> Common::Language
+    Wallet::PostgresStorage -down-> Common::Language
+  }
+}
+
+package PluginPostgres <<Folder>> {
+  class PluginPostgres::PostgresAPI #Wheat
+
+  package PluginPostgres::Utils <<Folder>> {
+    class PluginPostgres::PostgresStorage #Wheat
+    class Utils::Language #Wheat
+    class Utils::Query #Wheat
+    class Utils::Storage #Wheat
+    class Utils::Transaction #Wheat
+  }
+
+  PluginPostgres::PostgresAPI -down-> PluginPostgres::PostgresStorage
+  PluginPostgres::PostgresStorage -down-> Utils::Language
+}
+
+Wallet::PostgresStorage .down. PluginPostgres::PostgresStorage
+
+Wallet::PlugInStorage -down-> PluginPostgres::PostgresAPI
+
+note "Same code in indy-sdk\nand plug-in" as N1
+Wallet::PostgresStorage .left. N1
+PluginPostgres::PostgresStorage .left. N1
+
+@enduml

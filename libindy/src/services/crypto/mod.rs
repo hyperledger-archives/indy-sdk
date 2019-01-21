@@ -381,7 +381,7 @@ impl CryptoService {
             Vec::from_hex(seed)
                 .to_indy(IndyErrorKind::InvalidStructure, "Seed is invalid hex")?
         } else {
-            return Err(err_msg(IndyErrorKind::InvalidStructure, "Invalid bytes for Seed"));
+            return Err(err_msg(IndyErrorKind::InvalidStructure, "Invalid Seed length"));
         };
 
         let res = ed25519_sign::Seed::from_slice(bytes.as_slice())?;

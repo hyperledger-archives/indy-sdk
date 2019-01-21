@@ -51,7 +51,10 @@ delete_existing_avd(){
 create_avd(){
 
     echo "${GREEN}Creating Android SDK${RESET}"
-    echo "yes" | \
+
+    yes | sdkmanager --licenses
+
+    echo "yes" |
           sdkmanager --no_https \
             "emulator" \
             "platform-tools" \
