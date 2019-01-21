@@ -4,7 +4,7 @@ extern crate indy_crypto;
 
 use std::{error, fmt, io};
 
-use errors::common::CommonError;
+use errors::prelude::*;
 
 use api::ErrorCode;
 use errors::ToErrorCode;

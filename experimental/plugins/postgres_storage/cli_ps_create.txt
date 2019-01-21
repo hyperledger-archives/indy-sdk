@@ -1,0 +1,14 @@
+# commands to create and open a postgres wallet in CLI
+# run cli as:
+# RUST_BACKTRACE=1 LD_LIBRARY_PATH=../experimental/plugins/postgres_storage/target/debug/ cargo run ../experimental/plugins/postgres_storage/cli_ps_create.txt
+# register the postgres plug-in
+load-plugin library=../experimental/plugins/postgres_storage/target/debug/libindystrgpostgres.dylib initializer=postgresstorage_init
+# create a postgres wallet
+wallet create wallet_psy key storage_type=postgres_storage storage_config={"url":"localhost:5432"} storage_credentials={"account":"postgres","password":"mysecretpassword","admin_account":"postgres","admin_password":"mysecretpassword"}
+# open the postgres wallet
+wallet open wallet_psy key storage_credentials={"account":"postgres","password":"mysecretpassword","admin_account":"postgres","admin_password":"mysecretpassword"}
+# create and use a new DID in the wallet
+did new seed=00000000000000000000000000000My5 metadata=my_did_metadata
+did use VREsKVpdEtWCcCmMfddYuT
+# don't close or delete wallet - just leave us in an open state
+

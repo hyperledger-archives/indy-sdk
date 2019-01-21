@@ -179,7 +179,7 @@ pub fn import(config: &str) -> Result<(), WalletError> {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use utils::error;
+    use utils::{get_temp_dir_path, error};
     use std::thread;
     use std::time::Duration;
     use utils::devsetup::tests::setup_wallet_env;
@@ -241,6 +241,7 @@ pub mod tests {
         teardown!("false");
         ::api::vcx::vcx_shutdown(true);
         let wallet_n = settings::DEFAULT_WALLET_NAME;
+        settings::set_config_value(settings::CONFIG_WALLET_KEY, settings::DEFAULT_WALLET_KEY);
         settings::set_config_value(settings::CONFIG_WALLET_KEY_DERIVATION, settings::DEFAULT_WALLET_KEY_DERIVATION);
         create_wallet(wallet_n, None).unwrap();
 
@@ -249,6 +250,7 @@ pub mod tests {
         assert_eq!(open_wallet(wallet_n, None), Err(error::UNKNOWN_LIBINDY_ERROR.code_num));
 
         // Open works when set
+        settings::set_config_value(settings::CONFIG_WALLET_KEY, settings::DEFAULT_WALLET_KEY);
         settings::set_config_value(settings::CONFIG_WALLET_KEY_DERIVATION, settings::DEFAULT_WALLET_KEY_DERIVATION);
         assert!(open_wallet(wallet_n, None).is_ok());
 
@@ -257,6 +259,7 @@ pub mod tests {
         assert_eq!(delete_wallet(wallet_n, None), Err(error::UNKNOWN_LIBINDY_ERROR.code_num));
 
         // Delete works
+        settings::set_config_value(settings::CONFIG_WALLET_KEY, settings::DEFAULT_WALLET_KEY);
         settings::set_config_value(settings::CONFIG_WALLET_KEY_DERIVATION, settings::DEFAULT_WALLET_KEY_DERIVATION);
         assert!(delete_wallet(wallet_n, None).is_ok());
     }
@@ -310,7 +313,9 @@ pub mod tests {
 
         // Missing exported_wallet_path
         assert_eq!(import(&config.to_string()), Err(WalletError::CommonError(error::MISSING_EXPORTED_WALLET_PATH.code_num)));
-        config[settings::CONFIG_EXPORTED_WALLET_PATH] = serde_json::to_value(settings::DEFAULT_EXPORTED_WALLET_PATH).unwrap();
+        config[settings::CONFIG_EXPORTED_WALLET_PATH] = serde_json::to_value(
+            get_temp_dir_path(Some(settings::DEFAULT_EXPORTED_WALLET_PATH)).to_str().unwrap()
+        ).unwrap();
 
         // Missing backup_key
         assert_eq!(import(&config.to_string()), Err(WalletError::CommonError(error::MISSING_BACKUP_KEY.code_num)));

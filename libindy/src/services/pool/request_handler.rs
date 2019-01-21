@@ -1,13 +1,19 @@
 extern crate rust_base58;
 
+use std::cell::RefCell;
+use std::collections::HashMap;
+use std::collections::HashSet;
+use std::iter::FromIterator;
+use std::rc::Rc;
+
+use rmp_serde;
+use serde_json;
+use serde_json::Value as SJsonValue;
+
 use commands::Command;
 use commands::CommandExecutor;
 use commands::ledger::LedgerCommand;
-use errors::common::CommonError;
-use errors::pool::PoolError;
-use self::rust_base58::FromBase58;
-use serde_json;
-use serde_json::Value as SJsonValue;
+use errors::prelude::*;
 use services::ledger::merkletree::merkletree::MerkleTree;
 use services::pool::catchup::{build_catchup_req, CatchupProgress, check_cons_proofs, check_nodes_responses_on_status};
 use services::pool::events::NetworkerEvent;
@@ -19,15 +25,10 @@ use services::pool::state_proof;
 use services::pool::types::CatchupRep;
 use services::pool::types::HashableValue;
 
-use rmp_serde;
-use std::cell::RefCell;
-use std::collections::HashMap;
-use std::collections::HashSet;
-use std::iter::FromIterator;
-use std::rc::Rc;
 use super::indy_crypto::bls::Generator;
 use super::indy_crypto::bls::VerKey;
 
+use self::rust_base58::FromBase58;
 
 struct RequestSM<T: Networker> {
     f: usize,
@@ -235,7 +236,7 @@ impl<T: Networker> RequestSM<T> {
                                 (RequestState::finish(), Some(PoolEvent::Synced(merkle)))
                             }
                             Err(e) => {
-                                _send_replies(&cmd_ids, Err(PoolError::CommonError(e)));
+                                _send_replies(&cmd_ids, Err(e));
                                 (RequestState::finish(), None)
                             }
                         }
@@ -255,17 +256,14 @@ impl<T: Networker> RequestSM<T> {
                                         state.networker.borrow_mut().process_event(Some(NetworkerEvent::SendAllRequest(msg, req_id, timeout, Some(nodes_to_send.clone()))));
                                         (RequestState::Full((Some(nodes_to_send), state).into()), None)
                                     } else {
-                                        _send_replies(&cmd_ids, Err(PoolError::CommonError(CommonError::InvalidStructure(
-                                            format!("There is no known node in list to send {:?}, known nodes are {:?}",
-                                                    nodes_to_send, nodes.keys())
-                                        ))));
+                                        _send_replies(&cmd_ids, Err(err_msg(IndyErrorKind::InvalidStructure,
+                                                                            format!("There is no known node in list to send {:?}, known nodes are {:?}",
+                                                                                    nodes_to_send, nodes.keys()))));
                                         (RequestState::finish(), None)
                                     }
                                 }
                                 Err(err) => {
-                                    _send_replies(&cmd_ids, Err(PoolError::CommonError(CommonError::InvalidStructure(
-                                        format!("Invalid list of nodes to send {:?}", err)
-                                    ))));
+                                    _send_replies(&cmd_ids, Err(err.to_indy(IndyErrorKind::InvalidStructure, "Invalid list of nodes to send")));
                                     (RequestState::finish(), None)
                                 }
                             }
@@ -285,7 +283,10 @@ impl<T: Networker> RequestSM<T> {
             }
             RequestState::Consensus(mut state) => {
                 match re {
-                    RequestEvent::Reply(_, raw_msg, node_alias, req_id) => {
+                    RequestEvent::Reply(_, raw_msg, node_alias, req_id) |
+                    RequestEvent::ReqNACK(_, raw_msg, node_alias, req_id) |
+                    RequestEvent::Reject(_, raw_msg, node_alias, req_id)
+                        => {
                         if let Ok((_, result_without_proof)) = _get_msg_result_without_state_proof(&raw_msg) {
                             let hashable = HashableValue { inner: result_without_proof };
 
@@ -304,7 +305,7 @@ impl<T: Networker> RequestSM<T> {
                                 (RequestState::Consensus(state), None)
                             } else {
                                 //TODO: maybe we should change the error, but it was made to escape changing of ErrorCode returned to client
-                                _send_replies(&cmd_ids, Err(PoolError::Timeout));
+                                _send_replies(&cmd_ids, Err(err_msg(IndyErrorKind::PoolTimeout, "Consensus is impossible")));
                                 state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
                                 (RequestState::finish(), None)
                             }
@@ -316,19 +317,6 @@ impl<T: Networker> RequestSM<T> {
                         state.networker.borrow_mut().process_event(Some(NetworkerEvent::ExtendTimeout(req_id, node_alias, extended_timeout)));
                         (RequestState::Consensus(state), None)
                     }
-                    RequestEvent::ReqNACK(_, raw_msg, node_alias, req_id) | RequestEvent::Reject(_, raw_msg, node_alias, req_id) => {
-                        if _parse_nack(&mut state.denied_nodes, f, &raw_msg, &cmd_ids, &node_alias) {
-                            state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
-                            (RequestState::finish(), None)
-                        } else if state.is_consensus_reachable(f, nodes.len()) {
-                            state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
-                            (RequestState::Consensus(state.into()), None)
-                        } else {
-                            _send_replies(&cmd_ids, Err(PoolError::Timeout));
-                            state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
-                            (RequestState::finish(), None)
-                        }
-                    }
                     RequestEvent::Timeout(req_id, node_alias) => {
                         state.timeout_nodes.insert(node_alias.clone());
                         if state.is_consensus_reachable(f, nodes.len()) {
@@ -336,7 +324,7 @@ impl<T: Networker> RequestSM<T> {
                             (RequestState::Consensus(state.into()), None)
                         } else {
                             //TODO: maybe we should change the error, but it was made to escape changing of ErrorCode returned to client
-                            _send_replies(&cmd_ids, Err(PoolError::Timeout));
+                            _send_replies(&cmd_ids, Err(err_msg(IndyErrorKind::PoolTimeout, "Consensus is impossible")));
                             state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
                             (RequestState::finish(), None)
                         }
@@ -350,7 +338,9 @@ impl<T: Networker> RequestSM<T> {
             }
             RequestState::Single(mut state) => {
                 match re {
-                    RequestEvent::Reply(_, raw_msg, node_alias, req_id) => {
+                    RequestEvent::Reply(_, raw_msg, node_alias, req_id) |
+                    RequestEvent::ReqNACK(_, raw_msg, node_alias, req_id) |
+                    RequestEvent::Reject(_, raw_msg, node_alias, req_id) => {
                         trace!("reply on single request");
                         state.timeout_nodes.remove(&node_alias);
                         if let Ok((result, result_without_proof)) = _get_msg_result_without_state_proof(&raw_msg) {
@@ -377,15 +367,6 @@ impl<T: Networker> RequestSM<T> {
                     RequestEvent::ReqACK(_, _, node_alias, req_id) => {
                         state.networker.borrow_mut().process_event(Some(NetworkerEvent::ExtendTimeout(req_id, node_alias, extended_timeout)));
                         (RequestState::Single(state), None)
-                    }
-                    RequestEvent::ReqNACK(_, raw_msg, node_alias, req_id) | RequestEvent::Reject(_, raw_msg, node_alias, req_id) => {
-                        state.timeout_nodes.remove(&node_alias);
-                        if _parse_nack(&mut state.denied_nodes, f, &raw_msg, &cmd_ids, &node_alias) {
-                            state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
-                            (RequestState::finish(), None)
-                        } else {
-                            (state.try_to_continue(req_id, node_alias, &cmd_ids, nodes.len(), timeout), None)
-                        }
                     }
                     RequestEvent::Timeout(req_id, node_alias) => {
                         state.timeout_nodes.insert(node_alias.clone());
@@ -616,7 +597,7 @@ impl<T: Networker> SingleState<T> {
             RequestState::Single(self)
         } else {
             //TODO: maybe we should change the error, but it was made to escape changing of ErrorCode returned to client
-            _send_replies(cmd_ids, Err(PoolError::Timeout));
+            _send_replies(cmd_ids, Err(err_msg(IndyErrorKind::PoolTimeout, "Consensus is impossible")));
             self.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
             RequestState::finish()
         }
@@ -641,24 +622,22 @@ fn _parse_nack(denied_nodes: &mut HashSet<String>, f: usize, raw_msg: &str, cmd_
     }
 }
 
-fn _process_catchup_reply(rep: &mut CatchupRep, merkle: &MerkleTree, target_mt_root: &Vec<u8>, target_mt_size: usize, pool_name: &str) -> Result<MerkleTree, PoolError> {
+fn _process_catchup_reply(rep: &mut CatchupRep, merkle: &MerkleTree, target_mt_root: &Vec<u8>, target_mt_size: usize, pool_name: &str) -> IndyResult<MerkleTree> {
     let mut txns_to_drop = vec![];
     let mut merkle = merkle.clone();
+
     while !rep.txns.is_empty() {
         let key = rep.min_tx()?;
         let txn = rep.txns.remove(&key.to_string()).unwrap();
-        if let Ok(txn_bytes) = rmp_serde::to_vec_named(&txn) {
-            merkle.append(txn_bytes.clone())?;
-            txns_to_drop.push(txn_bytes);
-        } else {
-            return Err(PoolError::CommonError(CommonError::InvalidStructure("Invalid transaction -- can not transform to bytes".to_string()))).map_err(map_err_trace!());
-        }
+
+        let txn = rmp_serde::to_vec_named(&txn)
+            .to_indy(IndyErrorKind::InvalidStructure, "Invalid transaction -- can not transform to bytes")?;
+
+        merkle.append(txn.clone())?;
+        txns_to_drop.push(txn);
     }
 
-    if let Err(err) = check_cons_proofs(&merkle, &rep.consProof, target_mt_root, target_mt_size).map_err(map_err_trace!()) {
-        return Err(PoolError::CommonError(err));
-    }
-
+    check_cons_proofs(&merkle, &rep.consProof, target_mt_root, target_mt_size)?;
     merkle_tree_factory::dump_new_txns(pool_name, &txns_to_drop)?;
     Ok(merkle)
 }
@@ -668,10 +647,10 @@ fn _send_ok_replies(cmd_ids: &Vec<i32>, msg: &str) {
 }
 
 fn _finish_request(cmd_ids: &Vec<i32>) {
-    _send_replies(cmd_ids, Err(PoolError::Terminate))
+    _send_replies(cmd_ids, Err(err_msg(IndyErrorKind::PoolTerminated, "Pool is terminated")))
 }
 
-fn _send_replies(cmd_ids: &Vec<i32>, msg: Result<String, PoolError>) {
+fn _send_replies(cmd_ids: &Vec<i32>, msg: IndyResult<String>) {
     cmd_ids.into_iter().for_each(|id| {
         CommandExecutor::instance().send(
             Command::Ledger(
@@ -680,17 +659,19 @@ fn _send_replies(cmd_ids: &Vec<i32>, msg: Result<String, PoolError>) {
     });
 }
 
-fn _get_msg_result_without_state_proof(msg: &str) -> Result<(SJsonValue, SJsonValue), CommonError> {
-    let msg_result: SJsonValue = match serde_json::from_str::<SJsonValue>(msg) {
-        Ok(raw_msg) => raw_msg["result"].clone(),
-        Err(err) => return Err(CommonError::InvalidStructure(format!("Invalid response structure: {:?}", err))).map_err(map_err_err!())
-    };
+fn _get_msg_result_without_state_proof(msg: &str) -> IndyResult<(SJsonValue, SJsonValue)> {
+    let msg = serde_json::from_str::<SJsonValue>(msg)
+        .to_indy(IndyErrorKind::InvalidStructure, "Response is malformed json")?;
+
+    let msg_result = msg["result"].clone();
 
     let mut msg_result_without_proof: SJsonValue = msg_result.clone();
     msg_result_without_proof.as_object_mut().map(|obj| obj.remove("state_proof"));
+
     if msg_result_without_proof["data"].is_object() {
         msg_result_without_proof["data"].as_object_mut().map(|obj| obj.remove("stateProofFrom"));
     }
+
     Ok((msg_result, msg_result_without_proof))
 }
 
@@ -714,14 +695,19 @@ pub mod tests {
     use services::ledger::merkletree::tree::Tree;
     use services::pool::networker::MockNetworker;
     use services::pool::types::{ConsistencyProof, LedgerStatus, Reply, ReplyResultV1, ReplyTxnV1, ReplyV1, Response, ResponseMetadata, ResponseV1};
-    use super::*;
     use utils::test;
+
+    use super::*;
 
     const MESSAGE: &'static str = "message";
     const REQ_ID: &'static str = "1";
     const NODE: &'static str = "n1";
     const NODE_2: &'static str = "n2";
+    const NODE_3: &'static str = "n3";
+    const NODE_4: &'static str = "n4";
     const SIMPLE_REPLY: &'static str = r#"{"result":{}}"#;
+    const REJECT_REPLY: &'static str = r#"{"op":"REJECT", "result": {"reason": "reject"}}"#;
+    const NACK_REPLY: &'static str = r#"{"op":"REQNACK", "result": {"reason": "reqnack"}}"#;
     const POOL: &'static str = "pool1";
 
     #[derive(Debug)]
@@ -943,6 +929,56 @@ pub mod tests {
             request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), SIMPLE_REPLY.to_string(), NODE.to_string(), REQ_ID.to_string())));
             assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
+        }
+
+        #[test]
+        fn request_handler_process_reply_event_from_consensus_state_works_for_consensus_reached_with_mixed_msgs() {
+
+            // the test will use 4 nodes, each node replying with a response to the "custom consensus request" message
+            // some nodes accept, some reject and some nack.  the end result is consensus should not be reached
+            let mut request_handler = _request_handler(1, 4);
+
+            request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), REQ_ID.to_string())));
+            request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), SIMPLE_REPLY.to_string(), NODE.to_string(), REQ_ID.to_string())));
+            request_handler.process_event(Some(RequestEvent::Reject(Response::default(), REJECT_REPLY.to_string(), NODE_2.to_string(), REQ_ID.to_string())));
+            request_handler.process_event(Some(RequestEvent::ReqNACK(Response::default(), NACK_REPLY.to_string(), NODE_3.to_string(), REQ_ID.to_string())));
+
+            // test state is already Finished because already have 2 nodes not in consensus
+            {
+                let request_handler_ref = request_handler.request_wrapper.as_ref().unwrap();
+                assert_match!(RequestState::Consensus(_), request_handler_ref.state);
+            }
+
+            // send one more message to ensure state isn't affected
+            request_handler.process_event(Some(RequestEvent::Reject(Response::default(), REJECT_REPLY.to_string(), NODE_4.to_string(), REQ_ID.to_string())));
+
+            assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
+
+        }
+
+        // this test is marked ignore until https://jira.hyperledger.org/browse/IS-1137 is resolved
+        #[test]
+        #[ignore]
+        fn request_handler_process_reply_event_from_consensus_state_works_for_consensus_reached_with_0_concensus() {
+
+            // the test will use 4 nodes, each node replying with a response to the "custom consensus request" message
+            // some nodes accept, some reject and some nack.  the end result is consensus should not be reached
+            let mut request_handler = _request_handler(0, 4);
+
+            request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), REQ_ID.to_string())));
+            request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), SIMPLE_REPLY.to_string(), NODE.to_string(), REQ_ID.to_string())));
+            request_handler.process_event(Some(RequestEvent::Reject(Response::default(), "".to_string(), NODE_2.to_string(), REQ_ID.to_string())));
+            request_handler.process_event(Some(RequestEvent::ReqNACK(Response::default(), "".to_string(), NODE_3.to_string(), REQ_ID.to_string())));
+
+            {
+                let request_handler_ref = request_handler.request_wrapper.as_ref().unwrap();
+                assert_match!(RequestState::Consensus(_), request_handler_ref.state);
+            }
+
+            request_handler.process_event(Some(RequestEvent::Reject(Response::default(), "{}".to_string(), NODE_4.to_string(), REQ_ID.to_string())));
+
+            assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
+
         }
 
         #[test]
@@ -1198,6 +1234,56 @@ pub mod tests {
             request_handler.process_event(Some(RequestEvent::Pong));
             assert_match!(RequestState::Single(_), request_handler.request_wrapper.unwrap().state);
         }
+
+        #[test]
+        fn request_handler_process_reply_event_from_single_state_works_for_consensus_reached_with_mixed_msgs() {
+
+            // the test will use 4 nodes, each node replying with a response to the "custom consensus request" message
+            // some nodes accept, some reject and some nack.  the end result is consensus should not be reached
+            let mut request_handler = _request_handler(1, 4);
+
+            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string())));
+            request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), SIMPLE_REPLY.to_string(), NODE.to_string(), REQ_ID.to_string())));
+            request_handler.process_event(Some(RequestEvent::Reject(Response::default(), REJECT_REPLY.to_string(), NODE_2.to_string(), REQ_ID.to_string())));
+            request_handler.process_event(Some(RequestEvent::ReqNACK(Response::default(), NACK_REPLY.to_string(), NODE_3.to_string(), REQ_ID.to_string())));
+
+            {
+                let request_handler_ref = request_handler.request_wrapper.as_ref().unwrap();
+                assert_match!(RequestState::Single(_), request_handler_ref.state);
+            }
+
+            request_handler.process_event(Some(RequestEvent::Reject(Response::default(), REJECT_REPLY.to_string(), NODE_4.to_string(), REQ_ID.to_string())));
+
+            assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
+
+        }
+
+        // this test is marked ignore until https://jira.hyperledger.org/browse/IS-1137 is resolved
+        #[test]
+        #[ignore]
+        fn request_handler_process_reply_event_from_single_state_works_for_consensus_reached_with_0_concensus() {
+
+            // the test will use 4 nodes, each node replying with a response to the "custom consensus request" message
+            // some nodes accept, some reject and some nack.  the end result is consensus should not be reached
+            let mut request_handler = _request_handler(1, 4);
+
+            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string())));
+            request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), SIMPLE_REPLY.to_string(), NODE.to_string(), REQ_ID.to_string())));
+            request_handler.process_event(Some(RequestEvent::Reject(Response::default(), "".to_string(), NODE_2.to_string(), REQ_ID.to_string())));
+            request_handler.process_event(Some(RequestEvent::ReqNACK(Response::default(), "".to_string(), NODE_3.to_string(), REQ_ID.to_string())));
+
+            // test state should be still Single because request handler has 3 different answers
+            {
+                let request_handler_ref = request_handler.request_wrapper.as_ref().unwrap();
+                assert_match!(RequestState::Single(_), request_handler_ref.state);
+            }
+
+            request_handler.process_event(Some(RequestEvent::Reject(Response::default(), "".to_string(), NODE_4.to_string(), REQ_ID.to_string())));
+
+            assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
+
+        }
+
     }
 
     mod catchup_consensus {
