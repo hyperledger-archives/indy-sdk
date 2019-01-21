@@ -1,7 +1,7 @@
 [package]
 
 name = "libvcx"
-version = "0.2.0"
+version = "0.2.1"
 authors = [ "Evernym Inc." ]
 publish = false
 description = "This is the official SDK for Evernym's VCX"
