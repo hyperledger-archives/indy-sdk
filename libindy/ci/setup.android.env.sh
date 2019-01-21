@@ -54,15 +54,17 @@ create_avd(){
 
     yes | sdkmanager --licenses
 
-    echo "yes" | sdkmanager --no_https \
-        "emulator" \
-        "platform-tools" \
-        "platforms;android-24" \
-        "system-images;android-24;default;${ABI}"
+    echo "yes" |
+          sdkmanager --no_https \
+            "emulator" \
+            "platform-tools" \
+            "platforms;android-24" \
+            "system-images;android-24;default;${ABI}"
 
     echo "${BLUE}Creating android emulator${RESET}"
 
-        echo "no" | avdmanager create avd \
+        echo "no" |
+             avdmanager create avd \
                 --name ${ABSOLUTE_ARCH} \
                 --package "system-images;android-24;default;${ABI}" \
                 -f \
