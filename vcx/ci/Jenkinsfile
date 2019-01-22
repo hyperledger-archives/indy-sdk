@@ -26,20 +26,6 @@ def testing() {
     }
 }
 
-def pullDownIndySdk() {
-    stage('Pull Down Indy-Sdk') {
-        def indyTargetDir = 'indy-sdk-remote'
-        def indyTargetRepoURL = 'https://github.com/hyperledger/indy-sdk.git'
-	//def indyTargetBranch = '*/master'
-    def indyTargetBranch = '762ace5ecd56bd3756526655119c16b9e66841f1'
-        // checks out vcx-ci.git
-        checkout scm
-        // checks out indy-sdk.git
-        checkout([$class: 'GitSCM', branches: [[name: "${indyTargetBranch}"]], doGenerateSubmoduleConfigurations: false, extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: "${indyTargetDir}"]], submoduleCfg: [], userRemoteConfigs: [[url: "${indyTargetRepoURL}"]]])
-        sh "vcx/ci/copyNoClobber.sh ${indyTargetDir}"
-    }
-}
-
 def getUserUid() {
     return sh(returnStdout: true, script: 'id -u').trim()
 }
@@ -57,41 +43,81 @@ def getCurDir() {
     return sh(returnStdout: true, script: 'pwd')
 }
 
+static String rustVersion() {
+    return "1.31.1"
+}
+
+static String libindyVersion() {
+    return "1.7.0"
+}
+
+static String libnullVersion() {
+    return "1.7.0"
+}
+
+static String indyTag() {
+    return "942"
+}
+
+static String libsovtokenVersion() {
+    return "0.9.6~-.1.126"
+}
+
+static String libindyDockerfile() {
+    return 'vcx/ci/libindy.dockerfile'
+}
+
+static String indyBranch() {
+    return 'master'
+}
+
+
+def buildLibindy() {
+    indyTag=indyTag()
+    if (indyTag != "") {
+        indyTag = "~" + indyTag
+    }
+
+    docker.build("libindy", "--build-arg LIBINDY_VER=${libindyVersion() + indyTag} \
+            --build-arg LIBNULL_VER=${libnullVersion() + indyTag} \
+            --build-arg LIBSOVTOKEN_VER=${libsovtokenVersion()} \
+            -f ${libindyDockerfile()} .")
+}
+
+
 def mainUbuntu() {
     node('ubuntu') {
-        pullDownIndySdk()
-
-        def volumeInternalDir = "/sdk/vcx/output"
-        def revNumber = getRevNumber()
-        def volumeName = "vcx-volume1-${revNumber}"
-        def libindyDockerfile = 'vcx/ci/libindy.dockerfile'
-        def libvcxDockerfile = 'vcx/ci/libvcx.dockerfile'
-        def pythonDockerfile = 'vcx/ci/python.dockerfile'
-        def nodeDockerfile = 'vcx/wrappers/node/ci/node.dockerfile'
-        def javaDockerfile = 'vcx/wrappers/java/ci/java.dockerfile'
-        def uid= sh(returnStdout: true, script: 'id -u').trim()
-        def cwd= sh(returnStdout: true, script: 'pwd').trim()
-        def libvcx
-        def python
-        def node
-        def java
-
-        // set this to '--no-test' and the rust code will not run tests.
-        def rustTestFlag=""
 
         try {
+            checkout scm
+            def volumeInternalDir = "/sdk/vcx/output"
+            def revNumber = getRevNumber()
+            def volumeName = "vcx-volume1-${revNumber}"
+            def libindyDockerfile = 'vcx/ci/libindy.dockerfile'
+            def libvcxDockerfile = 'vcx/ci/libvcx.dockerfile'
+            def pythonDockerfile = 'vcx/ci/python.dockerfile'
+            def nodeDockerfile = 'vcx/wrappers/node/ci/node.dockerfile'
+            def javaDockerfile = 'vcx/wrappers/java/ci/java.dockerfile'
+            def uid= sh(returnStdout: true, script: 'id -u').trim()
+            def cwd= sh(returnStdout: true, script: 'pwd').trim()
+            def libvcx
+            def python
+            def node
+            def java
+
+            // set this to '--no-test' and the rust code will not run tests.
+            def rustTestFlag=""
+
+
             sh 'mkdir -p output'
             sh 'rm -rf output/*'
             stage('Build Libindy Image') {
-		def LIBINDY_VER = "1.7.0"
-		def LIBNULL_VER = "1.7.0"
-		def LIBSOVTOKEN_VER = "0.9.6~-1.126"
+                
                 // ******** Build the libindy base image (pulls down dependent debians from sovrin repo, and installs a majority of the dependencies)
-                libindy = docker.build("libindy", "--build-arg LIBINDY_VER=${LIBINDY_VER} --build-arg LIBNULL_VER=${LIBNULL_VER} --build-arg LIBSOVTOKEN_VER=${LIBSOVTOKEN_VER} -f ${libindyDockerfile} .")
+                buildLibindy()
             }
             stage('Build Libvcx Image, Tests Rust Code') {
-		def RUST_VERSION = "1.31.1"
-                libvcx = docker.build("libvcx", "--build-arg uid=${uid} --build-arg RUST_VER=${RUST_VERSION} -f ${libvcxDockerfile} .")
+                libvcx = docker.build("libvcx", "--build-arg uid=${uid} --build-arg RUST_VER=${rustVersion()} -f ${libvcxDockerfile} .")
                 libvcx.inside() {
                     sh "vcx/ci/scripts/package.sh ${rustTestFlag}"
                 }
@@ -184,48 +210,53 @@ def mainUbuntu() {
 }
 
 def android() {
-	def RUST_VER = "1.31.1"
-        stage('Android Build') {
-            parallel([
-                "x86" : { buildAndroid("x86") },
-                "x86_64" : { buildAndroid("x86_64") },
-                "arm" : { buildAndroid("arm") },
-                "arm64" : { buildAndroid("arm64") },
-                "armv7" : { buildAndroid("armv7") }
-            ])
-        }
-        node('ubuntu') {
-            try {
-                pullDownIndySdk()
 
-                def uid= sh(returnStdout: true, script: 'id -u').trim()
-                android = docker.build("android", "--build-arg uid=${uid} --build-arg RUST_VER=${RUST_VER} -f vcx/wrappers/java/ci/android.dockerfile .")
-                stage('Android Packaging') {
-                    //Package .so files into .aar
-                    packageAndroid(android)
-                }
-                stage('Android Publishing') {
-                    if (env.BRANCH_NAME == "master") {
-                        //Publish package on aptly
-                        publishAndroid(android)
-                    }
-                }
-            } catch (Exception ex) {
-                currentBuild.result = "FAILED"
-                if (env.BRANCH_NAME == "master") {
-                    fail()
-                }
-                echo "$ex error"
-            } finally {
-                sh 'docker system df'
-                step([$class: 'WsCleanup'])
+    stage('Android Build') {
+        parallel([
+            "x86" : { buildAndroid("x86") },
+            "x86_64" : { buildAndroid("x86_64") },
+            "arm" : { buildAndroid("arm") },
+            "arm64" : { buildAndroid("arm64") },
+            "armv7" : { buildAndroid("armv7") }
+        ])
+    }
+    node('ubuntu') {
+        try {
+            checkout scm
+
+            def uid= sh(returnStdout: true, script: 'id -u').trim()
+            stage('Build Libindy Image') {
+                // ******** Build the libindy base image (pulls down dependent debians from sovrin repo, and installs a majority of the dependencies)
+                buildLibindy()
             }
+            android = docker.build("android", "--build-arg uid=${uid} --build-arg RUST_VER=${rustVersion()} -f vcx/wrappers/java/ci/android.dockerfile .")
+            stage('Android Packaging') {
+                //Package .so files into .aar
+                packageAndroid(android)
+            }
+            stage('Android Publishing') {
+                if (env.BRANCH_NAME == "master") {
+                    //Publish package on aptly
+                    publishAndroid(android)
+                }
+            }
+        } catch (Exception ex) {
+            currentBuild.result = "FAILED"
+            if (env.BRANCH_NAME == "master") {
+                fail()
+            }
+            echo "$ex error"
+        } finally {
+            sh 'docker system df'
+            step([$class: 'WsCleanup'])
         }
+    }
 }
 
 def ios() {
+
     node('macos-vcx') {
-        pullDownIndySdk()
+        checkout scm
         sh "ls -r vcx/ci/*"
         sh "ls vcx/libvcx/build_scripts/ios/mac"
         stage('iOS Build') {
@@ -261,6 +292,7 @@ def ios() {
 }
 
 def fail() {
+
     def message = [
         message: "$JOB_NAME - Build # $BUILD_NUMBER - fail: Check console output at $BUILD_URL to view the results."
     ]
@@ -268,26 +300,29 @@ def fail() {
 }
 
 def buildAndroid(arch) {
-    node('ubuntu') {
 
+    node('ubuntu') {
         try {
-            pullDownIndySdk()
+            checkout scm
 
             def uid= sh(returnStdout: true, script: 'id -u').trim()
-            android =  docker.build("android", "--build-arg uid=${uid} -f vcx/wrappers/java/ci/android.dockerfile .")
-            android.inside {
-                ANDROID_SCRIPT_PATH = 'vcx/ci/scripts/androidBuild.sh'
-                LIBINDY_BRANCH="master"
-                LIBINDY_VERSION="1.7.0"
-                LIBINDY_TAG="934"
-
-                sh 'sudo ./vcx/ci/scripts/installCert.sh'
-                sh "LIBINDY_BRANCH=${LIBINDY_BRANCH} LIBINDY_VERSION=${LIBINDY_VERSION} LIBINDY_TAG=${LIBINDY_TAG} ./${ANDROID_SCRIPT_PATH} ${arch}"
-
+            stage('Build Libindy Image') {
+                // ******** Build the libindy base image (pulls down dependent debians from sovrin repo, and installs a majority of the dependencies)
+                buildLibindy()
             }
+            stage('Build and Publish Android') {
+                android = docker.build("android", "--build-arg uid=${uid} -f vcx/wrappers/java/ci/android.dockerfile .")
+                android.inside {
+                    ANDROID_SCRIPT_PATH = 'vcx/ci/scripts/androidBuild.sh'
 
-            dir("runtime_android_build/libvcx_${arch}") {
-                stash includes: "libvcx.so", name: "libvcx_${arch}"
+                    sh 'sudo ./vcx/ci/scripts/installCert.sh'
+                    sh "LIBINDY_BRANCH=${indyBranch()} LIBINDY_VERSION=${libindyVersion()} LIBINDY_TAG=${indyTag()} ./${ANDROID_SCRIPT_PATH} ${arch}"
+
+                }
+
+                dir("runtime_android_build/libvcx_${arch}") {
+                    stash includes: "libvcx.so", name: "libvcx_${arch}"
+                }
             }
         } catch (Exception ex) {
             currentBuild.result = "FAILED"
