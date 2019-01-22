@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.Threading.Tasks;
 using Hyperledger.Indy.DidApi;
 using Hyperledger.Indy.Samples.Utils;
 using Hyperledger.Indy.WalletApi;
 using Newtonsoft.Json;
+using Console = Colorful.Console;
 
 namespace Hyperledger.Indy.Samples
 {
@@ -13,7 +15,7 @@ namespace Hyperledger.Indy.Samples
     {
         public static async Task Execute()
         {
-            Console.WriteLine("Wallet sample -> started");
+            Console.Write("Executing wallet sample... ");
 
             var firstWalletConfig = "{\"id\":\"my_wallet\"}";
             var secondWalletConfig = "{\"id\":\"their_wallet\"}";
@@ -58,7 +60,13 @@ namespace Hyperledger.Indy.Samples
                     // Close wallets 
                     await firstWallet.CloseAsync();
                     File.Delete(path);
+
+                    Console.WriteLine("OK", Color.Green);
                 }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Error: {e.Message}", Color.Red);
             }
             finally
             {
@@ -66,8 +74,6 @@ namespace Hyperledger.Indy.Samples
                 await WalletUtils.DeleteWalletAsync(firstWalletConfig, firstWalletCredentials);
                 await WalletUtils.DeleteWalletAsync(secondWalletConfig, secondWalletCredentials);
             }
-
-            Console.WriteLine("Wallet sample -> completed");
         }
     }
 }

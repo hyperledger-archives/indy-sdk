@@ -16,11 +16,6 @@ namespace Hyperledger.Indy.WalletApi
     public sealed class Wallet : IDisposable
     {
         /// <summary>
-        /// Wallet type registrations by type name.
-        /// </summary>
-        private static ConcurrentBag<WalletType> _registeredWalletTypes = new ConcurrentBag<WalletType>();
-
-        /// <summary>
         /// Gets the callback to use when a wallet open command has completed.
         /// </summary>
 #if __IOS__
@@ -107,21 +102,6 @@ namespace Hyperledger.Indy.WalletApi
             return taskCompletionSource.Task;
         }
 
-        ///// <summary>
-        ///// Same as CreateWalletAsync(string config, string credentials)
-        ///// </summary>
-        ///// <returns>The wallet async.</returns>
-        ///// <param name="config">Config.</param>
-        ///// <param name="cred">Cred.</param>
-        //public static Task CreateWalletAsync(WalletConfig config, Credentials cred) 
-        //{
-        //    var json = new JavaScriptSerializer().Serialize(obj);
-        //    string configStr = JsonConvert.SerializeObject(config, Formatting.Indented); 
-        //    string credStr = JsonConvert.SerializeObject(cred, Formatting.Indented);
-
-        //    return CreateWalletAsync(configStr, credStr);
-        //}
-
         /// <summary>
         /// Open the wallet.
         ///
@@ -179,20 +159,6 @@ namespace Hyperledger.Indy.WalletApi
 
             return taskCompletionSource.Task;
         }
-
-        ///// <summary>
-        ///// Same as OpenWalletAsync(string config, string credentials)
-        ///// </summary>
-        ///// <returns>The wallet async.</returns>
-        ///// <param name="config">Config.</param>
-        ///// <param name="cred">Cred.</param>
-        //public static Task<Wallet> OpenWalletAsync(WalletConfig config, Credentials cred) 
-        //{
-        //    string configStr = JsonConvert.SerializeObject(config, Formatting.Indented);
-        //    string credStr = JsonConvert.SerializeObject(cred, Formatting.Indented);
-
-        //    return OpenWalletAsync(configStr, credStr);
-        //}
 
         /// <summary>
         /// Exports opened wallet
