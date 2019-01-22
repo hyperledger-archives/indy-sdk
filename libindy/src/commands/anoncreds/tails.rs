@@ -8,7 +8,7 @@ use services::blob_storage::BlobStorageService;
 use domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinitionV1;
 
 use self::indy_crypto::cl::{Tail, RevocationTailsAccessor, RevocationTailsGenerator};
-use self::indy_crypto::errors::IndyCryptoError;
+use self::indy_crypto::errors::prelude::{IndyCryptoError, IndyCryptoErrorKind};
 
 use self::rust_base58::{ToBase58, FromBase58};
 
@@ -52,20 +52,20 @@ impl Drop for SDKTailsAccessor {
 
 impl RevocationTailsAccessor for SDKTailsAccessor {
     fn access_tail(&self, tail_id: u32, accessor: &mut FnMut(&Tail)) -> Result<(), IndyCryptoError> {
-        debug!("access_tail >>> tail_id: {:?}",tail_id);
+        debug!("access_tail >>> tail_id: {:?}", tail_id);
 
         let tail_bytes = self.tails_service
             .read(self.tails_reader_handle,
                   TAIL_SIZE,
                   TAIL_SIZE * tail_id as usize + TAILS_BLOB_TAG_SZ as usize)
             .map_err(|_|
-                IndyCryptoError::InvalidState("Can't read tail bytes from blob storage".to_owned()))?; // FIXME: IO error should be returned
+                IndyCryptoError::from_msg(IndyCryptoErrorKind::InvalidState, "Can't read tail bytes from blob storage"))?; // FIXME: IO error should be returned
 
         let tail = Tail::from_bytes(tail_bytes.as_slice())?;
         accessor(&tail);
 
         let res = ();
-        debug!("access_tail <<< res: {:?}",res);
+        debug!("access_tail <<< res: {:?}", res);
         Ok(res)
     }
 }
@@ -73,7 +73,7 @@ impl RevocationTailsAccessor for SDKTailsAccessor {
 pub fn store_tails_from_generator(service: Rc<BlobStorageService>,
                                   writer_handle: i32,
                                   rtg: &mut RevocationTailsGenerator) -> IndyResult<(String, String)> {
-    debug!("store_tails_from_generator >>> writer_handle: {:?}",writer_handle);
+    debug!("store_tails_from_generator >>> writer_handle: {:?}", writer_handle);
 
     let blob_handle = service.create_blob(writer_handle)?;
 
