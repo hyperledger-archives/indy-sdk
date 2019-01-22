@@ -78,9 +78,12 @@ def buildLibindy() {
         indyTag = "~" + indyTag
     }
 
-    docker.build("libindy", "--build-arg LIBINDY_VER=${libindyVersion() + indyTag} \
-            --build-arg LIBNULL_VER=${libnullVersion() + indyTag} \
-            --build-arg LIBSOVTOKEN_VER=${libsovtokenVersion()} \
+    def LIBINDY_VER = libindyVersion() + indyTag
+    def LIBNULL_VER = libnullVersion() + indyTag
+    def LIBSOVTOKEN_VER = libsovtokenVersion()
+    docker.build("libindy", "--build-arg LIBINDY_VER=${LIBINDY_VER} \
+            --build-arg LIBNULL_VER=${LIBNULL_VER} \
+            --build-arg LIBSOVTOKEN_VER=${LIBSOVTOKEN_VER} \
             -f ${libindyDockerfile()} .")
 }
 
@@ -117,7 +120,8 @@ def mainUbuntu() {
                 buildLibindy()
             }
             stage('Build Libvcx Image, Tests Rust Code') {
-                libvcx = docker.build("libvcx", "--build-arg uid=${uid} --build-arg RUST_VER=${rustVersion()} -f ${libvcxDockerfile} .")
+                def RUST_VERSION = rustVersion()
+                libvcx = docker.build("libvcx", "--build-arg uid=${uid} --build-arg RUST_VER=${RUST_VERSION} -f ${libvcxDockerfile} .")
                 libvcx.inside() {
                     sh "vcx/ci/scripts/package.sh ${rustTestFlag}"
                 }
@@ -229,7 +233,8 @@ def android() {
                 // ******** Build the libindy base image (pulls down dependent debians from sovrin repo, and installs a majority of the dependencies)
                 buildLibindy()
             }
-            android = docker.build("android", "--build-arg uid=${uid} --build-arg RUST_VER=${rustVersion()} -f vcx/wrappers/java/ci/android.dockerfile .")
+            def RUST_VERSION = rustVersion()
+            android = docker.build("android", "--build-arg uid=${uid} --build-arg RUST_VER=${RUST_VERSION} -f vcx/wrappers/java/ci/android.dockerfile .")
             stage('Android Packaging') {
                 //Package .so files into .aar
                 packageAndroid(android)
