@@ -5,8 +5,10 @@ using Hyperledger.Indy.Samples.Utils;
 using Hyperledger.Indy.WalletApi;
 using System;
 using System.Diagnostics;
+using System.Drawing;
 using System.Text;
 using System.Threading.Tasks;
+using Console = Colorful.Console;
 
 namespace Hyperledger.Indy.Samples
 {
@@ -14,7 +16,7 @@ namespace Hyperledger.Indy.Samples
     {
         public static async Task Execute()
         {
-            Console.WriteLine("Crypto sample -> started");
+            Console.Write("Executing crypto sample... ");
 
             var myWalletConfig = "{\"id\":\"my_wallet\"}";
             var theirWalletConfig = "{\"id\":\"their_wallet\"}";
@@ -34,7 +36,6 @@ namespace Hyperledger.Indy.Samples
                 await WalletUtils.CreateWalletAsync(theirWalletConfig, theirWalletCredentials);
 
                 //4. Open pool and wallets in using statements to ensure they are closed when finished.
-                using (var pool = await Pool.OpenPoolLedgerAsync(PoolUtils.DEFAULT_POOL_NAME, "{}"))
                 using (var myWallet = await Wallet.OpenWalletAsync(myWalletConfig, myWalletCredentials))
                 using (var theirWallet = await Wallet.OpenWalletAsync(theirWalletConfig, theirWalletCredentials))
                 {
@@ -69,8 +70,13 @@ namespace Hyperledger.Indy.Samples
                     //10. Close wallets and pool
                     await myWallet.CloseAsync();
                     await theirWallet.CloseAsync();
-                    await pool.CloseAsync();
                 }
+
+                Console.WriteLine("OK", Color.Green);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Error: {e.Message}", Color.Red);
             }
             finally
             {
@@ -79,8 +85,6 @@ namespace Hyperledger.Indy.Samples
                 await WalletUtils.DeleteWalletAsync(theirWalletConfig, theirWalletCredentials);
                 await PoolUtils.DeletePoolLedgerConfigAsync(PoolUtils.DEFAULT_POOL_NAME);
             }
-
-            Console.WriteLine("Crypto sample -> completed");
         }
     }
 }

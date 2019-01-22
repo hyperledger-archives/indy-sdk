@@ -6,7 +6,9 @@ using Hyperledger.Indy.WalletApi;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Diagnostics;
+using System.Drawing;
 using System.Threading.Tasks;
+using Console = Colorful.Console;
 
 namespace Hyperledger.Indy.Samples
 {
@@ -14,7 +16,7 @@ namespace Hyperledger.Indy.Samples
     {
         public static async Task Execute()
         {
-            Console.WriteLine("Ledger sample -> started");
+            Console.Write("Executing ledger sample (requires local pool node)... ");
 
             var myWalletConfig = "{\"id\":\"my_wallet\"}";
             var theirWalletConfig = "{\"id\":\"their_wallet\"}";
@@ -67,6 +69,12 @@ namespace Hyperledger.Indy.Samples
                     await trusteeWallet.CloseAsync();
                     await pool.CloseAsync();
                 }
+
+                Console.WriteLine("OK", Color.Green);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Error: {e.Message}", Color.Red);
             }
             finally
             {
@@ -75,8 +83,6 @@ namespace Hyperledger.Indy.Samples
                 await WalletUtils.DeleteWalletAsync(theirWalletConfig, theirWalletCredentials);
                 await PoolUtils.DeletePoolLedgerConfigAsync(PoolUtils.DEFAULT_POOL_NAME);
             }
-
-            Console.WriteLine("Ledger sample -> completed");
         }
     }
 }
