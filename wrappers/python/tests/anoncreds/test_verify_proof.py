@@ -127,7 +127,7 @@ async def test_verifier_verify_proof_works_for_proof_does_not_correspond_to_requ
         await verifier_verify_proof(json.dumps(xproof_req), json.dumps(proof),
                                     json.dumps(schemas), json.dumps(credential_defs), "{}", "{}")
 
-    assert ErrorCode.CommonInvalidStructure == e.value.error_code
+    assert ErrorCode.AnoncredsProofRejected == e.value.error_code
 
 
 @pytest.mark.asyncio
