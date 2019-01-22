@@ -153,7 +153,7 @@ impl LibvcxDefaultLogger {
         let pattern = pattern.or(env::var("RUST_LOG").ok());
         if cfg!(target_os = "android") {
             #[cfg(target_os = "android")]
-            let log_filter = match pattern {
+            let log_filter = match pattern.as_ref() {
                 Some(val) => match val.to_lowercase().as_ref() {
                     "error" => Filter::default().with_min_level(log::Level::Error),
                     "warn" => Filter::default().with_min_level(log::Level::Warn),
