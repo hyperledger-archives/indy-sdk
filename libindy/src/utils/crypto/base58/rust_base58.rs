@@ -1,7 +1,6 @@
 extern crate rust_base58;
 
 use errors::prelude::*;
-use failure::{err_msg, ResultExt};
 use self::rust_base58::{FromBase58, ToBase58};
 
 pub fn encode(doc: &[u8]) -> String {
@@ -10,9 +9,7 @@ pub fn encode(doc: &[u8]) -> String {
 
 pub fn decode(doc: &str) -> Result<Vec<u8>, IndyError> {
     doc.from_base58()
-        .map_err(|err| err_msg(format!("Invalid base58 sequence: {:}", err)))
-        .context(IndyErrorKind::InvalidStructure)
-        .map_err(|err| err.into())
+        .map_err(|err| err_msg(IndyErrorKind::InvalidStructure, format!("Invalid base58 sequence: {:}", err)))
 }
 
 #[cfg(test)]

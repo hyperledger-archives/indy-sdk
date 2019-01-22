@@ -82,7 +82,7 @@ mod high_cases {
                                                                      TAG_1,
                                                                      None,
                                                                      Some(&anoncreds::default_cred_def_config()));
-            assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
+            assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             wallet::close_wallet(wallet_handle).unwrap();
         }
@@ -105,7 +105,7 @@ mod high_cases {
             let invalid_wallet_handle = wallet_handle + 100;
             let res = anoncreds::issuer_create_credential_offer(invalid_wallet_handle,
                                                                 &anoncreds::issuer_1_gvt_cred_def_id());
-            assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
+            assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             wallet::close_wallet(wallet_handle).unwrap();
         }
@@ -127,7 +127,7 @@ mod high_cases {
 
             let invalid_wallet_handle = wallet_handle + 100;
             let res = anoncreds::prover_create_master_secret(invalid_wallet_handle, COMMON_MASTER_SECRET);
-            assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
+            assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             wallet::close_wallet(wallet_handle).unwrap();
         }
@@ -153,7 +153,7 @@ mod high_cases {
                                                               &credential_offer,
                                                               &credential_def,
                                                               COMMON_MASTER_SECRET);
-            assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
+            assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             wallet::close_wallet(wallet_handle).unwrap();
         }
@@ -174,7 +174,7 @@ mod high_cases {
                                                               &other_credential_offer,
                                                               &issuer1_gvt_credential_def,
                                                               COMMON_MASTER_SECRET);
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             wallet::close_wallet(wallet_handle).unwrap();
         }
@@ -200,7 +200,7 @@ mod high_cases {
                                                           &anoncreds::xyz_credential_values_json(),
                                                           None,
                                                           None);
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             wallet::close_wallet(wallet_handle).unwrap();
         }
@@ -218,7 +218,7 @@ mod high_cases {
                                                           &anoncreds::gvt_credential_values_json(),
                                                           None,
                                                           None);
-            assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
+            assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             wallet::close_wallet(wallet_handle).unwrap();
         }
@@ -261,7 +261,7 @@ mod high_cases {
                                                          &credential_json,
                                                          &credential_def_json,
                                                          None);
-            assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
+            assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             wallet::close_wallet(wallet_handle).unwrap();
             wallet::close_wallet(prover_wallet_handle).unwrap();
@@ -414,7 +414,7 @@ mod high_cases {
 
             let invalid_wallet_handle = wallet_handle + 100;
             let res = anoncreds::prover_get_credentials(invalid_wallet_handle, r#"{}"#);
-            assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
+            assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             wallet::close_wallet(wallet_handle).unwrap();
         }
@@ -443,7 +443,7 @@ mod high_cases {
             let wallet_handle = wallet::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
 
             let res = anoncreds::prover_get_credential(wallet_handle, "other_cred_id");
-            assert_eq!(ErrorCode::WalletItemNotFound, res.unwrap_err());
+            assert_code!(ErrorCode::WalletItemNotFound, res);
 
             wallet::close_wallet(wallet_handle).unwrap();
         }
@@ -2467,7 +2467,7 @@ mod high_cases {
 
             let invalid_wallet_handle = wallet_handle + 100;
             let res = anoncreds::prover_get_credentials_for_proof_req(invalid_wallet_handle, &anoncreds::proof_request_attr());
-            assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
+            assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             wallet::close_wallet(wallet_handle).unwrap();
         }
@@ -3036,7 +3036,7 @@ mod high_cases {
                                                      &anoncreds::schemas_for_proof(),
                                                      &anoncreds::cred_defs_for_proof(),
                                                      "{}");
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             wallet::close_wallet(wallet_handle).unwrap();
         }
@@ -3063,7 +3063,7 @@ mod high_cases {
                                                      &anoncreds::schemas_for_proof(),
                                                      &anoncreds::cred_defs_for_proof(),
                                                      "{}");
-            assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
+            assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             wallet::close_wallet(wallet_handle).unwrap();
         }
@@ -3105,7 +3105,7 @@ mod high_cases {
                                                        &anoncreds::cred_defs_for_proof(),
                                                        "{}",
                                                        "{}");
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
 
         #[test]
@@ -3135,7 +3135,7 @@ mod medium_cases {
                                                       GVT_SCHEMA_NAME,
                                                       SCHEMA_VERSION,
                                                       "[]");
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
 
         #[test]
@@ -3144,7 +3144,7 @@ mod medium_cases {
                                                       GVT_SCHEMA_NAME,
                                                       SCHEMA_VERSION,
                                                       GVT_SCHEMA_ATTRIBUTES);
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
 
         #[test]
@@ -3155,7 +3155,7 @@ mod medium_cases {
                                                       GVT_SCHEMA_NAME,
                                                       SCHEMA_VERSION,
                                                       &serde_json::to_string(&attr_names).unwrap());
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
     }
 
@@ -3176,7 +3176,7 @@ mod medium_cases {
                                                                      TAG_1,
                                                                      None,
                                                                      Some(&anoncreds::default_cred_def_config()));
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             wallet::close_wallet(wallet_handle).unwrap();
         }
@@ -3193,7 +3193,7 @@ mod medium_cases {
                                                                      TAG_1,
                                                                      None,
                                                                      Some(&anoncreds::default_cred_def_config()));
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             wallet::close_wallet(wallet_handle).unwrap();
         }
@@ -3213,7 +3213,7 @@ mod medium_cases {
                                                                      TAG_1,
                                                                      None,
                                                                      Some(&anoncreds::default_cred_def_config()));
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             wallet::close_wallet(wallet_handle).unwrap();
         }
@@ -3244,7 +3244,7 @@ mod medium_cases {
                                                                      TAG_1,
                                                                      Some("some_type"),
                                                                      Some(&anoncreds::default_cred_def_config()));
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             wallet::close_wallet(wallet_handle).unwrap();
         }
@@ -3261,7 +3261,7 @@ mod medium_cases {
                                                                      TAG_1,
                                                                      None,
                                                                      Some(r#"{"support_revocation":"TRUE"}"#));
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             wallet::close_wallet(wallet_handle).unwrap();
         }
@@ -3278,7 +3278,7 @@ mod medium_cases {
                                                                      TAG_1,
                                                                      Some(SIGNATURE_TYPE),
                                                                      Some(&anoncreds::default_cred_def_config()));
-            assert_eq!(res.unwrap_err(), ErrorCode::AnoncredsCredDefAlreadyExistsError);
+            assert_code!(ErrorCode::AnoncredsCredDefAlreadyExistsError, res);
 
             wallet::close_wallet(wallet_handle).unwrap();
         }
@@ -3307,7 +3307,7 @@ mod medium_cases {
             let wallet_handle = wallet::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
 
             let res = anoncreds::issuer_create_credential_offer(wallet_handle, "unknown_cred_def_id");
-            assert_eq!(res.unwrap_err(), ErrorCode::WalletItemNotFound);
+            assert_code!(ErrorCode::WalletItemNotFound, res);
 
             wallet::close_wallet(wallet_handle).unwrap();
         }
@@ -3323,7 +3323,7 @@ mod medium_cases {
             let wallet_handle = wallet::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
 
             let res = anoncreds::prover_create_master_secret(wallet_handle, COMMON_MASTER_SECRET);
-            assert_eq!(res.unwrap_err(), ErrorCode::AnoncredsMasterSecretDuplicateNameError);
+            assert_code!(ErrorCode::AnoncredsMasterSecretDuplicateNameError, res);
 
             wallet::close_wallet(wallet_handle).unwrap();
         }
@@ -3343,7 +3343,7 @@ mod medium_cases {
                                                               &serde_json::to_string(&anoncreds::issuer_1_gvt_cred_offer_info()).unwrap(),
                                                               &credential_def,
                                                               COMMON_MASTER_SECRET);
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             wallet::close_wallet(wallet_handle).unwrap();
         }
@@ -3367,7 +3367,7 @@ mod medium_cases {
                                                               &credential_offer,
                                                               credential_def,
                                                               COMMON_MASTER_SECRET);
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             wallet::close_wallet(wallet_handle).unwrap();
         }
@@ -3383,7 +3383,7 @@ mod medium_cases {
                                                               &credential_offer,
                                                               &credential_def,
                                                               "invalid_master_secret_name");
-            assert_eq!(res.unwrap_err(), ErrorCode::WalletItemNotFound);
+            assert_code!(ErrorCode::WalletItemNotFound, res);
 
             wallet::close_wallet(wallet_handle).unwrap();
         }
@@ -3409,7 +3409,7 @@ mod medium_cases {
                                                           &anoncreds::gvt_credential_values_json(),
                                                           None,
                                                           None);
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             wallet::close_wallet(wallet_handle).unwrap();
         }
@@ -3433,7 +3433,7 @@ mod medium_cases {
                                                           &credential_values_json,
                                                           None,
                                                           None);
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             wallet::close_wallet(wallet_handle).unwrap();
         }
@@ -3466,7 +3466,7 @@ mod medium_cases {
                                                          &credential_json,
                                                          &credential_def_json,
                                                          None);
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             wallet::close_wallet(wallet_handle).unwrap();
         }
@@ -3482,7 +3482,7 @@ mod medium_cases {
             let wallet_handle = wallet::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
 
             let res = anoncreds::prover_get_credentials(wallet_handle, r#""issuer_did": 12345"#);
-            assert_eq!(res.unwrap_err(), ErrorCode::WalletQueryError);
+            assert_code!(ErrorCode::WalletQueryError, res);
 
             wallet::close_wallet(wallet_handle).unwrap();
         }
@@ -3505,7 +3505,7 @@ mod medium_cases {
             }).to_string();
 
             let res = anoncreds::prover_get_credentials_for_proof_req(wallet_handle, &proof_req);
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             wallet::close_wallet(wallet_handle).unwrap();
         }
@@ -3527,7 +3527,7 @@ mod medium_cases {
             }).to_string();
 
             let res = anoncreds::prover_get_credentials_for_proof_req(wallet_handle, &proof_req);
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             wallet::close_wallet(wallet_handle).unwrap();
         }
@@ -3549,7 +3549,7 @@ mod medium_cases {
             }).to_string();
 
             let res = anoncreds::prover_get_credentials_for_proof_req(wallet_handle, &proof_req);
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             wallet::close_wallet(wallet_handle).unwrap();
         }
@@ -3579,7 +3579,7 @@ mod medium_cases {
                                                      &anoncreds::schemas_for_proof(),
                                                      &anoncreds::cred_defs_for_proof(),
                                                      "{}");
-            assert_eq!(res.unwrap_err(), ErrorCode::WalletItemNotFound);
+            assert_code!(ErrorCode::WalletItemNotFound, res);
 
             wallet::close_wallet(wallet_handle).unwrap();
         }
@@ -3605,7 +3605,7 @@ mod medium_cases {
                                                      &"{}",
                                                      &anoncreds::cred_defs_for_proof(),
                                                      "{}");
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             wallet::close_wallet(wallet_handle).unwrap();
         }
@@ -3631,7 +3631,7 @@ mod medium_cases {
                                                      &anoncreds::schemas_for_proof(),
                                                      "{}",
                                                      "{}");
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             wallet::close_wallet(wallet_handle).unwrap();
         }
@@ -3654,7 +3654,7 @@ mod medium_cases {
                                                      &anoncreds::schemas_for_proof(),
                                                      &anoncreds::cred_defs_for_proof(),
                                                      "{}");
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             wallet::close_wallet(wallet_handle).unwrap();
         }
@@ -3673,7 +3673,7 @@ mod medium_cases {
                                                        &anoncreds::cred_defs_for_proof(),
                                                        "{}",
                                                        "{}");
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
 
         #[test]
@@ -3686,7 +3686,7 @@ mod medium_cases {
                                                        &anoncreds::cred_defs_for_proof(),
                                                        "{}",
                                                        "{}");
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
 
         #[test]
@@ -3697,7 +3697,7 @@ mod medium_cases {
                                                        "{}",
                                                        "{}",
                                                        "{}");
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
     }
 }
@@ -4492,8 +4492,8 @@ mod demos {
                                                    &credential_defs_json,
                                                    &rev_reg_defs_json,
                                                    &rev_regs_json);
-        assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
-
+        assert_code!(ErrorCode::CommonInvalidStructure, res);
+        
         wallet::close_wallet(wallet_handle).unwrap();
 
         utils::tear_down();
@@ -5613,7 +5613,7 @@ mod demos {
                                                       &anoncreds::gvt_credential_values_json(),
                                                       Some(&rev_reg_id),
                                                       Some(blob_storage_reader_handle));
-        assert_eq!(res.unwrap_err(), ErrorCode::AnoncredsRevocationRegistryFullError);
+        assert_code!(ErrorCode::AnoncredsRevocationRegistryFullError, res);
 
         wallet::close_wallet(issuer_wallet_handle).unwrap();
         wallet::close_wallet(prover_1_wallet_handle).unwrap();
@@ -5700,7 +5700,7 @@ mod demos {
                                                       &anoncreds::gvt_credential_values_json(),
                                                       Some(&rev_reg_id),
                                                       Some(blob_storage_reader_handle));
-        assert_eq!(res.unwrap_err(), ErrorCode::AnoncredsRevocationRegistryFullError);
+        assert_code!(ErrorCode::AnoncredsRevocationRegistryFullError, res);
 
         wallet::close_wallet(issuer_wallet_handle).unwrap();
         wallet::close_wallet(prover_1_wallet_handle).unwrap();
@@ -5750,7 +5750,7 @@ mod demos {
         //5. Issuer revokes Credential by not issued id
         let cred_rev_id = "100";
         let res = anoncreds::issuer_revoke_credential(issuer_wallet_handle, blob_storage_reader_handle, &rev_reg_id, cred_rev_id);
-        assert_eq!(res.unwrap_err(), ErrorCode::AnoncredsInvalidUserRevocId);
+        assert_code!(ErrorCode::AnoncredsInvalidUserRevocId, res);
 
         wallet::close_wallet(issuer_wallet_handle).unwrap();
 
@@ -5778,7 +5778,7 @@ mod demos {
         //3. Issuer revokes Credential by not issued id
         let cred_rev_id = 10.to_string();
         let res = anoncreds::issuer_revoke_credential(issuer_wallet_handle, blob_storage_reader_handle, &rev_reg_id, &cred_rev_id);
-        assert_eq!(res.unwrap_err(), ErrorCode::AnoncredsInvalidUserRevocId);
+        assert_code!(ErrorCode::AnoncredsInvalidUserRevocId, res);
 
         wallet::close_wallet(issuer_wallet_handle).unwrap();
 
