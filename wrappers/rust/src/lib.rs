@@ -327,7 +327,7 @@ impl Fail for IndyError {
 
 impl fmt::Display for IndyError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        writeln!(f, "Error Code: {}\n Error: {}", self.error_code, self.message)?;
+        writeln!(f, "{}", self.message)?;
         Ok(())
     }
 }

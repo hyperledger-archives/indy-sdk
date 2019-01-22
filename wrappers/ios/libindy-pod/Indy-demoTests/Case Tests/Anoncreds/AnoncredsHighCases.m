@@ -924,7 +924,7 @@
                                                      revocRegDefsJSON:revocRegDefsJSON
                                                         revocRegsJSON:revocRegsJson
                                                               isValid:&isValid];
-    XCTAssertEqual(ret.code, CommonInvalidStructure, @"AnoncredsUtils::verifierVerifyProof returned wrong error");
+    XCTAssertEqual(ret.code, AnoncredsProofRejected, @"AnoncredsUtils::verifierVerifyProof returned wrong error");
 }
 
 @end
