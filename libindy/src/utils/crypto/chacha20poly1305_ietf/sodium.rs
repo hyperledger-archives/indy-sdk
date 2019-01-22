@@ -26,19 +26,6 @@ impl Nonce {
     }
 }
 
-impl zeroize::Zeroize for Key {
-    #[inline]
-    fn zeroize(&mut self) {
-        self.0.zeroize();
-    }
-}
-
-impl ::std::ops::Drop for Key {
-    fn drop(&mut self) {
-        self.0.zeroize();
-    }
-}
-
 pub fn gen_key() -> Key {
     Key(chacha20poly1305_ietf::gen_key())
 }

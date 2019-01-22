@@ -467,12 +467,12 @@ impl CryptoService {
         let ciphertext_as_bytes = ciphertext_as_vec.as_ref();
 
         //convert IV from &str to &Nonce
-        let iv_as_vec = base64::decode(iv).map_err(|err|
+        let nonce_as_vec = base64::decode(iv).map_err(|err|
             CryptoError::CommonError(
                 CommonError::InvalidStructure(format!("Failed to decode IV {}", err)))
         )?;
-        let iv_as_slice = iv_as_vec.as_slice();
-        let nonce = chacha20poly1305_ietf::Nonce::from_slice(iv_as_slice).map_err(|err| {
+        let nonce_as_slice = nonce_as_vec.as_slice();
+        let nonce = chacha20poly1305_ietf::Nonce::from_slice(nonce_as_slice).map_err(|err| {
             CryptoError::CommonError(
                 CommonError::InvalidStructure(format!("Failed to convert IV to Nonce type {}", err))
             )
@@ -755,36 +755,6 @@ mod tests {
         let encrypted_message = service.crypto_box_seal(&encrypt_did.verkey, msg).unwrap();
         let decrypted_message = service.crypto_box_seal_open(&key, &encrypted_message).unwrap();
         assert_eq!(msg, decrypted_message.as_slice());
-    }
-
-    #[test]
-    fn authenticated_encrypt_works() {
-        let service = CryptoService::new();
-        let msg = "some message".as_bytes();
-        let did_info = MyDidInfo { did: None, cid: None, seed: None, crypto_type: None };
-        let ( _ , my_key) = service.create_my_did(&did_info).unwrap();
-        let (their_did, _their_key) = service.create_my_did(&did_info.clone()).unwrap();
-        let their_did_for_encrypt = Did::new(their_did.did, their_did.verkey);
-        let encrypted_message = service.authenticated_encrypt(&my_key, &their_did_for_encrypt.verkey, msg);
-        assert!(encrypted_message.is_ok());
-    }
-
-    #[test]
-    fn authenticated_encrypt_and_authenticated_decrypt_works() {
-        let service = CryptoService::new();
-        let msg = "some message";
-        let did_info = MyDidInfo { did: None, cid: None, seed: None, crypto_type: None };
-        let (my_did, my_key) = service.create_my_did(&did_info).unwrap();
-        let my_key_for_encrypt = my_key.clone();
-        let their_did_for_decrypt = Did::new(my_did.did, my_did.verkey);
-        let (their_did, their_key) = service.create_my_did(&did_info.clone()).unwrap();
-        let my_key_for_decrypt = their_key.clone();
-        let their_did_for_encrypt = Did::new(their_did.did, their_did.verkey);
-        let encrypted_message = service.authenticated_encrypt(&my_key_for_encrypt, &their_did_for_encrypt.verkey, msg.as_bytes()).unwrap();
-        let (their_vk, decrypted_message) = service.authenticated_decrypt(&my_key_for_decrypt,&encrypted_message).unwrap();
-        assert_eq!(msg.as_bytes().to_vec(), decrypted_message);
-        assert_eq!(&their_vk, &their_did_for_decrypt.verkey);
-
     }
 
     #[test]
