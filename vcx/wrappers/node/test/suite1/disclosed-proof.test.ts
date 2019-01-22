@@ -8,11 +8,9 @@ import {
   disclosedProofCreateWithMsgId,
   disclosedProofCreateWithRequest
 } from 'helpers/entities'
-import { gcTest } from 'helpers/gc'
-import { TIMEOUT_GC } from 'helpers/test-constants'
 import { initVcxTestMode, shouldThrow } from 'helpers/utils'
 import { mapValues } from 'lodash'
-import { DisclosedProof, rustAPI, StateType, VCXCode } from 'src'
+import { DisclosedProof, StateType, VCXCode } from 'src'
 
 describe('DisclosedProof', () => {
   before(() => initVcxTestMode())
@@ -97,15 +95,6 @@ describe('DisclosedProof', () => {
       assert.equal(error.vcxCode, VCXCode.INVALID_DISCLOSED_PROOF_HANDLE)
     })
 
-    it('throws: disclosedProof released', async () => {
-      const disclosedProof = await disclosedProofCreateWithRequest()
-      const { data } = await disclosedProof.serialize()
-      assert.ok(data)
-      assert.equal(data.source_id, disclosedProof.sourceId)
-      assert.equal(await disclosedProof.release(), VCXCode.SUCCESS)
-      const error = await shouldThrow(() => disclosedProof.serialize())
-      assert.equal(error.vcxCode, VCXCode.INVALID_DISCLOSED_PROOF_HANDLE)
-    })
   })
 
   describe('deserialize:', () => {
@@ -121,22 +110,6 @@ describe('DisclosedProof', () => {
     it('throws: incorrect data', async () => {
       const error = await shouldThrow(async () => DisclosedProof.deserialize({ data: { source_id: 'Invalid' } } as any))
       assert.equal(error.vcxCode, VCXCode.INVALID_JSON)
-    })
-  })
-
-  describe('release:', () => {
-    it('success', async () => {
-      const disclosedProof = await disclosedProofCreateWithRequest()
-      assert.equal(await disclosedProof.release(), VCXCode.SUCCESS)
-      const errorSerialize = await shouldThrow(() => disclosedProof.serialize())
-      assert.equal(errorSerialize.vcxCode, VCXCode.INVALID_DISCLOSED_PROOF_HANDLE)
-    })
-
-    // TODO: Enable once https://evernym.atlassian.net/browse/EN-668 is resolved
-    it.skip('throws: not initialized', async () => {
-      const disclosedProof = new (DisclosedProof as any)()
-      const error = await shouldThrow(() => disclosedProof.release())
-      assert.equal(error.vcxCode, VCXCode.UNKNOWN_ERROR)
     })
   })
 
@@ -205,22 +178,4 @@ describe('DisclosedProof', () => {
     })
   })
 
-  describe('GC:', function () {
-    this.timeout(TIMEOUT_GC)
-
-    const disclosedProofCreateAndDelete = async () => {
-      let disclosedProof: DisclosedProof | null = await disclosedProofCreateWithRequest()
-      const handle = disclosedProof.handle
-      disclosedProof = null
-      return handle
-    }
-    it('calls release', async () => {
-      const handle = await disclosedProofCreateAndDelete()
-      await gcTest({
-        handle,
-        serialize: rustAPI().vcx_disclosed_proof_serialize,
-        stopCode: VCXCode.INVALID_DISCLOSED_PROOF_HANDLE
-      })
-    })
-  })
 })

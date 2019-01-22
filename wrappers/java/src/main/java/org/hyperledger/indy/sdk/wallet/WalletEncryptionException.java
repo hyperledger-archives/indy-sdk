@@ -15,7 +15,18 @@ public class WalletEncryptionException extends IndyException
 	 * Initializes a new WalletEncryptionException.
 	 */
 	public WalletEncryptionException()
+	{
+		super(message, ErrorCode.WalletEncryptionError.value());
+	}
+
+	/**
+	 * Initializes a new WalletEncryptionException.
+	 *
+	 * @param sdkMessage The SDK error message.
+	 * @param sdkBacktrace The SDK error backtrace.
+	 */
+	public WalletEncryptionException(String sdkMessage, String sdkBacktrace)
     {
-    	super(message, ErrorCode.WalletEncryptionError.value());
+    	super(sdkMessage, ErrorCode.WalletEncryptionError.value(), sdkBacktrace);
     }
 }

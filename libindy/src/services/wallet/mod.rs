@@ -548,7 +548,7 @@ impl WalletService {
         let metadata_keys = metadata.get_keys();
 
         let res = Keys::deserialize_encrypted(&metadata_keys, master_key)
-            .to_indy(IndyErrorKind::WalletAccessFailed, "Invalid master key provided")?; // FIXME: review kind
+            .map_err(|err| err.map(IndyErrorKind::WalletAccessFailed, "Invalid master key provided"))?;
 
         Ok(res)
     }

@@ -63,7 +63,7 @@ pub extern fn vcx_credentialdef_create(command_handle: u32,
     } else {
         match settings::get_config_value(settings::CONFIG_INSTITUTION_DID) {
             Ok(x) => x,
-            Err(x) => return x
+            Err(x) => return x,
         }
     };
     
@@ -311,12 +311,18 @@ pub extern fn vcx_credentialdef_release(credentialdef_handle: u32) -> u32 {
 
     let source_id = credential_def::get_source_id(credentialdef_handle).unwrap_or_default();
     match credential_def::release(credentialdef_handle) {
-        Ok(_) => trace!("vcx_credentialdef_release(credentialdef_handle: {}, rc: {}), source_id: {}",
-                      credentialdef_handle, error_string(0), source_id),
-        Err(x) => warn!("vcx_credentialdef_release(credentialdef_handle: {}, rc: {}), source_id: {}",
-                        credentialdef_handle, x.to_string(), source_id),
-    };
-    error::SUCCESS.code_num
+        Ok(_) => {
+            trace!("vcx_credentialdef_release(credentialdef_handle: {}, rc: {}), source_id: {}",
+                      credentialdef_handle, error_string(0), source_id);
+            error::SUCCESS.code_num
+        },
+
+        Err(x) => {
+            warn!("vcx_credentialdef_release(credentialdef_handle: {}, rc: {}), source_id: {}",
+                        credentialdef_handle, x.to_string(), source_id);
+            x.to_error_code()
+        }
+    }
 }
 
 #[cfg(test)]
@@ -398,6 +404,27 @@ mod tests {
         assert!(handle > 0);
 
     }
+
+    #[test]
+    fn test_vcx_credentialdef_release() {
+        init!("true");
+
+        let cb = return_types_u32::Return_U32_U32::new().unwrap();
+        assert_eq!(vcx_credentialdef_create(cb.command_handle,
+                                            CString::new("Test Source ID Release Test").unwrap().into_raw(),
+                                            CString::new("Test Credential Def Release").unwrap().into_raw(),
+                                            CString::new(SCHEMA_ID).unwrap().into_raw(),
+                                            ptr::null(),
+                                            CString::new("tag").unwrap().into_raw(),
+                                            CString::new("{}").unwrap().into_raw(),
+                                            0,
+                                            Some(cb.get_callback())), error::SUCCESS.code_num);
+
+        let handle = cb.receive(Some(Duration::from_secs(10))).unwrap();
+        let unknown_handle = handle+1;
+        assert_eq!(vcx_credentialdef_release(unknown_handle), error::INVALID_CREDENTIAL_DEF_HANDLE.code_num);
+    }
+        
 
     #[test]
     fn test_vcx_creddef_get_id(){
