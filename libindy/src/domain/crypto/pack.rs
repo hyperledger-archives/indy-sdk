@@ -18,7 +18,7 @@ pub struct Header {
     pub kid: String,
     #[serde(default)]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub nonce: Option<String>,
+    pub iv: Option<String>,
     #[serde(default)]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sender: Option<String>

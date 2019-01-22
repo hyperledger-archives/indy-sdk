@@ -409,7 +409,7 @@ impl CryptoCommandExecutor {
                 header: Header {
                     kid: their_vk,
                     sender: None,
-                    nonce: None
+                    iv: None
                 },
             });
         } // end for-loop
@@ -439,7 +439,7 @@ impl CryptoCommandExecutor {
 
         //encrypt cek for recipient
         for their_vk in receiver_list {
-            let (enc_cek, nonce) = self.crypto_service.crypto_box(&my_key, &their_vk, &cek[..])?;
+            let (enc_cek, iv) = self.crypto_service.crypto_box(&my_key, &their_vk, &cek[..])?;
 
             let enc_sender = self.crypto_service.crypto_box_seal(&their_vk, sender_vk.as_bytes())?;
 
@@ -449,7 +449,7 @@ impl CryptoCommandExecutor {
                 header: Header {
                     kid: their_vk,
                     sender: Some(base64::encode(enc_sender.as_slice())),
-                    nonce: Some(base64::encode(nonce.as_slice()))
+                    iv: Some(base64::encode(iv.as_slice()))
                 },
             });
         } // end for-loop
@@ -590,7 +590,7 @@ impl CryptoCommandExecutor {
 
     fn _unpack_cek_authcrypt(&self, recipient: Recipient, wallet_handle: i32) -> Result<(Option<String>, chacha20poly1305_ietf::Key)> {
         let encrypted_key_vec = base64::decode(&recipient.encrypted_key)?;
-        let nonce = base64::decode(&recipient.header.nonce.unwrap())?;
+        let iv = base64::decode(&recipient.header.iv.unwrap())?;
         let enc_sender_vk = base64::decode(&recipient.header.sender.unwrap())?;
 
         //get my private key
@@ -610,7 +610,7 @@ impl CryptoCommandExecutor {
             &my_key,
             &sender_vk,
             encrypted_key_vec.as_slice(),
-            nonce.as_slice())?;
+            iv.as_slice())?;
 
         //convert cek to chacha Key struct
         let cek: chacha20poly1305_ietf::Key =
