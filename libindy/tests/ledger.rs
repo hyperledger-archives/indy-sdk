@@ -1778,7 +1778,7 @@ mod medium_cases {
         fn indy_send_nym_request_works_for_different_roles() {
             let (wallet_handle, pool_handle, trustee_did) = utils::setup_trustee();
 
-            for role in ["STEWARD", "TRUSTEE", "TRUST_ANCHOR"].iter() {
+            for role in ["STEWARD", "TRUSTEE", "TRUST_ANCHOR", "NETWORK_MONITOR"].iter() {
                 let (my_did, _) = did::create_and_store_my_did(wallet_handle, None).unwrap();
                 let nym_request = ledger::build_nym_request(&trustee_did, &my_did, None, None, Some(role)).unwrap();
                 let response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
