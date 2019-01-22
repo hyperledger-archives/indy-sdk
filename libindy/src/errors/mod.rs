@@ -8,7 +8,7 @@ use std::ptr;
 
 
 use failure::{Backtrace, Context, Fail};
-use indy_crypto::errors::IndyCryptoError;
+use indy_crypto::errors::{IndyCryptoError, IndyCryptoErrorKind};
 use log;
 use libc::c_char;
 
@@ -218,12 +218,17 @@ impl From<log::SetLoggerError> for IndyError {
 
 impl From<IndyCryptoError> for IndyError {
     fn from(err: IndyCryptoError) -> Self {
-        if let IndyCryptoError::InvalidState(err) = err {
-            IndyError::from_msg(IndyErrorKind::InvalidState, err)
-        } else if let IndyCryptoError::IOError(err) = err {
-            IndyError::from_msg(IndyErrorKind::IOError, err)
-        } else {
-            IndyError::from_msg(IndyErrorKind::InvalidStructure, err)
+        let message = format!("IndyCryptoError: {}", Fail::iter_causes(&err).map(|e| e.to_string()).collect::<String>());
+
+        match err.kind() {
+            IndyCryptoErrorKind::InvalidState => IndyError::from_msg(IndyErrorKind::InvalidState, message),
+            IndyCryptoErrorKind::InvalidStructure => IndyError::from_msg(IndyErrorKind::InvalidStructure, message),
+            IndyCryptoErrorKind::IOError => IndyError::from_msg(IndyErrorKind::IOError, message),
+            IndyCryptoErrorKind::InvalidRevocationAccumulatorIndex => IndyError::from_msg(IndyErrorKind::InvalidUserRevocId, message),
+            IndyCryptoErrorKind::RevocationAccumulatorIsFull => IndyError::from_msg(IndyErrorKind::RevocationRegistryFull, message),
+            IndyCryptoErrorKind::ProofRejected => IndyError::from_msg(IndyErrorKind::ProofRejected, message),
+            IndyCryptoErrorKind::CredentialRevoked => IndyError::from_msg(IndyErrorKind::CredentialRevoked, message),
+            IndyCryptoErrorKind::InvalidParam(_) => IndyError::from_msg(IndyErrorKind::InvalidStructure, message),
         }
     }
 }
@@ -456,6 +461,6 @@ pub fn get_current_error_c_json() -> *const c_char {
     CURRENT_ERROR_C_JSON.with(|err|
         err.borrow().as_ref().map(|err| value = err.as_ptr())
     );
-    
+
     value
 }
