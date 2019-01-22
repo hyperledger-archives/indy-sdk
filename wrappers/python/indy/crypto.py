@@ -395,7 +395,7 @@ async def pack_message(wallet_handle: int,
                        receiver_verkeys: list,
                        sender_verkey: str ) -> str:
     """
-    Packs a message by encrypting the message and serializes it in a JWE-like format
+    Packs a message by encrypting the message and serializes it in a JWE-like format (Experimental)
 
     Note to use DID keys with this function you can call indy_key_for_did to get key id (verkey)
     for specific DID.

@@ -563,7 +563,7 @@ pub  extern fn indy_crypto_anon_decrypt(command_handle: IndyHandle,
     res
 }
 
-/// Packs a message
+/// Packs a message (Experimental)
 ///
 /// Note to use DID keys with this function you can call indy_key_for_did to get key id (verkey)
 /// for specific DID.
@@ -670,7 +670,7 @@ pub extern fn indy_pack_message(
 }
 
 
-/// Unpacks a message packed using indy_pack_message which follows the wire message format
+/// Unpacks a message packed using indy_pack_message which follows the wire message format (Experimental)
 ///
 ///
 /// #Params

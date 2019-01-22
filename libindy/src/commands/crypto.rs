@@ -579,10 +579,7 @@ impl CryptoCommandExecutor {
 
 
             if my_key_res.is_ok() {
-                match recipient.header.sender {
-                    Some(_) => return Ok((recipient, true)),
-                    None => return Ok((recipient, false))
-                }
+                return Ok((recipient.clone(), recipient.header.sender.is_some()))
             }
         }
         return Err(IndyError::WalletError(WalletError::ItemNotFound));

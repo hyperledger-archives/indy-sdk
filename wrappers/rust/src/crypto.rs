@@ -276,7 +276,7 @@ fn _anon_decrypt(command_handle: IndyHandle, wallet_handle: IndyHandle, recipien
 }
 
 /// Unpacks a message packed using indy_pack_message which follows the wire message format HIPE
-///
+/// (Experimental)
 ///
 ///
 /// # Arguments
@@ -311,7 +311,7 @@ fn _pack_message(command_handle: IndyHandle, wallet_handle: IndyHandle, message:
 }
 
 /// Unpacks a message packed using indy_pack_message which follows the wire message format HIPE
-///
+/// (Experimental)
 ///
 ///
 /// # Arguments
