@@ -1024,6 +1024,10 @@ def libvcxDebPublishing(testEnv) {
 
     def libvcxVersion = getSrcVersion("vcx/libvcx")
 
+    def libindyVersion = getSrcVersion("libindy")
+    def replaceVersion = "$libindyVersion~$env.BUILD_NUMBER"
+    sh "sed -i -e \"s/^\\(Depends: .*libindy\\)\\(\\s*[,]\\{,1\\}.*\\)/\\1 (= $replaceVersion)\\2/\" vcx/libvcx/debian/control"
+
     debPublishing(testEnv, "vcx/libvcx", "libvcx", libvcxVersion, "LibvcxUbuntuBuildResult", "libvcxDebs")
 }
 
@@ -1290,6 +1294,11 @@ def publishLibnullpayDebRCtoStable(testEnv) {
 
 def publishLibvcxDebRCtoStable(testEnv) {
     def libvcxVersion = getSrcVersion("vcx/libvcx")
+    def libindyVersion = getSrcVersion("libindy")
+    def rcFullVersion = "$libvcxVersion~$env.BUILD_NUMBER"
+
+    sh "fpm -s deb -t deb --version $rcFullVersion --no-auto-depends --depends 'libindy = $libindyVersion' -f -p vcx/libvcx/debs vcx/libvcx/debs/libvcx_\"$rcFullVersion\"_amd64.deb"
+
     publishDebRCtoStable(testEnv, "libvcx", "vcx/libvcx", libvcxVersion, "libvcxDebs", false)
 }
 
