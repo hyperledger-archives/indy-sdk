@@ -551,12 +551,18 @@ pub extern fn vcx_disclosed_proof_release(handle: u32) -> u32 {
 
     let source_id = disclosed_proof::get_source_id(handle).unwrap_or_default();
     match disclosed_proof::release(handle) {
-        Ok(_) => trace!("vcx_disclosed_proof_release(handle: {}, rc: {}), source_id: {:?}",
-                       handle, error_string(0), source_id),
-        Err(e) => error!("vcx_disclosed_proof_release(handle: {}, rc: {}), source_id: {:?}",
-                         handle, error_string(e), source_id),
-    };
-    error::SUCCESS.code_num
+        Ok(_) => { 
+            let success_err_code = error::SUCCESS.code_num;
+            trace!("vcx_disclosed_proof_release(handle: {}, rc: {}), source_id: {:?}",
+                       handle, error_string(success_err_code), source_id);
+            success_err_code
+        },
+        Err(e) => {
+            error!("vcx_disclosed_proof_release(handle: {}, rc: {}), source_id: {:?}",
+                         handle, error_string(e), source_id);
+            e
+        },
+    }
 }
 
 #[cfg(test)]
@@ -609,6 +615,17 @@ mod tests {
                                                          Some(cb.get_callback())), error::SUCCESS.code_num);
         let (handle, disclosed_proof) = cb.receive(Some(Duration::from_secs(10))).unwrap();
         assert!(handle > 0 && disclosed_proof.is_some());
+    }
+
+    #[test]
+    fn test_vcx_disclosed_proof_release() {
+        init!("true");
+        let cb = return_types_u32::Return_U32_STR::new().unwrap();
+        let handle = disclosed_proof::create_proof("1",::utils::constants::PROOF_REQUEST_JSON).unwrap();
+        let unknown_handle = handle + 1;
+        let err = vcx_disclosed_proof_release(unknown_handle);
+        assert_eq!(err, error::INVALID_DISCLOSED_PROOF_HANDLE.code_num);
+
     }
 
     #[test]
