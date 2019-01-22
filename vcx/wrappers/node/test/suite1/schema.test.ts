@@ -8,10 +8,8 @@ import {
   schemaCreate,
   schemaLookup
 } from 'helpers/entities'
-import { gcTest } from 'helpers/gc'
-import { TIMEOUT_GC } from 'helpers/test-constants'
 import { initVcxTestMode, shouldThrow } from 'helpers/utils'
-import { rustAPI, Schema, SchemaPaymentManager, VCXCode } from 'src'
+import { Schema, SchemaPaymentManager, VCXCode } from 'src'
 
 describe('Schema:', () => {
   before(() => initVcxTestMode())
@@ -111,15 +109,6 @@ describe('Schema:', () => {
       assert.equal(error.vcxCode, VCXCode.INVALID_SCHEMA_HANDLE)
     })
 
-    it('throws: schema released', async () => {
-      const schema = await schemaCreate()
-      const data = await schema.serialize()
-      assert.ok(data)
-      assert.equal(data.data.source_id, schema.sourceId)
-      assert.equal(await schema.release(), VCXCode.SUCCESS)
-      const error = await shouldThrow(() => schema.serialize())
-      assert.equal(error.vcxCode, VCXCode.INVALID_SCHEMA_HANDLE)
-    })
   })
 
   describe('deserialize:', () => {
@@ -135,22 +124,6 @@ describe('Schema:', () => {
     it('throws: incorrect data', async () => {
       const error = await shouldThrow(async () => Schema.deserialize({ data: { source_id: 'Invalid' } } as any))
       assert.equal(error.vcxCode, VCXCode.INVALID_JSON)
-    })
-  })
-
-  describe('release:', () => {
-    it('success', async () => {
-      const schema = await schemaCreate()
-      assert.equal(await schema.release(), VCXCode.SUCCESS)
-      const errorSerialize = await shouldThrow(() => schema.serialize())
-      assert.equal(errorSerialize.vcxCode, VCXCode.INVALID_SCHEMA_HANDLE)
-    })
-
-    // TODO: Enable once https://evernym.atlassian.net/browse/EN-668 is resolved
-    it.skip('throws: not initialized', async () => {
-      const schema = new Schema(null as any, {} as any)
-      const error = await shouldThrow(() => schema.release())
-      assert.equal(error.vcxCode, VCXCode.UNKNOWN_ERROR)
     })
   })
 
@@ -170,22 +143,4 @@ describe('Schema:', () => {
     })
   })
 
-  describe('GC:', function () {
-    this.timeout(TIMEOUT_GC)
-
-    const schemaCreateAndDelete = async () => {
-      let schema: Schema | null = await schemaCreate()
-      const handle = schema.handle
-      schema = null
-      return handle
-    }
-    it('calls release', async () => {
-      const handle = await schemaCreateAndDelete()
-      await gcTest({
-        handle,
-        serialize: rustAPI().vcx_schema_serialize,
-        stopCode: VCXCode.INVALID_SCHEMA_HANDLE
-      })
-    })
-  })
 })
