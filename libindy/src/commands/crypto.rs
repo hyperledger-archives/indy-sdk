@@ -473,7 +473,7 @@ impl CryptoCommandExecutor {
 
         //structure protected and base64URL encode it
         let protected_struct = Protected {
-            enc: "xchacha20poly1305".to_string(),
+            enc: "xchacha20poly1305_ietf".to_string(),
             typ: "JWM/1.0".to_string(),
             alg: alg_val,
             recipients: encrypted_recipients_struct,
