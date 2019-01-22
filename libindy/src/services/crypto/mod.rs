@@ -441,9 +441,9 @@ impl CryptoService {
             plaintext.as_slice(), aad.as_bytes(), &cek);
 
         //base64 url encode data
-        let iv_encoded = base64::encode(&iv[..]);
-        let ciphertext_encoded = base64::encode(ciphertext.as_slice());
-        let tag_encoded = base64::encode(&tag[..]);
+        let iv_encoded = base64::encode_urlsafe(&iv[..]);
+        let ciphertext_encoded = base64::encode_urlsafe(ciphertext.as_slice());
+        let tag_encoded = base64::encode_urlsafe(&tag[..]);
 
         (ciphertext_encoded, iv_encoded, tag_encoded)
     }
@@ -459,7 +459,7 @@ impl CryptoService {
     ) -> Result<String, CryptoError> {
 
         //convert ciphertext to bytes
-        let ciphertext_as_vec = base64::decode(ciphertext).map_err(|err| {
+        let ciphertext_as_vec = base64::decode_urlsafe(ciphertext).map_err(|err| {
             CryptoError::CommonError(
                 CommonError::InvalidStructure(format!("Failed to decode ciphertext {}", err))
             )
@@ -467,7 +467,7 @@ impl CryptoService {
         let ciphertext_as_bytes = ciphertext_as_vec.as_ref();
 
         //convert IV from &str to &Nonce
-        let nonce_as_vec = base64::decode(iv).map_err(|err|
+        let nonce_as_vec = base64::decode_urlsafe(iv).map_err(|err|
             CryptoError::CommonError(
                 CommonError::InvalidStructure(format!("Failed to decode IV {}", err)))
         )?;
@@ -479,7 +479,7 @@ impl CryptoService {
         })?;
 
         //convert tag from &str to &Tag
-        let tag_as_vec = base64::decode(tag).map_err(|err|
+        let tag_as_vec = base64::decode_urlsafe(tag).map_err(|err|
             CryptoError::CommonError(
                 CommonError::InvalidStructure(format!("Failed to decode tag {}", err)))
         )?;
@@ -820,7 +820,7 @@ mod tests {
         let (_, iv_encoded, tag) = service
             .encrypt_plaintext(plaintext, aad, &cek);
 
-        let bad_ciphertext= base64::encode("bad_ciphertext".as_bytes());
+        let bad_ciphertext= base64::encode_urlsafe("bad_ciphertext".as_bytes());
 
         let expected_error = service
             .decrypt_ciphertext(&bad_ciphertext, &iv_encoded, &tag, aad, &cek);

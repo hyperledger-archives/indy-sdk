@@ -405,7 +405,7 @@ impl CryptoCommandExecutor {
 
             //create recipient struct and push to encrypted list
             encrypted_recipients_struct.push(Recipient {
-                encrypted_key: base64::encode(enc_cek.as_slice()),
+                encrypted_key: base64::encode_urlsafe(enc_cek.as_slice()),
                 header: Header {
                     kid: their_vk,
                     sender: None,
@@ -445,11 +445,11 @@ impl CryptoCommandExecutor {
 
             //create recipient struct and push to encrypted list
             encrypted_recipients_struct.push(Recipient {
-                encrypted_key: base64::encode(enc_cek.as_slice()),
+                encrypted_key: base64::encode_urlsafe(enc_cek.as_slice()),
                 header: Header {
                     kid: their_vk,
-                    sender: Some(base64::encode(enc_sender.as_slice())),
-                    iv: Some(base64::encode(iv.as_slice()))
+                    sender: Some(base64::encode_urlsafe(enc_sender.as_slice())),
+                    iv: Some(base64::encode_urlsafe(iv.as_slice()))
                 },
             });
         } // end for-loop
@@ -485,7 +485,7 @@ impl CryptoCommandExecutor {
             )))
         })?;
 
-        Ok(base64::encode(protected_encoded.as_bytes()))
+        Ok(base64::encode_urlsafe(protected_encoded.as_bytes()))
     }
 
     fn _format_pack_message(
@@ -521,7 +521,7 @@ impl CryptoCommandExecutor {
             )))
         })?;
         //decode protected data
-        let protected_decoded_vec = base64::decode(&jwe_struct.protected)?;
+        let protected_decoded_vec = base64::decode_urlsafe(&jwe_struct.protected)?;
         let protected_decoded_str = String::from_utf8(protected_decoded_vec).map_err(|err| {
             IndyError::CommonError(CommonError::InvalidStructure(format!(
                 "Failed to utf8 encode data {}",
@@ -589,9 +589,9 @@ impl CryptoCommandExecutor {
     }
 
     fn _unpack_cek_authcrypt(&self, recipient: Recipient, wallet_handle: i32) -> Result<(Option<String>, chacha20poly1305_ietf::Key)> {
-        let encrypted_key_vec = base64::decode(&recipient.encrypted_key)?;
-        let iv = base64::decode(&recipient.header.iv.unwrap())?;
-        let enc_sender_vk = base64::decode(&recipient.header.sender.unwrap())?;
+        let encrypted_key_vec = base64::decode_urlsafe(&recipient.encrypted_key)?;
+        let iv = base64::decode_urlsafe(&recipient.header.iv.unwrap())?;
+        let enc_sender_vk = base64::decode_urlsafe(&recipient.header.sender.unwrap())?;
 
         //get my private key
         let my_key = self.wallet_service.get_indy_object(
@@ -626,7 +626,7 @@ impl CryptoCommandExecutor {
     }
 
     fn _unpack_cek_anoncrypt(&self, recipient: Recipient, wallet_handle: i32) -> Result<(Option<String>, chacha20poly1305_ietf::Key)> {
-        let encrypted_key_vec = base64::decode(&recipient.encrypted_key)?;
+        let encrypted_key_vec = base64::decode_urlsafe(&recipient.encrypted_key)?;
 
         //get my private key
         let my_key : Key = self.wallet_service.get_indy_object(
