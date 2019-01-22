@@ -454,14 +454,9 @@ async def identity_steward1(wallet_handle, seed_steward1):
 
 
 @pytest.fixture
-async def identity_my1(wallet_handle, pool_handle, identity_trustee1, seed_my1, ):
-    (trustee_did, trustee_verkey) = identity_trustee1
-
+async def identity_my1(wallet_handle, pool_handle, seed_my1, ):
     (my_did, my_verkey) = await did.create_and_store_my_did(wallet_handle,
                                                             json.dumps({"seed": seed_my1, 'cid': True}))
-
-    nym_request = await ledger.build_nym_request(trustee_did, my_did, my_verkey, None, None)
-    await ledger.sign_and_submit_request(pool_handle, wallet_handle, trustee_did, nym_request)
 
     return my_did, my_verkey
 
