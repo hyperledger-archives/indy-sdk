@@ -67,6 +67,10 @@ pub fn indy_set_runtime_config(config: IndyConfig) {
         Some(false) => env::set_var("RUST_BACKTRACE", "0"),
         _ => {}
     }
+    match config.freshness_threshold {
+        Some(threshold) => env::set_var("FRESHNESS_THRESHOLD", format!("{}", threshold)),
+        _ => {}
+    }
 }
 
 pub struct CommandExecutor {
