@@ -77,7 +77,7 @@ pub enum CryptoCommand {
     PackMessage(
         Vec<u8>, // plaintext message
         String,  // list of receiver's keys
-        String,  // senders verkey
+        Option<String>,  // senders verkey
         i32,     //wallet handle
         Box<Fn(Result<Vec<u8>>) + Send>,
     ),
@@ -144,7 +144,7 @@ impl CryptoCommandExecutor {
             }
             CryptoCommand::PackMessage(message, receivers, sender_vk, wallet_handle, cb) => {
                 info!("PackMessage command received");
-                cb(self.pack_msg(message, &receivers, &sender_vk, wallet_handle));
+                cb(self.pack_msg(message, &receivers, sender_vk, wallet_handle));
             }
             CryptoCommand::UnpackMessage(jwe_json, wallet_handle, cb) => {
                 info!("UnpackMessage command received");
@@ -363,7 +363,7 @@ impl CryptoCommandExecutor {
         &self,
         message: Vec<u8>,
         receivers: &str,
-        sender_vk: &str,
+        sender_vk: Option<String>,
         wallet_handle: i32,
     ) -> Result<Vec<u8>> {
 
@@ -382,14 +382,14 @@ impl CryptoCommandExecutor {
             ))));
         }
         
-        match sender_vk.is_empty() {
-            true => {
+        match sender_vk {
+            Some(vk) => {
+                //returns authcrypted pack_message format. See Wire message format HIPE for details
+                self._pack_authcrypt(message, receiver_list, &vk, wallet_handle)
+            },
+            None => {
                 //returns anoncrypted pack_message format. See Wire message format HIPE for details
                 self._pack_anoncrypt(message, receiver_list)
-            }
-            false => {
-                //returns authcrypted pack_message format. See Wire message format HIPE for details
-                self._pack_authcrypt(message, receiver_list, sender_vk, wallet_handle)
             }
         }
     }

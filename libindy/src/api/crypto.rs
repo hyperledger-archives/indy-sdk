@@ -582,7 +582,7 @@ pub  extern fn indy_crypto_anon_decrypt(command_handle: IndyHandle,
 /// #Returns
 /// a JWE using authcrypt alg is defined below:
 /// {
-///    "protected": "b64URLencoded({
+///     "protected": "b64URLencoded({
 ///        "enc": "xsalsa20poly1305",
 ///        "typ": "JWM/1.0",
 ///        "alg": "authcrypt",
@@ -590,34 +590,36 @@ pub  extern fn indy_crypto_anon_decrypt(command_handle: IndyHandle,
 ///            {
 ///                "encrypted_key": anoncrypt(encrypted_cek|sender_vk|nonce)
 ///                "header": {
-///                    "kid": "b64URLencode(ver_key)"
+///                     "kid": "b64URLencode(ver_key)",
+///                     "sender" : base64URLencode(libsodium.crypto_box_seal(their_vk, sender_vk_string)),
+///                     "iv" : base64URLencode(iv)
 ///                }
 ///            },
 ///        ],
-///    })"
-///    "iv": <b64URLencode()>,
-///    "ciphertext": <b64URLencode(encrypt({'@type'...}, cek)>,
-///    "tag": <b64URLencode()>
+///     })",
+///     "iv": <b64URLencode(iv)>,
+///     "ciphertext": b64URLencode(encrypt_detached({'@type'...}, protected_value_encoded, iv, cek),
+///     "tag": <b64URLencode(tag)>
 /// }
 ///
 /// Alternative example in using anoncrypt alg is defined below:
 /// {
-///    "protected": "b64URLencode({
+///     "protected": "b64URLencoded({
 ///        "enc": "xsalsa20poly1305",
 ///        "typ": "JWM/1.0",
-///        "alg": "anoncrypt",
+///        "alg": "Anoncrypt",
 ///        "recipients": [
 ///            {
-///                "encrypted_key": <b64URLencode(anoncrypt(cek))>,
+///                "encrypted_key": base64URLencode(libsodium.crypto_box_seal(their_vk, cek)),
 ///                "header": {
-///                    "kid": "b64URLencode(ver_key)"
+///                    "kid": base58encode(recipient_verkey),
 ///                }
 ///            },
 ///        ],
-///    })"
-///    "iv": <b64URLencode(iv)>,
-///    "ciphertext": <b64URLencode(encrypt({'@type'...}, cek)>,
-///    "tag": <b64URLencode(authentication tag)>
+///     })",
+///     "iv": b64URLencode(iv),
+///     "ciphertext": b64URLencode(encrypt_detached({'@type'...}, protected_value_encoded, iv, cek),
+///     "tag": b64URLencode(tag)
 /// }
 ///
 ///
@@ -641,7 +643,7 @@ pub extern fn indy_pack_message(
 
     check_useful_c_byte_array!(message, message_len, ErrorCode::CommonInvalidParam2, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(receiver_keys, ErrorCode::CommonInvalidParam4);
-    check_useful_c_str_empty_accepted!(sender, ErrorCode::CommonInvalidParam5);
+    check_useful_opt_c_str!(sender, ErrorCode::CommonInvalidParam5);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
     trace!("indy_pack_message: entities >>> wallet_handle: {:?}, message: {:?}, message_len {:?},\

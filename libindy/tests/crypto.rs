@@ -483,7 +483,7 @@ mod high_cases {
             let rec_key_vec = vec![VERKEY_MY1, VERKEY_MY2, VERKEY_TRUSTEE];
             let receiver_keys = serde_json::to_string(&rec_key_vec).unwrap();
             let message = "Hello World".as_bytes();
-            let res = crypto::pack_message(wallet_handle, message, &receiver_keys, &verkey);
+            let res = crypto::pack_message(wallet_handle, message, &receiver_keys, Some(&verkey));
             assert!(res.is_ok());
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -494,7 +494,7 @@ mod high_cases {
             let rec_key_vec = vec![VERKEY_MY1, VERKEY_MY2, VERKEY_TRUSTEE];
             let receiver_keys = serde_json::to_string(&rec_key_vec).unwrap();
             let message = "".as_bytes();
-            let res = crypto::pack_message(wallet_handle, message, &receiver_keys, &verkey);
+            let res = crypto::pack_message(wallet_handle, message, &receiver_keys, Some(&verkey));
             assert_eq!(ErrorCode::CommonInvalidParam3, res.unwrap_err());
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -504,7 +504,7 @@ mod high_cases {
             let (wallet_handle, verkey) = setup_with_key();
             let receiver_keys = "[]";
             let message = "Hello World".as_bytes();
-            let res = crypto::pack_message(wallet_handle, message, &receiver_keys, &verkey);
+            let res = crypto::pack_message(wallet_handle, message, &receiver_keys, Some(&verkey));
             assert_eq!(ErrorCode::CommonInvalidParam4, res.unwrap_err());
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -515,7 +515,7 @@ mod high_cases {
             let rec_key_vec = vec![VERKEY_MY1, VERKEY_MY2, VERKEY_TRUSTEE];
             let receiver_keys = serde_json::to_string(&rec_key_vec).unwrap();
             let message = "Hello World".as_bytes();
-            let res = crypto::pack_message(wallet_handle + 1, message, &receiver_keys, &verkey);
+            let res = crypto::pack_message(wallet_handle + 1, message, &receiver_keys, Some(&verkey));
             assert_eq!(ErrorCode::WalletInvalidHandle, res.unwrap_err());
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -526,7 +526,7 @@ mod high_cases {
             let rec_key_vec = vec![VERKEY_MY1, VERKEY_MY2, VERKEY_TRUSTEE];
             let receiver_keys = serde_json::to_string(&rec_key_vec).unwrap();
             let message = "Hello World".as_bytes();
-            let res = crypto::pack_message(wallet_handle, message, &receiver_keys, INVALID_BASE58_VERKEY);
+            let res = crypto::pack_message(wallet_handle, message, &receiver_keys, Some(INVALID_BASE58_VERKEY));
             assert_eq!(ErrorCode::WalletItemNotFound, res.unwrap_err());
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -542,7 +542,7 @@ mod high_cases {
             let rec_key_vec = vec![VERKEY_MY1, VERKEY_MY2, VERKEY_TRUSTEE];
             let receiver_keys = serde_json::to_string(&rec_key_vec).unwrap();
             let message = "Hello World".as_bytes();
-            let res = crypto::pack_message(wallet_handle, message, &receiver_keys, "");
+            let res = crypto::pack_message(wallet_handle, message, &receiver_keys, None);
             assert!(res.is_ok());
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -553,7 +553,7 @@ mod high_cases {
             let rec_key_vec = vec![VERKEY_MY1, VERKEY_MY2, VERKEY_TRUSTEE];
             let receiver_keys = serde_json::to_string(&rec_key_vec).unwrap();
             let message = "".as_bytes();
-            let res = crypto::pack_message(wallet_handle, message, &receiver_keys, "");
+            let res = crypto::pack_message(wallet_handle, message, &receiver_keys, None);
             assert_eq!(ErrorCode::CommonInvalidParam3, res.unwrap_err());
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -563,7 +563,7 @@ mod high_cases {
             let (wallet_handle, _ ) = setup_with_key();
             let receiver_keys = "[]";
             let message = "Hello World".as_bytes();
-            let res = crypto::pack_message(wallet_handle, message, &receiver_keys, "");
+            let res = crypto::pack_message(wallet_handle, message, &receiver_keys, None);
             assert_eq!(ErrorCode::CommonInvalidParam4, res.unwrap_err());
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -574,7 +574,7 @@ mod high_cases {
             let receiver_keys = serde_json::to_string(&rec_key_vec).unwrap();
             let message = "Hello World".as_bytes();
             //The wallet_handle and sender aren't used in this case, so any wallet_handle whether inited or not will work
-            let res = crypto::pack_message(1, message, &receiver_keys, "");
+            let res = crypto::pack_message(1, message, &receiver_keys, None);
             assert!(res.is_ok());
         }
 
@@ -596,15 +596,14 @@ mod high_cases {
             let (wallet_handle_receiver, receiver_verkey) = setup_with_key();
             let rec_key_vec = vec![VERKEY_TRUSTEE, &receiver_verkey];
             let receiver_keys = serde_json::to_string(&rec_key_vec).unwrap();
-            let message = r#"{ "@id": "123456780","@type":"did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/basicmessage/1.0/message","sent_time": "2019-01-15 18:42:01Z","content": "Your hovercraft is full of eels."}"#.as_bytes();
-            let pack_message = crypto::pack_message(wallet_handle_sender, message, &receiver_keys, &sender_verkey).unwrap();
+            let pack_message = crypto::pack_message(wallet_handle_sender, AGENT_MESSAGE.as_bytes(), &receiver_keys, Some(&sender_verkey)).unwrap();
 
             //execute function
             let res = crypto::unpack_message(wallet_handle_receiver, pack_message.as_slice()).unwrap();
             let res_serialized : UnpackMessage = serde_json::from_slice(res.as_slice()).unwrap();
 
             //verify unpack ran correctly
-            assert_eq!(res_serialized.message, "Hello World".to_string());
+            assert_eq!(res_serialized.message, AGENT_MESSAGE.to_string());
             assert_eq!(res_serialized.sender_verkey, sender_verkey);
 
             //teardown
@@ -620,7 +619,7 @@ mod high_cases {
             let rec_key_vec = vec![VERKEY_TRUSTEE];
             let receiver_keys = serde_json::to_string(&rec_key_vec).unwrap();
             let message = "Hello World".as_bytes();
-            let pack_message = crypto::pack_message(wallet_handle_sender, message, &receiver_keys, &sender_verkey).unwrap();
+            let pack_message = crypto::pack_message(wallet_handle_sender, message, &receiver_keys, Some(&sender_verkey)).unwrap();
 
             //execute function
             let res = crypto::unpack_message(wallet_handle_receiver, pack_message.as_slice());
@@ -647,12 +646,11 @@ mod high_cases {
             let (wallet_handle_receiver, receiver_verkey) = setup_with_key();
             let rec_key_vec = vec![VERKEY_TRUSTEE, &receiver_verkey];
             let receiver_keys = serde_json::to_string(&rec_key_vec).unwrap();
-            let message = r#"{ "@id": "123456780","@type":"did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/basicmessage/1.0/message","sent_time": "2019-01-15 18:42:01Z","content": "Your hovercraft is full of eels."}"#.as_bytes();
-            let pack_message = crypto::pack_message(wallet_handle_sender, message, &receiver_keys, "").unwrap();
+            let pack_message = crypto::pack_message(wallet_handle_sender, AGENT_MESSAGE.as_bytes(), &receiver_keys, None).unwrap();
             let res = crypto::unpack_message(wallet_handle_receiver, pack_message.as_slice()).unwrap();
             let res_serialized : UnpackMessage = serde_json::from_slice(res.as_slice()).unwrap();
 
-            assert_eq!(res_serialized.message, "Hello World".to_string());
+            assert_eq!(res_serialized.message, AGENT_MESSAGE.to_string());
 
             utils::tear_down_with_wallet(wallet_handle_sender);
             utils::tear_down_with_wallet(wallet_handle_receiver);
@@ -666,7 +664,7 @@ mod high_cases {
             let rec_key_vec = vec![VERKEY_TRUSTEE];
             let receiver_keys = serde_json::to_string(&rec_key_vec).unwrap();
             let message = "Hello World".as_bytes();
-            let pack_message = crypto::pack_message(wallet_handle_sender, message, &receiver_keys, "").unwrap();
+            let pack_message = crypto::pack_message(wallet_handle_sender, message, &receiver_keys, None).unwrap();
 
             //execute function
             let res = crypto::unpack_message(wallet_handle_receiver, pack_message.as_slice());

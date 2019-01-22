@@ -8,6 +8,7 @@ use ffi::{ResponseEmptyCB,
 use futures::Future;
 
 use std::ffi::CString;
+use std::ptr::null;
 
 use {ErrorCode, IndyHandle};
 use utils::callbacks::{ClosureHandler, ResultHandler};
@@ -285,7 +286,7 @@ fn _anon_decrypt(command_handle: IndyHandle, wallet_handle: IndyHandle, recipien
 /// * `sender` : a string of the sender's verkey
 /// # Returns
 /// a json structure in the form of a JWE that contains the encrypted message and associated metadata
-pub fn pack_message(wallet_handle: IndyHandle, message: &[u8], receiver_keys: &str, sender: &str) -> Box<Future<Item=Vec<u8>, Error=ErrorCode>> {
+pub fn pack_message(wallet_handle: IndyHandle, message: &[u8], receiver_keys: &str, sender: Option<&str>) -> Box<Future<Item=Vec<u8>, Error=ErrorCode>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
 
     let err= _pack_message(command_handle, wallet_handle, message, receiver_keys, sender, cb);
@@ -293,9 +294,9 @@ pub fn pack_message(wallet_handle: IndyHandle, message: &[u8], receiver_keys: &s
     ResultHandler::slice(command_handle, err, receiver)
 }
 
-fn _pack_message(command_handle: IndyHandle, wallet_handle: IndyHandle, message: &[u8], receiver_keys: &str, sender: &str, cb: Option<ResponseSliceCB>) -> ErrorCode {
+fn _pack_message(command_handle: IndyHandle, wallet_handle: IndyHandle, message: &[u8], receiver_keys: &str, sender: Option<&str>, cb: Option<ResponseSliceCB>) -> ErrorCode {
     let receiver_keys = c_str!(receiver_keys);
-    let sender = c_str!(sender);
+    let sender_str = opt_c_str!(sender);
 
     ErrorCode::from(unsafe {
         crypto::indy_pack_message(command_handle,
@@ -303,7 +304,7 @@ fn _pack_message(command_handle: IndyHandle, wallet_handle: IndyHandle, message:
                                   message.as_ptr() as *const u8,
                                   message.len() as u32,
                                   receiver_keys.as_ptr(),
-                                  sender.as_ptr(),
+                                  opt_c_ptr!(sender, sender_str),
                                   cb)
     })
 
