@@ -596,7 +596,7 @@ mod high_cases {
             let (wallet_handle_receiver, receiver_verkey) = setup_with_key();
             let rec_key_vec = vec![VERKEY_TRUSTEE, &receiver_verkey];
             let receiver_keys = serde_json::to_string(&rec_key_vec).unwrap();
-            let message = "Hello World".as_bytes();
+            let message = r#"{ "@id": "123456780","@type":"did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/basicmessage/1.0/message","sent_time": "2019-01-15 18:42:01Z","content": "Your hovercraft is full of eels."}"#.as_bytes();
             let pack_message = crypto::pack_message(wallet_handle_sender, message, &receiver_keys, &sender_verkey).unwrap();
 
             //execute function
@@ -647,7 +647,7 @@ mod high_cases {
             let (wallet_handle_receiver, receiver_verkey) = setup_with_key();
             let rec_key_vec = vec![VERKEY_TRUSTEE, &receiver_verkey];
             let receiver_keys = serde_json::to_string(&rec_key_vec).unwrap();
-            let message = "Hello World".as_bytes();
+            let message = r#"{ "@id": "123456780","@type":"did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/basicmessage/1.0/message","sent_time": "2019-01-15 18:42:01Z","content": "Your hovercraft is full of eels."}"#.as_bytes();
             let pack_message = crypto::pack_message(wallet_handle_sender, message, &receiver_keys, "").unwrap();
             let res = crypto::unpack_message(wallet_handle_receiver, pack_message.as_slice()).unwrap();
             let res_serialized : UnpackMessage = serde_json::from_slice(res.as_slice()).unwrap();
