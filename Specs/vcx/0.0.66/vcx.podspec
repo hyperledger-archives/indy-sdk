@@ -26,7 +26,7 @@ through to the libvcx shared library.
   s.homepage         = 'https://www.evernym.com/'
   s.license          = { :type => 'MIT', :file => 'LICENSE' }
   s.author           = { 'evernym-ios-dev' => 'iosdev@evernym.com' }
-  s.source           = { :http => 'https://repo.corp.evernym.com/filely/ios/vcx.libvcxall_20190115.1643_universal.zip' }
+  s.source           = { :http => 'https://repo.corp.evernym.com/filely/ios/vcx.libvcxall_20190122.1101_universal.zip' }
 
   s.ios.deployment_target = '8.0'
 
