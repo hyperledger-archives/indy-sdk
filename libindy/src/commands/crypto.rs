@@ -115,7 +115,7 @@ impl CryptoCommandExecutor {
         let key = self.crypto_service.create_key(key_info)?;
         self.wallet_service.add_indy_object(wallet_handle, &key.verkey, &key, &HashMap::new())?;
 
-        let res = key.verkey;
+        let res = key.verkey.to_string();
         debug!("create_key <<< res: {:?}", res);
         Ok(res)
     }
