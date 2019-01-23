@@ -35,6 +35,7 @@ pub struct Protected {
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct UnpackMessage {
     pub message: String,
+    pub recipient_verkey: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sender_verkey: Option<String>
 }

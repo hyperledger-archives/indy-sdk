@@ -586,7 +586,8 @@ mod high_cases {
         #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
         pub struct UnpackMessage {
             pub message: String,
-            pub sender_verkey: String
+            pub sender_verkey: String,
+            pub recipient_verkey: String
         }
 
         #[test]
@@ -605,6 +606,7 @@ mod high_cases {
             //verify unpack ran correctly
             assert_eq!(res_serialized.message, AGENT_MESSAGE.to_string());
             assert_eq!(res_serialized.sender_verkey, sender_verkey);
+            assert_eq!(res_serialized.recipient_verkey, receiver_verkey);
 
             //teardown
             utils::tear_down_with_wallet(wallet_handle_sender);
@@ -637,7 +639,8 @@ mod high_cases {
 
         #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
         pub struct UnpackMessage {
-            pub message: String
+            pub message: String,
+            pub recipient_verkey: String
         }
 
         #[test]
@@ -651,6 +654,7 @@ mod high_cases {
             let res_serialized : UnpackMessage = serde_json::from_slice(res.as_slice()).unwrap();
 
             assert_eq!(res_serialized.message, AGENT_MESSAGE.to_string());
+            assert_eq!(res_serialized.recipient_verkey, receiver_verkey);
 
             utils::tear_down_with_wallet(wallet_handle_sender);
             utils::tear_down_with_wallet(wallet_handle_receiver);

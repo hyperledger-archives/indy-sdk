@@ -542,8 +542,8 @@ impl CryptoCommandExecutor {
         //get cek and sender data
         let (sender_verkey_option, cek) =
             match is_auth_recipient {
-                true => self._unpack_cek_authcrypt(recipient, wallet_handle),
-                false => self._unpack_cek_anoncrypt(recipient, wallet_handle),
+                true => self._unpack_cek_authcrypt(recipient.clone(), wallet_handle),
+                false => self._unpack_cek_anoncrypt(recipient.clone(), wallet_handle),
             }?; //close cek and sender_data match statement
 
         //decrypt message
@@ -559,6 +559,7 @@ impl CryptoCommandExecutor {
         let res = UnpackMessage {
             message,
             sender_verkey: sender_verkey_option,
+            recipient_verkey: recipient.header.kid
         };
 
         return serde_json::to_vec(&res).map_err(|err| {
