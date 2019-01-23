@@ -636,7 +636,7 @@ pub extern fn indy_pack_message(
     message_len: u32,
     receiver_keys: *const c_char,
     sender: *const c_char,
-    cb: Option<extern "C" fn(xcommand_handle: i32, err: ErrorCode, jwe_data: *const u8, jwe_len: u32)>,
+    cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, jwe_data: *const u8, jwe_len: u32)>,
 ) -> ErrorCode {
     trace!("indy_pack_message: >>> wallet_handle: {:?}, message: {:?}, message_len {:?},\
             receiver_keys: {:?}, sender: {:?}", wallet_handle, message, message_len, receiver_keys, sender);
@@ -706,7 +706,7 @@ pub extern fn indy_unpack_message(
     jwe_data: *const u8,
     jwe_len: u32,
     cb: Option<
-        extern "C" fn(
+        extern fn(
             xcommand_handle: i32,
             err: ErrorCode,
             res_json_data : *const u8,
