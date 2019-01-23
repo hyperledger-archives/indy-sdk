@@ -404,7 +404,7 @@ async def pack_message(wallet_handle: int,
     command_handle: command handle to map callback to user context.
     message: the message being sent as a string. If it's JSON formatted it should be in string format, not a JSON object
     receivers: a list of recipient verkey's as strings
-    sender: the sender's verkey as a string When "" is passed in this parameter, anoncrypt is used
+    sender: the sender's verkey as a string When None is passed in this parameter, anoncrypt is used
     """
 
     logger = logging.getLogger(__name__)
@@ -424,8 +424,8 @@ async def pack_message(wallet_handle: int,
     c_wallet_handle = c_int32(wallet_handle)
     msg_bytes = message.encode("utf-8")
     c_msg_len = c_uint32(len(msg_bytes))
-    c_receiver_verkeys = c_char_p(json.dumps(receiver_keys).encode('utf-8'))
-    c_sender_vk = c_char_p(sender_vk.encode('utf-8'))
+    c_receiver_verkeys = c_char_p(json.dumps(receiver_verkeys).encode('utf-8'))
+    c_sender_vk = c_char_p(sender_verkey.encode('utf-8')) if sender_verkey is not None else None
     pack_message_bytes = await do_call('indy_pack_message',
                                       c_wallet_handle,
                                       msg_bytes,
@@ -433,10 +433,53 @@ async def pack_message(wallet_handle: int,
                                       c_receiver_verkeys,
                                       c_sender_vk,
                                       pack_message.cb)
-    
-    #catch decoding error
-    pack_message = pack_message_bytes.decode('utf-8')
 
-    logger.debug("pack_message: <<< res: %r", pack_message)
-    return pack_message
+    #TODO catch decoding error
+
+    logger.debug("pack_message: <<< res: %r", pack_message_bytes)
+    return pack_message_bytes
+
+async def unpack_message(wallet_handle: int,
+                        jwe: str) -> str:
+
+    """
+    Packs a message by encrypting the message and serializes it in a JWE-like format (Experimental)
+
+    Note to use DID keys with this function you can call indy_key_for_did to get key id (verkey)
+    for specific DID.
+
+    #Params
+    command_handle: command handle to map callback to user context.
+    message: the message being sent as a string. If it's JSON formatted it should be in string format, not a JSON object
+    receivers: a list of recipient verkey's as strings
+    sender: the sender's verkey as a string When None is passed in this parameter, anoncrypt is used
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("unpack_message: >>> wallet_handle: %r, jwe: %r",
+                 wallet_handle,
+                 jwe)
+
+    def transform_cb(arr_ptr: POINTER(c_uint8), arr_len: c_uint32):
+        return bytes(arr_ptr[:arr_len])
+
+    if not hasattr(pack_message, "cb"):
+        logger.debug("pack_message: Creating callback")
+        unpack_message.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, POINTER(c_uint8), c_uint32), transform_cb)
+
+    c_wallet_handle = c_int32(wallet_handle)
+    jwe_bytes = message.encode("utf-8")
+    c_jwe_len = c_uint32(len(jwe_bytes))
+    unpack_message_bytes = await do_call('indy_unpack_message',
+                                         c_wallet_handle,
+                                         jwe_bytes,
+                                         c_jwe_len,
+                                         unpack_message.cb)
+
+    #Todo add try catch block to prevent errors
+    unpack_message_str = unpack_message_bytes.decode('utf-8')
+    logger.debug("unpack_message: <<< res: %r", unpack_message_str)
+    return unpack_message_str
+
+
 
