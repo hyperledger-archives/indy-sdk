@@ -459,10 +459,7 @@ impl CryptoCommandExecutor {
     }
 
     fn _base64_encode_protected(&self, encrypted_recipients_struct: Vec<Recipient>, alg_is_authcrypt: bool) -> Result<String> {
-        let alg_val= match alg_is_authcrypt {
-            true => String::from("Authcrypt"),
-            false => String::from("Anoncrypt")
-        };
+        let alg_val = if alg_is_authcrypt { String::from("Authcrypt") } else { String::from("Anoncrypt") };
 
         //structure protected and base64URL encode it
         let protected_struct = Protected {
@@ -533,11 +530,11 @@ impl CryptoCommandExecutor {
         let (recipient, is_auth_recipient) = self._find_correct_recipient(protected_struct, wallet_handle)?;
 
         //get cek and sender data
-        let (sender_verkey_option, cek) =
-            match is_auth_recipient {
-                true => self._unpack_cek_authcrypt(recipient.clone(), wallet_handle),
-                false => self._unpack_cek_anoncrypt(recipient.clone(), wallet_handle),
-            }?; //close cek and sender_data match statement
+        let (sender_verkey_option, cek) = if is_auth_recipient {
+            self._unpack_cek_authcrypt(recipient.clone(), wallet_handle)
+        } else {
+            self._unpack_cek_anoncrypt(recipient.clone(), wallet_handle)
+        }?; //close cek and sender_data match statement
 
         //decrypt message
         let message = self.crypto_service.decrypt_ciphertext(
