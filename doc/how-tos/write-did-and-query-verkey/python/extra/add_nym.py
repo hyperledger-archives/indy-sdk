@@ -4,7 +4,7 @@ Created on January 30, 2018
 
 For updating role of an user in the ledger, a person or an organization in that
 ledger must have one of these roles: Trustee, Steward or Trust Anchor.
-(https://docs.google.com/spreadsheets/d/1TWXF7NtBjSOaUIBeIH77SyZnawfo91cJ_ns4TR-wsq4/edit#gid=0)
+(https://github.com/hyperledger/indy-node/blob/master/docs/auth_rules.md)
 
 This script will setup an environment with a pool (from genesis_txn file),
 a wallet inside that pool and get the default Steward DID

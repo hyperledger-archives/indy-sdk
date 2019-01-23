@@ -1,8 +1,7 @@
 extern crate libc;
 
 use api::{ErrorCode, IndyHandle};
-use errors::common::CommonError;
-use errors::ToErrorCode;
+use errors::prelude::*;
 use commands::{Command, CommandExecutor};
 use commands::ledger::LedgerCommand;
 use domain::anoncreds::credential_definition::CredentialDefinition;
@@ -63,14 +62,14 @@ pub extern fn indy_sign_and_submit_request(command_handle: IndyHandle,
             submitter_did,
             request_json,
             Box::new(move |result| {
-                let (err, request_result_json) = result_to_err_code_1!(result, String::new());
+                let (err, request_result_json) = prepare_result_1!(result, String::new());
                 trace!("indy_sign_and_submit_request: request_result_json: {:?}", request_result_json);
                 let request_result_json = ctypes::string_to_cstring(request_result_json);
                 cb(command_handle, err, request_result_json.as_ptr())
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_sign_and_submit_request: <<< res: {:?}", res);
 
@@ -112,14 +111,14 @@ pub extern fn indy_submit_request(command_handle: IndyHandle,
             pool_handle,
             request_json,
             Box::new(move |result| {
-                let (err, request_result_json) = result_to_err_code_1!(result, String::new());
+                let (err, request_result_json) = prepare_result_1!(result, String::new());
                 trace!("indy_submit_request: request_result_json: {:?}", request_result_json);
                 let request_result_json = ctypes::string_to_cstring(request_result_json);
                 cb(command_handle, err, request_result_json.as_ptr())
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_submit_request: <<< res: {:?}", res);
 
@@ -177,14 +176,14 @@ pub extern fn indy_submit_action(command_handle: IndyHandle,
                 nodes,
                 timeout,
                 Box::new(move |result| {
-                    let (err, request_result_json) = result_to_err_code_1!(result, String::new());
+                    let (err, request_result_json) = prepare_result_1!(result, String::new());
                     trace!("indy_submit_action: request_result_json: {:?}", request_result_json);
                     let request_result_json = ctypes::string_to_cstring(request_result_json);
                     cb(command_handle, err, request_result_json.as_ptr())
                 })
             )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_submit_action: <<< res: {:?}", res);
 
@@ -233,14 +232,14 @@ pub extern fn indy_sign_request(command_handle: IndyHandle,
             submitter_did,
             request_json,
             Box::new(move |result| {
-                let (err, signed_request_json) = result_to_err_code_1!(result, String::new());
+                let (err, signed_request_json) = prepare_result_1!(result, String::new());
                 trace!("indy_sign_request: signed_request_json: {:?}", signed_request_json);
                 let signed_request_json = ctypes::string_to_cstring(signed_request_json);
                 cb(command_handle, err, signed_request_json.as_ptr())
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_sign_request: <<< res: {:?}", res);
 
@@ -288,14 +287,14 @@ pub extern fn indy_multi_sign_request(command_handle: IndyHandle,
             submitter_did,
             request_json,
             Box::new(move |result| {
-                let (err, signed_request_json) = result_to_err_code_1!(result, String::new());
+                let (err, signed_request_json) = prepare_result_1!(result, String::new());
                 trace!("indy_multi_sign_request: signed_request_json: {:?}", signed_request_json);
                 let signed_request_json = ctypes::string_to_cstring(signed_request_json);
                 cb(command_handle, err, signed_request_json.as_ptr())
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_multi_sign_request: <<< res: {:?}", res);
 
@@ -336,14 +335,14 @@ pub extern fn indy_build_get_ddo_request(command_handle: IndyHandle,
             submitter_did,
             target_did,
             Box::new(move |result| {
-                let (err, request_json) = result_to_err_code_1!(result, String::new());
+                let (err, request_json) = prepare_result_1!(result, String::new());
                 trace!("indy_build_get_ddo_request: request_json: {:?}", request_json);
                 let request_json = ctypes::string_to_cstring(request_json);
                 cb(command_handle, err, request_json.as_ptr())
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_build_get_ddo_request: <<< res: {:?}", res);
 
@@ -364,6 +363,7 @@ pub extern fn indy_build_get_ddo_request(command_handle: IndyHandle,
 ///                             TRUSTEE
 ///                             STEWARD
 ///                             TRUST_ANCHOR
+///                             NETWORK_MONITOR
 ///                             empty string to reset role
 /// cb: Callback that takes command result as parameter.
 ///
@@ -403,14 +403,14 @@ pub extern fn indy_build_nym_request(command_handle: IndyHandle,
             alias,
             role,
             Box::new(move |result| {
-                let (err, request_json) = result_to_err_code_1!(result, String::new());
+                let (err, request_json) = prepare_result_1!(result, String::new());
                 trace!("indy_build_nym_request: request_json: {:?}", request_json);
                 let request_json = ctypes::string_to_cstring(request_json);
                 cb(command_handle, err, request_json.as_ptr())
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_build_nym_request: <<< res: {:?}", res);
 
@@ -450,14 +450,14 @@ pub extern fn indy_build_get_nym_request(command_handle: IndyHandle,
             submitter_did,
             target_did,
             Box::new(move |result| {
-                let (err, request_json) = result_to_err_code_1!(result, String::new());
+                let (err, request_json) = prepare_result_1!(result, String::new());
                 trace!("indy_build_get_nym_request: >>> request_json: {:?}", request_json);
                 let request_json = ctypes::string_to_cstring(request_json);
                 cb(command_handle, err, request_json.as_ptr())
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_build_get_nym_request: <<< res: {:?}", res);
 
@@ -511,14 +511,14 @@ pub extern fn indy_build_attrib_request(command_handle: IndyHandle,
             raw,
             enc,
             Box::new(move |result| {
-                let (err, request_json) = result_to_err_code_1!(result, String::new());
+                let (err, request_json) = prepare_result_1!(result, String::new());
                 trace!("indy_build_attrib_request: >>> request_json: {:?}", request_json);
                 let request_json = ctypes::string_to_cstring(request_json);
                 cb(command_handle, err, request_json.as_ptr())
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_build_attrib_request: <<< res: {:?}", res);
 
@@ -572,14 +572,14 @@ pub extern fn indy_build_get_attrib_request(command_handle: IndyHandle,
             hash,
             enc,
             Box::new(move |result| {
-                let (err, request_json) = result_to_err_code_1!(result, String::new());
+                let (err, request_json) = prepare_result_1!(result, String::new());
                 trace!("indy_build_get_attrib_request: request_json: {:?}", request_json);
                 let request_json = ctypes::string_to_cstring(request_json);
                 cb(command_handle, err, request_json.as_ptr())
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_build_get_attrib_request: <<< res: {:?}", res);
 
@@ -626,14 +626,14 @@ pub extern fn indy_build_schema_request(command_handle: IndyHandle,
             submitter_did,
             data,
             Box::new(move |result| {
-                let (err, request_json) = result_to_err_code_1!(result, String::new());
+                let (err, request_json) = prepare_result_1!(result, String::new());
                 trace!("indy_build_schema_request: request_json: {:?}", request_json);
                 let request_json = ctypes::string_to_cstring(request_json);
                 cb(command_handle, err, request_json.as_ptr())
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_build_schema_request: <<< res: {:?}", res);
 
@@ -673,14 +673,14 @@ pub extern fn indy_build_get_schema_request(command_handle: IndyHandle,
             submitter_did,
             id,
             Box::new(move |result| {
-                let (err, request_json) = result_to_err_code_1!(result, String::new());
+                let (err, request_json) = prepare_result_1!(result, String::new());
                 trace!("indy_build_get_schema_request: request_json: {:?}", request_json);
                 let request_json = ctypes::string_to_cstring(request_json);
                 cb(command_handle, err, request_json.as_ptr())
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_build_get_schema_request: <<< res: {:?}", res);
 
@@ -724,7 +724,7 @@ pub extern fn indy_parse_get_schema_response(command_handle: IndyHandle,
         .send(Command::Ledger(LedgerCommand::ParseGetSchemaResponse(
             get_schema_response,
             Box::new(move |result| {
-                let (err, schema_id, schema_json) = result_to_err_code_2!(result, String::new(), String::new());
+                let (err, schema_id, schema_json) = prepare_result_2!(result, String::new(), String::new());
                 trace!("indy_parse_get_schema_response: schema_id: {:?}, schema_json: {:?}", schema_id, schema_json);
                 let schema_id = ctypes::string_to_cstring(schema_id);
                 let schema_json = ctypes::string_to_cstring(schema_json);
@@ -732,7 +732,7 @@ pub extern fn indy_parse_get_schema_response(command_handle: IndyHandle,
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_parse_get_schema_response: <<< res: {:?}", res);
 
@@ -784,14 +784,14 @@ pub extern fn indy_build_cred_def_request(command_handle: IndyHandle,
             submitter_did,
             data,
             Box::new(move |result| {
-                let (err, request_json) = result_to_err_code_1!(result, String::new());
+                let (err, request_json) = prepare_result_1!(result, String::new());
                 trace!("indy_build_cred_def_request: request_json: {:?}", request_json);
                 let request_json = ctypes::string_to_cstring(request_json);
                 cb(command_handle, err, request_json.as_ptr())
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_build_cred_def_request: <<< res: {:?}", res);
 
@@ -832,14 +832,14 @@ pub extern fn indy_build_get_cred_def_request(command_handle: IndyHandle,
             submitter_did,
             id,
             Box::new(move |result| {
-                let (err, request_json) = result_to_err_code_1!(result, String::new());
+                let (err, request_json) = prepare_result_1!(result, String::new());
                 trace!("indy_build_get_cred_def_request: request_json: {:?}", request_json);
                 let request_json = ctypes::string_to_cstring(request_json);
                 cb(command_handle, err, request_json.as_ptr())
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_build_get_cred_def_request: <<< res: {:?}", res);
 
@@ -887,7 +887,7 @@ pub extern fn indy_parse_get_cred_def_response(command_handle: IndyHandle,
         .send(Command::Ledger(LedgerCommand::ParseGetCredDefResponse(
             get_cred_def_response,
             Box::new(move |result| {
-                let (err, cred_def_id, cred_def_json) = result_to_err_code_2!(result, String::new(), String::new());
+                let (err, cred_def_id, cred_def_json) = prepare_result_2!(result, String::new(), String::new());
                 trace!("indy_parse_get_cred_def_response: cred_def_id: {:?}, cred_def_json: {:?}", cred_def_id, cred_def_json);
                 let cred_def_id = ctypes::string_to_cstring(cred_def_id);
                 let cred_def_json = ctypes::string_to_cstring(cred_def_json);
@@ -895,7 +895,7 @@ pub extern fn indy_parse_get_cred_def_response(command_handle: IndyHandle,
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_parse_get_cred_def_response: <<< res: {:?}", res);
 
@@ -948,14 +948,14 @@ pub extern fn indy_build_node_request(command_handle: IndyHandle,
             target_did,
             data,
             Box::new(move |result| {
-                let (err, request_json) = result_to_err_code_1!(result, String::new());
+                let (err, request_json) = prepare_result_1!(result, String::new());
                 trace!("indy_build_node_request: request_json: {:?}", request_json);
                 let request_json = ctypes::string_to_cstring(request_json);
                 cb(command_handle, err, request_json.as_ptr())
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_build_node_request: <<< res: {:?}", res);
 
@@ -986,13 +986,13 @@ pub extern fn indy_build_get_validator_info_request(command_handle: IndyHandle,
         .send(Command::Ledger(LedgerCommand::BuildGetValidatorInfoRequest(
             submitter_did,
             Box::new(move |result| {
-                let (err, request_json) = result_to_err_code_1!(result, String::new());
+                let (err, request_json) = prepare_result_1!(result, String::new());
                 let request_json = ctypes::string_to_cstring(request_json);
                 cb(command_handle, err, request_json.as_ptr())
             })
         )));
 
-    result_to_err_code!(result)
+    prepare_result!(result)
 }
 
 /// Builds a GET_TXN request. Request to get any transaction by its seq_no.
@@ -1035,14 +1035,14 @@ pub extern fn indy_build_get_txn_request(command_handle: IndyHandle,
             ledger_type,
             seq_no,
             Box::new(move |result| {
-                let (err, request_json) = result_to_err_code_1!(result, String::new());
+                let (err, request_json) = prepare_result_1!(result, String::new());
                 trace!("indy_build_get_txn_request: request_json: {:?}, cmd_handle: {}", request_json, command_handle);
                 let request_json = ctypes::string_to_cstring(request_json);
                 cb(command_handle, err, request_json.as_ptr())
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_build_get_txn_request: <<< res: {:?}", res);
 
@@ -1086,14 +1086,14 @@ pub extern fn indy_build_pool_config_request(command_handle: IndyHandle,
             writes,
             force,
             Box::new(move |result| {
-                let (err, request_json) = result_to_err_code_1!(result, String::new());
+                let (err, request_json) = prepare_result_1!(result, String::new());
                 trace!("indy_build_pool_config_request: request_json: {:?}", request_json);
                 let request_json = ctypes::string_to_cstring(request_json);
                 cb(command_handle, err, request_json.as_ptr())
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_build_pool_config_request: <<< res: {:?}", res);
 
@@ -1138,13 +1138,13 @@ pub extern fn indy_build_pool_restart_request(command_handle: IndyHandle,
                 action,
                 datetime,
                 Box::new(move |result| {
-                    let (err, request_json) = result_to_err_code_1!(result, String::new());
+                    let (err, request_json) = prepare_result_1!(result, String::new());
                     trace!("indy_build_pool_restart_request: request_json: {:?}", request_json);
                     let request_json = ctypes::string_to_cstring(request_json);
                     cb(command_handle, err, request_json.as_ptr())
                 }))));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_build_pool_restart_request: <<< res: {:?}", res);
 
@@ -1228,14 +1228,14 @@ pub extern fn indy_build_pool_upgrade_request(command_handle: IndyHandle,
                 force,
                 package,
                 Box::new(move |result| {
-                    let (err, request_json) = result_to_err_code_1!(result, String::new());
+                    let (err, request_json) = prepare_result_1!(result, String::new());
                     trace!("indy_build_pool_upgrade_request: request_json: {:?}", request_json);
                     let request_json = ctypes::string_to_cstring(request_json);
                     cb(command_handle, err, request_json.as_ptr())
                 })
             )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_build_pool_upgrade_request: <<< res: {:?}", res);
 
@@ -1290,14 +1290,14 @@ pub extern fn indy_build_revoc_reg_def_request(command_handle: IndyHandle,
             submitter_did,
             data,
             Box::new(move |result| {
-                let (err, rev_reg_def_req) = result_to_err_code_1!(result, String::new());
+                let (err, rev_reg_def_req) = prepare_result_1!(result, String::new());
                 trace!("indy_build_revoc_reg_def_request: rev_reg_def_req: {:?}", rev_reg_def_req);
                 let rev_reg_def_req = ctypes::string_to_cstring(rev_reg_def_req);
                 cb(command_handle, err, rev_reg_def_req.as_ptr())
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_build_revoc_reg_def_request: <<< res: {:?}", res);
 
@@ -1338,14 +1338,14 @@ pub extern fn indy_build_get_revoc_reg_def_request(command_handle: IndyHandle,
             submitter_did,
             id,
             Box::new(move |result| {
-                let (err, request_json) = result_to_err_code_1!(result, String::new());
+                let (err, request_json) = prepare_result_1!(result, String::new());
                 trace!("indy_build_get_revoc_reg_def_request: request_json: {:?}", request_json);
                 let request_json = ctypes::string_to_cstring(request_json);
                 cb(command_handle, err, request_json.as_ptr())
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_build_get_revoc_reg_def_request: <<< res: {:?}", res);
 
@@ -1397,7 +1397,7 @@ pub extern fn indy_parse_get_revoc_reg_def_response(command_handle: IndyHandle,
         .send(Command::Ledger(LedgerCommand::ParseGetRevocRegDefResponse(
             get_revoc_reg_def_response,
             Box::new(move |result| {
-                let (err, revoc_reg_def_id, revoc_reg_def_json) = result_to_err_code_2!(result, String::new(), String::new());
+                let (err, revoc_reg_def_id, revoc_reg_def_json) = prepare_result_2!(result, String::new(), String::new());
                 trace!("indy_parse_get_revoc_reg_def_response: revoc_reg_def_id: {:?}, revoc_reg_def_json: {:?}", revoc_reg_def_id, revoc_reg_def_json);
 
                 let revoc_reg_def_id = ctypes::string_to_cstring(revoc_reg_def_id);
@@ -1406,7 +1406,7 @@ pub extern fn indy_parse_get_revoc_reg_def_response(command_handle: IndyHandle,
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_parse_get_revoc_reg_def_response: <<< res: {:?}", res);
 
@@ -1468,14 +1468,14 @@ pub extern fn indy_build_revoc_reg_entry_request(command_handle: IndyHandle,
             rev_def_type,
             value,
             Box::new(move |result| {
-                let (err, request_json) = result_to_err_code_1!(result, String::new());
+                let (err, request_json) = prepare_result_1!(result, String::new());
                 trace!("indy_build_revoc_reg_entry_request: request_json: {:?}", request_json);
                 let request_json = ctypes::string_to_cstring(request_json);
                 cb(command_handle, err, request_json.as_ptr())
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_build_revoc_reg_entry_request: <<< res: {:?}", res);
 
@@ -1519,14 +1519,14 @@ pub extern fn indy_build_get_revoc_reg_request(command_handle: IndyHandle,
             revoc_reg_def_id,
             timestamp,
             Box::new(move |result| {
-                let (err, request_json) = result_to_err_code_1!(result, String::new());
+                let (err, request_json) = prepare_result_1!(result, String::new());
                 trace!("indy_build_get_revoc_reg_request: request_json: {:?}", request_json);
                 let request_json = ctypes::string_to_cstring(request_json);
                 cb(command_handle, err, request_json.as_ptr())
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_build_get_revoc_reg_request: <<< res: {:?}", res);
 
@@ -1570,7 +1570,7 @@ pub extern fn indy_parse_get_revoc_reg_response(command_handle: IndyHandle,
         .send(Command::Ledger(LedgerCommand::ParseGetRevocRegResponse(
             get_revoc_reg_response,
             Box::new(move |result| {
-                let (err, revoc_reg_def_id, revoc_reg_json, timestamp) = result_to_err_code_3!(result, String::new(), String::new(), 0);
+                let (err, revoc_reg_def_id, revoc_reg_json, timestamp) = prepare_result_3!(result, String::new(), String::new(), 0);
                 trace!("indy_parse_get_revoc_reg_response: revoc_reg_def_id: {:?}, revoc_reg_json: {:?}, timestamp: {:?}",
                        revoc_reg_def_id, revoc_reg_json, timestamp);
 
@@ -1580,7 +1580,7 @@ pub extern fn indy_parse_get_revoc_reg_response(command_handle: IndyHandle,
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_parse_get_revoc_reg_response: <<< res: {:?}", res);
 
@@ -1632,14 +1632,14 @@ pub extern fn indy_build_get_revoc_reg_delta_request(command_handle: IndyHandle,
             from,
             to,
             Box::new(move |result| {
-                let (err, request_json) = result_to_err_code_1!(result, String::new());
+                let (err, request_json) = prepare_result_1!(result, String::new());
                 trace!("indy_build_get_revoc_reg_request: request_json: {:?}", request_json);
                 let request_json = ctypes::string_to_cstring(request_json);
                 cb(command_handle, err, request_json.as_ptr())
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_build_get_revoc_reg_request: <<< res: {:?}", res);
 
@@ -1686,7 +1686,7 @@ pub extern fn indy_parse_get_revoc_reg_delta_response(command_handle: IndyHandle
         .send(Command::Ledger(LedgerCommand::ParseGetRevocRegDeltaResponse(
             get_revoc_reg_delta_response,
             Box::new(move |result| {
-                let (err, revoc_reg_def_id, revoc_reg_delta_json, timestamp) = result_to_err_code_3!(result, String::new(), String::new(), 0);
+                let (err, revoc_reg_def_id, revoc_reg_delta_json, timestamp) = prepare_result_3!(result, String::new(), String::new(), 0);
                 trace!("indy_parse_get_revoc_reg_delta_response: revoc_reg_def_id: {:?}, revoc_reg_delta_json: {:?}, timestamp: {:?}",
                        revoc_reg_def_id, revoc_reg_delta_json, timestamp);
 
@@ -1696,7 +1696,7 @@ pub extern fn indy_parse_get_revoc_reg_delta_response(command_handle: IndyHandle
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_parse_get_revoc_reg_delta_response: <<< res: {:?}", res);
 
@@ -1756,13 +1756,13 @@ pub extern fn indy_register_transaction_parser_for_sp(command_handle: IndyHandle
             parser,
             free,
             Box::new(move |res| {
-                let res = result_to_err_code!(res);
+                let res = prepare_result!(res);
                 trace!("indy_register_transaction_parser_for_sp: res: {:?}", res);
                 cb(command_handle, res)
             }),
         )));
 
-    let res = result_to_err_code!(res);
+    let res = prepare_result!(res);
 
     trace!("indy_register_transaction_parser_for_sp: <<< res: {:?}", res);
 
@@ -1820,7 +1820,7 @@ pub extern fn indy_get_response_metadata(command_handle: IndyHandle,
         .send(Command::Ledger(LedgerCommand::GetResponseMetadata(
             response,
             Box::new(move |result| {
-                let (err, response_metadata) = result_to_err_code_1!(result, String::new());
+                let (err, response_metadata) = prepare_result_1!(result, String::new());
                 trace!("indy_get_response_metadata: response_metadata: {:?}", response_metadata);
 
                 let response_metadata = ctypes::string_to_cstring(response_metadata);
@@ -1828,7 +1828,7 @@ pub extern fn indy_get_response_metadata(command_handle: IndyHandle,
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_get_response_metadata: <<< res: {:?}", res);
 

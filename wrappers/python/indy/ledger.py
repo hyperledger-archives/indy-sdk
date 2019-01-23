@@ -263,6 +263,7 @@ async def build_nym_request(submitter_did: str,
                              TRUSTEE
                              STEWARD
                              TRUST_ANCHOR
+                             NETWORK_MONITOR
                              empty string to reset role
     :return: Request result as json.
     """

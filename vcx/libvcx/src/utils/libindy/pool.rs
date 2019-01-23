@@ -7,7 +7,7 @@ use std::sync::RwLock;
 use settings;
 use indy::pool;
 use indy::ErrorCode;
-use utils::libindy::error_codes::map_rust_indy_sdk_error_code;
+use utils::libindy::error_codes::map_rust_indy_sdk_error;
 
 lazy_static! {
     static ref POOL_HANDLE: RwLock<Option<i32>> = RwLock::new(None);
@@ -30,7 +30,7 @@ pub fn create_pool_ledger_config(pool_name: &str, path: &str) -> Result<(), u32>
 
     match pool::create_pool_ledger_config(pool_name, Some(&pool_config)).wait() {
         Ok(_) => Ok(()),
-        Err(x) => if x != ErrorCode::PoolLedgerConfigAlreadyExistsError {
+        Err(x) => if x.error_code != ErrorCode::PoolLedgerConfigAlreadyExistsError {
             Err(error::UNKNOWN_LIBINDY_ERROR.code_num)
         } else {
             Ok(())
@@ -43,7 +43,7 @@ pub fn open_pool_ledger(pool_name: &str, config: Option<&str>) -> Result<u32, u3
     set_protocol_version();
 
     //TODO there was timeout here (before future-based Rust wrapper)
-    match pool::open_pool_ledger(pool_name, config).wait().map_err(map_rust_indy_sdk_error_code) {
+    match pool::open_pool_ledger(pool_name, config).wait().map_err(map_rust_indy_sdk_error) {
         Ok(x) => {
             change_pool_handle(Some(x));
             Ok(x as u32)
@@ -56,7 +56,7 @@ pub fn close() -> Result<(), u32> {
     let handle = get_pool_handle()?;
     change_pool_handle(None);
     //TODO there was timeout here (before future-based Rust wrapper)
-    pool::close_pool_ledger(handle).wait().map_err(map_rust_indy_sdk_error_code)
+    pool::close_pool_ledger(handle).wait().map_err(map_rust_indy_sdk_error)
 }
 
 pub fn delete(pool_name: &str) -> Result<(), u32> {
@@ -67,7 +67,7 @@ pub fn delete(pool_name: &str) -> Result<(), u32> {
         return Ok(())
     }
 
-    pool::delete_pool_ledger(pool_name).wait().map_err(map_rust_indy_sdk_error_code)
+    pool::delete_pool_ledger(pool_name).wait().map_err(map_rust_indy_sdk_error)
 }
 
 pub fn get_pool_handle() -> Result<i32, u32> {
@@ -79,7 +79,10 @@ pub mod tests {
     use super::*;
     use std::fs;
     use std::io::Write;
-    use utils::constants::{POOL, GENESIS_PATH};
+    use utils::{
+        constants::{POOL, GENESIS_PATH},
+        get_temp_dir_path
+    };
 
     pub fn delete_test_pool() {
         match delete(POOL) {
@@ -90,7 +93,7 @@ pub mod tests {
 
     pub fn open_sandbox_pool() -> u32 {
         create_genesis_txn_file();
-        create_pool_ledger_config(POOL, GENESIS_PATH).unwrap();
+        create_pool_ledger_config(POOL, get_temp_dir_path(Some(GENESIS_PATH)).to_str().unwrap()).unwrap();
         open_pool_ledger(POOL, None).unwrap()
     }
 
@@ -107,7 +110,7 @@ pub mod tests {
         let node_txns = get_txns(&test_pool_ip);
         let txn_file_data = node_txns[0..4].join("\n");
 
-        let mut f = fs::File::create(GENESIS_PATH).unwrap();
+        let mut f = fs::File::create(get_temp_dir_path(Some(GENESIS_PATH)).to_str().unwrap()).unwrap();
         f.write_all(txn_file_data.as_bytes()).unwrap();
         f.flush().unwrap();
         f.sync_all().unwrap();

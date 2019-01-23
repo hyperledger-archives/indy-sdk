@@ -3,11 +3,14 @@ extern crate futures;
 extern crate lazy_static;
 extern crate log;
 extern crate libc;
-#[macro_use]
 extern crate failure;
 extern crate num_traits;
 #[macro_use]
 extern crate num_derive;
+extern crate serde;
+#[macro_use]
+extern crate serde_derive;
+extern crate serde_json;
 
 extern crate indy_sys as ffi;
 
@@ -15,6 +18,7 @@ extern crate indy_sys as ffi;
 mod macros;
 
 pub use futures::future;
+use libc::c_char;
 
 pub mod anoncreds;
 pub mod blob_storage;
@@ -29,8 +33,14 @@ pub mod wallet;
 mod utils;
 
 use std::ffi::CString;
+use std::fmt;
+use std::ptr;
+use std::ffi::CStr;
 
 pub type IndyHandle = i32;
+
+use failure::{Backtrace, Fail};
+
 
 /// Set libindy runtime configuration. Can be optionally called to change current params.
 ///
@@ -298,4 +308,54 @@ impl Into<i32> for ErrorCode {
     fn into(self) -> i32 {
         num_traits::ToPrimitive::to_i32(&self).unwrap()
     }
+}
+
+#[derive(Debug)]
+pub struct IndyError {
+    pub error_code: ErrorCode,
+    pub message: String,
+    pub indy_backtrace: Option<String>
+}
+
+impl Fail for IndyError {
+    fn cause(&self) -> Option<&Fail> {
+        self.error_code.cause()
+    }
+
+    fn backtrace(&self) -> Option<&Backtrace> { self.error_code.backtrace() }
+}
+
+impl fmt::Display for IndyError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        writeln!(f, "{}", self.message)?;
+        Ok(())
+    }
+}
+
+impl IndyError {
+    pub(crate) fn new(error_code: ErrorCode) -> Self {
+        let mut error_json_p: *const c_char = ptr::null();
+
+        unsafe { ffi::indy_get_current_error(&mut error_json_p); }
+        let error_json = rust_str!(error_json_p);
+
+        match ::serde_json::from_str::<ErrorDetails>(&error_json) {
+            Ok(error) => IndyError {
+                error_code,
+                message: error.message,
+                indy_backtrace: error.backtrace,
+            },
+            Err(err) => IndyError {
+                error_code: ErrorCode::CommonInvalidState,
+                message: err.to_string(),
+                indy_backtrace: None,
+            }
+        }
+    }
+}
+
+#[derive(Deserialize)]
+struct ErrorDetails {
+    message: String,
+    backtrace: Option<String>
 }

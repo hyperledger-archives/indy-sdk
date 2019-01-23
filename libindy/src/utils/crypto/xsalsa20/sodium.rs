@@ -1,7 +1,7 @@
 extern crate sodiumoxide;
 
-use errors::common::CommonError;
-
+use errors::prelude::*;
+use failure::{err_msg, ResultExt};
 use self::sodiumoxide::crypto::secretbox;
 use self::sodiumoxide::crypto::secretbox::xsalsa20poly1305;
 
@@ -25,17 +25,19 @@ pub fn encrypt(key: &Key, nonce: &Nonce, doc: &[u8]) -> Vec<u8> {
     secretbox::seal(
         doc,
         &nonce.0,
-        &key.0
+        &key.0,
     )
 }
 
-pub fn decrypt(key: &Key, nonce: &Nonce, doc: &[u8]) -> Result<Vec<u8>, CommonError> {
+pub fn decrypt(key: &Key, nonce: &Nonce, doc: &[u8]) -> Result<Vec<u8>, IndyError> {
     secretbox::open(
         doc,
         &nonce.0,
-        &key.0
+        &key.0,
     )
-        .map_err(|err| CommonError::InvalidStructure(format!("Unable to decrypt data: {:?}", err)))
+        .map_err(|_| err_msg("Unable to open sodium secretbox"))
+        .context(IndyErrorKind::InvalidStructure)
+        .map_err(|err| err.into())
 }
 
 pub fn encrypt_detached(key: &Key, nonce: &Nonce, doc: &[u8]) -> (Vec<u8>, Tag) {
@@ -60,9 +62,8 @@ pub fn decrypt_detached(key: &Key, nonce: &Nonce, tag: &Tag, doc: &[u8]) -> Resu
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     use self::sodiumoxide::randombytes;
+    use super::*;
 
     #[test]
     fn encrypt_decrypt_works() {

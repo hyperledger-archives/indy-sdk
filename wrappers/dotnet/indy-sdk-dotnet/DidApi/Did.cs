@@ -234,8 +234,10 @@ namespace Hyperledger.Indy.DidApi
         /// with the following optional members:
         /// <code>
         /// {
-        ///     "seed": string, 
-        ///     "crypto_type": string
+        ///     "seed": string, (optional) Seed that allows deterministic key creation (if not set random one will be created).
+        ///                                Can be UTF-8, base64 or hex string.
+        ///     "crypto_type": string, (optional) if not set then ed25519 curve is used;
+        ///               currently only 'ed25519' value is supported for this field)
         /// }
         /// </code>
         /// <para>The <c>seed</c> member controls the seed that will be used to generate they keys.
@@ -305,9 +307,8 @@ namespace Hyperledger.Indy.DidApi
         /// </para>
         /// <code>
         /// {
-        ///        "did": string, 
-        ///        "verkey": string,
-        ///        "crypto_type": string
+        ///        "did": string, (required)
+        ///        "verkey": string (optional, can be avoided if did is cryptonym: did == verkey),
         /// }
         /// </code>
         /// <para>The <c>did</c> member specifies the DID to store.  This value is required.</para>

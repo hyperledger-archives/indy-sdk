@@ -7,7 +7,7 @@ use self::sha2::Sha256;
 use self::rust_base58::ToBase58;
 
 use super::{ReadableBlob, Reader, ReaderType};
-use errors::common::CommonError;
+use errors::prelude::*;
 
 use serde_json;
 use std::fs::File;
@@ -25,17 +25,16 @@ struct DefaultReaderConfig {
 }
 
 impl ReaderType for DefaultReaderType {
-    fn open(&self, config: &str) -> Result<Box<Reader>, CommonError> {
+    fn open(&self, config: &str) -> IndyResult<Box<Reader>> {
         let config: DefaultReaderConfig = serde_json::from_str(config)
-            .map_err(map_err_trace!())
-            .map_err(|err| CommonError::InvalidStructure(format!("Can't deserialize DefaultReaderConfig: {}", err)))?;
+            .to_indy(IndyErrorKind::InvalidStructure, "Can't deserialize DefaultReaderConfig")?;
 
         Ok(Box::new(config))
     }
 }
 
 impl Reader for DefaultReaderConfig {
-    fn open(&self, hash: &[u8], _location: &str) -> Result<Box<ReadableBlob>, CommonError> {
+    fn open(&self, hash: &[u8], _location: &str) -> IndyResult<Box<ReadableBlob>> {
         let mut path = PathBuf::from(&self.base_dir);
         path.push(hash.to_base58());
         let file = File::open(path)?;
@@ -47,7 +46,7 @@ impl Reader for DefaultReaderConfig {
 }
 
 impl ReadableBlob for DefaultReader {
-    fn verify(&mut self) -> Result<bool, CommonError> {
+    fn verify(&mut self) -> IndyResult<bool> {
         self.file.seek(SeekFrom::Start(0))?;
         let mut hasher = Sha256::default();
         let mut buf = [0u8; 1024];
@@ -63,12 +62,12 @@ impl ReadableBlob for DefaultReader {
         }
     }
 
-    fn close(&self) -> Result<(), CommonError> {
+    fn close(&self) -> IndyResult<()> {
         /* nothing to do */
         Ok(())
     }
 
-    fn read(&mut self, size: usize, offset: usize) -> Result<Vec<u8>, CommonError> {
+    fn read(&mut self, size: usize, offset: usize) -> IndyResult<Vec<u8>> {
         let mut buf = vec![0u8; size];
 
         self.file.seek(SeekFrom::Start(offset as u64))?;

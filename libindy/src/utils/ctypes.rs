@@ -31,10 +31,14 @@ macro_rules! check_useful_c_str {
     ($x:ident, $e:expr) => {
         let $x = match ctypes::c_str_to_string($x) {
             Ok(Some(val)) => val.to_string(),
-            _ => return $e,
+            _ => {
+                set_current_error(&err_msg($e.into(), "Invalid pointer has been passed"));
+                return $e
+            }
         };
 
         if $x.is_empty() {
+            set_current_error(&err_msg($e.into(), "Empty string has been passed"));
             return $e
         }
     }
@@ -45,7 +49,10 @@ macro_rules! check_useful_opt_json {
         let $x = match ctypes::c_str_to_string($x) {
             Ok(Some(val)) => Some(val),
             Ok(None) => None,
-            _ => return $e,
+            _ => {
+                set_current_error(&err_msg($e.into(), "Invalid pointer has been passed"));
+                return $e
+            },
         };
 
         let $x: Option<$t>  = match $x {
@@ -62,7 +69,10 @@ macro_rules! check_useful_json {
     ($x:ident, $e:expr, $t:ty) => {
         let $x = match ctypes::c_str_to_string($x) {
             Ok(Some(val)) => val,
-            _ => return $e,
+            _ => {
+                set_current_error(&err_msg($e.into(), "Invalid pointer has been passed"));
+                return $e
+            },
         };
 
         parse_json!($x, $e, $t);
@@ -72,19 +82,20 @@ macro_rules! check_useful_json {
 macro_rules! parse_json {
     ($x:ident, $e:expr, $t:ty) => {
         if $x.is_empty() {
-            return $e
+           set_current_error(&err_msg($e.into(), "Empty string has been passed"));
+           return $e
         }
 
-        let $x: $t = match
-            serde_json::from_str::<$t>($x)
-                .map_err(map_err_trace!())
-                .map_err(|err|
-                    CommonError::InvalidStructure(
-                        format!("Invalid $t json: {:?}", err)))
-            {
-                Ok(ok) => ok,
-                Err(err) => return err.to_error_code(),
-            };
+        let r = serde_json::from_str::<$t>($x)
+                    .to_indy(::errors::IndyErrorKind::InvalidStructure, format!("Invalid {} json has been passed", stringify!($t)));
+
+        let $x: $t = match r {
+            Ok(ok) => ok,
+            Err(err) => {
+                set_current_error(&err);
+                return err.into()
+            }
+        };
     }
 }
 
@@ -92,7 +103,10 @@ macro_rules! check_useful_c_str_empty_accepted {
     ($x:ident, $e:expr) => {
         let $x = match ctypes::c_str_to_string($x) {
             Ok(Some(val)) => val.to_string(),
-            _ => return $e,
+            _ => {
+                set_current_error(&err_msg($e.into(), "Invalid pointer has been passed"));
+                return $e
+            }
         };
     }
 }
@@ -102,7 +116,10 @@ macro_rules! check_useful_opt_c_str {
     ($x:ident, $e:expr) => {
         let $x = match ctypes::c_str_to_string($x) {
             Ok(opt_val) => opt_val.map(String::from),
-            Err(_) => return $e
+            Err(_) => {
+                set_current_error(&err_msg($e.into(), "Invalid pointer has been passed"));
+                return $e
+            }
         };
     }
 }
@@ -111,11 +128,13 @@ macro_rules! check_useful_opt_c_str {
 macro_rules! check_useful_c_byte_array {
     ($ptr:ident, $len:expr, $err1:expr, $err2:expr) => {
         if $ptr.is_null() {
-            return $err1
+            set_current_error(&err_msg($err1.into(), "Invalid pointer has been passed"));
+            return $err1;
         }
 
         if $len <= 0 {
-            return $err2
+            set_current_error(&err_msg($err2.into(), "Array length must be greater than 0"));
+            return $err2;
         }
 
         let $ptr = unsafe { $crate::std::slice::from_raw_parts($ptr, $len as usize) };

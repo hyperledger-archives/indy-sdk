@@ -1,16 +1,14 @@
 extern crate sodiumoxide;
 extern crate zeroize;
 
+use domain::wallet::KeyDerivationMethod;
+use errors::prelude::*;
 use self::sodiumoxide::crypto::aead::chacha20poly1305_ietf;
 use self::sodiumoxide::utils;
-
 use std::cmp;
 use std::io;
 use std::io::{Read, Write};
-
 use utils::crypto::pwhash_argon2i13;
-use errors::common::CommonError;
-use domain::wallet::KeyDerivationMethod;
 
 pub const KEYBYTES: usize = chacha20poly1305_ietf::KEYBYTES;
 pub const NONCEBYTES: usize = chacha20poly1305_ietf::NONCEBYTES;
@@ -30,10 +28,12 @@ pub fn gen_key() -> Key {
     Key(chacha20poly1305_ietf::gen_key())
 }
 
-pub fn derive_key(passphrase: &str, salt: &pwhash_argon2i13::Salt, key_derivation_method: &KeyDerivationMethod) -> Result<Key, CommonError> {
+pub fn derive_key(passphrase: &str, salt: &pwhash_argon2i13::Salt, key_derivation_method: &KeyDerivationMethod) -> Result<Key, IndyError> {
     let mut key_bytes = [0u8; chacha20poly1305_ietf::KEYBYTES];
+
     pwhash_argon2i13::pwhash(&mut key_bytes, passphrase.as_bytes(), salt, key_derivation_method)
-        .map_err(|err| CommonError::InvalidStructure(format!("Can't derive key: {}", err)))?;
+        .map_err(|err| err.extend("Can't derive key"))?;
+
     Ok(Key::new(key_bytes))
 }
 
@@ -48,7 +48,7 @@ pub fn gen_nonce_and_encrypt(data: &[u8], key: &Key) -> (Vec<u8>, Nonce) {
         data,
         None,
         &nonce.0,
-        &key.0
+        &key.0,
     );
 
     (encrypted_data, nonce)
@@ -90,14 +90,14 @@ pub fn encrypt(data: &[u8], key: &Key, nonce: &Nonce) -> Vec<u8> {
     )
 }
 
-pub fn decrypt(data: &[u8], key: &Key, nonce: &Nonce) -> Result<Vec<u8>, CommonError> {
+pub fn decrypt(data: &[u8], key: &Key, nonce: &Nonce) -> Result<Vec<u8>, IndyError> {
     chacha20poly1305_ietf::open(
         &data,
         None,
         &nonce.0,
         &key.0,
     )
-        .map_err(|err| CommonError::InvalidStructure(format!("Unable to decrypt data: {:?}", err)))
+        .map_err(|_| IndyError::from_msg(IndyErrorKind::InvalidStructure, "Unable to open sodium chacha20poly1305_ietf"))
 }
 
 pub struct Writer<W: Write> {
@@ -257,7 +257,7 @@ mod tests {
         let res = derive_key(
             passphrase,
             &pwhash_argon2i13::Salt::from_slice(&salt_bytes).unwrap(),
-            &KeyDerivationMethod::ARGON2I_MOD
+            &KeyDerivationMethod::ARGON2I_MOD,
         ).unwrap();
 
         assert_eq!(res, Key::new(key_bytes))
@@ -278,7 +278,7 @@ mod tests {
         let res = derive_key(
             passphrase,
             &pwhash_argon2i13::Salt::from_slice(&salt_bytes).unwrap(),
-            &KeyDerivationMethod::ARGON2I_INT
+            &KeyDerivationMethod::ARGON2I_INT,
         ).unwrap();
 
         assert_eq!(res, Key::new(key_bytes))

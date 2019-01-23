@@ -14,8 +14,19 @@ public class LedgerSecurityException extends IndyException
 	/**
 	 * Initializes a new LedgerSecurityException.
 	 */
-	public LedgerSecurityException() 
+	public LedgerSecurityException()
+	{
+		super(message, ErrorCode.LedgerSecurityError.value());
+	}
+
+	/**
+	 * Initializes a new LedgerSecurityException.
+	 *
+	 * @param sdkMessage The SDK error message.
+	 * @param sdkBacktrace The SDK error backtrace.
+	 */
+	public LedgerSecurityException(String sdkMessage, String sdkBacktrace)
     {
-    	super(message, ErrorCode.LedgerSecurityError.value());
+    	super(sdkMessage, ErrorCode.LedgerSecurityError.value(), sdkBacktrace);
     }
 }
