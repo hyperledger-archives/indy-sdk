@@ -1,5 +1,4 @@
 #!/bin/sh
-
 #1) Install Rust and rustup (https://www.rust-lang.org/install.html).
 #To get into the if statement below execute the following command...
 # mv /Users/norm/.cargo/bin/rustup /Users/norm/.cargo/bin/rustup.bak
@@ -44,11 +43,15 @@ fi
 
 if [[ $RUSTUP_VERSION =~ ^'rustup ' ]]; then
     rustup update
-    rustup default 1.31.0
+    rustup default 1.31.1
     rustup component add rls-preview rust-analysis rust-src
     echo "Using rustc version $(rustc --version)"
-    rustup target remove aarch64-linux-android armv7-linux-androideabi arm-linux-androideabi i686-linux-android x86_64-linux-android
-    rustup target add aarch64-apple-ios armv7-apple-ios armv7s-apple-ios x86_64-apple-ios i386-apple-ios
+    # rustup target remove aarch64-linux-android 
+    # rustup target remove armv7-linux-androideabi 
+    # rustup target remove arm-linux-androideabi 
+    # rustup target remove i686-linux-android 
+    # rustup target remove x86_64-linux-android
+     rustup target add aarch64-apple-ios armv7-apple-ios armv7s-apple-ios x86_64-apple-ios i386-apple-ios
 
     RUST_TARGETS=$(rustc --print target-list|grep -i ios)
     if [ "$RUST_TARGETS" = "" ]; then
@@ -63,8 +66,8 @@ if [[ $RUSTUP_VERSION =~ ^'rustup ' ]]; then
         exit 1
     fi
 
-    cargo install cargo-lipo
-    cargo install cargo-xcode
+    cargo install --force cargo-lipo
+    cargo install --force cargo-xcode
 
     BREW_VERSION=`brew --version`
     if ! [[ $BREW_VERSION =~ ^'Homebrew ' ]]; then

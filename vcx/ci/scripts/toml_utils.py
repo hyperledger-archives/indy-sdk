@@ -8,7 +8,7 @@ import os
 SO_FILE = 'libvcx.so'
 
 def valid_line(line):
-    return ('version =' in line or 'version=' in line) and ('uuid' not in line and 'rusqlite' not in line)
+    return ('version =' in line or 'version=' in line) and ('uuid' not in line and 'rusqlite' not in line and 'indy' not in line)
 	
 # update the so file with the major minor build
 def update_so(src_dir, version):
