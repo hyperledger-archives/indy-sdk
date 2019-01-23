@@ -30,14 +30,9 @@ pub mod chacha20poly1305_ietf;
 #[cfg(feature = "hash_openssl")]
 #[path = "hash/openssl.rs"]
 pub mod hash;
-
 pub mod signature_serializer;
 
 pub mod verkey_builder;
-
-#[cfg(feature = "memzero_sodium")]
-#[path = "memzero/sodium.rs"]
-pub mod memzero;
 
 #[cfg(feature = "sealedbox_sodium")]
 #[path = "sealedbox/sodium.rs"]
