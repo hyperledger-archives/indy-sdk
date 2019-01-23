@@ -318,7 +318,7 @@ extern "C" {
                                                  );
 
 
-    /// Packs a message
+    /// Packs a message (Experimental)
     ///
     /// Note to use DID keys with this function you can call indy_key_for_did to get key id (verkey)
     /// for specific DID.
@@ -337,42 +337,44 @@ extern "C" {
     /// #Returns
     /// a JWE using authcrypt alg is defined below:
     /// {
-    ///    "protected": "b64URLencoded({
-    ///        "enc": "xsalsa20poly1305",
+    ///     "protected": "b64URLencoded({
+    ///        "enc": "xchachapoly1305_ietf",
     ///        "typ": "JWM/1.0",
-    ///        "alg": "authcrypt",
+    ///        "alg": "Authcrypt",
     ///        "recipients": [
     ///            {
-    ///                "encrypted_key": anoncrypt(encrypted_cek|sender_vk|nonce)
+    ///                "encrypted_key": base64URLencode(libsodium.crypto_box(my_key, their_vk, cek, cek_iv))
     ///                "header": {
-    ///                    "kid": "b64URLencode(ver_key)"
+    ///                     "kid": "base58encode(recipient_verkey)",
+    ///                     "sender" : base64URLencode(libsodium.crypto_box_seal(their_vk, base58encode(sender_vk)),
+    ///                     "iv" : base64URLencode(cek_iv)
     ///                }
     ///            },
     ///        ],
-    ///    })"
-    ///    "iv": <b64URLencode()>,
-    ///    "ciphertext": <b64URLencode(encrypt({'@type'...}, cek)>,
-    ///    "tag": <b64URLencode()>
+    ///     })",
+    ///     "iv": <b64URLencode(iv)>,
+    ///     "ciphertext": b64URLencode(encrypt_detached({'@type'...}, protected_value_encoded, iv, cek),
+    ///     "tag": <b64URLencode(tag)>
     /// }
     ///
     /// Alternative example in using anoncrypt alg is defined below:
     /// {
-    ///    "protected": "b64URLencode({
-    ///        "enc": "xsalsa20poly1305",
+    ///     "protected": "b64URLencoded({
+    ///        "enc": "xchachapoly1305_ietf",
     ///        "typ": "JWM/1.0",
-    ///        "alg": "anoncrypt",
+    ///        "alg": "Anoncrypt",
     ///        "recipients": [
     ///            {
-    ///                "encrypted_key": <b64URLencode(anoncrypt(cek))>,
+    ///                "encrypted_key": base64URLencode(libsodium.crypto_box_seal(their_vk, cek)),
     ///                "header": {
-    ///                    "kid": "b64URLencode(ver_key)"
+    ///                    "kid": base58encode(recipient_verkey),
     ///                }
     ///            },
     ///        ],
-    ///    })"
-    ///    "iv": <b64URLencode(iv)>,
-    ///    "ciphertext": <b64URLencode(encrypt({'@type'...}, cek)>,
-    ///    "tag": <b64URLencode(authentication tag)>
+    ///     })",
+    ///     "iv": b64URLencode(iv),
+    ///     "ciphertext": b64URLencode(encrypt_detached({'@type'...}, protected_value_encoded, iv, cek),
+    ///     "tag": b64URLencode(tag)
     /// }
     ///
     ///
@@ -396,7 +398,7 @@ extern "C" {
 
 
     /// Unpacks a message packed using indy_pack_message which follows the wire message format HIPE
-    ///
+    /// (Experimental)
     ///
     /// #Params
     /// command_handle: command handle to map callback to user context.
@@ -409,6 +411,7 @@ extern "C" {
     /// {
     ///     message: <decrypted message>,
     ///     sender_verkey: <sender_verkey>
+    ///     recipient_verkey: <recipient_verkey>
     /// }
     ///
     /// OR
@@ -416,6 +419,7 @@ extern "C" {
     /// if anoncrypt was used to pack the message returns this json structure:
     /// {
     ///     message: <decrypted message>,
+    ///     recipient_verkey: <recipient_verkey>
     /// }
     ///
     ///

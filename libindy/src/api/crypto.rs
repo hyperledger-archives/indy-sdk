@@ -585,14 +585,14 @@ pub  extern fn indy_crypto_anon_decrypt(command_handle: IndyHandle,
 ///     "protected": "b64URLencoded({
 ///        "enc": "xsalsa20poly1305",
 ///        "typ": "JWM/1.0",
-///        "alg": "authcrypt",
+///        "alg": "Authcrypt",
 ///        "recipients": [
 ///            {
-///                "encrypted_key": anoncrypt(encrypted_cek|sender_vk|nonce)
+///                "encrypted_key": base64URLencode(libsodium.crypto_box(my_key, their_vk, cek, cek_iv))
 ///                "header": {
-///                     "kid": "b64URLencode(ver_key)",
-///                     "sender" : base64URLencode(libsodium.crypto_box_seal(their_vk, sender_vk_string)),
-///                     "iv" : base64URLencode(iv)
+///                     "kid": "base58encode(recipient_verkey)",
+///                     "sender" : base64URLencode(libsodium.crypto_box_seal(their_vk, base58encode(sender_vk)),
+///                     "iv" : base64URLencode(cek_iv)
 ///                }
 ///            },
 ///        ],
@@ -683,7 +683,8 @@ pub extern fn indy_pack_message(
 /// if authcrypt was used to pack the message returns this json structure:
 /// {
 ///     message: <decrypted message>,
-///     sender_verkey: <sender_verkey>
+///     sender_verkey: <sender_verkey>,
+///     recipient_verkey: <recipient_verkey>
 /// }
 ///
 /// OR
@@ -691,6 +692,7 @@ pub extern fn indy_pack_message(
 /// if anoncrypt was used to pack the message returns this json structure:
 /// {
 ///     message: <decrypted message>,
+///     recipient_verkey: <recipient_verkey>
 /// }
 ///
 ///
