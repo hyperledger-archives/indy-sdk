@@ -381,20 +381,26 @@ impl CryptoCommandExecutor {
                 "No receiver keys found"
             ))));
         }
-        
-        match sender_vk {
-            Some(vk) => {
-                //returns authcrypted pack_message format. See Wire message format HIPE for details
-                self._pack_authcrypt(message, receiver_list, &vk, wallet_handle)
-            },
-            None => {
-                //returns anoncrypted pack_message format. See Wire message format HIPE for details
-                self._pack_anoncrypt(message, receiver_list)
-            }
-        }
+
+        let (base64_protected, cek) = if let Some(sender_vk) = sender_vk {
+            //returns authcrypted pack_message format. See Wire message format HIPE for details
+            self._prepare_protected_authcrypt(receiver_list, &sender_vk, wallet_handle)?
+        } else {
+            //returns anoncrypted pack_message format. See Wire message format HIPE for details
+            self._prepare_protected_anoncrypt(receiver_list)?
+        };
+
+        // encrypt ciphertext and integrity protect "protected" field
+        let (ciphertext, iv, tag) =
+            self.crypto_service
+                .encrypt_plaintext(message, &base64_protected, &cek);
+
+        self._format_pack_message(&base64_protected, &ciphertext, &iv, &tag)
     }
 
-    fn _pack_anoncrypt(&self, message: Vec<u8>, receiver_list: Vec<String>) -> Result<Vec<u8>> {
+    fn _prepare_protected_anoncrypt(&self,
+                                    receiver_list: Vec<String>,
+    ) -> Result<(String, chacha20poly1305_ietf::Key)> {
         let mut encrypted_recipients_struct : Vec<Recipient> = vec![];
 
         let cek = chacha20poly1305_ietf::gen_key();
@@ -413,18 +419,13 @@ impl CryptoCommandExecutor {
                 },
             });
         } // end for-loop
-        let base64_protected = self._base64_encode_protected(encrypted_recipients_struct, false)?;
-
-        // encrypt ciphertext and integrity protect "protected" field
-        let (ciphertext, iv, tag) =
-            self.crypto_service
-                .encrypt_plaintext(message, &base64_protected, &cek);
-
-
-        self._format_pack_message(&base64_protected, &ciphertext, &iv, &tag)
+        Ok((self._base64_encode_protected(encrypted_recipients_struct, false)?, cek))
     }
 
-    fn _pack_authcrypt(&self, message: Vec<u8>, receiver_list: Vec<String>, sender_vk: &str, wallet_handle: i32) -> Result<Vec<u8>> {
+    fn _prepare_protected_authcrypt(&self,
+                                    receiver_list: Vec<String>, sender_vk: &str,
+                                    wallet_handle: i32,
+    ) -> Result<(String, chacha20poly1305_ietf::Key)> {
         let mut encrypted_recipients_struct : Vec<Recipient> = vec![];
 
         //get my_key from my wallet
@@ -454,15 +455,7 @@ impl CryptoCommandExecutor {
             });
         } // end for-loop
 
-        let base64_protected = self._base64_encode_protected(encrypted_recipients_struct, true)?;
-
-        // encrypt ciphertext and integrity protect "protected" field
-        let (ciphertext, iv, tag) =
-            self.crypto_service
-                .encrypt_plaintext(message, &base64_protected, &cek);
-
-
-        self._format_pack_message(&base64_protected, &ciphertext, &iv, &tag)
+        Ok((self._base64_encode_protected(encrypted_recipients_struct, true)?, cek))
     }
 
     fn _base64_encode_protected(&self, encrypted_recipients_struct: Vec<Recipient>, alg_is_authcrypt: bool) -> Result<String> {
