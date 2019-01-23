@@ -384,14 +384,14 @@ extern "C" {
     extern indy_error_t indy_pack_message(indy_handle_t      command_handle,
                                           indy_handle_t      wallet_handle,
                                           const indy_u8_t*   message,
-                                          indy_u64_t         message_len,
+                                          indy_u32_t         message_len,
                                           const char *       receiver_keys,
                                           const char *       sender,
 
                                           void           (*cb)(indy_handle_t     command_handle_,
                                                                indy_error_t      err,
                                                                const indy_u8_t*  jwe_msg_raw,
-                                                               indy_u64_t        jwe_msg_len)
+                                                               indy_u32_t        jwe_msg_len)
                                           );
 
 
@@ -427,12 +427,12 @@ extern "C" {
     extern indy_error_t indy_unpack_message(indy_handle_t      command_handle,
                                             indy_handle_t      wallet_handle,
                                             const indy_u8_t*   jwe_msg,
-                                            indy_u64_t         jwe_len,
+                                            indy_u32_t         jwe_len,
 
                                             void           (*cb)(indy_handle_t     command_handle_,
                                                                  indy_error_t      err,
                                                                  const indy_u8_t*  res_json_raw,
-                                                                 indy_u64_t        res_json_len)
+                                                                 indy_u32_t        res_json_len)
                                             );
 #ifdef __cplusplus
 }
