@@ -654,14 +654,14 @@ pub extern fn indy_pack_message(
         sender,
         wallet_handle,
         Box::new(move |result| {
-            let (err, jwe) = result_to_err_code_1!(result, Vec::new());
+            let (err, jwe) = prepare_result_1!(result, Vec::new());
             trace!("indy_auth_pack_message: jwe: {:?}", jwe);
             let (jwe_data, jwe_len) = ctypes::vec_to_pointer(&jwe);
             cb(command_handle, err, jwe_data, jwe_len)
         }),
     )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_auth_pack_message: <<< res: {:?}", res);
 
@@ -736,7 +736,7 @@ pub extern fn indy_unpack_message(
         jwe_data,
         wallet_handle,
         Box::new(move |result| {
-            let (err, res_json) = result_to_err_code_1!(result, Vec::new());
+            let (err, res_json) = prepare_result_1!(result, Vec::new());
             trace!("indy_unpack_message: cb command_handle: {:?}, err: {:?}, res_json: {:?}",
                 command_handle, err, res_json
             );
@@ -745,7 +745,7 @@ pub extern fn indy_unpack_message(
         }),
     )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_unpack_message: <<< res: {:?}", res);
 

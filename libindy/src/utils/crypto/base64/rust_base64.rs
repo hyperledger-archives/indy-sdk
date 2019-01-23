@@ -18,9 +18,11 @@ pub fn encode_urlsafe(doc: &[u8]) -> String {
     base64::encode_config(doc, base64::URL_SAFE)
 }
 
-pub fn decode_urlsafe(doc: &str) -> Result<Vec<u8>, CommonError> {
+pub fn decode_urlsafe(doc: &str) -> Result<Vec<u8>, IndyError> {
     base64::decode_config(doc, base64::URL_SAFE)
-        .map_err(|err| CommonError::InvalidStructure(format!("{}", err)))
+        .context("Invalid base64URL_SAFE sequence")
+        .context(IndyErrorKind::InvalidStructure)
+        .map_err(|err| err.into())
 }
 
 #[cfg(test)]

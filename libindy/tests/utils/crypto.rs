@@ -41,10 +41,10 @@ pub fn anon_decrypt(wallet_handle: i32, my_vk: &str, encrypted_msg: &[u8]) -> Re
     crypto::anon_decrypt(wallet_handle, my_vk, encrypted_msg).wait()
 }
 
-pub fn pack_message(wallet_handle: i32, message: &[u8], receiver_keys: &str, sender: Option<&str>) -> Result<Vec<u8>, ErrorCode> {
+pub fn pack_message(wallet_handle: i32, message: &[u8], receiver_keys: &str, sender: Option<&str>) -> Result<Vec<u8>, IndyError> {
     crypto::pack_message(wallet_handle, message, receiver_keys, sender).wait()
 }
 
-pub fn unpack_message(wallet_handle: i32, jwe: &[u8]) -> Result<Vec<u8>, ErrorCode> {
+pub fn unpack_message(wallet_handle: i32, jwe: &[u8]) -> Result<Vec<u8>, IndyError> {
     crypto::unpack_message(wallet_handle, jwe).wait()
 }

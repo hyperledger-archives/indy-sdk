@@ -69,16 +69,16 @@ pub fn gen_nonce_and_encrypt_detached(data: &[u8], aad: &[u8], key: &Key) -> (Ve
 }
 
 
-pub fn decrypt_detached(data: &[u8], key: &Key, nonce: &Nonce, tag: &Tag, ad: Option<&[u8]>) -> Result<Vec<u8>, CommonError> {
+pub fn decrypt_detached(data: &[u8], key: &Key, nonce: &Nonce, tag: &Tag, ad: Option<&[u8]>) -> Result<Vec<u8>, IndyError> {
     let mut plain = data.to_vec();
     chacha20poly1305_ietf::open_detached(plain.as_mut_slice(),
         ad,
         &tag.0,
         &nonce.0,
         &key.0,
-    ).map_err(|err| CommonError::InvalidStructure(format!("Unable to decrypt data: {:?}", err)))?;
-
-    Ok(plain.to_vec())
+    )
+        .map_err(|_| IndyError::from_msg(IndyErrorKind::InvalidStructure, "Unable to decrypt data: {:?}"))
+        .map(|()| plain)
 }
 
 pub fn encrypt(data: &[u8], key: &Key, nonce: &Nonce) -> Vec<u8> {

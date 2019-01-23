@@ -495,7 +495,7 @@ mod high_cases {
             let receiver_keys = serde_json::to_string(&rec_key_vec).unwrap();
             let message = "".as_bytes();
             let res = crypto::pack_message(wallet_handle, message, &receiver_keys, Some(&verkey));
-            assert_eq!(ErrorCode::CommonInvalidParam3, res.unwrap_err());
+            assert_code!(ErrorCode::CommonInvalidParam3, res);
             utils::tear_down_with_wallet(wallet_handle);
         }
 
@@ -505,7 +505,7 @@ mod high_cases {
             let receiver_keys = "[]";
             let message = "Hello World".as_bytes();
             let res = crypto::pack_message(wallet_handle, message, &receiver_keys, Some(&verkey));
-            assert_eq!(ErrorCode::CommonInvalidParam4, res.unwrap_err());
+            assert_code!(ErrorCode::CommonInvalidParam4, res);
             utils::tear_down_with_wallet(wallet_handle);
         }
 
@@ -516,7 +516,7 @@ mod high_cases {
             let receiver_keys = serde_json::to_string(&rec_key_vec).unwrap();
             let message = "Hello World".as_bytes();
             let res = crypto::pack_message(wallet_handle + 1, message, &receiver_keys, Some(&verkey));
-            assert_eq!(ErrorCode::WalletInvalidHandle, res.unwrap_err());
+            assert_code!(ErrorCode::WalletInvalidHandle, res);
             utils::tear_down_with_wallet(wallet_handle);
         }
 
@@ -527,7 +527,7 @@ mod high_cases {
             let receiver_keys = serde_json::to_string(&rec_key_vec).unwrap();
             let message = "Hello World".as_bytes();
             let res = crypto::pack_message(wallet_handle, message, &receiver_keys, Some(INVALID_BASE58_VERKEY));
-            assert_eq!(ErrorCode::WalletItemNotFound, res.unwrap_err());
+            assert_code!(ErrorCode::WalletItemNotFound, res);
             utils::tear_down_with_wallet(wallet_handle);
         }
 
@@ -554,7 +554,7 @@ mod high_cases {
             let receiver_keys = serde_json::to_string(&rec_key_vec).unwrap();
             let message = "".as_bytes();
             let res = crypto::pack_message(wallet_handle, message, &receiver_keys, None);
-            assert_eq!(ErrorCode::CommonInvalidParam3, res.unwrap_err());
+            assert_code!(ErrorCode::CommonInvalidParam3, res);
             utils::tear_down_with_wallet(wallet_handle);
         }
 
@@ -564,7 +564,7 @@ mod high_cases {
             let receiver_keys = "[]";
             let message = "Hello World".as_bytes();
             let res = crypto::pack_message(wallet_handle, message, &receiver_keys, None);
-            assert_eq!(ErrorCode::CommonInvalidParam4, res.unwrap_err());
+            assert_code!(ErrorCode::CommonInvalidParam4, res);
             utils::tear_down_with_wallet(wallet_handle);
         }
 
@@ -626,7 +626,7 @@ mod high_cases {
             //execute function
             let res = crypto::unpack_message(wallet_handle_receiver, pack_message.as_slice());
 
-            assert_eq!(ErrorCode::WalletItemNotFound, res.unwrap_err());
+            assert_code!(ErrorCode::WalletItemNotFound, res);
 
             utils::tear_down_with_wallet(wallet_handle_sender);
             utils::tear_down_with_wallet(wallet_handle_receiver);
@@ -673,7 +673,7 @@ mod high_cases {
             //execute function
             let res = crypto::unpack_message(wallet_handle_receiver, pack_message.as_slice());
 
-            assert_eq!(ErrorCode::WalletItemNotFound, res.unwrap_err());
+            assert_code!(ErrorCode::WalletItemNotFound, res);
 
             utils::tear_down_with_wallet(wallet_handle_sender);
             utils::tear_down_with_wallet(wallet_handle_receiver);

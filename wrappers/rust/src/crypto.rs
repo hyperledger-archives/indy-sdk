@@ -286,7 +286,7 @@ fn _anon_decrypt(command_handle: IndyHandle, wallet_handle: IndyHandle, recipien
 /// * `sender` : a string of the sender's verkey
 /// # Returns
 /// a json structure in the form of a JWE that contains the encrypted message and associated metadata
-pub fn pack_message(wallet_handle: IndyHandle, message: &[u8], receiver_keys: &str, sender: Option<&str>) -> Box<Future<Item=Vec<u8>, Error=ErrorCode>> {
+pub fn pack_message(wallet_handle: IndyHandle, message: &[u8], receiver_keys: &str, sender: Option<&str>) -> Box<Future<Item=Vec<u8>, Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
 
     let err= _pack_message(command_handle, wallet_handle, message, receiver_keys, sender, cb);
@@ -319,7 +319,7 @@ fn _pack_message(command_handle: IndyHandle, wallet_handle: IndyHandle, message:
 /// * `jwe`: a pointer to the first byte of the JWE string
 /// # Returns
 /// a json structure that contains a decrypted message and a sender_verkey if packed with authcrypt
-pub fn unpack_message(wallet_handle: IndyHandle, jwe: &[u8]) -> Box<Future<Item=Vec<u8>, Error=ErrorCode>> {
+pub fn unpack_message(wallet_handle: IndyHandle, jwe: &[u8]) -> Box<Future<Item=Vec<u8>, Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
 
     let err= _unpack_message(command_handle, wallet_handle, jwe, cb);
