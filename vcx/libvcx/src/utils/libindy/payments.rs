@@ -193,7 +193,7 @@ pub fn get_wallet_token_info() -> Result<WalletInfo, u32> {
             debug!("getting address info for {}", address);
             let mut info = get_address_info(&address)?;
 
-	    for utxo in info.utxo.iter() { balance += utxo.amount as u64; }
+            for utxo in info.utxo.iter() { balance += utxo.amount as u64; }
 
             wallet_info.push(info);
         }
