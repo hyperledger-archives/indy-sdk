@@ -331,7 +331,7 @@ extern "C" {
     ///                the message is being encrypted for.
     ///                Example:
     ///                "[<receiver edge_agent_1 verkey>, <receiver edge_agent_2 verkey>]"
-    /// sender: the sender's verkey as a string When "" is used in this parameter, anoncrypt is used
+    /// sender: the sender's verkey as a string When null pointer is used in this parameter, anoncrypt is used
     /// cb: Callback that takes command result as parameter.
     ///
     /// #Returns

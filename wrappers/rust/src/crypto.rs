@@ -283,7 +283,7 @@ fn _anon_decrypt(command_handle: IndyHandle, wallet_handle: IndyHandle, recipien
 /// * `wallet_handle`: wallet handle (created by Wallet::open).
 /// * `message`: a pointer to the first byte of the message to be encrypted
 /// * `receiver_keys`: a JSON array as a string containing a list of the receivers verkey's
-/// * `sender` : a string of the sender's verkey
+/// * `sender` : a string of the sender's verkey When None is used in this parameter, anoncrypt is used
 /// # Returns
 /// a json structure in the form of a JWE that contains the encrypted message and associated metadata
 pub fn pack_message(wallet_handle: IndyHandle, message: &[u8], receiver_keys: &str, sender: Option<&str>) -> Box<Future<Item=Vec<u8>, Error=IndyError>> {
