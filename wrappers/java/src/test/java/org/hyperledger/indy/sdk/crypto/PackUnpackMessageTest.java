@@ -29,13 +29,12 @@ public class PackUnpackMessageTest extends IndyIntegrationTestWithSingleWallet {
 
         byte[] packedMessage = Crypto.packMessage(wallet, receieversArray.toString(), null, message.getBytes()).get();
 
-        // System.out.println("**********");
-        // System.out.println(packedMessage.toString());
         assertNotNull(packedMessage);
     }
 
+    // This test proves the API is hooked up correctly and error result is returned
     @Test(expected = java.util.concurrent.ExecutionException.class)
-    public void testUnpackMessage() throws Exception {
+    public void testUnpackMessageWithInvalidStructure() throws Exception {
 
         String packedMessage = "jibberish";
         byte[] unpackedMessage = Crypto.unpackMessage(wallet, packedMessage.getBytes()).get();
