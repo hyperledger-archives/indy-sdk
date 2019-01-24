@@ -435,7 +435,7 @@ async def pack_message(wallet_handle: int, message: str, recv_key_list: str, sen
 
 async def unpack_message(wallet_handle: int, ames_json: str, my_vk: str) -> (str, str):
     """
-    deserializes a AMES json string and decrypts the message returning the message and the sender's verkey if it was an AuthAMES.
+    Experimental. Deserializes a AMES json string and decrypts the message returning the message and the sender's verkey if it was an AuthAMES.
     If it is an AnonAMES it will deserialize, decrypt, and return the message with an empty sender_vk string.
 
     :param wallet_handle: wallet handler (created by open_wallet).
