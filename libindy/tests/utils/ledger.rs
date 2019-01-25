@@ -1,7 +1,7 @@
 extern crate futures;
 extern crate indy_sys;
 
-use indy::ErrorCode;
+use indy::{IndyError, ErrorCode};
 use indy::ledger;
 use self::futures::Future;
 use self::indy_sys::ledger::{CustomTransactionParser, CustomFree, indy_register_transaction_parser_for_sp};
@@ -20,29 +20,29 @@ pub const SCHEMA_DATA: &'static str = r#"{"id":"id","name":"gvt","version":"1.0"
 
 const SUBMIT_RETRY_CNT: usize = 3;
 
-pub fn sign_and_submit_request(pool_handle: i32, wallet_handle: i32, submitter_did: &str, request_json: &str) -> Result<String, ErrorCode> {
+pub fn sign_and_submit_request(pool_handle: i32, wallet_handle: i32, submitter_did: &str, request_json: &str) -> Result<String, IndyError> {
     ledger::sign_and_submit_request(pool_handle, wallet_handle, submitter_did, request_json).wait()
 }
 
-pub fn submit_request_with_retries(pool_handle: i32, request_json: &str, previous_response: &str) -> Result<String, ErrorCode> {
+pub fn submit_request_with_retries(pool_handle: i32, request_json: &str, previous_response: &str) -> Result<String, IndyError> {
     _submit_retry(extract_seq_no_from_reply(previous_response).unwrap(), || {
         submit_request(pool_handle, request_json)
     })
 }
 
-pub fn submit_request(pool_handle: i32, request_json: &str) -> Result<String, ErrorCode> {
+pub fn submit_request(pool_handle: i32, request_json: &str) -> Result<String, IndyError> {
     ledger::submit_request(pool_handle, request_json).wait()
 }
 
-pub fn submit_action(pool_handle: i32, request_json: &str, nodes: Option<&str>, timeout: Option<i32>) -> Result<String, ErrorCode> {
+pub fn submit_action(pool_handle: i32, request_json: &str, nodes: Option<&str>, timeout: Option<i32>) -> Result<String, IndyError> {
     ledger::submit_action(pool_handle, request_json, nodes, timeout).wait()
 }
 
-pub fn sign_request(wallet_handle: i32, submitter_did: &str, request_json: &str) -> Result<String, ErrorCode> {
+pub fn sign_request(wallet_handle: i32, submitter_did: &str, request_json: &str) -> Result<String, IndyError> {
     ledger::sign_request(wallet_handle, submitter_did, request_json).wait()
 }
 
-pub fn multi_sign_request(wallet_handle: i32, submitter_did: &str, request_json: &str) -> Result<String, ErrorCode> {
+pub fn multi_sign_request(wallet_handle: i32, submitter_did: &str, request_json: &str) -> Result<String, IndyError> {
     ledger::multi_sign_request(wallet_handle, submitter_did, request_json).wait()
 }
 
@@ -54,8 +54,8 @@ pub fn extract_seq_no_from_reply(reply: &str) -> Result<u64, &'static str> {
         .as_u64().ok_or("Missed seqNo in reply")
 }
 
-fn _submit_retry<F>(minimal_timestamp: u64, submit_action: F) -> Result<String, ErrorCode>
-    where F: Fn() -> Result<String, ErrorCode> {
+fn _submit_retry<F>(minimal_timestamp: u64, submit_action: F) -> Result<String, IndyError>
+    where F: Fn() -> Result<String, IndyError> {
     let mut i = 0;
     let action_result = loop {
         let action_result = submit_action()?;
@@ -74,108 +74,108 @@ fn _submit_retry<F>(minimal_timestamp: u64, submit_action: F) -> Result<String, 
     Ok(action_result)
 }
 
-pub fn build_get_ddo_request(submitter_did: Option<&str>, target_did: &str) -> Result<String, ErrorCode> {
+pub fn build_get_ddo_request(submitter_did: Option<&str>, target_did: &str) -> Result<String, IndyError> {
     ledger::build_get_ddo_request(submitter_did, target_did).wait()
 }
 
 pub fn build_nym_request(submitter_did: &str, target_did: &str, verkey: Option<&str>,
-                         alias: Option<&str>, role: Option<&str>) -> Result<String, ErrorCode> {
+                         alias: Option<&str>, role: Option<&str>) -> Result<String, IndyError> {
     ledger::build_nym_request(submitter_did, target_did, verkey, alias, role).wait()
 }
 
-pub fn build_attrib_request(submitter_did: &str, target_did: &str, hash: Option<&str>, raw: Option<&str>, enc: Option<&str>) -> Result<String, ErrorCode> {
+pub fn build_attrib_request(submitter_did: &str, target_did: &str, hash: Option<&str>, raw: Option<&str>, enc: Option<&str>) -> Result<String, IndyError> {
     ledger::build_attrib_request(submitter_did, target_did, hash, raw, enc).wait()
 }
 
-pub fn build_get_attrib_request(submitter_did: Option<&str>, target_did: &str, raw: Option<&str>, hash: Option<&str>, enc: Option<&str>) -> Result<String, ErrorCode> {
+pub fn build_get_attrib_request(submitter_did: Option<&str>, target_did: &str, raw: Option<&str>, hash: Option<&str>, enc: Option<&str>) -> Result<String, IndyError> {
     ledger::build_get_attrib_request(submitter_did, target_did, raw, hash, enc).wait()
 }
 
-pub fn build_get_nym_request(submitter_did: Option<&str>, target_did: &str) -> Result<String, ErrorCode> {
+pub fn build_get_nym_request(submitter_did: Option<&str>, target_did: &str) -> Result<String, IndyError> {
     ledger::build_get_nym_request(submitter_did, target_did).wait()
 }
 
-pub fn build_schema_request(submitter_did: &str, data: &str) -> Result<String, ErrorCode> {
+pub fn build_schema_request(submitter_did: &str, data: &str) -> Result<String, IndyError> {
     ledger::build_schema_request(submitter_did, data).wait()
 }
 
-pub fn build_get_schema_request(submitter_did: Option<&str>, id: &str) -> Result<String, ErrorCode> {
+pub fn build_get_schema_request(submitter_did: Option<&str>, id: &str) -> Result<String, IndyError> {
     ledger::build_get_schema_request(submitter_did, id).wait()
 }
 
-pub fn build_cred_def_txn(submitter_did: &str, cred_def_json: &str) -> Result<String, ErrorCode> {
+pub fn build_cred_def_txn(submitter_did: &str, cred_def_json: &str) -> Result<String, IndyError> {
     ledger::build_cred_def_request(submitter_did, cred_def_json).wait()
 }
 
-pub fn build_get_cred_def_request(submitter_did: Option<&str>, id: &str) -> Result<String, ErrorCode> {
+pub fn build_get_cred_def_request(submitter_did: Option<&str>, id: &str) -> Result<String, IndyError> {
     ledger::build_get_cred_def_request(submitter_did, id).wait()
 }
 
-pub fn build_node_request(submitter_did: &str, target_did: &str, data: &str) -> Result<String, ErrorCode> {
+pub fn build_node_request(submitter_did: &str, target_did: &str, data: &str) -> Result<String, IndyError> {
     ledger::build_node_request(submitter_did, target_did, data).wait()
 }
 
-pub fn build_get_validator_info_request(submitter_did: &str) -> Result<String, ErrorCode> {
+pub fn build_get_validator_info_request(submitter_did: &str) -> Result<String, IndyError> {
     ledger::build_get_validator_info_request(submitter_did).wait()
 }
 
-pub fn build_get_txn_request(submitter_did: Option<&str>, data: i32, ledger_type: Option<&str>) -> Result<String, ErrorCode> {
+pub fn build_get_txn_request(submitter_did: Option<&str>, data: i32, ledger_type: Option<&str>) -> Result<String, IndyError> {
     ledger::build_get_txn_request(submitter_did, ledger_type, data).wait()
 }
 
-pub fn build_pool_config_request(submitter_did: &str, writes: bool, force: bool) -> Result<String, ErrorCode> {
+pub fn build_pool_config_request(submitter_did: &str, writes: bool, force: bool) -> Result<String, IndyError> {
     ledger::build_pool_config_request(submitter_did, writes, force).wait()
 }
 
 pub fn build_pool_restart_request(submitter_did: &str,
                                   action: &str,
-                                  datetime: Option<&str>) -> Result<String, ErrorCode> {
+                                  datetime: Option<&str>) -> Result<String, IndyError> {
     ledger::build_pool_restart_request(submitter_did, action, datetime).wait()
 }
 
 pub fn build_pool_upgrade_request(submitter_did: &str, name: &str, version: &str, action: &str, sha256: &str, timeout: Option<u32>, schedule: Option<&str>,
-                                  justification: Option<&str>, reinstall: bool, force: bool, package: Option<&str>) -> Result<String, ErrorCode> {
+                                  justification: Option<&str>, reinstall: bool, force: bool, package: Option<&str>) -> Result<String, IndyError> {
     ledger::build_pool_upgrade_request(submitter_did, name, version, action, sha256,
                                        timeout, schedule, justification, reinstall, force, package).wait()
 }
 
-pub fn build_revoc_reg_def_request(submitter_did: &str, data: &str) -> Result<String, ErrorCode> {
+pub fn build_revoc_reg_def_request(submitter_did: &str, data: &str) -> Result<String, IndyError> {
     ledger::build_revoc_reg_def_request(submitter_did, data).wait()
 }
 
-pub fn build_revoc_reg_entry_request(submitter_did: &str, rev_reg_def_id: &str, rev_reg_type: &str, value: &str) -> Result<String, ErrorCode> {
+pub fn build_revoc_reg_entry_request(submitter_did: &str, rev_reg_def_id: &str, rev_reg_type: &str, value: &str) -> Result<String, IndyError> {
     ledger::build_revoc_reg_entry_request(submitter_did, rev_reg_def_id, rev_reg_type, value).wait()
 }
 
-pub fn build_get_revoc_reg_def_request(submitter_did: Option<&str>, id: &str) -> Result<String, ErrorCode> {
+pub fn build_get_revoc_reg_def_request(submitter_did: Option<&str>, id: &str) -> Result<String, IndyError> {
     ledger::build_get_revoc_reg_def_request(submitter_did, id).wait()
 }
 
-pub fn build_get_revoc_reg_request(submitter_did: Option<&str>, rev_reg_def_id: &str, timestamp: u64) -> Result<String, ErrorCode> {
+pub fn build_get_revoc_reg_request(submitter_did: Option<&str>, rev_reg_def_id: &str, timestamp: u64) -> Result<String, IndyError> {
     ledger::build_get_revoc_reg_request(submitter_did, rev_reg_def_id, timestamp as i64).wait()
 }
 
-pub fn build_get_revoc_reg_delta_request(submitter_did: Option<&str>, rev_reg_def_id: &str, from: Option<u64>, to: u64) -> Result<String, ErrorCode> {
+pub fn build_get_revoc_reg_delta_request(submitter_did: Option<&str>, rev_reg_def_id: &str, from: Option<u64>, to: u64) -> Result<String, IndyError> {
     ledger::build_get_revoc_reg_delta_request(submitter_did, rev_reg_def_id, from.map(|f| f as i64).unwrap_or(-1), to as i64).wait()
 }
 
-pub fn parse_get_schema_response(get_schema_response: &str) -> Result<(String, String), ErrorCode> {
+pub fn parse_get_schema_response(get_schema_response: &str) -> Result<(String, String), IndyError> {
     ledger::parse_get_schema_response(get_schema_response).wait()
 }
 
-pub fn parse_get_cred_def_response(get_cred_def_response: &str) -> Result<(String, String), ErrorCode> {
+pub fn parse_get_cred_def_response(get_cred_def_response: &str) -> Result<(String, String), IndyError> {
     ledger::parse_get_cred_def_response(get_cred_def_response).wait()
 }
 
-pub fn parse_get_revoc_reg_def_response(get_revoc_reg_def_response: &str) -> Result<(String, String), ErrorCode> {
+pub fn parse_get_revoc_reg_def_response(get_revoc_reg_def_response: &str) -> Result<(String, String), IndyError> {
     ledger::parse_get_revoc_reg_def_response(get_revoc_reg_def_response).wait()
 }
 
-pub fn parse_get_revoc_reg_response(get_revoc_reg_response: &str) -> Result<(String, String, u64), ErrorCode> {
+pub fn parse_get_revoc_reg_response(get_revoc_reg_response: &str) -> Result<(String, String, u64), IndyError> {
     ledger::parse_get_revoc_reg_response(get_revoc_reg_response).wait()
 }
 
-pub fn parse_get_revoc_reg_delta_response(get_revoc_reg_delta_response: &str) -> Result<(String, String, u64), ErrorCode> {
+pub fn parse_get_revoc_reg_delta_response(get_revoc_reg_delta_response: &str) -> Result<(String, String, u64), IndyError> {
     ledger::parse_get_revoc_reg_delta_response(get_revoc_reg_delta_response).wait()
 }
 
@@ -196,7 +196,7 @@ pub fn register_transaction_parser_for_sp(txn_type: &str, parse: CustomTransacti
     super::results::result_to_empty(err, receiver)
 }
 
-pub fn get_response_metadata(response: &str) -> Result<String, ErrorCode> {
+pub fn get_response_metadata(response: &str) -> Result<String, IndyError> {
     ledger::get_response_metadata(response).wait()
 }
 
@@ -222,6 +222,7 @@ pub fn post_entities() -> (&'static str, &'static str, &'static str) {
 
             let schema_request = build_schema_request(&issuer_did, &schema_json).unwrap();
             let schema_response = sign_and_submit_request(pool_handle, wallet_handle, &issuer_did, &schema_request).unwrap();
+            pool::check_response_type(&schema_response, ::utils::types::ResponseType::REPLY);
 
             let get_schema_request = build_get_schema_request(Some(&issuer_did), &schema_id).unwrap();
             let get_schema_response = submit_request_with_retries(pool_handle, &get_schema_request, &schema_response).unwrap();
@@ -234,7 +235,8 @@ pub fn post_entities() -> (&'static str, &'static str, &'static str) {
                                                                                               None,
                                                                                               Some(&anoncreds::revocation_cred_def_config())).unwrap();
             let cred_def_request = build_cred_def_txn(&issuer_did, &cred_def_json).unwrap();
-            sign_and_submit_request(pool_handle, wallet_handle, &issuer_did, &cred_def_request).unwrap();
+            let cred_def_response = sign_and_submit_request(pool_handle, wallet_handle, &issuer_did, &cred_def_request).unwrap();
+            pool::check_response_type(&cred_def_response, ::utils::types::ResponseType::REPLY);
 
             let tails_writer_config = anoncreds::tails_writer_config();
             let tails_writer_handle = blob_storage::open_writer("default", &tails_writer_config).unwrap();
@@ -249,7 +251,8 @@ pub fn post_entities() -> (&'static str, &'static str, &'static str) {
                                                              tails_writer_handle).unwrap();
 
             let rev_reg_def_request = build_revoc_reg_def_request(&issuer_did, &revoc_reg_def_json).unwrap();
-            sign_and_submit_request(pool_handle, wallet_handle, &issuer_did, &rev_reg_def_request).unwrap();
+            let rev_reg_def_response = sign_and_submit_request(pool_handle, wallet_handle, &issuer_did, &rev_reg_def_request).unwrap();
+            pool::check_response_type(&rev_reg_def_response, ::utils::types::ResponseType::REPLY);
 
             let rev_reg_entry_request = build_revoc_reg_entry_request(&issuer_did, &rev_reg_id, REVOC_REG_TYPE, &rev_reg_entry_json).unwrap();
             sign_and_submit_request(pool_handle, wallet_handle, &issuer_did, &rev_reg_entry_request).unwrap();

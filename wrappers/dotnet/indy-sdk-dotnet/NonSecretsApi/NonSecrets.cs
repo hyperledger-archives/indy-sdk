@@ -162,6 +162,7 @@ namespace Hyperledger.Indy.NonSecretsApi
             ParamGuard.NotNull(wallet, "wallet");
             ParamGuard.NotNullOrWhiteSpace(type, "type");
             ParamGuard.NotNullOrWhiteSpace(id, "id");
+            ParamGuard.NotNullOrWhiteSpace(tagsJson, "tagsJson");
 
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
@@ -204,6 +205,7 @@ namespace Hyperledger.Indy.NonSecretsApi
             ParamGuard.NotNull(wallet, "wallet");
             ParamGuard.NotNullOrWhiteSpace(type, "type");
             ParamGuard.NotNullOrWhiteSpace(id, "id");
+            ParamGuard.NotNullOrWhiteSpace(tagsJson, "tagsJson");
 
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
@@ -348,6 +350,7 @@ namespace Hyperledger.Indy.NonSecretsApi
             ParamGuard.NotNull(wallet, "wallet");
             ParamGuard.NotNullOrWhiteSpace(type, "type");
             ParamGuard.NotNullOrWhiteSpace(queryJson, "queryJson");
+            ParamGuard.NotNullOrWhiteSpace(optionsJson, "optionsJson");
 
             var taskCompletionSource = new TaskCompletionSource<WalletSearch>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);

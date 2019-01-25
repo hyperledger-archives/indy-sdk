@@ -517,47 +517,47 @@ Table 1 is a glossary of the DKMS key names and types used in these diagrams.
     <td>Description</td>
   </tr>
   <tr>
-    <td>Apx-pk</td>
+    <td>A<sub>p</sub><sup>x-pk</sup></td>
     <td>Agent Policy Public Key for agent x</td>
   </tr>
   <tr>
-    <td>Apx-sk</td>
+    <td>A<sub>p</sub><sup>x-sk</sup></td>
     <td>Agent Policy Private (Secret) Key for agent x</td>
   </tr>
   <tr>
-    <td>AAx-ID</td>
+    <td>A<sub>A</sub><sup>x-ID</sup></td>
     <td>Alice's Agent to Agent Identifier for agent x</td>
   </tr>
   <tr>
-    <td>AAx-vk</td>
+    <td>A<sub>A</sub><sup>x-vk</sup></td>
     <td>Alice's Agent to Agent Public Verification Key for agent x</td>
   </tr>
   <tr>
-    <td>AAx-sk</td>
+    <td>A<sub>A</sub><sup>x-sk</sup></td>
     <td>Alice's Agent to Agent Private Signing Key for agent x</td>
   </tr>
   <tr>
-    <td>ABDID</td>
+    <td>A<sub>B</sub><sup>DID</sup></td>
     <td>Alice’s DID for connection with Bob</td>
   </tr>
   <tr>
-    <td>ABx</td>
+    <td>A<sub>B</sub><sup>x</sup></td>
     <td>Alice’s key pair for connection with Bob for agent x</td>
   </tr>
   <tr>
-    <td>ABx-vk</td>
+    <td>A<sub>B</sub><sup>x-vk</sup></td>
     <td>Alice’s Public Verification Key for connection with Bob for agent x</td>
   </tr>
   <tr>
-    <td>ABx-sk</td>
+    <td>A<sub>B</sub><sup>x-sk</sup></td>
     <td>Alice’s Private Signing Key for connection with Bob for agent x</td>
   </tr>
   <tr>
-    <td>AWx-k</td>
+    <td>A<sub>W</sub><sup>x-k</sup></td>
     <td>Wallet Encryption Key for agent x</td>
   </tr>
   <tr>
-    <td>ALS</td>
+    <td>A<sub>LS</sub></td>
     <td>Alice's Link Secret</td>
   </tr>
 </table>

@@ -8,7 +8,7 @@ use domain::config::{ForwardAgentConfig, WalletStorageConfig};
 use domain::invite::ForwardAgentDetail;
 use failure::{err_msg, Error, Fail};
 use futures::*;
-use indy::{did, ErrorCode, pairwise, pairwise::Pairwise, wallet};
+use indy::{did, ErrorCode, IndyError, pairwise, pairwise::Pairwise, wallet};
 use serde_json;
 use std::convert::Into;
 use utils::futures::*;
@@ -46,7 +46,7 @@ impl ForwardAgent {
 
                 wallet::create_wallet(&wallet_config, &wallet_credentials)
                     .then(|res| match res {
-                        Err(ErrorCode::WalletAlreadyExistsError) => Ok(()),
+                        Err(IndyError { error_code: ErrorCode::WalletAlreadyExistsError, .. }) => Ok(()),
                         r => r
                     })
                     .map(|_| (config, wallet_storage_config, wallet_config, wallet_credentials))
@@ -74,7 +74,7 @@ impl ForwardAgent {
                 did::create_and_store_my_did(wallet_handle, &did_info)
                     .then(|res| match res {
                         Ok(_) => Ok(()),
-                        Err(ErrorCode::DidAlreadyExistsError) => Ok(()), // Already exists
+                        Err(IndyError { error_code: ErrorCode::DidAlreadyExistsError, .. }) => Ok(()), // Already exists
                         Err(err) => Err(err),
                     })
                     .map(move |_| (wallet_handle, config, wallet_storage_config))

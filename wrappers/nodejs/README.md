@@ -89,8 +89,14 @@ var verkey = await indy.abbreviateVerkey(did, fullVerkey)
 
 All the functions may yield an IndyError. The errors are based on libindy error codes defined [here](https://github.com/hyperledger/indy-sdk/blob/master/libindy/include/indy_mod.h).
 
-* `err.indyCode` - the code number from libindy
-* `err.indyName` - the name string for the code
+* `err.indyCode`: Int - code number from libindy
+* `err.indyName`: String - name for the error code
+* `err.indyMessage`: String - human-readable error description
+* `err.indyBacktrace`: String? - if enabled, this is the libindy backtrace string
+
+Collecting of backtrace can be enabled by:
+1. Setting environment variable `RUST_BACKTRACE=1`
+2. Calling [setRuntimeConfig](#setruntimeconfig--config-)(`{collect_backtrace: true}`)
 
 ### anoncreds
 
@@ -1255,6 +1261,7 @@ null \(common USER\)
 TRUSTEE
 STEWARD
 TRUST\_ANCHOR
+NETWORK\_MONITOR
 empty string to reset role
 * __->__ `request`: Json
 
@@ -2525,7 +2532,10 @@ Set libindy runtime configuration. Can be optionally called to change current pa
 * `config`: Json
 ```
 {
-  "crypto_thread_pool_size": <int> - size of thread pool for the most expensive crypto operations. (4 by default)
+  "crypto_thread_pool_size": Optional<int> - size of thread pool for the most expensive crypto operations. (4 by default)
+  "collect_backtrace": Optional<bool> - whether errors backtrace should be collected.
+    Capturing of backtrace can affect library performance.
+    NOTE: must be set before invocation of any other API functions.
 }
 ```
 

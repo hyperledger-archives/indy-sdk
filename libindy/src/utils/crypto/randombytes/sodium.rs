@@ -1,9 +1,11 @@
 extern crate libc;
 extern crate sodiumoxide;
+extern crate zeroize;
 
 use errors::prelude::*;
 use self::libc::size_t;
-use utils::crypto::memzero::memzero;
+
+use self::zeroize::Zeroize;
 
 pub const SEEDBYTES: usize = 32; // randombytes_seedbytes
 
@@ -26,11 +28,7 @@ impl Seed {
     }
 }
 
-impl Drop for Seed {
-    fn drop(&mut self) {
-        memzero(self.0.as_mut());
-    }
-}
+memzeroize!(Seed, 0);
 
 pub fn randombytes(size: usize) -> Vec<u8> {
     self::sodiumoxide::randombytes::randombytes(size)

@@ -3,10 +3,8 @@ import '../module-resolver-helper'
 import { assert } from 'chai'
 import { validatePaymentTxn } from 'helpers/asserts'
 import { credentialDefCreate } from 'helpers/entities'
-import { gcTest } from 'helpers/gc'
-import { TIMEOUT_GC } from 'helpers/test-constants'
 import { initVcxTestMode, shouldThrow } from 'helpers/utils'
-import { CredentialDef, CredentialDefPaymentManager, rustAPI, VCXCode } from 'src'
+import { CredentialDef, CredentialDefPaymentManager, VCXCode } from 'src'
 
 describe('CredentialDef:', () => {
   before(() => initVcxTestMode())
@@ -36,15 +34,6 @@ describe('CredentialDef:', () => {
       assert.equal(error.vcxCode, VCXCode.INVALID_CREDENTIAL_DEF_HANDLE)
     })
 
-    it('throws: credential def released', async () => {
-      const credentialDef = await credentialDefCreate()
-      const data = await credentialDef.serialize()
-      assert.ok(data)
-      assert.equal(data.data.source_id, credentialDef.sourceId)
-      assert.equal(await credentialDef.release(), VCXCode.SUCCESS)
-      const error = await shouldThrow(() => credentialDef.serialize())
-      assert.equal(error.vcxCode, VCXCode.INVALID_CREDENTIAL_DEF_HANDLE)
-    })
   })
 
   describe('deserialize:', () => {
@@ -60,22 +49,6 @@ describe('CredentialDef:', () => {
     it('throws: incorrect data', async () => {
       const error = await shouldThrow(async () => CredentialDef.deserialize({ data: { source_id: 'Invalid' } } as any))
       assert.equal(error.vcxCode, VCXCode.CREATE_CREDENTIAL_DEF_ERR)
-    })
-  })
-
-  describe('release:', () => {
-    it('success', async () => {
-      const credentialDef = await credentialDefCreate()
-      assert.equal(await credentialDef.release(), VCXCode.SUCCESS)
-      const errorSerialize = await shouldThrow(() => credentialDef.serialize())
-      assert.equal(errorSerialize.vcxCode, VCXCode.INVALID_CREDENTIAL_DEF_HANDLE)
-    })
-
-    // TODO: Enable once https://evernym.atlassian.net/browse/EN-668 is resolved
-    it.skip('throws: not initialized', async () => {
-      const credentialDef = new CredentialDef(null as any, {} as any)
-      const error = await shouldThrow(() => credentialDef.release())
-      assert.equal(error.vcxCode, VCXCode.UNKNOWN_ERROR)
     })
   })
 
@@ -108,22 +81,4 @@ describe('CredentialDef:', () => {
     })
   })
 
-  describe('GC:', function () {
-    this.timeout(TIMEOUT_GC)
-
-    const credentialDefCreateAndDelete = async () => {
-      let credentialDef: CredentialDef | null = await credentialDefCreate()
-      const handle = credentialDef.handle
-      credentialDef = null
-      return handle
-    }
-    it('calls release', async () => {
-      const handle = await credentialDefCreateAndDelete()
-      await gcTest({
-        handle,
-        serialize: rustAPI().vcx_credentialdef_serialize,
-        stopCode: VCXCode.INVALID_CREDENTIAL_DEF_HANDLE
-      })
-    })
-  })
 })
