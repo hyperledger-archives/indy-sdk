@@ -37,13 +37,42 @@ public class PackUnpackMessageTest extends IndyIntegrationTestWithSingleWallet {
         String message = "hello world";
 
         JSONArray receieversArray = new JSONArray();
-        receieversArray.put(IndyIntegrationTest.VERKEY_MY1);        
+        receieversArray.put(IndyIntegrationTest.VERKEY_MY1);
 
         String myVk = Crypto.createKey(wallet, MY1_IDENTITY_KEY_JSON).get();
 
         byte[] packedMessage = Crypto.packMessage(wallet, receieversArray.toString(), null, message.getBytes()).get();
 
         assertNotNull(packedMessage);
+    }
+
+    @Test(expected = java.util.concurrent.ExecutionException.class)
+    public void testPackMessageSuccessfullyWithNoReceivers() throws Exception {
+        String message = "hello world";
+
+        JSONArray receieversArray = new JSONArray();
+
+        String myVk = Crypto.createKey(wallet, MY1_IDENTITY_KEY_JSON).get();
+
+        byte[] packedMessage = Crypto.packMessage(wallet, receieversArray.toString(), null, message.getBytes()).get();
+
+        // this assert should never trigger since unpackMessage should throw exception
+        assertTrue(false);
+    }
+
+    @Test(expected = java.util.concurrent.ExecutionException.class)
+    public void testPackMessageSuccessfullyInvalidReceivers() throws Exception {
+        String message = "hello world";
+
+        JSONArray receieversArray = new JSONArray();
+        receieversArray.put("IndyIntegrationTest.VERKEY_MY1");
+
+        String myVk = Crypto.createKey(wallet, MY1_IDENTITY_KEY_JSON).get();
+
+        byte[] packedMessage = Crypto.packMessage(wallet, receieversArray.toString(), null, message.getBytes()).get();
+
+        // this assert should never trigger since unpackMessage should throw exception
+        assertTrue(false);
     }
 
     @Test(expected = java.util.concurrent.ExecutionException.class)
