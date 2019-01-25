@@ -29,7 +29,7 @@ test('ledger', async function (t) {
   await indy.createWallet(walletConfig, walletCredentials)
   var wh = await indy.openWallet(walletConfig, walletCredentials)
   var [trusteeDid] = await indy.createAndStoreMyDid(wh, { seed: '000000000000000000000000Trustee1' })
-  var [myDid, myVerkey] = await indy.createAndStoreMyDid(wh, { seed: '00000000000000000000000000000My1', cid: true })
+  var [myDid, myVerkey] = await indy.createAndStoreMyDid(wh, { })
   var schemaName = 'schema-' + cuid()
   var [schemaId, schema] = await indy.issuerCreateSchema(myDid, schemaName, '1.0', ['name', 'age'])
 

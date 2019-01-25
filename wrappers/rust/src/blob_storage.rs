@@ -1,6 +1,6 @@
 use futures::Future;
 
-use {ErrorCode, IndyHandle};
+use {ErrorCode, IndyHandle, IndyError};
 
 use std::ffi::CString;
 
@@ -9,7 +9,7 @@ use ffi::ResponseI32CB;
 
 use utils::callbacks::{ClosureHandler, ResultHandler};
 
-pub fn open_reader(xtype: &str, config_json: &str) -> Box<Future<Item=IndyHandle, Error=ErrorCode>> {
+pub fn open_reader(xtype: &str, config_json: &str) -> Box<Future<Item=IndyHandle, Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_handle();
 
     let err = _open_reader(command_handle, xtype, config_json, cb);
@@ -24,7 +24,7 @@ fn _open_reader(command_handle: IndyHandle, xtype: &str, config_json: &str, cb: 
     ErrorCode::from(unsafe { blob_storage::indy_open_blob_storage_reader(command_handle, xtype.as_ptr(), config_json.as_ptr(), cb) })
 }
 
-pub fn open_writer(xtype: &str, config_json: &str) -> Box<Future<Item=IndyHandle, Error=ErrorCode>> {
+pub fn open_writer(xtype: &str, config_json: &str) -> Box<Future<Item=IndyHandle, Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_handle();
 
     let err = _open_writer(command_handle, xtype, config_json, cb);

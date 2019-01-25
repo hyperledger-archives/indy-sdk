@@ -9,7 +9,7 @@ use domain::internal_message::InternalMessage;
 use domain::key_deligation_proof::KeyDlgProof;
 use failure::{err_msg, Error, Fail};
 use futures::*;
-use indy::{did, crypto, pairwise, ErrorCode};
+use indy::{did, crypto, pairwise, ErrorCode, IndyError};
 use std::convert::Into;
 use std::collections::HashMap;
 use utils::futures::*;
@@ -834,7 +834,7 @@ impl AgentConnection {
 
         did::store_their_did(self.wallet_handle, &their_did_info)
             .then(|res| match res {
-                Err(ErrorCode::WalletItemAlreadyExists) => Ok(()),
+                Err(IndyError { error_code: ErrorCode::WalletItemAlreadyExists, .. }) => Ok(()),
                 r => r
             })
             .map_err(|err| err.context("Can't create my DID for pairwise.").into())

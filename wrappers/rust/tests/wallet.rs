@@ -120,7 +120,7 @@ mod test_wallet_create {
 
         let result = wallet::create_wallet(&config, CREDENTIALS).wait();
 
-        assert_eq!(ErrorCode::WalletUnknownTypeError, result.unwrap_err());
+        assert_eq!(ErrorCode::WalletUnknownTypeError, result.unwrap_err().error_code);
     }
 
     #[test]
@@ -141,7 +141,7 @@ mod test_wallet_create {
 
         let result = wallet::create_wallet(&config, credentials).wait();
 
-        assert_eq!(ErrorCode::CommonInvalidStructure, result.unwrap_err());
+        assert_eq!(ErrorCode::CommonInvalidStructure, result.unwrap_err().error_code);
     }
 
     #[test]
@@ -166,7 +166,7 @@ mod test_wallet_delete {
     #[inline]
     fn assert_wallet_deleted(config: &str, credentials: &str) {
         let result = wallet::open_wallet(config, credentials).wait();
-        assert_eq!(ErrorCode::WalletNotFoundError, result.unwrap_err());
+        assert_eq!(ErrorCode::WalletNotFoundError, result.unwrap_err().error_code);
     }
 
     #[test]
@@ -215,7 +215,7 @@ mod test_wallet_delete {
 
         let result = wallet::delete_wallet(&config, DEFAULT_CREDENTIALS).wait();
         
-        assert_eq!(ErrorCode::CommonInvalidState, result.unwrap_err());
+        assert_eq!(ErrorCode::CommonInvalidState, result.unwrap_err().error_code);
 
         wallet::close_wallet(handle).wait().unwrap();
         wallet::delete_wallet(&config, DEFAULT_CREDENTIALS).wait().unwrap();
@@ -234,7 +234,7 @@ mod test_wallet_delete {
 
         let result = wallet::delete_wallet(&config, DEFAULT_CREDENTIALS).wait();
 
-        assert_eq!(ErrorCode::WalletNotFoundError, result.unwrap_err());
+        assert_eq!(ErrorCode::WalletNotFoundError, result.unwrap_err().error_code);
     }
 
     #[test]
@@ -244,7 +244,7 @@ mod test_wallet_delete {
 
         let result = wallet::delete_wallet(&config, r#"{"key": "badkey"}"#).wait();
 
-        assert_eq!(ErrorCode::WalletAccessFailed, result.unwrap_err());
+        assert_eq!(ErrorCode::WalletAccessFailed, result.unwrap_err().error_code);
 
         wallet::delete_wallet(&config, DEFAULT_CREDENTIALS).wait().unwrap();
     }
@@ -255,7 +255,7 @@ mod test_wallet_delete {
 
         let result = wallet::delete_wallet(&config, DEFAULT_CREDENTIALS).wait();
 
-        assert_eq!(ErrorCode::WalletNotFoundError, result.unwrap_err());
+        assert_eq!(ErrorCode::WalletNotFoundError, result.unwrap_err().error_code);
     }
 
 }
@@ -299,7 +299,7 @@ mod test_wallet_open {
 
         let result = wallet::open_wallet(&config, DEFAULT_CREDENTIALS).wait();
         
-        assert_eq!(ErrorCode::WalletNotFoundError, result.unwrap_err());
+        assert_eq!(ErrorCode::WalletNotFoundError, result.unwrap_err().error_code);
     }
 
     #[test]
@@ -311,7 +311,7 @@ mod test_wallet_open {
 
         let result = wallet::open_wallet(&config, DEFAULT_CREDENTIALS).wait();
 
-        assert_eq!(ErrorCode::WalletAlreadyOpenedError, result.unwrap_err());
+        assert_eq!(ErrorCode::WalletAlreadyOpenedError, result.unwrap_err().error_code);
 
         wallet::close_wallet(handle).wait().unwrap();
         wallet::delete_wallet(&config, DEFAULT_CREDENTIALS).wait().unwrap();
@@ -343,7 +343,7 @@ mod test_wallet_open {
 
         let result = wallet::open_wallet(&config, DEFAULT_CREDENTIALS).wait();
 
-        assert_eq!(ErrorCode::WalletAccessFailed, result.unwrap_err());
+        assert_eq!(ErrorCode::WalletAccessFailed, result.unwrap_err().error_code);
 
         wallet::delete_wallet(&config, &credentials).wait().unwrap();
     }
@@ -361,7 +361,7 @@ mod test_wallet_open {
         wallet::close_wallet(handle).wait().unwrap();
 
         let result = wallet::open_wallet(&config, &credentials1).wait();
-        assert_eq!(ErrorCode::WalletAccessFailed, result.unwrap_err());
+        assert_eq!(ErrorCode::WalletAccessFailed, result.unwrap_err().error_code);
 
         let handle = wallet::open_wallet(&config, &credentials2).wait().unwrap();
         wallet::close_wallet(handle).wait().unwrap();
@@ -376,7 +376,7 @@ mod test_wallet_open {
 
         let result = wallet::open_wallet("{}", DEFAULT_CREDENTIALS).wait();
 
-        assert_eq!(ErrorCode::CommonInvalidStructure, result.unwrap_err());
+        assert_eq!(ErrorCode::CommonInvalidStructure, result.unwrap_err().error_code);
 
         wallet::delete_wallet(&config, DEFAULT_CREDENTIALS).wait().unwrap();
     }
@@ -405,7 +405,7 @@ mod test_wallet_close {
     #[test]
     fn close_wallet_invalid_handle() {
         let result = wallet::close_wallet(INVALID_HANDLE).wait();
-        assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err());
+        assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err().error_code);
     }
 
     #[test]
@@ -420,7 +420,7 @@ mod test_wallet_close {
 
         let result = wallet::close_wallet(handle).wait();
 
-        assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err());
+        assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err().error_code);
     }
 
 }
@@ -458,7 +458,7 @@ mod test_wallet_export {
 
         let result = wallet::export_wallet(handle, &config_export).wait();
 
-        assert_eq!(ErrorCode::CommonIOError, result.unwrap_err());
+        assert_eq!(ErrorCode::CommonIOError, result.unwrap_err().error_code);
         
         wallet::close_wallet(handle).wait().unwrap();
         wallet::delete_wallet(&config_wallet, DEFAULT_CREDENTIALS).wait().unwrap();
@@ -472,7 +472,7 @@ mod test_wallet_export {
 
         let result = wallet::export_wallet(handle, "{}").wait();
 
-        assert_eq!(ErrorCode::CommonInvalidStructure, result.unwrap_err());
+        assert_eq!(ErrorCode::CommonInvalidStructure, result.unwrap_err().error_code);
 
         wallet::close_wallet(handle).wait().unwrap();
         wallet::delete_wallet(&config_wallet, DEFAULT_CREDENTIALS).wait().unwrap();
@@ -483,7 +483,7 @@ mod test_wallet_export {
         let (config_export, path, _dir) = wallet_config::export::with_defaults();
 
         let result = wallet::export_wallet(INVALID_HANDLE, &config_export).wait();
-        assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err());
+        assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err().error_code);
         assert!(!path.exists());
     }
 }
@@ -555,10 +555,10 @@ mod test_wallet_import {
             &config_export
         ).wait();
 
-        assert_eq!(ErrorCode::CommonIOError, result.unwrap_err());
+        assert_eq!(ErrorCode::CommonIOError, result.unwrap_err().error_code);
 
         let result = wallet::open_wallet(&config_wallet, DEFAULT_CREDENTIALS).wait();
-        assert_eq!(ErrorCode::WalletNotFoundError, result.unwrap_err());
+        assert_eq!(ErrorCode::WalletNotFoundError, result.unwrap_err().error_code);
     }
 
     #[test]
@@ -567,7 +567,7 @@ mod test_wallet_import {
 
         let result = wallet::import_wallet(&config_wallet, DEFAULT_CREDENTIALS, "{}").wait();
 
-        assert_eq!(ErrorCode::CommonInvalidStructure, result.unwrap_err());
+        assert_eq!(ErrorCode::CommonInvalidStructure, result.unwrap_err().error_code);
     }
 
     #[test]
@@ -588,7 +588,7 @@ mod test_wallet_import {
             &config_import
         ).wait();
 
-        assert_eq!(ErrorCode::CommonInvalidStructure, result.unwrap_err());
+        assert_eq!(ErrorCode::CommonInvalidStructure, result.unwrap_err().error_code);
     }
 
     #[test]
@@ -609,7 +609,7 @@ mod test_wallet_import {
             &config_export
         ).wait();
 
-        assert_eq!(ErrorCode::WalletAlreadyExistsError, result.unwrap_err());
+        assert_eq!(ErrorCode::WalletAlreadyExistsError, result.unwrap_err().error_code);
 
         wallet::delete_wallet(&config_wallet, DEFAULT_CREDENTIALS).wait().unwrap();
     }

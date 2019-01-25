@@ -1,4 +1,5 @@
 var util = require('util')
+var capi = require('./indyBinding')
 
 var errors = {
   100: 'CommonInvalidParam1',
@@ -58,6 +59,17 @@ function IndyError (err) {
     this.message = errors[err]
     this.indyCode = err
     this.indyName = errors[err]
+    try {
+      this.indyCurrentErrorJson = capi.getCurrentError()
+      var details = JSON.parse(this.indyCurrentErrorJson)
+      if (typeof details.message === 'string') {
+        this.indyMessage = details.message
+      }
+      if (typeof details.backtrace === 'string') {
+        this.indyBacktrace = details.backtrace
+      }
+    } catch (e) {
+    }
   } else {
     this.message = (err + '')
   }
