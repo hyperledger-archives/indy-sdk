@@ -17,7 +17,7 @@ import static org.junit.Assert.*;
 public class PackUnpackMessageTest extends IndyIntegrationTestWithSingleWallet {
 
     @Test
-    public void testPackMessage() throws Exception {
+    public void testPackMessageSuccessfully() throws Exception {
         String message = "hello world";
 
         JSONArray receieversArray = new JSONArray();
@@ -32,13 +32,45 @@ public class PackUnpackMessageTest extends IndyIntegrationTestWithSingleWallet {
         assertNotNull(packedMessage);
     }
 
-    // This test proves the API is hooked up correctly and error result is returned
+    @Test
+    public void testPackMessageSuccessfullyWithOneReceiver() throws Exception {
+        String message = "hello world";
+
+        JSONArray receieversArray = new JSONArray();
+        receieversArray.put(IndyIntegrationTest.VERKEY_MY1);        
+
+        String myVk = Crypto.createKey(wallet, MY1_IDENTITY_KEY_JSON).get();
+
+        byte[] packedMessage = Crypto.packMessage(wallet, receieversArray.toString(), null, message.getBytes()).get();
+
+        assertNotNull(packedMessage);
+    }
+
     @Test(expected = java.util.concurrent.ExecutionException.class)
     public void testUnpackMessageWithInvalidStructure() throws Exception {
 
         String packedMessage = "jibberish";
         byte[] unpackedMessage = Crypto.unpackMessage(wallet, packedMessage.getBytes()).get();
 
+        // this assert should never trigger since unpackMessage should throw exception
+        assertTrue(false);
+    }
+
+    @Test
+    public void testUnpackMessageSuccessfully() throws Exception {
+        String message = "hello world";
+
+        JSONArray receieversArray = new JSONArray();
+        receieversArray.put(IndyIntegrationTest.VERKEY_MY1);
+        receieversArray.put(IndyIntegrationTest.VERKEY_MY2);
+        receieversArray.put(IndyIntegrationTest.VERKEY_TRUSTEE);
+
+        String myVk = Crypto.createKey(wallet, MY1_IDENTITY_KEY_JSON).get();
+
+        byte[] packedMessage = Crypto.packMessage(wallet, receieversArray.toString(), null, message.getBytes()).get();
+        byte[] unpackedMessage = Crypto.unpackMessage(wallet, packedMessage).get();
+
+        assertNotNull(unpackedMessage);
     }
 
 }
