@@ -172,11 +172,7 @@ pub fn list_addresses() -> Result<Vec<String>, u32> {
 fn is_valid_address(address: &str, method: &str) -> bool {
     let prefix = format!("pay:{}", method);
 
-    if address.starts_with(&prefix) {
-        return true
-    }
-
-    return false
+    address.starts_with(&prefix)
 }
 
 pub fn get_wallet_token_info() -> Result<WalletInfo, u32> {
@@ -196,6 +192,8 @@ pub fn get_wallet_token_info() -> Result<WalletInfo, u32> {
             for utxo in info.utxo.iter() { balance += utxo.amount as u64; }
 
             wallet_info.push(info);
+        } else {
+            warn!("payment address {} is not compatible with payment type '{}'", address, method);
         }
     }
 
