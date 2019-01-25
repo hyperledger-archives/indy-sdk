@@ -36,6 +36,8 @@ extern crate uuid;
 
 #[macro_use]
 extern crate derivative;
+extern crate sodiumoxide;
+extern crate core;
 
 // Note that to use macroses from util inside of other modules it must be loaded first!
 #[macro_use]

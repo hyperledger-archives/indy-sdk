@@ -8,6 +8,7 @@ use ffi::{ResponseEmptyCB,
 use futures::Future;
 
 use std::ffi::CString;
+use std::ptr::null;
 
 use {ErrorCode, IndyHandle, IndyError};
 use utils::callbacks::{ClosureHandler, ResultHandler};
@@ -271,6 +272,68 @@ fn _anon_decrypt(command_handle: IndyHandle, wallet_handle: IndyHandle, recipien
                                  recipient_vk.as_ptr(),
                                  encrypted_message.as_ptr() as *const u8,
                                  encrypted_message.len() as u32, cb)
+    })
+}
+
+/// Unpacks a message packed using indy_pack_message which follows the wire message format HIPE
+/// (Experimental)
+///
+///
+/// # Arguments
+/// * `wallet_handle`: wallet handle (created by Wallet::open).
+/// * `message`: a pointer to the first byte of the message to be encrypted
+/// * `receiver_keys`: a JSON array as a string containing a list of the receivers verkey's
+/// * `sender` : a string of the sender's verkey When None is used in this parameter, anoncrypt is used
+/// # Returns
+/// a json structure in the form of a JWE that contains the encrypted message and associated metadata
+pub fn pack_message(wallet_handle: IndyHandle, message: &[u8], receiver_keys: &str, sender: Option<&str>) -> Box<Future<Item=Vec<u8>, Error=IndyError>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
+
+    let err= _pack_message(command_handle, wallet_handle, message, receiver_keys, sender, cb);
+
+    ResultHandler::slice(command_handle, err, receiver)
+}
+
+fn _pack_message(command_handle: IndyHandle, wallet_handle: IndyHandle, message: &[u8], receiver_keys: &str, sender: Option<&str>, cb: Option<ResponseSliceCB>) -> ErrorCode {
+    let receiver_keys = c_str!(receiver_keys);
+    let sender_str = opt_c_str!(sender);
+
+    ErrorCode::from(unsafe {
+        crypto::indy_pack_message(command_handle,
+                                  wallet_handle,
+                                  message.as_ptr() as *const u8,
+                                  message.len() as u32,
+                                  receiver_keys.as_ptr(),
+                                  opt_c_ptr!(sender, sender_str),
+                                  cb)
+    })
+
+}
+
+/// Unpacks a message packed using indy_pack_message which follows the wire message format HIPE
+/// (Experimental)
+///
+///
+/// # Arguments
+/// * `wallet_handle`: wallet handle (created by Wallet::open).
+/// * `jwe`: a pointer to the first byte of the JWE string
+/// # Returns
+/// a json structure that contains a decrypted message and a sender_verkey if packed with authcrypt
+pub fn unpack_message(wallet_handle: IndyHandle, jwe: &[u8]) -> Box<Future<Item=Vec<u8>, Error=IndyError>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
+
+    let err= _unpack_message(command_handle, wallet_handle, jwe, cb);
+
+    ResultHandler::slice(command_handle, err, receiver)
+}
+
+fn _unpack_message(command_handle: IndyHandle, wallet_handle: IndyHandle, jwe: &[u8], cb: Option<ResponseSliceCB>) -> ErrorCode {
+    ErrorCode::from(unsafe {
+        crypto::indy_unpack_message(command_handle,
+                                    wallet_handle,
+                                    jwe.as_ptr() as *const u8,
+                                    jwe.len() as u32,
+                                    cb)
     })
 }
 

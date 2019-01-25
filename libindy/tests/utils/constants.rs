@@ -51,3 +51,4 @@ pub const WALLET_CONFIG: &'static str = r#"{"id":"wallet_1"}"#;
 pub const DEFAULT_WALLET_CONFIG: &'static str = r#"{"id":"wallet_1","storage_type":"default"}"#;
 pub const INMEM_WALLET_CONFIG: &'static str = r#"{"id":"wallet_1","storage_type":"inmem"}"#;
 pub const UNKNOWN_WALLET_CONFIG: &'static str = r#"{"id":"wallet_1","storage_type":"unknown"}"#;
+pub const AGENT_MESSAGE: &'static str = r#"{ "@id": "123456780","@type":"did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/basicmessage/1.0/message","sent_time": "2019-01-15 18:42:01Z","content": "Your hovercraft is full of eels."}"#;
