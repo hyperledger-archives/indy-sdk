@@ -46,8 +46,36 @@ public class PackUnpackMessageTest extends IndyIntegrationTestWithSingleWallet {
         assertNotNull(packedMessage);
     }
 
+    @Test
+    public void testPackSuccessWithSenderVerykey() throws Exception {
+        String message = "hello world";
+
+        JSONArray receieversArray = new JSONArray();
+        receieversArray.put(IndyIntegrationTest.VERKEY_MY1);
+
+        String myVk = Crypto.createKey(wallet, MY1_IDENTITY_KEY_JSON).get();
+
+        byte[] packedMessage = Crypto.packMessage(wallet, receieversArray.toString(), myVk, message.getBytes()).get();
+
+        assertNotNull(packedMessage);
+    }
+
     @Test(expected = java.util.concurrent.ExecutionException.class)
-    public void testPackMessageSuccessfullyWithNoReceivers() throws Exception {
+    public void testPackErrorsWithIncorrectSenderVerykey() throws Exception {
+        String message = "hello world";
+
+        JSONArray receieversArray = new JSONArray();
+        receieversArray.put(IndyIntegrationTest.VERKEY_MY1);
+
+        String myVk = Crypto.createKey(wallet, MY1_IDENTITY_KEY_JSON).get();
+
+        byte[] packedMessage = Crypto.packMessage(wallet, receieversArray.toString(), IndyIntegrationTest.VERKEY_MY2, message.getBytes()).get();
+
+        assertNotNull(packedMessage);
+    }
+
+    @Test(expected = java.util.concurrent.ExecutionException.class)
+    public void testPackMessageErrorsWithNoReceivers() throws Exception {
         String message = "hello world";
 
         JSONArray receieversArray = new JSONArray();
@@ -61,7 +89,7 @@ public class PackUnpackMessageTest extends IndyIntegrationTestWithSingleWallet {
     }
 
     @Test(expected = java.util.concurrent.ExecutionException.class)
-    public void testPackMessageSuccessfullyInvalidReceivers() throws Exception {
+    public void testPackMessageErrorsInvalidReceivers() throws Exception {
         String message = "hello world";
 
         JSONArray receieversArray = new JSONArray();
@@ -76,7 +104,7 @@ public class PackUnpackMessageTest extends IndyIntegrationTestWithSingleWallet {
     }
 
     @Test(expected = java.util.concurrent.ExecutionException.class)
-    public void testUnpackMessageWithInvalidStructure() throws Exception {
+    public void testUnpackMessageErrorsWithInvalidStructure() throws Exception {
 
         String packedMessage = "jibberish";
         byte[] unpackedMessage = Crypto.unpackMessage(wallet, packedMessage.getBytes()).get();
@@ -102,4 +130,18 @@ public class PackUnpackMessageTest extends IndyIntegrationTestWithSingleWallet {
         assertNotNull(unpackedMessage);
     }
 
+    @Test
+    public void testupackSuccessWithSenderVerykey() throws Exception {
+        String message = "hello world";
+
+        JSONArray receieversArray = new JSONArray();
+        receieversArray.put(IndyIntegrationTest.VERKEY_MY1);
+
+        String myVk = Crypto.createKey(wallet, MY1_IDENTITY_KEY_JSON).get();
+
+        byte[] packedMessage = Crypto.packMessage(wallet, receieversArray.toString(), myVk, message.getBytes()).get();
+        byte[] unpackedMessage = Crypto.unpackMessage(wallet, packedMessage).get();
+
+        assertNotNull(unpackedMessage);
+    }
 }
