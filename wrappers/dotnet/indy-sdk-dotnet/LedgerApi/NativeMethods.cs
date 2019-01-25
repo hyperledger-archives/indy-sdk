@@ -338,5 +338,9 @@ namespace Hyperledger.Indy.LedgerApi
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_parse_get_revoc_reg_delta_response(int command_handle, string get_revoc_reg_delta_response, ParseRegistryResponseCompletedDelegate cb);
 
+        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_get_response_metadata(int command_handle, string response, GetResponseMetadataCompletedDelegate cb);
+
+        internal delegate void GetResponseMetadataCompletedDelegate(int xcommand_handle, int err, string response_metadata);
     }
 }

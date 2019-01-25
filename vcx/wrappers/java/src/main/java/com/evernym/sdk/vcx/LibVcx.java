@@ -136,7 +136,7 @@ public abstract class LibVcx {
      */
 
         /** Creates a credential object from the specified credentialdef handle. Populates a handle the new credential. */
-        public int vcx_issuer_create_credential(int command_handle, String source_id, String cred_def_id, String issuer_did, String credential_data, String credential_name, long price, Callback cb);
+        public int vcx_issuer_create_credential(int command_handle, String source_id, int cred_def_handle, String issuer_did, String credential_data, String credential_name, String price, Callback cb);
 
         /** Asynchronously sends the credential offer to the connection. */
         public int vcx_issuer_send_credential_offer(int command_handle, int credential_handle, int connection_handle, Callback cb);
@@ -178,7 +178,7 @@ public abstract class LibVcx {
         /**
          * Creates a proof object.  Populates a handle to the new proof.
          */
-        public int vcx_proof_create(int command_handle, String source_id, String requested_attrs, String requested_predicates, String name, Callback cb);
+        public int vcx_proof_create(int command_handle, String source_id, String requested_attrs, String requested_predicates, String revocationInterval, String name, Callback cb);
 
         /**
          * Asynchronously send a proof request to the connection.

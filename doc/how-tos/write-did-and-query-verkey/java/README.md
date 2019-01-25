@@ -55,7 +55,7 @@ Save the updated version of `WriteDIDAndQueryVerkey.java`.
 Study the changes.
 
 A few operations in indy [can only be done by identities (DIDs) with
-special roles](https://docs.google.com/spreadsheets/d/1TWXF7NtBjSOaUIBeIH77SyZnawfo91cJ_ns4TR-wsq4/edit?usp=sharing). 
+special roles](https://github.com/hyperledger/indy-node/blob/master/docs/auth_rules.md). 
 For example, a DID that is a *steward* can add a node (the one
 they own) to the validator pool, and can create DIDs with a *trust anchor*
 role. A trust anchor DID can add arbitrary DIDs to the ledger.

@@ -1,6 +1,6 @@
 [package]
 name = "indy"
-version = "1.6.8"
+version = "1.7.0"
 description = "A library for assisting developers using LibIndy API"
 authors = ["Mike Lodder <redmike7@gmail.com>",
            "Matt Raffel <matt.raffel@evernyn.com>",
@@ -24,21 +24,20 @@ crate-type = ["rlib"]
 
 [dependencies]
 failure = "0.1.2"
-backtrace = "=0.3.9" # remove after will be solved: https://github.com/alexcrichton/backtrace-rs/issues/136
 futures = "0.1.24"
 lazy_static = "0.2"
 log = { version = "0.4.1", features = ["std"] }
 num-traits = "0.2"
 num-derive = "0.2"
-indy-sys = { path ="indy-sys", version = "=1.6.8" }
+indy-sys = { path ="indy-sys", version = "=1.7.0" }
 libc = "=0.2.41"
+serde_json = "1.0.22"
+serde_derive = "1.0.76"
+serde = "1.0.76"
 
 [dev-dependencies]
 bs58 = {version = "0.2.2", features = ["check"]}
 rand = "0.5.5"
-serde_json = "1.0.22"
-serde_derive = "1.0.76"
-serde = "1.0.76"
 rmp-serde = "0.13.6"
 byteorder = "1.0.0"
 dirs = "1.0.4"

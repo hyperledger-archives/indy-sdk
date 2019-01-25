@@ -1,44 +1,35 @@
-extern crate serde_json;
-extern crate indy_crypto;
-
-use std::collections::HashMap;
-
-use errors::common::CommonError;
-use errors::indy::IndyError;
-use services::wallet::{WalletService, RecordOptions};
-use domain::pairwise::{Pairwise, PairwiseInfo};
 use domain::crypto::did::{Did, TheirDid};
-
+use domain::pairwise::{Pairwise, PairwiseInfo};
+use errors::prelude::*;
+use services::wallet::{RecordOptions, WalletService};
+use std::collections::HashMap;
 use std::rc::Rc;
 use std::str;
 
-use std::result;
-
-type Result<T> = result::Result<T, IndyError>;
 
 pub enum PairwiseCommand {
     PairwiseExists(
         i32, // wallet handle
         String, // their_did
-        Box<Fn(Result<bool>) + Send>),
+        Box<Fn(IndyResult<bool>) + Send>),
     CreatePairwise(
         i32, // wallet handle
         String, // their_did
         String, // my_did
         Option<String>, // metadata
-        Box<Fn(Result<()>) + Send>),
+        Box<Fn(IndyResult<()>) + Send>),
     ListPairwise(
         i32, // wallet handle
-        Box<Fn(Result<String>) + Send>),
+        Box<Fn(IndyResult<String>) + Send>),
     GetPairwise(
         i32, // wallet handle
         String, // their_did
-        Box<Fn(Result<String>) + Send>),
+        Box<Fn(IndyResult<String>) + Send>),
     SetPairwiseMetadata(
         i32, // wallet handle
         String, // their_did
         Option<String>, // metadata
-        Box<Fn(Result<()>) + Send>)
+        Box<Fn(IndyResult<()>) + Send>)
 }
 
 pub struct PairwiseCommandExecutor {
@@ -79,7 +70,7 @@ impl PairwiseCommandExecutor {
 
     fn pairwise_exists(&self,
                        wallet_handle: i32,
-                       their_did: &str) -> Result<bool> {
+                       their_did: &str) -> IndyResult<bool> {
         debug!("pairwise_exists >>> wallet_handle: {:?}, their_did: {:?}", wallet_handle, their_did);
 
         let res = self.wallet_service.record_exists::<Pairwise>(wallet_handle, their_did)?;
@@ -93,7 +84,7 @@ impl PairwiseCommandExecutor {
                        wallet_handle: i32,
                        their_did: &str,
                        my_did: &str,
-                       metadata: Option<&str>) -> Result<()> {
+                       metadata: Option<&str>) -> IndyResult<()> {
         debug!("create_pairwise >>> wallet_handle: {:?}, their_did: {:?}, my_did: {:?}, metadata: {:?}", wallet_handle, their_did, my_did, metadata);
 
         self.wallet_service.get_indy_record::<Did>(wallet_handle, &my_did, &RecordOptions::id())?;
@@ -113,7 +104,7 @@ impl PairwiseCommandExecutor {
     }
 
     fn list_pairwise(&self,
-                     wallet_handle: i32) -> Result<String> {
+                     wallet_handle: i32) -> IndyResult<String> {
         debug!("list_pairwise >>> wallet_handle: {:?}", wallet_handle);
 
         let mut pairwise_search =
@@ -125,13 +116,13 @@ impl PairwiseCommandExecutor {
             let pairwise_id = pairwise_record.get_id();
 
             let pairwise_value = pairwise_record.get_value()
-                .ok_or(CommonError::InvalidStructure(format!("Pairwise not found for id: {}", pairwise_id)))?.to_string();
+                .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("Pairwise not found for id: {}", pairwise_id)))?.to_string();
 
             list_pairwise.push(pairwise_value);
         }
 
         let res = serde_json::to_string(&list_pairwise)
-            .map_err(|err| CommonError::InvalidStructure(format!("Can't serialize {:?}", err)))?;
+            .to_indy(IndyErrorKind::InvalidState, "Can't serialize pairwise list")?;
 
         debug!("list_pairwise <<< res: {:?}", res);
 
@@ -140,7 +131,7 @@ impl PairwiseCommandExecutor {
 
     fn get_pairwise(&self,
                     wallet_handle: i32,
-                    their_did: &str) -> Result<String> {
+                    their_did: &str) -> IndyResult<String> {
         debug!("get_pairwise >>> wallet_handle: {:?}, their_did: {:?}", wallet_handle, their_did);
 
         let pairwise_info =
@@ -148,8 +139,7 @@ impl PairwiseCommandExecutor {
                 self.wallet_service.get_indy_object::<Pairwise>(wallet_handle, &their_did, &RecordOptions::id_value())?);
 
         let res = serde_json::to_string(&pairwise_info)
-            .map_err(|e|
-                CommonError::InvalidState(format!("Can't serialize PairwiseInfo: {:?}", e)))?;
+            .to_indy(IndyErrorKind::InvalidState, "Can't serialize PairwiseInfo")?;
 
         debug!("get_pairwise <<< res: {:?}", res);
 
@@ -160,7 +150,7 @@ impl PairwiseCommandExecutor {
     fn set_pairwise_metadata(&self,
                              wallet_handle: i32,
                              their_did: &str,
-                             metadata: Option<&str>) -> Result<()> {
+                             metadata: Option<&str>) -> IndyResult<()> {
         debug!("set_pairwise_metadata >>> wallet_handle: {:?}, their_did: {:?}, metadata: {:?}", wallet_handle, their_did, metadata);
 
         let mut pairwise: Pairwise =

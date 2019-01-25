@@ -51,3 +51,23 @@ macro_rules! assert_match {
         })
     );
 }
+
+#[cfg(test)]
+macro_rules! assert_kind {
+    ($kind:expr, $var:expr) => (
+        match $var {
+            Err(e) => assert_eq!($kind, e.kind()),
+            _ => assert!(false, "Result expected to be error")
+        }
+    );
+}
+
+#[cfg(test)]
+macro_rules! assert_code {
+    ($code:expr, $var:expr) => (
+        match $var {
+            Err(e) => assert_eq!($code, e.error_code),
+            _ => assert!(false, "Result expected to be error")
+        }
+    );
+}

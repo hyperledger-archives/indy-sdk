@@ -4,14 +4,56 @@ extern crate indy_crypto;
 extern crate serde_json;
 
 use api::ErrorCode;
-use utils::ctypes;
 use utils::sequence;
 
 use self::libc::c_char;
 
 use std::collections::HashMap;
-use std::ffi::CString;
+use std::ffi::{CString, CStr};
+use std::str::Utf8Error;
 use std::sync::Mutex;
+
+/// C types helpers
+pub fn c_str_to_string<'a>(cstr: *const c_char) -> Result<Option<&'a str>, Utf8Error> {
+    if cstr.is_null() {
+        return Ok(None);
+    }
+
+    unsafe {
+        match CStr::from_ptr(cstr).to_str() {
+            Ok(str) => Ok(Some(str)),
+            Err(err) => Err(err)
+        }
+    }
+}
+
+macro_rules! check_useful_c_str {
+    ($x:ident, $e:expr) => {
+        let $x = match c_str_to_string($x) {
+            Ok(Some(val)) => val.to_string(),
+            _ => return $e,
+        };
+
+        if $x.is_empty() {
+            return $e
+        }
+    }
+}
+
+macro_rules! check_useful_c_byte_array {
+    ($ptr:ident, $len:expr, $err1:expr, $err2:expr) => {
+        if $ptr.is_null() {
+            return $err1;
+        }
+
+        if $len <= 0 {
+            return $err2;
+        }
+
+        let $ptr = unsafe { $crate::std::slice::from_raw_parts($ptr, $len as usize) };
+        let $ptr = $ptr.to_vec();
+    }
+}
 
 #[derive(Debug)]
 struct InmemWalletContext {

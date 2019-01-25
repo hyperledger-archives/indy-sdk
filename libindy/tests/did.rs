@@ -93,7 +93,7 @@ mod high_cases {
             let (wallet_handle, pool_handle) = utils::setup_with_wallet_and_pool();
 
             let res = did::key_for_did(pool_handle, wallet_handle, DID);
-            assert_eq!(ErrorCode::WalletItemNotFound, res.unwrap_err());
+            assert_code!(ErrorCode::WalletItemNotFound, res);
 
             utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
         }
@@ -103,7 +103,7 @@ mod high_cases {
             let (wallet_handle, pool_handle) = utils::setup_with_wallet_and_pool();
 
             let res = did::key_for_did(pool_handle + 1, wallet_handle, DID_TRUSTEE);
-            assert_eq!(ErrorCode::PoolLedgerInvalidPoolHandle, res.unwrap_err());
+            assert_code!(ErrorCode::PoolLedgerInvalidPoolHandle, res);
 
             utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
         }
@@ -113,7 +113,7 @@ mod high_cases {
             let (wallet_handle, did) = utils::setup_did();
 
             let res = did::key_for_did(-1, wallet_handle + 1, &did);
-            assert_eq!(ErrorCode::WalletInvalidHandle, res.unwrap_err());
+            assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -151,7 +151,7 @@ mod high_cases {
             let wallet_handle = utils::setup_with_wallet();
 
             let res = did::key_for_local_did(wallet_handle, DID);
-            assert_eq!(ErrorCode::WalletItemNotFound, res.unwrap_err());
+            assert_code!(ErrorCode::WalletItemNotFound, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -161,7 +161,7 @@ mod high_cases {
             let (wallet_handle, did) = utils::setup_did();
 
             let res = did::key_for_local_did(wallet_handle + 1, &did);
-            assert_eq!(ErrorCode::WalletInvalidHandle, res.unwrap_err());
+            assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -202,7 +202,7 @@ mod high_cases {
             let wallet_handle = utils::setup_with_wallet();
 
             let res = did::set_endpoint_for_did(wallet_handle, INVALID_BASE58_DID, ENDPOINT, VERKEY);
-            assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -212,10 +212,10 @@ mod high_cases {
             let wallet_handle = utils::setup_with_wallet();
 
             let res = did::set_endpoint_for_did(wallet_handle, DID, ENDPOINT, INVALID_BASE58_VERKEY);
-            assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             let res = did::set_endpoint_for_did(wallet_handle, DID, ENDPOINT, INVALID_VERKEY_LENGTH);
-            assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -225,7 +225,7 @@ mod high_cases {
             let wallet_handle = utils::setup_with_wallet();
 
             let res = did::set_endpoint_for_did(wallet_handle + 1, DID, ENDPOINT, VERKEY);
-            assert_eq!(ErrorCode::WalletInvalidHandle, res.unwrap_err());
+            assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -286,7 +286,7 @@ mod high_cases {
             let (wallet_handle, pool_handle) = utils::setup_with_wallet_and_pool();
 
             let res = did::get_endpoint_for_did(wallet_handle, pool_handle, DID);
-            assert_eq!(ErrorCode::CommonInvalidState, res.unwrap_err());
+            assert_code!(ErrorCode::CommonInvalidState, res);
 
             utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
         }
@@ -296,7 +296,7 @@ mod high_cases {
             let (wallet_handle, pool_handle) = utils::setup_with_wallet_and_pool();
 
             let res = did::get_endpoint_for_did(wallet_handle, pool_handle + 1, DID);
-            assert_eq!(ErrorCode::PoolLedgerInvalidPoolHandle, res.unwrap_err());
+            assert_code!(ErrorCode::PoolLedgerInvalidPoolHandle, res);
 
             utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
         }
@@ -308,7 +308,7 @@ mod high_cases {
             did::set_endpoint_for_did(wallet_handle, DID, ENDPOINT, VERKEY).unwrap();
 
             let res = did::get_endpoint_for_did(wallet_handle + 1, -1, DID);
-            assert_eq!(ErrorCode::WalletInvalidHandle, res.unwrap_err());
+            assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -367,7 +367,7 @@ mod high_cases {
             let wallet_handle = utils::setup_with_wallet();
 
             let res = did::set_did_metadata(wallet_handle, INVALID_BASE58_DID, METADATA);
-            assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -386,7 +386,7 @@ mod high_cases {
             let (wallet_handle, did) = utils::setup_did();
 
             let res = did::set_did_metadata(wallet_handle + 1, &did, METADATA);
-            assert_eq!(ErrorCode::WalletInvalidHandle, res.unwrap_err());
+            assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -438,7 +438,7 @@ mod high_cases {
             let (wallet_handle, did) = utils::setup_did();
 
             let res = did::get_did_metadata(wallet_handle, &did);
-            assert_eq!(ErrorCode::WalletItemNotFound, res.unwrap_err());
+            assert_code!(ErrorCode::WalletItemNotFound, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -448,7 +448,7 @@ mod high_cases {
             let wallet_handle = utils::setup_with_wallet();
 
             let res = did::get_did_metadata(wallet_handle, DID);
-            assert_eq!(ErrorCode::WalletItemNotFound, res.unwrap_err());
+            assert_code!(ErrorCode::WalletItemNotFound, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -460,7 +460,7 @@ mod high_cases {
             did::set_did_metadata(wallet_handle, &did, METADATA).unwrap();
 
             let res = did::get_did_metadata(wallet_handle + 1, &did);
-            assert_eq!(ErrorCode::WalletInvalidHandle, res.unwrap_err());
+            assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -507,7 +507,7 @@ mod high_cases {
             let wallet_handle = utils::setup_with_wallet();
 
             let res = did::get_my_did_with_metadata(wallet_handle, DID);
-            assert_eq!(ErrorCode::WalletItemNotFound, res.unwrap_err());
+            assert_code!(ErrorCode::WalletItemNotFound, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -590,7 +590,7 @@ mod high_cases {
             let wallet_handle = utils::setup_with_wallet();
 
             let res = did::create_my_did(wallet_handle + 1, "{}");
-            assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
+            assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -601,7 +601,7 @@ mod high_cases {
 
             let (my_did, _) = did::create_my_did(wallet_handle, "{}").unwrap();
             let res = did::create_my_did(wallet_handle, &format!(r#"{{"did":{:?}}}"#, my_did));
-            assert_eq!(res.unwrap_err(), ErrorCode::DidAlreadyExistsError);
+            assert_code!(ErrorCode::DidAlreadyExistsError, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -630,7 +630,7 @@ mod high_cases {
             let (my_did, _) = did::create_and_store_my_did(wallet_handle, None).unwrap();
 
             let res = did::replace_keys_start(wallet_handle + 1, &my_did, "{}");
-            assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
+            assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -671,7 +671,8 @@ mod high_cases {
         fn indy_replace_keys_apply_works_without_calling_replace_start() {
             let (wallet_handle, my_did) = utils::setup_did();
 
-            assert_eq!(did::replace_keys_apply(wallet_handle, &my_did).unwrap_err(), ErrorCode::WalletItemNotFound);
+            let res = did::replace_keys_apply(wallet_handle, &my_did);
+            assert_code!(ErrorCode::WalletItemNotFound, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -680,7 +681,8 @@ mod high_cases {
         fn indy_replace_keys_apply_works_for_unknown_did() {
             let wallet_handle = utils::setup_with_wallet();
 
-            assert_eq!(did::replace_keys_apply(wallet_handle, DID).unwrap_err(), ErrorCode::WalletItemNotFound);
+            let res = did::replace_keys_apply(wallet_handle, DID);
+            assert_code!(ErrorCode::WalletItemNotFound, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -689,7 +691,8 @@ mod high_cases {
         fn indy_replace_keys_apply_works_for_invalid_wallet_handle() {
             let wallet_handle = utils::setup_with_wallet();
 
-            assert_eq!(did::replace_keys_apply(wallet_handle + 1, DID).unwrap_err(), ErrorCode::WalletInvalidHandle);
+            let res = did::replace_keys_apply(wallet_handle + 1, DID);
+            assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -733,7 +736,7 @@ mod high_cases {
             let wallet_handle = utils::setup_with_wallet();
 
             let res = did::create_my_did(wallet_handle, r#"{"seed":"seed"}"#);
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -744,7 +747,7 @@ mod high_cases {
 
             let identity_json = json!({"did": DID}).to_string();
             let res = did::store_their_did(wallet_handle + 1, &identity_json);
-            assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
+            assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -764,7 +767,7 @@ mod high_cases {
             let wallet_handle = utils::setup_with_wallet();
 
             let res = did::create_my_did(wallet_handle, r#"{"seed":123}"#);
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -775,7 +778,7 @@ mod high_cases {
 
             let identity_json = json!({"did": INVALID_BASE58_DID}).to_string();
             let res = did::store_their_did(wallet_handle, &identity_json);
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -786,7 +789,7 @@ mod high_cases {
 
             let identity_json = json!({"did": "did", "verkey":"invalid_base58string"}).to_string();
             let res = did::store_their_did(wallet_handle, &identity_json);
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -798,7 +801,7 @@ mod high_cases {
 
             let identity_json = json!({"did": DID, "verkey": VERKEY.to_owned() + ":crypto_type"}).to_string();
             let res = did::store_their_did(wallet_handle, &identity_json);
-            assert_eq!(ErrorCode::UnknownCryptoTypeError, res.unwrap_err());
+            assert_code!(ErrorCode::UnknownCryptoTypeError, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -811,7 +814,7 @@ mod high_cases {
             did::store_their_did(wallet_handle, &identity_json).unwrap();
 
             let res = did::store_their_did(wallet_handle, &identity_json);
-            assert_eq!(ErrorCode::WalletItemAlreadyExists, res.unwrap_err());
+            assert_code!(ErrorCode::WalletItemAlreadyExists, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -828,13 +831,13 @@ mod high_cases {
             // 2. Repeat above operation (with same did and ver key used in #1)
             // but this time catch and swallow the exception (it will throw the exception WalletItemAlreadyExistsException)
             let res = did::store_their_did(wallet_handle, &identity_json);
-            assert_eq!(ErrorCode::WalletItemAlreadyExists, res.unwrap_err());
+            assert_code!(ErrorCode::WalletItemAlreadyExists, res);
 
             // 3. Then, now if you try 'storeTheirDid' operation
             // (either with same did and verkey or you can choose different did and verkey),
             // in IS-802 it fails with error 'Storage error occurred during wallet operation.'
             let res = did::store_their_did(wallet_handle, &identity_json);
-            assert_eq!(ErrorCode::WalletItemAlreadyExists, res.unwrap_err());
+            assert_code!(ErrorCode::WalletItemAlreadyExists, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -927,13 +930,13 @@ mod high_cases {
         #[test]
         fn indy_abbreviate_verkey_works_for_invalid_did() {
             let res = did::abbreviate_verkey(INVALID_BASE58_DID, VERKEY_TRUSTEE);
-            assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
 
         #[test]
         fn indy_abbreviate_verkey_works_for_invalid_verkey() {
             let res = did::abbreviate_verkey(DID_TRUSTEE, INVALID_BASE58_VERKEY);
-            assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
     }
 }

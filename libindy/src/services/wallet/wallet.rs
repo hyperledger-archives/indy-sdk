@@ -1,13 +1,14 @@
 extern crate sodiumoxide;
+extern crate zeroize;
 
-use utils::crypto::memzero::memzero;
 use std::collections::HashMap;
 use std::rc::Rc;
 
 use utils::crypto::{hmacsha256, chacha20poly1305_ietf};
 
-use errors::wallet::WalletError;
-use errors::common::CommonError;
+use errors::prelude::*;
+
+use self::zeroize::Zeroize;
 
 use super::storage;
 use super::iterator::WalletIterator;
@@ -40,30 +41,27 @@ impl Keys {
         }
     }
 
-    pub fn serialize_encrypted(&self, master_key: &chacha20poly1305_ietf::Key) -> Result<Vec<u8>, WalletError> {
+    pub fn serialize_encrypted(&self, master_key: &chacha20poly1305_ietf::Key) -> IndyResult<Vec<u8>> {
         extern crate rmp_serde;
 
         let mut serialized = rmp_serde::to_vec(self)
-            .map_err(|err| CommonError::InvalidState(format!("Cannot serialize keys: {:?}", err)))?;
+            .to_indy(IndyErrorKind::InvalidState, "Unable to serialize keys")?;
 
         let encrypted = encrypt_as_not_searchable(&serialized, master_key);
 
-        memzero(&mut serialized[..]);
+        serialized.zeroize();
         Ok(encrypted)
     }
 
-    pub fn deserialize_encrypted(bytes: &[u8], master_key: &chacha20poly1305_ietf::Key) -> Result<Keys, WalletError> {
+    pub fn deserialize_encrypted(bytes: &[u8], master_key: &chacha20poly1305_ietf::Key) -> IndyResult<Keys> {
         extern crate rmp_serde;
 
-        let mut decrypted = decrypt_merged(bytes, master_key)
-            .map_err(map_err_trace!())
-            .map_err(|_| WalletError::AccessFailed("Invalid master key provided".to_string()))?;
+        let mut decrypted = decrypt_merged(bytes, master_key)?;
 
         let keys: Keys = rmp_serde::from_slice(&decrypted)
-            .map_err(map_err_trace!())
-            .map_err(|_| WalletError::AccessFailed("Invalid master key provided".to_string()))?;
+                .to_indy(IndyErrorKind::InvalidStructure, "Invalid bytes for Key")?;
 
-        memzero(&mut decrypted[..]);
+        decrypted.zeroize();
         Ok(keys)
     }
 }
@@ -89,16 +87,16 @@ impl EncryptedValue {
         )
     }
 
-    pub fn decrypt(&self, key: &chacha20poly1305_ietf::Key) -> Result<String, WalletError> {
+    pub fn decrypt(&self, key: &chacha20poly1305_ietf::Key) -> IndyResult<String> {
         let mut value_key_bytes = decrypt_merged(&self.key, key)?;
 
         let value_key = chacha20poly1305_ietf::Key::from_slice(&value_key_bytes)
-            .map_err(|err| CommonError::InvalidStructure(format!("Invalid value key: {:?}", err)))?;
+            .map_err(|err| err.extend("Invalid value key"))?; // FIXME: review kind
 
-        memzero(&mut value_key_bytes[..]);
+        value_key_bytes.zeroize();
 
         let res = String::from_utf8(decrypt_merged(&self.data, &value_key)?)
-            .map_err(|err| CommonError::InvalidStructure(format!("Invalid UTF8 string inside of value: {:?}", err)))?;
+            .to_indy(IndyErrorKind::InvalidStructure, "Invalid UTF8 string inside of value")?; // FIXME: review kind
 
         Ok(res)
     }
@@ -109,10 +107,10 @@ impl EncryptedValue {
         result
     }
 
-    pub fn from_bytes(joined_data: &[u8]) -> Result<Self, CommonError> {
+    pub fn from_bytes(joined_data: &[u8]) -> IndyResult<Self> {
         // value_key is stored as NONCE || CYPHERTEXT. Lenth of CYPHERTHEXT is length of DATA + length of TAG.
         if joined_data.len() < ENCRYPTED_KEY_LEN {
-            return Err(CommonError::InvalidStructure(format!("Unable to split value_key from value: value too short")));
+            return Err(err_msg(IndyErrorKind::InvalidStructure, "Unable to split value_key from value: value too short")); // FIXME: review kind
         }
 
         let value_key = joined_data[..ENCRYPTED_KEY_LEN].to_owned();
@@ -132,7 +130,7 @@ impl Wallet {
         Wallet { id, storage, keys }
     }
 
-    pub fn add(&self, type_: &str, name: &str, value: &str, tags: &HashMap<String, String>) -> Result<(), WalletError> {
+    pub fn add(&self, type_: &str, name: &str, value: &str, tags: &HashMap<String, String>) -> IndyResult<()> {
         let etype = encrypt_as_searchable(type_.as_bytes(), &self.keys.type_key, &self.keys.item_hmac_key);
         let ename = encrypt_as_searchable(name.as_bytes(), &self.keys.name_key, &self.keys.item_hmac_key);
         let evalue = EncryptedValue::encrypt(value, &self.keys.value_key);
@@ -141,7 +139,7 @@ impl Wallet {
         Ok(())
     }
 
-    pub fn add_tags(&self, type_: &str, name: &str, tags: &HashMap<String, String>) -> Result<(), WalletError> {
+    pub fn add_tags(&self, type_: &str, name: &str, tags: &HashMap<String, String>) -> IndyResult<()> {
         let encrypted_type = encrypt_as_searchable(type_.as_bytes(), &self.keys.type_key, &self.keys.item_hmac_key);
         let encrypted_name = encrypt_as_searchable(name.as_bytes(), &self.keys.name_key, &self.keys.item_hmac_key);
         let encrypted_tags = encrypt_tags(tags, &self.keys.tag_name_key, &self.keys.tag_value_key, &self.keys.tags_hmac_key);
@@ -149,7 +147,7 @@ impl Wallet {
         Ok(())
     }
 
-    pub fn update_tags(&self, type_: &str, name: &str, tags: &HashMap<String, String>) -> Result<(), WalletError> {
+    pub fn update_tags(&self, type_: &str, name: &str, tags: &HashMap<String, String>) -> IndyResult<()> {
         let encrypted_type = encrypt_as_searchable(type_.as_bytes(), &self.keys.type_key, &self.keys.item_hmac_key);
         let encrypted_name = encrypt_as_searchable(name.as_bytes(), &self.keys.name_key, &self.keys.item_hmac_key);
         let encrypted_tags = encrypt_tags(tags, &self.keys.tag_name_key, &self.keys.tag_value_key, &self.keys.tags_hmac_key);
@@ -157,7 +155,7 @@ impl Wallet {
         Ok(())
     }
 
-    pub fn delete_tags(&self, type_: &str, name: &str, tag_names: &[&str]) -> Result<(), WalletError> {
+    pub fn delete_tags(&self, type_: &str, name: &str, tag_names: &[&str]) -> IndyResult<()> {
         let encrypted_type = encrypt_as_searchable(type_.as_bytes(), &self.keys.type_key, &self.keys.item_hmac_key);
         let encrypted_name = encrypt_as_searchable(name.as_bytes(), &self.keys.name_key, &self.keys.item_hmac_key);
         let encrypted_tag_names = encrypt_tag_names(tag_names, &self.keys.tag_name_key, &self.keys.tags_hmac_key);
@@ -165,7 +163,7 @@ impl Wallet {
         Ok(())
     }
 
-    pub fn update(&self, type_: &str, name: &str, new_value: &str) -> Result<(), WalletError> {
+    pub fn update(&self, type_: &str, name: &str, new_value: &str) -> IndyResult<()> {
         let encrypted_type = encrypt_as_searchable(type_.as_bytes(), &self.keys.type_key, &self.keys.item_hmac_key);
         let encrypted_name = encrypt_as_searchable(name.as_bytes(), &self.keys.name_key, &self.keys.item_hmac_key);
         let encrypted_value = EncryptedValue::encrypt(new_value, &self.keys.value_key);
@@ -173,7 +171,7 @@ impl Wallet {
         Ok(())
     }
 
-    pub fn get(&self, type_: &str, name: &str, options: &str) -> Result<WalletRecord, WalletError> {
+    pub fn get(&self, type_: &str, name: &str, options: &str) -> IndyResult<WalletRecord> {
         let etype = encrypt_as_searchable(type_.as_bytes(), &self.keys.type_key, &self.keys.item_hmac_key);
         let ename = encrypt_as_searchable(name.as_bytes(), &self.keys.name_key, &self.keys.item_hmac_key);
 
@@ -189,7 +187,7 @@ impl Wallet {
         Ok(WalletRecord::new(String::from(name), result.type_.map(|_| type_.to_string()), value, tags))
     }
 
-    pub fn delete(&self, type_: &str, name: &str) -> Result<(), WalletError> {
+    pub fn delete(&self, type_: &str, name: &str) -> IndyResult<()> {
         let etype = encrypt_as_searchable(type_.as_bytes(), &self.keys.type_key, &self.keys.item_hmac_key);
         let ename = encrypt_as_searchable(name.as_bytes(), &self.keys.name_key, &self.keys.item_hmac_key);
 
@@ -197,7 +195,7 @@ impl Wallet {
         Ok(())
     }
 
-    pub fn search<'a>(&'a self, type_: &str, query: &str, options: Option<&str>) -> Result<WalletIterator, WalletError> {
+    pub fn search<'a>(&'a self, type_: &str, query: &str, options: Option<&str>) -> IndyResult<WalletIterator> {
         let parsed_query = language::parse_from_json(query)?;
         let encrypted_query = encrypt_query(parsed_query, &self.keys)?;
         let encrypted_type_ = encrypt_as_searchable(type_.as_bytes(), &self.keys.type_key, &self.keys.item_hmac_key);
@@ -206,12 +204,12 @@ impl Wallet {
         Ok(wallet_iterator)
     }
 
-    pub fn close(&mut self) -> Result<(), WalletError> {
+    pub fn close(&mut self) -> IndyResult<()> {
         self.storage.close()
-            .map_err(WalletError::from)
+            .map_err(IndyError::from)
     }
 
-    pub fn get_all(&self) -> Result<WalletIterator, WalletError> {
+    pub fn get_all(&self) -> IndyResult<WalletIterator> {
         let all_items = self.storage.get_all()?;
         Ok(WalletIterator::new(all_items, Rc::clone(&self.keys)))
     }
@@ -230,7 +228,6 @@ mod tests {
     use std::collections::HashMap;
 
     use domain::wallet::{Metadata, MetadataArgon};
-    use errors::wallet::WalletError;
     use services::wallet::encryption;
     use services::wallet::wallet::Wallet;
     use services::wallet::storage::WalletStorageType;
@@ -298,7 +295,7 @@ mod tests {
         wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
 
         let res = wallet.get(_type1(), _id2(), &_fetch_options(false, true, true));
-        assert_match!(Err(WalletError::ItemNotFound), res);
+        assert_kind!(IndyErrorKind::WalletItemNotFound, res);
     }
 
     #[test]
@@ -309,7 +306,7 @@ mod tests {
         wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
 
         let res = wallet.add(_type1(), _id1(), _value2(), &_tags());
-        assert_match!(Err(WalletError::ItemAlreadyExists), res);
+        assert_kind!(IndyErrorKind::WalletItemAlreadyExists, res);
     }
 
     #[test]
@@ -340,7 +337,7 @@ mod tests {
         wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
 
         let res = wallet.update(_type1(), _id2(), _value2());
-        assert_match!(Err(WalletError::ItemNotFound), res);
+        assert_kind!(IndyErrorKind::WalletItemNotFound, res);
     }
 
     #[test]
@@ -351,7 +348,7 @@ mod tests {
         wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
 
         let res = wallet.update(_type2(), _id1(), _value2());
-        assert_match!(Err(WalletError::ItemNotFound), res);
+        assert_kind!(IndyErrorKind::WalletItemNotFound, res);
     }
 
     /**
@@ -449,7 +446,7 @@ mod tests {
         wallet.delete(_type1(), _id1()).unwrap();
 
         let res = wallet.get(_type1(), _id1(), &_fetch_options(false, true, true));
-        assert_match!(Err(WalletError::ItemNotFound), res);
+        assert_kind!(IndyErrorKind::WalletItemNotFound, res);
     }
 
     #[test]
@@ -460,7 +457,7 @@ mod tests {
         wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
 
         let res = wallet.delete(_type1(), _id2());
-        assert_match!(Err(WalletError::ItemNotFound), res);
+        assert_kind!(IndyErrorKind::WalletItemNotFound, res);
     }
 
     #[test]
@@ -471,7 +468,7 @@ mod tests {
         wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
 
         let res = wallet.delete(_type2(), _id1());
-        assert_match!(Err(WalletError::ItemNotFound), res);
+        assert_kind!(IndyErrorKind::WalletItemNotFound, res);
     }
 
     #[test]
@@ -672,7 +669,7 @@ mod tests {
                                 }),
                                 Some(&_search_options(true, false, false, true, false)));
 
-        assert_match!(Err(WalletError::QueryError(_)), res)
+        assert_kind!(IndyErrorKind::WalletQueryError, res);
     }
 
     #[test]
@@ -689,7 +686,7 @@ mod tests {
                                 }),
                                 Some(&_search_options(true, false, false, true, false)));
 
-        assert_match!(Err(WalletError::QueryError(_)), res)
+        assert_kind!(IndyErrorKind::WalletQueryError, res);
     }
 
     #[test]
@@ -945,7 +942,7 @@ mod tests {
                                 &jsonstr!({"tag_name": {"$gt": "1"}}),
                                 Some(&_search_options(true, false, false, true, false)));
 
-        assert_match!(Err(WalletError::QueryError(_)), res);
+        assert_kind!(IndyErrorKind::WalletQueryError, res);
     }
 
     #[test]
@@ -1014,7 +1011,7 @@ mod tests {
                                 &jsonstr!({"tag_name": {"$gte": "1"}}),
                                 Some(&_search_options(true, false, false, true, false)));
 
-        assert_match!(Err(WalletError::QueryError(_)), res);
+        assert_kind!(IndyErrorKind::WalletQueryError, res);
     }
 
     #[test]
@@ -1083,7 +1080,7 @@ mod tests {
                                 &jsonstr!({"tag_name": {"$lt": "4"}}),
                                 Some(&_search_options(true, false, false, true, false)));
 
-        assert_match!(Err(WalletError::QueryError(_)), res);
+        assert_kind!(IndyErrorKind::WalletQueryError, res);
     }
 
     #[test]
@@ -1152,7 +1149,7 @@ mod tests {
                                 &jsonstr!({"tag_name": {"$lte": "3"}}),
                                 Some(&_search_options(true, false, false, true, false)));
 
-        assert_match!(Err(WalletError::QueryError(_)), res);
+        assert_kind!(IndyErrorKind::WalletQueryError, res);
     }
 
     #[test]
@@ -1221,7 +1218,7 @@ mod tests {
                                 &jsonstr!({"tag_name": {"$like": "1"}}),
                                 Some(&_search_options(true, false, false, true, false)));
 
-        assert_match!(Err(WalletError::QueryError(_)), res);
+        assert_kind!(IndyErrorKind::WalletQueryError, res);
     }
 
     #[test]
@@ -1823,8 +1820,7 @@ mod tests {
                 keys: keys.serialize_encrypted(&master_key).unwrap(),
             });
 
-            serde_json::to_vec(&metadata)
-                .map_err(|err| CommonError::InvalidState(format!("Cannot serialize wallet metadata: {:?}", err))).unwrap()
+            serde_json::to_vec(&metadata).unwrap()
         };
 
         storage_type.create_storage(_wallet_id(),
@@ -1843,8 +1839,7 @@ mod tests {
 
         let metadata: MetadataArgon = {
             let metadata = storage.get_storage_metadata().unwrap();
-            serde_json::from_slice::<MetadataArgon>(&metadata)
-                .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize metadata: {:?}", err))).unwrap()
+            serde_json::from_slice::<MetadataArgon>(&metadata).unwrap()
         };
 
         let master_key = _master_key();

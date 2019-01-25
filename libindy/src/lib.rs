@@ -2,6 +2,7 @@
 
 extern crate base64;
 extern crate byteorder;
+extern crate failure;
 
 #[macro_use]
 extern crate log;
@@ -31,11 +32,14 @@ extern crate time;
 extern crate libc;
 extern crate rand;
 extern crate rusqlite;
+extern crate uuid;
 
 #[macro_use]
 extern crate derivative;
+extern crate sodiumoxide;
+extern crate core;
 
-// Note that to use macroses from util inside of other modules it must me loaded first!
+// Note that to use macroses from util inside of other modules it must be loaded first!
 #[macro_use]
 mod utils;
 

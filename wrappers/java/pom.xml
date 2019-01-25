@@ -5,7 +5,7 @@
 	<groupId>org.hyperledger</groupId>
 	<artifactId>indy</artifactId>
 	<packaging>jar</packaging>
-	<version>1.6.8</version>
+	<version>1.7.0</version>
 	<name>indy</name>
 	<description>This is the official SDK for Hyperledger Indy (https://www.hyperledger.org/projects),
 		which provides a distributed-ledger-based foundation for self-sovereign identity (https://sovrin.org).
@@ -44,9 +44,9 @@
 
 	<distributionManagement>
 		<repository>
-			<id>artifactory-evernym</id>
-			<name>artifactory-evernym</name>
-			<url>https://repo.evernym.com/artifactory/libindy-maven-local</url>
+			<id>${mavenRepo.id}</id>
+			<name>${mavenRepo.name}</name>
+			<url>${mavenRepo.url}</url>
 		</repository>
 	</distributionManagement>
 
@@ -176,7 +176,6 @@
 			<groupId>org.json</groupId>
 			<artifactId>json</artifactId>
 			<version>20160810</version>
-			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.slf4j</groupId>
@@ -194,6 +193,11 @@
 			<artifactId>log4j</artifactId>
 			<version>1.2.17</version>
 			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.json</groupId>
+			<artifactId>json</artifactId>
+			<version>20180130</version>
 		</dependency>
 	</dependencies>
 </project>

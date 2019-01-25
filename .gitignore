@@ -9,6 +9,8 @@ package-lock.json
 .cache
 .DS_Store
 Podfile.lock
-
+.vscode
+.pytest_cache
 
 /wrappers/python/venv/
+.vscode

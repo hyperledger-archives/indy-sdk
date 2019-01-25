@@ -1,4 +1,4 @@
-use indy::ErrorCode;
+use indy::IndyError;
 use indy::pool;
 use indy::future::Future;
 
@@ -15,7 +15,7 @@ pub struct PoolConfig {
 
 const PROTOCOL_VERSION: usize = 2;
 
-pub fn create_and_open_pool_ledger(pool_name: &str) -> Result<i32, ErrorCode> {
+pub fn create_and_open_pool_ledger(pool_name: &str) -> Result<i32, IndyError> {
     set_protocol_version(PROTOCOL_VERSION).unwrap();
     let txn_file_path = _create_genesis_txn_file_for_test_pool(pool_name, None, None);
     let pool_config = _pool_config_json(txn_file_path.as_path());
@@ -23,7 +23,7 @@ pub fn create_and_open_pool_ledger(pool_name: &str) -> Result<i32, ErrorCode> {
     _open_pool_ledger(pool_name, None)
 }
 
-pub fn close(pool_handle: i32) -> Result<(), ErrorCode> {
+pub fn close(pool_handle: i32) -> Result<(), IndyError> {
     pool::close_pool_ledger(pool_handle).wait()
 }
 
@@ -33,7 +33,7 @@ fn _pool_config_json(txn_file_path: &Path) -> String {
     }).unwrap()
 }
 
-fn _create_pool_ledger_config(pool_name: &str, pool_config: Option<&str>) -> Result<(), ErrorCode> {
+fn _create_pool_ledger_config(pool_name: &str, pool_config: Option<&str>) -> Result<(), IndyError> {
     pool::create_pool_ledger_config(pool_name, pool_config).wait()
 }
 
@@ -76,11 +76,11 @@ fn _create_genesis_txn_file(pool_name: &str,
     txn_file_path
 }
 
-fn _open_pool_ledger(pool_name: &str, config: Option<&str>) -> Result<i32, ErrorCode> {
+fn _open_pool_ledger(pool_name: &str, config: Option<&str>) -> Result<i32, IndyError> {
     pool::open_pool_ledger(pool_name, config).wait()
 }
 
 
-pub fn set_protocol_version(protocol_version: usize) -> Result<(), ErrorCode> {
+pub fn set_protocol_version(protocol_version: usize) -> Result<(), IndyError> {
     pool::set_protocol_version(protocol_version).wait()
 }

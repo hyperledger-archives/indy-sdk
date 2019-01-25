@@ -22,7 +22,7 @@ use utils::threadpool::spawn;
 ///
 /// version: version of schema
 ///
-/// schema_data: list of attributes that will make up the schema
+/// schema_data: list of attributes that will make up the schema (the number of attributes should be less or equal than 125)
 ///
 /// # Example schema_data -> "["attr1", "attr2", "attr3"]"
 ///
@@ -184,12 +184,17 @@ pub extern fn vcx_schema_release(schema_handle: u32) -> u32 {
 
     let source_id = schema::get_source_id(schema_handle).unwrap_or_default();
     match schema::release(schema_handle) {
-        Ok(x) => trace!("vcx_schema_release(schema_handle: {}, rc: {}), source_id: {}",
-                       schema_handle, error_string(0), source_id),
-        Err(e) => warn!("vcx_schema_release(schema_handle: {}, rc: {}), source_id: {}",
-                       schema_handle, error_string(e.to_error_code()), source_id),
-    };
-    error::SUCCESS.code_num
+        Ok(_) => {
+            trace!("vcx_schema_release(schema_handle: {}, rc: {}), source_id: {}",
+                       schema_handle, error_string(0), source_id);
+            error::SUCCESS.code_num
+        },
+        Err(e) => {
+            warn!("vcx_schema_release(schema_handle: {}, rc: {}), source_id: {}",
+                       schema_handle, error_string(e.to_error_code()), source_id);
+            e.to_error_code()
+        }
+    }
 }
 
 /// Retrieves schema's id
@@ -514,5 +519,14 @@ mod tests {
         let schema:CreateSchema = serde_json::from_value(j["data"].clone()).unwrap();
         assert_eq!(j["version"], "1.0");
         assert_eq!(schema.get_source_id(), source_id);
+    }
+
+    #[test]
+    fn test_vcx_schema_release() {
+        init!("true");
+        let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
+        let handle = schema::create_new_schema("testid", did, "name".to_string(),"1.0".to_string(),"[\"name\":\"male\"]".to_string()).unwrap();
+        let unknown_handle = handle + 1;
+        assert_eq!(vcx_schema_release(unknown_handle), error::INVALID_SCHEMA_HANDLE.code_num);
     }
 }

@@ -1,9 +1,11 @@
 extern crate byteorder;
 
-use errors::common::CommonError;
-use self::byteorder::{ByteOrder, LittleEndian};
+use errors::prelude::*;
 use services::pool::events::PoolEvent;
+
 use super::zmq;
+
+use self::byteorder::{ByteOrder, LittleEndian};
 
 pub struct Commander {
     cmd_socket: zmq::Socket,
@@ -18,14 +20,19 @@ impl Commander {
 
     pub fn fetch_events(&self) -> Option<PoolEvent> {
         let cmd_parts = self.cmd_socket.recv_multipart(zmq::DONTWAIT)
-            .map_err(map_err_trace!()).ok()?;
+            .to_indy(IndyErrorKind::IOError, "ZMQ socket error on fetching pool events")
+            .map_err(map_err_trace!())
+            .ok()?;
+
         trace!("cmd_parts {:?}", cmd_parts);
+
         let cmd_s = String::from_utf8(cmd_parts[0].clone())
-            .map_err(|err|
-                CommonError::InvalidState(format!("Invalid command received: {:?}", err)))
+            .to_indy(IndyErrorKind::InvalidState, "Invalid utf8 sequence in command") // FIXME: review kind
             .map_err(map_err_trace!()).ok()?;
+
         let id = cmd_parts.get(1).map(|cmd: &Vec<u8>| LittleEndian::read_i32(cmd.as_slice()))
             .unwrap_or(-1);
+
         if "exit".eq(cmd_s.as_str()) {
             Some(PoolEvent::Close(id))
         } else if "refresh".eq(cmd_s.as_str()) {
@@ -35,14 +42,15 @@ impl Commander {
         } else {
             let timeout = LittleEndian::read_i32(cmd_parts[2].as_slice());
             let timeout = if timeout == -1 { None } else { Some(timeout) };
+
             let nodes = if let Some(nodes) = cmd_parts.get(3) {
                 Some(String::from_utf8(nodes.clone())
-                    .map_err(|err|
-                        CommonError::InvalidState(format!("Invalid command received: {:?}", err)))
+                    .to_indy(IndyErrorKind::InvalidState, "Invalid utf8 sequence in command") // FIXME: review kind
                     .map_err(map_err_trace!()).ok()?)
             } else {
                 None
             };
+
             Some(PoolEvent::SendRequest(id, cmd_s, timeout, nodes))
         }
     }
@@ -54,8 +62,9 @@ impl Commander {
 
 #[cfg(test)]
 mod commander_tests {
-    use super::*;
     use utils::sequence;
+
+    use super::*;
 
     #[test]
     pub fn commander_new_works() {

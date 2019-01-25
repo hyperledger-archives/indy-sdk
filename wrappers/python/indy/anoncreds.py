@@ -24,7 +24,7 @@ async def issuer_create_schema(issuer_did: str,
     :param issuer_did: DID of schema issuer
     :param name: a name the schema
     :param version: a version of the schema
-    :param attrs: a list of schema attributes descriptions
+    :param attrs: a list of schema attributes descriptions (the number of attributes should be less or equal than 125)
     :return:
         schema_id: identifier of created schema
         schema_json: schema as json

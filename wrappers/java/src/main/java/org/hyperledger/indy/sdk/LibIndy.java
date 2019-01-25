@@ -3,6 +3,7 @@ package org.hyperledger.indy.sdk;
 import java.io.File;
 
 import com.sun.jna.*;
+import com.sun.jna.ptr.PointerByReference;
 
 public abstract class LibIndy {
 
@@ -165,10 +166,10 @@ public abstract class LibIndy {
 		int indy_build_verify_payment_req(int command_handle, int wallet_handle, String submitter_did, String receipt, Callback cb);
 		int indy_parse_verify_payment_response(int command_handle, String payment_method, String resp_json, Callback cb);
 
-		int indy_set_default_logger(String level);
 		int indy_set_logger(Pointer context, Callback enabled, Callback log, Callback flush);
 
 		int indy_set_runtime_config(String config);
+		int indy_get_current_error(PointerByReference error);
 
 	}
 
@@ -277,7 +278,10 @@ public abstract class LibIndy {
 	 * Set libindy runtime configuration. Can be optionally called to change current params.
 	 *
 	 * @param config config: {
-	 *      "crypto_thread_pool_size": int - size of thread pool for the most expensive crypto operations. (4 by default)
+	 *     "crypto_thread_pool_size": Optional[int] - size of thread pool for the most expensive crypto operations. (4 by default)
+	 *     "collect_backtrace": Optional[bool] - whether errors backtrace should be collected.
+	 *         Capturing of backtrace can affect library performance.
+	 *         NOTE: must be set before invocation of any other API functions.
 	 *  }
 	 */
 	public static void setRuntimeConfig(String config) {

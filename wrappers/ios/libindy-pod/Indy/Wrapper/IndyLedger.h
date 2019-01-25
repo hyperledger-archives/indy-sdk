@@ -108,6 +108,7 @@
                                  TRUSTEE
                                  STEWARD
                                  TRUST_ANCHOR
+                                 NETWORK_MONITOR
                                  empty string to reset role
  @param completion Callback that takes command result as parameter. Returns request result as json.
  */
@@ -185,7 +186,7 @@
  @param data  Credential schema.
               {
                   id: identifier of schema
-                  attrNames: array of attribute name strings
+                  attrNames: array of attribute name strings (the number of attributes should be less or equal than 125)
                   name: Schema's name string
                   version: Schema's version string,
                   ver: Version of the Schema json

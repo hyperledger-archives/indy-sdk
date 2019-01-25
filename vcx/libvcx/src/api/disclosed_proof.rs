@@ -466,11 +466,32 @@ pub extern fn vcx_disclosed_proof_retrieve_credentials(command_handle: u32,
 /// handle: Proof handle that was provided during creation. Used to identify the disclosed proof object
 ///
 /// selected_credentials: a json string with a credential for each proof request attribute.
-/// List of possible credentials for each attribute is returned from vcx_disclosed_proof_retrieve_credentials
-/// # Examples selected_credential -> "{"req_attr_0":cred_info}" Where cred_info is returned from retrieve credentials
+///     List of possible credentials for each attribute is returned from vcx_disclosed_proof_retrieve_credentials,
+///         (user needs to select specific credential to use from list of credentials)
+///         {
+///             "attrs":{
+///                 String:{// Attribute key: This may not be the same as the attr name ex. "age_1" where attribute name is "age"
+///                     "credential": {
+///                         "cred_info":{
+///                             "referent":String,
+///                             "attrs":{ String: String }, // ex. {"age": "111", "name": "Bob"}
+///                             "schema_id": String,
+///                             "cred_def_id": String,
+///                             "rev_reg_id":Option<String>,
+///                             "cred_rev_id":Option<String>,
+///                             },
+///                         "interval":Option<{to: Option<u64>, from:: Option<u64>}>
+///                     }, // This is the exact credential information selected from list of
+///                        // credentials returned from vcx_disclosed_proof_retrieve_credentials
+///                     "tails_file": Option<"String">, // Path to tails file for this credential
+///                 },
+///            },
+///           "predicates":{ TODO: will be implemented as part of IS-1095 ticket. }
+///        }
+///     // selected_credentials can be empty "{}" if the proof only contains self_attested_attrs
 ///
 /// self_attested_attrs: a json string with attributes self attested by user
-/// # Examples self_attested_attrs -> "{"self_attested_attr_0":"attested_val"}"
+/// # Examples self_attested_attrs -> "{"self_attested_attr_0":"attested_val"}" | "{}"
 ///
 /// cb: Callback that returns error status
 ///
@@ -530,12 +551,18 @@ pub extern fn vcx_disclosed_proof_release(handle: u32) -> u32 {
 
     let source_id = disclosed_proof::get_source_id(handle).unwrap_or_default();
     match disclosed_proof::release(handle) {
-        Ok(_) => trace!("vcx_disclosed_proof_release(handle: {}, rc: {}), source_id: {:?}",
-                       handle, error_string(0), source_id),
-        Err(e) => error!("vcx_disclosed_proof_release(handle: {}, rc: {}), source_id: {:?}",
-                         handle, error_string(e), source_id),
-    };
-    error::SUCCESS.code_num
+        Ok(_) => { 
+            let success_err_code = error::SUCCESS.code_num;
+            trace!("vcx_disclosed_proof_release(handle: {}, rc: {}), source_id: {:?}",
+                       handle, error_string(success_err_code), source_id);
+            success_err_code
+        },
+        Err(e) => {
+            error!("vcx_disclosed_proof_release(handle: {}, rc: {}), source_id: {:?}",
+                         handle, error_string(e), source_id);
+            e
+        },
+    }
 }
 
 #[cfg(test)]
@@ -588,6 +615,17 @@ mod tests {
                                                          Some(cb.get_callback())), error::SUCCESS.code_num);
         let (handle, disclosed_proof) = cb.receive(Some(Duration::from_secs(10))).unwrap();
         assert!(handle > 0 && disclosed_proof.is_some());
+    }
+
+    #[test]
+    fn test_vcx_disclosed_proof_release() {
+        init!("true");
+        let cb = return_types_u32::Return_U32_STR::new().unwrap();
+        let handle = disclosed_proof::create_proof("1",::utils::constants::PROOF_REQUEST_JSON).unwrap();
+        let unknown_handle = handle + 1;
+        let err = vcx_disclosed_proof_release(unknown_handle);
+        assert_eq!(err, error::INVALID_DISCLOSED_PROOF_HANDLE.code_num);
+
     }
 
     #[test]

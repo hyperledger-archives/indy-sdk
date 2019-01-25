@@ -6,10 +6,8 @@ import {
   dataProofCreate,
   proofCreate
 } from 'helpers/entities'
-import { gcTest } from 'helpers/gc'
-import { TIMEOUT_GC } from 'helpers/test-constants'
 import { initVcxTestMode, shouldThrow } from 'helpers/utils'
-import { Connection, Proof, ProofState, rustAPI, StateType, VCXCode, VCXMock, VCXMockMessage } from 'src'
+import { Connection, Proof, ProofState, StateType, VCXCode, VCXMock, VCXMockMessage } from 'src'
 
 describe('Proof:', () => {
   before(() => initVcxTestMode())
@@ -66,20 +64,6 @@ describe('Proof:', () => {
       assert.equal(error.vcxCode, VCXCode.INVALID_PROOF_HANDLE)
     })
 
-    it('throws: proof released', async () => {
-      const proof = await proofCreate()
-      const serialized = await proof.serialize()
-      assert.ok(serialized)
-      assert.property(serialized, 'version')
-      assert.property(serialized, 'data')
-      const { data, version } = serialized
-      assert.ok(data)
-      assert.ok(version)
-      assert.equal(data.source_id, proof.sourceId)
-      assert.equal(await proof.release(), VCXCode.SUCCESS)
-      const error = await shouldThrow(() => proof.serialize())
-      assert.equal(error.vcxCode, VCXCode.INVALID_PROOF_HANDLE)
-    })
   })
 
   describe('deserialize:', () => {
@@ -103,22 +87,6 @@ describe('Proof:', () => {
         requested_attrs: 'Invalid',
         source_id: 'Invalid'
       } as any))
-      assert.equal(error.vcxCode, VCXCode.UNKNOWN_ERROR)
-    })
-  })
-
-  describe('release:', () => {
-    it('success', async () => {
-      const proof = await proofCreate()
-      assert.equal(await proof.release(), VCXCode.SUCCESS)
-      const errorSerialize = await shouldThrow(() => proof.serialize())
-      assert.equal(errorSerialize.vcxCode, VCXCode.INVALID_PROOF_HANDLE)
-    })
-
-    // TODO: Enable once https://evernym.atlassian.net/browse/EN-668 is resolved
-    it.skip('throws: not initialized', async () => {
-      const proof = new Proof(null as any, {} as any)
-      const error = await shouldThrow(() => proof.release())
       assert.equal(error.vcxCode, VCXCode.UNKNOWN_ERROR)
     })
   })
@@ -176,22 +144,4 @@ describe('Proof:', () => {
     })
   })
 
-  describe('GC:', function () {
-    this.timeout(TIMEOUT_GC)
-
-    const proofCreateAndDelete = async () => {
-      let proof: Proof | null = await proofCreate()
-      const handle = proof.handle
-      proof = null
-      return handle
-    }
-    it('calls release', async () => {
-      const handle = await proofCreateAndDelete()
-      await gcTest({
-        handle,
-        serialize: rustAPI().vcx_proof_serialize,
-        stopCode: VCXCode.INVALID_PROOF_HANDLE
-      })
-    })
-  })
 })
