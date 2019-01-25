@@ -1,4 +1,5 @@
 extern crate sodiumoxide;
+extern crate zeroize;
 
 use domain::wallet::KeyDerivationMethod;
 use errors::prelude::*;
@@ -15,6 +16,7 @@ pub const TAGBYTES: usize = chacha20poly1305_ietf::TAGBYTES;
 
 sodium_type!(Key, chacha20poly1305_ietf::Key, KEYBYTES);
 sodium_type!(Nonce, chacha20poly1305_ietf::Nonce, NONCEBYTES);
+sodium_type!(Tag, chacha20poly1305_ietf::Tag, TAGBYTES);
 
 impl Nonce {
     pub fn increment(&mut self) {
@@ -50,6 +52,33 @@ pub fn gen_nonce_and_encrypt(data: &[u8], key: &Key) -> (Vec<u8>, Nonce) {
     );
 
     (encrypted_data, nonce)
+}
+
+pub fn gen_nonce_and_encrypt_detached(data: &[u8], aad: &[u8], key: &Key) -> (Vec<u8>, Nonce, Tag) {
+    let nonce = gen_nonce();
+
+    let mut plain = data.to_vec();
+    let tag = chacha20poly1305_ietf::seal_detached(
+        plain.as_mut_slice(),
+        Some(aad),
+        &nonce.0,
+        &key.0
+    );
+
+    (plain.to_vec(), nonce, Tag(tag))
+}
+
+
+pub fn decrypt_detached(data: &[u8], key: &Key, nonce: &Nonce, tag: &Tag, ad: Option<&[u8]>) -> Result<Vec<u8>, IndyError> {
+    let mut plain = data.to_vec();
+    chacha20poly1305_ietf::open_detached(plain.as_mut_slice(),
+        ad,
+        &tag.0,
+        &nonce.0,
+        &key.0,
+    )
+        .map_err(|_| IndyError::from_msg(IndyErrorKind::InvalidStructure, "Unable to decrypt data: {:?}"))
+        .map(|()| plain)
 }
 
 pub fn encrypt(data: &[u8], key: &Key, nonce: &Nonce) -> Vec<u8> {
@@ -256,7 +285,7 @@ mod tests {
     }
 
     #[test]
-    fn encrypt_decrypt_works() {
+    fn gen_nonce_and_encrypt_decrypt_works() {
         let data = randombytes(100);
         let key = gen_key();
 
@@ -265,6 +294,17 @@ mod tests {
 
         assert_eq!(data, u);
     }
+
+    #[test]
+    pub fn gen_nonce_and_encrypt_detached_decrypt_detached_works() {
+        let data = randombytes(100);
+        let key = gen_key();
+        let aad= randombytes(100);
+
+        let (c, nonce, tag) = gen_nonce_and_encrypt_detached(&data, aad.as_slice(), &key);
+        let u = decrypt_detached(&c, &key, &nonce, &tag, Some(aad.as_slice())).unwrap();
+        assert_eq!(data, u);
+}
 
     #[test]
     fn encrypt_decrypt_works_for_nonce() {
