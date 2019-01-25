@@ -147,9 +147,9 @@ impl IssuerCredential {
         let connection_name = settings::get_config_value(settings::CONFIG_INSTITUTION_NAME).map_err(|e| IssuerCredError::CommonError(e))?;
         let title = if let Some(x) = payment {
             payload.push(json!(x));
-            format!("{} is offering you a credential: {}", connection_name, self.credential_name)
-        } else {
             format!("{} wants you to pay tokens for: {}", connection_name, self.credential_name)
+        } else {
+            format!("{} is offering you a credential: {}", connection_name, self.credential_name)
         };
 
         payload.push(cred_json);
