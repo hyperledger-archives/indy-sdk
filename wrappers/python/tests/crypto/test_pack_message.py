@@ -23,6 +23,9 @@ async def test_pack_message_authcrypt_works(wallet_handle, seed_my1, verkey_my2,
 async def test_pack_message_anoncrypt_works(wallet_handle, verkey_my2):
     receiver_verkeys = [verkey_my2]
     packed_message_bytes = await crypto.pack_message(wallet_handle, "pack_message", receiver_verkeys, None)
+    print(type(packed_message_bytes))
+    with open("/tmp/out", 'w') as f:
+        f.write(str(type(packed_message_bytes)))
     packed_message_json = packed_message_bytes.decode("utf-8")
     json_message = json.loads(packed_message_json)
     assert json_message['protected'] != ""
@@ -30,9 +33,11 @@ async def test_pack_message_anoncrypt_works(wallet_handle, verkey_my2):
     assert json_message['ciphertext'] != ""
     assert json_message['iv'] != ""
 
-# @pytest.mark.asyncio
-# async def test_pack_message_invalid_verkey(wallet_handle, seed_my1, verkey_my2):
-#     sender_verkey = "INVALID_VERKEY"
-#     receiver_verkeys = [verkey_my2]
-#     packed_message = await crypto.pack_message(wallet_handle, "pack_message", receiver_verkeys, sender_verkey)
-#     print(packed_message)
+@pytest.mark.asyncio
+async def test_pack_message_invalid_verkey(wallet_handle, verkey_my2):
+    sender_verkey = "INVALID_VERKEY"
+    receiver_verkeys = [verkey_my2]
+    with pytest.raises(IndyError) as e:
+        pack_message = await crypto.pack_message(wallet_handle, "pack_message", receiver_verkeys, sender_verkey)
+    assert ErrorCode.WalletItemNotFound == e.value.error_code
+    

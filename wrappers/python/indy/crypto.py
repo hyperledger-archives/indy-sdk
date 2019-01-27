@@ -478,6 +478,7 @@ async def unpack_message(wallet_handle: int,
 
     def transform_cb(arr_ptr: POINTER(c_uint8), arr_len: c_uint32):
         return bytes(arr_ptr[:arr_len]),
+        
 
     if not hasattr(unpack_message, "cb"):
         logger.debug("pack_message: Creating callback")
