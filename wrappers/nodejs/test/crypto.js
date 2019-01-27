@@ -54,6 +54,33 @@ test('crypto', async function (t) {
   t.true(Buffer.isBuffer(decrypted))
   t.is(decrypted.toString('utf8'), message.toString('utf8'))
 
+  // Pack Auth Crypt
+  var [, senderVerkey] = await indy.createAndStoreMyDid(wh, {})
+  var receiverKeys = [trusteeVerkey, stewardVerkey]
+
+  var packedMessage = await indy.packMessage(wh, message, receiverKeys, senderVerkey)
+  t.true(Buffer.isBuffer(packedMessage))
+
+  var unpackedMessage = await indy.unpackMessage(wh, packedMessage)
+  t.true(Buffer.isBuffer(unpackedMessage))
+
+  unpackedMessage = JSON.parse(unpackedMessage.toString('utf8'))
+  t.is(unpackedMessage['message'], message.toString('utf8'))
+  t.is(unpackedMessage['sender_verkey'], senderVerkey)
+  t.is(unpackedMessage['recipient_verkey'], trusteeVerkey)
+
+  // Pack Anon Crypt
+  packedMessage = await indy.packMessage(wh, message, receiverKeys, null)
+  t.true(Buffer.isBuffer(packedMessage))
+
+  unpackedMessage = await indy.unpackMessage(wh, packedMessage)
+  t.true(Buffer.isBuffer(unpackedMessage))
+
+  unpackedMessage = JSON.parse(unpackedMessage.toString('utf8'))
+  t.is(unpackedMessage['message'], message.toString('utf8'))
+  t.is(unpackedMessage['sender_verkey'], undefined)
+  t.is(unpackedMessage['recipient_verkey'], trusteeVerkey)
+
   await indy.closeWallet(wh)
   await indy.deleteWallet(walletConfig, walletCredentials)
   pool.cleanup()
