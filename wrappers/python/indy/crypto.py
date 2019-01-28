@@ -1,5 +1,6 @@
 from .libindy import do_call, create_cb
 
+from typing import Optional
 from ctypes import *
 
 import logging
@@ -391,10 +392,10 @@ async def anon_decrypt(wallet_handle: int,
     return decrypted_message
 
 
-async def pack_message(wallet_handle: int, 
-                       message: str, 
+async def pack_message(wallet_handle: int,
+                       message: str,
                        recipient_verkeys: list,
-                       sender_verkey: str ) -> bytes:
+                       sender_verkey: Optional[str]) -> bytes:
     """
     Packs a message by encrypting the message and serializes it in a JWE-like format (Experimental)
 
@@ -431,23 +432,20 @@ async def pack_message(wallet_handle: int,
     c_recipient_verkeys = c_char_p(json.dumps(recipient_verkeys).encode('utf-8'))
     c_sender_vk = c_char_p(sender_verkey.encode('utf-8')) if sender_verkey is not None else None
     res = await do_call('indy_pack_message',
-                                      c_wallet_handle,
-                                      msg_bytes,
-                                      c_msg_len,
-                                      c_recipient_verkeys,
-                                      c_sender_vk,
-                                      pack_message.cb)
+                        c_wallet_handle,
+                        msg_bytes,
+                        c_msg_len,
+                        c_recipient_verkeys,
+                        c_sender_vk,
+                        pack_message.cb)
     logger.debug("pack_message: <<< res: %r", res)
     return res
 
-async def unpack_message(wallet_handle: int,
-                        jwe: str) -> str:
 
+async def unpack_message(wallet_handle: int,
+                         jwe: bytes) -> str:
     """
     Unpacks a JWE-like formatted message outputted by pack_message (Experimental)
-
-    Note to use DID keys with this function you can call did.key_for_did to get key id (verkey)
-    for specific DID.
 
     #Params
     command_handle: command handle to map callback to user context.
@@ -478,7 +476,6 @@ async def unpack_message(wallet_handle: int,
 
     def transform_cb(arr_ptr: POINTER(c_uint8), arr_len: c_uint32):
         return bytes(arr_ptr[:arr_len]),
-        
 
     if not hasattr(unpack_message, "cb"):
         logger.debug("unpack_message: Creating callback")
@@ -497,4 +494,3 @@ async def unpack_message(wallet_handle: int,
 
     logger.debug("unpack_message: <<< res: %r", unpack_message_str)
     return unpack_message_str
-
