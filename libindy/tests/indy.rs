@@ -1,5 +1,4 @@
 extern crate indyrs as indy;
-use std::env;
 
 #[test]
 fn set_runtime_config_works() {
