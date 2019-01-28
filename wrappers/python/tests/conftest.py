@@ -75,6 +75,10 @@ def verkey_my2():
 def message():
     return '{"reqId":1496822211362017764}'.encode('utf-8')
 
+@pytest.fixture
+def pack_message():
+    return '{"reqId":1496822211362017764}'
+
 
 @pytest.fixture
 def endpoint():

@@ -1,5 +1,6 @@
 from .libindy import do_call, create_cb
 
+from typing import Optional
 from ctypes import *
 
 import logging
@@ -391,80 +392,102 @@ async def anon_decrypt(wallet_handle: int,
     return decrypted_message
 
 
-async def pack_message(wallet_handle: int, message: str, recv_key_list: str, sender: str) -> str:
+async def pack_message(wallet_handle: int,
+                       message: str,
+                       recipient_verkeys: list,
+                       sender_verkey: Optional[str]) -> bytes:
     """
-    Packs a message (Experimental)
+    Packs a message by encrypting the message and serializes it in a JWE-like format (Experimental)
 
     Note to use DID keys with this function you can call did.key_for_did to get key id (verkey)
     for specific DID.
 
-    :param wallet_handle: wallet handler (created by open_wallet).
-    :param message: the message to be authcrypted for multiple parties
-    :param recv_key_list: a list in json format of receiver's verkeys
-    :param sender: the sender's verkey as a string When None is used in this parameter, anoncrypt is used
-    :return: a json string following the Auth or Anon AMES format
+    #Params
+    command_handle: command handle to map callback to user context.
+    wallet_handle: wallet handler (created by open_wallet)
+    message: the message being sent as a string. If it's JSON formatted it should be converted to a string
+    recipient_verkeys: a list of Strings which are recipient verkeys
+    sender_verkey: the sender's verkey as a string. -> When None is passed in this parameter, anoncrypt mode is used
+
+    returns an Agent Wire Message format as a byte array. See HIPE 0028 for detailed formats
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("pack_message: >>> wallet_handle: %r, message: %r, recv_key_list: %r, my_vk: %r",
+    logger.debug("pack_message: >>> wallet_handle: %r, message: %r, recipient_verkeys: %r, sender_verkey: %r",
                  wallet_handle,
                  message,
-                 recv_key_list,
-                 my_vk)
+                 recipient_verkeys,
+                 sender_verkey)
+
+    def transform_cb(arr_ptr: POINTER(c_uint8), arr_len: c_uint32):
+        return bytes(arr_ptr[:arr_len]),
 
     if not hasattr(pack_message, "cb"):
         logger.debug("pack_message: Creating callback")
-        pack_message.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+        pack_message.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, POINTER(c_uint8), c_uint32), transform_cb)
 
     c_wallet_handle = c_int32(wallet_handle)
-    c_message = c_char_p(message.encode('utf-8'))
-    c_recv_key_list = c_char_p(recv_key_list.encode('utf-8'))
-    c_my_vk = c_char_p(my_vk.encode('utf-8'))
-
-    auth_ames = await do_call('indy_pack_message',
+    msg_bytes = message.encode("utf-8")
+    c_msg_len = c_uint32(len(msg_bytes))
+    c_recipient_verkeys = c_char_p(json.dumps(recipient_verkeys).encode('utf-8'))
+    c_sender_vk = c_char_p(sender_verkey.encode('utf-8')) if sender_verkey is not None else None
+    res = await do_call('indy_pack_message',
                         c_wallet_handle,
-                        c_message,
-                        c_recv_key_list,
-                        c_my_vk,
+                        msg_bytes,
+                        c_msg_len,
+                        c_recipient_verkeys,
+                        c_sender_vk,
                         pack_message.cb)
-
-    auth_ames.decode()
     logger.debug("pack_message: <<< res: %r", res)
     return res
 
 
-async def unpack_message(wallet_handle: int, ames_json: str, my_vk: str) -> (str, str):
+async def unpack_message(wallet_handle: int,
+                         jwe: bytes) -> bytes:
     """
-    Experimental. Deserializes a AMES json string and decrypts the message returning the message and the sender's verkey if it was an AuthAMES.
-    If it is an AnonAMES it will deserialize, decrypt, and return the message with an empty sender_vk string.
+    Unpacks a JWE-like formatted message outputted by pack_message (Experimental)
 
-    :param wallet_handle: wallet handler (created by open_wallet).
-    :param ames_json: a json string serialized using either AuthAMES or AnonAMES
-    :param my_vk: the verkey to authcrypt with
-    :return: message: the unencrypted message
-             sender_vk: the sender's verkey if AuthAMES, else an empty string
+    #Params
+    command_handle: command handle to map callback to user context.
+    wallet_handle: wallet handler (created by open_wallet)
+    message: the output of a pack message
+
+    #Returns -> See HIPE 0028 for details
+    (Authcrypt mode)
+
+    {
+        "message": <decrypted message>,
+        "recipient_verkey": <recipient verkey used to decrypt>,
+        "sender_verkey": <sender verkey used to encrypt>
+    }
+
+    (Anoncrypt mode)
+
+    {
+        "message": <decrypted message>,
+        "recipient_verkey": <recipient verkey used to decrypt>,
+    }
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("unpack_message: >>> wallet_handle: %r, ames_json: %r, my_vk: %r",
+    logger.debug("unpack_message: >>> wallet_handle: %r, jwe: %r",
                  wallet_handle,
-                 ames_json,
-                 my_vk)
+                 jwe)
+
+    def transform_cb(arr_ptr: POINTER(c_uint8), arr_len: c_uint32):
+        return bytes(arr_ptr[:arr_len]),
 
     if not hasattr(unpack_message, "cb"):
         logger.debug("unpack_message: Creating callback")
-        unpack_message.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+        unpack_message.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, POINTER(c_uint8), c_uint32), transform_cb)
 
     c_wallet_handle = c_int32(wallet_handle)
-    c_ames_json = c_char_p(ames_json.encode('utf-8'))
-    c_my_vk = c_char_p(my_vk.encode('utf-8'))
+    c_jwe_len = c_uint32(len(jwe))
+    res = await do_call('indy_unpack_message',
+                        c_wallet_handle,
+                        jwe,
+                        c_jwe_len,
+                        unpack_message.cb)
 
-    message, sender_vk = await do_call('indy_unpack_messasge',
-                                       c_wallet_handle,
-                                       c_ames_json,
-                                       c_my_vk,
-                                       unpack_message.cb)
-
-    res = (message.decode(), sender_vk.decode())
     logger.debug("unpack_message: <<< res: %r", res)
     return res

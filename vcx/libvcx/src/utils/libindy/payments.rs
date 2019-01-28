@@ -169,26 +169,37 @@ pub fn list_addresses() -> Result<Vec<String>, u32> {
     Ok(serde_json::from_str(&addresses).or(Err(error::INVALID_JSON.code_num))?)
 }
 
+fn is_valid_address(address: &str, method: &str) -> bool {
+    let prefix = format!("pay:{}", method);
+
+    address.starts_with(&prefix)
+}
+
 pub fn get_wallet_token_info() -> Result<WalletInfo, u32> {
     trace!("get_wallet_token_info >>>");
 
     let addresses = list_addresses()?;
 
+    let method = settings::get_config_value(settings::CONFIG_PAYMENT_METHOD)?;
     let mut balance = 0;
     let mut wallet_info = Vec::new();
 
     for address in addresses.iter() {
-        let mut info = get_address_info(&address)?;
+        if is_valid_address(&address, &method) {
+            debug!("getting address info for {}", address);
+            let mut info = get_address_info(&address)?;
 
-        for utxo in info.utxo.iter() { balance += utxo.amount as u64; }
+            for utxo in info.utxo.iter() { balance += utxo.amount as u64; }
 
-        wallet_info.push(info);
+            wallet_info.push(info);
+        } else {
+            warn!("payment address {} is not compatible with payment type '{}'", address, method);
+        }
     }
 
     let info = WalletInfo { balance, balance_str: format!("{}", balance), addresses: wallet_info };
 
     trace!("get_wallet_token_info <<< info: {:?}", info);
-    ;
 
     Ok(info)
 }
