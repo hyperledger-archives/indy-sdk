@@ -33,7 +33,7 @@ mod events;
 mod merkle_tree_factory;
 mod networker;
 mod pool;
-mod request_handler;
+pub mod request_handler;
 mod state_proof;
 mod types;
 

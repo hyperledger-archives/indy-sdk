@@ -9,5 +9,5 @@ pub mod wallet;
 pub struct IndyConfig {
     pub crypto_thread_pool_size : Option<usize>,
     pub collect_backtrace: Option<bool>,
-    pub freshness_threshold: Option<u32>
+    pub freshness_threshold: Option<u64>
 }

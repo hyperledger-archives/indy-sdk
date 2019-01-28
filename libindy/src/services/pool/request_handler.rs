@@ -5,8 +5,6 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 use std::iter::FromIterator;
 use std::rc::Rc;
-use std::env;
-use std::str::FromStr;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use rmp_serde;
@@ -28,11 +26,14 @@ use services::pool::state_proof;
 use services::pool::types::CatchupRep;
 use services::pool::types::HashableValue;
 use utils::transaction_metadata::get_last_signed_time;
+use std::sync::Mutex;
 
 use super::indy_crypto::bls::Generator;
 use super::indy_crypto::bls::VerKey;
 
 use self::rust_base58::FromBase58;
+use std::hash::{Hash, Hasher};
+use std::ops::Mul;
 
 struct RequestSM<T: Networker> {
     f: usize,
@@ -132,7 +133,7 @@ struct CatchupSingleState<T: Networker> {
 
 struct SingleState<T: Networker> {
     denied_nodes: HashSet<String> /* FIXME should be map, may be merged with replies */,
-    replies: HashMap<HashableValue, HashSet<(String, u64, String)>>,
+    replies: HashMap<HashableValue, HashSet<NodeResponse>>,
     timeout_nodes: HashSet<String>,
     networker: Rc<RefCell<T>>,
 }
@@ -212,6 +213,26 @@ impl<T: Networker> From<(Option<Vec<String>>, StartState<T>)> for FullState<T> {
 impl<T: Networker> RequestState<T> {
     fn finish() -> RequestState<T> {
         RequestState::Finish(FinishState {})
+    }
+}
+
+struct NodeResponse {
+    raw_msg: String,
+    node_alias: String,
+    timestamp: u64
+}
+
+impl PartialEq for NodeResponse {
+    fn eq(&self, other: &NodeResponse) -> bool {
+        self.node_alias == other.node_alias
+    }
+}
+
+impl Eq for NodeResponse {}
+
+impl Hash for NodeResponse {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.node_alias.hash(state);
     }
 }
 
@@ -354,10 +375,10 @@ impl<T: Networker> RequestSM<T> {
 
                             let (cnt, soonest) = {
                                 let set = state.replies.entry(hashable).or_insert(HashSet::new());
-                                set.insert((node_alias.clone(), last_write_time, raw_msg.clone()));
+                                set.insert(NodeResponse { node_alias: node_alias.clone(), timestamp: last_write_time, raw_msg: raw_msg.clone() });
                                 (
                                     set.len(),
-                                    set.iter().min_by_key(|(_, time, _)| time).map(|(_, _, req)| req).unwrap_or(&raw_msg).clone()
+                                    set.iter().min_by_key(|resp| resp.timestamp).map(|resp| &resp.raw_msg).unwrap_or(&raw_msg).clone()
                                 )
                             };
 
@@ -604,6 +625,7 @@ impl<T: Networker> SingleState<T> {
     fn try_to_continue(self, req_id: String, node_alias: String, cmd_ids: &Vec<i32>, nodes_cnt: usize, timeout: i64) -> RequestState<T> {
         if self.is_consensus_reachable(nodes_cnt) {
             self.networker.borrow_mut().process_event(Some(NetworkerEvent::Resend(req_id.clone(), timeout)));
+            self.networker.borrow_mut().process_event(Some(NetworkerEvent::Resend(req_id.clone(), timeout)));
             self.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
             RequestState::Single(self)
         } else {
@@ -701,11 +723,18 @@ fn _check_state_proof(msg_result: &SJsonValue, f: usize, gen: &Generator, bls_ke
     res
 }
 
+lazy_static! {
+    static ref THRESHOLD: Mutex<u64> = Mutex::new(600);
+}
+
+pub fn set_freshness_threshold(threshold: u64) {
+    let mut th = THRESHOLD.lock().unwrap();
+    *th = ::std::cmp::max(threshold, 300);
+}
+
 fn _get_freshness_threshold() -> u64 {
-    u64::from_str(
-        &env::var("FRESHNESS_THRESHOLD")
-            .unwrap_or("600".to_string())
-    ).unwrap_or(600) * 1000
+    let t = THRESHOLD.lock().unwrap();
+    t.mul(1000)
 }
 
 fn _get_response_freshness(raw_msg: &str) -> u64 {
@@ -1160,7 +1189,21 @@ pub mod tests {
 
             let mut request_handler = _request_handler(1, 2);
             request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string())));
-            request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), r#"{"result": {"type":"test"}}"#.to_string(), NODE.to_string(), REQ_ID.to_string())));
+            request_handler.process_event(Some(RequestEvent::Reply(Reply::default(),
+                    json!({
+                    "result": {
+                        "type": "test",
+                        "ver": "1",
+                        "multiSignature":{
+                            "signedState": {
+                                "stateMetadata": {
+                                    "timestamp": _get_cur_time() - 300000
+                                }
+                            }
+                        }
+                    },
+                    "op": "REPLY",
+                   }).to_string(), NODE.to_string(), REQ_ID.to_string())));
             assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
         }
 
@@ -1237,7 +1280,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_reply_event_from_single_state_works_for_freshness_filtering_from_env_variable() {
-            env::set_var("FRESHNESS_THRESHOLD", "300");
+            set_freshness_threshold(300);
             // Register custom state proof parser
             {
                 use services::pool::{PoolService, REGISTERED_SP_PARSERS};

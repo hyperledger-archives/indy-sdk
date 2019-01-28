@@ -24,7 +24,7 @@ use services::blob_storage::BlobStorageService;
 use services::crypto::CryptoService;
 use services::ledger::LedgerService;
 use services::payments::PaymentsService;
-use services::pool::PoolService;
+use services::pool::{PoolService, request_handler::set_freshness_threshold};
 use services::wallet::WalletService;
 
 use self::threadpool::ThreadPool;
@@ -68,7 +68,7 @@ pub fn indy_set_runtime_config(config: IndyConfig) {
         _ => {}
     }
     match config.freshness_threshold {
-        Some(threshold) => env::set_var("FRESHNESS_THRESHOLD", format!("{}", threshold)),
+        Some(threshold) => set_freshness_threshold(threshold),
         _ => {}
     }
 }
