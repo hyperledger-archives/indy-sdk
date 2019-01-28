@@ -8,10 +8,10 @@ from indy import crypto, did, wallet
 from indy.error import ErrorCode
 
 @pytest.mark.asyncio
-async def test_pack_message_and_unpack_message_authcrypt_works(wallet_handle, seed_steward1, seed_my1, pack_message):
+async def test_pack_message_and_unpack_message_authcrypt_works(wallet_handle, identity_my1, identity_steward1, pack_message):
     #setup keys
-    sender_vk = await did.create_key(wallet_handle, json.dumps({'seed': seed_my1}))
-    steward_vk = await did.create_key(wallet_handle, json.dumps({'seed': seed_steward1}))
+    sender_vk, _ = identity_my1
+    steward_vk, _ = identity_steward1
     recipient_verkeys = [steward_vk]
 
     #run pack and unpack
@@ -25,9 +25,9 @@ async def test_pack_message_and_unpack_message_authcrypt_works(wallet_handle, se
     assert unpacked_message_json['sender_verkey'] == sender_vk
 
 @pytest.mark.asyncio
-async def test_pack_message_and_unpack_message_anoncrypt_works(wallet_handle, seed_steward1, seed_my1, pack_message):
+async def test_pack_message_and_unpack_message_anoncrypt_works(wallet_handle, identity_steward1, pack_message):
     #setup keys
-    steward_vk = await did.create_key(wallet_handle, json.dumps({'seed': seed_steward1}))
+    steward_vk, _ = identity_steward1
     recipient_verkeys = [steward_vk]
     
     #run pack and unpack
@@ -41,9 +41,9 @@ async def test_pack_message_and_unpack_message_anoncrypt_works(wallet_handle, se
 
 
 @pytest.mark.asyncio
-async def test_pack_message_and_unpack_message_missing_verkey(wallet_handle, seed_my1, verkey_my2, pack_message):
+async def test_pack_message_and_unpack_message_missing_verkey(wallet_handle, identity_my1, verkey_my2, pack_message):
     # setup keys
-    sender_vk = await did.create_key(wallet_handle, json.dumps({'seed': seed_my1}))
+    sender_vk = identity_my1
     recipient_verkeys = [verkey_my2]
 
     # run pack and unpack

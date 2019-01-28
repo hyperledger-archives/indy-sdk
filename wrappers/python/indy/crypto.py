@@ -398,7 +398,7 @@ async def pack_message(wallet_handle: int,
     """
     Packs a message by encrypting the message and serializes it in a JWE-like format (Experimental)
 
-    Note to use DID keys with this function you can call indy_key_for_did to get key id (verkey)
+    Note to use DID keys with this function you can call did.key_for_did to get key id (verkey)
     for specific DID.
 
     #Params
@@ -481,7 +481,7 @@ async def unpack_message(wallet_handle: int,
         
 
     if not hasattr(unpack_message, "cb"):
-        logger.debug("pack_message: Creating callback")
+        logger.debug("unpack_message: Creating callback")
         unpack_message.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, POINTER(c_uint8), c_uint32), transform_cb)
 
     c_wallet_handle = c_int32(wallet_handle)
@@ -495,9 +495,8 @@ async def unpack_message(wallet_handle: int,
     try:
         unpack_message_str = unpack_message_bytes.decode('utf-8', 'strict')
     except UnicodeDecodeError:
-        logger.debug("unpack_message: wrapper decode error <<< res: %r", unpack_message_bytes)
-        return unpack_message_bytes
+        return UnicodeDecodeError
 
-    logger.debug("unpack_message: <<< res: %r", unpack_message)
+    logger.debug("unpack_message: <<< res: %r", unpack_message_str)
     return unpack_message_str
 
