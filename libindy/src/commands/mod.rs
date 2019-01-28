@@ -51,7 +51,7 @@ pub enum Command {
     Wallet(WalletCommand),
     Pairwise(PairwiseCommand),
     NonSecrets(NonSecretsCommand),
-    Payments(PaymentsCommand)
+    Payments(PaymentsCommand),
 }
 
 lazy_static! {

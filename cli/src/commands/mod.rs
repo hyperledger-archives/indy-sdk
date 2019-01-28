@@ -277,3 +277,53 @@ pub fn submit_retry<F, T, E>(ctx: &CommandContext, request: &str, parser: F) -> 
 
     return Err(());
 }
+
+#[cfg(test)]
+use utils::test::TestUtils;
+
+#[cfg(test)]
+fn setup() -> CommandContext {
+    TestUtils::cleanup_storage();
+    CommandContext::new()
+}
+
+#[cfg(test)]
+fn setup_with_wallet() -> CommandContext {
+    let ctx = setup();
+    wallet::tests::create_and_open_wallet(&ctx);
+    ctx
+}
+
+#[cfg(test)]
+fn setup_with_wallet_and_pool() -> CommandContext {
+    let ctx = setup();
+    wallet::tests::create_and_open_wallet(&ctx);
+    pool::tests::create_and_connect_pool(&ctx);
+    ctx
+}
+
+#[cfg(test)]
+#[cfg(feature = "nullpay_plugin")]
+fn setup_with_wallet_and_pool_and_payment_plugin() -> CommandContext {
+    let ctx = setup_with_wallet_and_pool();
+    common::tests::load_null_payment_plugin(&ctx);
+    ctx
+}
+
+#[cfg(test)]
+fn tear_down_with_wallet_and_pool(ctx: &CommandContext) {
+    wallet::tests::close_and_delete_wallet(&ctx);
+    pool::tests::disconnect_and_delete_pool(&ctx);
+    tear_down();
+}
+
+#[cfg(test)]
+fn tear_down_with_wallet(ctx: &CommandContext) {
+    wallet::tests::close_and_delete_wallet(&ctx);
+    tear_down();
+}
+
+#[cfg(test)]
+fn tear_down() {
+    TestUtils::cleanup_storage();
+}

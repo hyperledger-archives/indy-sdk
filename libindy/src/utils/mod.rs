@@ -1,3 +1,6 @@
+#[macro_use]
+pub mod memzeroize;
+
 pub mod environment;
 
 #[macro_use]
@@ -28,3 +31,4 @@ pub mod test;
 pub mod try;
 
 pub mod transaction_metadata;
+pub mod option;

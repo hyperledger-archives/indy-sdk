@@ -1,5 +1,6 @@
 extern crate rmp_serde;
 
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ComboBox {
     pub msg: String,
