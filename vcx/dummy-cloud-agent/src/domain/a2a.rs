@@ -5,6 +5,7 @@ use rmp_serde;
 use serde::{de, Deserialize, Deserializer, ser, Serialize, Serializer};
 use serde_json::{self, Value};
 use utils::futures::*;
+use std::fmt;
 
 use domain::a2connection::*;
 use domain::invite::{InviteDetail, SenderDetail, ForwardAgentDetail};
@@ -109,7 +110,7 @@ pub struct SignedUp {}
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct CreateMessage {
-    pub mtype: MessageType,
+    pub mtype: String,
     #[serde(rename = "sendMsg")]
     pub send_msg: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -216,7 +217,7 @@ pub struct GetMessagesDetailResponse {
     #[serde(rename = "senderDID")]
     pub sender_did: String,
     #[serde(rename = "type")]
-    pub type_: MessageType,
+    pub type_: String,
     pub payload: Option<Vec<i8>>,
     #[serde(rename = "refMsgId")]
     pub ref_msg_id: Option<String>,
@@ -263,8 +264,10 @@ pub enum MessageType {
     ProofReq,
     #[serde(rename = "proof")]
     Proof,
+    Other,
 }
 
+/*
 impl ToString for MessageType {
     fn to_string(&self) -> String {
         match self {
@@ -275,7 +278,24 @@ impl ToString for MessageType {
             MessageType::Cred => "cred",
             MessageType::ProofReq => "proofReq",
             MessageType::Proof => "proof",
+            MessageType::Other => "other",
         }.to_string()
+    }
+}
+*/
+
+impl fmt::Display for MessageType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            MessageType::ConnReq => write!(f, "connReq"),
+            MessageType::ConnReqAnswer => write!(f, "connReqAnswer"),
+            MessageType::CredOffer => write!(f, "credOffer"),
+            MessageType::CredReq => write!(f, "credReq"),
+            MessageType::Cred => write!(f, "cred"),
+            MessageType::ProofReq => write!(f, "proofReq"),
+            MessageType::Proof => write!(f, "proof"),
+            MessageType::Other => write!(f, "other"),
+        }
     }
 }
 
@@ -338,7 +358,7 @@ pub struct PayloadMessageType {
 }
 
 impl PayloadMessageType {
-    pub fn new(type_: &MessageType) -> PayloadMessageType {
+    pub fn new(type_: &str) -> PayloadMessageType {
         PayloadMessageType {
             name: type_.to_string(),
             ver: "1.0".to_string(),

@@ -577,7 +577,7 @@ mod tests {
                                                              &agent_verkey,
                                                              &agent_pw_did,
                                                              &agent_pw_vk,
-                                                             MessageType::CredOffer).wait().unwrap();
+                                                             MessageType::CredOffer.to_string()).wait().unwrap();
 
                     forward_agent
                         .send(ForwardA2AMsg(msg))
@@ -611,7 +611,7 @@ mod tests {
                             uid: msg_uid,
                             status_code: MessageStatusCode::Created,
                             sender_did: EDGE_PAIRWISE_DID.to_string(),
-                            type_: MessageType::CredOffer,
+                            type_: MessageType::CredOffer.to_string(),
                             payload: Some(to_i8(&PAYLOAD.to_vec())),
                             ref_msg_id: None,
                         }]
