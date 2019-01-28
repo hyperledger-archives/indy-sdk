@@ -112,6 +112,7 @@ macro_rules! check_useful_c_str_empty_accepted {
 }
 
 macro_rules! check_useful_opt_c_str {
+    //TODO This no longer returns None options, only Strings are returned
     ($x:ident, $e:expr) => {
         let $x = match ctypes::c_str_to_string($x) {
             Ok(opt_val) => opt_val.map(String::from),

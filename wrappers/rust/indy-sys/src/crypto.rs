@@ -71,5 +71,21 @@ extern {
                                     encrypted_msg: BString,
                                     encrypted_len: u32,
                                     cb: Option<ResponseSliceCB>) -> Error;
+
+    #[no_mangle]
+    pub fn indy_pack_message(command_handle: Handle,
+                             wallet_handle: Handle,
+                             message: BString,
+                             message_len: u32,
+                             receiver_keys: CString,
+                             sender: CString,
+                             cb: Option<ResponseSliceCB>) -> Error;
+
+    #[no_mangle]
+    pub fn indy_unpack_message(command_handle: Handle,
+                               wallet_handle: Handle,
+                               jwe_msg: BString,
+                               jwe_len: u32,
+                               cb: Option<ResponseSliceCB>) -> Error;
 }
 

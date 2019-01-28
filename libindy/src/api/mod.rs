@@ -233,7 +233,8 @@ pub enum ErrorCode
     PaymentOperationNotSupportedError = 704,
 
     // Extra funds on inputs
-    PaymentExtraFundsError = 705
+    PaymentExtraFundsError = 705,
+
 }
 
 /// Set libindy runtime configuration. Can be optionally called to change current params.
