@@ -276,4 +276,100 @@
     XCTAssertEqualObjects(decryptedMessage, [TestUtils message]);
 }
 
+// MARK: - Pack Unpack message
+
+- (void)testPackUnpackAuthMessageWorks {
+    NSString *senderVerkey = nil;
+    ret = [[CryptoUtils sharedInstance] createKeyWithWalletHandle:walletHandle
+                                                          keyJson:@"{}"
+                                                        outVerkey:&senderVerkey];
+    XCTAssertEqual(ret.code, Success, @"CryptoUtils:createKeyWithWalletHandle failed");
+
+
+    IndyHandle walletHandleReceiver;
+    [[WalletUtils sharedInstance] createAndOpenWalletWithHandle:&walletHandleReceiver];
+
+
+    NSString *receiverVerkey = nil;
+    ret = [[CryptoUtils sharedInstance] createKeyWithWalletHandle:walletHandleReceiver
+                                                          keyJson:@"{}"
+                                                        outVerkey:&receiverVerkey];
+    XCTAssertEqual(ret.code, Success, @"CryptoUtils:createKeyWithWalletHandle failed");
+
+    NSArray *receivers = @[[TestUtils trusteeVerkey], receiverVerkey];
+    NSData *jsonData = [NSJSONSerialization dataWithJSONObject:receivers options:0 error:nil];
+    NSString *receiversJson = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+
+    NSData *packedMessage = nil;
+    ret = [[CryptoUtils sharedInstance] packMessage:[TestUtils message]
+                                          receivers:receiversJson
+                                             sender:senderVerkey
+                                       walletHandle:walletHandle
+                                                jwe:&packedMessage];
+    XCTAssertEqual(ret.code, Success, @"CryptoUtils:packMessage failed");
+    XCTAssertNotNil(packedMessage);
+
+    NSData *unpackedMessageData = nil;
+    ret = [[CryptoUtils sharedInstance] unpackMessage:packedMessage
+                                         walletHandle:walletHandleReceiver
+                                      unpackedMessage:&unpackedMessageData];
+    XCTAssertEqual(ret.code, Success, @"CryptoUtils:unpackMessage failed");
+
+    NSString *unpackedMessageJson = [[NSString alloc] initWithData:unpackedMessageData encoding:NSUTF8StringEncoding];
+    NSDictionary *unpackedMessage = [NSDictionary fromString:unpackedMessageJson];
+
+    XCTAssertTrue([[[NSString alloc] initWithData:[TestUtils message] encoding:NSUTF8StringEncoding] isEqualToString:unpackedMessage[@"message"]]);
+    XCTAssertTrue([senderVerkey isEqualToString:unpackedMessage[@"sender_verkey"]]);
+    XCTAssertTrue([receiverVerkey isEqualToString:unpackedMessage[@"recipient_verkey"]]);
+    
+    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandleReceiver];
+}
+
+- (void)testPackUnpackAnonMessageWorks {
+    NSString *senderVerkey = nil;
+    ret = [[CryptoUtils sharedInstance] createKeyWithWalletHandle:walletHandle
+                                                          keyJson:@"{}"
+                                                        outVerkey:&senderVerkey];
+    XCTAssertEqual(ret.code, Success, @"CryptoUtils:createKeyWithWalletHandle failed");
+    
+    
+    IndyHandle walletHandleReceiver;
+    [[WalletUtils sharedInstance] createAndOpenWalletWithHandle:&walletHandleReceiver];
+    
+    
+    NSString *receiverVerkey = nil;
+    ret = [[CryptoUtils sharedInstance] createKeyWithWalletHandle:walletHandleReceiver
+                                                          keyJson:@"{}"
+                                                        outVerkey:&receiverVerkey];
+    XCTAssertEqual(ret.code, Success, @"CryptoUtils:createKeyWithWalletHandle failed");
+    
+    NSArray *receivers = @[[TestUtils trusteeVerkey], receiverVerkey];
+    NSData *jsonData = [NSJSONSerialization dataWithJSONObject:receivers options:0 error:nil];
+    NSString *receiversJson = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+    
+    NSData *packedMessage = nil;
+    ret = [[CryptoUtils sharedInstance] packMessage:[TestUtils message]
+                                          receivers:receiversJson
+                                             sender:nil
+                                       walletHandle:walletHandle
+                                                jwe:&packedMessage];
+    XCTAssertEqual(ret.code, Success, @"CryptoUtils:packMessage failed");
+    XCTAssertNotNil(packedMessage);
+    
+    NSData *unpackedMessageData = nil;
+    ret = [[CryptoUtils sharedInstance] unpackMessage:packedMessage
+                                         walletHandle:walletHandleReceiver
+                                      unpackedMessage:&unpackedMessageData];
+    XCTAssertEqual(ret.code, Success, @"CryptoUtils:unpackMessage failed");
+    
+    NSString *unpackedMessageJson = [[NSString alloc] initWithData:unpackedMessageData encoding:NSUTF8StringEncoding];
+    NSDictionary *unpackedMessage = [NSDictionary fromString:unpackedMessageJson];
+    
+    XCTAssertTrue([[[NSString alloc] initWithData:[TestUtils message] encoding:NSUTF8StringEncoding] isEqualToString:unpackedMessage[@"message"]]);
+    XCTAssertNil(unpackedMessage[@"sender_verkey"]);
+    XCTAssertTrue([receiverVerkey isEqualToString:unpackedMessage[@"recipient_verkey"]]);
+    
+    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandleReceiver];
+}
+
 @end

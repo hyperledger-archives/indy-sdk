@@ -1111,6 +1111,50 @@ NAN_METHOD(cryptoAnonDecrypt) {
   delete arg1;
 }
 
+void packMessage_cb(indy_handle_t handle, indy_error_t xerr, const indy_u8_t* arg0data, indy_u32_t arg0len) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbBuffer(xerr, arg0data, arg0len);
+  }
+}
+NAN_METHOD(packMessage) {
+  INDY_ASSERT_NARGS(packMessage, 5)
+  INDY_ASSERT_NUMBER(packMessage, 0, wh)
+  INDY_ASSERT_UINT8ARRAY(packMessage, 1, message)
+  INDY_ASSERT_STRING(packMessage, 2, receiverKeys)
+  INDY_ASSERT_STRING(packMessage, 3, sender)
+  INDY_ASSERT_FUNCTION(packMessage, 4)
+  indy_handle_t arg0 = argToInt32(info[0]);
+  const indy_u8_t* arg1data = (indy_u8_t*)argToBufferData(info[1]);
+  indy_u32_t arg1len = node::Buffer::Length(info[1]);
+  const char* arg2 = argToCString(info[2]);
+  const char* arg3 = argToCString(info[3]);
+  IndyCallback* icb = argToIndyCb(info[4]);
+  indyCalled(icb, indy_pack_message(icb->handle, arg0, arg1data, arg1len, arg2, arg3, packMessage_cb));
+  delete arg2;
+  delete arg3;
+}
+
+void unpackMessage_cb(indy_handle_t handle, indy_error_t xerr, const indy_u8_t* arg0data, indy_u32_t arg0len) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbBuffer(xerr, arg0data, arg0len);
+  }
+}
+
+NAN_METHOD(unpackMessage) {
+  INDY_ASSERT_NARGS(unpackMessage, 3)
+  INDY_ASSERT_NUMBER(unpackMessage, 0, wh)
+  INDY_ASSERT_UINT8ARRAY(unpackMessage, 1, jweData)
+  INDY_ASSERT_FUNCTION(unpackMessage, 2)
+  indy_handle_t arg0 = argToInt32(info[0]);
+  const indy_u8_t* arg1data = (indy_u8_t*)argToBufferData(info[1]);
+  indy_u32_t arg1len = node::Buffer::Length(info[1]);
+  IndyCallback* icb = argToIndyCb(info[2]);
+  indyCalled(icb, indy_unpack_message(icb->handle, arg0, arg1data, arg1len, unpackMessage_cb));
+}
+
+
 void createAndStoreMyDid_cb(indy_handle_t handle, indy_error_t xerr, const char *const arg0, const char *const arg1) {
   IndyCallback* icb = IndyCallback::getCallback(handle);
   if(icb != nullptr){
@@ -3026,6 +3070,8 @@ NAN_MODULE_INIT(InitAll) {
   Nan::Export(target, "cryptoAuthDecrypt", cryptoAuthDecrypt);
   Nan::Export(target, "cryptoAnonCrypt", cryptoAnonCrypt);
   Nan::Export(target, "cryptoAnonDecrypt", cryptoAnonDecrypt);
+  Nan::Export(target, "packMessage", packMessage);
+  Nan::Export(target, "unpackMessage", unpackMessage);
   Nan::Export(target, "createAndStoreMyDid", createAndStoreMyDid);
   Nan::Export(target, "replaceKeysStart", replaceKeysStart);
   Nan::Export(target, "replaceKeysApply", replaceKeysApply);
