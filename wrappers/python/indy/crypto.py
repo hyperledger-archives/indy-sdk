@@ -444,9 +444,9 @@ async def unpack_message(wallet_handle: int,
                         jwe: str) -> str:
 
     """
-    Packs a message by encrypting the message and serializes it in a JWE-like format (Experimental)
+    Unpacks a JWE-like formatted message outputted by pack_message (Experimental)
 
-    Note to use DID keys with this function you can call indy_key_for_did to get key id (verkey)
+    Note to use DID keys with this function you can call did.key_for_did to get key id (verkey)
     for specific DID.
 
     #Params
@@ -492,10 +492,8 @@ async def unpack_message(wallet_handle: int,
                                          c_jwe_len,
                                          unpack_message.cb)
 
-    try:
-        unpack_message_str = unpack_message_bytes.decode('utf-8', 'strict')
-    except UnicodeDecodeError:
-        return UnicodeDecodeError
+    # If this fails this function will throw a UnicodeDecodeError
+    unpack_message_str = unpack_message_bytes.decode('utf-8', 'strict')
 
     logger.debug("unpack_message: <<< res: %r", unpack_message_str)
     return unpack_message_str

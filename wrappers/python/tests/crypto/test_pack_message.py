@@ -14,10 +14,10 @@ async def test_pack_message_authcrypt_works(wallet_handle, identity_my1, verkey_
     packed_message_bytes = await crypto.pack_message(wallet_handle, pack_message, receiver_verkeys, sender_verkey)
     packed_message_json = packed_message_bytes.decode("utf-8")
     json_message = json.loads(packed_message_json)
-    assert json_message['protected'] != ""
-    assert json_message['tag'] != ""
-    assert json_message['ciphertext'] != ""
-    assert json_message['iv'] != ""
+    assert json_message['protected']
+    assert json_message['tag']
+    assert json_message['ciphertext']
+    assert json_message['iv']
 
 @pytest.mark.asyncio
 async def test_pack_message_anoncrypt_works(wallet_handle, verkey_my2, pack_message):
@@ -25,10 +25,10 @@ async def test_pack_message_anoncrypt_works(wallet_handle, verkey_my2, pack_mess
     packed_message_bytes = await crypto.pack_message(wallet_handle, pack_message, receiver_verkeys, None)
     packed_message_json = packed_message_bytes.decode("utf-8")
     json_message = json.loads(packed_message_json)
-    assert json_message['protected'] != ""
-    assert json_message['tag'] != ""
-    assert json_message['ciphertext'] != ""
-    assert json_message['iv'] != ""
+    assert json_message['protected']
+    assert json_message['tag']
+    assert json_message['ciphertext']
+    assert json_message['iv']
 
 @pytest.mark.asyncio
 async def test_pack_message_invalid_sender_verkey(wallet_handle, verkey_my2, pack_message):
