@@ -174,9 +174,9 @@
          completion:(void (^)(NSError *error, NSData *decryptedMessage))completion;
 
 /**
-  Packs a message (Experimental)
+  Packs a message by encrypting the message and serializes it in a JWE-like format (Experimental)
  
-  Note to use DID keys with this function you can call indy_key_for_did to get key id (verkey)
+  Note to use DID keys with this function you can call IndyDid.keyForDid to get key id (verkey)
   for specific DID.
 
   @param walletHandle  The wallet.
@@ -235,7 +235,7 @@
 
 
 /**
-  Unpacks a message packed using indy_pack_message which follows the wire message format (Experimental)
+  Unpacks a JWE-like formatted message outputted by packMessage (Experimental)
 
   @param walletHandle  The wallet.
   @param jwe a JWE to be unpacked

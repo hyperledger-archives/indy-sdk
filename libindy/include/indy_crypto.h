@@ -318,7 +318,7 @@ extern "C" {
                                                  );
 
 
-    /// Packs a message (Experimental)
+    /// Packs a message by encrypting the message and serializes it in a JWE-like format (Experimental)
     ///
     /// Note to use DID keys with this function you can call indy_key_for_did to get key id (verkey)
     /// for specific DID.
@@ -398,8 +398,7 @@ extern "C" {
                                           );
 
 
-    /// Unpacks a message packed using indy_pack_message which follows the wire message format HIPE
-    /// (Experimental)
+    /// Unpacks a JWE-like formatted message outputted by indy_pack_message (Experimental)
     ///
     /// #Params
     /// command_handle: command handle to map callback to user context.

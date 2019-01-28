@@ -981,9 +981,9 @@ Errors: `Common*`, `Wallet*`, `Crypto*`
 
 #### packMessage \( wh, message, receiverKeys, senderVk \) -&gt; jwe
 
-Packs a message (Experimental)
+Packs a message by encrypting the message and serializes it in a JWE-like format (Experimental)
 
-Note to use DID keys with this function you can call indy_key_for_did to get key id (verkey) for specific DID.
+Note to use DID keys with this function you can call keyForDid to get key id (verkey) for specific DID.
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `message`: Buffer - message that to be packed
@@ -1039,7 +1039,7 @@ Errors: `Common*`, `Wallet*`, `Ledger*`, `Crypto*`
 
 #### unpackMessage \( wh, jwe \) -&gt; res
 
-Unpacks a message packed using indy_pack_message which follows the wire message format (Experimental)
+Unpacks a JWE-like formatted message outputted by packMessage (Experimental)
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `jwe`: Buffer - JWE to be unpacked
