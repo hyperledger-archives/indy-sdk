@@ -33,7 +33,6 @@ fn _parse_response_metadata(response: &str) -> IndyResult<ResponseMetadata> {
 
 pub fn get_last_signed_time(response: &str) -> u64 {
     let c = _parse_response_metadata(response);
-    println!("{:?}", c);
     c.map(|resp| resp.last_txn_time.unwrap_or(0)).unwrap_or(0)
 }
 
