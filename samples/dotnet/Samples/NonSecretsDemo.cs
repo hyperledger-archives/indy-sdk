@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Drawing;
 using System.Threading.Tasks;
 using Hyperledger.Indy.NonSecretsApi;
 using Hyperledger.Indy.Samples.Utils;
 using Hyperledger.Indy.WalletApi;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Console = Colorful.Console;
 
 namespace Hyperledger.Indy.Samples
 {
@@ -13,7 +15,7 @@ namespace Hyperledger.Indy.Samples
     {
         public static async Task Execute()
         {
-            Console.WriteLine("Non Secrets sample -> started");
+            Console.Write("Executing non-secrets sample... ");
 
             var myWalletConfig = "{\"id\":\"my_wallet\"}";
             var myWalletCredentials = "{\"key\":\"my_wallet_key\"}";
@@ -55,14 +57,18 @@ namespace Hyperledger.Indy.Samples
                     // Close wallets 
                     await myWallet.CloseAsync();
                 }
+
+                Console.WriteLine("OK", Color.Green);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Error: {e.Message}", Color.Red);
             }
             finally
             {
                 // Delete wallets
                 await WalletUtils.DeleteWalletAsync(myWalletConfig, myWalletCredentials);
             }
-
-            Console.WriteLine("Non Secrets sample -> completed");
         }
     }
 }

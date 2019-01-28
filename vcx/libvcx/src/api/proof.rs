@@ -306,12 +306,17 @@ pub extern fn vcx_proof_release(proof_handle: u32) -> u32 {
 
     let source_id = proof::get_source_id(proof_handle).unwrap_or_default();
     match proof::release(proof_handle) {
-        Ok(x) => trace!("vcx_proof_release(proof_handle: {}, rc: {}), source_id: {}",
-                       proof_handle, error_string(0), source_id),
-        Err(e) => warn!("vcx_proof_release(proof_handle: {}, rc: {}), source_id: {}",
-                       proof_handle, error_string(e.to_error_code()), source_id),
-    };
-    error::SUCCESS.code_num
+        Ok(_) => {
+            trace!("vcx_proof_release(proof_handle: {}, rc: {}), source_id: {}",
+                       proof_handle, error_string(0), source_id);
+            error::SUCCESS.code_num
+        },
+        Err(e) => {
+            warn!("vcx_proof_release(proof_handle: {}, rc: {}), source_id: {}",
+                       proof_handle, error_string(e.to_error_code()), source_id);
+            e.to_error_code()
+        },
+    }
 }
 
 /// Sends a proof request to pairwise connection
@@ -583,6 +588,8 @@ mod tests {
         let (state, _) = cb.receive(Some(Duration::from_secs(10))).unwrap();
         assert_eq!(state, ProofStateType::ProofInvalid as u32);
         vcx_proof_release(proof_handle);
+        let unknown_handle = proof_handle + 1;
+        assert_eq!(vcx_proof_release(unknown_handle), error::INVALID_PROOF_HANDLE.code_num);
     }
 
     #[test]
