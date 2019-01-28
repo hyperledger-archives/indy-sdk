@@ -4,7 +4,6 @@ extern crate atty;
 extern crate ansi_term;
 extern crate unescape;
 #[cfg(test)]
-#[macro_use]
 extern crate lazy_static;
 extern crate libc;
 extern crate linefeed;

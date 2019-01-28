@@ -1,3 +1,6 @@
+#[macro_use]
+pub mod memzeroize;
+
 pub mod environment;
 
 #[macro_use]
@@ -26,3 +29,5 @@ pub mod test;
 
 #[macro_use]
 pub mod try;
+
+pub mod option;
