@@ -3,9 +3,8 @@ package org.hyperledger.indy.sdk.crypto;
 import org.hyperledger.indy.sdk.IndyIntegrationTest;
 import org.hyperledger.indy.sdk.IndyIntegrationTestWithSingleWallet;
 import org.hyperledger.indy.sdk.InvalidStructureException;
-import org.hyperledger.indy.sdk.did.Did;
-import org.hyperledger.indy.sdk.did.DidResults;
 import org.hyperledger.indy.sdk.wallet.WalletItemNotFoundException;
+import org.json.JSONObject;
 import org.junit.Test;
 import org.json.JSONArray;
 
@@ -15,133 +14,111 @@ import static org.hamcrest.CoreMatchers.isA;
 import static org.junit.Assert.*;
 
 public class PackUnpackMessageTest extends IndyIntegrationTestWithSingleWallet {
+	private String message = "hello world";
 
-    @Test
-    public void testPackMessageSuccessfully() throws Exception {
-        String message = "hello world";
+	@Test
+	public void testPackMessageAnoncryptWorks() throws Exception {
+		JSONArray receivers = new JSONArray(new String[]{VERKEY_MY1, VERKEY_MY2, VERKEY_TRUSTEE});
 
-        JSONArray receieversArray = new JSONArray();
-        receieversArray.put(IndyIntegrationTest.VERKEY_MY1);
-        receieversArray.put(IndyIntegrationTest.VERKEY_MY2);
-        receieversArray.put(IndyIntegrationTest.VERKEY_TRUSTEE);
+		byte[] packedMessage = Crypto.packMessage(wallet, receivers.toString(), null, message.getBytes()).get();
 
-        String myVk = Crypto.createKey(wallet, MY1_IDENTITY_KEY_JSON).get();
+		assertNotNull(packedMessage);
+	}
 
-        byte[] packedMessage = Crypto.packMessage(wallet, receieversArray.toString(), null, message.getBytes()).get();
+	@Test
+	public void testPackMessageAuthcryptWorks() throws Exception {
+		JSONArray receivers = new JSONArray(new String[]{VERKEY_MY1});
 
-        assertNotNull(packedMessage);
-    }
+		String senderVerkey = Crypto.createKey(wallet, MY1_IDENTITY_KEY_JSON).get();
 
-    @Test
-    public void testPackMessageSuccessfullyWithOneReceiver() throws Exception {
-        String message = "hello world";
+		byte[] packedMessage = Crypto.packMessage(wallet, receivers.toString(), senderVerkey, message.getBytes()).get();
 
-        JSONArray receieversArray = new JSONArray();
-        receieversArray.put(IndyIntegrationTest.VERKEY_MY1);
+		assertNotNull(packedMessage);
+	}
 
-        String myVk = Crypto.createKey(wallet, MY1_IDENTITY_KEY_JSON).get();
+	@Test
+	public void testPackErrorsWithUnknownSenderVerkey() throws Exception {
+		JSONArray receivers = new JSONArray(new String[]{VERKEY_MY1});
 
-        byte[] packedMessage = Crypto.packMessage(wallet, receieversArray.toString(), null, message.getBytes()).get();
+		thrown.expect(ExecutionException.class);
+		thrown.expectCause(isA(WalletItemNotFoundException.class));
 
-        assertNotNull(packedMessage);
-    }
+		Crypto.packMessage(wallet, receivers.toString(), IndyIntegrationTest.VERKEY_MY2, message.getBytes()).get();
 
-    @Test
-    public void testPackSuccessWithSenderVerykey() throws Exception {
-        String message = "hello world";
+		// this assert should never trigger since packMessage should throw exception
+		assertTrue(false);
+	}
 
-        JSONArray receieversArray = new JSONArray();
-        receieversArray.put(IndyIntegrationTest.VERKEY_MY1);
+	@Test
+	public void testPackMessageErrorsWithNoReceivers() throws Exception {
+		JSONArray receivers = new JSONArray();
 
-        String myVk = Crypto.createKey(wallet, MY1_IDENTITY_KEY_JSON).get();
+		thrown.expect(ExecutionException.class);
+		thrown.expectCause(isA(InvalidStructureException.class));
 
-        byte[] packedMessage = Crypto.packMessage(wallet, receieversArray.toString(), myVk, message.getBytes()).get();
+		Crypto.packMessage(wallet, receivers.toString(), null, message.getBytes()).get();
 
-        assertNotNull(packedMessage);
-    }
+		// this assert should never trigger since unpackMessage should throw exception
+		assertTrue(false);
+	}
 
-    @Test(expected = java.util.concurrent.ExecutionException.class)
-    public void testPackErrorsWithIncorrectSenderVerykey() throws Exception {
-        String message = "hello world";
+	@Test
+	public void testPackMessageErrorsInvalidReceivers() throws Exception {
+		JSONArray receivers = new JSONArray(new String[]{"IndyIntegrationTest.VERKEY_MY1"});
 
-        JSONArray receieversArray = new JSONArray();
-        receieversArray.put(IndyIntegrationTest.VERKEY_MY1);
+		thrown.expect(ExecutionException.class);
+		thrown.expectCause(isA(InvalidStructureException.class));
 
-        String myVk = Crypto.createKey(wallet, MY1_IDENTITY_KEY_JSON).get();
+		Crypto.packMessage(wallet, receivers.toString(), null, message.getBytes()).get();
 
-        byte[] packedMessage = Crypto.packMessage(wallet, receieversArray.toString(), IndyIntegrationTest.VERKEY_MY2, message.getBytes()).get();
+		// this assert should never trigger since unpackMessage should throw exception
+		assertTrue(false);
+	}
 
-        assertNotNull(packedMessage);
-    }
+	@Test
+	public void testUnpackMessageErrorsWithInvalidPackedMessageStructure() throws Exception {
+		String packedMessage = "jibberish";
 
-    @Test(expected = java.util.concurrent.ExecutionException.class)
-    public void testPackMessageErrorsWithNoReceivers() throws Exception {
-        String message = "hello world";
+		thrown.expect(ExecutionException.class);
+		thrown.expectCause(isA(InvalidStructureException.class));
 
-        JSONArray receieversArray = new JSONArray();
+		Crypto.unpackMessage(wallet, packedMessage.getBytes()).get();
 
-        String myVk = Crypto.createKey(wallet, MY1_IDENTITY_KEY_JSON).get();
+		// this assert should never trigger since unpackMessage should throw exception
+		assertTrue(false);
+	}
 
-        byte[] packedMessage = Crypto.packMessage(wallet, receieversArray.toString(), null, message.getBytes()).get();
+	@Test
+	public void testUnpackMessageAnoncryptWorks() throws Exception {
+		String receiverVerkey = Crypto.createKey(wallet, "{}").get();
 
-        // this assert should never trigger since unpackMessage should throw exception
-        assertTrue(false);
-    }
+		JSONArray receivers = new JSONArray(new String[]{receiverVerkey, VERKEY_TRUSTEE});
 
-    @Test(expected = java.util.concurrent.ExecutionException.class)
-    public void testPackMessageErrorsInvalidReceivers() throws Exception {
-        String message = "hello world";
+		byte[] packedMessage = Crypto.packMessage(wallet, receivers.toString(), null, message.getBytes()).get();
 
-        JSONArray receieversArray = new JSONArray();
-        receieversArray.put("IndyIntegrationTest.VERKEY_MY1");
+		byte[] unpackedMessageBytes = Crypto.unpackMessage(wallet, packedMessage).get();
 
-        String myVk = Crypto.createKey(wallet, MY1_IDENTITY_KEY_JSON).get();
+		JSONObject unpackedMessage = new JSONObject(new String(unpackedMessageBytes));
 
-        byte[] packedMessage = Crypto.packMessage(wallet, receieversArray.toString(), null, message.getBytes()).get();
+		assertEquals(message, unpackedMessage.getString("message"));
+		assertEquals(receiverVerkey, unpackedMessage.getString("recipient_verkey"));
+		assertFalse(unpackedMessage.has("sender_verkey"));
+	}
 
-        // this assert should never trigger since unpackMessage should throw exception
-        assertTrue(false);
-    }
+	@Test
+	public void testUnpackMesssageAuthcryptWorks() throws Exception {
+		String receiverVerkey = Crypto.createKey(wallet, "{}").get();
+		String senderVerkey = Crypto.createKey(wallet, "{}").get();
 
-    @Test(expected = java.util.concurrent.ExecutionException.class)
-    public void testUnpackMessageErrorsWithInvalidStructure() throws Exception {
+		JSONArray receivers = new JSONArray(new String[]{receiverVerkey});
 
-        String packedMessage = "jibberish";
-        byte[] unpackedMessage = Crypto.unpackMessage(wallet, packedMessage.getBytes()).get();
+		byte[] packedMessage = Crypto.packMessage(wallet, receivers.toString(), senderVerkey, message.getBytes()).get();
+		byte[] unpackedMessageBytes = Crypto.unpackMessage(wallet, packedMessage).get();
 
-        // this assert should never trigger since unpackMessage should throw exception
-        assertTrue(false);
-    }
+		JSONObject unpackedMessage = new JSONObject(new String(unpackedMessageBytes));
 
-    @Test
-    public void testUnpackMessageSuccessfully() throws Exception {
-        String message = "hello world";
-
-        JSONArray receieversArray = new JSONArray();
-        receieversArray.put(IndyIntegrationTest.VERKEY_MY1);
-        receieversArray.put(IndyIntegrationTest.VERKEY_MY2);
-        receieversArray.put(IndyIntegrationTest.VERKEY_TRUSTEE);
-
-        String myVk = Crypto.createKey(wallet, MY1_IDENTITY_KEY_JSON).get();
-
-        byte[] packedMessage = Crypto.packMessage(wallet, receieversArray.toString(), null, message.getBytes()).get();
-        byte[] unpackedMessage = Crypto.unpackMessage(wallet, packedMessage).get();
-
-        assertNotNull(unpackedMessage);
-    }
-
-    @Test
-    public void testupackSuccessWithSenderVerykey() throws Exception {
-        String message = "hello world";
-
-        JSONArray receieversArray = new JSONArray();
-        receieversArray.put(IndyIntegrationTest.VERKEY_MY1);
-
-        String myVk = Crypto.createKey(wallet, MY1_IDENTITY_KEY_JSON).get();
-
-        byte[] packedMessage = Crypto.packMessage(wallet, receieversArray.toString(), myVk, message.getBytes()).get();
-        byte[] unpackedMessage = Crypto.unpackMessage(wallet, packedMessage).get();
-
-        assertNotNull(unpackedMessage);
-    }
+		assertEquals(message, unpackedMessage.getString("message"));
+		assertEquals(receiverVerkey, unpackedMessage.getString("recipient_verkey"));
+		assertEquals(senderVerkey, unpackedMessage.getString("sender_verkey"));
+	}
 }

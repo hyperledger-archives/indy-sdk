@@ -562,13 +562,18 @@ public class Crypto extends IndyJava.API {
 		return future;
 	}
 
-	/**
+	/** Packs a message by encrypting the message and serializes it in a JWE-like format (Experimental)
+	 *
+	 * Note to use DID keys with this function you can call Did.keyForDid to get key id (verkey)
+	 * for specific DID.
 	 *
 	 * @param wallet       The wallet.
-	 * @param recipientVk  list of Id (verkey). formatted as json like [<receiver edge_agent_1 verkey>, <receiver edge_agent_2 verkey>]
-	 * @param senderVk     if null, will use AnonCrypt mode
-	 * @param message      raw data
-	 * @return A future that resolves to a
+	 * @param recipientVk  list of Id (verkey). formatted as json like ["receiver edge_agent_1 verkey", "receiver edge_agent_2 verkey"`]
+	 * @param senderVk     verkey of message sender. if null, will use AnonCrypt mode
+	 * @param message      message to be packed
+	 *                        
+	 * @return A future that resolves to an Agent Wire Message format as a byte array. See HIPE 0028 for detailed formats
+	 *
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
 	public static CompletableFuture<byte[]> packMessage(
@@ -601,11 +606,28 @@ public class Crypto extends IndyJava.API {
 		return future;
 	}
 
-	/**
+	/** Unpacks a JWE-like formatted message outputted by pack_message (Experimental)
 	 *
 	 * @param wallet       The wallet.
-	 * @param jwe_data     The encrypted message.
-	 * @return A future that resolves to a byte[] of descrypted data
+	 * @param jwe_data     The JWE to be unpacked.
+	 *                        
+	 * @return A future that resolves to a byte[] of unpacked data
+	 * 
+	 * if authcrypt was used to pack the message returns this json structure:
+	 *  {
+	 *      message: decrypted message,
+	 *      sender_verkey: sender_verkey,
+	 *      recipient_verkey: recipient_verkey
+	 *  }
+	 * 
+	 *  OR
+	 * 
+	 *  if anoncrypt was used to pack the message returns this json structure:
+	 *  {
+	 *      message: decrypted message,
+	 *      recipient_verkey: recipient_verkey
+	 *  }
+	
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
 	public static CompletableFuture<byte[]> unpackMessage(
