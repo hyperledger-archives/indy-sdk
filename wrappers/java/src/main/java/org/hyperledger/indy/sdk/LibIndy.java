@@ -98,6 +98,8 @@ public abstract class LibIndy {
 		public int indy_crypto_auth_decrypt(int command_handle, int wallet_handle, String my_vk, byte[] encrypted_msg_raw, int encrypted_msg_len, Callback cb);
 		public int indy_crypto_anon_crypt(int command_handle, String their_vk, byte[] message_raw, int message_len, Callback cb);
 		public int indy_crypto_anon_decrypt(int command_handle, int wallet_handle, String my_vk, byte[] encrypted_msg_raw, int encrypted_msg_len, Callback cb);
+		public int indy_pack_message(int command_handle, int wallet_handle, byte[] message, int message_len, String receiver_keys, String sender, Callback cb);
+		public int indy_unpack_message(int command_handle, int wallet_handle, byte[] jwe_data, int jwe_len, Callback cb);
 
 		// anoncreds.rs
 
@@ -125,6 +127,7 @@ public abstract class LibIndy {
 		public int indy_verifier_verify_proof(int command_handle, String proof_request_json, String proof_json, String schemas_json, String cred_defs_jsons, String rev_reg_defs_json, String revoc_regs_json, Callback cb);
 		public int indy_create_revocation_state(int command_handle, int blob_storage_reader_handle, String rev_reg_def_json, String rev_reg_delta_json, long timestamp, String cred_rev_id, Callback cb);
 		public int indy_update_revocation_state(int command_handle, int blob_storage_reader_handle, String rev_state_json, String rev_reg_def_json, String rev_reg_delta_json, long timestamp, String cred_rev_id, Callback cb);
+
 
 		// pairwise.rs
 
