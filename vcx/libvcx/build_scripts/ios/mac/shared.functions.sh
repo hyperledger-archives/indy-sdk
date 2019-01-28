@@ -1,8 +1,8 @@
 #!/bin/sh
 
 export LIBSOVTOKEN_IOS_BUILD_URL="https://repo.sovrin.org/ios/libsovtoken/stable/libsovtoken_0.9.6-201811211710-4901e95_all.zip"
-export LIBINDY_IOS_BUILD_URL="https://repo.sovrin.org/ios/libindy/master/libindy-core/1.7.0-934/libindy.tar.gz"
-export LIBNULLPAY_IOS_BUILD_URL="https://repo.sovrin.org/ios/libnullpay/master/libnullpay-core/1.7.0-934/libnullpay.tar.gz"
+export LIBINDY_IOS_BUILD_URL="https://repo.sovrin.org/ios/libindy/master/libindy-core/1.7.0-955/libindy.tar.gz"
+export LIBNULLPAY_IOS_BUILD_URL="https://repo.sovrin.org/ios/libnullpay/master/libnullpay-core/1.7.0-955/libnullpay.tar.gz"
 
 export LIBSOVTOKEN_FILE=$(basename ${LIBSOVTOKEN_IOS_BUILD_URL})
 export LIBSOVTOKEN_VERSION=$(echo ${LIBSOVTOKEN_FILE} | cut -d'_' -f 2)
