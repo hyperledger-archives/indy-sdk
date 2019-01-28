@@ -8,7 +8,7 @@ libindy (1.8.0) unstable; urgency=medium
     * Added *EXPERIMENTAL* `indy_pack_message` and `indy_unpack_message` functions to support
         Wire Messages described in AMES HIPE(https://github.com/hyperledger/indy-hipe/pull/43)
     * Functions `indy_crypto_anon_crypt` and `indy_crypto_anon_decrypt` marked as *Deprecated*.
-    * Added NETWORK_MONITOR role in builder for NYM transaction.
+    * Added `NETWORK_MONITOR` role to NYM transaction builder.
     * Bugfixes
 
 * 1.7.0

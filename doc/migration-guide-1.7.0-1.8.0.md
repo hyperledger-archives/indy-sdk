@@ -97,6 +97,8 @@ The main purpose of this changes is providing a way of getting additional error 
 
 The main purpose of changes is the support of *Wire Messages* described in [AMES HIPE](https://github.com/hyperledger/indy-hipe/pull/43)
 
+*Note*: New functions are *Experimental*. 
+
 <table>
     <tr>  
       <th>v1.7.0 - Crypto API</th>
@@ -104,8 +106,8 @@ The main purpose of changes is the support of *Wire Messages* described in [AMES
     </tr>
     <tr>
       <th colspan="2">
-          <a href="https://github.com/hyperledger/indy-sdk/blob/v1.7.0/libindy/src/api/crypto.rs#L566">
-              Packs a message
+          <a href="https://github.com/hyperledger/indy-sdk/blob/v1.7.0/libindy/src/api/crypto.rs#L565">
+              Packs a message by encrypting the message and serializes it in a JWE-like format
           </a>
       </th>
     <tr>
@@ -130,8 +132,8 @@ indy_pack_message(command_handle: i32,
     </tr>
     <tr>
       <th colspan="2">
-          <a href="https://github.com/hyperledger/indy-sdk/blob/v1.7.0/libindy/src/api/crypto.rs#L566">
-              Unpacks a message packed using indy_pack_message which follows the wire message format
+          <a href="https://github.com/hyperledger/indy-sdk/blob/v1.7.0/libindy/src/api/crypto.rs#L673">
+              Unpacks a JWE-like formatted message outputted by indy_pack_message
           </a>
       </th>
     <tr>
@@ -144,7 +146,6 @@ indy_pack_message(command_handle: i32,
 indy_unpack_message(command_handle: i32,
                     wallet_handle: i32,
                     jwe_data: *const u8,
-                    message_len: u32,
                     jwe_len: u32,
                     cb: Option<extern fn(xcommand_handle: i32,
                                          err: ErrorCode,

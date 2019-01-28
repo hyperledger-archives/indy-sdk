@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.8.0 - 2018-1-31
+## 1.8.0 - 2018-1-28
 * Added function `indy_get_current_error` to get additional information for last error occurred in Libindy.
 * Updated Libindy wrappers for automatic getting error details:
     * Python - added `message` and `indy_backtrace` fields to `IndyError` object.
@@ -13,7 +13,7 @@
 * Added *EXPERIMENTAL* `indy_pack_message` and `indy_unpack_message` functions to support *Wire Messages* described in [AMES HIPE](https://github.com/hyperledger/indy-hipe/pull/43)
 * Functions `indy_crypto_anon_crypt` and `indy_crypto_anon_decrypt` marked as *Deprecated*.
 * Removed `bindgen` folder from Libindy NodeJS wrapper.
-* Added NETWORK_MONITOR role in builder for NYM transaction.
+* Added `NETWORK_MONITOR` role to NYM transaction builder.
 * Bugfixes
 
 ## 1.7.0 - 2018-12-21
