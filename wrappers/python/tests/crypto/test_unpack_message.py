@@ -20,7 +20,7 @@ async def test_pack_message_and_unpack_message_authcrypt_works(wallet_handle, id
     unpacked_message = await crypto.unpack_message(wallet_handle, packed_message)
 
     # test function
-    unpacked_message_json = json.loads(unpacked_message)
+    unpacked_message_json = json.loads(unpacked_message.decode("utf-8"))
     assert unpacked_message_json['message'] == pack_message
     assert unpacked_message_json['recipient_verkey'] == steward_vk
     assert unpacked_message_json['sender_verkey'] == sender_vk
@@ -37,9 +37,10 @@ async def test_pack_message_and_unpack_message_anoncrypt_works(wallet_handle, id
     unpacked_message = await crypto.unpack_message(wallet_handle, packed_message)
 
     # test function
-    unpacked_message_json = json.loads(unpacked_message)
+    unpacked_message_json = json.loads(unpacked_message.decode("utf-8"))
     assert unpacked_message_json['message'] == pack_message
     assert unpacked_message_json['recipient_verkey'] == steward_vk
+    assert 'sender_verkey' not in unpacked_message_json
 
 
 @pytest.mark.asyncio

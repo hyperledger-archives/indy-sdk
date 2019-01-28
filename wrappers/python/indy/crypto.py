@@ -443,7 +443,7 @@ async def pack_message(wallet_handle: int,
 
 
 async def unpack_message(wallet_handle: int,
-                         jwe: bytes) -> str:
+                         jwe: bytes) -> bytes:
     """
     Unpacks a JWE-like formatted message outputted by pack_message (Experimental)
 
@@ -483,14 +483,11 @@ async def unpack_message(wallet_handle: int,
 
     c_wallet_handle = c_int32(wallet_handle)
     c_jwe_len = c_uint32(len(jwe))
-    unpack_message_bytes = await do_call('indy_unpack_message',
-                                         c_wallet_handle,
-                                         jwe,
-                                         c_jwe_len,
-                                         unpack_message.cb)
+    res = await do_call('indy_unpack_message',
+                        c_wallet_handle,
+                        jwe,
+                        c_jwe_len,
+                        unpack_message.cb)
 
-    # If this fails this function will throw a UnicodeDecodeError
-    unpack_message_str = unpack_message_bytes.decode('utf-8', 'strict')
-
-    logger.debug("unpack_message: <<< res: %r", unpack_message_str)
-    return unpack_message_str
+    logger.debug("unpack_message: <<< res: %r", res)
+    return res
