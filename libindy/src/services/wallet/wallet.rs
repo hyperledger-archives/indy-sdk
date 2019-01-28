@@ -1,12 +1,14 @@
 extern crate sodiumoxide;
+extern crate zeroize;
 
-use utils::crypto::memzero::memzero;
 use std::collections::HashMap;
 use std::rc::Rc;
 
 use utils::crypto::{hmacsha256, chacha20poly1305_ietf};
 
 use errors::prelude::*;
+
+use self::zeroize::Zeroize;
 
 use super::storage;
 use super::iterator::WalletIterator;
@@ -47,7 +49,7 @@ impl Keys {
 
         let encrypted = encrypt_as_not_searchable(&serialized, master_key);
 
-        memzero(&mut serialized[..]);
+        serialized.zeroize();
         Ok(encrypted)
     }
 
@@ -59,7 +61,7 @@ impl Keys {
         let keys: Keys = rmp_serde::from_slice(&decrypted)
                 .to_indy(IndyErrorKind::InvalidStructure, "Invalid bytes for Key")?;
 
-        memzero(&mut decrypted[..]);
+        decrypted.zeroize();
         Ok(keys)
     }
 }
@@ -91,7 +93,7 @@ impl EncryptedValue {
         let value_key = chacha20poly1305_ietf::Key::from_slice(&value_key_bytes)
             .map_err(|err| err.extend("Invalid value key"))?; // FIXME: review kind
 
-        memzero(&mut value_key_bytes[..]);
+        value_key_bytes.zeroize();
 
         let res = String::from_utf8(decrypt_merged(&self.data, &value_key)?)
             .to_indy(IndyErrorKind::InvalidStructure, "Invalid UTF8 string inside of value")?; // FIXME: review kind
