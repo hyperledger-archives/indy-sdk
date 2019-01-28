@@ -267,23 +267,6 @@ pub enum MessageType {
     Other,
 }
 
-/*
-impl ToString for MessageType {
-    fn to_string(&self) -> String {
-        match self {
-            MessageType::ConnReq => "connReq",
-            MessageType::ConnReqAnswer => "connReqAnswer",
-            MessageType::CredOffer => "credOffer",
-            MessageType::CredReq => "credReq",
-            MessageType::Cred => "cred",
-            MessageType::ProofReq => "proofReq",
-            MessageType::Proof => "proof",
-            MessageType::Other => "other",
-        }.to_string()
-    }
-}
-*/
-
 impl fmt::Display for MessageType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
