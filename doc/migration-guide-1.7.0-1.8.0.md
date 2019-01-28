@@ -67,7 +67,8 @@ The main purpose of this changes is providing a way of getting additional error 
           <b>NEW</b>
       </td>
       <td>
-          <pre>indy_get_current_error(error_json_p: *mut *const c_char)</pre>
+<pre>indy_get_current_error(
+            error_json_p: *mut *const c_char)</pre>
       </td>
     </tr>
     <tr>
@@ -79,14 +80,17 @@ The main purpose of this changes is providing a way of getting additional error 
     <tr>
     <tr>
       <td>
-          <pre>indy_set_runtime_config(config: *const c_char) -> ErrorCode</pre>
+<pre>indy_set_runtime_config(
+        config: *const c_char) -> ErrorCode</pre>
       </td>
       <td>
         <b>Note:</b> Format of <i>config</i> parameter was changed. Current format is:
 <pre>
 {
-    "crypto_thread_pool_size": Optional<int> - size of thread pool 
-    "collect_backtrace": Optional<bool> - whether errors backtrace should be collected
+    "crypto_thread_pool_size": Optional[int] - 
+        size of thread pool 
+    "collect_backtrace": Optional<[bool] - 
+        whether errors backtrace should be collected
 }
 </pre>
       </td>
@@ -164,19 +168,20 @@ indy_unpack_message(command_handle: i32,
     <tr>
       <td>
           <pre>
-indy_crypto_anon_crypt(command_handle: i32,
-                       recipient_vk: *const c_char,
-                       msg_data: *const u8,
-                       msg_len: u32,
-                       cb: Option<extern fn(command_handle_: i32,
-                                            err: ErrorCode,
-                                            encrypted_msg: *const u8,
-                                            encrypted_len: u32)>)
+indy_crypto_anon_crypt(
+            command_handle: i32,
+            recipient_vk: *const c_char,
+            msg_data: *const u8,
+            msg_len: u32,
+            cb: Option<extern fn(command_handle_: i32,
+                                 err: ErrorCode,
+                                 encrypted_msg: *const u8,
+                                 encrypted_len: u32)>)
           </pre>
       </td>
       <td>
-          <b>DEPRECATED</b>
-          <b>USE indy_pack_message INSTEAD</b>
+          <b>DEPRECATED</b><br>
+          Use `indy_pack_message` instead
       </td>
     </tr>
     <tr>
@@ -189,21 +194,22 @@ indy_crypto_anon_crypt(command_handle: i32,
     <tr>
       <td>
           <pre>
-indy_crypto_auth_decrypt(command_handle: i32,
-                         wallet_handle: i32,
-                         recipient_vk: *const c_char,
-                         encrypted_msg: *const u8,
-                         encrypted_len: u32,
-                         cb: Option<extern fn(command_handle_: IndyHandle,
-                                              err: ErrorCode,
-                                              sender_vk: *const c_char,
-                                              msg_data: *const u8,
-                                              msg_len: u32)>)
+indy_crypto_auth_decrypt(
+            command_handle: i32,
+             wallet_handle: i32,
+             recipient_vk: *const c_char,
+             encrypted_msg: *const u8,
+             encrypted_len: u32,
+             cb: Option<extern fn(command_handle_: IndyHandle,
+                                  err: ErrorCode,
+                                  sender_vk: *const c_char,
+                                  msg_data: *const u8,
+                                  msg_len: u32)>)
           </pre>
       </td>
       <td>
-          <b>DEPRECATED</b>
-          <b>USE indy_unpack_message INSTEAD</b>
+          <b>DEPRECATED</b><br>
+          Use `indy_unpack_message` instead
       </td>
     </tr>
 </table>
