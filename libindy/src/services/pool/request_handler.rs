@@ -10,6 +10,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use rmp_serde;
 use serde_json;
 use serde_json::Value as SJsonValue;
+use self::super::THRESHOLD;
 
 use commands::Command;
 use commands::CommandExecutor;
@@ -20,13 +21,12 @@ use services::pool::catchup::{build_catchup_req, CatchupProgress, check_cons_pro
 use services::pool::events::NetworkerEvent;
 use services::pool::events::PoolEvent;
 use services::pool::events::RequestEvent;
+use services::pool::get_last_signed_time;
 use services::pool::merkle_tree_factory;
 use services::pool::networker::Networker;
 use services::pool::state_proof;
 use services::pool::types::CatchupRep;
 use services::pool::types::HashableValue;
-use utils::transaction_metadata::get_last_signed_time;
-use std::sync::Mutex;
 
 use super::indy_crypto::bls::Generator;
 use super::indy_crypto::bls::VerKey;
@@ -723,15 +723,6 @@ fn _check_state_proof(msg_result: &SJsonValue, f: usize, gen: &Generator, bls_ke
     res
 }
 
-lazy_static! {
-    static ref THRESHOLD: Mutex<u64> = Mutex::new(600);
-}
-
-pub fn set_freshness_threshold(threshold: u64) {
-    let mut th = THRESHOLD.lock().unwrap();
-    *th = ::std::cmp::max(threshold, 300);
-}
-
 fn _get_freshness_threshold() -> u64 {
     let t = THRESHOLD.lock().unwrap();
     t.mul(1000)
@@ -1155,6 +1146,7 @@ pub mod tests {
 
     mod single {
         use super::*;
+        use services::pool::set_freshness_threshold;
 
         #[test]
         fn request_handler_process_reply_event_from_single_state_works_for_consensus_reached() {

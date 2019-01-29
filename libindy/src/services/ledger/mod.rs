@@ -26,7 +26,6 @@ use domain::ledger::schema::{GetSchemaOperation, GetSchemaOperationData, GetSche
 use domain::ledger::txn::{GetTxnOperation, LedgerType};
 use domain::ledger::validator_info::GetValidatorInfoOperation;
 use errors::prelude::*;
-use utils::transaction_metadata::*;
 
 pub mod merkletree;
 
@@ -549,16 +548,6 @@ impl LedgerService {
         Ok(res)
     }
 
-    pub fn get_response_metadata(&self, response: &str) -> IndyResult<String> {
-        info!("get_response_metadata >>> response: {:?}", response);
-
-        let res = parse_response_metadata(response);
-
-        info!("get_response_metadata <<< res: {:?}", res);
-
-        res
-    }
-
     pub fn parse_response<T>(response: &str) -> IndyResult<Reply<T>> where T: DeserializeOwned + ReplyType + ::std::fmt::Debug {
         trace!("parse_response >>> response {:?}", response);
 
@@ -572,7 +561,12 @@ impl LedgerService {
         let message: Message<T> = serde_json::from_value(message)
             .to_indy(IndyErrorKind::LedgerItemNotFound, "Structure doesn't correspond to type. Most probably not found")?; // FIXME: Review how we handle not found
 
-        handle_response_message_type(message)
+        match message {
+            Message::Reject(response) | Message::ReqNACK(response) =>
+                Err(err_msg(IndyErrorKind::InvalidTransaction, format!("Transaction has been failed: {:?}", response.reason))),
+            Message::Reply(reply) =>
+                Ok(reply)
+        }
     }
 
     pub fn validate_action(&self, request: &str) -> IndyResult<()> {

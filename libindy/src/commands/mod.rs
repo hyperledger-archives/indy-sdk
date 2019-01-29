@@ -24,7 +24,7 @@ use services::blob_storage::BlobStorageService;
 use services::crypto::CryptoService;
 use services::ledger::LedgerService;
 use services::payments::PaymentsService;
-use services::pool::{PoolService, request_handler::set_freshness_threshold};
+use services::pool::{PoolService, set_freshness_threshold};
 use services::wallet::WalletService;
 
 use self::threadpool::ThreadPool;
