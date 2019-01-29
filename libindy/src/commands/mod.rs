@@ -67,9 +67,8 @@ pub fn indy_set_runtime_config(config: IndyConfig) {
         Some(false) => env::set_var("RUST_BACKTRACE", "0"),
         _ => {}
     }
-    match config.freshness_threshold {
-        Some(threshold) => set_freshness_threshold(threshold),
-        _ => {}
+    if let Some(threshold) = config.freshness_threshold {
+        set_freshness_threshold(threshold);
     }
 }
 
