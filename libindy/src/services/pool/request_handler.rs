@@ -378,13 +378,13 @@ impl<T: Networker> RequestSM<T> {
                                 set.insert(NodeResponse { node_alias: node_alias.clone(), timestamp: last_write_time, raw_msg: raw_msg.clone() });
                                 (
                                     set.len(),
-                                    set.iter().min_by_key(|resp| resp.timestamp).map(|resp| &resp.raw_msg).unwrap_or(&raw_msg).clone()
+                                    set.iter().max_by_key(|resp| resp.timestamp).map(|resp| &resp.raw_msg).unwrap_or(&raw_msg).clone()
                                 )
                             };
 
                             if cnt > f
                                 || _check_state_proof(&result, f, &generator, &nodes, &raw_msg)
-                                    && _get_cur_time() as u64 - last_write_time <= _get_freshness_threshold() {
+                                    && _get_cur_time() as u64 <= _get_freshness_threshold() + last_write_time {
                                 state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
                                 _send_ok_replies(&cmd_ids, if cnt > f {&soonest} else {&raw_msg});
                                 (RequestState::finish(), None)
@@ -1176,6 +1176,29 @@ pub mod tests {
             assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
         }
 
+        #[test]
+        fn request_handler_process_reply_event_from_single_state_works_for_state_proof_from_future() {
+            add_state_proof_parser();
+            let mut request_handler = _request_handler(1, 2);
+            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string())));
+            request_handler.process_event(Some(RequestEvent::Reply(Reply::default(),
+                    json!({
+                    "result": {
+                        "type": "test",
+                        "ver": "1",
+                        "multiSignature":{
+                            "signedState": {
+                                "stateMetadata": {
+                                    "timestamp": _get_cur_time() + 300000
+                                }
+                            }
+                        }
+                    },
+                    "op": "REPLY",
+                   }).to_string(), NODE.to_string(), REQ_ID.to_string())));
+            assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
+        }
+
         fn add_state_proof_parser() {
             use services::pool::{PoolService, REGISTERED_SP_PARSERS};
             use api::ErrorCode;
@@ -1251,24 +1274,7 @@ pub mod tests {
         fn request_handler_process_reply_event_from_single_state_works_for_freshness_filtering_from_env_variable() {
             set_freshness_threshold(300);
             // Register custom state proof parser
-            {
-                use services::pool::{PoolService, REGISTERED_SP_PARSERS};
-                use api::ErrorCode;
-                use libc::c_char;
-                use std::ffi::CString;
-
-                REGISTERED_SP_PARSERS.lock().unwrap().clear();
-
-                extern fn test_sp(_reply_from_node: *const c_char, parsed_sp: *mut *const c_char) -> ErrorCode {
-                    let sp: CString = CString::new("[]").unwrap();
-                    unsafe { *parsed_sp = sp.into_raw(); }
-                    ErrorCode::Success
-                }
-                extern fn test_free(_data: *const c_char) -> ErrorCode {
-                    ErrorCode::Success
-                }
-                PoolService::register_sp_parser("test", test_sp, test_free).unwrap();
-            }
+            add_state_proof_parser();
 
             let mut request_handler = _request_handler(2, 4);
             request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string())));
