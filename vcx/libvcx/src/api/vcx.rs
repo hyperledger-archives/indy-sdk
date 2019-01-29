@@ -274,8 +274,13 @@ mod tests {
     use std::time::Duration;
     use std::ptr;
     use std::thread;
-    use utils::libindy::wallet::{import, tests::export_test_wallet, tests::delete_import_wallet_path};
-    use utils::libindy::pool::get_pool_handle;
+    use utils::{
+        libindy::{
+            wallet::{import, tests::export_test_wallet, tests::delete_import_wallet_path},
+            pool::get_pool_handle
+        },
+        get_temp_dir_path
+    };
     use api::return_types_u32;
 
     fn create_config_util(logging: Option<&str>) -> String {
@@ -286,7 +291,7 @@ mod tests {
                "institution_name" : "evernym enterprise",
                "agency_verkey" : "91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
                "remote_to_sdk_verkey" : "91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
-               "genesis_path":"/tmp/pool1.txn",
+               "genesis_path": get_temp_dir_path(Some("pool1.txn")).to_str().unwrap(),
                "payment_method": "null"}).to_string()
     }
 
@@ -298,7 +303,8 @@ mod tests {
         wallet::close_wallet().unwrap();
         pool::close().unwrap();
 
-        let config_path = "/tmp/test_init.json";
+        let config_path_buf = get_temp_dir_path(Some("test_init.json"));
+        let config_path = config_path_buf.to_str().unwrap();
         let content = create_config_util(Some("true"));
         settings::write_config_to_file(&content, config_path).unwrap();
 
@@ -319,7 +325,8 @@ mod tests {
         init!("false");
         settings::clear_config();
 
-        let config_path = "/tmp/test_init.json";
+        let config_path_buf = get_temp_dir_path(Some("test_init.json"));
+        let config_path = config_path_buf.to_str().unwrap();
         let content = json!({
             "wallet_name": settings::DEFAULT_WALLET_NAME,
             "wallet_key": settings::DEFAULT_WALLET_KEY,
@@ -366,7 +373,7 @@ mod tests {
         settings::set_config_value(settings::CONFIG_WALLET_KEY,settings::DEFAULT_WALLET_KEY);
 
         // Write invalid genesis.txn
-        let mut f = fs::File::create(::utils::constants::GENESIS_PATH).unwrap();
+        let mut f = fs::File::create(get_temp_dir_path(Some(::utils::constants::GENESIS_PATH)).to_str().unwrap()).unwrap();
         f.write_all("{}".as_bytes()).unwrap();
         f.flush().unwrap();
         f.sync_all().unwrap();
@@ -532,7 +539,8 @@ mod tests {
     fn test_init_fails_with_open_wallet() {
         init!("ledger");
 
-        let config_path = "/tmp/test_init.json";
+        let config_path_buf = get_temp_dir_path(Some("test_init.json"));
+        let config_path = config_path_buf.to_str().unwrap();
         let content = create_config_util(None);
         settings::write_config_to_file(&content, config_path).unwrap();
 

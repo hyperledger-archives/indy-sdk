@@ -5,7 +5,7 @@ extern crate log;
 use self::libc::{c_void, c_char};
 
 use api::ErrorCode;
-use errors::ToErrorCode;
+use errors::prelude::*;
 
 use utils::logger::{EnabledCB, LogCB, FlushCB, LibindyLogger, LibindyDefaultLogger, LOGGER_STATE};
 use utils::ctypes;
@@ -33,7 +33,7 @@ pub extern fn indy_set_logger(context: *const c_void,
 
     let result = LibindyLogger::init(context, enabled, log, flush);
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_set_logger: <<< res: {:?}", res);
 
@@ -62,7 +62,7 @@ pub extern fn indy_set_default_logger(pattern: *const c_char) -> ErrorCode {
 
     let result = LibindyDefaultLogger::init(pattern);
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_set_default_logger: <<< res: {:?}", res);
 

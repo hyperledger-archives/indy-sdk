@@ -13,7 +13,7 @@ class Schema(VcxBase):
     Attributes:
         source_id: user generated unique identifier
         schema_id: the ledger ID of the schema
-        attrs: attribute/value pairs
+        attrs: attribute/value pairs (the number of attributes should be less or equal than 125)
         version: version of the schema
     """
 

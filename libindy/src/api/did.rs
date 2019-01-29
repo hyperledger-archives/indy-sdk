@@ -5,8 +5,7 @@ use commands::{Command, CommandExecutor};
 use commands::did::DidCommand;
 use domain::crypto::did::{MyDidInfo, TheirDidInfo};
 use domain::crypto::key::KeyInfo;
-use errors::common::CommonError;
-use errors::ToErrorCode;
+use errors::prelude::*;
 use utils::ctypes;
 
 use serde_json;
@@ -72,7 +71,7 @@ pub  extern fn indy_create_and_store_my_did(command_handle: IndyHandle,
             wallet_handle,
             did_info,
             Box::new(move |result| {
-                let (err, did, verkey) = result_to_err_code_2!(result, String::new(), String::new());
+                let (err, did, verkey) = prepare_result_2!(result, String::new(), String::new());
                 trace!("indy_create_and_store_my_did: did: {:?}, verkey: {:?}", did, verkey);
                 let did = ctypes::string_to_cstring(did);
                 let verkey = ctypes::string_to_cstring(verkey);
@@ -80,7 +79,7 @@ pub  extern fn indy_create_and_store_my_did(command_handle: IndyHandle,
             }),
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_create_and_store_my_did: <<< res: {:?}", res);
 
@@ -137,14 +136,14 @@ pub  extern fn indy_replace_keys_start(command_handle: IndyHandle,
             key_info,
             did,
             Box::new(move |result| {
-                let (err, verkey) = result_to_err_code_1!(result, String::new());
+                let (err, verkey) = prepare_result_1!(result, String::new());
                 trace!("indy_replace_keys_start: verkey: {:?}", verkey);
                 let verkey = ctypes::string_to_cstring(verkey);
                 cb(command_handle, err, verkey.as_ptr())
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_replace_keys_start: <<< res: {:?}", res);
 
@@ -187,13 +186,13 @@ pub  extern fn indy_replace_keys_apply(command_handle: IndyHandle,
             wallet_handle,
             did,
             Box::new(move |result| {
-                let err = result_to_err_code!(result);
+                let err = prepare_result!(result);
                 trace!("indy_replace_keys_apply:");
                 cb(command_handle, err)
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_replace_keys_apply: <<< res: {:?}", res);
 
@@ -241,13 +240,13 @@ pub  extern fn indy_store_their_did(command_handle: IndyHandle,
             wallet_handle,
             identity_json,
             Box::new(move |result| {
-                let err = result_to_err_code!(result);
+                let err = prepare_result!(result);
                 trace!("indy_store_their_did:");
                 cb(command_handle, err)
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_store_their_did: <<< res: {:?}", res);
 
@@ -306,14 +305,14 @@ pub extern fn indy_key_for_did(command_handle: IndyHandle,
             wallet_handle,
             did,
             Box::new(move |result| {
-                let (err, key) = result_to_err_code_1!(result, String::new());
+                let (err, key) = prepare_result_1!(result, String::new());
                 trace!("indy_key_for_did: key: {:?}", key);
                 let key = ctypes::string_to_cstring(key);
                 cb(command_handle, err, key.as_ptr())
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_key_for_did: <<< res: {:?}", res);
 
@@ -367,14 +366,14 @@ pub extern fn indy_key_for_local_did(command_handle: IndyHandle,
             wallet_handle,
             did,
             Box::new(move |result| {
-                let (err, key) = result_to_err_code_1!(result, String::new());
+                let (err, key) = prepare_result_1!(result, String::new());
                 trace!("indy_key_for_local_did: key: {:?}", key);
                 let key = ctypes::string_to_cstring(key);
                 cb(command_handle, err, key.as_ptr())
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_key_for_local_did: <<< res: {:?}", res);
 
@@ -427,13 +426,13 @@ pub extern fn indy_set_endpoint_for_did(command_handle: IndyHandle,
             did,
             endpoint,
             Box::new(move |result| {
-                let err = result_to_err_code!(result);
+                let err = prepare_result!(result);
                 trace!("indy_set_endpoint_for_did:");
                 cb(command_handle, err)
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_set_endpoint_for_did: <<< res: {:?}", res);
 
@@ -482,7 +481,7 @@ pub extern fn indy_get_endpoint_for_did(command_handle: IndyHandle,
             pool_handle,
             did,
             Box::new(move |result| {
-                let (err, address, transport_vk) = result_to_err_code_2!(result, String::new(), None);
+                let (err, address, transport_vk) = prepare_result_2!(result, String::new(), None);
                 trace!("indy_get_endpoint_for_did: address: {:?}, transport_vk: {:?}", address, transport_vk);
                 let address = ctypes::string_to_cstring(address);
                 let transport_vk = transport_vk.map(ctypes::string_to_cstring);
@@ -491,7 +490,7 @@ pub extern fn indy_get_endpoint_for_did(command_handle: IndyHandle,
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_get_endpoint_for_did: <<< res: {:?}", res);
 
@@ -538,13 +537,13 @@ pub extern fn indy_set_did_metadata(command_handle: IndyHandle,
             did,
             metadata,
             Box::new(move |result| {
-                let err = result_to_err_code!(result);
+                let err = prepare_result!(result);
                 trace!("indy_set_did_metadata:");
                 cb(command_handle, err)
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_set_did_metadata: <<< res: {:?}", res);
 
@@ -589,14 +588,14 @@ pub extern fn indy_get_did_metadata(command_handle: IndyHandle,
             wallet_handle,
             did,
             Box::new(move |result| {
-                let (err, metadata) = result_to_err_code_1!(result, String::new());
+                let (err, metadata) = prepare_result_1!(result, String::new());
                 trace!("indy_get_did_metadata: metadata: {:?}", metadata);
                 let metadata = ctypes::string_to_cstring(metadata);
                 cb(command_handle, err, metadata.as_ptr())
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_get_did_metadata: <<< res: {:?}", res);
 
@@ -647,14 +646,14 @@ pub extern fn indy_get_my_did_with_meta(command_handle: IndyHandle,
             wallet_handle,
             my_did,
             Box::new(move |result| {
-                let (err, did_with_meta) = result_to_err_code_1!(result, String::new());
+                let (err, did_with_meta) = prepare_result_1!(result, String::new());
                 trace!("indy_get_my_did_with_meta: did_with_meta: {:?}", did_with_meta);
                 let did_with_meta = ctypes::string_to_cstring(did_with_meta);
                 cb(command_handle, err, did_with_meta.as_ptr())
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_get_my_did_with_meta: <<< res: {:?}", res);
 
@@ -699,14 +698,14 @@ pub extern fn indy_list_my_dids_with_meta(command_handle: IndyHandle,
         .send(Command::Did(DidCommand::ListMyDidsWithMeta(
             wallet_handle,
             Box::new(move |result| {
-                let (err, dids) = result_to_err_code_1!(result, String::new());
+                let (err, dids) = prepare_result_1!(result, String::new());
                 trace!("indy_list_my_dids_with_meta: dids: {:?}", dids);
                 let dids = ctypes::string_to_cstring(dids);
                 cb(command_handle, err, dids.as_ptr())
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_list_my_dids_with_meta: <<< res: {:?}", res);
 
@@ -751,14 +750,14 @@ pub  extern fn indy_abbreviate_verkey(command_handle: IndyHandle,
             did,
             full_verkey,
             Box::new(move |result| {
-                let (err, verkey) = result_to_err_code_1!(result, String::new());
+                let (err, verkey) = prepare_result_1!(result, String::new());
                 trace!("indy_abbreviate_verkey: verkey: {:?}", verkey);
                 let verkey = ctypes::string_to_cstring(verkey);
                 cb(command_handle, err, verkey.as_ptr())
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_abbreviate_verkey: <<< res: {:?}", res);
 

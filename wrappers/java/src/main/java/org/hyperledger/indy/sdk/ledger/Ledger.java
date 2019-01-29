@@ -370,6 +370,7 @@ public class Ledger extends IndyJava.API {
 	 *                     TRUSTEE
 	 *                     STEWARD
 	 *                     TRUST_ANCHOR
+	 *                     NETWORK_MONITOR
 	 *                     empty string to reset role
 	 * @return A future resolving to a request result as json.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
@@ -511,7 +512,7 @@ public class Ledger extends IndyJava.API {
 	 * @param data         Credential schema.
 	 *                     {
 	 *                         id: identifier of schema
-	 *                         attrNames: array of attribute name strings
+	 *                         attrNames: array of attribute name strings (the number of attributes should be less or equal than 125)
 	 *                         name: Schema's name string
 	 *                         version: Schema's version string,
 	 *                         ver: Version of the Schema json

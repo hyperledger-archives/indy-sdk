@@ -32,7 +32,7 @@ rewritten but still contains some useful ideas.
 
 The major artifact of the SDK is a C-callable library that provides the basic building blocks for 
 the creation of applications on the top of [Hyperledger Indy](https://www.hyperledger.org/projects/hyperledger-indy).
-It is available for most popular desktop, mobile and server platfrorms.
+It is available for most popular desktop, mobile and server platforms.
 
 ### Libindy wrappers
 

@@ -114,11 +114,6 @@ def windowsTesting() {
                     dir('vcx/libvcx') {
                         echo "Windows Libvcx Test: Build"
 
-                        // FIXME remove that once https://jira.hyperledger.org/browse/IS-1127 is resolved
-                        bat """
-                            PowerShell.exe "&{(Get-Content -Path src/settings.rs -Raw) -replace '/tmp/test_init.json','./test_init.json'} | Set-Content -Path src/settings.rs"
-                        """
-
                         withEnv([
                                 "OPENSSL_DIR=$WORKSPACE\\libindy\\prebuilt",
                                 "RUST_BACKTRACE=1"
@@ -622,7 +617,7 @@ def linuxVcxPythonTesting(env_name, network_name, testEnv) {
             echo "${env_name} Vcx Test: Test python wrapper"
 
             sh '''
-                    python3.5 -m pip install --user pytest==3.4.2 qrcode pytest-asyncio
+                    python3.5 -m pip install --user pytest==3.6.4 pytest-asyncio
                     LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} python3.5 -m pytest -s
             '''
         }

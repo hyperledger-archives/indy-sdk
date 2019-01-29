@@ -4,7 +4,7 @@ extern crate chrono;
 use command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata};
 use commands::*;
 
-use indy::ErrorCode;
+use indy::{ErrorCode, IndyError};
 use libindy::payment::Payment;
 
 use serde_json::Value as JSONValue;
@@ -87,7 +87,7 @@ pub mod list_command {
                                  "There are no payment addresses");
                 Ok(())
             }
-            Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
+            Err(err) => Err(handle_indy_error(err, None, None, None)),
         };
 
         trace!("execute << {:?}", res);
@@ -95,18 +95,16 @@ pub mod list_command {
     }
 }
 
-pub fn handle_payment_error(err: ErrorCode, payment_method: Option<&str>) {
-    match err {
+pub fn handle_payment_error(err: IndyError, payment_method: Option<&str>) {
+    match err.error_code {
         ErrorCode::UnknownPaymentMethod => println_err!("Unknown payment method {}", payment_method.unwrap_or("")),
         ErrorCode::IncompatiblePaymentError => println_err!("No methods were scraped or more than one was scraped"),
         ErrorCode::PaymentInsufficientFundsError => println_err!("Insufficient funds on inputs"),
         ErrorCode::PaymentExtraFundsError => println_err!("Extra funds on inputs"),
-        ErrorCode::CommonInvalidState => println_err!("Input not found"),
         ErrorCode::PaymentSourceDoesNotExistError => println_err!("Payment source not found"),
         ErrorCode::PaymentOperationNotSupportedError => println_err!("Payment operation not supported"),
-        ErrorCode::CommonInvalidStructure => println_err!("Invalid format of command params. Please check format of posted JSONs, Keys, DIDs and etc..."),
         ErrorCode::WalletItemAlreadyExists => println_err!("Payment address already exists"),
-        err => println_err!("Indy SDK error occurred {:?}", err)
+        _ => println_err!("{}", err.message)
     }
 }
 
@@ -114,9 +112,7 @@ pub fn handle_payment_error(err: ErrorCode, payment_method: Option<&str>) {
 #[cfg(feature = "nullpay_plugin")]
 pub mod tests {
     use super::*;
-    use utils::test::TestUtils;
     use commands::common::tests::{load_null_payment_plugin, NULL_PAYMENT_METHOD};
-    use commands::wallet::tests::{create_and_open_wallet, close_and_delete_wallet};
     use commands::did::tests::SEED_MY1;
 
     mod create {
@@ -124,10 +120,7 @@ pub mod tests {
 
         #[test]
         pub fn create_works() {
-            TestUtils::cleanup_storage();
-            let ctx = CommandContext::new();
-
-            create_and_open_wallet(&ctx);
+            let ctx = setup_with_wallet();
             load_null_payment_plugin(&ctx);
             {
                 let cmd = create_command::new();
@@ -139,16 +132,12 @@ pub mod tests {
             assert_eq!(1, addresses.len());
             assert!(addresses[0].starts_with("pay:null:"));
 
-            close_and_delete_wallet(&ctx);
-            TestUtils::cleanup_storage();
+            tear_down_with_wallet(&ctx);
         }
 
         #[test]
         pub fn create_works_for_seed() {
-            TestUtils::cleanup_storage();
-            let ctx = CommandContext::new();
-
-            create_and_open_wallet(&ctx);
+            let ctx = setup_with_wallet();
             load_null_payment_plugin(&ctx);
             {
                 let cmd = create_command::new();
@@ -159,32 +148,26 @@ pub mod tests {
             }
             let addresses = list_payment_addresses(&ctx);
             assert_eq!(1, addresses.len());
-//            assert_eq!("pay:null:AkQr7K6CP1tslXd", addresses[0]);  TODO: Exactly check
+            //            assert_eq!("pay:null:AkQr7K6CP1tslXd", addresses[0]);  TODO: Exactly check
 
-            close_and_delete_wallet(&ctx);
-            TestUtils::cleanup_storage();
+            tear_down_with_wallet(&ctx);
         }
 
         #[test]
         pub fn create_works_for_unknown_payment_method() {
-            TestUtils::cleanup_storage();
-            let ctx = CommandContext::new();
-
-            create_and_open_wallet(&ctx);
+            let ctx = setup_with_wallet();
             {
                 let cmd = create_command::new();
                 let mut params = CommandParams::new();
                 params.insert("payment_method", "unknown_payment_method".to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
             }
-            close_and_delete_wallet(&ctx);
-            TestUtils::cleanup_storage();
+            tear_down_with_wallet(&ctx);
         }
 
         #[test]
         pub fn create_works_for_no_opened_wallet() {
-            TestUtils::cleanup_storage();
-            let ctx = CommandContext::new();
+            let ctx = setup();
             load_null_payment_plugin(&ctx);
             {
                 let cmd = create_command::new();
@@ -192,7 +175,7 @@ pub mod tests {
                 params.insert("payment_method", NULL_PAYMENT_METHOD.to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
             }
-            TestUtils::cleanup_storage();
+            tear_down();
         }
     }
 
@@ -201,10 +184,7 @@ pub mod tests {
 
         #[test]
         pub fn list_works() {
-            TestUtils::cleanup_storage();
-            let ctx = CommandContext::new();
-
-            create_and_open_wallet(&ctx);
+            let ctx = setup_with_wallet();
             load_null_payment_plugin(&ctx);
             create_payment_address(&ctx);
             {
@@ -215,16 +195,12 @@ pub mod tests {
             let addresses = list_payment_addresses(&ctx);
             assert_eq!(1, addresses.len());
 
-            close_and_delete_wallet(&ctx);
-            TestUtils::cleanup_storage();
+            tear_down_with_wallet(&ctx);
         }
 
         #[test]
         pub fn list_works_for_empty_list() {
-            TestUtils::cleanup_storage();
-            let ctx = CommandContext::new();
-
-            create_and_open_wallet(&ctx);
+            let ctx = setup_with_wallet();
             load_null_payment_plugin(&ctx);
             {
                 let cmd = list_command::new();
@@ -234,22 +210,19 @@ pub mod tests {
             let addresses = list_payment_addresses(&ctx);
             assert_eq!(0, addresses.len());
 
-            close_and_delete_wallet(&ctx);
-            TestUtils::cleanup_storage();
+            tear_down_with_wallet(&ctx);
         }
 
         #[test]
         pub fn list_works_for_no_opened_wallet() {
-            TestUtils::cleanup_storage();
-            let ctx = CommandContext::new();
-
+            let ctx = setup();
             load_null_payment_plugin(&ctx);
             {
                 let cmd = list_command::new();
                 let params = CommandParams::new();
                 cmd.execute(&ctx, &params).unwrap_err();
             }
-            TestUtils::cleanup_storage();
+            tear_down();
         }
     }
 
