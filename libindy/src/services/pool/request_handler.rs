@@ -1172,6 +1172,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_reply_event_from_single_state_works_for_state_proof() {
+            set_freshness_threshold(600);
             add_state_proof_parser();
             let mut request_handler = _request_handler(1, 2);
             request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string())));
@@ -1183,6 +1184,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_reply_event_from_single_state_works_for_state_proof_from_future() {
+            set_freshness_threshold(600);
             add_state_proof_parser();
             let mut request_handler = _request_handler(1, 2);
             request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string())));
@@ -1213,6 +1215,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_reply_event_from_single_state_works_for_freshness_filtering() {
+            set_freshness_threshold(600);
             add_state_proof_parser();
             let mut request_handler = _request_handler(2, 4);
             request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string())));
@@ -1263,6 +1266,7 @@ pub mod tests {
                 NODE.to_string(),
                 REQ_ID.to_string())));
             assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
+            set_freshness_threshold(600);
         }
 
         #[test]
