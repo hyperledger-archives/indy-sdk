@@ -12,9 +12,7 @@ use serde_json::Value as JSONValue;
 use serde_json::Map as JSONMap;
 
 use commands::ledger::{
-    handle_transaction_error,
     handle_transaction_response,
-    handle_build_request_error,
     set_request_fees,
     parse_response_with_fees,
     print_response_receipts,
@@ -74,10 +72,7 @@ pub mod new_command {
                 println_succ!("Did \"{}\" has been created with \"{}\" verkey", did, vk);
                 Ok(did)
             }
-            Err(ErrorCode::DidAlreadyExistsError) => Err(println_err!("Did already exists")),
-            Err(ErrorCode::UnknownCryptoTypeError) => Err(println_err!("Unknown crypto type")),
-            Err(ErrorCode::CommonInvalidStructure) => Err(println_err!("Invalid format of command params. Please check format of posted JSONs, Keys, DIDs and etc...")),
-            Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
+            Err(err) => Err(handle_indy_error(err, None, None, None))
         };
 
         let res = if let Some(metadata) = metadata {
@@ -85,8 +80,7 @@ pub mod new_command {
                 let res = Did::set_metadata(wallet_handle, &did, metadata);
                 match res {
                     Ok(()) => Ok(println_succ!("Metadata has been saved for DID \"{}\"", did)),
-                    Err(ErrorCode::CommonInvalidStructure) => Err(println_err!("Invalid format of command params. Please check format of posted JSONs, Keys, DIDs and etc...")),
-                    Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
+                    Err(err) => Err(handle_indy_error(err, None, None, None))
                 }
             })
         } else {
@@ -149,7 +143,7 @@ pub mod import_command {
                                 Ok((did, vk)) =>
                                     println_succ!("Did \"{}\" has been created with \"{}\" verkey", did, vk),
                                 Err(err) =>
-                                    println_warn!("Indy SDK error occured {:?} while importing DID {}", err, did)
+                                    println_warn!("Indy SDK error occured {} while importing DID {}", err.message, did)
                             }
                         }
                         Ok(())
@@ -187,9 +181,12 @@ pub mod use_command {
                 set_active_did(ctx, Some(did.to_owned()));
                 Ok(println_succ!("Did \"{}\" has been set as active", did))
             }
-            Err(ErrorCode::CommonInvalidStructure) => Err(println_err!("Invalid DID format")),
-            Err(ErrorCode::WalletItemNotFound) => Err(println_err!("Requested DID not found")),
-            Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err))
+            Err(err) => {
+                match err.error_code {
+                    ErrorCode::WalletItemNotFound => Err(println_err!("Requested DID not found")),
+                    _ => Err(handle_indy_error(err, Some(&did), None, None)),
+                }
+            }
         };
 
         trace!("execute << {:?}", res);
@@ -227,10 +224,10 @@ pub mod rotate_key_command {
         let (new_verkey, update_ledger) = if resume {
             // get temp and current verkey from wallet.
             let (temp_verkey, curr_verkey) = Did::get_did_with_meta(wallet_handle, &did)
-                .map_err(|e|println_err!("Unable to get did: {:?}", e))
+                .map_err(|e| println_err!("Unable to get did: {}", e.message))
                 .and_then(|did_info| {
                     serde_json::from_str::<JSONValue>(&did_info)
-                        .map_err(|e|println_err!("{}", e))
+                        .map_err(|e| println_err!("{}", e))
                         .and_then(|did_info| {
                             let temp_verkey = match did_info["tempVerkey"].as_str() {
                                 Some(temp_verkey) => Ok(temp_verkey.to_owned()),
@@ -252,12 +249,11 @@ pub mod rotate_key_command {
                     // if ledger verkey is abbreviated, abbreviate other also.
                     let (temp_verkey, curr_verkey) = if ledger_verkey.starts_with('~') {
                         let temp_verkey = Did::abbreviate_verkey(&did, &temp_verkey)
-                            .map_err(|_e|println_err!("Invalid temp verkey: {}", temp_verkey))?;
+                            .map_err(|_e| println_err!("Invalid temp verkey: {}", temp_verkey))?;
                         let curr_verkey = Did::abbreviate_verkey(&did, &curr_verkey)
-                            .map_err(|_e|println_err!("Invalid current verkey: {}", curr_verkey))?;
+                            .map_err(|_e| println_err!("Invalid current verkey: {}", curr_verkey))?;
                         Ok((temp_verkey, curr_verkey))
-                    }
-                    else {
+                    } else {
                         Ok((temp_verkey, curr_verkey))
                     }?;
 
@@ -268,19 +264,17 @@ pub mod rotate_key_command {
                     if ledger_verkey == temp_verkey {
                         // ledger is updated, need to apply change to wallet.
                         Ok((temp_verkey, false))
-                    }
-                    else if ledger_verkey == curr_verkey {
+                    } else if ledger_verkey == curr_verkey {
                         // ledger have old state, send nym request and apply change to wallet.
                         Ok((temp_verkey, true))
-                    }
-                    else { // some invalid state
+                    } else {
+                        // some invalid state
                         Err(println_err!("Unable to resume, verkey on ledger is completely different from verkey in wallet"))
                     }
-                },
+                }
                 None => Err(println_err!("No verkey on ledger for did: {}", did))
             }?
-        }
-        else {
+        } else {
             let identity_json = {
                 let mut json = JSONMap::new();
                 update_json_map_opt_key!(json, "seed", seed);
@@ -289,8 +283,12 @@ pub mod rotate_key_command {
 
             let new_verkey = match Did::replace_keys_start(wallet_handle, &did, &identity_json) {
                 Ok(request) => Ok(request),
-                Err(ErrorCode::WalletItemNotFound) => Err(println_err!("Active DID: \"{}\" not found", did)),
-                Err(_) => return Err(println_err!("Invalid format of command params. Please check format of posted JSONs, Keys, DIDs and etc...")),
+                Err(err) => {
+                    match err.error_code {
+                        ErrorCode::WalletItemNotFound => Err(println_err!("Active DID: \"{}\" not found", did)),
+                        _ => Err(handle_indy_error(err, Some(&did), Some(&pool_name), Some(&wallet_name))),
+                    }
+                }
             }?;
 
             (new_verkey, true)
@@ -298,18 +296,18 @@ pub mod rotate_key_command {
 
         let receipts = if update_ledger {
             let mut request = Ledger::build_nym_request(&did, &did, Some(&new_verkey), None, None)
-                .map_err(|err| handle_build_request_error(err))?;
+                .map_err(|err| handle_indy_error(err, Some(&did), Some(&pool_name), Some(&wallet_name)))?;
 
             let payment_method = set_request_fees(&mut request, wallet_handle, Some(&did), &fees_inputs, &fees_outputs, extra)?;
 
             let response_json = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &did, &request)
                 .map_err(|err| {
-                    match err {
+                    match err.error_code {
                         ErrorCode::PoolLedgerTimeout => {
                             println_err!("Transaction response has not beed received");
                             println_err!("Use command `did rotate-key resume=true` to complete");
                         }
-                        err => handle_transaction_error(err, Some(&did), Some(&pool_name), Some(&wallet_name))
+                        _ => handle_indy_error(err, Some(&did), Some(&pool_name), Some(&wallet_name))
                     }
                 })?;
 
@@ -319,7 +317,7 @@ pub mod rotate_key_command {
             handle_transaction_response(response)?;
 
             parse_response_with_fees(&response_json, payment_method)?
-        } else {None};
+        } else { None };
 
         match Did::replace_keys_apply(wallet_handle, &did)
             .and_then(|_| Did::abbreviate_verkey(&did, &new_verkey)) {
@@ -327,8 +325,12 @@ pub mod rotate_key_command {
                 println_succ!("Verkey for did \"{}\" has been updated", did);
                 println_succ!("New verkey is \"{}\"", vk)
             }),
-            Err(ErrorCode::WalletItemNotFound) => Err(println_err!("Active DID: \"{}\" not found", did)),
-            Err(_) => return Err(println_err!("Invalid format of command params. Please check format of posted JSONs, Keys, DIDs and etc...")),
+            Err(err) => {
+                match err.error_code {
+                    ErrorCode::WalletItemNotFound => Err(println_err!("Active DID: \"{}\" not found", did)),
+                    _ => Err(handle_indy_error(err, Some(&did), Some(&pool_name), Some(&wallet_name))),
+                }
+            }
         }?;
 
         let res = print_response_receipts(receipts);
@@ -342,7 +344,7 @@ fn _get_current_verkey(pool_handle: i32, pool_name: &str, wallet_handle: i32, wa
     //TODO: There nym is requested. Due to freshness issues response might be stale or outdated. Something should be done with it
     let response_json = Ledger::build_get_nym_request(Some(did), did)
         .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, did, &request))
-        .map_err(|err| handle_transaction_error(err, Some(did), Some(pool_name), Some(wallet_name)))?;
+        .map_err(|err| handle_indy_error(err, Some(did), Some(pool_name), Some(wallet_name)))?;
     let response: Response<serde_json::Value> = serde_json::from_str::<Response<serde_json::Value>>(&response_json)
         .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
     let result = handle_transaction_response(response)?;
@@ -372,7 +374,7 @@ pub mod list_command {
                     match Did::abbreviate_verkey(did_info["did"].as_str().unwrap_or(""),
                                                  did_info["verkey"].as_str().unwrap_or("")) {
                         Ok(vk) => did_info["verkey"] = serde_json::Value::String(vk),
-                        Err(err) => return Err(println_err!("Indy SDK error occurred {:?}", err))
+                        Err(err) => return Err(handle_indy_error(err, None, None, None))
                     }
                 }
 
@@ -386,7 +388,7 @@ pub mod list_command {
                 }
                 Ok(())
             }
-            Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
+            Err(err) => Err(handle_indy_error(err, None, None, None)),
         };
 
         trace!("execute << {:?}", res);
@@ -398,7 +400,6 @@ pub mod list_command {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use utils::test::TestUtils;
     use libindy::did::Did;
     use commands::wallet::tests::{create_and_open_wallet, close_and_delete_wallet};
     use commands::pool::tests::{create_and_connect_pool, disconnect_and_delete_pool};
@@ -416,139 +417,106 @@ pub mod tests {
     pub const DID_MY3: &'static str = "5Uu7YveFSGcT3dSzjpvPab";
     pub const VERKEY_MY3: &'static str = "3SeuRm3uYuQDYmHeuMLu1xNHozNTtzS3kbZRFMMCWrX4";
 
-    #[cfg(feature = "nullpay_plugin")]
-    pub const SEED_MY4: &'static str = "00000000000000000000000000000My4";
-    #[cfg(feature = "nullpay_plugin")]
-    pub const DID_MY4: &'static str = "QZAWuVCVYWEAbH8E2ipqtP";
-    #[cfg(feature = "nullpay_plugin")]
-    pub const VERKEY_MY4: &'static str = "Dqc95QYYCot8XNLp9APubEP7omDqHHVU9frwFSUb9yBu";
-
     mod did_new {
         use super::*;
 
         #[test]
         pub fn new_works() {
-            TestUtils::cleanup_storage();
-            let ctx = CommandContext::new();
-
-            let wallet_handle = create_and_open_wallet(&ctx);
+            let ctx = setup_with_wallet();
             {
                 let cmd = new_command::new();
                 let params = CommandParams::new();
                 cmd.execute(&ctx, &params).unwrap();
             }
-            let dids = get_dids(wallet_handle);
+            let dids = get_dids(&ctx);
             assert_eq!(1, dids.len());
 
-            close_and_delete_wallet(&ctx);
-            TestUtils::cleanup_storage();
+            tear_down_with_wallet(&ctx);
         }
 
         #[test]
         pub fn new_works_for_did() {
-            TestUtils::cleanup_storage();
-            let ctx = CommandContext::new();
-
-            let wallet_handle = create_and_open_wallet(&ctx);
+            let ctx = setup_with_wallet();
             {
                 let cmd = new_command::new();
                 let mut params = CommandParams::new();
                 params.insert("did", DID_TRUSTEE.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            let did = get_did_info(wallet_handle, DID_TRUSTEE);
+            let did = get_did_info(&ctx, DID_TRUSTEE);
             assert_eq!(did["did"].as_str().unwrap(), DID_TRUSTEE);
 
-            close_and_delete_wallet(&ctx);
-            TestUtils::cleanup_storage();
+            tear_down_with_wallet(&ctx);
         }
 
         #[test]
         pub fn new_works_for_seed() {
-            TestUtils::cleanup_storage();
-            let ctx = CommandContext::new();
-
-            let wallet_handle = create_and_open_wallet(&ctx);
+            let ctx = setup_with_wallet();
             {
                 let cmd = new_command::new();
                 let mut params = CommandParams::new();
                 params.insert("seed", SEED_TRUSTEE.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            let did = get_did_info(wallet_handle, DID_TRUSTEE);
+            let did = get_did_info(&ctx, DID_TRUSTEE);
             assert_eq!(did["did"].as_str().unwrap(), DID_TRUSTEE);
             assert_eq!(did["verkey"].as_str().unwrap(), VERKEY_TRUSTEE);
 
-            close_and_delete_wallet(&ctx);
-            TestUtils::cleanup_storage();
+            tear_down_with_wallet(&ctx);
         }
 
         #[test]
         pub fn new_works_for_hex_seed() {
-            TestUtils::cleanup_storage();
-            let ctx = CommandContext::new();
-
-            let wallet_handle = create_and_open_wallet(&ctx);
+            let ctx = setup_with_wallet();
             {
                 let cmd = new_command::new();
                 let mut params = CommandParams::new();
                 params.insert("seed", "94a823a6387cdd30d8f7687d95710ebab84c6e277b724790a5b221440beb7df6".to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            get_did_info(wallet_handle, "HWvjYf77k1dqQAk6sE4gaS");
+            get_did_info(&ctx, "HWvjYf77k1dqQAk6sE4gaS");
 
-            close_and_delete_wallet(&ctx);
-            TestUtils::cleanup_storage();
+            tear_down_with_wallet(&ctx);
         }
 
         #[test]
         pub fn new_works_for_meta() {
-            TestUtils::cleanup_storage();
-            let ctx = CommandContext::new();
-
+            let ctx = setup_with_wallet();
             let metadata = "metadata";
-
-            let wallet_handle = create_and_open_wallet(&ctx);
             {
                 let cmd = new_command::new();
                 let mut params = CommandParams::new();
                 params.insert("metadata", metadata.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            let dids = get_dids(wallet_handle);
+            let dids = get_dids(&ctx);
             assert_eq!(1, dids.len());
             assert_eq!(dids[0]["metadata"].as_str().unwrap(), metadata);
 
-            close_and_delete_wallet(&ctx);
-            TestUtils::cleanup_storage();
+            tear_down_with_wallet(&ctx);
         }
 
         #[test]
         pub fn new_works_for_no_opened_wallet() {
-            TestUtils::cleanup_storage();
-            let ctx = CommandContext::new();
+            let ctx = setup();
             {
                 let cmd = new_command::new();
                 let params = CommandParams::new();
                 cmd.execute(&ctx, &params).unwrap_err();
             }
-            TestUtils::cleanup_storage();
+            tear_down();
         }
 
         #[test]
         pub fn new_works_for_wrong_seed() {
-            TestUtils::cleanup_storage();
-            let ctx = CommandContext::new();
-
-            create_and_open_wallet(&ctx);
+            let ctx = setup_with_wallet();
             {
                 let cmd = new_command::new();
                 let mut params = CommandParams::new();
                 params.insert("seed", "invalid_base58_string".to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
             }
-            close_and_delete_wallet(&ctx);
-            TestUtils::cleanup_storage();
+            tear_down_with_wallet(&ctx);
         }
     }
 
@@ -557,10 +525,7 @@ pub mod tests {
 
         #[test]
         pub fn use_works() {
-            TestUtils::cleanup_storage();
-            let ctx = CommandContext::new();
-
-            create_and_open_wallet(&ctx);
+            let ctx = setup_with_wallet();
             new_did(&ctx, SEED_TRUSTEE);
             {
                 let cmd = use_command::new();
@@ -569,33 +534,24 @@ pub mod tests {
                 cmd.execute(&ctx, &params).unwrap();
             }
             assert_eq!(ensure_active_did(&ctx).unwrap(), DID_TRUSTEE);
-
-            close_and_delete_wallet(&ctx);
-            TestUtils::cleanup_storage();
+            tear_down_with_wallet(&ctx);
         }
 
         #[test]
         pub fn use_works_for_unknown_did() {
-            TestUtils::cleanup_storage();
-            let ctx = CommandContext::new();
-
-            create_and_open_wallet(&ctx);
+            let ctx = setup_with_wallet();
             {
                 let cmd = use_command::new();
                 let mut params = CommandParams::new();
                 params.insert("did", DID_TRUSTEE.to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
             }
-            close_and_delete_wallet(&ctx);
-            TestUtils::cleanup_storage();
+            tear_down_with_wallet(&ctx);
         }
 
         #[test]
         pub fn use_works_for_closed_wallet() {
-            TestUtils::cleanup_storage();
-            let ctx = CommandContext::new();
-
-            create_and_open_wallet(&ctx);
+            let ctx = setup_with_wallet();
             new_did(&ctx, SEED_TRUSTEE);
             close_and_delete_wallet(&ctx);
             {
@@ -603,7 +559,7 @@ pub mod tests {
                 let params = CommandParams::new();
                 cmd.execute(&ctx, &params).unwrap_err();
             }
-            TestUtils::cleanup_storage();
+            tear_down();
         }
     }
 
@@ -612,41 +568,30 @@ pub mod tests {
 
         #[test]
         pub fn list_works() {
-            TestUtils::cleanup_storage();
-            let ctx = CommandContext::new();
-
-            create_and_open_wallet(&ctx);
+            let ctx = setup_with_wallet();
             new_did(&ctx, SEED_TRUSTEE);
             {
                 let cmd = list_command::new();
                 let params = CommandParams::new();
                 cmd.execute(&ctx, &params).unwrap();
             }
-            close_and_delete_wallet(&ctx);
-            TestUtils::cleanup_storage();
+            tear_down_with_wallet(&ctx);
         }
 
         #[test]
         pub fn list_works_for_empty_result() {
-            TestUtils::cleanup_storage();
-            let ctx = CommandContext::new();
-
-            create_and_open_wallet(&ctx);
+            let ctx = setup_with_wallet();
             {
                 let cmd = list_command::new();
                 let params = CommandParams::new();
                 cmd.execute(&ctx, &params).unwrap();
             }
-            close_and_delete_wallet(&ctx);
-            TestUtils::cleanup_storage();
+            tear_down_with_wallet(&ctx);
         }
 
         #[test]
         pub fn list_works_for_closed_wallet() {
-            TestUtils::cleanup_storage();
-            let ctx = CommandContext::new();
-
-            create_and_open_wallet(&ctx);
+            let ctx = setup_with_wallet();
             new_did(&ctx, SEED_TRUSTEE);
             close_and_delete_wallet(&ctx);
             {
@@ -654,14 +599,12 @@ pub mod tests {
                 let params = CommandParams::new();
                 cmd.execute(&ctx, &params).unwrap_err();
             }
-            TestUtils::cleanup_storage();
+            tear_down();
         }
     }
 
     mod did_rotate_key {
         use super::*;
-        #[cfg(feature = "nullpay_plugin")]
-        use commands::common::tests::load_null_payment_plugin;
         #[cfg(feature = "nullpay_plugin")]
         use commands::ledger::tests::{set_fees, create_address_and_mint_sources, get_source_input, FEES, OUTPUT};
 
@@ -688,39 +631,33 @@ pub mod tests {
 
         #[test]
         pub fn rotate_works() {
-            TestUtils::cleanup_storage();
-            let ctx = CommandContext::new();
-
-            let wallet_handle = create_and_open_wallet(&ctx);
-            create_and_connect_pool(&ctx);
+            let ctx = setup_with_wallet_and_pool();
 
             new_did(&ctx, SEED_TRUSTEE);
 
+            let wallet_handle = ensure_opened_wallet_handle(&ctx).unwrap();
             let (did, verkey) = Did::new(wallet_handle, "{}").unwrap();
             use_did(&ctx, DID_TRUSTEE);
             send_nym(&ctx, &did, &verkey, None);
             ensure_nym_written(&ctx, &did, &verkey);
             use_did(&ctx, &did);
 
-            let did_info = get_did_info(wallet_handle, &did);
+            let did_info = get_did_info(&ctx, &did);
             assert_eq!(did_info["verkey"].as_str().unwrap(), verkey);
             {
                 let cmd = rotate_key_command::new();
                 let params = CommandParams::new();
                 cmd.execute(&ctx, &params).unwrap();
             }
-            let did_info = get_did_info(wallet_handle, &did);
+            let did_info = get_did_info(&ctx, &did);
             assert_ne!(did_info["verkey"].as_str().unwrap(), verkey);
 
-            close_and_delete_wallet(&ctx);
-            disconnect_and_delete_pool(&ctx);
-            TestUtils::cleanup_storage();
+            tear_down_with_wallet_and_pool(&ctx);
         }
 
         #[test]
         pub fn rotate_resume_works_when_ledger_updated() {
-            TestUtils::cleanup_storage();
-            let ctx = CommandContext::new();
+            let ctx = setup();
 
             let wallet_handle = create_and_open_wallet(&ctx);
             create_and_connect_pool(&ctx);
@@ -738,7 +675,7 @@ pub mod tests {
             Ledger::sign_and_submit_request(pool_handle, wallet_handle, &did, &request).unwrap();
             ensure_nym_written(&ctx, &did, &new_verkey);
 
-            let did_info = get_did_info(wallet_handle, &did);
+            let did_info = get_did_info(&ctx, &did);
             assert_eq!(did_info["verkey"].as_str().unwrap(), verkey);
             assert_eq!(did_info["tempVerkey"].as_str().unwrap(), new_verkey);
             {
@@ -747,19 +684,18 @@ pub mod tests {
                 params.insert("resume", "true".to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            let did_info = get_did_info(wallet_handle, &did);
+            let did_info = get_did_info(&ctx, &did);
             assert_eq!(did_info["verkey"].as_str().unwrap(), new_verkey);
             assert_eq!(did_info["tempVerkey"].as_str(), None);
 
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
-            TestUtils::cleanup_storage();
+            tear_down();
         }
 
         #[test]
         pub fn rotate_resume_works_when_ledger_not_updated() {
-            TestUtils::cleanup_storage();
-            let ctx = CommandContext::new();
+            let ctx = setup();
 
             let wallet_handle = create_and_open_wallet(&ctx);
             create_and_connect_pool(&ctx);
@@ -774,7 +710,7 @@ pub mod tests {
 
             let new_verkey = Did::replace_keys_start(wallet_handle, &did, "{}").unwrap();
 
-            let did_info = get_did_info(wallet_handle, &did);
+            let did_info = get_did_info(&ctx, &did);
             assert_eq!(did_info["verkey"].as_str().unwrap(), verkey);
             assert_eq!(did_info["tempVerkey"].as_str().unwrap(), new_verkey);
             {
@@ -783,19 +719,18 @@ pub mod tests {
                 params.insert("resume", "true".to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            let did_info = get_did_info(wallet_handle, &did);
+            let did_info = get_did_info(&ctx, &did);
             assert_eq!(did_info["verkey"].as_str().unwrap(), new_verkey);
             assert_eq!(did_info["tempVerkey"].as_str(), None);
 
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
-            TestUtils::cleanup_storage();
+            tear_down();
         }
 
         #[test]
         pub fn rotate_resume_without_started_rotation_rejected() {
-            TestUtils::cleanup_storage();
-            let ctx = CommandContext::new();
+            let ctx = setup();
 
             let wallet_handle = create_and_open_wallet(&ctx);
             create_and_connect_pool(&ctx);
@@ -807,7 +742,7 @@ pub mod tests {
             send_nym(&ctx, &did, &verkey, None);
             use_did(&ctx, &did);
 
-            let did_info = get_did_info(wallet_handle, &did);
+            let did_info = get_did_info(&ctx, &did);
             assert_eq!(did_info["verkey"].as_str().unwrap(), verkey);
             assert_eq!(did_info["tempVerkey"].as_str(), None);
             {
@@ -816,39 +751,38 @@ pub mod tests {
                 params.insert("resume", "true".to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
             }
-            let did_info = get_did_info(wallet_handle, &did);
+            let did_info = get_did_info(&ctx, &did);
             assert_eq!(did_info["verkey"].as_str().unwrap(), verkey); // it is not changed.
             assert_eq!(did_info["tempVerkey"].as_str(), None);
 
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
-            TestUtils::cleanup_storage();
+            tear_down();
         }
 
         #[test]
         #[cfg(feature = "nullpay_plugin")]
-        pub fn nym_works_for_set_fees() {
-            TestUtils::cleanup_storage();
-            let ctx = CommandContext::new();
+        pub fn rotate_works_for_set_fees() {
+            let ctx = setup();
 
             let wallet_handle = create_and_open_wallet(&ctx);
             create_and_connect_pool(&ctx);
 
             new_did(&ctx, SEED_TRUSTEE);
-            new_did(&ctx, SEED_MY4);
             use_did(&ctx, DID_TRUSTEE);
-            send_nym(&ctx, DID_MY4, VERKEY_MY4, None);
 
-            load_null_payment_plugin(&ctx);
+            let (did, verkey) = Did::new(wallet_handle, "{}").unwrap();
+
+            send_nym(&ctx, &did, &verkey, None);
             set_fees(&ctx, FEES);
 
-            use_did(&ctx, DID_MY4);
+            use_did(&ctx, &did);
 
             let payment_address_from = create_address_and_mint_sources(&ctx);
             let input = get_source_input(&ctx, &payment_address_from);
 
-            let did_info = get_did_info(wallet_handle, DID_MY4);
-            assert_eq!(did_info["verkey"].as_str().unwrap(), VERKEY_MY4);
+            let did_info = get_did_info(&ctx, &did);
+            assert_eq!(did_info["verkey"].as_str().unwrap(), &verkey);
             {
                 let cmd = rotate_key_command::new();
                 let mut params = CommandParams::new();
@@ -856,38 +790,32 @@ pub mod tests {
                 params.insert("fees_outputs", OUTPUT.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            let did_info = get_did_info(wallet_handle, DID_MY4);
-            assert_ne!(did_info["verkey"].as_str().unwrap(), VERKEY_MY4);
+            let did_info = get_did_info(&ctx, &did);
+            assert_ne!(did_info["verkey"].as_str().unwrap(), &verkey);
 
-            close_and_delete_wallet(&ctx);
-            disconnect_and_delete_pool(&ctx);
-            TestUtils::cleanup_storage();
+            tear_down_with_wallet_and_pool(&ctx);
         }
 
         #[test]
         pub fn rotate_works_for_no_active_did() {
-            TestUtils::cleanup_storage();
-            let ctx = CommandContext::new();
-
-            create_and_open_wallet(&ctx);
-            create_and_connect_pool(&ctx);
+            let ctx = setup_with_wallet_and_pool();
             {
                 let cmd = rotate_key_command::new();
                 let params = CommandParams::new();
                 cmd.execute(&ctx, &params).unwrap_err();
             }
-            close_and_delete_wallet(&ctx);
-            disconnect_and_delete_pool(&ctx);
-            TestUtils::cleanup_storage();
+            tear_down_with_wallet_and_pool(&ctx);
         }
     }
 
-    fn get_did_info(wallet_handle: i32, did: &str) -> serde_json::Value {
+    fn get_did_info(ctx: &CommandContext, did: &str) -> serde_json::Value {
+        let wallet_handle = ensure_opened_wallet_handle(ctx).unwrap();
         let did_info = Did::get_did_with_meta(wallet_handle, did).unwrap();
         serde_json::from_str(&did_info).unwrap()
     }
 
-    fn get_dids(wallet_handle: i32) -> Vec<serde_json::Value> {
+    fn get_dids(ctx: &CommandContext) -> Vec<serde_json::Value> {
+        let wallet_handle = ensure_opened_wallet_handle(ctx).unwrap();
         let dids = Did::list_dids_with_meta(wallet_handle).unwrap();
         serde_json::from_str(&dids).unwrap()
     }

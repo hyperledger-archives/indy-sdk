@@ -1,4 +1,4 @@
-var capi = require('bindings')('indynodejs')
+var capi = require('./indyBinding')
 var wrapIndyCallback = require('./wrapIndyCallback')
 var IndyError = require('./IndyError')
 
@@ -258,6 +258,18 @@ indy.cryptoAnonCrypt = function cryptoAnonCrypt (recipientVk, messageRaw, cb) {
 indy.cryptoAnonDecrypt = function cryptoAnonDecrypt (wh, recipientVk, encryptedMsg, cb) {
   cb = wrapIndyCallback(cb)
   capi.cryptoAnonDecrypt(wh, recipientVk, encryptedMsg, cb)
+  return cb.promise
+}
+
+indy.packMessage = function packMessage (wh, message, receiverKeys, sender, cb) {
+  cb = wrapIndyCallback(cb)
+  capi.packMessage(wh, message, toJson(receiverKeys), sender, cb)
+  return cb.promise
+}
+
+indy.unpackMessage = function unpackMessage (wh, jwe, cb) {
+  cb = wrapIndyCallback(cb)
+  capi.unpackMessage(wh, jwe, cb)
   return cb.promise
 }
 

@@ -52,6 +52,13 @@ RUN apt-get update && apt-get install -y maven
 
 RUN apt-get install -y zip
 
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        ruby \
+        ruby-dev \
+        rubygems \
+    && gem install --no-ri --no-rdoc fpm \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN useradd -ms /bin/bash -u $uid indy
 USER indy
 

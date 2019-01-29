@@ -4,7 +4,7 @@ use self::futures::Future;
 
 use super::indy;
 
-use indy::ErrorCode;
+use indy::IndyError;
 
 type DidAndVerKey = (String, String);
 
@@ -34,7 +34,7 @@ pub fn create_nym(
     pool_handle: i32,
     did_trustee: &str,
     role: NymRole
-) -> Result<DidAndVerKey, ErrorCode> {
+) -> Result<DidAndVerKey, IndyError> {
     let (did, verkey) = indy::did::create_and_store_my_did(wallet_handle, "{}").wait().unwrap();
 
     let req_nym = indy::ledger::build_nym_request(
@@ -59,7 +59,7 @@ pub fn create_multiple_nym(
     did_trustee: &str,
     n: u8,
     role: NymRole
-) -> Result<Vec<DidAndVerKey>, ErrorCode> {
+) -> Result<Vec<DidAndVerKey>, IndyError> {
     let mut v: Vec<(String, String)> = Vec::new();
     for _ in 0..n {
         let new_did = create_nym(wallet_handle, pool_handle, did_trustee, role)?;
@@ -74,7 +74,7 @@ Create and store the initial dids of trustees.
 
 Includes the initial trustee.
 */
-pub fn initial_trustees(num_trustees: u8, wallet_handle: i32, pool_handle: i32) -> Result<Vec<DidAndVerKey>, ErrorCode> {
+pub fn initial_trustees(num_trustees: u8, wallet_handle: i32, pool_handle: i32) -> Result<Vec<DidAndVerKey>, IndyError> {
     let first = initial_trustee(wallet_handle);
 
     let mut trustees = create_multiple_nym(

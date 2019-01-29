@@ -81,11 +81,13 @@ pub struct CredentialOffer {
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct CredentialMessage {
     pub libindy_cred: String,
-    pub rev_reg_def_json: Option<String>,
+    pub rev_reg_def_json: String,
     pub cred_def_id: String,
     pub msg_type: String,
     pub claim_offer_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub cred_revoc_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub revoc_reg_delta_json: Option<String>,
     pub version: String,
     pub from_did: String,
@@ -145,9 +147,9 @@ impl IssuerCredential {
         let connection_name = settings::get_config_value(settings::CONFIG_INSTITUTION_NAME).map_err(|e| IssuerCredError::CommonError(e))?;
         let title = if let Some(x) = payment {
             payload.push(json!(x));
-            format!("{} is offering you a credential: {}", connection_name, self.credential_name)
-        } else {
             format!("{} wants you to pay tokens for: {}", connection_name, self.credential_name)
+        } else {
+            format!("{} is offering you a credential: {}", connection_name, self.credential_name)
         };
 
         payload.push(cred_json);
@@ -309,7 +311,10 @@ impl IssuerCredential {
             version: String::from("0.1"),
             msg_type: String::from("CRED"),
             libindy_cred: cred,
-            rev_reg_def_json: self.rev_reg_def_json.clone(),
+            rev_reg_def_json: match self.rev_reg_def_json {
+                Some(_) => self.rev_reg_def_json.clone().unwrap(),
+                None => String::new(),
+            },
             cred_def_id: self.cred_def_id.clone(),
             cred_revoc_id,
             revoc_reg_delta_json,

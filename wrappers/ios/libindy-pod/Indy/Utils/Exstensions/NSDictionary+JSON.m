@@ -25,6 +25,16 @@
     }
 }
 
++ (NSDictionary*) fromString:(NSString*) s
+{
+    NSError *error;
+    NSDictionary *dict = [NSJSONSerialization JSONObjectWithData:[NSData dataWithBytes:[s UTF8String]
+                                                                                length:[s length]]
+                                                         options:kNilOptions
+                                                           error: &error];
+    return dict;
+}
+
 - (BOOL) contains:(NSDictionary*) dict
 {
     for (NSString *key in [dict allKeys])
