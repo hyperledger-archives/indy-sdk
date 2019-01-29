@@ -35,8 +35,9 @@ async def test_connection_send_message():
     connection = await Connection.create(source_id)
     invite_details = await connection.connect(connection_options)
     assert invite_details
-    msg_id = await connection.send_message("msg","type","title")
-    assert msg_id
+    with pytest.raises(VcxError) as e:
+        msg_id = await connection.send_message("msg","type","title")
+    assert ErrorCode.NotReady == e.value.error_code
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
