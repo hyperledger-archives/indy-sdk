@@ -9,6 +9,9 @@ extern crate sha2;
 extern crate time;
 extern crate zmq;
 
+use self::byteorder::{ByteOrder, LittleEndian};
+use self::zmq::Socket;
+
 use std::{fs, io};
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -16,16 +19,21 @@ use std::io::Write;
 use std::sync::Mutex;
 
 use serde_json;
+use serde::de::DeserializeOwned;
 
 use api::ledger::{CustomFree, CustomTransactionParser};
-use domain::pool::{PoolConfig, PoolOpenConfig};
-use errors::prelude::*;
+use domain::{
+    pool::{PoolConfig, PoolOpenConfig},
+    ledger::response::{
+        Message,
+        Reply,
+        ResponseMetadata
+    }
+};
+use errors::*;
 use services::pool::pool::{Pool, ZMQPool};
 use utils::environment;
 use utils::sequence;
-
-use self::byteorder::{ByteOrder, LittleEndian};
-use self::zmq::Socket;
 
 mod catchup;
 mod commander;
@@ -253,6 +261,66 @@ impl PoolService {
         }
 
         Ok(pool)
+    }
+}
+
+lazy_static! {
+    static ref THRESHOLD: Mutex<u64> = Mutex::new(600);
+}
+
+pub fn set_freshness_threshold(threshold: u64) {
+    let mut th = THRESHOLD.lock().unwrap();
+    *th = ::std::cmp::max(threshold, 300);
+}
+
+
+pub fn parse_response_metadata(response: &str) -> IndyResult<ResponseMetadata> {
+    let message: Message<serde_json::Value> = serde_json::from_str(response)
+        .to_indy(IndyErrorKind::InvalidTransaction, "Cannot deserialize transaction Response")?;
+
+    let response_object: Reply<serde_json::Value> = _handle_response_message_type(message)?;
+    let response_result = response_object.result();
+
+    let response_metadata = match response_result["ver"].as_str() {
+        None => _parse_transaction_metadata_v0(&response_result),
+        Some("1") => _parse_transaction_metadata_v1(&response_result),
+        ver @ _ => return Err(err_msg(IndyErrorKind::InvalidTransaction, format!("Unsupported transaction response version: {:?}", ver)))
+    };
+
+    Ok(response_metadata)
+}
+
+pub fn get_last_signed_time(response: &str) -> Option<u64> {
+    let c = parse_response_metadata(response);
+    c.ok().and_then(|resp| resp.last_txn_time)
+}
+
+fn _handle_response_message_type<T>(message: Message<T>) -> IndyResult<Reply<T>> where T: DeserializeOwned + ::std::fmt::Debug {
+    trace!("handle_response_message_type >>> message {:?}", message);
+
+    match message {
+        Message::Reject(response) | Message::ReqNACK(response) =>
+            Err(err_msg(IndyErrorKind::InvalidTransaction, format!("Transaction has been failed: {:?}", response.reason))),
+        Message::Reply(reply) =>
+            Ok(reply)
+    }
+}
+
+fn _parse_transaction_metadata_v0(message: &serde_json::Value) -> ResponseMetadata {
+    ResponseMetadata {
+        seq_no: message["seqNo"].as_u64(),
+        txn_time: message["txnTime"].as_u64(),
+        last_txn_time: message["state_proof"]["multi_signature"]["value"]["timestamp"].as_u64(),
+        last_seq_no: None,
+    }
+}
+
+fn _parse_transaction_metadata_v1(message: &serde_json::Value) -> ResponseMetadata {
+    ResponseMetadata {
+        seq_no: message["txnMetadata"]["seqNo"].as_u64(),
+        txn_time: message["txnMetadata"]["txnTime"].as_u64(),
+        last_txn_time: message["multiSignature"]["signedState"]["stateMetadata"]["timestamp"].as_u64(),
+        last_seq_no: None,
     }
 }
 
