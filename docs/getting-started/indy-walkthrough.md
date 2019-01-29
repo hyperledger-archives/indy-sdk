@@ -20,7 +20,8 @@
         - [Step 6: Credential Definition Setup](#step-6-credential-definition-setup)
     - [Alice Gets a Transcript](#alice-gets-a-transcript)
     - [Apply for a Job](#apply-for-a-job)
-
+    - [Apply for a Loan](#apply-for-a-loan)
+    - [Explore the Code](#explore-the-code)
 ## What Indy and Libindy are and Why They Matter
 
 Indy provides a software ecosystem for private, secure, and powerful identity, and libindy enables clients for it. Indy puts people — not the organizations that traditionally centralize identity — in charge of decisions about their own privacy and disclosure. This enables all kinds of rich innovation: connection contracts, revocation, novel payment workflows, asset and document management features, creative forms of escrow, curated reputation, integrations with other cool technologies, and so on.
