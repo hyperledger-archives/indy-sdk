@@ -16,7 +16,10 @@ use domain::ledger::node::NodeOperationData;
 use errors::prelude::*;
 use services::crypto::CryptoService;
 use services::ledger::LedgerService;
-use services::pool::PoolService;
+use services::pool::{
+    PoolService,
+    parse_response_metadata
+};
 use services::wallet::{RecordOptions, WalletService};
 use utils::crypto::base58;
 use utils::crypto::signature_serializer::serialize_signature;
@@ -877,7 +880,10 @@ impl LedgerCommandExecutor {
                              response: &str) -> IndyResult<String> {
         debug!("get_response_metadata >>> response: {:?}", response);
 
-        let res = self.ledger_service.get_response_metadata(response)?;
+        let metadata = parse_response_metadata(response)?;
+
+        let res = serde_json::to_string(&metadata)
+            .to_indy(IndyErrorKind::InvalidState, "Cannot serialize ResponseMetadata")?;
 
         debug!("get_response_metadata <<< res: {:?}", res);
 
