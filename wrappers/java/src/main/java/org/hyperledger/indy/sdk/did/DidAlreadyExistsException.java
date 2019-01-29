@@ -15,7 +15,18 @@ public class DidAlreadyExistsException extends IndyException
 	 * Initializes a new DidAlreadyExistsError.
 	 */
 	public DidAlreadyExistsException()
+	{
+		super(message, ErrorCode.DidAlreadyExistsError.value());
+	}
+
+	/**
+	 * Initializes a new DidAlreadyExistsError.
+	 *
+	 * @param sdkMessage The SDK error message.
+	 * @param sdkBacktrace The SDK error backtrace.
+	 */
+	public DidAlreadyExistsException(String sdkMessage, String sdkBacktrace)
     {
-    	super(message, ErrorCode.DidAlreadyExistsError.value());
+    	super(sdkMessage, ErrorCode.DidAlreadyExistsError.value(), sdkBacktrace);
     }
 }

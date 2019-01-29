@@ -5,12 +5,40 @@ from indy import anoncreds, crypto, did, ledger, pool, wallet
 import json
 import logging
 
+import argparse
+import sys
+from ctypes import *
+
 from indy.error import ErrorCode, IndyError
 
 from src.utils import get_pool_genesis_txn_path, run_coroutine, PROTOCOL_VERSION
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
+
+parser = argparse.ArgumentParser(description='Run python getting-started scenario (Alice/Faber)')
+parser.add_argument('-t', '--storage_type', help='load custom wallet storage plug-in')
+parser.add_argument('-l', '--library', help='dynamic library to load for plug-in')
+parser.add_argument('-e', '--entrypoint', help='entry point for dynamic library')
+parser.add_argument('-c', '--config', help='entry point for dynamic library')
+parser.add_argument('-s', '--creds', help='entry point for dynamic library')
+
+args = parser.parse_args()
+
+
+# check if we need to dyna-load a custom wallet storage plug-in
+if args.storage_type:
+    if not (args.library and args.entrypoint):
+        parser.print_help()
+        sys.exit(0)
+    stg_lib = CDLL(args.library)
+    result = stg_lib[args.entrypoint]()
+    if result != 0:
+        print("Error unable to load wallet storage", result)
+        parser.print_help()
+        sys.exit(0)
+
+    print("Success, loaded wallet storage", args.storage_type)
 
 
 async def run():
@@ -782,23 +810,23 @@ async def run():
 
     logger.info("\"Government\" -> Close and Delete wallet")
     await wallet.close_wallet(government['wallet'])
-    await wallet.delete_wallet(government['wallet_config'], government['wallet_credentials'])
+    await wallet.delete_wallet(wallet_config("delete", government['wallet_config']), wallet_credentials("delete", government['wallet_credentials']))
 
     logger.info("\"Faber\" -> Close and Delete wallet")
     await wallet.close_wallet(faber['wallet'])
-    await wallet.delete_wallet(faber['wallet_config'], faber['wallet_credentials'])
+    await wallet.delete_wallet(wallet_config("delete", faber['wallet_config']), wallet_credentials("delete", faber['wallet_credentials']))
 
     logger.info("\"Acme\" -> Close and Delete wallet")
     await wallet.close_wallet(acme['wallet'])
-    await wallet.delete_wallet(acme['wallet_config'], acme['wallet_credentials'])
+    await wallet.delete_wallet(wallet_config("delete", acme['wallet_config']), wallet_credentials("delete", acme['wallet_credentials']))
 
     logger.info("\"Thrift\" -> Close and Delete wallet")
     await wallet.close_wallet(thrift['wallet'])
-    await wallet.delete_wallet(thrift['wallet_config'], thrift['wallet_credentials'])
+    await wallet.delete_wallet(wallet_config("delete", thrift['wallet_config']), wallet_credentials("delete", thrift['wallet_credentials']))
 
     logger.info("\"Alice\" -> Close and Delete wallet")
     await wallet.close_wallet(alice['wallet'])
-    await wallet.delete_wallet(alice['wallet_config'], alice['wallet_credentials'])
+    await wallet.delete_wallet(wallet_config("delete", alice['wallet_config']), wallet_credentials("delete", alice['wallet_credentials']))
 
     logger.info("Close and Delete pool")
     await pool.close_pool_ledger(pool_['handle'])
@@ -824,11 +852,11 @@ async def onboarding(_from, to):
     if 'wallet' not in to:
         logger.info("\"{}\" -> Create wallet".format(to['name']))
         try:
-            await wallet.create_wallet(to['wallet_config'], to['wallet_credentials'])
+            await wallet.create_wallet(wallet_config("create", to['wallet_config']), wallet_credentials("create", to['wallet_credentials']))
         except IndyError as ex:
             if ex.error_code == ErrorCode.PoolLedgerConfigAlreadyExistsError:
                 pass
-        to['wallet'] = await wallet.open_wallet(to['wallet_config'], to['wallet_credentials'])
+        to['wallet'] = await wallet.open_wallet(wallet_config("open", to['wallet_config']), wallet_credentials("open", to['wallet_credentials']))
 
     logger.info("\"{}\" -> Create and store in Wallet \"{} {}\" DID".format(to['name'], to['name'], _from['name']))
     (to_from_did, to_from_key) = await did.create_and_store_my_did(to['wallet'], "{}")
@@ -862,6 +890,24 @@ async def onboarding(_from, to):
 
     return from_to_did, from_to_key, to_from_did, to_from_key, _from['connection_response']
 
+def wallet_config(operation, wallet_config_str):
+    if not args.storage_type:
+        return wallet_config_str
+    wallet_config_json = json.loads(wallet_config_str)
+    wallet_config_json['storage_type'] = args.storage_type
+    if args.config:
+        wallet_config_json['storage_config'] = json.loads(args.config)
+    #print(operation, json.dumps(wallet_config_json))
+    return json.dumps(wallet_config_json)
+
+def wallet_credentials(operation, wallet_credentials_str):
+    if not args.storage_type:
+        return wallet_credentials_str
+    wallet_credentials_json = json.loads(wallet_credentials_str)
+    if args.creds:
+        wallet_credentials_json['storage_credentials'] = json.loads(args.creds)
+    #print(operation, json.dumps(wallet_credentials_json))
+    return json.dumps(wallet_credentials_json)
 
 async def get_verinym(_from, from_to_did, from_to_key, to, to_from_did, to_from_key):
     logger.info("\"{}\" -> Create and store in Wallet \"{}\" new DID".format(to['name'], to['name']))

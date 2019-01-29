@@ -104,3 +104,14 @@ pub fn setup_did() -> (i32, String) {
     let (did, _) = did::create_and_store_my_did(wallet_handle, None).unwrap();
     (wallet_handle, did)
 }
+
+pub fn setup_new_identity() -> (i32, i32, String, String) {
+    let (wallet_handle, pool_handle, trustee_did) = setup_trustee();
+
+    let (my_did, my_vk) = did::create_and_store_my_did(wallet_handle, None).unwrap();
+    let nym = ledger::build_nym_request(&trustee_did, &my_did, Some(&my_vk), None, Some("TRUSTEE")).unwrap();
+    let response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym).unwrap();
+    pool::check_response_type(&response, types::ResponseType::REPLY);
+
+    (wallet_handle, pool_handle, my_did, my_vk)
+}
