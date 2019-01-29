@@ -30,5 +30,4 @@ pub mod test;
 #[macro_use]
 pub mod try;
 
-pub mod transaction_metadata;
 pub mod option;

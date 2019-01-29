@@ -371,7 +371,7 @@ impl<T: Networker> RequestSM<T> {
                         if let Ok((result, result_without_proof)) = _get_msg_result_without_state_proof(&raw_msg) {
                             let hashable = HashableValue { inner: result_without_proof };
 
-                            let last_write_time =_get_response_freshness(&raw_msg);
+                            let last_write_time = get_last_signed_time(&raw_msg).unwrap_or(0);
 
                             let (cnt, soonest) = {
                                 let set = state.replies.entry(hashable).or_insert(HashSet::new());
@@ -726,10 +726,6 @@ fn _check_state_proof(msg_result: &SJsonValue, f: usize, gen: &Generator, bls_ke
 fn _get_freshness_threshold() -> u64 {
     let t = THRESHOLD.lock().unwrap();
     t.mul(1000)
-}
-
-fn _get_response_freshness(raw_msg: &str) -> u64 {
-    get_last_signed_time(raw_msg)
 }
 
 fn _get_cur_time() -> u64 {
@@ -1159,26 +1155,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_reply_event_from_single_state_works_for_state_proof() {
-            // Register custom state proof parser
-            {
-                use services::pool::{PoolService, REGISTERED_SP_PARSERS};
-                use api::ErrorCode;
-                use libc::c_char;
-                use std::ffi::CString;
-
-                REGISTERED_SP_PARSERS.lock().unwrap().clear();
-
-                extern fn test_sp(_reply_from_node: *const c_char, parsed_sp: *mut *const c_char) -> ErrorCode {
-                    let sp: CString = CString::new("[]").unwrap();
-                    unsafe { *parsed_sp = sp.into_raw(); }
-                    ErrorCode::Success
-                }
-                extern fn test_free(_data: *const c_char) -> ErrorCode {
-                    ErrorCode::Success
-                }
-                PoolService::register_sp_parser("test", test_sp, test_free).unwrap();
-            }
-
+            add_state_proof_parser();
             let mut request_handler = _request_handler(1, 2);
             request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Reply(Reply::default(),
@@ -1199,28 +1176,28 @@ pub mod tests {
             assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
         }
 
+        fn add_state_proof_parser() {
+            use services::pool::{PoolService, REGISTERED_SP_PARSERS};
+            use api::ErrorCode;
+            use libc::c_char;
+            use std::ffi::CString;
+
+            REGISTERED_SP_PARSERS.lock().unwrap().clear();
+
+            extern fn test_sp(_reply_from_node: *const c_char, parsed_sp: *mut *const c_char) -> ErrorCode {
+                let sp: CString = CString::new("[]").unwrap();
+                unsafe { *parsed_sp = sp.into_raw(); }
+                ErrorCode::Success
+            }
+            extern fn test_free(_data: *const c_char) -> ErrorCode {
+                ErrorCode::Success
+            }
+            PoolService::register_sp_parser("test", test_sp, test_free).unwrap();
+        }
+
         #[test]
         fn request_handler_process_reply_event_from_single_state_works_for_freshness_filtering() {
-            // Register custom state proof parser
-            {
-                use services::pool::{PoolService, REGISTERED_SP_PARSERS};
-                use api::ErrorCode;
-                use libc::c_char;
-                use std::ffi::CString;
-
-                REGISTERED_SP_PARSERS.lock().unwrap().clear();
-
-                extern fn test_sp(_reply_from_node: *const c_char, parsed_sp: *mut *const c_char) -> ErrorCode {
-                    let sp: CString = CString::new("[]").unwrap();
-                    unsafe { *parsed_sp = sp.into_raw(); }
-                    ErrorCode::Success
-                }
-                extern fn test_free(_data: *const c_char) -> ErrorCode {
-                    ErrorCode::Success
-                }
-                PoolService::register_sp_parser("test", test_sp, test_free).unwrap();
-            }
-
+            add_state_proof_parser();
             let mut request_handler = _request_handler(2, 4);
             request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string())));
             //

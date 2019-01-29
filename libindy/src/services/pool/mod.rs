@@ -290,9 +290,9 @@ pub fn parse_response_metadata(response: &str) -> IndyResult<ResponseMetadata> {
     Ok(response_metadata)
 }
 
-pub fn get_last_signed_time(response: &str) -> u64 {
+pub fn get_last_signed_time(response: &str) -> Option<u64> {
     let c = parse_response_metadata(response);
-    c.map(|resp| resp.last_txn_time.unwrap_or(0)).unwrap_or(0)
+    c.ok().and_then(|resp| resp.last_txn_time)
 }
 
 fn _handle_response_message_type<T>(message: Message<T>) -> IndyResult<Reply<T>> where T: DeserializeOwned + ::std::fmt::Debug {
