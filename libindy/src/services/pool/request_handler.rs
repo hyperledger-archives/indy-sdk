@@ -1153,26 +1153,31 @@ pub mod tests {
             assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
         }
 
+        fn correct_state_proof_reply(timestamp: u64) -> String {
+            json!({
+                "result": {
+                    "type": "test",
+                    "ver": "1",
+                    "multiSignature":{
+                        "signedState": {
+                            "stateMetadata": {
+                                "timestamp": timestamp
+                            }
+                        }
+                    }
+                },
+                "op": "REPLY",
+            }).to_string()
+        }
+
         #[test]
         fn request_handler_process_reply_event_from_single_state_works_for_state_proof() {
             add_state_proof_parser();
             let mut request_handler = _request_handler(1, 2);
             request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string())));
-            request_handler.process_event(Some(RequestEvent::Reply(Reply::default(),
-                    json!({
-                    "result": {
-                        "type": "test",
-                        "ver": "1",
-                        "multiSignature":{
-                            "signedState": {
-                                "stateMetadata": {
-                                    "timestamp": _get_cur_time() - 300000
-                                }
-                            }
-                        }
-                    },
-                    "op": "REPLY",
-                   }).to_string(), NODE.to_string(), REQ_ID.to_string())));
+            request_handler.process_event(Some(
+                RequestEvent::Reply(Reply::default(), correct_state_proof_reply(_get_cur_time() - 300000), NODE.to_string(), REQ_ID.to_string()))
+            );
             assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
         }
 
@@ -1181,21 +1186,9 @@ pub mod tests {
             add_state_proof_parser();
             let mut request_handler = _request_handler(1, 2);
             request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string())));
-            request_handler.process_event(Some(RequestEvent::Reply(Reply::default(),
-                    json!({
-                    "result": {
-                        "type": "test",
-                        "ver": "1",
-                        "multiSignature":{
-                            "signedState": {
-                                "stateMetadata": {
-                                    "timestamp": _get_cur_time() + 300000
-                                }
-                            }
-                        }
-                    },
-                    "op": "REPLY",
-                   }).to_string(), NODE.to_string(), REQ_ID.to_string())));
+            request_handler.process_event(
+                Some(RequestEvent::Reply(Reply::default(), correct_state_proof_reply(_get_cur_time() + 300000), NODE.to_string(), REQ_ID.to_string()))
+            );
             assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
         }
 
@@ -1226,20 +1219,7 @@ pub mod tests {
             //
             request_handler.process_event(Some(RequestEvent::Reply(
                 Reply::default(),
-                json!({
-                    "result": {
-                        "type": "test",
-                        "ver": "1",
-                        "multiSignature":{
-                            "signedState": {
-                                "stateMetadata": {
-                                    "timestamp": _get_cur_time() - 700000
-                                }
-                            }
-                        }
-                    },
-                    "op": "REPLY",
-                   }).to_string(),
+                correct_state_proof_reply(_get_cur_time() - 700000),
                    NODE.to_string(),
                    REQ_ID.to_string())));
 
@@ -1250,20 +1230,7 @@ pub mod tests {
 
             request_handler.process_event(Some(RequestEvent::Reply(
                 Reply::default(),
-                json!({
-                    "result": {
-                        "type": "test",
-                        "ver": "1",
-                        "multiSignature":{
-                            "signedState": {
-                                "stateMetadata": {
-                                    "timestamp": _get_cur_time() - 300000
-                                }
-                            }
-                        }
-                    },
-                    "op": "REPLY",
-                   }).to_string(),
+                correct_state_proof_reply(_get_cur_time() - 300000),
                 NODE.to_string(),
                 REQ_ID.to_string())));
             assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
@@ -1281,20 +1248,7 @@ pub mod tests {
             //
             request_handler.process_event(Some(RequestEvent::Reply(
                 Reply::default(),
-                json!({
-                    "result": {
-                        "type": "test",
-                        "ver": "1",
-                        "multiSignature":{
-                            "signedState": {
-                                "stateMetadata": {
-                                    "timestamp": _get_cur_time() - 400000
-                                }
-                            }
-                        }
-                    },
-                    "op": "REPLY",
-                   }).to_string(),
+                correct_state_proof_reply(_get_cur_time() - 400000),
                 NODE.to_string(),
                 REQ_ID.to_string())));
 
@@ -1305,20 +1259,7 @@ pub mod tests {
 
             request_handler.process_event(Some(RequestEvent::Reply(
                 Reply::default(),
-                json!({
-                    "result": {
-                        "type": "test",
-                        "ver": "1",
-                        "multiSignature":{
-                            "signedState": {
-                                "stateMetadata": {
-                                    "timestamp": _get_cur_time() - 200000
-                                }
-                            }
-                        }
-                    },
-                    "op": "REPLY",
-                   }).to_string(),
+                correct_state_proof_reply(_get_cur_time() - 200000),
                 NODE.to_string(),
                 REQ_ID.to_string())));
             assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
