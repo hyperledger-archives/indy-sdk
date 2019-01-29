@@ -44,8 +44,8 @@ describe('Connection:', () => {
     it('success: sends message', async () => {
       const connection = await connectionCreate()
       await connection.connect({ data: '{"connection_type":"QR"}' })
-      const msgId = await connection.sendMessage({ msg: 'msg', type: 'msg', title: 'title' })
-      assert(msgId)
+      const error = await shouldThrow(() => connection.sendMessage({ msg: 'msg', type: 'msg', title: 'title' }))
+      assert.equal(error.vcxCode, VCXCode.NOT_READY)
     })
   })
 
