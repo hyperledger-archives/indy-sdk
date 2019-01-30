@@ -71,13 +71,7 @@ if [ "$#" -gt 0 ]; then
         # cargo update
     fi
 
-    # To build for macos
-    #cargo build
-    # To build for iOS
-    #echo "cargo lipo --release --verbose --targets=${IOS_TARGETS}"
-    # cargo lipo --release --verbose --targets="${IOS_TARGETS}"
     cargo lipo --release --targets="${IOS_TARGETS}"
-    #cargo lipo
     mkdir -p ${BUILD_CACHE}/libindy/${LIBINDY_VERSION}
     cp $WORK_DIR/vcx-indy-sdk/libindy/target/universal/release/libindy.a ${BUILD_CACHE}/libindy/${LIBINDY_VERSION}/libindy.a
     for hfile in $(find ${WORK_DIR}/vcx-indy-sdk/libindy -name "*.h")

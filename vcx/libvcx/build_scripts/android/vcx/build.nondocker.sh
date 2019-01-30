@@ -117,7 +117,6 @@ fi
 #    LIBSOVTOKEN_DIR="${LIBSOVTOKEN_DIR}/lib"
 #fi
 
-echo ${LIBNULLPAY_DIR}
 if [ -z "${LIBNULLPAY_DIR}" ] ; then
     LIBNULLPAY_DIR="libnullpay"
     if [ -d "${LIBNULLPAY_DIR}" ] ; then

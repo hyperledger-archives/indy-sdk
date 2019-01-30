@@ -3,6 +3,7 @@
 #To get into the if statement below execute the following command...
 # mv /Users/norm/.cargo/bin/rustup /Users/norm/.cargo/bin/rustup.bak
 RUSTUP_VERSION=`rustup --version`
+DEFAULT_RUST_VERSION=$1
 if [ "$?" != "0" ]; then
     if [ -f $HOME/.cargo/bin/rustup ]; then
         echo "You need to add $HOME/.cargo/bin to your PATH environment variable or simply restart your terminal"
@@ -43,7 +44,7 @@ fi
 
 if [[ $RUSTUP_VERSION =~ ^'rustup ' ]]; then
     rustup update
-    rustup default 1.31.1
+    rustup default ${DEFAULT_RUST_VERSION}
     rustup component add rls-preview rust-analysis rust-src
     echo "Using rustc version $(rustc --version)"
     # rustup target remove aarch64-linux-android 

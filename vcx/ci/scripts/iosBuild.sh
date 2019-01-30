@@ -7,39 +7,20 @@ export WRAPPER_BASE="vcx/wrappers/ios/vcx"
 export WRAPPER_LIBS="vcx/wrappers/ios/vcx/lib"
 IOS_TARGETS="aarch64-apple-ios,armv7-apple-ios,i386-apple-ios,x86_64-apple-ios"
 IOS_ARCHS="arm64,armv7,i386,x86_64"
+export INDY_BRANCH=$1
+export INDY_VERSION=$2
+export SOVTOKEN_ZIP=$3
+export RUST_VERSION=$4
 #IOS_TARGETS="x86_64-apple-ios,i386-apple-ios"
 #IOS_ARCHS="x86_64,i386"
 
-
-function printStartProgress {
-		echo "=================="
-		echo "Starting"
-		echo $1
-		echo "=================="
-		echo
-}
-
-function printEndProgress {
-		echo
-		echo "+++++++++++++++++"
-		echo "Finished"
-		echo $1
-		echo "+++++++++++++++++"
-}
-
-function progress {
-		printStartProgress $1
-		$1
-		printEndProgress $1
-}
-
 cd ${SCRIPTS_PATH}
 
-progress ./mac.01.libindy.setup.sh
-progress ./mac.02.libindy.env.sh
-progress ./mac.03.libindy.build.sh
+./mac.01.libindy.setup.sh ${RUST_VERSION}
+./mac.02.libindy.env.sh
+./mac.03.libindy.build.sh
 #./mac.04.libvcx.setup.sh
-progress 'source ./mac.05.libvcx.env.sh'
+./mac.05.libvcx.env.sh
 cp -rf ~/OpenSSL-for-iPhone ${BASE_DIR}/.macosbuild
 cp -rf ~/libzmq-ios ${BASE_DIR}/.macosbuild
 cp -rf ~/combine-libs ${BASE_DIR}/.macosbuild

@@ -50,7 +50,7 @@ fi
 
 git log -1 > $WORK_DIR/evernym.vcx-sdk.git.commit.log
 
-export OPENSSL_LIB_DIR_DARWIN=$OPENSSL_LIB_DIR
+export OPENSSL_LIB_DIR_DARWIN=${OPENSSL_LIB_DIR}
 
 bkpIFS="$IFS"
 IFS=',()][' read -r -a targets <<<"${IOS_TARGETS}"

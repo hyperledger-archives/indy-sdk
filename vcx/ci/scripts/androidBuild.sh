@@ -6,6 +6,9 @@ setup() {
     echo "Working Directory: ${PWD}"
     set -e
     export ARCH=$1
+    export LIBINDY_BRANCH=$2
+    export LIBINDY_VERSION=$3
+    export LIBSOVTOKEN_ZIP=$4
 
     export PATH=$PATH:/opt/gradle/gradle-3.4.1/bin
     export PATH=${PATH}:$ANDROID_HOME/platform-tools:$ANDROID_HOME/tools:$ANDROID_HOME/build-tools/25.0.2/
@@ -96,12 +99,7 @@ get_libindy() {
 		SIMPLE_LIBINDY_VERSION=$(echo ${LIBINDY_VERSION} | cut -f1 -d'-')
         if [ ! -d "libindy_${ARCH}" ]; then
 
-            if [ "$LIBINDY_BRANCH" = "stable" ]; then
-                wget https://repo.sovrin.org/android/libindy/${LIBINDY_BRANCH}/${LIBINDY_VERSION}/libindy_android_${ARCH}_${LIBINDY_VERSION}.zip
-            else
-                wget https://repo.sovrin.org/android/libindy/${LIBINDY_BRANCH}/1.7.0-934/libindy_android_${ARCH}_${SIMPLE_LIBINDY_VERSION}.zip
-            fi
-
+            wget -q https://repo.sovrin.org/android/libindy/${LIBINDY_BRANCH}/${LIBINDY_VERSION}/libindy_android_${ARCH}_${SIMPLE_LIBINDY_VERSION}.zip
             unzip libindy_android_${ARCH}_${SIMPLE_LIBINDY_VERSION}.zip
 
         fi
@@ -112,12 +110,10 @@ get_libindy() {
 
 get_libsovtoken() {
     set -xv
-    # Todo: This artifact was manually uploaded to this repo. Eventually, the file format will change. That is why it is hardcoded
     if [ -z ${LIBSOVTOKEN_DIR} ]; then
-        LIBSOVTOKEN_ZIP=libsovtoken_0.9.6-201811211720-4901e95_all.zip
         if [ ! -d "libsovtoken" ]; then
             echo "retrieving libsovtoken prebuilt library"
-            wget ${SOVRIN_REPO}/${LIBSOVTOKEN_ZIP}
+            wget -q ${SOVRIN_REPO}/${LIBSOVTOKEN_ZIP}
             unzip ${LIBSOVTOKEN_ZIP}
         fi
         export LIBSOVTOKEN_DIR="${PWD}/libsovtoken/${TRIPLET}"
@@ -133,12 +129,7 @@ get_libnullpay() {
 		SIMPLE_LIBINDY_VERSION=$(echo ${LIBINDY_VERSION} | cut -f1 -d'-')
         if [ ! -d "libnullpay_${ARCH}" ]; then
 
-            if [ "$LIBINDY_BRANCH" = "stable" ]; then
-                wget https://repo.sovrin.org/android/libnullpay/${LIBINDY_BRANCH}/${LIBINDY_VERSION}/libnullpay_android_${ARCH}_${LIBINDY_VERSION}.zip
-            else
-                wget https://repo.sovrin.org/android/libnullpay/${LIBINDY_BRANCH}/1.7.0-934/libnullpay_android_${ARCH}_${SIMPLE_LIBINDY_VERSION}.zip
-            fi
-
+            wget -q https://repo.sovrin.org/android/libnullpay/${LIBINDY_BRANCH}/${LIBINDY_VERSION}/libnullpay_android_${ARCH}_${SIMPLE_LIBINDY_VERSION}.zip
             unzip libnullpay_android_${ARCH}_${SIMPLE_LIBINDY_VERSION}.zip
 
         fi
@@ -177,8 +168,8 @@ build_vcx() {
 
 }
 
-setup $1
-get_libindy $1
+setup $1 $2 $3 $4
+get_libindy
 get_libsovtoken
 get_libnullpay
-build_vcx $1
+build_vcx

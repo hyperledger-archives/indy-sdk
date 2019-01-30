@@ -63,6 +63,14 @@ static String libsovtokenVersion() {
     return "0.9.6~-.1.126"
 }
 
+static String androidSovtokenArtifact() {
+    return "libsovtoken_0.9.6-201811211720-4901e95_all.zip"
+}
+
+static String iosSovtokenArtifact() {
+    return "libsovtoken_0.9.6-201811211710-4901e95_all.zip"
+}
+
 static String libindyDockerfile() {
     return 'vcx/ci/libindy.dockerfile'
 }
@@ -72,19 +80,18 @@ static String indyBranch() {
 }
 
 
-def buildLibindy() {
-    indyTag=indyTag()
-    if (indyTag != "") {
-        indyTag = "~" + indyTag
-    }
-
-    def LIBINDY_VER = libindyVersion() + indyTag
-    def LIBNULL_VER = libnullVersion() + indyTag
-    def LIBSOVTOKEN_VER = libsovtokenVersion()
-    docker.build("libindy", "--build-arg LIBINDY_VER=${LIBINDY_VER} \
-            --build-arg LIBNULL_VER=${LIBNULL_VER} \
-            --build-arg LIBSOVTOKEN_VER=${LIBSOVTOKEN_VER} \
+def buildLibindyDocker() {
+    def tag=indyTag()
+    if (tag != "") { tag = "~" + tag }
+    docker.build("libindy", "--build-arg LIBINDY_VER=${libindyVersion()}${tag} \
+            --build-arg LIBNULL_VER=${libnullVersion()}${tag} \
+            --build-arg LIBSOVTOKEN_VER=${libsovtokenVersion()} \
             -f ${libindyDockerfile()} .")
+}
+
+def buildAndroidDocker() {
+    def uid= sh(returnStdout: true, script: 'id -u').trim()
+    android = docker.build("android", "--build-arg uid=${uid} --build-arg RUST_VER=${rustVersion()} -f vcx/wrappers/java/ci/android.dockerfile .")
 }
 
 
@@ -117,11 +124,10 @@ def mainUbuntu() {
             stage('Build Libindy Image') {
                 
                 // ******** Build the libindy base image (pulls down dependent debians from sovrin repo, and installs a majority of the dependencies)
-                buildLibindy()
+                buildLibindyDocker()
             }
             stage('Build Libvcx Image, Tests Rust Code') {
-                RUST_VERSION = rustVersion()
-                libvcx = docker.build("libvcx", "--build-arg uid=${uid} --build-arg RUST_VER=${RUST_VERSION} -f ${libvcxDockerfile} .")
+                libvcx = docker.build("libvcx", "--build-arg uid=${uid} --build-arg RUST_VER=${rustVersion()} -f ${libvcxDockerfile} .")
                 libvcx.inside() {
                     sh "vcx/ci/scripts/package.sh ${rustTestFlag}"
                 }
@@ -228,13 +234,11 @@ def android() {
         try {
             checkout scm
 
-            def uid= sh(returnStdout: true, script: 'id -u').trim()
             stage('Build Libindy Image') {
                 // ******** Build the libindy base image (pulls down dependent debians from sovrin repo, and installs a majority of the dependencies)
-                buildLibindy()
+                buildLibindyDocker()
             }
-            def RUST_VERSION = rustVersion()
-            android = docker.build("android", "--build-arg uid=${uid} --build-arg RUST_VER=${RUST_VERSION} -f vcx/wrappers/java/ci/android.dockerfile .")
+            buildAndroidDocker()
             stage('Android Packaging') {
                 //Package .so files into .aar
                 packageAndroid(android)
@@ -262,15 +266,16 @@ def ios() {
 
     node('macos-vcx') {
         checkout scm
-        sh "ls -r vcx/ci/*"
-        sh "ls vcx/libvcx/build_scripts/ios/mac"
         stage('iOS Build') {
             try {
                 SCRIPTS_PATH="vcx/libvcx/build_scripts/ios/mac"
                 WORK_DIR = "/Users/jenkins"
 
                 // Build ios architectures
-                sh "source vcx/ci/scripts/iosBuild.sh"
+                def tag=indyTag()
+                if (tag != "") { tag = "-" + tag }
+
+                sh "source vcx/ci/scripts/iosBuild.sh ${indyBranch()} ${libindyVersion()}${tag} ${iosSovtokenArtifact()} ${rustVersion()}"
 
                 // Publish to Kraken
                 if (env.BRANCH_NAME == "master") {
@@ -310,18 +315,21 @@ def buildAndroid(arch) {
         try {
             checkout scm
 
-            def uid= sh(returnStdout: true, script: 'id -u').trim()
             stage('Build Libindy Image') {
                 // ******** Build the libindy base image (pulls down dependent debians from sovrin repo, and installs a majority of the dependencies)
-                buildLibindy()
+                buildLibindyDocker()
             }
             stage('Build and Publish Android') {
-                android = docker.build("android", "--build-arg uid=${uid} -f vcx/wrappers/java/ci/android.dockerfile .")
+                buildAndroidDocker()
                 android.inside {
                     ANDROID_SCRIPT_PATH = 'vcx/ci/scripts/androidBuild.sh'
 
                     sh 'sudo ./vcx/ci/scripts/installCert.sh'
-                    sh "LIBINDY_BRANCH=${indyBranch()} LIBINDY_VERSION=${libindyVersion()} LIBINDY_TAG=${indyTag()} ./${ANDROID_SCRIPT_PATH} ${arch}"
+
+                    def tag=indyTag()
+                    if (tag != "") { tag = "-" + tag }
+
+                    sh "./${ANDROID_SCRIPT_PATH} ${arch} ${indyBranch()} ${libindyVersion()}${tag} ${androidSovtokenArtifact()}"
 
                 }
 
@@ -339,7 +347,7 @@ def buildAndroid(arch) {
             sh 'docker system df'
             step([$class: 'WsCleanup'])
         }
-}
+    }
 }
 
 def packageAndroid(android) {

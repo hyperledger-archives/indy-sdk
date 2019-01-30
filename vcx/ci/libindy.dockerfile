@@ -44,9 +44,9 @@ ENV RUST_ARCHIVE=rust-${RUST_VER}-x86_64-unknown-linux-gnu.tar.gz
 ENV RUST_DOWNLOAD_URL=https://static.rust-lang.org/dist/$RUST_ARCHIVE
 
 # Install Gradle
-RUN wget https://services.gradle.org/distributions/gradle-3.4.1-bin.zip
+RUN wget -q https://services.gradle.org/distributions/gradle-3.4.1-bin.zip
 RUN mkdir /opt/gradle
-RUN unzip -d /opt/gradle gradle-3.4.1-bin.zip
+RUN unzip -q -d /opt/gradle gradle-3.4.1-bin.zip
 
 # fpm for deb packaging of npm
 RUN gem install fpm
@@ -66,10 +66,10 @@ RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 68DB5E88 && \
 
 # these are default values if they are not passed into the environment with 
 # the --build-arg flag from 'docker build' command.
-ARG LIBINDY_VER="1.7.0"
-ARG LIBNULL_VER="1.7.0"
+ARG LIBINDY_VER
+ARG LIBNULL_VER
+ARG LIBSOVTOKEN_VER
 
-ARG LIBSOVTOKEN_VER="0.9.6~-1.126"
 RUN apt-get update && apt-get install -y \
     libindy=${LIBINDY_VER} \
     libnullpay=${LIBNULL_VER}

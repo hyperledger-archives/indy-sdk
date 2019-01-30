@@ -350,6 +350,9 @@ vcx_error_t vcx_messages_update_status( vcx_command_handle_t command_handle, con
  */
 vcx_error_t vcx_ledger_get_fees(vcx_command_handle_t command_handle, void(*cb)(vcx_command_handle_t xhandle, vcx_error_t error, const char *fees));
 
+/** Logging **/
+vcx_error_t vcx_set_default_logger(const char* pattern);
+
 /** For testing purposes only */
 void vcx_set_next_agency_response(int);
 #ifdef __cplusplus

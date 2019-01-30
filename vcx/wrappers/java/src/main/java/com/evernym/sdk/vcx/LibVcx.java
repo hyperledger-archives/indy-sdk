@@ -421,6 +421,7 @@ public abstract class LibVcx {
 
         /** Set custom logger implementation.. */
         int vcx_set_logger(Pointer context, Callback enabled, Callback log, Callback flush);
+        int vcx_set_default_logger(String log_level);
 
     }
 
