@@ -56,7 +56,7 @@ In summary, the service layer can be thought of as a suite of helper primitives 
 
 ### Errors
 
-This is where errors are specified in rust types which get translated at the API layer into errorcodes. Since only simple native c-types are used, libindy opts to pass integer error codes along the C-callable layer if some action fails in libindy. This allows wrapper consumers to gracefully detect errors that occurred in the SDK. A list of the errors can be found [here](../../../libindy/src/api/mod.rs). The comments give a short description of why the error may have occurred, but they won't help with debugging much. Alternatively, an excellent community maintained document would be to expand on the reasoning and solutions to why common error codes occur in certain situations.
+This is where errors are specified in rust types which get translated at the API layer into errorcodes. Since only simple native c-types are used, libindy opts to pass integer error codes along the C-callable layer if some action fails in libindy. This allows wrapper consumers to gracefully detect errors that occurred in the SDK. A list of the errors can be found [here](../../../libindy/src/api/mod.rs). The comments give a short description of why the error may have occurred, but they won't help with debugging much. To get more information about the last error happened you can use a special call `get_current_error` -- more information about it can be found in documentation [here](https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/mod.rs#L288).
 
 ### Domains
 
