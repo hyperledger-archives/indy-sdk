@@ -78,8 +78,4 @@ describe('Using the vcx ffi directly', () => {
     assert.equal(result, VCXCode.INVALID_CONNECTION_HANDLE)
   })
 
-  // TODO: Enable once https://evernym.atlassian.net/browse/EN-668 is resolved
-  it.skip(`a call to vcx_connection_release should return ${VCXCode.UNKNOWN_ERROR}`, () => {
-    assert.equal(run.ffi.vcx_connection_release(2), VCXCode.UNKNOWN_ERROR)
-  })
 })

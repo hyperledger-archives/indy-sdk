@@ -69,7 +69,11 @@ namespace Hyperledger.Indy.PoolApi
         /// <seealso cref="OpenPoolLedgerAsync(string, string)"/>
         /// <seealso cref="DeletePoolLedgerConfigAsync(string)"/>
         /// <param name="configName">The name for the configuration.</param>
-        /// <param name="config">The configuration JSON.</param>
+        /// <param name="config">Pool configuration json. if NULL, then default config will be used. Example:
+        /// {
+        ///     "genesis_txn": string (optional), A path to genesis transaction file. If NULL, then a default one will be used.
+        ///                    If file doesn't exists default one will be created.
+        /// }</param>
         /// <returns>An asynchronous <see cref="Task{T}"/> with no return value that completes when
         /// the configuration is created.</returns>
         public static Task CreatePoolLedgerConfigAsync(string configName, string config)

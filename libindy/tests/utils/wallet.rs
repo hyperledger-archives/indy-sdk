@@ -3,7 +3,7 @@ extern crate libc;
 
 use serde_json;
 
-use indy::ErrorCode;
+use indy::{ErrorCode, IndyError};
 use indy::wallet;
 
 use self::futures::Future;
@@ -73,15 +73,15 @@ pub fn register_wallet_storage(xtype: &str, force_create: bool) -> Result<(), Er
     super::results::result_to_empty(err as i32, receiver)
 }
 
-pub fn create_wallet(config: &str, credentials: &str) -> Result<(), ErrorCode> {
+pub fn create_wallet(config: &str, credentials: &str) -> Result<(), IndyError> {
     wallet::create_wallet(config, credentials).wait()
 }
 
-pub fn open_wallet(config: &str, credentials: &str) -> Result<i32, ErrorCode> {
+pub fn open_wallet(config: &str, credentials: &str) -> Result<i32, IndyError> {
     wallet::open_wallet(config, credentials).wait()
 }
 
-pub fn create_and_open_wallet(storage_type: Option<&str>) -> Result<i32, ErrorCode> {
+pub fn create_and_open_wallet(storage_type: Option<&str>) -> Result<i32, IndyError> {
     let config = json!({
             "id": format!("default-wallet_id-{}", sequence::get_next_id()),
             "storage_type": storage_type.unwrap_or(TYPE)
@@ -91,7 +91,7 @@ pub fn create_and_open_wallet(storage_type: Option<&str>) -> Result<i32, ErrorCo
     open_wallet(&config, WALLET_CREDENTIALS)
 }
 
-pub fn create_and_open_default_wallet() -> Result<i32, ErrorCode> {
+pub fn create_and_open_default_wallet() -> Result<i32, IndyError> {
     let config = json!({
             "id": format!("default-wallet_id-{}", sequence::get_next_id()),
             "storage_type": TYPE
@@ -101,7 +101,7 @@ pub fn create_and_open_default_wallet() -> Result<i32, ErrorCode> {
     open_wallet(&config, WALLET_CREDENTIALS)
 }
 
-pub fn create_and_open_plugged_wallet() -> Result<i32, ErrorCode> {
+pub fn create_and_open_plugged_wallet() -> Result<i32, IndyError> {
     let config = json!({
             "id": format!("default-wallet_id-{}", sequence::get_next_id()),
             "storage_type": INMEM_TYPE
@@ -112,19 +112,19 @@ pub fn create_and_open_plugged_wallet() -> Result<i32, ErrorCode> {
     open_wallet(&config, WALLET_CREDENTIALS)
 }
 
-pub fn delete_wallet(config: &str, credentials: &str) -> Result<(), ErrorCode> {
+pub fn delete_wallet(config: &str, credentials: &str) -> Result<(), IndyError> {
     wallet::delete_wallet(config, credentials).wait()
 }
 
-pub fn close_wallet(wallet_handle: i32) -> Result<(), ErrorCode> {
+pub fn close_wallet(wallet_handle: i32) -> Result<(), IndyError> {
     wallet::close_wallet(wallet_handle).wait()
 }
 
-pub fn export_wallet(wallet_handle: i32, export_config_json: &str) -> Result<(), ErrorCode> {
+pub fn export_wallet(wallet_handle: i32, export_config_json: &str) -> Result<(), IndyError> {
     wallet::export_wallet(wallet_handle, export_config_json).wait()
 }
 
-pub fn import_wallet(config: &str, credentials: &str, import_config: &str) -> Result<(), ErrorCode> {
+pub fn import_wallet(config: &str, credentials: &str, import_config: &str) -> Result<(), IndyError> {
     wallet::import_wallet(config, credentials, import_config).wait()
 }
 
@@ -140,7 +140,7 @@ pub fn prepare_export_wallet_config(path: &Path) -> String {
     serde_json::to_string(&json).unwrap()
 }
 
-pub fn generate_wallet_key(config: Option<&str>) -> Result<String, ErrorCode> {
+pub fn generate_wallet_key(config: Option<&str>) -> Result<String, IndyError> {
     wallet::generate_wallet_key(config).wait()
 }
 
