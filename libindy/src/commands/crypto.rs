@@ -381,6 +381,8 @@ impl CryptoCommandExecutor {
         }
 
         let (base64_protected, cek) = if let Some(sender_vk) = sender_vk {
+            self.crypto_service.validate_key(&sender_vk)?;
+
             //returns authcrypted pack_message format. See Wire message format HIPE for details
             self._prepare_protected_authcrypt(receiver_list, &sender_vk, wallet_handle)?
         } else {

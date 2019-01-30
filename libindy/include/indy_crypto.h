@@ -318,13 +318,14 @@ extern "C" {
                                                  );
 
 
-    /// Packs a message (Experimental)
+    /// Packs a message by encrypting the message and serializes it in a JWE-like format (Experimental)
     ///
     /// Note to use DID keys with this function you can call indy_key_for_did to get key id (verkey)
     /// for specific DID.
     ///
     /// #Params
     /// command_handle: command handle to map callback to user context.
+    /// wallet_handle: wallet handle (created by open_wallet).
     /// message: a pointer to the first byte of the message to be packed
     /// message_len: the length of the message
     /// receivers: a string in the format of a json list which will contain the list of receiver's keys
@@ -397,11 +398,11 @@ extern "C" {
                                           );
 
 
-    /// Unpacks a message packed using indy_pack_message which follows the wire message format HIPE
-    /// (Experimental)
+    /// Unpacks a JWE-like formatted message outputted by indy_pack_message (Experimental)
     ///
     /// #Params
     /// command_handle: command handle to map callback to user context.
+    /// wallet_handle: wallet handle (created by open_wallet).
     /// jwe_data: a pointer to the first byte of the JWE to be unpacked
     /// jwe_len: the length of the JWE message in bytes
     /// cb: Callback that takes command result as parameter.

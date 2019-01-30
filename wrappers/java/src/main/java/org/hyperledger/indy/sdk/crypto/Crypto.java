@@ -182,6 +182,24 @@ public class Crypto extends IndyJava.API {
 		}
 	};
 
+	/**
+	 * Callback for indy-indy_pack_message
+	 */
+	private static Callback packMessageCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err, Pointer encrypted_msg_raw, int encrypted_msg_len) {
+
+			CompletableFuture<byte[]> future = (CompletableFuture<byte[]>) removeFuture(xcommand_handle);
+			if (! checkResult(future, err)) return;
+
+			byte[] result = new byte[encrypted_msg_len];
+			encrypted_msg_raw.read(0, result, 0, encrypted_msg_len);
+
+			future.complete(result);
+		}
+	};
+
 	/*
 	 * STATIC METHODS
 	 */
@@ -488,7 +506,7 @@ public class Crypto extends IndyJava.API {
 
 		CompletableFuture<byte[]> future = new CompletableFuture<byte[]>();
 		int commandHandle = addFuture(future);
-		
+
 		int result = LibIndy.api.indy_crypto_anon_crypt(
 				commandHandle,
 				recipientVk,
@@ -543,4 +561,98 @@ public class Crypto extends IndyJava.API {
 
 		return future;
 	}
+
+	/** Packs a message by encrypting the message and serializes it in a JWE-like format (Experimental)
+	 *
+	 * Note to use DID keys with this function you can call Did.keyForDid to get key id (verkey)
+	 * for specific DID.
+	 *
+	 * @param wallet       The wallet.
+	 * @param recipientVk  list of Id (verkey). formatted as json like ["receiver edge_agent_1 verkey", "receiver edge_agent_2 verkey"`]
+	 * @param senderVk     verkey of message sender. if null, will use AnonCrypt mode
+	 * @param message      message to be packed
+	 *                        
+	 * @return A future that resolves to an Agent Wire Message format as a byte array. See HIPE 0028 for detailed formats
+	 *
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<byte[]> packMessage(
+			Wallet wallet,
+			String recipientVk,
+			String senderVk,
+			byte[] message) throws IndyException {
+
+		ParamGuard.notNull(wallet, "wallet");
+		ParamGuard.notNull(message, "message");
+		ParamGuard.notNullOrWhiteSpace(recipientVk, "recipientVk");
+
+		CompletableFuture<byte[]> future = new CompletableFuture<byte[]>();
+		int commandHandle = addFuture(future);
+
+		int walletHandle = wallet.getWalletHandle();
+
+		int result = LibIndy.api.indy_pack_message(
+				commandHandle,
+				walletHandle,
+				message,
+				message.length,
+				recipientVk,
+				senderVk,
+				packMessageCb
+			);
+
+		checkResult(future, result);
+
+		return future;
+	}
+
+	/** Unpacks a JWE-like formatted message outputted by pack_message (Experimental)
+	 *
+	 * @param wallet       The wallet.
+	 * @param jwe_data     The JWE to be unpacked.
+	 *                        
+	 * @return A future that resolves to a byte[] of unpacked data
+	 * 
+	 * if authcrypt was used to pack the message returns this json structure:
+	 *  {
+	 *      message: decrypted message,
+	 *      sender_verkey: sender_verkey,
+	 *      recipient_verkey: recipient_verkey
+	 *  }
+	 * 
+	 *  OR
+	 * 
+	 *  if anoncrypt was used to pack the message returns this json structure:
+	 *  {
+	 *      message: decrypted message,
+	 *      recipient_verkey: recipient_verkey
+	 *  }
+	
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<byte[]> unpackMessage(
+			Wallet wallet,
+			byte[] jwe_data) throws IndyException {
+
+		ParamGuard.notNull(wallet, "wallet");
+		ParamGuard.notNull(jwe_data, "jwe_data");
+
+		CompletableFuture<byte[]> future = new CompletableFuture<byte[]>();
+		int commandHandle = addFuture(future);
+
+		int walletHandle = wallet.getWalletHandle();
+
+		int result = LibIndy.api.indy_unpack_message(
+				commandHandle,
+				walletHandle,
+				jwe_data,
+				jwe_data.length,
+				authCrypCb
+			);
+
+		checkResult(future, result);
+
+		return future;
+	}
+
 }
