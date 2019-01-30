@@ -107,7 +107,6 @@ async def main():
     connection_data = await connection_to_faber.serialize()
     connection_to_faber.release()
     connection_to_faber = None
-    print(connection_data)
 
     option = input('Poll messages? [Y/n] ')
     while option != 'N' and option != 'n':

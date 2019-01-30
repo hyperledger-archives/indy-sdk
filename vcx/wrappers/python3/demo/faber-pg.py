@@ -90,7 +90,6 @@ async def main():
     payment_plugin.nullpay_init()
 
     print("#1 Provision an agent and wallet, get back configuration details")
-    print('provisionConfig', provisionConfig)
     config = await vcx_agent_provision(json.dumps(provisionConfig))
     config = json.loads(config)
     # Set some additional configuration options specific to faber
@@ -99,7 +98,6 @@ async def main():
     config['genesis_path'] = 'docker.txn'
     
     print("#2 Initialize libvcx with new configuration")
-    print('config', config)
     await vcx_init_with_config(json.dumps(config))
 
     print("#3 Create a new schema on the ledger")
@@ -111,6 +109,8 @@ async def main():
     cred_def = await CredentialDef.create('credef_uuid', 'degree', schema_id, 0)
     cred_def_handle = cred_def.handle
     cred_def_id = await cred_def.get_cred_def_id()
+    cred_def_json = await cred_def.serialize()
+    print(" >>> cred_def_handle", cred_def_handle)
 
     print("#5 Create a connection to alice and print out the invite details")
     connection_to_alice = await Connection.create('alice')
@@ -124,7 +124,6 @@ async def main():
     connection_data = await connection_to_alice.serialize()
     connection_to_alice.release()
     connection_to_alice = None
-    print(connection_data)
 
     while True:
         print("#6 Poll agency and wait for alice to accept the invitation (start alice.py now)")
@@ -151,7 +150,7 @@ async def main():
         sleep(2)
 
         if option == '1':
-            await send_credential_request(my_connection, cred_def_handle)
+            await send_credential_request(my_connection, cred_def_json)
         elif option == '2':
             await send_proof_request(my_connection, config['institution_did'])
 
@@ -167,12 +166,17 @@ async def main():
     sleep(2)
 
 
-async def send_credential_request(my_connection, cred_def_handle):
+async def send_credential_request(my_connection, cred_def_json):
     schema_attrs = {
         'name': 'alice',
         'date': '05-2018',
         'degree': 'maths',
     }
+
+    print("De-serialize cred def")
+    cred_def = await CredentialDef.deserialize(cred_def_json)
+    cred_def_handle = cred_def.handle
+    print(" >>> cred_def_handle", cred_def_handle)
 
     print("#12 Create an IssuerCredential object using the schema and credential definition")
     credential = await IssuerCredential.create('alice_degree', schema_attrs, cred_def_handle, 'cred', '0')
