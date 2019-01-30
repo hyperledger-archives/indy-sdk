@@ -1,6 +1,10 @@
-#![allow(dead_code)]
+#![allow(dead_code, unused_macros)]
 
 pub mod callback;
+
+#[macro_use]
+#[path = "../../src/utils/memzeroize.rs"]
+pub mod zeroize;
 
 #[path = "../../src/utils/environment.rs"]
 pub mod environment;

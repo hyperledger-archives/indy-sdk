@@ -1,4 +1,7 @@
 extern crate indy_crypto;
+extern crate zeroize;
+
+use self::zeroize::Zeroize;
 
 use named_type::NamedType;
 
@@ -23,6 +26,8 @@ impl Key {
         }
     }
 }
+
+memzeroize!(Key, signkey);
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct KeyInfo {

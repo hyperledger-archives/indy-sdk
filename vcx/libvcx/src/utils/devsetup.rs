@@ -201,6 +201,7 @@ pub mod tests {
         settings::clear_config();
         unsafe {
             CONFIG_STRING.get(INSTITUTION_CONFIG, |t| {
+                settings::set_config_value(settings::CONFIG_PAYMENT_METHOD, settings::DEFAULT_PAYMENT_METHOD);
                 settings::process_config_string(&t)
             }).unwrap();
         }
@@ -211,6 +212,7 @@ pub mod tests {
         settings::clear_config();
         unsafe {
             CONFIG_STRING.get(CONSUMER_CONFIG, |t| {
+                settings::set_config_value(settings::CONFIG_PAYMENT_METHOD, settings::DEFAULT_PAYMENT_METHOD);
                 settings::process_config_string(&t)
             }).unwrap();
         }
