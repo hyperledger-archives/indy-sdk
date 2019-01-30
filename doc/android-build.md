@@ -13,6 +13,25 @@ Supported architectures are arm, armv7, arm64, x86 and x86_64
 - If you want build the dependencies by yourself the instructions for that can be found [here](https://github.com/evernym/indy-android-dependencies) 
 
 ## How to build.
+- If on Ubuntu make sure you have these packages installed
+    ```
+    apt-get install -y \
+             pkg-config \
+             libssl-dev \
+             libgmp3-dev \
+             curl \
+             build-essential \
+             libsqlite3-dev \
+             cmake \
+             apt-transport-https \
+             ca-certificates \
+             wget \
+             devscripts \
+             libncursesw5-dev \
+             libzmq3-dev \
+             zip \
+             unzip \
+             jq
 - Run `indy-sdk/libindy/build-libindy-android.sh` to build libindy for arm, arm64 and x86
     - This generates the libindy zip file with each architecture in the indy-sdk/libindy
     - You can also set the `LIBINDY_VERSION` environment variable to append version number to generated zip file.
