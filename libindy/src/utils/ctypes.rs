@@ -82,11 +82,12 @@ macro_rules! check_useful_json {
 macro_rules! parse_json {
     ($x:ident, $e:expr, $t:ty) => {
         if $x.is_empty() {
+           set_current_error(&err_msg($e.into(), "Empty string has been passed"));
            return $e
         }
 
         let r = serde_json::from_str::<$t>($x)
-                    .to_indy(::errors::IndyErrorKind::InvalidStructure, "Invalid $t json has been passed");
+                    .to_indy(::errors::IndyErrorKind::InvalidStructure, format!("Invalid {} json has been passed", stringify!($t)));
 
         let $x: $t = match r {
             Ok(ok) => ok,
@@ -111,6 +112,7 @@ macro_rules! check_useful_c_str_empty_accepted {
 }
 
 macro_rules! check_useful_opt_c_str {
+    //TODO This no longer returns None options, only Strings are returned
     ($x:ident, $e:expr) => {
         let $x = match ctypes::c_str_to_string($x) {
             Ok(opt_val) => opt_val.map(String::from),

@@ -1,0 +1,84 @@
+@startuml
+
+package Indy-SDK <<Folder >> {
+
+  package SDK-tests <<Folder>> {
+    class AnonCredsTests {
+    }
+    class WalletTests {
+    }
+    package TestsUtils {
+      class AnonCredsUtils {
+        +init_common_wallet()
+      }
+      class TestWalletUtils {
+        +create_wallet()
+        +open_wallet()
+        +close_wallet()
+        +delete_wallet()
+        +override_wallet_config_creds()
+        +override_wallet_config_creds()
+        +wallet_storage_overrides()
+      }
+      class ModUtils {
+        +setup()
+        +tear_down()
+      }
+    }
+  }
+
+  package SDK-src <<Folder>> {
+    package API <<Folder>> {
+    }
+    package Commands <<Folder>> {
+    }
+    package Services <<Folder>> {
+      class WalletService {
+        +_config()
+        +_credentials()
+        +_cleanup()
+      }
+      class Wallet {
+        +_cleanup()
+        +_wallet()
+      }
+    }
+    package Utils <<Folder>> {
+      class WalletUtils {
+        +override_wallet_config_creds()
+        +override_wallet_config_creds()
+        +wallet_storage_overrides()
+      }
+      class Tests {
+        +cleanup_storage()
+      }
+    }
+  }
+}
+
+AnonCredsTests --> AnonCredsUtils
+AnonCredsTests --> TestWalletUtils
+AnonCredsUtils -down-> Tests
+AnonCredsUtils -right-> TestWalletUtils
+WalletTests -down-> TestWalletUtils
+WalletTests -down-> ModUtils
+ModUtils -down-> Tests
+Wallet -down-> WalletUtils
+WalletService -down-> Tests
+
+note bottom of TestWalletUtils
+"Shim" is currently built into:
+  * create_wallet()
+  * open_wallet()
+  * delete_wallet()
+for WalletTests and AnonCredsTests.
+end note
+
+note bottom of WalletUtils
+"Shim" is currently built into:
+  * _wallet()
+  * _cleanup()
+for Wallet unit tests.
+end note
+
+@enduml

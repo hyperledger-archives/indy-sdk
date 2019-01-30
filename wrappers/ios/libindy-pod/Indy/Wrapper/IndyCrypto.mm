@@ -169,5 +169,45 @@
     [[IndyCallbacks sharedInstance] completeData:completion forHandle:handle ifError:ret];
 }
 
++ (void)packMessage:(NSData *)message
+          receivers:(NSString *)receivers
+             sender:(NSString *)sender
+       walletHandle:(IndyHandle)walletHandle
+         completion:(void (^)(NSError *error, NSData *jwe))completion
+{
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    uint32_t messageLen = (uint32_t) [message length];
+    uint8_t *messageRaw = (uint8_t *) [message bytes];
+
+    indy_error_t ret = indy_pack_message(handle,
+            walletHandle,
+            messageRaw,
+            messageLen,
+            [receivers UTF8String],
+            [sender UTF8String],
+            IndyWrapperCommonDataCallback);
+
+    [[IndyCallbacks sharedInstance] completeData:completion forHandle:handle ifError:ret];
+}
+
++ (void)unpackMessage:(NSData *)jwe
+         walletHandle:(IndyHandle)walletHandle
+           completion:(void (^)(NSError *error, NSData *res))completion
+{
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    uint32_t jweLen = (uint32_t) [jwe length];
+    uint8_t *jweRaw = (uint8_t *) [jwe bytes];
+
+    indy_error_t ret = indy_unpack_message(handle,
+            walletHandle,
+            jweRaw,
+            jweLen,
+            IndyWrapperCommonDataCallback);
+
+    [[IndyCallbacks sharedInstance] completeData:completion forHandle:handle ifError:ret];
+}
 
 @end

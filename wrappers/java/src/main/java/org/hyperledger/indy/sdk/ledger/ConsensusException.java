@@ -14,8 +14,19 @@ public class ConsensusException extends IndyException
 	/**
 	 * Initializes a new ConsensusException.
 	 */
-	public ConsensusException() 
+	public ConsensusException()
+	{
+		super(message, ErrorCode.LedgerNoConsensusError.value());
+	}
+
+	/**
+	 * Initializes a new ConsensusException.
+	 *
+	 * @param sdkMessage The SDK error message.
+	 * @param sdkBacktrace The SDK error backtrace.
+	 */
+	public ConsensusException(String sdkMessage, String sdkBacktrace)
     {
-    	super(message, ErrorCode.LedgerNoConsensusError.value());
+    	super(sdkMessage, ErrorCode.LedgerNoConsensusError.value(), sdkBacktrace);
     }
 }

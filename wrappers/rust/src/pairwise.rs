@@ -1,4 +1,4 @@
-use {ErrorCode, IndyHandle};
+use {ErrorCode, IndyHandle, IndyError};
 
 use futures::Future;
 
@@ -12,7 +12,7 @@ use ffi::{ResponseEmptyCB,
           ResponseStringCB,
           ResponseBoolCB};
 
-pub fn is_pairwise_exists(wallet_handle: IndyHandle, their_did: &str) -> Box<Future<Item=bool, Error=ErrorCode>> {
+pub fn is_pairwise_exists(wallet_handle: IndyHandle, their_did: &str) -> Box<Future<Item=bool, Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_bool();
 
     let err = _is_pairwise_exists(command_handle, wallet_handle, their_did, cb);
@@ -28,7 +28,7 @@ fn _is_pairwise_exists(command_handle: IndyHandle, wallet_handle: IndyHandle, th
     })
 }
 
-pub fn create_pairwise(wallet_handle: IndyHandle, their_did: &str, my_did: &str, metadata: Option<&str>) -> Box<Future<Item=(), Error=ErrorCode>> {
+pub fn create_pairwise(wallet_handle: IndyHandle, their_did: &str, my_did: &str, metadata: Option<&str>) -> Box<Future<Item=(), Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
     let err = _create_pairwise(command_handle, wallet_handle, their_did, my_did, metadata, cb);
@@ -46,7 +46,7 @@ fn _create_pairwise(command_handle: IndyHandle, wallet_handle: IndyHandle, their
     })
 }
 
-pub fn list_pairwise(wallet_handle: IndyHandle) -> Box<Future<Item=String, Error=ErrorCode>> {
+pub fn list_pairwise(wallet_handle: IndyHandle) -> Box<Future<Item=String, Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
     let err = _list_pairwise(command_handle, wallet_handle, cb);
@@ -60,7 +60,7 @@ fn _list_pairwise(command_handle: IndyHandle, wallet_handle: IndyHandle, cb: Opt
     })
 }
 
-pub fn get_pairwise(wallet_handle: IndyHandle, their_did: &str) -> Box<Future<Item=String, Error=ErrorCode>> {
+pub fn get_pairwise(wallet_handle: IndyHandle, their_did: &str) -> Box<Future<Item=String, Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
     let err = _get_pairwise(command_handle, wallet_handle, their_did, cb);
@@ -76,7 +76,7 @@ fn _get_pairwise(command_handle: IndyHandle, wallet_handle: IndyHandle, their_di
     })
 }
 
-pub fn set_pairwise_metadata(wallet_handle: IndyHandle, their_did: &str, metadata: Option<&str>) -> Box<Future<Item=(), Error=ErrorCode>> {
+pub fn set_pairwise_metadata(wallet_handle: IndyHandle, their_did: &str, metadata: Option<&str>) -> Box<Future<Item=(), Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
     let err = _set_pairwise_metadata(command_handle, wallet_handle, their_did, metadata, cb);
