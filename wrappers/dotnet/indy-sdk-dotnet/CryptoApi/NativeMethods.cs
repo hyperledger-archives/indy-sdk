@@ -170,5 +170,15 @@ namespace Hyperledger.Indy.CryptoApi
         /// <param name="msg_data">A pointer to the decrypted message data.</param>
         /// <param name="msg_len">The length of the decrypted message data in bytes.</param>
         internal delegate void AnonDecryptCompletedDelegate(int command_handle, int err, IntPtr msg_data, int msg_len);
+
+        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_pack_message(int command_handle, int wallet_handle, byte[] message, int message_len, string receiver_keys, string sender, PackMessageCompletedDelegate cb);
+
+        internal delegate void PackMessageCompletedDelegate(int command_handle, int err, IntPtr jwe_data, int jwe_len);
+
+        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_unpack_message(int command_handle, int wallet_handle, byte[] jwe_data, int jwe_len, UnpackMessageCompletedDelegate cb);
+
+        internal delegate void UnpackMessageCompletedDelegate(int command_handle, int err, IntPtr res_json_data, int res_json_len);
     }
 }

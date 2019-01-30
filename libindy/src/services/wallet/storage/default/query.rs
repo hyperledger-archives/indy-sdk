@@ -1,13 +1,12 @@
+use errors::prelude::*;
 use rusqlite::types::ToSql;
-
-use errors::wallet::WalletQueryError;
-use services::wallet::language::{Operator,TagName,TargetValue};
+use services::wallet::language::{Operator, TagName, TargetValue};
 
 
 // Translates Wallet Query Language to SQL
 // WQL input is provided as a reference to a top level Operator
 // Result is a tuple of query string and query arguments
-pub fn wql_to_sql<'a>(class: &'a Vec<u8>, op: &'a Operator, _options: Option<&str>) -> Result<(String, Vec<&'a ToSql>), WalletQueryError> {
+pub fn wql_to_sql<'a>(class: &'a Vec<u8>, op: &'a Operator, _options: Option<&str>) -> Result<(String, Vec<&'a ToSql>), IndyError> {
     let mut arguments: Vec<&ToSql> = Vec::new();
     arguments.push(class);
     let clause_string = operator_to_sql(op, &mut arguments)?;
@@ -20,7 +19,7 @@ pub fn wql_to_sql<'a>(class: &'a Vec<u8>, op: &'a Operator, _options: Option<&st
 }
 
 
-pub fn wql_to_sql_count<'a>(class: &'a Vec<u8>, op: &'a Operator) -> Result<(String, Vec<&'a ToSql>), WalletQueryError> {
+pub fn wql_to_sql_count<'a>(class: &'a Vec<u8>, op: &'a Operator) -> Result<(String, Vec<&'a ToSql>), IndyError> {
     let mut arguments: Vec<&ToSql> = Vec::new();
     arguments.push(class);
     let clause_string = operator_to_sql(op, &mut arguments)?;
@@ -33,7 +32,7 @@ pub fn wql_to_sql_count<'a>(class: &'a Vec<u8>, op: &'a Operator) -> Result<(Str
 }
 
 
-fn operator_to_sql<'a>(op: &'a Operator, arguments: &mut Vec<&'a ToSql>) -> Result<String, WalletQueryError> {
+fn operator_to_sql<'a>(op: &'a Operator, arguments: &mut Vec<&'a ToSql>) -> IndyResult<String> {
     match *op {
         Operator::Eq(ref tag_name, ref target_value) => eq_to_sql(tag_name, target_value, arguments),
         Operator::Neq(ref tag_name, ref target_value) => neq_to_sql(tag_name, target_value, arguments),
@@ -50,7 +49,7 @@ fn operator_to_sql<'a>(op: &'a Operator, arguments: &mut Vec<&'a ToSql>) -> Resu
 }
 
 
-fn eq_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec<&'a ToSql>) -> Result<String, WalletQueryError> {
+fn eq_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec<&'a ToSql>) -> IndyResult<String> {
     match (name, value) {
         (&TagName::PlainTagName(ref queried_name), &TargetValue::Unencrypted(ref queried_value)) => {
             arguments.push(queried_name);
@@ -62,12 +61,12 @@ fn eq_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec<
             arguments.push(queried_value);
             Ok("(i.id in (SELECT item_id FROM tags_encrypted WHERE name = ? AND value = ?))".to_string())
         },
-        _ => Err(WalletQueryError::StructureErr("Invalid combination of tag name and value for equality operator".to_string()))
+        _ => Err(err_msg(IndyErrorKind::WalletQueryError, "Invalid combination of tag name and value for equality operator"))
     }
 }
 
 
-fn neq_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec<&'a ToSql>) -> Result<String, WalletQueryError> {
+fn neq_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec<&'a ToSql>) -> IndyResult<String> {
     match (name, value) {
         (&TagName::PlainTagName(ref queried_name), &TargetValue::Unencrypted(ref queried_value)) => {
             arguments.push(queried_name);
@@ -79,72 +78,72 @@ fn neq_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec
             arguments.push(queried_value);
             Ok("(i.id in (SELECT item_id FROM tags_encrypted WHERE name = ? AND value != ?))".to_string())
         },
-        _ => Err(WalletQueryError::StructureErr("Invalid combination of tag name and value for inequality operator".to_string()))
+        _ => Err(err_msg(IndyErrorKind::WalletQueryError, "Invalid combination of tag name and value for inequality operator"))
     }
 }
 
 
-fn gt_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec<&'a ToSql>) -> Result<String, WalletQueryError> {
+fn gt_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec<&'a ToSql>) -> IndyResult<String> {
     match (name, value) {
         (&TagName::PlainTagName(ref queried_name), &TargetValue::Unencrypted(ref queried_value)) => {
             arguments.push(queried_name);
             arguments.push(queried_value);
             Ok("(i.id in (SELECT item_id FROM tags_plaintext WHERE name = ? AND value > ?))".to_string())
         },
-        _ => Err(WalletQueryError::StructureErr("Invalid combination of tag name and value for $gt operator".to_string()))
+        _ => Err(err_msg(IndyErrorKind::WalletQueryError, "Invalid combination of tag name and value for $gt operator"))
     }
 }
 
 
-fn gte_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec<&'a ToSql>) -> Result<String, WalletQueryError> {
+fn gte_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec<&'a ToSql>) -> IndyResult<String> {
     match (name, value) {
         (&TagName::PlainTagName(ref queried_name), &TargetValue::Unencrypted(ref queried_value)) => {
             arguments.push(queried_name);
             arguments.push(queried_value);
             Ok("(i.id in (SELECT item_id FROM tags_plaintext WHERE name = ? AND value >= ?))".to_string())
         },
-        _ => Err(WalletQueryError::StructureErr("Invalid combination of tag name and value for $gte operator".to_string()))
+        _ => Err(err_msg(IndyErrorKind::WalletQueryError, "Invalid combination of tag name and value for $gte operator"))
     }
 }
 
 
-fn lt_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec<&'a ToSql>) -> Result<String, WalletQueryError> {
+fn lt_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec<&'a ToSql>) -> IndyResult<String> {
     match (name, value) {
         (&TagName::PlainTagName(ref queried_name), &TargetValue::Unencrypted(ref queried_value)) => {
             arguments.push(queried_name);
             arguments.push(queried_value);
             Ok("(i.id in (SELECT item_id FROM tags_plaintext WHERE name = ? AND value < ?))".to_string())
         },
-        _ => Err(WalletQueryError::StructureErr("Invalid combination of tag name and value for $lte operator".to_string()))
+        _ => Err(err_msg(IndyErrorKind::WalletQueryError, "Invalid combination of tag name and value for $lt operator"))
     }
 }
 
 
-fn lte_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec<&'a ToSql>) -> Result<String, WalletQueryError> {
+fn lte_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec<&'a ToSql>) -> IndyResult<String> {
     match (name, value) {
         (&TagName::PlainTagName(ref queried_name), &TargetValue::Unencrypted(ref queried_value)) => {
             arguments.push(queried_name);
             arguments.push(queried_value);
             Ok("(i.id in (SELECT item_id FROM tags_plaintext WHERE name = ? AND value <= ?))".to_string())
         },
-        _ => Err(WalletQueryError::StructureErr("Invalid combination of tag name and value for $lte operator".to_string()))
+        _ => Err(err_msg(IndyErrorKind::WalletQueryError, "Invalid combination of tag name and value for $lte operator"))
     }
 }
 
 
-fn like_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec<&'a ToSql>) -> Result<String, WalletQueryError> {
+fn like_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec<&'a ToSql>) -> IndyResult<String> {
     match (name, value) {
         (&TagName::PlainTagName(ref queried_name), &TargetValue::Unencrypted(ref queried_value)) => {
             arguments.push(queried_name);
             arguments.push(queried_value);
             Ok("(i.id in (SELECT item_id FROM tags_plaintext WHERE name = ? AND value LIKE ?))".to_string())
         },
-        _ => Err(WalletQueryError::StructureErr("Invalid combination of tag name and value for $like operator".to_string()))
+        _ => Err(err_msg(IndyErrorKind::WalletQueryError, "Invalid combination of tag name and value for $like operator"))
     }
 }
 
 
-fn in_to_sql<'a>(name: &'a TagName, values: &'a Vec<TargetValue>, arguments: &mut Vec<&'a ToSql>) -> Result<String, WalletQueryError> {
+fn in_to_sql<'a>(name: &'a TagName, values: &'a Vec<TargetValue>, arguments: &mut Vec<&'a ToSql>) -> IndyResult<String> {
     let mut in_string = String::new();
     match name {
         &TagName::PlainTagName(ref queried_name) => {
@@ -159,7 +158,7 @@ fn in_to_sql<'a>(name: &'a TagName, values: &'a Vec<TargetValue>, arguments: &mu
                         in_string.push(',');
                     }
                 } else {
-                    return Err(WalletQueryError::StructureErr("Encrypted tag value in $in for nonencrypted tag name".to_string()))
+                    return Err(err_msg(IndyErrorKind::WalletQueryError, "Encrypted tag value in $in for nonencrypted tag name"))
                 }
             }
 
@@ -178,7 +177,7 @@ fn in_to_sql<'a>(name: &'a TagName, values: &'a Vec<TargetValue>, arguments: &mu
                         in_string.push(',');
                     }
                 } else {
-                    return Err(WalletQueryError::StructureErr("Unencrypted tag value in $in for encrypted tag name".to_string()))
+                    return Err(err_msg(IndyErrorKind::WalletQueryError, "Unencrypted tag value in $in for encrypted tag name"))
                 }
             }
 
@@ -188,23 +187,23 @@ fn in_to_sql<'a>(name: &'a TagName, values: &'a Vec<TargetValue>, arguments: &mu
 }
 
 
-fn and_to_sql<'a>(suboperators: &'a [Operator], arguments: &mut Vec<&'a ToSql>) -> Result<String, WalletQueryError> {
+fn and_to_sql<'a>(suboperators: &'a [Operator], arguments: &mut Vec<&'a ToSql>) -> IndyResult<String> {
     join_operators(suboperators, " AND ", arguments)
 }
 
 
-fn or_to_sql<'a>(suboperators: &'a [Operator], arguments: &mut Vec<&'a ToSql>) -> Result<String, WalletQueryError> {
+fn or_to_sql<'a>(suboperators: &'a [Operator], arguments: &mut Vec<&'a ToSql>) -> IndyResult<String> {
     join_operators(suboperators, " OR ", arguments)
 }
 
 
-fn not_to_sql<'a>(suboperator: &'a Operator, arguments: &mut Vec<&'a ToSql>) -> Result<String, WalletQueryError> {
+fn not_to_sql<'a>(suboperator: &'a Operator, arguments: &mut Vec<&'a ToSql>) -> IndyResult<String> {
     let suboperator_string = operator_to_sql(suboperator, arguments)?;
     Ok("NOT (".to_string() + &suboperator_string + ")")
 }
 
 
-fn join_operators<'a>(operators: &'a [Operator], join_str: &str, arguments: &mut Vec<&'a ToSql>) -> Result<String, WalletQueryError> {
+fn join_operators<'a>(operators: &'a [Operator], join_str: &str, arguments: &mut Vec<&'a ToSql>) -> IndyResult<String> {
     let mut s = String::new();
     if operators.len() > 0 {
         s.push('(');

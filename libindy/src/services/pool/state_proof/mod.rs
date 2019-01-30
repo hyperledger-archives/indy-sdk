@@ -7,10 +7,21 @@ extern crate rust_base58;
 extern crate sha2;
 extern crate sha3;
 
-use api::ErrorCode;
+use std::collections::HashMap;
+use std::ffi::{CStr, CString};
+
 use base64;
+use serde_json;
+use serde_json::Value as SJsonValue;
+
+use api::ErrorCode;
 use domain::ledger::{constants, request::ProtocolVersion};
-use errors::common::CommonError;
+use errors::prelude::*;
+use services::pool::events::REQUESTS_FOR_STATE_PROOFS;
+
+use super::PoolService;
+use super::types::*;
+
 use self::digest::FixedOutput;
 use self::digest::Input;
 use self::hex::ToHex;
@@ -22,13 +33,6 @@ use self::rlp::{
 };
 use self::rust_base58::FromBase58;
 use self::sha3::Digest;
-use serde_json;
-use serde_json::Value as SJsonValue;
-use services::pool::events::REQUESTS_FOR_STATE_PROOFS;
-use std::collections::HashMap;
-use std::ffi::{CStr, CString};
-use super::PoolService;
-use super::types::*;
 
 mod node;
 
@@ -362,15 +366,16 @@ fn _verify_proof_signature(signature: &str,
                            value: &[u8],
                            nodes: &HashMap<String, Option<VerKey>>,
                            f: usize,
-                           gen: &Generator) -> Result<bool, CommonError> {
+                           gen: &Generator) -> IndyResult<bool> {
     trace!("verify_proof_signature: >>> signature: {:?}, participants: {:?}, pool_state_root: {:?}", signature, participants, value);
 
     let mut ver_keys: Vec<&VerKey> = Vec::new();
+
     for (name, verkey) in nodes {
         if participants.contains(&name.as_str()) {
             match verkey {
                 &Some(ref blskey) => ver_keys.push(blskey),
-                _ => return Err(CommonError::InvalidState(format!("Blskey not found for node: {:?}", name)))
+                _ => return Err(err_msg(IndyErrorKind::InvalidState, format!("Blskey not found for node: {:?}", name)))
             };
         }
     }
@@ -464,11 +469,11 @@ fn _parse_reply_for_proof_value(json_msg: &SJsonValue, data: Option<String>, par
 mod tests {
     use super::*;
 
-    extern crate hex;
-    extern crate libc;
-
     use self::hex::FromHex;
     use self::libc::c_char;
+
+    extern crate hex;
+    extern crate libc;
 
     #[test]
     fn state_proof_nodes_parse_and_get_works() {

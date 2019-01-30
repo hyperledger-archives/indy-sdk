@@ -1,6 +1,6 @@
 extern crate indy_crypto;
 
-use errors::common::CommonError;
+use errors::prelude::*;
 
 use domain::anoncreds::credential::AttributeValues;
 use domain::anoncreds::proof_request::{AttributeInfo, PredicateInfo};
@@ -14,7 +14,7 @@ pub fn attr_common_view(attr: &str) -> String {
     attr.replace(" ", "").to_lowercase()
 }
 
-pub fn build_credential_schema(attrs: &HashSet<String>) -> Result<CredentialSchema, CommonError> {
+pub fn build_credential_schema(attrs: &HashSet<String>) -> IndyResult<CredentialSchema> {
     trace!("build_credential_schema >>> attrs: {:?}", attrs);
 
     let mut credential_schema_builder = issuer::Issuer::new_credential_schema_builder()?;
@@ -29,7 +29,7 @@ pub fn build_credential_schema(attrs: &HashSet<String>) -> Result<CredentialSche
     Ok(res)
 }
 
-pub fn build_non_credential_schema() -> Result<NonCredentialSchema, CommonError> {
+pub fn build_non_credential_schema() -> IndyResult<NonCredentialSchema> {
     trace!("build_non_credential_schema");
 
     let mut non_credential_schema_builder = issuer::Issuer::new_non_credential_schema_builder()?;
@@ -40,7 +40,7 @@ pub fn build_non_credential_schema() -> Result<NonCredentialSchema, CommonError>
     Ok(res)
 }
 
-pub fn build_credential_values(credential_values: &HashMap<String, AttributeValues>, master_secret: Option<&MasterSecret>) -> Result<CredentialValues, CommonError> {
+pub fn build_credential_values(credential_values: &HashMap<String, AttributeValues>, master_secret: Option<&MasterSecret>) -> IndyResult<CredentialValues> {
     trace!("build_credential_values >>> credential_values: {:?}", credential_values);
 
     let mut credential_values_builder = issuer::Issuer::new_credential_values_builder()?;
@@ -59,7 +59,7 @@ pub fn build_credential_values(credential_values: &HashMap<String, AttributeValu
 }
 
 pub fn build_sub_proof_request(attrs_for_credential: &Vec<AttributeInfo>,
-                               predicates_for_credential: &Vec<PredicateInfo>) -> Result<SubProofRequest, CommonError> {
+                               predicates_for_credential: &Vec<PredicateInfo>) -> IndyResult<SubProofRequest> {
     trace!("build_sub_proof_request >>> attrs_for_credential: {:?}, predicates_for_credential: {:?}", attrs_for_credential, predicates_for_credential);
 
     let mut sub_proof_request_builder = verifier::Verifier::new_sub_proof_request_builder()?;
@@ -79,11 +79,11 @@ pub fn build_sub_proof_request(attrs_for_credential: &Vec<AttributeInfo>,
     Ok(res)
 }
 
-pub fn parse_cred_rev_id(cred_rev_id: &str) -> Result<u32, CommonError> {
+pub fn parse_cred_rev_id(cred_rev_id: &str) -> IndyResult<u32> {
     trace!("parse_cred_rev_id >>> cred_rev_id: {:?}", cred_rev_id);
 
     let res = cred_rev_id.parse::<u32>()
-        .map_err(|err| CommonError::InvalidStructure(format!("Cannot parse CredentialRevocationId: {}", err)))?;
+        .to_indy(IndyErrorKind::InvalidStructure, "Cannot parse CredentialRevocationId")?;
 
     trace!("parse_cred_rev_id <<< res: {:?}", res);
 

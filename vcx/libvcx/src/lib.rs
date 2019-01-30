@@ -2,6 +2,8 @@
 #![allow(unused_variables)]
 #![allow(dead_code)]
 #![crate_name = "vcx"]
+//this is needed for some large json macro invocations
+#![recursion_limit="128"]
 extern crate serde;
 extern crate rand;
 extern crate reqwest;
@@ -60,8 +62,11 @@ mod tests {
     use rand::Rng;
     use std::thread;
     use std::time::Duration;
-    use ::utils::devsetup::tests::{set_institution, set_consumer};
-    use utils::constants::{DEFAULT_SCHEMA_ATTRS, TEST_TAILS_FILE};
+    use utils::{
+        devsetup::tests::{set_institution, set_consumer},
+        constants::{DEFAULT_SCHEMA_ATTRS, TEST_TAILS_FILE},
+        get_temp_dir_path
+    };
 
     #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
@@ -221,11 +226,11 @@ mod tests {
         let (address1, address2, city, state, zip) = attr_names();
         json!({
                "attrs":{
-                  address1.to_string():{"credential": matching_credentials["attrs"][address1][0], "tails_file": TEST_TAILS_FILE},
-                  address2.to_string():{"credential": matching_credentials["attrs"][address2][0], "tails_file": TEST_TAILS_FILE},
-                  city.to_string():{"credential": matching_credentials["attrs"][city][0], "tails_file": TEST_TAILS_FILE},
-                  state.to_string():{"credential": matching_credentials["attrs"][state][0], "tails_file": TEST_TAILS_FILE},
-                  zip.to_string():{"credential": matching_credentials["attrs"][zip][0], "tails_file": TEST_TAILS_FILE},
+                  address1.to_string():{"credential": matching_credentials["attrs"][address1][0], "tails_file": get_temp_dir_path(Some(TEST_TAILS_FILE)).to_str().unwrap().to_string()},
+                  address2.to_string():{"credential": matching_credentials["attrs"][address2][0], "tails_file": get_temp_dir_path(Some(TEST_TAILS_FILE)).to_str().unwrap().to_string()},
+                  city.to_string():{"credential": matching_credentials["attrs"][city][0], "tails_file": get_temp_dir_path(Some(TEST_TAILS_FILE)).to_str().unwrap().to_string()},
+                  state.to_string():{"credential": matching_credentials["attrs"][state][0], "tails_file": get_temp_dir_path(Some(TEST_TAILS_FILE)).to_str().unwrap().to_string()},
+                  zip.to_string():{"credential": matching_credentials["attrs"][zip][0], "tails_file": get_temp_dir_path(Some(TEST_TAILS_FILE)).to_str().unwrap().to_string()},
                },
                "predicates":{
                }
@@ -291,7 +296,7 @@ mod tests {
         for i in 1..number_of_attributes {
             credentials["attrs"][format!("key{}",i)] = json!({
                 "credential": matching_credentials["attrs"][format!("key{}",i)][0].clone(),
-                "tails_file": ::utils::constants::TEST_TAILS_FILE,
+                "tails_file": get_temp_dir_path(Some(TEST_TAILS_FILE)).to_str().unwrap().to_string(),
             });
         };
         generate_and_send_proof(proof_handle, faber, credentials);

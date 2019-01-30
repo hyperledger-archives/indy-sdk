@@ -39,7 +39,7 @@ RUN pip3 install -U \
 	deb-pkg-tools
 
 RUN cd /tmp && \
-   curl https://download.libsodium.org/libsodium/releases/libsodium-1.0.14.tar.gz | tar -xz && \
+   curl https://download.libsodium.org/libsodium/releases/old/libsodium-1.0.14.tar.gz | tar -xz && \
     cd /tmp/libsodium-1.0.14 && \
     ./configure --disable-shared && \
     make && \
@@ -51,6 +51,13 @@ ENV JAVA_HOME /usr/lib/jvm/java-8-openjdk-amd64
 RUN apt-get update && apt-get install -y maven
 
 RUN apt-get install -y zip
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        ruby \
+        ruby-dev \
+        rubygems \
+    && gem install --no-ri --no-rdoc fpm \
+    && rm -rf /var/lib/apt/lists/*
 
 RUN useradd -ms /bin/bash -u $uid indy
 USER indy

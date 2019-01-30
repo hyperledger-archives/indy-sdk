@@ -67,6 +67,7 @@ pub mod tests {
     use utils::libindy::pool;
     use settings;
     use std;
+    use utils;
     use object_cache::ObjectCache;
     static mut INSTITUTION_CONFIG: u32 = 0;
     static mut CONSUMER_CONFIG: u32 = 0;
@@ -175,7 +176,8 @@ pub mod tests {
         settings::set_config_value(settings::CONFIG_WALLET_KEY_DERIVATION,settings::DEFAULT_WALLET_KEY_DERIVATION);
         settings::set_config_value(settings::CONFIG_WALLET_NAME, settings::DEFAULT_WALLET_NAME);
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
-        settings::set_config_value(settings::CONFIG_GENESIS_PATH, settings::DEFAULT_GENESIS_PATH);
+        settings::set_config_value(settings::CONFIG_GENESIS_PATH,
+                                   utils::get_temp_dir_path(Some(settings::DEFAULT_GENESIS_PATH)).to_str().unwrap_or(""));
 
         pool::tests::open_sandbox_pool();
 
@@ -199,6 +201,7 @@ pub mod tests {
         settings::clear_config();
         unsafe {
             CONFIG_STRING.get(INSTITUTION_CONFIG, |t| {
+                settings::set_config_value(settings::CONFIG_PAYMENT_METHOD, settings::DEFAULT_PAYMENT_METHOD);
                 settings::process_config_string(&t)
             }).unwrap();
         }
@@ -209,6 +212,7 @@ pub mod tests {
         settings::clear_config();
         unsafe {
             CONFIG_STRING.get(CONSUMER_CONFIG, |t| {
+                settings::set_config_value(settings::CONFIG_PAYMENT_METHOD, settings::DEFAULT_PAYMENT_METHOD);
                 settings::process_config_string(&t)
             }).unwrap();
         }

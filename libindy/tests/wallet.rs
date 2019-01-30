@@ -101,7 +101,7 @@ mod high_cases {
             utils::setup();
 
             let res = wallet::create_wallet(UNKNOWN_WALLET_CONFIG, WALLET_CREDENTIALS);
-            assert_eq!(res.unwrap_err(), ErrorCode::WalletUnknownTypeError);
+            assert_code!(ErrorCode::WalletUnknownTypeError, res);
 
             utils::tear_down();
         }
@@ -169,7 +169,7 @@ mod high_cases {
             wallet::create_wallet(WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
             let wallet_handle = wallet::open_wallet(WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
             let res = wallet::delete_wallet(WALLET_CONFIG, WALLET_CREDENTIALS);
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidState);
+            assert_code!(ErrorCode::CommonInvalidState, res);
 
             wallet::close_wallet(wallet_handle).unwrap();
 
@@ -389,8 +389,8 @@ mod medium_cases {
             InmemWallet::cleanup();
 
             wallet::register_wallet_storage(INMEM_TYPE, false).unwrap();
-            let res = wallet::register_wallet_storage(INMEM_TYPE, true);
-            assert_eq!(res.unwrap_err(), ErrorCode::WalletTypeAlreadyRegisteredError);
+            let res = wallet::register_wallet_storage(INMEM_TYPE, true).unwrap_err();
+            assert_eq!(ErrorCode::WalletTypeAlreadyRegisteredError, res);
 
             InmemWallet::cleanup();
             utils::tear_down();
@@ -409,7 +409,7 @@ mod medium_cases {
                                                      None, None, None, None,
                                                      None, None, None, None, None)
             };
-            assert_eq!(res, ErrorCode::CommonInvalidParam3);
+            assert_eq!(ErrorCode::CommonInvalidParam3, res);
 
             InmemWallet::cleanup();
             utils::tear_down();
@@ -425,7 +425,7 @@ mod medium_cases {
 
             wallet::create_wallet(WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
             let res = wallet::create_wallet(WALLET_CONFIG, WALLET_CREDENTIALS);
-            assert_eq!(res.unwrap_err(), ErrorCode::WalletAlreadyExistsError);
+            assert_code!(ErrorCode::WalletAlreadyExistsError, res);
 
             test::cleanup_storage();
         }
@@ -435,7 +435,7 @@ mod medium_cases {
             utils::setup();
 
             let res = wallet::create_wallet(WALLET_CONFIG, r#"{}"#);
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             utils::tear_down();
         }
@@ -445,7 +445,7 @@ mod medium_cases {
             utils::setup();
 
             let res = wallet::create_wallet(r#"{"id": ""}"#, WALLET_CREDENTIALS);
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             utils::tear_down();
         }
@@ -456,7 +456,7 @@ mod medium_cases {
 
             let credentials = json!({"key": "key", "key_derivation_method": "RAW"}).to_string();
             let res = wallet::create_wallet(WALLET_CONFIG, &credentials);
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             test::cleanup_storage();
         }
@@ -470,7 +470,7 @@ mod medium_cases {
             utils::setup();
 
             let res = wallet::delete_wallet(WALLET_CONFIG, WALLET_CREDENTIALS);
-            assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
+            assert_code!(ErrorCode::WalletNotFoundError, res);
 
             utils::tear_down();
         }
@@ -482,7 +482,7 @@ mod medium_cases {
             wallet::create_wallet(WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
             wallet::delete_wallet(WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
             let res = wallet::delete_wallet(WALLET_CONFIG, WALLET_CREDENTIALS);
-            assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
+            assert_code!(ErrorCode::WalletNotFoundError, res);
 
             utils::tear_down();
         }
@@ -493,7 +493,7 @@ mod medium_cases {
 
             wallet::create_wallet(WALLET_CONFIG, r#"{"key":"key"}"#).unwrap();
             let res = wallet::delete_wallet(WALLET_CONFIG, r#"{"key":"other_key"}"#);
-            assert_eq!(res.unwrap_err(), ErrorCode::WalletAccessFailed);
+            assert_code!(ErrorCode::WalletAccessFailed, res);
 
             utils::tear_down();
         }
@@ -507,7 +507,7 @@ mod medium_cases {
             utils::setup();
 
             let res = wallet::open_wallet(WALLET_CONFIG, WALLET_CREDENTIALS);
-            assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
+            assert_code!(ErrorCode::WalletNotFoundError, res);
 
             utils::tear_down();
         }
@@ -520,7 +520,7 @@ mod medium_cases {
 
             let wallet_handle = wallet::open_wallet(WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
             let res = wallet::open_wallet(WALLET_CONFIG, WALLET_CREDENTIALS);
-            assert_eq!(res.unwrap_err(), ErrorCode::WalletAlreadyOpenedError);
+            assert_code!(ErrorCode::WalletAlreadyOpenedError, res);
 
             wallet::close_wallet(wallet_handle).unwrap();
 
@@ -552,7 +552,7 @@ mod medium_cases {
 
             wallet::create_wallet(WALLET_CONFIG, r#"{"key":"key"}"#).unwrap();
             let res = wallet::open_wallet(WALLET_CONFIG, r#"{"key":"other_key"}"#);
-            assert_eq!(ErrorCode::WalletAccessFailed, res.unwrap_err());
+            assert_code!(ErrorCode::WalletAccessFailed, res);
 
             utils::tear_down();
         }
@@ -579,7 +579,7 @@ mod medium_cases {
 
             wallet::create_wallet(WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
             let res = wallet::open_wallet(config, WALLET_CREDENTIALS);
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             utils::tear_down();
         }
@@ -593,7 +593,7 @@ mod medium_cases {
             let wallet_handle = utils::setup_with_wallet();
 
             let res = wallet::close_wallet(wallet_handle + 1);
-            assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
+            assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -604,7 +604,7 @@ mod medium_cases {
 
             wallet::close_wallet(wallet_handle).unwrap();
             let res = wallet::close_wallet(wallet_handle);
-            assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
+            assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             utils::tear_down();
         }
@@ -626,7 +626,7 @@ mod medium_cases {
                 .create(path).unwrap();
 
             let res = wallet::export_wallet(wallet_handle, &config_json);
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonIOError);
+            assert_code!(ErrorCode::CommonIOError, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -636,7 +636,7 @@ mod medium_cases {
             let wallet_handle = utils::setup_with_wallet();
 
             let res = wallet::export_wallet(wallet_handle, "{}");
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -649,7 +649,7 @@ mod medium_cases {
             let config_json = wallet::prepare_export_wallet_config(&path);
 
             let res = wallet::export_wallet(wallet_handle + 1, &config_json);
-            assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
+            assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -667,10 +667,10 @@ mod medium_cases {
 
             let wallet_config = r#"{"id":"indy_import_wallet_returns_error_if_path_doesnt_exist"}"#;
             let res = wallet::import_wallet(WALLET_CONFIG, WALLET_CREDENTIALS, &config_json);
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonIOError);
+            assert_code!(ErrorCode::CommonIOError, res);
 
             let res = wallet::open_wallet(wallet_config, WALLET_CREDENTIALS);
-            assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
+            assert_code!(ErrorCode::WalletNotFoundError, res);
 
             utils::tear_down();
         }
@@ -680,7 +680,7 @@ mod medium_cases {
             utils::setup();
 
             let res = wallet::import_wallet(WALLET_CONFIG, WALLET_CREDENTIALS, "{}");
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             utils::tear_down();
         }
@@ -708,7 +708,7 @@ mod medium_cases {
             }).to_string();
 
             let res = wallet::import_wallet(WALLET_CONFIG, WALLET_CREDENTIALS, &config_json);
-            assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             utils::tear_down();
         }
@@ -728,7 +728,7 @@ mod medium_cases {
             wallet::export_wallet(wallet_handle, &config_json).unwrap();
 
             let res = wallet::import_wallet(WALLET_CONFIG, WALLET_CREDENTIALS, &config_json);
-            assert_eq!(ErrorCode::WalletAlreadyExistsError, res.unwrap_err());
+            assert_code!(ErrorCode::WalletAlreadyExistsError, res);
 
             wallet::close_wallet(wallet_handle).unwrap();
             utils::tear_down();

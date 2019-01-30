@@ -14,8 +14,19 @@ public class RevocationRegistryFullException extends IndyException
 	/**
 	 * Initializes a new RevocationRegistryFullException.
 	 */
-	public RevocationRegistryFullException() 
+	public RevocationRegistryFullException()
+	{
+		super(message, ErrorCode.AnoncredsRevocationRegistryFullError.value());
+	}
+
+	/**
+	 * Initializes a new RevocationRegistryFullException.
+	 *
+	 * @param sdkMessage The SDK error message.
+	 * @param sdkBacktrace The SDK error backtrace.
+	 */
+	public RevocationRegistryFullException(String sdkMessage, String sdkBacktrace)
     {
-    	super(message, ErrorCode.AnoncredsRevocationRegistryFullError.value());
+    	super(sdkMessage, ErrorCode.AnoncredsRevocationRegistryFullError.value(), sdkBacktrace);
     }
 }
