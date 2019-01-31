@@ -979,6 +979,90 @@ for specific DID.
 
 Errors: `Common*`, `Wallet*`, `Crypto*`
 
+#### packMessage \( wh, message, receiverKeys, senderVk \) -&gt; jwe
+
+Packs a message by encrypting the message and serializes it in a JWE-like format (Experimental)
+
+Note to use DID keys with this function you can call keyForDid to get key id (verkey) for specific DID.
+
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
+* `message`: Buffer - message that to be packed
+* `receiverKeys`: Array - an array of strings which contains receiver's keys the message is being encrypted for.
+    Example: \['receiver edge_agent_1 verkey', 'receiver edge_agent_2 verkey'\]
+* `senderVk`: String - the sender's verkey as a string When null pointer is used in this parameter, anoncrypt is used
+* __->__ `jwe`: Buffer - a JWE 
+```
+using authcrypt alg:
+{
+    "protected": "b64URLencoded({
+       "enc": "xsalsa20poly1305",
+       "typ": "JWM/1.0",
+       "alg": "Authcrypt",
+       "recipients": [
+           {
+               "encrypted_key": base64URLencode(libsodium.crypto_box(my_key, their_vk, cek, cek_iv))
+               "header": {
+                    "kid": "base58encode(recipient_verkey)",
+                    "sender" : base64URLencode(libsodium.crypto_box_seal(their_vk, base58encode(sender_vk)),
+                    "iv" : base64URLencode(cek_iv)
+               }
+           },
+       ],
+    })",
+    "iv": <b64URLencode(iv)>,
+    "ciphertext": b64URLencode(encrypt_detached({'@type'...}, protected_value_encoded, iv, cek),
+    "tag": <b64URLencode(tag)>
+}
+
+Alternative example in using anoncrypt alg is defined below:
+{
+    "protected": "b64URLencoded({
+       "enc": "xsalsa20poly1305",
+       "typ": "JWM/1.0",
+       "alg": "Anoncrypt",
+       "recipients": [
+           {
+               "encrypted_key": base64URLencode(libsodium.crypto_box_seal(their_vk, cek)),
+               "header": {
+                   "kid": base58encode(recipient_verkey),
+               }
+           },
+       ],
+    })",
+    "iv": b64URLencode(iv),
+    "ciphertext": b64URLencode(encrypt_detached({'@type'...}, protected_value_encoded, iv, cek),
+    "tag": b64URLencode(tag)
+}
+````
+
+Errors: `Common*`, `Wallet*`, `Ledger*`, `Crypto*`
+
+#### unpackMessage \( wh, jwe \) -&gt; res
+
+Unpacks a JWE-like formatted message outputted by packMessage (Experimental)
+
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
+* `jwe`: Buffer - JWE to be unpacked
+* __->__ `res`: Buffer - a result message
+```
+if authcrypt was used to pack the message returns this json structure:
+{
+    message: <decrypted message>,
+    sender_verkey: <sender_verkey>,
+    recipient_verkey: <recipient_verkey>
+}
+
+OR
+
+if anoncrypt was used to pack the message returns this json structure:
+{
+    message: <decrypted message>,
+    recipient_verkey: <recipient_verkey>
+}
+````
+
+Errors: `Common*`, `Wallet*`, `Ledger*`, `Crypto*`
+
 ### did
 
 #### createAndStoreMyDid \( wh, did \) -&gt; \[ did, verkey \]
@@ -1261,6 +1345,7 @@ null \(common USER\)
 TRUSTEE
 STEWARD
 TRUST\_ANCHOR
+NETWORK\_MONITOR
 empty string to reset role
 * __->__ `request`: Json
 

@@ -108,6 +108,7 @@
                                  TRUSTEE
                                  STEWARD
                                  TRUST_ANCHOR
+                                 NETWORK_MONITOR
                                  empty string to reset role
  @param completion Callback that takes command result as parameter. Returns request result as json.
  */

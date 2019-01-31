@@ -5,7 +5,7 @@
     <AssemblyName>Hyperledger.Indy.Sdk</AssemblyName>
     <RootNamespace>Hyperledger.Indy</RootNamespace>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>1.7.0</Version>
+    <Version>1.8.0</Version>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <Authors>Symon Rottem, Tomislav Markovski</Authors>
     <Company>Hyperledger Indy</Company>
@@ -19,8 +19,8 @@ Please note that to function the C-Callable Hyperledger Indy SDK and its depende
     <PackageTags>hyperledger indy sdk</PackageTags>
     <PackageLicenseUrl>https://github.com/hyperledger/indy-sdk/blob/master/LICENSE</PackageLicenseUrl>
     <PackageIconUrl></PackageIconUrl>
-    <AssemblyVersion>1.7.0</AssemblyVersion>
-    <FileVersion>1.7.0</FileVersion>
+    <AssemblyVersion>1.8.0</AssemblyVersion>
+    <FileVersion>1.8.0</FileVersion>
   </PropertyGroup>
 
   <PropertyGroup>

@@ -101,7 +101,7 @@
   @param walletHandle  The wallet.
   @param myKey    id (verkey) of my key. The key must be created by calling createKey or createAndStoreMyDid
   @param theirKey id (verkey) of their key
-  @param message a message to be signed
+  @param message a message to be decrypted
   Returns encrypted message as an array of bytes.
  */
 + (void)authCrypt:(NSData *)message
@@ -131,9 +131,9 @@
   Returns sender verkey and decrypted message.
  */
 + (void)authDecrypt:(NSData *)encryptedMessage
-        myKey:(NSString *)myKey
-        walletHandle:(IndyHandle)walletHandle
-        completion:(void (^)(NSError *error, NSString *theirKey, NSData *decryptedMessage))completion;
+              myKey:(NSString *)myKey
+       walletHandle:(IndyHandle)walletHandle
+         completion:(void (^)(NSError *error, NSString *theirKey, NSData *decryptedMessage))completion;
 
 /**
   Encrypts a message by anonymous-encryption scheme.
@@ -146,12 +146,12 @@
   for specific DID.
 
   @param theirKey verkey of message recipient
-  @param message a message to be signed
+  @param message a message to be encrypted
   Returns encrypted message
  */
 + (void)anonCrypt:(NSData *)message
-             theirKey:(NSString *)theirKey
-           completion:(void (^)(NSError *error, NSData *encryptedMsg))completion;
+         theirKey:(NSString *)theirKey
+       completion:(void (^)(NSError *error, NSData *encryptedMsg))completion;
 
 /**
   Decrypts a message by anonymous-encryption scheme.
@@ -169,8 +169,95 @@
   Returns decrypted message as an array of bytes.
  */
 + (void)anonDecrypt:(NSData *)encryptedMessage
-                    myKey:(NSString *)myKey
-             walletHandle:(IndyHandle)walletHandle
-               completion:(void (^)(NSError *error, NSData *decryptedMessage))completion;
+              myKey:(NSString *)myKey
+       walletHandle:(IndyHandle)walletHandle
+         completion:(void (^)(NSError *error, NSData *decryptedMessage))completion;
+
+/**
+  Packs a message by encrypting the message and serializes it in a JWE-like format (Experimental)
+ 
+  Note to use DID keys with this function you can call IndyDid.keyForDid to get key id (verkey)
+  for specific DID.
+
+  @param walletHandle  The wallet.
+  @param message a message to be packed
+  @param receivers   a string in the format of a json list which will contain the list of receiver's keys the message is being encrypted for.
+            Example:  "[<receiver edge_agent_1 verkey>, <receiver edge_agent_2 verkey>]"
+  @param sender      the sender's verkey as a string When null pointer is used in this parameter, anoncrypt is used
+  
+  Returns a JWE using authcrypt alg is defined below:
+  {
+      "protected": "b64URLencoded({
+         "enc": "xsalsa20poly1305",
+         "typ": "JWM/1.0",
+         "alg": "Authcrypt",
+         "recipients": [
+             {
+                 "encrypted_key": base64URLencode(libsodium.crypto_box(my_key, their_vk, cek, cek_iv))
+                 "header": {
+                      "kid": "base58encode(recipient_verkey)",
+                      "sender" : base64URLencode(libsodium.crypto_box_seal(their_vk, base58encode(sender_vk)),
+                      "iv" : base64URLencode(cek_iv)
+                 }
+             },
+         ],
+      })",
+      "iv": <b64URLencode(iv)>,
+      "ciphertext": b64URLencode(encrypt_detached({'@type'...}, protected_value_encoded, iv, cek),
+      "tag": <b64URLencode(tag)>
+  }
+ 
+  Alternative example in using anoncrypt alg is defined below:
+  {
+      "protected": "b64URLencoded({
+         "enc": "xsalsa20poly1305",
+         "typ": "JWM/1.0",
+         "alg": "Anoncrypt",
+         "recipients": [
+             {
+                 "encrypted_key": base64URLencode(libsodium.crypto_box_seal(their_vk, cek)),
+                 "header": {
+                     "kid": base58encode(recipient_verkey),
+                 }
+             },
+         ],
+      })",
+      "iv": b64URLencode(iv),
+      "ciphertext": b64URLencode(encrypt_detached({'@type'...}, protected_value_encoded, iv, cek),
+      "tag": b64URLencode(tag)
+  }
+ */
++ (void)packMessage:(NSData *)message
+          receivers:(NSString *)receivers
+             sender:(NSString *)sender
+       walletHandle:(IndyHandle)walletHandle
+         completion:(void (^)(NSError *error, NSData *jwe))completion;
+
+
+/**
+  Unpacks a JWE-like formatted message outputted by packMessage (Experimental)
+
+  @param walletHandle  The wallet.
+  @param jwe a JWE to be unpacked
+  
+  Returns 
+  if authcrypt was used to pack the message returns this json structure:
+  {
+      message: <decrypted message>,
+      sender_verkey: <sender_verkey>,
+      recipient_verkey: <recipient_verkey>
+  }
+ 
+  OR
+ 
+  if anoncrypt was used to pack the message returns this json structure:
+  {
+      message: <decrypted message>,
+      recipient_verkey: <recipient_verkey>
+  }
+ */
++ (void)unpackMessage:(NSData *)jwe
+       walletHandle:(IndyHandle)walletHandle
+         completion:(void (^)(NSError *error, NSData *res))completion;
 
 @end
