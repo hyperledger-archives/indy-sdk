@@ -20,17 +20,9 @@ from vcx.api.utils import vcx_agent_provision
 from vcx.api.vcx_init import vcx_init_with_config
 from vcx.state import State, ProofState
 
-# logging.basicConfig(level=logging.DEBUG) uncomment to get logs
+from demo_utils import *
 
-def file_ext():
-    if platform.system() == 'Linux':
-        return '.so'
-    elif platform.system() == 'Darwin':
-        return '.dylib'
-    elif platform.system() == 'Windows':
-        return '.dll'
-    else:
-        return '.so'
+# logging.basicConfig(level=logging.DEBUG) uncomment to get logs
 
 
 # 'agency_url': URL of the agency
@@ -52,42 +44,19 @@ provisionConfig = {
 
 if len(sys.argv) > 1 and sys.argv[1] == '--postgres':
     # load postgres dll and configure postgres wallet
-    print("Initializing postgres wallet")
-    stg_lib = cdll.LoadLibrary("libindystrgpostgres" + file_ext())
-    result = stg_lib.postgresstorage_init()
-    if result != 0:
-        print("Error unable to load postgres wallet storage", result)
-        sys.exit(0)
-
-    provisionConfig['wallet_type'] = 'postgres_storage'
-    provisionConfig['storage_config'] = '{"url":"localhost:5432"}'
-    provisionConfig['storage_credentials'] = '{"account":"postgres","password":"mysecretpassword","admin_account":"postgres","admin_password":"mysecretpassword"}'
-
-    print("Success, loaded postgres wallet storage")
+    load_postgres_plugin(provisionConfig)
 
 
 async def main():
     if len(sys.argv) > 1 and sys.argv[1] == '--postgres':
         # create wallet in advance
-        print("Provision postgres wallet in advance")
-        wallet_config = {
-            'id': provisionConfig['wallet_name'],
-            'storage_type': provisionConfig['wallet_type'],
-            'storage_config': json.loads(provisionConfig['storage_config']),
-        }
-        wallet_creds = {
-            'key': provisionConfig['wallet_key'],
-            'storage_credentials': json.loads(provisionConfig['storage_credentials']),
-        }
-        try:
-            await wallet.create_wallet(json.dumps(wallet_config), json.dumps(wallet_creds))
-        except IndyError as ex:
-            if ex.error_code == ErrorCode.PoolLedgerConfigAlreadyExistsError:
-                pass
-        print("Postgres wallet provisioned")
+        await create_postgres_wallet(provisionConfig)
 
     payment_plugin = cdll.LoadLibrary("libnullpay" + file_ext())
     payment_plugin.nullpay_init()
+
+    handled_offers = []
+    handled_requests = []
 
     print("#1 Provision an agent and wallet, get back configuration details")
     config = await vcx_agent_provision(json.dumps(provisionConfig))
@@ -100,17 +69,13 @@ async def main():
     print("#2 Initialize libvcx with new configuration")
     await vcx_init_with_config(json.dumps(config))
 
-    print("#3 Create a new schema on the ledger")
-    version = format("%d.%d.%d" % (random.randint(1, 101), random.randint(1, 101), random.randint(1, 101)))
-    schema = await Schema.create('schema_uuid', 'degree schema', version, ['name', 'date', 'degree'], 0)
-    schema_id = await schema.get_schema_id()
-
-    print("#4 Create a new credential definition on the ledger")
-    cred_def = await CredentialDef.create('credef_uuid', 'degree', schema_id, 0)
-    cred_def_handle = cred_def.handle
-    cred_def_id = await cred_def.get_cred_def_id()
-    cred_def_json = await cred_def.serialize()
-    print(" >>> cred_def_handle", cred_def_handle)
+    print("#3 Create a new schema and cred def on the ledger")
+    schema_uuid = 'schema_uuid'
+    schema_name = 'degree schema'
+    schema_attrs = ['name', 'date', 'degree']
+    creddef_uuid = 'credef_uuid'
+    creddef_name = 'degree'
+    cred_def_json = await create_schema_and_cred_def(schema_uuid, schema_name, schema_attrs, creddef_uuid, creddef_name)
 
     print("#5 Create a connection to alice and print out the invite details")
     connection_to_alice = await Connection.create('alice')
@@ -143,16 +108,36 @@ async def main():
     connection_to_alice.release()
     connection_to_alice = None
 
-    option = input('(1) Issue Credential, (2) Send Proof Request, (X) Exit? [1/2/X] ')
+    option = input('(1) Issue Credential, (2) Send Proof Request, (3) Poll for Messages (X) Exit? [1/2/3/X] ')
     while option != 'X' and option != 'x':
         print("Deserialize connection")
         my_connection = await Connection.deserialize(connection_data)
         sleep(2)
 
         if option == '1':
-            await send_credential_request(my_connection, cred_def_json)
+            schema_attrs = {
+                'name': 'alice',
+                'date': '05-2018',
+                'degree': 'maths',
+            }
+            cred_tag = 'alice_degree'
+            cred_name = 'cred'
+
+            await send_credential_request(my_connection, cred_def_json, schema_attrs, cred_tag, cred_name)
+
         elif option == '2':
-            await send_proof_request(my_connection, config['institution_did'])
+            proof_attrs = [
+                {'name': 'name', 'restrictions': [{'issuer_did': config['institution_did']}]},
+                {'name': 'date', 'restrictions': [{'issuer_did': config['institution_did']}]},
+                {'name': 'degree', 'restrictions': [{'issuer_did': config['institution_did']}]}
+            ]
+            proof_uuid = 'proof_uuid'
+            proof_name = 'proof_from_alice'
+
+            await send_proof_request(my_connection, config['institution_did'], proof_attrs, proof_uuid, proof_name)
+
+        elif option == '3':
+            await handle_messages(my_connection, handled_offers, handled_requests)
 
         sleep(2)
         print("Serialize connection")
@@ -164,97 +149,6 @@ async def main():
 
     print("Done, pause before exiting program")
     sleep(2)
-
-
-async def send_credential_request(my_connection, cred_def_json):
-    schema_attrs = {
-        'name': 'alice',
-        'date': '05-2018',
-        'degree': 'maths',
-    }
-
-    print("De-serialize cred def")
-    cred_def = await CredentialDef.deserialize(cred_def_json)
-    cred_def_handle = cred_def.handle
-    print(" >>> cred_def_handle", cred_def_handle)
-
-    print("#12 Create an IssuerCredential object using the schema and credential definition")
-    credential = await IssuerCredential.create('alice_degree', schema_attrs, cred_def_handle, 'cred', '0')
-
-    print("#13 Issue credential offer to alice")
-    await credential.send_offer(my_connection)
-
-    # serialize/deserialize credential - waiting for Alice to rspond with Credential Request
-    credential_data = await credential.serialize()
-
-    while True:
-        print("#14 Poll agency and wait for alice to send a credential request")
-        my_credential = await IssuerCredential.deserialize(credential_data)
-        await my_credential.update_state()
-        credential_state = await my_credential.get_state()
-        if credential_state == State.RequestReceived:
-            break
-        else:
-            credential_data = await my_credential.serialize()
-            sleep(2)
-
-    print("#17 Issue credential to alice")
-    await my_credential.send_credential(my_connection)
-
-    # serialize/deserialize credential - waiting for Alice to accept credential
-    credential_data = await my_credential.serialize()
-
-    while True:
-        print("#18 Wait for alice to accept credential")
-        my_credential2 = await IssuerCredential.deserialize(credential_data)
-        await my_credential2.update_state()
-        credential_state = await my_credential2.get_state()
-        if credential_state == State.Accepted:
-            break
-        else:
-            credential_data = await my_credential2.serialize()
-            sleep(2)
-
-    print("Done")
-
-
-async def send_proof_request(my_connection, institution_did):
-    proof_attrs = [
-        {'name': 'name', 'restrictions': [{'issuer_did': institution_did}]},
-        {'name': 'date', 'restrictions': [{'issuer_did': institution_did}]},
-        {'name': 'degree', 'restrictions': [{'issuer_did': institution_did}]}
-    ]
-
-    print("#19 Create a Proof object")
-    proof = await Proof.create('proof_uuid', 'proof_from_alice', proof_attrs, {})
-
-    print("#20 Request proof of degree from alice")
-    await proof.request_proof(my_connection)
-
-    # serialize/deserialize proof
-    proof_data = await proof.serialize()
-
-    while True:
-        print("#21 Poll agency and wait for alice to provide proof")
-        my_proof = await Proof.deserialize(proof_data)
-        await my_proof.update_state()
-        proof_state = await my_proof.get_state()
-        if proof_state == State.Accepted:
-            break
-        else:
-            proof_data = await my_proof.serialize()
-            sleep(2)
-
-    print("#27 Process the proof provided by alice")
-    await my_proof.get_proof(my_connection)
-
-    print("#28 Check if proof is valid")
-    if my_proof.proof_state == ProofState.Verified:
-        print("proof is verified!!")
-    else:
-        print("could not verify proof :(")
-
-    print("Done")
 
 
 if __name__ == '__main__':
