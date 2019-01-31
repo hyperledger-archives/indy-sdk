@@ -38,7 +38,7 @@ def runValdiationRust(dir) {
         if (dir == 'vcx/libvcx') {
             testEnv = dockerBuild("static-validation-libvcx", "vcx/ci/ubuntu.dockerfile vcx/ci")
         } else {
-            testEnv = dockerBuild("static-validation-libvcx", "libindy/ci/ubuntu.dockerfile libindy/ci")
+            testEnv = dockerBuild("static-validation-libindy", "libindy/ci/ubuntu.dockerfile libindy/ci")
         }
         testEnv.inside {
             sh "cargo clippy --manifest-path ${dir}/Cargo.toml -- -W clippy::style -W clippy::correctness -W clippy::complexity -W clippy::perf"
