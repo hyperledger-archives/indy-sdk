@@ -46,13 +46,15 @@ if len(sys.argv) > 1 and sys.argv[1] == '--postgres':
     # load postgres dll and configure postgres wallet
     load_postgres_plugin(provisionConfig)
 
+    print("Success, loaded postgres wallet storage")
+
 
 async def main():
     if len(sys.argv) > 1 and sys.argv[1] == '--postgres':
         # create wallet in advance
         await create_postgres_wallet(provisionConfig)
 
-    payment_plugin = cdll.LoadLibrary("libnullpay" + file_ext())
+    payment_plugin = cdll.LoadLibrary("/usr/local/lib/libnullpay" + file_ext())
     payment_plugin.nullpay_init()
 
     handled_offers = []
@@ -145,7 +147,7 @@ async def main():
         my_connection.release()
         my_connection = None
 
-        option = input('(1) Issue Credential, (2) Send Proof Request, (X) Exit? [1/2/X] ')
+        option = input('(1) Issue Credential, (2) Send Proof Request, (3) Poll for Messages (X) Exit? [1/2/3/X] ')
 
     print("Done, pause before exiting program")
     sleep(2)
