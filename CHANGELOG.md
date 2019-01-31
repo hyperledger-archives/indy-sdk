@@ -16,6 +16,8 @@
 * Added `NETWORK_MONITOR` role to NYM transaction builder.
 * Bugfixes
 
+NOTE: This version of libindy will work slower with older versions of node due to freshness changes.
+
 ## 1.7.0 - 2018-12-21
 * Added VCX - a library built over libindy for **V**erifiable **C**redentials e**X**change. API is EXPERIMENTAL.
     * At the current moment mobile builds are not available - they should be added in future releases.
