@@ -108,7 +108,7 @@ def runValdiationRust(dir) {
     node('ubuntu') {
         checkout scm
         if (dir == 'vcx/libvcx') {
-            testEnv = dockerBuild("static-validation-libvcx", "vcx/libvcx/ci/ubuntu.dockerfile vcx/libvcx/ci")
+            testEnv = dockerBuild("static-validation-libvcx", "vcx/ci/ubuntu.dockerfile vcx/ci")
         } else {
             testEnv = dockerBuild("static-validation-libindy", "libindy/ci/ubuntu.dockerfile libindy/ci")
         }
