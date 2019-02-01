@@ -14,7 +14,7 @@ us on [Hyperledger's Rocket.Chat](https://chat.hyperledger.org/) at #indy-sdk to
 If you have just started learning about self-sovereign identity, here are some resources to increase your understanding:
 
 * This extended tutorial introduces Indy, explains how the whole ecosystem works, and how the
-functions in the SDK can be used to construct rich clients: [Indy-SDK Getting-Started Guide](doc/getting-started/getting-started.md)
+functions in the SDK can be used to construct rich clients: [Indy-SDK Getting-Started Guide](docs/getting-started/getting-started.md)
 
 * Hyperledger Indy Working Group calls happen every Thursday at 8amPT, 9amMT, 11amET, 4pmBST. Add to your calendar and join from any device: https://zoom.us/j/232861185 
   
@@ -90,14 +90,14 @@ We plan to migrate to this protocol and implementation soon.
 ## How-To Tutorials
 
 Short, simple tutorials that demonstrate how to accomplish common tasks
-are also available. See the [doc/how-tos](doc/how-tos) folder.
+are also available. See the [docs/how-tos](docs/how-tos) folder.
 
-1. [Write a DID and Query Its Verkey](doc/how-tos/write-did-and-query-verkey/README.md)
-2. [Rotate a Key](doc/how-tos/rotate-key/README.md)
-3. [Save a Schema and Cred Def](doc/how-tos/save-schema-and-cred-def/README.md)
-4. [Issue a Credential](doc/how-tos/issue-credential/README.md)
-5. [Negotiate a Proof](doc/how-tos/negotiate-proof/README.md)
-6. [Send a Secure Message](doc/how-tos/send-secure-msg/README.md)
+1. [Write a DID and Query Its Verkey](docs/how-tos/write-did-and-query-verkey/README.md)
+2. [Rotate a Key](docs/how-tos/rotate-key/README.md)
+3. [Save a Schema and Cred Def](docs/how-tos/save-schema-and-cred-def/README.md)
+4. [Issue a Credential](docs/how-tos/issue-credential/README.md)
+5. [Negotiate a Proof](docs/how-tos/negotiate-proof/README.md)
+6. [Send a Secure Message](docs/how-tos/send-secure-msg/README.md)
 
 ## Installing the SDK
 ### Release channels
@@ -107,7 +107,7 @@ The Indy SDK release process defines the following release channels:
 * `rc` - release candidates.
 * `stable` - stable releases.
 
-Please refer to our [release workflow](doc/release-workflow.md) for more details.
+Please refer to our [release workflow](docs/release-workflow.md) for more details.
 
 ### Ubuntu based distributions (Ubuntu 16.04)
 It is recommended to install the SDK packages with APT:
@@ -179,7 +179,7 @@ that may be need for your applications.
     
  * `libindy.a` - This is a static library, which is compiled with NDK.
  
- [How to use instructions.](https://github.com/hyperledger/indy-sdk/blob/master/doc/android-build.md#usage)  
+ [How to use instructions.](https://github.com/hyperledger/indy-sdk/blob/master/docs/android-build.md#usage)  
 
 {release channel} must be replaced with rc or stable to define corresponded release channel.
 See section "Release channels" for more details.
@@ -194,7 +194,7 @@ See section "Release channels" for more details.
  
 ### MacOS
 
-Pre-built libraries are not provided for MacOS. Please look [here](doc/mac-build.md)
+Pre-built libraries are not provided for MacOS. Please look [here](docs/mac-build.md)
 for details on building from source for MacOS.
 
  **Note:** After building `libindy`, add the path containing the library the `LD_LIBRARY_PATH` and
@@ -206,7 +206,7 @@ linker will search for the library in `DYLD_LIBRARY_PATH` (not `LD_LIBRARY_PATH`
 so we recommend you set both variables to be safe.
 
 ### RHEL-based distributions (Amazon Linux 2017.03)
-Pre-built libraries are not provided for RHEL-based distributions. Please look [here](doc/rhel-build.md)
+Pre-built libraries are not provided for RHEL-based distributions. Please look [here](docs/rhel-build.md)
 for details on building from source for RHEL-based distributions.
 
 After successfully compiling `libindy`, you will need to add the path containing `libindy.so` to the
@@ -215,11 +215,11 @@ After successfully compiling `libindy`, you will need to add the path containing
 
 ## How to build Indy SDK from source
 
-* [Ubuntu based distributions (Ubuntu 16.04)](doc/ubuntu-build.md)
-* [RHEL based distributions (Amazon Linux 2017.03)](doc/rhel-build.md)
-* [Windows](doc/windows-build.md)
-* [MacOS](doc/mac-build.md)
-* [Android](doc/android-build.md)
+* [Ubuntu based distributions (Ubuntu 16.04)](docs/ubuntu-build.md)
+* [RHEL based distributions (Amazon Linux 2017.03)](docs/rhel-build.md)
+* [Windows](docs/windows-build.md)
+* [MacOS](docs/mac-build.md)
+* [Android](docs/android-build.md)
 
 **Note:**
 By default `cargo build` produce debug artifacts with a large amount of run-time checks.
@@ -317,16 +317,16 @@ details.
 ## How to migrate
 The documents that provide necessary information for Libindy migration. This document is written for developers using Libindy 1.3.0 to provide necessary information and
 to simplify their transition to API of Libindy 1.4.0.
-* [v1.3.0 → v1.4.0](doc/migration-guide-1.3.0-1.4.0.md)
-* [v1.4.0 → v1.5.0](doc/migration-guide-1.4.0-1.5.0.md)
-* [v1.5.0 → v1.6.x](doc/migration-guide-1.5.0-1.6.0.md)
+* [v1.3.0 → v1.4.0](docs/migration-guide-1.3.0-1.4.0.md)
+* [v1.4.0 → v1.5.0](docs/migration-guide-1.4.0-1.5.0.md)
+* [v1.5.0 → v1.6.x](docs/migration-guide-1.5.0-1.6.0.md)
 
 ## How to Contribute
 * We'd love your help; see these [instructions on how to contribute](http://bit.ly/2ugd0bq).
 * You may also want to read this info about [maintainers](MAINTAINERS.md) and our process.
 * We use developer certificate of origin (DCO) in all hyperledger repositories,
   so to get your pull requests accepted, you must certify your commits by signing off on each commit.
-  More information can be found in [Signing Commits](doc/signing-commits.md) article.
+  More information can be found in [Signing Commits](docs/signing-commits.md) article.
 
 
 #### Notes
