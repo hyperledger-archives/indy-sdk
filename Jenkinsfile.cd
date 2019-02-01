@@ -2,6 +2,9 @@
 
 @Library('SovrinHelpers') _
 
+testVersion = "0.0.1"
+testSuffix = "-dev-sovrin-$env.BUILD_NUMBER"
+
 properties([
         [$class: 'BuildDiscarderProperty', strategy: [
                 $class               : 'LogRotator',
@@ -161,6 +164,7 @@ def closePool(env_name, network_name, poolInst) {
 
 
 void getSrcVersion(folder) {
+    return testVersion
     commit = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
     def version = sh(returnStdout: true, script: "wget -q https://raw.githubusercontent.com/hyperledger/indy-sdk/$commit/$folder/Cargo.toml -O - | grep -E '^version =' | head -n1 | cut -f2 -d= | cut -f2 -d '\"'").trim()
     return version
@@ -864,14 +868,16 @@ def rustWrapperPublishing(testEnv, isRelease) {
     echo 'Publish Indy to Cargo'
 
     dir('wrappers/rust') {
-        sh "sed -i -- 's/indy-sys = { path =\"indy-sys\", version = \"=$ver\" }/indy-sys = { path =\"indy-sys\", version = \"=$ver$suffix\" }/g' Cargo.toml"
+        //sh "sed -i -- 's/indy-sys = { path =\"indy-sys\", version = \"=$ver\" }/indy-sys = { path =\"indy-sys\", version = \"=$ver$suffix\" }/g' Cargo.toml"
+        sh "sed -i -E -- 's/indy-sys = \\{ path =\"indy-sys\", version = \"=([0-9,.]+)\" \\}/indy-sys = \\{ path =\"indy-sys\", version = \"=${testVersion}${suffix}\" \\}/g' Cargo.toml"
         publishToCargo(testEnv, suffix, ver)
     }
 }
 
 def publishToCargo(testEnv, suffix, ver) {
     testEnv.inside {
-        sh "sed -i -E -e 'H;1h;\$!d;x' -e \"s/version = \\\"$ver/version = \\\"$ver$suffix/\" Cargo.toml"
+        //sh "sed -i -E -e 'H;1h;\$!d;x' -e \"s/version = \\\"$ver/version = \\\"$ver$suffix/\" Cargo.toml"
+        sh "sed -i -E -e 'H;1h;\$!d;x' -e \"s/version = \\\"([0-9,.]+)/version = \\\"${testVersion}${suffix}/\" Cargo.toml"
 
         withCredentials([string(credentialsId: 'cargoSecretKey', variable: 'LOGIN')]) {
             sh 'cargo login $LOGIN'
@@ -984,6 +990,7 @@ def publishIOSAtrifacts(testEnv, packageName, stashName, version, targetName) {
 }
 
 def getSuffix(isRelease, target) {
+    return testSuffix
     def suffix
     if (env.BRANCH_NAME == 'master' && !isRelease) {
         suffix = "-dev-$env.BUILD_NUMBER"
@@ -1094,7 +1101,8 @@ def javaWrapperPublishing(testEnv, isRelease) {
         testEnv.inside {
             echo "Publish To Maven Test: Test"
 
-            sh "sed -i -E -e 'H;1h;\$!d;x' -e \"s/<version>([0-9,.]+)</<version>\\1$suffix</\" pom.xml"
+            //sh "sed -i -E -e 'H;1h;\$!d;x' -e \"s/<version>([0-9,.]+)</<version>\\1$suffix</\" pom.xml"
+            sh "sed -i -E -e 'H;1h;\$!d;x' -e \"s/<version>([0-9,.]+)</<version>${testVersion}${suffix}</\" pom.xml"
 
             withCredentials([file(credentialsId: 'maven-settings', variable: 'settingsFile')]) {
                 sh 'cp $settingsFile .'
@@ -1330,7 +1338,8 @@ def buildTestEnv(file, env_name) {
 }
 
 def downloadPackagingUtils() {
-    git branch: 'master', credentialsId: 'evernym-github-machine-user', url: 'https://github.com/evernym/sovrin-packaging'
+    //git branch: 'master', credentialsId: 'evernym-github-machine-user', url: 'https://github.com/evernym/sovrin-packaging'
+    git branch: 'master', credentialsId: 'sovbot-github', url: 'https://github.com/sovrin-foundation/sovrin-packaging'
 }
 
 def shell(command) {
