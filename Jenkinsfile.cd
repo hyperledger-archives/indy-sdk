@@ -3,7 +3,7 @@
 @Library('SovrinHelpers') _
 
 testVersion = "0.0.1"
-testSuffix = "-devsovrin-$env.BUILD_NUMBER"
+testSuffix = "-dev-sovrin$env.BUILD_NUMBER"
 
 properties([
         [$class: 'BuildDiscarderProperty', strategy: [
@@ -417,9 +417,9 @@ def linuxCLITesting(env_name, network_name, testEnv, stashBuildResults) {
         sh '''
             cd cli
             LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo build --release --features fatal_warnings
+        '''
 //            LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --release --features "nullpay_plugin" --no-run
 //            LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test  --release --features "nullpay_plugin"
-        '''
         if (stashBuildResults) {
             stash includes: 'cli/target/release/indy-cli', name: 'IndyCliUbuntuBuildResult'
         }
@@ -931,8 +931,11 @@ def windowsPublishArtifact(testEnv, folder, packageName, packageType, packageVer
         unstash name: stashName
 
         withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'repo_key')]) {
-
-            sh "ci/win-zip-and-upload.sh $folder $packageName $packageType $packageVersion '${repo_key}' $env.BRANCH_NAME $env.BUILD_NUMBER"
+            withEnv([
+                "SOVRIN_REPO_HOST=$SOVRIN_REPO_HOST",
+            ]) {
+                sh "ci/win-zip-and-upload.sh $folder $packageName $packageType $packageVersion '${repo_key}' $env.BRANCH_NAME $env.BUILD_NUMBER"
+            }
         }
     }
 }
@@ -1430,7 +1433,11 @@ def androidPublishArtifact(buildEnv, arch, packageVersion, artifact) {
         unstash name: "${artifact}_${arch}_zip"
 
         withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'repo_key')]) {
-            sh "ci/android-zip-and-upload.sh $arch $packageVersion '${repo_key}' $env.BRANCH_NAME $env.BUILD_NUMBER $artifact"
+            withEnv([
+                "SOVRIN_REPO_HOST=$SOVRIN_REPO_HOST",
+            ]) {
+                sh "ci/android-zip-and-upload.sh $arch $packageVersion '${repo_key}' $env.BRANCH_NAME $env.BUILD_NUMBER $artifact"
+            }
         }
     }
 }
