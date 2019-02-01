@@ -20,5 +20,4 @@ cp -v $LIBZMQ/libsodium-ios/dist/ios/lib/libsodium.a $VCX_SDK/vcx/wrappers/ios/v
 
 # sovtoken and nullpay
 cp -v ${BUILD_CACHE}/libnullpay/${LIBNULLPAY_VERSION}/libnullpay.a $VCX_SDK/vcx/wrappers/ios/vcx/lib/libnullpay.a.tocombine
-# TODO: libsovtoken builds need to be combined into one .a
-#cp -v ${BUILD_CACHE}/libsovtoken-ios/${LIBSOVTOKEN_VERSION}/libsovtoken.a $VCX_SDK/vcx/wrappers/ios/vcx/lib/libsovtoken.a.tocombine
+#cp -v ${BUILD_CACHE}/libsovtoken-ios/${LIBSOVTOKEN_VERSION}/libsovtoken/universal/libsovtoken.a ${VCX_SDK}/vcx/wrappers/ios/vcx/lib/libsovtoken.a.tocombine

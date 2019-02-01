@@ -27,6 +27,7 @@ fi
 # removing 'armv7s-apple-ios' from the master build, as its not currently
 # required, just a 'nice to have'
 IOS_TARGETS="aarch64-apple-ios,armv7-apple-ios,i386-apple-ios,x86_64-apple-ios"
+#IOS_TARGETS="x86_64-apple-ios,i386-apple-ios"
 if [ ! -z "$2" ]; then
     IOS_TARGETS=$2
 fi

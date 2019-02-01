@@ -16,6 +16,7 @@ COMBINED_LIB=$1
 DATETIME=$(date +"%Y%m%d.%H%M")
 
 IOS_ARCHS="arm64,armv7,i386,x86_64"
+#IOS_ARCHS="i386,x86_64"
 if [ ! -z "$2" ]; then
     IOS_ARCHS=$2
 fi
@@ -52,6 +53,27 @@ do
     fi
     cp -rp vcx.framework vcx.framework.previousbuild
 done
+
+#export GEM_HOME=${HOME}/.gem
+#export PATH=${GEM_HOME}/bin:$PATH
+# Test the libvcx.a file if the ${IOS_ARCHS} contains i386 or x86_64
+if [[ "${IOS_ARCHS}" == *"i386"* ]] || [[ "${IOS_ARCHS}" == *"x86_64"* ]]; then
+    xcodebuild -project vcx.xcodeproj -scheme vcx-demo -sdk iphonesimulator build-for-testing
+    ## Need to do:
+    ## a) gem install cocoapods -- sudo may be needed
+    #if [ -z "$(which pod)" ]; then
+    #    gem install cocoapods
+    #fi
+    ## b) pod setup
+    if [ ! -d "${HOME}/.cocoapods/repos/master" ]; then
+        pod setup
+    fi
+    ## c) brew install xctool
+    if [ -z "$(which xctool)" ]; then
+        brew install xctool
+    fi
+    xctool -project vcx.xcodeproj -scheme vcx-demo run-tests -sdk iphonesimulator
+fi
 
 #mv lib/libvcx.a.original lib/libvcx.a
 rm lib/libvcx.a

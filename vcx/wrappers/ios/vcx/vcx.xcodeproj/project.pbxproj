@@ -21,6 +21,9 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
+		8EFD93C9220269BD00A0400A /* vcx.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DD2566EE209705E3002EBEBA /* vcx.framework */; };
+		8EFD93CE22026CA400A0400A /* RNIndy.m in Sources */ = {isa = PBXBuildFile; fileRef = 8EFD93CA22026CA400A0400A /* RNIndy.m */; };
+		8EFD93CF22026CA400A0400A /* RNIndyTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 8EFD93CD22026CA400A0400A /* RNIndyTests.m */; };
 		91E754A820F3DB4200D9CE79 /* libresolv.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = DD858CC420A53DD7004B3CB5 /* libresolv.tbd */; };
 		91E754A920F3DB4D00D9CE79 /* libstdc++.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = DD858CC220A53DCB004B3CB5 /* libstdc++.tbd */; };
 		91E754AD20F3DC9800D9CE79 /* libvcx.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 91E754AC20F3DC9800D9CE79 /* libvcx.a */; };
@@ -48,6 +51,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		8EFD93C7220269B600A0400A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = DD2566E5209705E3002EBEBA /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = DD2566ED209705E3002EBEBA;
+			remoteInfo = vcx;
+		};
 		DD2566F9209705E3002EBEBA /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = DD2566E5209705E3002EBEBA /* Project object */;
@@ -93,6 +103,10 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		8EFD93CA22026CA400A0400A /* RNIndy.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RNIndy.m; sourceTree = "<group>"; };
+		8EFD93CB22026CA400A0400A /* RNIndyTests.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RNIndyTests.h; sourceTree = "<group>"; };
+		8EFD93CC22026CA400A0400A /* RNIndy.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RNIndy.h; sourceTree = "<group>"; };
+		8EFD93CD22026CA400A0400A /* RNIndyTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RNIndyTests.m; sourceTree = "<group>"; };
 		91E754AC20F3DC9800D9CE79 /* libvcx.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libvcx.a; path = lib/libvcx.a; sourceTree = "<group>"; };
 		DD2566EE209705E3002EBEBA /* vcx.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = vcx.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		DD2566F1209705E3002EBEBA /* vcx.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = vcx.h; sourceTree = "<group>"; };
@@ -160,6 +174,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8EFD93C9220269BD00A0400A /* vcx.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -239,6 +254,10 @@
 		DD2567302097138F002EBEBA /* vcx-demoTests */ = {
 			isa = PBXGroup;
 			children = (
+				8EFD93CC22026CA400A0400A /* RNIndy.h */,
+				8EFD93CA22026CA400A0400A /* RNIndy.m */,
+				8EFD93CB22026CA400A0400A /* RNIndyTests.h */,
+				8EFD93CD22026CA400A0400A /* RNIndyTests.m */,
 				DD2567312097138F002EBEBA /* vcx_demoTests.m */,
 				DD2567332097138F002EBEBA /* Info.plist */,
 			);
@@ -363,6 +382,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				8EFD93C8220269B600A0400A /* PBXTargetDependency */,
 				DD25672F2097138F002EBEBA /* PBXTargetDependency */,
 			);
 			name = "vcx-demoTests";
@@ -539,6 +559,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				DD2567322097138F002EBEBA /* vcx_demoTests.m in Sources */,
+				8EFD93CF22026CA400A0400A /* RNIndyTests.m in Sources */,
+				8EFD93CE22026CA400A0400A /* RNIndy.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -553,6 +575,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		8EFD93C8220269B600A0400A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = DD2566ED209705E3002EBEBA /* vcx */;
+			targetProxy = 8EFD93C7220269B600A0400A /* PBXContainerItemProxy */;
+		};
 		DD2566FA209705E3002EBEBA /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = DD2566ED209705E3002EBEBA /* vcx */;
@@ -738,7 +765,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "co.evernym.vcx-objc.vcx";
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
-				SDKROOT = iphoneos11.2;
+				SDKROOT = iphoneos;
 				SKIP_INSTALL = NO;
 				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -779,7 +806,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "co.evernym.vcx-objc.vcx";
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
-				SDKROOT = iphoneos11.2;
+				SDKROOT = iphoneos;
 				SKIP_INSTALL = NO;
 				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -838,7 +865,7 @@
 				CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES = YES;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = 6R2S6Y6HSX;
+				DEVELOPMENT_TEAM = ES8QU3D2A4;
 				ENABLE_BITCODE = NO;
 				FRAMEWORK_SEARCH_PATHS = "$(PROJECT_DIR)";
 				HEADER_SEARCH_PATHS = $SOURCE_ROOT/include;
@@ -866,7 +893,7 @@
 				CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES = YES;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = 6R2S6Y6HSX;
+				DEVELOPMENT_TEAM = ES8QU3D2A4;
 				ENABLE_BITCODE = NO;
 				FRAMEWORK_SEARCH_PATHS = "$(PROJECT_DIR)";
 				HEADER_SEARCH_PATHS = $SOURCE_ROOT/include;
@@ -891,10 +918,16 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = FBKAURK5R6;
+				DEVELOPMENT_TEAM = ES8QU3D2A4;
 				INFOPLIST_FILE = "vcx-demoTests/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				LIBRARY_SEARCH_PATHS = "$(PROJECT_DIR)/lib";
+				OTHER_LDFLAGS = (
+					"-ObjC",
+					"-lvcx",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = "co.evernym.vcx-objc.vcx-demoTests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -906,10 +939,16 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = FBKAURK5R6;
+				DEVELOPMENT_TEAM = ES8QU3D2A4;
 				INFOPLIST_FILE = "vcx-demoTests/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				LIBRARY_SEARCH_PATHS = "$(PROJECT_DIR)/lib";
+				OTHER_LDFLAGS = (
+					"-ObjC",
+					"-lvcx",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = "co.evernym.vcx-objc.vcx-demoTests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -921,7 +960,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = FBKAURK5R6;
+				DEVELOPMENT_TEAM = ES8QU3D2A4;
 				INFOPLIST_FILE = "vcx-demoUITests/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = "co.evernym.vcx-objc.vcx-demoUITests";
@@ -935,7 +974,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = FBKAURK5R6;
+				DEVELOPMENT_TEAM = ES8QU3D2A4;
 				INFOPLIST_FILE = "vcx-demoUITests/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = "co.evernym.vcx-objc.vcx-demoUITests";

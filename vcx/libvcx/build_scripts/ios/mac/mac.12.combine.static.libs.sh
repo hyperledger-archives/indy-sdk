@@ -49,6 +49,7 @@ if [ ! -z "$3" ]; then
 fi
 
 IOS_ARCHS="arm64,armv7,i386,x86_64"
+#IOS_ARCHS="i386,x86_64"
 if [ ! -z "$4" ]; then
     IOS_ARCHS=$4
 fi
