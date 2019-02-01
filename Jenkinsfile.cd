@@ -979,11 +979,11 @@ def publishIOSAtrifacts(testEnv, packageName, stashName, version, targetName) {
         withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'sovrin_repo_key')]) {
             target = "/var/repository/repos/ios/$packageName/$env.BRANCH_NAME/$packageName-core"
 
-            sh "ssh -v -oStrictHostKeyChecking=no -i '$sovrin_repo_key' repo@192.168.11.115 mkdir -p $target/$version"
-            sh "scp -r -oStrictHostKeyChecking=no -i $sovrin_repo_key $packageName/out_pod/${packageName}.tar.gz repo@192.168.11.115:$target/$version/"
+            sh "ssh -v -oStrictHostKeyChecking=no -i '$sovrin_repo_key' repo@$SOVRIN_REPO_HOST mkdir -p $target/$version"
+            sh "scp -r -oStrictHostKeyChecking=no -i $sovrin_repo_key $packageName/out_pod/${packageName}.tar.gz repo@$SOVRIN_REPO_HOST:$target/$version/"
 
             if (targetName != null) {
-                sh "ssh -v -oStrictHostKeyChecking=no -i $sovrin_repo_key repo@192.168.11.115 mv $target/$version/${packageName}.tar.gz $target/$version/$targetName"
+                sh "ssh -v -oStrictHostKeyChecking=no -i $sovrin_repo_key repo@$SOVRIN_REPO_HOST mv $target/$version/${packageName}.tar.gz $target/$version/$targetName"
             }
         }
     }
@@ -1282,8 +1282,8 @@ def fullVersion(version) {
 
 def copyFilesFromRcToStable(src, target) {
     withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'sovrin_repo_key')]) {
-        sh "ssh -v -oStrictHostKeyChecking=no -i '$sovrin_repo_key' repo@192.168.11.115 '! ls $target'"
-        sh "ssh -v -oStrictHostKeyChecking=no -i '$sovrin_repo_key' repo@192.168.11.115 cp -r $src $target"
+        sh "ssh -v -oStrictHostKeyChecking=no -i '$sovrin_repo_key' repo@$SOVRIN_REPO_HOST '! ls $target'"
+        sh "ssh -v -oStrictHostKeyChecking=no -i '$sovrin_repo_key' repo@$SOVRIN_REPO_HOST cp -r $src $target"
     }
 }
 
