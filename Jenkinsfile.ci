@@ -545,7 +545,7 @@ def linuxAndroidOnEmulatorTesting(env_name, network_name, testEnv) {
 
         def emu_arch = "x86"
 
-        echo "${env_name} Libindy Test: Test on ${emu_arch} emulator"
+        echo "${env_name} Libnullpay Test: Test on ${emu_arch} emulator"
         testEnv.inside("--network=${network_name}") {
             sh "./android.test.sh ${emu_arch} --release"
         }
