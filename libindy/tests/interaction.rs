@@ -71,6 +71,11 @@ struct Prover{
 }
 
 
+struct Verifier{
+    proof_request : String
+}
+
+
 impl Pool {
 
 
@@ -224,7 +229,7 @@ impl Issuer {
         cred_offer_json
     }
 
-    pub fn issue_credential(&self, pool: &Pool, cred_offer_json: &str, cred_req_json: &str) -> (String, String, String)
+    pub fn issue_credential(&self, pool: &Pool, cred_offer_json: &str, cred_req_json: &str, cred_values_json: &str) -> (String, String, String)
     {
 
         let tails_writer_config = anoncreds::tails_writer_config();
@@ -235,7 +240,7 @@ impl Issuer {
         let (cred_json, cred_rev_id, revoc_reg_delta_json) = anoncreds::issuer_create_credential(self.issuer_wallet_handle,
                                                                                                  &cred_offer_json,
                                                                                                  &cred_req_json,
-                                                                                                 &anoncreds::gvt_credential_values_json(),
+                                                                                                 cred_values_json,
                                                                                                  Some(&self.rev_reg_id),
                                                                                                  Some(blob_storage_reader_handle)).unwrap();
         let revoc_reg_delta_json = revoc_reg_delta_json.unwrap();
@@ -408,6 +413,74 @@ impl Prover
 
 
 
+
+impl Verifier{
+
+
+    pub fn new(proof_request: &String) -> Verifier {
+        Verifier{
+            proof_request: proof_request.clone()
+        }
+    }
+
+    pub fn verify_revealed(&self, proof_json : &str, attr_name : &str, attr_value : &str)
+    {
+        let proof : Proof  = serde_json::from_str(&proof_json).unwrap();
+
+        assert_eq!(attr_value, proof.requested_proof.revealed_attrs.get(attr_name).unwrap().raw)
+
+    }
+
+    pub fn verify(&self, pool: &Pool, proof_json : &str) -> bool
+    {
+
+        let proof : Proof  = serde_json::from_str(&proof_json).unwrap();
+        assert_eq!(1, proof.identifiers.len());
+
+        let identifier = proof.identifiers[0].clone();
+
+        // Verifier gets Schema from Ledger
+        let (schema_id, schema_json) = pool.get_schema(Some(DID_MY1),  &identifier.schema_id );
+
+        // Verifier gets CredentialDefinition from Ledger
+        let (cred_def_id, cred_def_json) = pool.get_cred_def(Some(DID_MY1), &identifier.cred_def_id);
+
+        // Verifier gets RevocationRegistryDefinition from Ledger
+        let (rev_reg_id, revoc_reg_def_json) = pool.get_revoc_reg_def(Some(DID_MY1), &identifier.rev_reg_id.clone().unwrap());
+
+        // Verifier gets RevocationRegistry from Ledger
+        let (_, rev_reg_json, timestamp) =
+            pool.get_revoc_reg_delta(Some(DID_MY1), &identifier.rev_reg_id.clone().unwrap(), None, identifier.timestamp.unwrap());
+
+        let schemas_json = json!({
+            schema_id.clone(): serde_json::from_str::<Schema>(&schema_json).unwrap()
+        }).to_string();
+
+        let cred_defs_json = json!({
+            cred_def_id.clone(): serde_json::from_str::<CredentialDefinition>(&cred_def_json).unwrap()
+        }).to_string();
+
+        let rev_reg_defs_json = json!({
+            rev_reg_id.clone(): serde_json::from_str::<RevocationRegistryDefinition>(&revoc_reg_def_json).unwrap()
+        }).to_string();
+
+        let rev_regs_json = json!({
+            rev_reg_id.clone(): json!({
+                timestamp.to_string(): serde_json::from_str::<RevocationRegistry>(&rev_reg_json).unwrap()
+            })
+        }).to_string();
+
+        let valid = anoncreds::verifier_verify_proof(&self.proof_request,
+                                                     proof_json,
+                                                     &schemas_json,
+                                                     &cred_defs_json,
+                                                     &rev_reg_defs_json,
+                                                     &rev_regs_json).unwrap();
+
+        valid
+    }
+}
+
 #[cfg(feature = "revocation_tests")]
 #[test]
 fn anoncreds_revocation_interaction_test_issuance_by_demand() {
@@ -426,11 +499,12 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand() {
     // ISSUER post to Ledger Schema, CredentialDefinition, RevocationRegistry
     issuer.create_initial_ledger_state(&pool);
 
-    ///////////////////////////////////////////////////////////////////////////////////////////////////////
-    // Issuance Credential for Prover
 
     // Prover creates Master Secret
     anoncreds::prover_create_master_secret(prover.wallet_handle, COMMON_MASTER_SECRET).unwrap();
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Issuance Credential for Prover
 
     // Issuer creates Credential Offer
     let cred_offer_json = issuer.make_credential_offer();
@@ -439,7 +513,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand() {
     let cred_req_json = prover.make_credential_request(&pool,&cred_offer_json);
 
     // Issuer issues credential
-    let (cred_json, cred_rev_id, _revoc_reg_delta_json) = issuer.issue_credential(&pool, &cred_offer_json, &cred_req_json );
+    let (cred_json, cred_rev_id, _revoc_reg_delta_json) = issuer.issue_credential(&pool, &cred_offer_json, &cred_req_json, &anoncreds::gvt_credential_values_json() );
 
     // Prover stores credentials
     prover.store_credentials(&pool, &cred_json);
@@ -471,55 +545,15 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand() {
            "non_revoked": json!({ "to": to.clone() })
         }).to_string();
 
+    let verifier = Verifier::new(&proof_request);
 
     let proof_json = prover.make_proof(&pool, &proof_request, "attr1_referent", None, to);
 
-    let proof: Proof = serde_json::from_str(&proof_json).unwrap();
 
-    // Verifier gets required entities from Ledger
-    assert_eq!(1, proof.identifiers.len());
-    let identifier = proof.identifiers[0].clone();
+    // Verifier verifies revealed attribute
+    verifier.verify_revealed(&proof_json,"attr1_referent","Alex");
 
-    // Verifier gets Schema from Ledger
-    let (schema_id, schema_json) = pool.get_schema(Some(DID_MY1),  &identifier.schema_id );
-
-    // Verifier gets CredentialDefinition from Ledger
-    let (cred_def_id, cred_def_json) = pool.get_cred_def(Some(DID_MY1), &identifier.cred_def_id);
-
-    // Verifier gets RevocationRegistryDefinition from Ledger
-    let (_, revoc_reg_def_json) = pool.get_revoc_reg_def(Some(DID_MY1), &identifier.rev_reg_id.clone().unwrap());
-
-    // Verifier gets RevocationRegistry from Ledger
-    let (rev_reg_id, rev_reg_json, timestamp) =
-        pool.get_revoc_reg_delta(Some(DID_MY1), &identifier.rev_reg_id.clone().unwrap(), None, identifier.timestamp.unwrap());
-
-    // Verifier verifies proof
-    assert_eq!("Alex", proof.requested_proof.revealed_attrs.get("attr1_referent").unwrap().raw);
-
-    let schemas_json = json!({
-            schema_id.clone(): serde_json::from_str::<Schema>(&schema_json).unwrap()
-        }).to_string();
-
-    let cred_defs_json = json!({
-            cred_def_id.clone(): serde_json::from_str::<CredentialDefinition>(&cred_def_json).unwrap()
-        }).to_string();
-
-    let rev_reg_defs_json = json!({
-            rev_reg_id.clone(): serde_json::from_str::<RevocationRegistryDefinition>(&revoc_reg_def_json).unwrap()
-        }).to_string();
-
-    let rev_regs_json = json!({
-            rev_reg_id.clone(): json!({
-                timestamp.to_string(): serde_json::from_str::<RevocationRegistry>(&rev_reg_json).unwrap()
-            })
-        }).to_string();
-
-    let valid = anoncreds::verifier_verify_proof(&proof_request,
-                                                      &proof_json,
-                                                      &schemas_json,
-                                                      &cred_defs_json,
-                                                      &rev_reg_defs_json,
-                                                      &rev_regs_json).unwrap();
+    let valid = verifier.verify(&pool,&proof_json);
     assert!(valid);
 
     /////////////////////////////////////////////////////////////////////////////////////////
@@ -534,25 +568,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand() {
 
     let proof_json = prover.make_proof(&pool, &proof_request, "attr1_referent" , Some(from), to);
 
-    let proof: Proof = serde_json::from_str(&proof_json).unwrap();
-    let identifier = proof.identifiers[0].clone();
-
-    // Verifier gets RevocationRegistry from Ledger
-
-    let (rev_reg_id, rev_reg_json, timestamp) = pool.get_revoc_reg_delta( Some(DID_MY1), &identifier.rev_reg_id.unwrap(), None, identifier.timestamp.unwrap() );
-
-    let rev_regs_json = json!({
-            rev_reg_id.clone(): json!({
-                timestamp.to_string(): serde_json::from_str::<RevocationRegistry>(&rev_reg_json).unwrap()
-            })
-        }).to_string();
-
-    let valid = anoncreds::verifier_verify_proof(&proof_request,
-                                                      &proof_json,
-                                                      &schemas_json,
-                                                      &cred_defs_json,
-                                                      &rev_reg_defs_json,
-                                                      &rev_regs_json).unwrap();
+    let valid = verifier.verify(&pool, &proof_json);
     assert!(!valid);
 
 
