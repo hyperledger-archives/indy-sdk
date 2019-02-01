@@ -1,11 +1,8 @@
 #!/usr/bin/env bash
 
-
-
 WORKDIR="$( cd "$(dirname "$0")" ; pwd -P )"
 LIBINDY_WORKDIR="$(realpath ${WORKDIR}/../libindy)"
 LIBNULLPAY_WORKDIR=${WORKDIR}
-CI_DIR="${LIBINDY_WORKDIR}/ci"
 export ANDROID_BUILD_FOLDER="/tmp/android_build"
 
 TARGET_ARCH=$1
@@ -17,12 +14,12 @@ if [ -z "${TARGET_ARCH}" ]; then
 fi
 
 if [ -z "${INDY_DIR}" ] ; then
-        INDY_DIR="libindy_${TARGET_ARCH}"
+        INDY_DIR="libnullpay_${TARGET_ARCH}"
         if [ -d "${INDY_DIR}" ] ; then
             echo "Found ${INDY_DIR}"
         elif [ -z "$2" ] ; then
             echo STDERR "Missing INDY_DIR argument and environment variable"
-            echo STDERR "e.g. set INDY_DIR=<path> for environment or libindy_${TARGET_ARCH}"
+            echo STDERR "e.g. set INDY_DIR=<path> for environment or libnullpay_${TARGET_ARCH}"
             exit 1
         else
             INDY_DIR=$2
@@ -49,12 +46,14 @@ build_test_artifacts(){
 }
 
 create_cargo_config(){
-mkdir -p ${LIBINDY_WORKDIR}/.cargo
-cat << EOF > ${LIBINDY_WORKDIR}/.cargo/config
+if [ -z "${LIBINDY_WORKDIR}/.cargo/config" ] ; then
+    mkdir -p ${LIBINDY_WORKDIR}/.cargo
+    cat << EOF > ${LIBINDY_WORKDIR}/.cargo/config
 [target.${TRIPLET}]
 ar = "$(realpath ${AR})"
 linker = "$(realpath ${CC})"
 EOF
+fi
 }
 
 execute_on_device(){

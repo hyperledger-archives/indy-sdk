@@ -199,7 +199,8 @@ def macosModuleTesting(library) {
 def androidTesting() {
     env_name = "android_on_linux"
     network_name = "pool_network"
-    linuxModuleTesting("ci/ubuntu.dockerfile ci", env_name, network_name, this.&linuxAndroidOnEmulatorTesting)
+    linuxModuleTesting("ci/ubuntu.dockerfile ci", env_name, network_name, this.&linuxAndroidOnEmulatorTestingIndy)
+    linuxModuleTesting("ci/ubuntu.dockerfile ci", env_name, network_name, this.&linuxAndroidOnEmulatorTestingNullPay)
 }
 
 def iosTesting() {
@@ -527,28 +528,24 @@ def linuxModuleTesting(file, env_name, network_name, module_tester) {
     }
 }
 
-def linuxAndroidOnEmulatorTesting(env_name, network_name, testEnv) {
+def linuxAndroidOnEmulatorTestingIndy(env_name, network_name, testEnv) {
     dir('libindy') {
-        sh 'chmod -R 777 ci/*.sh'
-        sh 'chmod -R 777 *.sh'
-
-        def emu_arch = "x86"
-
-        echo "${env_name} Libindy Test: Test on ${emu_arch} emulator"
-        testEnv.inside("--network=${network_name}") {
-            sh "./android.test.sh ${emu_arch} --release"
-        }
     }
-    dir('libnullpay') {
-        sh 'chmod -R 777 ci/*.sh'
-        sh 'chmod -R 777 *.sh'
+}
+def linuxAndroidOnEmulatorTestingNullPay(env_name, network_name, testEnv) {
+    sh 'chmod -R 777 libindy/ci/*.sh'
+    sh 'chmod -R 777 libindy/*.sh'
 
-        def emu_arch = "x86"
+    def emu_arch = "x86"
 
-        echo "${env_name} Libnullpay Test: Test on ${emu_arch} emulator"
-        testEnv.inside("--network=${network_name}") {
-            sh "./android.test.sh ${emu_arch} --release"
-        }
+    echo "${env_name} Libindy Test: Test on ${emu_arch} emulator"
+    testEnv.inside("--network=${network_name}") {
+        sh "./libindy/android.test.sh ${emu_arch} --release"
+    }
+
+    echo "${env_name} Libnullpay Test: Test on ${emu_arch} emulator"
+    testEnv.inside("--network=${network_name}") {
+        sh "./libnullpay/android.test.sh ${emu_arch} --release"
     }
 }
 
