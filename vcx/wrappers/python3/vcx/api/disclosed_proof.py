@@ -215,13 +215,13 @@ class DisclosedProof(VcxStateful):
         """
         if not hasattr(DisclosedProof.get_creds, "cb"):
             self.logger.debug("vcx_disclosed_proof_retrieve_credentials: Creating callback")
-            DisclosedProof.send_proof.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
+            DisclosedProof.get_creds.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
 
         c_disclosed_proof_handle = c_uint32(self.handle)
 
         data = await do_call('vcx_disclosed_proof_retrieve_credentials',
                              c_disclosed_proof_handle,
-                             DisclosedProof.send_proof.cb)
+                             DisclosedProof.get_creds.cb)
         return json.loads(data.decode())
 
     async def send_proof(self, connection: Connection):
@@ -249,6 +249,7 @@ class DisclosedProof(VcxStateful):
                       c_connection_handle,
                       DisclosedProof.send_proof.cb)
 
+
     async def generate_proof(self, selected_creds: dict, self_attested_attrs: dict):
         """
         Generates the proof
@@ -263,9 +264,9 @@ class DisclosedProof(VcxStateful):
         :param self_attested_attrs: Self Attested Attributes
         :return: None
         """
-        if not hasattr(DisclosedProof.send_proof, "cb"):
+        if not hasattr(DisclosedProof.generate_proof, "cb"):
             self.logger.debug("vcx_disclosed_proof_generate_proof: Creating callback")
-            DisclosedProof.send_proof.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32))
+            DisclosedProof.generate_proof.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32))
 
         c_disclosed_proof_handle = c_uint32(self.handle)
         c_selected_creds = c_char_p(json.dumps(selected_creds).encode('utf-8'))
@@ -275,4 +276,4 @@ class DisclosedProof(VcxStateful):
                       c_disclosed_proof_handle,
                       c_selected_creds,
                       c_self_attested_attrs,
-                      DisclosedProof.send_proof.cb)
+                      DisclosedProof.generate_proof.cb)
