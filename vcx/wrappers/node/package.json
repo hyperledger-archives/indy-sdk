@@ -20,7 +20,7 @@
         "url": "git+https://github.com/evernym/vcx.git",
         "type": "git"
     },
-    "version": "0.2.0",
+    "version": "0.2.1",
     "dependencies": {
         "@types/ffi": "0.0.19",
         "@types/node": "^8.0.47",
