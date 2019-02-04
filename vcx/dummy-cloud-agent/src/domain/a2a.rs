@@ -5,7 +5,6 @@ use rmp_serde;
 use serde::{de, Deserialize, Deserializer, ser, Serialize, Serializer};
 use serde_json::{self, Value};
 use utils::futures::*;
-use std::fmt;
 
 use domain::a2connection::*;
 use domain::invite::{InviteDetail, SenderDetail, ForwardAgentDetail};
@@ -110,7 +109,7 @@ pub struct SignedUp {}
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct CreateMessage {
-    pub mtype: String,
+    pub mtype: MessageType,
     #[serde(rename = "sendMsg")]
     pub send_msg: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -217,7 +216,7 @@ pub struct GetMessagesDetailResponse {
     #[serde(rename = "senderDID")]
     pub sender_did: String,
     #[serde(rename = "type")]
-    pub type_: String,
+    pub type_: MessageType,
     pub payload: Option<Vec<i8>>,
     #[serde(rename = "refMsgId")]
     pub ref_msg_id: Option<String>,
@@ -248,36 +247,63 @@ pub struct FailedMessageUpdateInfo {
     pub status_msg: String,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum MessageType {
-    #[serde(rename = "connReq")]
     ConnReq,
-    #[serde(rename = "connReqAnswer")]
     ConnReqAnswer,
-    #[serde(rename = "credOffer")]
     CredOffer,
-    #[serde(rename = "credReq")]
     CredReq,
-    #[serde(rename = "cred")]
     Cred,
-    #[serde(rename = "proofReq")]
     ProofReq,
-    #[serde(rename = "proof")]
     Proof,
-    Other,
+    Other(String),
 }
 
-impl fmt::Display for MessageType {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl ToString for MessageType {
+    fn to_string(&self) -> String {
         match self {
-            MessageType::ConnReq => write!(f, "connReq"),
-            MessageType::ConnReqAnswer => write!(f, "connReqAnswer"),
-            MessageType::CredOffer => write!(f, "credOffer"),
-            MessageType::CredReq => write!(f, "credReq"),
-            MessageType::Cred => write!(f, "cred"),
-            MessageType::ProofReq => write!(f, "proofReq"),
-            MessageType::Proof => write!(f, "proof"),
-            MessageType::Other => write!(f, "other"),
+            MessageType::ConnReq => "connReq",
+            MessageType::ConnReqAnswer => "connReqAnswer",
+            MessageType::CredOffer => "credOffer",
+            MessageType::CredReq => "credReq",
+            MessageType::Cred => "cred",
+            MessageType::ProofReq => "proofReq",
+            MessageType::Proof => "proof",
+            MessageType::Other(other) => other.as_str(),
+        }.to_string()
+    }
+}
+
+impl Serialize for MessageType {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
+        let value = match self {
+            MessageType::ConnReq => "connReq",
+            MessageType::ConnReqAnswer => "connReqAnswer",
+            MessageType::CredOffer => "credOffer",
+            MessageType::CredReq => "credReq",
+            MessageType::Cred => "cred",
+            MessageType::ProofReq => "proofReq",
+            MessageType::Proof => "proof",
+            MessageType::Other(other) => other.as_str(),
+        };
+        serde_json::Value::String(value.to_string()).serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for MessageType {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
+        let value = Value::deserialize(deserializer).map_err(de::Error::custom)?;
+
+        match value.as_str() {
+            Some("connReq") => Ok(MessageType::ConnReq),
+            Some("connReqAnswer") => Ok(MessageType::ConnReqAnswer),
+            Some("credOffer") => Ok(MessageType::CredOffer),
+            Some("credReq") => Ok(MessageType::CredReq),
+            Some("cred") => Ok(MessageType::Cred),
+            Some("proofReq") => Ok(MessageType::ProofReq),
+            Some("proof") => Ok(MessageType::Proof),
+            Some(mtype) => Ok(MessageType::Other(mtype.to_string())),
+            _ => Err(de::Error::custom("Unexpected message type."))
         }
     }
 }
@@ -341,7 +367,7 @@ pub struct PayloadMessageType {
 }
 
 impl PayloadMessageType {
-    pub fn new(type_: &str) -> PayloadMessageType {
+    pub fn new(type_: &MessageType) -> PayloadMessageType {
         PayloadMessageType {
             name: type_.to_string(),
             ver: "1.0".to_string(),

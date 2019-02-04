@@ -255,15 +255,10 @@ impl AgentConnection {
 
         let sender_verkey = sender_verkey.to_string();
 
-        let _mtype: MessageType = match serde_json::from_str(&format!("\"{}\"", mtype)) {
-            Ok(x) => x,
-            Err(_) => MessageType::Other,
-        };
-
         future::ok(())
             .into_actor(self)
             .and_then(move |_, slf, _| {
-                match (_mtype, tail.pop()) {
+                match (mtype, tail.pop()) {
                     (MessageType::ConnReq, Some(A2AMessage::MessageDetail(MessageDetail::ConnectionRequest(detail)))) => {
                         slf.handle_create_connection_request(detail, sender_verkey)
                     }
@@ -273,7 +268,7 @@ impl AgentConnection {
                                                                     uid,
                                                                     sender_verkey)
                     }
-                    (_mtype @ _, Some(A2AMessage::MessageDetail(MessageDetail::General(detail)))) =>
+                    (mtype @ _, Some(A2AMessage::MessageDetail(MessageDetail::General(detail)))) =>
                         slf.handle_create_general_message(mtype,
                                                           detail,
                                                           reply_to_msg_id.clone(),
@@ -319,7 +314,7 @@ impl AgentConnection {
 
                 let sender_did = slf.user_pairwise_did.clone();
                 let msg = slf.create_and_store_internal_message(None,
-                                                                MessageType::ConnReq.to_string(),
+                                                                MessageType::ConnReq,
                                                                 MessageStatusCode::Created,
                                                                 &sender_did,
                                                                 None,
@@ -359,7 +354,7 @@ impl AgentConnection {
     }
 
     fn handle_create_general_message(&mut self,
-                                     mtype: String,
+                                     mtype: MessageType,
                                      msg_detail: GeneralMessageDetail,
                                      reply_to_msg_id: Option<String>,
                                      uid: Option<String>,
@@ -381,7 +376,7 @@ impl AgentConnection {
             };
 
         let msg = self.create_and_store_internal_message(uid.as_ref().map(String::as_str),
-                                                         mtype.to_string(),
+                                                         mtype,
                                                          status_code,
                                                          &sender_did,
                                                          None,
@@ -546,7 +541,7 @@ impl AgentConnection {
             )
             .map(|(msg_detail, reply_to_msg_id, key_dlg_proof), slf, _| {
                 let conn_req_msg = slf.create_and_store_internal_message(Some(reply_to_msg_id.as_str()),
-                                                                         MessageType::ConnReq.to_string(),
+                                                                         MessageType::ConnReq,
                                                                          MessageStatusCode::Received,
                                                                          &msg_detail.sender_detail.did,
                                                                          None,
@@ -555,7 +550,7 @@ impl AgentConnection {
 
                 let sender_did = slf.user_pairwise_did.clone();
                 let answer_msg = slf.create_and_store_internal_message(None,
-                                                                       MessageType::ConnReqAnswer.to_string(),
+                                                                       MessageType::ConnReqAnswer,
                                                                        msg_detail.answer_status_code.clone(),
                                                                        &sender_did,
                                                                        Some(conn_req_msg.uid.as_str()),
@@ -613,7 +608,7 @@ impl AgentConnection {
             )
             .map(move |(msg_detail, reply_to_msg_id), slf, _| {
                 let answer_msg = slf.create_and_store_internal_message(msg_uid.as_ref().map(String::as_str),
-                                                                       MessageType::ConnReqAnswer.to_string(),
+                                                                       MessageType::ConnReqAnswer,
                                                                        msg_detail.answer_status_code.clone(),
                                                                        &msg_detail.sender_detail.did,
                                                                        None,
@@ -659,7 +654,7 @@ impl AgentConnection {
 
     fn create_and_store_internal_message(&mut self,
                                          uid: Option<&str>,
-                                         mtype: String,
+                                         mtype: MessageType,
                                          status_code: MessageStatusCode,
                                          sender_did: &str,
                                          ref_msg_id: Option<&str>,
@@ -709,7 +704,7 @@ impl AgentConnection {
 
         let msg_uid = msg_uid.to_string();
 
-        let msg = ftry_act!(self, self.build_payload_message(MessageType::ConnReqAnswer.to_string(), &json!({"senderDetail": msg_detail.sender_detail})));
+        let msg = ftry_act!(self, self.build_payload_message(MessageType::ConnReqAnswer, &json!({"senderDetail": msg_detail.sender_detail})));
 
         future::ok(())
             .into_actor(self)
@@ -878,7 +873,7 @@ impl AgentConnection {
 
         let is_exists = self.state.messages.values()
             .any(|msg|
-                msg._type == MessageType::ConnReq.to_string() && msg.status_code == MessageStatusCode::Accepted
+                msg._type == MessageType::ConnReq && msg.status_code == MessageStatusCode::Accepted
             );
         if is_exists {
             return Err(err_msg("Accepted connection already exists."));
@@ -938,12 +933,7 @@ impl AgentConnection {
             .into_iter()
             .map(|(msg_uid, reply_to)| {
                 let message = self.state.messages.get(&msg_uid).cloned().unwrap();
-
-                let _mtype: MessageType = match serde_json::from_str(&format!("\"{}\"", message._type)) {
-                    Ok(x) => x,
-                    Err(_) => MessageType::Other,
-                };
-                match _mtype {
+                match message._type {
                     MessageType::ConnReq => self.send_invite_message(message),
                     MessageType::ConnReqAnswer => self.send_invite_answer_message(message, reply_to),
                     _ => self.send_general_message(message, reply_to.as_ref().map(String::as_str)),
@@ -1036,7 +1026,7 @@ impl AgentConnection {
         Ok(message)
     }
 
-    fn build_payload_message<T>(&self, type_: String, msg: &T) -> Result<Vec<u8>, Error> where T: ::serde::Serialize + ::std::fmt::Debug {
+    fn build_payload_message<T>(&self, type_: MessageType, msg: &T) -> Result<Vec<u8>, Error> where T: ::serde::Serialize + ::std::fmt::Debug {
         trace!("AgentConnection::build_payload_message >> {:?}, {:?}",
                type_, msg);
 
@@ -1270,7 +1260,7 @@ mod tests {
                                                              &agent_verkey,
                                                              &agent_pw_did,
                                                              &agent_pw_vk,
-                                                             "any_message".to_string()).wait().unwrap();
+                                                             MessageType::CredOffer).wait().unwrap();
 
                     forward_agent
                         .send(ForwardA2AMsg(msg))
@@ -1297,7 +1287,7 @@ mod tests {
                                                              &agent_verkey,
                                                              &agent_pw_did,
                                                              &agent_pw_vk,
-                                                             MessageType::CredOffer.to_string()).wait().unwrap();
+                                                             MessageType::CredOffer).wait().unwrap();
 
                     forward_agent
                         .send(ForwardA2AMsg(msg))
@@ -1329,7 +1319,7 @@ mod tests {
                         uid: msg_uid,
                         status_code: MessageStatusCode::Created,
                         sender_did: EDGE_PAIRWISE_DID.to_string(),
-                        type_: MessageType::CredOffer.to_string(),
+                        type_: MessageType::CredOffer,
                         payload: Some(to_i8(&PAYLOAD.to_vec())),
                         ref_msg_id: None,
                     };
@@ -1350,7 +1340,7 @@ mod tests {
                                                              &agent_verkey,
                                                              &agent_pw_did,
                                                              &agent_pw_vk,
-                                                             MessageType::CredOffer.to_string()).wait().unwrap();
+                                                             MessageType::CredOffer).wait().unwrap();
 
                     forward_agent
                         .send(ForwardA2AMsg(msg))
