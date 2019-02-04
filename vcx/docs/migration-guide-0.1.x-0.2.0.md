@@ -12,7 +12,8 @@ to simplify their transition to LibVCX 0.1.x from LibVCX 0.2.
     * [Issuer Credential API](#issuer-credetial-api)
     * [Proof API](#proof-api)
     * [logger API](#logger-api)
-    
+* [Libvcx 0.2.0 to 0.2.1 migration](#libvcx-020-to-021-migration-guide)
+
 ### Notes
 
 In the following tables, there are mappings for each LibVCX API part of how 0.1.x functionality maps to 0.2.0. 
@@ -426,3 +427,7 @@ libvcx sets the same log function for libindy as well.
       </td>
     </tr>
 </table>
+
+## Libvcx 0.2.0 to 0.2.1 migration Guide
+
+The Libvcx 0.2.1 release contains fixes that don't affect API functions. 
