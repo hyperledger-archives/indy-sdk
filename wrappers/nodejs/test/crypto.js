@@ -5,8 +5,8 @@ var initTestPool = require('./helpers/initTestPool')
 
 test('crypto', async function (t) {
   var pool = await initTestPool()
-  var walletConfig = {'id': 'wallet-' + cuid()}
-  var walletCredentials = {'key': 'key'}
+  var walletConfig = { 'id': 'wallet-' + cuid() }
+  var walletCredentials = { 'key': 'key' }
   await indy.createWallet(walletConfig, walletCredentials)
   var wh = await indy.openWallet(walletConfig, walletCredentials)
 
@@ -18,7 +18,7 @@ test('crypto', async function (t) {
   t.is(typeof verkey, 'string')
 
   var seed1 = '00000000000000000000000000000My1'
-  verkey = await indy.createKey(wh, {'seed': seed1})
+  verkey = await indy.createKey(wh, { 'seed': seed1 })
   t.is(typeof verkey, 'string')
 
   // Sign + Verify
@@ -35,8 +35,8 @@ test('crypto', async function (t) {
   t.is(metadata, 'foobar')
 
   // Auth
-  var [, stewardVerkey] = await indy.createAndStoreMyDid(wh, {seed: '000000000000000000000000Steward1'})
-  var [, trusteeVerkey] = await indy.createAndStoreMyDid(wh, {seed: '000000000000000000000000Trustee1'})
+  var [, stewardVerkey] = await indy.createAndStoreMyDid(wh, { seed: '000000000000000000000000Steward1' })
+  var [, trusteeVerkey] = await indy.createAndStoreMyDid(wh, { seed: '000000000000000000000000Trustee1' })
 
   var encrypted = await indy.cryptoAuthCrypt(wh, stewardVerkey, trusteeVerkey, message)
   t.true(Buffer.isBuffer(encrypted))
@@ -53,6 +53,33 @@ test('crypto', async function (t) {
   decrypted = await indy.cryptoAnonDecrypt(wh, trusteeVerkey, encrypted)
   t.true(Buffer.isBuffer(decrypted))
   t.is(decrypted.toString('utf8'), message.toString('utf8'))
+
+  // Pack Auth Crypt
+  var [, senderVerkey] = await indy.createAndStoreMyDid(wh, {})
+  var receiverKeys = [trusteeVerkey, stewardVerkey]
+
+  var packedMessage = await indy.packMessage(wh, message, receiverKeys, senderVerkey)
+  t.true(Buffer.isBuffer(packedMessage))
+
+  var unpackedMessage = await indy.unpackMessage(wh, packedMessage)
+  t.true(Buffer.isBuffer(unpackedMessage))
+
+  unpackedMessage = JSON.parse(unpackedMessage.toString('utf8'))
+  t.is(unpackedMessage['message'], message.toString('utf8'))
+  t.is(unpackedMessage['sender_verkey'], senderVerkey)
+  t.is(unpackedMessage['recipient_verkey'], trusteeVerkey)
+
+  // Pack Anon Crypt
+  packedMessage = await indy.packMessage(wh, message, receiverKeys, null)
+  t.true(Buffer.isBuffer(packedMessage))
+
+  unpackedMessage = await indy.unpackMessage(wh, packedMessage)
+  t.true(Buffer.isBuffer(unpackedMessage))
+
+  unpackedMessage = JSON.parse(unpackedMessage.toString('utf8'))
+  t.is(unpackedMessage['message'], message.toString('utf8'))
+  t.is(unpackedMessage['sender_verkey'], undefined)
+  t.is(unpackedMessage['recipient_verkey'], trusteeVerkey)
 
   await indy.closeWallet(wh)
   await indy.deleteWallet(walletConfig, walletCredentials)

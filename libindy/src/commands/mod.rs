@@ -1,3 +1,34 @@
+extern crate indy_crypto;
+extern crate threadpool;
+
+use std::env;
+use std::rc::Rc;
+use std::sync::{Mutex, MutexGuard};
+use std::sync::mpsc::{channel, Sender};
+use std::thread;
+
+use commands::anoncreds::{AnoncredsCommand, AnoncredsCommandExecutor};
+use commands::blob_storage::{BlobStorageCommand, BlobStorageCommandExecutor};
+use commands::crypto::{CryptoCommand, CryptoCommandExecutor};
+use commands::did::{DidCommand, DidCommandExecutor};
+use commands::ledger::{LedgerCommand, LedgerCommandExecutor};
+use commands::non_secrets::{NonSecretsCommand, NonSecretsCommandExecutor};
+use commands::pairwise::{PairwiseCommand, PairwiseCommandExecutor};
+use commands::payments::{PaymentsCommand, PaymentsCommandExecutor};
+use commands::pool::{PoolCommand, PoolCommandExecutor};
+use commands::wallet::{WalletCommand, WalletCommandExecutor};
+use domain::IndyConfig;
+use errors::prelude::*;
+use services::anoncreds::AnoncredsService;
+use services::blob_storage::BlobStorageService;
+use services::crypto::CryptoService;
+use services::ledger::LedgerService;
+use services::payments::PaymentsService;
+use services::pool::{PoolService, set_freshness_threshold};
+use services::wallet::WalletService;
+
+use self::threadpool::ThreadPool;
+
 pub mod anoncreds;
 pub mod blob_storage;
 pub mod crypto;
@@ -8,41 +39,6 @@ pub mod wallet;
 pub mod pairwise;
 pub mod non_secrets;
 pub mod payments;
-
-extern crate indy_crypto;
-extern crate threadpool;
-
-use self::threadpool::ThreadPool;
-
-use commands::anoncreds::{AnoncredsCommand, AnoncredsCommandExecutor};
-use commands::blob_storage::{BlobStorageCommand, BlobStorageCommandExecutor};
-use commands::crypto::{CryptoCommand, CryptoCommandExecutor};
-use commands::ledger::{LedgerCommand, LedgerCommandExecutor};
-use commands::pool::{PoolCommand, PoolCommandExecutor};
-use commands::did::{DidCommand, DidCommandExecutor};
-use commands::wallet::{WalletCommand, WalletCommandExecutor};
-use commands::pairwise::{PairwiseCommand, PairwiseCommandExecutor};
-use commands::non_secrets::{NonSecretsCommand, NonSecretsCommandExecutor};
-use commands::payments::{PaymentsCommand, PaymentsCommandExecutor};
-
-use errors::common::CommonError;
-
-use services::anoncreds::AnoncredsService;
-use services::blob_storage::BlobStorageService;
-use services::payments::PaymentsService;
-use services::pool::PoolService;
-use services::wallet::WalletService;
-use services::crypto::CryptoService;
-use services::ledger::LedgerService;
-
-use domain::IndyConfig;
-
-
-use std::error::Error;
-use std::sync::mpsc::{Sender, channel};
-use std::rc::Rc;
-use std::thread;
-use std::sync::{Mutex, MutexGuard};
 
 pub enum Command {
     Exit,
@@ -55,7 +51,7 @@ pub enum Command {
     Wallet(WalletCommand),
     Pairwise(PairwiseCommand),
     NonSecrets(NonSecretsCommand),
-    Payments(PaymentsCommand)
+    Payments(PaymentsCommand),
 }
 
 lazy_static! {
@@ -63,7 +59,17 @@ lazy_static! {
 }
 
 pub fn indy_set_runtime_config(config: IndyConfig) {
-    THREADPOOL.lock().unwrap().set_num_threads(config.crypto_thread_pool_size)
+    if let Some(crypto_thread_pool_size) = config.crypto_thread_pool_size {
+        THREADPOOL.lock().unwrap().set_num_threads(crypto_thread_pool_size);
+    }
+    match config.collect_backtrace {
+        Some(true) => env::set_var("RUST_BACKTRACE", "1"),
+        Some(false) => env::set_var("RUST_BACKTRACE", "0"),
+        _ => {}
+    }
+    if let Some(threshold) = config.freshness_threshold {
+        set_freshness_threshold(threshold);
+    }
 }
 
 pub struct CommandExecutor {
@@ -164,9 +170,10 @@ impl CommandExecutor {
         }
     }
 
-    pub fn send(&self, cmd: Command) -> Result<(), CommonError> {
-        self.sender.send(cmd).map_err(|err|
-            CommonError::InvalidState(err.description().to_string()))
+    pub fn send(&self, cmd: Command) -> IndyResult<()> {
+        self.sender
+            .send(cmd)
+            .map_err(|err| err_msg(IndyErrorKind::InvalidState, format!("Can't send msg to CommandExecutor: {}", err)))
     }
 }
 

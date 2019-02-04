@@ -164,7 +164,7 @@ public class Anoncreds extends IndyJava.API {
 	 * @param issuerDid The DID of the issuer.
 	 * @param name      Human-readable name of schema.
 	 * @param version   Version of schema.
-	 * @param attrs:    List of schema attributes descriptions
+	 * @param attrs:    List of schema attributes descriptions (the number of attributes should be less or equal than 125)
 	 * @return A future resolving to IssuerCreateSchemaResult object containing:
 	 * schemaId: identifier of created schema
 	 * schemaJson: schema as json

@@ -1,12 +1,12 @@
 use std::cmp;
-use utils::crypto::hash::{Digest, Hash};
-use errors::common::CommonError;
 
+use errors::prelude::*;
 pub use services::ledger::merkletree::proof::{
-    Proof,
     Lemma,
-    Positioned
+    Positioned,
+    Proof
 };
+use utils::crypto::hash::{Digest, Hash};
 
 pub type TreeLeafData = Vec<u8>;
 
@@ -46,7 +46,7 @@ impl Tree {
     }
 
     /// Create a new leaf
-    pub fn new_leaf(value: TreeLeafData) -> Result<Tree, CommonError> {
+    pub fn new_leaf(value: TreeLeafData) -> IndyResult<Tree> {
 
         let hash = Hash::hash_leaf(&value)?;
         Ok(Tree::new(hash, value))

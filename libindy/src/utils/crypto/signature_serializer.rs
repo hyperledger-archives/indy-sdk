@@ -1,17 +1,16 @@
-extern crate serde_json;
 extern crate hex;
+extern crate serde_json;
 
+use errors::prelude::*;
 use self::hex::ToHex;
 use self::serde_json::Value;
-
-use errors::common::CommonError;
 use utils::crypto::hash::Hash;
 
-pub fn serialize_signature(v: Value) -> Result<String, CommonError> {
+pub fn serialize_signature(v: Value) -> Result<String, IndyError> {
     _serialize_signature(v, true)
 }
 
-fn _serialize_signature(v: Value, is_top_level: bool) -> Result<String, CommonError> {
+fn _serialize_signature(v: Value, is_top_level: bool) -> Result<String, IndyError> {
     match v {
         Value::Bool(value) => Ok(if value { "True".to_string() } else { "False".to_string() }),
         Value::Number(value) => Ok(value.to_string()),
@@ -41,7 +40,12 @@ fn _serialize_signature(v: Value, is_top_level: bool) -> Result<String, CommonEr
                 let mut value = map[key].clone();
                 if key == "raw" || key == "hash" || key == "enc" {
                     let mut ctx = Hash::new_context()?;
-                    ctx.update(&value.as_str().ok_or(CommonError::InvalidState("Cannot update hash context".to_string()))?.as_bytes())?;
+
+                    ctx.update(&value
+                        .as_str()
+                        .ok_or(IndyError::from_msg(IndyErrorKind::InvalidState, "Cannot update hash context"))?
+                        .as_bytes())?;
+
                     value = Value::String(ctx.finish()?.as_ref().to_hex());
                 }
                 result = result + key + ":" + &_serialize_signature(value, false)?;

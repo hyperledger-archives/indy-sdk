@@ -4,8 +4,8 @@ use self::libc::c_char;
 use api::{ErrorCode, IndyHandle};
 use commands::{Command, CommandExecutor};
 use commands::payments::PaymentsCommand;
-use errors::ToErrorCode;
 use services::payments::PaymentsMethodCBs;
+use errors::prelude::*;
 use utils::ctypes;
 
 /// Create the payment address for this payment method.
@@ -392,11 +392,11 @@ pub extern fn indy_register_payment_method(command_handle: IndyHandle,
                     payment_method,
                     cbs,
                     Box::new(move |result| {
-                        cb(command_handle, result.to_error_code());
+                        cb(command_handle, result.into());
                     }))
             ));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_register_payment_method: <<< res: {:?}", res);
 
@@ -448,14 +448,14 @@ pub extern fn indy_create_payment_address(command_handle: IndyHandle,
                     payment_method,
                     config,
                     Box::new(move |result| {
-                        let (err, address) = result_to_err_code_1!(result, String::new());
+                        let (err, address) = prepare_result_1!(result, String::new());
                         trace!("indy_create_payment_address: address: {:?}", address);
                         let address = ctypes::string_to_cstring(address);
                         cb(command_handle, err, address.as_ptr());
                     }))
             ));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_create_payment_address: <<< res: {:?}", res);
 
@@ -488,14 +488,14 @@ pub extern fn indy_list_payment_addresses(command_handle: IndyHandle,
                 PaymentsCommand::ListAddresses(
                     wallet_handle,
                     Box::new(move |result| {
-                        let (err, addresses_json) = result_to_err_code_1!(result, String::new());
+                        let (err, addresses_json) = prepare_result_1!(result, String::new());
                         trace!("indy_list_payment_address: addresses_json: {:?}", addresses_json);
                         let addresses_json = ctypes::string_to_cstring(addresses_json);
                         cb(command_handle, err, addresses_json.as_ptr());
                     }))
             ));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_list_payment_address: <<< res: {:?}", res);
 
@@ -567,7 +567,7 @@ pub extern fn indy_add_request_fees(command_handle: IndyHandle,
                     outputs_json,
                     extra,
                     Box::new(move |result| {
-                        let (err, req_with_fees_json, payment_method) = result_to_err_code_2!(result, String::new(), String::new());
+                        let (err, req_with_fees_json, payment_method) = prepare_result_2!(result, String::new(), String::new());
                         trace!("indy_add_request_fees: req_with_fees_json: {:?}, payment_method: {:?}", req_with_fees_json, payment_method);
                         let req_with_fees_json = ctypes::string_to_cstring(req_with_fees_json);
                         let payment_method = ctypes::string_to_cstring(payment_method);
@@ -575,7 +575,7 @@ pub extern fn indy_add_request_fees(command_handle: IndyHandle,
                     }))
             ));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_add_request_fees: <<< res: {:?}", res);
 
@@ -616,13 +616,13 @@ pub extern fn indy_parse_response_with_fees(command_handle: IndyHandle,
             Command::Payments(
                 PaymentsCommand::ParseResponseWithFees(
                     payment_method, resp_json, Box::new(move |result| {
-                        let (err, receipts_json) = result_to_err_code_1!(result, String::new());
+                        let (err, receipts_json) = prepare_result_1!(result, String::new());
                         trace!("indy_parse_response_with_fees: receipts_json: {:?}", receipts_json);
                         let receipts_json = ctypes::string_to_cstring(receipts_json);
                         cb(command_handle, err, receipts_json.as_ptr());
                     }))
             ));
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_parse_response_with_fees: <<< res: {:?}", res);
 
@@ -665,7 +665,7 @@ pub extern fn indy_build_get_payment_sources_request(command_handle: IndyHandle,
                     submitter_did,
                     payment_address,
                     Box::new(move |result| {
-                        let (err, get_sources_txn_json, payment_method) = result_to_err_code_2!(result, String::new(), String::new());
+                        let (err, get_sources_txn_json, payment_method) = prepare_result_2!(result, String::new(), String::new());
                         trace!("indy_build_get_payment_sources_request: get_sources_txn_json: {:?}, payment_method: {:?}", get_sources_txn_json, payment_method);
                         let get_sources_txn_json = ctypes::string_to_cstring(get_sources_txn_json);
                         let payment_method = ctypes::string_to_cstring(payment_method);
@@ -673,7 +673,7 @@ pub extern fn indy_build_get_payment_sources_request(command_handle: IndyHandle,
                     }))
             ));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_build_get_payment_sources_request: <<< res: {:?}", res);
 
@@ -716,14 +716,14 @@ pub extern fn indy_parse_get_payment_sources_response(command_handle: IndyHandle
                     payment_method,
                     resp_json,
                     Box::new(move |result| {
-                        let (err, sources_json) = result_to_err_code_1!(result, String::new());
+                        let (err, sources_json) = prepare_result_1!(result, String::new());
                         trace!("indy_parse_get_payment_sources_response: sources_json: {:?}", sources_json);
                         let sources_json = ctypes::string_to_cstring(sources_json);
                         cb(command_handle, err, sources_json.as_ptr());
                     }))
             ));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_parse_get_payment_sources_response: <<< res: {:?}", res);
 
@@ -787,7 +787,7 @@ pub extern fn indy_build_payment_req(command_handle: IndyHandle,
                     outputs_json,
                     extra,
                     Box::new(move |result| {
-                        let (err, payment_req_json, payment_method) = result_to_err_code_2!(result, String::new(), String::new());
+                        let (err, payment_req_json, payment_method) = prepare_result_2!(result, String::new(), String::new());
                         trace!("indy_build_payment_req: payment_req_json: {:?}, payment_method: {:?}", payment_req_json, payment_method);
                         let payment_req_json = ctypes::string_to_cstring(payment_req_json);
                         let payment_method = ctypes::string_to_cstring(payment_method);
@@ -795,7 +795,7 @@ pub extern fn indy_build_payment_req(command_handle: IndyHandle,
                     }))
             ));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_build_payment_req: <<< res: {:?}", res);
 
@@ -838,14 +838,14 @@ pub extern fn indy_parse_payment_response(command_handle: IndyHandle,
                     payment_method,
                     resp_json,
                     Box::new(move |result| {
-                        let (err, receipts_json) = result_to_err_code_1!(result, String::new());
+                        let (err, receipts_json) = prepare_result_1!(result, String::new());
                         trace!("indy_parse_payment_response: receipts_json: {:?}", receipts_json);
                         let receipts_json = ctypes::string_to_cstring(receipts_json);
                         cb(command_handle, err, receipts_json.as_ptr());
                     }))
             ));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_parse_payment_response: <<< res: {:?}", res);
 
@@ -896,7 +896,7 @@ pub extern fn indy_build_mint_req(command_handle: IndyHandle,
                     outputs_json,
                     extra,
                     Box::new(move |result| {
-                        let (err, mint_req_json, payment_method) = result_to_err_code_2!(result, String::new(), String::new());
+                        let (err, mint_req_json, payment_method) = prepare_result_2!(result, String::new(), String::new());
                         trace!("indy_build_mint_req: mint_req_json: {:?}, payment_method: {:?}", mint_req_json, payment_method);
                         let mint_req_json = ctypes::string_to_cstring(mint_req_json);
                         let payment_method = ctypes::string_to_cstring(payment_method);
@@ -904,7 +904,7 @@ pub extern fn indy_build_mint_req(command_handle: IndyHandle,
                     }))
             ));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_build_mint_req: <<< res: {:?}", res);
 
@@ -952,14 +952,14 @@ pub extern fn indy_build_set_txn_fees_req(command_handle: IndyHandle,
                     payment_method,
                     fees_json,
                     Box::new(move |result| {
-                        let (err, set_txn_fees_json) = result_to_err_code_1!(result, String::new());
+                        let (err, set_txn_fees_json) = prepare_result_1!(result, String::new());
                         trace!("indy_build_set_txn_fees_req: set_txn_fees_json: {:?}", set_txn_fees_json);
                         let set_txn_fees_json = ctypes::string_to_cstring(set_txn_fees_json);
                         cb(command_handle, err, set_txn_fees_json.as_ptr());
                     }))
             ));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_build_set_txn_fees_req: <<< res: {:?}", res);
 
@@ -999,14 +999,14 @@ pub extern fn indy_build_get_txn_fees_req(command_handle: IndyHandle,
                     submitter_did,
                     payment_method,
                     Box::new(move |result| {
-                        let (err, get_txn_fees_json) = result_to_err_code_1!(result, String::new());
+                        let (err, get_txn_fees_json) = prepare_result_1!(result, String::new());
                         trace!("indy_build_get_txn_fees_req: entities >>> get_txn_fees_json: {:?}", get_txn_fees_json);
                         let get_txn_fees_json = ctypes::string_to_cstring(get_txn_fees_json);
                         cb(command_handle, err, get_txn_fees_json.as_ptr());
                     }))
             ));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_build_get_txn_fees_req: <<< res: {:?}", res);
 
@@ -1048,14 +1048,14 @@ pub extern fn indy_parse_get_txn_fees_response(command_handle: IndyHandle,
                     payment_method,
                     resp_json,
                     Box::new(move |result| {
-                        let (err, fees_json) = result_to_err_code_1!(result, String::new());
+                        let (err, fees_json) = prepare_result_1!(result, String::new());
                         trace!("indy_parse_get_txn_fees_response: fees_json: {:?}", fees_json);
                         let fees_json = ctypes::string_to_cstring(fees_json);
                         cb(command_handle, err, fees_json.as_ptr());
                     }))
             ));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_parse_get_txn_fees_response: <<< res: {:?}", res);
 
@@ -1096,7 +1096,7 @@ pub extern fn indy_build_verify_payment_req(command_handle: IndyHandle,
                 submitter_did,
                 receipt,
                 Box::new(move |result| {
-                    let (err, verify_txn_json, payment_method) = result_to_err_code_2!(result, String::new(), String::new());
+                    let (err, verify_txn_json, payment_method) = prepare_result_2!(result, String::new(), String::new());
                     trace!("indy_build_verify_payment_req: verify_txn_json: {:?}, payment_method: {:?}", verify_txn_json, payment_method);
                     let verify_txn_json = ctypes::string_to_cstring(verify_txn_json);
                     let payment_method = ctypes::string_to_cstring(payment_method);
@@ -1104,7 +1104,7 @@ pub extern fn indy_build_verify_payment_req(command_handle: IndyHandle,
                 })
             )));
 
-    let result = result_to_err_code!(result);
+    let result = prepare_result!(result);
 
     trace!("indy_build_verify_payment_req: <<< result: {:?}", result);
 
@@ -1148,14 +1148,14 @@ pub extern fn indy_parse_verify_payment_response(command_handle: IndyHandle,
                 payment_method,
                 resp_json,
                 Box::new(move |result| {
-                    let (err, txn_json) = result_to_err_code_1!(result, String::new());
+                    let (err, txn_json) = prepare_result_1!(result, String::new());
                     trace!("indy_parse_verify_payment_response: txn_json: {:?}", txn_json);
                     let txn_json = ctypes::string_to_cstring(txn_json);
                     cb(command_handle, err, txn_json.as_ptr());
                 })
             )));
 
-    let result = result_to_err_code!(result);
+    let result = prepare_result!(result);
 
     trace!("indy_parse_verify_payment_response: <<< result: {:?}", result);
 

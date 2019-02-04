@@ -11,6 +11,7 @@ pub mod payment_address;
 use self::regex::Regex;
 
 use command_executor::{CommandContext, CommandParams};
+use indy::{ErrorCode, IndyError};
 
 use std;
 
@@ -237,4 +238,92 @@ pub fn set_connected_pool(ctx: &CommandContext, value: Option<(i32, String)>) {
     ctx.set_int_value("CONNECTED_POOL_HANDLE", value.as_ref().map(|value| value.0.to_owned()));
     ctx.set_string_value("CONNECTED_POOL_NAME", value.as_ref().map(|value| value.1.to_owned()));
     ctx.set_sub_prompt(1, value.map(|value| format!("pool({})", value.1)));
+}
+
+pub fn handle_indy_error(err: IndyError, submitter_did: Option<&str>, pool_name: Option<&str>, wallet_name: Option<&str>) {
+    match err.error_code {
+        ErrorCode::WalletAlreadyExistsError => println_err!("Wallet \"{}\" already exists", wallet_name.unwrap_or("")),
+        ErrorCode::WalletInvalidHandle => println_err!("Wallet: \"{}\" not found", wallet_name.unwrap_or("")),
+        ErrorCode::WalletItemNotFound => println_err!("Submitter DID: \"{}\" not found", submitter_did.unwrap_or("")),
+        ErrorCode::WalletIncompatiblePoolError =>
+            println_err!("Wallet \"{}\" is incompatible with pool \"{}\".", wallet_name.unwrap_or(""), pool_name.unwrap_or("")),
+        ErrorCode::PoolLedgerInvalidPoolHandle => println_err!("Pool: \"{}\" not found", pool_name.unwrap_or("")),
+        ErrorCode::PoolLedgerNotCreatedError => println_err!("Pool \"{}\" does not exist.", pool_name.unwrap_or("")),
+        ErrorCode::PoolLedgerTerminated => println_err!("Pool \"{}\" does not exist.", pool_name.unwrap_or("")),
+        ErrorCode::PoolLedgerTimeout => println_err!("Transaction response has not been received"),
+        ErrorCode::DidAlreadyExistsError => println_err!("Did already exists"),
+        _ => println_err!("{}", err.message),
+    }
+}
+
+#[cfg(test)]
+use libindy::ledger::Ledger;
+
+#[cfg(test)]
+pub fn submit_retry<F, T, E>(ctx: &CommandContext, request: &str, parser: F) -> Result<(), ()>
+    where F: Fn(&str) -> Result<T, E> {
+    const SUBMIT_RETRY_CNT: usize = 3;
+    const SUBMIT_TIMEOUT_SEC: u64 = 2;
+
+    let pool_handle = ensure_connected_pool_handle(ctx).unwrap();
+
+    for _ in 0..SUBMIT_RETRY_CNT {
+        let response = Ledger::submit_request(pool_handle, request).unwrap();
+        if parser(&response).is_ok() {
+            return Ok(());
+        }
+        ::std::thread::sleep(::std::time::Duration::from_secs(SUBMIT_TIMEOUT_SEC));
+    }
+
+    return Err(());
+}
+
+#[cfg(test)]
+use utils::test::TestUtils;
+
+#[cfg(test)]
+fn setup() -> CommandContext {
+    TestUtils::cleanup_storage();
+    CommandContext::new()
+}
+
+#[cfg(test)]
+fn setup_with_wallet() -> CommandContext {
+    let ctx = setup();
+    wallet::tests::create_and_open_wallet(&ctx);
+    ctx
+}
+
+#[cfg(test)]
+fn setup_with_wallet_and_pool() -> CommandContext {
+    let ctx = setup();
+    wallet::tests::create_and_open_wallet(&ctx);
+    pool::tests::create_and_connect_pool(&ctx);
+    ctx
+}
+
+#[cfg(test)]
+#[cfg(feature = "nullpay_plugin")]
+fn setup_with_wallet_and_pool_and_payment_plugin() -> CommandContext {
+    let ctx = setup_with_wallet_and_pool();
+    common::tests::load_null_payment_plugin(&ctx);
+    ctx
+}
+
+#[cfg(test)]
+fn tear_down_with_wallet_and_pool(ctx: &CommandContext) {
+    wallet::tests::close_and_delete_wallet(&ctx);
+    pool::tests::disconnect_and_delete_pool(&ctx);
+    tear_down();
+}
+
+#[cfg(test)]
+fn tear_down_with_wallet(ctx: &CommandContext) {
+    wallet::tests::close_and_delete_wallet(&ctx);
+    tear_down();
+}
+
+#[cfg(test)]
+fn tear_down() {
+    TestUtils::cleanup_storage();
 }

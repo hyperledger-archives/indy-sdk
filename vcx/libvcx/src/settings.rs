@@ -3,7 +3,7 @@ extern crate serde_json;
 
 use std::collections::HashMap;
 use std::sync::RwLock;
-use utils::error;
+use utils::{get_temp_dir_path, error};
 use std::path::Path;
 use url::Url;
 use messages::validation;
@@ -41,8 +41,8 @@ pub static CONFIG_PAYMENT_METHOD: &'static str = "payment_method";
 pub static DEFAULT_PROTOCOL_VERSION: usize = 2;
 pub static MAX_SUPPORTED_PROTOCOL_VERSION: usize = 2;
 pub static UNINITIALIZED_WALLET_KEY: &str = "<KEY_IS_NOT_SET>";
-pub static DEFAULT_GENESIS_PATH: &str = "/tmp/genesis.txn";
-pub static DEFAULT_EXPORTED_WALLET_PATH: &str = "/tmp/wallet.txn";
+pub static DEFAULT_GENESIS_PATH: &str = "genesis.txn";
+pub static DEFAULT_EXPORTED_WALLET_PATH: &str = "wallet.txn";
 pub static DEFAULT_WALLET_NAME: &str = "LIBVCX_SDK_WALLET";
 pub static DEFAULT_POOL_NAME: &str = "pool1";
 pub static DEFAULT_LINK_SECRET_ALIAS: &str = "main";
@@ -52,10 +52,10 @@ pub static DEFAULT_DID: &str = "2hoqvcwupRTUNkXn6ArYzs";
 pub static DEFAULT_VERKEY: &str = "FuN98eH2eZybECWkofW6A9BKJxxnTatBCopfUiNxo6ZB";
 pub static DEFAULT_ENABLE_TEST_MODE: &str = "false";
 pub static DEFAULT_WALLET_BACKUP_KEY: &str = "backup_wallet_key";
-pub static DEFAULT_WALLET_KEY: &str = "foobar1234";
+pub static DEFAULT_WALLET_KEY: &str = "8dvfYSt5d1taSd6yJdpjq4emkwsPDDLYxkNFysFD2cZY";
 pub static DEFAULT_THREADPOOL_SIZE: usize = 8;
 pub static MASK_VALUE: &str = "********";
-pub static DEFAULT_WALLET_KEY_DERIVATION: &str = "ARGON2I_INT";
+pub static DEFAULT_WALLET_KEY_DERIVATION: &str = "RAW";
 pub static DEFAULT_PAYMENT_PLUGIN: &str = "libnullpay.so";
 pub static DEFAULT_PAYMENT_INIT_FUNCTION: &str = "nullpay_init";
 pub static DEFAULT_PAYMENT_METHOD: &str = "null";
@@ -96,9 +96,11 @@ pub fn set_defaults() -> u32 {
     settings.insert(CONFIG_SDK_TO_REMOTE_DID.to_string(),DEFAULT_DID.to_string());
     settings.insert(CONFIG_SDK_TO_REMOTE_VERKEY.to_string(),DEFAULT_VERKEY.to_string());
     settings.insert(CONFIG_WALLET_KEY.to_string(),DEFAULT_WALLET_KEY.to_string());
+    settings.insert(CONFIG_WALLET_KEY_DERIVATION.to_string(),DEFAULT_WALLET_KEY_DERIVATION.to_string());
     settings.insert(CONFIG_LINK_SECRET_ALIAS.to_string(), DEFAULT_LINK_SECRET_ALIAS.to_string());
     settings.insert(CONFIG_PROTOCOL_VERSION.to_string(), DEFAULT_PROTOCOL_VERSION.to_string());
-    settings.insert(CONFIG_EXPORTED_WALLET_PATH.to_string(), DEFAULT_EXPORTED_WALLET_PATH.to_string());
+    settings.insert(CONFIG_EXPORTED_WALLET_PATH.to_string(),
+                    get_temp_dir_path(Some(DEFAULT_EXPORTED_WALLET_PATH)).to_str().unwrap_or("").to_string());
     settings.insert(CONFIG_WALLET_BACKUP_KEY.to_string(), DEFAULT_WALLET_BACKUP_KEY.to_string());
     settings.insert(CONFIG_THREADPOOL_SIZE.to_string(), DEFAULT_THREADPOOL_SIZE.to_string());
     settings.insert(CONFIG_PAYMENT_METHOD.to_string(), DEFAULT_PAYMENT_METHOD.to_string());
@@ -312,6 +314,7 @@ pub fn clear_config() {
 #[cfg(test)]
 pub mod tests {
     use super::*;
+    use utils::get_temp_dir_path;
 
     #[test]
     fn test_bad_path() {
@@ -321,7 +324,8 @@ pub mod tests {
 
     #[test]
     fn test_read_config_file() {
-        let config_path = "/tmp/test_init.json";
+        let config_path_buf = get_temp_dir_path(Some("test_init.json"));
+        let config_path = config_path_buf.to_str().unwrap();
 
         let content = json!({
             "pool_name" : "pool1",
@@ -344,7 +348,8 @@ pub mod tests {
 
     #[test]
     fn test_process_file() {
-        let config_path = "/tmp/test_init.json";
+        let config_path_buf = get_temp_dir_path(Some("test_init.json"));
+        let config_path = config_path_buf.to_str().unwrap();
 
         let content = json!({
             "pool_name" : "pool1",

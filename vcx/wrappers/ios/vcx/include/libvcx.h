@@ -31,6 +31,7 @@ typedef unsigned int vcx_proof_handle_t;
 typedef unsigned int vcx_command_handle_t;
 typedef unsigned int vcx_bool_t;
 typedef unsigned int vcx_payment_handle_t;
+typedef unsigned int vcx_u32_t;
 typedef SInt32 VcxHandle;
 
 typedef struct
@@ -345,6 +346,24 @@ vcx_error_t vcx_messages_update_status( vcx_command_handle_t command_handle, con
  * utils object
  */
 vcx_error_t vcx_ledger_get_fees(vcx_command_handle_t command_handle, void(*cb)(vcx_command_handle_t xhandle, vcx_error_t error, const char *fees));
+
+/**
+ * logging
+ **/
+vcx_error_t vcx_set_default_logger(const char* pattern);
+
+vcx_error_t vcx_set_logger( const void* context,
+                            vcx_bool_t (*enabledFn)(const void*  context,
+                                                      vcx_u32_t level,
+                                                      const char* target),
+                            void (*logFn)(const void*  context,
+                                          vcx_u32_t level,
+                                          const char* target,
+                                          const char* message,
+                                          const char* module_path,
+                                          const char* file,
+                                          vcx_u32_t line),
+                            void (*flushFn)(const void*  context));
 
 /** For testing purposes only */
 void vcx_set_next_agency_response(int);

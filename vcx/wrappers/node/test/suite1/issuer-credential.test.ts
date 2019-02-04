@@ -7,14 +7,11 @@ import {
   dataIssuerCredentialCreate,
   issuerCredentialCreate
 } from 'helpers/entities'
-import { gcTest } from 'helpers/gc'
-import { TIMEOUT_GC } from 'helpers/test-constants'
 import { initVcxTestMode, shouldThrow } from 'helpers/utils'
 import {
   Connection,
   IssuerCredential,
   IssuerCredentialPaymentManager,
-  rustAPI,
   StateType,
   VCXCode,
   VCXMock,
@@ -30,46 +27,46 @@ describe('IssuerCredential:', () => {
     })
 
     it('throws: missing sourceId', async () => {
-      const { sourceId, ...data } = dataIssuerCredentialCreate()
+      const { sourceId, ...data } = await dataIssuerCredentialCreate()
       const error = await shouldThrow(() => IssuerCredential.create(data as any))
       assert.equal(error.vcxCode, VCXCode.INVALID_OPTION)
     })
 
-    it('throws: missing credDefId', async () => {
-      const { credDefId, ...data } = dataIssuerCredentialCreate()
+    it('throws: invalid credDefHandle', async () => {
+      const { credDefHandle, ...data } = await dataIssuerCredentialCreate()
       const error = await shouldThrow(() => IssuerCredential.create(data as any))
-      assert.equal(error.vcxCode, VCXCode.INVALID_OPTION)
+      assert.equal(error.vcxCode, VCXCode.INVALID_CREDENTIAL_DEF_HANDLE)
     })
 
     it('throws: missing credDefId', async () => {
-      const { credDefId, ...data } = dataIssuerCredentialCreate()
+      const { credDefHandle, ...data } = await dataIssuerCredentialCreate()
       const error = await shouldThrow(() => IssuerCredential.create(data as any))
-      assert.equal(error.vcxCode, VCXCode.INVALID_OPTION)
+      assert.equal(error.vcxCode, VCXCode.INVALID_CREDENTIAL_DEF_HANDLE)
     })
 
     it('throws: missing attr', async () => {
-      const { attr, ...data } = dataIssuerCredentialCreate()
+      const { attr, ...data } = await dataIssuerCredentialCreate()
       const error = await shouldThrow(() => IssuerCredential.create(data as any))
-      assert.equal(error.vcxCode, VCXCode.UNKNOWN_ERROR)
+      assert.equal(error.vcxCode, VCXCode.INVALID_OPTION)
     })
 
     it('throws: missing credentialName', async () => {
-      const { credentialName, ...data } = dataIssuerCredentialCreate()
+      const { credentialName, ...data } = await dataIssuerCredentialCreate()
       const error = await shouldThrow(() => IssuerCredential.create(data as any))
       assert.equal(error.vcxCode, VCXCode.INVALID_OPTION)
     })
 
     // TODO: Enable once https://evernym.atlassian.net/browse/EN-665 is resolved
-    it.skip('throws: missing price', async () => {
-      const { price, ...data } = dataIssuerCredentialCreate()
+    it('throws: missing price', async () => {
+      const { price, ...data } = await dataIssuerCredentialCreate()
       const error = await shouldThrow(() => IssuerCredential.create(data as any))
       assert.equal(error.vcxCode, VCXCode.INVALID_OPTION)
     })
 
     it('throws: invalid attr', async () => {
-      const { attr, ...data } = dataIssuerCredentialCreate()
+      const { attr, ...data } = await dataIssuerCredentialCreate()
       const error = await shouldThrow(() => IssuerCredential.create({ attr: null as any, ...data }))
-      assert.equal(error.vcxCode, VCXCode.UNKNOWN_ERROR)
+      assert.equal(error.vcxCode, VCXCode.INVALID_OPTION)
     })
   })
 
@@ -92,15 +89,6 @@ describe('IssuerCredential:', () => {
       assert.equal(error.vcxCode, VCXCode.INVALID_ISSUER_CREDENTIAL_HANDLE)
     })
 
-    it('throws: issuerCredential released', async () => {
-      const issuerCredential = await issuerCredentialCreate()
-      const { data } = await issuerCredential.serialize()
-      assert.ok(data)
-      assert.equal(data.source_id, issuerCredential.sourceId)
-      assert.equal(await issuerCredential.release(), VCXCode.SUCCESS)
-      const error = await shouldThrow(() => issuerCredential.serialize())
-      assert.equal(error.vcxCode, VCXCode.INVALID_ISSUER_CREDENTIAL_HANDLE)
-    })
   })
 
   describe('deserialize:', () => {
@@ -127,22 +115,6 @@ describe('IssuerCredential:', () => {
         source_id: 'Invalid'
       } } as any))
       assert.equal(error.vcxCode, VCXCode.INVALID_JSON)
-    })
-  })
-
-  describe('release:', () => {
-    it('success', async () => {
-      const issuerCredential = await issuerCredentialCreate()
-      assert.equal(await issuerCredential.release(), VCXCode.SUCCESS)
-      const errorSerialize = await shouldThrow(() => issuerCredential.serialize())
-      assert.equal(errorSerialize.vcxCode, VCXCode.INVALID_ISSUER_CREDENTIAL_HANDLE)
-    })
-
-    // TODO: Enable once https://evernym.atlassian.net/browse/EN-668 is resolved
-    it.skip('throws: not initialized', async () => {
-      const issuerCredential = new IssuerCredential(null as any, {} as any)
-      const error = await shouldThrow(() => issuerCredential.release())
-      assert.equal(error.vcxCode, VCXCode.UNKNOWN_ERROR)
     })
   })
 
@@ -243,22 +215,22 @@ describe('IssuerCredential:', () => {
     })
   })
 
-  describe('GC:', function () {
-    this.timeout(TIMEOUT_GC)
+  describe('revoke:', () => {
+    it('throws: invalid revocation details', async () => {
+      const issuerCredential = await issuerCredentialCreate()
+      const error = await shouldThrow(() => issuerCredential.revokeCredential())
+      assert.equal(error.vcxCode, VCXCode.INVALID_REVOCATION_DETAILS)
+    })
 
-    const issuerCredentialCreateAndDelete = async () => {
-      let issuerCredential: IssuerCredential | null = await issuerCredentialCreate()
-      const handle = issuerCredential.handle
-      issuerCredential = null
-      return handle
-    }
-    it('calls release', async () => {
-      const handle = await issuerCredentialCreateAndDelete()
-      await gcTest({
-        handle,
-        serialize: rustAPI().vcx_issuer_credential_serialize,
-        stopCode: VCXCode.INVALID_ISSUER_CREDENTIAL_HANDLE
-      })
+    it('success', async () => {
+      const issuerCredential1 = await issuerCredentialCreate()
+      const data = await issuerCredential1.serialize()
+      data.data.cred_rev_id = '123'
+      data.data.rev_reg_id = '456'
+      data.data.tails_file = 'file'
+      const issuerCredential2 = await IssuerCredential.deserialize(data)
+      await issuerCredential2.revokeCredential()
     })
   })
+
 })

@@ -1,14 +1,13 @@
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
-use domain::anoncreds::schema::{Schema, SchemaV1, schemas_map_to_schemas_v1_map};
-use domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionV1, cred_defs_map_to_cred_defs_v1_map};
+use domain::anoncreds::credential_definition::{cred_defs_map_to_cred_defs_v1_map, CredentialDefinition, CredentialDefinitionV1};
 use domain::anoncreds::proof::Proof;
 use domain::anoncreds::proof_request::ProofRequest;
-use domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinition, RevocationRegistryDefinitionV1, rev_reg_defs_map_to_rev_reg_defs_v1_map};
-use domain::anoncreds::revocation_registry::{RevocationRegistry, RevocationRegistryV1, rev_regs_map_to_rev_regs_local_map};
-use errors::common::CommonError;
-use errors::indy::IndyError;
+use domain::anoncreds::revocation_registry::{rev_regs_map_to_rev_regs_local_map, RevocationRegistry, RevocationRegistryV1};
+use domain::anoncreds::revocation_registry_definition::{rev_reg_defs_map_to_rev_reg_defs_v1_map, RevocationRegistryDefinition, RevocationRegistryDefinitionV1};
+use domain::anoncreds::schema::{Schema, schemas_map_to_schemas_v1_map, SchemaV1};
+use errors::prelude::*;
 use services::anoncreds::AnoncredsService;
 
 pub enum VerifierCommand {
@@ -19,7 +18,7 @@ pub enum VerifierCommand {
         HashMap<String, CredentialDefinition>, // credential defs
         HashMap<String, RevocationRegistryDefinition>, // rev reg defs
         HashMap<String, HashMap<u64, RevocationRegistry>>, // rev reg entries
-        Box<Fn(Result<bool, IndyError>) + Send>)
+        Box<Fn(IndyResult<bool>) + Send>)
 }
 
 pub struct VerifierCommandExecutor {
@@ -52,7 +51,7 @@ impl VerifierCommandExecutor {
                     schemas: &HashMap<String, SchemaV1>,
                     cred_defs: &HashMap<String, CredentialDefinitionV1>,
                     rev_reg_defs: &HashMap<String, RevocationRegistryDefinitionV1>,
-                    rev_regs: &HashMap<String, HashMap<u64, RevocationRegistryV1>>) -> Result<bool, IndyError> {
+                    rev_regs: &HashMap<String, HashMap<u64, RevocationRegistryV1>>) -> IndyResult<bool> {
         debug!("verify_proof >>> proof_req: {:?}, proof: {:?}, schemas: {:?}, cred_defs: {:?},  \
                rev_reg_defs: {:?}, rev_regs: {:?}",
                proof_req, proof, schemas, cred_defs, rev_reg_defs, rev_regs);
@@ -94,8 +93,8 @@ impl VerifierCommandExecutor {
             .collect::<HashSet<String>>();
 
         if requested_attrs != received_attrs {
-            return Err(IndyError::CommonError(CommonError::InvalidStructure(
-                format!("Requested attributes {:?} do not correspond to received {:?}", requested_attrs, received_attrs))));
+            return Err(err_msg(IndyErrorKind::InvalidStructure,
+                               format!("Requested attributes {:?} do not correspond to received {:?}", requested_attrs, received_attrs)));
         }
 
         let requested_predicates: HashSet<String> =
@@ -113,8 +112,8 @@ impl VerifierCommandExecutor {
                 .collect::<HashSet<String>>();
 
         if requested_predicates != received_predicates {
-            return Err(IndyError::CommonError(CommonError::InvalidStructure(
-                format!("Requested predicates {:?} do not correspond to received {:?}", requested_predicates, received_predicates))));
+            return Err(err_msg(IndyErrorKind::InvalidStructure,
+                               format!("Requested predicates {:?} do not correspond to received {:?}", requested_predicates, received_predicates)));
         }
 
         let result = self.anoncreds_service.verifier.verify(&proof,

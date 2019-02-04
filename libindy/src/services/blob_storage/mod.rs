@@ -1,44 +1,44 @@
-mod default_writer;
-mod default_reader;
-
 extern crate digest;
 extern crate indy_crypto;
 extern crate sha2;
 
-use errors::common::CommonError;
+use std::cell::RefCell;
+use std::collections::HashMap;
+
+use errors::prelude::*;
 use utils::sequence;
 
 use self::digest::{FixedOutput, Input};
 use self::sha2::Sha256;
 
-use std::cell::RefCell;
-use std::collections::HashMap;
+mod default_writer;
+mod default_reader;
 
 trait WriterType {
-    fn open(&self, config: &str) -> Result<Box<Writer>, CommonError>;
+    fn open(&self, config: &str) -> IndyResult<Box<Writer>>;
 }
 
 trait Writer {
-    fn create(&self, id: i32) -> Result<Box<WritableBlob>, CommonError>;
+    fn create(&self, id: i32) -> IndyResult<Box<WritableBlob>>;
 }
 
 trait WritableBlob {
-    fn append(&mut self, bytes: &[u8]) -> Result<usize, CommonError>;
-    fn finalize(&mut self, hash: &[u8]) -> Result<String, CommonError>;
+    fn append(&mut self, bytes: &[u8]) -> IndyResult<usize>;
+    fn finalize(&mut self, hash: &[u8]) -> IndyResult<String>;
 }
 
 trait ReaderType {
-    fn open(&self, config: &str) -> Result<Box<Reader>, CommonError>;
+    fn open(&self, config: &str) -> IndyResult<Box<Reader>>;
 }
 
 trait Reader {
-    fn open(&self, hash: &[u8], location: &str) -> Result<Box<ReadableBlob>, CommonError>;
+    fn open(&self, hash: &[u8], location: &str) -> IndyResult<Box<ReadableBlob>>;
 }
 
 trait ReadableBlob {
-    fn read(&mut self, size: usize, offset: usize) -> Result<Vec<u8>, CommonError>;
-    fn verify(&mut self) -> Result<bool, CommonError>;
-    fn close(&self) -> Result<(), CommonError>;
+    fn read(&mut self, size: usize, offset: usize) -> IndyResult<Vec<u8>>;
+    fn verify(&mut self) -> IndyResult<bool>;
+    fn close(&self) -> IndyResult<()>;
 }
 
 pub struct BlobStorageService {
@@ -72,9 +72,9 @@ impl BlobStorageService {
 
 /* Writer */
 impl BlobStorageService {
-    pub fn open_writer(&self, type_: &str, config: &str) -> Result<i32, CommonError> {
+    pub fn open_writer(&self, type_: &str, config: &str) -> IndyResult<i32> {
         let writer_config = self.writer_types.try_borrow()?
-            .get(type_).ok_or(CommonError::InvalidStructure("Unknown BlobStorage Writer type".to_string()))?
+            .get(type_).ok_or(err_msg(IndyErrorKind::InvalidStructure, "Unknown BlobStorage Writer type"))?
             .open(config)?;
 
         let config_handle = sequence::get_next_id();
@@ -83,10 +83,10 @@ impl BlobStorageService {
         Ok(config_handle)
     }
 
-    pub fn create_blob(&self, config_handle: i32) -> Result<i32, CommonError> {
+    pub fn create_blob(&self, config_handle: i32) -> IndyResult<i32> {
         let blob_handle = sequence::get_next_id();
         let writer = self.writer_configs.try_borrow()?
-            .get(&config_handle).ok_or(CommonError::InvalidStructure("Unknown BlobStorage Writer".to_owned()))?
+            .get(&config_handle).ok_or(err_msg(IndyErrorKind::InvalidStructure, "Invalid BlobStorage config handle"))? // FIXME: Review error kind
             .create(blob_handle)?;
 
         self.writer_blobs.try_borrow_mut()?.insert(blob_handle, (writer, Sha256::default()));
@@ -94,19 +94,19 @@ impl BlobStorageService {
         Ok(blob_handle)
     }
 
-    pub fn append(&self, handle: i32, bytes: &[u8]) -> Result<usize, CommonError> {
+    pub fn append(&self, handle: i32, bytes: &[u8]) -> IndyResult<usize> {
         let mut writers = self.writer_blobs.try_borrow_mut()?;
         let &mut (ref mut writer, ref mut hasher) = writers
-            .get_mut(&handle).ok_or(CommonError::InvalidStructure("Unknown BlobStorage handle Blob to append".to_owned()))?;
+            .get_mut(&handle).ok_or(err_msg(IndyErrorKind::InvalidStructure, "Invalid BlobStorage handle"))?; // FIXME: Review error kind
 
         hasher.process(bytes);
         writer.append(bytes)
     }
 
-    pub fn finalize(&self, handle: i32) -> Result<(String, Vec<u8>), CommonError> {
+    pub fn finalize(&self, handle: i32) -> IndyResult<(String, Vec<u8>)> {
         let mut writers = self.writer_blobs.try_borrow_mut()?;
         let (mut writer, hasher) = writers
-            .remove(&handle).ok_or(CommonError::InvalidStructure("Unknown BlobStorage handle Blob to finalize".to_owned()))?;
+            .remove(&handle).ok_or(err_msg(IndyErrorKind::InvalidStructure, "Invalid BlobStorage handle"))?; // FIXME: Review error kind
 
         let hash = hasher.fixed_result().to_vec();
 
@@ -117,9 +117,9 @@ impl BlobStorageService {
 
 /* Reader */
 impl BlobStorageService {
-    pub fn open_reader(&self, type_: &str, config: &str) -> Result<i32, CommonError> {
+    pub fn open_reader(&self, type_: &str, config: &str) -> IndyResult<i32> {
         let reader_config = self.reader_types.try_borrow()?
-            .get(type_).ok_or(CommonError::InvalidStructure("Unknown BlobStorage Reader type".to_string()))?
+            .get(type_).ok_or(err_msg(IndyErrorKind::InvalidStructure, "Invalid BlobStorage Reader type"))? // FIXME: Review error kind
             .open(config)?;
 
         let config_handle = sequence::get_next_id();
@@ -128,9 +128,9 @@ impl BlobStorageService {
         Ok(config_handle)
     }
 
-    pub fn open_blob(&self, config_handle: i32, location: &str, hash: &[u8]) -> Result<i32, CommonError> {
+    pub fn open_blob(&self, config_handle: i32, location: &str, hash: &[u8]) -> IndyResult<i32> {
         let reader = self.reader_configs.try_borrow()?
-            .get(&config_handle).ok_or(CommonError::InvalidStructure("Unknown BlobStorage Reader".to_string()))?
+            .get(&config_handle).ok_or(err_msg(IndyErrorKind::InvalidStructure, "Invalid BlobStorage config handle"))? // FIXME: Review error kind
             .open(hash, location)?;
 
         let reader_handle = sequence::get_next_id();
@@ -139,21 +139,21 @@ impl BlobStorageService {
         Ok(reader_handle)
     }
 
-    pub fn read(&self, handle: i32, size: usize, offset: usize) -> Result<Vec<u8>, CommonError> {
+    pub fn read(&self, handle: i32, size: usize, offset: usize) -> IndyResult<Vec<u8>> {
         self.reader_blobs.try_borrow_mut()?
-            .get_mut(&handle).ok_or(CommonError::InvalidStructure("Unknown BlobStorage handle Blob to read".to_owned()))?
+            .get_mut(&handle).ok_or(err_msg(IndyErrorKind::InvalidStructure, "Invalid BlobStorage handle"))? // FIXME: Review error kind
             .read(size, offset)
     }
 
-    pub fn _verify(&self, handle: i32) -> Result<bool, CommonError> {
+    pub fn _verify(&self, handle: i32) -> IndyResult<bool> {
         self.reader_blobs.try_borrow_mut()?
-            .get_mut(&handle).ok_or(CommonError::InvalidStructure("Unknown BlobStorage handle Blob to verify".to_owned()))?
+            .get_mut(&handle).ok_or(err_msg(IndyErrorKind::InvalidStructure, "Invalid BlobStorage handle"))? // FIXME: Review error kind
             .verify()
     }
 
-    pub fn close(&self, handle: i32) -> Result<(), CommonError> {
+    pub fn close(&self, handle: i32) -> IndyResult<()> {
         self.reader_blobs.try_borrow_mut()?
-            .remove(&handle).ok_or(CommonError::InvalidStructure("Unknown BlobStorage handle Blob to close".to_owned()))?
+            .remove(&handle).ok_or(err_msg(IndyErrorKind::InvalidStructure, "Invalid BlobStorage handle"))? // FIXME: Review error kind
             .close()
     }
 }

@@ -350,6 +350,7 @@ mod tests {
     use std::ffi::CString;
     use std::time::Duration;
     use api::return_types_u32;
+    use utils::timeout::TimeoutUtils;
 
     #[test]
     fn test_provision_agent() {
@@ -389,6 +390,28 @@ mod tests {
         assert_eq!(0, result);
         let result = cb.receive(Some(Duration::from_secs(2)));
         assert_eq!(result, Err(error::INVALID_CONFIGURATION.code_num));
+    }
+
+    #[test]
+    fn test_create_agent_fails_for_unknown_wallet_type() {
+        init!("false");
+
+        let config = json!({
+            "agency_url":"https://enym-eagency.pdev.evernym.com",
+            "agency_did":"Ab8TvZa3Q19VNkQVzAWVL7",
+            "agency_verkey":"5LXaR43B1aQyeh94VBP8LG1Sgvjk7aNfqiksBCSjwqbf",
+            "wallet_name":"test_provision_agent",
+            "wallet_key":"key",
+            "wallet_type":"UNKNOWN_WALLET_TYPE"
+        }).to_string();
+
+        let c_config = CString::new(config).unwrap().into_raw();
+
+        let cb = return_types_u32::Return_U32_STR::new().unwrap();
+        let result = vcx_agent_provision_async(cb.command_handle, c_config, Some(cb.get_callback()));
+        assert_eq!(0, result);
+        let result = cb.receive(Some(TimeoutUtils::medium_timeout()));
+        assert_eq!(result, Err(error::INVALID_WALLET_CREATION.code_num));
     }
 
     #[test]
