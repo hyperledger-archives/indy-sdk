@@ -1111,7 +1111,7 @@ def javaWrapperPublishing(testEnv, isRelease) {
             withCredentials([file(credentialsId: 'maven-settings', variable: 'settingsFile')]) {
                 sh 'cp $settingsFile .'
 
-                sh "mvn clean deploy -DskipTests --settings settings.xml"
+                sh "mvn clean deploy -DskipTests -Dmaven.wagon.http.ssl.insecure=true -Dmaven.wagon.http.ssl.allowall=true -Dmaven.wagon.http.ssl.ignore.validity.dates=true --settings settings.xml"
             }
         }
     }

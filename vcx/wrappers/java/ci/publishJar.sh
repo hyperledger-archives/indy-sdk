@@ -8,6 +8,7 @@ cp -v settings.xml ${JAR_FOLDER}
 pushd ${JAR_FOLDER}
 
     mvn -e deploy:deploy-file \
+        -Dmaven.wagon.http.ssl.insecure=true -Dmaven.wagon.http.ssl.allowall=true -Dmaven.wagon.http.ssl.ignore.validity.dates=true \
         -Durl='${mavenRepo.url}' \
         -DrepositoryId='${mavenRepo.id}' \
         -Dversion=${JAR_VERSION} \
