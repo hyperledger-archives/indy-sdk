@@ -1,4 +1,7 @@
-#!/bin/sh -e
+#!/bin/sh
+
+set -e
+set -x
 
 if [ "$1" = "--help" ] ; then
   echo "Usage: <package> <targets>"

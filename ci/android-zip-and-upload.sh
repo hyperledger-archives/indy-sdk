@@ -1,5 +1,8 @@
 #!/bin/bash
 
+set -e
+set -x
+
 if [ "$1" = "--help" ] ; then
   echo "Usage: <architecture> <version> <key> <branchName> <number> <artifact_name>"
   return
