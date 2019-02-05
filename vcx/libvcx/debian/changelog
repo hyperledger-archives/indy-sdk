@@ -1,4 +1,9 @@
-libvcx (0.1.0) unstable; urgency=medium
+libvcx (0.2.1) unstable; urgency=medium
 
-  [ Hyperledger ]
-  * Initial release
+[ Hyperledger ]
+
+* 0.2.1
+    * Bugfixes
+
+* 0.2.0
+    * Initial release

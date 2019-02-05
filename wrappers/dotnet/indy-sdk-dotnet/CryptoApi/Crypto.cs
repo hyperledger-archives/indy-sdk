@@ -149,6 +149,40 @@ namespace Hyperledger.Indy.CryptoApi
         }
         private static AnonDecryptCompletedDelegate CryptoAnonDecryptCompletedCallback = CryptoAnonDecryptCompletedCallbackMethod;
 
+#if __IOS__
+        [MonoPInvokeCallback(typeof(PackMessageCompletedDelegate))]
+#endif
+        private static void PackMessageCompletedCallbackMethod(int command_handle, int err, IntPtr msg_data, int msg_len)
+        {
+            var taskCompletionSource = PendingCommands.Remove<byte[]>(command_handle);
+
+            if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
+                return;
+
+            var decryptedMsgBytes = new byte[msg_len];
+            Marshal.Copy(msg_data, decryptedMsgBytes, 0, msg_len);
+
+            taskCompletionSource.SetResult(decryptedMsgBytes);
+        }
+        private static PackMessageCompletedDelegate PackMessageCompletedCallback = PackMessageCompletedCallbackMethod;
+
+#if __IOS__
+        [MonoPInvokeCallback(typeof(UnpackMessageCompletedDelegate))]
+#endif
+        private static void UnpackMessageCompletedCallbackMethod(int command_handle, int err, IntPtr msg_data, int msg_len)
+        {
+            var taskCompletionSource = PendingCommands.Remove<byte[]>(command_handle);
+
+            if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
+                return;
+
+            var decryptedMsgBytes = new byte[msg_len];
+            Marshal.Copy(msg_data, decryptedMsgBytes, 0, msg_len);
+
+            taskCompletionSource.SetResult(decryptedMsgBytes);
+        }
+        private static UnpackMessageCompletedDelegate UnpackMessageCompletedCallback = UnpackMessageCompletedCallbackMethod;
+
         /// <summary>
         /// Creates a key in the provided wallet.
         /// </summary>
@@ -478,6 +512,133 @@ namespace Hyperledger.Indy.CryptoApi
                 encryptedMessage.Length,
                 CryptoAnonDecryptCompletedCallback
                 );
+
+            CallbackHelper.CheckResult(commandResult);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
+        /// Packs a message (Experimental)
+        ///
+        /// Note to use DID keys with this function you can call indy_key_for_did to get key id (verkey)
+        /// for specific DID.
+        /// </summary>
+        /// <param name="wallet">The wallet containing the key-pair associated with the verification key specified in the <paramref name="recipientVk"/> parameter.</param>
+        /// <param name="recipientVk">A string in the format of a json list which will contain the list of receiver's keys
+        ///                the message is being encrypted for.
+        ///                Example:
+        ///                <code>[&lt;receiver edge_agent_1 verkey>, &lt;receiver edge_agent_2 verkey>]</code>
+        /// </param>
+        /// <param name="senderVk">The sender's verkey as a string or null.
+        /// <remarks>When null pointer is used in this parameter, anoncrypt is used</remarks>
+        /// </param>
+        /// <param name="message">The message data to pack.</param>
+        /// <returns>a JWE using authcrypt alg is defined below:
+        /// <code>
+        /// {
+        ///     "protected": "b64URLencoded({
+        ///        "enc": "xsalsa20poly1305",
+        ///        "typ": "JWM/1.0",
+        ///        "alg": "Authcrypt",
+        ///        "recipients": [
+        ///            {
+        ///                "encrypted_key": base64URLencode(libsodium.crypto_box(my_key, their_vk, cek, cek_iv))
+        ///                "header": {
+        ///                     "kid": "base58encode(recipient_verkey)",
+        ///                     "sender" : base64URLencode(libsodium.crypto_box_seal(their_vk, base58encode(sender_vk)),
+        ///                     "iv" : base64URLencode(cek_iv)
+        ///                }
+        ///            },
+        ///        ],
+        ///     })",
+        ///     "iv": &lt;b64URLencode(iv)>,
+        ///     "ciphertext": b64URLencode(encrypt_detached({'@type'...}, protected_value_encoded, iv, cek),
+        ///     "tag": &lt;b64URLencode(tag)>
+        /// }
+        /// </code>
+        /// Alternative example in using anoncrypt alg is defined below:
+        /// <code>
+        /// {
+        ///     "protected": "b64URLencoded({
+        ///        "enc": "xsalsa20poly1305",
+        ///        "typ": "JWM/1.0",
+        ///        "alg": "Anoncrypt",
+        ///        "recipients": [
+        ///            {
+        ///                "encrypted_key": base64URLencode(libsodium.crypto_box_seal(their_vk, cek)),
+        ///                "header": {
+        ///                    "kid": base58encode(recipient_verkey),
+        ///                }
+        ///            },
+        ///        ],
+        ///     })",
+        ///     "iv": b64URLencode(iv),
+        ///     "ciphertext": b64URLencode(encrypt_detached({'@type'...}, protected_value_encoded, iv, cek),
+        ///     "tag": b64URLencode(tag)
+        /// }
+        /// </code>
+        /// </returns>
+        public static Task<byte[]> PackMessageAsync(Wallet wallet, string recipientVk, string senderVk, byte[] message)
+        {
+            ParamGuard.NotNull(wallet, "wallet");
+            ParamGuard.NotNullOrWhiteSpace(recipientVk, "recipientVk");
+            ParamGuard.NotNull(message, "message");
+
+            var taskCompletionSource = new TaskCompletionSource<byte[]>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var commandResult = NativeMethods.indy_pack_message(
+                commandHandle,
+                wallet.Handle,
+                message,
+                message.Length,
+                recipientVk,
+                senderVk,
+                PackMessageCompletedCallback);
+
+            CallbackHelper.CheckResult(commandResult);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
+        /// Unpacks a message packed using indy_pack_message which follows the wire message format (Experimental)
+        /// </summary>
+        /// <param name="wallet">The wallet.</param>
+        /// <param name="message">The JWE message to be unpacked</param>
+        /// <returns>
+        /// if authcrypt was used to pack the message returns this json structure:
+        /// <code>
+        /// {
+        ///     message: &lt;decrypted message>,
+        ///     sender_verkey: &lt;sender_verkey>,
+        ///     recipient_verkey: &lt;recipient_verkey>
+        /// }
+        /// </code>
+        /// OR
+        /// <code>
+        /// if anoncrypt was used to pack the message returns this json structure:
+        /// {
+        ///     message: &lt;decrypted message>,
+        ///     recipient_verkey: &lt;recipient_verkey>
+        /// }
+        /// </code>
+        /// </returns>
+        public static Task<byte[]> UnpackMessageAsync(Wallet wallet, byte[] message)
+        {
+            ParamGuard.NotNull(wallet, "wallet");
+            ParamGuard.NotNull(message, "message");
+
+            var taskCompletionSource = new TaskCompletionSource<byte[]>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var commandResult = NativeMethods.indy_unpack_message(
+                commandHandle,
+                wallet.Handle,
+                message,
+                message.Length,
+                UnpackMessageCompletedCallback);
 
             CallbackHelper.CheckResult(commandResult);
 
