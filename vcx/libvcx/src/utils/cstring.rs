@@ -60,3 +60,25 @@ macro_rules! check_useful_opt_c_str {
         };
     }
 }
+
+/// Vector helpers
+macro_rules! check_useful_c_byte_array {
+    ($ptr:ident, $len:expr, $err1:expr, $err2:expr) => {
+        if $ptr.is_null() {
+            return $err1;
+        }
+
+        if $len <= 0 {
+            return $err2;
+        }
+
+        let $ptr = unsafe { $crate::std::slice::from_raw_parts($ptr, $len as usize) };
+        let $ptr = $ptr.to_vec();
+    }
+}
+
+//Returnable pointer is valid only before first vector modification
+pub fn vec_to_pointer(v: &Vec<u8>) -> (*const u8, u32) {
+    let len = v.len() as u32;
+    (v.as_ptr() as *const u8, len)
+}
