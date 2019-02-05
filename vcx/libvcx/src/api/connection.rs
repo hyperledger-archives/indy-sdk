@@ -445,6 +445,204 @@ pub extern fn vcx_connection_invite_details(command_handle: u32,
     error::SUCCESS.code_num
 }
 
+/// Send a message to the specified connection
+///
+/// #params
+///
+/// command_handle: command handle to map callback to user context.
+///
+/// connection_handle: connection to receive the message
+///
+/// msg: actual message to send
+///
+/// msg_type: type of message to send
+///
+/// msg_title: message title (user notification)
+///
+/// cb: Callback that provides array of matching messages retrieved
+///
+/// #Returns
+/// Error code as a u32
+
+#[no_mangle]
+pub extern fn vcx_connection_send_message(command_handle: u32,
+                               connection_handle: u32,
+                               msg: *const c_char,
+                               msg_type: *const c_char,
+                               msg_title: *const c_char,
+                               cb: Option<extern fn(xcommand_handle: u32, err: u32, msg_id: *const c_char)>) -> u32 {
+    info!("vcx_message_send >>>");
+
+    check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
+    check_useful_c_str!(msg, error::INVALID_OPTION.code_num);
+    check_useful_c_str!(msg_type, error::INVALID_OPTION.code_num);
+    check_useful_c_str!(msg_title, error::INVALID_OPTION.code_num);
+
+    trace!("vcx_message_send(command_handle: {}, connection_handle: {}, msg: {}, msg_type: {}, msg_title: {})",
+          command_handle, connection_handle, msg, msg_type, msg_title);
+
+    spawn(move|| {
+        match ::messages::send_message::send_generic_message(connection_handle, &msg, &msg_type, &msg_title) {
+            Ok(x) => {
+                trace!("vcx_connection_send_message_cb(command_handle: {}, rc: {}, msg_id: {})",
+                    command_handle, error::error_string(0), x);
+
+                let msg_id = CStringUtils::string_to_cstring(x);
+                cb(command_handle, error::SUCCESS.code_num, msg_id.as_ptr());
+            },
+            Err(e) => {
+                warn!("vcx_connection_send_message_cb(command_handle: {}, rc: {})",
+                      command_handle, error_string(e));
+
+                cb(command_handle, e, ptr::null_mut());
+            },
+        };
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
+
+/// Generate a signature for the specified data
+///
+/// #params
+///
+/// command_handle: command handle to map callback to user context.
+///
+/// connection_handle: connection to receive the message
+///
+/// data_raw: raw data buffer for signature
+///
+/// data:len: length of data buffer
+///
+/// cb: Callback that provides the generated signature
+///
+/// #Returns
+/// Error code as a u32
+#[no_mangle]
+pub extern fn vcx_connection_sign_data(command_handle: u32,
+                                  connection_handle: u32,
+                                  data_raw: *const u8,
+                                  data_len: u32,
+                                  cb: Option<extern fn(command_handle_: u32,
+                                                       err: u32,
+                                                       signature_raw: *const u8,
+                                                       signature_len: u32)>) -> u32  {
+    trace!("vcx_connection_sign_data: >>> connection_handle: {}, data_raw: {:?}, data_len: {}",
+           connection_handle, data_raw, data_len);
+
+    check_useful_c_byte_array!(data_raw, data_len, error::INVALID_OPTION.code_num, error::INVALID_OPTION.code_num);
+    check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
+
+    trace!("vcx_connection_sign_data: entities >>> connection_handle: {}, data_raw: {:?}, data_len: {}",
+           connection_handle, data_raw, data_len);
+
+    if !is_valid_handle(connection_handle) {
+        error!("vcx_connection_sign - invalid handle");
+        return error::INVALID_CONNECTION_HANDLE.code_num;
+    }
+
+    let vk = match ::connection::get_pw_verkey(connection_handle) {
+        Ok(x) => x,
+        Err(e) => return e.to_error_code(),
+    };
+
+    spawn (move || {
+        match ::utils::libindy::crypto::sign(&vk, &data_raw) {
+            Ok(x) => {
+                trace!("vcx_connection_sign_data_cb(command_handle: {}, connection_handle: {}, rc: {}, signature: {:?})",
+                       command_handle, connection_handle, error_string(0), x);
+
+                let (signature_raw, signature_len) = ::utils::cstring::vec_to_pointer(&x);
+                cb(command_handle, error::SUCCESS.code_num, signature_raw, signature_len);
+            },
+            Err(e) => {
+                warn!("vcx_messages_sign_data_cb(command_handle: {}, rc: {}, signature: null)",
+                      command_handle, error_string(e));
+
+                cb(command_handle, e, ptr::null_mut(), 0);
+            },
+        };
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
+
+/// Verify the signature is valid for the specified data
+///
+/// #params
+///
+/// command_handle: command handle to map callback to user context.
+///
+/// connection_handle: connection to receive the message
+///
+/// data_raw: raw data buffer for signature
+///
+/// data_len: length of data buffer
+///
+/// signature_raw: raw data buffer for signature
+///
+/// signature_len: length of data buffer
+///
+/// cb: Callback that specifies whether the signature was valid or not
+///
+/// #Returns
+/// Error code as a u32
+#[no_mangle]
+pub extern fn vcx_connection_verify_signature(command_handle: u32,
+                                  connection_handle: u32,
+                                  data_raw: *const u8,
+                                  data_len: u32,
+                                  signature_raw: *const u8,
+                                  signature_len: u32,
+                                  cb: Option<extern fn(command_handle_: u32,
+                                                       err: u32,
+                                                       valid: bool)>) -> u32 {
+    trace!("vcx_connection_verify_signature: >>> connection_handle: {}, data_raw: {:?}, data_len: {}, signature_raw: {:?}, signature_len: {}",
+           connection_handle, data_raw, data_len, signature_raw, signature_len);
+
+    check_useful_c_byte_array!(data_raw, data_len, error::INVALID_OPTION.code_num, error::INVALID_OPTION.code_num);
+    check_useful_c_byte_array!(signature_raw, signature_len, error::INVALID_OPTION.code_num, error::INVALID_OPTION.code_num);
+    check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
+
+    trace!("vcx_connection_verify_signature: entities >>> connection_handle: {}, data_raw: {:?}, data_len: {}, signature_raw: {:?}, signature_len: {}",
+           connection_handle, data_raw, data_len, signature_raw, signature_len);
+
+    if !is_valid_handle(connection_handle) {
+        error!("vcx_connection_verify_signature - invalid handle");
+        return error::INVALID_CONNECTION_HANDLE.code_num;
+    }
+
+    let vk = match ::connection::get_their_pw_verkey(connection_handle) {
+        Ok(x) => x,
+        Err(e) => return e.to_error_code(),
+    };
+
+    spawn (move || {
+        match ::utils::libindy::crypto::verify(&vk, &data_raw, &signature_raw) {
+            Ok(x) => {
+                trace!("vcx_connection_verify_signature_cb(command_handle: {}, rc: {}, valid: {})",
+                       command_handle, error_string(0), x);
+
+                cb(command_handle, error::SUCCESS.code_num, x);
+            },
+            Err(e) => {
+                warn!("vcx_connection_verify_signature_cb(command_handle: {}, rc: {}, valid: {})",
+                      command_handle, error_string(e), false);
+
+                cb(command_handle, e, false);
+            },
+        };
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
+
 /// Releases the connection object by de-allocating memory
 ///
 /// #Params
@@ -612,4 +810,61 @@ mod tests {
         cb.receive(Some(Duration::from_secs(10))).unwrap();
     }
 
+    #[test]
+    fn test_send_message() {
+        init!("true");
+
+        let msg = CString::new("MESSAGE").unwrap().into_raw();
+        let msg_type = CString::new("TYPE").unwrap().into_raw();
+        let msg_title = CString::new("TITLE").unwrap().into_raw();
+        let connection_handle = ::connection::tests::build_test_connection();
+        ::connection::set_state(connection_handle, VcxStateType::VcxStateAccepted).unwrap();
+        let cb = return_types_u32::Return_U32_STR::new().unwrap();
+        assert_eq!(vcx_connection_send_message(cb.command_handle, connection_handle, msg, msg_type, msg_title, Some(cb.get_callback())), error::SUCCESS.code_num);
+        cb.receive(Some(Duration::from_secs(10))).unwrap();
+    }
+
+    extern "C" fn test_sign_cb(command_handle: u32, error: u32, signature: *const u8, signature_length: u32) {
+        assert_eq!(error, error::SUCCESS.code_num);
+    }
+
+    #[test]
+    fn test_sign() {
+        use std::thread;
+        init!("true");
+
+        let msg = format!("My message");;
+        let msg_len = msg.len();
+
+        let connection_handle = ::connection::tests::build_test_connection();
+        assert_eq!(vcx_connection_sign_data(0, connection_handle, CString::new(msg).unwrap().as_ptr() as *const u8, msg_len as u32, Some(test_sign_cb)), error::SUCCESS.code_num);
+        thread::sleep(Duration::from_secs(2));
+    }
+
+    extern "C" fn test_verify_cb(command_handle: u32, error: u32, valid: bool) {
+        assert_eq!(valid, true);
+    }
+
+    #[test]
+    fn test_verify_signature() {
+        use std::thread;
+        init!("true");
+
+        let msg = format!("My message");
+        let msg_len = msg.len();
+
+        let signature = format!("signature");
+        let signature_length = signature.len();
+
+        let connection_handle = ::connection::tests::build_test_connection();
+        assert_eq!(vcx_connection_verify_signature(0,
+                                                   connection_handle,
+                                                   CString::new(msg).unwrap().as_ptr() as *const u8,
+                                                   msg_len as u32,
+                                                   CString::new(signature).unwrap().as_ptr() as *const u8,
+                                                   signature_length as u32,
+                                                   Some(test_verify_cb)), error::SUCCESS.code_num);
+
+        thread::sleep(Duration::from_secs(2));
+    }
 }
