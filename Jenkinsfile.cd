@@ -3,8 +3,7 @@
 @Library('SovrinHelpers') _
 
 testVersion = "0.0.1"
-testSuffix = "-dev-$env.BUILD_NUMBER"
-env.BRANCH_NAME = 'master'
+testSuffix = "-dev-sovrin$env.BUILD_NUMBER"
 
 properties([
         [$class: 'BuildDiscarderProperty', strategy: [
@@ -41,9 +40,9 @@ def testing() {
         parallel([
                 'ubuntu-test' : { ubuntuTesting() },
 //                'redhat-test' : { rhelTesting() },
-                'android-test': { androidTesting() },
+//                'android-test': { androidTesting() },
                 'windows-test': { windowsTesting() },
-                'ios-test'    : { iosTesting() }
+//                'ios-test'    : { iosTesting() }
         ])
     }
 }
