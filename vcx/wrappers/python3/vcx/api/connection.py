@@ -114,6 +114,85 @@ class Connection(VcxStateful):
                                        Connection.connect.cb)
         return invite_details
 
+    async def send_message(self, msg: str, msg_type: str, msg_title: str) -> str:
+        """
+            Send a generic message to the connection
+            :param msg:
+            :param msg_type:
+            :param msg_title:
+            :return:
+            """
+        if not hasattr(Connection.send_message, "cb"):
+            self.logger.debug("vcx_connection_send_message: Creating callback")
+            Connection.send_message.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
+
+        c_connection_handle = c_uint32(self.handle)
+        c_msg = c_char_p(msg.encode('utf-8'))
+        c_msg_type = c_char_p(msg_type.encode('utf-8'))
+        c_msg_title = c_char_p(msg_title.encode('utf-8'))
+
+        result = await do_call('vcx_connection_send_message',
+                               c_connection_handle,
+                               c_msg,
+                               c_msg_type,
+                               c_msg_title,
+                               Connection.send_message.cb)
+
+        self.logger.debug("vcx_connection_send_message completed")
+        return result
+
+    async def sign_data(self, msg: bytes) -> bytes:
+        """
+        Sign data using connection's pairwise key
+        :param msg:
+        :return: signature
+        """
+
+        def transform_cb(arr_ptr: POINTER(c_uint8), arr_len: c_uint32):
+            return bytes(arr_ptr[:arr_len]),
+
+        if not hasattr(Connection.sign_data, "cb"):
+            self.logger.debug("vcx_connection_sign_data: Creating callback")
+            Connection.sign_data.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, POINTER(c_uint8), c_uint32), transform_cb)
+
+        c_connection_handle = c_uint32(self.handle)
+        c_msg_len = c_uint32(len(msg))
+
+        result = await do_call('vcx_connection_sign_data',
+                               c_connection_handle,
+                               msg,
+                               c_msg_len,
+                               Connection.sign_data.cb)
+
+        self.logger.debug("vcx_connection_sign_data completed")
+        return result
+
+    async def verify_signature(self, msg: bytes, signature: bytes) -> bool:
+        """
+        Verification the signature of a msg
+        :param msg:
+        :param signature:
+        :return: bool
+        """
+        if not hasattr(Connection.verify_signature, "cb"):
+            self.logger.debug("vcx_connection_verify_signature: Creating callback")
+            Connection.verify_signature.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_bool))
+
+        c_connection_handle = c_uint32(self.handle)
+        c_msg_len = c_uint32(len(msg))
+        c_signature_len = c_uint32(len(signature))
+
+        result = await do_call('vcx_connection_verify_signature',
+                               c_connection_handle,
+                               msg,
+                               c_msg_len,
+                               signature,
+                               c_signature_len,
+                               Connection.verify_signature.cb)
+
+        self.logger.debug("vcx_connection_verify_signature completed")
+        return result
+
     async def _delete(self):
         if not hasattr(Connection._delete, "cb"):
             Connection._delete.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32))

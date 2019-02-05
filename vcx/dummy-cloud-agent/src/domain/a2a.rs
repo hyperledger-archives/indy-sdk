@@ -247,22 +247,16 @@ pub struct FailedMessageUpdateInfo {
     pub status_msg: String,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum MessageType {
-    #[serde(rename = "connReq")]
     ConnReq,
-    #[serde(rename = "connReqAnswer")]
     ConnReqAnswer,
-    #[serde(rename = "credOffer")]
     CredOffer,
-    #[serde(rename = "credReq")]
     CredReq,
-    #[serde(rename = "cred")]
     Cred,
-    #[serde(rename = "proofReq")]
     ProofReq,
-    #[serde(rename = "proof")]
     Proof,
+    Other(String),
 }
 
 impl ToString for MessageType {
@@ -275,7 +269,42 @@ impl ToString for MessageType {
             MessageType::Cred => "cred",
             MessageType::ProofReq => "proofReq",
             MessageType::Proof => "proof",
+            MessageType::Other(other) => other.as_str(),
         }.to_string()
+    }
+}
+
+impl Serialize for MessageType {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
+        let value = match self {
+            MessageType::ConnReq => "connReq",
+            MessageType::ConnReqAnswer => "connReqAnswer",
+            MessageType::CredOffer => "credOffer",
+            MessageType::CredReq => "credReq",
+            MessageType::Cred => "cred",
+            MessageType::ProofReq => "proofReq",
+            MessageType::Proof => "proof",
+            MessageType::Other(other) => other.as_str(),
+        };
+        serde_json::Value::String(value.to_string()).serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for MessageType {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
+        let value = Value::deserialize(deserializer).map_err(de::Error::custom)?;
+
+        match value.as_str() {
+            Some("connReq") => Ok(MessageType::ConnReq),
+            Some("connReqAnswer") => Ok(MessageType::ConnReqAnswer),
+            Some("credOffer") => Ok(MessageType::CredOffer),
+            Some("credReq") => Ok(MessageType::CredReq),
+            Some("cred") => Ok(MessageType::Cred),
+            Some("proofReq") => Ok(MessageType::ProofReq),
+            Some("proof") => Ok(MessageType::Proof),
+            Some(mtype) => Ok(MessageType::Other(mtype.to_string())),
+            _ => Err(de::Error::custom("Unexpected message type."))
+        }
     }
 }
 
