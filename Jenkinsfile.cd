@@ -1297,7 +1297,11 @@ def publishLibvcxDebRCtoStable(testEnv) {
     def libindyVersion = getSrcVersion("libindy")
     def rcFullVersion = "$libvcxVersion~$env.BUILD_NUMBER"
 
-    sh "fpm -s deb -t deb --version $rcFullVersion --no-auto-depends --depends 'libindy = $libindyVersion' -f -p vcx/libvcx/debs vcx/libvcx/debs/libvcx_\"$rcFullVersion\"_amd64.deb"
+    testEnv.inside {
+        unstash name: "libvcxDebs"
+        sh "fpm -s deb -t deb --version $rcFullVersion --no-auto-depends --depends 'libindy = $libindyVersion' -f -p vcx/libvcx/debs vcx/libvcx/debs/libvcx_\"$rcFullVersion\"_amd64.deb"
+        stash includes: "vcx/libvcx/debs/*", name: libvcxDebs
+    }
 
     publishDebRCtoStable(testEnv, "libvcx", "vcx/libvcx", libvcxVersion, "libvcxDebs", false)
 }
