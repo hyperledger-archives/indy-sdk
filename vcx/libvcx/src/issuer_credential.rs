@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use api::VcxStateType;
 use messages;
 use settings;
-use messages::CredentialExchangeMessageType;
+use messages::{CredentialExchangeMessageType, PayloadKinds};
 use messages::MessageStatusCode;
 use messages::{GeneralMessage};
 use connection;
@@ -162,7 +162,7 @@ impl IssuerCredential {
 
         debug!("credential offer data: {}", payload);
 
-        let data = connection::generate_encrypted_payload(&self.issued_vk, &self.remote_vk, &payload, "CRED_OFFER")
+        let data = connection::generate_encrypted_payload(&self.issued_vk, &self.remote_vk, &payload, PayloadKinds::CredOffer)
             .map_err(|e| IssuerCredError::CommonError(e.to_error_code()))?;
 
         let response =
@@ -216,7 +216,7 @@ impl IssuerCredential {
 
         let cred_req_msg_id = self.credential_request.as_ref().ok_or(IssuerCredError::InvalidCredRequest())?
             .msg_ref_id.as_ref().ok_or(IssuerCredError::InvalidCredRequest())?;
-        let data = connection::generate_encrypted_payload(&self.issued_vk, &self.remote_vk, &data, "CRED")
+        let data = connection::generate_encrypted_payload(&self.issued_vk, &self.remote_vk, &data, PayloadKinds::Cred)
             .map_err(|e| IssuerCredError::CommonError(e.to_error_code()))?;
 
         let response = messages::send_message()

@@ -9,7 +9,7 @@ use connection;
 use api::{VcxStateType, ProofStateType};
 use messages::proofs::proof_message::{ProofMessage, CredInfo};
 use messages;
-use messages::CredentialExchangeMessageType;
+use messages::{CredentialExchangeMessageType, PayloadKinds};
 use messages::proofs::proof_request::ProofRequestMessage;
 use messages::GeneralMessage;
 use utils::error;
@@ -46,7 +46,8 @@ pub struct Proof {
     name: String,
     version: String,
     nonce: String,
-    proof: Option<ProofMessage>, // Refactoring this name to 'proof_message' causes some tests to fail.
+    proof: Option<ProofMessage>,
+    // Refactoring this name to 'proof_message' causes some tests to fail.
     proof_request: Option<ProofRequestMessage>,
     remote_did: String,
     remote_vk: String,
@@ -87,7 +88,7 @@ impl Proof {
         if !valid {
             warn!("indy returned false when validating proof {}", self.source_id);
             self.proof_state = ProofStateType::ProofInvalid;
-            return Ok(error::SUCCESS.code_num)
+            return Ok(error::SUCCESS.code_num);
         }
 
         debug!("Indy validated proof: {}", self.source_id);
@@ -201,7 +202,7 @@ impl Proof {
     fn build_proof_req_json(&self) -> Result<String, ProofError> {
         debug!("{} building proof request json for proof validation", self.source_id);
         if let Some(ref x) = self.proof_request {
-            return Ok(x.get_proof_request_data())
+            return Ok(x.get_proof_request_data());
         }
 
         Err(ProofError::InvalidProof())
@@ -275,7 +276,7 @@ impl Proof {
             .map_err(|ec| ProofError::ProofMessageError(ec))?;
 
         self.proof_request = Some(proof_obj);
-        let data = connection::generate_encrypted_payload(&self.prover_vk, &self.remote_vk, &proof_request, "PROOF_REQUEST").map_err(|_| ProofError::ProofConnectionError())?;
+        let data = connection::generate_encrypted_payload(&self.prover_vk, &self.remote_vk, &proof_request, PayloadKinds::ProofRequest).map_err(|_| ProofError::ProofConnectionError())?;
         let title = format!("{} wants you to share: {}", settings::get_config_value(settings::CONFIG_INSTITUTION_NAME).map_err(|e| ProofError::CommonError(e))?, self.name);
 
         let response = messages::send_message()
@@ -306,8 +307,7 @@ impl Proof {
         debug!("updating state for proof {} with msg_id {:?}", self.source_id, self.msg_uid);
         if self.state == VcxStateType::VcxStateAccepted {
             return Ok(self.get_state());
-        }
-        else if self.state != VcxStateType::VcxStateOfferSent || self.msg_uid.is_empty() || self.prover_did.is_empty() {
+        } else if self.state != VcxStateType::VcxStateOfferSent || self.msg_uid.is_empty() || self.prover_did.is_empty() {
             return Ok(self.get_state());
         }
 
@@ -356,7 +356,10 @@ impl Proof {
         state
     }
 
-    fn get_proof_state(&self) -> u32 {let state = self.proof_state as u32; state}
+    fn get_proof_state(&self) -> u32 {
+        let state = self.proof_state as u32;
+        state
+    }
 
     fn get_proof_uuid(&self) -> &String { &self.msg_uid }
 
@@ -376,7 +379,6 @@ impl Proof {
             .or(Err(ProofError::InvalidJson()))?;
         Ok(proof)
     }
-
 }
 
 pub fn create_proof(source_id: String,
@@ -387,7 +389,7 @@ pub fn create_proof(source_id: String,
     trace!("create_proof >>> source_id: {}, requested_attrs: {}, requested_predicates: {}, name: {}", source_id, requested_attrs, requested_predicates, name);
 
     // TODO: Get this to actually validate as json, not just check length.
-    if requested_attrs.len() <= 0 { return Err(ProofError::CommonError(error::INVALID_JSON.code_num)) }
+    if requested_attrs.len() <= 0 { return Err(ProofError::CommonError(error::INVALID_JSON.code_num)); }
 
     let revocation_details: RevocationInterval = serde_json::from_str(&revocation_details)
         .or(Err(ProofError::CommonError(error::INVALID_JSON.code_num)))?;
@@ -436,7 +438,7 @@ pub fn update_state(handle: u32) -> Result<u32, ProofError> {
             Err(x) => {
                 warn!("could not update state for proof {}: {}", p.get_source_id(), x);
                 Ok(p.get_state())
-            },
+            }
         }
     }).map_err(|ec| ProofError::CommonError(ec))
 }
@@ -466,6 +468,7 @@ pub fn release_all() {
         Err(_) => (),
     };
 }
+
 pub fn to_string(handle: u32) -> Result<String, ProofError> {
     PROOF_MAP.get(handle, |p| {
         Ok(Proof::to_string(&p))
@@ -533,7 +536,9 @@ mod tests {
     use utils::httpclient;
     use connection::tests::build_test_connection;
     use utils::libindy::{pool, set_libindy_rc};
+
     static PROOF_MSG: &str = r#"{"msg_type":"proof","version":"0.1","to_did":"BnRXf8yDMUwGyZVDkSENeq","from_did":"GxtnGN6ypZYgEqcftSQFnC","proof_request_id":"cCanHnpFAD","proofs":{"claim::e5fec91f-d03d-4513-813c-ab6db5715d55":{"proof":{"primary_proof":{"eq_proof":{"revealed_attrs":{"state":"96473275571522321025213415717206189191162"},"a_prime":"22605045280481376895214546474258256134055560453004805058368015338423404000586901936329279496160366852115900235316791489357953785379851822281248296428005020302405076144264617943389810572564188437603815231794326272302243703078443007359698858400857606408856314183672828086906560155576666631125808137726233827430076624897399072853872527464581329767287002222137559918765406079546649258389065217669558333867707240780369514832185660287640444094973804045885379406641474693993903268791773620198293469768106363470543892730424494655747935463337367735239405840517696064464669905860189004121807576749786474060694597244797343224031","e":"70192089123105616042684481760592174224585053817450673797400202710878562748001698340846985261463026529360990669802293480312441048965520897","v":"1148619141217957986496757711054111791862691178309410923416837802801708689012670430650138736456223586898110113348220116209094530854607083005898964558239710027534227973983322542548800291320747321452329327824406430787211689678096549398458892087551551587767498991043777397791000822007896620414888602588897806008609113730393639807814070738699614969916095861363383223421727858670289337712185089527052065958362840287749622133424503902085247641830693297082507827948006947829401008622239294382186995101394791468192083810475776455445579931271665980788474331866572497866962452476638881287668931141052552771328556458489781734943404258692308937784221642452132005267809852656378394530342203469943982066011466088478895643800295937901139711103301249691253510784029114718919483272055970725860849610885050165709968510696738864528287788491998027072378656038991754015693216663830793243584350961586874315757599094357535856429087122365865868729","m":{"address2":"11774234640096848605908744857306447015748098256395922562149769943967941106193320512788344020652220849708117081570187385467979956319507248530701654682748372348387275979419669108338","city":"4853213962270369118453000522408430296589146124488849630769837449684434138367659379663124155088827069418193027370932024893343033367076071757003149452226758383807126385017161888440","address1":"12970590675851114145396120869959510754345567924518524026685086869487243290925032320159287997675756075512889990901552679591155319959039145119122576164798225386578339739435869622811","zip":"8333721522340131864419931745588776943042067606218561135102011966361165456174036379901390244538991611895455576519950813910672825465382312504250936740379785802177629077591444977329"},"m1":"92853615502250003546205004470333326341901175168428906399291824325990659330595200000112546157141090642053863739870044907457400076448073272490169488870502566172795456430489790324815765612798273406119873266684053517977802902202155082987833343670942161987285661291655743810590661447300059024966135828466539810035","m2":"14442362430453309930284822850357071315613831915865367971974791350454381198894252834180803515368579729220423713315556807632571621646127926114010380486713602821529657583905131582938"},"ge_proofs":[]},"non_revoc_proof":null},"schema_seq_no":15,"issuer_did":"4fUDR9R7fjwELRvH9JT6HH"}},"aggregated_proof":{"c_hash":"68430476900085482958838239880418115228681348197588159723604944078288347793331","c_list":[[179,17,2,242,194,227,92,203,28,32,255,113,112,20,5,243,9,111,220,111,21,210,116,12,167,119,253,181,37,40,143,215,140,42,179,97,75,229,96,94,54,248,206,3,48,14,61,219,160,122,139,227,166,183,37,43,197,200,28,220,217,10,65,42,6,195,124,44,164,65,114,206,51,231,254,156,170,141,21,153,50,251,237,65,147,97,243,17,157,116,213,201,80,119,106,70,88,60,55,36,33,160,135,106,60,212,191,235,116,57,78,177,61,86,44,226,205,100,134,118,93,6,26,58,220,66,232,166,202,62,90,174,231,207,19,239,233,223,70,191,199,100,157,62,139,176,28,184,9,70,116,199,142,237,198,183,12,32,53,84,207,202,77,56,97,177,154,169,223,201,212,163,212,101,184,255,215,167,16,163,136,44,25,123,49,15,229,41,149,133,159,86,106,208,234,73,207,154,194,162,141,63,159,145,94,47,174,51,225,91,243,2,221,202,59,11,212,243,197,208,116,42,242,131,221,137,16,169,203,215,239,78,254,150,42,169,202,132,172,106,179,130,178,130,147,24,173,213,151,251,242,44,54,47,208,223]]},"requested_proof":{"revealed_attrs":{"sdf":["claim::e5fec91f-d03d-4513-813c-ab6db5715d55","UT","96473275571522321025213415717206189191162"]},"unrevealed_attrs":{},"self_attested_attrs":{},"predicates":{}}}"#;
+
     extern "C" fn create_cb(command_handle: u32, err: u32, connection_handle: u32) {
         assert_eq!(err, 0);
         assert!(connection_handle > 0);
@@ -560,7 +565,7 @@ mod tests {
             remote_vk: VERKEY.to_string(),
             agent_did: DID.to_string(),
             agent_vk: VERKEY.to_string(),
-            revocation_interval: RevocationInterval { from: None, to: None}
+            revocation_interval: RevocationInterval { from: None, to: None }
         })
     }
 
@@ -612,7 +617,7 @@ mod tests {
                                   r#"{"support_revocation":false}"#.to_string(),
                                   "Optional".to_owned()).unwrap();
         let proof_string = to_string(handle).unwrap();
-        let s:Value = serde_json::from_str(&proof_string).unwrap();
+        let s: Value = serde_json::from_str(&proof_string).unwrap();
         assert_eq!(s["version"], DEFAULT_SERIALIZE_VERSION);
         assert!(!proof_string.is_empty());
     }
@@ -630,7 +635,7 @@ mod tests {
         assert!(release(handle).is_ok());
 
         let new_handle = from_string(&proof_data).unwrap();
-        let proof2 : Proof = Proof::from_str(&to_string(new_handle).unwrap()).unwrap();
+        let proof2: Proof = Proof::from_str(&to_string(new_handle).unwrap()).unwrap();
         assert_eq!(proof1, proof2);
     }
 
@@ -722,7 +727,7 @@ mod tests {
             remote_vk: VERKEY.to_string(),
             agent_did: DID.to_string(),
             agent_vk: VERKEY.to_string(),
-            revocation_interval: RevocationInterval { from: None, to: None}
+            revocation_interval: RevocationInterval { from: None, to: None }
         });
 
         httpclient::set_next_u8_response(PROOF_RESPONSE.to_vec());
@@ -757,7 +762,7 @@ mod tests {
             remote_vk: VERKEY.to_string(),
             agent_did: DID.to_string(),
             agent_vk: VERKEY.to_string(),
-            revocation_interval: RevocationInterval { from: None, to: None}
+            revocation_interval: RevocationInterval { from: None, to: None }
         });
 
         httpclient::set_next_u8_response(PROOF_RESPONSE.to_vec());
@@ -888,11 +893,11 @@ mod tests {
     #[test]
     fn test_release_all() {
         init!("true");
-        let h1 = create_proof("1".to_string(), REQUESTED_ATTRS.to_owned(), REQUESTED_PREDICATES.to_owned(),r#"{"support_revocation":false}"#.to_string(), "Optional".to_owned()).unwrap();
-        let h2 = create_proof("1".to_string(), REQUESTED_ATTRS.to_owned(), REQUESTED_PREDICATES.to_owned(),r#"{"support_revocation":false}"#.to_string(), "Optional".to_owned()).unwrap();
-        let h3 = create_proof("1".to_string(), REQUESTED_ATTRS.to_owned(), REQUESTED_PREDICATES.to_owned(),r#"{"support_revocation":false}"#.to_string(), "Optional".to_owned()).unwrap();
-        let h4 = create_proof("1".to_string(), REQUESTED_ATTRS.to_owned(), REQUESTED_PREDICATES.to_owned(),r#"{"support_revocation":false}"#.to_string(), "Optional".to_owned()).unwrap();
-        let h5 = create_proof("1".to_string(), REQUESTED_ATTRS.to_owned(), REQUESTED_PREDICATES.to_owned(),r#"{"support_revocation":false}"#.to_string(), "Optional".to_owned()).unwrap();
+        let h1 = create_proof("1".to_string(), REQUESTED_ATTRS.to_owned(), REQUESTED_PREDICATES.to_owned(), r#"{"support_revocation":false}"#.to_string(), "Optional".to_owned()).unwrap();
+        let h2 = create_proof("1".to_string(), REQUESTED_ATTRS.to_owned(), REQUESTED_PREDICATES.to_owned(), r#"{"support_revocation":false}"#.to_string(), "Optional".to_owned()).unwrap();
+        let h3 = create_proof("1".to_string(), REQUESTED_ATTRS.to_owned(), REQUESTED_PREDICATES.to_owned(), r#"{"support_revocation":false}"#.to_string(), "Optional".to_owned()).unwrap();
+        let h4 = create_proof("1".to_string(), REQUESTED_ATTRS.to_owned(), REQUESTED_PREDICATES.to_owned(), r#"{"support_revocation":false}"#.to_string(), "Optional".to_owned()).unwrap();
+        let h5 = create_proof("1".to_string(), REQUESTED_ATTRS.to_owned(), REQUESTED_PREDICATES.to_owned(), r#"{"support_revocation":false}"#.to_string(), "Optional".to_owned()).unwrap();
         release_all();
         assert_eq!(release(h1).err(), Some(ProofError::InvalidHandle()));
         assert_eq!(release(h2).err(), Some(ProofError::InvalidHandle()));
@@ -931,7 +936,7 @@ mod tests {
             remote_vk: VERKEY.to_string(),
             agent_did: DID.to_string(),
             agent_vk: VERKEY.to_string(),
-            revocation_interval: RevocationInterval { from: None, to: None}
+            revocation_interval: RevocationInterval { from: None, to: None }
         };
         let rc = proof.proof_validation();
         assert!(rc.is_ok());
@@ -999,12 +1004,12 @@ mod tests {
 
     #[test]
     fn test_proof_errors() {
-        use utils::error::{ INVALID_JSON, POST_MSG_FAILURE };
+        use utils::error::{INVALID_JSON, POST_MSG_FAILURE};
         init!("false");
 
         let mut proof = create_boxed_proof();
 
-        assert_eq!(proof.validate_proof_indy("{}", "{}", "{}", "{}","", "").err(),
+        assert_eq!(proof.validate_proof_indy("{}", "{}", "{}", "{}", "", "").err(),
                    Some(ProofError::InvalidProof()));
 
         let bad_handle = 100000;
@@ -1022,7 +1027,7 @@ mod tests {
                                 "{}".to_string(),
                                 r#"{"support_revocation":false}"#.to_string(),
                                 "my name".to_string()).err(),
-            Some(ProofError::CommonError(INVALID_JSON.code_num)));
+                   Some(ProofError::CommonError(INVALID_JSON.code_num)));
 
         assert_eq!(to_string(bad_handle).err(), Some(ProofError::CommonError(error::INVALID_OBJ_HANDLE.code_num)));
         assert_eq!(get_source_id(bad_handle).err(), Some(ProofError::CommonError(error::INVALID_OBJ_HANDLE.code_num)));
@@ -1053,7 +1058,7 @@ mod tests {
 
         println!("{}", serde_json::to_string(&proof).unwrap());
         assert!(rc.is_ok());
-        assert_eq!(proof.proof_state,ProofStateType::ProofValidated);
+        assert_eq!(proof.proof_state, ProofStateType::ProofValidated);
     }
 
     #[cfg(feature = "agency")]
@@ -1078,7 +1083,7 @@ mod tests {
 
         println!("{}", serde_json::to_string(&proof).unwrap());
         assert!(rc.is_ok());
-        assert_eq!(proof.proof_state,ProofStateType::ProofValidated);
+        assert_eq!(proof.proof_state, ProofStateType::ProofValidated);
     }
 }
 

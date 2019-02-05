@@ -12,10 +12,10 @@ use api::VcxStateType;
 use settings;
 use messages::GeneralMessage;
 use messages;
+use messages::{Payload, PayloadKinds, PayloadTypes};
 use messages::MessageStatusCode;
 use messages::invite::{InviteDetail, SenderDetail};
-use messages::get_message::Message;
-use messages::get_message::Payload;
+use messages::get_message::{Message, Payload as MessagePayload};
 use self::rmp_serde::encode;
 use serde_json::Value;
 use utils::json::KeyMatch;
@@ -88,6 +88,7 @@ impl Connection {
 
         Ok(error::SUCCESS.code_num)
     }
+
     pub fn delete_connection(&mut self) -> Result<u32, ConnectionError> {
         trace!("Connection::delete_connection >>>");
 
@@ -461,7 +462,7 @@ pub fn parse_acceptance_details(handle: u32, message: &Message) -> Result<Sender
 
     trace!("deserializing GetMsgResponse: {:?}", payload);
 
-    let response: Payload = rmp_serde::from_slice(&payload[..])
+    let response: MessagePayload = rmp_serde::from_slice(&payload[..])
         .map_err(|err| {
             error!("Could not parse outer msg: {}", err);
             ConnectionError::CommonError(error::INVALID_MSGPACK.code_num)
@@ -612,9 +613,9 @@ pub fn set_invite_details(handle: u32, invite_detail: &InviteDetail) -> Result<(
 // this will become a CommonError, because multiple types (Connection/Issuer Credential) use this function
 // Possibly this function moves out of this file.
 // On second thought, this should stick as a ConnectionError.
-pub fn generate_encrypted_payload(my_vk: &str, their_vk: &str, data: &str, msg_type: &str) -> Result<Vec<u8>, ConnectionError> {
-    let my_payload = messages::Payload {
-        msg_info: messages::MsgInfo { name: msg_type.to_string(), ver: "1.0".to_string(), fmt: "json".to_string() },
+pub fn generate_encrypted_payload(my_vk: &str, their_vk: &str, data: &str, msg_type: PayloadKinds) -> Result<Vec<u8>, ConnectionError> {
+    let my_payload = Payload {
+        type_: PayloadTypes::build(msg_type, "json"),
         msg: data.to_string(),
     };
 

@@ -47,12 +47,6 @@ pub enum A2AMessage {
     /// PW Connection
     CreateKey(CreateKey),
     CreateKeyResponse(CreateKeyResponse),
-
-    /// Pairwise connection
-    ConnectionRequest(SendInvitePayloadV1),
-    ConnectionRequestResponse(ConnectionRequestResponse),
-    ConnectionRequestAnswer(AcceptInvitePayloadV1),
-    ConnectionRequestAnswerResponse(ConnectionRequestAnswerResponse),
     CreateMessage(CreateMessage),
     MessageDetail(MessageDetail),
     MessageCreated(MessageCreated),
@@ -71,6 +65,13 @@ pub enum A2AMessage {
     UpdateConfigs(UpdateConfigs),
     UpdateConfigsResponse(UpdateConfigsResponse),
 
+    /// Version 1
+
+    /// Pairwise connection
+    ConnectionRequest(SendInvitePayloadV1),
+    ConnectionRequestResponse(ConnectionRequestResponse),
+    ConnectionRequestAnswer(AcceptInvitePayloadV1),
+    ConnectionRequestAnswerResponse(ConnectionRequestAnswerResponse),
     /// Credential Exchange
     CredentialExchangeMessage(CredentialExchangeMessage),
     CredentialExchangeMessageResponse(CredentialExchangeMessageResponse),
@@ -393,17 +394,89 @@ impl<'de> Deserialize<'de> for CredentialExchangeMessageType {
     }
 }
 
+
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[serde(untagged)]
+pub enum PayloadTypes {
+    PayloadTypeV0(PayloadTypeV0),
+    PayloadTypeV1(PayloadTypeV1),
+}
+
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
-pub struct MsgInfo {
+pub struct PayloadTypeV0 {
     pub name: String,
     pub ver: String,
     pub fmt: String,
 }
 
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
+pub struct PayloadTypeV1 {
+    did: String,
+    family: MessageFamilies,
+    version: String,
+    type_: String,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub enum PayloadKinds {
+    CredOffer,
+    CredReq,
+    Cred,
+    Proof,
+    ProofRequest,
+    Other(String)
+}
+
+impl PayloadKinds {
+    pub fn family(&self) -> MessageFamilies {
+        match self {
+            PayloadKinds::CredOffer => MessageFamilies::CredentialExchange,
+            PayloadKinds::CredReq => MessageFamilies::CredentialExchange,
+            PayloadKinds::Cred => MessageFamilies::CredentialExchange,
+            PayloadKinds::Proof => MessageFamilies::CredentialExchange,
+            PayloadKinds::ProofRequest => MessageFamilies::CredentialExchange,
+            PayloadKinds::Other(family) => MessageFamilies::Unknown(family.to_string()),
+        }
+    }
+
+    pub fn name(&self) -> String {
+        match self {
+            PayloadKinds::CredOffer => "CRED_OFFER".to_string(),
+            PayloadKinds::CredReq => "CRED_REQ".to_string(),
+            PayloadKinds::Cred => "CRED".to_string(),
+            PayloadKinds::Proof => "PROOF".to_string(),
+            PayloadKinds::ProofRequest => "PROOF_REQUEST".to_string(),
+            PayloadKinds::Other(kind) => kind.to_string(),
+        }
+    }
+}
+
+impl PayloadTypes {
+    pub fn build(kind: PayloadKinds, fmt: &str) -> PayloadTypes {
+        match settings::get_protocol_type() {
+            settings::ProtocolTypes::V0 => {
+                PayloadTypes::PayloadTypeV0(PayloadTypeV0 {
+                    name: kind.name(),
+                    ver: MESSAGE_VERSION.to_string(),
+                    fmt: fmt.to_string(),
+                })
+            }
+            settings::ProtocolTypes::V1 => {
+                PayloadTypes::PayloadTypeV1(PayloadTypeV1 {
+                    did: DID_GROUP_OWNER.to_string(),
+                    family: kind.family(),
+                    version: MESSAGE_VERSION.to_string(),
+                    type_: kind.name(),
+                })
+            }
+        }
+    }
+}
+
+#[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
 pub struct Payload {
     #[serde(rename = "@type")]
-    pub msg_info: MsgInfo,
+    pub type_: PayloadTypes,
     #[serde(rename = "@msg")]
     pub msg: String,
 }
@@ -490,13 +563,6 @@ impl MessageTypes {
             MessageTypes::MessageTypeV1(type_) => type_.version.as_str(),
         }
     }
-
-    pub fn set_did(&mut self, did: &str) {
-        match self {
-            MessageTypes::MessageTypeV0(_type) => {}
-            MessageTypes::MessageTypeV1(type_) => type_.did = did.to_string(),
-        }
-    }
 }
 
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
@@ -520,7 +586,7 @@ pub enum MessageFamilies {
     Pairwise,
     Configs,
     CredentialExchange,
-    Unknown,
+    Unknown(String),
 }
 
 impl From<String> for MessageFamilies {
@@ -531,9 +597,9 @@ impl From<String> for MessageFamilies {
             "pairwise" => MessageFamilies::Pairwise,
             "configs" => MessageFamilies::Configs,
             "credential_exchange" => MessageFamilies::CredentialExchange,
-            _ => {
+            family @ _ => {
                 error!("Unknown Message family");
-                MessageFamilies::Unknown
+                MessageFamilies::Unknown(family.to_string())
             }
         }
     }
@@ -547,7 +613,7 @@ impl ::std::string::ToString for MessageFamilies {
             MessageFamilies::Pairwise => "pairwise".to_string(),
             MessageFamilies::CredentialExchange => "credential_exchange".to_string(),
             MessageFamilies::Configs => "configs".to_string(),
-            MessageFamilies::Unknown => "unknown".to_string()
+            MessageFamilies::Unknown(family) => family.to_string()
         }
     }
 }
@@ -678,7 +744,6 @@ impl<'de> Deserialize<'de> for MessageTypeV1 {
                     .map_err(|err| de::Error::custom(format!("Can not parse message type_: {:?}", err)))?;
 
                 match MessageFamilies::from(family) {
-                    MessageFamilies::Unknown => Err(de::Error::custom("Unexpected message family.")),
                     family @ _ =>
                         Ok(MessageTypeV1 {
                             did,

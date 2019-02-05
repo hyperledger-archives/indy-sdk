@@ -190,7 +190,7 @@ pub fn send_generic_message(connection_handle: u32, msg: &str, msg_type: &str, m
     let vk = connection::get_pw_verkey(connection_handle).map_err(|x| error::INVALID_CONNECTION_HANDLE.code_num)?;
     let remote_vk = connection::get_their_pw_verkey(connection_handle).map_err(|x| error::INVALID_CONNECTION_HANDLE.code_num)?;
 
-    let data = connection::generate_encrypted_payload(&vk, &remote_vk, &msg, msg_type)
+    let data = connection::generate_encrypted_payload(&vk, &remote_vk, &msg, PayloadKinds::Other(msg_type.to_string()))
         .map_err(|e| error::UNKNOWN_LIBINDY_ERROR.code_num)?;
 
     let response =

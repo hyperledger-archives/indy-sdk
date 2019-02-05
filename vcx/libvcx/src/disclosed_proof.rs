@@ -7,7 +7,7 @@ use utils::error;
 use connection;
 use messages;
 use messages::GeneralMessage;
-use messages::CredentialExchangeMessageType;
+use messages::{CredentialExchangeMessageType, PayloadKinds};
 use messages::proofs::proof_message::{ProofMessage };
 use messages::proofs::proof_request::{ ProofRequestMessage, ProofRequestData, NonRevokedInterval };
 use messages::extract_json_payload;
@@ -421,7 +421,7 @@ impl DisclosedProof {
             true => DEFAULT_GENERATED_PROOF.to_string(),
         };
 
-        let data: Vec<u8> = connection::generate_encrypted_payload(local_my_vk, local_their_vk, &proof, "PROOF")
+        let data: Vec<u8> = connection::generate_encrypted_payload(local_my_vk, local_their_vk, &proof, PayloadKinds::Proof)
             .or(Err(ProofError::ProofConnectionError()))?;
 
         messages::send_message()

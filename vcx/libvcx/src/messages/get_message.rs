@@ -170,17 +170,9 @@ impl GeneralMessage for GetMessagesBuilder {
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct PayloadType {
-    pub name: String,
-    pub ver: String,
-    pub fmt: String,
-}
-
-#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
-#[serde(rename_all = "camelCase")]
 pub struct Payload {
     #[serde(rename = "@type")]
-    pub msg_type: PayloadType,
+    pub msg_type: PayloadTypes,
     #[serde(rename = "@msg")]
     pub msg: Vec<i8>,
 }

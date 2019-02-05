@@ -15,7 +15,7 @@ use messages;
 use messages::to_u8;
 use messages::GeneralMessage;
 use messages::extract_json_payload;
-use messages::CredentialExchangeMessageType;
+use messages::{CredentialExchangeMessageType, PayloadKinds};
 
 use utils::libindy::anoncreds::{libindy_prover_create_credential_req, libindy_prover_store_credential};
 use utils::libindy::crypto;
@@ -152,7 +152,7 @@ impl Credential {
         let data: Vec<u8> = connection::generate_encrypted_payload(local_my_vk,
                                                                    local_their_vk,
                                                                    &cred_req_json,
-                                                                   "CRED_REQ")
+                                                                   PayloadKinds::CredReq)
             .map_err(|e| CredentialError::CommonError(e.to_error_code()))?;
 
         let offer_msg_id = self.credential_offer.as_ref().and_then(|offer| offer.msg_ref_id.clone())
