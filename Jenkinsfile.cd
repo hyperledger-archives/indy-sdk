@@ -22,6 +22,7 @@ libvcxBuildFinished = ["Ubuntu": false, "RedHat": false]
 gitHubUserCredId = env.GITHUB_BOT_USER ?: 'sovbot-github'
 sovrinPackagingRepo = env.SOVRIN_PACKAGING_REPO ?: 'https://github.com/sovrin-foundation/sovrin-packaging'
 sovrinPackagingBranch = env.SOVRIN_PACKAGING_BRANCH ?: 'master'
+mavenDeployAddOptions = env.MAVEN_DEPLOY_ADD_OPTIONS ?: ''
 
 try {
     testing()
@@ -1115,7 +1116,7 @@ def javaWrapperPublishing(testEnv, isRelease) {
             withCredentials([file(credentialsId: 'maven-settings', variable: 'settingsFile')]) {
                 sh 'cp $settingsFile .'
 
-                sh "mvn clean deploy -DskipTests -Dmaven.wagon.http.ssl.insecure=true -Dmaven.wagon.http.ssl.allowall=true -Dmaven.wagon.http.ssl.ignore.validity.dates=true --settings settings.xml"
+                sh "mvn clean deploy -DskipTests $mavenDeployAddOptions --settings settings.xml"
             }
         }
     }
@@ -1135,7 +1136,12 @@ def vcxJavaWrapperPublishing(testEnv, isRelease) {
                 sh "ci/buildJar.sh ${version}${suffix}"
 
                 sh "chmod +x ci/publishJar.sh"
-                sh 'ci/publishJar.sh'
+
+                withEnv([
+                    "MAVEN_ADD_OPTIONS=$mavenDeployAddOptions",
+                ]) {
+                    sh 'ci/publishJar.sh'
+                }
             }
         }
     }
