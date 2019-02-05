@@ -19,6 +19,10 @@ properties([
 libindyBuildFinished = ["Ubuntu": false, "RedHat": false]
 libvcxBuildFinished = ["Ubuntu": false, "RedHat": false]
 
+gitHubUserCredId = env.GITHUB_BOT_USER ?: 'sovbot-github'
+sovrinPackagingRepo = env.SOVRIN_PACKAGING_REPO ?: 'https://github.com/sovrin-foundation/sovrin-packaging'
+sovrinPackagingBranch = env.SOVRIN_PACKAGING_BRANCH ?: 'master'
+
 try {
     testing()
     publishing()
@@ -1342,8 +1346,7 @@ def buildTestEnv(file, env_name) {
 }
 
 def downloadPackagingUtils() {
-    //git branch: 'master', credentialsId: 'evernym-github-machine-user', url: 'https://github.com/evernym/sovrin-packaging'
-    git branch: 'master', credentialsId: 'sovbot-github', url: 'https://github.com/sovrin-foundation/sovrin-packaging'
+    git branch: sovrinPackagingBranch, credentialsId: gitHubUserCredId, url: sovrinPackagingRepo
 }
 
 def shell(command) {
