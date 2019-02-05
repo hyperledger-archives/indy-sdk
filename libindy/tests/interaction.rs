@@ -593,9 +593,10 @@ fn anoncreds_revocation_interaction_test_issuance_by_default() {
                                                          &cred_defs_json,
                                                          &rev_states_json).unwrap();
     let proof: Proof = serde_json::from_str(&proof_json).unwrap();
+    let identifier = proof.identifiers[0].clone();
 
     // Verifier gets RevocationRegistry from Ledger
-    let get_rev_reg_req = ledger::build_get_revoc_reg_request(Some(DID_MY1), &rev_reg_id, timestamp).unwrap();
+    let get_rev_reg_req = ledger::build_get_revoc_reg_request(Some(DID_MY1), &rev_reg_id, identifier.timestamp.unwrap()).unwrap();
     let get_rev_reg_resp = ledger::submit_request(pool_handle, &get_rev_reg_req).unwrap();
     let (rev_reg_id, rev_reg_json, timestamp) = ledger::parse_get_revoc_reg_response(&get_rev_reg_resp).unwrap();
 
@@ -1214,9 +1215,10 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_po
                                                          &cred_defs_json,
                                                          &rev_states_json).unwrap();
     let proof: Proof = serde_json::from_str(&proof_json).unwrap();
+    let identifier = proof.identifiers[0].clone();
 
     // Verifier gets RevocationRegistry from Ledger
-    let get_rev_reg_req = ledger::build_get_revoc_reg_request(Some(DID_MY1), &rev_reg_id, timestamp).unwrap();
+    let get_rev_reg_req = ledger::build_get_revoc_reg_request(Some(DID_MY1), &rev_reg_id, identifier.timestamp.unwrap()).unwrap();
     let get_rev_reg_resp = ledger::submit_request(pool_handle, &get_rev_reg_req).unwrap();
     let (rev_reg_id, rev_reg_json, timestamp) = ledger::parse_get_revoc_reg_response(&get_rev_reg_resp).unwrap();
 

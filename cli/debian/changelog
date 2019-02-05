@@ -1,6 +1,13 @@
-indy-cli (1.6.8) unstable; urgency=medium
+indy-cli (1.8.0) unstable; urgency=medium
 
 [ Hyperledger ]
+
+* 1.8.0
+    * Updated error handling to show Libindy error message in some cases.
+    * Added `NETWORK_MONITOR` to list of supported values for parameter `role` in `ledger nym` command.
+
+* 1.7.0
+    * Piped logs from Libindy into logger configured by CLI.
 
 * 1.6.8
     * Update CLI help
