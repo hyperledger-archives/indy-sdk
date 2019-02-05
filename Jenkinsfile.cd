@@ -26,12 +26,12 @@ mavenDeployAddOptions = env.MAVEN_DEPLOY_ADD_OPTIONS ?: ''
 try {
     testing()
     publishing()
-//    if (acceptanceTesting()) {
-//        releasing()
-//    }
-//    notifyingSuccess()
+    if (acceptanceTesting()) {
+        releasing()
+    }
+    notifyingSuccess()
 } catch (err) {
-//    notifyingFailure()
+    notifyingFailure()
     throw err
 }
 
@@ -39,10 +39,10 @@ def testing() {
     stage('Testing') {
         parallel([
                 'ubuntu-test' : { ubuntuTesting() },
-//                'redhat-test' : { rhelTesting() },
-//                'android-test': { androidTesting() },
+                'redhat-test' : { rhelTesting() },
+                'android-test': { androidTesting() },
                 'windows-test': { windowsTesting() },
-//                'ios-test'    : { iosTesting() }
+                'ios-test'    : { iosTesting() }
         ])
     }
 }
@@ -191,24 +191,24 @@ def linuxTesting(file, env_name, network_name, stashBuildResults) {
                         "${env_name}-cli-test"   : {
                             linuxModuleTesting(file, env_name, network_name, this.&linuxCLITesting, stashBuildResults)
                         },
-//                      "${env_name}-rust-test"  : {
-//                          linuxModuleTesting(file, env_name, network_name, this.&linuxRustTesting, stashBuildResults)
-//                      },
-//                      "${env_name}-nodejs-test": {
-//                          linuxModuleTesting(file, env_name, network_name, this.&linuxNodejsTesting, stashBuildResults)
-//                      },
+                        "${env_name}-rust-test"  : {
+                            linuxModuleTesting(file, env_name, network_name, this.&linuxRustTesting, stashBuildResults)
+                        },
+                        "${env_name}-nodejs-test": {
+                            linuxModuleTesting(file, env_name, network_name, this.&linuxNodejsTesting, stashBuildResults)
+                        },
                         "${env_name}-vcx-test"   : {
                             vcxTesting(file, env_name, network_name, stashBuildResults)
                         }
                 ]
-//              if (env_name == "Ubuntu") {
-//                  jobs["${env_name}-java-test"] = {
-//                      linuxModuleTesting(file, env_name, network_name, this.&linuxJavaTesting, stashBuildResults)
-//                  }
-//                  jobs["${env_name}-python-test"] = {
-//                      linuxModuleTesting(file, env_name, network_name, this.&linuxPythonTesting, stashBuildResults)
-//                  }
-//              }
+                if (env_name == "Ubuntu") {
+                    jobs["${env_name}-java-test"] = {
+                        linuxModuleTesting(file, env_name, network_name, this.&linuxJavaTesting, stashBuildResults)
+                    }
+                    jobs["${env_name}-python-test"] = {
+                        linuxModuleTesting(file, env_name, network_name, this.&linuxPythonTesting, stashBuildResults)
+                    }
+                }
                 parallel(jobs)
             },
     ])
@@ -226,20 +226,20 @@ def vcxTesting(file, env_name, network_name, stashBuildResults) {
                 waitUntil {
                     libvcxBuildFinished[env_name]
                 }
-//              def jobs = [
-//                      "${env_name}-vcx-nodejs-test": {
-//                          linuxModuleTesting(file, env_name, network_name, this.&linuxVcxNodejsTesting, stashBuildResults)
-//                      }
-//              ]
-//              if (env_name == "Ubuntu") {
-//                  jobs["${env_name}-vcx-java-test"] = {
-//                      linuxModuleTesting(file, env_name, network_name, this.&linuxVcxJavaTesting, stashBuildResults)
-//                  }
-//                  jobs["${env_name}-vcx-python-test"] = {
-//                      linuxModuleTesting(file, env_name, network_name, this.&linuxVcxPythonTesting, stashBuildResults)
-//                  }
-//              }
-//              parallel(jobs)
+                def jobs = [
+                        "${env_name}-vcx-nodejs-test": {
+                            linuxModuleTesting(file, env_name, network_name, this.&linuxVcxNodejsTesting, stashBuildResults)
+                        }
+                ]
+                if (env_name == "Ubuntu") {
+                    jobs["${env_name}-vcx-java-test"] = {
+                        linuxModuleTesting(file, env_name, network_name, this.&linuxVcxJavaTesting, stashBuildResults)
+                    }
+                    jobs["${env_name}-vcx-python-test"] = {
+                        linuxModuleTesting(file, env_name, network_name, this.&linuxVcxPythonTesting, stashBuildResults)
+                    }
+                }
+                parallel(jobs)
             },
     ])
 }
@@ -310,23 +310,23 @@ def linuxLibindyBuild(file, env_name, network_name, stashBuildResults) {
 
         libindyBuildFinished[env_name] = true
 
-//      echo "${env_name} Libindy Test: Test"
-//      testEnv.inside("--network=${network_name}") {
-//          sh '''
-//              cd libindy
-//              RUST_BACKTRACE=1 cargo test --release --no-run --features sodium_static
-//              RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release --features sodium_static
-//          '''
-//      }
+        echo "${env_name} Libindy Test: Test"
+        testEnv.inside("--network=${network_name}") {
+            sh '''
+                cd libindy
+                RUST_BACKTRACE=1 cargo test --release --no-run --features sodium_static
+                RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release --features sodium_static
+            '''
+        }
 
-//      echo "${env_name} Libnullpay Test: Test"
-//      testEnv.inside("--network=${network_name}") {
-//          sh '''
-//              cd libnullpay
-//              LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --no-run --release
-//              LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release
-//          '''
-//      }
+        echo "${env_name} Libnullpay Test: Test"
+        testEnv.inside("--network=${network_name}") {
+            sh '''
+                cd libnullpay
+                LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --no-run --release
+                LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release
+            '''
+        }
 
     }
     finally {
@@ -368,20 +368,20 @@ def linuxVcxBuild(file, env_name, network_name, stashBuildResults) {
         libvcxBuildFinished[env_name] = true
 
 
-//      testEnv.inside("--network=${network_name}") {
-//          echo "${env_name} Libvcx Test: Run Cloud Agent"
-//          sh '''
-//              cp vcx/libvcx/libindy.so vcx/dummy-cloud-agent
-//              cd vcx/dummy-cloud-agent
-//              LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy=info cargo run sample-config.json &
-//          '''
+        testEnv.inside("--network=${network_name}") {
+            echo "${env_name} Libvcx Test: Run Cloud Agent"
+            sh '''
+                cp vcx/libvcx/libindy.so vcx/dummy-cloud-agent
+                cd vcx/dummy-cloud-agent
+                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy=info cargo run sample-config.json &
+            '''
 
-//          echo "${env_name} Libvcx Test: Run tests"
-//          sh '''
-//              cd vcx/libvcx
-//              LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=vcx=debug,indy=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release --features "pool_tests agency"
-//          '''
-//      }
+            echo "${env_name} Libvcx Test: Run tests"
+            sh '''
+                cd vcx/libvcx
+                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=vcx=debug,indy=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release --features "pool_tests agency"
+            '''
+        }
     }
     finally {
         closePool(env_name, network_name, poolInst)
@@ -422,9 +422,9 @@ def linuxCLITesting(env_name, network_name, testEnv, stashBuildResults) {
         sh '''
             cd cli
             LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo build --release --features fatal_warnings
+            LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --release --features "nullpay_plugin" --no-run
+            LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test  --release --features "nullpay_plugin"
         '''
-//            LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --release --features "nullpay_plugin" --no-run
-//            LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test  --release --features "nullpay_plugin"
         if (stashBuildResults) {
             stash includes: 'cli/target/release/indy-cli', name: 'IndyCliUbuntuBuildResult'
         }
@@ -536,16 +536,16 @@ def windowsTesting() {
                                 "RUST_BACKTRACE=1"
                         ]) {
                             bat "cargo build --release --features fatal_warnings"
-//                          bat "cargo test --release --no-run"
+                            bat "cargo test --release --no-run"
 
-//                          echo "Windows Libindy Test: Run tests"
-//                          withEnv([
-//                                  "RUST_TEST_THREADS=1",
-//                                  "RUST_LOG=indy::=debug,zmq=trace",
-//                                  "TEST_POOL_IP=$INDY_SDK_SERVER_IP"
-//                          ]) {
-//                              bat "cargo test --release"
-//                          }
+                            echo "Windows Libindy Test: Run tests"
+                            withEnv([
+                                    "RUST_TEST_THREADS=1",
+                                    "RUST_LOG=indy::=debug,zmq=trace",
+                                    "TEST_POOL_IP=$INDY_SDK_SERVER_IP"
+                            ]) {
+                                bat "cargo test --release"
+                            }
                         }
                         stash includes: 'target/release/*.dll', name: 'LibindyWindowsBuildResult'
                     }
@@ -556,17 +556,17 @@ def windowsTesting() {
                                 "RUST_BACKTRACE=1"
                         ]) {
                             bat "cargo build --release --features fatal_warnings"
-//                          bat "cargo test --release --no-run"
+                            bat "cargo test --release --no-run"
 
-//                          echo "Windows Libnullpay Test: Run tests"
-//                          withEnv([
-//                                  "RUST_TEST_THREADS=1",
-//                                  "RUST_LOG=indy::=debug,zmq=trace",
-//                                  "TEST_POOL_IP=$INDY_SDK_SERVER_IP",
-//                                  "PATH=$WORKSPACE\\libindy\\target\\release;$PATH",
-//                          ]) {
-//                              bat "cargo test --release"
-//                          }
+                            echo "Windows Libnullpay Test: Run tests"
+                            withEnv([
+                                    "RUST_TEST_THREADS=1",
+                                    "RUST_LOG=indy::=debug,zmq=trace",
+                                    "TEST_POOL_IP=$INDY_SDK_SERVER_IP",
+                                    "PATH=$WORKSPACE\\libindy\\target\\release;$PATH",
+                            ]) {
+                                bat "cargo test --release"
+                            }
                         }
 
                         stash includes: 'target/release/*.dll', name: 'LibnullpayWindowsBuildResult'
@@ -586,17 +586,17 @@ def windowsTesting() {
                         ]) {
                             bat "cargo build --release --features fatal_warnings"
 
-//                          echo "Windows Indy Cli Test: Build tests"
-//                          bat "cargo test --release $featuresArgs --no-run"
+                            echo "Windows Indy Cli Test: Build tests"
+                            bat "cargo test --release $featuresArgs --no-run"
 
-//                          echo "Windows Indy Cli Test: Run tests"
-//                          withEnv([
-//                                  "RUST_TEST_THREADS=1",
-//                                  "RUST_LOG=indy::=debug,zmq=trace",
-//                                  "TEST_POOL_IP=$INDY_SDK_SERVER_IP"
-//                          ]) {
-//                              bat "cargo test --release $featuresArgs"
-//                          }
+                            echo "Windows Indy Cli Test: Run tests"
+                            withEnv([
+                                    "RUST_TEST_THREADS=1",
+                                    "RUST_LOG=indy::=debug,zmq=trace",
+                                    "TEST_POOL_IP=$INDY_SDK_SERVER_IP"
+                            ]) {
+                                bat "cargo test --release $featuresArgs"
+                            }
                         }
 
                         stash includes: 'target/release/indy-cli.exe,target/release/*.dll', name: 'IndyCliWindowsBuildResult'
@@ -617,16 +617,16 @@ def windowsTesting() {
                                 "RUST_BACKTRACE=1"
                         ]) {
                             bat "cargo build --release --features fatal_warnings"
-//                          bat "cargo test --release --no-run"
+                            bat "cargo test --release --no-run"
 
-//                          echo "Windows Libvcx Test: Run tests"
-//                          withEnv([
-//                                  "RUST_TEST_THREADS=1",
-//                                  "RUST_LOG=vcx=debug,indy::=debug",
-//                                  "PATH=$WORKSPACE\\libindy\\target\\release;$PATH",
-//                          ]) {
-//                              bat "cargo test --release"
-//                          }
+                            echo "Windows Libvcx Test: Run tests"
+                            withEnv([
+                                    "RUST_TEST_THREADS=1",
+                                    "RUST_LOG=vcx=debug,indy::=debug",
+                                    "PATH=$WORKSPACE\\libindy\\target\\release;$PATH",
+                            ]) {
+                                bat "cargo test --release"
+                            }
                         }
 
                         stash includes: 'target/release/*.dll', name: 'LibvcxWindowsBuildResult'
