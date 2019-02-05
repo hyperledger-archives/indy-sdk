@@ -1,62 +1,68 @@
-extern crate serde;
-extern crate rmp_serde;
-extern crate libc;
-
-use self::rmp_serde::encode;
-use self::rmp_serde::Deserializer;
-use serde::Deserialize;
-use serde_json;
 use settings;
 use utils::constants::*;
-use utils::error;
+use messages::*;
+use utils::{error, httpclient};
 use utils::libindy::wallet;
 use utils::libindy::signus::create_and_store_my_did;
-use utils::httpclient;
-use messages::{Bundled, MsgType, bundle_for_agency, unbundle_from_agency};
 
-
-#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, PartialOrd)]
-struct ConnectMsg {
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Connect {
     #[serde(rename = "@type")]
-    msg_type: MsgType,
+    pub msg_type: MessageTypes,
     #[serde(rename = "fromDID")]
-    from_did: String,
+    pub from_did: String,
     #[serde(rename = "fromDIDVerKey")]
-    from_vk: String,
+    pub from_vk: String,
 }
 
-#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, PartialOrd)]
-struct ConnectResponseMsg {
+#[derive(Serialize, Deserialize, Debug)]
+pub struct ConnectResponse {
     #[serde(rename = "@type")]
-    msg_type: MsgType,
+    pub msg_type: MessageTypes,
     #[serde(rename = "withPairwiseDID")]
-    from_did: String,
+    pub from_did: String,
     #[serde(rename = "withPairwiseDIDVerKey")]
-    from_vk: String,
+    pub from_vk: String,
 }
 
-#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, PartialOrd)]
-struct GenericMsg {
+#[derive(Serialize, Deserialize, Debug)]
+pub struct SignUp {
     #[serde(rename = "@type")]
-    msg_type: MsgType,
+    pub msg_type: MessageTypes,
 }
 
-#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, PartialOrd)]
-struct RegisterResponse {
+#[derive(Serialize, Deserialize, Debug)]
+pub struct SignUpResponse {
     #[serde(rename = "@type")]
-    msg_type: MsgType,
+    pub msg_type: MessageTypes,
 }
 
-#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, PartialOrd)]
-struct UpdateAgentMsg {
+#[derive(Serialize, Deserialize, Debug)]
+pub struct CreateAgent {
     #[serde(rename = "@type")]
-    msg_type: MsgType,
+    pub msg_type: MessageTypes,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct CreateAgentResponse {
+    #[serde(rename = "@type")]
+    pub msg_type: MessageTypes,
+    #[serde(rename = "withPairwiseDID")]
+    pub from_did: String,
+    #[serde(rename = "withPairwiseDIDVerKey")]
+    pub from_vk: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct UpdateConnectionMethod {
+    #[serde(rename = "@type")]
+    pub  msg_type: MessageTypes,
     #[serde(rename = "comMethod")]
-    com_method: ComMethod,
+    pub com_method: ComMethod,
 }
 
-#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, PartialOrd)]
-struct ComMethod {
+#[derive(Serialize, Deserialize, Debug)]
+pub struct ComMethod {
     id: String,
     #[serde(rename = "type")]
     e_type: i32,
@@ -65,6 +71,8 @@ struct ComMethod {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Config {
+    #[serde(default)]
+    protocol_type: settings::ProtocolTypes,
     agency_url: String,
     agency_did: String,
     agency_verkey: String,
@@ -79,7 +87,7 @@ pub struct Config {
     path: Option<String>,
 }
 
-pub fn connect_register_provision(config: &str) -> Result<String,u32> {
+pub fn connect_register_provision(config: &str) -> Result<String, u32> {
     trace!("connect_register_provision >>> config: {:?}", config);
 
     trace!("***Registering with agency");
@@ -89,6 +97,7 @@ pub fn connect_register_provision(config: &str) -> Result<String,u32> {
         None => ("".to_string(), settings::DEFAULT_WALLET_NAME.to_string()),
     };
 
+    settings::set_config_value(settings::CONFIG_PROTOCOL_TYPE, &my_config.protocol_type.to_string());
     settings::set_config_value(settings::CONFIG_AGENCY_ENDPOINT, &my_config.agency_url);
     settings::set_config_value(settings::CONFIG_WALLET_NAME, &wallet_name);
     settings::set_config_value(settings::CONFIG_AGENCY_DID, &my_config.agency_did);
@@ -115,95 +124,64 @@ pub fn connect_register_provision(config: &str) -> Result<String,u32> {
     let logo = my_config.logo.as_ref().unwrap_or(&String::from("<CHANGE_ME>")).to_string();
     let path = my_config.path.as_ref().unwrap_or(&String::from("<CHANGE_ME>")).to_string();
 
-    let seed_opt = if seed.len() > 0 {Some(seed.as_ref())} else {None};
+    let seed_opt = if seed.len() > 0 { Some(seed.as_ref()) } else { None };
     let (my_did, my_vk) = create_and_store_my_did(seed_opt)?;
 
-    let issuer_did;
-    let issuer_vk;
     let issuer_seed = my_config.enterprise_seed.as_ref().unwrap_or(&String::new()).to_string();
-    if issuer_seed != seed {
+
+    let (issuer_did, issuer_vk) = if issuer_seed != seed {
         let issuer_seed_opt = if issuer_seed.len() > 0 { Some(issuer_seed.as_ref()) } else { None };
         let (did1, vk1) = create_and_store_my_did(issuer_seed_opt)?;
-        issuer_did = did1;
-        issuer_vk = vk1;
+        (did1, vk1)
     } else {
-        issuer_did = my_did.clone();
-        issuer_vk = my_vk.clone();
-    }
+        (my_did.clone(), my_vk.clone())
+    };
 
-    settings::set_config_value(settings::CONFIG_INSTITUTION_DID,&my_did);
-    settings::set_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY,&my_vk);
-
-    if settings::test_agency_mode_enabled() {
-        httpclient::set_next_u8_response(PROVISION_RESPONSE.to_vec());
-        httpclient::set_next_u8_response(REGISTER_RESPONSE.to_vec());
-        httpclient::set_next_u8_response(PROVISION_RESPONSE.to_vec());
-    }
+    settings::set_config_value(settings::CONFIG_INSTITUTION_DID, &my_did);
+    settings::set_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY, &my_vk);
 
     /* STEP 1 - CONNECT */
+    if settings::test_agency_mode_enabled() {
+        httpclient::set_next_u8_response(CONNECTED_RESPONSE.to_vec());
+    }
 
     trace!("Connecting to Agency");
-    let payload = ConnectMsg {
-        msg_type: MsgType { name: "CONNECT".to_string(), ver: "1.0".to_string(), },
+    let message = A2AMessage::Connect(Connect {
+        msg_type: MessageTypes::build(A2AMessageKinds::Connect),
         from_did: my_did.to_string(),
         from_vk: my_vk.to_string(),
-    };
-    let data = Bundled::create(
-        encode::to_vec_named(&payload).or(Err(error::UNKNOWN_ERROR.code_num))?
-    ).encode()?;
-    let data = bundle_for_agency(data, &my_config.agency_did)?;
-    let data = unbundle_from_agency(
-        httpclient::post_u8(&data).map_err(|e|error::INVALID_HTTP_RESPONSE.code_num)?
-    )?;
+    });
 
-    trace!("deserializing connect response: {:?}", data);
-    let mut de = Deserializer::new(&data[0][..]);
-    let response: ConnectResponseMsg = Deserialize::deserialize(&mut de).map_err(|ec| {error::INVALID_OPTION.code_num})?;
-    //self.my_vk = Some(connection::get_pw_verkey(connection_handle).map_err(|ec| CredentialError::CommonError(ec.to_error_code()))?);
+    let mut response = send_message_to_agency(&message, &my_config.agency_did)?;
+    let response: ConnectResponse = ConnectResponse::from_a2a_message(response.remove(0))?;
     let agency_pw_vk = response.from_vk.to_owned();
     let agency_pw_did = response.from_did.to_owned();
 
-    settings::set_config_value(settings::CONFIG_REMOTE_TO_SDK_VERKEY,&agency_pw_vk);
+    settings::set_config_value(settings::CONFIG_REMOTE_TO_SDK_VERKEY, &agency_pw_vk);
 
     /* STEP 2 - REGISTER */
+    if settings::test_agency_mode_enabled() {
+        httpclient::set_next_u8_response(REGISTER_RESPONSE.to_vec());
+    }
 
-    let payload = GenericMsg {
-        msg_type: MsgType { name: "SIGNUP".to_string(), ver: "1.0".to_string(), },
-    };
+    let message = A2AMessage::SignUp(SignUp {
+        msg_type: MessageTypes::build(A2AMessageKinds::SignUp)
+    });
 
-    let data = encode::to_vec_named(&payload)
-        .or(Err(error::UNKNOWN_ERROR.code_num))?;
-    let data = Bundled::create(data)
-        .encode()
-        .or(Err(error::UNKNOWN_ERROR.code_num))?;
-    let data = bundle_for_agency(data, &agency_pw_did)?;
-    let data = unbundle_from_agency(
-        httpclient::post_u8(&data).map_err(|e|error::INVALID_HTTP_RESPONSE.code_num)?
-    )?;
-
-    trace!("deserializing register response: {:?}", data);
-    let mut de = Deserializer::new(&data[0][..]);
-    let response: RegisterResponse = Deserialize::deserialize(&mut de)
-        .map_err(|e|error::INVALID_HTTP_RESPONSE.code_num)?;
+    let mut response = send_message_to_agency(&message, &agency_pw_did)?;
+    let response: SignUpResponse = SignUpResponse::from_a2a_message(response.remove(0))?;
 
     /* STEP 3 - CREATE AGENT */
-    let payload = GenericMsg {
-        msg_type: MsgType { name: "CREATE_AGENT".to_string(), ver: "1.0".to_string(), },
-    };
+    if settings::test_agency_mode_enabled() {
+        httpclient::set_next_u8_response(AGENT_CREATED.to_vec());
+    }
 
-    let data = encode::to_vec_named(&payload)
-        .or(Err(error::UNKNOWN_ERROR.code_num))?;
-    let data = Bundled::create(data).encode()
-        .or(Err(error::UNKNOWN_ERROR.code_num))?;
-    let data = bundle_for_agency(data, &agency_pw_did)?;
-    let data = unbundle_from_agency(
-        httpclient::post_u8(&data).map_err(|e|error::INVALID_HTTP_RESPONSE.code_num)?
-    )?;
+    let message = A2AMessage::CreateAgent(CreateAgent {
+        msg_type: MessageTypes::build(A2AMessageKinds::CreateAgent)
+    });
 
-    trace!("deserializing provision response: {:?}", data);
-    let mut de = Deserializer::new(&data[0][..]);
-    let response: ConnectResponseMsg = Deserialize::deserialize(&mut de)
-        .map_err(|e|error::INVALID_HTTP_RESPONSE.code_num)?;
+    let mut response = send_message_to_agency(&message, &agency_pw_did)?;
+    let response: CreateAgentResponse = CreateAgentResponse::from_a2a_message(response.remove(0))?;
     let agent_did = response.from_did;
     let agent_vk = response.from_vk;
 
@@ -235,36 +213,34 @@ pub fn connect_register_provision(config: &str) -> Result<String,u32> {
 pub fn update_agent_info(id: &str, value: &str) -> Result<(), u32> {
     trace!("update_agent_info >>> id: {}, value: {}", id, value);
 
-    let new_config = UpdateAgentMsg {
-        msg_type: MsgType { name: "UPDATE_COM_METHOD".to_string(), ver: "1.0".to_string(), },
-        com_method: ComMethod { id: id.to_string(), e_type: 1, value: value.to_string(), },
-    };
+    let message = A2AMessage::UpdateConnectionMethod(UpdateConnectionMethod {
+        msg_type: MessageTypes::build(A2AMessageKinds::UpdateConMethod),
+        com_method: ComMethod {
+            id: id.to_string(),
+            e_type: 1,
+            value: value.to_string()
+        },
+    });
 
     if settings::test_agency_mode_enabled() {
         httpclient::set_next_u8_response(REGISTER_RESPONSE.to_vec());
     }
 
     let to_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
-    let endpoint = settings::get_config_value(settings::CONFIG_AGENCY_ENDPOINT)?;
 
-    let data = encode::to_vec_named(&new_config)
-        .or(Err(error::UNKNOWN_ERROR.code_num))?;
-
-    let data = Bundled::create(data).encode()
-        .or(Err(error::UNKNOWN_ERROR.code_num))?;
-
-    let data = bundle_for_agency(data, &to_did)?;
-
-    let data = unbundle_from_agency(
-        httpclient::post_u8(&data) .map_err(|e|error::INVALID_HTTP_RESPONSE.code_num)?
-    )?;
+    send_message_to_agency(&message, &to_did)?;
 
     Ok(())
 }
 
+pub fn send_message_to_agency(message: &A2AMessage, did: &str) -> Result<Vec<A2AMessage>, u32> {
+    let data = prepare_message_for_agency(message, did)?;
+    let response = httpclient::post_u8(&data).map_err(|e| error::INVALID_HTTP_RESPONSE.code_num)?;
+    parse_response_from_agency(&response)
+}
+
 #[cfg(test)]
 mod tests {
-
     use super::*;
 
     #[test]
@@ -304,19 +280,17 @@ mod tests {
 
         let result = connect_register_provision(&config.to_string()).unwrap();
         assert!(result.len() > 0);
-        println!("result: {}", result);
     }
 
     #[test]
     fn test_update_agent_info() {
         init!("true");
         settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
 
         match update_agent_info("123", "value") {
-            Ok(_) => assert_eq!(0,0),
+            Ok(_) => assert_eq!(0, 0),
             Err(x) => assert_eq!(x, 0), // should fail here
         };
-
     }
 }

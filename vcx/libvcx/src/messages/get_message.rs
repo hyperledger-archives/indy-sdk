@@ -1,183 +1,191 @@
-extern crate rust_base58;
-extern crate serde_json;
-extern crate serde;
-extern crate rmp_serde;
-
 use settings;
-use utils::httpclient;
-use utils::error;
 use messages::*;
-use messages::MessageResponseCode::{ MessageAccepted, MessagePending };
+use utils::{httpclient, error};
 use utils::libindy::crypto;
 
-#[derive(Clone, Serialize, Debug, PartialEq, PartialOrd)]
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
-struct GetMessagesPayload{
+pub struct GetMessages {
     #[serde(rename = "@type")]
-    msg_type: MsgType,
+    msg_type: MessageTypes,
     #[serde(rename = "excludePayload")]
     #[serde(skip_serializing_if = "Option::is_none")]
     exclude_payload: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     uids: Option<Vec<String>>,
+    #[serde(rename = "statusCodes")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    status_codes: Option<Vec<String>>,
+    status_codes: Option<Vec<MessageStatusCode>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "pairwiseDIDs")]
     pairwise_dids: Option<Vec<String>>,
 }
 
-#[derive(Serialize, Debug, PartialEq, PartialOrd, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct GetMessages {
-    #[serde(rename = "to")]
+#[derive(Debug)]
+pub struct GetMessagesBuilder {
     to_did: String,
-    agent_payload: String,
-    #[serde(skip_serializing, default)]
-    payload: GetMessagesPayload,
-    #[serde(skip_serializing, default)]
+    payload: GetMessages,
     to_vk: String,
-    #[serde(skip_serializing, default)]
-    validate_rc: u32,
-    #[serde(skip_serializing, default)]
     agent_did: String,
-    #[serde(skip_serializing, default)]
     agent_vk: String,
 }
 
-impl GetMessages{
-
-    pub fn create() -> GetMessages {
+impl GetMessagesBuilder {
+    pub fn create() -> GetMessagesBuilder {
         trace!("GetMessages::create_message >>>");
 
-        GetMessages {
+        GetMessagesBuilder {
             to_did: String::new(),
             to_vk: String::new(),
-            payload: GetMessagesPayload{
-                msg_type: MsgType { name: "GET_MSGS".to_string(), ver: "1.0".to_string(), },
+            payload: GetMessages {
+                msg_type: MessageTypes::build(A2AMessageKinds::GetMessages),
                 uids: None,
                 exclude_payload: None,
                 status_codes: None,
                 pairwise_dids: None,
             },
-            agent_payload: String::new(),
-            validate_rc: error::SUCCESS.code_num,
             agent_did: String::new(),
             agent_vk: String::new(),
         }
     }
 
-    pub fn uid(&mut self, uids: Option<Vec<String>>) -> &mut Self{
+    pub fn uid(&mut self, uids: Option<Vec<String>>) -> Result<&mut Self, u32> {
         //Todo: validate msg_uid??
         self.payload.uids = uids;
-        self
+        Ok(self)
     }
 
-    pub fn status_codes(&mut self, status_codes: Option<Vec<String>>) -> &mut Self{
-        //Todo: validate msg_uid??
+    pub fn status_codes(&mut self, status_codes: Option<Vec<String>>) -> Result<&mut Self, u32> {
+        let status_codes =
+            match status_codes {
+                Some(codes) => {
+                    let codes = codes
+                        .iter()
+                        .map(|code|
+                            serde_json::from_str::<MessageStatusCode>(&format!("\"{}\"", code)).or(Err(error::INVALID_JSON.code_num))
+                        ).collect::<Result<Vec<MessageStatusCode>, u32>>()?;
+                    Some(codes)
+                }
+                None => None
+            };
+
         self.payload.status_codes = status_codes;
-        self
+        Ok(self)
     }
 
-    pub fn pairwise_dids(&mut self, pairwise_dids: Option<Vec<String>>) -> &mut Self{
+    pub fn pairwise_dids(&mut self, pairwise_dids: Option<Vec<String>>) -> Result<&mut Self, u32> {
         //Todo: validate msg_uid??
         self.payload.pairwise_dids = pairwise_dids;
-        self
+        Ok(self)
     }
 
-    pub fn include_edge_payload(&mut self, payload: &str) -> &mut Self {
+    pub fn include_edge_payload(&mut self, payload: &str) -> Result<&mut Self, u32> {
         //todo: is this a json value, String??
         self.payload.exclude_payload = Some(payload.to_string());
-        self
+        Ok(self)
     }
 
     pub fn send_secure(&mut self) -> Result<Vec<Message>, u32> {
         trace!("GetMessages::send >>>");
 
-        let data = match self.msgpack() {
-            Ok(x) => x,
-            Err(x) => return Err(x),
-        };
+        let data = self.prepare()?;
 
-        match httpclient::post_u8(&data) {
-            Err(_) => return Err(error::POST_MSG_FAILURE.code_num),
-            Ok(response) => if settings::test_agency_mode_enabled() && response.len() == 0 {
-                return Ok(Vec::new());
-            } else {
-                parse_get_messages_response(response)
-            },
+        let response = httpclient::post_u8(&data).or(Err(error::POST_MSG_FAILURE.code_num))?;
+
+        if settings::test_agency_mode_enabled() && response.len() == 0 {
+            return Ok(Vec::new());
         }
+
+        let response = GetMessagesBuilder::parse_response(response)?;
+
+        Ok(response)
     }
 
-    pub fn download_messages(&mut self) -> Result<Vec<ConnectionMessages>, u32> {
+    fn parse_response(response: Vec<u8>) -> Result<Vec<Message>, u32> {
+        trace!("parse_get_messages_response >>>");
+        let mut response = parse_response_from_agency(&response)?;
+        let response: GetMessagesResponse = GetMessagesResponse::from_a2a_message(response.remove(0))?;
+        Ok(response.msgs)
+    }
+
+    pub fn download_messages(&mut self) -> Result<Vec<MessageByConnection>, u32> {
         trace!("GetMessages::download >>>");
 
-        if self.validate_rc != error::SUCCESS.code_num {
-            return Err(self.validate_rc)
+        match self.payload.msg_type {
+            MessageTypes::MessageTypeV0(ref mut type_) => type_.name = A2AMessageKinds::GetMessagesByConnections.name().to_string(),
+            MessageTypes::MessageTypeV1(ref mut type_) => type_.type_ = A2AMessageKinds::GetMessagesByConnections.name().to_string(),
         }
-
-        self.payload.msg_type.name = "GET_MSGS_BY_CONNS".to_string();
-        let data = encode::to_vec_named(&self.payload).or(Err(error::UNKNOWN_ERROR.code_num))?;
-        trace!("get_message content: {:?}", data);
-
-        let msg = Bundled::create(data).encode()?;
 
         let to_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
-        let data = bundle_for_agency(msg, &to_did)?;
 
-        match httpclient::post_u8(&data) {
-            Err(_) => return Err(error::POST_MSG_FAILURE.code_num),
-            Ok(response) => if settings::test_agency_mode_enabled() && response.len() == 0 {
-                return Ok(Vec::new());
-            } else {
-                parse_get_connection_messages_response(response)
-            },
+        let data = prepare_message_for_agency(&A2AMessage::GetMessagesByConnections(self.payload.clone()), &to_did)?;
+
+        let response = httpclient::post_u8(&data).or(Err(error::POST_MSG_FAILURE.code_num))?;
+
+        if settings::test_agency_mode_enabled() && response.len() == 0 {
+            return Ok(Vec::new());
         }
+
+        let response = GetMessagesBuilder::parse_get_connection_messages_response(response)?;
+
+        Ok(response)
+    }
+
+    fn parse_get_connection_messages_response(response: Vec<u8>) -> Result<Vec<MessageByConnection>, u32> {
+        trace!("parse_get_connection_messages_response >>>");
+        let mut response = parse_response_from_agency(&response)?;
+        let response: MessagesByConnections = MessagesByConnections::from_a2a_message(response.remove(0))?;
+
+        let mut connection_messages = Vec::new();
+        for connection in response.msgs.iter() {
+            let vk = ::utils::libindy::signus::get_local_verkey(&connection.pairwise_did)?;
+            let mut new_messages = Vec::new();
+            for message in connection.msgs.iter() {
+                new_messages.push(message.decrypt(&vk));
+            }
+            connection_messages.push(MessageByConnection {
+                pairwise_did: connection.pairwise_did.clone(),
+                msgs: new_messages,
+            })
+        }
+
+        Ok(connection_messages)
     }
 }
 
 //Todo: Every GeneralMessage extension, duplicates code
-impl GeneralMessage for GetMessages{
-    type Msg = GetMessages;
+impl GeneralMessage for GetMessagesBuilder {
+    type Msg = GetMessagesBuilder;
 
     fn set_agent_did(&mut self, did: String) { self.agent_did = did; }
     fn set_agent_vk(&mut self, vk: String) { self.agent_vk = vk; }
-    fn set_to_did(&mut self, to_did: String){ self.to_did = to_did; }
-    fn set_validate_rc(&mut self, rc: u32){ self.validate_rc = rc; }
-    fn set_to_vk(&mut self, to_vk: String){ self.to_vk = to_vk; }
+    fn set_to_did(&mut self, to_did: String) { self.to_did = to_did; }
+    fn set_to_vk(&mut self, to_vk: String) { self.to_vk = to_vk; }
 
-    fn msgpack(&mut self) -> Result<Vec<u8>,u32> {
-        if self.validate_rc != error::SUCCESS.code_num {
-            return Err(self.validate_rc)
-        }
-
-        let data = encode::to_vec_named(&self.payload).or(Err(error::UNKNOWN_ERROR.code_num))?;
-        trace!("get_message content: {:?}", data);
-
-        let msg = Bundled::create(data).encode()?;
-
-        bundle_for_agent(msg, &self.to_vk, &self.agent_did, &self.agent_vk)
+    fn prepare(&mut self) -> Result<Vec<u8>, u32> {
+        let messages = vec![A2AMessage::GetMessages(self.payload.clone())];
+        prepare_message_for_agent(messages, &self.to_vk, &self.agent_did, &self.agent_vk)
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, PartialOrd, Clone)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct GetMsgType {
+pub struct PayloadType {
     pub name: String,
     pub ver: String,
     pub fmt: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, PartialOrd, Clone)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct GetMsgResponse {
+pub struct Payload {
     #[serde(rename = "@type")]
-    pub msg_type: GetMsgType,
+    pub msg_type: PayloadType,
     #[serde(rename = "@msg")]
     pub msg: Vec<i8>,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, PartialOrd, Clone)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct DeliveryDetails {
     to: String,
@@ -185,10 +193,11 @@ pub struct DeliveryDetails {
     last_updated_date_time: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, PartialOrd, Clone)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Message {
-    pub status_code: String,
+    #[serde(rename = "statusCode")]
+    pub status_code: MessageStatusCode,
     pub payload: Option<Vec<i8>>,
     #[serde(rename = "senderDID")]
     pub sender_did: String,
@@ -206,7 +215,7 @@ pub struct Message {
 impl Message {
     pub fn new() -> Message {
         Message {
-            status_code: String::new(),
+            status_code: MessageStatusCode::Created,
             payload: None,
             sender_did: String::new(),
             uid: String::new(),
@@ -214,7 +223,7 @@ impl Message {
             ref_msg_id: None,
             delivery_details: Vec::new(),
             decrypted_payload: None,
-        }    
+        }
     }
 
     pub fn decrypt(&self, vk: &str) -> Message {
@@ -223,7 +232,7 @@ impl Message {
             let payload = ::messages::to_u8(payload);
             match ::utils::libindy::crypto::parse_msg(&vk, &payload) {
                 Ok(x) => {
-                    new_message.decrypted_payload = to_json(&x.1)
+                    new_message.decrypted_payload = rmp_serde::from_slice::<serde_json::Value>(&x.1[..])
                         .map(|i| i.to_string())
                         .ok();
                 }
@@ -235,113 +244,59 @@ impl Message {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, PartialOrd, Clone)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct GetMessagesResponse {
     #[serde(rename = "@type")]
-    msg_type: MsgType,
-    msgs: Vec<Message>,
-}
-
-fn parse_get_messages_response(response: Vec<u8>) -> Result<Vec<Message>, u32> {
-    trace!("parse_get_messages_response >>>");
-    let data = unbundle_from_agency(response)?;
-
-    trace!("get_message response: {:?}", data[0]);
-    let mut de = Deserializer::new(&data[0][..]);
-    let response: GetMessagesResponse = match Deserialize::deserialize(&mut de) {
-        Ok(x) => x,
-        Err(x) => {
-            error!("Could not parse messagepack: {}", x);
-
-            return Err(error::INVALID_MSGPACK.code_num)
-        },
-    };
-
-    Ok(response.msgs.to_owned())
-}
-
-#[derive(Serialize, Deserialize, Debug, PartialEq, PartialOrd, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct GetConnectionMessagesResponse {
-    #[serde(rename = "@type")]
-    msg_type: MsgType,
-    msgs_by_conns: Vec<ConnectionMessages>,
-}
-
-#[derive(Serialize, Deserialize, Debug, PartialEq, PartialOrd, Clone)]
-pub struct ConnectionMessages {
-    #[serde(rename = "pairwiseDID")]
-    pub pairwise_did: String,
+    msg_type: MessageTypeV0,
     pub msgs: Vec<Message>,
 }
 
-fn parse_get_connection_messages_response(response: Vec<u8>) -> Result<Vec<ConnectionMessages>, u32> {
-    trace!("parse_get_connection_messages_response >>>");
+#[derive(Debug, Deserialize, Serialize)]
+pub struct MessagesByConnections {
+    #[serde(rename = "@type")]
+    msg_type: MessageTypeV0,
+    #[serde(rename = "msgsByConns")]
+    #[serde(default)]
+    pub msgs: Vec<MessageByConnection>,
+}
 
-    let data = unbundle_from_agency(response)?;
-
-    trace!("parse_get_connection_message response: {:?}", data[0]);
-    let mut de = Deserializer::new(&data[0][..]);
-    let response: GetConnectionMessagesResponse = match Deserialize::deserialize(&mut de) {
-        Ok(x) => x,
-        Err(x) => {
-            error!("Could not parse messagepack: {}", x);
-
-            return Err(error::INVALID_MSGPACK.code_num)
-        },
-    };
-
-    let mut connection_messages = Vec::new();
-    for connection in response.msgs_by_conns.iter() {
-        let vk = ::utils::libindy::signus::get_local_verkey(&connection.pairwise_did)?;
-        let mut new_messages = Vec::new();
-        for message in connection.msgs.iter() {
-            new_messages.push(message.decrypt(&vk));
-        }
-        connection_messages.push(ConnectionMessages {
-            pairwise_did: connection.pairwise_did.clone(),
-            msgs: new_messages,
-        })
-    }
-    Ok(connection_messages)
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+pub struct MessageByConnection {
+    #[serde(rename = "pairwiseDID")]
+    pub pairwise_did: String,
+    pub msgs: Vec<Message>,
 }
 
 pub fn get_connection_messages(pw_did: &str, pw_vk: &str, agent_did: &str, agent_vk: &str, msg_uid: Option<Vec<String>>) -> Result<Vec<Message>, u32> {
     trace!("get_connection_messages >>> pw_did: {}, pw_vk: {}, agent_vk: {}, msg_uid: {:?}",
            pw_did, pw_vk, agent_vk, msg_uid);
 
-    match get_messages()
-        .to(&pw_did)
-        .to_vk(&pw_vk)
-        .agent_did(&agent_did)
-        .agent_vk(&agent_vk)
-        .uid(msg_uid)
-        .send_secure() {
-        Err(x) => {
-            error!("could not post get_messages: {}", x);
-            Err(error::POST_MSG_FAILURE.code_num)
-        },
-        Ok(response) => {
-            if response.len() == 0 {
-                Err(error::POST_MSG_FAILURE.code_num)
-            } else {
-                trace!("message returned: {:?}", response[0]);
-                Ok(response)
-            }
-        },
-    }
+    let response = get_messages()
+        .to(&pw_did)?
+        .to_vk(&pw_vk)?
+        .agent_did(&agent_did)?
+        .agent_vk(&agent_vk)?
+        .uid(msg_uid)?
+        .send_secure()
+        .map_err(|err| {
+            error!("could not post get_messages: {}", err);
+            error::POST_MSG_FAILURE.code_num
+        })?;
+
+    trace!("message returned: {:?}", response);
+    Ok(response)
 }
 
 pub fn get_ref_msg(msg_id: &str, pw_did: &str, pw_vk: &str, agent_did: &str, agent_vk: &str) -> Result<(String, Vec<u8>), u32> {
     trace!("get_ref_msg >>> msg_id: {}, pw_did: {}, pw_vk: {}, agent_did: {}, agent_vk: {}",
            msg_id, pw_did, pw_vk, agent_did, agent_vk);
 
-    let message = get_connection_messages(pw_did, pw_vk, agent_did, agent_vk, Some(vec![msg_id.to_string()]))?;
+    let message: Vec<Message> = get_connection_messages(pw_did, pw_vk, agent_did, agent_vk, Some(vec![msg_id.to_string()]))?;
     trace!("checking for ref_msg: {:?}", message);
 
     let msg_id = match message[0].ref_msg_id.clone() {
-        Some(ref ref_msg_id) if message[0].status_code == MessageAccepted.as_string() => ref_msg_id.to_string(),
+        Some(ref ref_msg_id) if message[0].status_code == MessageStatusCode::Accepted => ref_msg_id.to_string(),
         _ => return Err(error::NOT_READY.code_num),
     };
 
@@ -351,16 +306,16 @@ pub fn get_ref_msg(msg_id: &str, pw_did: &str, pw_vk: &str, agent_did: &str, age
 
     // this will work for both credReq and proof types
     match message[0].payload.clone() {
-        Some(ref payload) if message[0].status_code == MessagePending.as_string() => {
+        Some(ref payload) if message[0].status_code == MessageStatusCode::Pending => {
             // TODO: check returned verkey
             let (_, msg) = crypto::parse_msg(&pw_vk, &to_u8(payload))?;
             Ok((message[0].uid.clone(), msg))
-        },
+        }
         _ => Err(error::INVALID_HTTP_RESPONSE.code_num)
     }
 }
 
-pub fn download_messages(pairwise_dids: Option<Vec<String>>, status_codes: Option<Vec<String>>, uids: Option<Vec<String>>) -> Result<Vec<ConnectionMessages>, u32> {
+pub fn download_messages(pairwise_dids: Option<Vec<String>>, status_codes: Option<Vec<String>>, uids: Option<Vec<String>>) -> Result<Vec<MessageByConnection>, u32> {
     trace!("download_messages >>> pairwise_dids: {:?}, status_codes: {:?}, uids: {:?}",
            pairwise_dids, status_codes, uids);
 
@@ -368,20 +323,15 @@ pub fn download_messages(pairwise_dids: Option<Vec<String>>, status_codes: Optio
         ::utils::httpclient::set_next_u8_response(::utils::constants::GET_ALL_MESSAGES_RESPONSE.to_vec());
     }
 
-    match get_messages()
-        .uid(uids)
-        .status_codes(status_codes)
-        .pairwise_dids(pairwise_dids)
-        .download_messages() {
-        Err(x) => {
-            error!("could not post get_messages: {}", x);
-            Err(error::POST_MSG_FAILURE.code_num)
-        },
-        Ok(response) => {
-            trace!("message returned: {:?}", response[0]);
-            Ok(response)
-        },
-    }
+    let response =
+        get_messages()
+            .uid(uids)?
+            .status_codes(status_codes)?
+            .pairwise_dids(pairwise_dids)?
+            .download_messages()?;
+
+    trace!("message returned: {:?}", response);
+    Ok(response)
 }
 
 #[cfg(test)]
@@ -393,7 +343,7 @@ mod tests {
     fn test_parse_get_messages_response() {
         init!("true");
 
-        let result = parse_get_messages_response(GET_MESSAGES_RESPONSE.to_vec()).unwrap();
+        let result = GetMessagesBuilder::parse_response(GET_MESSAGES_RESPONSE.to_vec()).unwrap();
         assert_eq!(result.len(), 3)
     }
 
@@ -401,8 +351,8 @@ mod tests {
     fn test_parse_get_connection_messages_response() {
         init!("true");
 
-        let json = to_json(&GET_ALL_MESSAGES_RESPONSE.to_vec()).unwrap();
-        let result = parse_get_connection_messages_response(GET_ALL_MESSAGES_RESPONSE.to_vec()).unwrap();
+        let json: serde_json::Value = rmp_serde::from_slice(GET_ALL_MESSAGES_RESPONSE).unwrap();
+        let result = GetMessagesBuilder::parse_get_connection_messages_response(GET_ALL_MESSAGES_RESPONSE.to_vec()).unwrap();
         assert_eq!(result.len(), 1)
     }
 
@@ -422,7 +372,7 @@ mod tests {
         };
 
         let msg1 = Message {
-            status_code: MessageResponseCode::MessageAccepted.as_string(),
+            status_code: MessageStatusCode::Accepted,
             payload: Some(vec![-9, 108, 97, 105, 109, 45, 100, 97, 116, 97]),
             sender_did: "WVsWVh8nL96BE3T3qwaCd5".to_string(),
             uid: "mmi3yze".to_string(),
@@ -432,7 +382,7 @@ mod tests {
             decrypted_payload: None,
         };
         let msg2 = Message {
-            status_code: MessageResponseCode::MessageCreate.as_string(),
+            status_code: MessageStatusCode::Created,
             payload: None,
             sender_did: "WVsWVh8nL96BE3T3qwaCd5".to_string(),
             uid: "zjcynmq".to_string(),
@@ -441,14 +391,20 @@ mod tests {
             delivery_details: Vec::new(),
             decrypted_payload: None,
         };
+
         let response = GetMessagesResponse {
-            msg_type: MsgType { name: "MSGS".to_string(), ver: "1.0".to_string(), },
+            msg_type: MessageTypeV0 { name: "MSGS".to_string(), ver: "1.0".to_string() },
             msgs: vec![msg1, msg2],
         };
 
-        let data = encode::to_vec_named(&response).unwrap();
+        let my_vk = settings::get_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY).unwrap();
+        let verkey = settings::get_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY).unwrap();
+
+        let data = rmp_serde::to_vec_named(&response).unwrap();
         let bundle = Bundled::create(data).encode().unwrap();
-        let result = parse_get_messages_response(bundle).unwrap();
+        let message = crypto::prep_msg(&my_vk, &verkey, &bundle[..]).unwrap();
+
+        let result = GetMessagesBuilder::parse_response(message).unwrap();
     }
 
     #[cfg(feature = "agency")]
@@ -457,6 +413,7 @@ mod tests {
     fn test_download_messages() {
         use std::thread;
         use std::time::Duration;
+        ::utils::logger::LibvcxDefaultLogger::init_testing_logger();
 
         init!("agency");
         let institution_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
@@ -465,11 +422,11 @@ mod tests {
         let (_, cred_def_handle) = ::credential_def::tests::create_cred_def_real(false);
         let credential_data = r#"{"address1": ["123 Main St"], "address2": ["Suite 3"], "city": ["Draper"], "state": ["UT"], "zip": ["84000"]}"#;
         let credential_offer = ::issuer_credential::issuer_credential_create(cred_def_handle,
-                                                                           "1".to_string(),
-                                                                           institution_did.clone(),
-                                                                           "credential_name".to_string(),
-                                                                           credential_data.to_owned(),
-                                                                           1).unwrap();
+                                                                             "1".to_string(),
+                                                                             institution_did.clone(),
+                                                                             "credential_name".to_string(),
+                                                                             credential_data.to_owned(),
+                                                                             1).unwrap();
         ::issuer_credential::send_credential_offer(credential_offer, alice).unwrap();
         thread::sleep(Duration::from_millis(2000));
         // AS CONSUMER GET MESSAGES

@@ -3,13 +3,14 @@ extern crate serde_json;
 extern crate libc;
 extern crate openssl;
 
-use self::openssl::bn::{ BigNum, BigNumRef };
+use self::openssl::bn::{BigNum, BigNumRef};
 use settings;
 use connection;
-use api::{ VcxStateType, ProofStateType };
+use api::{VcxStateType, ProofStateType};
 use messages::proofs::proof_message::{ProofMessage, CredInfo};
 use messages;
-use messages::proofs::proof_request::{ ProofRequestMessage };
+use messages::CredentialExchangeMessageType;
+use messages::proofs::proof_request::ProofRequestMessage;
 use messages::GeneralMessage;
 use utils::error;
 use utils::constants::*;
@@ -69,7 +70,7 @@ impl Proof {
                            credential_defs_json: &str,
                            rev_reg_defs_json: &str,
                            rev_regs_json: &str) -> Result<u32, ProofError> {
-        if settings::test_indy_mode_enabled() {return Ok(error::SUCCESS.code_num);}
+        if settings::test_indy_mode_enabled() { return Ok(error::SUCCESS.code_num); }
 
         debug!("starting libindy proof verification for {}", self.source_id);
         let valid = libindy_verifier_verify_proof(proof_req_json,
@@ -78,9 +79,9 @@ impl Proof {
                                                   credential_defs_json,
                                                   rev_reg_defs_json,
                                                   rev_regs_json).map_err(|err| {
-                error!("Error: {}, Proof {} wasn't valid", err, self.source_id);
-                self.proof_state = ProofStateType::ProofInvalid;
-                ProofError::InvalidProof()
+            error!("Error: {}, Proof {} wasn't valid", err, self.source_id);
+            self.proof_state = ProofStateType::ProofInvalid;
+            ProofError::InvalidProof()
         })?;
 
         if !valid {
@@ -243,14 +244,14 @@ impl Proof {
 
         if self.state != VcxStateType::VcxStateInitialized {
             warn!("proof {} has invalid state {} for sending proofRequest", self.source_id, self.state as u32);
-            return Err(ProofError::ProofNotReadyError())
+            return Err(ProofError::ProofNotReadyError());
         }
         debug!("sending proof request with proof: {}, and connection {}", self.source_id, connection_handle);
-        self.prover_did = connection::get_pw_did(connection_handle).map_err(|ec| ProofError::InvalidConnection())?;
-        self.agent_did = connection::get_agent_did(connection_handle).map_err(|ec| ProofError::InvalidConnection())?;
-        self.agent_vk = connection::get_agent_verkey(connection_handle).map_err(|ec| ProofError::InvalidConnection())?;
-        self.remote_vk = connection::get_their_pw_verkey(connection_handle).map_err(|ec| ProofError::InvalidConnection())?;
-        self.prover_vk = connection::get_pw_verkey(connection_handle).map_err(|ec| ProofError::InvalidConnection())?;
+        self.prover_did = connection::get_pw_did(connection_handle).map_err(|_| ProofError::InvalidConnection())?;
+        self.agent_did = connection::get_agent_did(connection_handle).map_err(|_| ProofError::InvalidConnection())?;
+        self.agent_vk = connection::get_agent_verkey(connection_handle).map_err(|_| ProofError::InvalidConnection())?;
+        self.remote_vk = connection::get_their_pw_verkey(connection_handle).map_err(|_| ProofError::InvalidConnection())?;
+        self.prover_vk = connection::get_pw_verkey(connection_handle).map_err(|_| ProofError::InvalidConnection())?;
 
         debug!("prover_did: {} -- agent_did: {} -- agent_vk: {} -- remote_vk: {} -- prover_vk: {}",
                self.prover_did,
@@ -277,25 +278,24 @@ impl Proof {
         let data = connection::generate_encrypted_payload(&self.prover_vk, &self.remote_vk, &proof_request, "PROOF_REQUEST").map_err(|_| ProofError::ProofConnectionError())?;
         let title = format!("{} wants you to share: {}", settings::get_config_value(settings::CONFIG_INSTITUTION_NAME).map_err(|e| ProofError::CommonError(e))?, self.name);
 
-        match messages::send_message().to(&self.prover_did)
-            .to_vk(&self.prover_vk)
-            .msg_type("proofReq")
-            .agent_did(&self.agent_did)
-            .set_title(&title)
-            .set_detail(&title)
-            .agent_vk(&self.agent_vk)
-            .edge_agent_payload(&data)
-            .send_secure() {
-            Ok(response) => {
-                self.msg_uid = get_proof_details(&response[0])?;
-                self.state = VcxStateType::VcxStateOfferSent;
-                return Ok(error::SUCCESS.code_num)
-            },
-            Err(x) => {
-                warn!("{} could not send proofReq: {}", self.source_id, x);
-                return Err(ProofError::ProofMessageError(x));
-            }
-        }
+        let response = messages::send_message()
+            .to(&self.prover_did)?
+            .to_vk(&self.prover_vk)?
+            .msg_type(&CredentialExchangeMessageType::ProofReq)?
+            .agent_did(&self.agent_did)?
+            .set_title(&title)?
+            .set_detail(&title)?
+            .agent_vk(&self.agent_vk)?
+            .edge_agent_payload(&data)?
+            .send_secure()
+            .map_err(|err| {
+                warn!("{} could not send proofReq: {}", self.source_id, err);
+                ProofError::ProofMessageError(err)
+            })?;
+
+        self.msg_uid = response.get_msg_uid()?;
+        self.state = VcxStateType::VcxStateOfferSent;
+        return Ok(error::SUCCESS.code_num);
     }
 
     fn get_proof(&self) -> Result<String, ProofError> {
@@ -312,8 +312,8 @@ impl Proof {
         }
 
         let (_, payload) = messages::get_message::get_ref_msg(&self.msg_uid, &self.prover_did,
-                                                         &self.prover_vk, &self.agent_did,
-                                                         &self.agent_vk)
+                                                              &self.prover_vk, &self.agent_did,
+                                                              &self.agent_vk)
             .map_err(|ec| ProofError::ProofMessageError(ec))?;
 
         self.proof = match parse_proof_payload(&payload) {
@@ -370,7 +370,7 @@ impl Proof {
     }
 
     fn from_str(s: &str) -> Result<Proof, ProofError> {
-        let s:Value = serde_json::from_str(&s)
+        let s: Value = serde_json::from_str(&s)
             .or(Err(ProofError::InvalidJson()))?;
         let proof: Proof = serde_json::from_value(s["data"].clone())
             .or(Err(ProofError::InvalidJson()))?;
@@ -420,7 +420,7 @@ pub fn create_proof(source_id: String,
 
     new_proof.state = VcxStateType::VcxStateInitialized;
 
-    let new_handle = PROOF_MAP.add(new_proof).map_err(|ec|ProofError::CreateProofError())?;
+    let new_handle = PROOF_MAP.add(new_proof).map_err(|ec| ProofError::CreateProofError())?;
 
     Ok(new_handle)
 }
@@ -430,7 +430,7 @@ pub fn is_valid_handle(handle: u32) -> bool {
 }
 
 pub fn update_state(handle: u32) -> Result<u32, ProofError> {
-    PROOF_MAP.get_mut(handle,|p|{
+    PROOF_MAP.get_mut(handle, |p| {
         match p.update_state() {
             Ok(x) => Ok(x),
             Err(x) => {
@@ -438,19 +438,19 @@ pub fn update_state(handle: u32) -> Result<u32, ProofError> {
                 Ok(p.get_state())
             },
         }
-    }).map_err(|ec|ProofError::CommonError(ec))
+    }).map_err(|ec| ProofError::CommonError(ec))
 }
 
 pub fn get_state(handle: u32) -> Result<u32, ProofError> {
-    PROOF_MAP.get(handle,|p|{
+    PROOF_MAP.get(handle, |p| {
         Ok(p.get_state())
-    }).map_err(|ec|ProofError::CommonError(ec))
+    }).map_err(|ec| ProofError::CommonError(ec))
 }
 
 pub fn get_proof_state(handle: u32) -> Result<u32, ProofError> {
-    PROOF_MAP.get(handle,|p|{
+    PROOF_MAP.get(handle, |p| {
         Ok(p.get_proof_state())
-    }).map_err(|ec|ProofError::CommonError(ec))
+    }).map_err(|ec| ProofError::CommonError(ec))
 }
 
 pub fn release(handle: u32) -> Result<(), ProofError> {
@@ -467,57 +467,37 @@ pub fn release_all() {
     };
 }
 pub fn to_string(handle: u32) -> Result<String, ProofError> {
-    PROOF_MAP.get(handle,|p|{
+    PROOF_MAP.get(handle, |p| {
         Ok(Proof::to_string(&p))
-    }).map_err(|ec|ProofError::CommonError(ec))
+    }).map_err(|ec| ProofError::CommonError(ec))
 }
 
 pub fn get_source_id(handle: u32) -> Result<String, ProofError> {
-    PROOF_MAP.get(handle,|p|{
+    PROOF_MAP.get(handle, |p| {
         Ok(p.get_source_id().clone())
-    }).map_err(|ec|ProofError::CommonError(ec))
+    }).map_err(|ec| ProofError::CommonError(ec))
 }
 
 pub fn from_string(proof_data: &str) -> Result<u32, ProofError> {
     let derived_proof: Proof = Proof::from_str(proof_data).map_err(|err| {
-        warn!("{} with serde error: {}",error::INVALID_JSON.message, err);
+        warn!("{} with serde error: {}", error::INVALID_JSON.message, err);
         ProofError::CommonError(error::INVALID_JSON.code_num)
     })?;
 
     let source_id = derived_proof.source_id.clone();
-    let new_handle = PROOF_MAP.add(derived_proof).map_err(|ec|ProofError::CommonError(ec))?;
+    let new_handle = PROOF_MAP.add(derived_proof).map_err(|ec| ProofError::CommonError(ec))?;
 
     Ok(new_handle)
 }
 
 pub fn send_proof_request(handle: u32, connection_handle: u32) -> Result<u32, ProofError> {
-    PROOF_MAP.get_mut(handle,|p|{
-        p.send_proof_request(connection_handle).map_err(|ec|ec.to_error_code())
-    }).map_err(|ec|ProofError::CommonError(ec))
+    PROOF_MAP.get_mut(handle, |p| {
+        p.send_proof_request(connection_handle).map_err(|ec| ec.to_error_code())
+    }).map_err(|ec| ProofError::CommonError(ec))
 }
 
-fn get_proof_details(response: &str) -> Result<String, ProofError> {
-    match serde_json::from_str(response) {
-        Ok(json) => {
-            let json: serde_json::Value = json;
-            let detail = match json["uids"].as_array() {
-                Some(x) => x[0].as_str().ok_or(ProofError::CommonError(error::INVALID_JSON.code_num))?,
-                None => {
-                    warn!("response had no uid");
-                    return Err(ProofError::CommonError(error::INVALID_JSON.code_num))
-                },
-            };
-            Ok(String::from(detail))
-        },
-        Err(_) => {
-            warn!("Proof called without a valid response from server");
-            return Err(ProofError::CommonError(error::INVALID_JSON.code_num))
-        },
-    }
-}
-
-pub fn get_proof_uuid(handle: u32) -> Result<String,u32> {
-    PROOF_MAP.get(handle,|p|{
+pub fn get_proof_uuid(handle: u32) -> Result<String, u32> {
+    PROOF_MAP.get(handle, |p| {
         Ok(p.get_proof_uuid().clone())
     })
 }
@@ -533,9 +513,9 @@ fn parse_proof_payload(payload: &Vec<u8>) -> Result<ProofMessage, u32> {
 }
 
 pub fn get_proof(handle: u32) -> Result<String, ProofError> {
-    PROOF_MAP.get(handle,|p|{
-        p.get_proof().map_err(|ec|ec.to_error_code())
-    }).map_err(|ec|ProofError::CommonError(ec))
+    PROOF_MAP.get(handle, |p| {
+        p.get_proof().map_err(|ec| ec.to_error_code())
+    }).map_err(|ec| ProofError::CommonError(ec))
 }
 
 // TODO: This doesnt feel like it should be here (maybe utils?)

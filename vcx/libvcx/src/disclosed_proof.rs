@@ -7,6 +7,7 @@ use utils::error;
 use connection;
 use messages;
 use messages::GeneralMessage;
+use messages::CredentialExchangeMessageType;
 use messages::proofs::proof_message::{ProofMessage };
 use messages::proofs::proof_request::{ ProofRequestMessage, ProofRequestData, NonRevokedInterval };
 use messages::extract_json_payload;
@@ -402,9 +403,7 @@ impl DisclosedProof {
                self.their_vk,
                self.my_vk);
 
-        let e_code: u32 = error::INVALID_CONNECTION_HANDLE.code_num;
-
-        let local_their_did = self.their_did.as_ref().ok_or(ProofError::ProofConnectionError())?;
+        self.their_did.as_ref().ok_or(ProofError::ProofConnectionError())?;
         let local_their_vk = self.their_vk.as_ref().ok_or(ProofError::ProofConnectionError())?;
         let local_agent_did = self.agent_did.as_ref().ok_or(ProofError::ProofConnectionError())?;
         let local_agent_vk = self.agent_vk.as_ref().ok_or(ProofError::ProofConnectionError())?;
@@ -425,23 +424,22 @@ impl DisclosedProof {
         let data: Vec<u8> = connection::generate_encrypted_payload(local_my_vk, local_their_vk, &proof, "PROOF")
             .or(Err(ProofError::ProofConnectionError()))?;
 
-        match messages::send_message().to(local_my_did)
-            .to_vk(local_my_vk)
-            .msg_type("proof")
-            .agent_did(local_agent_did)
-            .agent_vk(local_agent_vk)
-            .edge_agent_payload(&data)
-            .ref_msg_id(ref_msg_uid)
-            .send_secure() {
-            Ok(response) => {
-                self.state = VcxStateType::VcxStateAccepted;
-                return Ok(error::SUCCESS.code_num)
-            },
-            Err(x) => {
-                warn!("could not send proof: {}", x);
-                return Err(ProofError::CommonError(x));
-            }
-        }
+        messages::send_message()
+            .to(local_my_did)?
+            .to_vk(local_my_vk)?
+            .msg_type(&CredentialExchangeMessageType::Proof)?
+            .agent_did(local_agent_did)?
+            .agent_vk(local_agent_vk)?
+            .edge_agent_payload(&data)?
+            .ref_msg_id(ref_msg_uid)?
+            .send_secure()
+            .map_err(|err|{
+                warn!("could not send proof: {}", err);
+                err
+            })?;
+
+        self.state = VcxStateType::VcxStateAccepted;
+        return Ok(error::SUCCESS.code_num)
     }
 
     fn set_source_id(&mut self, id: &str) { self.source_id = id.to_string(); }
@@ -511,10 +509,8 @@ pub fn to_string(handle: u32) -> Result<String, u32> {
 }
 
 pub fn from_string(proof_data: &str) -> Result<u32, ProofError> {
-    let derived_proof: DisclosedProof = match DisclosedProof::from_str(proof_data) {
-        Ok(x) => x,
-        Err(y) => return Err(ProofError::CommonError(error::INVALID_JSON.code_num)),
-    };
+    let derived_proof: DisclosedProof = DisclosedProof::from_str(proof_data)
+        .or(Err(ProofError::CommonError(error::INVALID_JSON.code_num)))?;
 
     let new_handle = HANDLE_MAP.add(derived_proof).map_err(|ec| ProofError::CommonError(ec))?;
 

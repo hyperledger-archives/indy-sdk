@@ -27,9 +27,12 @@ extern crate lazy_static;
 
 extern crate time;
 
+extern crate regex;
+
 #[macro_use]
 pub mod utils;
 pub mod settings;
+#[macro_use]
 pub mod messages;
 
 pub mod api;
