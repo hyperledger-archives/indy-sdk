@@ -3,7 +3,8 @@
 @Library('SovrinHelpers') _
 
 testVersion = "0.0.1"
-testSuffix = "-dev-sovrin$env.BUILD_NUMBER"
+testSuffix = "-dev-$env.BUILD_NUMBER"
+env.BRANCH_NAME = 'master'
 
 properties([
         [$class: 'BuildDiscarderProperty', strategy: [
