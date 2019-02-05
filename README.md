@@ -107,7 +107,7 @@ The Indy SDK release process defines the following release channels:
 * `rc` - release candidates.
 * `stable` - stable releases.
 
-Please refer to our [release workflow](docs/release-workflow.md) for more details.
+Please refer to our [release workflow](docs/contributors/release-workflow.md) for more details.
 
 ### Ubuntu based distributions (Ubuntu 16.04)
 It is recommended to install the SDK packages with APT:
