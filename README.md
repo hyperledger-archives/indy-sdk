@@ -14,7 +14,7 @@ us on [Hyperledger's Rocket.Chat](https://chat.hyperledger.org/) at #indy-sdk to
 If you have just started learning about self-sovereign identity, here are some resources to increase your understanding:
 
 * This extended tutorial introduces Indy, explains how the whole ecosystem works, and how the
-functions in the SDK can be used to construct rich clients: [Indy-SDK Getting-Started Guide](docs/getting-started/getting-started.md)
+functions in the SDK can be used to construct rich clients: [Indy-SDK Getting-Started Guide](docs/getting-started/indy-walkthrough.md)
 
 * Hyperledger Indy Working Group calls happen every Thursday at 8amPT, 9amMT, 11amET, 4pmBST. Add to your calendar and join from any device: https://zoom.us/j/232861185 
   
