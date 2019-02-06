@@ -9,8 +9,10 @@ IOS_TARGETS="aarch64-apple-ios,armv7-apple-ios,i386-apple-ios,x86_64-apple-ios"
 IOS_ARCHS="arm64,armv7,i386,x86_64"
 export INDY_BRANCH=$1
 export INDY_VERSION=$2
-export SOVTOKEN_ZIP=$3
-export RUST_VERSION=$4
+export NULL_BRANCH=$3
+export NULL_VERSION=$4
+export SOVTOKEN_ZIP=$5
+export RUST_VERSION=$6
 #IOS_TARGETS="x86_64-apple-ios,i386-apple-ios"
 #IOS_ARCHS="x86_64,i386"
 

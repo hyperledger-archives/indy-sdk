@@ -8,7 +8,9 @@ setup() {
     export ARCH=$1
     export LIBINDY_BRANCH=$2
     export LIBINDY_VERSION=$3
-    export LIBSOVTOKEN_ZIP=$4
+    export LIBNULL_BRANCH=$4
+    export LIBNULL_VERSION=$5
+    export LIBSOVTOKEN_ZIP=$6
 
     export PATH=$PATH:/opt/gradle/gradle-3.4.1/bin
     export PATH=${PATH}:$ANDROID_HOME/platform-tools:$ANDROID_HOME/tools:$ANDROID_HOME/build-tools/25.0.2/
@@ -124,13 +126,13 @@ get_libsovtoken() {
 get_libnullpay() {
     set -xv
     if [ -z ${LIBNULLPAY_DIR} ]; then
-        [ -z ${LIBINDY_BRANCH} ] && exit 1
-        [ -z ${LIBINDY_VERSION} ] && exit 1
-		SIMPLE_LIBINDY_VERSION=$(echo ${LIBINDY_VERSION} | cut -f1 -d'-')
+        [ -z ${LIBNULL_BRANCH} ] && exit 1
+        [ -z ${LIBNULL_VERSION} ] && exit 1
+		SIMPLE_LIBNULL_VERSION=$(echo ${LIBNULL_VERSION} | cut -f1 -d'-')
         if [ ! -d "libnullpay_${ARCH}" ]; then
 
-            wget -q https://repo.sovrin.org/android/libnullpay/${LIBINDY_BRANCH}/${LIBINDY_VERSION}/libnullpay_android_${ARCH}_${SIMPLE_LIBINDY_VERSION}.zip
-            unzip libnullpay_android_${ARCH}_${SIMPLE_LIBINDY_VERSION}.zip
+            wget -q https://repo.sovrin.org/android/libnullpay/${LIBNULL_BRANCH}/${LIBNULL_VERSION}/libnullpay_android_${ARCH}_${SIMPLE_LIBNULL_VERSION}.zip
+            unzip libnullpay_android_${ARCH}_${SIMPLE_LIBNULL_VERSION}.zip
 
         fi
         export LIBNULLPAY_DIR="${PWD}/libnullpay_${ARCH}"
@@ -168,7 +170,7 @@ build_vcx() {
 
 }
 
-setup $1 $2 $3 $4
+setup $1 $2 $3 $4 $5 $6
 get_libindy
 get_libsovtoken
 get_libnullpay

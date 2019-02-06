@@ -51,12 +51,16 @@ static String libindyVersion() {
     return "1.7.0"
 }
 
-static String libnullVersion() {
-    return "1.7.0"
+static String libindyTag() {
+    return "961"
 }
 
-static String indyTag() {
-    return "958"
+static String libnullVersion() {
+    return "1.8.0"
+}
+
+static String nullpayTag() {
+    return "967"
 }
 
 static String libsovtokenVersion() {
@@ -79,12 +83,20 @@ static String indyBranch() {
     return 'master'
 }
 
+static String nullBranch() {
+    return 'master'
+}
+
+static String appendTag(tag, del) {
+    if (tag != "") { tag = del + tag }
+    return tag
+}
 
 def buildLibindyDocker() {
-    def tag=indyTag()
-    if (tag != "") { tag = "~" + tag }
-    docker.build("libindy", "--build-arg LIBINDY_VER=${libindyVersion()}${tag} \
-            --build-arg LIBNULL_VER=${libnullVersion()}${tag} \
+    def indyTag = appendTag(libindyTag(), "~")
+    def nullTag= appendTag(nullpayTag(), "~")
+    docker.build("libindy", "--build-arg LIBINDY_VER=${libindyVersion()}${indyTag} \
+            --build-arg LIBNULL_VER=${libnullVersion()}${nullTag} \
             --build-arg LIBSOVTOKEN_VER=${libsovtokenVersion()} \
             -f ${libindyDockerfile()} .")
 }
@@ -272,10 +284,12 @@ def ios() {
                 WORK_DIR = "/Users/jenkins"
 
                 // Build ios architectures
-                def tag=indyTag()
-                if (tag != "") { tag = "-" + tag }
 
-                sh "source vcx/ci/scripts/iosBuild.sh ${indyBranch()} ${libindyVersion()}${tag} ${iosSovtokenArtifact()} ${rustVersion()}"
+                def indyTag = appendTag(libindyTag(), "-")
+                def nullTag = appendTag(nullpayTag(), "-")
+
+                sh "source vcx/ci/scripts/iosBuild.sh ${indyBranch()} ${libindyVersion()}${indyTag} \
+                    ${nullBranch()} ${libnullVersion()}${nullTag} ${iosSovtokenArtifact()} ${rustVersion()}"
 
                 // Publish to Kraken
                 if (env.BRANCH_NAME == "master") {
@@ -326,10 +340,11 @@ def buildAndroid(arch) {
 
                     sh 'sudo ./vcx/ci/scripts/installCert.sh'
 
-                    def tag=indyTag()
-                    if (tag != "") { tag = "-" + tag }
+                    def indyTag = appendTag(libindyTag(), "-")
+                    def nullTag = appendTag(nullpayTag(), "-")
 
-                    sh "./${ANDROID_SCRIPT_PATH} ${arch} ${indyBranch()} ${libindyVersion()}${tag} ${androidSovtokenArtifact()}"
+                    sh "./${ANDROID_SCRIPT_PATH} ${arch} ${indyBranch()} ${libindyVersion()}${indyTag} \
+                            ${nullBranch()} ${libnullVersion()}${nullTag} ${androidSovtokenArtifact()}"
 
                 }
 
