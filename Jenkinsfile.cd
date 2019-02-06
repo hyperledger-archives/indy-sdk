@@ -2,7 +2,6 @@
 
 @Library('SovrinHelpers') _
 
-env.BRANCH_NAME = 'master'
 testReleaseVersion = env.INDY_SDK_TEST_RELEASE_VERSION ?: null
 
 properties([
