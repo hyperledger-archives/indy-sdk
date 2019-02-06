@@ -527,11 +527,7 @@ def linuxModuleTesting(file, env_name, network_name, module_tester) {
     }
 }
 
-def linuxAndroidOnEmulatorTestingIndy(env_name, network_name, testEnv) {
-    dir('libindy') {
-    }
-}
-def linuxAndroidOnEmulatorTestingNullPay(env_name, network_name, testEnv) {
+def linuxAndroidOnEmulatorTesting(env_name, network_name, testEnv) {
     sh 'chmod -R 777 libindy/ci/*.sh'
     sh 'chmod -R 777 libindy/*.sh'
 
