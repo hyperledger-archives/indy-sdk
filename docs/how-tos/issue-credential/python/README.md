@@ -89,7 +89,7 @@ Save the updated version of `IssueCredential.py`.
 
 ### Step 5
 
-Run the [finished code](IssueCredential.py) and observe the whole sequence.
+Run the [finished code](issue_credential.py) and observe the whole sequence.
 
 ## More experiments
 
