@@ -24,7 +24,7 @@ use services::blob_storage::BlobStorageService;
 use services::crypto::CryptoService;
 use services::ledger::LedgerService;
 use services::payments::PaymentsService;
-use services::pool::PoolService;
+use services::pool::{PoolService, set_freshness_threshold};
 use services::wallet::WalletService;
 
 use self::threadpool::ThreadPool;
@@ -66,6 +66,9 @@ pub fn indy_set_runtime_config(config: IndyConfig) {
         Some(true) => env::set_var("RUST_BACKTRACE", "1"),
         Some(false) => env::set_var("RUST_BACKTRACE", "0"),
         _ => {}
+    }
+    if let Some(threshold) = config.freshness_threshold {
+        set_freshness_threshold(threshold);
     }
 }
 

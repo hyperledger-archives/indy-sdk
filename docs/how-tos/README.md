@@ -1,4 +1,5 @@
 # How Tos
+* 
 
 This folder contains short tutorials demonstrating how to accomplish
 common tasks with the Indy SDK. For best results, proceed through the following in order:
@@ -9,3 +10,4 @@ common tasks with the Indy SDK. For best results, proceed through the following 
 4. [Issue a Credential](issue-credential/README.md)
 5. [Negotiate a Proof](negotiate-proof/README.md)
 6. [Send a Secure Message](send-secure-msg/README.md)
+   
