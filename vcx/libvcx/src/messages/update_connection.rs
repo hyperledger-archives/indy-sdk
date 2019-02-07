@@ -10,7 +10,7 @@ pub struct UpdateConnection {
     #[serde(rename = "@type")]
     msg_type: MessageTypes,
     #[serde(rename = "statusCode")]
-    pub status_code: ConnectionStatus,
+    status_code: ConnectionStatus,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]

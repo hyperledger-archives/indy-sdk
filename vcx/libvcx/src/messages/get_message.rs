@@ -134,20 +134,16 @@ impl GetMessagesBuilder {
         let mut response = parse_response_from_agency(&response)?;
         let response: MessagesByConnections = MessagesByConnections::from_a2a_message(response.remove(0))?;
 
-        let mut connection_messages = Vec::new();
-        for connection in response.msgs.iter() {
-            let vk = ::utils::libindy::signus::get_local_verkey(&connection.pairwise_did)?;
-            let mut new_messages = Vec::new();
-            for message in connection.msgs.iter() {
-                new_messages.push(message.decrypt(&vk));
-            }
-            connection_messages.push(MessageByConnection {
-                pairwise_did: connection.pairwise_did.clone(),
-                msgs: new_messages,
+        response.msgs
+            .iter()
+            .map(|connection| {
+                ::utils::libindy::signus::get_local_verkey(&connection.pairwise_did)
+                    .map(|vk| MessageByConnection {
+                        pairwise_did: connection.pairwise_did.clone(),
+                        msgs: connection.msgs.iter().map(|message| message.decrypt(&vk)).collect(),
+                    })
             })
-        }
-
-        Ok(connection_messages)
+            .collect()
     }
 }
 
@@ -170,7 +166,7 @@ impl GeneralMessage for GetMessagesBuilder {
 #[serde(rename_all = "camelCase")]
 pub struct Payload {
     #[serde(rename = "@type")]
-    pub msg_type: PayloadTypes,
+    msg_type: PayloadTypes,
     #[serde(rename = "@msg")]
     pub msg: Vec<i8>,
 }
@@ -203,31 +199,13 @@ pub struct Message {
 }
 
 impl Message {
-    pub fn new() -> Message {
-        Message {
-            status_code: MessageStatusCode::Created,
-            payload: None,
-            sender_did: String::new(),
-            uid: String::new(),
-            msg_type: String::new(),
-            ref_msg_id: None,
-            delivery_details: Vec::new(),
-            decrypted_payload: None,
-        }
-    }
-
     pub fn decrypt(&self, vk: &str) -> Message {
+        // TODO: must be Result
         let mut new_message = self.clone();
         if let Some(ref payload) = self.payload {
             let payload = ::messages::to_u8(payload);
-            match ::utils::libindy::crypto::parse_msg(&vk, &payload) {
-                Ok(x) => {
-                    new_message.decrypted_payload = rmp_serde::from_slice::<serde_json::Value>(&x.1[..])
-                        .map(|i| i.to_string())
-                        .ok();
-                }
-                Err(_) => (),
-            };
+            let payload = ::utils::libindy::crypto::parse_msg(&vk, &payload).unwrap_or((String::new(), Vec::new()));
+            new_message.decrypted_payload = rmp_serde::from_slice(&payload.1[..]).ok();
         }
         new_message.payload = None;
         new_message
@@ -239,7 +217,7 @@ impl Message {
 pub struct GetMessagesResponse {
     #[serde(rename = "@type")]
     msg_type: MessageTypes,
-    pub msgs: Vec<Message>,
+    msgs: Vec<Message>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -248,14 +226,14 @@ pub struct MessagesByConnections {
     msg_type: MessageTypes,
     #[serde(rename = "msgsByConns")]
     #[serde(default)]
-    pub msgs: Vec<MessageByConnection>,
+    msgs: Vec<MessageByConnection>,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct MessageByConnection {
     #[serde(rename = "pairwiseDID")]
-    pub pairwise_did: String,
-    pub msgs: Vec<Message>,
+    pairwise_did: String,
+    msgs: Vec<Message>,
 }
 
 pub fn get_connection_messages(pw_did: &str, pw_vk: &str, agent_did: &str, agent_vk: &str, msg_uid: Option<Vec<String>>) -> Result<Vec<Message>, u32> {
@@ -285,7 +263,7 @@ pub fn get_ref_msg(msg_id: &str, pw_did: &str, pw_vk: &str, agent_did: &str, age
     let message: Vec<Message> = get_connection_messages(pw_did, pw_vk, agent_did, agent_vk, Some(vec![msg_id.to_string()]))?;
     trace!("checking for ref_msg: {:?}", message);
 
-    let msg_id = match message[0].ref_msg_id.clone() {
+    let msg_id = match message.get(0).as_ref().and_then(|message| message.ref_msg_id.as_ref()) {
         Some(ref ref_msg_id) if message[0].status_code == MessageStatusCode::Accepted => ref_msg_id.to_string(),
         _ => return Err(error::NOT_READY.code_num),
     };
@@ -295,7 +273,7 @@ pub fn get_ref_msg(msg_id: &str, pw_did: &str, pw_vk: &str, agent_did: &str, age
     trace!("checking for pending message: {:?}", message);
 
     // this will work for both credReq and proof types
-    match message[0].payload.clone() {
+    match message.get(0).as_ref().and_then(|message| message.payload.as_ref()) {
         Some(ref payload) if message[0].status_code == MessageStatusCode::Pending => {
             // TODO: check returned verkey
             let (_, msg) = crypto::parse_msg(&pw_vk, &to_u8(payload))?;

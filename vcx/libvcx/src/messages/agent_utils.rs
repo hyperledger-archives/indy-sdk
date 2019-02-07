@@ -1,9 +1,9 @@
 use settings;
 use utils::constants::*;
-use messages::*;
+use messages::{A2AMessage, A2AMessageKinds, prepare_message_for_agency, parse_response_from_agency};
 use messages::message_type::MessageTypes;
 use utils::{error, httpclient};
-use utils::libindy::wallet;
+use utils::libindy::{wallet, anoncreds};
 use utils::libindy::signus::create_and_store_my_did;
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -93,10 +93,8 @@ pub fn connect_register_provision(config: &str) -> Result<String, u32> {
 
     trace!("***Registering with agency");
     let my_config: Config = serde_json::from_str(&config).or(Err(error::INVALID_CONFIGURATION.code_num))?;
-    let (wallet_name_string, wallet_name) = match my_config.wallet_name {
-        Some(x) => (format!("\"wallet_name\":\"{}\",", x), x),
-        None => ("".to_string(), settings::DEFAULT_WALLET_NAME.to_string()),
-    };
+
+    let wallet_name = my_config.wallet_name.unwrap_or(settings::DEFAULT_WALLET_NAME.to_string());
 
     settings::set_config_value(settings::CONFIG_PROTOCOL_TYPE, &my_config.protocol_type.to_string());
     settings::set_config_value(settings::CONFIG_AGENCY_ENDPOINT, &my_config.agency_url);
@@ -105,35 +103,27 @@ pub fn connect_register_provision(config: &str) -> Result<String, u32> {
     settings::set_config_value(settings::CONFIG_AGENCY_VERKEY, &my_config.agency_verkey);
     settings::set_config_value(settings::CONFIG_REMOTE_TO_SDK_VERKEY, &my_config.agency_verkey);
     settings::set_config_value(settings::CONFIG_WALLET_KEY, &my_config.wallet_key);
-    if let Some(_key_derivation) = &my_config.wallet_key_derivation {
-        settings::set_config_value(settings::CONFIG_WALLET_KEY_DERIVATION, _key_derivation);
+
+    if let Some(key_derivation) = &my_config.wallet_key_derivation {
+        settings::set_config_value(settings::CONFIG_WALLET_KEY_DERIVATION, key_derivation);
     }
-    if let Some(_wallet_type) = &my_config.wallet_type {
-        settings::set_config_value(settings::CONFIG_WALLET_TYPE, _wallet_type);
+    if let Some(wallet_type) = &my_config.wallet_type {
+        settings::set_config_value(settings::CONFIG_WALLET_TYPE, wallet_type);
     }
 
     wallet::init_wallet(&wallet_name, my_config.wallet_type.as_ref().map(String::as_str))?;
     trace!("initialized wallet");
 
-    match ::utils::libindy::anoncreds::libindy_prover_create_master_secret(::settings::DEFAULT_LINK_SECRET_ALIAS) {
-        Ok(_) => (),
-        Err(_) => (),  // If MS is already in wallet then just continue
-    };
+    anoncreds::libindy_prover_create_master_secret(::settings::DEFAULT_LINK_SECRET_ALIAS).ok(); // If MS is already in wallet then just continue
 
-    let seed = my_config.agent_seed.as_ref().unwrap_or(&String::new()).to_string();
-    let name = my_config.name.as_ref().unwrap_or(&String::from("<CHANGE_ME>")).to_string();
-    let logo = my_config.logo.as_ref().unwrap_or(&String::from("<CHANGE_ME>")).to_string();
-    let path = my_config.path.as_ref().unwrap_or(&String::from("<CHANGE_ME>")).to_string();
+    let name = my_config.name.unwrap_or(String::from("<CHANGE_ME>"));
+    let logo = my_config.logo.unwrap_or(String::from("<CHANGE_ME>"));
+    let path = my_config.path.unwrap_or(String::from("<CHANGE_ME>"));
 
-    let seed_opt = if seed.len() > 0 { Some(seed.as_ref()) } else { None };
-    let (my_did, my_vk) = create_and_store_my_did(seed_opt)?;
+    let (my_did, my_vk) = create_and_store_my_did(my_config.agent_seed.as_ref().map(String::as_str))?;
 
-    let issuer_seed = my_config.enterprise_seed.as_ref().unwrap_or(&String::new()).to_string();
-
-    let (issuer_did, issuer_vk) = if issuer_seed != seed {
-        let issuer_seed_opt = if issuer_seed.len() > 0 { Some(issuer_seed.as_ref()) } else { None };
-        let (did1, vk1) = create_and_store_my_did(issuer_seed_opt)?;
-        (did1, vk1)
+    let (issuer_did, issuer_vk) = if my_config.enterprise_seed != my_config.agent_seed {
+        create_and_store_my_did(my_config.enterprise_seed.as_ref().map(String::as_str))?
     } else {
         (my_did.clone(), my_vk.clone())
     };
@@ -155,8 +145,9 @@ pub fn connect_register_provision(config: &str) -> Result<String, u32> {
 
     let mut response = send_message_to_agency(&message, &my_config.agency_did)?;
     let response: ConnectResponse = ConnectResponse::from_a2a_message(response.remove(0))?;
-    let agency_pw_vk = response.from_vk.to_owned();
-    let agency_pw_did = response.from_did.to_owned();
+
+    let agency_pw_vk = response.from_vk;
+    let agency_pw_did = response.from_did;
 
     settings::set_config_value(settings::CONFIG_REMOTE_TO_SDK_VERKEY, &agency_pw_vk);
 
@@ -183,6 +174,7 @@ pub fn connect_register_provision(config: &str) -> Result<String, u32> {
 
     let mut response = send_message_to_agency(&message, &agency_pw_did)?;
     let response: CreateAgentResponse = CreateAgentResponse::from_a2a_message(response.remove(0))?;
+
     let agent_did = response.from_did;
     let agent_vk = response.from_vk;
 
@@ -202,8 +194,8 @@ pub fn connect_register_provision(config: &str) -> Result<String, u32> {
         "institution_logo_url": logo,
         "genesis_path": path,
     });
-    if let Some(_key_derivation) = &my_config.wallet_key_derivation {
-        final_config["wallet_key_derivation"] = json!(_key_derivation);
+    if let Some(key_derivation) = &my_config.wallet_key_derivation {
+        final_config["wallet_key_derivation"] = json!(key_derivation);
     }
 
     wallet::close_wallet()?;
@@ -236,7 +228,7 @@ pub fn update_agent_info(id: &str, value: &str) -> Result<(), u32> {
 
 pub fn send_message_to_agency(message: &A2AMessage, did: &str) -> Result<Vec<A2AMessage>, u32> {
     let data = prepare_message_for_agency(message, did)?;
-    let response = httpclient::post_u8(&data).map_err(|e| error::INVALID_HTTP_RESPONSE.code_num)?;
+    let response = httpclient::post_u8(&data).or(Err(error::INVALID_HTTP_RESPONSE.code_num))?;
     parse_response_from_agency(&response)
 }
 

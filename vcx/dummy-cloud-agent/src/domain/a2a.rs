@@ -11,7 +11,7 @@ use domain::a2connection::*;
 use domain::invite::{InviteDetail, SenderDetail, ForwardAgentDetail};
 use domain::key_deligation_proof::KeyDlgProof;
 use domain::status::{MessageStatusCode, ConnectionStatus};
-use domain::message_type::{MessageTypes};
+use domain::message_type::{MessageTypes, MessageFamilies};
 
 // TODO: For simplification we avoid complex versioning logic
 // TODO: There should be additional enum level for versions

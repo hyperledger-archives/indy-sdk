@@ -4,19 +4,6 @@ use messages::message_type::MessageTypes;
 use utils::{httpclient, error};
 use utils::constants::*;
 
-#[derive(Clone, Serialize, Debug, PartialEq)]
-enum SendInvitePayloads {
-    SendInvitePayloadV0(SendInvitePayloadV0),
-    SendInvitePayloadV1(SendInvitePayloadV1)
-}
-
-#[derive(Clone, Serialize, Debug, PartialEq)]
-#[serde(rename_all = "camelCase")]
-struct SendInvitePayloadV0 {
-    create_payload: CreateMessage,
-    msg_detail_payload: SendInviteMessageDetails,
-}
-
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 pub struct SendInviteMessageDetails {
     #[serde(rename = "@type")]
@@ -32,7 +19,7 @@ pub struct SendInviteMessageDetails {
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
-pub struct SendInvitePayloadV1 {
+pub struct ConnectionRequest {
     #[serde(rename = "@type")]
     msg_type: MessageTypes,
     #[serde(rename = "sendMsg")]
@@ -54,26 +41,13 @@ pub struct SendInvitePayloadV1 {
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 pub struct ConnectionRequestResponse {
     #[serde(rename = "@type")]
-    pub msg_type: MessageTypes,
-    pub uid: String,
+    msg_type: MessageTypes,
+    uid: String,
     #[serde(rename = "inviteDetail")]
-    pub invite_detail: InviteDetail,
+    invite_detail: InviteDetail,
     #[serde(rename = "urlToInviteDetail")]
-    pub url_to_invite_detail: String,
-    pub sent: bool,
-}
-
-#[derive(Clone, Serialize, Debug, PartialEq)]
-enum AcceptInvitePayloads {
-    AcceptInvitePayloadV0(AcceptInvitePayloadV0),
-    AcceptInvitePayloadV1(AcceptInvitePayloadV1)
-}
-
-#[derive(Clone, Serialize, Debug, PartialEq)]
-#[serde(rename_all = "camelCase")]
-struct AcceptInvitePayloadV0 {
-    create_payload: CreateMessage,
-    msg_detail_payload: AcceptInviteMessageDetails,
+    url_to_invite_detail: String,
+    sent: bool,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
@@ -91,7 +65,7 @@ pub struct AcceptInviteMessageDetails {
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
-pub struct AcceptInvitePayloadV1 {
+pub struct ConnectionRequestAnswer {
     #[serde(rename = "@type")]
     msg_type: MessageTypes,
     #[serde(rename = "sendMsg")]
@@ -114,21 +88,21 @@ pub struct AcceptInvitePayloadV1 {
 #[serde(rename_all = "camelCase")]
 pub struct KeyDlgProof {
     #[serde(rename = "agentDID")]
-    pub agent_did: String,
+    agent_did: String,
     #[serde(rename = "agentDelegatedKey")]
-    pub agent_delegated_key: String,
+    agent_delegated_key: String,
     #[serde(rename = "signature")]
-    pub signature: String,
+    signature: String,
 }
 
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct SenderDetail {
-    pub name: Option<String>,
-    pub agent_key_dlg_proof: KeyDlgProof,
+    name: Option<String>,
+    agent_key_dlg_proof: KeyDlgProof,
     #[serde(rename = "DID")]
     pub did: String,
-    pub logo_url: Option<String>,
+    logo_url: Option<String>,
     #[serde(rename = "verKey")]
     pub verkey: String,
     #[serde(rename = "publicDID")]
@@ -140,21 +114,21 @@ pub struct SenderDetail {
 #[serde(rename_all = "camelCase")]
 pub struct SenderAgencyDetail {
     #[serde(rename = "DID")]
-    pub did: String,
+    did: String,
     #[serde(rename = "verKey")]
-    pub verkey: String,
-    pub endpoint: String,
+    verkey: String,
+    endpoint: String,
 }
 
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct InviteDetail {
-    status_code: String,
+    pub status_code: String,
     pub conn_req_id: String,
     pub sender_detail: SenderDetail,
     pub sender_agency_detail: SenderAgencyDetail,
-    target_name: String,
-    status_msg: String,
+    pub target_name: String,
+    pub status_msg: String,
 }
 
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
@@ -163,16 +137,16 @@ pub struct SendInviteMessageDetailsResponse {
     #[serde(rename = "@type")]
     msg_type: MessageTypes,
     #[serde(rename = "inviteDetail")]
-    pub invite_detail: InviteDetail,
+    invite_detail: InviteDetail,
     #[serde(rename = "urlToInviteDetail")]
-    pub url_to_invite_detail: String,
+    url_to_invite_detail: String,
 }
 
 #[derive(Debug)]
 pub struct SendInviteBuilder {
     to_did: String,
     to_vk: String,
-    payload: SendInvitePayloads,
+    payload: SendInviteMessageDetails,
     agent_did: String,
     agent_vk: String,
     public_did: Option<String>,
@@ -190,9 +164,9 @@ impl SendInviteMessageDetailsResponse {
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 pub struct ConnectionRequestAnswerResponse {
     #[serde(rename = "@type")]
-    pub msg_type: MessageTypes,
-    pub uid: String,
-    pub sent: bool,
+    msg_type: MessageTypes,
+    uid: String,
+    sent: bool,
 }
 
 impl InviteDetail {
@@ -227,46 +201,16 @@ impl SendInviteBuilder {
     pub fn create() -> SendInviteBuilder {
         trace!("SendInvite::create_message >>>");
 
-        let payload =
-            match settings::get_protocol_type() {
-                settings::ProtocolTypes::V1 => {
-                    SendInvitePayloads::SendInvitePayloadV0(
-                        SendInvitePayloadV0 {
-                            create_payload: CreateMessage {
-                                msg_type: MessageTypes::build(A2AMessageKinds::CreateMessage),
-                                mtype: CredentialExchangeMessageType::ConnReq,
-                                reply_to_msg_id: None,
-                                send_msg: true,
-                                uid: None,
-                            },
-                            msg_detail_payload: SendInviteMessageDetails {
-                                msg_type: MessageTypes::build(A2AMessageKinds::MessageDetail),
-                                key_dlg_proof: KeyDlgProof { agent_did: String::new(), agent_delegated_key: String::new(), signature: String::new() },
-                                target_name: None,
-                                phone_no: None,
-                                include_public_did: false,
-                            },
-                        }
-                    )
-                }
-                settings::ProtocolTypes::V2 => {
-                    SendInvitePayloads::SendInvitePayloadV1(SendInvitePayloadV1 {
-                        msg_type: MessageTypes::build(A2AMessageKinds::ConnectionRequest),
-                        send_msg: true,
-                        uid: None,
-                        reply_to_msg_id: None,
-                        key_dlg_proof: KeyDlgProof { agent_did: String::new(), agent_delegated_key: String::new(), signature: String::new() },
-                        target_name: None,
-                        phone_no: None,
-                        include_public_did: false,
-                    })
-                }
-            };
-
         SendInviteBuilder {
             to_did: String::new(),
             to_vk: String::new(),
-            payload,
+            payload: SendInviteMessageDetails {
+                msg_type: MessageTypes::build(A2AMessageKinds::MessageDetail),
+                key_dlg_proof: KeyDlgProof { agent_did: String::new(), agent_delegated_key: String::new(), signature: String::new() },
+                target_name: None,
+                phone_no: None,
+                include_public_did: false,
+            },
             agent_did: String::new(),
             agent_vk: String::new(),
             public_did: None,
@@ -275,51 +219,31 @@ impl SendInviteBuilder {
 
     pub fn key_delegate(&mut self, key: &str) -> Result<&mut Self, u32> {
         validation::validate_key_delegate(key)?;
-        match self.payload {
-            SendInvitePayloads::SendInvitePayloadV0(ref mut payload) => payload.msg_detail_payload.key_dlg_proof.agent_delegated_key = key.to_string(),
-            SendInvitePayloads::SendInvitePayloadV1(ref mut payload) => payload.key_dlg_proof.agent_delegated_key = key.to_string(),
-        }
+        self.payload.key_dlg_proof.agent_delegated_key = key.to_string();
         Ok(self)
     }
 
     pub fn public_did(&mut self, did: Option<&str>) -> Result<&mut Self, u32> {
         if did.is_some() {
-            match self.payload {
-                SendInvitePayloads::SendInvitePayloadV0(ref mut payload) => payload.msg_detail_payload.include_public_did = true,
-                SendInvitePayloads::SendInvitePayloadV1(ref mut payload) => payload.include_public_did = true,
-            }
+            self.payload.include_public_did = true;
         }
         self.public_did = did.map(String::from);
         Ok(self)
     }
 
-    pub fn phone_number(&mut self, phone_number: &Option<String>) -> Result<&mut Self, u32> {
-        if let &Some(ref p_num) = phone_number {
-            validation::validate_phone_number(p_num.as_str())?;
-            match self.payload {
-                SendInvitePayloads::SendInvitePayloadV0(ref mut payload) => payload.msg_detail_payload.phone_no = Some(p_num.to_string()),
-                SendInvitePayloads::SendInvitePayloadV1(ref mut payload) => payload.phone_no = Some(p_num.to_string())
-            }
+    pub fn phone_number(&mut self, phone_number: Option<&str>) -> Result<&mut Self, u32> {
+        if let Some(ref p_num) = phone_number {
+            validation::validate_phone_number(p_num)?;
+            self.payload.phone_no = phone_number.map(String::from);
         }
         Ok(self)
     }
 
     pub fn generate_signature(&mut self) -> Result<(), u32> {
-        let prepare_signature = |(key_dlg_proof, to_vk): (&KeyDlgProof, &str)| {
-            let signature = format!("{}{}", key_dlg_proof.agent_did, key_dlg_proof.agent_delegated_key);
-            let signature = ::utils::libindy::crypto::sign(to_vk, signature.as_bytes()).unwrap(); //TODO: FIXME
-            let signature = base64::encode(&signature);
-            signature
-        };
-
-        match self.payload {
-            SendInvitePayloads::SendInvitePayloadV0(ref mut payload) => {
-                payload.msg_detail_payload.key_dlg_proof.signature = prepare_signature((&payload.msg_detail_payload.key_dlg_proof, &self.to_vk))
-            }
-            SendInvitePayloads::SendInvitePayloadV1(ref mut payload) => {
-                payload.key_dlg_proof.signature = prepare_signature((&payload.key_dlg_proof, &self.to_vk))
-            }
-        }
+        let signature = format!("{}{}", self.payload.key_dlg_proof.agent_did, self.payload.key_dlg_proof.agent_delegated_key);
+        let signature = ::utils::libindy::crypto::sign(&self.to_vk, signature.as_bytes())?;
+        let signature = base64::encode(&signature);
+        self.payload.key_dlg_proof.signature = signature;
         Ok(())
     }
 
@@ -359,136 +283,64 @@ impl SendInviteBuilder {
 pub struct AcceptInviteBuilder {
     to_did: String,
     to_vk: String,
-    payload: AcceptInvitePayloads,
+    payload: AcceptInviteMessageDetails,
     agent_did: String,
-    agent_vk: String
+    agent_vk: String,
+    reply_to_msg_id: Option<String>
 }
 
 impl AcceptInviteBuilder {
     pub fn create() -> AcceptInviteBuilder {
         trace!("AcceptInvite::create_message >>>");
 
-        let payload =
-            match settings::get_protocol_type() {
-                settings::ProtocolTypes::V1 => {
-                    AcceptInvitePayloads::AcceptInvitePayloadV0(
-                        AcceptInvitePayloadV0 {
-                            create_payload: CreateMessage {
-                                msg_type: MessageTypes::build(A2AMessageKinds::CreateMessage),
-                                mtype: CredentialExchangeMessageType::ConnReqAnswer,
-                                reply_to_msg_id: None,
-                                send_msg: true,
-                                uid: None,
-                            },
-                            msg_detail_payload: AcceptInviteMessageDetails {
-                                msg_type: MessageTypes::build(A2AMessageKinds::MessageDetail),
-                                key_dlg_proof: KeyDlgProof { agent_did: String::new(), agent_delegated_key: String::new(), signature: String::new() },
-                                sender_detail: None,
-                                sender_agency_detail: None,
-                                answer_status_code: None,
-                            },
-                        }
-                    )
-                }
-                settings::ProtocolTypes::V2 => {
-                    AcceptInvitePayloads::AcceptInvitePayloadV1(AcceptInvitePayloadV1 {
-                        msg_type: MessageTypes::build(A2AMessageKinds::ConnectionRequestAnswer),
-                        send_msg: true,
-                        uid: None,
-                        reply_to_msg_id: None,
-                        key_dlg_proof: KeyDlgProof { agent_did: String::new(), agent_delegated_key: String::new(), signature: String::new() },
-                        sender_detail: None,
-                        sender_agency_detail: None,
-                        answer_status_code: None,
-                    })
-                }
-            };
 
         AcceptInviteBuilder {
             to_did: String::new(),
             to_vk: String::new(),
-            payload,
+            payload: AcceptInviteMessageDetails {
+                msg_type: MessageTypes::build(A2AMessageKinds::MessageDetail),
+                key_dlg_proof: KeyDlgProof { agent_did: String::new(), agent_delegated_key: String::new(), signature: String::new() },
+                sender_detail: None,
+                sender_agency_detail: None,
+                answer_status_code: None,
+            },
             agent_did: String::new(),
             agent_vk: String::new(),
+            reply_to_msg_id: None,
         }
     }
 
     pub fn key_delegate(&mut self, key: &str) -> Result<&mut Self, u32> {
         validation::validate_key_delegate(key)?;
-        match self.payload {
-            AcceptInvitePayloads::AcceptInvitePayloadV0(ref mut payload) => {
-                payload.msg_detail_payload.key_dlg_proof.agent_delegated_key = key.to_string()
-            }
-            AcceptInvitePayloads::AcceptInvitePayloadV1(ref mut payload) => {
-                payload.key_dlg_proof.agent_delegated_key = key.to_string()
-            }
-        }
+        self.payload.key_dlg_proof.agent_delegated_key = key.to_string();
         Ok(self)
     }
 
     pub fn sender_details(&mut self, details: &SenderDetail) -> Result<&mut Self, u32> {
-        match self.payload {
-            AcceptInvitePayloads::AcceptInvitePayloadV0(ref mut payload) => {
-                payload.msg_detail_payload.sender_detail = Some(details.clone());
-            }
-            AcceptInvitePayloads::AcceptInvitePayloadV1(ref mut payload) => {
-                payload.sender_detail = Some(details.clone());
-            }
-        };
+        self.payload.sender_detail = Some(details.clone());
         Ok(self)
     }
 
     pub fn sender_agency_details(&mut self, details: &SenderAgencyDetail) -> Result<&mut Self, u32> {
-        match self.payload {
-            AcceptInvitePayloads::AcceptInvitePayloadV0(ref mut payload) => {
-                payload.msg_detail_payload.sender_agency_detail = Some(details.clone());
-            }
-            AcceptInvitePayloads::AcceptInvitePayloadV1(ref mut payload) => {
-                payload.sender_agency_detail = Some(details.clone());
-            }
-        };
+        self.payload.sender_agency_detail = Some(details.clone());
         Ok(self)
     }
 
     pub fn answer_status_code(&mut self, code: &MessageStatusCode) -> Result<&mut Self, u32> {
-        match self.payload {
-            AcceptInvitePayloads::AcceptInvitePayloadV0(ref mut payload) => {
-                payload.msg_detail_payload.answer_status_code = Some(code.clone());
-            }
-            AcceptInvitePayloads::AcceptInvitePayloadV1(ref mut payload) => {
-                payload.answer_status_code = Some(code.clone());
-            }
-        }
+        self.payload.answer_status_code = Some(code.clone());
         Ok(self)
     }
 
     pub fn reply_to(&mut self, id: &str) -> Result<&mut Self, u32> {
-        match self.payload {
-            AcceptInvitePayloads::AcceptInvitePayloadV0(ref mut payload) => {
-                payload.create_payload.reply_to_msg_id = Some(id.to_owned());
-            }
-            AcceptInvitePayloads::AcceptInvitePayloadV1(ref mut payload) => {
-                payload.reply_to_msg_id = Some(id.to_owned());
-            }
-        }
+        self.reply_to_msg_id = Some(id.to_string());
         Ok(self)
     }
 
     pub fn generate_signature(&mut self) -> Result<(), u32> {
-        let prepare_signature = |key_dlg_proof: &KeyDlgProof, to_vk: &str| {
-            let signature = format!("{}{}", key_dlg_proof.agent_did, key_dlg_proof.agent_delegated_key);
-            let signature = crypto::sign(to_vk, signature.as_bytes()).unwrap(); // TODO: FIXME
-            base64::encode(&signature)
-        };
-
-        match self.payload {
-            AcceptInvitePayloads::AcceptInvitePayloadV0(ref mut payload) => {
-                payload.msg_detail_payload.key_dlg_proof.signature = prepare_signature(&payload.msg_detail_payload.key_dlg_proof, &self.to_vk);
-            }
-            AcceptInvitePayloads::AcceptInvitePayloadV1(ref mut payload) => {
-                payload.key_dlg_proof.signature = prepare_signature(&payload.key_dlg_proof, &self.to_vk);
-            }
-        }
+        let signature = format!("{}{}", self.payload.key_dlg_proof.agent_did, self.payload.key_dlg_proof.agent_delegated_key);
+        let signature = crypto::sign(&self.to_vk, signature.as_bytes())?;
+        let signature = base64::encode(&signature);
+        self.payload.key_dlg_proof.signature = signature;
         Ok(())
     }
 
@@ -531,26 +383,12 @@ impl GeneralMessage for SendInviteBuilder {
 
     fn set_agent_did(&mut self, did: String) {
         self.agent_did = did;
-        match self.payload {
-            SendInvitePayloads::SendInvitePayloadV0(ref mut payload) => {
-                payload.msg_detail_payload.key_dlg_proof.agent_did = self.agent_did.to_string()
-            }
-            SendInvitePayloads::SendInvitePayloadV1(ref mut payload) => {
-                payload.key_dlg_proof.agent_did = self.agent_did.to_string()
-            }
-        }
+        self.payload.key_dlg_proof.agent_did = self.agent_did.clone();
     }
 
     fn set_agent_vk(&mut self, vk: String) {
         self.agent_vk = vk;
-        match self.payload {
-            SendInvitePayloads::SendInvitePayloadV0(ref mut payload) => {
-                payload.msg_detail_payload.key_dlg_proof.agent_delegated_key = self.agent_vk.to_string();
-            }
-            SendInvitePayloads::SendInvitePayloadV1(ref mut payload) => {
-                payload.key_dlg_proof.agent_delegated_key = self.agent_vk.to_string();
-            }
-        }
+        self.payload.key_dlg_proof.agent_delegated_key = self.agent_vk.clone();
     }
 
     fn set_to_did(&mut self, to_did: String) { self.to_did = to_did; }
@@ -561,10 +399,34 @@ impl GeneralMessage for SendInviteBuilder {
         self.generate_signature()?;
 
         let messages =
-            match self.payload {
-                SendInvitePayloads::SendInvitePayloadV0(ref mut payload) => vec![A2AMessage::CreateMessage(payload.create_payload.clone()),
-                                                                                 A2AMessage::MessageDetail(MessageDetail::ConnectionRequest(payload.msg_detail_payload.clone()))],
-                SendInvitePayloads::SendInvitePayloadV1(ref mut payload) => vec![A2AMessage::ConnectionRequest(payload.clone())]
+            match settings::get_protocol_type() {
+                settings::ProtocolTypes::V1 => {
+                    let create_msg = CreateMessage {
+                        msg_type: MessageTypes::build(A2AMessageKinds::CreateMessage),
+                        mtype: CredentialExchangeMessageType::ConnReq,
+                        reply_to_msg_id: None,
+                        send_msg: true,
+                        uid: None,
+                    };
+
+                    let details = self.payload.clone();
+
+                    vec![A2AMessage::CreateMessage(create_msg), A2AMessage::MessageDetail(MessageDetail::ConnectionRequest(details))]
+                }
+                settings::ProtocolTypes::V2 => {
+                    let msg = ConnectionRequest {
+                        msg_type: MessageTypes::build(A2AMessageKinds::ConnectionRequest),
+                        send_msg: true,
+                        uid: None,
+                        reply_to_msg_id: None,
+                        key_dlg_proof: self.payload.key_dlg_proof.clone(),
+                        target_name: self.payload.target_name.clone(),
+                        phone_no: self.payload.phone_no.clone(),
+                        include_public_did: self.payload.include_public_did,
+                    };
+
+                    vec![A2AMessage::ConnectionRequest(msg)]
+                }
             };
 
         prepare_message_for_agent(messages, &self.to_vk, &self.agent_did, &self.agent_vk)
@@ -576,28 +438,12 @@ impl GeneralMessage for AcceptInviteBuilder {
 
     fn set_agent_did(&mut self, did: String) {
         self.agent_did = did;
-
-        match self.payload {
-            AcceptInvitePayloads::AcceptInvitePayloadV0(ref mut payload) => {
-                payload.msg_detail_payload.key_dlg_proof.agent_did = self.agent_did.to_string();
-            }
-            AcceptInvitePayloads::AcceptInvitePayloadV1(ref mut payload) => {
-                payload.key_dlg_proof.agent_did = self.agent_did.to_string();
-            }
-        }
+        self.payload.key_dlg_proof.agent_did = self.agent_did.to_string();
     }
 
     fn set_agent_vk(&mut self, vk: String) {
         self.agent_vk = vk;
-
-        match self.payload {
-            AcceptInvitePayloads::AcceptInvitePayloadV0(ref mut payload) => {
-                payload.msg_detail_payload.key_dlg_proof.agent_delegated_key = self.agent_vk.to_string();
-            }
-            AcceptInvitePayloads::AcceptInvitePayloadV1(ref mut payload) => {
-                payload.key_dlg_proof.agent_delegated_key = self.agent_vk.to_string();
-            }
-        }
+        self.payload.key_dlg_proof.agent_delegated_key = self.agent_vk.to_string();
     }
 
     fn set_to_did(&mut self, to_did: String) { self.to_did = to_did; }
@@ -607,10 +453,34 @@ impl GeneralMessage for AcceptInviteBuilder {
         self.generate_signature()?;
 
         let messages =
-            match self.payload {
-                AcceptInvitePayloads::AcceptInvitePayloadV0(ref mut payload) => vec![A2AMessage::CreateMessage(payload.create_payload.clone()),
-                                                                                     A2AMessage::MessageDetail(MessageDetail::ConnectionRequestAnswer(payload.msg_detail_payload.clone()))],
-                AcceptInvitePayloads::AcceptInvitePayloadV1(ref mut payload) => vec![A2AMessage::ConnectionRequestAnswer(payload.clone())]
+            match settings::get_protocol_type() {
+                settings::ProtocolTypes::V1 => {
+                    let msg_created = CreateMessage {
+                        msg_type: MessageTypes::build(A2AMessageKinds::CreateMessage),
+                        mtype: CredentialExchangeMessageType::ConnReqAnswer,
+                        reply_to_msg_id: self.reply_to_msg_id.clone(),
+                        send_msg: true,
+                        uid: None,
+                    };
+
+                    let details = self.payload.clone();
+
+                    vec![A2AMessage::CreateMessage(msg_created), A2AMessage::MessageDetail(MessageDetail::ConnectionRequestAnswer(details))]
+                }
+                settings::ProtocolTypes::V2 => {
+                    let msg = ConnectionRequestAnswer {
+                        msg_type: MessageTypes::build(A2AMessageKinds::ConnectionRequestAnswer),
+                        send_msg: true,
+                        uid: None,
+                        reply_to_msg_id: self.reply_to_msg_id.clone(),
+                        key_dlg_proof: self.payload.key_dlg_proof.clone(),
+                        sender_detail: self.payload.sender_detail.clone(),
+                        sender_agency_detail: self.payload.sender_agency_detail.clone(),
+                        answer_status_code: self.payload.answer_status_code.clone(),
+                    };
+
+                    vec![A2AMessage::ConnectionRequestAnswer(msg)]
+                }
             };
 
         prepare_message_for_agent(messages, &self.to_vk, &self.agent_did, &self.agent_vk)
@@ -652,7 +522,7 @@ mod tests {
             .to_vk(&user_vk).unwrap()
             .agent_did(&agent_did).unwrap()
             .agent_vk(&agent_vk).unwrap()
-            .phone_number(&Some("phone".to_string())).unwrap()
+            .phone_number(Some("phone")).unwrap()
             .key_delegate("key").unwrap()
             .prepare().unwrap();
 

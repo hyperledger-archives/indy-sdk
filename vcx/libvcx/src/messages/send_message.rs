@@ -162,8 +162,8 @@ impl GeneralMessage for SendMessageBuilder {
 
 #[derive(Debug, PartialEq)]
 pub struct SendResponse {
-    pub uid: Option<String>,
-    pub uids: Vec<String>,
+    uid: Option<String>,
+    uids: Vec<String>,
 }
 
 impl SendResponse {
@@ -180,17 +180,18 @@ pub fn send_generic_message(connection_handle: u32, msg: &str, msg_type: &str, m
         return Err(error::NOT_READY.code_num);
     }
 
-    let agent_did = connection::get_agent_did(connection_handle).map_err(|e| error::INVALID_CONNECTION_HANDLE.code_num)?;
-    let agent_vk = connection::get_agent_verkey(connection_handle).map_err(|e| error::INVALID_CONNECTION_HANDLE.code_num)?;
-    let did = connection::get_pw_did(connection_handle).map_err(|x| error::INVALID_CONNECTION_HANDLE.code_num)?;
-    let vk = connection::get_pw_verkey(connection_handle).map_err(|x| error::INVALID_CONNECTION_HANDLE.code_num)?;
-    let remote_vk = connection::get_their_pw_verkey(connection_handle).map_err(|x| error::INVALID_CONNECTION_HANDLE.code_num)?;
+    let agent_did = connection::get_agent_did(connection_handle).or(Err(error::INVALID_CONNECTION_HANDLE.code_num))?;
+    let agent_vk = connection::get_agent_verkey(connection_handle).or(Err(error::INVALID_CONNECTION_HANDLE.code_num))?;
+    let did = connection::get_pw_did(connection_handle).or(Err(error::INVALID_CONNECTION_HANDLE.code_num))?;
+    let vk = connection::get_pw_verkey(connection_handle).or(Err(error::INVALID_CONNECTION_HANDLE.code_num))?;
+    let remote_vk = connection::get_their_pw_verkey(connection_handle).or(Err(error::INVALID_CONNECTION_HANDLE.code_num))?;
 
     let data = connection::generate_encrypted_payload(&vk, &remote_vk, &msg, PayloadKinds::Other(msg_type.to_string()))
-        .map_err(|e| error::UNKNOWN_LIBINDY_ERROR.code_num)?;
+        .or(Err(error::UNKNOWN_LIBINDY_ERROR.code_num))?;
 
     let response =
-        send_message().to(&did)?
+        send_message()
+            .to(&did)?
             .to_vk(&vk)?
             .msg_type(&CredentialExchangeMessageType::Other(msg_type.to_string()))?
             .edge_agent_payload(&data)?

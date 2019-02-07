@@ -18,8 +18,8 @@ use self::create_key::{CreateKeyBuilder, CreateKey, CreateKeyResponse};
 use self::update_connection::{DeleteConnectionBuilder, UpdateConnection, UpdateConnectionResponse};
 use self::update_profile::{UpdateProfileDataBuilder, UpdateConfigs, UpdateConfigsResponse};
 use self::invite::{
-    SendInviteBuilder, SendInvitePayloadV1, SendInviteMessageDetails, SendInviteMessageDetailsResponse, ConnectionRequestResponse,
-    AcceptInviteBuilder, AcceptInvitePayloadV1, AcceptInviteMessageDetails, ConnectionRequestAnswerResponse
+    SendInviteBuilder, ConnectionRequest, SendInviteMessageDetails, SendInviteMessageDetailsResponse, ConnectionRequestResponse,
+    AcceptInviteBuilder, ConnectionRequestAnswer, AcceptInviteMessageDetails, ConnectionRequestAnswerResponse
 };
 use self::get_message::{GetMessagesBuilder, GetMessages, GetMessagesResponse, MessagesByConnections};
 use self::send_message::SendMessageBuilder;
@@ -72,9 +72,9 @@ pub enum A2AMessage {
     MessageSent(MessageSent),
 
     /// Version 1
-    ConnectionRequest(SendInvitePayloadV1),
+    ConnectionRequest(ConnectionRequest),
     ConnectionRequestResponse(ConnectionRequestResponse),
-    ConnectionRequestAnswer(AcceptInvitePayloadV1),
+    ConnectionRequestAnswer(ConnectionRequestAnswer),
     ConnectionRequestAnswerResponse(ConnectionRequestAnswerResponse),
     CredentialExchange(CredentialExchange),
     CredentialExchangeResponse(CredentialExchangeResponse),
@@ -238,7 +238,7 @@ impl<'de> Deserialize<'de> for A2AMessage {
 
             // Version 2
             ("CONN_REQUEST", "1.0") => {
-                SendInvitePayloadV1::deserialize(value)
+                ConnectionRequest::deserialize(value)
                     .map(|msg| A2AMessage::ConnectionRequest(msg))
                     .map_err(de::Error::custom)
             }
@@ -248,7 +248,7 @@ impl<'de> Deserialize<'de> for A2AMessage {
                     .map_err(de::Error::custom)
             }
             ("CONN_REQUEST_ANSWER", "1.0") => {
-                AcceptInvitePayloadV1::deserialize(value)
+                ConnectionRequestAnswer::deserialize(value)
                     .map(|msg| A2AMessage::ConnectionRequestAnswer(msg))
                     .map_err(de::Error::custom)
             }
@@ -426,9 +426,9 @@ pub enum PayloadTypes {
 
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
 pub struct PayloadTypeV0 {
-    pub name: String,
-    pub ver: String,
-    pub fmt: String,
+    name: String,
+    ver: String,
+    fmt: String,
 }
 
 type PayloadTypeV1 = MessageTypeV2;
@@ -444,7 +444,7 @@ pub enum PayloadKinds {
 }
 
 impl PayloadKinds {
-    pub fn family(&self) -> MessageFamilies {
+    fn family(&self) -> MessageFamilies {
         match self {
             PayloadKinds::CredOffer => MessageFamilies::CredentialExchange,
             PayloadKinds::CredReq => MessageFamilies::CredentialExchange,
@@ -455,7 +455,7 @@ impl PayloadKinds {
         }
     }
 
-    pub fn name(&self) -> String {
+    fn name(&self) -> String {
         match self {
             PayloadKinds::CredOffer => "CRED_OFFER".to_string(),
             PayloadKinds::CredReq => "CRED_REQ".to_string(),
@@ -537,7 +537,7 @@ impl<'de> Deserialize<'de> for MessageStatusCode {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-pub  enum A2AMessageKinds {
+pub enum A2AMessageKinds {
     Forward,
     Connect,
     Connected,
@@ -750,15 +750,18 @@ pub fn bundle_from_u8(data: Vec<u8>) -> Result<Bundled<Vec<u8>>, u32> {
 }
 
 pub fn extract_json_payload(data: &Vec<u8>) -> Result<String, u32> {
-    let my_payload: Payload = rmp_serde::from_slice(&data[..]).unwrap();
-
+    let my_payload: Payload = rmp_serde::from_slice(&data[..])
+        .map_err(|err|{
+            error!("could not deserialize bundle with i8 or u8: {}", err);
+            error::INVALID_MSGPACK.code_num
+        })?;
     Ok(my_payload.msg)
 }
 
 fn prepare_forward_message(message: Vec<u8>, did: &str) -> Result<Vec<u8>, u32> {
     let agency_vk = settings::get_config_value(settings::CONFIG_AGENCY_VERKEY)?;
 
-    let message = Forward::new(did.to_owned(), message);
+    let message = Forward::new(did.to_string(), message);
 
     match settings::get_protocol_type() {
         settings::ProtocolTypes::V1 => prepare_forward_message_for_agency_v1(&message, &agency_vk),

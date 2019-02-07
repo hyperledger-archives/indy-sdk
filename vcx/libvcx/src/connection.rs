@@ -76,7 +76,7 @@ impl Connection {
             messages::send_invite()
                 .to(&self.pw_did)?
                 .to_vk(&self.pw_verkey)?
-                .phone_number(&options.phone)?
+                .phone_number(options.phone.as_ref().map(String::as_str))?
                 .agent_did(&self.agent_did)?
                 .agent_vk(&self.agent_vk)?
                 .public_did(self.public_did.as_ref().map(String::as_str))?
