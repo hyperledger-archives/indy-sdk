@@ -1,7 +1,7 @@
 from distutils.core import setup
 import os
 
-PKG_VERSION = os.environ.get('PACKAGE_VERSION') or '1.8.0'
+PKG_VERSION = os.environ.get('PACKAGE_VERSION') or '1.8.1'
 
 setup(
     name='python3-indy',
