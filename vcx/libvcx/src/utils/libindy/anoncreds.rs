@@ -4,7 +4,7 @@ use futures::Future;
 use serde_json;
 use serde_json::{ map::Map, Value};
 use settings;
-use utils::constants::{ LIBINDY_CRED_OFFER, REQUESTED_ATTRIBUTES, ATTRS, REV_STATE_JSON};
+use utils::constants::{ LIBINDY_CRED_OFFER, REQUESTED_ATTRIBUTES, PROOF_REQUESTED_PREDICATES, ATTRS, REV_STATE_JSON};
 use utils::error::{ INVALID_PROOF_REQUEST, INVALID_ATTRIBUTES_STRUCTURE, INVALID_CONFIGURATION, INVALID_JSON, DUPLICATE_SCHEMA, UNKNOWN_SCHEMA_REJECTION } ;
 use utils::libindy::{ error_codes::map_rust_indy_sdk_error, mock_libindy_rc, wallet::get_wallet_handle };
 use utils::libindy::payments::{pay_for_txn, PaymentTxn};
@@ -152,24 +152,35 @@ pub fn libindy_prover_get_credentials_for_proof_req(proof_req: &str) -> Result<S
             error!("Invalid Json Parsing of Requested Attributes Retrieved From Libindy. Did Libindy change its structure?");
         }).ok()
     });
+    let requested_predicates:Option<Map<String,Value>> = proof_request_json.get(PROOF_REQUESTED_PREDICATES).and_then(|v| {
+        serde_json::from_value(v.clone()).map_err(|_| {
+            error!("Invalid Json Parsing of Requested Predicates Retrieved From Libindy. Did Libindy change its structure?");
+        }).ok()
+    });
 
-    match requested_attributes {
-        Some(attrs) => {
-            let search_handle = anoncreds::prover_search_credentials_for_proof_req(wallet_handle, proof_req, None)
-                .wait()
-                .map_err(|ec| {
-                error!("Opening Indy Search for Credentials Failed");
-                map_rust_indy_sdk_error(ec)
-            })?;
-            let creds: String = fetch_credentials(search_handle, attrs)?;
-            // should an error on closing a search handle throw an error, or just a warning?
-            // for now we're are just outputting to the user that there is an issue, and continuing on.
-            let _ = close_search_handle(search_handle);
-            Ok(creds)
-        },
-        None => {
-            Err(INVALID_ATTRIBUTES_STRUCTURE.code_num)
-        }
+    let mut fetch_attrs: Map<String, Value> = match requested_attributes {
+        Some(attrs) => attrs.clone(),
+        None => Map::new()
+    };
+    match requested_predicates {
+        Some(attrs) => fetch_attrs.extend(attrs),
+        None => ()
+    }
+    if 0 < fetch_attrs.len() {
+        let search_handle = anoncreds::prover_search_credentials_for_proof_req(wallet_handle, proof_req, None)
+            .wait()
+            .map_err(|ec| {
+            error!("Opening Indy Search for Credentials Failed");
+            map_rust_indy_sdk_error(ec)
+        })?;
+        let creds: String = fetch_credentials(search_handle, fetch_attrs)?;
+
+        // should an error on closing a search handle throw an error, or just a warning?
+        // for now we're are just outputting to the user that there is an issue, and continuing on.
+        let _ = close_search_handle(search_handle);
+        Ok(creds)
+    } else {
+        Err(INVALID_ATTRIBUTES_STRUCTURE.code_num)
     }
 
 }

@@ -85,10 +85,10 @@ async def send_credential_request(my_connection, cred_def_json, schema_attrs, cr
     print("Done")
 
 
-async def send_proof_request(my_connection, institution_did, proof_attrs, proof_uuid, proof_name):
+async def send_proof_request(my_connection, institution_did, proof_attrs, proof_uuid, proof_name, proof_predicates):
 
     print("#19 Create a Proof object")
-    proof = await Proof.create(proof_uuid, proof_name, proof_attrs, {})
+    proof = await Proof.create(proof_uuid, proof_name, proof_attrs, {}, requested_predicates=proof_predicates)
 
     print("#20 Request proof of degree from alice")
     await proof.request_proof(my_connection)

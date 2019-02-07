@@ -147,6 +147,17 @@ fn _get_revocation_interval(attr_name: &str, proof_req: &ProofRequestData)
         return Ok(None)
     }
     // Todo: Handle case for predicates
+    if let Some(ref attr) = proof_req.requested_predicates.get(attr_name) {
+
+        if let Some(ref interval) = attr.non_revoked {
+            return Ok(Some(NonRevokedInterval {from: interval.from, to: interval.to}))
+        }
+        else if let Some(ref interval) = proof_req.non_revoked {
+            return Ok(Some(NonRevokedInterval { from: interval.from, to: interval.to }))
+        }
+
+        return Ok(None)
+    }
 
     Err(ProofError::InvalidCredData())
 }
@@ -325,7 +336,8 @@ impl DisclosedProof {
 
     fn build_requested_credentials_json(&self,
                                         credentials_identifiers: &Vec<CredInfo>,
-                                        self_attested_attrs: &str) -> Result<String, ProofError> {
+                                        self_attested_attrs: &str,
+                                        proof_req: &ProofRequestData) -> Result<String, ProofError> {
         let mut rtn: Value = json!({
               "self_attested_attributes":{},
               "requested_attributes":{},
@@ -335,8 +347,19 @@ impl DisclosedProof {
         //Todo: need to handle if the attribute is not revealed
         if let Value::Object(ref mut map) = rtn["requested_attributes"] {
             for ref cred_info in credentials_identifiers {
-                let insert_val = json!({"cred_id": cred_info.referent, "revealed": true, "timestamp": cred_info.timestamp});
-                map.insert(cred_info.requested_attr.to_owned(), insert_val);
+                if let Some(ref attr) = proof_req.requested_attributes.get(&cred_info.requested_attr) {
+                    let insert_val = json!({"cred_id": cred_info.referent, "revealed": true, "timestamp": cred_info.timestamp});
+                    map.insert(cred_info.requested_attr.to_owned(), insert_val);
+                }
+            }
+        }
+
+        if let Value::Object(ref mut map) = rtn["requested_predicates"] {
+            for ref cred_info in credentials_identifiers {
+                if let Some(ref attr) = proof_req.requested_predicates.get(&cred_info.requested_attr) {
+                    let insert_val = json!({"cred_id": cred_info.referent, "revealed": false, "timestamp": cred_info.timestamp});
+                    map.insert(cred_info.requested_attr.to_owned(), insert_val);
+                }
             }
         }
 
@@ -358,13 +381,13 @@ impl DisclosedProof {
         let proof_req_data_json = serde_json::to_string(&proof_req.proof_request_data)
             .or(Err(ProofError::CommonError(error::INVALID_JSON.code_num)))?;
 
-
         let mut credentials_identifiers = credential_def_identifiers(credentials,
                                                                      &proof_req.proof_request_data)?;
 
         let revoc_states_json = build_rev_states_json(&mut credentials_identifiers)?;
         let requested_credentials = self.build_requested_credentials_json(&credentials_identifiers,
-                                                                          self_attested_attrs)?;
+                                                                          self_attested_attrs,
+                                                                          &proof_req.proof_request_data)?;
 
         let schemas_json = self.build_schemas_json(&credentials_identifiers)?;
         let credential_defs_json = self.build_cred_def_json(&credentials_identifiers)?;
@@ -882,7 +905,22 @@ mod tests {
         });
 
         let proof: DisclosedProof = Default::default();
-        let requested_credential = proof.build_requested_credentials_json(&creds, &self_attested_attrs).unwrap();
+        let proof_req = json!({
+            "nonce": "123432421212",
+            "name": "proof_req_1",
+            "version": "0.1",
+            "requested_attributes": {
+                "height_1": {
+                    "name": "height_1",
+                    "non_revoked":  {"from": 123, "to": 456}
+                },
+                "zip_2": { "name": "zip_2" }
+            },
+            "requested_predicates": {},
+            "non_revoked": {"from": 098, "to": 123}
+        });
+        let proof_req: ProofRequestData = serde_json::from_value(proof_req).unwrap();
+        let requested_credential = proof.build_requested_credentials_json(&creds, &self_attested_attrs, &proof_req).unwrap();
         assert_eq!(test.to_string(), requested_credential);
     }
 
