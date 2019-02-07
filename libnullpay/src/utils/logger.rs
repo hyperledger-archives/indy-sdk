@@ -1,6 +1,3 @@
-#![allow(dead_code)]
-#![allow(unused)]
-
 extern crate log;
 
 use self::log::LevelFilter;
