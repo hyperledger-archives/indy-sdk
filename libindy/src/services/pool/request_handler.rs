@@ -33,7 +33,6 @@ use super::indy_crypto::bls::VerKey;
 
 use self::rust_base58::FromBase58;
 use std::hash::{Hash, Hasher};
-use std::ops::Mul;
 
 struct RequestSM<T: Networker> {
     f: usize,
@@ -725,8 +724,7 @@ fn _check_state_proof(msg_result: &SJsonValue, f: usize, gen: &Generator, bls_ke
 }
 
 fn _get_freshness_threshold() -> u64 {
-    let t = THRESHOLD.lock().unwrap();
-    t.mul(1000)
+    THRESHOLD.lock().unwrap().clone()
 }
 
 fn _get_cur_time() -> u64 {
