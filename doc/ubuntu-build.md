@@ -88,7 +88,7 @@ See [libindy/ci/ubuntu.dockerfile](https://github.com/hyperledger/indy-sdk/tree/
 
 To build `libindy` for Ubuntu using Docker :
 1) Go to `indy-sdk/libindy`
-2) Run `build-libindy-ubuntu-with-docker.sh`
+2) Run `./build-libindy-ubuntu-with-docker.sh`
 
 This script will build the Docker image `build-libindy-ubuntu` which
 contains the built lib in `/home/libindy/target/debug/`.
