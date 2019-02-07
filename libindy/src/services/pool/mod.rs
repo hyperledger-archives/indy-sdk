@@ -34,6 +34,7 @@ use errors::*;
 use services::pool::pool::{Pool, ZMQPool};
 use utils::environment;
 use utils::sequence;
+use std::u64;
 
 mod catchup;
 mod commander;
@@ -265,7 +266,7 @@ impl PoolService {
 }
 
 lazy_static! {
-    static ref THRESHOLD: Mutex<u64> = Mutex::new(600);
+    static ref THRESHOLD: Mutex<u64> = Mutex::new(u64::MAX);
 }
 
 pub fn set_freshness_threshold(threshold: u64) {

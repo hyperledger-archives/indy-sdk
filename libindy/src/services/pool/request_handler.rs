@@ -6,6 +6,7 @@ use std::collections::HashSet;
 use std::iter::FromIterator;
 use std::rc::Rc;
 use std::time::{SystemTime, UNIX_EPOCH};
+use std::u64;
 
 use rmp_serde;
 use serde_json;
@@ -384,7 +385,7 @@ impl<T: Networker> RequestSM<T> {
                             trace!("Last signed time: {}", last_write_time);
                             if cnt > f
                                 || _check_state_proof(&result, f, &generator, &nodes, &raw_msg)
-                                    && _get_cur_time() as u64 <= _get_freshness_threshold() + last_write_time {
+                                    && (_get_freshness_threshold() == u64::MAX || _get_cur_time() as u64 <= _get_freshness_threshold() + last_write_time) {
                                 state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
                                 _send_ok_replies(&cmd_ids, if cnt > f {&soonest} else {&raw_msg});
                                 (RequestState::finish(), None)
