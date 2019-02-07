@@ -288,7 +288,7 @@ pub fn parse_response_metadata(response: &str) -> IndyResult<ResponseMetadata> {
         ver @ _ => return Err(err_msg(IndyErrorKind::InvalidTransaction, format!("Unsupported transaction response version: {:?}", ver)))
     };
 
-    trace!("indy::services::pool::parse_response_metadata >> response_metadata: {}", response_metadata);
+    trace!("indy::services::pool::parse_response_metadata >> response_metadata: {:?}", response_metadata);
 
     Ok(response_metadata)
 }
