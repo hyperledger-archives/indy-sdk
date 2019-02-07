@@ -275,6 +275,7 @@ pub fn set_freshness_threshold(threshold: u64) {
 
 
 pub fn parse_response_metadata(response: &str) -> IndyResult<ResponseMetadata> {
+    trace!("indy::services::pool::parse_response_metadata << response: {}", response);
     let message: Message<serde_json::Value> = serde_json::from_str(response)
         .to_indy(IndyErrorKind::InvalidTransaction, "Cannot deserialize transaction Response")?;
 
@@ -286,6 +287,8 @@ pub fn parse_response_metadata(response: &str) -> IndyResult<ResponseMetadata> {
         Some("1") => _parse_transaction_metadata_v1(&response_result),
         ver @ _ => return Err(err_msg(IndyErrorKind::InvalidTransaction, format!("Unsupported transaction response version: {:?}", ver)))
     };
+
+    trace!("indy::services::pool::parse_response_metadata >> response_metadata: {}", response_metadata);
 
     Ok(response_metadata)
 }
