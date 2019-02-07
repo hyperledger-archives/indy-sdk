@@ -1,4 +1,7 @@
-#!/bin/bash -xe
+#!/bin/bash
+
+set -e
+set -x
 
 if [ "$1" = "--help" ] ; then
   echo "Usage: <folder> <package> <package_type> <version> <key> <type> <number>"
@@ -39,7 +42,7 @@ cd ${TEMP_ARCH_DIR} && zip -r ${package}_${version}.zip ./* && mv ${package}_${v
 
 rm -rf ${TEMP_ARCH_DIR}
 
-cat <<EOF | sftp -v -oStrictHostKeyChecking=no -i $key repo@192.168.11.115
+cat <<EOF | sftp -v -oStrictHostKeyChecking=no -i $key repo@$SOVRIN_REPO_HOST
 mkdir /var/repository/repos/windows/$package/$type/$version-$number
 cd /var/repository/repos/windows/$package/$type/$version-$number
 put -r ${package}_"${version}".zip
