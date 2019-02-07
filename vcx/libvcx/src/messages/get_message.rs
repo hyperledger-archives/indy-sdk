@@ -363,7 +363,7 @@ mod tests {
         };
 
         let response = GetMessagesResponse {
-            msg_type: MessageTypes::MessageTypeV0(MessageTypeV1 { name: "MSGS".to_string(), ver: "1.0".to_string() }),
+            msg_type: MessageTypes::MessageTypeV1(MessageTypeV1 { name: "MSGS".to_string(), ver: "1.0".to_string() }),
             msgs: vec![msg1, msg2],
         };
 

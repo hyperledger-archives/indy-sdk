@@ -3,7 +3,7 @@
 #![allow(dead_code)]
 #![crate_name = "vcx"]
 //this is needed for some large json macro invocations
-#![recursion_limit="128"]
+#![recursion_limit = "128"]
 extern crate serde;
 extern crate rand;
 extern crate reqwest;
@@ -77,7 +77,7 @@ mod tests {
     fn test_delete_connection() {
         init!("agency");
         let alice = connection::create_connection("alice").unwrap();
-        connection::connect(alice,None).unwrap();
+        connection::connect(alice, None).unwrap();
         connection::delete_connection(alice).unwrap();
         assert!(connection::release(alice).is_err());
         teardown!("agency");
@@ -85,7 +85,7 @@ mod tests {
 
 
 
-    fn attr_names() -> (String, String, String, String, String)  {
+    fn attr_names() -> (String, String, String, String, String) {
         let address1 = "Address1".to_string();
         let address2 = "address2".to_string();
         let city = "CITY".to_string();
@@ -213,7 +213,7 @@ mod tests {
         disclosed_proof::create_proof(::utils::constants::DEFAULT_PROOF_NAME, &requests).unwrap()
     }
 
-    fn generate_and_send_proof(proof_handle: u32, connection_handle: u32, selected_credentials: Value){
+    fn generate_and_send_proof(proof_handle: u32, connection_handle: u32, selected_credentials: Value) {
         set_consumer();
         disclosed_proof::generate_proof(proof_handle, selected_credentials.to_string(), "{}".to_string()).unwrap();
         println!("sending proof");
@@ -246,22 +246,19 @@ mod tests {
         let (_, delta, timestamp) = ::utils::libindy::anoncreds::get_rev_reg_delta_json(&rev_reg_id.clone().unwrap(), None, None).unwrap();
         println!("revoking credential");
         ::issuer_credential::revoke_credential(issuer_handle).unwrap();
-        let (_, delta_after_revoke, _) = ::utils::libindy::anoncreds::get_rev_reg_delta_json(&rev_reg_id.unwrap(), Some(timestamp+1), None).unwrap();
+        let (_, delta_after_revoke, _) = ::utils::libindy::anoncreds::get_rev_reg_delta_json(&rev_reg_id.unwrap(), Some(timestamp + 1), None).unwrap();
         assert_ne!(delta, delta_after_revoke);
     }
 
-    #[cfg(feature = "agency")]
-    #[cfg(feature = "pool_tests")]
-    #[test]
-    fn test_real_proof() {
+    fn real_proof_demo() {
         let number_of_attributes = 10;
-        init!("agency");
+
         let institution_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
         let (faber, alice) = ::connection::tests::create_connected_connections();
 
         // AS INSTITUTION SEND CREDENTIAL OFFER
         println!("creating schema/credential_def and paying fees");
-        let mut attrs_list:Value = serde_json::Value::Array(vec![]);
+        let mut attrs_list: Value = serde_json::Value::Array(vec![]);
         for i in 1..number_of_attributes {
             attrs_list.as_array_mut().unwrap().push(json!(format!("key{}",i)));
         }
@@ -269,7 +266,7 @@ mod tests {
         let (schema_id, schema_json, cred_def_id, cred_def_json, cred_def_handle, _) = ::utils::libindy::anoncreds::tests::create_and_store_credential_def(&attrs_list, false);
         let mut credential_data = json!({});
         for i in 1..number_of_attributes {
-            credential_data[format!("key{}",i)] = json!([format!("value{}",i)]);
+            credential_data[format!("key{}", i)] = json!([format!("value{}",i)]);
         }
         let credential_data = credential_data.to_string();
         let credential_offer = send_cred_offer(&institution_did, cred_def_handle, alice, &credential_data);
@@ -284,7 +281,7 @@ mod tests {
         tests::set_institution();
 
         let restrictions = json!({ "issuer_did": institution_did, "schema_id": schema_id, "cred_def_id": cred_def_id, });
-        let mut attrs:Value = serde_json::Value::Array(vec![]);
+        let mut attrs: Value = serde_json::Value::Array(vec![]);
         for i in 1..number_of_attributes {
             attrs.as_array_mut().unwrap().push(json!({ "name":format!("key{}", i), "restrictions": [restrictions]}));
         }
@@ -297,7 +294,7 @@ mod tests {
         let mut credentials: Value = json!({"attrs":{}, "predicates":{}});
 
         for i in 1..number_of_attributes {
-            credentials["attrs"][format!("key{}",i)] = json!({
+            credentials["attrs"][format!("key{}", i)] = json!({
                 "credential": matching_credentials["attrs"][format!("key{}",i)][0].clone(),
                 "tails_file": get_temp_dir_path(Some(TEST_TAILS_FILE)).to_str().unwrap().to_string(),
             });
@@ -309,6 +306,15 @@ mod tests {
         proof::update_state(proof_req_handle).unwrap();
         assert_eq!(proof::get_proof_state(proof_req_handle).unwrap(), ProofStateType::ProofValidated as u32);
         println!("proof validated!");
+    }
+
+    #[cfg(feature = "agency")]
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn test_real_proof() {
+        init!("agency");
+
+        real_proof_demo();
 
         teardown!("agency");
     }
@@ -344,7 +350,7 @@ mod tests {
 
         let time_before_revocation = time::get_time().sec as u64;
         let mut _requested_attrs = requested_attrs(&institution_did, &schema_id, &cred_def_id, None, Some(time_before_revocation));
-        let(proof_req_handle, req_uuid) = send_proof_request(alice, &_requested_attrs.to_string(), "[]", "{}", "");
+        let (proof_req_handle, req_uuid) = send_proof_request(alice, &_requested_attrs.to_string(), "[]", "{}", "");
 
         //AS Consumer - (Prover) GET PROOF REQ AND ASSOCIATED CREDENTIALS, GENERATE AND SEND PROOF
         let proof_handle = create_proof(faber, &req_uuid);
@@ -366,7 +372,7 @@ mod tests {
         let mut _requested_attrs = requested_attrs(&institution_did, &schema_id, &cred_def_id, None, Some(requested_time));
         _requested_attrs[0]["non_revoked"] = json!({"from": requested_time+1});
         let interval = json!({"from": time::get_time().sec+1}).to_string();
-        let(proof_req_handle2, req_uuid2) = send_proof_request(alice, &_requested_attrs.to_string(), "[]", &interval, "- revoked creds");
+        let (proof_req_handle2, req_uuid2) = send_proof_request(alice, &_requested_attrs.to_string(), "[]", &interval, "- revoked creds");
 
         //AS Consumer - (Prover) Generate Proof with revoked credentials
         let revoked_proof = create_proof(faber, &req_uuid2);
@@ -381,7 +387,7 @@ mod tests {
 
         // VERIFIER SENDS PROOF_REQ WITH INTERVAL BEFORE REVOCATION
         let _requested_attrs = requested_attrs(&institution_did, &schema_id, &cred_def_id, None, Some(time_before_revocation));
-        let(proof_req_handle3, req_uuid3) = send_proof_request(alice, &_requested_attrs.to_string(), "[]", "{}", "");
+        let (proof_req_handle3, req_uuid3) = send_proof_request(alice, &_requested_attrs.to_string(), "[]", "{}", "");
 
         //AS Consumer - (Prover) Generate Proof with revoked credentials but valid interval
         let valid_interval_proof = create_proof(faber, &req_uuid3);
@@ -393,6 +399,17 @@ mod tests {
         proof::update_state(proof_req_handle3).unwrap();
         assert_eq!(proof::get_proof_state(proof_req_handle3).unwrap(), ProofStateType::ProofValidated as u32);
         println!("proof valid for specified interval!");
+
+        teardown!("agency");
+    }
+
+    #[cfg(feature = "pool_tests")]
+    #[cfg(feature = "agency_v2")]
+    #[test]
+    fn test_real_proof_for_protocol_type_v2() {
+        init!("agency_2_0");
+
+        real_proof_demo();
 
         teardown!("agency");
     }

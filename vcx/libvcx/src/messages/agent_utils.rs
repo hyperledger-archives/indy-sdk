@@ -178,6 +178,7 @@ pub fn connect_register_provision(config: &str) -> Result<String, u32> {
     let agent_did = response.from_did;
     let agent_vk = response.from_vk;
 
+
     let mut final_config = json!({
         "wallet_key": &my_config.wallet_key,
         "wallet_name": wallet_name,
@@ -193,9 +194,13 @@ pub fn connect_register_provision(config: &str) -> Result<String, u32> {
         "institution_name": name,
         "institution_logo_url": logo,
         "genesis_path": path,
+        "protocol_type": &my_config.protocol_type,
     });
     if let Some(key_derivation) = &my_config.wallet_key_derivation {
         final_config["wallet_key_derivation"] = json!(key_derivation);
+    }
+    if let Some(wallet_type) = &my_config.wallet_type {
+        final_config["wallet_type"] = json!(wallet_type);
     }
 
     wallet::close_wallet()?;

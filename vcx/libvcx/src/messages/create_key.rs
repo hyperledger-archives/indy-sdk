@@ -95,7 +95,7 @@ mod tests {
         let msg_payload = CreateKey {
             for_did: String::new(),
             for_verkey: String::new(),
-            msg_type: MessageTypes::MessageTypeV0(MessageTypeV1 { name: "CREATE_KEY".to_string(), ver: "1.0".to_string() }),
+            msg_type: MessageTypes::MessageTypeV1(MessageTypeV1 { name: "CREATE_KEY".to_string(), ver: "1.0".to_string() }),
         };
         assert_eq!(msg.payload, msg_payload);
     }
@@ -108,7 +108,7 @@ mod tests {
         let msg_payload = CreateKey {
             for_did: for_did.to_string(),
             for_verkey: for_verkey.to_string(),
-            msg_type: MessageTypes::MessageTypeV0(MessageTypeV1 { name: "CREATE_KEY".to_string(), ver: "1.0".to_string() }),
+            msg_type: MessageTypes::MessageTypeV1(MessageTypeV1 { name: "CREATE_KEY".to_string(), ver: "1.0".to_string() }),
         };
         let msg = create_keys()
             .for_did(for_did).unwrap()

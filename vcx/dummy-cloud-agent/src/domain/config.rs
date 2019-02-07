@@ -1,5 +1,5 @@
 use serde_json::Value;
-use ProtocolTypes;
+use domain::protocol_type::ProtocolTypes;
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct Config {
@@ -7,8 +7,7 @@ pub struct Config {
     pub forward_agent: ForwardAgentConfig,
     pub server: ServerConfig,
     pub wallet_storage: WalletStorageConfig,
-    #[serde(default)]
-    pub protocol_type: ProtocolTypes,
+    pub protocol_type: Option<ProtocolTypes>,
 }
 
 #[derive(Clone, Debug, Deserialize)]

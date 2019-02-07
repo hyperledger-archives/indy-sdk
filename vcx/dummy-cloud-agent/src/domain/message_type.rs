@@ -1,10 +1,9 @@
-use {ProtocolType, ProtocolTypes};
-
 use serde::{de, Deserializer, Deserialize, Serializer, Serialize};
 use serde_json::Value;
 use regex::Regex;
 use failure::{err_msg, Error};
 use domain::a2a::A2AMessageKinds;
+use domain::protocol_type::{ProtocolType, ProtocolTypes};
 
 pub const MESSAGE_VERSION: &str = "1.0";
 pub const DID: &str = "did:sov:123456789abcdefghi1234";

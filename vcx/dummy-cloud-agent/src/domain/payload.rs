@@ -1,6 +1,6 @@
-use {ProtocolType, ProtocolTypes};
 use domain::message_type::{MessageTypeV2, MessageFamilies, MESSAGE_VERSION, DID};
 use domain::a2a::ExchangeMessageType;
+use domain::protocol_type::{ProtocolType, ProtocolTypes};
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct Payload {

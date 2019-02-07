@@ -8,6 +8,7 @@ use domain::invite::{ForwardAgentDetail, InviteDetail, SenderDetail, AgentDetail
 use domain::internal_message::InternalMessage;
 use domain::key_deligation_proof::KeyDlgProof;
 use domain::payload::{Payload, PayloadTypes, PayloadKinds};
+use domain::protocol_type::{ProtocolType, ProtocolTypes};
 use failure::{err_msg, Error, Fail};
 use futures::*;
 use indy::{did, crypto, pairwise, ErrorCode, IndyError};
@@ -15,7 +16,6 @@ use std::convert::Into;
 use std::collections::HashMap;
 use utils::futures::*;
 use utils::to_i8;
-use {ProtocolType, ProtocolTypes};
 
 use base64;
 use rmp_serde;
@@ -1024,7 +1024,6 @@ impl AgentConnection {
 
     fn send_messages(&mut self, msgs: Vec<(String, Option<String>)>) -> ResponseFuture<Vec<A2AMessage>, Error> {
         trace!("AgentConnection::send_messages >> {:?}", msgs);
-        println!("send_messages");
         let futures: Vec<_> = msgs
             .into_iter()
             .map(|(msg_uid, reply_to)| {
@@ -1052,7 +1051,6 @@ impl AgentConnection {
     fn send_invite_answer_message(&mut self, message: InternalMessage, reply_to: Option<String>) -> ResponseFuture<(), Error> {
         trace!("AgentConnection::send_invite_answer_message >> {:?}, {:?}",
                message, reply_to);
-        println!("send_invite_answer_message");
 
         let reply_to = ftry!(reply_to.ok_or(err_msg("Missed required field `reply_to_msg_id`.")));
 
@@ -1084,7 +1082,6 @@ impl AgentConnection {
 
     fn send_remote_message(&self, message: Vec<u8>, endpoint: String) -> ResponseFuture<(), Error> {
         let router = self.router.clone();
-        println!("prepare_remote_message");
         future::ok(())
             .and_then(move |_| {
                 router

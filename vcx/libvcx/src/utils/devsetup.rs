@@ -33,7 +33,14 @@ macro_rules! init {
             ::utils::libindy::wallet::tests::delete_test_wallet(&format!("{}_{}", ::utils::constants::CONSUMER_PREFIX, ::settings::DEFAULT_WALLET_NAME));
             ::utils::libindy::pool::tests::delete_test_pool();
             ::utils::devsetup::tests::init_plugin(::settings::DEFAULT_PAYMENT_PLUGIN, ::settings::DEFAULT_PAYMENT_INIT_FUNCTION);
-            ::utils::devsetup::tests::setup_local_env();
+            ::utils::devsetup::tests::setup_local_env("1.0");
+        },
+        "agency_2_0" => {
+            ::utils::libindy::wallet::tests::delete_test_wallet(&format!("{}_{}", ::utils::constants::ENTERPRISE_PREFIX, ::settings::DEFAULT_WALLET_NAME));
+            ::utils::libindy::wallet::tests::delete_test_wallet(&format!("{}_{}", ::utils::constants::CONSUMER_PREFIX, ::settings::DEFAULT_WALLET_NAME));
+            ::utils::libindy::pool::tests::delete_test_pool();
+            ::utils::devsetup::tests::init_plugin(::settings::DEFAULT_PAYMENT_PLUGIN, ::settings::DEFAULT_PAYMENT_INIT_FUNCTION);
+            ::utils::devsetup::tests::setup_local_env("2.0");
         },
         _ => {panic!("Invalid test mode");},
     };
@@ -224,7 +231,7 @@ pub mod tests {
         unsafe { wallet::WALLET_HANDLE = wallet_handle.parse::<i32>().unwrap() }
     }
 
-    pub fn setup_local_env() {
+    pub fn setup_local_env(protocol_type: &str) {
         use indy::ledger;
         use futures::Future;
 
@@ -246,6 +253,7 @@ pub mod tests {
             "name": "institution".to_string(),
             "logo": "http://www.logo.com".to_string(),
             "path": constants::GENESIS_PATH.to_string(),
+            "protocol_type": protocol_type,
         }).to_string();
         let enterprise_config = ::messages::agent_utils::connect_register_provision(&config).unwrap();
 
@@ -265,6 +273,7 @@ pub mod tests {
             "name": "consumer".to_string(),
             "logo": "http://www.logo.com".to_string(),
             "path": constants::GENESIS_PATH.to_string(),
+            "protocol_type": protocol_type,
         }).to_string();
         let consumer_config = ::messages::agent_utils::connect_register_provision(&config).unwrap();
 
