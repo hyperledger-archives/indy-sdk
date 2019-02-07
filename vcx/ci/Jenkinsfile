@@ -60,7 +60,7 @@ static String libnullVersion() {
 }
 
 static String nullpayTag() {
-    return "967"
+    return "2"
 }
 
 static String libsovtokenVersion() {
@@ -84,7 +84,7 @@ static String indyBranch() {
 }
 
 static String nullBranch() {
-    return 'master'
+    return 'PR-1460'
 }
 
 static String appendTag(tag, del) {
@@ -94,7 +94,9 @@ static String appendTag(tag, del) {
 
 def buildLibindyDocker() {
     def indyTag = appendTag(libindyTag(), "~")
-    def nullTag= appendTag(nullpayTag(), "~")
+    // Todo: when indy fixes libnullpay, delete this line
+    def nullTag="~967"
+//    def nullTag= appendTag(nullpayTag(), "~")
     docker.build("libindy", "--build-arg LIBINDY_VER=${libindyVersion()}${indyTag} \
             --build-arg LIBNULL_VER=${libnullVersion()}${nullTag} \
             --build-arg LIBSOVTOKEN_VER=${libsovtokenVersion()} \
