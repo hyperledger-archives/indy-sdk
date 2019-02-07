@@ -16,5 +16,6 @@ pushd ${JAR_FOLDER}
         -DartifactId="vcx" \
         -Dpackaging="jar" \
         -DgroupId="com.evernym" \
+        $MAVEN_ADD_OPTIONS \
         --settings settings.xml
 popd

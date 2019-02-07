@@ -1,27 +1,27 @@
-﻿# Getting Started with Libindy
+﻿# Indy Walkthrough
 
 ## A Developer Guide for Building Indy Clients Using Libindy
 
 ![logo](https://raw.githubusercontent.com/hyperledger/indy-node/master/collateral/logos/indy-logo.png)
 
-* [Getting Started with Libndy](#getting-started-with-libindy)
-  * [What Indy and Libindy are and Why They Matter](#what-indy-and-libindy-are-and-why-they-matter)
-  * [What We'll Cover](#what-well-cover)
-  * [About Alice](#about-alice)
-  * [Infrastructure Preparation](#infrastructure-preparation)
-      * [Step 1: Getting Trust Anchor Credentials for Faber, Acme, Thrift and Government](#step-1-getting-trust-anchor-credentials-for-faber-acme-thrift-and-government)
-      * [Step 2: Connecting to the Indy Nodes Pool](#step-2-connecting-to-the-indy-nodes-pool)
-      * [Step 3: Getting the Ownership for Stewards's Verinym](#step-3-getting-the-ownership-for-stewardss-verinym)
-      * [Step 4: Onboarding Faber, Acme, Thrift and Government by the Steward](#step-4-onboarding-faber-acme-thrift-and-government-by-steward)
-        * [Connecting the Establishment](#connecting-the-establishment)
-        * [Getting the Verinym](#getting-verinym)
-      * [Step 5: Credential Schemas Setup](#step-5-credential-schemas-setup)
-      * [Step 6: Credential Definition Setup](#step-6-credential-definition-setup)
-  * [Alice Gets a Transcript](#alice-gets-a-transcript)
-  * [Apply for a Job](#apply-for-a-job)
-  * [Apply for a Loan](#apply-for-a-loan)
-  * [Explore the Code](#explore-the-code)
-
+- [Indy Walkthrough](#indy-walkthrough)
+    - [A Developer Guide for Building Indy Clients Using Libindy](#a-developer-guide-for-building-indy-clients-using-libindy)
+    - [What Indy and Libindy are and Why They Matter](#what-indy-and-libindy-are-and-why-they-matter)
+    - [What We’ll Cover](#what-well-cover)
+    - [About Alice](#about-alice)
+    - [Infrastructure Preparation](#infrastructure-preparation)
+        - [Step 1: Getting Trust Anchor Credentials for Faber, Acme, Thrift and Government](#step-1-getting-trust-anchor-credentials-for-faber-acme-thrift-and-government)
+        - [Step 2: Connecting to the Indy Nodes Pool](#step-2-connecting-to-the-indy-nodes-pool)
+        - [Step 3: Getting the ownership for Steward's Verinym](#step-3-getting-the-ownership-for-stewards-verinym)
+        - [Step 4: Onboarding Faber, Acme, Thrift and Government by Steward](#step-4-onboarding-faber-acme-thrift-and-government-by-steward)
+            - [Connecting the Establishment](#connecting-the-establishment)
+            - [Getting Verinym](#getting-verinym)
+        - [Step 5: Credential Schemas Setup](#step-5-credential-schemas-setup)
+        - [Step 6: Credential Definition Setup](#step-6-credential-definition-setup)
+    - [Alice Gets a Transcript](#alice-gets-a-transcript)
+    - [Apply for a Job](#apply-for-a-job)
+    - [Apply for a Loan](#apply-for-a-loan)
+    - [Explore the Code](#explore-the-code)
 ## What Indy and Libindy are and Why They Matter
 
 Indy provides a software ecosystem for private, secure, and powerful identity, and libindy enables clients for it. Indy puts people — not the organizations that traditionally centralize identity — in charge of decisions about their own privacy and disclosure. This enables all kinds of rich innovation: connection contracts, revocation, novel payment workflows, asset and document management features, creative forms of escrow, curated reputation, integrations with other cool technologies, and so on.
@@ -74,7 +74,7 @@ Our ledger is public permissioned and anyone who wants to publish DIDs needs to 
 
 Becoming a **Trust Anchor** requires contacting a person or organization who already has the **Trust Anchor** role on the ledger. For the sake of the demo, in our empty test ledger we have only NYMs with the **Steward** role, but all **Stewards** are automatically **Trust Anchors**.
 
-#### Step 2: Connecting to the Indy Nodes Pool
+### Step 2: Connecting to the Indy Nodes Pool
 
 We are ready to start writing the code that will cover Alice's use case from start to finish. It is important to note that for demo purposes it will be a single test that will contain the code intended to be executed on different agents. We will always point to what Agent is intended to execute each code part. Also we will use different wallets to store the DID and keys of different Agents. Let's begin.
 
@@ -98,7 +98,7 @@ The code block below contains each of these items. Note how the comments denote 
   pool_['handle'] = await pool.open_pool_ledger(pool_['name'], None)
 ```
 
-#### Step 3: Getting the ownership for Steward's Verinym
+### Step 3: Getting the ownership for Steward's Verinym
 
 **Next, the Steward's agent should get the ownership for the DID that has corresponding NYM transactions with the Steward role on the ledger.**
 
@@ -127,7 +127,7 @@ After the wallet is opened we can create a DID record in this wallet by calling 
 
 **Please note:** We provided only information about the seed to ``did.create_and_store_my_did``, but not any information about the Steward's DID. By default DID's are generated as the first 16 bytes of the verkey. For such DID's, when dealing with operations that require both a DID and the verkey we can use the verkey in an abbreviated form. In this form the verkey starts with a tilde '~' followed by 22 or 23 characters. The tilde indicates that the DID itself represents the first 16 bytes of the verkey and the string following the tilde represents the second 16 bytes of the verkey, both using base58Check encoding.
 
-#### Step 4: Onboarding Faber, Acme, Thrift and Government by Steward
+### Step 4: Onboarding Faber, Acme, Thrift and Government by Steward
 
 **Faber, Acme, Thrift and Government should now establish a Connection with the Steward.**
 
@@ -142,7 +142,7 @@ We call the process of establish a connection **Onboarding**.
 In this tutorial we will describe the simple version of onboarding process.
 In our case, one party will always be the Trust Anchor. Real enterprise scenarios can use a more complex version.
 
-##### Connecting the Establishment
+#### Connecting the Establishment
 Let's look the process of connection establishment between **Steward** and **Faber College**.
 
 1. **Faber** and **Steward** contact in some way to initiate onboarding process.
@@ -243,7 +243,7 @@ At this point **Faber** is connected to the **Steward** and can interact in a se
 **Note:** All parties must not use the same DID's to establish other relationships.
 By having independent pairwise relationships, you're reducing the ability for others to correlate your activities across multiple interactions.
 
-##### Getting Verinym
+#### Getting Verinym
 
 It is important to understand that earlier created **Faber** DID is not, in and of itself, the same thing as self-sovereign identity. This DID must be used only for secure interaction with the **Steward**.
 After the connection is established **Faber** must create new DID record that he will use as Verinym in the Ledger.
@@ -304,7 +304,7 @@ At this point **Faber** has a DID related to his identity in the Ledger.
 
 **Acme**, **Thrift Bank**, and **Government** must pass the same Onboarding process connection establishment with **Steward**.
 
-#### Step 5: Credential Schemas Setup
+### Step 5: Credential Schemas Setup
 
 **Credential Schema** is the base semantic structure that describes the list of attributes which one particular Credential can contain.
 
@@ -354,7 +354,7 @@ In the same way **Government** creates and publishes the **Job-Certificate** Cre
 
 At this point we have the **Transcript** and the **Job-Certificate** Credential Schemas published by **Government** to the Ledger.
 
-#### Step 6: Credential Definition Setup
+### Step 6: Credential Definition Setup
 
 **Credential Definition** is similar in that the keys that the Issuer uses for the signing of Credentials also satisfies a specific Credential Schema.
 
