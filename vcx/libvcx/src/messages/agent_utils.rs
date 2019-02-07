@@ -1,6 +1,7 @@
 use settings;
 use utils::constants::*;
 use messages::*;
+use messages::message_type::MessageTypes;
 use utils::{error, httpclient};
 use utils::libindy::wallet;
 use utils::libindy::signus::create_and_store_my_did;

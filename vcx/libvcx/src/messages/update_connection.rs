@@ -1,4 +1,5 @@
 use messages::*;
+use messages::message_type::MessageTypes;
 use settings;
 use utils::{error, httpclient};
 use utils::constants::DELETE_CONNECTION_RESPONSE;
@@ -45,7 +46,7 @@ impl<'de> Deserialize<'de> for ConnectionStatus {
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
 pub struct UpdateConnectionResponse {
     #[serde(rename = "@type")]
-    msg_type: MessageTypeV0,
+    msg_type: MessageTypes,
     #[serde(rename = "statusCode")]
     status_code: ConnectionStatus,
 }

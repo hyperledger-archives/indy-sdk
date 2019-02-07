@@ -1,12 +1,8 @@
-extern crate rust_base58;
-extern crate serde_json;
-extern crate serde;
-extern crate rmp_serde;
-
 use settings;
 use connection;
 use api::VcxStateType;
 use messages::*;
+use messages::message_type::MessageTypes;
 use utils::{httpclient, error};
 
 #[derive(Debug)]
@@ -100,7 +96,7 @@ impl SendMessageBuilder {
 
     fn parse_response(response: Vec<u8>) -> Result<SendResponse, u32> {
         match settings::get_protocol_type() {
-            settings::ProtocolTypes::V0 => {
+            settings::ProtocolTypes::V1 => {
                 let mut messages = parse_response_from_agency(&response)?;
                 if messages.len() <= 1 {
                     return Err(error::INVALID_HTTP_RESPONSE.code_num);
@@ -108,10 +104,10 @@ impl SendMessageBuilder {
                 let response: MessageSent = MessageSent::from_a2a_message(messages.remove(1))?;
                 Ok(SendResponse { uid: response.uid, uids: response.uids })
             }
-            settings::ProtocolTypes::V1 => {
+            settings::ProtocolTypes::V2 => {
                 let mut messages = parse_response_from_agency(&response)?;
-                let response: CredentialExchangeMessageResponse = CredentialExchangeMessageResponse::from_a2a_message(messages.remove(0))?;
-                Ok(SendResponse { uid: Some(response.uid), uids: response.uids })
+                let response: CredentialExchangeResponse = CredentialExchangeResponse::from_a2a_message(messages.remove(0))?;
+                Ok(SendResponse { uid: Some(response.uid.clone()), uids: if response.sent { vec![response.uid] } else { vec![] } })
             }
         }
     }
@@ -129,7 +125,7 @@ impl GeneralMessage for SendMessageBuilder {
     fn prepare(&mut self) -> Result<Vec<u8>, u32> {
         let messages =
             match settings::get_protocol_type() {
-                settings::ProtocolTypes::V0 => {
+                settings::ProtocolTypes::V1 => {
                     let create = CreateMessage {
                         msg_type: MessageTypes::build(A2AMessageKinds::CreateMessage),
                         mtype: self.mtype.clone(),
@@ -145,8 +141,8 @@ impl GeneralMessage for SendMessageBuilder {
                     };
                     vec![A2AMessage::CreateMessage(create), A2AMessage::MessageDetail(MessageDetail::General(detail))]
                 }
-                settings::ProtocolTypes::V1 => {
-                    let message = CredentialExchangeMessage {
+                settings::ProtocolTypes::V2 => {
+                    let message = CredentialExchange {
                         msg_type: MessageTypes::build(A2AMessageKinds::CredentialExchange),
                         mtype: self.mtype.clone(),
                         reply_to_msg_id: self.ref_msg_id.clone(),
@@ -156,7 +152,7 @@ impl GeneralMessage for SendMessageBuilder {
                         title: self.title.clone(),
                         detail: self.detail.clone(),
                     };
-                    vec![A2AMessage::CredentialExchangeMessage(message)]
+                    vec![A2AMessage::CredentialExchange(message)]
                 }
             };
 

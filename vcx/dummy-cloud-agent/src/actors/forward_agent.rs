@@ -183,7 +183,7 @@ impl ForwardAgent {
         future::ok(())
             .into_actor(self)
             .and_then(move |_, slf, _| {
-                A2AMessage::unbundle_anoncrypted(slf.wallet_handle, &slf.verkey, &msg)
+                A2AMessage::parse_anoncrypted(slf.wallet_handle, &slf.verkey, &msg)
                     .map_err(|err| err.context("Can't unbundle message.").into())
                     .into_actor(slf)
             })
@@ -210,7 +210,7 @@ impl ForwardAgent {
         future::ok(())
             .into_actor(self)
             .and_then(move |_, slf, _| {
-                A2AMessage::unbundle_authcrypted(slf.wallet_handle, &slf.verkey, &msg)
+                A2AMessage::parse_authcrypted(slf.wallet_handle, &slf.verkey, &msg)
                     .map_err(|err| err.context("Can't unbundle message.").into())
                     .into_actor(slf)
             })
@@ -255,7 +255,7 @@ impl ForwardAgent {
                     with_pairwise_did_verkey: my_verkey,
                 })];
 
-                A2AMessage::bundle_authcrypted(slf.wallet_handle, &slf.verkey, &their_verkey, &msgs)
+                A2AMessage::prepare_authcrypted(slf.wallet_handle, &slf.verkey, &their_verkey, &msgs)
                     .map_err(|err| err.context("Can't bundle and authcrypt connected message.").into())
                     .into_actor(slf)
             })

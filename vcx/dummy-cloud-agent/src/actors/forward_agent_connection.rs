@@ -181,7 +181,7 @@ impl ForwardAgentConnection {
         future::ok(())
             .into_actor(self)
             .and_then(move |_, slf, _| {
-                A2AMessage::unbundle_authcrypted(slf.wallet_handle, &slf.my_verkey, &msg)
+                A2AMessage::parse_authcrypted(slf.wallet_handle, &slf.my_verkey, &msg)
                     .map_err(|err| err.context("Can't unbundle a2a message.").into())
                     .into_actor(slf)
             })
@@ -228,7 +228,7 @@ impl ForwardAgentConnection {
             .and_then(|_, slf, _| {
                 let msgs = vec![A2AMessage::SignedUp(SignedUp {})];
 
-                A2AMessage::bundle_authcrypted(slf.wallet_handle, &slf.my_verkey, &slf.their_verkey, &msgs)
+                A2AMessage::prepare_authcrypted(slf.wallet_handle, &slf.my_verkey, &slf.their_verkey, &msgs)
                     .map_err(|err| err.context("Can't bundle and authcrypt connected message.").into())
                     .into_actor(slf)
             })
@@ -277,7 +277,7 @@ impl ForwardAgentConnection {
                     with_pairwise_did_verkey: verkey,
                 })];
 
-                A2AMessage::bundle_authcrypted(slf.wallet_handle, &slf.my_verkey, &slf.their_verkey, &msgs)
+                A2AMessage::prepare_authcrypted(slf.wallet_handle, &slf.my_verkey, &slf.their_verkey, &msgs)
                     .map_err(|err| err.context("Can't bundle and authcrypt connected message.").into())
                     .into_actor(slf)
             })

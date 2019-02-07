@@ -23,6 +23,9 @@ extern crate base64;
 extern crate rand;
 extern crate hyper;
 extern crate indyrs;
+extern crate regex;
+#[macro_use]
+extern crate lazy_static;
 
 use actix::prelude::*;
 use actors::forward_agent::ForwardAgent;
@@ -31,6 +34,7 @@ use failure::*;
 use futures::*;
 use std::env;
 use std::fs::File;
+use std::sync::Mutex;
 
 #[macro_use]
 pub(crate) mod utils;
@@ -73,6 +77,7 @@ fn _start(config_path: &str) {
         forward_agent: forward_agent_config,
         server: server_config,
         wallet_storage: wallet_storage_config,
+        protocol_type: protocol_type_config,
     } = File::open(config_path)
         .context("Can't open config file")
         .and_then(|reader| serde_json::from_reader(reader)
@@ -83,6 +88,8 @@ fn _start(config_path: &str) {
 
     Arbiter::spawn_fn(move || {
         info!("Starting Forward Agent with config: {:?}", forward_agent_config);
+
+        ProtocolType::set(protocol_type_config);
 
         ForwardAgent::create_or_restore(forward_agent_config, wallet_storage_config)
             .map(move |forward_agent| {
@@ -101,6 +108,38 @@ fn _start(config_path: &str) {
     });
 
     let _ = sys.run();
+}
+
+
+lazy_static! {
+    static ref PROTOCOL_TYPE: Mutex<ProtocolTypes> = Mutex::new(ProtocolTypes::default());
+}
+
+pub struct ProtocolType {}
+
+impl ProtocolType {
+    pub fn set(protocol_type_config: ProtocolTypes) {
+        let mut protocol_type = PROTOCOL_TYPE.lock().unwrap();
+        *protocol_type = protocol_type_config;
+    }
+
+    pub fn get() -> ProtocolTypes {
+        PROTOCOL_TYPE.lock().unwrap().clone()
+    }
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub enum ProtocolTypes {
+    #[serde(rename = "1.0")]
+    V1,
+    #[serde(rename = "2.0")]
+    V2,
+}
+
+impl Default for ProtocolTypes {
+    fn default() -> Self {
+        ProtocolTypes::V1
+    }
 }
 
 fn _print_help() {

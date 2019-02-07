@@ -6,15 +6,19 @@ use serde::{de, Deserialize, Deserializer, ser, Serialize, Serializer};
 use serde_json::{self, Value};
 use utils::futures::*;
 
+use {ProtocolType, ProtocolTypes};
 use domain::a2connection::*;
 use domain::invite::{InviteDetail, SenderDetail, ForwardAgentDetail};
 use domain::key_deligation_proof::KeyDlgProof;
 use domain::status::{MessageStatusCode, ConnectionStatus};
+use domain::message_type::{MessageTypes};
 
 // TODO: For simplification we avoid complex versioning logic
 // TODO: There should be additional enum level for versions
 #[derive(Debug)]
 pub enum A2AMessage {
+    /// Common for Version 1 and Version 2
+
     /// base
     Forward(Forward),
     /// onboarding
@@ -27,13 +31,9 @@ pub enum A2AMessage {
     /// PW Connection
     CreateKey(CreateKey),
     KeyCreated(KeyCreated),
-    CreateMessage(CreateMessage),
-    MessageDetail(MessageDetail),
-    MessageCreated(MessageCreated),
-    SendMessages(SendMessages),
-    MessageSent(MessageSent),
     UpdateConnectionStatus(UpdateConnectionStatus),
     ConnectionStatusUpdated(ConnectionStatusUpdated),
+    SendMessages(SendMessages),
     UpdateMessageStatus(UpdateMessageStatus),
     MessageStatusUpdated(MessageStatusUpdated),
     GetMessages(GetMessages),
@@ -42,12 +42,27 @@ pub enum A2AMessage {
     MessagesByConnections(MessagesByConnections),
     UpdateMessageStatusByConnections(UpdateMessageStatusByConnections),
     MessageStatusUpdatedByConnections(MessageStatusUpdatedByConnections),
+    /// PW Configs
     UpdateConfigs(UpdateConfigs),
     ConfigsUpdated(ConfigsUpdated),
     GetConfigs(GetConfigs),
     Configs(Configs),
     RemoveConfigs(RemoveConfigs),
     ConfigsRemoved(ConfigsRemoved),
+
+    /// Version 1
+    CreateMessage(CreateMessage),
+    MessageDetail(MessageDetail),
+    MessageCreated(MessageCreated),
+    MessageSent(MessageSent),
+
+    /// Version 2
+    ConnectionRequest(ConnectionRequest),
+    ConnectionRequestResponse(ConnectionRequestResponse),
+    ConnectionRequestAnswer(ConnectionRequestAnswer),
+    ConnectionRequestAnswerResponse(ConnectionRequestAnswerResponse),
+    CredentialExchange(CredentialExchange),
+    CredentialExchangeResponse(CredentialExchangeResponse),
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -109,7 +124,7 @@ pub struct SignedUp {}
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct CreateMessage {
-    pub mtype: MessageType,
+    pub mtype: ExchangeMessageType,
     #[serde(rename = "sendMsg")]
     pub send_msg: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -216,7 +231,7 @@ pub struct GetMessagesDetailResponse {
     #[serde(rename = "senderDID")]
     pub sender_did: String,
     #[serde(rename = "type")]
-    pub type_: MessageType,
+    pub type_: ExchangeMessageType,
     pub payload: Option<Vec<i8>>,
     #[serde(rename = "refMsgId")]
     pub ref_msg_id: Option<String>,
@@ -248,7 +263,7 @@ pub struct FailedMessageUpdateInfo {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub enum MessageType {
+pub enum ExchangeMessageType {
     ConnReq,
     ConnReqAnswer,
     CredOffer,
@@ -259,50 +274,34 @@ pub enum MessageType {
     Other(String),
 }
 
-impl ToString for MessageType {
-    fn to_string(&self) -> String {
-        match self {
-            MessageType::ConnReq => "connReq",
-            MessageType::ConnReqAnswer => "connReqAnswer",
-            MessageType::CredOffer => "credOffer",
-            MessageType::CredReq => "credReq",
-            MessageType::Cred => "cred",
-            MessageType::ProofReq => "proofReq",
-            MessageType::Proof => "proof",
-            MessageType::Other(other) => other.as_str(),
-        }.to_string()
-    }
-}
-
-impl Serialize for MessageType {
+impl Serialize for ExchangeMessageType {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
         let value = match self {
-            MessageType::ConnReq => "connReq",
-            MessageType::ConnReqAnswer => "connReqAnswer",
-            MessageType::CredOffer => "credOffer",
-            MessageType::CredReq => "credReq",
-            MessageType::Cred => "cred",
-            MessageType::ProofReq => "proofReq",
-            MessageType::Proof => "proof",
-            MessageType::Other(other) => other.as_str(),
+            ExchangeMessageType::ConnReq => "connReq",
+            ExchangeMessageType::ConnReqAnswer => "connReqAnswer",
+            ExchangeMessageType::CredOffer => "credOffer",
+            ExchangeMessageType::CredReq => "credReq",
+            ExchangeMessageType::Cred => "cred",
+            ExchangeMessageType::ProofReq => "proofReq",
+            ExchangeMessageType::Proof => "proof",
+            ExchangeMessageType::Other(other) => other.as_str(),
         };
         serde_json::Value::String(value.to_string()).serialize(serializer)
     }
 }
 
-impl<'de> Deserialize<'de> for MessageType {
+impl<'de> Deserialize<'de> for ExchangeMessageType {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
         let value = Value::deserialize(deserializer).map_err(de::Error::custom)?;
-
         match value.as_str() {
-            Some("connReq") => Ok(MessageType::ConnReq),
-            Some("connReqAnswer") => Ok(MessageType::ConnReqAnswer),
-            Some("credOffer") => Ok(MessageType::CredOffer),
-            Some("credReq") => Ok(MessageType::CredReq),
-            Some("cred") => Ok(MessageType::Cred),
-            Some("proofReq") => Ok(MessageType::ProofReq),
-            Some("proof") => Ok(MessageType::Proof),
-            Some(mtype) => Ok(MessageType::Other(mtype.to_string())),
+            Some("connReq") => Ok(ExchangeMessageType::ConnReq),
+            Some("connReqAnswer") => Ok(ExchangeMessageType::ConnReqAnswer),
+            Some("credOffer") => Ok(ExchangeMessageType::CredOffer),
+            Some("credReq") => Ok(ExchangeMessageType::CredReq),
+            Some("cred") => Ok(ExchangeMessageType::Cred),
+            Some("proofReq") => Ok(ExchangeMessageType::ProofReq),
+            Some("proof") => Ok(ExchangeMessageType::Proof),
+            Some(mtype) => Ok(ExchangeMessageType::Other(mtype.to_string())),
             _ => Err(de::Error::custom("Unexpected message type."))
         }
     }
@@ -318,6 +317,17 @@ pub struct ConnectionRequestMessageDetail {
     pub phone_no: Option<String>,
     #[serde(rename = "usePublicDID")]
     pub use_public_did: Option<bool>,
+}
+
+impl From<ConnectionRequest> for ConnectionRequestMessageDetail {
+    fn from(con_req: ConnectionRequest) -> Self {
+        ConnectionRequestMessageDetail {
+            key_dlg_proof: con_req.key_dlg_proof,
+            target_name: con_req.target_name,
+            phone_no: con_req.phone_no,
+            use_public_did: Some(con_req.include_public_did),
+        }
+    }
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -340,12 +350,33 @@ pub struct ConnectionRequestAnswerMessageDetail {
     pub answer_status_code: MessageStatusCode,
 }
 
+impl From<ConnectionRequestAnswer> for ConnectionRequestAnswerMessageDetail {
+    fn from(con_req_answer: ConnectionRequestAnswer) -> Self {
+        ConnectionRequestAnswerMessageDetail {
+            key_dlg_proof: con_req_answer.key_dlg_proof,
+            sender_detail: con_req_answer.sender_detail,
+            sender_agency_detail: con_req_answer.sender_agency_detail,
+            answer_status_code: con_req_answer.answer_status_code,
+        }
+    }
+}
+
 #[derive(Debug, Deserialize, Serialize)]
 pub struct GeneralMessageDetail {
     #[serde(rename = "@msg")]
     pub msg: Vec<u8>,
     pub title: Option<String>,
     pub detail: Option<String>,
+}
+
+impl From<CredentialExchange> for GeneralMessageDetail {
+    fn from(message: CredentialExchange) -> GeneralMessageDetail {
+        GeneralMessageDetail {
+            msg: message.msg,
+            title: message.title,
+            detail: message.detail,
+        }
+    }
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -358,33 +389,7 @@ pub struct SendMessageDetail {
     pub answer_status_code: MessageStatusCode,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct PayloadMessageType {
-    pub name: String,
-    pub ver: String,
-    pub fmt: String,
-}
-
-impl PayloadMessageType {
-    pub fn new(type_: &MessageType) -> PayloadMessageType {
-        PayloadMessageType {
-            name: type_.to_string(),
-            ver: "1.0".to_string(),
-            fmt: "indy.msgpack".to_string(),
-        }
-    }
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct PayloadMessage {
-    #[serde(rename = "@type")]
-    pub type_: PayloadMessageType,
-    #[serde(rename = "@msg")]
-    pub msg: Vec<i8>,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
 pub struct ConfigOption {
     pub name: String,
     pub value: String
@@ -416,159 +421,395 @@ pub struct RemoveConfigs {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ConfigsRemoved {}
 
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ConnectionRequest {
+    #[serde(rename = "sendMsg")]
+    pub send_msg: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub uid: Option<String>,
+    #[serde(rename = "replyToMsgId")]
+    pub reply_to_msg_id: Option<String>,
+    #[serde(rename = "keyDlgProof")]
+    pub key_dlg_proof: KeyDlgProof,
+    #[serde(rename = "targetName")]
+    pub target_name: Option<String>,
+    #[serde(rename = "phoneNo")]
+    pub phone_no: Option<String>,
+    #[serde(rename = "usePublicDID")]
+    pub include_public_did: bool,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ConnectionRequestResponse {
+    pub uid: String,
+    #[serde(rename = "inviteDetail")]
+    pub invite_detail: InviteDetail,
+    #[serde(rename = "urlToInviteDetail")]
+    pub url_to_invite_detail: String,
+    pub sent: bool,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ConnectionRequestAnswer {
+    #[serde(rename = "sendMsg")]
+    pub send_msg: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub uid: Option<String>,
+    #[serde(rename = "replyToMsgId")]
+    pub reply_to_msg_id: Option<String>,
+    #[serde(rename = "keyDlgProof")]
+    pub key_dlg_proof: Option<KeyDlgProof>,
+    #[serde(rename = "senderDetail")]
+    pub sender_detail: SenderDetail,
+    #[serde(rename = "senderAgencyDetail")]
+    pub sender_agency_detail: ForwardAgentDetail,
+    #[serde(rename = "answerStatusCode")]
+    pub answer_status_code: MessageStatusCode,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ConnectionRequestAnswerResponse {
+    pub uid: String,
+    pub sent: bool,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CredentialExchange {
+    pub mtype: ExchangeMessageType,
+    #[serde(rename = "replyToMsgId")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reply_to_msg_id: Option<String>,
+    #[serde(rename = "sendMsg")]
+    pub send_msg: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub uid: Option<String>,
+    #[serde(rename = "@msg")]
+    pub msg: Vec<u8>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub detail: Option<String>,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CredentialExchangeResponse {
+    pub uid: String,
+    pub sent: bool,
+}
+
+pub enum A2AMessageKinds {
+    Forward,
+    Connect,
+    Connected,
+    SignUp,
+    SignedUp,
+    CreateAgent,
+    AgentCreated,
+    CreateKey,
+    KeyCreated,
+    CreateMessage,
+    MessageDetail,
+    MessageCreated,
+    MessageSent,
+    SendMessages,
+    GetMessages,
+    GetMessagesByConnections,
+    MessagesByConnections,
+    Messages,
+    UpdateMessageStatus,
+    MessageStatusUpdated,
+    UpdateMessageStatusByConnections,
+    MessageStatusUpdatedByConnections,
+    UpdateConnectionStatus,
+    ConnectionStatusUpdated,
+    UpdateConfigs,
+    ConfigsUpdated,
+    GetConfigs,
+    Configs,
+    RemoveConfigs,
+    ConfigsRemoved,
+    ConnectionRequest,
+    ConnectionRequestResponse,
+    ConnectionRequestAnswer,
+    ConnectionRequestAnswerResponse,
+    CredentialExchange,
+    CredentialExchangeResponse,
+}
+
+impl A2AMessageKinds {
+    pub fn family(&self) -> MessageFamilies {
+        match self {
+            A2AMessageKinds::Forward => MessageFamilies::Routing,
+            A2AMessageKinds::Connect => MessageFamilies::Onboarding,
+            A2AMessageKinds::Connected => MessageFamilies::Onboarding,
+            A2AMessageKinds::CreateAgent => MessageFamilies::Onboarding,
+            A2AMessageKinds::AgentCreated => MessageFamilies::Onboarding,
+            A2AMessageKinds::SignUp => MessageFamilies::Onboarding,
+            A2AMessageKinds::SignedUp => MessageFamilies::Onboarding,
+            A2AMessageKinds::CreateKey => MessageFamilies::Pairwise,
+            A2AMessageKinds::KeyCreated => MessageFamilies::Pairwise,
+            A2AMessageKinds::CreateMessage => MessageFamilies::Pairwise,
+            A2AMessageKinds::MessageDetail => MessageFamilies::Pairwise,
+            A2AMessageKinds::MessageCreated => MessageFamilies::Pairwise,
+            A2AMessageKinds::MessageSent => MessageFamilies::Pairwise,
+            A2AMessageKinds::SendMessages => MessageFamilies::Pairwise,
+            A2AMessageKinds::GetMessages => MessageFamilies::Pairwise,
+            A2AMessageKinds::GetMessagesByConnections => MessageFamilies::Pairwise,
+            A2AMessageKinds::MessagesByConnections => MessageFamilies::Pairwise,
+            A2AMessageKinds::Messages => MessageFamilies::Pairwise,
+            A2AMessageKinds::UpdateConnectionStatus => MessageFamilies::Pairwise,
+            A2AMessageKinds::ConnectionStatusUpdated => MessageFamilies::Pairwise,
+            A2AMessageKinds::ConnectionRequest => MessageFamilies::Pairwise,
+            A2AMessageKinds::ConnectionRequestResponse => MessageFamilies::Pairwise,
+            A2AMessageKinds::ConnectionRequestAnswer => MessageFamilies::Pairwise,
+            A2AMessageKinds::ConnectionRequestAnswerResponse => MessageFamilies::Pairwise,
+            A2AMessageKinds::UpdateMessageStatus => MessageFamilies::Pairwise,
+            A2AMessageKinds::MessageStatusUpdated => MessageFamilies::Pairwise,
+            A2AMessageKinds::UpdateMessageStatusByConnections => MessageFamilies::Pairwise,
+            A2AMessageKinds::MessageStatusUpdatedByConnections => MessageFamilies::Pairwise,
+            A2AMessageKinds::UpdateConfigs => MessageFamilies::Configs,
+            A2AMessageKinds::ConfigsUpdated => MessageFamilies::Configs,
+            A2AMessageKinds::GetConfigs => MessageFamilies::Configs,
+            A2AMessageKinds::Configs => MessageFamilies::Configs,
+            A2AMessageKinds::RemoveConfigs => MessageFamilies::Configs,
+            A2AMessageKinds::ConfigsRemoved => MessageFamilies::Configs,
+            A2AMessageKinds::CredentialExchange => MessageFamilies::CredentialExchange,
+            A2AMessageKinds::CredentialExchangeResponse => MessageFamilies::CredentialExchange,
+        }
+    }
+
+    pub fn name(&self) -> String {
+        match self {
+            A2AMessageKinds::Forward => "FWD".to_string(),
+            A2AMessageKinds::Connect => "CONNECT".to_string(),
+            A2AMessageKinds::Connected => "CONNECTED".to_string(),
+            A2AMessageKinds::CreateAgent => "CREATE_AGENT".to_string(),
+            A2AMessageKinds::AgentCreated => "AGENT_CREATED".to_string(),
+            A2AMessageKinds::SignUp => "SIGNUP".to_string(),
+            A2AMessageKinds::SignedUp => "SIGNED_UP".to_string(),
+            A2AMessageKinds::CreateKey => "CREATE_KEY".to_string(),
+            A2AMessageKinds::KeyCreated => "KEY_CREATED".to_string(),
+            A2AMessageKinds::CreateMessage => "CREATE_MSG".to_string(),
+            A2AMessageKinds::MessageDetail => "MSG_DETAIL".to_string(),
+            A2AMessageKinds::MessageCreated => "MSG_CREATED".to_string(),
+            A2AMessageKinds::MessageSent => "MSGS_SENT".to_string(),
+            A2AMessageKinds::SendMessages => "SEND_MSGS".to_string(),
+            A2AMessageKinds::GetMessages => "GET_MSGS".to_string(),
+            A2AMessageKinds::GetMessagesByConnections => "GET_MSGS_BY_CONNS".to_string(),
+            A2AMessageKinds::MessagesByConnections => "MSGS_BY_CONNS".to_string(),
+            A2AMessageKinds::UpdateMessageStatus => "UPDATE_MSG_STATUS".to_string(),
+            A2AMessageKinds::MessageStatusUpdated => "MSG_STATUS_UPDATED".to_string(),
+            A2AMessageKinds::UpdateMessageStatusByConnections => "UPDATE_MSG_STATUS_BY_CONNS".to_string(),
+            A2AMessageKinds::MessageStatusUpdatedByConnections => "MSG_STATUS_UPDATED_BY_CONNS".to_string(),
+            A2AMessageKinds::Messages => "MSGS".to_string(),
+            A2AMessageKinds::UpdateConnectionStatus => "UPDATE_CONN_STATUS".to_string(),
+            A2AMessageKinds::ConnectionStatusUpdated => "CONN_STATUS_UPDATED".to_string(),
+            A2AMessageKinds::ConnectionRequest => "CONN_REQUEST".to_string(),
+            A2AMessageKinds::ConnectionRequestResponse => "CONN_REQUEST_RESP".to_string(),
+            A2AMessageKinds::ConnectionRequestAnswer => "CONN_REQUEST_ANSWER".to_string(),
+            A2AMessageKinds::ConnectionRequestAnswerResponse => "CONN_REQUEST_ANSWER_RESP".to_string(),
+            A2AMessageKinds::UpdateConfigs => "UPDATE_CONFIGS".to_string(),
+            A2AMessageKinds::ConfigsUpdated => "CONFIGS_UPDATED".to_string(),
+            A2AMessageKinds::GetConfigs => "GET_CONFIGS".to_string(),
+            A2AMessageKinds::Configs => "CONFIGS".to_string(),
+            A2AMessageKinds::RemoveConfigs => "REMOVE_CONFIGS".to_string(),
+            A2AMessageKinds::ConfigsRemoved => "CONFIGS_REMOVED".to_string(),
+            A2AMessageKinds::CredentialExchange => "CRED_EXCHANGE".to_string(),
+            A2AMessageKinds::CredentialExchangeResponse => "CRED_EXCHANGE_RESP".to_string(),
+        }
+    }
+}
+
 impl<'de> Deserialize<'de> for A2AMessage {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
         let value = Value::deserialize(deserializer).map_err(de::Error::custom)?;
+        let message_type: MessageTypes = serde_json::from_value(value["@type"].clone()).map_err(de::Error::custom)?;
 
-        match (value["@type"]["name"].as_str(), value["@type"]["ver"].as_str()) {
-            (Some("AGENT_CREATED"), Some("1.0")) => {
-                AgentCreated::deserialize(value)
-                    .map(|msg| A2AMessage::AgentCreated(msg))
-                    .map_err(de::Error::custom)
-            }
-            (Some("CONNECT"), Some("1.0")) => {
-                Connect::deserialize(value)
-                    .map(|msg| A2AMessage::Connect(msg))
-                    .map_err(de::Error::custom)
-            }
-            (Some("CONNECTED"), Some("1.0")) => {
-                Connected::deserialize(value)
-                    .map(|msg| A2AMessage::Connected(msg))
-                    .map_err(de::Error::custom)
-            }
-            (Some("CREATE_AGENT"), Some("1.0")) => {
-                CreateAgent::deserialize(value)
-                    .map(|msg| A2AMessage::CreateAgent(msg))
-                    .map_err(de::Error::custom)
-            }
-            (Some("CREATE_KEY"), Some("1.0")) => {
-                CreateKey::deserialize(value)
-                    .map(|msg| A2AMessage::CreateKey(msg))
-                    .map_err(de::Error::custom)
-            }
-            (Some("FWD"), Some("1.0")) => {
+        match (message_type.name(), message_type.version()) {
+            ("FWD", "1.0") => {
                 Forward::deserialize(value)
                     .map(|msg| A2AMessage::Forward(msg))
                     .map_err(de::Error::custom)
             }
-            (Some("KEY_CREATED"), Some("1.0")) => {
-                KeyCreated::deserialize(value)
-                    .map(|msg| A2AMessage::KeyCreated(msg))
+            ("CONNECT", "1.0") => {
+                Connect::deserialize(value)
+                    .map(|msg| A2AMessage::Connect(msg))
                     .map_err(de::Error::custom)
             }
-            (Some("SIGNUP"), Some("1.0")) => {
+            ("CONNECTED", "1.0") => {
+                Connected::deserialize(value)
+                    .map(|msg| A2AMessage::Connected(msg))
+                    .map_err(de::Error::custom)
+            }
+            ("SIGNUP", "1.0") => {
                 SignUp::deserialize(value)
                     .map(|msg| A2AMessage::SignUp(msg))
                     .map_err(de::Error::custom)
             }
-            (Some("SIGNED_UP"), Some("1.0")) => {
+            ("SIGNED_UP", "1.0") => {
                 SignedUp::deserialize(value)
                     .map(|msg| A2AMessage::SignedUp(msg))
                     .map_err(de::Error::custom)
             }
-            (Some("CREATE_MSG"), Some("1.0")) => {
-                CreateMessage::deserialize(value)
-                    .map(|msg| A2AMessage::CreateMessage(msg))
+            ("CREATE_AGENT", "1.0") => {
+                CreateAgent::deserialize(value)
+                    .map(|msg| A2AMessage::CreateAgent(msg))
                     .map_err(de::Error::custom)
             }
-            (Some("MSG_DETAIL"), Some("1.0")) => {
-                MessageDetail::deserialize(value)
-                    .map(|msg| A2AMessage::MessageDetail(msg))
+            ("AGENT_CREATED", "1.0") => {
+                AgentCreated::deserialize(value)
+                    .map(|msg| A2AMessage::AgentCreated(msg))
                     .map_err(de::Error::custom)
             }
-            (Some("MSG_CREATED"), Some("1.0")) => {
-                MessageCreated::deserialize(value)
-                    .map(|msg| A2AMessage::MessageCreated(msg))
+            ("CREATE_KEY", "1.0") => {
+                CreateKey::deserialize(value)
+                    .map(|msg| A2AMessage::CreateKey(msg))
                     .map_err(de::Error::custom)
             }
-            (Some("MSGS_SENT"), Some("1.0")) => {
-                MessageSent::deserialize(value)
-                    .map(|msg| A2AMessage::MessageSent(msg))
+            ("KEY_CREATED", "1.0") => {
+                KeyCreated::deserialize(value)
+                    .map(|msg| A2AMessage::KeyCreated(msg))
                     .map_err(de::Error::custom)
             }
-            (Some("SEND_MSGS"), Some("1.0")) => {
+            ("SEND_MSGS", "1.0") => {
                 SendMessages::deserialize(value)
                     .map(|msg| A2AMessage::SendMessages(msg))
                     .map_err(de::Error::custom)
             }
-            (Some("UPDATE_CONN_STATUS"), Some("1.0")) => {
+            ("UPDATE_CONN_STATUS", "1.0") => {
                 UpdateConnectionStatus::deserialize(value)
                     .map(|msg| A2AMessage::UpdateConnectionStatus(msg))
                     .map_err(de::Error::custom)
             }
-            (Some("CONN_STATUS_UPDATED"), Some("1.0")) => {
+            ("CONN_STATUS_UPDATED", "1.0") => {
                 ConnectionStatusUpdated::deserialize(value)
                     .map(|msg| A2AMessage::ConnectionStatusUpdated(msg))
                     .map_err(de::Error::custom)
             }
-            (Some("UPDATE_MSG_STATUS"), Some("1.0")) => {
+            ("UPDATE_MSG_STATUS", "1.0") => {
                 UpdateMessageStatus::deserialize(value)
                     .map(|msg| A2AMessage::UpdateMessageStatus(msg))
                     .map_err(de::Error::custom)
             }
-            (Some("MSG_STATUS_UPDATED"), Some("1.0")) => {
+            ("MSG_STATUS_UPDATED", "1.0") => {
                 MessageStatusUpdated::deserialize(value)
                     .map(|msg| A2AMessage::MessageStatusUpdated(msg))
                     .map_err(de::Error::custom)
             }
-            (Some("GET_MSGS"), Some("1.0")) => {
+            ("GET_MSGS", "1.0") => {
                 GetMessages::deserialize(value)
                     .map(|msg| A2AMessage::GetMessages(msg))
                     .map_err(de::Error::custom)
             }
-            (Some("MSGS"), Some("1.0")) => {
+            ("MSGS", "1.0") => {
                 Messages::deserialize(value)
                     .map(|msg| A2AMessage::Messages(msg))
                     .map_err(de::Error::custom)
             }
-            (Some("GET_MSGS_BY_CONNS"), Some("1.0")) => {
+            ("GET_MSGS_BY_CONNS", "1.0") => {
                 GetMessagesByConnections::deserialize(value)
                     .map(|msg| A2AMessage::GetMessagesByConnections(msg))
                     .map_err(de::Error::custom)
             }
-            (Some("MSGS_BY_CONNS"), Some("1.0")) => {
+            ("MSGS_BY_CONNS", "1.0") => {
                 MessagesByConnections::deserialize(value)
                     .map(|msg| A2AMessage::MessagesByConnections(msg))
                     .map_err(de::Error::custom)
             }
-            (Some("UPDATE_MSG_STATUS_BY_CONNS"), Some("1.0")) => {
+            ("UPDATE_MSG_STATUS_BY_CONNS", "1.0") => {
                 UpdateMessageStatusByConnections::deserialize(value)
                     .map(|msg| A2AMessage::UpdateMessageStatusByConnections(msg))
                     .map_err(de::Error::custom)
             }
-            (Some("MSG_STATUS_UPDATED_BY_CONNS"), Some("1.0")) => {
+            ("MSG_STATUS_UPDATED_BY_CONNS", "1.0") => {
                 MessageStatusUpdatedByConnections::deserialize(value)
                     .map(|msg| A2AMessage::MessageStatusUpdatedByConnections(msg))
                     .map_err(de::Error::custom)
             }
-            (Some("UPDATE_CONFIGS"), Some("1.0")) => {
+            ("UPDATE_CONFIGS", "1.0") => {
                 UpdateConfigs::deserialize(value)
                     .map(|msg| A2AMessage::UpdateConfigs(msg))
                     .map_err(de::Error::custom)
             }
-            (Some("CONFIGS_UPDATED"), Some("1.0")) => {
+            ("CONFIGS_UPDATED", "1.0") => {
                 ConfigsUpdated::deserialize(value)
                     .map(|msg| A2AMessage::ConfigsUpdated(msg))
                     .map_err(de::Error::custom)
             }
-            (Some("GET_CONFIGS"), Some("1.0")) => {
+            ("GET_CONFIGS", "1.0") => {
                 GetConfigs::deserialize(value)
                     .map(|msg| A2AMessage::GetConfigs(msg))
                     .map_err(de::Error::custom)
             }
-            (Some("CONFIGS"), Some("1.0")) => {
+            ("CONFIGS", "1.0") => {
                 Configs::deserialize(value)
                     .map(|msg| A2AMessage::Configs(msg))
                     .map_err(de::Error::custom)
             }
-            (Some("REMOVE_CONFIGS"), Some("1.0")) => {
+            ("REMOVE_CONFIGS", "1.0") => {
                 RemoveConfigs::deserialize(value)
                     .map(|msg| A2AMessage::RemoveConfigs(msg))
                     .map_err(de::Error::custom)
             }
-            (Some("CONFIGS_REMOVED"), Some("1.0")) => {
+            ("CONFIGS_REMOVED", "1.0") => {
                 ConfigsRemoved::deserialize(value)
                     .map(|msg| A2AMessage::ConfigsRemoved(msg))
+                    .map_err(de::Error::custom)
+            }
+
+            // Version 1
+            ("CREATE_MSG", "1.0") => {
+                CreateMessage::deserialize(value)
+                    .map(|msg| A2AMessage::CreateMessage(msg))
+                    .map_err(de::Error::custom)
+            }
+            ("MSG_DETAIL", "1.0") => {
+                MessageDetail::deserialize(value)
+                    .map(|msg| A2AMessage::MessageDetail(msg))
+                    .map_err(de::Error::custom)
+            }
+            ("MSG_CREATED", "1.0") => {
+                MessageCreated::deserialize(value)
+                    .map(|msg| A2AMessage::MessageCreated(msg))
+                    .map_err(de::Error::custom)
+            }
+            ("MSGS_SENT", "1.0") => {
+                MessageSent::deserialize(value)
+                    .map(|msg| A2AMessage::MessageSent(msg))
+                    .map_err(de::Error::custom)
+            }
+
+            // Version 2
+            ("CONN_REQUEST", "1.0") => {
+                ConnectionRequest::deserialize(value)
+                    .map(|msg| A2AMessage::ConnectionRequest(msg))
+                    .map_err(de::Error::custom)
+            }
+            ("CONN_REQUEST_RESP", "1.0") => {
+                ConnectionRequestResponse::deserialize(value)
+                    .map(|msg| A2AMessage::ConnectionRequestResponse(msg))
+                    .map_err(de::Error::custom)
+            }
+            ("CONN_REQUEST_ANSWER", "1.0") => {
+                ConnectionRequestAnswer::deserialize(value)
+                    .map(|msg| A2AMessage::ConnectionRequestAnswer(msg))
+                    .map_err(de::Error::custom)
+            }
+            ("CONN_REQUEST_ANSWER_RESP", "1.0") => {
+                ConnectionRequestAnswerResponse::deserialize(value)
+                    .map(|msg| A2AMessage::ConnectionRequestAnswerResponse(msg))
+                    .map_err(de::Error::custom)
+            }
+            ("CRED_EXCHANGE", "1.0") => {
+                CredentialExchange::deserialize(value)
+                    .map(|msg| A2AMessage::CredentialExchange(msg))
+                    .map_err(de::Error::custom)
+            }
+            ("CRED_EXCHANGE_RESP", "1.0") => {
+                CredentialExchangeResponse::deserialize(value)
+                    .map(|msg| A2AMessage::CredentialExchangeResponse(msg))
                     .map_err(de::Error::custom)
             }
             _ => Err(de::Error::custom("Unexpected @type field structure."))
@@ -576,160 +817,58 @@ impl<'de> Deserialize<'de> for A2AMessage {
     }
 }
 
+fn set_a2a_message_type<T>(msg: T, kind: A2AMessageKinds) -> Result<serde_json::Value, serde_json::Error> where T: Serialize {
+    let mut value = serde_json::to_value(msg)?;
+    let type_ = serde_json::to_value(MessageTypes::build(kind))?;
+    value.as_object_mut().unwrap().insert("@type".into(), type_);
+    Ok(value)
+}
+
 impl Serialize for A2AMessage {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
         let value = match self {
-            A2AMessage::AgentCreated(msg) => {
-                let mut value = serde_json::to_value(msg).map_err(ser::Error::custom)?;
-                value.as_object_mut().unwrap().insert("@type".into(), json!({"name": "AGENT_CREATED", "ver": "1.0"}));
-                value
-            }
-            A2AMessage::Connect(msg) => {
-                let mut value = serde_json::to_value(msg).map_err(ser::Error::custom)?;
-                value.as_object_mut().unwrap().insert("@type".into(), json!({"name": "CONNECT", "ver": "1.0"}));
-                value
-            }
-            A2AMessage::Connected(msg) => {
-                let mut value = serde_json::to_value(msg).map_err(ser::Error::custom)?;
-                value.as_object_mut().unwrap().insert("@type".into(), json!({"name": "CONNECTED", "ver": "1.0"}));
-                value
-            }
-            A2AMessage::Forward(msg) => {
-                let mut value = serde_json::to_value(msg).map_err(ser::Error::custom)?;
-                value.as_object_mut().unwrap().insert("@type".into(), json!({"name": "FWD", "ver": "1.0"}));
-                value
-            }
-            A2AMessage::CreateAgent(msg) => {
-                let mut value = serde_json::to_value(msg).map_err(ser::Error::custom)?;
-                value.as_object_mut().unwrap().insert("@type".into(), json!({"name": "CREATE_AGENT", "ver": "1.0"}));
-                value
-            }
-            A2AMessage::CreateKey(msg) => {
-                let mut value = serde_json::to_value(msg).map_err(ser::Error::custom)?;
-                value.as_object_mut().unwrap().insert("@type".into(), json!({"name": "CREATE_KEY", "ver": "1.0"}));
-                value
-            }
-            A2AMessage::KeyCreated(msg) => {
-                let mut value = serde_json::to_value(msg).map_err(ser::Error::custom)?;
-                value.as_object_mut().unwrap().insert("@type".into(), json!({"name": "KEY_CREATED", "ver": "1.0"}));
-                value
-            }
-            A2AMessage::SignUp(msg) => {
-                let mut value = serde_json::to_value(msg).map_err(ser::Error::custom)?;
-                value.as_object_mut().unwrap().insert("@type".into(), json!({"name": "SIGNUP", "ver": "1.0"}));
-                value
-            }
-            A2AMessage::SignedUp(msg) => {
-                let mut value = serde_json::to_value(msg).map_err(ser::Error::custom)?;
-                value.as_object_mut().unwrap().insert("@type".into(), json!({"name": "SIGNED_UP", "ver": "1.0"}));
-                value
-            }
-            A2AMessage::CreateMessage(msg) => {
-                let mut value = serde_json::to_value(msg).map_err(ser::Error::custom)?;
-                value.as_object_mut().unwrap().insert("@type".into(), json!({"name": "CREATE_MSG", "ver": "1.0"}));
-                value
-            }
-            A2AMessage::MessageDetail(msg) => {
-                let mut value = serde_json::to_value(msg).map_err(ser::Error::custom)?;
-                value.as_object_mut().unwrap().insert("@type".into(), json!({"name": "MSG_DETAIL", "ver": "1.0"}));
-                value
-            }
-            A2AMessage::MessageCreated(msg) => {
-                let mut value = serde_json::to_value(msg).map_err(ser::Error::custom)?;
-                value.as_object_mut().unwrap().insert("@type".into(), json!({"name": "MSG_CREATED", "ver": "1.0"}));
-                value
-            }
-            A2AMessage::MessageSent(msg) => {
-                let mut value = serde_json::to_value(msg).map_err(ser::Error::custom)?;
-                value.as_object_mut().unwrap().insert("@type".into(), json!({"name": "MSGS_SENT", "ver": "1.0"}));
-                value
-            }
-            A2AMessage::SendMessages(msg) => {
-                let mut value = serde_json::to_value(msg).map_err(ser::Error::custom)?;
-                value.as_object_mut().unwrap().insert("@type".into(), json!({"name": "SEND_MSGS", "ver": "1.0"}));
-                value
-            }
-            A2AMessage::UpdateConnectionStatus(msg) => {
-                let mut value = serde_json::to_value(msg).map_err(ser::Error::custom)?;
-                value.as_object_mut().unwrap().insert("@type".into(), json!({"name": "UPDATE_CONN_STATUS", "ver": "1.0"}));
-                value
-            }
-            A2AMessage::ConnectionStatusUpdated(msg) => {
-                let mut value = serde_json::to_value(msg).map_err(ser::Error::custom)?;
-                value.as_object_mut().unwrap().insert("@type".into(), json!({"name": "CONN_STATUS_UPDATED", "ver": "1.0"}));
-                value
-            }
-            A2AMessage::UpdateMessageStatus(msg) => {
-                let mut value = serde_json::to_value(msg).map_err(ser::Error::custom)?;
-                value.as_object_mut().unwrap().insert("@type".into(), json!({"name": "UPDATE_MSG_STATUS", "ver": "1.0"}));
-                value
-            }
-            A2AMessage::MessageStatusUpdated(msg) => {
-                let mut value = serde_json::to_value(msg).map_err(ser::Error::custom)?;
-                value.as_object_mut().unwrap().insert("@type".into(), json!({"name": "MSG_STATUS_UPDATED", "ver": "1.0"}));
-                value
-            }
-            A2AMessage::GetMessages(msg) => {
-                let mut value = serde_json::to_value(msg).map_err(ser::Error::custom)?;
-                value.as_object_mut().unwrap().insert("@type".into(), json!({"name": "GET_MSGS", "ver": "1.0"}));
-                value
-            }
-            A2AMessage::Messages(msg) => {
-                let mut value = serde_json::to_value(msg).map_err(ser::Error::custom)?;
-                value.as_object_mut().unwrap().insert("@type".into(), json!({"name": "MSGS", "ver": "1.0"}));
-                value
-            }
-            A2AMessage::GetMessagesByConnections(msg) => {
-                let mut value = serde_json::to_value(msg).map_err(ser::Error::custom)?;
-                value.as_object_mut().unwrap().insert("@type".into(), json!({"name": "GET_MSGS_BY_CONNS", "ver": "1.0"}));
-                value
-            }
-            A2AMessage::MessagesByConnections(msg) => {
-                let mut value = serde_json::to_value(msg).map_err(ser::Error::custom)?;
-                value.as_object_mut().unwrap().insert("@type".into(), json!({"name": "MSGS_BY_CONNS", "ver": "1.0"}));
-                value
-            }
-            A2AMessage::UpdateMessageStatusByConnections(msg) => {
-                let mut value = serde_json::to_value(msg).map_err(ser::Error::custom)?;
-                value.as_object_mut().unwrap().insert("@type".into(), json!({"name": "UPDATE_MSG_STATUS_BY_CONNS", "ver": "1.0"}));
-                value
-            }
-            A2AMessage::MessageStatusUpdatedByConnections(msg) => {
-                let mut value = serde_json::to_value(msg).map_err(ser::Error::custom)?;
-                value.as_object_mut().unwrap().insert("@type".into(), json!({"name": "MSG_STATUS_UPDATED_BY_CONNS", "ver": "1.0"}));
-                value
-            }
-            A2AMessage::UpdateConfigs(msg) => {
-                let mut value = serde_json::to_value(msg).map_err(ser::Error::custom)?;
-                value.as_object_mut().unwrap().insert("@type".into(), json!({"name": "UPDATE_CONFIGS", "ver": "1.0"}));
-                value
-            }
-            A2AMessage::ConfigsUpdated(msg) => {
-                let mut value = serde_json::to_value(msg).map_err(ser::Error::custom)?;
-                value.as_object_mut().unwrap().insert("@type".into(), json!({"name": "CONFIGS_UPDATED", "ver": "1.0"}));
-                value
-            }
-            A2AMessage::GetConfigs(msg) => {
-                let mut value = serde_json::to_value(msg).map_err(ser::Error::custom)?;
-                value.as_object_mut().unwrap().insert("@type".into(), json!({"name": "GET_CONFIGS", "ver": "1.0"}));
-                value
-            }
-            A2AMessage::Configs(msg) => {
-                let mut value = serde_json::to_value(msg).map_err(ser::Error::custom)?;
-                value.as_object_mut().unwrap().insert("@type".into(), json!({"name": "CONFIGS", "ver": "1.0"}));
-                value
-            }
-            A2AMessage::RemoveConfigs(msg) => {
-                let mut value = serde_json::to_value(msg).map_err(ser::Error::custom)?;
-                value.as_object_mut().unwrap().insert("@type".into(), json!({"name": "REMOVE_CONFIGS", "ver": "1.0"}));
-                value
-            }
-            A2AMessage::ConfigsRemoved(msg) => {
-                let mut value = serde_json::to_value(msg).map_err(ser::Error::custom)?;
-                value.as_object_mut().unwrap().insert("@type".into(), json!({"name": "CONFIGS_REMOVED", "ver": "1.0"}));
-                value
-            }
-        };
+            // Common
+            A2AMessage::Forward(msg) => set_a2a_message_type(msg, A2AMessageKinds::Forward),
+            A2AMessage::Connect(msg) => set_a2a_message_type(msg, A2AMessageKinds::Connect),
+            A2AMessage::Connected(msg) => set_a2a_message_type(msg, A2AMessageKinds::Connected),
+            A2AMessage::SignUp(msg) => set_a2a_message_type(msg, A2AMessageKinds::SignUp),
+            A2AMessage::SignedUp(msg) => set_a2a_message_type(msg, A2AMessageKinds::SignedUp),
+            A2AMessage::CreateAgent(msg) => set_a2a_message_type(msg, A2AMessageKinds::CreateAgent),
+            A2AMessage::AgentCreated(msg) => set_a2a_message_type(msg, A2AMessageKinds::AgentCreated),
+            A2AMessage::CreateKey(msg) => set_a2a_message_type(msg, A2AMessageKinds::CreateKey),
+            A2AMessage::KeyCreated(msg) => set_a2a_message_type(msg, A2AMessageKinds::KeyCreated),
+            A2AMessage::SendMessages(msg) => set_a2a_message_type(msg, A2AMessageKinds::SendMessages),
+            A2AMessage::UpdateConnectionStatus(msg) => set_a2a_message_type(msg, A2AMessageKinds::UpdateConnectionStatus),
+            A2AMessage::ConnectionStatusUpdated(msg) => set_a2a_message_type(msg, A2AMessageKinds::ConnectionStatusUpdated),
+            A2AMessage::UpdateMessageStatus(msg) => set_a2a_message_type(msg, A2AMessageKinds::UpdateMessageStatus),
+            A2AMessage::MessageStatusUpdated(msg) => set_a2a_message_type(msg, A2AMessageKinds::MessageStatusUpdated),
+            A2AMessage::GetMessages(msg) => set_a2a_message_type(msg, A2AMessageKinds::GetMessages),
+            A2AMessage::Messages(msg) => set_a2a_message_type(msg, A2AMessageKinds::Messages),
+            A2AMessage::GetMessagesByConnections(msg) => set_a2a_message_type(msg, A2AMessageKinds::GetMessagesByConnections),
+            A2AMessage::MessagesByConnections(msg) => set_a2a_message_type(msg, A2AMessageKinds::MessagesByConnections),
+            A2AMessage::UpdateMessageStatusByConnections(msg) => set_a2a_message_type(msg, A2AMessageKinds::UpdateMessageStatusByConnections),
+            A2AMessage::MessageStatusUpdatedByConnections(msg) => set_a2a_message_type(msg, A2AMessageKinds::MessageStatusUpdatedByConnections),
+            A2AMessage::UpdateConfigs(msg) => set_a2a_message_type(msg, A2AMessageKinds::UpdateConfigs),
+            A2AMessage::ConfigsUpdated(msg) => set_a2a_message_type(msg, A2AMessageKinds::ConfigsUpdated),
+            A2AMessage::GetConfigs(msg) => set_a2a_message_type(msg, A2AMessageKinds::GetConfigs),
+            A2AMessage::Configs(msg) => set_a2a_message_type(msg, A2AMessageKinds::Configs),
+            A2AMessage::RemoveConfigs(msg) => set_a2a_message_type(msg, A2AMessageKinds::RemoveConfigs),
+            A2AMessage::ConfigsRemoved(msg) => set_a2a_message_type(msg, A2AMessageKinds::ConfigsRemoved),
+
+            // Version 1
+            A2AMessage::CreateMessage(msg) => set_a2a_message_type(msg, A2AMessageKinds::CreateMessage),
+            A2AMessage::MessageDetail(msg) => set_a2a_message_type(msg, A2AMessageKinds::MessageDetail),
+            A2AMessage::MessageCreated(msg) => set_a2a_message_type(msg, A2AMessageKinds::MessageCreated),
+            A2AMessage::MessageSent(msg) => set_a2a_message_type(msg, A2AMessageKinds::MessageSent),
+
+            // Version 2
+            A2AMessage::ConnectionRequest(msg) => set_a2a_message_type(msg, A2AMessageKinds::ConnectionRequest),
+            A2AMessage::ConnectionRequestResponse(msg) => set_a2a_message_type(msg, A2AMessageKinds::ConnectionRequestResponse),
+            A2AMessage::ConnectionRequestAnswer(msg) => set_a2a_message_type(msg, A2AMessageKinds::ConnectionRequestAnswer),
+            A2AMessage::ConnectionRequestAnswerResponse(msg) => set_a2a_message_type(msg, A2AMessageKinds::ConnectionRequestAnswerResponse),
+            A2AMessage::CredentialExchange(msg) => set_a2a_message_type(msg, A2AMessageKinds::CredentialExchange),
+            A2AMessage::CredentialExchangeResponse(msg) => set_a2a_message_type(msg, A2AMessageKinds::CredentialExchangeResponse),
+        }.map_err(ser::Error::custom)?;
 
         value.serialize(serializer)
     }
@@ -741,7 +880,7 @@ struct A2AMsgsBundle {
 }
 
 impl A2AMessage {
-    pub fn bundle_plain(msgs: &[A2AMessage]) -> Result<Vec<u8>, Error> {
+    fn bundle_plain(msgs: &[A2AMessage]) -> Result<Vec<u8>, Error> {
         msgs
             .iter()
             .map(|msg| rmp_serde::to_vec_named(msg))
@@ -751,10 +890,28 @@ impl A2AMessage {
             .map_err(|err| err.context("Can't bundle messages").into())
     }
 
-    pub fn bundle_authcrypted(wallet_handle: i32,
-                              sender_vk: &str,
-                              recipient_vk: &str,
-                              msgs: &[A2AMessage]) -> BoxedFuture<Vec<u8>, Error> {
+    pub fn prepare_authcrypted(wallet_handle: i32,
+                               sender_vk: &str,
+                               recipient_vk: &str,
+                               msgs: &[A2AMessage]) -> BoxedFuture<Vec<u8>, Error> {
+        match ProtocolType::get() {
+            ProtocolTypes::V1 => A2AMessage::bundle_authcrypted(wallet_handle, sender_vk, recipient_vk, msgs),
+            ProtocolTypes::V2 => A2AMessage::pack(wallet_handle, Some(sender_vk), recipient_vk, msgs)
+        }
+    }
+
+
+    pub fn prepare_anoncrypted(wallet_handle: i32, recipient_vk: &str, message: &[A2AMessage]) -> BoxedFuture<Vec<u8>, Error> {
+        match ProtocolType::get() {
+            ProtocolTypes::V1 => A2AMessage::bundle_anoncrypted(recipient_vk, message),
+            ProtocolTypes::V2 => A2AMessage::pack(wallet_handle, None, recipient_vk, message)
+        }
+    }
+
+    fn bundle_authcrypted(wallet_handle: i32,
+                          sender_vk: &str,
+                          recipient_vk: &str,
+                          msgs: &[A2AMessage]) -> BoxedFuture<Vec<u8>, Error> {
         let bundle = ftry!(Self::bundle_plain(msgs));
 
         crypto::auth_crypt(wallet_handle, sender_vk, recipient_vk, &bundle)
@@ -762,8 +919,8 @@ impl A2AMessage {
             .into_box()
     }
 
-    pub fn bundle_anoncrypted(recipient_vk: &str,
-                              msgs: &[A2AMessage]) -> BoxedFuture<Vec<u8>, Error> {
+    fn bundle_anoncrypted(recipient_vk: &str,
+                          msgs: &[A2AMessage]) -> BoxedFuture<Vec<u8>, Error> {
         let bundle = ftry!(Self::bundle_plain(msgs));
 
         crypto::anon_crypt(recipient_vk, &bundle)
@@ -771,7 +928,20 @@ impl A2AMessage {
             .into_box()
     }
 
-    pub fn unbundle(bundle: &[u8]) -> Result<Vec<A2AMessage>, Error> {
+    fn pack(wallet_handle: i32, sender_vk: Option<&str>, recipient_vk: &str, msgs: &[A2AMessage]) -> BoxedFuture<Vec<u8>, Error> {
+        if msgs.len() != 1 {
+            return err!(err_msg("Invalid messages count."));
+        }
+
+        let message = ftry!(serde_json::to_string(&msgs[0]));
+        let receiver_keys = ftry!(serde_json::to_string(&vec![&recipient_vk]));
+
+        crypto::pack_message(wallet_handle, sender_vk, &receiver_keys, message.as_bytes())
+            .from_err()
+            .into_box()
+    }
+
+    fn unbundle(bundle: &[u8]) -> Result<Vec<A2AMessage>, Error> {
         rmp_serde::from_slice::<A2AMsgsBundle>(bundle)
             .and_then(|bundle| {
                 bundle.bundled
@@ -782,10 +952,34 @@ impl A2AMessage {
             .map_err(|err| err.context("Can't unbundle messages").into())
     }
 
-    pub fn unbundle_anoncrypted(wallet_handle: i32,
-                                recipient_vk: &str,
-                                bundle: &[u8]) -> BoxedFuture<Vec<A2AMessage>, Error> {
-        crypto::anon_decrypt(wallet_handle, recipient_vk, bundle)
+    pub fn parse_anoncrypted(wallet_handle: i32,
+                             recipient_vk: &str,
+                             bundle: &[u8]) -> BoxedFuture<Vec<A2AMessage>, Error> {
+        match ProtocolType::get() {
+            ProtocolTypes::V1 => A2AMessage::unbundle_anoncrypted(wallet_handle, recipient_vk, bundle),
+            ProtocolTypes::V2 =>
+                A2AMessage::unpack(wallet_handle, bundle)
+                    .map(|(_, message)| message)
+                    .into_box()
+        }
+    }
+
+    pub fn parse_authcrypted(wallet_handle: i32,
+                             recipient_vk: &str,
+                             message: &[u8]) -> BoxedFuture<(String, Vec<A2AMessage>), Error> {
+        match ProtocolType::get() {
+            ProtocolTypes::V1 => A2AMessage::unbundle_authcrypted(wallet_handle, recipient_vk, message),
+            ProtocolTypes::V2 =>
+                A2AMessage::unpack(wallet_handle, message)
+                    .map(|(sender_vk, message)| (sender_vk.unwrap(), message))
+                    .into_box()
+        }
+    }
+
+    fn unbundle_anoncrypted(wallet_handle: i32,
+                            recipient_vk: &str,
+                            message: &[u8]) -> BoxedFuture<Vec<A2AMessage>, Error> {
+        crypto::anon_decrypt(wallet_handle, recipient_vk, message)
             .from_err()
             .and_then(|bundle| {
                 Self::unbundle(&bundle)
@@ -803,5 +997,26 @@ impl A2AMessage {
             })
             .into_box()
     }
+
+    fn unpack(wallet_handle: i32, message: &[u8]) -> BoxedFuture<(Option<String>, Vec<A2AMessage>), Error> {
+        crypto::unpack_message(wallet_handle, message)
+            .from_err()
+            .and_then(|message| {
+                let message: UnpackMessage = ftry!(serde_json::from_slice(message.as_slice()));
+
+                serde_json::from_str::<A2AMessage>(&message.message)
+                    .map(|msg| (message.sender_verkey, vec![msg]))
+                    .map_err(|err| err.context("Can't unpack message").into())
+                    .into_future()
+                    .into_box()
+            })
+            .into_box()
+    }
+}
+
+#[derive(Deserialize)]
+struct UnpackMessage {
+    message: String,
+    sender_verkey: Option<String>
 }
 

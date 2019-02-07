@@ -1,5 +1,6 @@
 use settings;
 use messages::*;
+use messages::message_type::MessageTypes;
 use utils::{httpclient, error};
 use utils::libindy::crypto;
 
@@ -111,10 +112,7 @@ impl GetMessagesBuilder {
     pub fn download_messages(&mut self) -> Result<Vec<MessageByConnection>, u32> {
         trace!("GetMessages::download >>>");
 
-        match self.payload.msg_type {
-            MessageTypes::MessageTypeV0(ref mut type_) => type_.name = A2AMessageKinds::GetMessagesByConnections.name().to_string(),
-            MessageTypes::MessageTypeV1(ref mut type_) => type_.type_ = A2AMessageKinds::GetMessagesByConnections.name().to_string(),
-        }
+        self.payload.msg_type = MessageTypes::build(A2AMessageKinds::GetMessagesByConnections);
 
         let to_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
 
@@ -240,14 +238,14 @@ impl Message {
 #[serde(rename_all = "camelCase")]
 pub struct GetMessagesResponse {
     #[serde(rename = "@type")]
-    msg_type: MessageTypeV0,
+    msg_type: MessageTypes,
     pub msgs: Vec<Message>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct MessagesByConnections {
     #[serde(rename = "@type")]
-    msg_type: MessageTypeV0,
+    msg_type: MessageTypes,
     #[serde(rename = "msgsByConns")]
     #[serde(default)]
     pub msgs: Vec<MessageByConnection>,
@@ -330,6 +328,8 @@ pub fn download_messages(pairwise_dids: Option<Vec<String>>, status_codes: Optio
 mod tests {
     use super::*;
     use utils::constants::{GET_MESSAGES_RESPONSE, GET_ALL_MESSAGES_RESPONSE};
+    use messages::message_type::MessageTypeV1;
+
 
     #[test]
     fn test_parse_get_messages_response() {
@@ -385,7 +385,7 @@ mod tests {
         };
 
         let response = GetMessagesResponse {
-            msg_type: MessageTypeV0 { name: "MSGS".to_string(), ver: "1.0".to_string() },
+            msg_type: MessageTypes::MessageTypeV0(MessageTypeV1 { name: "MSGS".to_string(), ver: "1.0".to_string() }),
             msgs: vec![msg1, msg2],
         };
 

@@ -17,7 +17,7 @@ pub struct CreateKey {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CreateKeyResponse {
     #[serde(rename = "@type")]
-    msg_type: MessageTypeV0,
+    msg_type: MessageTypes,
     #[serde(rename = "withPairwiseDID")]
     pub for_did: String,
     #[serde(rename = "withPairwiseDIDVerKey")]
@@ -87,6 +87,7 @@ mod tests {
     use utils::constants::{MY1_SEED, MY2_SEED, MY3_SEED};
     use utils::libindy::signus::create_and_store_my_did;
     use messages::create_keys;
+    use messages::message_type::{MessageTypes, MessageTypeV1};
 
     #[test]
     fn test_create_key_returns_message_with_create_key_as_payload() {
@@ -94,7 +95,7 @@ mod tests {
         let msg_payload = CreateKey {
             for_did: String::new(),
             for_verkey: String::new(),
-            msg_type: MessageTypes::MessageTypeV0(MessageTypeV0 { name: "CREATE_KEY".to_string(), ver: "1.0".to_string() }),
+            msg_type: MessageTypes::MessageTypeV0(MessageTypeV1 { name: "CREATE_KEY".to_string(), ver: "1.0".to_string() }),
         };
         assert_eq!(msg.payload, msg_payload);
     }
@@ -107,7 +108,7 @@ mod tests {
         let msg_payload = CreateKey {
             for_did: for_did.to_string(),
             for_verkey: for_verkey.to_string(),
-            msg_type: MessageTypes::MessageTypeV0(MessageTypeV0 { name: "CREATE_KEY".to_string(), ver: "1.0".to_string() }),
+            msg_type: MessageTypes::MessageTypeV0(MessageTypeV1 { name: "CREATE_KEY".to_string(), ver: "1.0".to_string() }),
         };
         let msg = create_keys()
             .for_did(for_did).unwrap()

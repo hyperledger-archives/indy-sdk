@@ -1,5 +1,6 @@
 use settings;
 use messages::*;
+use messages::message_type::MessageTypes;
 use utils::{httpclient, error};
 use utils::constants::*;
 

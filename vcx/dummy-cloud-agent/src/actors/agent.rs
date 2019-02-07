@@ -218,7 +218,7 @@ impl Agent {
         future::ok(())
             .into_actor(self)
             .and_then(move |_, slf, _| {
-                A2AMessage::unbundle_authcrypted(slf.wallet_handle, &slf.verkey, &msg)
+                A2AMessage::parse_authcrypted(slf.wallet_handle, &slf.verkey, &msg)
                     .map_err(|err| err.context("Can't unbundle message.").into())
                     .into_actor(slf)
             })
@@ -270,7 +270,7 @@ impl Agent {
                 }
             )
             .and_then(move |msgs, slf, _|
-                A2AMessage::bundle_authcrypted(slf.wallet_handle, &slf.verkey, &sender_vk, &msgs)
+                A2AMessage::prepare_authcrypted(slf.wallet_handle, &slf.verkey, &sender_vk, &msgs)
                     .map_err(|err| err.context("Can't bundle and authcrypt message.").into())
                     .into_actor(slf)
             )
@@ -577,7 +577,7 @@ mod tests {
                                                              &agent_verkey,
                                                              &agent_pw_did,
                                                              &agent_pw_vk,
-                                                             MessageType::CredOffer).wait().unwrap();
+                                                             ExchangeMessageType::CredOffer).wait().unwrap();
 
                     forward_agent
                         .send(ForwardA2AMsg(msg))
@@ -611,7 +611,7 @@ mod tests {
                             uid: msg_uid,
                             status_code: MessageStatusCode::Created,
                             sender_did: EDGE_PAIRWISE_DID.to_string(),
-                            type_: MessageType::CredOffer,
+                            type_: ExchangeMessageType::CredOffer,
                             payload: Some(to_i8(&PAYLOAD.to_vec())),
                             ref_msg_id: None,
                         }]

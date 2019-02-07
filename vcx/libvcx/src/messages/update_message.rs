@@ -1,5 +1,6 @@
 use settings;
 use messages::*;
+use messages::message_type::MessageTypes;
 use utils::{httpclient, error};
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
@@ -15,7 +16,7 @@ pub struct UpdateMessageStatusByConnections {
 #[serde(rename_all = "camelCase")]
 pub struct UpdateMessageStatusByConnectionsResponse {
     #[serde(rename = "@type")]
-    msg_type: MessageTypeV0,
+    msg_type: MessageTypes,
     status_code: Option<String>,
     updated_uids_by_conns: Vec<UIDsByConn>
 }

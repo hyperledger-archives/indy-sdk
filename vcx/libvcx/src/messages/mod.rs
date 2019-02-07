@@ -8,6 +8,7 @@ pub mod proofs;
 pub mod agent_utils;
 pub mod update_connection;
 pub mod update_message;
+pub mod message_type;
 
 use std::u8;
 use settings;
@@ -25,14 +26,17 @@ use self::send_message::SendMessageBuilder;
 use self::update_message::{UpdateMessageStatusByConnections, UpdateMessageStatusByConnectionsResponse};
 use self::proofs::proof_request::ProofRequestMessage;
 use self::agent_utils::{Connect, ConnectResponse, SignUp, SignUpResponse, CreateAgent, CreateAgentResponse, UpdateConnectionMethod};
+use self::message_type::{MessageTypes, MessageFamilies, MessageTypeV2, MESSAGE_VERSION, DID};
 
 use serde::{de, Deserializer, Deserialize, Serializer, Serialize};
 use serde_json::Value;
-use regex::Regex;
+
 
 #[derive(Debug, Serialize)]
 #[serde(untagged)]
 pub enum A2AMessage {
+    /// Common for Version 1 and Version 2
+
     /// routing
     Forward(Forward),
 
@@ -47,10 +51,6 @@ pub enum A2AMessage {
     /// PW Connection
     CreateKey(CreateKey),
     CreateKeyResponse(CreateKeyResponse),
-    CreateMessage(CreateMessage),
-    MessageDetail(MessageDetail),
-    MessageCreated(MessageCreated),
-    MessageSent(MessageSent),
     UpdateConnection(UpdateConnection),
     UpdateConnectionResponse(UpdateConnectionResponse),
     GetMessages(GetMessages),
@@ -66,15 +66,18 @@ pub enum A2AMessage {
     UpdateConfigsResponse(UpdateConfigsResponse),
 
     /// Version 1
+    CreateMessage(CreateMessage),
+    MessageDetail(MessageDetail),
+    MessageCreated(MessageCreated),
+    MessageSent(MessageSent),
 
-    /// Pairwise connection
+    /// Version 1
     ConnectionRequest(SendInvitePayloadV1),
     ConnectionRequestResponse(ConnectionRequestResponse),
     ConnectionRequestAnswer(AcceptInvitePayloadV1),
     ConnectionRequestAnswerResponse(ConnectionRequestAnswerResponse),
-    /// Credential Exchange
-    CredentialExchangeMessage(CredentialExchangeMessage),
-    CredentialExchangeMessageResponse(CredentialExchangeMessageResponse),
+    CredentialExchange(CredentialExchange),
+    CredentialExchangeResponse(CredentialExchangeResponse),
 }
 
 // This macro allows to convert A2AMessage into specific variant
@@ -99,7 +102,7 @@ a2a_to_variant!(ConnectionRequestResponse, ConnectionRequestResponse);
 a2a_to_variant!(MessageCreated, MessageCreated);
 a2a_to_variant!(ConnectionRequestAnswerResponse, ConnectionRequestAnswerResponse);
 a2a_to_variant!(MessageSent, MessageSent);
-a2a_to_variant!(CredentialExchangeMessageResponse, CredentialExchangeMessageResponse);
+a2a_to_variant!(CredentialExchangeResponse, CredentialExchangeResponse);
 a2a_to_variant!(UpdateConnectionResponse, UpdateConnectionResponse);
 a2a_to_variant!(UpdateMessageStatusByConnectionsResponse, UpdateMessageStatusByConnectionsResponse);
 a2a_to_variant!(UpdateConfigsResponse, UpdateConfigsResponse);
@@ -107,8 +110,8 @@ a2a_to_variant!(UpdateConfigsResponse, UpdateConfigsResponse);
 impl<'de> Deserialize<'de> for A2AMessage {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
         let value = Value::deserialize(deserializer).map_err(de::Error::custom)?;
+        let message_type: MessageTypes = serde_json::from_value(value["@type"].clone()).map_err(de::Error::custom)?;
 
-        let message_type: MessageTypes = serde_json::from_value(value["@type"].clone()).unwrap();
         match (message_type.name(), message_type.version()) {
             ("FWD", "1.0") => {
                 Forward::deserialize(value)
@@ -153,27 +156,6 @@ impl<'de> Deserialize<'de> for A2AMessage {
             ("KEY_CREATED", "1.0") => {
                 CreateKeyResponse::deserialize(value)
                     .map(|msg| A2AMessage::CreateKeyResponse(msg))
-                    .map_err(de::Error::custom)
-            }
-            ("CREATE_MSG", "1.0") => {
-                CreateMessage::deserialize(value)
-                    .map(|msg| A2AMessage::CreateMessage(msg))
-                    .map_err(de::Error::custom)
-            }
-            ("MSG_DETAIL", "1.0") => {
-                MessageDetail::deserialize(value)
-                    .map(|msg| A2AMessage::MessageDetail(msg))
-                    .map_err(de::Error::custom)
-            }
-            ("MSG_CREATED", "1.0") => {
-                MessageCreated::deserialize(value)
-                    .map(|msg| A2AMessage::MessageCreated(msg))
-                    .map_err(de::Error::custom)
-            }
-            ("MSG_SENT", "1.0") | ("MSGS_SENT", "1.0") => {
-                // TODO: STRANGE
-                MessageSent::deserialize(value)
-                    .map(|msg| A2AMessage::MessageSent(msg))
                     .map_err(de::Error::custom)
             }
             ("UPDATE_CONN_STATUS", "1.0") => {
@@ -231,19 +213,58 @@ impl<'de> Deserialize<'de> for A2AMessage {
                     .map(|msg| A2AMessage::UpdateConfigsResponse(msg))
                     .map_err(de::Error::custom)
             }
-            ("CONNECTION_REQUEST", "1.0") => {
+
+            // Version 1
+            ("CREATE_MSG", "1.0") => {
+                CreateMessage::deserialize(value)
+                    .map(|msg| A2AMessage::CreateMessage(msg))
+                    .map_err(de::Error::custom)
+            }
+            ("MSG_DETAIL", "1.0") => {
+                MessageDetail::deserialize(value)
+                    .map(|msg| A2AMessage::MessageDetail(msg))
+                    .map_err(de::Error::custom)
+            }
+            ("MSG_CREATED", "1.0") => {
+                MessageCreated::deserialize(value)
+                    .map(|msg| A2AMessage::MessageCreated(msg))
+                    .map_err(de::Error::custom)
+            }
+            ("MSG_SENT", "1.0") | ("MSGS_SENT", "1.0") => {
+                MessageSent::deserialize(value)
+                    .map(|msg| A2AMessage::MessageSent(msg))
+                    .map_err(de::Error::custom)
+            }
+
+            // Version 2
+            ("CONN_REQUEST", "1.0") => {
                 SendInvitePayloadV1::deserialize(value)
                     .map(|msg| A2AMessage::ConnectionRequest(msg))
                     .map_err(de::Error::custom)
             }
-            ("CONNECTION_REQUEST_ANSWER", "1.0") => {
+            ("CONN_REQUEST_RESP", "1.0") => {
+                ConnectionRequestResponse::deserialize(value)
+                    .map(|msg| A2AMessage::ConnectionRequestResponse(msg))
+                    .map_err(de::Error::custom)
+            }
+            ("CONN_REQUEST_ANSWER", "1.0") => {
                 AcceptInvitePayloadV1::deserialize(value)
                     .map(|msg| A2AMessage::ConnectionRequestAnswer(msg))
                     .map_err(de::Error::custom)
             }
-            ("CREDENTIAL_EXCHANGE", "1.0") => {
-                CredentialExchangeMessage::deserialize(value)
-                    .map(|msg| A2AMessage::CredentialExchangeMessage(msg))
+            ("CONN_REQUEST_ANSWER_RESP", "1.0") => {
+                ConnectionRequestAnswerResponse::deserialize(value)
+                    .map(|msg| A2AMessage::ConnectionRequestAnswerResponse(msg))
+                    .map_err(de::Error::custom)
+            }
+            ("CRED_EXCHANGE", "1.0") => {
+                CredentialExchange::deserialize(value)
+                    .map(|msg| A2AMessage::CredentialExchange(msg))
+                    .map_err(de::Error::custom)
+            }
+            ("CRED_EXCHANGE_RESP", "1.0") => {
+                CredentialExchangeResponse::deserialize(value)
+                    .map(|msg| A2AMessage::CredentialExchangeResponse(msg))
                     .map_err(de::Error::custom)
             }
             _ => Err(de::Error::custom("Unexpected @type field structure."))
@@ -297,14 +318,14 @@ pub struct GeneralMessageDetail {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct MessageCreated {
     #[serde(rename = "@type")]
-    msg_type: MessageTypeV0,
+    msg_type: MessageTypes,
     pub uid: String
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct MessageSent {
     #[serde(rename = "@type")]
-    msg_type: MessageTypeV0,
+    msg_type: MessageTypes,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub uid: Option<String>,
     #[serde(default)]
@@ -322,13 +343,14 @@ pub enum MessageDetail {
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct CredentialExchangeMessage {
+pub struct CredentialExchange {
     #[serde(rename = "@type")]
     pub msg_type: MessageTypes,
     pub mtype: CredentialExchangeMessageType,
     #[serde(rename = "replyToMsgId")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub reply_to_msg_id: Option<String>,
+    #[serde(rename = "sendMsg")]
     pub send_msg: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub uid: Option<String>,
@@ -340,13 +362,13 @@ pub struct CredentialExchangeMessage {
     detail: Option<String>,
 }
 
-#[derive(Serialize, Debug, PartialEq, Clone)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct CredentialExchangeMessageResponse {
+pub struct CredentialExchangeResponse {
     #[serde(rename = "@type")]
-    msg_type: MessageTypeV0,
+    msg_type: MessageTypes,
     pub uid: String,
-    pub uids: Vec<String>,
+    pub sent: bool,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -409,13 +431,7 @@ pub struct PayloadTypeV0 {
     pub fmt: String,
 }
 
-#[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
-pub struct PayloadTypeV1 {
-    did: String,
-    family: MessageFamilies,
-    version: String,
-    type_: String,
-}
+type PayloadTypeV1 = MessageTypeV2;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub enum PayloadKinds {
@@ -454,16 +470,16 @@ impl PayloadKinds {
 impl PayloadTypes {
     pub fn build(kind: PayloadKinds, fmt: &str) -> PayloadTypes {
         match settings::get_protocol_type() {
-            settings::ProtocolTypes::V0 => {
+            settings::ProtocolTypes::V1 => {
                 PayloadTypes::PayloadTypeV0(PayloadTypeV0 {
                     name: kind.name(),
                     ver: MESSAGE_VERSION.to_string(),
                     fmt: fmt.to_string(),
                 })
             }
-            settings::ProtocolTypes::V1 => {
+            settings::ProtocolTypes::V2 => {
                 PayloadTypes::PayloadTypeV1(PayloadTypeV1 {
-                    did: DID_GROUP_OWNER.to_string(),
+                    did: DID.to_string(),
                     family: kind.family(),
                     version: MESSAGE_VERSION.to_string(),
                     type_: kind.name(),
@@ -520,106 +536,8 @@ impl<'de> Deserialize<'de> for MessageStatusCode {
     }
 }
 
-const MESSAGE_VERSION: &str = "1.0";
-const DID_GROUP_OWNER: &str = "did:sov:123456789abcdefghi1234";
-
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
-#[serde(untagged)]
-pub enum MessageTypes {
-    MessageTypeV0(MessageTypeV0),
-    MessageTypeV1(MessageTypeV1),
-}
-
-impl MessageTypes {
-    fn build(kind: A2AMessageKinds) -> MessageTypes {
-        match settings::get_protocol_type() {
-            settings::ProtocolTypes::V0 => {
-                MessageTypes::MessageTypeV0(MessageTypeV0 {
-                    name: kind.name(),
-                    ver: MESSAGE_VERSION.to_string(),
-                })
-            }
-            settings::ProtocolTypes::V1 => {
-                MessageTypes::MessageTypeV1(MessageTypeV1 {
-                    did: DID_GROUP_OWNER.to_string(),
-                    family: kind.family(),
-                    version: MESSAGE_VERSION.to_string(),
-                    type_: kind.name(),
-                })
-            }
-        }
-    }
-
-    pub fn name<'a>(&'a self) -> &'a str {
-        match self {
-            MessageTypes::MessageTypeV0(type_) => type_.name.as_str(),
-            MessageTypes::MessageTypeV1(type_) => type_.type_.as_str(),
-        }
-    }
-
-    pub fn version<'a>(&'a self) -> &'a str {
-        match self {
-            MessageTypes::MessageTypeV0(type_) => type_.ver.as_str(),
-            MessageTypes::MessageTypeV1(type_) => type_.version.as_str(),
-        }
-    }
-}
-
-#[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
-pub struct MessageTypeV0 {
-    name: String,
-    ver: String,
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct MessageTypeV1 {
-    did: String,
-    family: MessageFamilies,
-    version: String,
-    type_: String,
-}
-
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
-pub enum MessageFamilies {
-    Routing,
-    Onboarding,
-    Pairwise,
-    Configs,
-    CredentialExchange,
-    Unknown(String),
-}
-
-impl From<String> for MessageFamilies {
-    fn from(family: String) -> Self {
-        match family.as_str() {
-            "routing" => MessageFamilies::Routing,
-            "onboarding" => MessageFamilies::Onboarding,
-            "pairwise" => MessageFamilies::Pairwise,
-            "configs" => MessageFamilies::Configs,
-            "credential_exchange" => MessageFamilies::CredentialExchange,
-            family @ _ => {
-                error!("Unknown Message family");
-                MessageFamilies::Unknown(family.to_string())
-            }
-        }
-    }
-}
-
-impl ::std::string::ToString for MessageFamilies {
-    fn to_string(&self) -> String {
-        match self {
-            MessageFamilies::Routing => "routing".to_string(),
-            MessageFamilies::Onboarding => "onboarding".to_string(),
-            MessageFamilies::Pairwise => "pairwise".to_string(),
-            MessageFamilies::CredentialExchange => "credential_exchange".to_string(),
-            MessageFamilies::Configs => "configs".to_string(),
-            MessageFamilies::Unknown(family) => family.to_string()
-        }
-    }
-}
-
 #[derive(Debug, Deserialize, Serialize)]
-enum A2AMessageKinds {
+pub  enum A2AMessageKinds {
     Forward,
     Connect,
     Connected,
@@ -645,6 +563,7 @@ enum A2AMessageKinds {
     ConnectionRequest,
     ConnectionRequestAnswer,
     CredentialExchange,
+    CredentialExchangeResponse,
 }
 
 impl A2AMessageKinds {
@@ -675,6 +594,7 @@ impl A2AMessageKinds {
             A2AMessageKinds::ConfigsUpdated => MessageFamilies::Configs,
             A2AMessageKinds::UpdateConMethod => MessageFamilies::Configs,
             A2AMessageKinds::CredentialExchange => MessageFamilies::CredentialExchange,
+            A2AMessageKinds::CredentialExchangeResponse => MessageFamilies::CredentialExchange,
         }
     }
 
@@ -699,80 +619,25 @@ impl A2AMessageKinds {
             A2AMessageKinds::MessageStatusUpdatedByConnections => "MSG_STATUS_UPDATED_BY_CONNS".to_string(),
             A2AMessageKinds::Messages => "MSGS".to_string(),
             A2AMessageKinds::UpdateConnectionStatus => "UPDATE_CONN_STATUS".to_string(),
-            A2AMessageKinds::ConnectionRequest => "CONNECTION_REQUEST".to_string(),
-            A2AMessageKinds::ConnectionRequestAnswer => "CONNECTION_REQUEST_ANSWER".to_string(),
+            A2AMessageKinds::ConnectionRequest => "CONN_REQUEST".to_string(),
+            A2AMessageKinds::ConnectionRequestAnswer => "CONN_REQUEST_ANSWER".to_string(),
             A2AMessageKinds::UpdateConfigs => "UPDATE_CONFIGS".to_string(),
             A2AMessageKinds::ConfigsUpdated => "CONFIGS_UPDATED".to_string(),
             A2AMessageKinds::UpdateConMethod => "UPDATE_CONNECTION_METHOD".to_string(),
-            A2AMessageKinds::CredentialExchange => "CREDENTIAL_EXCHANGE".to_string(),
+            A2AMessageKinds::CredentialExchange => "CRED_EXCHANGE".to_string(),
+            A2AMessageKinds::CredentialExchangeResponse => "CRED_EXCHANGE_RESP".to_string(),
         }
-    }
-}
-
-fn parse_message_type(message_type: &str) -> Result<(String, String, String, String), u32> {
-    lazy_static! {
-        static ref RE: Regex = Regex::new(r"(?x)
-            (?P<did>[\d\w:]*);
-            (?P<spec>.*)/
-            (?P<family>.*)/
-            (?P<version>.*)/
-            (?P<type>.*)").unwrap();
-    }
-
-    RE.captures(message_type)
-        .and_then(|cap| {
-            let did = cap.name("did").map(|s| s.as_str());
-            let family = cap.name("family").map(|s| s.as_str());
-            let version = cap.name("version").map(|s| s.as_str());
-            let type_ = cap.name("type").map(|s| s.as_str());
-
-            match (did, family, version, type_) {
-                (Some(did), Some(family), Some(version), Some(type_)) =>
-                    Some((did.to_string(), family.to_string(), version.to_string(), type_.to_string())),
-                _ => None
-            }
-        }).ok_or(error::INVALID_OPTION.code_num) // TODO: Check Error
-}
-
-impl<'de> Deserialize<'de> for MessageTypeV1 {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
-        let value = Value::deserialize(deserializer).map_err(de::Error::custom)?;
-
-        match value.as_str() {
-            Some(type_) => {
-                let (did, family, version, type_) = parse_message_type(type_)
-                    .map_err(|err| de::Error::custom(format!("Can not parse message type_: {:?}", err)))?;
-
-                match MessageFamilies::from(family) {
-                    family @ _ =>
-                        Ok(MessageTypeV1 {
-                            did,
-                            family,
-                            version,
-                            type_,
-                        })
-                }
-            }
-            _ => Err(de::Error::custom("Unexpected @type field structure."))
-        }
-    }
-}
-
-impl Serialize for MessageTypeV1 {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
-        let value = Value::String(format!("{};spec/{}/{}/{}", self.did, self.family.to_string(), self.version, self.type_));
-        value.serialize(serializer)
     }
 }
 
 pub fn prepare_message_for_agency(message: &A2AMessage, agency_did: &str) -> Result<Vec<u8>, u32> {
     match settings::get_protocol_type() {
-        settings::ProtocolTypes::V0 => bundle_for_agency_v0(message, &agency_did),
-        settings::ProtocolTypes::V1 => pack_for_agency_v1(message, agency_did)
+        settings::ProtocolTypes::V1 => bundle_for_agency_v1(message, &agency_did),
+        settings::ProtocolTypes::V2 => pack_for_agency_v2(message, agency_did)
     }
 }
 
-fn bundle_for_agency_v0(message: &A2AMessage, agency_did: &str) -> Result<Vec<u8>, u32> {
+fn bundle_for_agency_v1(message: &A2AMessage, agency_did: &str) -> Result<Vec<u8>, u32> {
     let agent_vk = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_VERKEY)?;
     let my_vk = settings::get_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY)?;
 
@@ -784,7 +649,7 @@ fn bundle_for_agency_v0(message: &A2AMessage, agency_did: &str) -> Result<Vec<u8
     prepare_forward_message(message, agency_did)
 }
 
-fn pack_for_agency_v1(message: &A2AMessage, agency_did: &str) -> Result<Vec<u8>, u32> {
+fn pack_for_agency_v2(message: &A2AMessage, agency_did: &str) -> Result<Vec<u8>, u32> {
     let agent_vk = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_VERKEY)?;
     let my_vk = settings::get_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY)?;
 
@@ -798,12 +663,12 @@ fn pack_for_agency_v1(message: &A2AMessage, agency_did: &str) -> Result<Vec<u8>,
 
 fn parse_response_from_agency(response: &Vec<u8>) -> Result<Vec<A2AMessage>, u32> {
     match settings::get_protocol_type() {
-        settings::ProtocolTypes::V0 => parse_response_from_agency_v0(response),
-        settings::ProtocolTypes::V1 => parse_response_from_agency_v1(response)
+        settings::ProtocolTypes::V1 => parse_response_from_agency_v1(response),
+        settings::ProtocolTypes::V2 => parse_response_from_agency_v2(response)
     }
 }
 
-fn parse_response_from_agency_v0(response: &Vec<u8>) -> Result<Vec<A2AMessage>, u32> {
+fn parse_response_from_agency_v1(response: &Vec<u8>) -> Result<Vec<A2AMessage>, u32> {
     let verkey = settings::get_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY)?;
     let (_, data) = crypto::parse_msg(&verkey, &response)?;
     let bundle: Bundled<Vec<u8>> = bundle_from_u8(data)?;
@@ -814,9 +679,15 @@ fn parse_response_from_agency_v0(response: &Vec<u8>) -> Result<Vec<A2AMessage>, 
         .collect::<Result<Vec<A2AMessage>, u32>>()
 }
 
-fn parse_response_from_agency_v1(response: &Vec<u8>) -> Result<Vec<A2AMessage>, u32> {
-    let (_, message) = crypto::unpack_message(&response[..])?;
-    let message: A2AMessage = serde_json::from_str(&message)
+fn parse_response_from_agency_v2(response: &Vec<u8>) -> Result<Vec<A2AMessage>, u32> {
+    let unpacked_msg = crypto::unpack_message(&response[..])?;
+
+    let message: Value = ::serde_json::from_slice(unpacked_msg.as_slice())
+        .or(Err(error::INVALID_JSON.code_num))?;
+
+    let message = message["message"].as_str().ok_or(error::INVALID_JSON.code_num)?;
+
+    let message: A2AMessage = serde_json::from_str(message)
         .map_err(|ec| { error::INVALID_JSON.code_num })?;
     Ok(vec![message])
 }
@@ -879,11 +750,7 @@ pub fn bundle_from_u8(data: Vec<u8>) -> Result<Bundled<Vec<u8>>, u32> {
 }
 
 pub fn extract_json_payload(data: &Vec<u8>) -> Result<String, u32> {
-    let my_payload: Payload = rmp_serde::from_slice(&data[..])
-        .map_err(|x| {
-            error!("could not deserialize bundle with i8 or u8: {}", x);
-            error::INVALID_MSGPACK.code_num
-        })?;
+    let my_payload: Payload = rmp_serde::from_slice(&data[..]).unwrap();
 
     Ok(my_payload.msg)
 }
@@ -894,22 +761,18 @@ fn prepare_forward_message(message: Vec<u8>, did: &str) -> Result<Vec<u8>, u32> 
     let message = Forward::new(did.to_owned(), message);
 
     match settings::get_protocol_type() {
-        settings::ProtocolTypes::V0 => {
-            prepare_forward_message_for_agency_v0(&message, &agency_vk)
-        }
-        settings::ProtocolTypes::V1 => {
-            prepare_forward_message_for_agency_v1(&message, &agency_vk)
-        }
+        settings::ProtocolTypes::V1 => prepare_forward_message_for_agency_v1(&message, &agency_vk),
+        settings::ProtocolTypes::V2 => prepare_forward_message_for_agency_v2(&message, &agency_vk)
     }
 }
 
-fn prepare_forward_message_for_agency_v0(message: &Forward, agency_vk: &str) -> Result<Vec<u8>, u32> {
+fn prepare_forward_message_for_agency_v1(message: &Forward, agency_vk: &str) -> Result<Vec<u8>, u32> {
     let message = rmp_serde::to_vec_named(message).or(Err(error::UNKNOWN_ERROR.code_num))?;
     let message = Bundled::create(message).encode()?;
     crypto::prep_anonymous_msg(agency_vk, &message[..])
 }
 
-fn prepare_forward_message_for_agency_v1(message: &Forward, agency_vk: &str) -> Result<Vec<u8>, u32> {
+fn prepare_forward_message_for_agency_v2(message: &Forward, agency_vk: &str) -> Result<Vec<u8>, u32> {
     let message = serde_json::to_string(message).or(Err(error::SERIALIZATION_ERROR.code_num))?;
     let receiver_keys = serde_json::to_string(&vec![agency_vk]).or(Err(error::SERIALIZATION_ERROR.code_num))?;
     crypto::pack_message(None, &receiver_keys, message.as_bytes())
@@ -917,16 +780,12 @@ fn prepare_forward_message_for_agency_v1(message: &Forward, agency_vk: &str) -> 
 
 pub fn prepare_message_for_agent(messages: Vec<A2AMessage>, pw_vk: &str, agent_did: &str, agent_vk: &str) -> Result<Vec<u8>, u32> {
     match settings::get_protocol_type() {
-        settings::ProtocolTypes::V0 => {
-            prepare_message_for_agent_v0(messages, pw_vk, agent_did, agent_vk)
-        }
-        settings::ProtocolTypes::V1 => {
-            prepare_message_for_agent_v1(messages, pw_vk, agent_did, agent_vk)
-        }
+        settings::ProtocolTypes::V1 => prepare_message_for_agent_v1(messages, pw_vk, agent_did, agent_vk),
+        settings::ProtocolTypes::V2 => prepare_message_for_agent_v2(messages, pw_vk, agent_did, agent_vk)
     }
 }
 
-fn prepare_message_for_agent_v0(messages: Vec<A2AMessage>, pw_vk: &str, agent_did: &str, agent_vk: &str) -> Result<Vec<u8>, u32> {
+fn prepare_message_for_agent_v1(messages: Vec<A2AMessage>, pw_vk: &str, agent_did: &str, agent_vk: &str) -> Result<Vec<u8>, u32> {
     let message = messages
         .iter()
         .map(|msg| rmp_serde::to_vec_named(msg))
@@ -942,10 +801,10 @@ fn prepare_message_for_agent_v0(messages: Vec<A2AMessage>, pw_vk: &str, agent_di
 
     let to_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
 
-    bundle_for_agency_v0(&A2AMessage::Forward(message), &to_did)
+    bundle_for_agency_v1(&A2AMessage::Forward(message), &to_did)
 }
 
-fn prepare_message_for_agent_v1(messages: Vec<A2AMessage>, pw_vk: &str, agent_did: &str, agent_vk: &str) -> Result<Vec<u8>, u32> {
+fn prepare_message_for_agent_v2(messages: Vec<A2AMessage>, pw_vk: &str, agent_did: &str, agent_vk: &str) -> Result<Vec<u8>, u32> {
     let message = messages.get(0).ok_or(error::SERIALIZATION_ERROR.code_num)?;
     let message = serde_json::to_string(message).or(Err(error::SERIALIZATION_ERROR.code_num))?;
     let receiver_keys = serde_json::to_string(&vec![&agent_vk]).or(Err(error::SERIALIZATION_ERROR.code_num))?;
@@ -957,7 +816,7 @@ fn prepare_message_for_agent_v1(messages: Vec<A2AMessage>, pw_vk: &str, agent_di
 
     let to_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
 
-    pack_for_agency_v1(&A2AMessage::Forward(message), &to_did)
+    pack_for_agency_v2(&A2AMessage::Forward(message), &to_did)
 }
 
 pub trait GeneralMessage {

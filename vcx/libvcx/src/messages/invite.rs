@@ -1,5 +1,6 @@
 use settings;
 use messages::*;
+use messages::message_type::MessageTypes;
 use utils::{httpclient, error};
 use utils::constants::*;
 
@@ -53,13 +54,13 @@ pub struct SendInvitePayloadV1 {
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 pub struct ConnectionRequestResponse {
     #[serde(rename = "@type")]
-    pub msg_type: MessageTypeV0,
+    pub msg_type: MessageTypes,
     pub uid: String,
     #[serde(rename = "inviteDetail")]
     pub invite_detail: InviteDetail,
     #[serde(rename = "urlToInviteDetail")]
     pub url_to_invite_detail: String,
-    pub uids: Vec<String>,
+    pub sent: bool,
 }
 
 #[derive(Clone, Serialize, Debug, PartialEq)]
@@ -189,9 +190,9 @@ impl SendInviteMessageDetailsResponse {
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 pub struct ConnectionRequestAnswerResponse {
     #[serde(rename = "@type")]
-    pub msg_type: MessageTypeV0,
+    pub msg_type: MessageTypes,
     pub uid: String,
-    pub uids: Vec<String>,
+    pub sent: bool,
 }
 
 impl InviteDetail {
@@ -228,7 +229,7 @@ impl SendInviteBuilder {
 
         let payload =
             match settings::get_protocol_type() {
-                settings::ProtocolTypes::V0 => {
+                settings::ProtocolTypes::V1 => {
                     SendInvitePayloads::SendInvitePayloadV0(
                         SendInvitePayloadV0 {
                             create_payload: CreateMessage {
@@ -248,10 +249,10 @@ impl SendInviteBuilder {
                         }
                     )
                 }
-                settings::ProtocolTypes::V1 => {
+                settings::ProtocolTypes::V2 => {
                     SendInvitePayloads::SendInvitePayloadV1(SendInvitePayloadV1 {
                         msg_type: MessageTypes::build(A2AMessageKinds::ConnectionRequest),
-                        send_msg: false,
+                        send_msg: true,
                         uid: None,
                         reply_to_msg_id: None,
                         key_dlg_proof: KeyDlgProof { agent_did: String::new(), agent_delegated_key: String::new(), signature: String::new() },
@@ -342,11 +343,11 @@ impl SendInviteBuilder {
         let mut data = parse_response_from_agency(&response)?;
 
         match settings::get_protocol_type() {
-            settings::ProtocolTypes::V0 => {
+            settings::ProtocolTypes::V1 => {
                 let response: SendInviteMessageDetailsResponse = SendInviteMessageDetailsResponse::from_a2a_message(data.remove(1))?;
                 Ok((response.invite_detail, response.url_to_invite_detail))
             }
-            settings::ProtocolTypes::V1 => {
+            settings::ProtocolTypes::V2 => {
                 let response: ConnectionRequestResponse = ConnectionRequestResponse::from_a2a_message(data.remove(0))?;
                 Ok((response.invite_detail, response.url_to_invite_detail))
             }
@@ -369,7 +370,7 @@ impl AcceptInviteBuilder {
 
         let payload =
             match settings::get_protocol_type() {
-                settings::ProtocolTypes::V0 => {
+                settings::ProtocolTypes::V1 => {
                     AcceptInvitePayloads::AcceptInvitePayloadV0(
                         AcceptInvitePayloadV0 {
                             create_payload: CreateMessage {
@@ -389,10 +390,10 @@ impl AcceptInviteBuilder {
                         }
                     )
                 }
-                settings::ProtocolTypes::V1 => {
+                settings::ProtocolTypes::V2 => {
                     AcceptInvitePayloads::AcceptInvitePayloadV1(AcceptInvitePayloadV1 {
                         msg_type: MessageTypes::build(A2AMessageKinds::ConnectionRequestAnswer),
-                        send_msg: false,
+                        send_msg: true,
                         uid: None,
                         reply_to_msg_id: None,
                         key_dlg_proof: KeyDlgProof { agent_did: String::new(), agent_delegated_key: String::new(), signature: String::new() },
@@ -510,11 +511,11 @@ impl AcceptInviteBuilder {
 
         let uid =
             match settings::get_protocol_type() {
-                settings::ProtocolTypes::V0 => {
+                settings::ProtocolTypes::V1 => {
                     let response: MessageCreated = MessageCreated::from_a2a_message(data.remove(0))?;
                     response.uid
                 }
-                settings::ProtocolTypes::V1 => {
+                settings::ProtocolTypes::V2 => {
                     let response: ConnectionRequestAnswerResponse = ConnectionRequestAnswerResponse::from_a2a_message(data.remove(0))?;
                     response.uid
                 }

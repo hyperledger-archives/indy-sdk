@@ -7,7 +7,6 @@ use utils::libindy::mock_libindy_rc;
 use utils::libindy::error_codes::map_rust_indy_sdk_error;
 use settings;
 use indy::crypto;
-use utils::error;
 
 pub fn prep_msg(sender_vk: &str, recipient_vk: &str, msg: &[u8]) -> Result<Vec<u8>, u32> {
     if settings::test_indy_mode_enabled() {
@@ -67,20 +66,8 @@ pub fn pack_message(sender_vk: Option<&str>, receiver_keys: &str, msg: &[u8]) ->
         .map_err(map_rust_indy_sdk_error)
 }
 
-pub fn unpack_message(msg: &[u8]) -> Result<(Option<String>, String), u32> {
-    let unpacked_msg = crypto::unpack_message(::utils::libindy::wallet::get_wallet_handle(), msg)
+pub fn unpack_message(msg: &[u8]) -> Result<Vec<u8>, u32> {
+    crypto::unpack_message(::utils::libindy::wallet::get_wallet_handle(), msg)
         .wait()
-        .map_err(map_rust_indy_sdk_error)?;
-
-    let message: UnpackMessage = ::serde_json::from_slice(unpacked_msg.as_slice())
-        .map_err(|ec| { error::INVALID_JSON.code_num })?;
-
-    Ok((message.sender_verkey, message.message))
-}
-
-#[derive(Deserialize)]
-pub struct UnpackMessage {
-    pub message: String,
-    pub recipient_verkey: String,
-    pub sender_verkey: Option<String>
+        .map_err(map_rust_indy_sdk_error)
 }
