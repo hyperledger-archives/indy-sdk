@@ -35,3 +35,7 @@ These methods are not exclusive and should be combined with key rotation and rev
 2. **Public Registry for Agent Authorization Policy**. An identity owner create a policy on the ledger that defines its agents and their authorizations. 
    Agents while acting on the behalf of the identity owner need to prove that they are authorised. [More details](../005-dkms/pdf/Agent%20Authorization%20Policy.pdf)  
    
+
+### Additional Info
+* [Shamir Secret](shamir_secret.md)
+* [Trustee Protocols](trustee_protocols.md)
