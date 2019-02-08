@@ -1,4 +1,7 @@
-#!/bin/bash -xe
+#!/bin/bash
+
+set -e
+set -x
 
 if [ "$1" = "--help" ] ; then
   echo "Usage: <package> <version> <key> <type> <suffix> <repo> <host> <key>"
