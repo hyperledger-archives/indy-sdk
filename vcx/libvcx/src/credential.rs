@@ -673,7 +673,6 @@ pub mod tests {
     }
 
     #[test]
-//    #[ignore]
     fn full_credential_test() {
         init!("true");
 
