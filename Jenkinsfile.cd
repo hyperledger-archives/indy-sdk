@@ -372,7 +372,10 @@ def linuxVcxBuild(file, env_name, network_name, stashBuildResults) {
         sh "cp vcx/libvcx/libindy.so vcx/dummy-cloud-agent"
 
         testEnv.inside("--network=${network_name}") {
-            startCloudAgent(env_name, "1.0")
+            sh '''
+                cd vcx/dummy-cloud-agent
+                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy=info cargo run sample-config.json &
+            '''
 
             echo "${env_name} Libvcx Test: Run tests"
             sh '''
@@ -382,7 +385,10 @@ def linuxVcxBuild(file, env_name, network_name, stashBuildResults) {
         }
 
         testEnv.inside("--network=${network_name}") {
-            startCloudAgent(env_name, "2.0")
+            sh '''
+                cd vcx/dummy-cloud-agent
+                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy=info PROTOCOL_TYPE=2.0 cargo run sample-config.json &
+            '''
 
             echo "${env_name} Libvcx Test: Run vcx demo test for protocol version 2.0"
             sh '''
@@ -394,11 +400,6 @@ def linuxVcxBuild(file, env_name, network_name, stashBuildResults) {
     finally {
         closePool(env_name, network_name, poolInst)
     }
-}
-
-def startCloudAgent(env_name, protocol_type){
-    echo "${env_name} Libvcx Test: Run Cloud Agent with protocol type ${protocol_type}"
-    sh "cd vcx/dummy-cloud-agent && LIBRARY_PATH=./ LD_LIBRARY_PATH=./ RUST_BACKTRACE=1 PROTOCOL_TYPE=${protocol_type} cargo run sample-config.json &"
 }
 
 def linuxJavaTesting(env_name, network_name, testEnv, stashBuildResults) {
