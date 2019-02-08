@@ -2,6 +2,9 @@ libindy (1.8.1) unstable; urgency=medium
 
 [ Hyperledger ]
 
+* 1.8.1
+    * Bugfixes
+
 * 1.8.0
     * Added function `indy_get_current_error` to get additional information for last error occurred in Libindy.
     * Implemented automatic filtering of outdated responses based on comparison of local time with latest transaction ordering time.
