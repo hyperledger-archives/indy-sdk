@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.8.0 - 2018-1-31
+* Added function `indy_get_current_error` to get additional information for last error occurred in Libindy.
+* Updated Libindy wrappers for automatic getting error details:
+    * Python - added `message` and `indy_backtrace` fields to `IndyError` object.
+    * Java - added `sdkBacktrace` field to `IndyException`. Libindy `error message` set as the main for `IndyException`.
+    * NodeJS - added `indyMessage` and `indyBacktrace` fields to `IndyError` object.
+    * Rust - changed type of returning value from enum `ErrorCode` on structure `IndyError` with `error_code`, `message`, `indy_backtrace` fields.
+    * Objective-C - added `message` and `indy_backtrace` fields to `userInfo` dictionary in `NSError` object. 
+* Updated Indy-Cli to show Libindy error message in some cases.
+* Implemented automatic filtering of outdated responses based on comparison of local time with latest transaction ordering time.
+* Added *EXPERIMENTAL* `indy_pack_message` and `indy_unpack_message` functions to support *Wire Messages* described in [AMES HIPE](https://github.com/hyperledger/indy-hipe/pull/43)
+* Functions `indy_crypto_anon_crypt` and `indy_crypto_anon_decrypt` marked as *Deprecated*.
+* Removed `bindgen` folder from Libindy NodeJS wrapper.
+* Added `NETWORK_MONITOR` role to NYM transaction builder.
+* Bugfixes
+
+NOTE: This version of libindy will work slower with older versions of node due to freshness changes.
+
 ## 1.7.0 - 2018-12-21
 * Added VCX - a library built over libindy for **V**erifiable **C**redentials e**X**change. API is EXPERIMENTAL.
     * At the current moment mobile builds are not available - they should be added in future releases.

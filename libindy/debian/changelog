@@ -1,6 +1,23 @@
-libindy (1.6.8) unstable; urgency=medium
+libindy (1.8.0) unstable; urgency=medium
 
 [ Hyperledger ]
+
+* 1.8.0
+    * Added function `indy_get_current_error` to get additional information for last error occurred in Libindy.
+    * Implemented automatic filtering of outdated responses based on comparison of local time with latest transaction ordering time.
+    * Added *EXPERIMENTAL* `indy_pack_message` and `indy_unpack_message` functions to support
+        Wire Messages described in AMES HIPE(https://github.com/hyperledger/indy-hipe/pull/43)
+    * Functions `indy_crypto_anon_crypt` and `indy_crypto_anon_decrypt` marked as *Deprecated*.
+    * Added `NETWORK_MONITOR` role to NYM transaction builder.
+    * Bugfixes
+
+* 1.7.0
+    * Added Logging API
+        * Added function `indy_get_logger` for plugins to give their logging to libindy
+        * Added function `indy_set_logger` for client apps and wrappers to receive logs from libindy
+        * Integrated libindy logging into Slf4j for Java wrapper and into python logging facade
+    * Introduced multithreading for Wallet API and CRED_DEF generation
+    * Bugfixes
 
 * 1.6.8
     * Fix State Proof verification for some types of GET requests to the ledger
