@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.8.0 - 2018-01-31
+## 1.8.0 - 2019-01-31
 * Added function `indy_get_current_error` to get additional information for last error occurred in Libindy.
 * Updated Libindy wrappers for automatic getting error details:
     * Python - added `message` and `indy_backtrace` fields to `IndyError` object.
