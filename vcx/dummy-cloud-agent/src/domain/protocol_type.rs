@@ -16,9 +16,7 @@ impl ProtocolType {
     }
 
     pub fn get() -> ProtocolTypes {
-        let a = PROTOCOL_TYPE.lock().unwrap().clone();
-        println!("ProtocolType {:?}", a);
-        a
+        PROTOCOL_TYPE.lock().unwrap().clone()
     }
 }
 

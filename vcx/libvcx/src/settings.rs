@@ -312,9 +312,7 @@ impl ::std::string::ToString for ProtocolTypes {
 }
 
 pub fn get_protocol_type() -> ProtocolTypes {
-    let a =     ProtocolTypes::from(get_config_value(CONFIG_PROTOCOL_TYPE).unwrap_or(DEFAULT_PROTOCOL_TYPE.to_string()));
-    println!("get_protocol_type {:?}", a);
-    a
+    ProtocolTypes::from(get_config_value(CONFIG_PROTOCOL_TYPE).unwrap_or(DEFAULT_PROTOCOL_TYPE.to_string()))
 }
 
 pub fn write_config_to_file(config: &str, path_string: &str) -> Result<(), u32> {
