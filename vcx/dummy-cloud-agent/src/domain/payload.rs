@@ -1,5 +1,5 @@
 use domain::message_type::{MessageTypeV2, MessageFamilies, MESSAGE_VERSION, DID};
-use domain::a2a::ExchangeMessageType;
+use domain::a2a::RemoteMessageType;
 use domain::protocol_type::{ProtocolType, ProtocolTypes};
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -89,17 +89,17 @@ impl PayloadTypes {
     }
 }
 
-impl From<ExchangeMessageType> for PayloadKinds {
-    fn from(type_: ExchangeMessageType) -> PayloadKinds {
+impl From<RemoteMessageType> for PayloadKinds {
+    fn from(type_: RemoteMessageType) -> PayloadKinds {
         match type_ {
-            ExchangeMessageType::ConnReq => PayloadKinds::ConnReq,
-            ExchangeMessageType::ConnReqAnswer => PayloadKinds::ConnReqAnswer,
-            ExchangeMessageType::CredOffer => PayloadKinds::CredOffer,
-            ExchangeMessageType::CredReq => PayloadKinds::CredReq,
-            ExchangeMessageType::Cred => PayloadKinds::Cred,
-            ExchangeMessageType::ProofReq => PayloadKinds::ProofRequest,
-            ExchangeMessageType::Proof => PayloadKinds::Proof,
-            ExchangeMessageType::Other(other) => PayloadKinds::Other(other.to_string()),
+            RemoteMessageType::ConnReq => PayloadKinds::ConnReq,
+            RemoteMessageType::ConnReqAnswer => PayloadKinds::ConnReqAnswer,
+            RemoteMessageType::CredOffer => PayloadKinds::CredOffer,
+            RemoteMessageType::CredReq => PayloadKinds::CredReq,
+            RemoteMessageType::Cred => PayloadKinds::Cred,
+            RemoteMessageType::ProofReq => PayloadKinds::ProofRequest,
+            RemoteMessageType::Proof => PayloadKinds::Proof,
+            RemoteMessageType::Other(other) => PayloadKinds::Other(other.to_string()),
         }
     }
 }

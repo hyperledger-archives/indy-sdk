@@ -1,4 +1,4 @@
-use domain::a2a::ExchangeMessageType;
+use domain::a2a::RemoteMessageType;
 use domain::status::MessageStatusCode;
 
 use utils::rand::rand_string;
@@ -8,7 +8,7 @@ use std::collections::HashMap;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InternalMessage {
     pub uid: String,
-    pub _type: ExchangeMessageType,
+    pub _type: RemoteMessageType,
     pub sender_did: String,
     pub status_code: MessageStatusCode,
     pub ref_msg_id: Option<String>,
@@ -19,7 +19,7 @@ pub struct InternalMessage {
 
 impl InternalMessage {
     pub fn new(uid: Option<&str>,
-               mtype: ExchangeMessageType,
+               mtype: RemoteMessageType,
                status_code: MessageStatusCode,
                sender_did: &str,
                ref_msg_id: Option<&str>,

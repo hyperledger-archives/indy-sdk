@@ -7,7 +7,7 @@ use utils::error;
 use connection;
 use messages;
 use messages::GeneralMessage;
-use messages::{CredentialExchangeMessageType, PayloadKinds};
+use messages::{RemoteMessageType, PayloadKinds};
 use messages::proofs::proof_message::{ProofMessage };
 use messages::proofs::proof_request::{ ProofRequestMessage, ProofRequestData, NonRevokedInterval };
 use messages::extract_json_payload;
@@ -427,7 +427,7 @@ impl DisclosedProof {
         messages::send_message()
             .to(local_my_did)?
             .to_vk(local_my_vk)?
-            .msg_type(&CredentialExchangeMessageType::Proof)?
+            .msg_type(&RemoteMessageType::Proof)?
             .agent_did(local_agent_did)?
             .agent_vk(local_agent_vk)?
             .edge_agent_payload(&data)?

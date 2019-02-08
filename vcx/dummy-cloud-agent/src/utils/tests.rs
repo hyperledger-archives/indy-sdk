@@ -332,7 +332,7 @@ pub fn compose_create_connection_request(wallet_handle: i32,
                                          agent_verkey: &str,
                                          agent_pairwise_did: &str,
                                          agent_pairwise_verkey: &str) -> BoxedFuture<Vec<u8>, Error> {
-    let create_msg = build_create_message_request(ExchangeMessageType::ConnReq, None);
+    let create_msg = build_create_message_request(RemoteMessageType::ConnReq, None);
 
     let msg_details = A2AMessage::MessageDetail(
         MessageDetail::ConnectionRequest(
@@ -371,7 +371,7 @@ pub fn compose_create_connection_request_answer(wallet_handle: i32,
     let (remote_user_pw_did, remote_user_pw_verkey) = did::create_and_store_my_did(wallet_handle, "{}").wait().unwrap();
     let (remote_agent_pw_did, remote_agent_pw_verkey) = did::create_and_store_my_did(wallet_handle, "{}").wait().unwrap();
 
-    let create_msg = build_create_message_request(ExchangeMessageType::ConnReqAnswer, Some(reply_to_msg_id.to_string()));
+    let create_msg = build_create_message_request(RemoteMessageType::ConnReqAnswer, Some(reply_to_msg_id.to_string()));
 
     let msg_details: A2AMessage = A2AMessage::MessageDetail(
         MessageDetail::ConnectionRequestAnswer(
@@ -416,7 +416,7 @@ pub fn compose_create_general_message(wallet_handle: i32,
                                       agent_verkey: &str,
                                       agent_pairwise_did: &str,
                                       agent_pairwise_verkey: &str,
-                                      mtype: ExchangeMessageType) -> BoxedFuture<Vec<u8>, Error> {
+                                      mtype: RemoteMessageType) -> BoxedFuture<Vec<u8>, Error> {
     let create_msg = build_create_message_request(mtype, None);
 
     let msg_details: A2AMessage = A2AMessage::MessageDetail(
@@ -434,7 +434,7 @@ pub fn compose_create_general_message(wallet_handle: i32,
     compose_message(wallet_handle, &msgs, agent_pairwise_did, agent_pairwise_verkey, agent_did, agent_verkey)
 }
 
-fn build_create_message_request(mtype: ExchangeMessageType, reply_to_msg_id: Option<String>) -> A2AMessage {
+fn build_create_message_request(mtype: RemoteMessageType, reply_to_msg_id: Option<String>) -> A2AMessage {
     A2AMessage::CreateMessage(CreateMessage {
         mtype,
         send_msg: false,

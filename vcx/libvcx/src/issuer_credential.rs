@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use api::VcxStateType;
 use messages;
 use settings;
-use messages::{CredentialExchangeMessageType, PayloadKinds};
+use messages::{RemoteMessageType, PayloadKinds};
 use messages::MessageStatusCode;
 use messages::{GeneralMessage};
 use connection;
@@ -169,7 +169,7 @@ impl IssuerCredential {
             messages::send_message()
                 .to(&self.issued_did)?
                 .to_vk(&self.issued_vk)?
-                .msg_type(&CredentialExchangeMessageType::CredOffer)?
+                .msg_type(&RemoteMessageType::CredOffer)?
                 .edge_agent_payload(&data)?
                 .agent_did(&self.agent_did)?
                 .agent_vk(&self.agent_vk)?
@@ -222,7 +222,7 @@ impl IssuerCredential {
         let response = messages::send_message()
             .to(&self.issued_did)?
             .to_vk(&self.issued_vk)?
-            .msg_type(&CredentialExchangeMessageType::Cred)?
+            .msg_type(&RemoteMessageType::Cred)?
             .status_code(&MessageStatusCode::Accepted)?
             .edge_agent_payload(&data)?
             .agent_did(&self.agent_did)?

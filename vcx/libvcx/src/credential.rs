@@ -15,7 +15,7 @@ use messages;
 use messages::to_u8;
 use messages::GeneralMessage;
 use messages::extract_json_payload;
-use messages::{CredentialExchangeMessageType, PayloadKinds};
+use messages::{RemoteMessageType, PayloadKinds};
 
 use utils::libindy::anoncreds::{libindy_prover_create_credential_req, libindy_prover_store_credential};
 use utils::libindy::crypto;
@@ -167,7 +167,7 @@ impl Credential {
             messages::send_message()
                 .to(local_my_did)?
                 .to_vk(local_my_vk)?
-                .msg_type(&CredentialExchangeMessageType::CredReq)?
+                .msg_type(&RemoteMessageType::CredReq)?
                 .agent_did(local_agent_did)?
                 .agent_vk(local_agent_vk)?
                 .edge_agent_payload(&data)?

@@ -231,8 +231,8 @@ impl AgentConnection {
                     Some(A2AMessage::ConnectionRequestAnswer(msg)) => {
                         slf.handle_connection_request_answer_message(msg, &sender_vk)
                     }
-                    Some(A2AMessage::CredentialExchange(msg)) => {
-                        slf.handle_credential_exchange_message(msg, &sender_vk)
+                    Some(A2AMessage::RemoteMessage(msg)) => {
+                        slf.handle_remote_message(msg, &sender_vk)
                     }
                     // Common
                     Some(A2AMessage::SendMessages(msg)) => {
@@ -277,10 +277,10 @@ impl AgentConnection {
             .into_actor(self)
             .and_then(move |_, slf, _| {
                 match (mtype, tail.pop()) {
-                    (ExchangeMessageType::ConnReq, Some(A2AMessage::MessageDetail(MessageDetail::ConnectionRequest(detail)))) => {
+                    (RemoteMessageType::ConnReq, Some(A2AMessage::MessageDetail(MessageDetail::ConnectionRequest(detail)))) => {
                         slf.handle_create_connection_request(detail, sender_verkey)
                     }
-                    (ExchangeMessageType::ConnReqAnswer, Some(A2AMessage::MessageDetail(MessageDetail::ConnectionRequestAnswer(detail)))) => {
+                    (RemoteMessageType::ConnReqAnswer, Some(A2AMessage::MessageDetail(MessageDetail::ConnectionRequestAnswer(detail)))) => {
                         slf.handle_create_connection_request_answer(detail,
                                                                     reply_to_msg_id.clone(),
                                                                     uid,
@@ -308,8 +308,8 @@ impl AgentConnection {
     }
 
     fn handle_connection_request_message(&mut self,
-                                            msg: ConnectionRequest,
-                                            sender_verkey: &str) -> ResponseActFuture<Self, Vec<A2AMessage>, Error> {
+                                         msg: ConnectionRequest,
+                                         sender_verkey: &str) -> ResponseActFuture<Self, Vec<A2AMessage>, Error> {
         trace!("AgentConnection::handle_connection_request_message >> {:?}, {:?}", msg, sender_verkey);
 
         let send_msg = msg.send_msg;
@@ -349,7 +349,7 @@ impl AgentConnection {
 
                 let sender_did = slf.user_pairwise_did.clone();
                 let msg = slf.create_and_store_internal_message(None,
-                                                                ExchangeMessageType::ConnReq,
+                                                                RemoteMessageType::ConnReq,
                                                                 MessageStatusCode::Created,
                                                                 &sender_did,
                                                                 None,
@@ -366,8 +366,8 @@ impl AgentConnection {
     }
 
     fn handle_connection_request_answer_message(&mut self,
-                                                   msg: ConnectionRequestAnswer,
-                                                   sender_verkey: &str) -> ResponseActFuture<Self, Vec<A2AMessage>, Error> {
+                                                msg: ConnectionRequestAnswer,
+                                                sender_verkey: &str) -> ResponseActFuture<Self, Vec<A2AMessage>, Error> {
         trace!("AgentConnection::handle_connection_request_answer_message >> {:?}, {:?}", msg, sender_verkey);
 
         let send_msg = msg.send_msg;
@@ -412,10 +412,10 @@ impl AgentConnection {
         }
     }
 
-    fn handle_credential_exchange_message(&mut self,
-                                          msg: CredentialExchange,
-                                          sender_verkey: &str) -> ResponseActFuture<Self, Vec<A2AMessage>, Error> {
-        trace!("AgentConnection::handle_credential_exchange_message >> {:?}, {:?}", msg, sender_verkey);
+    fn handle_remote_message(&mut self,
+                              msg: RemoteMessage,
+                              sender_verkey: &str) -> ResponseActFuture<Self, Vec<A2AMessage>, Error> {
+        trace!("AgentConnection::handle_remote_message >> {:?}, {:?}", msg, sender_verkey);
 
         let send_msg = msg.send_msg;
         let mtype = msg.mtype.clone();
@@ -438,7 +438,7 @@ impl AgentConnection {
     }
 
     fn handle_create_general_message(&mut self,
-                                     mtype: ExchangeMessageType,
+                                     mtype: RemoteMessageType,
                                      msg_detail: GeneralMessageDetail,
                                      reply_to_msg_id: Option<String>,
                                      uid: Option<String>,
@@ -473,7 +473,7 @@ impl AgentConnection {
 
         let message = match ProtocolType::get() {
             ProtocolTypes::V1 => A2AMessage::MessageCreated(MessageCreated { uid: msg.uid.clone() }),
-            ProtocolTypes::V2 => A2AMessage::CredentialExchangeResponse(CredentialExchangeResponse { uid: msg.uid.clone(), sent: true })
+            ProtocolTypes::V2 => A2AMessage::RemoteMessageResponse(RemoteMessageResponse { uid: msg.uid.clone(), sent: true })
         };
 
         ok_act!(self, (msg.uid, vec![message]))
@@ -628,7 +628,7 @@ impl AgentConnection {
             )
             .map(|(msg_detail, reply_to_msg_id, key_dlg_proof), slf, _| {
                 let conn_req_msg = slf.create_and_store_internal_message(Some(reply_to_msg_id.as_str()),
-                                                                         ExchangeMessageType::ConnReq,
+                                                                         RemoteMessageType::ConnReq,
                                                                          MessageStatusCode::Received,
                                                                          &msg_detail.sender_detail.did,
                                                                          None,
@@ -637,7 +637,7 @@ impl AgentConnection {
 
                 let sender_did = slf.user_pairwise_did.clone();
                 let answer_msg = slf.create_and_store_internal_message(None,
-                                                                       ExchangeMessageType::ConnReqAnswer,
+                                                                       RemoteMessageType::ConnReqAnswer,
                                                                        msg_detail.answer_status_code.clone(),
                                                                        &sender_did,
                                                                        Some(conn_req_msg.uid.as_str()),
@@ -698,7 +698,7 @@ impl AgentConnection {
             )
             .map(move |(msg_detail, reply_to_msg_id), slf, _| {
                 let answer_msg = slf.create_and_store_internal_message(msg_uid.as_ref().map(String::as_str),
-                                                                       ExchangeMessageType::ConnReqAnswer,
+                                                                       RemoteMessageType::ConnReqAnswer,
                                                                        msg_detail.answer_status_code.clone(),
                                                                        &msg_detail.sender_detail.did,
                                                                        None,
@@ -747,7 +747,7 @@ impl AgentConnection {
 
     fn create_and_store_internal_message(&mut self,
                                          uid: Option<&str>,
-                                         mtype: ExchangeMessageType,
+                                         mtype: RemoteMessageType,
                                          status_code: MessageStatusCode,
                                          sender_did: &str,
                                          ref_msg_id: Option<&str>,
@@ -797,7 +797,7 @@ impl AgentConnection {
 
         let msg_uid = msg_uid.to_string();
 
-        let msg = ftry_act!(self, self.build_payload_message(ExchangeMessageType::ConnReqAnswer, &json!({"senderDetail": msg_detail.sender_detail})));
+        let msg = ftry_act!(self, self.build_payload_message(RemoteMessageType::ConnReqAnswer, &json!({"senderDetail": msg_detail.sender_detail})));
 
         future::ok(())
             .into_actor(self)
@@ -856,7 +856,7 @@ impl AgentConnection {
             Some(A2AMessage::CreateMessage(_)) |
             Some(A2AMessage::ConnectionRequest(_)) |
             Some(A2AMessage::ConnectionRequestAnswer(_)) |
-            Some(A2AMessage::CredentialExchange(_)) => {
+            Some(A2AMessage::RemoteMessage(_)) => {
                 if self.is_sent_by_owner(sender_verkey) || self.is_sent_by_remote(sender_verkey) {
                     return Ok(());
                 }
@@ -969,7 +969,7 @@ impl AgentConnection {
 
         let is_exists = self.state.messages.values()
             .any(|msg|
-                msg._type == ExchangeMessageType::ConnReq && msg.status_code == MessageStatusCode::Accepted
+                msg._type == RemoteMessageType::ConnReq && msg.status_code == MessageStatusCode::Accepted
             );
         if is_exists {
             return Err(err_msg("Accepted connection already exists."));
@@ -1029,8 +1029,8 @@ impl AgentConnection {
             .map(|(msg_uid, reply_to)| {
                 let message = self.state.messages.get(&msg_uid).cloned().unwrap();
                 match message._type {
-                    ExchangeMessageType::ConnReq => self.send_invite_message(message),
-                    ExchangeMessageType::ConnReqAnswer => self.send_invite_answer_message(message, reply_to),
+                    RemoteMessageType::ConnReq => self.send_invite_message(message),
+                    RemoteMessageType::ConnReqAnswer => self.send_invite_answer_message(message, reply_to),
                     _ => self.send_general_message(message, reply_to.as_ref().map(String::as_str)),
                 }
                     .map(move |_| msg_uid.to_string())
@@ -1120,7 +1120,7 @@ impl AgentConnection {
         Ok(message)
     }
 
-    fn build_payload_message<T>(&self, type_: ExchangeMessageType, msg: &T) -> Result<Vec<u8>, Error> where T: ::serde::Serialize + ::std::fmt::Debug {
+    fn build_payload_message<T>(&self, type_: RemoteMessageType, msg: &T) -> Result<Vec<u8>, Error> where T: ::serde::Serialize + ::std::fmt::Debug {
         trace!("AgentConnection::build_payload_message >> {:?}, {:?}",
                type_, msg);
 
@@ -1267,7 +1267,7 @@ impl AgentConnection {
                          A2AMessage::MessageDetail(MessageDetail::General(msg_detail))]
                 }
                 ProtocolTypes::V2 => {
-                    let msg = CredentialExchange {
+                    let msg = RemoteMessage {
                         mtype: message._type,
                         send_msg: false,
                         uid: Some(message.uid),
@@ -1277,7 +1277,7 @@ impl AgentConnection {
                         detail
                     };
 
-                    vec![A2AMessage::CredentialExchange(msg)]
+                    vec![A2AMessage::RemoteMessage(msg)]
                 }
             };
 
@@ -1405,7 +1405,7 @@ mod tests {
                                                              &agent_verkey,
                                                              &agent_pw_did,
                                                              &agent_pw_vk,
-                                                             ExchangeMessageType::CredOffer).wait().unwrap();
+                                                             RemoteMessageType::CredOffer).wait().unwrap();
 
                     forward_agent
                         .send(ForwardA2AMsg(msg))
@@ -1432,7 +1432,7 @@ mod tests {
                                                              &agent_verkey,
                                                              &agent_pw_did,
                                                              &agent_pw_vk,
-                                                             ExchangeMessageType::CredOffer).wait().unwrap();
+                                                             RemoteMessageType::CredOffer).wait().unwrap();
 
                     forward_agent
                         .send(ForwardA2AMsg(msg))
@@ -1464,7 +1464,7 @@ mod tests {
                         uid: msg_uid,
                         status_code: MessageStatusCode::Created,
                         sender_did: EDGE_PAIRWISE_DID.to_string(),
-                        type_: ExchangeMessageType::CredOffer,
+                        type_: RemoteMessageType::CredOffer,
                         payload: Some(to_i8(&PAYLOAD.to_vec())),
                         ref_msg_id: None,
                     };
@@ -1485,7 +1485,7 @@ mod tests {
                                                              &agent_verkey,
                                                              &agent_pw_did,
                                                              &agent_pw_vk,
-                                                             ExchangeMessageType::CredOffer).wait().unwrap();
+                                                             RemoteMessageType::CredOffer).wait().unwrap();
 
                     forward_agent
                         .send(ForwardA2AMsg(msg))

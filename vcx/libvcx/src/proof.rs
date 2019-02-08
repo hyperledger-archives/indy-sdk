@@ -9,7 +9,7 @@ use connection;
 use api::{VcxStateType, ProofStateType};
 use messages::proofs::proof_message::{ProofMessage, CredInfo};
 use messages;
-use messages::{CredentialExchangeMessageType, PayloadKinds};
+use messages::{RemoteMessageType, PayloadKinds};
 use messages::proofs::proof_request::ProofRequestMessage;
 use messages::GeneralMessage;
 use utils::error;
@@ -282,7 +282,7 @@ impl Proof {
         let response = messages::send_message()
             .to(&self.prover_did)?
             .to_vk(&self.prover_vk)?
-            .msg_type(&CredentialExchangeMessageType::ProofReq)?
+            .msg_type(&RemoteMessageType::ProofReq)?
             .agent_did(&self.agent_did)?
             .set_title(&title)?
             .set_detail(&title)?

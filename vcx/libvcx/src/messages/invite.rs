@@ -403,7 +403,7 @@ impl GeneralMessage for SendInviteBuilder {
                 settings::ProtocolTypes::V1 => {
                     let create_msg = CreateMessage {
                         msg_type: MessageTypes::build(A2AMessageKinds::CreateMessage),
-                        mtype: CredentialExchangeMessageType::ConnReq,
+                        mtype: RemoteMessageType::ConnReq,
                         reply_to_msg_id: None,
                         send_msg: true,
                         uid: None,
@@ -457,7 +457,7 @@ impl GeneralMessage for AcceptInviteBuilder {
                 settings::ProtocolTypes::V1 => {
                     let msg_created = CreateMessage {
                         msg_type: MessageTypes::build(A2AMessageKinds::CreateMessage),
-                        mtype: CredentialExchangeMessageType::ConnReqAnswer,
+                        mtype: RemoteMessageType::ConnReqAnswer,
                         reply_to_msg_id: self.reply_to_msg_id.clone(),
                         send_msg: true,
                         uid: None,

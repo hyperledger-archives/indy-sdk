@@ -7,7 +7,7 @@ use utils::{httpclient, error};
 
 #[derive(Debug)]
 pub struct SendMessageBuilder {
-    mtype: CredentialExchangeMessageType,
+    mtype: RemoteMessageType,
     to_did: String,
     to_vk: String,
     agent_did: String,
@@ -25,7 +25,7 @@ impl SendMessageBuilder {
         trace!("SendMessage::create_message >>>");
 
         SendMessageBuilder {
-            mtype: CredentialExchangeMessageType::Other(String::new()),
+            mtype: RemoteMessageType::Other(String::new()),
             to_did: String::new(),
             to_vk: String::new(),
             agent_did: String::new(),
@@ -39,7 +39,7 @@ impl SendMessageBuilder {
         }
     }
 
-    pub fn msg_type(&mut self, msg: &CredentialExchangeMessageType) -> Result<&mut Self, u32> {
+    pub fn msg_type(&mut self, msg: &RemoteMessageType) -> Result<&mut Self, u32> {
         //Todo: validate msg??
         self.mtype = msg.clone();
         Ok(self)
@@ -106,7 +106,7 @@ impl SendMessageBuilder {
             }
             settings::ProtocolTypes::V2 => {
                 let mut messages = parse_response_from_agency(&response)?;
-                let response: CredentialExchangeResponse = CredentialExchangeResponse::from_a2a_message(messages.remove(0))?;
+                let response: RemoteMessageResponse = RemoteMessageResponse::from_a2a_message(messages.remove(0))?;
                 Ok(SendResponse { uid: Some(response.uid.clone()), uids: if response.sent { vec![response.uid] } else { vec![] } })
             }
         }
@@ -142,8 +142,8 @@ impl GeneralMessage for SendMessageBuilder {
                     vec![A2AMessage::CreateMessage(create), A2AMessage::MessageDetail(MessageDetail::General(detail))]
                 }
                 settings::ProtocolTypes::V2 => {
-                    let message = CredentialExchange {
-                        msg_type: MessageTypes::build(A2AMessageKinds::CredentialExchange),
+                    let message = RemoteMessage {
+                        msg_type: MessageTypes::build(A2AMessageKinds::RemoteMessage),
                         mtype: self.mtype.clone(),
                         reply_to_msg_id: self.ref_msg_id.clone(),
                         send_msg: true,
@@ -152,7 +152,7 @@ impl GeneralMessage for SendMessageBuilder {
                         title: self.title.clone(),
                         detail: self.detail.clone(),
                     };
-                    vec![A2AMessage::CredentialExchange(message)]
+                    vec![A2AMessage::RemoteMessage(message)]
                 }
             };
 
@@ -193,7 +193,7 @@ pub fn send_generic_message(connection_handle: u32, msg: &str, msg_type: &str, m
         send_message()
             .to(&did)?
             .to_vk(&vk)?
-            .msg_type(&CredentialExchangeMessageType::Other(msg_type.to_string()))?
+            .msg_type(&RemoteMessageType::Other(msg_type.to_string()))?
             .edge_agent_payload(&data)?
             .agent_did(&agent_did)?
             .agent_vk(&agent_vk)?
@@ -221,7 +221,7 @@ mod tests {
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
 
         let mut message = SendMessageBuilder {
-            mtype: CredentialExchangeMessageType::CredOffer,
+            mtype: RemoteMessageType::CredOffer,
             to_did: "8XFh8yBzrpJQmNyZzgoTqB".to_string(),
             to_vk: "EkVTa7SCJ5SntpYyX7CSb2pcBhiVGT9kWSagA8a9T69A".to_string(),
             agent_did: "8XFh8yBzrpJQmNyZzgoTqB".to_string(),

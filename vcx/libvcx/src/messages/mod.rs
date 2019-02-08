@@ -76,8 +76,8 @@ pub enum A2AMessage {
     ConnectionRequestResponse(ConnectionRequestResponse),
     ConnectionRequestAnswer(ConnectionRequestAnswer),
     ConnectionRequestAnswerResponse(ConnectionRequestAnswerResponse),
-    CredentialExchange(CredentialExchange),
-    CredentialExchangeResponse(CredentialExchangeResponse),
+    RemoteMessage(RemoteMessage),
+    RemoteMessageResponse(RemoteMessageResponse),
 }
 
 // This macro allows to convert A2AMessage into specific variant
@@ -102,7 +102,7 @@ a2a_to_variant!(ConnectionRequestResponse, ConnectionRequestResponse);
 a2a_to_variant!(MessageCreated, MessageCreated);
 a2a_to_variant!(ConnectionRequestAnswerResponse, ConnectionRequestAnswerResponse);
 a2a_to_variant!(MessageSent, MessageSent);
-a2a_to_variant!(CredentialExchangeResponse, CredentialExchangeResponse);
+a2a_to_variant!(RemoteMessageResponse, RemoteMessageResponse);
 a2a_to_variant!(UpdateConnectionResponse, UpdateConnectionResponse);
 a2a_to_variant!(UpdateMessageStatusByConnectionsResponse, UpdateMessageStatusByConnectionsResponse);
 a2a_to_variant!(UpdateConfigsResponse, UpdateConfigsResponse);
@@ -257,14 +257,14 @@ impl<'de> Deserialize<'de> for A2AMessage {
                     .map(|msg| A2AMessage::ConnectionRequestAnswerResponse(msg))
                     .map_err(de::Error::custom)
             }
-            ("CRED_EXCHANGE", "1.0") => {
-                CredentialExchange::deserialize(value)
-                    .map(|msg| A2AMessage::CredentialExchange(msg))
+            ("REMOTE_MSG", "1.0") => {
+                RemoteMessage::deserialize(value)
+                    .map(|msg| A2AMessage::RemoteMessage(msg))
                     .map_err(de::Error::custom)
             }
-            ("CRED_EXCHANGE_RESP", "1.0") => {
-                CredentialExchangeResponse::deserialize(value)
-                    .map(|msg| A2AMessage::CredentialExchangeResponse(msg))
+            ("REMOTE_MSG_RESP", "1.0") => {
+                RemoteMessageResponse::deserialize(value)
+                    .map(|msg| A2AMessage::RemoteMessageResponse(msg))
                     .map_err(de::Error::custom)
             }
             _ => Err(de::Error::custom("Unexpected @type field structure."))
@@ -296,7 +296,7 @@ impl Forward {
 pub struct CreateMessage {
     #[serde(rename = "@type")]
     msg_type: MessageTypes,
-    mtype: CredentialExchangeMessageType,
+    mtype: RemoteMessageType,
     #[serde(rename = "sendMsg")]
     send_msg: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -343,10 +343,10 @@ pub enum MessageDetail {
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct CredentialExchange {
+pub struct RemoteMessage {
     #[serde(rename = "@type")]
     pub msg_type: MessageTypes,
-    pub mtype: CredentialExchangeMessageType,
+    pub mtype: RemoteMessageType,
     #[serde(rename = "replyToMsgId")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub reply_to_msg_id: Option<String>,
@@ -364,7 +364,7 @@ pub struct CredentialExchange {
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct CredentialExchangeResponse {
+pub struct RemoteMessageResponse {
     #[serde(rename = "@type")]
     msg_type: MessageTypes,
     pub uid: String,
@@ -372,7 +372,7 @@ pub struct CredentialExchangeResponse {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum CredentialExchangeMessageType {
+pub enum RemoteMessageType {
     Other(String),
     ConnReq,
     ConnReqAnswer,
@@ -383,34 +383,34 @@ pub enum CredentialExchangeMessageType {
     Proof,
 }
 
-impl Serialize for CredentialExchangeMessageType {
+impl Serialize for RemoteMessageType {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
         let value = match self {
-            CredentialExchangeMessageType::ConnReq => "connReq",
-            CredentialExchangeMessageType::ConnReqAnswer => "connReqAnswer",
-            CredentialExchangeMessageType::CredOffer => "credOffer",
-            CredentialExchangeMessageType::CredReq => "credReq",
-            CredentialExchangeMessageType::Cred => "cred",
-            CredentialExchangeMessageType::ProofReq => "proofReq",
-            CredentialExchangeMessageType::Proof => "proof",
-            CredentialExchangeMessageType::Other(_type) => "_type",
+            RemoteMessageType::ConnReq => "connReq",
+            RemoteMessageType::ConnReqAnswer => "connReqAnswer",
+            RemoteMessageType::CredOffer => "credOffer",
+            RemoteMessageType::CredReq => "credReq",
+            RemoteMessageType::Cred => "cred",
+            RemoteMessageType::ProofReq => "proofReq",
+            RemoteMessageType::Proof => "proof",
+            RemoteMessageType::Other(_type) => "_type",
         };
         Value::String(value.to_string()).serialize(serializer)
     }
 }
 
-impl<'de> Deserialize<'de> for CredentialExchangeMessageType {
+impl<'de> Deserialize<'de> for RemoteMessageType {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
         let value = Value::deserialize(deserializer).map_err(de::Error::custom)?;
         match value.as_str() {
-            Some("connReq") => Ok(CredentialExchangeMessageType::ConnReq),
-            Some("connReqAnswer") => Ok(CredentialExchangeMessageType::ConnReqAnswer),
-            Some("credOffer") => Ok(CredentialExchangeMessageType::CredOffer),
-            Some("credReq") => Ok(CredentialExchangeMessageType::CredReq),
-            Some("cred") => Ok(CredentialExchangeMessageType::Cred),
-            Some("proofReq") => Ok(CredentialExchangeMessageType::ProofReq),
-            Some("proof") => Ok(CredentialExchangeMessageType::Proof),
-            Some(_type) => Ok(CredentialExchangeMessageType::Other(_type.to_string())),
+            Some("connReq") => Ok(RemoteMessageType::ConnReq),
+            Some("connReqAnswer") => Ok(RemoteMessageType::ConnReqAnswer),
+            Some("credOffer") => Ok(RemoteMessageType::CredOffer),
+            Some("credReq") => Ok(RemoteMessageType::CredReq),
+            Some("cred") => Ok(RemoteMessageType::Cred),
+            Some("proofReq") => Ok(RemoteMessageType::ProofReq),
+            Some("proof") => Ok(RemoteMessageType::Proof),
+            Some(_type) => Ok(RemoteMessageType::Other(_type.to_string())),
             _ => Err(de::Error::custom("Unexpected message type."))
         }
     }
@@ -562,8 +562,8 @@ pub enum A2AMessageKinds {
     UpdateConMethod,
     ConnectionRequest,
     ConnectionRequestAnswer,
-    CredentialExchange,
-    CredentialExchangeResponse,
+    RemoteMessage,
+    RemoteMessageResponse,
 }
 
 impl A2AMessageKinds {
@@ -593,8 +593,8 @@ impl A2AMessageKinds {
             A2AMessageKinds::UpdateConfigs => MessageFamilies::Configs,
             A2AMessageKinds::ConfigsUpdated => MessageFamilies::Configs,
             A2AMessageKinds::UpdateConMethod => MessageFamilies::Configs,
-            A2AMessageKinds::CredentialExchange => MessageFamilies::CredentialExchange,
-            A2AMessageKinds::CredentialExchangeResponse => MessageFamilies::CredentialExchange,
+            A2AMessageKinds::RemoteMessage => MessageFamilies::Routing,
+            A2AMessageKinds::RemoteMessageResponse => MessageFamilies::Routing,
         }
     }
 
@@ -624,8 +624,8 @@ impl A2AMessageKinds {
             A2AMessageKinds::UpdateConfigs => "UPDATE_CONFIGS".to_string(),
             A2AMessageKinds::ConfigsUpdated => "CONFIGS_UPDATED".to_string(),
             A2AMessageKinds::UpdateConMethod => "UPDATE_CONNECTION_METHOD".to_string(),
-            A2AMessageKinds::CredentialExchange => "CRED_EXCHANGE".to_string(),
-            A2AMessageKinds::CredentialExchangeResponse => "CRED_EXCHANGE_RESP".to_string(),
+            A2AMessageKinds::RemoteMessage => "REMOTE_MSG".to_string(),
+            A2AMessageKinds::RemoteMessageResponse => "REMOTE_MSG_RESP".to_string(),
         }
     }
 }
