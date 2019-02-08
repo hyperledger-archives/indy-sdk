@@ -382,7 +382,7 @@ mod tests {
         f.sync_all().unwrap();
 
         let wallet_name = "test_init_fails_when_open_pool_fails";
-        wallet::create_wallet(wallet_name, None).unwrap();
+        wallet::create_wallet(wallet_name, None, None, None).unwrap();
 
         let content = create_config_util(None);
 
@@ -396,7 +396,7 @@ mod tests {
         assert!(rc.is_err());
         assert_eq!(get_pool_handle(), Err(error::NO_POOL_OPEN.code_num));
         assert_eq!(wallet::get_wallet_handle(), 0);
-        wallet::delete_wallet(wallet_name, None).unwrap();
+        wallet::delete_wallet(wallet_name, None, None, None).unwrap();
     }
 
     #[test]
