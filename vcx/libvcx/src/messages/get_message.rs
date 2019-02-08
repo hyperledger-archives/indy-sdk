@@ -232,8 +232,8 @@ pub struct MessagesByConnections {
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct MessageByConnection {
     #[serde(rename = "pairwiseDID")]
-    pairwise_did: String,
-    msgs: Vec<Message>,
+    pub pairwise_did: String,
+    pub msgs: Vec<Message>,
 }
 
 pub fn get_connection_messages(pw_did: &str, pw_vk: &str, agent_did: &str, agent_vk: &str, msg_uid: Option<Vec<String>>) -> Result<Vec<Message>, u32> {
