@@ -13,18 +13,77 @@ def vcx_nodejs
 // python3-vcx-wrapper-<ver>.tar.gz (Python Installable package) ----> published with Filely to https://kraken.corp.evernym.com/repo/python/upload
 // ********* OTHERS ********
 // DEPRECATED ( NO LONGER PRODUCED ) libvcx.tar.gz (libvcx.so file and provision_agent_keys.py) ----> archived with Jenkins
+class Globals {
+
+    static String rustVersion = "1.31.1"
+
+    static String libindyVersion = "1.7.0"
+
+    static String libindyTag = "961"
+
+    static String libnullVersion = "1.8.0"
+
+    static String nullpayTag = "2"
+
+    static String libsovtokenVersion = "0.9.6~-.1.126"
+
+    static String androidSovtokenArtifact = "libsovtoken_0.9.6-201811211720-4901e95_all.zip"
+
+    static String iosSovtokenArtifact = "libsovtoken_0.9.6-201811211710-4901e95_all.zip"
+
+    static String indyBranch = 'master'
+
+    static String nullBranch = 'PR-1460'
+
+    static String vcxVersion = null
+
+    static String vcxRevision = null
+}
 
 testing()
 
 def testing() {
-    stage('Testing') {
-        parallel([
-            'Xenial' : { mainUbuntu() },
-            'Android': { android() },
-            'iOS' : { ios() }
-        ])
+    vcxVersion()
+    if (Globals.vcxVersion && Globals.vcxRevision) {
+        echo "VCX Version: ${Globals.vcxVersion}"
+        echo "VCX revision: ${Globals.vcxRevision}"
+        echo "Full VCX version: ${full_vcx_version()}"
+
+        stage('Testing') {
+            parallel([
+                    'Xenial' : { mainUbuntu() },
+                    'Android': { android() },
+                    'iOS' : { ios() }
+            ])
+        }
+    } else {
+        currentBuild.result = "FAILED"
+        if (env.BRANCH_NAME == "master") {
+            fail()
+        }
+        echo "vcx version not found"
     }
 }
+
+def buildLibindyDocker() {
+    def libindyDockerfile = 'vcx/ci/libindy.dockerfile'
+    def indyTag = appendTag(Globals.libindyTag, "~")
+
+    // Todo: when indy fixes libnullpay, delete this line
+    def nullTag="~967"
+//    def nullTag= appendTag(Globals.nullpayTag, "~")
+
+    docker.build("libindy", "--build-arg LIBINDY_VER=${Globals.libindyVersion}${indyTag} \
+            --build-arg LIBNULL_VER=${Globals.libnullVersion}${nullTag} \
+            --build-arg LIBSOVTOKEN_VER=${Globals.libsovtokenVersion} \
+            -f ${libindyDockerfile} .")
+}
+
+def buildAndroidDocker() {
+    def uid= sh(returnStdout: true, script: 'id -u').trim()
+    android = docker.build("android", "--build-arg uid=${uid} --build-arg RUST_VER=${Globals.rustVersion} -f vcx/wrappers/java/ci/android.dockerfile .")
+}
+
 
 def getUserUid() {
     return sh(returnStdout: true, script: 'id -u').trim()
@@ -35,118 +94,87 @@ def build(name, file, context='.', customParams = '') {
     return docker.build("$name", "${customParams} --build-arg uid=${getUserUid()} -f $file $context")
 }
 
-def getRevNumber() {
-    return sh(returnStdout: true, script: 'git log --pretty=format:%h -n 1')
-}
-
-def getCurDir() {
-    return sh(returnStdout: true, script: 'pwd')
-}
-
-static String rustVersion() {
-    return "1.31.1"
-}
-
-static String libindyVersion() {
-    return "1.7.0"
-}
-
-static String libindyTag() {
-    return "961"
-}
-
-static String libnullVersion() {
-    return "1.8.0"
-}
-
-static String nullpayTag() {
-    return "2"
-}
-
-static String libsovtokenVersion() {
-    return "0.9.6~-.1.126"
-}
-
-static String androidSovtokenArtifact() {
-    return "libsovtoken_0.9.6-201811211720-4901e95_all.zip"
-}
-
-static String iosSovtokenArtifact() {
-    return "libsovtoken_0.9.6-201811211710-4901e95_all.zip"
-}
-
-static String libindyDockerfile() {
-    return 'vcx/ci/libindy.dockerfile'
-}
-
-static String indyBranch() {
-    return 'master'
-}
-
-static String nullBranch() {
-    return 'PR-1460'
-}
-
 static String appendTag(tag, del) {
     if (tag != "") { tag = del + tag }
     return tag
 }
 
-def buildLibindyDocker() {
-    def indyTag = appendTag(libindyTag(), "~")
-    // Todo: when indy fixes libnullpay, delete this line
-    def nullTag="~967"
-//    def nullTag= appendTag(nullpayTag(), "~")
-    docker.build("libindy", "--build-arg LIBINDY_VER=${libindyVersion()}${indyTag} \
-            --build-arg LIBNULL_VER=${libnullVersion()}${nullTag} \
-            --build-arg LIBSOVTOKEN_VER=${libsovtokenVersion()} \
-            -f ${libindyDockerfile()} .")
+static String full_vcx_version() {
+    return Globals.vcxVersion + "-" + Globals.vcxRevision
 }
 
-def buildAndroidDocker() {
-    def uid= sh(returnStdout: true, script: 'id -u').trim()
-    android = docker.build("android", "--build-arg uid=${uid} --build-arg RUST_VER=${rustVersion()} -f vcx/wrappers/java/ci/android.dockerfile .")
-}
+def vcxVersion() {
+    node('ubuntu') {
 
+        try {
+            checkout scm
+
+            libindy = buildLibindyDocker()
+            def scripts_path = "vcx/ci/scripts"
+            stage('Retrieve VCX version for ios & android') {
+                libindy.inside {
+                    pwd = sh(
+                            returnStdout: true,
+                            script: 'pwd'
+                    ).trim()
+                    sh "cd vcx/libvcx && ./../ci/scripts/cargo-update-version"
+                    Globals.vcxRevision = sh(
+                            returnStdout: true,
+                            script: 'git rev-parse --short HEAD'
+                    ).trim()
+                    Globals.vcxVersion = sh(
+                            returnStdout: true,
+                            script: "./${scripts_path}/toml_utils.py ${pwd}/vcx/libvcx/Cargo.toml"
+                    ).trim()
+                }
+
+            }
+
+        } catch (Exception ex) {
+            currentBuild.result = "FAILED"
+            if (env.BRANCH_NAME == "master") {
+                fail()
+            }
+            echo "$ex error"
+        } finally {
+            sh 'docker system df'
+            step([$class: 'WsCleanup'])
+        }
+    }
+}
 
 def mainUbuntu() {
     node('ubuntu') {
 
         try {
             checkout scm
-            def volumeInternalDir = "/sdk/vcx/output"
-            def revNumber = getRevNumber()
-            def volumeName = "vcx-volume1-${revNumber}"
-            def libindyDockerfile = 'vcx/ci/libindy.dockerfile'
             def libvcxDockerfile = 'vcx/ci/libvcx.dockerfile'
             def pythonDockerfile = 'vcx/ci/python.dockerfile'
             def nodeDockerfile = 'vcx/wrappers/node/ci/node.dockerfile'
             def javaDockerfile = 'vcx/wrappers/java/ci/java.dockerfile'
             def uid= sh(returnStdout: true, script: 'id -u').trim()
             def cwd= sh(returnStdout: true, script: 'pwd').trim()
-            def libvcx
             def python
             def node
             def java
 
             // set this to '--no-test' and the rust code will not run tests.
-            def rustTestFlag=""
+            def rustTestFlag="test"
 
-
-            sh 'mkdir -p output'
-            sh 'rm -rf output/*'
             stage('Build Libindy Image') {
-                
                 // ******** Build the libindy base image (pulls down dependent debians from sovrin repo, and installs a majority of the dependencies)
                 buildLibindyDocker()
             }
-            stage('Build Libvcx Image, Tests Rust Code') {
-                libvcx = docker.build("libvcx", "--build-arg uid=${uid} --build-arg RUST_VER=${rustVersion()} -f ${libvcxDockerfile} .")
-                libvcx.inside() {
-                    sh "vcx/ci/scripts/package.sh ${rustTestFlag}"
-                }
 
+            sh 'mkdir -p output'
+            sh 'rm -rf output/*'
+            stage('Build Libvcx Image and Tests Rust Code') {
+                libvcx = docker.build("libvcx", "--build-arg uid=${uid} --build-arg RUST_VER=${Globals.rustVersion} -f ${libvcxDockerfile} .")
+                libvcx.inside {
+                    sh "vcx/ci/scripts/package.sh ${rustTestFlag} ${Globals.vcxVersion} ${Globals.vcxRevision}"
+                }
             }
+
             stage('Test Python Wrapper'){
                 python = docker.build("python", "--build-arg uid=${uid} -f ${pythonDockerfile} .")
                 withEnv(["PYTHONPATH=${cwd}/vcx/wrappers/python3:vcx/wrappers/python3"]){
@@ -237,11 +265,11 @@ def android() {
 
     stage('Android Build') {
         parallel([
-            "x86" : { buildAndroid("x86") },
-            "x86_64" : { buildAndroid("x86_64") },
-            "arm" : { buildAndroid("arm") },
-            "arm64" : { buildAndroid("arm64") },
-            "armv7" : { buildAndroid("armv7") }
+                "x86" : { buildAndroid("x86") },
+                "x86_64" : { buildAndroid("x86_64") },
+                "arm" : { buildAndroid("arm") },
+                "arm64" : { buildAndroid("arm64") },
+                "armv7" : { buildAndroid("armv7") }
         ])
     }
     node('ubuntu') {
@@ -287,21 +315,25 @@ def ios() {
 
                 // Build ios architectures
 
-                def indyTag = appendTag(libindyTag(), "-")
-                def nullTag = appendTag(nullpayTag(), "-")
+                def indyTag = appendTag(Globals.libindyTag, "-")
+                def nullTag = appendTag(Globals.nullpayTag, "-")
 
-                sh "source vcx/ci/scripts/iosBuild.sh ${indyBranch()} ${libindyVersion()}${indyTag} \
-                    ${nullBranch()} ${libnullVersion()}${nullTag} ${iosSovtokenArtifact()} ${rustVersion()}"
+                sh "source vcx/ci/scripts/iosBuild.sh ${Globals.indyBranch} ${Globals.libindyVersion}${indyTag} \
+                    ${Globals.nullBranch} ${Globals.libnullVersion}${nullTag} ${Globals.iosSovtokenArtifact} \
+                    ${Globals.rustVersion} ${full_vcx_version()}"
 
-                // Publish to Kraken
                 if (env.BRANCH_NAME == "master") {
                     withCredentials([usernameColonPassword(credentialsId: 'jenkins-kraken-svc', variable: 'KRAKEN_CREDENTIALS')]) {
+                        // ******** Archive with Jenkins ********
+                        archiveArtifacts allowEmptyArchive: true, artifacts: "/Users/jenkins/IOSBuilds/libvcxpartial/vcx.libvcxpartial_${full_vcx_version()}_universal.zip"
+                        archiveArtifacts allowEmptyArchive: true, artifacts: "/Users/jenkins/IOSBuilds/libvcxpartial/libvcx.a.libvcxpartial_${full_vcx_version()}.tar.gz"
+                        archiveArtifacts allowEmptyArchive: true, artifacts: "/Users/jenkins/IOSBuilds/libvcxall/vcx.libvcxall_${full_vcx_version()}_universal.zip"
+                        archiveArtifacts allowEmptyArchive: true, artifacts: "/Users/jenkins/IOSBuilds/libvcxall/libvcx.a.libvcxall_${full_vcx_version()}_universal.tar.gz"
+
                         sh "find /Users/jenkins/IOSBuilds/libvcxpartial/ -type f -name 'vcx.libvcxpartial_*_universal.zip' -exec curl -u \"${KRAKEN_CREDENTIALS}\" -X POST  https://kraken.corp.evernym.com/repo/ios/upload -F 'file=@{}' \\;"
                         sh "find /Users/jenkins/IOSBuilds/libvcxpartial/ -type f -name 'libvcx.a.libvcxpartial_*_universal.tar.gz' -exec curl -u \"${KRAKEN_CREDENTIALS}\" -X POST  https://kraken.corp.evernym.com/repo/ios/upload -F 'file=@{}' \\;"
                         sh "find /Users/jenkins/IOSBuilds/libvcxall/ -type f -name 'vcx.libvcxall_*_universal.zip' -exec curl -u \"${KRAKEN_CREDENTIALS}\" -X POST  https://kraken.corp.evernym.com/repo/ios/upload -F 'file=@{}' \\;"
                         sh "find /Users/jenkins/IOSBuilds/libvcxall/ -type f -name 'libvcx.a.libvcxall_*_universal.tar.gz' -exec curl -u \"${KRAKEN_CREDENTIALS}\" -X POST  https://kraken.corp.evernym.com/repo/ios/upload -F 'file=@{}' \\;"
-                        // sh "vcx/ci/scripts/publish.sh 'vcx.libvcxpartial_*_universal.zip' https://kraken.corp.evernym.com/repo/ios/upload /Users/jenkins/IOSBuilds/libvcxpartial/"
-                        // sh "vcx/ci/scripts/publish.sh 'vcx.libvcxall_*_universal.zip' https://kraken.corp.evernym.com/repo/ios/upload /Users/jenkins/IOSBuilds/libvcxall/"
                     }
                 }
             } catch (Exception ex) {
@@ -320,7 +352,7 @@ def ios() {
 def fail() {
 
     def message = [
-        message: "$JOB_NAME - Build # $BUILD_NUMBER - fail: Check console output at $BUILD_URL to view the results."
+            message: "$JOB_NAME - Build # $BUILD_NUMBER - fail: Check console output at $BUILD_URL to view the results."
     ]
     slackSend message
 }
@@ -342,11 +374,11 @@ def buildAndroid(arch) {
 
                     sh 'sudo ./vcx/ci/scripts/installCert.sh'
 
-                    def indyTag = appendTag(libindyTag(), "-")
-                    def nullTag = appendTag(nullpayTag(), "-")
+                    def indyTag = appendTag(Globals.libindyTag, "-")
+                    def nullTag = appendTag(Globals.nullpayTag, "-")
 
-                    sh "./${ANDROID_SCRIPT_PATH} ${arch} ${indyBranch()} ${libindyVersion()}${indyTag} \
-                            ${nullBranch()} ${libnullVersion()}${nullTag} ${androidSovtokenArtifact()}"
+                    sh "./${ANDROID_SCRIPT_PATH} ${arch} ${Globals.indyBranch} ${Globals.libindyVersion}${indyTag} \
+                            ${Globals.nullBranch} ${Globals.libnullVersion}${nullTag} ${Globals.androidSovtokenArtifact}"
 
                 }
 
@@ -387,7 +419,13 @@ def publishAndroid(envn) {
             sh 'cp $settingsFile .'
             ANDROID_SCRIPT_PATH = 'vcx/ci/scripts/androidPublish.sh'
             sh "chmod +x ${ANDROID_SCRIPT_PATH}"
-            sh "./${ANDROID_SCRIPT_PATH}"
+            sh "./${ANDROID_SCRIPT_PATH} ${full_vcx_version()}"
+        }
+
+        withCredentials([usernameColonPassword(credentialsId: 'jenkins-kraken-svc', variable: 'KRAKEN_CREDENTIALS')]) {
+            artifactLocation='vcx/wrappers/java/artifacts/aar'
+            artifactName="com.evernym-vcx_${full_vcx_version()}_x86-armv7-release.aar"
+            archiveArtifacts allowEmptyArchive: true, artifacts: "${artifactLocation}/${artifactName}"
         }
     }
 }

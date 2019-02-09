@@ -47,12 +47,7 @@ if [[ $RUSTUP_VERSION =~ ^'rustup ' ]]; then
     rustup default ${DEFAULT_RUST_VERSION}
     rustup component add rls-preview rust-analysis rust-src
     echo "Using rustc version $(rustc --version)"
-    # rustup target remove aarch64-linux-android 
-    # rustup target remove armv7-linux-androideabi 
-    # rustup target remove arm-linux-androideabi 
-    # rustup target remove i686-linux-android 
-    # rustup target remove x86_64-linux-android
-     rustup target add aarch64-apple-ios armv7-apple-ios armv7s-apple-ios x86_64-apple-ios i386-apple-ios
+    rustup target add aarch64-apple-ios armv7-apple-ios armv7s-apple-ios x86_64-apple-ios i386-apple-ios
 
     RUST_TARGETS=$(rustc --print target-list|grep -i ios)
     if [ "$RUST_TARGETS" = "" ]; then
@@ -88,4 +83,5 @@ if [[ $RUSTUP_VERSION =~ ^'rustup ' ]]; then
     brew install wget
     brew install truncate
     brew install libzip
+    brew install python3
 fi
