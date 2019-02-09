@@ -83,22 +83,44 @@ download_sdk
 
 pushd ${SCRIPT_DIR} # we will work on relative paths from the script directory
     pushd ../android
-    npm install
+        npm install
     popd
     pushd ..
-    ./gradlew --no-daemon clean build --project-dir=android -x test #skipping tests because the already run in jenkins CI
+        # Run the tests first
+        ./gradlew --no-daemon :assembleDebugAndroidTest --project-dir=android -x test
 
-    ./gradlew --no-daemon :assembleDebugAndroidTest --project-dir=android -x test
-    adb shell service list
-    echo "Installing the android test apk that will test the aar library..."
-    adb install ./android/build/outputs/apk/androidTest/debug/com.evernym-vcx_1.0.0-*_x86-armv7-debug-androidTest.apk
-    echo "Starting the tests of the aar library..."
-    ./gradlew --full-stacktrace --debug --console=verbose --no-daemon :connectedCheck --project-dir=android
-    cat ./android/build/reports/androidTests/connected/me.connect.VcxWrapperTests.html
+        echo "Installing the android test apk that will test the aar library..."
+        i=0
+        while
+            sleep 10
+            : ${start=$i}
+            i="$((i+1))"
+            echo "i: ${i}"
+            ADB_INSTALL=$(adb install ./android/build/outputs/apk/androidTest/debug/com.evernym-vcx_1.0.0-*_x86-armv7-debug-androidTest.apk 2>&1)
+            echo "ADB_INSTALL -- ${ADB_INSTALL}"
+            FAILED_INSTALL=$(echo ${ADB_INSTALL}|grep "adb: failed to install")
+            [ "${FAILED_INSTALL}" != "" ] && [ "$i" -lt 70 ]            # test the limit of the loop.
+        do :;  done
 
-    mkdir -p artifacts/aar
-    pushd android/build/outputs/aar
-        cp $(ls -t1 |  head -n 1) ${SCRIPT_DIR}/../artifacts/aar
+        if [ "${FAILED_INSTALL}" != "" ]; then
+            exit 1
+        fi
+
+        adb shell service list
+        #adb install ./android/build/outputs/apk/androidTest/debug/com.evernym-vcx_1.0.0-*_x86-armv7-debug-androidTest.apk
+        echo "Starting the tests of the aar library..."
+        ./gradlew --full-stacktrace --debug --console=verbose --no-daemon :connectedCheck --project-dir=android
+        cat ./android/build/reports/androidTests/connected/me.connect.VcxWrapperTests.html
     popd
+popd
 
+pushd ${SCRIPT_DIR} # we will work on relative paths from the script directory
+    pushd ..
+        # Now build it clean
+        ./gradlew --no-daemon clean build --project-dir=android -x test #skipping tests because they already run in jenkins CI
+        mkdir -p artifacts/aar
+        pushd android/build/outputs/aar
+            cp $(ls -t1 |  head -n 1) ${SCRIPT_DIR}/../artifacts/aar
+        popd
+    popd
 popd
