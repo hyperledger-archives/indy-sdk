@@ -99,8 +99,6 @@ impl Pool {
     }
 
     pub fn submit_schema(&self, issuer_did: &str, issuer_wallet_handle: i32, schema_json: &str) -> String {
-
-        // Issuer posts Schema to Ledger
         let schema_request = ledger::build_schema_request(issuer_did, schema_json).unwrap();
         ledger::sign_and_submit_request(self.pool_handle, issuer_wallet_handle, issuer_did, &schema_request).unwrap()
     }
@@ -113,7 +111,6 @@ impl Pool {
     }
 
     pub fn submit_cred_def(&self, issuer_did: &str, issuer_wallet_handle: i32, cred_def_json: &str) -> String {
-        // Issuer post CredentialDefinition to Ledger
         let cred_def_request = ledger::build_cred_def_txn(issuer_did, cred_def_json).unwrap();
         ledger::sign_and_submit_request(self.pool_handle, issuer_wallet_handle, issuer_did, &cred_def_request).unwrap()
 
