@@ -1,4 +1,5 @@
 import pytest
+import base64
 import random
 from vcx.error import ErrorCode, VcxError
 from vcx.state import State
@@ -28,6 +29,33 @@ async def test_connection_connect():
     with pytest.raises(VcxError) as e:
         await connection.serialize()
 
+@pytest.mark.asyncio
+@pytest.mark.usefixtures('vcx_init_test_mode')
+async def test_connection_send_message():
+    connection = await Connection.create(source_id)
+    invite_details = await connection.connect(connection_options)
+    assert invite_details
+    with pytest.raises(VcxError) as e:
+        msg_id = await connection.send_message("msg","type","title")
+    assert ErrorCode.NotReady == e.value.error_code
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures('vcx_init_test_mode')
+async def test_connection_sign_data():
+    connection = await Connection.create(source_id)
+    invite_details = await connection.connect(connection_options)
+    assert invite_details
+    signature = await connection.sign_data(invite_details)
+    assert signature
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures('vcx_init_test_mode')
+async def test_connection_verify_signature():
+    connection = await Connection.create(source_id)
+    invite_details = await connection.connect(connection_options)
+    assert invite_details
+    signature = await connection.verify_signature(invite_details, invite_details)
+    assert signature
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
