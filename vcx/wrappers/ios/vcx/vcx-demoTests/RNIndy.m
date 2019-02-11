@@ -180,11 +180,6 @@
     return [[[ConnectMeVcx alloc] init] initNullPay];
 }
 
--(int)initSovToken {
-    //return [[[ConnectMeVcx alloc] init] initSovToken];
-    return 0;
-}
-
 -(void)credentialCreateWithMsgId: (NSString *) sourceId
                   withConnectionHandle: (VcxHandle) connectionHandle
                   withMessageId: (NSString *) messageId

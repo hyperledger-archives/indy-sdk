@@ -52,10 +52,6 @@ vcx_error_t nullpay_init();
 //
 // #Params
 // delete: specify whether wallet/pool should be deleted
-//
-// #Returns
-// Successt();
-//vcx_error_t nullpay_init();
 
 // Provision an agent in the agency, populate configuration and wallet for this agent.
 // NOTE: for synchronous call use vcx_provision_agent

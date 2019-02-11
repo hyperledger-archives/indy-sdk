@@ -102,6 +102,5 @@
                     completion:(void (^)(BOOL success))successful;
 
 -(int)initNullPay;
--(int)initSovToken;
 
 @end
