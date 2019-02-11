@@ -2,6 +2,8 @@
 
 @Library('SovrinHelpers') _
 
+testReleaseVersion = env.INDY_SDK_TEST_RELEASE_VERSION ?: null
+
 properties([
         [$class: 'BuildDiscarderProperty', strategy: [
                 $class               : 'LogRotator',
@@ -14,6 +16,11 @@ properties([
 
 libindyBuildFinished = ["Ubuntu": false, "RedHat": false]
 libvcxBuildFinished = ["Ubuntu": false, "RedHat": false]
+
+gitHubUserCredId = env.GITHUB_BOT_USER ?: 'sovbot-github'
+sovrinPackagingRepo = env.SOVRIN_PACKAGING_REPO ?: 'https://github.com/sovrin-foundation/sovrin-packaging'
+sovrinPackagingBranch = env.SOVRIN_PACKAGING_BRANCH ?: 'master'
+mavenDeployAddOptions = env.MAVEN_DEPLOY_ADD_OPTIONS ?: ''
 
 try {
     testing()
@@ -160,10 +167,14 @@ def closePool(env_name, network_name, poolInst) {
 }
 
 
-void getSrcVersion(folder) {
-    commit = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
-    def version = sh(returnStdout: true, script: "wget -q https://raw.githubusercontent.com/hyperledger/indy-sdk/$commit/$folder/Cargo.toml -O - | grep -E '^version =' | head -n1 | cut -f2 -d= | cut -f2 -d '\"'").trim()
-    return version
+String getSrcVersion(folder) {
+    if (testReleaseVersion) {
+        return testReleaseVersion
+    } else {
+        commit = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
+        def version = sh(returnStdout: true, script: "wget -q https://raw.githubusercontent.com/hyperledger/indy-sdk/$commit/$folder/Cargo.toml -O - | grep -E '^version =' | head -n1 | cut -f2 -d= | cut -f2 -d '\"'").trim()
+        return version
+    }
 }
 
 def linuxTesting(file, env_name, network_name, stashBuildResults) {
@@ -864,14 +875,22 @@ def rustWrapperPublishing(testEnv, isRelease) {
     echo 'Publish Indy to Cargo'
 
     dir('wrappers/rust') {
-        sh "sed -i -- 's/indy-sys = { path =\"indy-sys\", version = \"=$ver\" }/indy-sys = { path =\"indy-sys\", version = \"=$ver$suffix\" }/g' Cargo.toml"
+        if (testReleaseVersion) {
+            sh "sed -i -E -- 's/indy-sys = \\{ path =\"indy-sys\", version = \"=([0-9,.]+)\" \\}/indy-sys = \\{ path =\"indy-sys\", version = \"=${testReleaseVersion}${suffix}\" \\}/g' Cargo.toml"
+        } else {
+            sh "sed -i -- 's/indy-sys = { path =\"indy-sys\", version = \"=$ver\" }/indy-sys = { path =\"indy-sys\", version = \"=$ver$suffix\" }/g' Cargo.toml"
+        }
         publishToCargo(testEnv, suffix, ver)
     }
 }
 
 def publishToCargo(testEnv, suffix, ver) {
     testEnv.inside {
-        sh "sed -i -E -e 'H;1h;\$!d;x' -e \"s/version = \\\"$ver/version = \\\"$ver$suffix/\" Cargo.toml"
+        if (testReleaseVersion) {
+            sh "sed -i -E -e 'H;1h;\$!d;x' -e \"s/version = \\\"([0-9,.]+)/version = \\\"${testReleaseVersion}${suffix}/\" Cargo.toml"
+        } else {
+            sh "sed -i -E -e 'H;1h;\$!d;x' -e \"s/version = \\\"$ver/version = \\\"$ver$suffix/\" Cargo.toml"
+        }
 
         withCredentials([string(credentialsId: 'cargoSecretKey', variable: 'LOGIN')]) {
             sh 'cargo login $LOGIN'
@@ -925,8 +944,11 @@ def windowsPublishArtifact(testEnv, folder, packageName, packageType, packageVer
         unstash name: stashName
 
         withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'repo_key')]) {
-
-            sh "ci/win-zip-and-upload.sh $folder $packageName $packageType $packageVersion '${repo_key}' $env.BRANCH_NAME $env.BUILD_NUMBER"
+            withEnv([
+                "SOVRIN_REPO_HOST=$SOVRIN_REPO_HOST",
+            ]) {
+                sh "ci/win-zip-and-upload.sh $folder $packageName $packageType $packageVersion '${repo_key}' $env.BRANCH_NAME $env.BUILD_NUMBER"
+            }
         }
     }
 }
@@ -973,11 +995,11 @@ def publishIOSAtrifacts(testEnv, packageName, stashName, version, targetName) {
         withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'sovrin_repo_key')]) {
             target = "/var/repository/repos/ios/$packageName/$env.BRANCH_NAME/$packageName-core"
 
-            sh "ssh -v -oStrictHostKeyChecking=no -i '$sovrin_repo_key' repo@192.168.11.115 mkdir -p $target/$version"
-            sh "scp -r -oStrictHostKeyChecking=no -i $sovrin_repo_key $packageName/out_pod/${packageName}.tar.gz repo@192.168.11.115:$target/$version/"
+            sh "ssh -v -oStrictHostKeyChecking=no -i '$sovrin_repo_key' repo@$SOVRIN_REPO_HOST mkdir -p $target/$version"
+            sh "scp -r -oStrictHostKeyChecking=no -i $sovrin_repo_key $packageName/out_pod/${packageName}.tar.gz repo@$SOVRIN_REPO_HOST:$target/$version/"
 
             if (targetName != null) {
-                sh "ssh -v -oStrictHostKeyChecking=no -i $sovrin_repo_key repo@192.168.11.115 mv $target/$version/${packageName}.tar.gz $target/$version/$targetName"
+                sh "ssh -v -oStrictHostKeyChecking=no -i $sovrin_repo_key repo@$SOVRIN_REPO_HOST mv $target/$version/${packageName}.tar.gz $target/$version/$targetName"
             }
         }
     }
@@ -1094,12 +1116,16 @@ def javaWrapperPublishing(testEnv, isRelease) {
         testEnv.inside {
             echo "Publish To Maven Test: Test"
 
-            sh "sed -i -E -e 'H;1h;\$!d;x' -e \"s/<version>([0-9,.]+)</<version>\\1$suffix</\" pom.xml"
+            if (testReleaseVersion) {
+                sh "sed -i -E -e 'H;1h;\$!d;x' -e \"s/<version>([0-9,.]+)</<version>${testReleaseVersion}${suffix}</\" pom.xml"
+            } else {
+                sh "sed -i -E -e 'H;1h;\$!d;x' -e \"s/<version>([0-9,.]+)</<version>\\1$suffix</\" pom.xml"
+            }
 
             withCredentials([file(credentialsId: 'maven-settings', variable: 'settingsFile')]) {
                 sh 'cp $settingsFile .'
 
-                sh "mvn clean deploy -DskipTests --settings settings.xml"
+                sh "mvn clean deploy -DskipTests $mavenDeployAddOptions --settings settings.xml"
             }
         }
     }
@@ -1119,7 +1145,12 @@ def vcxJavaWrapperPublishing(testEnv, isRelease) {
                 sh "ci/buildJar.sh ${version}${suffix}"
 
                 sh "chmod +x ci/publishJar.sh"
-                sh 'ci/publishJar.sh'
+
+                withEnv([
+                    "MAVEN_ADD_OPTIONS=$mavenDeployAddOptions",
+                ]) {
+                    sh 'ci/publishJar.sh'
+                }
             }
         }
     }
@@ -1274,8 +1305,8 @@ def fullVersion(version) {
 
 def copyFilesFromRcToStable(src, target) {
     withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'sovrin_repo_key')]) {
-        sh "ssh -v -oStrictHostKeyChecking=no -i '$sovrin_repo_key' repo@192.168.11.115 '! ls $target'"
-        sh "ssh -v -oStrictHostKeyChecking=no -i '$sovrin_repo_key' repo@192.168.11.115 cp -r $src $target"
+        sh "ssh -v -oStrictHostKeyChecking=no -i '$sovrin_repo_key' repo@$SOVRIN_REPO_HOST '! ls $target'"
+        sh "ssh -v -oStrictHostKeyChecking=no -i '$sovrin_repo_key' repo@$SOVRIN_REPO_HOST cp -r $src $target"
     }
 }
 
@@ -1300,7 +1331,7 @@ def publishLibvcxDebRCtoStable(testEnv) {
     testEnv.inside {
         unstash name: "libvcxDebs"
         sh "fpm -s deb -t deb --version $rcFullVersion --no-auto-depends --depends 'libindy = $libindyVersion' -f -p vcx/libvcx/debs vcx/libvcx/debs/libvcx_\"$rcFullVersion\"_amd64.deb"
-        stash includes: "vcx/libvcx/debs/*", name: libvcxDebs
+        stash includes: "vcx/libvcx/debs/*", name: "libvcxDebs"
     }
 
     publishDebRCtoStable(testEnv, "libvcx", "vcx/libvcx", libvcxVersion, "libvcxDebs", false)
@@ -1334,7 +1365,7 @@ def buildTestEnv(file, env_name) {
 }
 
 def downloadPackagingUtils() {
-    git branch: 'master', credentialsId: 'evernym-github-machine-user', url: 'https://github.com/evernym/sovrin-packaging'
+    git branch: sovrinPackagingBranch, credentialsId: gitHubUserCredId, url: sovrinPackagingRepo
 }
 
 def shell(command) {
@@ -1425,7 +1456,11 @@ def androidPublishArtifact(buildEnv, arch, packageVersion, artifact) {
         unstash name: "${artifact}_${arch}_zip"
 
         withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'repo_key')]) {
-            sh "ci/android-zip-and-upload.sh $arch $packageVersion '${repo_key}' $env.BRANCH_NAME $env.BUILD_NUMBER $artifact"
+            withEnv([
+                "SOVRIN_REPO_HOST=$SOVRIN_REPO_HOST",
+            ]) {
+                sh "ci/android-zip-and-upload.sh $arch $packageVersion '${repo_key}' $env.BRANCH_NAME $env.BUILD_NUMBER $artifact"
+            }
         }
     }
 }

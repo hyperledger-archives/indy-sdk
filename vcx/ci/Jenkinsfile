@@ -17,9 +17,9 @@ class Globals {
 
     static String rustVersion = "1.31.1"
 
-    static String libindyVersion = "1.7.0"
+    static String libindyVersion = "1.8.0"
 
-    static String libindyTag = "961"
+    static String libindyTag = "968"
 
     static String libnullVersion = "1.8.0"
 
