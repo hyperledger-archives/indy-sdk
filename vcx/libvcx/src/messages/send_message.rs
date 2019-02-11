@@ -5,6 +5,7 @@ use messages::*;
 use messages::message_type::MessageTypes;
 use utils::{httpclient, error};
 
+
 #[derive(Debug)]
 pub struct SendMessageBuilder {
     mtype: RemoteMessageType,
@@ -57,9 +58,9 @@ impl SendMessageBuilder {
         Ok(self)
     }
 
-    pub fn edge_agent_payload(&mut self, payload: &[u8]) -> Result<&mut Self, u32> {
+    pub fn edge_agent_payload(&mut self, my_vk:&str, their_vk: &str, data: &str, payload_type: PayloadKinds) -> Result<&mut Self, u32> {
         //todo: is this a json value, String??
-        self.payload = payload.to_vec();
+        self.payload = encrypted_payload(my_vk, their_vk, data, payload_type)?;
         Ok(self)
     }
 
@@ -106,7 +107,7 @@ impl SendMessageBuilder {
             }
             settings::ProtocolTypes::V2 => {
                 let mut messages = parse_response_from_agency(&response)?;
-                let response: RemoteMessageResponse = RemoteMessageResponse::from_a2a_message(messages.remove(0))?;
+                let response: SendRemoteMessageResponse = SendRemoteMessageResponse::from_a2a_message(messages.remove(0))?;
                 Ok(SendResponse { uid: Some(response.uid.clone()), uids: if response.sent { vec![response.uid] } else { vec![] } })
             }
         }
@@ -142,8 +143,8 @@ impl GeneralMessage for SendMessageBuilder {
                     vec![A2AMessage::CreateMessage(create), A2AMessage::MessageDetail(MessageDetail::General(detail))]
                 }
                 settings::ProtocolTypes::V2 => {
-                    let message = RemoteMessage {
-                        msg_type: MessageTypes::build(A2AMessageKinds::RemoteMessage),
+                    let message = SendRemoteMessage {
+                        msg_type: MessageTypes::build(A2AMessageKinds::SendRemoteMessage),
                         mtype: self.mtype.clone(),
                         reply_to_msg_id: self.ref_msg_id.clone(),
                         send_msg: true,
@@ -152,7 +153,7 @@ impl GeneralMessage for SendMessageBuilder {
                         title: self.title.clone(),
                         detail: self.detail.clone(),
                     };
-                    vec![A2AMessage::RemoteMessage(message)]
+                    vec![A2AMessage::SendRemoteMessage(message)]
                 }
             };
 
@@ -186,15 +187,12 @@ pub fn send_generic_message(connection_handle: u32, msg: &str, msg_type: &str, m
     let vk = connection::get_pw_verkey(connection_handle).or(Err(error::INVALID_CONNECTION_HANDLE.code_num))?;
     let remote_vk = connection::get_their_pw_verkey(connection_handle).or(Err(error::INVALID_CONNECTION_HANDLE.code_num))?;
 
-    let data = connection::generate_encrypted_payload(&vk, &remote_vk, &msg, PayloadKinds::Other(msg_type.to_string()))
-        .or(Err(error::UNKNOWN_LIBINDY_ERROR.code_num))?;
-
     let response =
         send_message()
             .to(&did)?
             .to_vk(&vk)?
             .msg_type(&RemoteMessageType::Other(msg_type.to_string()))?
-            .edge_agent_payload(&data)?
+            .edge_agent_payload(&vk, &remote_vk, &msg, PayloadKinds::Other(msg_type.to_string()))?
             .agent_did(&agent_did)?
             .agent_vk(&agent_vk)?
             .set_title(&msg_title)?
@@ -208,6 +206,26 @@ pub fn send_generic_message(connection_handle: u32, msg: &str, msg_type: &str, m
 
     let msg_uid = response.get_msg_uid()?;
     return Ok(msg_uid);
+}
+
+// TODO: Refactor Error
+// this will become a CommonError, because multiple types (Connection/Issuer Credential) use this function
+// Possibly this function moves out of this file.
+// On second thought, this should stick as a ConnectionError.
+pub fn encrypted_payload(my_vk: &str, their_vk: &str, data: &str, msg_type: PayloadKinds) -> Result<Vec<u8>, u32> {
+    let payload = Payload {
+        type_: PayloadTypes::build(msg_type, "json"),
+        msg: data.to_string(),
+    };
+
+    let bytes = rmp_serde::to_vec_named(&payload)
+        .map_err(|err| {
+            error!("could not encode create_keys msg: {}", err);
+            error::INVALID_MSGPACK.code_num
+        })?;
+
+    trace!("Sending payload: {:?}", bytes);
+    ::utils::libindy::crypto::prep_msg(&my_vk, &their_vk, &bytes)
 }
 
 #[cfg(test)]

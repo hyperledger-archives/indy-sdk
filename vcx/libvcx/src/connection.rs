@@ -12,11 +12,9 @@ use api::VcxStateType;
 use settings;
 use messages::GeneralMessage;
 use messages;
-use messages::{Payload, PayloadKinds, PayloadTypes};
-use messages::MessageStatusCode;
+use messages::{MessageStatusCode, RemoteMessageType};
 use messages::invite::{InviteDetail, SenderDetail};
 use messages::get_message::{Message, Payload as MessagePayload};
-use self::rmp_serde::encode;
 use serde_json::Value;
 use utils::json::KeyMatch;
 use error::connection::ConnectionError;
@@ -505,7 +503,7 @@ pub fn update_state(handle: u32) -> Result<u32, ConnectionError> {
     debug!("connection {} update state response: {:?}", get_source_id(handle).unwrap_or_default(), response);
     if get_state(handle) == VcxStateType::VcxStateOfferSent as u32 || get_state(handle) == VcxStateType::VcxStateInitialized as u32 {
         for i in response {
-            if i.status_code == MessageStatusCode::Accepted && i.msg_type == "connReqAnswer" {
+            if i.status_code == MessageStatusCode::Accepted && i.msg_type == RemoteMessageType::ConnReqAnswer {
                 // TODO: Refactor Error
                 let details = parse_acceptance_details(handle, &i)?;
                 set_their_pw_did(handle, &details.did).ok();
@@ -608,28 +606,6 @@ pub fn set_invite_details(handle: u32, invite_detail: &InviteDetail) -> Result<(
         Ok(())
     }).or(Err(ConnectionError::InvalidHandle()))
 }
-
-// TODO: Refactor Error
-// this will become a CommonError, because multiple types (Connection/Issuer Credential) use this function
-// Possibly this function moves out of this file.
-// On second thought, this should stick as a ConnectionError.
-pub fn generate_encrypted_payload(my_vk: &str, their_vk: &str, data: &str, msg_type: PayloadKinds) -> Result<Vec<u8>, ConnectionError> {
-    let my_payload = Payload {
-        type_: PayloadTypes::build(msg_type, "json"),
-        msg: data.to_string(),
-    };
-
-    let bytes = encode::to_vec_named(&my_payload)
-        .map_err(|err| {
-            error!("could not encode create_keys msg: {}", err);
-            ConnectionError::InvalidMessagePack()
-        })?;
-
-    trace!("Sending payload: {:?}", bytes);
-    crypto::prep_msg(&my_vk, &their_vk, &bytes)
-        .map_err(|ec| ConnectionError::CommonError(ec))
-}
-
 
 //**********
 // Code to convert InviteDetails to Abbreviated String
@@ -897,7 +873,7 @@ pub mod tests {
             payload: Some(vec![-126, -91, 64, 116, 121, 112, 101, -125, -92, 110, 97, 109, 101, -83, 99, 111, 110, 110, 82, 101, 113, 65, 110, 115, 119, 101, 114, -93, 118, 101, 114, -93, 49, 46, 48, -93, 102, 109, 116, -84, 105, 110, 100, 121, 46, 109, 115, 103, 112, 97, 99, 107, -92, 64, 109, 115, 103, -36, 1, 53, -48, -127, -48, -84, 115, 101, 110, 100, 101, 114, 68, 101, 116, 97, 105, 108, -48, -125, -48, -93, 68, 73, 68, -48, -74, 67, 113, 85, 88, 113, 53, 114, 76, 105, 117, 82, 111, 100, 55, 68, 67, 52, 97, 86, 84, 97, 115, -48, -90, 118, 101, 114, 75, 101, 121, -48, -39, 44, 67, 70, 86, 87, 122, 118, 97, 103, 113, 65, 99, 117, 50, 115, 114, 68, 106, 117, 106, 85, 113, 74, 102, 111, 72, 65, 80, 74, 66, 111, 65, 99, 70, 78, 117, 49, 55, 113, 117, 67, 66, 57, 118, 71, -48, -80, 97, 103, 101, 110, 116, 75, 101, 121, 68, 108, 103, 80, 114, 111, 111, 102, -48, -125, -48, -88, 97, 103, 101, 110, 116, 68, 73, 68, -48, -74, 57, 54, 106, 111, 119, 113, 111, 84, 68, 68, 104, 87, 102, 81, 100, 105, 72, 49, 117, 83, 109, 77, -48, -79, 97, 103, 101, 110, 116, 68, 101, 108, 101, 103, 97, 116, 101, 100, 75, 101, 121, -48, -39, 44, 66, 105, 118, 78, 52, 116, 114, 53, 78, 88, 107, 69, 103, 119, 66, 56, 81, 115, 66, 51, 109, 109, 109, 122, 118, 53, 102, 119, 122, 54, 85, 121, 53, 121, 112, 122, 90, 77, 102, 115, 74, 56, 68, 122, -48, -87, 115, 105, 103, 110, 97, 116, 117, 114, 101, -48, -39, 88, 77, 100, 115, 99, 66, 85, 47, 99, 89, 75, 72, 49, 113, 69, 82, 66, 56, 80, 74, 65, 43, 48, 51, 112, 121, 65, 80, 65, 102, 84, 113, 73, 80, 74, 102, 52, 84, 120, 102, 83, 98, 115, 110, 81, 86, 66, 68, 84, 115, 67, 100, 119, 122, 75, 114, 52, 54, 120, 87, 116, 80, 43, 78, 65, 68, 73, 57, 88, 68, 71, 55, 50, 50, 103, 113, 86, 80, 77, 104, 117, 76, 90, 103, 89, 67, 103, 61, 61]),
             sender_did: "H4FBkUidRG8WLsWa7M6P38".to_string(),
             uid: "yzjjywu".to_string(),
-            msg_type: "connReqAnswer".to_string(),
+            msg_type: RemoteMessageType::ConnReqAnswer,
             ref_msg_id: None,
             delivery_details: Vec::new(),
             decrypted_payload: None,
@@ -931,7 +907,7 @@ pub mod tests {
             // This will cause an error
             sender_did: "H4FBkUidRG8WLsWa7M6P38".to_string(),
             uid: "yzjjywu".to_string(),
-            msg_type: "connReqAnswer".to_string(),
+            msg_type: RemoteMessageType::ConnReqAnswer,
             ref_msg_id: None,
             delivery_details: Vec::new(),
             decrypted_payload: None,

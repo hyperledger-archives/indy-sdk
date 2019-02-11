@@ -56,20 +56,7 @@ impl GetMessagesBuilder {
         Ok(self)
     }
 
-    pub fn status_codes(&mut self, status_codes: Option<Vec<String>>) -> Result<&mut Self, u32> {
-        let status_codes =
-            match status_codes {
-                Some(codes) => {
-                    let codes = codes
-                        .iter()
-                        .map(|code|
-                            serde_json::from_str::<MessageStatusCode>(&format!("\"{}\"", code)).or(Err(error::INVALID_JSON.code_num))
-                        ).collect::<Result<Vec<MessageStatusCode>, u32>>()?;
-                    Some(codes)
-                }
-                None => None
-            };
-
+    pub fn status_codes(&mut self, status_codes: Option<Vec<MessageStatusCode>>) -> Result<&mut Self, u32> {
         self.payload.status_codes = status_codes;
         Ok(self)
     }
@@ -189,7 +176,7 @@ pub struct Message {
     pub sender_did: String,
     pub uid: String,
     #[serde(rename = "type")]
-    pub msg_type: String,
+    pub msg_type: RemoteMessageType,
     pub ref_msg_id: Option<String>,
     #[serde(skip_deserializing)]
     pub delivery_details: Vec<DeliveryDetails>,
@@ -291,6 +278,19 @@ pub fn download_messages(pairwise_dids: Option<Vec<String>>, status_codes: Optio
         ::utils::httpclient::set_next_u8_response(::utils::constants::GET_ALL_MESSAGES_RESPONSE.to_vec());
     }
 
+    let status_codes =
+        match status_codes {
+            Some(codes) => {
+                let codes = codes
+                    .iter()
+                    .map(|code|
+                        serde_json::from_str::<MessageStatusCode>(&format!("\"{}\"", code)).or(Err(error::INVALID_JSON.code_num))
+                    ).collect::<Result<Vec<MessageStatusCode>, u32>>()?;
+                Some(codes)
+            }
+            None => None
+        };
+
     let response =
         get_messages()
             .uid(uids)?
@@ -346,7 +346,7 @@ mod tests {
             payload: Some(vec![-9, 108, 97, 105, 109, 45, 100, 97, 116, 97]),
             sender_did: "WVsWVh8nL96BE3T3qwaCd5".to_string(),
             uid: "mmi3yze".to_string(),
-            msg_type: "connReq".to_string(),
+            msg_type: RemoteMessageType::ConnReq,
             ref_msg_id: None,
             delivery_details: vec![delivery_details1],
             decrypted_payload: None,
@@ -356,7 +356,7 @@ mod tests {
             payload: None,
             sender_did: "WVsWVh8nL96BE3T3qwaCd5".to_string(),
             uid: "zjcynmq".to_string(),
-            msg_type: "credOffer".to_string(),
+            msg_type: RemoteMessageType::CredOffer,
             ref_msg_id: None,
             delivery_details: Vec::new(),
             decrypted_payload: None,

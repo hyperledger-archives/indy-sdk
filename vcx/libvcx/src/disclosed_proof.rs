@@ -421,16 +421,13 @@ impl DisclosedProof {
             true => DEFAULT_GENERATED_PROOF.to_string(),
         };
 
-        let data: Vec<u8> = connection::generate_encrypted_payload(local_my_vk, local_their_vk, &proof, PayloadKinds::Proof)
-            .or(Err(ProofError::ProofConnectionError()))?;
-
         messages::send_message()
             .to(local_my_did)?
             .to_vk(local_my_vk)?
             .msg_type(&RemoteMessageType::Proof)?
             .agent_did(local_agent_did)?
             .agent_vk(local_agent_vk)?
-            .edge_agent_payload(&data)?
+            .edge_agent_payload(&local_my_vk, &local_their_vk, &proof, PayloadKinds::Proof).or(Err(ProofError::ProofConnectionError()))?
             .ref_msg_id(ref_msg_uid)?
             .send_secure()
             .map_err(|err|{
@@ -569,7 +566,7 @@ pub fn get_proof_request(connection_handle: u32, msg_id: &str) -> Result<String,
                                                                  &agent_vk,
                                                                  Some(vec![msg_id.to_string()])).map_err(|ec| ProofError::CommonError(ec))?;
 
-    if message[0].msg_type.eq("proofReq") {
+    if message[0].msg_type == RemoteMessageType::ProofReq {
         let (_, msg_data) = match message[0].payload {
             Some(ref data) => {
                 let data = to_u8(data);
@@ -611,7 +608,7 @@ pub fn get_proof_request_messages(connection_handle: u32, match_name: Option<&st
     for msg in payload {
         if msg.sender_did.eq(&my_did){ continue; }
 
-        if msg.msg_type.eq("proofReq") {
+        if msg.msg_type == RemoteMessageType::ProofReq {
             let (_, msg_data) = match msg.payload {
                 Some(ref data) => {
                     let data = to_u8(data);

@@ -29,8 +29,6 @@ pub type PayloadTypeV2 = MessageTypeV2;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub enum PayloadKinds {
-    ConnReq,
-    ConnReqAnswer,
     CredOffer,
     CredReq,
     Cred,
@@ -42,8 +40,6 @@ pub enum PayloadKinds {
 impl PayloadKinds {
     pub fn family(&self) -> MessageFamilies {
         match self {
-            PayloadKinds::ConnReq => MessageFamilies::Pairwise,
-            PayloadKinds::ConnReqAnswer => MessageFamilies::Pairwise,
             PayloadKinds::CredOffer => MessageFamilies::CredentialExchange,
             PayloadKinds::CredReq => MessageFamilies::CredentialExchange,
             PayloadKinds::Cred => MessageFamilies::CredentialExchange,
@@ -53,16 +49,28 @@ impl PayloadKinds {
         }
     }
 
-    pub fn name(&self) -> String {
-        match self {
-            PayloadKinds::ConnReq => "CONN_REQ".to_string(),
-            PayloadKinds::ConnReqAnswer => "CONN_REQ_ANSWER".to_string(),
-            PayloadKinds::CredOffer => "CRED_OFFER".to_string(),
-            PayloadKinds::CredReq => "CRED_REQ".to_string(),
-            PayloadKinds::Cred => "CRED".to_string(),
-            PayloadKinds::Proof => "PROOF".to_string(),
-            PayloadKinds::ProofRequest => "PROOF_REQUEST".to_string(),
-            PayloadKinds::Other(kind) => kind.to_string(),
+    fn name<'a>(&'a self) -> &'a str {
+        match ProtocolType::get() {
+            ProtocolTypes::V1 => {
+                match self {
+                    PayloadKinds::CredOffer => "CRED_OFFER",
+                    PayloadKinds::CredReq => "CRED_REQ",
+                    PayloadKinds::Cred => "CRED",
+                    PayloadKinds::ProofRequest => "PROOF_REQUEST",
+                    PayloadKinds::Proof => "PROOF",
+                    PayloadKinds::Other(kind) => kind,
+                }
+            }
+            ProtocolTypes::V2 => {
+                match self {
+                    PayloadKinds::CredOffer => "credential-offer",
+                    PayloadKinds::CredReq => "credential-request",
+                    PayloadKinds::Cred => "credential",
+                    PayloadKinds::ProofRequest => "presentation-request",
+                    PayloadKinds::Proof => "presentation",
+                    PayloadKinds::Other(kind) => kind,
+                }
+            }
         }
     }
 }
@@ -72,7 +80,7 @@ impl PayloadTypes {
         match ProtocolType::get() {
             ProtocolTypes::V1 => {
                 PayloadTypes::PayloadTypeV1(PayloadTypeV1 {
-                    name: kind.name(),
+                    name: kind.name().to_string(),
                     ver: MESSAGE_VERSION.to_string(),
                     fmt: "json".to_string(),
                 })
@@ -82,7 +90,7 @@ impl PayloadTypes {
                     did: DID.to_string(),
                     family: kind.family(),
                     version: MESSAGE_VERSION.to_string(),
-                    type_: kind.name(),
+                    type_: kind.name().to_string(),
                 })
             }
         }
@@ -92,8 +100,8 @@ impl PayloadTypes {
 impl From<RemoteMessageType> for PayloadKinds {
     fn from(type_: RemoteMessageType) -> PayloadKinds {
         match type_ {
-            RemoteMessageType::ConnReq => PayloadKinds::ConnReq,
-            RemoteMessageType::ConnReqAnswer => PayloadKinds::ConnReqAnswer,
+            RemoteMessageType::ConnReq => PayloadKinds::Other("connReq".to_string()),
+            RemoteMessageType::ConnReqAnswer => PayloadKinds::Other("ConnReqAnswer".to_string()),
             RemoteMessageType::CredOffer => PayloadKinds::CredOffer,
             RemoteMessageType::CredReq => PayloadKinds::CredReq,
             RemoteMessageType::Cred => PayloadKinds::Cred,

@@ -82,7 +82,7 @@ impl From<String> for MessageFamilies {
             "onboarding" => MessageFamilies::Onboarding,
             "pairwise" => MessageFamilies::Pairwise,
             "configs" => MessageFamilies::Configs,
-            "credential_exchange" => MessageFamilies::CredentialExchange,
+            "credential-exchange" => MessageFamilies::CredentialExchange,
             family @ _ => MessageFamilies::Unknown(family.to_string())
         }
     }

@@ -231,8 +231,8 @@ impl AgentConnection {
                     Some(A2AMessage::ConnectionRequestAnswer(msg)) => {
                         slf.handle_connection_request_answer_message(msg, &sender_vk)
                     }
-                    Some(A2AMessage::RemoteMessage(msg)) => {
-                        slf.handle_remote_message(msg, &sender_vk)
+                    Some(A2AMessage::SendRemoteMessage(msg)) => {
+                        slf.handle_send_remote_message(msg, &sender_vk)
                     }
                     // Common
                     Some(A2AMessage::SendMessages(msg)) => {
@@ -412,10 +412,10 @@ impl AgentConnection {
         }
     }
 
-    fn handle_remote_message(&mut self,
-                              msg: RemoteMessage,
+    fn handle_send_remote_message(&mut self,
+                              msg: SendRemoteMessage,
                               sender_verkey: &str) -> ResponseActFuture<Self, Vec<A2AMessage>, Error> {
-        trace!("AgentConnection::handle_remote_message >> {:?}, {:?}", msg, sender_verkey);
+        trace!("AgentConnection::handle_send_remote_message >> {:?}, {:?}", msg, sender_verkey);
 
         let send_msg = msg.send_msg;
         let mtype = msg.mtype.clone();
@@ -473,7 +473,7 @@ impl AgentConnection {
 
         let message = match ProtocolType::get() {
             ProtocolTypes::V1 => A2AMessage::MessageCreated(MessageCreated { uid: msg.uid.clone() }),
-            ProtocolTypes::V2 => A2AMessage::RemoteMessageResponse(RemoteMessageResponse { uid: msg.uid.clone(), sent: true })
+            ProtocolTypes::V2 => A2AMessage::SendRemoteMessageResponse(SendRemoteMessageResponse { uid: msg.uid.clone(), sent: true })
         };
 
         ok_act!(self, (msg.uid, vec![message]))
@@ -856,7 +856,7 @@ impl AgentConnection {
             Some(A2AMessage::CreateMessage(_)) |
             Some(A2AMessage::ConnectionRequest(_)) |
             Some(A2AMessage::ConnectionRequestAnswer(_)) |
-            Some(A2AMessage::RemoteMessage(_)) => {
+            Some(A2AMessage::SendRemoteMessage(_)) => {
                 if self.is_sent_by_owner(sender_verkey) || self.is_sent_by_remote(sender_verkey) {
                     return Ok(());
                 }
@@ -1267,7 +1267,7 @@ impl AgentConnection {
                          A2AMessage::MessageDetail(MessageDetail::General(msg_detail))]
                 }
                 ProtocolTypes::V2 => {
-                    let msg = RemoteMessage {
+                    let msg = SendRemoteMessage {
                         mtype: message._type,
                         send_msg: false,
                         uid: Some(message.uid),
@@ -1277,7 +1277,7 @@ impl AgentConnection {
                         detail
                     };
 
-                    vec![A2AMessage::RemoteMessage(msg)]
+                    vec![A2AMessage::SendRemoteMessage(msg)]
                 }
             };
 

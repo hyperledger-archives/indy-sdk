@@ -149,12 +149,6 @@ impl Credential {
 
         self.credential_request = Some(cred_req);
 
-        let data: Vec<u8> = connection::generate_encrypted_payload(local_my_vk,
-                                                                   local_their_vk,
-                                                                   &cred_req_json,
-                                                                   PayloadKinds::CredReq)
-            .map_err(|e| CredentialError::CommonError(e.to_error_code()))?;
-
         let offer_msg_id = self.credential_offer.as_ref().and_then(|offer| offer.msg_ref_id.clone())
             .ok_or(CredentialError::CommonError(error::CREATE_CREDENTIAL_REQUEST_ERROR.code_num))?;
 
@@ -170,7 +164,7 @@ impl Credential {
                 .msg_type(&RemoteMessageType::CredReq)?
                 .agent_did(local_agent_did)?
                 .agent_vk(local_agent_vk)?
-                .edge_agent_payload(&data)?
+                .edge_agent_payload(&local_my_vk, &local_their_vk, &cred_req_json, PayloadKinds::CredReq)?
                 .ref_msg_id(&offer_msg_id)?
                 .send_secure()
                 .map_err(|err| {
@@ -454,7 +448,7 @@ pub fn get_credential_offer_msg(connection_handle: u32, msg_id: &str) -> Result<
                                                                  &agent_vk,
                                                                  Some(vec![msg_id.to_string()])).map_err(|ec| CredentialError::CommonError(ec))?;
 
-    if message[0].msg_type.eq("credOffer") {
+    if message[0].msg_type == RemoteMessageType::CredOffer {
         let (_, msg_data) = match message[0].payload {
             Some(ref data) => {
                 let data = to_u8(data);
@@ -497,7 +491,7 @@ pub fn get_credential_offer_messages(connection_handle: u32) -> Result<String, C
     let mut messages = Vec::new();
 
     for msg in payload {
-        if msg.msg_type.eq("credOffer") {
+        if msg.msg_type == RemoteMessageType::CredOffer {
             let (_, msg_data) = match msg.payload {
                 Some(ref data) => {
                     let data = to_u8(data);

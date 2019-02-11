@@ -76,8 +76,8 @@ pub enum A2AMessage {
     ConnectionRequestResponse(ConnectionRequestResponse),
     ConnectionRequestAnswer(ConnectionRequestAnswer),
     ConnectionRequestAnswerResponse(ConnectionRequestAnswerResponse),
-    RemoteMessage(RemoteMessage),
-    RemoteMessageResponse(RemoteMessageResponse),
+    SendRemoteMessage(SendRemoteMessage),
+    SendRemoteMessageResponse(SendRemoteMessageResponse),
 }
 
 // This macro allows to convert A2AMessage into specific variant
@@ -102,7 +102,7 @@ a2a_to_variant!(ConnectionRequestResponse, ConnectionRequestResponse);
 a2a_to_variant!(MessageCreated, MessageCreated);
 a2a_to_variant!(ConnectionRequestAnswerResponse, ConnectionRequestAnswerResponse);
 a2a_to_variant!(MessageSent, MessageSent);
-a2a_to_variant!(RemoteMessageResponse, RemoteMessageResponse);
+a2a_to_variant!(SendRemoteMessageResponse, SendRemoteMessageResponse);
 a2a_to_variant!(UpdateConnectionResponse, UpdateConnectionResponse);
 a2a_to_variant!(UpdateMessageStatusByConnectionsResponse, UpdateMessageStatusByConnectionsResponse);
 a2a_to_variant!(UpdateConfigsResponse, UpdateConfigsResponse);
@@ -257,14 +257,14 @@ impl<'de> Deserialize<'de> for A2AMessage {
                     .map(|msg| A2AMessage::ConnectionRequestAnswerResponse(msg))
                     .map_err(de::Error::custom)
             }
-            ("REMOTE_MSG", "1.0") => {
-                RemoteMessage::deserialize(value)
-                    .map(|msg| A2AMessage::RemoteMessage(msg))
+            ("SEND_REMOTE_MSG", "1.0") => {
+                SendRemoteMessage::deserialize(value)
+                    .map(|msg| A2AMessage::SendRemoteMessage(msg))
                     .map_err(de::Error::custom)
             }
-            ("REMOTE_MSG_RESP", "1.0") => {
-                RemoteMessageResponse::deserialize(value)
-                    .map(|msg| A2AMessage::RemoteMessageResponse(msg))
+            ("REMOTE_MSG_SENT", "1.0") => {
+                SendRemoteMessageResponse::deserialize(value)
+                    .map(|msg| A2AMessage::SendRemoteMessageResponse(msg))
                     .map_err(de::Error::custom)
             }
             _ => Err(de::Error::custom("Unexpected @type field structure."))
@@ -343,7 +343,7 @@ pub enum MessageDetail {
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct RemoteMessage {
+pub struct SendRemoteMessage {
     #[serde(rename = "@type")]
     pub msg_type: MessageTypes,
     pub mtype: RemoteMessageType,
@@ -364,7 +364,7 @@ pub struct RemoteMessage {
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct RemoteMessageResponse {
+pub struct SendRemoteMessageResponse {
     #[serde(rename = "@type")]
     msg_type: MessageTypes,
     pub uid: String,
@@ -393,7 +393,7 @@ impl Serialize for RemoteMessageType {
             RemoteMessageType::Cred => "cred",
             RemoteMessageType::ProofReq => "proofReq",
             RemoteMessageType::Proof => "proof",
-            RemoteMessageType::Other(_type) => "_type",
+            RemoteMessageType::Other(_type) => _type,
         };
         Value::String(value.to_string()).serialize(serializer)
     }
@@ -455,14 +455,28 @@ impl PayloadKinds {
         }
     }
 
-    fn name(&self) -> String {
-        match self {
-            PayloadKinds::CredOffer => "CRED_OFFER".to_string(),
-            PayloadKinds::CredReq => "CRED_REQ".to_string(),
-            PayloadKinds::Cred => "CRED".to_string(),
-            PayloadKinds::Proof => "PROOF".to_string(),
-            PayloadKinds::ProofRequest => "PROOF_REQUEST".to_string(),
-            PayloadKinds::Other(kind) => kind.to_string(),
+    fn name<'a>(&'a self) -> &'a str {
+        match settings::get_protocol_type() {
+            settings::ProtocolTypes::V1 => {
+                match self {
+                    PayloadKinds::CredOffer => "CRED_OFFER",
+                    PayloadKinds::CredReq => "CRED_REQ",
+                    PayloadKinds::Cred => "CRED",
+                    PayloadKinds::ProofRequest => "PROOF_REQUEST",
+                    PayloadKinds::Proof => "PROOF",
+                    PayloadKinds::Other(kind) => kind,
+                }
+            }
+            settings::ProtocolTypes::V2 => {
+                match self {
+                    PayloadKinds::CredOffer => "credential-offer",
+                    PayloadKinds::CredReq => "credential-request",
+                    PayloadKinds::Cred => "credential",
+                    PayloadKinds::ProofRequest => "presentation-request",
+                    PayloadKinds::Proof => "presentation",
+                    PayloadKinds::Other(kind) => kind,
+                }
+            }
         }
     }
 }
@@ -472,7 +486,7 @@ impl PayloadTypes {
         match settings::get_protocol_type() {
             settings::ProtocolTypes::V1 => {
                 PayloadTypes::PayloadTypeV0(PayloadTypeV0 {
-                    name: kind.name(),
+                    name: kind.name().to_string(),
                     ver: MESSAGE_VERSION.to_string(),
                     fmt: fmt.to_string(),
                 })
@@ -482,7 +496,7 @@ impl PayloadTypes {
                     did: DID.to_string(),
                     family: kind.family(),
                     version: MESSAGE_VERSION.to_string(),
-                    type_: kind.name(),
+                    type_: kind.name().to_string(),
                 })
             }
         }
@@ -562,8 +576,8 @@ pub enum A2AMessageKinds {
     UpdateConMethod,
     ConnectionRequest,
     ConnectionRequestAnswer,
-    RemoteMessage,
-    RemoteMessageResponse,
+    SendRemoteMessage,
+    SendRemoteMessageResponse,
 }
 
 impl A2AMessageKinds {
@@ -593,8 +607,8 @@ impl A2AMessageKinds {
             A2AMessageKinds::UpdateConfigs => MessageFamilies::Configs,
             A2AMessageKinds::ConfigsUpdated => MessageFamilies::Configs,
             A2AMessageKinds::UpdateConMethod => MessageFamilies::Configs,
-            A2AMessageKinds::RemoteMessage => MessageFamilies::Routing,
-            A2AMessageKinds::RemoteMessageResponse => MessageFamilies::Routing,
+            A2AMessageKinds::SendRemoteMessage => MessageFamilies::Routing,
+            A2AMessageKinds::SendRemoteMessageResponse => MessageFamilies::Routing,
         }
     }
 
@@ -624,8 +638,8 @@ impl A2AMessageKinds {
             A2AMessageKinds::UpdateConfigs => "UPDATE_CONFIGS".to_string(),
             A2AMessageKinds::ConfigsUpdated => "CONFIGS_UPDATED".to_string(),
             A2AMessageKinds::UpdateConMethod => "UPDATE_CONNECTION_METHOD".to_string(),
-            A2AMessageKinds::RemoteMessage => "REMOTE_MSG".to_string(),
-            A2AMessageKinds::RemoteMessageResponse => "REMOTE_MSG_RESP".to_string(),
+            A2AMessageKinds::SendRemoteMessage => "SEND_REMOTE_MSG".to_string(),
+            A2AMessageKinds::SendRemoteMessageResponse => "REMOTE_MSG_SENT".to_string(),
         }
     }
 }

@@ -61,8 +61,8 @@ pub enum A2AMessage {
     ConnectionRequestResponse(ConnectionRequestResponse),
     ConnectionRequestAnswer(ConnectionRequestAnswer),
     ConnectionRequestAnswerResponse(ConnectionRequestAnswerResponse),
-    RemoteMessage(RemoteMessage),
-    RemoteMessageResponse(RemoteMessageResponse),
+    SendRemoteMessage(SendRemoteMessage),
+    SendRemoteMessageResponse(SendRemoteMessageResponse),
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -369,8 +369,8 @@ pub struct GeneralMessageDetail {
     pub detail: Option<String>,
 }
 
-impl From<RemoteMessage> for GeneralMessageDetail {
-    fn from(message: RemoteMessage) -> GeneralMessageDetail {
+impl From<SendRemoteMessage> for GeneralMessageDetail {
+    fn from(message: SendRemoteMessage) -> GeneralMessageDetail {
         GeneralMessageDetail {
             msg: message.msg,
             title: message.title,
@@ -475,7 +475,7 @@ pub struct ConnectionRequestAnswerResponse {
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct RemoteMessage {
+pub struct SendRemoteMessage {
     pub mtype: RemoteMessageType,
     #[serde(rename = "replyToMsgId")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -494,7 +494,7 @@ pub struct RemoteMessage {
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct RemoteMessageResponse {
+pub struct SendRemoteMessageResponse {
     pub uid: String,
     pub sent: bool,
 }
@@ -534,8 +534,8 @@ pub enum A2AMessageKinds {
     ConnectionRequestResponse,
     ConnectionRequestAnswer,
     ConnectionRequestAnswerResponse,
-    RemoteMessage,
-    RemoteMessageResponse,
+    SendRemoteMessage,
+    SendRemoteMessageResponse,
 }
 
 impl A2AMessageKinds {
@@ -575,8 +575,8 @@ impl A2AMessageKinds {
             A2AMessageKinds::Configs => MessageFamilies::Configs,
             A2AMessageKinds::RemoveConfigs => MessageFamilies::Configs,
             A2AMessageKinds::ConfigsRemoved => MessageFamilies::Configs,
-            A2AMessageKinds::RemoteMessage => MessageFamilies::Routing,
-            A2AMessageKinds::RemoteMessageResponse => MessageFamilies::Routing,
+            A2AMessageKinds::SendRemoteMessage => MessageFamilies::Routing,
+            A2AMessageKinds::SendRemoteMessageResponse => MessageFamilies::Routing,
         }
     }
 
@@ -616,8 +616,8 @@ impl A2AMessageKinds {
             A2AMessageKinds::Configs => "CONFIGS".to_string(),
             A2AMessageKinds::RemoveConfigs => "REMOVE_CONFIGS".to_string(),
             A2AMessageKinds::ConfigsRemoved => "CONFIGS_REMOVED".to_string(),
-            A2AMessageKinds::RemoteMessage => "REMOTE_MSG".to_string(),
-            A2AMessageKinds::RemoteMessageResponse => "REMOTE_MSG_RESP".to_string(),
+            A2AMessageKinds::SendRemoteMessage => "SEND_REMOTE_MSG".to_string(),
+            A2AMessageKinds::SendRemoteMessageResponse => "REMOTE_MSG_SENT".to_string(),
         }
     }
 }
@@ -802,14 +802,14 @@ impl<'de> Deserialize<'de> for A2AMessage {
                     .map(|msg| A2AMessage::ConnectionRequestAnswerResponse(msg))
                     .map_err(de::Error::custom)
             }
-            ("REMOTE_MSG", "1.0") => {
-                RemoteMessage::deserialize(value)
-                    .map(|msg| A2AMessage::RemoteMessage(msg))
+            ("SEND_REMOTE_MSG", "1.0") => {
+                SendRemoteMessage::deserialize(value)
+                    .map(|msg| A2AMessage::SendRemoteMessage(msg))
                     .map_err(de::Error::custom)
             }
-            ("REMOTE_MSG_RESP", "1.0") => {
-                RemoteMessageResponse::deserialize(value)
-                    .map(|msg| A2AMessage::RemoteMessageResponse(msg))
+            ("REMOTE_MSG_SENT", "1.0") => {
+                SendRemoteMessageResponse::deserialize(value)
+                    .map(|msg| A2AMessage::SendRemoteMessageResponse(msg))
                     .map_err(de::Error::custom)
             }
             _ => Err(de::Error::custom("Unexpected @type field structure."))
@@ -866,8 +866,8 @@ impl Serialize for A2AMessage {
             A2AMessage::ConnectionRequestResponse(msg) => set_a2a_message_type(msg, A2AMessageKinds::ConnectionRequestResponse),
             A2AMessage::ConnectionRequestAnswer(msg) => set_a2a_message_type(msg, A2AMessageKinds::ConnectionRequestAnswer),
             A2AMessage::ConnectionRequestAnswerResponse(msg) => set_a2a_message_type(msg, A2AMessageKinds::ConnectionRequestAnswerResponse),
-            A2AMessage::RemoteMessage(msg) => set_a2a_message_type(msg, A2AMessageKinds::RemoteMessage),
-            A2AMessage::RemoteMessageResponse(msg) => set_a2a_message_type(msg, A2AMessageKinds::RemoteMessageResponse),
+            A2AMessage::SendRemoteMessage(msg) => set_a2a_message_type(msg, A2AMessageKinds::SendRemoteMessage),
+            A2AMessage::SendRemoteMessageResponse(msg) => set_a2a_message_type(msg, A2AMessageKinds::SendRemoteMessageResponse),
         }.map_err(ser::Error::custom)?;
 
         value.serialize(serializer)

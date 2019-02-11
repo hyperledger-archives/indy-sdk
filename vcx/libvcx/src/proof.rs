@@ -276,7 +276,6 @@ impl Proof {
             .map_err(|ec| ProofError::ProofMessageError(ec))?;
 
         self.proof_request = Some(proof_obj);
-        let data = connection::generate_encrypted_payload(&self.prover_vk, &self.remote_vk, &proof_request, PayloadKinds::ProofRequest).map_err(|_| ProofError::ProofConnectionError())?;
         let title = format!("{} wants you to share: {}", settings::get_config_value(settings::CONFIG_INSTITUTION_NAME).map_err(|e| ProofError::CommonError(e))?, self.name);
 
         let response = messages::send_message()
@@ -287,7 +286,7 @@ impl Proof {
             .set_title(&title)?
             .set_detail(&title)?
             .agent_vk(&self.agent_vk)?
-            .edge_agent_payload(&data)?
+            .edge_agent_payload(&self.prover_vk, &self.remote_vk, &proof_request, PayloadKinds::ProofRequest).or(Err(ProofError::ProofConnectionError()))?
             .send_secure()
             .map_err(|err| {
                 warn!("{} could not send proofReq: {}", self.source_id, err);

@@ -162,15 +162,12 @@ impl IssuerCredential {
 
         debug!("credential offer data: {}", payload);
 
-        let data = connection::generate_encrypted_payload(&self.issued_vk, &self.remote_vk, &payload, PayloadKinds::CredOffer)
-            .map_err(|e| IssuerCredError::CommonError(e.to_error_code()))?;
-
         let response =
             messages::send_message()
                 .to(&self.issued_did)?
                 .to_vk(&self.issued_vk)?
                 .msg_type(&RemoteMessageType::CredOffer)?
-                .edge_agent_payload(&data)?
+                .edge_agent_payload(&self.issued_vk, &self.remote_vk, &payload, PayloadKinds::CredOffer)?
                 .agent_did(&self.agent_did)?
                 .agent_vk(&self.agent_vk)?
                 .set_title(&title)?
@@ -214,17 +211,15 @@ impl IssuerCredential {
 
         debug!("credential data: {}", data);
 
-        let cred_req_msg_id = self.credential_request.as_ref().ok_or(IssuerCredError::InvalidCredRequest())?
-            .msg_ref_id.as_ref().ok_or(IssuerCredError::InvalidCredRequest())?;
-        let data = connection::generate_encrypted_payload(&self.issued_vk, &self.remote_vk, &data, PayloadKinds::Cred)
-            .map_err(|e| IssuerCredError::CommonError(e.to_error_code()))?;
+        let cred_req_msg_id = self.credential_request.as_ref().and_then(|cred_req| cred_req.msg_ref_id.as_ref())
+            .ok_or(IssuerCredError::InvalidCredRequest())?;
 
         let response = messages::send_message()
             .to(&self.issued_did)?
             .to_vk(&self.issued_vk)?
             .msg_type(&RemoteMessageType::Cred)?
             .status_code(&MessageStatusCode::Accepted)?
-            .edge_agent_payload(&data)?
+            .edge_agent_payload(&self.issued_vk, &self.remote_vk, &data, PayloadKinds::Cred)?
             .agent_did(&self.agent_did)?
             .agent_vk(&self.agent_vk)?
             .ref_msg_id(cred_req_msg_id)?
