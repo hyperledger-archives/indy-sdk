@@ -17,13 +17,6 @@ public class VcxApi extends VcxJava.API {
     private VcxApi() {
     }
 
-//    public static int initSovToken() throws VcxException {
-//        logger.debug("initSovToken()");
-//        int result = LibVcx.api.sovtoken_init();
-//        checkResult(result);
-//        return result;
-//    }
-
      public static int initNullPay() throws VcxException {
          logger.debug("initNullPay()");
          int result = LibVcx.api.nullpay_init();

@@ -25,12 +25,6 @@ class Globals {
 
     static String nullpayTag = "2"
 
-    static String libsovtokenVersion = "0.9.6~-.1.126"
-
-    static String androidSovtokenArtifact = "libsovtoken_0.9.6-201811211720-4901e95_all.zip"
-
-    static String iosSovtokenArtifact = "libsovtoken_0.9.6-201811211710-4901e95_all.zip"
-
     static String indyBranch = 'master'
 
     static String nullBranch = 'PR-1460'
@@ -75,7 +69,6 @@ def buildLibindyDocker() {
 
     docker.build("libindy", "--build-arg LIBINDY_VER=${Globals.libindyVersion}${indyTag} \
             --build-arg LIBNULL_VER=${Globals.libnullVersion}${nullTag} \
-            --build-arg LIBSOVTOKEN_VER=${Globals.libsovtokenVersion} \
             -f ${libindyDockerfile} .")
 }
 
@@ -319,8 +312,7 @@ def ios() {
                 def nullTag = appendTag(Globals.nullpayTag, "-")
 
                 sh "source vcx/ci/scripts/iosBuild.sh ${Globals.indyBranch} ${Globals.libindyVersion}${indyTag} \
-                    ${Globals.nullBranch} ${Globals.libnullVersion}${nullTag} ${Globals.iosSovtokenArtifact} \
-                    ${Globals.rustVersion} ${full_vcx_version()}"
+                    ${Globals.nullBranch} ${Globals.libnullVersion}${nullTag} ${Globals.rustVersion} ${full_vcx_version()}"
 
                 if (env.BRANCH_NAME == "master") {
                     withCredentials([usernameColonPassword(credentialsId: 'jenkins-kraken-svc', variable: 'KRAKEN_CREDENTIALS')]) {
@@ -377,8 +369,7 @@ def buildAndroid(arch) {
                     def indyTag = appendTag(Globals.libindyTag, "-")
                     def nullTag = appendTag(Globals.nullpayTag, "-")
 
-                    sh "./${ANDROID_SCRIPT_PATH} ${arch} ${Globals.indyBranch} ${Globals.libindyVersion}${indyTag} \
-                            ${Globals.nullBranch} ${Globals.libnullVersion}${nullTag} ${Globals.androidSovtokenArtifact}"
+                    sh "./${ANDROID_SCRIPT_PATH} ${arch} ${Globals.indyBranch} ${Globals.libindyVersion}${indyTag} ${Globals.nullBranch} ${Globals.libnullVersion}${nullTag}"
 
                 }
 

@@ -10,12 +10,10 @@ setup() {
     export LIBINDY_VERSION=$3
     export LIBNULL_BRANCH=$4
     export LIBNULL_VERSION=$5
-    export LIBSOVTOKEN_ZIP=$6
 
     export PATH=$PATH:/opt/gradle/gradle-3.4.1/bin
     export PATH=${PATH}:$ANDROID_HOME/platform-tools:$ANDROID_HOME/tools:$ANDROID_HOME/build-tools/25.0.2/
     export PATH=${HOME}/.cargo/bin:${PATH}
-    export SOVRIN_REPO=https://repo.sovrin.org/android/libsovtoken/stable
     export VCX_BASE=../vcx
     # For docker
     # export VCX_BASE=${HOME}/vcx
@@ -110,19 +108,6 @@ get_libindy() {
 
 }
 
-get_libsovtoken() {
-    set -xv
-    if [ -z ${LIBSOVTOKEN_DIR} ]; then
-        if [ ! -d "libsovtoken" ]; then
-            echo "retrieving libsovtoken prebuilt library"
-            wget -q ${SOVRIN_REPO}/${LIBSOVTOKEN_ZIP}
-            unzip ${LIBSOVTOKEN_ZIP}
-        fi
-        export LIBSOVTOKEN_DIR="${PWD}/libsovtoken/${TRIPLET}"
-    fi
-
-}
-
 get_libnullpay() {
     set -xv
     if [ -z ${LIBNULLPAY_DIR} ]; then
@@ -152,10 +137,6 @@ build_vcx() {
         echo "missing libindy_${ARCH} directory. Cannot proceed without it."
         exit 1
     fi
-    if [ ! -d ${LIBSOVTOKEN_DIR} ]; then
-        echo "missing libsovtoken directory. Cannot proceed without it."
-        exit 1
-    fi
     if [ ! -d ${LIBNULLPAY_DIR} ]; then
         echo "missing libnullpay directory. Cannot proceed without it."
         exit 1
@@ -163,15 +144,14 @@ build_vcx() {
 
     pushd ${LIBVCX_PATH}
     mkdir -p toolchains/
-    ./build.nondocker.sh ${ARCH} ${PLATFORM} ${TRIPLET} ${OPENSSL_DIR} ${SODIUM_DIR} ${LIBZMQ_DIR} ${LIBINDY_DIR} ${LIBSOVTOKEN_DIR} ${LIBNULLPAY_DIR}
+    ./build.nondocker.sh ${ARCH} ${PLATFORM} ${TRIPLET} ${OPENSSL_DIR} ${SODIUM_DIR} ${LIBZMQ_DIR} ${LIBINDY_DIR} ${LIBNULLPAY_DIR}
     popd
     rm -rf libvcx_${ARCH}
     mv ${LIBVCX_PATH}libvcx_${ARCH} .
 
 }
 
-setup $1 $2 $3 $4 $5 $6
+setup $1 $2 $3 $4 $5
 get_libindy
-get_libsovtoken
 get_libnullpay
 build_vcx

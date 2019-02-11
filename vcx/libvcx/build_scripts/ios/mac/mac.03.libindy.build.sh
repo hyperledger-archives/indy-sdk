@@ -94,23 +94,6 @@ else
         rm ${LIBINDY_VERSION}-${LIBINDY_FILE}
     fi
 
-
-    #########################################################################################################################
-    # Now setup libsovtoken
-    #########################################################################################################################
-
-    if [ -e ${BUILD_CACHE}/libsovtoken-ios/${LIBSOVTOKEN_VERSION}/libsovtoken/universal/libsovtoken.a ]; then
-        echo "libsovtoken build for ios already exist"
-    else
-        mkdir -p ${BUILD_CACHE}/libsovtoken-ios/${LIBSOVTOKEN_VERSION}
-        cd ${BUILD_CACHE}/libsovtoken-ios/${LIBSOVTOKEN_VERSION}
-        curl --insecure -o ${LIBSOVTOKEN_VERSION}-${LIBSOVTOKEN_FILE} ${LIBSOVTOKEN_IOS_BUILD_URL}
-        unzip ${LIBSOVTOKEN_VERSION}-${LIBSOVTOKEN_FILE}
-        # Deletes extra folders that we don't need
-        rm -rf __MACOSX
-        rm ${LIBSOVTOKEN_VERSION}-${LIBSOVTOKEN_FILE}
-    fi
-
     #########################################################################################################################
     # Now setup libnullpay
     #########################################################################################################################

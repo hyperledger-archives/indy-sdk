@@ -27,9 +27,8 @@ public abstract class LibVcx {
         public int vcx_reset();
 
     /**
-     * Sovtoken & nullpay
+     * nullpay
      */
-//        public int sovtoken_init();
         public int nullpay_init();
 
     /**

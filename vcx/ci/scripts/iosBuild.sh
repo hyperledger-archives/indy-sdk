@@ -18,9 +18,8 @@ setup_env() {
     export INDY_VERSION=$2
     export NULL_BRANCH=$3
     export NULL_VERSION=$4
-    export SOVTOKEN_ZIP=$5
-    export RUST_VERSION=$6
-    export VCX_VERSION=$7
+    export RUST_VERSION=$5
+    export VCX_VERSION=$6
 
     check_params
 
@@ -39,9 +38,8 @@ setup_env() {
 
 check_params() {
     if [ -z ${INDY_BRANCH} ] || [ -z ${INDY_VERSION} ] || [ -z ${NULL_BRANCH} ] || [ -z ${NULL_VERSION} ] \
-    || [ -z ${SOVTOKEN_ZIP} ] || [ -z ${RUST_VERSION} ] || [ -z ${VCX_VERSION} ]; then
-        echo "missing parameters. Expected (INDY_BRANCH, INDY_VERSION, NULL_BRANCH, NULL_VERSION, SOVTOKEN_ZIP,
-        RUST_VERSION, VCX_VERSION)"
+    || [ -z ${RUST_VERSION} ] || [ -z ${VCX_VERSION} ]; then
+        echo "missing parameters. Expected (INDY_BRANCH, INDY_VERSION, NULL_BRANCH, NULL_VERSION, RUST_VERSION, VCX_VERSION)"
         exit 1
     fi
 }
@@ -81,7 +79,7 @@ build_cocoapod() {
 VCX_VERSION=''
 vcx_version VCX_VERSION
 set_ios_platforms "arm64,armv7,i386,x86_64" "aarch64-apple-ios,armv7-apple-ios,i386-apple-ios,x86_64-apple-ios"
-setup_env $1 $2 $3 $4 $5 $6 $7
+setup_env $1 $2 $3 $4 $5 $6
 clear_previous_builds
 build_vcx ${IOS_TARGETS}
 build_cocoapod libvcxall ${IOS_ARCHS} ${VCX_VERSION}
