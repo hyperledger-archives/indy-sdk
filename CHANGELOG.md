@@ -1,7 +1,6 @@
 # Changelog
 
 ## 1.8.1 - 2019-02-08
-
 * Bugfixes:
     * Set default freshness threshold to u64::MAX -- if you need to change it, look at the `indy_set_runtime_config` call.
     * Fixed a bug in freshness threshold calculation.
@@ -14,7 +13,7 @@
     * Java - added `sdkBacktrace` field to `IndyException`. Libindy `error message` set as the main for `IndyException`.
     * NodeJS - added `indyMessage` and `indyBacktrace` fields to `IndyError` object.
     * Rust - changed type of returning value from enum `ErrorCode` on structure `IndyError` with `error_code`, `message`, `indy_backtrace` fields.
-    * Objective-C - added `message` and `indy_backtrace` fields to `userInfo` dictionary in `NSError` object. 
+    * Objective-C - added `message` and `indy_backtrace` fields to `userInfo` dictionary in `NSError` object.
 * Updated Indy-Cli to show Libindy error message in some cases.
 * Implemented automatic filtering of outdated responses based on comparison of local time with latest transaction ordering time.
 * Added *EXPERIMENTAL* `indy_pack_message` and `indy_unpack_message` functions to support *Wire Messages* described in [AMES HIPE](https://github.com/hyperledger/indy-hipe/pull/43)
@@ -33,7 +32,7 @@ NOTE: This version of libindy will work slower with older versions of node due t
     * Added function `indy_set_logger` for client apps and wrappers to receive logs from libindy
     * Integrated libindy logging into Slf4j for Java wrapper and into python logging facade
 * Updated API of Rust wrapper. Now there is no three methods for each API call, there is only one that returns Future.
-* Introduced multithreading for Wallet API and CRED_DEF generation 
+* Introduced multithreading for Wallet API and CRED_DEF generation
 * Bugfixes
 
 ## 1.6.8 - 2018-11-22
@@ -43,7 +42,7 @@ NOTE: This version of libindy will work slower with older versions of node due t
 
 ## 1.6.7 - 2018-10-9
 * Supported setting fees in `did rotate-key` CLI command.
-* Supported hexadecimal seed for did and key creation. 
+* Supported hexadecimal seed for did and key creation.
 * Removed TGB role.
 * Added EXPERIMENTAL Rust wrapper for Libindy.
 * Bugfixes.
@@ -66,7 +65,7 @@ NOTE: This version of libindy will work slower with older versions of node due t
 ## 1.6.3 - 2018-08-28
 * Performed the following changes related to Libindy Wallet API:
     * Added separate API function `indy_generate_wallet_key` to generate a random wallet master key.
-    * Updated `key_derivation_method` parameter of wallet `credentials` to accept the addition type - `RAW`. 
+    * Updated `key_derivation_method` parameter of wallet `credentials` to accept the addition type - `RAW`.
       By using this type, the result of `indy_generate_wallet_key` can be passed as a wallet master key (key derivation will be skipped).
     * Updated Indy CLI wallet related commands to accept the addition parameter `key_derivation_method`.
 * Updated `data` parameter of `indy_build_node_request` API function to accept `blskey_pop` (Proof of possession for BLS key).
@@ -76,7 +75,7 @@ NOTE: This version of libindy will work slower with older versions of node due t
 
 ## 1.6.2 - 2018-08-14
 * Performed the following changes related to Libindy Ledger API:
-    * Added `indy_submit_action` endpoint that provides the ability to send either GET_VALIDATOR_INFO or 
+    * Added `indy_submit_action` endpoint that provides the ability to send either GET_VALIDATOR_INFO or
       POOL_RESTART request to specific nodes and to specify custom timeout for a response from a node.
     * Updated `indy_build_pool_upgrade_request` API function to accept the additional parameter `package` that allow specify package to be upgraded.* Bugfixes
 * Added `pool restart` command in Indy CLI.
@@ -84,11 +83,11 @@ NOTE: This version of libindy will work slower with older versions of node due t
 * Updated wallet `credentials` to accept the additional parameter `key_derivation_method`.
   This parameter provides the ability to use different crypto algorithms for master key derivation.
 * Bugfixes
- 
+
 ## 1.6.1 bugfixes - 2018-07-30
 * Fix connection performance issue
 * Fix Android publishing
-  
+
 ## 1.6.0 - 2018-07-27
 * Integrated tags based search in Anoncreds workflow:
     * Updated `indy_prover_store_credential` API function to create tags for a stored credential object.
@@ -124,7 +123,7 @@ Notes:
 * There is [migration guide](doc/migration-guide-1.5.0-1.6.0.md) about API changes.
 * Wallet format of libindy v1.6 isn't compatible with a wallet format of libindy v1.5. As result it is impossible to use wallets
   created with older libindy versions with libindy v1.6.
-  
+
 ## 1.5.0 - 2018-06-28
 
 * Introduction of [Wallet Storage](https://github.com/hyperledger/indy-sdk/tree/master/doc/design/003-wallet-storage) concept:
