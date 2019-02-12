@@ -103,5 +103,6 @@
 
 -(int)initNullPay;
 -(int)initSovToken;
+- (int)setDefaultLogger:(NSString *)logLevel;
 
 @end

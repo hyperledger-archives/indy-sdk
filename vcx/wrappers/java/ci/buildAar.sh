@@ -95,7 +95,6 @@ pushd ${SCRIPT_DIR} # we will work on relative paths from the script directory
             sleep 10
             : ${start=$i}
             i="$((i+1))"
-            echo "i: ${i}"
             ADB_INSTALL=$(adb install ./android/build/outputs/apk/androidTest/debug/com.evernym-vcx_1.0.0-*_x86-armv7-debug-androidTest.apk 2>&1)
             echo "ADB_INSTALL -- ${ADB_INSTALL}"
             FAILED_INSTALL=$(echo ${ADB_INSTALL}|grep "adb: failed to install")
@@ -107,7 +106,6 @@ pushd ${SCRIPT_DIR} # we will work on relative paths from the script directory
         fi
 
         adb shell service list
-        #adb install ./android/build/outputs/apk/androidTest/debug/com.evernym-vcx_1.0.0-*_x86-armv7-debug-androidTest.apk
         echo "Starting the tests of the aar library..."
         ./gradlew --full-stacktrace --debug --console=verbose --no-daemon :connectedCheck --project-dir=android
         cat ./android/build/reports/androidTests/connected/me.connect.VcxWrapperTests.html

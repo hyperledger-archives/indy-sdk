@@ -319,7 +319,7 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
    return nullpay_init();
 }
 
-- (int)vcxSetDefaultLogger:(NSString *) level {
+- (int)setDefaultLogger:(NSString *) level {
 
   const char *log_level = [level cString];
   return vcx_set_default_logger(log_level);

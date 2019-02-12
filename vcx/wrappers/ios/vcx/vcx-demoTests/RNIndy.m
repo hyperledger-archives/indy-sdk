@@ -185,6 +185,10 @@
     return 0;
 }
 
+- (int)setDefaultLogger:(NSString *) level {
+  return [[[ConnectMeVcx alloc] init] setDefaultLogger:level];
+}
+
 -(void)credentialCreateWithMsgId: (NSString *) sourceId
                   withConnectionHandle: (VcxHandle) connectionHandle
                   withMessageId: (NSString *) messageId
