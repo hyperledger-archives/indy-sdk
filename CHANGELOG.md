@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.1 - 2019-02-08
+* Bugfixes:
+    * Set default freshness threshold to u64::MAX -- if you need to change it, look at the `indy_set_runtime_config` call.
+    * Fixed a bug in freshness threshold calculation.
+    * Fixed a bug with libnullpay and VCX connected to logging initialization.
+
 ## 1.8.0 - 2019-01-31
 * Added function `indy_get_current_error` to get additional information for last error occurred in Libindy.
 * Updated Libindy wrappers for automatic getting error details:
