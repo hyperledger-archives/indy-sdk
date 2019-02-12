@@ -17,13 +17,13 @@ class Globals {
 
     static String rustVersion = "1.31.1"
 
-    static String libindyVersion = "1.8.0"
+    static String libindyVersion = "1.8.1"
 
-    static String libindyTag = "968"
+    static String libindyTag = null
 
-    static String libnullVersion = "1.8.0"
+    static String libnullVersion = "1.8.1"
 
-    static String nullpayTag = "2"
+    static String nullpayTag = null
 
     static String libsovtokenVersion = "0.9.6~-.1.126"
 
@@ -31,9 +31,9 @@ class Globals {
 
     static String iosSovtokenArtifact = "libsovtoken_0.9.6-201811211710-4901e95_all.zip"
 
-    static String indyBranch = 'master'
+    static String indyBranch = 'stable'
 
-    static String nullBranch = 'PR-1460'
+    static String nullBranch = 'stable'
 
     static String vcxVersion = null
 
@@ -69,9 +69,7 @@ def buildLibindyDocker() {
     def libindyDockerfile = 'vcx/ci/libindy.dockerfile'
     def indyTag = appendTag(Globals.libindyTag, "~")
 
-    // Todo: when indy fixes libnullpay, delete this line
-    def nullTag="~967"
-//    def nullTag= appendTag(Globals.nullpayTag, "~")
+    def nullTag= appendTag(Globals.nullpayTag, "~")
 
     docker.build("libindy", "--build-arg LIBINDY_VER=${Globals.libindyVersion}${indyTag} \
             --build-arg LIBNULL_VER=${Globals.libnullVersion}${nullTag} \
@@ -95,6 +93,7 @@ def build(name, file, context='.', customParams = '') {
 }
 
 static String appendTag(tag, del) {
+    if (tag == null) {tag = ""}
     if (tag != "") { tag = del + tag }
     return tag
 }
