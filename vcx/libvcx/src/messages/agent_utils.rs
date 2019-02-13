@@ -121,6 +121,8 @@ pub struct Config {
     name: Option<String>,
     logo: Option<String>,
     path: Option<String>,
+    storage_config: Option<String>,
+    storage_credentials: Option<String>,
 }
 
 
@@ -146,8 +148,15 @@ pub fn connect_register_provision(config: &str) -> Result<String, u32> {
     if let Some(wallet_type) = &my_config.wallet_type {
         settings::set_config_value(settings::CONFIG_WALLET_TYPE, wallet_type);
     }
+    if let Some(_storage_config) = &my_config.storage_config {
+        settings::set_config_value(settings::CONFIG_WALLET_STORAGE_CONFIG, _storage_config);
+    }
+    if let Some(_storage_credentials) = &my_config.storage_credentials {
+        settings::set_config_value(settings::CONFIG_WALLET_STORAGE_CREDS, _storage_credentials);
+    }
 
-    wallet::init_wallet(&wallet_name, my_config.wallet_type.as_ref().map(String::as_str))?;
+    wallet::init_wallet(&wallet_name, my_config.wallet_type.as_ref().map(String::as_str), 
+                        my_config.storage_config.as_ref().map(String::as_str), my_config.storage_credentials.as_ref().map(String::as_str))?;
     trace!("initialized wallet");
 
     anoncreds::libindy_prover_create_master_secret(::settings::DEFAULT_LINK_SECRET_ALIAS).ok(); // If MS is already in wallet then just continue
@@ -196,6 +205,15 @@ pub fn connect_register_provision(config: &str) -> Result<String, u32> {
     }
     if let Some(wallet_type) = &my_config.wallet_type {
         final_config["wallet_type"] = json!(wallet_type);
+    }
+    if let Some(_wallet_type) = &my_config.wallet_type {
+        final_config["wallet_type"] = json!(_wallet_type);
+    }
+    if let Some(_storage_config) = &my_config.storage_config {
+        final_config["storage_config"] = json!(_storage_config);
+    }
+    if let Some(_storage_credentials) = &my_config.storage_credentials {
+        final_config["storage_credentials"] = json!(_storage_credentials);
     }
 
     wallet::close_wallet()?;

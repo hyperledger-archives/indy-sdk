@@ -159,7 +159,7 @@ pub extern fn vcx_disclosed_proof_send_proof(command_handle: u32,
             Ok(x) => {
                 trace!("vcx_disclosed_proof_send_proof_cb(command_handle: {}, rc: {}) source_id: {}",
                       command_handle, error_string(0), source_id);
-                cb(command_handle,x);
+                cb(command_handle,error::SUCCESS.code_num);
             },
             Err(x) => {
                 error!("vcx_disclosed_proof_send_proof_cb(command_handle: {}, rc: {}) source_id: {}",
