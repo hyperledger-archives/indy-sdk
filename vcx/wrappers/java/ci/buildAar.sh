@@ -39,9 +39,9 @@ create_avd_and_launch_emulator(){
                 --name ${ABSOLUTE_ARCH} \
                 --package "system-images;android-24;default;${ABI}" \
                 -f \
-                -c 1000M
+                -c 4096M
 
-        ANDROID_SDK_ROOT=${ANDROID_SDK} ANDROID_HOME=${ANDROID_SDK} ${ANDROID_HOME}/tools/emulator -avd ${ABSOLUTE_ARCH} -no-audio -no-window -no-snapshot -no-accel &
+        ANDROID_SDK_ROOT=${ANDROID_SDK} ANDROID_HOME=${ANDROID_SDK} ${ANDROID_HOME}/tools/emulator -avd ${ABSOLUTE_ARCH} -netdelay none -partition-size 4096 -netspeed full -no-audio -no-window -no-snapshot -no-accel &
 }
 
 kill_avd(){
@@ -107,7 +107,7 @@ pushd ${SCRIPT_DIR} # we will work on relative paths from the script directory
 
         adb shell service list
         echo "Starting the tests of the aar library..."
-        ./gradlew --full-stacktrace --debug --console=verbose --no-daemon :connectedCheck --project-dir=android
+        ./gradlew --full-stacktrace --debug --no-daemon :connectedCheck --project-dir=android
         cat ./android/build/reports/androidTests/connected/me.connect.VcxWrapperTests.html
     popd
 popd

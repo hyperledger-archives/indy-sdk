@@ -21,6 +21,8 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
+		8EFD49F922133FBF002E58D5 /* VcxLogger.h in Headers */ = {isa = PBXBuildFile; fileRef = 8EFD49F722133FBF002E58D5 /* VcxLogger.h */; };
+		8EFD49FA22133FBF002E58D5 /* VcxLogger.m in Sources */ = {isa = PBXBuildFile; fileRef = 8EFD49F822133FBF002E58D5 /* VcxLogger.m */; };
 		8EFD93C9220269BD00A0400A /* vcx.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DD2566EE209705E3002EBEBA /* vcx.framework */; };
 		8EFD93CE22026CA400A0400A /* RNIndy.m in Sources */ = {isa = PBXBuildFile; fileRef = 8EFD93CA22026CA400A0400A /* RNIndy.m */; };
 		8EFD93CF22026CA400A0400A /* RNIndyTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 8EFD93CD22026CA400A0400A /* RNIndyTests.m */; };
@@ -103,6 +105,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		8EFD49F722133FBF002E58D5 /* VcxLogger.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = VcxLogger.h; sourceTree = "<group>"; };
+		8EFD49F822133FBF002E58D5 /* VcxLogger.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = VcxLogger.m; sourceTree = "<group>"; };
 		8EFD93CA22026CA400A0400A /* RNIndy.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RNIndy.m; sourceTree = "<group>"; };
 		8EFD93CB22026CA400A0400A /* RNIndyTests.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RNIndyTests.h; sourceTree = "<group>"; };
 		8EFD93CC22026CA400A0400A /* RNIndy.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RNIndy.h; sourceTree = "<group>"; };
@@ -287,6 +291,8 @@
 		DD858CB520A4AF0A004B3CB5 /* utils */ = {
 			isa = PBXGroup;
 			children = (
+				8EFD49F722133FBF002E58D5 /* VcxLogger.h */,
+				8EFD49F822133FBF002E58D5 /* VcxLogger.m */,
 				DD858CBA20A4AF7B004B3CB5 /* NSError+VcxError.h */,
 				DD858CBB20A4AF7C004B3CB5 /* NSError+VcxError.m */,
 				DD858CB620A4AF7B004B3CB5 /* VcxCallbacks.h */,
@@ -309,6 +315,7 @@
 				DD858C9F20A45C11004B3CB5 /* ConnectMeVcx.h in Headers */,
 				DD2566FF209705E3002EBEBA /* vcx.h in Headers */,
 				DD858CBD20A4AF7C004B3CB5 /* VcxErrors.h in Headers */,
+				8EFD49F922133FBF002E58D5 /* VcxLogger.h in Headers */,
 				DD858CBF20A4AF7C004B3CB5 /* VcxTypes.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -533,6 +540,7 @@
 				DD858CBE20A4AF7C004B3CB5 /* VcxCallbacks.mm in Sources */,
 				DD858C9E20A45C11004B3CB5 /* ConnectMeVcx.m in Sources */,
 				DD858CC120A4AF7C004B3CB5 /* NSError+VcxError.m in Sources */,
+				8EFD49FA22133FBF002E58D5 /* VcxLogger.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

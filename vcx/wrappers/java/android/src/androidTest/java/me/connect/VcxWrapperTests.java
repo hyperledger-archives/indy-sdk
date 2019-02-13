@@ -34,6 +34,7 @@ public class VcxWrapperTests {
 
     private GrantPermissionRule writePermissionRule = GrantPermissionRule.grant(Manifest.permission.WRITE_EXTERNAL_STORAGE);
 
+    private CallbackLogger callbackLogger = new CallbackLogger();
 
     @Rule
     public final RuleChain mRuleChain = RuleChain.outerRule(readPermissionRule)
@@ -54,6 +55,8 @@ public class VcxWrapperTests {
                 "    \"enterprise_seed\": null\n" +
                 "}";
         try {
+            int result =  VcxApi.vcxSetLogger(callbackLogger.context, callbackLogger.enabled, callbackLogger.log, callbackLogger.flush);
+            Assert.assertSame(0,result);
             String res = UtilsApi.vcxAgentProvisionAsync(agencyConfig).get();
 
             Log.d(TAG, "vcx::APP::async result Prov: " + res);
@@ -71,7 +74,7 @@ public class VcxWrapperTests {
     public void testInitNullPay() {
         Log.d(TAG, "testInitNullPay: called");
         try {
-            int result =  VcxApi.vcxSetDefaultLogger("trace");
+            int result =  VcxApi.vcxSetLogger(callbackLogger.context, callbackLogger.enabled, callbackLogger.log, callbackLogger.flush);
             Assert.assertSame(0,result);
             result =  VcxApi.initNullPay();
             Assert.assertSame(0,result);
