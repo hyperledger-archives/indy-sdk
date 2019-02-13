@@ -1,6 +1,6 @@
 use settings;
 use utils::constants::*;
-use messages::{A2AMessage, A2AMessageKinds, prepare_message_for_agency, parse_response_from_agency};
+use messages::{A2AMessage, A2AMessageV1, A2AMessageV2, A2AMessageKinds, prepare_message_for_agency, parse_response_from_agency};
 use messages::message_type::MessageTypes;
 use utils::{error, httpclient};
 use utils::libindy::{wallet, anoncreds};
