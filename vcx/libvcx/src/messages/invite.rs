@@ -1,13 +1,13 @@
 use settings;
 use messages::*;
-use messages::message_type::MessageTypes;
+use messages::message_type::{MessageTypes, MessageTypeV1, MessageTypeV2};
 use utils::{httpclient, error};
 use utils::constants::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 pub struct SendInviteMessageDetails {
     #[serde(rename = "@type")]
-    msg_type: MessageTypes,
+    msg_type: MessageTypeV1,
     #[serde(rename = "keyDlgProof")]
     key_dlg_proof: KeyDlgProof,
     #[serde(rename = "targetName")]
@@ -21,7 +21,7 @@ pub struct SendInviteMessageDetails {
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 pub struct ConnectionRequest {
     #[serde(rename = "@type")]
-    msg_type: MessageTypes,
+    msg_type: MessageTypeV2,
     #[serde(rename = "sendMsg")]
     send_msg: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -41,7 +41,7 @@ pub struct ConnectionRequest {
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 pub struct ConnectionRequestResponse {
     #[serde(rename = "@type")]
-    msg_type: MessageTypes,
+    msg_type: MessageTypeV2,
     uid: String,
     #[serde(rename = "inviteDetail")]
     invite_detail: InviteDetail,
@@ -53,7 +53,7 @@ pub struct ConnectionRequestResponse {
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 pub struct AcceptInviteMessageDetails {
     #[serde(rename = "@type")]
-    msg_type: MessageTypes,
+    msg_type: MessageTypeV1,
     #[serde(rename = "keyDlgProof")]
     key_dlg_proof: KeyDlgProof,
     #[serde(rename = "senderDetail")]
@@ -67,7 +67,7 @@ pub struct AcceptInviteMessageDetails {
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 pub struct ConnectionRequestAnswer {
     #[serde(rename = "@type")]
-    msg_type: MessageTypes,
+    msg_type: MessageTypeV2,
     #[serde(rename = "sendMsg")]
     send_msg: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -135,7 +135,7 @@ pub struct InviteDetail {
 #[serde(rename_all = "camelCase")]
 pub struct SendInviteMessageDetailsResponse {
     #[serde(rename = "@type")]
-    msg_type: MessageTypes,
+    msg_type: MessageTypeV1,
     #[serde(rename = "inviteDetail")]
     invite_detail: InviteDetail,
     #[serde(rename = "urlToInviteDetail")]
@@ -152,19 +152,10 @@ pub struct SendInviteBuilder {
     public_did: Option<String>,
 }
 
-impl SendInviteMessageDetailsResponse {
-    fn from_a2a_message(message: A2AMessage) -> Result<SendInviteMessageDetailsResponse, u32> {
-        match message {
-            A2AMessage::MessageDetail(MessageDetail::ConnectionRequestResp(msg)) => Ok(msg),
-            _ => Err(error::INVALID_HTTP_RESPONSE.code_num)
-        }
-    }
-}
-
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 pub struct ConnectionRequestAnswerResponse {
     #[serde(rename = "@type")]
-    msg_type: MessageTypes,
+    msg_type: MessageTypeV2,
     uid: String,
     sent: bool,
 }
@@ -205,7 +196,7 @@ impl SendInviteBuilder {
             to_did: String::new(),
             to_vk: String::new(),
             payload: SendInviteMessageDetails {
-                msg_type: MessageTypes::build(A2AMessageKinds::MessageDetail),
+                msg_type: MessageTypes::build_v1(A2AMessageKinds::MessageDetail),
                 key_dlg_proof: KeyDlgProof { agent_did: String::new(), agent_delegated_key: String::new(), signature: String::new() },
                 target_name: None,
                 phone_no: None,
@@ -251,30 +242,33 @@ impl SendInviteBuilder {
         trace!("SendInvite::send >>>");
 
         if settings::test_agency_mode_enabled() {
-            return SendInviteBuilder::parse_response(SEND_INVITE_RESPONSE.to_vec());
+            return self.parse_response(SEND_INVITE_RESPONSE.to_vec());
         }
 
-        let data = self.prepare()?;
+        let data = self.prepare_request()?;
 
         let response = httpclient::post_u8(&data).or(Err(error::POST_MSG_FAILURE.code_num))?;
 
-        let (invite, url) = SendInviteBuilder::parse_response(response)?;
+        let (invite, url) = self.parse_response(response)?;
 
         Ok((invite, url))
     }
 
-    fn parse_response(response: Vec<u8>) -> Result<(InviteDetail, String), u32> {
-        let mut data = parse_response_from_agency(&response)?;
+    fn parse_response(&self, response: Vec<u8>) -> Result<(InviteDetail, String), u32> {
+        let mut response = parse_response_from_agency(&response)?;
 
-        match settings::get_protocol_type() {
-            settings::ProtocolTypes::V1 => {
-                let response: SendInviteMessageDetailsResponse = SendInviteMessageDetailsResponse::from_a2a_message(data.remove(1))?;
-                Ok((response.invite_detail, response.url_to_invite_detail))
-            }
-            settings::ProtocolTypes::V2 => {
-                let response: ConnectionRequestResponse = ConnectionRequestResponse::from_a2a_message(data.remove(0))?;
-                Ok((response.invite_detail, response.url_to_invite_detail))
-            }
+        let index = match settings::get_protocol_type() {
+            // TODO: THINK better
+            settings::ProtocolTypes::V1 => 1,
+            settings::ProtocolTypes::V2 => 0
+        };
+
+        match response.remove(index) {
+            A2AMessage::Version1(A2AMessageV1::MessageDetail(MessageDetail::ConnectionRequestResp(res))) =>
+                Ok((res.invite_detail, res.url_to_invite_detail)),
+            A2AMessage::Version2(A2AMessageV2::ConnectionRequestResponse(res)) =>
+                Ok((res.invite_detail, res.url_to_invite_detail)),
+            _ => return Err(error::INVALID_HTTP_RESPONSE.code_num)
         }
     }
 }
@@ -298,7 +292,7 @@ impl AcceptInviteBuilder {
             to_did: String::new(),
             to_vk: String::new(),
             payload: AcceptInviteMessageDetails {
-                msg_type: MessageTypes::build(A2AMessageKinds::MessageDetail),
+                msg_type: MessageTypes::build_v1(A2AMessageKinds::MessageDetail),
                 key_dlg_proof: KeyDlgProof { agent_did: String::new(), agent_delegated_key: String::new(), signature: String::new() },
                 sender_detail: None,
                 sender_agency_detail: None,
@@ -348,31 +342,24 @@ impl AcceptInviteBuilder {
         trace!("AcceptInvite::send >>>");
 
         if settings::test_agency_mode_enabled() {
-            return AcceptInviteBuilder::parse_response(ACCEPT_INVITE_RESPONSE.to_vec());
+            return self.parse_response(ACCEPT_INVITE_RESPONSE.to_vec());
         }
 
-        let data = self.prepare()?;
+        let data = self.prepare_request()?;
 
         let response = httpclient::post_u8(&data).or(Err(error::POST_MSG_FAILURE.code_num))?;
 
-        AcceptInviteBuilder::parse_response(response)
+        self.parse_response(response)
     }
 
-    fn parse_response(response: Vec<u8>) -> Result<String, u32> {
-        let mut data = parse_response_from_agency(&response)?;
+    fn parse_response(&self, response: Vec<u8>) -> Result<String, u32> {
+        let mut response = parse_response_from_agency(&response)?;
 
-        let uid =
-            match settings::get_protocol_type() {
-                settings::ProtocolTypes::V1 => {
-                    let response: MessageCreated = MessageCreated::from_a2a_message(data.remove(0))?;
-                    response.uid
-                }
-                settings::ProtocolTypes::V2 => {
-                    let response: ConnectionRequestAnswerResponse = ConnectionRequestAnswerResponse::from_a2a_message(data.remove(0))?;
-                    response.uid
-                }
-            };
-        Ok(uid)
+        match response.remove(0) {
+            A2AMessage::Version1(A2AMessageV1::MessageCreated(res)) => Ok(res.uid),
+            A2AMessage::Version2(A2AMessageV2::ConnectionRequestAnswerResponse(res)) => Ok(res.uid),
+            _ => return Err(error::INVALID_HTTP_RESPONSE.code_num)
+        }
     }
 }
 
@@ -395,14 +382,14 @@ impl GeneralMessage for SendInviteBuilder {
 
     fn set_to_vk(&mut self, to_vk: String) { self.to_vk = to_vk; }
 
-    fn prepare(&mut self) -> Result<Vec<u8>, u32> {
+    fn prepare_request(&mut self) -> Result<Vec<u8>, u32> {
         self.generate_signature()?;
 
         let messages =
             match settings::get_protocol_type() {
                 settings::ProtocolTypes::V1 => {
                     let create_msg = CreateMessage {
-                        msg_type: MessageTypes::build(A2AMessageKinds::CreateMessage),
+                        msg_type: MessageTypes::build_v1(A2AMessageKinds::CreateMessage),
                         mtype: RemoteMessageType::ConnReq,
                         reply_to_msg_id: None,
                         send_msg: true,
@@ -411,11 +398,12 @@ impl GeneralMessage for SendInviteBuilder {
 
                     let details = self.payload.clone();
 
-                    vec![A2AMessage::CreateMessage(create_msg), A2AMessage::MessageDetail(MessageDetail::ConnectionRequest(details))]
+                    vec![A2AMessage::Version1(A2AMessageV1::CreateMessage(create_msg)),
+                         A2AMessage::Version1(A2AMessageV1::MessageDetail(MessageDetail::ConnectionRequest(details)))]
                 }
                 settings::ProtocolTypes::V2 => {
                     let msg = ConnectionRequest {
-                        msg_type: MessageTypes::build(A2AMessageKinds::ConnectionRequest),
+                        msg_type: MessageTypes::build_v2(A2AMessageKinds::ConnectionRequest),
                         send_msg: true,
                         uid: None,
                         reply_to_msg_id: None,
@@ -425,7 +413,7 @@ impl GeneralMessage for SendInviteBuilder {
                         include_public_did: self.payload.include_public_did,
                     };
 
-                    vec![A2AMessage::ConnectionRequest(msg)]
+                    vec![A2AMessage::Version2(A2AMessageV2::ConnectionRequest(msg))]
                 }
             };
 
@@ -449,14 +437,14 @@ impl GeneralMessage for AcceptInviteBuilder {
     fn set_to_did(&mut self, to_did: String) { self.to_did = to_did; }
     fn set_to_vk(&mut self, to_vk: String) { self.to_vk = to_vk; }
 
-    fn prepare(&mut self) -> Result<Vec<u8>, u32> {
+    fn prepare_request(&mut self) -> Result<Vec<u8>, u32> {
         self.generate_signature()?;
 
         let messages =
             match settings::get_protocol_type() {
                 settings::ProtocolTypes::V1 => {
                     let msg_created = CreateMessage {
-                        msg_type: MessageTypes::build(A2AMessageKinds::CreateMessage),
+                        msg_type: MessageTypes::build_v1(A2AMessageKinds::CreateMessage),
                         mtype: RemoteMessageType::ConnReqAnswer,
                         reply_to_msg_id: self.reply_to_msg_id.clone(),
                         send_msg: true,
@@ -465,11 +453,12 @@ impl GeneralMessage for AcceptInviteBuilder {
 
                     let details = self.payload.clone();
 
-                    vec![A2AMessage::CreateMessage(msg_created), A2AMessage::MessageDetail(MessageDetail::ConnectionRequestAnswer(details))]
+                    vec![A2AMessage::Version1(A2AMessageV1::CreateMessage(msg_created)),
+                         A2AMessage::Version1(A2AMessageV1::MessageDetail(MessageDetail::ConnectionRequestAnswer(details)))]
                 }
                 settings::ProtocolTypes::V2 => {
                     let msg = ConnectionRequestAnswer {
-                        msg_type: MessageTypes::build(A2AMessageKinds::ConnectionRequestAnswer),
+                        msg_type: MessageTypes::build_v2(A2AMessageKinds::ConnectionRequestAnswer),
                         send_msg: true,
                         uid: None,
                         reply_to_msg_id: self.reply_to_msg_id.clone(),
@@ -479,7 +468,7 @@ impl GeneralMessage for AcceptInviteBuilder {
                         answer_status_code: self.payload.answer_status_code.clone(),
                     };
 
-                    vec![A2AMessage::ConnectionRequestAnswer(msg)]
+                    vec![A2AMessage::Version2(A2AMessageV2::ConnectionRequestAnswer(msg))]
                 }
             };
 
@@ -524,7 +513,7 @@ mod tests {
             .agent_vk(&agent_vk).unwrap()
             .phone_number(Some("phone")).unwrap()
             .key_delegate("key").unwrap()
-            .prepare().unwrap();
+            .prepare_request().unwrap();
 
         assert!(msg.len() > 0);
     }
@@ -532,7 +521,7 @@ mod tests {
     #[test]
     fn test_parse_send_invite_response() {
         init!("indy");
-        let (result, url) = SendInviteBuilder::parse_response(SEND_INVITE_RESPONSE.to_vec()).unwrap();
+        let (result, url) = SendInviteBuilder::create().parse_response(SEND_INVITE_RESPONSE.to_vec()).unwrap();
         let invite = serde_json::from_str(INVITE_DETAIL_STRING).unwrap();
 
         assert_eq!(result, invite);

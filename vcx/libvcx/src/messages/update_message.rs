@@ -29,31 +29,85 @@ struct UIDsByConn {
     uids: Vec<String>,
 }
 
-impl UpdateMessageStatusByConnections {
-    pub fn send_secure(&mut self) -> Result<UpdateMessageStatusByConnectionsResponse, u32> {
+struct UpdateMessageStatusByConnectionsBuilder {
+    status_code: Option<MessageStatusCode>,
+    uids_by_conns: Vec<UIDsByConn>
+}
+
+impl UpdateMessageStatusByConnectionsBuilder {
+    pub fn create() -> UpdateMessageStatusByConnectionsBuilder {
+        trace!("UpdateMessageStatusByConnectionsBuilder::create >>>");
+
+        UpdateMessageStatusByConnectionsBuilder {
+            status_code: None,
+            uids_by_conns: Vec::new(),
+        }
+    }
+
+    pub fn uids_by_conns(&mut self, uids_by_conns: Vec<UIDsByConn>) -> Result<&mut Self, u32> {
+        //Todo: validate msg_uid??
+        self.uids_by_conns = uids_by_conns;
+        Ok(self)
+    }
+
+    pub fn status_code(&mut self, code: MessageStatusCode) -> Result<&mut Self, u32> {
+        //Todo: validate that it can be parsed to number??
+        self.status_code = Some(code.clone());
+        Ok(self)
+    }
+
+    pub fn send_secure(&mut self) -> Result<(), u32> {
         trace!("UpdateMessages::send >>>");
 
         if settings::test_agency_mode_enabled() {
             ::utils::httpclient::set_next_u8_response(::utils::constants::UPDATE_MESSAGES_RESPONSE.to_vec());
         }
 
-        let data = self.prepare()?;
+        let data = self.prepare_request()?;
 
         let response = httpclient::post_u8(&data).or(Err(error::POST_MSG_FAILURE.code_num))?;
 
-        UpdateMessageStatusByConnections::parse_response(&response)
+        self.parse_response(&response)
     }
 
-    fn prepare(&mut self) -> Result<Vec<u8>, u32> {
+    fn prepare_request(&mut self) -> Result<Vec<u8>, u32> {
+        let message = match settings::get_protocol_type() {
+            settings::ProtocolTypes::V1 =>
+                A2AMessage::Version1(
+                    A2AMessageV1::UpdateMessageStatusByConnections(
+                        UpdateMessageStatusByConnections {
+                            msg_type: MessageTypes::build(A2AMessageKinds::UpdateMessageStatusByConnections),
+                            uids_by_conns: self.uids_by_conns.clone(),
+                            status_code: self.status_code.clone(),
+                        }
+                    )
+                ),
+            settings::ProtocolTypes::V2 =>
+                A2AMessage::Version2(
+                    A2AMessageV2::UpdateMessageStatusByConnections(
+                        UpdateMessageStatusByConnections {
+                            msg_type: MessageTypes::build(A2AMessageKinds::UpdateMessageStatusByConnections),
+                            uids_by_conns: self.uids_by_conns.clone(),
+                            status_code: self.status_code.clone(),
+                        }
+                    )
+                ),
+        };
+
         let agency_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
-        prepare_message_for_agency(&A2AMessage::UpdateMessageStatusByConnections(self.clone()), &agency_did)
+        prepare_message_for_agency(&message, &agency_did)
     }
 
-    fn parse_response(response: &Vec<u8>) -> Result<UpdateMessageStatusByConnectionsResponse, u32> {
+    fn parse_response(&self, response: &Vec<u8>) -> Result<(), u32> {
         trace!("parse_create_keys_response >>>");
-        let mut messages = parse_response_from_agency(&response)?;
-        let response = UpdateMessageStatusByConnectionsResponse::from_a2a_message(messages.remove(0))?;
-        Ok(response)
+
+        let mut response = parse_response_from_agency(response)?;
+
+        match response.remove(0) {
+            A2AMessage::Version1(A2AMessageV1::UpdateMessageStatusByConnectionsResponse(res)) => Ok(()),
+            A2AMessage::Version2(A2AMessageV2::UpdateMessageStatusByConnectionsResponse(res)) => Ok(()),
+            _ => Err(error::INVALID_HTTP_RESPONSE.code_num)
+        }
     }
 }
 
@@ -66,13 +120,10 @@ pub fn update_agency_messages(status_code: &str, msg_json: &str) -> Result<(), u
 
     let uids_by_conns: Vec<UIDsByConn> = serde_json::from_str(msg_json).or(Err(error::INVALID_JSON.code_num))?;
 
-    let mut messages = UpdateMessageStatusByConnections {
-        msg_type: MessageTypes::build(A2AMessageKinds::UpdateMessageStatusByConnections),
-        uids_by_conns,
-        status_code: Some(status_code),
-    };
-
-    messages.send_secure()?;
+    UpdateMessageStatusByConnectionsBuilder::create()
+        .uids_by_conns(uids_by_conns)?
+        .status_code(status_code)?
+        .send_secure()?;
 
     Ok(())
 }
@@ -86,7 +137,7 @@ mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
 
-        UpdateMessageStatusByConnections::parse_response(&::utils::constants::UPDATE_MESSAGES_RESPONSE.to_vec()).unwrap();
+        UpdateMessageStatusByConnectionsBuilder::create().parse_response(&::utils::constants::UPDATE_MESSAGES_RESPONSE.to_vec()).unwrap();
     }
 
     #[cfg(feature = "agency")]

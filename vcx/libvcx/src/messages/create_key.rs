@@ -1,9 +1,10 @@
 use settings;
 use messages::*;
+use messages::message_type::MessageTypes;
 use utils::{httpclient, error};
 use utils::constants::CREATE_KEYS_RESPONSE;
 
-#[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
+#[derive(Deserialize, Serialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateKey {
     #[serde(rename = "@type")]
@@ -12,6 +13,16 @@ pub struct CreateKey {
     for_did: String,
     #[serde(rename = "forDIDVerKey")]
     for_verkey: String,
+}
+
+impl CreateKey {
+    fn build(for_did: &str, for_verkey: &str) -> CreateKey {
+        CreateKey {
+            msg_type: MessageTypes::build(A2AMessageKinds::CreateKey),
+            for_did: for_did.to_string(),
+            for_verkey: for_verkey.to_string(),
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -26,7 +37,8 @@ pub struct CreateKeyResponse {
 
 #[derive(Debug)]
 pub struct CreateKeyBuilder {
-    payload: CreateKey,
+    for_did: String,
+    for_verkey: String,
 }
 
 impl CreateKeyBuilder {
@@ -34,50 +46,64 @@ impl CreateKeyBuilder {
         trace!("CreateKeyBuilder::create_message >>>");
 
         CreateKeyBuilder {
-            payload: CreateKey {
-                msg_type: MessageTypes::build(A2AMessageKinds::CreateKey),
-                for_did: String::new(),
-                for_verkey: String::new(),
-            },
+            for_did: String::new(),
+            for_verkey: String::new(),
         }
     }
 
     pub fn for_did(&mut self, did: &str) -> Result<&mut Self, u32> {
         validation::validate_did(did)?;
-        self.payload.for_did = did.to_string();
+        self.for_did = did.to_string();
         Ok(self)
     }
 
     pub fn for_verkey(&mut self, verkey: &str) -> Result<&mut Self, u32> {
         validation::validate_verkey(verkey)?;
-        self.payload.for_verkey = verkey.to_string();
+        self.for_verkey = verkey.to_string();
         Ok(self)
     }
 
-    pub fn send_secure(&mut self) -> Result<CreateKeyResponse, u32> {
+    pub fn send_secure(&self) -> Result<(String, String), u32> {
         trace!("CreateKeyMsg::send >>>");
 
         if settings::test_agency_mode_enabled() {
-            return CreateKeyBuilder::parse_response(&CREATE_KEYS_RESPONSE.to_vec());
+            return self.parse_response(&CREATE_KEYS_RESPONSE.to_vec());
         }
 
-        let data = self.prepare()?;
+        let data = self.prepare_request()?;
 
         let response = httpclient::post_u8(&data).or(Err(error::POST_MSG_FAILURE.code_num))?;
 
-        CreateKeyBuilder::parse_response(&response)
+        self.parse_response(&response)
     }
 
-    fn prepare(&mut self) -> Result<Vec<u8>, u32> {
+    fn prepare_request(&self) -> Result<Vec<u8>, u32> {
+        let message = match settings::get_protocol_type() {
+            settings::ProtocolTypes::V1 =>
+                A2AMessage::Version1(
+                    A2AMessageV1::CreateKey(CreateKey::build(&self.for_did, &self.for_verkey))
+                ),
+            settings::ProtocolTypes::V2 =>
+                A2AMessage::Version2(
+                    A2AMessageV2::CreateKey(CreateKey::build(&self.for_did, &self.for_verkey))
+                )
+        };
+
         let agency_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
-        prepare_message_for_agency(&A2AMessage::CreateKey(self.payload.clone()), &agency_did)
+
+        prepare_message_for_agency(&message, &agency_did)
     }
 
-    fn parse_response(response: &Vec<u8>) -> Result<CreateKeyResponse, u32> {
-        trace!("parse_create_keys_response >>>");
+    fn parse_response(&self, response: &Vec<u8>) -> Result<(String, String), u32> {
+        trace!("parse_response >>>");
+
         let mut response = parse_response_from_agency(response)?;
-        let response = CreateKeyResponse::from_a2a_message(response.remove(0))?;
-        Ok(response)
+
+        match response.remove(0) {
+            A2AMessage::Version1(A2AMessageV1::CreateKeyResponse(res)) => Ok((res.for_did, res.for_verkey)),
+            A2AMessage::Version2(A2AMessageV2::CreateKeyResponse(res)) => Ok((res.for_did, res.for_verkey)),
+            _ => Err(error::INVALID_HTTP_RESPONSE.code_num)
+        }
     }
 }
 
@@ -87,33 +113,16 @@ mod tests {
     use utils::constants::{MY1_SEED, MY2_SEED, MY3_SEED};
     use utils::libindy::signus::create_and_store_my_did;
     use messages::create_keys;
-    use messages::message_type::{MessageTypes, MessageTypeV1};
-
-    #[test]
-    fn test_create_key_returns_message_with_create_key_as_payload() {
-        let msg = create_keys();
-        let msg_payload = CreateKey {
-            for_did: String::new(),
-            for_verkey: String::new(),
-            msg_type: MessageTypes::MessageTypeV1(MessageTypeV1 { name: "CREATE_KEY".to_string(), ver: "1.0".to_string() }),
-        };
-        assert_eq!(msg.payload, msg_payload);
-    }
 
     #[test]
     fn test_create_key_set_values() {
         let to_did = "8XFh8yBzrpJQmNyZzgoTqB";
         let for_did = "11235yBzrpJQmNyZzgoTqB";
         let for_verkey = "EkVTa7SCJ5SntpYyX7CSb2pcBhiVGT9kWSagA8a9T69A";
-        let msg_payload = CreateKey {
-            for_did: for_did.to_string(),
-            for_verkey: for_verkey.to_string(),
-            msg_type: MessageTypes::MessageTypeV1(MessageTypeV1 { name: "CREATE_KEY".to_string(), ver: "1.0".to_string() }),
-        };
-        let msg = create_keys()
+
+        create_keys()
             .for_did(for_did).unwrap()
-            .for_verkey(for_verkey).unwrap().payload.clone();
-        assert_eq!(msg, msg_payload);
+            .for_verkey(for_verkey).unwrap();
     }
 
     #[test]
@@ -131,7 +140,7 @@ mod tests {
         let bytes = create_keys()
             .for_did(&my_did).unwrap()
             .for_verkey(&my_vk).unwrap()
-            .prepare().unwrap();
+            .prepare_request().unwrap();
         assert!(bytes.len() > 0);
     }
 
@@ -139,10 +148,12 @@ mod tests {
     fn test_parse_create_keys_response() {
         init!("true");
 
-        let result = CreateKeyBuilder::parse_response(&CREATE_KEYS_RESPONSE.to_vec()).unwrap();
+        let builder = create_keys();
 
-        assert_eq!(result.for_did, "U5LXs4U7P9msh647kToezy");
-        assert_eq!(result.for_verkey, "FktSZg8idAVzyQZrdUppK6FTrfAzW3wWVzAjJAfdUvJq");
+        let (for_did, for_verkey) = builder.parse_response(&CREATE_KEYS_RESPONSE.to_vec()).unwrap();
+
+        assert_eq!(for_did, "U5LXs4U7P9msh647kToezy");
+        assert_eq!(for_verkey, "FktSZg8idAVzyQZrdUppK6FTrfAzW3wWVzAjJAfdUvJq");
     }
 
     #[test]

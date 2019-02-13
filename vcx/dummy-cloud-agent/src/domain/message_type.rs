@@ -3,9 +3,10 @@ use serde_json::Value;
 use regex::Regex;
 use failure::{err_msg, Error};
 use domain::a2a::A2AMessageKinds;
-use domain::protocol_type::{ProtocolType, ProtocolTypes};
 
-pub const MESSAGE_VERSION: &str = "1.0";
+pub const MESSAGE_VERSION_V1: &str = "1.0";
+pub const MESSAGE_VERSION_V2: &str = "2.0";
+
 pub const DID: &str = "did:sov:123456789abcdefghi1234";
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -16,30 +17,20 @@ pub enum MessageTypes {
 }
 
 impl MessageTypes {
-    pub fn build(kind: A2AMessageKinds) -> MessageTypes {
-        match ProtocolType::get() {
-            ProtocolTypes::V1 => {
-                MessageTypes::MessageTypeV1(MessageTypeV1 {
-                    name: kind.name(),
-                    ver: MESSAGE_VERSION.to_string(),
-                })
-            }
-            ProtocolTypes::V2 => {
-                MessageTypes::MessageTypeV2(MessageTypeV2 {
-                    did: DID.to_string(),
-                    family: kind.family(),
-                    version: MESSAGE_VERSION.to_string(),
-                    type_: kind.name(),
-                })
-            }
-        }
+    pub fn build_v1(kind: A2AMessageKinds) -> MessageTypes {
+        MessageTypes::MessageTypeV1(MessageTypeV1 {
+            name: kind.name(),
+            ver: MESSAGE_VERSION_V1.to_string(),
+        })
     }
 
-    pub fn name<'a>(&'a self) -> &'a str {
-        match self {
-            MessageTypes::MessageTypeV1(type_) => type_.name.as_str(),
-            MessageTypes::MessageTypeV2(type_) => type_.type_.as_str(),
-        }
+    pub fn build_v2(kind: A2AMessageKinds) -> MessageTypes {
+        MessageTypes::MessageTypeV2(MessageTypeV2 {
+            did: DID.to_string(),
+            family: kind.family(),
+            version: MESSAGE_VERSION_V2.to_string(),
+            type_: kind.name(),
+        })
     }
 
     pub fn version<'a>(&'a self) -> &'a str {

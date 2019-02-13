@@ -230,11 +230,11 @@ pub fn edge_wallet_setup() -> BoxedFuture<i32, Error> {
 }
 
 pub fn compose_connect(wallet_handle: i32) -> BoxedFuture<Vec<u8>, Error> {
-    let msgs = [A2AMessage::Connect(
+    let msgs = [A2AMessage::Version1(A2AMessageV1::Connect(
         Connect {
             from_did: EDGE_AGENT_DID.into(),
             from_did_verkey: EDGE_AGENT_DID_VERKEY.into(),
-        })];
+        }))];
 
     let msg = A2AMessage::prepare_authcrypted(wallet_handle,
                                              EDGE_AGENT_DID_VERKEY,
@@ -246,7 +246,7 @@ pub fn compose_connect(wallet_handle: i32) -> BoxedFuture<Vec<u8>, Error> {
 pub fn decompose_connected(wallet_handle: i32, msg: &[u8]) -> BoxedFuture<(String, String, String), Error> {
     A2AMessage::unbundle_authcrypted(wallet_handle, EDGE_AGENT_DID_VERKEY, &msg)
         .and_then(|(sender_verkey, mut msgs)| {
-            if let Some(A2AMessage::Connected(msg)) = msgs.pop() {
+            if let Some(A2AMessage::Version1(A2AMessageV1::Connected(msg))) = msgs.pop() {
                 let Connected { with_pairwise_did: pairwise_did, with_pairwise_did_verkey: pairwise_verkey } = msg;
                 Ok((sender_verkey, pairwise_did, pairwise_verkey))
             } else {
@@ -257,7 +257,7 @@ pub fn decompose_connected(wallet_handle: i32, msg: &[u8]) -> BoxedFuture<(Strin
 }
 
 pub fn compose_signup(wallet_handle: i32, pairwise_did: &str, pairwise_verkey: &str) -> BoxedFuture<Vec<u8>, Error> {
-    let msgs = [A2AMessage::SignUp(SignUp {})];
+    let msgs = [A2AMessage::Version1(A2AMessageV1::SignUp(SignUp {}))];
 
     let msg = A2AMessage::prepare_authcrypted(wallet_handle,
                                              EDGE_AGENT_DID_VERKEY,
@@ -269,7 +269,7 @@ pub fn compose_signup(wallet_handle: i32, pairwise_did: &str, pairwise_verkey: &
 pub fn decompose_signedup(wallet_handle: i32, msg: &[u8]) -> BoxedFuture<String, Error> {
     A2AMessage::unbundle_authcrypted(wallet_handle, EDGE_AGENT_DID_VERKEY, &msg)
         .and_then(|(sender_verkey, mut msgs)| {
-            if let Some(A2AMessage::SignedUp(_)) = msgs.pop() {
+            if let Some(A2AMessage::Version1(A2AMessageV1::SignedUp(_))) = msgs.pop() {
                 Ok(sender_verkey)
             } else {
                 Err(err_msg("Invalid message"))
@@ -279,7 +279,7 @@ pub fn decompose_signedup(wallet_handle: i32, msg: &[u8]) -> BoxedFuture<String,
 }
 
 pub fn compose_create_agent(wallet_handle: i32, pairwise_did: &str, pairwise_verkey: &str) -> BoxedFuture<Vec<u8>, Error> {
-    let msgs = [A2AMessage::CreateAgent(CreateAgent {})];
+    let msgs = vec![A2AMessage::Version1(A2AMessageV1::CreateAgent(CreateAgent {}))];
 
     let msg = A2AMessage::prepare_authcrypted(wallet_handle,
                                              EDGE_AGENT_DID_VERKEY,
@@ -291,7 +291,7 @@ pub fn compose_create_agent(wallet_handle: i32, pairwise_did: &str, pairwise_ver
 pub fn decompose_agent_created(wallet_handle: i32, msg: &[u8]) -> BoxedFuture<(String, String, String), Error> {
     A2AMessage::unbundle_authcrypted(wallet_handle, EDGE_AGENT_DID_VERKEY, &msg)
         .and_then(|(sender_verkey, mut msgs)| {
-            if let Some(A2AMessage::AgentCreated(agent_created)) = msgs.pop() {
+            if let Some(A2AMessage::Version1(A2AMessageV1::AgentCreated(agent_created))) = msgs.pop() {
                 let AgentCreated { with_pairwise_did: pw_did, with_pairwise_did_verkey: pw_vk } = agent_created;
                 Ok((sender_verkey, pw_did, pw_vk))
             } else {
@@ -302,11 +302,11 @@ pub fn decompose_agent_created(wallet_handle: i32, msg: &[u8]) -> BoxedFuture<(S
 }
 
 pub fn compose_create_key(wallet_handle: i32, agent_did: &str, agent_verkey: &str, for_did: &str, for_verkey: &str) -> BoxedFuture<Vec<u8>, Error> {
-    let msgs = [A2AMessage::CreateKey(
+    let msgs = [A2AMessage::Version1(A2AMessageV1::CreateKey(
         CreateKey {
             for_did: for_did.into(),
             for_did_verkey: for_verkey.into()
-        })];
+        }))];
 
     let msg = A2AMessage::prepare_authcrypted(wallet_handle,
                                              EDGE_AGENT_DID_VERKEY,
@@ -318,7 +318,7 @@ pub fn compose_create_key(wallet_handle: i32, agent_did: &str, agent_verkey: &st
 pub fn decompose_key_created(wallet_handle: i32, msg: &[u8]) -> BoxedFuture<(String, KeyCreated), Error> {
     A2AMessage::unbundle_authcrypted(wallet_handle, EDGE_AGENT_DID_VERKEY, &msg)
         .and_then(|(sender_verkey, mut msgs)| {
-            if let Some(A2AMessage::KeyCreated(key_created)) = msgs.pop() {
+            if let Some(A2AMessage::Version1(A2AMessageV1::KeyCreated(key_created))) = msgs.pop() {
                 Ok((sender_verkey, key_created))
             } else {
                 Err(err_msg("Invalid message"))
@@ -334,14 +334,14 @@ pub fn compose_create_connection_request(wallet_handle: i32,
                                          agent_pairwise_verkey: &str) -> BoxedFuture<Vec<u8>, Error> {
     let create_msg = build_create_message_request(RemoteMessageType::ConnReq, None);
 
-    let msg_details = A2AMessage::MessageDetail(
+    let msg_details = A2AMessage::Version1(A2AMessageV1::MessageDetail(
         MessageDetail::ConnectionRequest(
             ConnectionRequestMessageDetail {
                 key_dlg_proof: gen_key_delegated_proof(wallet_handle, EDGE_PAIRWISE_DID_VERKEY, &agent_pairwise_did, &agent_pairwise_verkey),
                 target_name: None,
                 phone_no: Some(PHONE_NO.to_string()),
                 use_public_did: Some(true),
-            }));
+            })));
 
     let msgs = [create_msg, msg_details];
 
@@ -353,8 +353,8 @@ pub fn decompose_connection_request_created(wallet_handle: i32, msg: &[u8]) -> B
         .and_then(|(sender_verkey, mut msgs)| {
             assert_eq!(2, msgs.len());
             match (msgs.remove(0), msgs.remove(0)) {
-                (A2AMessage::MessageCreated(msg_created),
-                    A2AMessage::MessageDetail(MessageDetail::ConnectionRequestResp(msg_details))) =>
+                (A2AMessage::Version1(A2AMessageV1::MessageCreated(msg_created)),
+            A2AMessage::Version1(A2AMessageV1::MessageDetail(MessageDetail::ConnectionRequestResp(msg_details)))) =>
                     Ok((sender_verkey, msg_created.uid, msg_details.invite_detail)),
                 _ => Err(err_msg("Invalid message"))
             }
@@ -373,7 +373,7 @@ pub fn compose_create_connection_request_answer(wallet_handle: i32,
 
     let create_msg = build_create_message_request(RemoteMessageType::ConnReqAnswer, Some(reply_to_msg_id.to_string()));
 
-    let msg_details: A2AMessage = A2AMessage::MessageDetail(
+    let msg_details: A2AMessage = A2AMessage::Version1(A2AMessageV1::MessageDetail(
         MessageDetail::ConnectionRequestAnswer(
             ConnectionRequestAnswerMessageDetail {
                 key_dlg_proof: Some(gen_key_delegated_proof(wallet_handle, EDGE_PAIRWISE_DID_VERKEY, &agent_pairwise_did, &agent_pairwise_verkey)),
@@ -392,7 +392,7 @@ pub fn compose_create_connection_request_answer(wallet_handle: i32,
                 },
                 answer_status_code: MessageStatusCode::Accepted
             }
-        ));
+        )));
 
     let msgs = [create_msg, msg_details];
 
@@ -404,7 +404,7 @@ pub fn decompose_connection_request_answer_created(wallet_handle: i32, msg: &[u8
         .and_then(|(sender_verkey, mut msgs)| {
             assert_eq!(1, msgs.len());
             match msgs.remove(0) {
-                A2AMessage::MessageCreated(msg_created) => Ok((sender_verkey, msg_created.uid)),
+                A2AMessage::Version1(A2AMessageV1::MessageCreated(msg_created)) => Ok((sender_verkey, msg_created.uid)),
                 _ => Err(err_msg("Invalid message"))
             }
         })
@@ -419,7 +419,7 @@ pub fn compose_create_general_message(wallet_handle: i32,
                                       mtype: RemoteMessageType) -> BoxedFuture<Vec<u8>, Error> {
     let create_msg = build_create_message_request(mtype, None);
 
-    let msg_details: A2AMessage = A2AMessage::MessageDetail(
+    let msg_details: A2AMessage = A2AMessage::Version1(A2AMessageV1::MessageDetail(
         MessageDetail::General(
             GeneralMessageDetail {
                 msg: PAYLOAD.to_vec(),
@@ -427,7 +427,7 @@ pub fn compose_create_general_message(wallet_handle: i32,
                 detail: None,
             }
         )
-    );
+    ));
 
     let msgs = [create_msg, msg_details];
 
@@ -435,12 +435,12 @@ pub fn compose_create_general_message(wallet_handle: i32,
 }
 
 fn build_create_message_request(mtype: RemoteMessageType, reply_to_msg_id: Option<String>) -> A2AMessage {
-    A2AMessage::CreateMessage(CreateMessage {
+    A2AMessage::Version1(A2AMessageV1::CreateMessage(CreateMessage {
         mtype,
         send_msg: false,
         uid: None,
         reply_to_msg_id
-    })
+    }))
 }
 
 pub fn decompose_general_message_created(wallet_handle: i32, msg: &[u8]) -> BoxedFuture<(String, String), Error> {
@@ -448,7 +448,7 @@ pub fn decompose_general_message_created(wallet_handle: i32, msg: &[u8]) -> Boxe
         .and_then(|(sender_verkey, mut msgs)| {
             assert_eq!(1, msgs.len());
             match msgs.remove(0) {
-                A2AMessage::MessageCreated(msg_created) => Ok((sender_verkey, msg_created.uid)),
+                A2AMessage::Version1(A2AMessageV1::MessageCreated(msg_created)) => Ok((sender_verkey, msg_created.uid)),
                 _ => Err(err_msg("Invalid message"))
             }
         })
@@ -460,11 +460,11 @@ pub fn compose_get_messages(wallet_handle: i32,
                             agent_verkey: &str,
                             agent_pairwise_did: &str,
                             agent_pairwise_verkey: &str) -> BoxedFuture<Vec<u8>, Error> {
-    let msgs = [A2AMessage::GetMessages(GetMessages {
+    let msgs = [A2AMessage::Version1(A2AMessageV1::GetMessages(GetMessages {
         exclude_payload: None,
         uids: Vec::new(),
         status_codes: Vec::new(),
-    })];
+    }))];
 
     compose_message(wallet_handle, &msgs, agent_pairwise_did, agent_pairwise_verkey, agent_did, agent_verkey)
 }
@@ -474,7 +474,7 @@ pub fn decompose_get_messages(wallet_handle: i32, msg: &[u8]) -> BoxedFuture<(St
         .and_then(|(sender_verkey, mut msgs)| {
             assert_eq!(1, msgs.len());
             match msgs.remove(0) {
-                A2AMessage::Messages(messages) => Ok((sender_verkey, messages.msgs)),
+                A2AMessage::Version1(A2AMessageV1::Messages(messages)) => Ok((sender_verkey, messages.msgs)),
                 _ => Err(err_msg("Invalid message"))
             }
         })
@@ -488,10 +488,10 @@ pub fn compose_update_message_status_message(wallet_handle: i32,
                                              agent_pairwise_verkey: &str,
                                              uid: &str,
                                              status_code: MessageStatusCode) -> BoxedFuture<Vec<u8>, Error> {
-    let msgs = [A2AMessage::UpdateMessageStatus(UpdateMessageStatus {
+    let msgs = [A2AMessage::Version1(A2AMessageV1::UpdateMessageStatus(UpdateMessageStatus {
         uids: vec![uid.to_string()],
         status_code
-    })];
+    }))];
 
     compose_message(wallet_handle, &msgs, agent_pairwise_did, agent_pairwise_verkey, agent_did, agent_verkey)
 }
@@ -501,7 +501,7 @@ pub fn decompose_message_status_updated(wallet_handle: i32, msg: &[u8]) -> Boxed
         .and_then(|(sender_verkey, mut msgs)| {
             assert_eq!(1, msgs.len());
             match msgs.remove(0) {
-                A2AMessage::MessageStatusUpdated(msg) => Ok((sender_verkey, msg)),
+                A2AMessage::Version1(A2AMessageV1::MessageStatusUpdated(msg)) => Ok((sender_verkey, msg)),
                 _ => Err(err_msg("Invalid message"))
             }
         })
@@ -513,9 +513,9 @@ pub fn compose_update_connection_status_message(wallet_handle: i32,
                                                 agent_verkey: &str,
                                                 agent_pairwise_did: &str,
                                                 agent_pairwise_verkey: &str) -> BoxedFuture<Vec<u8>, Error> {
-    let msgs = [A2AMessage::UpdateConnectionStatus(UpdateConnectionStatus {
+    let msgs = [A2AMessage::Version1(A2AMessageV1::UpdateConnectionStatus(UpdateConnectionStatus {
         status_code: ConnectionStatus::Deleted
-    })];
+    }))];
 
     compose_message(wallet_handle, &msgs, agent_pairwise_did, agent_pairwise_verkey, agent_did, agent_verkey)
 }
@@ -525,7 +525,7 @@ pub fn decompose_connection_status_updated(wallet_handle: i32, msg: &[u8]) -> Bo
         .and_then(|(sender_verkey, mut msgs)| {
             assert_eq!(1, msgs.len());
             match msgs.remove(0) {
-                A2AMessage::ConnectionStatusUpdated(msg) => Ok((sender_verkey, msg)),
+                A2AMessage::Version1(A2AMessageV1::ConnectionStatusUpdated(msg)) => Ok((sender_verkey, msg)),
                 _ => Err(err_msg("Invalid message"))
             }
         })
@@ -537,12 +537,12 @@ pub fn compose_get_messages_by_connection(wallet_handle: i32,
                                           agent_verkey: &str,
                                           agent_pairwise_did: &str,
                                           agent_pairwise_verkey: &str) -> BoxedFuture<Vec<u8>, Error> {
-    let msgs = [A2AMessage::GetMessagesByConnections(GetMessagesByConnections {
+    let msgs = [A2AMessage::Version1(A2AMessageV1::GetMessagesByConnections(GetMessagesByConnections {
         exclude_payload: None,
         uids: Vec::new(),
         status_codes: Vec::new(),
         pairwise_dids: Vec::new(),
-    })];
+    }))];
     let msg = A2AMessage::prepare_authcrypted(wallet_handle,
                                              EDGE_AGENT_DID_VERKEY,
                                              agent_verkey,
@@ -554,7 +554,7 @@ pub fn decompose_get_messages_by_connection(wallet_handle: i32, msg: &[u8]) -> B
         .and_then(|(sender_verkey, mut msgs)| {
             assert_eq!(1, msgs.len());
             match msgs.remove(0) {
-                A2AMessage::MessagesByConnections(messages) => Ok((sender_verkey, messages.msgs)),
+                A2AMessage::Version1(A2AMessageV1::MessagesByConnections(messages)) => Ok((sender_verkey, messages.msgs)),
                 _ => Err(err_msg("Invalid message"))
             }
         })
@@ -562,14 +562,14 @@ pub fn decompose_get_messages_by_connection(wallet_handle: i32, msg: &[u8]) -> B
 }
 
 pub fn compose_update_configs(wallet_handle: i32, agent_did: &str, agent_verkey: &str) -> BoxedFuture<Vec<u8>, Error> {
-    let msgs = [A2AMessage::UpdateConfigs(
+    let msgs = [A2AMessage::Version1(A2AMessageV1::UpdateConfigs(
         UpdateConfigs {
             configs: vec![
                 ConfigOption {name: "zoom_zoom".to_string(), value: "value".to_string()},
                 ConfigOption {name: "name".to_string(), value: "super agent".to_string()},
                 ConfigOption {name: "logo_url".to_string(), value: "http://logo.url".to_string()}
             ]
-        })];
+        }))];
 
     let msg = A2AMessage::prepare_authcrypted(wallet_handle,
                                              EDGE_AGENT_DID_VERKEY,
@@ -580,10 +580,10 @@ pub fn compose_update_configs(wallet_handle: i32, agent_did: &str, agent_verkey:
 }
 
 pub fn compose_get_configs(wallet_handle: i32, agent_did: &str, agent_verkey: &str) -> BoxedFuture<Vec<u8>, Error> {
-    let msgs = [A2AMessage::GetConfigs(
+    let msgs = [A2AMessage::Version1(A2AMessageV1::GetConfigs(
         GetConfigs {
             configs: vec![String::from("name"), String::from("logo_url")]
-        })];
+        }))];
 
     let msg = A2AMessage::prepare_authcrypted(wallet_handle,
                                              EDGE_AGENT_DID_VERKEY,
@@ -596,7 +596,7 @@ pub fn compose_get_configs(wallet_handle: i32, agent_did: &str, agent_verkey: &s
 pub fn decompose_configs(wallet_handle: i32, msg: &[u8]) -> BoxedFuture<Vec<ConfigOption>, Error> {
     A2AMessage::unbundle_authcrypted(wallet_handle, EDGE_AGENT_DID_VERKEY, &msg)
         .and_then(|(sender_verkey, mut msgs)| {
-            if let Some(A2AMessage::Configs(configs)) = msgs.pop() {
+            if let Some(A2AMessage::Version1(A2AMessageV1::Configs(configs))) = msgs.pop() {
                 Ok((configs.configs))
             } else {
                 Err(err_msg("Invalid message"))
@@ -606,10 +606,10 @@ pub fn decompose_configs(wallet_handle: i32, msg: &[u8]) -> BoxedFuture<Vec<Conf
 }
 
 pub fn compose_remove_configs(wallet_handle: i32, agent_did: &str, agent_verkey: &str) -> BoxedFuture<Vec<u8>, Error> {
-    let msgs = [A2AMessage::RemoveConfigs(
+    let msgs = [A2AMessage::Version1(A2AMessageV1::RemoveConfigs(
         RemoveConfigs {
             configs: vec![String::from("name")]
-        })];
+        }))];
 
     let msg = A2AMessage::prepare_authcrypted(wallet_handle,
                                              EDGE_AGENT_DID_VERKEY,
@@ -620,21 +620,21 @@ pub fn compose_remove_configs(wallet_handle: i32, agent_did: &str, agent_verkey:
 }
 
 pub fn compose_forward(wallet_handle: i32, recipient_did: &str, recipient_vk: &str, msg: Vec<u8>) -> BoxedFuture<Vec<u8>, Error> {
-    let msgs = [A2AMessage::Forward(
+    let msgs = [A2AMessage::Version1(A2AMessageV1::Forward(
         Forward {
             fwd: recipient_did.into(),
             msg,
-        })];
+        }))];
 
     A2AMessage::prepare_anoncrypted(wallet_handle,recipient_vk, &msgs)
 }
 
 pub fn compose_authcrypted_forward(wallet_handle: i32, sender_vk: &str, recipient_did: &str, recipient_vk: &str, msg: Vec<u8>) -> BoxedFuture<Vec<u8>, Error> {
-    let msgs = [A2AMessage::Forward(
+    let msgs = [A2AMessage::Version1(A2AMessageV1::Forward(
         Forward {
             fwd: recipient_did.into(),
             msg,
-        })];
+        }))];
 
     A2AMessage::prepare_authcrypted(wallet_handle, sender_vk, recipient_vk, &msgs)
 }

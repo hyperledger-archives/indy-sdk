@@ -58,7 +58,7 @@ impl SendMessageBuilder {
         Ok(self)
     }
 
-    pub fn edge_agent_payload(&mut self, my_vk:&str, their_vk: &str, data: &str, payload_type: PayloadKinds) -> Result<&mut Self, u32> {
+    pub fn edge_agent_payload(&mut self, my_vk: &str, their_vk: &str, data: &str, payload_type: PayloadKinds) -> Result<&mut Self, u32> {
         //todo: is this a json value, String??
         self.payload = encrypted_payload(my_vk, their_vk, data, payload_type)?;
         Ok(self)
@@ -83,33 +83,38 @@ impl SendMessageBuilder {
         trace!("SendMessage::send >>>");
 
         if settings::test_agency_mode_enabled() {
-            return SendMessageBuilder::parse_response(::utils::constants::SEND_MESSAGE_RESPONSE.to_vec());
+            return self.parse_response(::utils::constants::SEND_MESSAGE_RESPONSE.to_vec());
         }
 
-        let data = self.prepare()?;
+        let data = self.prepare_request()?;
 
         let response = httpclient::post_u8(&data).or(Err(error::POST_MSG_FAILURE.code_num))?;
 
-        let result = SendMessageBuilder::parse_response(response)?;
+        let result = self.parse_response(response)?;
 
         Ok(result)
     }
 
-    fn parse_response(response: Vec<u8>) -> Result<SendResponse, u32> {
-        match settings::get_protocol_type() {
+    fn parse_response(&self, response: Vec<u8>) -> Result<SendResponse, u32> {
+        let mut response = parse_response_from_agency(&response)?;
+
+        let index = match settings::get_protocol_type() {
+            // TODO: THINK better
             settings::ProtocolTypes::V1 => {
-                let mut messages = parse_response_from_agency(&response)?;
-                if messages.len() <= 1 {
+                if response.len() <= 1 {
                     return Err(error::INVALID_HTTP_RESPONSE.code_num);
                 }
-                let response: MessageSent = MessageSent::from_a2a_message(messages.remove(1))?;
-                Ok(SendResponse { uid: response.uid, uids: response.uids })
-            }
-            settings::ProtocolTypes::V2 => {
-                let mut messages = parse_response_from_agency(&response)?;
-                let response: SendRemoteMessageResponse = SendRemoteMessageResponse::from_a2a_message(messages.remove(0))?;
-                Ok(SendResponse { uid: Some(response.uid.clone()), uids: if response.sent { vec![response.uid] } else { vec![] } })
-            }
+                1
+            },
+            settings::ProtocolTypes::V2 => 0
+        };
+
+        match response.remove(index) {
+            A2AMessage::Version1(A2AMessageV1::MessageSent(res)) =>
+                Ok(SendResponse { uid: res.uid, uids: res.uids }),
+            A2AMessage::Version2(A2AMessageV2::SendRemoteMessageResponse(res)) =>
+                Ok(SendResponse { uid: Some(res.uid.clone()), uids: if res.sent { vec![res.uid] } else { vec![] } }),
+            _ => return Err(error::INVALID_HTTP_RESPONSE.code_num)
         }
     }
 }
@@ -123,28 +128,29 @@ impl GeneralMessage for SendMessageBuilder {
     fn set_to_did(&mut self, to_did: String) { self.to_did = to_did; }
     fn set_to_vk(&mut self, to_vk: String) { self.to_vk = to_vk; }
 
-    fn prepare(&mut self) -> Result<Vec<u8>, u32> {
+    fn prepare_request(&mut self) -> Result<Vec<u8>, u32> {
         let messages =
             match settings::get_protocol_type() {
                 settings::ProtocolTypes::V1 => {
                     let create = CreateMessage {
-                        msg_type: MessageTypes::build(A2AMessageKinds::CreateMessage),
+                        msg_type: MessageTypes::build_v1(A2AMessageKinds::CreateMessage),
                         mtype: self.mtype.clone(),
                         reply_to_msg_id: self.ref_msg_id.clone(),
                         send_msg: true,
                         uid: self.uid.clone()
                     };
                     let detail = GeneralMessageDetail {
-                        msg_type: MessageTypes::build(A2AMessageKinds::MessageDetail),
+                        msg_type: MessageTypes::build_v1(A2AMessageKinds::MessageDetail),
                         msg: self.payload.clone(),
                         title: self.title.clone(),
                         detail: self.detail.clone()
                     };
-                    vec![A2AMessage::CreateMessage(create), A2AMessage::MessageDetail(MessageDetail::General(detail))]
+                    vec![A2AMessage::Version1(A2AMessageV1::CreateMessage(create)),
+                         A2AMessage::Version1(A2AMessageV1::MessageDetail(MessageDetail::General(detail)))]
                 }
                 settings::ProtocolTypes::V2 => {
                     let message = SendRemoteMessage {
-                        msg_type: MessageTypes::build(A2AMessageKinds::SendRemoteMessage),
+                        msg_type: MessageTypes::build_v2(A2AMessageKinds::SendRemoteMessage),
                         mtype: self.mtype.clone(),
                         reply_to_msg_id: self.ref_msg_id.clone(),
                         send_msg: true,
@@ -153,7 +159,7 @@ impl GeneralMessage for SendMessageBuilder {
                         title: self.title.clone(),
                         detail: self.detail.clone(),
                     };
-                    vec![A2AMessage::SendRemoteMessage(message)]
+                    vec![A2AMessage::Version2(A2AMessageV2::SendRemoteMessage(message))]
                 }
             };
 
@@ -213,7 +219,7 @@ pub fn send_generic_message(connection_handle: u32, msg: &str, msg_type: &str, m
 // Possibly this function moves out of this file.
 // On second thought, this should stick as a ConnectionError.
 pub fn encrypted_payload(my_vk: &str, their_vk: &str, data: &str, msg_type: PayloadKinds) -> Result<Vec<u8>, u32> {
-    let payload = Payload {
+    let payload = ::messages::Payload {
         type_: PayloadTypes::build(msg_type, "json"),
         msg: data.to_string(),
     };
@@ -253,13 +259,13 @@ mod tests {
         };
 
         /* just check that it doesn't panic */
-        let packed = message.prepare().unwrap();
+        let packed = message.prepare_request().unwrap();
     }
 
     #[test]
     fn test_parse_send_message_response() {
         init!("true");
-        let result = SendMessageBuilder::parse_response(SEND_MESSAGE_RESPONSE.to_vec()).unwrap();
+        let result = SendMessageBuilder::create().parse_response(SEND_MESSAGE_RESPONSE.to_vec()).unwrap();
         let expected = SendResponse {
             uid: None,
             uids: vec!["ntc2ytb".to_string()],
@@ -270,7 +276,7 @@ mod tests {
     #[test]
     fn test_parse_send_message_bad_response() {
         init!("true");
-        let result = SendMessageBuilder::parse_response(::utils::constants::UPDATE_PROFILE_RESPONSE.to_vec());
+        let result = SendMessageBuilder::create().parse_response(::utils::constants::UPDATE_PROFILE_RESPONSE.to_vec());
         assert!(result.is_err());
     }
 

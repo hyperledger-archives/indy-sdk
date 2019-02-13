@@ -2,7 +2,6 @@ use messages::*;
 use messages::message_type::MessageTypes;
 use settings;
 use utils::{error, httpclient};
-use utils::constants::DELETE_CONNECTION_RESPONSE;
 
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -55,7 +54,7 @@ pub struct UpdateConnectionResponse {
 pub struct DeleteConnectionBuilder {
     to_did: String,
     to_vk: String,
-    payload: UpdateConnection,
+    status_code: ConnectionStatus,
     agent_did: String,
     agent_vk: String,
 }
@@ -67,45 +66,46 @@ impl DeleteConnectionBuilder {
         DeleteConnectionBuilder {
             to_did: String::new(),
             to_vk: String::new(),
-            payload: UpdateConnection {
-                msg_type: MessageTypes::build(A2AMessageKinds::UpdateConnectionStatus),
-                status_code: ConnectionStatus::Deleted,
-            },
+            status_code: ConnectionStatus::Deleted,
             agent_did: String::new(),
             agent_vk: String::new(),
         }
     }
 
-    pub fn send_secure(&mut self) -> Result<UpdateConnectionResponse, u32> {
+    pub fn send_secure(&mut self) -> Result<(), u32> {
         trace!("DeleteConnection::send >>>");
 
         if settings::test_agency_mode_enabled() {
-            return Ok(rmp_serde::from_slice::<UpdateConnectionResponse>(&DELETE_CONNECTION_RESPONSE.to_vec()).unwrap())
+            return Ok(());
         }
 
-        let data = self.prepare()?;
+        let data = self.prepare_request()?;
 
         let response = httpclient::post_u8(&data).or(Err(error::POST_MSG_FAILURE.code_num))?;
 
-        let response = DeleteConnectionBuilder::parse_response(&response)?;
+        let response = self.parse_response(&response)?;
 
         Ok(response)
     }
 
-    fn parse_response(response: &Vec<u8>) -> Result<UpdateConnectionResponse, u32> {
+    fn parse_response(&self, response: &Vec<u8>) -> Result<(), u32> {
         trace!("parse_create_keys_response >>>");
-        let mut messages = parse_response_from_agency(&response)?;
-        let response = UpdateConnectionResponse::from_a2a_message(messages.remove(0))?;
-        Ok(response)
+
+        let mut response = parse_response_from_agency(response)?;
+
+        match response.remove(0) {
+            A2AMessage::Version1(A2AMessageV1::UpdateConnectionResponse(res)) => Ok(()),
+            A2AMessage::Version2(A2AMessageV2::UpdateConnectionResponse(res)) => Ok(()),
+            _ => Err(error::INVALID_HTTP_RESPONSE.code_num)
+        }
     }
 
     fn print_info(&self) {
         println!("\n****\n**** message pack: Delete Connection");
-        println!("payload {}", serde_json::to_string(&self.payload).unwrap());
+        println!("self.status_code {:?}", &self.status_code);
         println!("self.to_vk: {}", &self.to_vk);
         println!("self.agent_did: {}", &self.agent_did);
         println!("self.agent_vk: {}", &self.agent_vk);
-        debug!("connection invitation details: {}", serde_json::to_string(&self.payload).unwrap_or("failure".to_string()));
     }
 }
 
@@ -124,9 +124,29 @@ impl GeneralMessage for DeleteConnectionBuilder {
     fn set_to_did(&mut self, to_did: String) { self.to_did = to_did; }
     fn set_to_vk(&mut self, to_vk: String) { self.to_vk = to_vk; }
 
-    fn prepare(&mut self) -> Result<Vec<u8>, u32> {
-        let messages = vec![A2AMessage::UpdateConnection(self.payload.clone())];
-        prepare_message_for_agent(messages, &self.to_vk, &self.agent_did, &self.agent_vk)
+    fn prepare_request(&mut self) -> Result<Vec<u8>, u32> {
+        let message = match settings::get_protocol_type() {
+            settings::ProtocolTypes::V1 =>
+                A2AMessage::Version1(
+                    A2AMessageV1::UpdateConnection(
+                        UpdateConnection {
+                            msg_type: MessageTypes::build(A2AMessageKinds::UpdateConnectionStatus),
+                            status_code: self.status_code.clone()
+                        }
+                    )
+                ),
+            settings::ProtocolTypes::V2 =>
+                A2AMessage::Version2(
+                    A2AMessageV2::UpdateConnection(
+                        UpdateConnection {
+                            msg_type: MessageTypes::build(A2AMessageKinds::UpdateConnectionStatus),
+                            status_code: self.status_code.clone(),
+                        }
+                    )
+                )
+        };
+
+        prepare_message_for_agent(vec![message], &self.to_vk, &self.agent_did, &self.agent_vk)
     }
 }
 

@@ -6,7 +6,8 @@ use regex::Regex;
 use messages::A2AMessageKinds;
 use utils::error;
 
-pub const MESSAGE_VERSION: &str = "1.0";
+pub const MESSAGE_VERSION_V1: &str = "1.0";
+pub const MESSAGE_VERSION_V2: &str = "2.0";
 pub const DID: &str = "did:sov:123456789abcdefghi1234";
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
@@ -17,22 +18,26 @@ pub enum MessageTypes {
 }
 
 impl MessageTypes {
+    pub fn build_v1(kind: A2AMessageKinds) -> MessageTypeV1 {
+        MessageTypeV1 {
+            name: kind.name(),
+            ver: MESSAGE_VERSION_V1.to_string(),
+        }
+    }
+
+    pub fn build_v2(kind: A2AMessageKinds) -> MessageTypeV2 {
+        MessageTypeV2 {
+            did: DID.to_string(),
+            family: kind.family(),
+            version: MESSAGE_VERSION_V2.to_string(),
+            type_: kind.name(),
+        }
+    }
+
     pub fn build(kind: A2AMessageKinds) -> MessageTypes {
         match settings::get_protocol_type() {
-            settings::ProtocolTypes::V1 => {
-                MessageTypes::MessageTypeV1(MessageTypeV1 {
-                    name: kind.name(),
-                    ver: MESSAGE_VERSION.to_string(),
-                })
-            }
-            settings::ProtocolTypes::V2 => {
-                MessageTypes::MessageTypeV2(MessageTypeV2 {
-                    did: DID.to_string(),
-                    family: kind.family(),
-                    version: MESSAGE_VERSION.to_string(),
-                    type_: kind.name(),
-                })
-            }
+            settings::ProtocolTypes::V1 => MessageTypes::MessageTypeV1(MessageTypes::build_v1(kind)),
+            settings::ProtocolTypes::V2 => MessageTypes::MessageTypeV2(MessageTypes::build_v2(kind))
         }
     }
 

@@ -1,4 +1,4 @@
-use domain::message_type::{MessageTypeV2, MessageFamilies, MESSAGE_VERSION, DID};
+use domain::message_type::{MessageTypeV2, MessageFamilies, MESSAGE_VERSION_V1, MESSAGE_VERSION_V2, DID};
 use domain::a2a::RemoteMessageType;
 use domain::protocol_type::{ProtocolType, ProtocolTypes};
 
@@ -81,7 +81,7 @@ impl PayloadTypes {
             ProtocolTypes::V1 => {
                 PayloadTypes::PayloadTypeV1(PayloadTypeV1 {
                     name: kind.name().to_string(),
-                    ver: MESSAGE_VERSION.to_string(),
+                    ver: MESSAGE_VERSION_V1.to_string(),
                     fmt: "json".to_string(),
                 })
             }
@@ -89,7 +89,7 @@ impl PayloadTypes {
                 PayloadTypes::PayloadTypeV2(PayloadTypeV2 {
                     did: DID.to_string(),
                     family: kind.family(),
-                    version: MESSAGE_VERSION.to_string(),
+                    version: MESSAGE_VERSION_V2.to_string(),
                     type_: kind.name().to_string(),
                 })
             }

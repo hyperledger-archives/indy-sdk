@@ -220,36 +220,30 @@ impl AgentConnection {
             })
             .and_then(|(sender_vk, msg, msgs), slf, _| {
                 match msg {
-                    // specific for Version 1
-                    Some(A2AMessage::CreateMessage(msg)) => {
-                        slf.handle_create_message(msg, msgs, &sender_vk)
+                    Some(A2AMessage::Version1(msg)) => {
+                        match msg {
+                            A2AMessageV1::CreateMessage(msg) => slf.handle_create_message(msg, msgs, &sender_vk),
+                            A2AMessageV1::SendMessages(msg) => slf.handle_send_messages(msg),
+                            A2AMessageV1::GetMessages(msg) => slf.handle_get_messages(msg),
+                            A2AMessageV1::UpdateConnectionStatus(msg) => slf.handle_update_connection_status(msg),
+                            A2AMessageV1::UpdateMessageStatus(msg) => slf.handle_update_message_status(msg),
+                            _ => err_act!(slf, err_msg("Unsupported message"))
+                        }
                     }
-                    // specific for Version 2
-                    Some(A2AMessage::ConnectionRequest(msg)) => {
-                        slf.handle_connection_request_message(msg, &sender_vk)
-                    }
-                    Some(A2AMessage::ConnectionRequestAnswer(msg)) => {
-                        slf.handle_connection_request_answer_message(msg, &sender_vk)
-                    }
-                    Some(A2AMessage::SendRemoteMessage(msg)) => {
-                        slf.handle_send_remote_message(msg, &sender_vk)
-                    }
-                    // Common
-                    Some(A2AMessage::SendMessages(msg)) => {
-                        slf.handle_send_messages(msg)
-                    }
-                    Some(A2AMessage::GetMessages(msg)) => {
-                        slf.handle_get_messages(msg)
-                    }
-                    Some(A2AMessage::UpdateConnectionStatus(msg)) => {
-                        slf.handle_update_connection_status(msg)
-                    }
-                    Some(A2AMessage::UpdateMessageStatus(msg)) => {
-                        slf.handle_update_message_status(msg)
-                    }
-                    _ => err_act!(slf, err_msg("Unsupported message."))
-                }
-                    .map(|msgs, _, _| (msgs, sender_vk))
+                    Some(A2AMessage::Version2(msg)) => {
+                        match msg {
+                            A2AMessageV2::ConnectionRequest(msg) => slf.handle_connection_request_message(msg, &sender_vk),
+                            A2AMessageV2::ConnectionRequestAnswer(msg) => slf.handle_connection_request_answer_message(msg, &sender_vk),
+                            A2AMessageV2::SendRemoteMessage(msg) => slf.handle_send_remote_message(msg, &sender_vk),
+                            A2AMessageV2::SendMessages(msg) => slf.handle_send_messages(msg),
+                            A2AMessageV2::GetMessages(msg) => slf.handle_get_messages(msg),
+                            A2AMessageV2::UpdateConnectionStatus(msg) => slf.handle_update_connection_status(msg),
+                            A2AMessageV2::UpdateMessageStatus(msg) => slf.handle_update_message_status(msg),
+                            _ => err_act!(slf, err_msg("Unsupported message"))
+                        }
+                    },
+                    _ => err_act!(slf, err_msg("Unsupported message"))
+                }.map(|msgs, _, _| (msgs, sender_vk))
             })
             .and_then(|(msgs, sender_vk), slf, _|
                 slf.persist_connection_state()
@@ -277,21 +271,22 @@ impl AgentConnection {
             .into_actor(self)
             .and_then(move |_, slf, _| {
                 match (mtype, tail.pop()) {
-                    (RemoteMessageType::ConnReq, Some(A2AMessage::MessageDetail(MessageDetail::ConnectionRequest(detail)))) => {
+                    (RemoteMessageType::ConnReq, Some(A2AMessage::Version1(A2AMessageV1::MessageDetail(MessageDetail::ConnectionRequest(detail))))) => {
                         slf.handle_create_connection_request(detail, sender_verkey)
                     }
-                    (RemoteMessageType::ConnReqAnswer, Some(A2AMessage::MessageDetail(MessageDetail::ConnectionRequestAnswer(detail)))) => {
+                    (RemoteMessageType::ConnReqAnswer, Some(A2AMessage::Version1(A2AMessageV1::MessageDetail(MessageDetail::ConnectionRequestAnswer(detail))))) => {
                         slf.handle_create_connection_request_answer(detail,
                                                                     reply_to_msg_id.clone(),
                                                                     uid,
                                                                     sender_verkey)
                     }
-                    (mtype @ _, Some(A2AMessage::MessageDetail(MessageDetail::General(detail)))) =>
+                    (mtype @ _, Some(A2AMessage::Version1(A2AMessageV1::MessageDetail(MessageDetail::General(detail))))) => {
                         slf.handle_create_general_message(mtype,
                                                           detail,
                                                           reply_to_msg_id.clone(),
                                                           uid,
-                                                          sender_verkey),
+                                                          sender_verkey)
+                    }
                     _ => err_act!(slf, err_msg("Unsupported message."))
                 }
                     .map(|(msg_uid, a2a_msgs), _, _| (msg_uid, a2a_msgs, reply_to_msg_id))
@@ -413,8 +408,8 @@ impl AgentConnection {
     }
 
     fn handle_send_remote_message(&mut self,
-                              msg: SendRemoteMessage,
-                              sender_verkey: &str) -> ResponseActFuture<Self, Vec<A2AMessage>, Error> {
+                                  msg: SendRemoteMessage,
+                                  sender_verkey: &str) -> ResponseActFuture<Self, Vec<A2AMessage>, Error> {
         trace!("AgentConnection::handle_send_remote_message >> {:?}, {:?}", msg, sender_verkey);
 
         let send_msg = msg.send_msg;
@@ -472,8 +467,8 @@ impl AgentConnection {
         }
 
         let message = match ProtocolType::get() {
-            ProtocolTypes::V1 => A2AMessage::MessageCreated(MessageCreated { uid: msg.uid.clone() }),
-            ProtocolTypes::V2 => A2AMessage::SendRemoteMessageResponse(SendRemoteMessageResponse { uid: msg.uid.clone(), sent: true })
+            ProtocolTypes::V1 => A2AMessage::Version1(A2AMessageV1::MessageCreated(MessageCreated { uid: msg.uid.clone() })),
+            ProtocolTypes::V2 => A2AMessage::Version2(A2AMessageV2::SendRemoteMessageResponse(SendRemoteMessageResponse { uid: msg.uid.clone(), sent: true })),
         };
 
         ok_act!(self, (msg.uid, vec![message]))
@@ -495,12 +490,14 @@ impl AgentConnection {
     fn handle_get_messages(&mut self, msg: GetMessages) -> ResponseActFuture<Self, Vec<A2AMessage>, Error> {
         trace!("AgentConnection::handle_get_messages >> {:?}", msg);
 
-        let msgs = vec![A2AMessage::Messages(
-            Messages {
-                msgs: self.get_messages(msg)
-            })];
+        let messages = self.get_messages(msg);
 
-        ok_act!(self, msgs)
+        let message = match ProtocolType::get() {
+            ProtocolTypes::V1 => A2AMessage::Version1(A2AMessageV1::Messages(Messages { msgs: messages })),
+            ProtocolTypes::V2 => A2AMessage::Version2(A2AMessageV2::Messages(Messages { msgs: messages })),
+        };
+
+        ok_act!(self, vec![message])
     }
 
     fn get_messages(&self, msg: GetMessages) -> Vec<GetMessagesDetailResponse> {
@@ -539,9 +536,12 @@ impl AgentConnection {
 
         self.state.connection_status = status_code.clone();
 
-        let msgs = vec![A2AMessage::ConnectionStatusUpdated(ConnectionStatusUpdated { status_code })];
+        let message = match ProtocolType::get() {
+            ProtocolTypes::V1 => A2AMessage::Version1(A2AMessageV1::ConnectionStatusUpdated(ConnectionStatusUpdated { status_code })),
+            ProtocolTypes::V2 => A2AMessage::Version2(A2AMessageV2::ConnectionStatusUpdated(ConnectionStatusUpdated { status_code })),
+        };
 
-        ok_act!(self, msgs)
+        ok_act!(self, vec![message])
     }
 
     fn handle_update_message_status(&mut self, msg: UpdateMessageStatus) -> ResponseActFuture<Self, Vec<A2AMessage>, Error> {
@@ -549,7 +549,13 @@ impl AgentConnection {
                msg);
 
         self.update_messages_status(msg)
-            .map(|(uids, status_code)| vec![A2AMessage::MessageStatusUpdated(MessageStatusUpdated { uids, status_code })])
+            .map(|(uids, status_code)| {
+                let msg = match ProtocolType::get() {
+                    ProtocolTypes::V1 => A2AMessage::Version1(A2AMessageV1::MessageStatusUpdated(MessageStatusUpdated { uids, status_code })),
+                    ProtocolTypes::V2 => A2AMessage::Version2(A2AMessageV2::MessageStatusUpdated(MessageStatusUpdated { uids, status_code })),
+                };
+                vec![msg]
+            })
             .into_future()
             .into_actor(self)
             .into_box()
@@ -674,8 +680,8 @@ impl AgentConnection {
             })
             .map(|uid, _, _| {
                 let message = match ProtocolType::get() {
-                    ProtocolTypes::V1 => A2AMessage::MessageCreated(MessageCreated { uid: uid.clone() }),
-                    ProtocolTypes::V2 => A2AMessage::ConnectionRequestAnswerResponse(ConnectionRequestAnswerResponse { uid: uid.clone(), sent: true })
+                    ProtocolTypes::V1 => A2AMessage::Version1(A2AMessageV1::MessageCreated(MessageCreated { uid: uid.clone() })),
+                    ProtocolTypes::V2 => A2AMessage::Version2(A2AMessageV2::ConnectionRequestAnswerResponse(ConnectionRequestAnswerResponse { uid: uid.clone(), sent: true }))
                 };
                 (uid, vec![message])
             })
@@ -737,8 +743,8 @@ impl AgentConnection {
             })
             .map(|uid, _, _| {
                 let message = match ProtocolType::get() {
-                    ProtocolTypes::V1 => A2AMessage::MessageCreated(MessageCreated { uid: uid.clone() }),
-                    ProtocolTypes::V2 => A2AMessage::ConnectionRequestAnswerResponse(ConnectionRequestAnswerResponse { uid: uid.clone(), sent: true })
+                    ProtocolTypes::V1 => A2AMessage::Version1(A2AMessageV1::MessageCreated(MessageCreated { uid: uid.clone() })),
+                    ProtocolTypes::V2 => A2AMessage::Version2(A2AMessageV2::ConnectionRequestAnswerResponse(ConnectionRequestAnswerResponse { uid: uid.clone(), sent: true }))
                 };
                 (uid, vec![message])
             })
@@ -853,18 +859,22 @@ impl AgentConnection {
                msg, sender_verkey);
 
         match msg {
-            Some(A2AMessage::CreateMessage(_)) |
-            Some(A2AMessage::ConnectionRequest(_)) |
-            Some(A2AMessage::ConnectionRequestAnswer(_)) |
-            Some(A2AMessage::SendRemoteMessage(_)) => {
+            Some(A2AMessage::Version1(A2AMessageV1::CreateMessage(_))) |
+            Some(A2AMessage::Version2(A2AMessageV2::ConnectionRequest(_))) |
+            Some(A2AMessage::Version2(A2AMessageV2::ConnectionRequestAnswer(_))) |
+            Some(A2AMessage::Version2(A2AMessageV2::SendRemoteMessage(_))) => {
                 if self.is_sent_by_owner(sender_verkey) || self.is_sent_by_remote(sender_verkey) {
                     return Ok(());
                 }
             }
-            Some(A2AMessage::SendMessages(_)) |
-            Some(A2AMessage::GetMessages(_)) |
-            Some(A2AMessage::UpdateConnectionStatus(_)) |
-            Some(A2AMessage::UpdateMessageStatus(_)) => {
+            Some(A2AMessage::Version1(A2AMessageV1::SendMessages(_))) |
+            Some(A2AMessage::Version2(A2AMessageV2::SendMessages(_))) |
+            Some(A2AMessage::Version1(A2AMessageV1::GetMessages(_))) |
+            Some(A2AMessage::Version2(A2AMessageV2::GetMessages(_))) |
+            Some(A2AMessage::Version1(A2AMessageV1::UpdateConnectionStatus(_))) |
+            Some(A2AMessage::Version2(A2AMessageV2::UpdateConnectionStatus(_))) |
+            Some(A2AMessage::Version1(A2AMessageV1::UpdateMessageStatus(_))) |
+            Some(A2AMessage::Version2(A2AMessageV2::UpdateMessageStatus(_))) => {
                 if self.is_sent_by_owner(sender_verkey) {
                     return Ok(());
                 }
@@ -1038,7 +1048,13 @@ impl AgentConnection {
             .collect();
 
         future::join_all(futures)
-            .map(|uids| vec![A2AMessage::MessageSent(MessageSent { uids })])
+            .map(|uids| {
+                let message = match ProtocolType::get() {
+                    ProtocolTypes::V1 => A2AMessage::Version1(A2AMessageV1::MessageSent(MessageSent { uids })),
+                    ProtocolTypes::V2 => A2AMessage::Version2(A2AMessageV2::MessageSent(MessageSent { uids }))
+                };
+                vec![message]
+            })
             .into_future()
             .into_box()
     }
@@ -1139,7 +1155,12 @@ impl AgentConnection {
         trace!("AgentConnection::build_forward_message >> {:?}, {:?}",
                fwd, message);
 
-        Ok(vec![A2AMessage::Forward(Forward { fwd: fwd.to_string(), msg: message })])
+        let message = match ProtocolType::get() {
+            ProtocolTypes::V1 => A2AMessage::Version1(A2AMessageV1::Forward(Forward { fwd: fwd.to_string(), msg: message })),
+            ProtocolTypes::V2 => A2AMessage::Version2(A2AMessageV2::Forward(Forward { fwd: fwd.to_string(), msg: message }))
+        };
+
+        Ok(vec![message])
     }
 
     fn build_invite_message(&self, msg: &InternalMessage, msg_detail: &ConnectionRequestMessageDetail) -> Vec<A2AMessage> {
@@ -1170,8 +1191,8 @@ impl AgentConnection {
                     url_to_invite_detail: "".to_string() // format!("{}/agency/invite/{}?msg_uid{}", AGENCY_DOMAIN_URL_PREFIX, self.agent_pairwise_did, msg_uid)
                 };
 
-                vec![A2AMessage::MessageCreated(msg_created),
-                     A2AMessage::MessageDetail(MessageDetail::ConnectionRequestResp(msg_detail))]
+                vec![A2AMessage::Version1(A2AMessageV1::MessageCreated(msg_created)),
+                     A2AMessage::Version1(A2AMessageV1::MessageDetail(MessageDetail::ConnectionRequestResp(msg_detail)))]
             }
             ProtocolTypes::V2 => {
                 let message = ConnectionRequestResponse {
@@ -1183,7 +1204,7 @@ impl AgentConnection {
                     // TODO: FIXME set positive after sending
                 };
 
-                vec![A2AMessage::ConnectionRequestResponse(message)]
+                vec![A2AMessage::Version2(A2AMessageV2::ConnectionRequestResponse(message))]
             }
         }
     }
@@ -1221,8 +1242,8 @@ impl AgentConnection {
                         answer_status_code: MessageStatusCode::Accepted,
                     };
 
-                    vec![A2AMessage::CreateMessage(msg_create),
-                         A2AMessage::MessageDetail(MessageDetail::ConnectionRequestAnswer(msg_detail))]
+                    vec![A2AMessage::Version1(A2AMessageV1::CreateMessage(msg_create)),
+                         A2AMessage::Version1(A2AMessageV1::MessageDetail(MessageDetail::ConnectionRequestAnswer(msg_detail)))]
                 }
                 ProtocolTypes::V2 => {
                     let msg = ConnectionRequestAnswer {
@@ -1234,7 +1255,7 @@ impl AgentConnection {
                         sender_agency_detail: self.forward_agent_detail.clone(),
                         answer_status_code: MessageStatusCode::Accepted,
                     };
-                    vec![A2AMessage::ConnectionRequestAnswer(msg)]
+                    vec![A2AMessage::Version2(A2AMessageV2::ConnectionRequestAnswer(msg))]
                 }
             };
 
@@ -1263,8 +1284,8 @@ impl AgentConnection {
 
                     let msg_detail = GeneralMessageDetail { msg, title, detail };
 
-                    vec![A2AMessage::CreateMessage(msg_create),
-                         A2AMessage::MessageDetail(MessageDetail::General(msg_detail))]
+                    vec![A2AMessage::Version1(A2AMessageV1::CreateMessage(msg_create)),
+                         A2AMessage::Version1(A2AMessageV1::MessageDetail(MessageDetail::General(msg_detail)))]
                 }
                 ProtocolTypes::V2 => {
                     let msg = SendRemoteMessage {
@@ -1277,7 +1298,7 @@ impl AgentConnection {
                         detail
                     };
 
-                    vec![A2AMessage::SendRemoteMessage(msg)]
+                    vec![A2AMessage::Version2(A2AMessageV2::SendRemoteMessage(msg))]
                 }
             };
 

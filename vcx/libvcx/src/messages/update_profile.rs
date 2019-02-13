@@ -8,7 +8,7 @@ use utils::constants::*;
 pub struct UpdateProfileDataBuilder {
     to_did: String,
     agent_payload: String,
-    payload: UpdateConfigs,
+    configs: Vec<ConfigOption>
 }
 
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
@@ -36,10 +36,7 @@ impl UpdateProfileDataBuilder {
 
         UpdateProfileDataBuilder {
             to_did: String::new(),
-            payload: UpdateConfigs {
-                msg_type: MessageTypes::build(A2AMessageKinds::UpdateConfigs),
-                configs: Vec::new(),
-            },
+            configs: Vec::new(),
             agent_payload: String::new(),
         }
     }
@@ -52,49 +49,74 @@ impl UpdateProfileDataBuilder {
 
     pub fn name(&mut self, name: &str) -> Result<&mut Self, u32> {
         let config = ConfigOption { name: "name".to_string(), value: name.to_string() };
-        self.payload.configs.push(config);
+        self.configs.push(config);
         Ok(self)
     }
 
     pub fn logo_url(&mut self, url: &str) -> Result<&mut Self, u32> {
         validation::validate_url(url)?;
         let config = ConfigOption { name: "logoUrl".to_string(), value: url.to_string() };
-        self.payload.configs.push(config);
+        self.configs.push(config);
         Ok(self)
     }
 
     pub fn use_public_did(&mut self, did: &Option<String>) -> Result<&mut Self, u32> {
         if let Some(x) = did {
             let config = ConfigOption { name: "publicDid".to_string(), value: x.to_string() };
-            self.payload.configs.push(config);
+            self.configs.push(config);
         };
         Ok(self)
     }
 
-    pub fn send_secure(&mut self) -> Result<UpdateConfigsResponse, u32> {
+    pub fn send_secure(&mut self) -> Result<(), u32> {
         trace!("UpdateProfileData::send_secure >>>");
 
         if settings::test_agency_mode_enabled() {
-            return UpdateProfileDataBuilder::parse_response(UPDATE_PROFILE_RESPONSE.to_vec());
+            return self.parse_response(UPDATE_PROFILE_RESPONSE.to_vec());
         }
 
-        let data = self.prepare()?;
+        let data = self.prepare_request()?;
 
         let response = httpclient::post_u8(&data).or(Err(error::POST_MSG_FAILURE.code_num))?;
 
-        let response = UpdateProfileDataBuilder::parse_response(response)?;
-
-        Ok(response)
+        self.parse_response(response)
     }
 
-    fn prepare(&mut self) -> Result<Vec<u8>, u32> {
-        let to_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
-        prepare_message_for_agency(&A2AMessage::UpdateConfigs(self.payload.clone()), &to_did)
+    fn prepare_request(&self) -> Result<Vec<u8>, u32> {
+        let message = match settings::get_protocol_type() {
+            settings::ProtocolTypes::V1 =>
+                A2AMessage::Version1(
+                    A2AMessageV1::UpdateConfigs(
+                        UpdateConfigs {
+                            msg_type: MessageTypes::build(A2AMessageKinds::UpdateConfigs),
+                            configs: self.configs.clone()
+                        }
+                    )
+                ),
+            settings::ProtocolTypes::V2 =>
+                A2AMessage::Version2(
+                    A2AMessageV2::UpdateConfigs(
+                        UpdateConfigs {
+                            msg_type: MessageTypes::build(A2AMessageKinds::UpdateConfigs),
+                            configs: self.configs.clone(),
+                        }
+                    )
+                )
+        };
+
+        let agency_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
+
+        prepare_message_for_agency(&message, &agency_did)
     }
 
-    fn parse_response(response: Vec<u8>) -> Result<UpdateConfigsResponse, u32> {
-        let mut messages = parse_response_from_agency(&response)?;
-        UpdateConfigsResponse::from_a2a_message(messages.remove(0))
+    fn parse_response(&self, response: Vec<u8>) -> Result<(), u32> {
+        let mut response = parse_response_from_agency(&response)?;
+
+        match response.remove(0) {
+            A2AMessage::Version1(A2AMessageV1::UpdateConfigsResponse(res)) => Ok(()),
+            A2AMessage::Version2(A2AMessageV2::UpdateConfigsResponse(res)) => Ok(()),
+            _ => Err(error::INVALID_HTTP_RESPONSE.code_num)
+        }
     }
 }
 
@@ -114,7 +136,7 @@ mod tests {
             .to(to_did).unwrap()
             .name(&name).unwrap()
             .logo_url(&url).unwrap()
-            .prepare().unwrap();
+            .prepare_request().unwrap();
     }
 
     #[test]
@@ -132,17 +154,13 @@ mod tests {
             .to(agent_did.as_ref()).unwrap()
             .name("name").unwrap()
             .logo_url("https://random.com").unwrap()
-            .prepare().unwrap();
+            .prepare_request().unwrap();
         assert!(msg.len() > 0);
     }
 
     #[test]
     fn test_parse_update_profile_response() {
         init!("indy");
-
-        let result = UpdateProfileDataBuilder::parse_response(UPDATE_PROFILE_RESPONSE.to_vec()).unwrap();
-        let expected = UpdateConfigsResponse { msg_type: MessageTypes::build(A2AMessageKinds::ConfigsUpdated, ) };
-
-        assert_eq!(expected, result);
+        UpdateProfileDataBuilder::create().parse_response(UPDATE_PROFILE_RESPONSE.to_vec()).unwrap();
     }
 }

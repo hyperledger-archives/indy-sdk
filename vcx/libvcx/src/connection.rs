@@ -210,14 +210,14 @@ impl Connection {
     fn create_agent_pairwise(&mut self) -> Result<u32, ConnectionError> {
         debug!("creating pairwise keys on agent for connection {}", self.source_id);
 
-        let response = messages::create_keys()
+        let (for_did, for_verkey) = messages::create_keys()
             .for_did(&self.pw_did)?
             .for_verkey(&self.pw_verkey)?
             .send_secure()?;
 
-        debug!("create key for connection: {} with did {:?}, vk: {:?}", self.source_id, response.for_did, response.for_verkey);
-        self.set_agent_did(&response.for_did);
-        self.set_agent_verkey(&response.for_verkey);
+        debug!("create key for connection: {} with did {:?}, vk: {:?}", self.source_id, for_did, for_verkey);
+        self.set_agent_did(&for_did);
+        self.set_agent_verkey(&for_verkey);
 
         Ok(error::SUCCESS.code_num)
     }
