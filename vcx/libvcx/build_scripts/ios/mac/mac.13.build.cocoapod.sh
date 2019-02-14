@@ -89,6 +89,7 @@ mkdir -p vcx.framework/lib
 
 mkdir -p vcx.framework/Headers
 cp -v ConnectMeVcx.h vcx.framework/Headers
+cp -v utils/VcxLogger.h vcx.framework/Headers
 cp -v include/libvcx.h vcx.framework/Headers
 cp -v vcx/vcx.h vcx.framework/Headers
 if [ -d $VCX_SDK/vcx/wrappers/ios/vcx/tmp ]; then
