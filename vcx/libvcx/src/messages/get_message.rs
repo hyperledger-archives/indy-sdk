@@ -2,7 +2,6 @@ use settings;
 use messages::*;
 use messages::message_type::MessageTypes;
 use utils::{httpclient, error};
-use utils::libindy::crypto;
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -309,7 +308,7 @@ pub fn get_connection_messages(pw_did: &str, pw_vk: &str, agent_did: &str, agent
     Ok(response)
 }
 
-pub fn get_ref_msg(msg_id: &str, pw_did: &str, pw_vk: &str, agent_did: &str, agent_vk: &str) -> Result<(String, Vec<u8>), u32> {
+pub fn get_ref_msg(msg_id: &str, pw_did: &str, pw_vk: &str, agent_did: &str, agent_vk: &str) -> Result<(String, Vec<i8>), u32> {
     trace!("get_ref_msg >>> msg_id: {}, pw_did: {}, pw_vk: {}, agent_did: {}, agent_vk: {}",
            msg_id, pw_did, pw_vk, agent_did, agent_vk);
 
@@ -327,10 +326,9 @@ pub fn get_ref_msg(msg_id: &str, pw_did: &str, pw_vk: &str, agent_did: &str, age
 
     // this will work for both credReq and proof types
     match message.get(0).as_ref().and_then(|message| message.payload.as_ref()) {
-        Some(ref payload) if message[0].status_code == MessageStatusCode::Pending => {
+        Some(payload) if message[0].status_code == MessageStatusCode::Pending => {
             // TODO: check returned verkey
-            let (_, msg) = crypto::parse_msg(&pw_vk, &to_u8(payload))?;
-            Ok((message[0].uid.clone(), msg))
+            Ok((message[0].uid.clone(), payload.to_owned()))
         }
         _ => Err(error::INVALID_HTTP_RESPONSE.code_num)
     }

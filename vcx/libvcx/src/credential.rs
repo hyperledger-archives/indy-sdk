@@ -12,13 +12,10 @@ use issuer_credential::{CredentialOffer, CredentialMessage, PaymentInfo};
 use credential_request::CredentialRequest;
 
 use messages;
-use messages::to_u8;
 use messages::GeneralMessage;
-use messages::extract_json_payload;
 use messages::{RemoteMessageType, PayloadKinds};
 
 use utils::libindy::anoncreds::{libindy_prover_create_credential_req, libindy_prover_store_credential};
-use utils::libindy::crypto;
 use utils::libindy::anoncreds;
 use utils::libindy::payments::{pay_a_payee, PaymentTxn};
 
@@ -189,7 +186,7 @@ impl Credential {
 
         let (_, payload) = messages::get_message::get_ref_msg(msg_uid, my_did, my_vk, agent_did, agent_vk)?;
 
-        let credential = extract_json_payload(&payload)?;
+        let credential = messages::Payload::decrypted(&my_vk, &payload)?;
 
         let credential_msg: CredentialMessage = serde_json::from_str(&credential)
             .or(Err(error::INVALID_CREDENTIAL_JSON.code_num))?;
@@ -449,15 +446,10 @@ pub fn get_credential_offer_msg(connection_handle: u32, msg_id: &str) -> Result<
                                                                  Some(vec![msg_id.to_string()])).map_err(|ec| CredentialError::CommonError(ec))?;
 
     if message[0].msg_type == RemoteMessageType::CredOffer {
-        let (_, msg_data) = match message[0].payload {
-            Some(ref data) => {
-                let data = to_u8(data);
-                crypto::parse_msg(&my_vk, data.as_slice()).map_err(|ec| CredentialError::CommonError(ec))?
-            }
-            None => return Err(CredentialError::CommonError(error::INVALID_MESSAGES.code_num))
-        };
+        let payload = message.get(0).and_then(|msg| msg.payload.as_ref())
+            .ok_or(CredentialError::CommonError(error::INVALID_MESSAGES.code_num))?;
+        let offer = messages::Payload::decrypted(&my_vk, &payload).map_err(|ec| CredentialError::CommonError(ec))?;
 
-        let offer = extract_json_payload(&msg_data).map_err(|ec| CredentialError::CommonError(ec))?;
         let (mut offer, payment_info) = parse_json_offer(&offer)?;
 
         offer.msg_ref_id = Some(message[0].uid.to_owned());
@@ -492,16 +484,10 @@ pub fn get_credential_offer_messages(connection_handle: u32) -> Result<String, C
 
     for msg in payload {
         if msg.msg_type == RemoteMessageType::CredOffer {
-            let (_, msg_data) = match msg.payload {
-                Some(ref data) => {
-                    let data = to_u8(data);
-                    crypto::parse_msg(&my_vk, data.as_slice()).map_err(|ec| CredentialError::CommonError(ec))?
-                }
-                None => return Err(CredentialError::CommonError(error::INVALID_MESSAGES.code_num))
-            };
+            let payload = msg.payload.ok_or(CredentialError::CommonError(error::INVALID_MESSAGES.code_num))?;
+            let offer = messages::Payload::decrypted(&my_vk, &payload).map_err(|ec| CredentialError::CommonError(ec))?;
 
-            let offer = extract_json_payload(&msg_data).map_err(|ec| CredentialError::CommonError(ec))?;
-            let (mut offer, payment_info) = parse_json_offer(&offer)?;
+            let (mut offer, payment_info) = parse_json_offer(&offer).unwrap();
 
             offer.msg_ref_id = Some(msg.uid.to_owned());
             let mut payload = Vec::new();

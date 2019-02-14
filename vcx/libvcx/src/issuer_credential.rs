@@ -255,7 +255,10 @@ impl IssuerCredential {
                                                                       &self.agent_vk)
             .map_err(|wc| IssuerCredError::CommonError(wc))?;
 
-        self.credential_request = Some(parse_credential_req_payload(offer_uid, &payload)?);
+        let payload = messages::Payload::decrypted(&self.issued_vk, &payload).map_err(|ec| IssuerCredError::CommonError(ec))?;
+
+        self.credential_request = Some(parse_credential_req_payload(offer_uid, payload)?);
+        
         debug!("received credential request for credential offer: {}", self.source_id);
         self.state = VcxStateType::VcxStateRequestReceived;
         Ok(self.get_state())
@@ -511,11 +514,10 @@ pub fn get_payment_txn(handle: u32) -> Result<payments::PaymentTxn, IssuerCredEr
     }).map_err(|ec| IssuerCredError::CommonError(ec))
 }
 
-fn parse_credential_req_payload(offer_uid: String, payload: &Vec<u8>) -> Result<CredentialRequest, IssuerCredError> {
+fn parse_credential_req_payload(offer_uid: String, payload: String) -> Result<CredentialRequest, IssuerCredError> {
     debug!("parsing credentialReq payload: {:?}", payload);
-    let data = messages::extract_json_payload(payload).map_err(|ec| IssuerCredError::CommonError(ec))?;
 
-    let mut my_credential_req: CredentialRequest = serde_json::from_str(&data)
+    let mut my_credential_req: CredentialRequest = serde_json::from_str(&payload)
         .map_err(|err| {
             warn!("invalid json {}", err);
             IssuerCredError::CommonError(error::INVALID_JSON.code_num)

@@ -315,6 +315,8 @@ impl Proof {
                                                               &self.agent_vk)
             .map_err(|ec| ProofError::ProofMessageError(ec))?;
 
+        let payload = messages::Payload::decrypted(&self.prover_vk, &payload).map_err(|ec| ProofError::CommonError(ec))?;
+
         self.proof = match parse_proof_payload(&payload) {
             Err(err) => return Ok(self.get_state()),
             Ok(x) => Some(x),
@@ -504,10 +506,8 @@ pub fn get_proof_uuid(handle: u32) -> Result<String, u32> {
     })
 }
 
-fn parse_proof_payload(payload: &Vec<u8>) -> Result<ProofMessage, u32> {
-    let data = messages::extract_json_payload(payload)?;
-
-    let my_credential_req = ProofMessage::from_str(&data).map_err(|err| {
+fn parse_proof_payload(payload: &str) -> Result<ProofMessage, u32> {
+    let my_credential_req = ProofMessage::from_str(&payload).map_err(|err| {
         warn!("invalid json {}", err);
         error::INVALID_JSON.code_num
     })?;

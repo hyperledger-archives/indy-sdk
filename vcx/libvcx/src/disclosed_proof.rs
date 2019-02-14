@@ -10,12 +10,9 @@ use messages::GeneralMessage;
 use messages::{RemoteMessageType, PayloadKinds};
 use messages::proofs::proof_message::{ProofMessage };
 use messages::proofs::proof_request::{ ProofRequestMessage, ProofRequestData, NonRevokedInterval };
-use messages::extract_json_payload;
-use messages::to_u8;
 use time;
 
 use utils::libindy::anoncreds;
-use utils::libindy::crypto;
 use utils::libindy::anoncreds::{ get_rev_reg_def_json, get_rev_reg_delta_json };
 
 use settings;
@@ -567,15 +564,10 @@ pub fn get_proof_request(connection_handle: u32, msg_id: &str) -> Result<String,
                                                                  Some(vec![msg_id.to_string()])).map_err(|ec| ProofError::CommonError(ec))?;
 
     if message[0].msg_type == RemoteMessageType::ProofReq {
-        let (_, msg_data) = match message[0].payload {
-            Some(ref data) => {
-                let data = to_u8(data);
-                crypto::parse_msg(&my_vk, data.as_slice()).map_err(|ec| ProofError::CommonError(ec))?
-            },
-            None => return Err(ProofError::CommonError(error::INVALID_HTTP_RESPONSE.code_num))
-        };
+        let payload = message.get(0).and_then(|msg| msg.payload.as_ref())
+            .ok_or(ProofError::CommonError(error::INVALID_MESSAGES.code_num))?;
+        let request = messages::Payload::decrypted(&my_vk, payload).map_err(|ec| ProofError::CommonError(ec))?;
 
-        let request = extract_json_payload(&msg_data).map_err(|ec| ProofError::CommonError(ec))?;
         let mut request: ProofRequestMessage = serde_json::from_str(&request)
            .or(Err(ProofError::CommonError(error::INVALID_HTTP_RESPONSE.code_num)))?;
 
@@ -609,16 +601,8 @@ pub fn get_proof_request_messages(connection_handle: u32, match_name: Option<&st
         if msg.sender_did.eq(&my_did){ continue; }
 
         if msg.msg_type == RemoteMessageType::ProofReq {
-            let (_, msg_data) = match msg.payload {
-                Some(ref data) => {
-                    let data = to_u8(data);
-                    crypto::parse_msg(&my_vk, data.as_slice())
-                        .map_err(|ec| ProofError::CommonError(ec))?
-                },
-                None => return Err(ProofError::CommonError(error::INVALID_HTTP_RESPONSE.code_num))
-            };
-
-            let req = extract_json_payload(&msg_data).map_err(|ec| ProofError::CommonError(ec))?;
+            let payload = msg.payload.ok_or(ProofError::CommonError(error::INVALID_HTTP_RESPONSE.code_num))?;
+            let req = messages::Payload::decrypted(&my_vk, &payload).map_err(|ec| ProofError::CommonError(ec))?;
 
             let mut req: ProofRequestMessage = serde_json::from_str(&req)
                 .or(Err(ProofError::CommonError(error::INVALID_HTTP_RESPONSE.code_num)))?;

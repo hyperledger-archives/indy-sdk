@@ -60,7 +60,7 @@ impl SendMessageBuilder {
 
     pub fn edge_agent_payload(&mut self, my_vk: &str, their_vk: &str, data: &str, payload_type: PayloadKinds) -> Result<&mut Self, u32> {
         //todo: is this a json value, String??
-        self.payload = encrypted_payload(my_vk, their_vk, data, payload_type)?;
+        self.payload = Payload::encrypted(my_vk, their_vk, data, payload_type)?;
         Ok(self)
     }
 
@@ -212,26 +212,6 @@ pub fn send_generic_message(connection_handle: u32, msg: &str, msg_type: &str, m
 
     let msg_uid = response.get_msg_uid()?;
     return Ok(msg_uid);
-}
-
-// TODO: Refactor Error
-// this will become a CommonError, because multiple types (Connection/Issuer Credential) use this function
-// Possibly this function moves out of this file.
-// On second thought, this should stick as a ConnectionError.
-pub fn encrypted_payload(my_vk: &str, their_vk: &str, data: &str, msg_type: PayloadKinds) -> Result<Vec<u8>, u32> {
-    let payload = ::messages::Payload {
-        type_: PayloadTypes::build(msg_type, "json"),
-        msg: data.to_string(),
-    };
-
-    let bytes = rmp_serde::to_vec_named(&payload)
-        .map_err(|err| {
-            error!("could not encode create_keys msg: {}", err);
-            error::INVALID_MSGPACK.code_num
-        })?;
-
-    trace!("Sending payload: {:?}", bytes);
-    ::utils::libindy::crypto::prep_msg(&my_vk, &their_vk, &bytes)
 }
 
 #[cfg(test)]
