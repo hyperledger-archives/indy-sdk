@@ -1,6 +1,6 @@
 [package]
 name = "libindy"
-version = "1.8.0"
+version = "1.8.1"
 authors = [
   "Sergej Pupykin <sergej.pupykin@dsr-company.com>",
   "Vyacheslav Gudkov <vyacheslav.gudkov@dsr-company.com>",

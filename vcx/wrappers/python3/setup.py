@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 import os
 
-PKG_VERSION = os.environ.get('PACKAGE_VERSION') or '0.2.1'
+PKG_VERSION = os.environ.get('PACKAGE_VERSION') or '0.2.2'
 PKG_NAME = os.environ.get('PACKAGE_NAME') or 'python3-wrapper-vcx'
 
 def get_version():

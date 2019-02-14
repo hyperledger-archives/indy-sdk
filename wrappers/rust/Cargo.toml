@@ -1,6 +1,6 @@
 [package]
 name = "indy"
-version = "1.8.0"
+version = "1.8.1"
 description = "A library for assisting developers using LibIndy API"
 authors = ["Mike Lodder <redmike7@gmail.com>",
            "Matt Raffel <matt.raffel@evernyn.com>",
@@ -29,7 +29,7 @@ lazy_static = "0.2"
 log = { version = "0.4.1", features = ["std"] }
 num-traits = "0.2"
 num-derive = "0.2"
-indy-sys = { path ="indy-sys", version = "=1.8.0" }
+indy-sys = { path ="indy-sys", version = "=1.8.1" }
 libc = "=0.2.41"
 serde_json = "1.0.22"
 serde_derive = "1.0.76"
