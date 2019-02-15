@@ -45,6 +45,8 @@ use utils::domain::anoncreds::revocation_registry::RevocationRegistry;
 
 use std::thread;
 
+use serde_json::Value;
+
 
 struct Pool{
     pool_handle : i32
@@ -59,7 +61,8 @@ struct Issuer{
     cred_def_id : String,
     rev_reg_id : String,
 
-    revoc_registry_config: String
+    issuance_type: String,
+    tails_writer_config: String
 }
 
 
@@ -167,7 +170,8 @@ impl Issuer {
             rev_reg_id : String::new(),
             cred_def_id : String::new(),
 
-            revoc_registry_config : String::new()
+            issuance_type : String::new(),
+            tails_writer_config : anoncreds::tails_writer_config()
 
         }
     }
@@ -176,7 +180,8 @@ impl Issuer {
     pub fn create_initial_ledger_state(& mut self, pool : &Pool, revoc_registry_config : &str)
     {
 
-        self.revoc_registry_config = String::from(revoc_registry_config);
+        let revoc_reg_config_value : Value = serde_json::from_str(revoc_registry_config).unwrap();
+        self.issuance_type = String::from(revoc_reg_config_value.as_object().unwrap().get("issuance_type").unwrap().as_str().unwrap());
 
         // Issuer creates Schema
         let (schema_id, schema_json) = anoncreds::issuer_create_schema(&self.issuer_did,
@@ -207,8 +212,7 @@ impl Issuer {
         self.cred_def_id = cred_def_id;
 
         // Issuer creates RevocationRegistry
-        let tails_writer_config = anoncreds::tails_writer_config();
-        let tails_writer_handle = blob_storage::open_writer("default", &tails_writer_config).unwrap();
+        let tails_writer_handle = blob_storage::open_writer("default", &self.tails_writer_config).unwrap();
 
         let (rev_reg_id, rev_reg_def_json, rev_reg_entry_json) =
             anoncreds::issuer_create_and_store_revoc_reg(self.issuer_wallet_handle,
@@ -216,7 +220,7 @@ impl Issuer {
                                                          None,
                                                          TAG_1,
                                                          &self.cred_def_id,
-                                                         &self.revoc_registry_config,
+                                                         revoc_registry_config,
                                                          tails_writer_handle).unwrap();
 
         // Issuer posts RevocationRegistryDefinition to Ledger
@@ -238,11 +242,8 @@ impl Issuer {
     pub fn issue_credential(&self, pool: &Pool, cred_offer_json: &str, cred_req_json: &str, cred_values_json: &str) -> (String, String, Option<String>)
     {
 
-        use serde_json::Value;
-
-        let tails_writer_config = anoncreds::tails_writer_config();
         // Issuer creates TailsReader
-        let blob_storage_reader_handle = blob_storage::open_reader(TYPE, &tails_writer_config).unwrap();
+        let blob_storage_reader_handle = blob_storage::open_reader(TYPE, &self.tails_writer_config).unwrap();
 
         // Issuer creates Credential
         // NOte that  the function returns revoc_reg_delta_json as None in case
@@ -255,13 +256,8 @@ impl Issuer {
                                                                                                  Some(blob_storage_reader_handle)).unwrap();
 
 
-
         // Issuer does not have to post rev_reg_delta to ledger in case of the strategy ISSUANCE_BY_DEFAULT
-        let revoc_reg_config_value : Value = serde_json::from_str(&self.revoc_registry_config).unwrap();
-        let issuance_type = revoc_reg_config_value.as_object().unwrap().get("issuance_type").unwrap().as_str().unwrap();
-
-        // Issuer posts RevocationRegistryDelta to Ledger
-        if issuance_type  == "ISSUANCE_ON_DEMAND" {
+        if &self.issuance_type  == "ISSUANCE_ON_DEMAND" {
             pool.submit_revoc_reg_entry(&self.issuer_did, self.issuer_wallet_handle, &self.rev_reg_id, &revoc_reg_delta_json.clone().unwrap());
         }
 
@@ -271,9 +267,8 @@ impl Issuer {
     pub fn revoke_credential(&self, pool : &Pool, cred_rev_id: &str) -> String
     {
 
-        let tails_writer_config = anoncreds::tails_writer_config();
         // Issuer creates TailsReader
-        let blob_storage_reader_handle = blob_storage::open_reader(TYPE, &tails_writer_config).unwrap();
+        let blob_storage_reader_handle = blob_storage::open_reader(TYPE, &self.tails_writer_config).unwrap();
 
         // Issuer revokes cred_info
         let rev_reg_delta_json = anoncreds::issuer_revoke_credential(self.issuer_wallet_handle, blob_storage_reader_handle, &self.rev_reg_id, &cred_rev_id).unwrap();
@@ -363,6 +358,7 @@ impl Prover
         assert_eq!(cred_def_id, self.cred_def_id.clone().unwrap());
 
         let cred_rev_id = cred_info.cred_rev_id.clone().unwrap();
+
 
         let rev_reg_id = cred_info.rev_reg_id.clone().unwrap();
 
