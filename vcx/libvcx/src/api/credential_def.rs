@@ -406,6 +406,22 @@ mod tests {
     }
 
     #[test]
+    fn test_vcx_credentialdef_deserialize_succeeds_with_old_data() {
+        init!("true");
+        let cb = return_types_u32::Return_U32_U32::new().unwrap();
+
+        let original = r#"{"data":{"id":"V4SGRU86Z58d6TV7PBUe6f:3:CL:912:tag1","name":"color","payment_txn":null,"source_id":"1","tag":"tag1"},"version":"1.0"}"#;
+        assert_eq!(vcx_credentialdef_deserialize(cb.command_handle,
+                                      CString::new(original).unwrap().into_raw(),
+                                      Some(cb.get_callback())), error::SUCCESS.code_num);
+
+        let handle = cb.receive(Some(Duration::from_secs(2))).unwrap();
+        assert!(handle > 0);
+
+    }
+
+
+    #[test]
     fn test_vcx_credentialdef_release() {
         init!("true");
 

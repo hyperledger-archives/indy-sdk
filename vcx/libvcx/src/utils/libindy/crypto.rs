@@ -52,8 +52,10 @@ pub fn sign(my_vk: &str, msg: &[u8]) -> Result<Vec<u8>, u32> {
         .map_err(map_rust_indy_sdk_error)
 }
 
-pub fn verify(vk: &str, msg: &str, signature: &[u8]) -> Result<bool, u32> {
-    crypto::verify(vk, msg.as_bytes(), signature)
+pub fn verify(vk: &str, msg: &[u8], signature: &[u8]) -> Result<bool, u32> {
+    if settings::test_indy_mode_enabled() { return Ok(true) }
+
+    crypto::verify(vk, msg, signature)
 	.wait()
 	.map_err(map_rust_indy_sdk_error)
 }
