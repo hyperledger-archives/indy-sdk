@@ -367,6 +367,8 @@ impl Prover
         let cred_def_id = cred_info.cred_def_id;
         assert_eq!(cred_def_id, self.cred_def_id.clone().unwrap());
         let cred_rev_id = cred_info.cred_rev_id.clone().unwrap();
+
+
         let rev_reg_id = cred_info.rev_reg_id.clone().unwrap();
 
 
