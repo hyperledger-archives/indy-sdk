@@ -348,9 +348,7 @@ impl Prover
 
     pub fn make_proof(&self, pool : &Pool, proof_request: &str, attr1_referent: &str, from: Option<u64>, to: u64 ) -> String
     {
-
-        use serde_json::Value;
-
+        
         // Prover searches Credentials for Proof Request
         let search_handle  = anoncreds::prover_search_credentials_for_proof_req(self.wallet_handle, &proof_request, None).unwrap();
         let credentials_list = anoncreds::prover_fetch_next_credentials_for_proof_req(search_handle,attr1_referent,1).unwrap();
