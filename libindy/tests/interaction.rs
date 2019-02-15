@@ -38,6 +38,7 @@ use utils::domain::anoncreds::schema::Schema;
 use utils::domain::anoncreds::credential_definition::CredentialDefinition;
 use utils::domain::anoncreds::credential_offer::CredentialOffer;
 use utils::domain::anoncreds::credential::Credential;
+use utils::domain::anoncreds::credential::CredentialInfo;
 use utils::domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinition;
 use utils::domain::anoncreds::proof::Proof;
 use utils::domain::anoncreds::revocation_state::RevocationState;
@@ -349,17 +350,25 @@ impl Prover
     {
 
         use serde_json::Value;
-        // Prover gets Credentials for Proof Request
-        let credentials_json = anoncreds::prover_get_credentials_for_proof_req(self.wallet_handle, &proof_request).unwrap();
-        let cred_info = anoncreds::get_credential_for_attr_referent(&credentials_json, attr1_referent);
+
+        // Prover searches Credentials for Proof Request
+        let search_handle  = anoncreds::prover_search_credentials_for_proof_req(self.wallet_handle, &proof_request, None).unwrap();
+        let credentials_list = anoncreds::prover_fetch_next_credentials_for_proof_req(search_handle,attr1_referent,1).unwrap();
+
+        let credentials_list_value : Value = serde_json::from_str(&credentials_list).unwrap();
+        // extract first result of the search as Value
+        let credentials_first = &credentials_list_value.as_array().unwrap()[0];
+        // extract cred_info as Value from the result
+        let cred_info_value = credentials_first.as_object().unwrap().get("cred_info").unwrap();
+
+        let cred_info : CredentialInfo = serde_json::from_value(cred_info_value.clone()).unwrap();
+
+        let _ = anoncreds::prover_close_credentials_search_for_proof_req(search_handle).unwrap();
 
         let schema_id = cred_info.schema_id;
         let cred_def_id = cred_info.cred_def_id;
         assert_eq!(cred_def_id, self.cred_def_id.clone().unwrap());
-
         let cred_rev_id = cred_info.cred_rev_id.clone().unwrap();
-
-
         let rev_reg_id = cred_info.rev_reg_id.clone().unwrap();
 
 
