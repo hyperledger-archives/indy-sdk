@@ -7,7 +7,7 @@ use domain::status::{ConnectionStatus, MessageStatusCode};
 use domain::invite::{ForwardAgentDetail, InviteDetail, SenderDetail, AgentDetail};
 use domain::internal_message::InternalMessage;
 use domain::key_deligation_proof::KeyDlgProof;
-use domain::payload::{Payload, PayloadTypes, PayloadKinds};
+use domain::payload::{PayloadV1, PayloadV2, PayloadTypes, PayloadKinds, Thread};
 use domain::protocol_type::{ProtocolType, ProtocolTypes};
 use failure::{err_msg, Error, Fail};
 use futures::*;
@@ -803,15 +803,8 @@ impl AgentConnection {
 
         let msg_uid = msg_uid.to_string();
 
-        let msg = ftry_act!(self, self.build_payload_message(RemoteMessageType::ConnReqAnswer, &json!({"senderDetail": msg_detail.sender_detail})));
-
-        future::ok(())
+        self.build_payload_message(RemoteMessageType::ConnReqAnswer, &json!({"senderDetail": msg_detail.sender_detail}))
             .into_actor(self)
-            .and_then(move |_, slf, _|
-                crypto::auth_crypt(slf.wallet_handle, &slf.agent_pairwise_verkey, &slf.owner_verkey, &msg)
-                    .map_err(|err| err.context("Can't encode Answer Payload.").into())
-                    .into_actor(slf)
-            )
             .map(move |payload, slf, _|
                 slf.state.messages.get_mut(&msg_uid)
                     .map(|message| message.payload = Some(payload))
@@ -1136,19 +1129,43 @@ impl AgentConnection {
         Ok(message)
     }
 
-    fn build_payload_message<T>(&self, type_: RemoteMessageType, msg: &T) -> Result<Vec<u8>, Error> where T: ::serde::Serialize + ::std::fmt::Debug {
+    fn build_payload_message<T>(&self, type_: RemoteMessageType, msg: &T) -> ResponseFuture<Vec<u8>, Error> where T: ::serde::Serialize + ::std::fmt::Debug {
         trace!("AgentConnection::build_payload_message >> {:?}, {:?}",
                type_, msg);
 
-        let msg = rmp_serde::to_vec_named(&msg)?;
+        match ProtocolType::get() {
+            ProtocolTypes::V1 => {
+                let msg = ftry!(rmp_serde::to_vec_named(&msg));;
 
-        let payload_msg = Payload {
-            type_: PayloadTypes::build(PayloadKinds::from(type_)),
-            msg: to_i8(&msg)
-        };
+                let payload_msg = PayloadV1 {
+                    type_: PayloadTypes::build_v1(PayloadKinds::from(type_), "json"),
+                    msg: to_i8(&msg)
+                };
 
-        rmp_serde::to_vec_named(&payload_msg)
-            .map_err(|err| err.into())
+                let message = ftry!(rmp_serde::to_vec_named(&payload_msg));
+
+                crypto::auth_crypt(self.wallet_handle, &self.agent_pairwise_verkey, &self.owner_verkey, &message)
+                    .map_err(|err| err.context("Can't encode Answer Payload.").into())
+                    .into_box()
+            },
+            ProtocolTypes::V2 => {
+                let msg = ftry!(serde_json::to_string(&msg));;
+
+                let payload_msg = PayloadV2 {
+                    type_: PayloadTypes::build_v2(PayloadKinds::from(type_)),
+                    id: String::new(),
+                    msg,
+                    thread: Thread::new(),
+                };
+
+                let message = ftry!(serde_json::to_string(&payload_msg));
+                let receiver_keys = ftry!(serde_json::to_string(&vec![&self.owner_verkey]));
+
+                crypto::pack_message(self.wallet_handle, Some(&self.agent_pairwise_verkey), &receiver_keys, &message.as_bytes())
+                    .map_err(|err| err.context("Can't encode Answer Payload.").into())
+                    .into_box()
+            }
+        }
     }
 
     fn build_forward_message(&self, fwd: &str, message: Vec<u8>) -> Result<Vec<A2AMessage>, Error> {

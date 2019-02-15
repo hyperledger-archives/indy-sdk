@@ -476,15 +476,24 @@ impl GeneralMessage for AcceptInviteBuilder {
     }
 }
 
-pub fn parse_invitation_acceptance_details(payload: Vec<u8>) -> Result<SenderDetail, u32> {
-    #[serde(rename_all = "camelCase")]
-    #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
-    struct Details {
-        sender_detail: SenderDetail,
-    }
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct Payload {
+    #[serde(rename = "@type")]
+    msg_type: ::messages::payload::PayloadTypes,
+    #[serde(rename = "@msg")]
+    pub msg: Vec<i8>,
+}
 
+#[serde(rename_all = "camelCase")]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+pub struct AcceptanceDetails {
+    pub sender_detail: SenderDetail,
+}
+
+pub fn parse_invitation_acceptance_details(payload: Vec<u8>) -> Result<SenderDetail, u32> {
     debug!("parsing invitation acceptance details: {:?}", payload);
-    let response: Details = rmp_serde::from_slice(&payload[..]).or(Err(error::INVALID_MSGPACK.code_num))?;
+    let response: AcceptanceDetails = rmp_serde::from_slice(&payload[..]).or(Err(error::INVALID_MSGPACK.code_num))?;
     Ok(response.sender_detail)
 }
 

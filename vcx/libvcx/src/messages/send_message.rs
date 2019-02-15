@@ -3,8 +3,8 @@ use connection;
 use api::VcxStateType;
 use messages::*;
 use messages::message_type::MessageTypes;
+use messages::payload::{Payloads, PayloadKinds, Thread};
 use utils::{httpclient, error};
-
 
 #[derive(Debug)]
 pub struct SendMessageBuilder {
@@ -58,9 +58,9 @@ impl SendMessageBuilder {
         Ok(self)
     }
 
-    pub fn edge_agent_payload(&mut self, my_vk: &str, their_vk: &str, data: &str, payload_type: PayloadKinds) -> Result<&mut Self, u32> {
+    pub fn edge_agent_payload(&mut self, my_vk: &str, their_vk: &str, data: &str, payload_type: PayloadKinds, thread: Option<Thread>) -> Result<&mut Self, u32> {
         //todo: is this a json value, String??
-        self.payload = Payload::encrypted(my_vk, their_vk, data, payload_type)?;
+        self.payload = Payloads::encrypt(my_vk, their_vk, data, payload_type, thread)?;
         Ok(self)
     }
 
@@ -105,7 +105,7 @@ impl SendMessageBuilder {
                     return Err(error::INVALID_HTTP_RESPONSE.code_num);
                 }
                 1
-            },
+            }
             settings::ProtocolTypes::V2 => 0
         };
 
@@ -198,7 +198,7 @@ pub fn send_generic_message(connection_handle: u32, msg: &str, msg_type: &str, m
             .to(&did)?
             .to_vk(&vk)?
             .msg_type(&RemoteMessageType::Other(msg_type.to_string()))?
-            .edge_agent_payload(&vk, &remote_vk, &msg, PayloadKinds::Other(msg_type.to_string()))?
+            .edge_agent_payload(&vk, &remote_vk, &msg, PayloadKinds::Other(msg_type.to_string()), None)?
             .agent_did(&agent_did)?
             .agent_vk(&agent_vk)?
             .set_title(&msg_title)?

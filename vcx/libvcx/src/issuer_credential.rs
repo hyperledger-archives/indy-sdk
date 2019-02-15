@@ -6,9 +6,8 @@ use std::collections::HashMap;
 use api::VcxStateType;
 use messages;
 use settings;
-use messages::{RemoteMessageType, PayloadKinds};
-use messages::MessageStatusCode;
-use messages::{GeneralMessage};
+use messages::{RemoteMessageType, MessageStatusCode, GeneralMessage};
+use messages::payload::{Payloads, PayloadKinds, Thread};
 use connection;
 use credential_request::CredentialRequest;
 use utils::error;
@@ -24,7 +23,7 @@ use serde_json::Value;
 use object_cache::ObjectCache;
 
 lazy_static! {
-    static ref ISSUER_CREDENTIAL_MAP: ObjectCache<IssuerCredential> = Default::default();
+static ref ISSUER_CREDENTIAL_MAP: ObjectCache < IssuerCredential > = Default::default();
 }
 
 static CREDENTIAL_OFFER_ID_KEY: &str = "claim_offer_id";
@@ -57,27 +56,36 @@ pub struct IssuerCredential {
     price: u64,
     payment_address: Option<String>,
     // the following 6 are pulled from the connection object
-    agent_did: String, //agent_did for this relationship
+    agent_did: String,
+    //agent_did for this relationship
     agent_vk: String,
-    issued_did: String, //my_pw_did for this relationship
+    issued_did: String,
+    //my_pw_did for this relationship
     issued_vk: String,
-    remote_did: String, //their_pw_did for this relationship
+    remote_did: String,
+    //their_pw_did for this relationship
     remote_vk: String,
+    thread: Thread
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct CredentialOffer {
     pub msg_type: String,
-    pub version: String, //vcx version of cred_offer
-    pub to_did: String, //their_pw_did for this relationship
-    pub from_did: String, //my_pw_did for this relationship
+    pub version: String,
+    //vcx version of cred_offer
+    pub to_did: String,
+    //their_pw_did for this relationship
+    pub from_did: String,
+    //my_pw_did for this relationship
     pub libindy_offer: String,
     pub cred_def_id: String,
-    pub credential_attrs: serde_json::Map<String, serde_json::Value>, //promised attributes revealed in credential
+    pub credential_attrs: serde_json::Map<String, serde_json::Value>,
+    //promised attributes revealed in credential
     pub schema_seq_no: u32,
     pub claim_name: String,
     pub claim_id: String,
     pub msg_ref_id: Option<String>,
+    pub thread_id: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
@@ -155,10 +163,8 @@ impl IssuerCredential {
         };
 
         payload.push(cred_json);
-        let payload = match serde_json::to_string(&payload) {
-            Ok(p) => p,
-            Err(_) => return Err(IssuerCredError::CommonError(error::INVALID_JSON.code_num))
-        };
+
+        let payload = serde_json::to_string(&payload).or(Err(IssuerCredError::CommonError(error::INVALID_JSON.code_num)))?;
 
         debug!("credential offer data: {}", payload);
 
@@ -167,7 +173,7 @@ impl IssuerCredential {
                 .to(&self.issued_did)?
                 .to_vk(&self.issued_vk)?
                 .msg_type(&RemoteMessageType::CredOffer)?
-                .edge_agent_payload(&self.issued_vk, &self.remote_vk, &payload, PayloadKinds::CredOffer)?
+                .edge_agent_payload(&self.issued_vk, &self.remote_vk, &payload, PayloadKinds::CredOffer, Some(self.thread.clone()))?
                 .agent_did(&self.agent_did)?
                 .agent_vk(&self.agent_vk)?
                 .set_title(&title)?
@@ -182,6 +188,7 @@ impl IssuerCredential {
         self.msg_uid = response.get_msg_uid()?;
         self.state = VcxStateType::VcxStateOfferSent;
         self.credential_offer = Some(credential_offer);
+
         debug!("sent credential offer for: {}", self.source_id);
         return Ok(error::SUCCESS.code_num);
     }
@@ -214,12 +221,14 @@ impl IssuerCredential {
         let cred_req_msg_id = self.credential_request.as_ref().and_then(|cred_req| cred_req.msg_ref_id.as_ref())
             .ok_or(IssuerCredError::InvalidCredRequest())?;
 
+        self.thread.sender_order += 1;
+
         let response = messages::send_message()
             .to(&self.issued_did)?
             .to_vk(&self.issued_vk)?
             .msg_type(&RemoteMessageType::Cred)?
             .status_code(&MessageStatusCode::Accepted)?
-            .edge_agent_payload(&self.issued_vk, &self.remote_vk, &data, PayloadKinds::Cred)?
+            .edge_agent_payload(&self.issued_vk, &self.remote_vk, &data, PayloadKinds::Cred, Some(self.thread.clone()))?
             .agent_did(&self.agent_did)?
             .agent_vk(&self.agent_vk)?
             .ref_msg_id(cred_req_msg_id)?
@@ -231,6 +240,7 @@ impl IssuerCredential {
 
         self.msg_uid = response.get_msg_uid()?;
         self.state = VcxStateType::VcxStateAccepted;
+
         debug!("issued credential: {}", self.source_id);
         return Ok(error::SUCCESS.code_num);
     }
@@ -245,7 +255,8 @@ impl IssuerCredential {
         debug!("updating state for credential offer: {} msg_uid: {:?}", self.source_id, self.msg_uid);
         if self.state == VcxStateType::VcxStateRequestReceived {
             return Ok(self.get_state());
-        } else if self.state != VcxStateType::VcxStateOfferSent || self.msg_uid.is_empty() || self.issued_did.is_empty() {
+        }
+        if self.state != VcxStateType::VcxStateOfferSent || self.msg_uid.is_empty() || self.issued_did.is_empty() {
             return Ok(self.get_state());
         }
         let (offer_uid, payload) = messages::get_message::get_ref_msg(&self.msg_uid,
@@ -255,10 +266,14 @@ impl IssuerCredential {
                                                                       &self.agent_vk)
             .map_err(|wc| IssuerCredError::CommonError(wc))?;
 
-        let payload = messages::Payload::decrypted(&self.issued_vk, &payload).map_err(|ec| IssuerCredError::CommonError(ec))?;
+        let (payload, thread) = Payloads::decrypt(&self.issued_vk, &payload).map_err(|ec| IssuerCredError::CommonError(ec))?;
+        let cred_req = parse_credential_req_payload(offer_uid, payload)?;
 
-        self.credential_request = Some(parse_credential_req_payload(offer_uid, payload)?);
-        
+        if let Some(tr) = thread {
+            self.thread.increment_receiver(self.remote_did.as_str());
+        }
+
+        self.credential_request = Some(cred_req);
         debug!("received credential request for credential offer: {}", self.source_id);
         self.state = VcxStateType::VcxStateRequestReceived;
         Ok(self.get_state())
@@ -306,12 +321,9 @@ impl IssuerCredential {
             claim_offer_id: self.msg_uid.clone(),
             from_did: String::from(did),
             version: String::from("0.1"),
-            msg_type: String::from("CRED"),
+            msg_type: PayloadKinds::Cred.name().to_string(),
             libindy_cred: cred,
-            rev_reg_def_json: match self.rev_reg_def_json {
-                Some(_) => self.rev_reg_def_json.clone().unwrap(),
-                None => String::new(),
-            },
+            rev_reg_def_json: self.rev_reg_def_json.clone().unwrap_or(String::new()),
             cred_def_id: self.cred_def_id.clone(),
             cred_revoc_id,
             revoc_reg_delta_json,
@@ -324,7 +336,7 @@ impl IssuerCredential {
         let libindy_offer = anoncreds::libindy_issuer_create_credential_offer(&self.cred_def_id)
             .map_err(|err| IssuerCredError::CommonError(err))?;
         Ok(CredentialOffer {
-            msg_type: String::from("CRED_OFFER"),
+            msg_type: PayloadKinds::CredOffer.name().to_string(),
             version: String::from("0.1"),
             to_did: to_did.to_string(),
             from_did: self.issued_did.clone(),
@@ -335,6 +347,7 @@ impl IssuerCredential {
             msg_ref_id: None,
             cred_def_id: self.cred_def_id.clone(),
             libindy_offer,
+            thread_id: None,
         })
     }
 
@@ -403,7 +416,7 @@ impl IssuerCredential {
     pub fn to_string(&self) -> String {
         json!({
             "version": DEFAULT_SERIALIZE_VERSION,
-            "data": json!(self),
+            "data": json ! ( self),
         }).to_string()
     }
 
@@ -470,7 +483,6 @@ pub fn encode_attributes(attributes: &str) -> Result<String, IssuerCredError> {
 
             // new style input such as {"address2":"101 Wilson Lane"}
             serde_json::Value::String(str_type) => str_type,
-
             // anything else is an error
             _ => {
                 warn!("Invalid Json for Attribute data");
@@ -480,9 +492,9 @@ pub fn encode_attributes(attributes: &str) -> Result<String, IssuerCredError> {
 
         let encoded = encode(&first_attr).map_err(|x| IssuerCredError::CommonError(x))?;
         let attrib_values = json!({
-            "raw" : first_attr,
-            "encoded": encoded
-        });
+"raw": first_attr,
+"encoded": encoded
+});
 
         dictionary.insert(attr, attrib_values);
     }
@@ -524,6 +536,7 @@ fn parse_credential_req_payload(offer_uid: String, payload: String) -> Result<Cr
         })?;
 
     my_credential_req.msg_ref_id = Some(offer_uid);
+
     Ok(my_credential_req)
 }
 
@@ -568,7 +581,8 @@ pub fn issuer_credential_create(cred_def_handle: u32,
         agent_did: String::new(),
         agent_vk: String::new(),
         cred_def_id,
-        cred_def_handle
+        cred_def_handle,
+        thread: Thread::new(),
     };
 
     new_issuer_credential.validate_credential_offer()?;
@@ -773,6 +787,12 @@ pub mod tests {
             agent_vk: VERKEY.to_string(),
             cred_def_id: CRED_DEF_ID.to_string(),
             cred_def_handle: 0,
+            thread: Thread {
+                thid: None,
+                pthid: None,
+                sender_order: 0,
+                received_orders: HashMap::new(),
+            },
         };
         issuer_credential
     }
@@ -827,7 +847,13 @@ pub mod tests {
             agent_did: String::new(),
             agent_vk: String::new(),
             cred_def_id,
-            cred_def_handle
+            cred_def_handle,
+            thread: Thread {
+                thid: None,
+                pthid: None,
+                sender_order: 0,
+                received_orders: HashMap::new(),
+            },
         };
 
         let payment = issuer_credential.generate_payment_info().unwrap();
@@ -970,7 +996,7 @@ pub mod tests {
         let connection_handle = build_test_connection();
         let credential_req: CredentialRequest = serde_json::from_str(CREDENTIAL_REQ_STRING).unwrap();
         let (credential_offer, _) = ::credential::parse_json_offer(CREDENTIAL_OFFER_JSON).unwrap();
-        let mut credential = IssuerCredential {
+        let mut credential: IssuerCredential = IssuerCredential {
             source_id: "test_has_pending_credential_request".to_owned(),
             schema_seq_no: 32,
             msg_uid: "1234".to_owned(),
@@ -997,6 +1023,12 @@ pub mod tests {
             remote_vk: VERKEY.to_string(),
             agent_did: DID.to_string(),
             agent_vk: VERKEY.to_string(),
+            thread: Thread {
+                thid: None,
+                pthid: None,
+                sender_order: 0,
+                received_orders: HashMap::new(),
+            },
         };
 
         ::utils::httpclient::set_next_u8_response(CREDENTIAL_REQ_RESPONSE.to_vec());
@@ -1186,27 +1218,27 @@ pub mod tests {
         //        for reference....expectation is encode_attributes returns this:
 
         let expected = json!({
-          "address2": {
-            "encoded": "68086943237164982734333428280784300550565381723532936263016368251445461241953",
-            "raw": "101 Wilson Lane"
-          },
-          "zip": {
-            "encoded": "87121",
-            "raw": "87121"
-          },
-          "city": {
-            "encoded": "101327353979588246869873249766058188995681113722618593621043638294296500696424",
-            "raw": "SLC"
-          },
-          "address1": {
-            "encoded": "63690509275174663089934667471948380740244018358024875547775652380902762701972",
-            "raw": "101 Tela Lane"
-          },
-          "state": {
-            "encoded": "93856629670657830351991220989031130499313559332549427637940645777813964461231",
-            "raw": "UT"
-          }
-        });
+"address2": {
+"encoded": "68086943237164982734333428280784300550565381723532936263016368251445461241953",
+"raw": "101 Wilson Lane"
+},
+"zip": {
+"encoded": "87121",
+"raw": "87121"
+},
+"city": {
+"encoded": "101327353979588246869873249766058188995681113722618593621043638294296500696424",
+"raw": "SLC"
+},
+"address1": {
+"encoded": "63690509275174663089934667471948380740244018358024875547775652380902762701972",
+"raw": "101 Tela Lane"
+},
+"state": {
+"encoded": "93856629670657830351991220989031130499313559332549427637940645777813964461231",
+"raw": "UT"
+}
+});
 
 
         static TEST_CREDENTIAL_DATA: &str =
@@ -1237,11 +1269,11 @@ pub mod tests {
     #[test]
     fn test_encode_with_one_attribute_success() {
         let expected = json!({
-          "address2": {
-            "encoded": "68086943237164982734333428280784300550565381723532936263016368251445461241953",
-            "raw": "101 Wilson Lane"
-          }
-        });
+"address2": {
+"encoded": "68086943237164982734333428280784300550565381723532936263016368251445461241953",
+"raw": "101 Wilson Lane"
+}
+});
 
         static TEST_CREDENTIAL_DATA: &str =
             r#"{"address2":["101 Wilson Lane"]}"#;
@@ -1258,27 +1290,27 @@ pub mod tests {
         //        for reference....expectation is encode_attributes returns this:
 
         let expected = json!({
-          "address2": {
-            "encoded": "68086943237164982734333428280784300550565381723532936263016368251445461241953",
-            "raw": "101 Wilson Lane"
-          },
-          "zip": {
-            "encoded": "87121",
-            "raw": "87121"
-          },
-          "city": {
-            "encoded": "101327353979588246869873249766058188995681113722618593621043638294296500696424",
-            "raw": "SLC"
-          },
-          "address1": {
-            "encoded": "63690509275174663089934667471948380740244018358024875547775652380902762701972",
-            "raw": "101 Tela Lane"
-          },
-          "state": {
-            "encoded": "93856629670657830351991220989031130499313559332549427637940645777813964461231",
-            "raw": "UT"
-          }
-        });
+"address2": {
+"encoded": "68086943237164982734333428280784300550565381723532936263016368251445461241953",
+"raw": "101 Wilson Lane"
+},
+"zip": {
+"encoded": "87121",
+"raw": "87121"
+},
+"city": {
+"encoded": "101327353979588246869873249766058188995681113722618593621043638294296500696424",
+"raw": "SLC"
+},
+"address1": {
+"encoded": "63690509275174663089934667471948380740244018358024875547775652380902762701972",
+"raw": "101 Tela Lane"
+},
+"state": {
+"encoded": "93856629670657830351991220989031130499313559332549427637940645777813964461231",
+"raw": "UT"
+}
+});
 
 
         static TEST_CREDENTIAL_DATA: &str =
@@ -1309,11 +1341,11 @@ pub mod tests {
     #[test]
     fn test_encode_with_new_format_one_attribute_success() {
         let expected = json!({
-          "address2": {
-            "encoded": "68086943237164982734333428280784300550565381723532936263016368251445461241953",
-            "raw": "101 Wilson Lane"
-          }
-        });
+"address2": {
+"encoded": "68086943237164982734333428280784300550565381723532936263016368251445461241953",
+"raw": "101 Wilson Lane"
+}
+});
 
         static TEST_CREDENTIAL_DATA: &str =
             r#"{"address2": "101 Wilson Lane"}"#;
@@ -1330,27 +1362,27 @@ pub mod tests {
         //        for reference....expectation is encode_attributes returns this:
 
         let expected = json!({
-          "address2": {
-            "encoded": "68086943237164982734333428280784300550565381723532936263016368251445461241953",
-            "raw": "101 Wilson Lane"
-          },
-          "zip": {
-            "encoded": "87121",
-            "raw": "87121"
-          },
-          "city": {
-            "encoded": "101327353979588246869873249766058188995681113722618593621043638294296500696424",
-            "raw": "SLC"
-          },
-          "address1": {
-            "encoded": "63690509275174663089934667471948380740244018358024875547775652380902762701972",
-            "raw": "101 Tela Lane"
-          },
-          "state": {
-            "encoded": "93856629670657830351991220989031130499313559332549427637940645777813964461231",
-            "raw": "UT"
-          }
-        });
+"address2": {
+"encoded": "68086943237164982734333428280784300550565381723532936263016368251445461241953",
+"raw": "101 Wilson Lane"
+},
+"zip": {
+"encoded": "87121",
+"raw": "87121"
+},
+"city": {
+"encoded": "101327353979588246869873249766058188995681113722618593621043638294296500696424",
+"raw": "SLC"
+},
+"address1": {
+"encoded": "63690509275174663089934667471948380740244018358024875547775652380902762701972",
+"raw": "101 Tela Lane"
+},
+"state": {
+"encoded": "93856629670657830351991220989031130499313559332549427637940645777813964461231",
+"raw": "UT"
+}
+});
 
 
         static TEST_CREDENTIAL_DATA: &str =

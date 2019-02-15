@@ -120,9 +120,7 @@ impl GetMessagesBuilder {
             return Ok(Vec::new());
         }
 
-        let response = self.parse_response(response)?;
-
-        Ok(response)
+        self.parse_response(response)
     }
 
     fn parse_response(&self, response: Vec<u8>) -> Result<Vec<Message>, u32> {
@@ -240,15 +238,6 @@ impl GeneralMessage for GetMessagesBuilder {
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct Payload {
-    #[serde(rename = "@type")]
-    msg_type: PayloadTypes,
-    #[serde(rename = "@msg")]
-    pub msg: Vec<i8>,
-}
-
-#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
-#[serde(rename_all = "camelCase")]
 pub struct DeliveryDetails {
     to: String,
     status_code: String,
@@ -320,7 +309,7 @@ pub fn get_ref_msg(msg_id: &str, pw_did: &str, pw_vk: &str, agent_did: &str, age
         _ => return Err(error::NOT_READY.code_num),
     };
 
-    let message = get_connection_messages(pw_did, pw_vk, agent_did, agent_vk, Some(vec![msg_id]))?;
+    let message: Vec<Message> = get_connection_messages(pw_did, pw_vk, agent_did, agent_vk, Some(vec![msg_id]))?;
 
     trace!("checking for pending message: {:?}", message);
 

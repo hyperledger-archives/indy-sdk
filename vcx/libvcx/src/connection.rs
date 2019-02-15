@@ -13,8 +13,9 @@ use settings;
 use messages::GeneralMessage;
 use messages;
 use messages::{MessageStatusCode, RemoteMessageType};
-use messages::invite::{InviteDetail, SenderDetail};
-use messages::get_message::{Message, Payload as MessagePayload};
+use messages::invite::{InviteDetail, SenderDetail, Payload as ConnectionPayload, AcceptanceDetails};
+use messages::payload::Payloads;
+use messages::get_message::Message;
 use serde_json::Value;
 use utils::json::KeyMatch;
 use error::connection::ConnectionError;
@@ -450,27 +451,34 @@ pub fn create_connection_with_invite(source_id: &str, details: &str) -> Result<u
 pub fn parse_acceptance_details(handle: u32, message: &Message) -> Result<SenderDetail, ConnectionError> {
     debug!("connection {} parsing acceptance details for message {:?}", get_source_id(handle).unwrap_or_default(), message);
     let my_vk = settings::get_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY)?;
-    let payload = messages::to_u8(
-        message.payload
-            .as_ref()
-            .ok_or(ConnectionError::CommonError(error::INVALID_MSGPACK.code_num))?
-    );
-    // TODO: check returned verkey
-    let (_, payload) = crypto::parse_msg(&my_vk, &payload).map_err(|e| { ConnectionError::CommonError(e) })?;
 
-    trace!("deserializing GetMsgResponse: {:?}", payload);
+    let payload = message.payload
+        .as_ref()
+        .ok_or(ConnectionError::CommonError(error::INVALID_MSGPACK.code_num))?;
 
-    let response: MessagePayload = rmp_serde::from_slice(&payload[..])
-        .map_err(|err| {
-            error!("Could not parse outer msg: {}", err);
-            ConnectionError::CommonError(error::INVALID_MSGPACK.code_num)
-        })?;
+    match settings::ProtocolTypes::from(settings::get_protocol_type()) {
+        settings::ProtocolTypes::V1 => {
+            let payload = messages::to_u8(&payload);
 
-    let payload = messages::to_u8(&response.msg);
-    // TODO: Refactor Error
-    let details = messages::invite::parse_invitation_acceptance_details(payload).map_err(|e| { ConnectionError::CommonError(e) })?;
+            // TODO: check returned verkey
+            let (_, payload) = crypto::parse_msg(&my_vk, &payload).map_err(|e| { ConnectionError::CommonError(e) })?;
 
-    Ok(details)
+            let response: ConnectionPayload = rmp_serde::from_slice(&payload[..])
+                .map_err(|err| {
+                    error!("Could not parse outer msg: {}", err);
+                    ConnectionError::CommonError(error::INVALID_MSGPACK.code_num)
+                })?;
+
+            let payload = messages::to_u8(&response.msg);
+            // TODO: Refactor Error
+            messages::invite::parse_invitation_acceptance_details(payload).map_err(|e| { ConnectionError::CommonError(e) })
+        }
+        settings::ProtocolTypes::V2 => {
+            let (payload, _) = Payloads::decrypt_payload_v2(&my_vk, &payload)?;
+            let response: AcceptanceDetails = serde_json::from_str(&payload).or(Err(error::INVALID_JSON.code_num))?;
+            Ok(response.sender_detail)
+        }
+    }
 }
 
 pub fn update_state(handle: u32) -> Result<u32, ConnectionError> {
