@@ -909,7 +909,6 @@ mod tests {
         proof.proof_request = Some(proof_req);
 
         let retrieved_creds = proof.retrieve_credentials().unwrap();
-        println!("retrieved_creds: {}", retrieved_creds);
         assert!(retrieved_creds.len() > 500);
     }
 
