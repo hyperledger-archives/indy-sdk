@@ -353,6 +353,12 @@ impl Prover
         let search_handle  = anoncreds::prover_search_credentials_for_proof_req(self.wallet_handle, &proof_request, None).unwrap();
         let credentials_list = anoncreds::prover_fetch_next_credentials_for_proof_req(search_handle,attr1_referent,1).unwrap();
 
+        use serde_json::Value;
+
+        // Prover searches Credentials for Proof Request
+        let search_handle  = anoncreds::prover_search_credentials_for_proof_req(self.wallet_handle, &proof_request, None).unwrap();
+        let credentials_list = anoncreds::prover_fetch_next_credentials_for_proof_req(search_handle,attr1_referent,1).unwrap();
+
         let credentials_list_value : Value = serde_json::from_str(&credentials_list).unwrap();
         // extract first result of the search as Value
         let credentials_first = &credentials_list_value.as_array().unwrap()[0];
@@ -367,8 +373,6 @@ impl Prover
         let cred_def_id = cred_info.cred_def_id;
         assert_eq!(cred_def_id, self.cred_def_id.clone().unwrap());
         let cred_rev_id = cred_info.cred_rev_id.clone().unwrap();
-
-
         let rev_reg_id = cred_info.rev_reg_id.clone().unwrap();
 
 
