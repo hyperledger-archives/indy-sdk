@@ -143,7 +143,7 @@ public class IssuerApi extends VcxJava.API {
         ParamGuard.notNull(credentialHandle, "credentialHandle");
         ParamGuard.notNull(connectionHandle, "connectionHandle");
         logger.debug("issuerSendCredential() called with: credentialHandle = [" + credentialHandle + "], connectionHandle = [" + connectionHandle + "]");
-        CompletableFuture<String> future = new CompletableFuture<>();
+        CompletableFuture<Integer> future = new CompletableFuture<>();
         int issue = addFuture(future);
 
         int result = LibVcx.api.vcx_issuer_send_credential(
