@@ -492,6 +492,29 @@ public abstract class LibVcx {
         return api != null;
     }
 
+    public static void logMessage(String loggerName, int level, String message) {
+        org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(loggerName);
+        switch (level) {
+            case 1:
+                logger.error(message);
+                break;
+            case 2:
+                logger.warn(message);
+                break;
+            case 3:
+                logger.info(message);
+                break;
+            case 4:
+                logger.debug(message);
+                break;
+            case 5:
+                logger.trace(message);
+                break;
+            default:
+                break;
+        }
+    }
+
     private static class Logger {
         private static Callback enabled = null;
 
@@ -499,29 +522,9 @@ public abstract class LibVcx {
 
             @SuppressWarnings({"unused", "unchecked"})
             public void callback(Pointer context, int level, String target, String message, String module_path, String file, int line) {
-                org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(String.format("%s.native.%s", LibVcx.class.getName(), target.replace("::", ".")));
-
-                String logMessage = String.format("%s:%d | %s", file, line, message);
-
-                switch (level) {
-                    case 1:
-                        logger.error(logMessage);
-                        break;
-                    case 2:
-                        logger.warn(logMessage);
-                        break;
-                    case 3:
-                        logger.info(logMessage);
-                        break;
-                    case 4:
-                        logger.debug(logMessage);
-                        break;
-                    case 5:
-                        logger.trace(logMessage);
-                        break;
-                    default:
-                        break;
-                }
+                String loggerName = String.format("%s.native.%s", LibVcx.class.getName(), target.replace("::", "."));
+                String msg = String.format("%s:%d | %s", file, line, message);
+                logMessage(loggerName, level, msg);
             }
         };
 
