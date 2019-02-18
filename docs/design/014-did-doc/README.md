@@ -124,8 +124,10 @@ On Indy SDK level DID-related identity has the following structure:
 
 ### DID resolver configuration
 
+#### Create DID Resolver instance
+
 ```Rust
-// Creates DID resolver instance
+// Create DID resolver instance
 //
 // By default supports peer method only. To support additional did methods
 // indy_register_indy_did_method or indy_register_did_method can be called.
@@ -134,6 +136,8 @@ On Indy SDK level DID-related identity has the following structure:
 // returns - did_resolver_handle: handler ot DID Resolver instance
 pub fn indy_create_did_resolver(options) -> Future<did_resolver_handle>
 ```
+
+#### Register did method based on Indy pool with did resolver
 
 ```Rust
 // Register did method based on Indy pool with did resolver.
@@ -149,6 +153,8 @@ pub fn indy_register_indy_did_method(did_resolver_handle,
                                      options) -> Future<()>
 ```
 
+##### Register custom did method with did resolver
+
 ```Rust
 // Register custom did method with did resolver.
 //
@@ -163,8 +169,10 @@ pub fn indy_register_did_method(did_resolver_handle,
                                 options) -> Future<()>
 ```
 
+#### Close did resolver and releases all related resources
+
 ```Rust
-// Closes did resolver and releases all related resources.
+// Close did resolver and releases all related resources.
 //
 // did_resolver_handle: resolver handle
 // returns - ()
@@ -172,6 +180,8 @@ pub fn indy_close_did_resolver(did_resolver_handle) -> Future<()>
 ```
 
 ### Resolving DID Doc
+
+#### Resolve DID Doc for DID
 
 ```Rust
 // Resolve DID Doc for DID.
@@ -187,8 +197,10 @@ pub fn indy_resolve_did_doc(did_resolver_handle,
 
 ### DID and DID keys creation
 
+#### Creates a new DID
+
 ```Rust
-// Creates a new DID.
+// Create a new DID.
 //
 // Note: It doesn't create any records in the wallet.
 //
@@ -201,8 +213,10 @@ pub fn indy_create_did(did_resolver_handle,
                        options) -> Future<did>
 ```
 
+#### Create a new key pair associated with DID
+
 ```Rust
-// Creates a new key pair associated with DID.
+// Create a new key pair associated with DID.
 //
 // It verifies that key options are compatible with method,
 // creates and stores key in the wallet, creates and stores association
@@ -222,8 +236,10 @@ pub fn indy_create_did_key(did_resolver_handle,
 
 ### DID Doc creation, updating and publishing
 
+#### Create a new DID Doc builder instance
+
 ```Rust
-// Creates a new DID Doc builder.
+// Create a new DID Doc builder instance.
 //
 // It tries to resolve did doc for provided did and creates builder that
 // allows to modify did doc and publish it. If did doc isn't exists it
@@ -238,8 +254,10 @@ pub fn indy_create_did_doc_builder(did_resolver_handle,
                                    options) -> Future<ddoc_builder_handle>
 ```
 
+#### Add new public key item to DID Doc builder
+
 ```Rust
-// Adds new public key item to DID Doc builder.
+// Add new public key item to DID Doc builder.
 //
 // Note: id can be full DID Doc reference or fragment.
 // In case of fragment reference will be related to current DID.
@@ -253,8 +271,10 @@ pub fn indy_did_doc_add_public_key(ddoc_builder_handle,
                                    key_json) -> Future<()>
 ```
 
+#### Update public key item in DID Doc builder
+
 ```Rust
-// Updates public key item in DID Doc builder.
+// Update public key item in DID Doc builder.
 //
 // Note: id can be full DID Doc reference or fragment.
 // In case of fragment reference will be related to current DID.
@@ -268,8 +288,10 @@ pub fn indy_did_doc_update_public_key(ddoc_builder_handle,
                                       key_json) -> Future<()>
 ```
 
+#### Delete public key item in DID Doc builder
+
 ```Rust
-// Deletes public key item in DID Doc builder.
+// Delete public key item in DID Doc builder.
 //
 // Note: id can be full DID Doc reference or fragment.
 // In case of fragment reference will be related to current DID.
@@ -284,8 +306,10 @@ pub fn indy_did_doc_remove_public_key(ddoc_builder_handle,
                                       id) -> Future<()>
 ```
 
+#### Add new authorization item to DID Doc builder
+
 ```Rust
-// Adds new authorization item to DID Doc builder.
+// Add new authorization item to DID Doc builder.
 //
 // Note: id can be full DID Doc reference or fragment.
 // In case of fragment reference will be related to current DID.
@@ -302,8 +326,10 @@ pub fn indy_did_doc_add_authorization(ddoc_builder_handle,
                                       Option<key_json>) -> Future<()>
 ```
 
+#### Update embedded authorization item with DID Doc builder
+
 ```Rust
-// Updates embedded authorization item with DID Doc builder.
+// Update embedded authorization item with DID Doc builder.
 //
 // Note: id can be full DID Doc reference or fragment.
 // In case of fragment reference will be related to current DID.
@@ -317,8 +343,10 @@ pub fn indy_did_doc_update_authorization(ddoc_builder_handle,
                                          Option<key_json>) -> Future<()>
 ```
 
+#### Delete authorization item with DID Doc builder
+
 ```Rust
-// Deletes authorization item with DID Doc builder.
+// Delete authorization item with DID Doc builder.
 //
 // Note: id can be full DID Doc reference or fragment.
 // In case of fragment reference will be related to current DID.
@@ -330,8 +358,10 @@ pub fn indy_did_doc_remove_authorization(ddoc_builder_handle,
                                          id) -> Future<()>
 ```
 
+#### Add new service endpoint item to DID Doc builder
+
 ```Rust
-// Adds new service endpoint item to DID Doc builder.
+// Add new service endpoint item to DID Doc builder.
 //
 // Note: id can be full DID Doc reference or path.
 // In case of path reference will be related to current DID.
@@ -345,8 +375,10 @@ pub fn indy_did_doc_add_service_endpoint(ddoc_builder_handle,
                                          endpoint_json) -> Future<()>
 ```
 
+#### Update service endpoint item with DID Doc builder
+
 ```Rust
-// Updates service endpoint item with DID Doc builder.
+// Update service endpoint item with DID Doc builder.
 //
 // Note: id can be full DID Doc reference or path .
 // In case of path reference will be related to current DID.
@@ -360,8 +392,10 @@ pub fn indy_did_doc_update_service_endpoint(ddoc_builder_handle,
                                             endpoint_json) -> Future<()>
 ```
 
+#### Delete service endpoint item with DID Doc builder
+
 ```Rust
-// Deletes service endpoint item with DID Doc builder.
+// Delete service endpoint item with DID Doc builder.
 //
 // Note: id can be full DID Doc reference or path.
 // In case of path reference will be related to current DID.
@@ -373,8 +407,10 @@ pub fn indy_did_doc_remove_service_endpoint(ddoc_builder_handle,
                                             id) -> Future<()>
 ```
 
+#### Finalize DID Doc builder and return corresonded DID Doc or DID Doc delta
+
 ```Rust
-// Finalizes DID Doc builder and returns DID Doc or DID Doc delta.
+// Finalize DID Doc builder and return corresonded DID Doc or DID Doc delta.
 //
 // Note: Format of delta can be method specific.
 // In case of path reference will be related to current DID.
@@ -384,6 +420,8 @@ pub fn indy_did_doc_remove_service_endpoint(ddoc_builder_handle,
 // returns - did_doc_delta: DID Doc or DID Doc delta
 pub fn indy_did_doc_finalize(ddoc_builder_handle) -> Future<did_doc_delta>
 ```
+
+#### Publish DID Doc or DID Doc delta in distributed network
 
 ```Rust
 // Publish DID Doc or DID Doc delta in distributed network.
