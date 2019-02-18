@@ -1,0 +1,18 @@
+{
+  "agency_did": "UNM2cmvMVoWpk6r3pG5FAq",
+  "agency_endpoint": "https://eas01.pps.evernym.com",
+  "agency_verkey": "FvA7e4DuD2f9kYHq6B3n7hE7NQvmpgeFRrox3ELKv9vX",
+  "genesis_path": "/Users/nxshah5/Workspace/corda/project-janus2-restapi/lib/poolconfig.json",
+  "institution_did": "2YbuEaSyorW2ex939pFFG5",
+  "institution_logo_url": "https://logopond.com/logos/dc5cc8314658dcbce4536affc4772f78.png",
+  "institution_name": "BigDummyBank",
+  "institution_verkey": "qqVGpGzvtKbhThWoEuqJhLqfebgjX9PA1p8xKvxAaNk",
+  "remote_to_sdk_did": "2Gcj3bvSsKJYbGcbNVi7FD",
+  "remote_to_sdk_verkey": "h89RThQwG37d9AVmGqEZrxQQwJBpkRF7eqBeAGNCmB5",
+  "sdk_to_remote_did": "3A7zHxQLUshi8CVe11sAej",
+  "sdk_to_remote_verkey": "2BCJh4Ltk5yHt4dctMs4P8XhribdKG9K13ZYLyH1M6pu",
+  "wallet_key": "usbanksovrintest",
+  "wallet_name": "usbank",
+  "enterprise_seed":"000000000000000000000000Trustee",
+  "payment_method":"null"
+}
