@@ -22,11 +22,7 @@ import java.util.concurrent.ExecutionException
 
 fun main(args: Array<String>) {
 
-    var libnullpay = "libnullpay.so"
 
-    if(System.getProperty("os.name") == "Mac OS X"){
-        libnullpay = "libnullpay.dylib"
-    }
 
     var defaultLevel: Level = Level.OFF
 
@@ -54,11 +50,17 @@ fun main(args: Array<String>) {
 
     //LibVcx.init()
 
+    var libnullpay = "libnullpay.so"
+
+    if(System.getProperty("os.name") == "Mac OS X"){
+        libnullpay = "libnullpay.dylib"
+    }
+    
     /**Initialize Lib Null Pay library for the payment APIs. Currently there is no java wrapper available for libnullpay So we have to manually
      * load the library. This code written base off of LibVCX.init()
      * com.sun.jna is used to bridge the gap between java and OS specific DLL(libraries)
      **/
-    Native.loadLibrary(File("../../../../libnullpay/target/debug/${libnullpay}").absolutePath,PAYMENT_API::class.java)
+    Native.loadLibrary(libnullpay,PAYMENT_API::class.java)
             .nullpay_init()
 
     try {
