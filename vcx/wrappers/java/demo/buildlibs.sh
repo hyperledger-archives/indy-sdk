@@ -1,0 +1,9 @@
+source ~/.profile
+cd ..
+./gradlew build
+cd ../../libvcx
+cargo build
+cd ../../libindy
+cargo build
+cd ../libnullpay
+cargo build

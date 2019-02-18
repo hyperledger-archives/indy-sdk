@@ -23,7 +23,7 @@ repositories {
 dependencies {
     compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
 
-    compile fileTree(dir: 'lib', include: ['*.jar'])
+    compile fileTree(dir: '../build/libs/', include: ['*.jar'])
     compile 'net.java.dev.jna:jna:4.5.0'
     compile group: 'net.sourceforge.streamsupport', name: 'java9-concurrent-backport', version: '1.1.1'
     compile group: 'com.jayway.jsonpath', name: 'json-path',version: '2.4.0'

@@ -10,6 +10,7 @@ import com.evernym.sdk.vcx.credentialDef.CredentialDefApi
 import com.evernym.sdk.vcx.proof.ProofApi
 import com.evernym.sdk.vcx.schema.SchemaApi
 import com.evernym.sdk.vcx.vcx.VcxApi
+import com.evernym.sdk.vcx.issuer.IssuerApi
 import com.google.gson.Gson
 import com.sun.jna.Library
 import com.sun.jna.Native
@@ -45,12 +46,14 @@ fun main(args: Array<String>) {
      * load the library. This code written base off of LibVCX.init()
      * com.sun.jna is used to bridge the gap between java and OS specific DLL(libraries)
      **/
-    Native.loadLibrary(File("lib/libnullpay.dylib").absolutePath,PAYMENT_API::class.java)
+    Native.loadLibrary(File("../../../../libnullpay/target/debug/libnullpay.dylib").absolutePath,PAYMENT_API::class.java)
             .nullpay_init()
 
     try {
 
-        println("======#1 Provision an agent and wallet, get back configuration details")
+        println("####################################################################")
+        println("# 1 Provision an agent and wallet, get back configuration details")
+        println("####################################################################")
 
         //Initialize the vcx with provision agent. This is only needed for local network
         //For Test network use vcxInitWithConfig directly
@@ -59,7 +62,9 @@ fun main(args: Array<String>) {
                 "lib/localpoolconfig.json" )
 
 
-        print("======#2 Initialize libvcx with new configuration")
+        println("####################################################################")
+        println("# 2 Initialize libvcx with new configuration")
+        println("####################################################################")
 
         //Initialize vcx with the vcxconfig received from the provision agent initialization
         VcxApi.vcxInitWithConfig(vcxconfig).get()
@@ -73,7 +78,9 @@ fun main(args: Array<String>) {
         val schemaData = "[\"name\", \"date\", \"degree\"]"
 
 
-        println("=======#3 Create a new schema on the ledger")
+        println("####################################################################")
+        println("# 3 Create a new schema on the ledger")
+        println("####################################################################")
 
         var schemaHandle = SchemaApi.schemaCreate(sourceId,schemaName,schemaVersion,schemaData,0).get()
 
@@ -88,7 +95,9 @@ fun main(args: Array<String>) {
         println("====$attr====")
 
 
-        println("=======#4 Create a new credential definition on the ledger")
+        println("####################################################################")
+        println("# 4 Create a new credential definition on the ledger")
+        println("####################################################################")
 
         val credDefHandle = CredentialDefApi.credentialDefCreate("creddef_uuid","degree",schemaId,null,"tag1","{\"support_revocation\":false, \"tails_file\": \"/tmp/tailsfile.txt\", \"max_creds\": 1}",0).get()
 
@@ -97,7 +106,9 @@ fun main(args: Array<String>) {
         println(defId)
 
 
-        print("=======#5 Create a connection to alice and print out the invite details")
+        println("####################################################################")
+        println("# 5 Create a connection to alice and print out the invite details")
+        println("####################################################################")
 
         //Create a connection to alice and print out the invite details
         var connCreateHandle = ConnectionApi.vcxConnectionCreate("alice").get()
@@ -112,7 +123,9 @@ fun main(args: Array<String>) {
 
         var connDetailObj = Gson().fromJson(connDetail,ConnectionDetail::class.java)
 
-        println("======#6 Poll agency and wait for alice to accept the invitation (start alice.py now)")
+        println("####################################################################")
+        println("# 6 Poll agency and wait for alice to accept the invitation (start alice.py now)")
+        println("####################################################################")
 
         var connStateHandle = ConnectionApi.connectionGetState(connCreateHandle).get()
 
@@ -129,19 +142,25 @@ fun main(args: Array<String>) {
         println("======Faber is now connected to Alice=======")
 
 
-        println("#==========12 Create an IssuerCredential object using the schema and credential definition")
+        println("####################################################################")
+        println("# 12 Create an IssuerCredential object using the schema and credential definition")
+        println("####################################################################")
 
         var credOffer = IssuerApi.issuerCreateCredential("alice_degree",credDefHandle,connDetailObj.senderDetail.DID
                 ,Gson().toJson(Degree("alice","04-2019","math")),"alice_degree",0).get()
 
 
 
-        print("#===========13 Issue credential offer to alice")
+        println("####################################################################")
+        println("# 13 Issue credential offer to alice")
+        println("####################################################################")
 
         IssuerApi.issuerSendcredentialOffer(credOffer,connCreateHandle).get()
         IssuerApi.issuerCredentialUpdateState(credOffer).get()
 
-        println("#===============14 Poll agency and wait for alice to send a credential request")
+        println("####################################################################")
+        println("# 14 Poll agency and wait for alice to send a credential request")
+        println("####################################################################")
         var credReqState = IssuerApi.issuerCredntialGetState (credOffer).get()
 
         while(credReqState!=IssuerCredentialState.RequestReceived.code){
@@ -153,11 +172,15 @@ fun main(args: Array<String>) {
 
         }
 
-        println("=====#17 Issue credential to alice")
+        println("####################################################################")
+        println("# 17 Issue credential to alice")
+        println("####################################################################")
         IssuerApi.issuerSendCredential(credOffer,connCreateHandle).get()
 
 
-        println("====#18 Wait for alice to accept credential")
+        println("####################################################################")
+        println("# 18 Wait for alice to accept credential")
+        println("####################################################################")
 
         IssuerApi.issuerCredentialUpdateState(credOffer).get()
         credReqState = IssuerApi.issuerCredntialGetState (credOffer).get()
@@ -177,17 +200,23 @@ fun main(args: Array<String>) {
                 "{\"name\": \"degree\"}"+
                 "]"
 
-        print("========#19 Create a Proof object")
+        println("####################################################################")
+        println("# 19 Create a Proof object")
+        println("####################################################################")
 
         var proofReq = ProofApi.proofCreate("proof_uuid",proof_attrs,"","{}","degree_proof").get()
 
 
-        print("=======#20 Request proof of degree from alice")
+        println("####################################################################")
+        println("# 20 Request proof of degree from alice")
+        println("####################################################################")
 
         ProofApi.proofSendRequest(proofReq,connCreateHandle).get()
 
 
-        print("=======#21 Poll agency and wait for alice to provide proof")
+        println("####################################################################")
+        println("# 21 Poll agency and wait for alice to provide proof")
+        println("####################################################################")
 
         var proofReqState = ProofApi.proofGetState (proofReq).get()
 
@@ -199,15 +228,23 @@ fun main(args: Array<String>) {
 
         }
 
-        println("=======#27 Process the proof provided by alice")
+        println("####################################################################")
+        println("# 27 Process the proof provided by alice")
+        println("####################################################################")
 
         var proofResult = ProofApi.getProof(proofReq,connCreateHandle).get()
 
         if(proofResult.proof_state == ProofState.Verified.code){
-            println("========proof is verified!!")
+
+            println("####################################################################")
+            println("proof is verified!!")
+            println("####################################################################")
 
         }else{
-            println("========could not verify proof :(")
+
+            println("####################################################################")
+            println("could not verify proof :(")
+            println("####################################################################")
 
         }
 

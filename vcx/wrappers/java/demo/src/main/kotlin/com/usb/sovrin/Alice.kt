@@ -38,12 +38,15 @@ fun main(args: Array<String>) {
      * load the library. This code written base off of LibVCX.init()
      * com.sun.jna is used to bridge the gap between java and OS specific DLL(libraries)
      **/
-    Native.loadLibrary(File("lib/libnullpay.dylib").absolutePath,PAYMENT_API::class.java)
+    Native.loadLibrary(File("../../../../libnullpay/target/debug/libnullpay.dylib").absolutePath,PAYMENT_API::class.java)
             .nullpay_init()
 
     try {
 
-        println("====#7 Provision an agent and wallet, get back configuration details")
+        println("####################################################################")
+        println("# 7 Provision an agent and wallet, get back configuration details")
+        println("####################################################################")
+
 
         //Initialize the vcx with provision agent. This is only needed for local network
         //For Test network use vcxInitWithConfig directly
@@ -52,7 +55,9 @@ fun main(args: Array<String>) {
                 "lib/localpoolconfig.json" )
 
 
-        println("====#8 Initialize libvcx with new configuration")
+        println("####################################################################")
+        println("# 8 Initialize libvcx with new configuration")
+        println("####################################################################")
 
         //Initialize vcx with the vcxconfig received from the provision agent initialization
         VcxApi.vcxInitWithConfig(vcxconfig).get()
@@ -60,11 +65,15 @@ fun main(args: Array<String>) {
 
 
 
+        println("####################################################################")
+        println("# 9 Input faber.py invitation details")
+        println("####################################################################")
 
-        println("======#9 Input faber.py invitation details")
         val connectionDetail = readLine()!!
 
-        print("#=======10 Convert to valid json and string and create a connection to faber")
+        println("####################################################################")
+        println("# 10 Convert to valid json and string and create a connection to faber")
+        println("####################################################################")
 
         var conn_to_faber = ConnectionApi.vcxCreateConnectionWithInvite("faber",connectionDetail).get()
 
@@ -72,7 +81,9 @@ fun main(args: Array<String>) {
 
         ConnectionApi.vcxConnectionUpdateState(conn_to_faber).get()
 
-        println("=======#11 Wait for faber.py to issue a credential offer")
+        println("####################################################################")
+        println("# 11 Wait for faber.py to issue a credential offer")
+        println("####################################################################")
 
         Thread.sleep(30000)
 
@@ -89,11 +100,16 @@ fun main(args: Array<String>) {
 
         val credOffer = CredentialApi.credentialCreateWithOffer("credential",Gson().toJson(offers.get(0))).get()
 
-        println("========#15 After receiving credential offer, send credential request")
+
+        println("####################################################################")
+        println("# 15 After receiving credential offer, send credential request")
+        println("####################################################################")
 
         CredentialApi.credentialSendRequest(credOffer,conn_to_faber,0).get()
 
-        println("=======#16 Poll agency and accept credential offer from faber")
+        println("####################################################################")
+        println("# 16 Poll agency and accept credential offer from faber")
+        println("####################################################################")
         CredentialApi.credentialUpdateState(credOffer).get()
 
         var credReqState = CredentialApi.credentialGetState (credOffer).get()
@@ -110,7 +126,9 @@ fun main(args: Array<String>) {
         var cred = CredentialApi.getCredential(credOffer).get()
         println("======CREDENTIAL IS: ${cred}")
 
-        println("======#22 Poll agency for a proof request")
+        println("####################################################################")
+        println("# 22 Poll agency for a proof request")
+        println("####################################################################")
         var proofRequests = DisclosedProofApi.proofGetRequests(conn_to_faber).get()
 
 
@@ -132,10 +150,14 @@ fun main(args: Array<String>) {
 
 
 
-        println("=======#23 Create a Disclosed proof object from proof request")
+        println("####################################################################")
+        println("# 23 Create a Disclosed proof object from proof request")
+        println("####################################################################")
         val newProof = DisclosedProofApi.proofCreateWithRequest("proof",proofStr).get()
 
-        println("=====#24 Query for credentials in the wallet that satisfy the proof request")
+        println("####################################################################")
+        println("# 24 Query for credentials in the wallet that satisfy the proof request")
+        println("####################################################################")
         val credentialsJson = DisclosedProofApi.proofRetrieveCredentials(newProof).get()
 
         println("====Credentials in Wallets are ${credentialsJson}")
@@ -163,13 +185,16 @@ fun main(args: Array<String>) {
 
         val generatedProof =  Gson().toJson(proof)
 
-        println(generatedProof)
 
-        print("=====#25 Generate the proof")
+        println("####################################################################")
+        println("# 25 Generate the proof")
+        println("####################################################################")
 
         DisclosedProofApi.proofGenerate(newProof,generatedProof,"{}").get()
 
-        print("====#26 Send the proof to faber")
+        println("####################################################################")
+        println("# 26 Send the proof to faber")
+        println("####################################################################")
 
 
         DisclosedProofApi.proofSend(newProof,conn_to_faber).get()
