@@ -660,7 +660,7 @@ Each proof is associated with a credential and corresponding schema\_id, cred\_d
 There is also aggregated proof part common for all credential proofs.
 ```
     {
-        "requested": {
+        "requested_proof": {
             "revealed_attrs": {
                 "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string},
                 "requested_attr4_id": {sub_proof_index: number: string, encoded: string},
