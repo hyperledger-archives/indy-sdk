@@ -25,10 +25,13 @@ This demo code is written using Kotlin language
 ### Auto generate using ```buildlibs.sh``` and run the example
 
 1. Run ```buildlibs.sh``` to auto generate libs and vcx jar file
-2. Run Faber using ```./gradlew faber```
-3. Copy the connection detail printed on the screen
-4. Open another terminal window and run Alice using ```./gradlew alice```
-5. On alice terminal window once prompted to enter the connection detail, paste the text you copied and press enter
+2. Start the local Sovrin network by following instructions [here](https://github.com/hyperledger/indy-sdk#how-to-start-local-nodes-pool-with-docker)
+3. Start the dummy cloud agent by following instructions [here](https://github.com/hyperledger/indy-sdk/blob/master/vcx/dummy-cloud-agent/README.md)
+    Note: If there is an error starting the dummy cloud agent due port conflict then update the config file in the dummy cloud directory to update the port number
+4. Run Faber using ```./gradlew faber```
+5. Copy the connection detail printed on the screen
+6. Open another terminal window and run Alice using ```./gradlew alice```
+7. On alice terminal window once prompted to enter the connection detail, paste the text you copied and press enter
 
 
 ## Logging
