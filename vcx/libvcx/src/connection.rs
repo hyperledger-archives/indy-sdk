@@ -14,7 +14,7 @@ use messages::GeneralMessage;
 use messages;
 use messages::{MessageStatusCode, RemoteMessageType};
 use messages::invite::{InviteDetail, SenderDetail, Payload as ConnectionPayload, AcceptanceDetails};
-use messages::payload::Payloads;
+use messages::payload::{Payloads, Thread};
 use messages::get_message::Message;
 use serde_json::Value;
 use utils::json::KeyMatch;
@@ -22,6 +22,7 @@ use error::connection::ConnectionError;
 use error::ToErrorCode;
 use object_cache::ObjectCache;
 use utils::constants::DEFAULT_SERIALIZE_VERSION;
+use std::collections::HashMap;
 
 lazy_static! {
     static ref CONNECTION_MAP: ObjectCache<Connection> = Default::default();
@@ -79,6 +80,7 @@ impl Connection {
                 .agent_did(&self.agent_did)?
                 .agent_vk(&self.agent_vk)?
                 .public_did(self.public_did.as_ref().map(String::as_str))?
+                .thread(&Thread::new())?
                 .send_secure()?;
 
         self.state = VcxStateType::VcxStateOfferSent;
@@ -106,7 +108,7 @@ impl Connection {
     fn _connect_accept_invite(&mut self) -> Result<u32, ConnectionError> {
         debug!("accepting invite for connection {}", self.source_id);
 
-        let details = self.invite_detail.as_ref()
+        let details: &InviteDetail = self.invite_detail.as_ref()
             .ok_or_else(|| {
                 warn!("{} can not connect without invite details", self.source_id);
                 // TODO: Refactor Error
@@ -123,10 +125,23 @@ impl Connection {
             .sender_agency_details(&details.sender_agency_detail)?
             .answer_status_code(&MessageStatusCode::Accepted)?
             .reply_to(&details.conn_req_id)?
+            .thread(&self._build_thread(&details))?
             .send_secure()?;
 
         self.state = VcxStateType::VcxStateAccepted;
         Ok(error::SUCCESS.code_num)
+    }
+
+    fn _build_thread(&self, invite_detail: &InviteDetail) -> Thread {
+        let mut received_orders = HashMap::new();
+        received_orders.insert(invite_detail.sender_detail.did.clone(), 0);
+
+        Thread {
+            thid: invite_detail.thread_id.clone(),
+            pthid: None,
+            sender_order: 0,
+            received_orders,
+        }
     }
 
     fn connect(&mut self, options: &ConnectionOptions) -> Result<u32, ConnectionError> {

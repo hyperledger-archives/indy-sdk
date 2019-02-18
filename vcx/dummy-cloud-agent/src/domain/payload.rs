@@ -128,7 +128,7 @@ impl From<RemoteMessageType> for PayloadKinds {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Thread {
     pub thid: Option<String>,
     pub pthid: Option<String>,
