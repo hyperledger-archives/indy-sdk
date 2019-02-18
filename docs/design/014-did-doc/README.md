@@ -153,7 +153,7 @@ pub fn indy_register_indy_did_method(did_resolver_handle,
                                      options) -> Future<()>
 ```
 
-##### Register custom did method with did resolver
+#### Register custom did method with did resolver
 
 ```Rust
 // Register custom did method with did resolver.
