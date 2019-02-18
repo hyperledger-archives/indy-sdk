@@ -40,7 +40,7 @@ public class Ledger extends IndyJava.API {
 		public void callback(int xcommand_handle, int err, String request_result_json) {
 
 			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			String result = request_result_json;
 			future.complete(result);
@@ -56,7 +56,7 @@ public class Ledger extends IndyJava.API {
 		public void callback(int xcommand_handle, int err, String request_result_json) {
 
 			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			String result = request_result_json;
 			future.complete(result);
@@ -72,7 +72,7 @@ public class Ledger extends IndyJava.API {
 		public void callback(int xcommand_handle, int err, String signed_request_json) {
 
 			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			String result = signed_request_json;
 			future.complete(result);
@@ -88,7 +88,7 @@ public class Ledger extends IndyJava.API {
 		public void callback(int xcommand_handle, int err, String request_json) {
 
 			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			String result = request_json;
 			future.complete(result);
@@ -104,7 +104,7 @@ public class Ledger extends IndyJava.API {
 		public void callback(int xcommand_handle, int err, String id, String object_json) {
 
 			CompletableFuture<ParseResponseResult> future = (CompletableFuture<ParseResponseResult>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			ParseResponseResult result = new ParseResponseResult(id, object_json);
 			future.complete(result);
@@ -120,7 +120,7 @@ public class Ledger extends IndyJava.API {
 		public void callback(int xcommand_handle, int err, String id, String object_json, long timestamp) {
 
 			CompletableFuture<ParseRegistryResponseResult> future = (CompletableFuture<ParseRegistryResponseResult>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			ParseRegistryResponseResult result = new ParseRegistryResponseResult(id, object_json, timestamp);
 			future.complete(result);
@@ -171,7 +171,7 @@ public class Ledger extends IndyJava.API {
 				requestJson,
 				signAndSubmitRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -204,7 +204,52 @@ public class Ledger extends IndyJava.API {
 				requestJson,
 				submitRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
+
+		return future;
+	}
+
+	/**
+	 * Send action to particular nodes of validator pool.
+	 *
+	 * The list of requests can be send:
+	 *     POOL_RESTART
+	 *     GET_VALIDATOR_INFO
+	 *
+	 * The request is sent to the nodes as is. It's assumed that it's already prepared.
+	 *
+	 * @param pool        The Pool to publish to.
+	 * @param requestJson Request data json.
+	 * @param nodes      (Optional) List of node names to send the request.
+	 *                   ["Node1", "Node2",...."NodeN"]
+	 * @param timeout    (Optional) Time to wait respond from nodes (override the default timeout) (in sec).
+	 *                   Pass -1 to use default timeout
+	 * @return A future resolving to a request result as json.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<String> submitAction(
+			Pool pool,
+			String requestJson,
+			String nodes,
+			int timeout) throws IndyException {
+
+		ParamGuard.notNull(pool, "pool");
+		ParamGuard.notNullOrWhiteSpace(requestJson, "requestJson");
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int poolHandle = pool.getPoolHandle();
+
+		int result = LibIndy.api.indy_submit_action(
+				commandHandle,
+				poolHandle,
+				requestJson,
+				nodes,
+				timeout,
+				submitRequestCb);
+
+		checkResult(future, result);
 
 		return future;
 	}
@@ -242,7 +287,7 @@ public class Ledger extends IndyJava.API {
 				requestJson,
 				signRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -280,7 +325,7 @@ public class Ledger extends IndyJava.API {
 				requestJson,
 				signRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -288,7 +333,7 @@ public class Ledger extends IndyJava.API {
 	/**
 	 * Builds a request to get a DDO.
 	 *
-	 * @param submitterDid Id of Identity stored in secured Wallet.
+	 * @param submitterDid (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
 	 * @param targetDid    Id of Identity stored in secured Wallet.
 	 * @return A future resolving to a JSON request string.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
@@ -297,7 +342,6 @@ public class Ledger extends IndyJava.API {
 			String submitterDid,
 			String targetDid) throws IndyException {
 
-		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
 		ParamGuard.notNullOrWhiteSpace(targetDid, "targetDid");
 
 		CompletableFuture<String> future = new CompletableFuture<String>();
@@ -309,7 +353,7 @@ public class Ledger extends IndyJava.API {
 				targetDid,
 				buildRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -326,6 +370,7 @@ public class Ledger extends IndyJava.API {
 	 *                     TRUSTEE
 	 *                     STEWARD
 	 *                     TRUST_ANCHOR
+	 *                     NETWORK_MONITOR
 	 *                     empty string to reset role
 	 * @return A future resolving to a request result as json.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
@@ -352,7 +397,7 @@ public class Ledger extends IndyJava.API {
 				role,
 				buildRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -390,7 +435,7 @@ public class Ledger extends IndyJava.API {
 				enc,
 				buildRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -398,7 +443,7 @@ public class Ledger extends IndyJava.API {
 	/**
 	 * Builds a GET_ATTRIB request. Request to get information about an Attribute for the specified DID.
 	 *
-	 * @param submitterDid DID of the read request sender.
+	 * @param submitterDid (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
 	 * @param targetDid    Target DID as base58-encoded string for 16 or 32 bit DID value.
 	 * @param raw          (Optional) Requested attribute name.
 	 * @param hash         (Optional) Requested attribute hash.
@@ -413,7 +458,6 @@ public class Ledger extends IndyJava.API {
 			String hash,
 			String enc) throws IndyException {
 
-		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
 		ParamGuard.notNullOrWhiteSpace(targetDid, "targetDid");
 
 		CompletableFuture<String> future = new CompletableFuture<String>();
@@ -428,7 +472,7 @@ public class Ledger extends IndyJava.API {
 				enc,
 				buildRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -436,7 +480,7 @@ public class Ledger extends IndyJava.API {
 	/**
 	 * Builds a GET_NYM request. Request to get information about a DID (NYM).
 	 *
-	 * @param submitterDid DID of the read request sender.
+	 * @param submitterDid (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
 	 * @param targetDid    Target DID as base58-encoded string for 16 or 32 bit DID value.
 	 * @return A future resolving to a request result as json..
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
@@ -445,7 +489,6 @@ public class Ledger extends IndyJava.API {
 			String submitterDid,
 			String targetDid) throws IndyException {
 
-		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
 		ParamGuard.notNullOrWhiteSpace(targetDid, "targetDid");
 
 		CompletableFuture<String> future = new CompletableFuture<String>();
@@ -457,7 +500,7 @@ public class Ledger extends IndyJava.API {
 				targetDid,
 				buildRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -469,7 +512,7 @@ public class Ledger extends IndyJava.API {
 	 * @param data         Credential schema.
 	 *                     {
 	 *                         id: identifier of schema
-	 *                         attrNames: array of attribute name strings
+	 *                         attrNames: array of attribute name strings (the number of attributes should be less or equal than 125)
 	 *                         name: Schema's name string
 	 *                         version: Schema's version string,
 	 *                         ver: Version of the Schema json
@@ -493,7 +536,7 @@ public class Ledger extends IndyJava.API {
 				data,
 				buildRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -501,7 +544,7 @@ public class Ledger extends IndyJava.API {
 	/**
 	 * Builds a GET_SCHEMA request. Request to get Credential's Schema.
 	 *
-	 * @param submitterDid DID of read request sender.
+	 * @param submitterDid (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
 	 * @param id           Schema ID in ledger
 	 * @return A future resolving to a request result as json.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
@@ -510,7 +553,6 @@ public class Ledger extends IndyJava.API {
 			String submitterDid,
 			String id) throws IndyException {
 
-		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
 		ParamGuard.notNullOrWhiteSpace(id, "id");
 
 		CompletableFuture<String> future = new CompletableFuture<String>();
@@ -522,7 +564,7 @@ public class Ledger extends IndyJava.API {
 				id,
 				buildRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -554,7 +596,7 @@ public class Ledger extends IndyJava.API {
 				getSchemaResponse,
 				parseResponseCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -595,7 +637,7 @@ public class Ledger extends IndyJava.API {
 				data,
 				buildRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -604,7 +646,7 @@ public class Ledger extends IndyJava.API {
 	 * Builds a GET_CRED_DEF request. Request to get a credential definition (in particular, public key),
 	 * that Issuer creates for a particular Credential Schema.
 	 *
-	 * @param submitterDid DID of read request sender.
+	 * @param submitterDid (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
 	 * @param id           Credential Definition ID in ledger.
 	 * @return A future resolving to a request result as json.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
@@ -613,7 +655,6 @@ public class Ledger extends IndyJava.API {
 			String submitterDid,
 			String id) throws IndyException {
 
-		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
 		ParamGuard.notNullOrWhiteSpace(id, "id");
 
 		CompletableFuture<String> future = new CompletableFuture<String>();
@@ -625,7 +666,7 @@ public class Ledger extends IndyJava.API {
 				id,
 				buildRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -661,7 +702,7 @@ public class Ledger extends IndyJava.API {
 				getCredDefResponse,
 				parseResponseCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -703,7 +744,7 @@ public class Ledger extends IndyJava.API {
 				data,
 				buildRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -728,7 +769,7 @@ public class Ledger extends IndyJava.API {
 				submitterDid,
 				buildRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -736,7 +777,7 @@ public class Ledger extends IndyJava.API {
 	/**
 	 * Builds a GET_TXN request. Request to get any transaction by its seq_no.
 	 *
-	 * @param submitterDid DID of read request sender.
+	 * @param submitterDid (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
 	 * @param ledgerType  (Optional) type of the ledger the requested transaction belongs to:
 	 *    DOMAIN - used default,
 	 *    POOL,
@@ -751,8 +792,6 @@ public class Ledger extends IndyJava.API {
 			String ledgerType,
 			int seqNo) throws IndyException {
 
-		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
-
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
@@ -763,7 +802,7 @@ public class Ledger extends IndyJava.API {
 				seqNo,
 				buildRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -796,7 +835,7 @@ public class Ledger extends IndyJava.API {
 				force,
 				buildRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -827,7 +866,7 @@ public class Ledger extends IndyJava.API {
 				datetime,
 				buildRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -847,6 +886,7 @@ public class Ledger extends IndyJava.API {
 	 * @param justification (Optional) justification string for this particular Upgrade.
 	 * @param reinstall     Whether it's allowed to re-install the same version. False by default.
 	 * @param force         Whether we should apply transaction (schedule Upgrade) without waiting for consensus of this transaction.
+	 * @param package_      (Optional) Package to be upgraded.
 	 * @return A future resolving to a JSON request string.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
@@ -860,7 +900,8 @@ public class Ledger extends IndyJava.API {
 			String schedule,
 			String justification,
 			boolean reinstall,
-			boolean force) throws IndyException {
+			boolean force,
+			String package_) throws IndyException {
 
 		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
 
@@ -879,9 +920,10 @@ public class Ledger extends IndyJava.API {
 				justification,
 				reinstall,
 				force,
+				package_,
 				buildRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -924,7 +966,7 @@ public class Ledger extends IndyJava.API {
 				data,
 				buildRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -933,7 +975,7 @@ public class Ledger extends IndyJava.API {
 	 * Builds a GET_REVOC_REG_DEF request. Request to get a revocation registry definition,
 	 * that Issuer creates for a particular Credential Definition.
 	 *
-	 * @param submitterDid DID of the submitter stored in secured Wallet.
+	 * @param submitterDid (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
 	 * @param id           ID of Revocation Registry Definition in ledger.
 	 * @return A future resolving to a request result as json.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
@@ -942,7 +984,6 @@ public class Ledger extends IndyJava.API {
 			String submitterDid,
 			String id) throws IndyException {
 
-		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
 		ParamGuard.notNullOrWhiteSpace(id, "id");
 
 		CompletableFuture<String> future = new CompletableFuture<String>();
@@ -954,7 +995,7 @@ public class Ledger extends IndyJava.API {
 				id,
 				buildRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -993,7 +1034,7 @@ public class Ledger extends IndyJava.API {
 				getRevocRegDefResponse,
 				parseResponseCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -1041,7 +1082,7 @@ public class Ledger extends IndyJava.API {
 				value,
 				buildRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -1050,7 +1091,7 @@ public class Ledger extends IndyJava.API {
 	 * Builds a GET_REVOC_REG request. Request to get the accumulated state of the Revocation Registry
 	 * by ID. The state is defined by the given timestamp.
 	 *
-	 * @param submitterDid  DID of the submitter stored in secured Wallet.
+	 * @param submitterDid  (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
 	 * @param revocRegDefId ID of the corresponding Revocation Registry Definition in ledger.
 	 * @param timestamp     Requested time represented as a total number of seconds from Unix Epoch
 	 * @return A future resolving to a request result as json.
@@ -1061,7 +1102,6 @@ public class Ledger extends IndyJava.API {
 			String revocRegDefId,
 			long timestamp) throws IndyException {
 
-		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
 		ParamGuard.notNullOrWhiteSpace(revocRegDefId, "id");
 
 		CompletableFuture<String> future = new CompletableFuture<String>();
@@ -1074,7 +1114,7 @@ public class Ledger extends IndyJava.API {
 				timestamp,
 				buildRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -1105,7 +1145,7 @@ public class Ledger extends IndyJava.API {
 				getRevocRegResponse,
 				parseRegistryResponseCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -1115,7 +1155,7 @@ public class Ledger extends IndyJava.API {
 	 * The Delta is defined by from and to timestamp fields.
 	 * If from is not specified, then the whole state till to will be returned.
 	 *
-	 * @param submitterDid  DID of the submitter stored in secured Wallet.
+	 * @param submitterDid  (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
 	 * @param revocRegDefId ID of the corresponding Revocation Registry Definition in ledger.
 	 * @param from          Requested time represented as a total number of seconds from Unix Epoch
 	 * @param to            Requested time represented as a total number of seconds from Unix Epoch
@@ -1128,7 +1168,6 @@ public class Ledger extends IndyJava.API {
 			long from,
 			long to) throws IndyException {
 
-		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
 		ParamGuard.notNullOrWhiteSpace(revocRegDefId, "id");
 
 		CompletableFuture<String> future = new CompletableFuture<String>();
@@ -1142,7 +1181,7 @@ public class Ledger extends IndyJava.API {
 				to,
 				buildRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -1176,7 +1215,53 @@ public class Ledger extends IndyJava.API {
 				getRevocRegDeltaResponse,
 				parseRegistryResponseCb);
 
-		checkResult(result);
+		checkResult(future, result);
+
+		return future;
+	}
+
+	/**
+	 * Parse transaction response to fetch metadata.
+	 * The important use case for this method is validation of Node's response freshens.
+	 *
+	 * Distributed Ledgers can reply with outdated information for consequence read request after write.
+	 * To reduce pool load libindy sends read requests to one random node in the pool.
+	 * Consensus validation is performed based on validation of nodes multi signature for current ledger Merkle Trie root.
+	 * This multi signature contains information about the latest ldeger's transaction ordering time and sequence number that this method returns.
+	 *
+	 * If node that returned response for some reason is out of consensus and has outdated ledger
+	 * it can be caught by analysis of the returned latest ledger's transaction ordering time and sequence number.
+	 *
+	 * There are two ways to filter outdated responses:
+	 *     1) based on "seqNo" - sender knows the sequence number of transaction that he consider as a fresh enough.
+	 *     2) based on "txnTime" - sender knows the timestamp that he consider as a fresh enough.
+	 *
+	 * Note: response of GET_VALIDATOR_INFO request isn't supported
+	 *
+	 * @param response response of write or get request.
+	 * @return A future resolving to a Response Metadata.
+	 * {
+	 *     "seqNo": Option<u64> - transaction sequence number,
+	 *     "txnTime": Option<u64> - transaction ordering time,
+	 *     "lastSeqNo": Option<u64> - the latest transaction seqNo for particular Node,
+	 *     "lastTxnTime": Option<u64> - the latest transaction ordering time for particular Node
+	 * }
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<String> getResponseMetadata(
+			String response) throws IndyException {
+
+		ParamGuard.notNullOrWhiteSpace(response, "response");
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int result = LibIndy.api.indy_get_response_metadata(
+				commandHandle,
+				response,
+				buildRequestCb);
+
+		checkResult(future, result);
 
 		return future;
 	}

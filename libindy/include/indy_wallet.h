@@ -141,7 +141,7 @@ extern "C" {
                                                   indy_error_t (*freeSearchFn)(indy_handle_t handle,
                                                                            indy_handle_t search_handle),
 
-                                                  void         (*fn)(indy_handle_t xcommand_handle, indy_error_t err)
+                                                  void         (*fn)(indy_handle_t command_handle_, indy_error_t err)
                                                   );
 
     /// Create a new secure wallet.
@@ -156,20 +156,25 @@ extern "C" {
     ///                  Custom storage types can be registered with indy_register_wallet_storage call.
     ///   "storage_config": optional<object>, Storage configuration json. Storage type defines set of supported keys.
     ///                     Can be optional if storage supports default configuration.
-    //                      For 'default' storage type configuration is:
+    ///                     For 'default' storage type configuration is:
     ///   {
     ///     "path": optional<string>, Path to the directory with wallet files.
-    ///             Defaults to $HOME/.indy_client/wallets.
+    ///             Defaults to $HOME/.indy_client/wallet.
     ///             Wallet will be stored in the file {path}/{id}/sqlite.db
     ///   }
     /// }
     /// credentials: Wallet credentials json
     /// {
-    ///   "key": string, Passphrase used to derive wallet master key
+    ///   "key": string, Key or passphrase used for wallet key derivation.
+    ///                  Look to key_derivation_method param for information about supported key derivation methods.
     ///   "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
     ///                          Can be optional if storage supports default configuration.
-    //                           For 'default' storage type should be empty.
-    ///
+    ///                          For 'default' storage type should be empty.
+    ///   "key_derivation_method": optional<string> Algorithm to use for wallet key derivation:
+    ///                          ARGON2I_MOD - derive secured wallet master key (used by default)
+    ///                          ARGON2I_INT - derive secured wallet master key (less secured but faster)
+    ///                          RAW - raw wallet key master provided (skip derivation).
+    ///                                RAW keys can be generated with indy_generate_wallet_key call
     /// }
     ///
     /// #Returns
@@ -182,7 +187,7 @@ extern "C" {
     extern indy_error_t indy_create_wallet(indy_handle_t  command_handle,
                                            const char*    config,
                                            const char*    credentials,
-                                           void           (*fn)(indy_handle_t xcommand_handle, indy_error_t err)
+                                           void           (*fn)(indy_handle_t command_handle_, indy_error_t err)
                                           );
 
     /// Open the wallet.
@@ -199,23 +204,32 @@ extern "C" {
     ///                       Custom storage types can be registered with indy_register_wallet_storage call.
     ///       "storage_config": optional<object>, Storage configuration json. Storage type defines set of supported keys.
     ///                         Can be optional if storage supports default configuration.
-    //                          For 'default' storage type configuration is:
+    ///                         For 'default' storage type configuration is:
     ///           {
     ///              "path": optional<string>, Path to the directory with wallet files.
-    ///                      Defaults to $HOME/.indy_client/wallets.
+    ///                      Defaults to $HOME/.indy_client/wallet.
     ///                      Wallet will be stored in the file {path}/{id}/sqlite.db
     ///           }
     ///
     ///   }
     /// credentials: Wallet credentials json
     ///   {
-    ///       "key": string, Passphrase used to derive current wallet master key
-    ///       "rekey": optional<string>, If present than wallet master key will be rotated to a new one
-    ///                                  derived from this passphrase.
+    ///       "key": string, Key or passphrase used for wallet key derivation.
+    ///                      Look to key_derivation_method param for information about supported key derivation methods.
+    ///       "rekey": optional<string>, If present than wallet master key will be rotated to a new one.
     ///       "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
     ///                              Can be optional if storage supports default configuration.
-    //                               For 'default' storage type should be empty.
-    ///
+    ///                              For 'default' storage type should be empty.
+    ///       "key_derivation_method": optional<string> Algorithm to use for wallet key derivation:
+    ///                          ARGON2I_MOD - derive secured wallet master key (used by default)
+    ///                          ARGON2I_INT - derive secured wallet master key (less secured but faster)
+    ///                          RAW - raw wallet key master provided (skip derivation).
+    ///                                RAW keys can be generated with indy_generate_wallet_key call
+    ///       "rekey_derivation_method": optional<string> Algorithm to use for wallet rekey derivation:
+    ///                          ARGON2I_MOD - derive secured wallet master rekey (used by default)
+    ///                          ARGON2I_INT - derive secured wallet master rekey (less secured but faster)
+    ///                          RAW - raw wallet key master provided (skip derivation).
+    ///                                RAW keys can be generated with indy_generate_wallet_key call
     ///   }
     ///
     /// #Returns
@@ -229,17 +243,23 @@ extern "C" {
     extern indy_error_t indy_open_wallet(indy_handle_t  command_handle,
                                          const char*    config,
                                          const char*    credentials,
-                                         void           (*fn)(indy_handle_t xcommand_handle, indy_error_t err, indy_handle_t handle)
+                                         void           (*fn)(indy_handle_t command_handle_, indy_error_t err, indy_handle_t handle)
                                         );
 
-    /// Exports opened wallet's content using key and path provided in export_config_json
+    /// Exports opened wallet
     ///
-    /// #Params
-    /// wallet_handle: wallet handle returned by indy_open_wallet.
-    /// export_config_json: JSON containing settings for input operation.
+    /// #Params:
+    /// wallet_handle: wallet handle returned by indy_open_wallet
+    /// export_config: JSON containing settings for input operation.
     ///   {
-    ///     "path": path of the file that contains exported wallet content
-    ///     "key": passphrase used to derive export key
+    ///     "path": <string>, Path of the file that contains exported wallet content
+    ///     "key": <string>, Key or passphrase used for wallet export key derivation.
+    ///                     Look to key_derivation_method param for information about supported key derivation methods.
+    ///     "key_derivation_method": optional<string> Algorithm to use for export key derivation:
+    ///                              ARGON2I_MOD - derive secured export key (used by default)
+    ///                              ARGON2I_INT - derive secured export key (less secured but faster)
+    ///                              RAW - raw export key provided (skip derivation).
+    ///                                RAW keys can be generated with indy_generate_wallet_key call
     ///   }
     ///
     /// #Returns
@@ -252,7 +272,7 @@ extern "C" {
     extern indy_error_t indy_export_wallet(indy_handle_t  command_handle,
                                            indy_handle_t  wallet_handle,
                                            const char*    export_config_json,
-                                           void           (*fn)(indy_handle_t xcommand_handle, indy_error_t err)
+                                           void           (*fn)(indy_handle_t command_handle_, indy_error_t err)
                                            );
 
 
@@ -270,25 +290,30 @@ extern "C" {
     ///                  Custom storage types can be registered with indy_register_wallet_storage call.
     ///   "storage_config": optional<object>, Storage configuration json. Storage type defines set of supported keys.
     ///                     Can be optional if storage supports default configuration.
-    //                      For 'default' storage type configuration is:
+    ///                     For 'default' storage type configuration is:
     ///   {
     ///     "path": optional<string>, Path to the directory with wallet files.
-    ///             Defaults to $HOME/.indy_client/wallets.
+    ///             Defaults to $HOME/.indy_client/wallet.
     ///             Wallet will be stored in the file {path}/{id}/sqlite.db
     ///   }
     /// }
     /// credentials: Wallet credentials json
     /// {
-    ///   "key": string, Passphrase used to derive wallet master key
+    ///   "key": string, Key or passphrase used for wallet key derivation.
+    ///                  Look to key_derivation_method param for information about supported key derivation methods.
     ///   "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
     ///                          Can be optional if storage supports default configuration.
-    //                           For 'default' storage type should be empty.
-    ///
+    ///                          For 'default' storage type should be empty.
+    ///   "key_derivation_method": optional<string> Algorithm to use for wallet key derivation:
+    ///                             ARGON2I_MOD - derive secured wallet master key (used by default)
+    ///                             ARGON2I_INT - derive secured wallet master key (less secured but faster)
+    ///                             RAW - raw wallet key master provided (skip derivation).
+    ///                                RAW keys can be generated with indy_generate_wallet_key call
     /// }
     /// import_config: Import settings json.
     /// {
     ///   "path": <string>, path of the file that contains exported wallet content
-    ///   "key": <string>, passphrase used to derive export key
+    ///   "key": <string>, key used for export of the wallet
     /// }
     ///
     /// #Returns
@@ -302,7 +327,7 @@ extern "C" {
                                            const char*    config,
                                            const char*    credentials,
                                            const char*    import_config_json,
-                                           void           (*fn)(indy_handle_t xcommand_handle, indy_error_t err)
+                                           void           (*fn)(indy_handle_t command_handle_, indy_error_t err)
                                            );
 
     /// Closes opened wallet and frees allocated resources.
@@ -319,7 +344,7 @@ extern "C" {
 
     extern indy_error_t indy_close_wallet(indy_handle_t  command_handle,
                                           indy_handle_t  wallet_handle,
-                                          void           (*fn)(indy_handle_t xcommand_handle, indy_error_t err)
+                                          void           (*fn)(indy_handle_t command_handle_, indy_error_t err)
                                          );
 
     /// Deletes created wallet.
@@ -334,20 +359,25 @@ extern "C" {
     ///                  Custom storage types can be registered with indy_register_wallet_storage call.
     ///   "storage_config": optional<object>, Storage configuration json. Storage type defines set of supported keys.
     ///                     Can be optional if storage supports default configuration.
-    //                      For 'default' storage type configuration is:
+    ///                     For 'default' storage type configuration is:
     ///   {
     ///     "path": optional<string>, Path to the directory with wallet files.
-    ///             Defaults to $HOME/.indy_client/wallets.
+    ///             Defaults to $HOME/.indy_client/wallet.
     ///             Wallet will be stored in the file {path}/{id}/sqlite.db
     ///   }
     /// }
     /// credentials: Wallet credentials json
     /// {
-    ///   "key": string, Passphrase used to derive wallet master key
+    ///   "key": string, Key or passphrase used for wallet key derivation.
+    ///                  Look to key_derivation_method param for information about supported key derivation methods.
     ///   "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
     ///                          Can be optional if storage supports default configuration.
-    //                           For 'default' storage type should be empty.
-    ///
+    ///                          For 'default' storage type should be empty.
+    ///   "key_derivation_method": optional<string> Algorithm to use for wallet key derivation:
+    ///                             ARGON2I_MOD - derive secured wallet master key (used by default)
+    ///                             ARGON2I_INT - derive secured wallet master key (less secured but faster)
+    ///                             RAW - raw wallet key master provided (skip derivation).
+    ///                                RAW keys can be generated with indy_generate_wallet_key call
     /// }
     ///
     /// #Returns
@@ -360,8 +390,33 @@ extern "C" {
     extern indy_error_t indy_delete_wallet(indy_handle_t  command_handle,
                                            const char*    config,
                                            const char*    credentials,
-                                           void           (*fn)(indy_handle_t xcommand_handle, indy_error_t err)
+                                           void           (*fn)(indy_handle_t command_handle_, indy_error_t err)
                                           );
+
+    /// Generate wallet master key.
+    /// Returned key is compatible with "RAW" key derivation method.
+    /// It allows to avoid expensive key derivation for use cases when wallet keys can be stored in a secure enclave.
+    ///
+    /// #Params
+    /// config: (optional) key configuration json.
+    /// {
+    ///   "seed": string, (optional) Seed that allows deterministic key creation (if not set random one will be created).
+    ///                              Can be UTF-8, base64 or hex string.
+    /// }
+    ///
+    /// #Returns
+    /// err: Error code
+    ///
+    /// #Errors
+    /// Common*
+    /// Wallet*
+    extern indy_error_t indy_generate_wallet_key(indy_handle_t     command_handle,
+                                                 const char *const config,
+
+                                                 void              (*cb)(indy_handle_t     command_handle,
+                                                                         indy_error_t      err,
+                                                                         const char *const key)
+                                                );
 
 #ifdef __cplusplus
 }

@@ -219,6 +219,7 @@ def issuer_2_gvt_cred_offer_json(credential_offer_issuer_2_schema_1):
 
 @pytest.fixture(scope="session")
 def gvt_cred_values():
+    # note that encoding is not standardized by Indy except that 32-bit integers are encoded as themselves. IS-786
     return {
         "sex": {
             "raw": "male", "encoded": "5944657099558967239210949258394887428692050081607692519917050011144233115103"},

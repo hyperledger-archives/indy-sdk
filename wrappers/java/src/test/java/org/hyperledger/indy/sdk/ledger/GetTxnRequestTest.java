@@ -7,6 +7,7 @@ import org.hyperledger.indy.sdk.IndyIntegrationTestWithPoolAndSingleWallet;
 import org.hyperledger.indy.sdk.utils.PoolUtils;
 import org.json.JSONObject;
 import org.junit.Test;
+import org.hyperledger.indy.sdk.JsonObjectSimilar;
 
 public class GetTxnRequestTest extends IndyIntegrationTestWithPoolAndSingleWallet {
 
@@ -56,7 +57,7 @@ public class GetTxnRequestTest extends IndyIntegrationTestWithPoolAndSingleWalle
 			JSONObject schemaTransactionObj =
 					getTxnResponseObj.getJSONObject("result").getJSONObject("data").getJSONObject("txn").getJSONObject("data").getJSONObject("data");
 
-			return new JSONObject(expectedData).similar(schemaTransactionObj);
+			return JsonObjectSimilar.similar(new JSONObject(expectedData), schemaTransactionObj);
 		});
 		assertNotNull(getTxnResponse);
 	}

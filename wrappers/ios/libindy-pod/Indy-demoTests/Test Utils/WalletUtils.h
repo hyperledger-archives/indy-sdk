@@ -11,8 +11,6 @@
 
 + (WalletUtils *)sharedInstance;
 
-- (NSError *)registerWalletType:(NSString *)xtype;
-
 - (NSError *)createAndOpenWalletWithHandle:(IndyHandle *)handle;
 
 - (NSError *)createWalletWithConfig:(NSString *)config;
@@ -29,5 +27,9 @@
 
 - (NSError *)importWalletWithConfig:(NSString *)config
                    importConfigJson:(NSString *)importConfigJson;
+
+
+- (NSError *)generateWalletKeyForConfig:(NSString *)configJson
+                                    key:(NSString **)key;
 
 @end

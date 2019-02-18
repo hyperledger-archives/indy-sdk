@@ -51,7 +51,7 @@
  with at least one output that corresponds to payment address that user owns.
 
  @param requestJson Request data json.
- @param submitterDid Id of Identity stored in secured Wallet.
+ @param submitterDid (Optional) DID of request sender
  @param walletHandle Wallet handle (created by IndyWallet::openWalletWithName).
  @param inputsJson The list of payment sources as json array:
    ["source1", ...]
@@ -96,7 +96,7 @@
  according to this payment method.
 
  @param requestJson Request data json.
- @param submitterDid Id of Identity stored in secured Wallet.
+ @param submitterDid (Optional) DID of request sender
  @param walletHandle Wallet handle (created by IndyWallet::openWalletWithName).
  @param paymentAddress Target payment address
  @param completion Callback that takes command result as parameter. 
@@ -139,7 +139,7 @@
  with at least one output that corresponds to payment address that user owns.
 
  @param requestJson Request data json.
- @param submitterDid Id of Identity stored in secured Wallet.
+ @param submitterDid (Optional) DID of request sender
  @param walletHandle Wallet handle (created by IndyWallet::openWalletWithName).
  @param inputsJson The list of payment sources as json array:
    ["source1", ...]
@@ -184,7 +184,7 @@
  Builds Indy request for doing minting according to this payment method.
 
  @param requestJson Request data json.
- @param submitterDid Id of Identity stored in secured Wallet.
+ @param submitterDid (Optional) DID of request sender
  @param walletHandle Wallet handle (created by IndyWallet::openWalletWithName).
  @param outputsJson The list of outputs as json array:
    [{
@@ -207,7 +207,7 @@
  Builds Indy request for setting fees for transactions in the ledger
 
  @param requestJson Request data json.
- @param submitterDid Id of Identity stored in secured Wallet.
+ @param submitterDid (Optional) DID of request sender
  @param walletHandle Wallet handle (created by IndyWallet::openWalletWithName).
  @param paymentMethod
  @param feesJson {
@@ -228,7 +228,7 @@
  Builds Indy request for getting fees for transactions in the ledger
 
  @param requestJson Request data json.
- @param submitterDid Id of Identity stored in secured Wallet.
+ @param submitterDid (Optional) DID of request sender
  @param walletHandle Wallet handle (created by IndyWallet::openWalletWithName).
  @param paymentMethod
  @param completion Callback that takes command result as parameter. Returns getTxnFeesRequest json.
@@ -259,7 +259,7 @@
 /**
  Builds Indy request for information to verify the payment receipt
 
- @param submitterDid Id of Identity stored in secured Wallet.
+ @param submitterDid (Optional) DID of request sender
  @param walletHandle Wallet handle (created by IndyWallet::openWalletWithName).
  @param receipt: Payment receipt to verify
  @param completion Callback that takes command result as parameter. 

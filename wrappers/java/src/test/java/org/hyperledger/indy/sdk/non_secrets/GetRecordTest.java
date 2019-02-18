@@ -10,6 +10,7 @@ import static org.hamcrest.CoreMatchers.isA;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import org.hyperledger.indy.sdk.JsonObjectSimilar;
 
 public class GetRecordTest extends NonSecretsIntegrationTest {
 
@@ -27,7 +28,7 @@ public class GetRecordTest extends NonSecretsIntegrationTest {
 				.put("value", value)
 				.put("tags", JSONObject.NULL);
 
-		assertTrue(expected.similar(actual));
+		assertTrue(JsonObjectSimilar.similar(expected, actual));
 
 	}
 
@@ -46,7 +47,7 @@ public class GetRecordTest extends NonSecretsIntegrationTest {
 		assertEquals(id, record.getString("id"));
 		assertEquals(type, record.getString("type"));
 		assertEquals(value, record.getString("value"));
-		assertTrue(new JSONObject(tags).similar(record.getJSONObject("tags")));
+		assertTrue(JsonObjectSimilar.similar(new JSONObject(tags), record.getJSONObject("tags")));
 	}
 
 	@Test

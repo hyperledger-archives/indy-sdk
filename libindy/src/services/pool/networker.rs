@@ -1,18 +1,21 @@
-extern crate zmq;
 extern crate time;
+extern crate zmq;
 
-use errors::common::CommonError;
-use errors::pool::PoolError;
-use self::zmq::PollItem;
-use self::zmq::Socket as ZSocket;
-use services::pool::events::*;
-use services::pool::types::*;
 use std::cell::RefCell;
 use std::collections::{BTreeMap, HashMap, HashSet};
-use super::time::Duration;
+
+use rand::{Rng, thread_rng};
 use time::Tm;
-use utils::sequence::SequenceUtils;
-use rand::{thread_rng, Rng};
+
+use errors::prelude::*;
+use services::pool::events::*;
+use services::pool::types::*;
+use utils::sequence;
+
+use super::time::Duration;
+
+use self::zmq::PollItem;
+use self::zmq::Socket as ZSocket;
 
 pub trait Networker {
     fn new(active_timeout: i64, conn_limit: usize, preordered_nodes: Vec<String>) -> Self;
@@ -54,7 +57,7 @@ impl Networker for ZMQNetworker {
 
     fn process_event(&mut self, pe: Option<NetworkerEvent>) -> Option<RequestEvent> {
         match pe.clone() {
-            Some(NetworkerEvent::SendAllRequest(_, req_id, _)) | Some(NetworkerEvent::SendOneRequest(_, req_id, _)) | Some(NetworkerEvent::Resend(req_id, _)) => {
+            Some(NetworkerEvent::SendAllRequest(_, req_id, _, _)) | Some(NetworkerEvent::SendOneRequest(_, req_id, _)) | Some(NetworkerEvent::Resend(req_id, _)) => {
                 let num = self.req_id_mappings.get(&req_id).map(|i| i.clone()).or_else(|| {
                     trace!("sending new request");
                     self.pool_connections.iter().next_back().and_then(|(pc_idx, pc)| {
@@ -81,7 +84,7 @@ impl Networker for ZMQNetworker {
                     }
                     None => {
                         trace!("send request in new conn");
-                        let pc_id = SequenceUtils::get_next_id();
+                        let pc_id = sequence::get_next_id();
                         let mut pc = PoolConnection::new(self.nodes.clone(), self.active_timeout, self.preordered_nodes.clone());
                         pc.send_request(pe).expect("FIXME");
                         self.pool_connections.insert(pc_id, pc);
@@ -251,7 +254,7 @@ impl PoolConnection {
         res
     }
 
-    fn send_request(&mut self, pe: Option<NetworkerEvent>) -> Result<(), PoolError> {
+    fn send_request(&mut self, pe: Option<NetworkerEvent>) -> IndyResult<()> {
         trace!("send_request >> pe: {:?}", pe);
         match pe {
             Some(NetworkerEvent::SendOneRequest(msg, req_id, timeout)) => {
@@ -259,10 +262,12 @@ impl PoolConnection {
                 self._send_msg_to_one_node(0, req_id.clone(), msg.clone(), timeout)?;
                 self.resend.borrow_mut().insert(req_id, (0, msg));
             }
-            Some(NetworkerEvent::SendAllRequest(msg, req_id, timeout)) => {
+            Some(NetworkerEvent::SendAllRequest(msg, req_id, timeout, nodes_to_send)) => {
                 self.req_cnt += 1;
                 for idx in 0..self.nodes.len() {
-                    self._send_msg_to_one_node(idx, req_id.clone(), msg.clone(), timeout)?;
+                    if nodes_to_send.as_ref().map(|nodes| nodes.contains(&self.nodes[idx].name)).unwrap_or(true) {
+                        self._send_msg_to_one_node(idx, req_id.clone(), msg.clone(), timeout)?;
+                    }
                 }
             }
             Some(NetworkerEvent::Resend(req_id, timeout)) => {
@@ -313,7 +318,7 @@ impl PoolConnection {
         !self.is_active() && !self.has_active_requests()
     }
 
-    fn _send_msg_to_one_node(&mut self, idx: usize, req_id: String, req: String, timeout: i64) -> Result<(), PoolError> {
+    fn _send_msg_to_one_node(&mut self, idx: usize, req_id: String, req: String, timeout: i64) -> IndyResult<()> {
         trace!("_send_msg_to_one_node >> idx {}, req_id {}, req {}", idx, req_id, req);
         {
             let s = self._get_socket(idx)?;
@@ -324,7 +329,7 @@ impl PoolConnection {
         Ok(())
     }
 
-    fn _get_socket(&mut self, idx: usize) -> Result<&ZSocket, PoolError> {
+    fn _get_socket(&mut self, idx: usize) -> IndyResult<&ZSocket> {
         if self.sockets[idx].is_none() {
             debug!("_get_socket: open new socket for node {}", idx);
             let s: ZSocket = self.nodes[idx].connect(&self.ctx, &self.key_pair)?;
@@ -335,14 +340,14 @@ impl PoolConnection {
 }
 
 impl RemoteNode {
-    fn connect(&self, ctx: &zmq::Context, key_pair: &zmq::CurveKeyPair) -> Result<ZSocket, PoolError> {
+    fn connect(&self, ctx: &zmq::Context, key_pair: &zmq::CurveKeyPair) -> IndyResult<ZSocket> {
         let s = ctx.socket(zmq::SocketType::DEALER)?;
         s.set_identity(key_pair.public_key.as_bytes())?;
         s.set_curve_secretkey(&key_pair.secret_key)?;
         s.set_curve_publickey(&key_pair.public_key)?;
         s.set_curve_serverkey(
             zmq::z85_encode(self.public_key.as_slice())
-                .map_err(|err| { CommonError::InvalidStructure(format!("Can't encode server key as z85: {:?}", err)) })?
+                .to_indy(IndyErrorKind::InvalidStructure, "Can't encode server key as z85")? // FIXME: review kind
                 .as_str())?;
         s.set_linger(0)?; //TODO set correct timeout
         s.connect(&self.zaddr)?;
@@ -351,19 +356,24 @@ impl RemoteNode {
 }
 
 #[cfg(test)]
-pub struct MockNetworker {}
+pub struct MockNetworker {
+    pub events: Vec<Option<NetworkerEvent>>,
+}
 
 #[cfg(test)]
 impl Networker for MockNetworker {
     fn new(_active_timeout: i64, _conn_limit: usize, _preordered_nodes: Vec<String>) -> Self {
-        MockNetworker {}
+        MockNetworker {
+            events: Vec::new(),
+        }
     }
 
     fn fetch_events(&self, _poll_items: &[zmq::PollItem]) -> Vec<PoolEvent> {
         unimplemented!()
     }
 
-    fn process_event(&mut self, _pe: Option<NetworkerEvent>) -> Option<RequestEvent> {
+    fn process_event(&mut self, pe: Option<NetworkerEvent>) -> Option<RequestEvent> {
+        self.events.push(pe);
         None
     }
 
@@ -379,13 +389,15 @@ impl Networker for MockNetworker {
 
 #[cfg(test)]
 pub mod networker_tests {
-    use domain::pool::{POOL_ACK_TIMEOUT, POOL_REPLY_TIMEOUT, MAX_REQ_PER_POOL_CON, POOL_CON_ACTIVE_TO};
-    use services::pool::rust_base58::FromBase58;
-    use services::pool::tests::nodes_emulator;
     use std;
     use std::thread;
+
+    use domain::pool::{MAX_REQ_PER_POOL_CON, POOL_ACK_TIMEOUT, POOL_CON_ACTIVE_TO, POOL_REPLY_TIMEOUT};
+    use services::pool::rust_base58::FromBase58;
+    use services::pool::tests::nodes_emulator;
+    use utils::crypto::ed25519_sign;
+
     use super::*;
-    use utils::crypto::box_::CryptoBox;
 
     const REQ_ID: &'static str = "1";
     const MESSAGE: &'static str = "msg";
@@ -393,7 +405,7 @@ pub mod networker_tests {
 
     pub fn _remote_node(txn: &NodeTransactionV1) -> RemoteNode {
         RemoteNode {
-            public_key: CryptoBox::vk_to_curve25519(&txn.txn.data.dest.as_str().from_base58().unwrap()).unwrap(),
+            public_key: ed25519_sign::vk_to_curve25519(&ed25519_sign::PublicKey::from_slice(&txn.txn.data.dest.as_str().from_base58().unwrap()).unwrap()).unwrap()[..].to_vec(),
             zaddr: format!("tcp://{}:{}", txn.txn.data.data.client_ip.clone().unwrap(), txn.txn.data.data.client_port.clone().unwrap()),
             name: txn.txn.data.data.alias.clone(),
             is_blacklisted: false,
@@ -402,8 +414,9 @@ pub mod networker_tests {
 
     #[cfg(test)]
     mod networker {
-        use super::*;
         use std::ops::Sub;
+
+        use super::*;
 
         #[test]
         pub fn networker_new_works() {
@@ -448,8 +461,8 @@ pub mod networker_tests {
             assert_eq!(1, networker.req_id_mappings.len());
             assert!(networker.req_id_mappings.contains_key(REQ_ID));
 
-            let messages = handle.join().unwrap();
-            assert_eq!(vec![MESSAGE.to_string()], messages);
+            assert_eq!(MESSAGE.to_string(), nodes_emulator::next(&handle).unwrap());
+            assert!(nodes_emulator::next(&handle).is_none());
         }
 
         #[test]
@@ -465,13 +478,12 @@ pub mod networker_tests {
             let mut networker = ZMQNetworker::new(POOL_CON_ACTIVE_TO, MAX_REQ_PER_POOL_CON, vec![]);
 
             networker.process_event(Some(NetworkerEvent::NodesStateUpdated(vec![rn_1, rn_2])));
-            networker.process_event(Some(NetworkerEvent::SendAllRequest(MESSAGE.to_string(), REQ_ID.to_string(), POOL_ACK_TIMEOUT)));
+            networker.process_event(Some(NetworkerEvent::SendAllRequest(MESSAGE.to_string(), REQ_ID.to_string(), POOL_ACK_TIMEOUT, None)));
 
-            let messages = handle_1.join().unwrap();
-            assert_eq!(vec![MESSAGE.to_string()], messages);
-
-            let messages = handle_2.join().unwrap();
-            assert_eq!(vec![MESSAGE.to_string()], messages);
+            for handle in vec![handle_1, handle_2] {
+                assert_eq!(MESSAGE.to_string(), nodes_emulator::next(&handle).unwrap());
+                assert!(nodes_emulator::next(&handle).is_none());
+            }
         }
 
         #[test]
@@ -491,15 +503,40 @@ pub mod networker_tests {
             networker.process_event(Some(NetworkerEvent::NodesStateUpdated(vec![rn_1, rn_2])));
 
             for i in 0..send_cnt {
-                networker.process_event(Some(NetworkerEvent::SendAllRequest(MESSAGE.to_string(), i.to_string(), POOL_ACK_TIMEOUT)));
+                networker.process_event(Some(NetworkerEvent::SendAllRequest(MESSAGE.to_string(), i.to_string(), POOL_ACK_TIMEOUT, None)));
                 assert_eq!(1, networker.pool_connections.len());
             }
 
-            let messages = handle_1.join().unwrap();
-            assert_eq!(vec![MESSAGE.to_string(); send_cnt], messages);
 
-            let messages = handle_2.join().unwrap();
-            assert_eq!(vec![MESSAGE.to_string(); send_cnt], messages);
+            for handle in vec![handle_1, handle_2] {
+                let mut messages = Vec::new();
+                for _ in 0..send_cnt {
+                    messages.push(nodes_emulator::next(&handle).unwrap());
+                }
+                assert!(nodes_emulator::next(&handle).is_none());
+                assert_eq!(vec![MESSAGE.to_string(); send_cnt], messages);
+            }
+        }
+
+        #[test]
+        fn networker_process_send_all_request_event_works_for_list_nodes() {
+            let mut txn_1 = nodes_emulator::node();
+            let handle_1 = nodes_emulator::start(&mut txn_1);
+            let rn_1 = _remote_node(&txn_1);
+
+            let mut txn_2 = nodes_emulator::node_2();
+            let handle_2 = nodes_emulator::start(&mut txn_2);
+            let rn_2 = _remote_node(&txn_2);
+
+            let mut networker = ZMQNetworker::new(POOL_CON_ACTIVE_TO, MAX_REQ_PER_POOL_CON, vec![]);
+
+            networker.process_event(Some(NetworkerEvent::NodesStateUpdated(vec![rn_1, rn_2])));
+            networker.process_event(Some(NetworkerEvent::SendAllRequest(MESSAGE.to_string(), REQ_ID.to_string(), POOL_ACK_TIMEOUT, Some(vec![NODE_NAME.to_string()]))));
+
+            assert_eq!(MESSAGE.to_string(), nodes_emulator::next(&handle_1).unwrap());
+            assert!(nodes_emulator::next(&handle_1).is_none());
+
+            assert!(nodes_emulator::next(&handle_2).is_none());
         }
 
         #[test]
@@ -518,6 +555,11 @@ pub mod networker_tests {
 
             networker.process_event(Some(NetworkerEvent::SendOneRequest(MESSAGE.to_string(), "6".to_string(), POOL_ACK_TIMEOUT)));
             assert_eq!(2, networker.pool_connections.len());
+
+            let mut pc_iter = networker.pool_connections.values();
+            let first_pc = pc_iter.next().unwrap();
+            let second_pc = pc_iter.next().unwrap();
+            assert_ne!(first_pc.key_pair.public_key, second_pc.key_pair.public_key);
         }
 
         #[test]
@@ -682,13 +724,14 @@ pub mod networker_tests {
             rn.zaddr = "invalid_address".to_string();
 
             let res = rn.connect(&zmq::Context::new(), &zmq::CurveKeyPair::new().unwrap());
-            assert_match!(Err(PoolError::CommonError(_)), res);
+            assert_kind!(IndyErrorKind::IOError, res);
         }
     }
 
     #[cfg(test)]
     mod pool_connection {
         use std::ops::Sub;
+
         use super::*;
 
         #[test]
@@ -851,7 +894,7 @@ pub mod networker_tests {
             let mut conn = PoolConnection::new(vec![rn], POOL_CON_ACTIVE_TO, vec![]);
 
             let res = conn._get_socket(0);
-            assert_match!(Err(PoolError::CommonError(_)), res);
+            assert_kind!(IndyErrorKind::IOError, res);
         }
 
         #[test]
@@ -865,8 +908,9 @@ pub mod networker_tests {
             conn.send_request(Some(NetworkerEvent::SendOneRequest(MESSAGE.to_string(), REQ_ID.to_string(), POOL_ACK_TIMEOUT))).unwrap();
             conn.send_request(Some(NetworkerEvent::SendOneRequest("msg2".to_string(), "12".to_string(), POOL_ACK_TIMEOUT))).unwrap();
 
-            let messages = handle.join().unwrap();
-            assert_eq!(vec![MESSAGE.to_string(), "msg2".to_string()], messages);
+            assert_eq!(MESSAGE.to_string(), nodes_emulator::next(&handle).unwrap());
+            assert_eq!("msg2".to_string(), nodes_emulator::next(&handle).unwrap());
+            assert!(nodes_emulator::next(&handle).is_none());
         }
 
         #[test]
@@ -883,11 +927,10 @@ pub mod networker_tests {
 
             conn.send_request(Some(NetworkerEvent::SendOneRequest(MESSAGE.to_string(), REQ_ID.to_string(), POOL_ACK_TIMEOUT))).unwrap();
 
-            let messages = handle_1.join().unwrap();
-            assert_eq!(vec![MESSAGE.to_string()], messages);
+            assert_eq!(MESSAGE.to_string(), nodes_emulator::next(&handle_1).unwrap());
+            assert!(nodes_emulator::next(&handle_1).is_none());
 
-            let messages = handle_2.join().unwrap();
-            assert!(messages.is_empty());
+            assert!(nodes_emulator::next(&handle_2).is_none());
         }
 
         #[test]
@@ -902,13 +945,12 @@ pub mod networker_tests {
 
             let mut conn = PoolConnection::new(vec![rn_1, rn_2], POOL_CON_ACTIVE_TO, vec![]);
 
-            conn.send_request(Some(NetworkerEvent::SendAllRequest(MESSAGE.to_string(), REQ_ID.to_string(), POOL_ACK_TIMEOUT))).unwrap();
+            conn.send_request(Some(NetworkerEvent::SendAllRequest(MESSAGE.to_string(), REQ_ID.to_string(), POOL_ACK_TIMEOUT, None))).unwrap();
 
-            let messages = handle_1.join().unwrap();
-            assert_eq!(vec![MESSAGE.to_string()], messages);
-
-            let messages = handle_2.join().unwrap();
-            assert_eq!(vec![MESSAGE.to_string()], messages);
+            for handle in vec![handle_1, handle_2] {
+                assert_eq!(MESSAGE.to_string(), nodes_emulator::next(&handle).unwrap());
+                assert!(nodes_emulator::next(&handle).is_none());
+            }
         }
 
         #[test]
@@ -923,9 +965,9 @@ pub mod networker_tests {
 
             conn.send_request(Some(NetworkerEvent::Resend(REQ_ID.to_string(), POOL_ACK_TIMEOUT))).unwrap();
 
-            let messages = handle.join().unwrap();
-
-            assert_eq!(vec![MESSAGE.to_string(), MESSAGE.to_string()], messages);
+            assert_eq!(MESSAGE.to_string(), nodes_emulator::next(&handle).unwrap());
+            assert_eq!(MESSAGE.to_string(), nodes_emulator::next(&handle).unwrap());
+            assert!(nodes_emulator::next(&handle).is_none());
         }
 
         #[test]
@@ -944,11 +986,10 @@ pub mod networker_tests {
 
             conn.send_request(Some(NetworkerEvent::Resend(REQ_ID.to_string(), POOL_ACK_TIMEOUT))).unwrap();
 
-            let messages = handle_1.join().unwrap();
-            assert_eq!(vec![MESSAGE.to_string()], messages);
-
-            let messages = handle_2.join().unwrap();
-            assert_eq!(vec![MESSAGE.to_string()], messages);
+            for handle in vec![handle_1, handle_2] {
+                assert_eq!(MESSAGE.to_string(), nodes_emulator::next(&handle).unwrap());
+                assert!(nodes_emulator::next(&handle).is_none());
+            }
         }
 
         #[test]
@@ -960,8 +1001,7 @@ pub mod networker_tests {
             let mut conn = PoolConnection::new(vec![rn], POOL_CON_ACTIVE_TO, vec![]);
 
             let res = conn.send_request(Some(NetworkerEvent::SendOneRequest(MESSAGE.to_string(), REQ_ID.to_string(), POOL_ACK_TIMEOUT)));
-
-            assert_match!(Err(PoolError::CommonError(_)), res);
+            assert_kind!(IndyErrorKind::IOError, res);
         }
     }
 }

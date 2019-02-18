@@ -4,14 +4,56 @@ extern crate indy_crypto;
 extern crate serde_json;
 
 use api::ErrorCode;
-use utils::cstring::CStringUtils;
-use utils::sequence::SequenceUtils;
+use utils::sequence;
 
 use self::libc::c_char;
 
 use std::collections::HashMap;
-use std::ffi::CString;
+use std::ffi::{CString, CStr};
+use std::str::Utf8Error;
 use std::sync::Mutex;
+
+/// C types helpers
+pub fn c_str_to_string<'a>(cstr: *const c_char) -> Result<Option<&'a str>, Utf8Error> {
+    if cstr.is_null() {
+        return Ok(None);
+    }
+
+    unsafe {
+        match CStr::from_ptr(cstr).to_str() {
+            Ok(str) => Ok(Some(str)),
+            Err(err) => Err(err)
+        }
+    }
+}
+
+macro_rules! check_useful_c_str {
+    ($x:ident, $e:expr) => {
+        let $x = match c_str_to_string($x) {
+            Ok(Some(val)) => val.to_string(),
+            _ => return $e,
+        };
+
+        if $x.is_empty() {
+            return $e
+        }
+    }
+}
+
+macro_rules! check_useful_c_byte_array {
+    ($ptr:ident, $len:expr, $err1:expr, $err2:expr) => {
+        if $ptr.is_null() {
+            return $err1;
+        }
+
+        if $len <= 0 {
+            return $err2;
+        }
+
+        let $ptr = unsafe { $crate::std::slice::from_raw_parts($ptr, $len as usize) };
+        let $ptr = $ptr.to_vec();
+    }
+}
 
 #[derive(Debug)]
 struct InmemWalletContext {
@@ -85,7 +127,7 @@ impl InmemWallet {
         }
 
         let mut handles = INMEM_OPEN_WALLETS.lock().unwrap();
-        let xhandle = SequenceUtils::get_next_id();
+        let xhandle = sequence::get_next_id();
         handles.insert(xhandle, InmemWalletContext {
             id,
         });
@@ -200,7 +242,7 @@ impl InmemWallet {
 
         let record = wallet.records.get(&key).unwrap();
 
-        let record_handle = SequenceUtils::get_next_id();
+        let record_handle = sequence::get_next_id();
 
         let mut handles = ACTIVE_RECORDS.lock().unwrap();
         handles.insert(record_handle, record.clone());
@@ -501,7 +543,7 @@ impl InmemWallet {
         let metadata = wallet.metadata.clone();
         let metadata_pointer = metadata.as_ptr();
 
-        let handle = SequenceUtils::get_next_id();
+        let handle = sequence::get_next_id();
 
         let mut metadatas = ACTIVE_METADATAS.lock().unwrap();
         metadatas.insert(handle, metadata);
@@ -578,7 +620,7 @@ impl InmemWallet {
             .map(|(_, value)| value.clone())
             .collect::<Vec<InmemWalletRecord>>();
 
-        let search_handle = SequenceUtils::get_next_id();
+        let search_handle = sequence::get_next_id();
 
         let mut searches = ACTIVE_SEARCHES.lock().unwrap();
 
@@ -611,7 +653,7 @@ impl InmemWallet {
             .cloned()
             .collect::<Vec<InmemWalletRecord>>();
 
-        let search_handle = SequenceUtils::get_next_id();
+        let search_handle = sequence::get_next_id();
 
         let mut searches = ACTIVE_SEARCHES.lock().unwrap();
 
@@ -654,7 +696,7 @@ impl InmemWallet {
             Some(records) => {
                 match records.pop() {
                     Some(record) => {
-                        let handle = SequenceUtils::get_next_id();
+                        let handle = sequence::get_next_id();
 
                         let mut handles = ACTIVE_RECORDS.lock().unwrap();
                         handles.insert(handle, record.clone());

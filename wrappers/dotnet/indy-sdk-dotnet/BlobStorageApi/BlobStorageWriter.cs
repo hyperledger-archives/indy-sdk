@@ -1,5 +1,4 @@
-﻿using System;
-namespace Hyperledger.Indy.BlobStorageApi
+﻿namespace Hyperledger.Indy.BlobStorageApi
 {
     /// <summary>
     /// BLOB storage writer.

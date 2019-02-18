@@ -100,7 +100,7 @@ async def add_request_fees(wallet_handle: int,
     with at least one output that corresponds to payment address that user owns.
 
     :param wallet_handle: wallet handle (created by open_wallet).
-    :param submitter_did : DID of request sender
+    :param submitter_did : (Option) DID of request sender
     :param req_json : initial transaction request as json
     :param inputs_json: The list of payment sources as json array:
       ["source1", ...]
@@ -134,7 +134,7 @@ async def add_request_fees(wallet_handle: int,
         add_request_fees.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p, c_char_p))
 
     c_wallet_handle = c_int32(wallet_handle)
-    c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
+    c_submitter_did = c_char_p(submitter_did.encode('utf-8')) if submitter_did is not None else None
     c_req_json = c_char_p(req_json.encode('utf-8'))
     c_inputs_json = c_char_p(inputs_json.encode('utf-8'))
     c_outputs_json = c_char_p(outputs_json.encode('utf-8'))
@@ -201,7 +201,7 @@ async def build_get_payment_sources_request(wallet_handle: int,
     according to this payment method.
 
     :param wallet_handle: wallet handle (created by open_wallet).
-    :param submitter_did : DID of request sender
+    :param submitter_did : (Option) DID of request sender
     :param payment_address: target payment address
     :return: get_sources_txn_json: Indy request for getting sources list for payment address
              payment_method: used payment method
@@ -218,7 +218,7 @@ async def build_get_payment_sources_request(wallet_handle: int,
         build_get_payment_sources_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p, c_char_p))
 
     c_wallet_handle = c_int32(wallet_handle)
-    c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
+    c_submitter_did = c_char_p(submitter_did.encode('utf-8')) if submitter_did is not None else None
     c_payment_address = c_char_p(payment_address.encode('utf-8'))
 
     (get_sources_txn_json, payment_method) = await do_call('indy_build_get_payment_sources_request',
@@ -286,7 +286,7 @@ async def build_payment_req(wallet_handle: int,
     with at least one output that corresponds to payment address that user owns.
 
     :param wallet_handle: wallet handle (created by open_wallet).
-    :param submitter_did : DID of request sender
+    :param submitter_did : (Option) DID of request sender
     :param inputs_json: The list of payment sources as json array:
       ["source1", ...]
       Note that each source should reference payment address    
@@ -315,7 +315,7 @@ async def build_payment_req(wallet_handle: int,
         build_payment_req.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p, c_char_p))
 
     c_wallet_handle = c_int32(wallet_handle)
-    c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
+    c_submitter_did = c_char_p(submitter_did.encode('utf-8')) if submitter_did is not None else None
     c_inputs_json = c_char_p(inputs_json.encode('utf-8'))
     c_outputs_json = c_char_p(outputs_json.encode('utf-8'))
     c_extra = c_char_p(extra.encode('utf-8')) if extra is not None else None
@@ -381,7 +381,7 @@ async def build_mint_req(wallet_handle: int,
     according to this payment method.
 
     :param wallet_handle: wallet handle (created by open_wallet).
-    :param submitter_did : DID of request sender
+    :param submitter_did : (Option) DID of request sender
     :param outputs_json: The list of outputs as json array:
       [{
         recipient: <str>, // payment address of recipient
@@ -406,7 +406,7 @@ async def build_mint_req(wallet_handle: int,
         build_mint_req.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p, c_char_p))
 
     c_wallet_handle = c_int32(wallet_handle)
-    c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
+    c_submitter_did = c_char_p(submitter_did.encode('utf-8')) if submitter_did is not None else None
     c_outputs_json = c_char_p(outputs_json.encode('utf-8'))
     c_extra = c_char_p(extra.encode('utf-8')) if extra is not None else None
 
@@ -430,7 +430,7 @@ async def build_set_txn_fees_req(wallet_handle: int,
     Builds Indy request for setting fees for transactions in the ledger
 
     :param wallet_handle: wallet handle (created by open_wallet).
-    :param submitter_did:  DID of request sender
+    :param submitter_did : (Option) DID of request sender
     :param payment_method: Payment method to use (for example, 'sov').
     :param fees_json: {
        txnType1: amount1,
@@ -453,7 +453,7 @@ async def build_set_txn_fees_req(wallet_handle: int,
         build_set_txn_fees_req.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
 
     c_wallet_handle = c_int32(wallet_handle)
-    c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
+    c_submitter_did = c_char_p(submitter_did.encode('utf-8')) if submitter_did is not None else None
     c_payment_method = c_char_p(payment_method.encode('utf-8'))
     c_fees_json = c_char_p(fees_json.encode('utf-8'))
 
@@ -476,7 +476,7 @@ async def build_get_txn_fees_req(wallet_handle: int,
     Builds Indy request for getting fees for transactions in the ledger
 
     :param wallet_handle: wallet handle (created by open_wallet).
-    :param submitter_did: DID of request sender
+    :param submitter_did : (Option) DID of request sender
     :param payment_method: Payment method to use (for example, 'sov').
     :return: set_txn_fees_json: Indy request for setting fees for transactions in the ledger
     """
@@ -492,7 +492,7 @@ async def build_get_txn_fees_req(wallet_handle: int,
         build_get_txn_fees_req.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
 
     c_wallet_handle = c_int32(wallet_handle)
-    c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
+    c_submitter_did = c_char_p(submitter_did.encode('utf-8')) if submitter_did is not None else None
     c_payment_method = c_char_p(payment_method.encode('utf-8'))
 
     get_txn_fees_json = await do_call('indy_build_get_txn_fees_req',
@@ -550,7 +550,7 @@ async def build_verify_payment_req(wallet_handle: int,
     Builds Indy request for information to verify the payment receipt
 
     :param wallet_handle: wallet handle (created by open_wallet).
-    :param submitter_did : DID of request sender
+    :param submitter_did : (Option) DID of request sender
     :param receipt: payment receipt to verify
 
     :return: verify_txn_json: Indy request for verification receipt for transactions in the ledger
@@ -568,7 +568,7 @@ async def build_verify_payment_req(wallet_handle: int,
         build_verify_payment_req.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p, c_char_p))
 
     c_wallet_handle = c_int32(wallet_handle)
-    c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
+    c_submitter_did = c_char_p(submitter_did.encode('utf-8')) if submitter_did is not None else None
     c_receipt = c_char_p(receipt.encode('utf-8'))
 
     (verify_txn_json, payment_method) = await do_call('indy_build_verify_payment_req',

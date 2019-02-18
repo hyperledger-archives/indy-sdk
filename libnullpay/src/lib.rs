@@ -23,7 +23,10 @@ use std::ffi::CString;
 
 #[no_mangle]
 pub extern fn nullpay_init() -> ErrorCode {
-    utils::logger::LoggerUtils::init();
+    if let Err(err) = utils::logger::LibnullpayLogger::init() {
+        return err;
+    }
+
     let payment_method_name = CString::new(payment_method::PAYMENT_METHOD_NAME).unwrap();
 
     libindy::payments::register_payment_method(
@@ -46,7 +49,6 @@ pub extern fn nullpay_init() -> ErrorCode {
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 #[repr(i32)]
-#[allow(dead_code)]
 pub enum ErrorCode
 {
     Success = 0,

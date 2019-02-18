@@ -1,0 +1,200 @@
+@startuml
+
+box "Alice" #LightBlue
+actor "Agent" as A
+participant "Wallet" as AW
+endbox
+
+box "Faber College" #LightYellow
+actor "Agent" as F
+participant "Wallet" as FW
+endbox
+
+box "Acme Corp" #LightBlue
+actor "Agent" as AC
+participant "Wallet" as ACW
+endbox
+
+box "Thrift Bank" #LightYellow
+actor "Agent" as T
+participant "Wallet" as TW
+endbox
+
+participant "Ledger" as L
+
+box "Government" #LightBlue
+actor "Agent" as G
+participant "Wallet" as GW
+endbox
+
+box "Sovrin Steward" #LightYellow
+actor "Agent" as S
+participant "Wallet" as SW
+endbox
+
+=== Getting Trust Anchor credentials for Faber, Acme, Thrift and Government  ==
+S->SW: Create "Sovrin Steward" wallet
+S->SW: Create and store "Sovrin Steward" DID from seed
+
+== Getting Trust Anchor credentials - Government Onboarding  ==
+S->SW: Create and store "Sovrin Steward Government Pairwise" DID
+S->L: Send Nym for "Sovrin Steward Government Pairwise" DID
+S->G: Connection request with "Sovrin Steward Government Pairwise" DID and nonce
+G->GW: Create "Government" wallet
+G->GW: Create and store "Government Sovrin Steward Pairwise" DID
+G->S: Send anoncrypted connection response with "Government Sovrin Steward Pairwise" DID, verkey and nonce
+S->L: Send Nym for "Government Sovrin Steward Pairwise" DID
+
+== Getting Trust Anchor credentials - Government getting Verinym  ==
+G->GW: Create and store "Government" DID
+G->S: Send authcrypted "Government" DID
+S->L: Send Nym for "Government" DID with Trust Anchor Role
+
+== Getting Trust Anchor credentials - Faber Onboarding  ==
+S->SW: Create and store "Sovrin Steward Faber Pairwise" DID
+S->L: Send Nym for "Sovrin Steward Faber Pairwise" DID
+S->F: Connection request with "Sovrin Steward Faber Pairwise" DID and nonce
+F->FW: Create "Faber" wallet
+F->FW: Create and store "Faber Sovrin Steward Pairwise" DID
+F->S: Send anoncrypted connection response with "Faber Sovrin Steward Pairwise" DID, verkey and nonce
+S->L: Send Nym for "Faber Sovrin Steward Pairwise" DID
+
+== Getting Trust Anchor credentials - Faber getting Verinym  ==
+F->FW: Create and store "Faber" DID
+F->S: Send authcrypted "Faber" DID
+S->L: Send Nym for "Faber" DID with Trust Anchor Role
+
+== Getting Trust Anchor credentials - Acme Onboarding  ==
+S->SW: Create and store "Sovrin Steward Acme Pairwise" DID
+S->L: Send Nym for "Sovrin Steward Acme Pairwise" DID
+S->AC: Connection request with "Sovrin Steward Acme Pairwise" DID and nonce
+AC->ACW: Create "Acme" wallet
+AC->ACW: Create and store "Acme Sovrin Steward Pairwise" DID
+AC->S: Send anoncrypted connection response with "Acme Sovrin Steward Pairwise" DID, verkey and nonce
+S->L: Send Nym for "Acme Sovrin Steward Pairwise" DID
+
+== Getting Trust Anchor credentials - Acme getting Verinym  ==
+AC->ACW: Create and store "Acme" DID
+AC->S: Send authcrypted "Acme" DID
+S->L: Send Nym for "Acme" DID with Trust Anchor Role
+
+== Getting Trust Anchor credentials - Thrift Onboarding  ==
+S->SW: Create and store "Sovrin Steward Thrift Pairwise" DID
+S->L: Send Nym for "Sovrin Steward Thrift Pairwise" DID
+S->T: Connection request with "Sovrin Steward Thrift Pairwise" DID and nonce
+T->TW: Create "Thrift" wallet
+T->TW: Create and store "Thrift Sovrin Steward Pairwise" DID
+T->S: Send anoncrypted connection response with "Thrift Sovrin Steward Pairwise" DID, verkey and nonce
+S->L: Send Nym for "Thrift Sovrin Steward Pairwise" DID
+
+== Getting Trust Anchor credentials - Thrift getting Verinym  ==
+T->TW: Create and store "Thrift" DID
+T->S: Send authcrypted "Thrift" DID Info
+S->L: Send Nym for "Thrift" DID with Trust Anchor Role
+
+=== Credential Schemas Setup ==
+G->GW: Create "Job-Certificate" Schema
+G->L: Send Schema for "Job-Certificate" Schema
+G->GW: Create "Transcript" Schema
+G->L: Send Schema for "Transcript" Schema
+
+=== Faber Credential Definition Setup ==
+F->L: Send GetSchema for "Transcript" Schema
+F->FW: Create and store "Faber Transcript" Credential Definition
+F->L: Send CredDef for "Faber Transcript" Credential Definition
+
+=== Acme Credential Definition Setup ==
+AC->L: Send GetSchema for "Job-Certificate" Schema
+AC->ACW: Create and store "Acme Job-Certificate" Credential Definition
+AC->L: Send CredDef for "Acme Job-Certificate" Credential Definition
+
+=== Getting Transcript with Faber ==
+== Getting Transcript with Faber - Onboarding ==
+F->FW: Create and store "Faber Alice Pairwise" DID
+F->L: Send Nym for "Faber Alice Pairwise" DID
+F->A: Connection request with "Faber Alice Pairwise" DID and nonce
+A->AW: Create "Alice" wallet
+A->AW: Create and store "Alice Faber Pairwise" DID
+A->F: Anoncrypted connection response with "Alice Faber Pairwise" DID, verkey and nonce
+F->L: Send Nym for "Alice Faber Pairwise" DID
+
+== Getting Transcript with Faber - Getting Transcript Credential ==
+F->A: Send authcrypted "Alice Faber Transcript" Credential Offer
+A->AW: Create and store "Alice" Master Secret
+A->L: Send GetSchema for "Transcript" Schema
+A->L: Send GetCredDef for "Faber Transcript" Credential Definition
+A->AW: Create "Alice Faber Transcript" Credential Request
+A->F: Send authcrypted "Alice Faber Transcript" Credential Request
+F->F: Create "Alice Faber Transcript" Credential
+F->A: Send authcrypted "Alice Faber Transcript" Credential
+A->AW: Store "Alice Faber Transcript" Credential
+
+=== Apply for the job with Acme ==
+== Apply for the job with Acme - Onboarding ==
+AC->ACW: Create and store "Acme Alice Pairwise" DID
+AC->L: Send Nym for "Acme Alice Pairwise" DID
+AC->A: Connection request with "Acme Alice Pairwise" DID and nonce
+A->AW: Create and store "Alice Acme Pairwise" DID
+A->AC: Anoncrypted connection response with "Alice Acme Pairwise" DID, verkey and nonce
+AC->L: Send Nym for "Alice Acme Pairwise" DID
+
+== Apply for the job with Acme - Job-Application proving ==
+AC->A: Send authcrypted "Job-Application" Proof Request
+A->AW: Get credentials for "Job-Application" Proof Request
+AW->A: "Alice Faber Transcript" Credential
+A->L: Send GetSchema for "Transcript" Schema
+A->L: Send GetCredDef for "Faber Transcript" Credential Definition
+A->A: Create "Alice Job-Application" Proof
+A->AC: Send authcrypted "Alice Job-Application" Proof
+AC->L: Send GetSchema for "Transcript" Schema
+AC->L: Send GetCredDef for "Faber Transcript" Credential Definition
+AC->AC: Verify "Alice Job-Application" Proof
+
+== Apply for the job with Acme - Getting Job-Certificate Credential ==
+AC->A: Send authcrypted "Alice Acme Job-Certificate" Credential Offer
+A->L: Send GetSchema for "Job-Certificate" Schema
+A->L: Send GetCredDef for "Acme Job-Certificate" Credential Definition
+A->AW: Create "Alice Acme Job-Certificate" Credential Request
+A->AC: Send authcrypted "Alice Acme Job-Certificate" Credential Request
+AC->AC: Create "Alice Acme Job-Certificate" Credential
+AC->A: Send authcrypted "Alice Acme Job-Certificate" Credential
+A->AW: Store "Alice Acme Job-Certificate" Credential
+
+=== Apply for the loan with Thrift ==
+== Apply for the loan with Thrift - Onboarding ==
+T->TW: Create and store "Thrift Alice Pairwise" DID
+T->L: Send Nym for "Thrift Alice Pairwise" DID
+T->A: Connection request with "Thrift Alice Pairwise" DID and nonce
+A->AW: Create and store "Alice Thrift Pairwise" DID
+A->T: Anoncrypted connection response with "Alice Thrift Pairwise" DID, verkey and nonce
+T->L: Send Nym for "Alice Thrift Pairwise" DID
+
+== Apply for the loan with Thrift - Employment History proving  ==
+T->A: Send authcrypted "Loan-Application-Basic" Proof Request
+A->AW: Get credentials for "Loan-Application-Basic" Proof Request
+AW->A: "Alice Acme Job-Certificate" Credential
+A->L: Send GetSchema for "Job-Certificate" Schema
+A->L: Send GetCredDef for "Acme Job-Certificate" Credential Definition
+A->A: Create "Loan-Application-Basic" Proof
+A->T: Send "Loan-Application-Basic" Proof
+T->L: Send GetSchema for "Job-Certificate" Schema
+T->L: Send GetCredDef for "Acme Job-Certificate" Credential Definition
+T->T: Verify "Loan-Application-Basic" Proof
+
+== Apply for the loan with Thrift - Loan-Application-KYC proving  ==
+T->A: Send authcrypted "Loan-Application-KYC" Proof Request
+A->AW: Get credentials for "Loan-Application-KYC" Proof Request
+AW->A: "Alice Faber Transcript and Alice Acme Job-Certificate" Credential
+A->L: Send GetSchema for "Transcript" Schema
+A->L: Send GetCredDef for "Faber Transcript" Credential Definition
+A->L: Send GetSchema for "Job-Certificate" Schema
+A->L: Send GetCredDef for "Acme Job-Certificate" Credential Definition
+A->A: Create "Loan-Application-KYC" Proof
+A->T: Send "Loan-Application-KYC" Proof
+T->L: Send GetSchema for "Transcript" Schema
+T->L: Send GetCredDef for "Faber Transcript" Credential Definition
+T->L: Send GetSchema for "Job-Certificate" Schema
+T->L: Send GetCredDef for "Acme Job-Certificate" Credential Definition
+T->T: Verify "Loan-Application-KYC" Proof
+
+@enduml

@@ -13,7 +13,7 @@ pub struct ProofRequest {
     pub non_revoked: Option<NonRevocedInterval>
 }
 
-pub type ProofRequestExtraQuery = HashMap<String, HashMap<String, serde_json::Value>>;
+pub type ProofRequestExtraQuery = HashMap<String, serde_json::Map<String, serde_json::Value>>;
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq, Hash)]
 pub struct NonRevocedInterval {

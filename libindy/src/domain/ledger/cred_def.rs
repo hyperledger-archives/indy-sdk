@@ -1,5 +1,5 @@
 use super::constants::{CRED_DEF, GET_CRED_DEF};
-use super::response::GetReplyResultV1;
+use super::response::{GetReplyResultV1, ReplyType};
 use super::super::anoncreds::credential_definition::{CredentialDefinitionData, CredentialDefinitionV1, SignatureType};
 use super::super::ledger::request::ProtocolVersion;
 
@@ -56,6 +56,12 @@ impl GetCredDefOperation {
 pub enum GetCredDefReplyResult {
     GetCredDefReplyResultV0(GetCredDefResultV0),
     GetCredDefReplyResultV1(GetReplyResultV1<GetCredDefResultDataV1>)
+}
+
+impl ReplyType for GetCredDefReplyResult {
+    fn get_type<'a>() -> &'a str {
+        GET_CRED_DEF
+    }
 }
 
 #[derive(Deserialize, Serialize, Debug)]

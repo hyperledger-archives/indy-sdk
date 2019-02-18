@@ -14,9 +14,13 @@ Native bindings for [Hyperledger Indy](https://www.hyperledger.org/projects/hype
   * [crypto](#crypto)
   * [did](#did)
   * [ledger](#ledger)
+  * [non_secrets](#non_secrets)
   * [pairwise](#pairwise)
+  * [payment](#payment)
   * [pool](#pool)
   * [wallet](#wallet)
+  * [logger](#logger)
+  * [mod](#mod)
 - [Advanced](#advanced)
 - [Contributing](#contributing)
 
@@ -27,7 +31,7 @@ This module has a native compile step. It compiles C++ code and dynamically link
 You will need:
 
 * C++ build tools and Python 2. See [this](https://github.com/nodejs/node-gyp#installation) for platform recommendations.
-* `libindy` v1.5+ in your system library path. (i.e. `/usr/lib/libindy.so` for linux)
+* `libindy` v1.6+ in your system library path. (i.e. `/usr/lib/libindy.so` for linux)
 
 Then you can install via npm:
 
@@ -85,10 +89,15 @@ var verkey = await indy.abbreviateVerkey(did, fullVerkey)
 
 All the functions may yield an IndyError. The errors are based on libindy error codes defined [here](https://github.com/hyperledger/indy-sdk/blob/master/libindy/include/indy_mod.h).
 
-* `err.indyCode` - the code number from libindy
-* `err.indyName` - the name string for the code
+* `err.indyCode`: Int - code number from libindy
+* `err.indyName`: String - name for the error code
+* `err.indyMessage`: String - human-readable error description
+* `err.indyBacktrace`: String? - if enabled, this is the libindy backtrace string
 
-[//]: # (CODEGEN-START - don't edit by hand see `codegen/index.js`)
+Collecting of backtrace can be enabled by:
+1. Setting environment variable `RUST_BACKTRACE=1`
+2. Calling [setRuntimeConfig](#setruntimeconfig--config-)(`{collect_backtrace: true}`)
+
 ### anoncreds
 
 #### issuerCreateSchema \( issuerDid, name, version, attrNames \) -&gt; \[ id, schema \]
@@ -101,12 +110,12 @@ to Indy distributed ledger.
 
 It is IMPORTANT for current version POST Schema in Ledger and after that GET it from Ledger
 with correct seq\_no to save compatibility with Ledger.
-After that can call indy\_issuer\_create\_and\_store\_credential\_def to build corresponding Credential Definition.
+After that can call issuerCreateAndStoreCredentialDef to build corresponding Credential Definition.
 
 * `issuerDid`: String - DID of schema issuer
 * `name`: String - a name the schema
 * `version`: String - a version of the schema
-* `attrNames`: Json
+* `attrNames`: Json - a list of schema attributes descriptions (the number of attributes should be less or equal than 125)
 * __->__ [ `id`: String, `schema`: Json ] - schema\_id: identifier of created schema
 schema\_json: schema as json
 
@@ -215,8 +224,8 @@ This call returns revoc registry delta as json file intended to be shared as REV
 Note that it is possible to accumulate deltas to reduce ledger load.
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
-* `credOffer`: Json - a cred offer created by indy\_issuer\_create\_credential\_offer
-* `credReq`: Json - a credential request created by indy\_prover\_create\_credential\_req
+* `credOffer`: Json - a cred offer created by issuerCreateCredentialOffer
+* `credReq`: Json - a credential request created by proverCreateCredentialReq
 * `credValues`: Json - a credential containing attribute values for each of requested attribute names.
 Example:
 ```
@@ -226,19 +235,19 @@ Example:
     }
 ````
 * `revRegId`: String - id of revocation registry stored in the wallet
-* `blobStorageReaderHandle`: Number - configuration of blob storage reader handle that will allow to read revocation tails
+* `blobStorageReaderHandle`: Handle (Number) - configuration of blob storage reader handle that will allow to read revocation tails
 * __->__ [ `cred`: Json, `credRevocId`: String, `revocRegDelta`: Json ] - cred\_json: Credential json containing signed credential values
 ```
     {
         "schema_id": string,
         "cred_def_id": string,
         "rev_reg_def_id", Optional<string>,
-        "values": <see credValues above>,
+        "values": <see cred_values_json above>,
         // Fields below can depend on Cred Def type
         "signature": <signature>,
         "signature_correctness_proof": <signature_correctness_proof>
     }
-cred_revoc_id: local id for revocation info (Can be used for revocation of this cred)
+cred_revoc_id: local id for revocation info (Can be used for revocation of this credential)
 revoc_reg_delta_json: Revocation registry delta json with a newly issued credential
 ````
 
@@ -246,7 +255,7 @@ Errors: `Annoncreds*`, `Common*`, `Wallet*`
 
 #### issuerRevokeCredential \( wh, blobStorageReaderHandle, revRegId, credRevocId \) -&gt; revocRegDelta
 
-Revoke a credential identified by a cred\_revoc\_id \(returned by indy\_issuer\_create\_credential\).
+Revoke a credential identified by a cred\_revoc\_id \(returned by issuerCreateCredential\).
 
 The corresponding credential definition and revocation registry must be already
 created an stored into the wallet.
@@ -255,7 +264,7 @@ This call returns revoc registry delta as json file intended to be shared as REV
 Note that it is possible to accumulate deltas to reduce ledger load.
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
-* `blobStorageReaderHandle`: Number
+* `blobStorageReaderHandle`: Handle (Number)
 * `revRegId`: String - id of revocation registry stored in wallet
 * `credRevocId`: String - local id for revocation info
 * __->__ `revocRegDelta`: Json - revoc\_reg\_delta\_json: Revocation registry delta json with a revoked credential
@@ -264,7 +273,7 @@ Errors: `Annoncreds*`, `Common*`, `Wallet*`
 
 #### issuerMergeRevocationRegistryDeltas \( revRegDelta, otherRevRegDelta \) -&gt; mergedRevRegDelta
 
-Merge two revocation registry deltas \(returned by indy\_issuer\_create\_credential or indy\_issuer\_revoke\_credential\) to accumulate common delta.
+Merge two revocation registry deltas \(returned by issuerCreateCredential or issuerRevokeCredential\) to accumulate common delta.
 Send common delta to ledger to reduce the load.
 
 * `revRegDelta`: Json - revocation registry delta.
@@ -295,7 +304,7 @@ The blinded master secret is a part of the credential request.
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `proverDid`: String - a DID of the prover
 * `credOffer`: Json - credential offer as a json containing information about the issuer and a credential
-* `credDef`: Json - credential definition json
+* `credDef`: Json - credential definition json related to &lt;cred\_def\_id&gt; in &lt;cred\_offer\_json&gt;
 * `masterSecretId`: String - the id of the master secret stored in the wallet
 * __->__ [ `credReq`: Json, `credReqMetadata`: Json ] - cred\_req\_json: Credential request json for creation of credential by Issuer
 ```
@@ -307,7 +316,7 @@ The blinded master secret is a part of the credential request.
      "blinded_ms_correctness_proof" : <blinded_ms_correctness_proof>,
      "nonce": string
    }
-cred_req_metadata_json: Credential request metadata json for processing of received form Issuer credential.
+cred_req_metadata_json: Credential request metadata json for further processing of received form Issuer credential.
 ````
 
 Errors: `Annoncreds*`, `Common*`, `Wallet*`
@@ -317,7 +326,7 @@ Errors: `Annoncreds*`, `Common*`, `Wallet*`
 Check credential provided by Issuer for the given credential request,
 updates the credential by a master secret and stores in a secure wallet.
 
-To support efficient search the following tags will be created for stored credential:
+To support efficient and flexible search the following tags will be created for stored credential:
 ```
     {
         "schema_id": <credential schema id>,
@@ -326,18 +335,19 @@ To support efficient search the following tags will be created for stored creden
         "schema_version": <credential schema version>,
         "issuer_did": <credential issuer did>,
         "cred_def_id": <credential definition id>,
-        // for every attribute in <credValues>
+        "rev_reg_id": <credential revocation registry id>, // "None" as string if not present
+        // for every attribute in <credential values>
         "attr::<attribute name>::marker": "1",
         "attr::<attribute name>::value": <attribute raw value>,
     }
-```
+````
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `credId`: String - \(optional, default is a random one\) identifier by which credential will be stored in the wallet
-* `credReqMetadata`: Json - a credential request metadata created by indy\_prover\_create\_credential\_req
+* `credReqMetadata`: Json - a credential request metadata created by proverCreateCredentialReq
 * `cred`: Json - credential json received from issuer
-* `credDef`: Json - credential definition json
-* `revRegDef`: Json - revocation registry definition json
+* `credDef`: Json - credential definition json related to &lt;cred\_def\_id&gt; in &lt;cred\_json&gt;
+* `revRegDef`: Json - revocation registry definition json related to &lt;rev\_reg\_def\_id&gt; in &lt;cred\_json&gt;
 * __->__ `outCredId`: String - out\_cred\_id: identifier by which credential is stored in the wallet
 
 Errors: `Annoncreds*`, `Common*`, `Wallet*`
@@ -348,17 +358,26 @@ Gets human readable credentials according to the filter.
 If filter is NULL, then all credentials are returned.
 Credentials can be filtered by Issuer, credential\_def and\/or Schema.
 
-NOTE: This method is deprecated. Use `proverSearchCredentials` instead.
+NOTE: This method is deprecated because immediately returns all fetched credentials.
+Use &lt;proverSearchCredentials&gt; to fetch records by small batches.
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
-* `filter`: Json - wql style query for credentials searching based on tags created during the saving of credential
-where wql query: indy-sdk/doc/design/011-wallet-query-language/README.md
-
+* `filter`: Json - filter for credentials
+```
+       {
+           "schema_id": string, (Optional)
+           "schema_issuer_did": string, (Optional)
+           "schema_name": string, (Optional)
+           "schema_version": string, (Optional)
+           "issuer_did": string, (Optional)
+           "cred_def_id": string, (Optional)
+       }
+````
 * __->__ `credentials`: Json - credentials json
 ```
     [{
         "referent": string, // cred_id in the wallet
-        "values": <see credValues above>,
+        "attrs": {"key1":"raw_value1", "key2":"raw_value2"},
         "schema_id": string,
         "cred_def_id": string,
         "rev_reg_id": Optional<string>,
@@ -373,12 +392,12 @@ Errors: `Annoncreds*`, `Common*`, `Wallet*`
 Gets human readable credential by the given id.
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
-* `credId`: String - identifier by which requested credential is stored in the wallet
-* __->__ `credential`: Json - credential json
+* `credId`: String - Identifier by which requested credential is stored in the wallet
+* __->__ `credential`: Json - credential json:
 ```
     {
         "referent": string, // cred_id in the wallet
-        "values": <see credValues above>,
+        "attrs": {"key1":"raw_value1", "key2":"raw_value2"},
         "schema_id": string,
         "cred_def_id": string,
         "rev_reg_id": Optional<string>,
@@ -388,57 +407,59 @@ Gets human readable credential by the given id.
 
 Errors: `Annoncreds*`, `Common*`, `Wallet*`
 
-#### proverSearchCredentials \( wh, filter \) -&gt; \[ searchHandle, totalCount \]
+#### proverSearchCredentials \( wh, query \) -&gt; \[ sh, totalCount \]
 
 Search for credentials stored in wallet.
+Credentials can be filtered by tags created during saving of credential.
 
-Instead of immediately returning of fetched credentials this call returns search_handle that can be used later 
-to fetch records by small batches (with proverFetchCredentials).
+Instead of immediately returning of fetched credentials
+this call returns search\_handle that can be used later
+to fetch records by small batches \(with proverFetchCredentials\).
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
-* `filter`: Json - wql style filter for credentials searching based on tags created during the saving of credential
-where wql query: indy-sdk/doc/design/011-wallet-query-language/README.md
-
-* __->__ `searchHandle`: Number - handle that can be used later to fetch records by small batches (with proverFetchCredentials)
-* __->__ `totalCount`: Number -  total count of records
+* `query`: Json - Wql query filter for credentials searching based on tags.
+where query: indy-sdk\/doc\/design\/011-wallet-query-language\/README.md
+* __->__ [ `sh`: Handle (Number), `totalCount`: Number ] - search\_handle: Search handle that can be used later to fetch records by small batches \(with proverFetchCredentials\)
+total\_count: Total count of records
 
 Errors: `Annoncreds*`, `Common*`, `Wallet*`
 
 #### proverFetchCredentials \( sh, count \) -&gt; credentials
 
-Fetch next records for wallet search.
+Fetch next credentials for search.
 
-* `sh`: Handle (Number) - search handle (created by proverSearchCredentials)
-* `count`: Number - count of records to fetch
-* __->__ `credentials`: Json - credentials json
+* `sh`: Handle (Number) - Search handle \(created by proverSearchCredentials\)
+* `count`: Number - Count of credentials to fetch
+* __->__ `credentials`: Json - credentials\_json: List of human readable credentials:
 ```
     [{
         "referent": string, // cred_id in the wallet
-        "values": <see credValues above>,
+        "attrs": {"key1":"raw_value1", "key2":"raw_value2"},
         "schema_id": string,
         "cred_def_id": string,
         "rev_reg_id": Optional<string>,
         "cred_rev_id": Optional<string>
     }]
-````
 NOTE: The list of length less than the requested count means credentials search iterator is completed.
+````
 
 Errors: `Annoncreds*`, `Common*`, `Wallet*`
 
-#### proverCloseCredentialsSearch \( sh \) -&gt;
+#### proverCloseCredentialsSearch \( sh \) -&gt; void
 
-Close credentials search (make search handle invalid).
+Close credentials search \(make search handle invalid\)
 
-* `sh`: Handle (Number) - search handle (created by proverSearchCredentials)
+* `sh`: Handle (Number) - Search handle \(created by proverSearchCredentials\)
 * __->__ void
 
 Errors: `Annoncreds*`, `Common*`, `Wallet*`
 
 #### proverGetCredentialsForProofReq \( wh, proofRequest \) -&gt; credentials
 
-NOTE: This method is deprecated. Use `proverSearchCredentialsForProofReq` instead.
-
 Gets human readable credentials matching the given proof request.
+
+NOTE: This method is deprecated because immediately returns all fetched credentials.
+Use &lt;proverSearchCredentialsForProofReq&gt; to fetch records by small batches.
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `proofRequest`: Json - proof request json
@@ -460,8 +481,8 @@ Gets human readable credentials matching the given proof request.
                        // for date in this interval for each attribute
                        // (can be overridden on attribute level)
     }
+where
 ````
-
 * __->__ `credentials`: Json - credentials\_json: json with credentials for the given proof request.
 ```
     {
@@ -476,7 +497,7 @@ Gets human readable credentials matching the given proof request.
     }, where credential is
     {
         "referent": <string>,
-        "attrs": [{"attr_name" : "attr_raw_value"}],
+        "attrs": {"attr_name" : "attr_raw_value"},
         "schema_id": string,
         "cred_def_id": string,
         "rev_reg_id": Optional<int>,
@@ -486,13 +507,15 @@ Gets human readable credentials matching the given proof request.
 
 Errors: `Annoncreds*`, `Common*`, `Wallet*`
 
-#### proverSearchCredentialsForProofReq \( wh, proofRequest, extraQuery \) -&gt; searchHandle
+#### proverSearchCredentialsForProofReq \( wh, proofRequest, extraQuery \) -&gt; sh
 
 Search for credentials matching the given proof request.
 
-Instead of immediately returning of fetched credentials this call returns search_handle that can be used later
-to fetch records by small batches (with proverFetchCredentialsForProofReq).
+Instead of immediately returning of fetched credentials
+this call returns search\_handle that can be used later
+to fetch records by small batches \(with proverFetchCredentialsForProofReq\).
 
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `proofRequest`: Json - proof request json
 ```
     {
@@ -513,53 +536,58 @@ to fetch records by small batches (with proverFetchCredentialsForProofReq).
                        // (can be overridden on attribute level)
     }
 ````
-* `extraQuery`: Json - (Optional) List of extra queries that will be applied to correspondent attribute/predicate.
-where wql query: indy-sdk/doc/design/011-wallet-query-language/README.md
+* `extraQuery`: Json - \(Optional\) List of extra queries that will be applied to correspondent attribute\/predicate:
 ```
     {
         "<attr_referent>": <wql query>,
         "<predicate_referent>": <wql query>,
     }
-```
-
-* __->__ `searchHandle`: Number - handle that can be used later to fetch records by small batches (with proverFetchCredentialsForProofReq)
+where wql query: indy-sdk/doc/design/011-wallet-query-language/README.md
+````
+* __->__ `sh`: Handle (Number) - search\_handle: Search handle that can be used later to fetch records by small batches \(with proverFetchCredentialsForProofReq\)
 
 Errors: `Annoncreds*`, `Common*`, `Wallet*`
 
 #### proverFetchCredentialsForProofReq \( sh, itemReferent, count \) -&gt; credentials
 
-Fetch next records for the requested item using proof request search handle (created by proverSearchCredentialsForProofReq).
+Fetch next credentials for the requested item using proof request search
+handle \(created by proverSearchCredentialsForProofReq\).
 
-* `sh`: Handle (Number) - search handle (created by proverSearchCredentialsForProofReq)
-* `itemReferent`: Number - referent of attribute/predicate in the proof request
-* `count`: Number - count of records to fetch
-* __->__ `credentials`: Json - credentials json
+* `sh`: Handle (Number) - Search handle \(created by proverSearchCredentialsForProofReq\)
+* `itemReferent`: String - Referent of attribute\/predicate in the proof request
+* `count`: Number - Count of credentials to fetch
+* __->__ `credentials`: Json - credentials\_json: List of credentials for the given proof request.
 ```
     [{
         cred_info: <credential_info>,
         interval: Optional<non_revoc_interval>
     }]
-````
-where credential_info is:
-```
+where
+credential_info:
     {
         "referent": <string>,
-        "attrs": [{"attr_name" : "attr_raw_value"}],
+        "attrs": {"attr_name" : "attr_raw_value"},
         "schema_id": string,
         "cred_def_id": string,
         "rev_reg_id": Optional<int>,
         "cred_rev_id": Optional<int>,
     }
-```
-NOTE: The list of length less than the requested `count` means that search iterator correspondent to the requested `itemReferent` is completed.
+non_revoc_interval:
+    {
+        "from": Optional<int>, // timestamp of interval beginning
+        "to": Optional<int>, // timestamp of interval ending
+    }
+NOTE: The list of length less than the requested count means that search iterator
+correspondent to the requested <item_referent> is completed.
+````
 
 Errors: `Annoncreds*`, `Common*`, `Wallet*`
 
-#### proverCloseCredentialsSearchForProofReq \( sh \) -&gt;
+#### proverCloseCredentialsSearchForProofReq \( sh \) -&gt; void
 
-Close credentials search for proof request (make search handle invalid)
+Close credentials search for proof request \(make search handle invalid\)
 
-* `sh`: Handle (Number) - search handle (created by proverSearchCredentialsForProofReq)
+* `sh`: Handle (Number) - Search handle \(created by proverSearchCredentialsForProofReq\)
 * __->__ void
 
 Errors: `Annoncreds*`, `Common*`, `Wallet*`
@@ -568,7 +596,7 @@ Errors: `Annoncreds*`, `Common*`, `Wallet*`
 
 Creates a proof according to the given proof request
 Either a corresponding credential with optionally revealed attributes or self-attested attribute must be provided
-for each requested attribute \(see indy\_prover\_get\_credentials\_for\_pool\_req\).
+for each requested attribute \(see proverGetCredentials\_for\_pool\_req\).
 A proof request may request multiple credentials from different schemas and different issuers.
 All required schemas, public keys and revocation registries must be provided.
 The proof request also contains nonce.
@@ -623,6 +651,7 @@ The proof contains either proof or self-attested attribute value for each reques
         },
     }
 where
+where wql query: indy-sdk/doc/design/011-wallet-query-language/README.md
 ````
 * __->__ `proof`: Json - Proof json
 For each requested attribute either a proof \(with optionally revealed attribute value\) or
@@ -631,7 +660,7 @@ Each proof is associated with a credential and corresponding schema\_id, cred\_d
 There is also aggregated proof part common for all credential proofs.
 ```
     {
-        "requested": {
+        "requested_proof": {
             "revealed_attrs": {
                 "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string},
                 "requested_attr4_id": {sub_proof_index: number: string, encoded: string},
@@ -748,7 +777,7 @@ Errors: `Annoncreds*`, `Common*`, `Wallet*`
 
 Create revocation state for a credential in the particular time moment.
 
-* `blobStorageReaderHandle`: Number - configuration of blob storage reader handle that will allow to read revocation tails
+* `blobStorageReaderHandle`: Handle (Number) - configuration of blob storage reader handle that will allow to read revocation tails
 * `revRegDef`: Json - revocation registry definition json
 * `revRegDelta`: Json - revocation registry definition delta json
 * `timestamp`: Timestamp (Number) - time represented as a total number of seconds from Unix Epoch
@@ -769,7 +798,7 @@ Errors: `Common*`, `Wallet*`, `Anoncreds*`
 Create new revocation state for a credential based on existed state
 at the particular time moment \(to reduce calculation time\).
 
-* `blobStorageReaderHandle`: Number - configuration of blob storage reader handle that will allow to read revocation tails
+* `blobStorageReaderHandle`: Handle (Number) - configuration of blob storage reader handle that will allow to read revocation tails
 * `revState`: Json - revocation registry state json
 * `revRegDef`: Json - revocation registry definition json
 * `revRegDelta`: Json - revocation registry definition delta json
@@ -794,7 +823,7 @@ Errors: `Common*`, `Wallet*`, `Anoncreds*`
 
 * `type`: String
 * `config`: Json
-* __->__ `handle`: Number
+* __->__ `handle`: Handle (Number)
 
 
 #### openBlobStorageWriter \( type, config \) -&gt; handle
@@ -803,7 +832,7 @@ Errors: `Common*`, `Wallet*`, `Anoncreds*`
 
 * `type`: String
 * `config`: Json
-* __->__ `handle`: Number
+* __->__ `handle`: Handle (Number)
 
 
 ### crypto
@@ -816,7 +845,8 @@ Creates keys pair and stores in the wallet.
 * `key`: Json - Key information as json. Example:
 ```
 {
-    "seed": string, // Optional (if not set random one will be used); Seed information that allows deterministic key creation.
+    "seed": string, (optional) Seed that allows deterministic key creation (if not set random one will be created).
+                               Can be UTF-8, base64 or hex string.
     "crypto_type": string, // Optional (if not set then ed25519 curve is used); Currently only 'ed25519' value is supported for this field.
 }
 ````
@@ -849,11 +879,11 @@ Errors: `Common*`, `Wallet*`, `Crypto*`
 
 Signs a message with a key.
 
-Note to use DID keys with this function you can call indy\_key\_for\_did to get key id \(verkey\)
+Note to use DID keys with this function you can call keyForDid to get key id \(verkey\)
 for specific DID.
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
-* `signerVk`: String - id \(verkey\) of my key. The key must be created by calling indy\_create\_key or indy\_create\_and\_store\_my\_did
+* `signerVk`: String - id \(verkey\) of message signer. The key must be created by calling createKey or createAndStoreMyDid
 * `messageRaw`: Buffer - a pointer to first byte of message to be signed
 * __->__ `signatureRaw`: Buffer - a signature string
 
@@ -863,10 +893,10 @@ Errors: `Common*`, `Wallet*`, `Crypto*`
 
 Verify a signature with a verkey.
 
-Note to use DID keys with this function you can call indy\_key\_for\_did to get key id \(verkey\)
+Note to use DID keys with this function you can call keyForDid to get key id \(verkey\)
 for specific DID.
 
-* `signerVk`: String - verkey of signer of the message
+* `signerVk`: String - verkey of the message signer
 * `messageRaw`: Buffer - a pointer to first byte of message that has been signed
 * `signatureRaw`: Buffer - a pointer to first byte of signature to be verified
 * __->__ `valid`: Boolean - valid: true - if signature is valid, false - otherwise
@@ -883,12 +913,12 @@ Using Sender's public key and his secret key, Recipient can compute the exact sa
 That shared secret key can be used to verify that the encrypted message was not tampered with,
 before eventually decrypting it.
 
-Note to use DID keys with this function you can call indy\_key\_for\_did to get key id \(verkey\)
+Note to use DID keys with this function you can call keyForDid to get key id \(verkey\)
 for specific DID.
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
-* `senderVk`: String - id \(verkey\) of my key. The key must be created by calling indy\_create\_key or indy\_create\_and\_store\_my\_did
-* `recipientVk`: String - id \(verkey\) of their key
+* `senderVk`: String - id \(verkey\) of message sender. The key must be created by calling createKey or createAndStoreMyDid
+* `recipientVk`: String - id \(verkey\) of message recipient
 * `messageRaw`: Buffer - a pointer to first byte of message that to be encrypted
 * __->__ `encryptedMsgRaw`: Buffer - an encrypted message as a pointer to array of bytes.
 
@@ -904,11 +934,11 @@ Using Sender's public key and his secret key, Recipient can compute the exact sa
 That shared secret key can be used to verify that the encrypted message was not tampered with,
 before eventually decrypting it.
 
-Note to use DID keys with this function you can call indy\_key\_for\_did to get key id \(verkey\)
+Note to use DID keys with this function you can call keyForDid to get key id \(verkey\)
 for specific DID.
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
-* `recipientVk`: String - id \(verkey\) of my key. The key must be created by calling indy\_create\_key or indy\_create\_and\_store\_my\_did
+* `recipientVk`: String - id \(verkey\) of message recipient. The key must be created by calling createKey or createAndStoreMyDid
 * `encryptedMsgRaw`: Buffer - a pointer to first byte of message that to be decrypted
 * __->__ [ `senderVk`: String, `decryptedMsgRaw`: Buffer ] - sender verkey and decrypted message as a pointer to array of bytes
 
@@ -922,7 +952,7 @@ Sealed boxes are designed to anonymously send messages to a Recipient given its 
 Only the Recipient can decrypt these messages, using its private key.
 While the Recipient can verify the integrity of the message, it cannot verify the identity of the Sender.
 
-Note to use DID keys with this function you can call indy\_key\_for\_did to get key id \(verkey\)
+Note to use DID keys with this function you can call keyForDid to get key id \(verkey\)
 for specific DID.
 
 * `recipientVk`: String - verkey of message recipient
@@ -939,15 +969,99 @@ Sealed boxes are designed to anonymously send messages to a Recipient given its 
 Only the Recipient can decrypt these messages, using its private key.
 While the Recipient can verify the integrity of the message, it cannot verify the identity of the Sender.
 
-Note to use DID keys with this function you can call indy\_key\_for\_did to get key id \(verkey\)
+Note to use DID keys with this function you can call keyForDid to get key id \(verkey\)
 for specific DID.
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
-* `recipientVk`: String - id \(verkey\) of my key. The key must be created by calling indy\_create\_key or indy\_create\_and\_store\_my\_did
+* `recipientVk`: String - id \(verkey\) of my key. The key must be created by calling createKey or createAndStoreMyDid
 * `encryptedMsg`: Buffer
 * __->__ `decryptedMsgRaw`: Buffer - decrypted message as a pointer to an array of bytes
 
 Errors: `Common*`, `Wallet*`, `Crypto*`
+
+#### packMessage \( wh, message, receiverKeys, senderVk \) -&gt; jwe
+
+Packs a message by encrypting the message and serializes it in a JWE-like format (Experimental)
+
+Note to use DID keys with this function you can call keyForDid to get key id (verkey) for specific DID.
+
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
+* `message`: Buffer - message that to be packed
+* `receiverKeys`: Array - an array of strings which contains receiver's keys the message is being encrypted for.
+    Example: \['receiver edge_agent_1 verkey', 'receiver edge_agent_2 verkey'\]
+* `senderVk`: String - the sender's verkey as a string When null pointer is used in this parameter, anoncrypt is used
+* __->__ `jwe`: Buffer - a JWE 
+```
+using authcrypt alg:
+{
+    "protected": "b64URLencoded({
+       "enc": "xsalsa20poly1305",
+       "typ": "JWM/1.0",
+       "alg": "Authcrypt",
+       "recipients": [
+           {
+               "encrypted_key": base64URLencode(libsodium.crypto_box(my_key, their_vk, cek, cek_iv))
+               "header": {
+                    "kid": "base58encode(recipient_verkey)",
+                    "sender" : base64URLencode(libsodium.crypto_box_seal(their_vk, base58encode(sender_vk)),
+                    "iv" : base64URLencode(cek_iv)
+               }
+           },
+       ],
+    })",
+    "iv": <b64URLencode(iv)>,
+    "ciphertext": b64URLencode(encrypt_detached({'@type'...}, protected_value_encoded, iv, cek),
+    "tag": <b64URLencode(tag)>
+}
+
+Alternative example in using anoncrypt alg is defined below:
+{
+    "protected": "b64URLencoded({
+       "enc": "xsalsa20poly1305",
+       "typ": "JWM/1.0",
+       "alg": "Anoncrypt",
+       "recipients": [
+           {
+               "encrypted_key": base64URLencode(libsodium.crypto_box_seal(their_vk, cek)),
+               "header": {
+                   "kid": base58encode(recipient_verkey),
+               }
+           },
+       ],
+    })",
+    "iv": b64URLencode(iv),
+    "ciphertext": b64URLencode(encrypt_detached({'@type'...}, protected_value_encoded, iv, cek),
+    "tag": b64URLencode(tag)
+}
+````
+
+Errors: `Common*`, `Wallet*`, `Ledger*`, `Crypto*`
+
+#### unpackMessage \( wh, jwe \) -&gt; res
+
+Unpacks a JWE-like formatted message outputted by packMessage (Experimental)
+
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
+* `jwe`: Buffer - JWE to be unpacked
+* __->__ `res`: Buffer - a result message
+```
+if authcrypt was used to pack the message returns this json structure:
+{
+    message: <decrypted message>,
+    sender_verkey: <sender_verkey>,
+    recipient_verkey: <recipient_verkey>
+}
+
+OR
+
+if anoncrypt was used to pack the message returns this json structure:
+{
+    message: <decrypted message>,
+    recipient_verkey: <recipient_verkey>
+}
+````
+
+Errors: `Common*`, `Wallet*`, `Ledger*`, `Crypto*`
 
 ### did
 
@@ -960,19 +1074,7 @@ Saves the Identity DID with keys in a secured Wallet, so that it can be used to 
 and encrypt transactions.
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
-* `did`: Json - Identity information as json. Example:
-```
-{
-    "did": string, (optional;
-            if not provided and cid param is false then the first 16 bit of the verkey will be used as a new DID;
-            if not provided and cid is true then the full verkey will be used as a new DID;
-            if provided, then keys will be replaced - key rotation use case)
-    "seed": string, (optional; if not provide then a random one will be created)
-    "crypto_type": string, (optional; if not set then ed25519 curve is used;
-              currently only 'ed25519' value is supported for this field)
-    "cid": bool, (optional; if not set then false is used;)
-}
-````
+* `did`: Json
 * __->__ [ `did`: String, `verkey`: String ] - did: DID generated and stored in the wallet
 verkey: The DIDs verification key
 
@@ -984,15 +1086,8 @@ Generated temporary keys \(signing and encryption keys\) for an existing
 DID \(owned by the caller of the library\).
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
-* `did`: String
-* `identity`: Json - Identity information as json. Example:
-```
-{
-    "seed": string, (optional; if not provide then a random one will be created)
-    "crypto_type": string, (optional; if not set then ed25519 curve is used;
-              currently only 'ed25519' value is supported for this field)
-}
-````
+* `did`: String - target did to rotate keys.
+* `identity`: Json
 * __->__ `verkey`: String - verkey: The DIDs verification key
 
 Errors: `Common*`, `Wallet*`, `Crypto*`
@@ -1028,15 +1123,15 @@ Errors: `Common*`, `Wallet*`, `Crypto*`
 
 Returns ver key \(key id\) for the given DID.
 
-"indy\_key\_for\_did" call follow the idea that we resolve information about their DID from
-the ledger with cache in the local wallet. The "indy\_open\_wallet" call has freshness parameter
+"keyForDid" call follow the idea that we resolve information about their DID from
+the ledger with cache in the local wallet. The "openWallet" call has freshness parameter
 that is used for checking the freshness of cached pool value.
 
 Note if you don't want to resolve their DID info from the ledger you can use
-"indy\_key\_for\_local\_did" call instead that will look only to the local wallet and skip
+"keyForLocalDid" call instead that will look only to the local wallet and skip
 freshness checking.
 
-Note that "indy\_create\_and\_store\_my\_did" makes similar wallet record as "indy\_create\_key".
+Note that "createAndStoreMyDid" makes similar wallet record as "createKey".
 As result we can use returned ver key in all generic crypto and messaging functions.
 
 * `poolHandle`: Handle (Number) - Pool handle \(created by open\_pool\).
@@ -1050,13 +1145,13 @@ Errors: `Common*`, `Wallet*`, `Crypto*`
 
 Returns ver key \(key id\) for the given DID.
 
-"indy\_key\_for\_local\_did" call looks data stored in the local wallet only and skips freshness
+"keyForLocalDid" call looks data stored in the local wallet only and skips freshness
 checking.
 
-Note if you want to get fresh data from the ledger you can use "indy\_key\_for\_did" call
+Note if you want to get fresh data from the ledger you can use "keyForDid" call
 instead.
 
-Note that "indy\_create\_and\_store\_my\_did" makes similar wallet record as "indy\_create\_key".
+Note that "createAndStoreMyDid" makes similar wallet record as "createKey".
 As result we can use returned ver key in all generic crypto and messaging functions.
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
@@ -1119,6 +1214,8 @@ Retrieves the information about the giving DID in the wallet.
 * __->__ `didWithMeta`: Json - did\_with\_meta: {
 "did": string - DID stored in the wallet,
 "verkey": string - The DIDs transport key \(ver key, key id\),
+"tempVerkey": string - Temporary DIDs transport key \(ver key, key id\), exist only during the rotation of the keys.
+After rotation is done, it becomes a new verkey.
 "metadata": string - The meta information stored with the DID
 }
 
@@ -1177,6 +1274,26 @@ The request is sent to the validator pool as is. It's assumed that it's already 
 
 Errors: `Common*`, `Ledger*`
 
+#### submitAction \( poolHandle, request, nodes, timeout \) -&gt; requestResult
+
+Send action to particular nodes of validator pool.
+
+The list of requests can be send:
+POOL\_RESTART
+GET\_VALIDATOR\_INFO
+
+The request is sent to the nodes as is. It's assumed that it's already prepared.
+
+* `poolHandle`: Handle (Number) - pool handle \(created by open\_pool\_ledger\).
+* `request`: Json - Request data json.
+* `nodes`: Json - \(Optional\) List of node names to send the request.
+\["Node1", "Node2",...."NodeN"\]
+* `timeout`: Number - \(Optional\) Time to wait respond from nodes \(override the default timeout\) \(in sec\).
+Pass -1 to use default timeout
+* __->__ `requestResult`: Json
+
+Errors: `Common*`, `Ledger*`
+
 #### signRequest \( wh, submitterDid, request \) -&gt; signedRequest
 
 Signs request message.
@@ -1209,8 +1326,8 @@ Errors: `Common*`, `Wallet*`, `Ledger*`, `Crypto*`
 
 Builds a request to get a DDO.
 
-* `submitterDid`: String - Id of Identity stored in secured Wallet.
-* `targetDid`: String - Id of Identity stored in secured Wallet.
+* `submitterDid`: String - \(Optional\) DID of the read request sender \(if not provided then default Libindy DID will be used\).
+* `targetDid`: String - Target DID as base58-encoded string for 16 or 32 bit DID value.
 * __->__ `requestResult`: Json
 
 Errors: `Common*`
@@ -1228,6 +1345,7 @@ null \(common USER\)
 TRUSTEE
 STEWARD
 TRUST\_ANCHOR
+NETWORK\_MONITOR
 empty string to reset role
 * __->__ `request`: Json
 
@@ -1250,7 +1368,7 @@ Errors: `Common*`
 
 Builds a GET\_ATTRIB request. Request to get information about an Attribute for the specified DID.
 
-* `submitterDid`: String - DID of the read request sender.
+* `submitterDid`: String - \(Optional\) DID of the read request sender \(if not provided then default Libindy DID will be used\).
 * `targetDid`: String - Target DID as base58-encoded string for 16 or 32 bit DID value.
 * `hash`: String - \(Optional\) Requested attribute hash.
 * `raw`: String - \(Optional\) Requested attribute name.
@@ -1263,7 +1381,7 @@ Errors: `Common*`
 
 Builds a GET\_NYM request. Request to get information about a DID \(NYM\).
 
-* `submitterDid`: String - DID of the read request sender.
+* `submitterDid`: String - \(Optional\) DID of the read request sender \(if not provided then default Libindy DID will be used\).
 * `targetDid`: String - Target DID as base58-encoded string for 16 or 32 bit DID value.
 * __->__ `request`: Json
 
@@ -1279,7 +1397,7 @@ Builds a SCHEMA request. Request to add Credential's schema.
 {
     id: identifier of schema
     attrNames: array of attribute name strings
-    name: Schema's name string
+    name: Schema's name string (the number of attributes should be less or equal than 125)
     version: Schema's version string,
     ver: Version of the Schema json
 }
@@ -1292,7 +1410,7 @@ Errors: `Common*`
 
 Builds a GET\_SCHEMA request. Request to get Credential's Schema.
 
-* `submitterDid`: String - DID of the read request sender.
+* `submitterDid`: String - \(Optional\) DID of the read request sender \(if not provided then default Libindy DID will be used\).
 * `id`: String - Schema ID in ledger
 * __->__ `request`: Json
 
@@ -1346,7 +1464,7 @@ Errors: `Common*`
 Builds a GET\_CRED\_DEF request. Request to get a Credential Definition \(in particular, public key\),
 that Issuer creates for a particular Credential Schema.
 
-* `submitterDid`: String - DID of the read request sender.
+* `submitterDid`: String - \(Optional\) DID of the read request sender \(if not provided then default Libindy DID will be used\).
 * `id`: String - Credential Definition ID in ledger.
 * __->__ `request`: Json
 
@@ -1401,22 +1519,22 @@ Errors: `Common*`
 
 Builds a GET\_VALIDATOR\_INFO request.
 
-* `submitterDid`: String - Id of Identity stored in secured Wallet.
+* `submitterDid`: String - DID of the read request sender.
 * __->__ `request`: Json
 
 Errors: `Common*`
 
-#### buildGetTxnRequest \( submitterDid, ledgerType, data \) -&gt; request
+#### buildGetTxnRequest \( submitterDid, ledgerType, seqNo \) -&gt; request
 
 Builds a GET\_TXN request. Request to get any transaction by its seq\_no.
 
-* `submitterDid`: String - DID of the request submitter.
+* `submitterDid`: String - \(Optional\) DID of the read request sender \(if not provided then default Libindy DID will be used\).
 * `ledgerType`: String - \(Optional\) type of the ledger the requested transaction belongs to:
-    * DOMAIN - used default,
-    * POOL,
-    * CONFIG
-    * any number
-* `data`: Number
+DOMAIN - used default,
+POOL,
+CONFIG
+any number
+* `seqNo`: Number - requested transaction sequence number as it's stored on Ledger.
 * __->__ `request`: Json
 
 Errors: `Common*`
@@ -1439,13 +1557,13 @@ Errors: `Common*`
 Builds a POOL\_RESTART request.
 
 * `submitterDid`: String - Id of Identity stored in secured Wallet.
-* `action`: String
-* `datetime`: String
+* `action`: String - Action that pool has to do after received transaction.
+* `datetime`: String - &lt;Optional&gt; Restart time in datetime format. Skip to restart as early as possible.
 * __->__ `request`: Json
 
 Errors: `Common*`
 
-#### buildPoolUpgradeRequest \( submitterDid, name, version, action, sha256, timeout, schedule, justification, reinstall, force \) -&gt; request
+#### buildPoolUpgradeRequest \( submitterDid, name, version, action, sha256, timeout, schedule, justification, reinstall, force, package\_ \) -&gt; request
 
 Builds a POOL\_UPGRADE request. Request to upgrade the Pool \(sent by Trustee\).
 It upgrades the specified Nodes \(either all nodes in the Pool, or some specific ones\).
@@ -1462,6 +1580,7 @@ Must be greater than existing one \(or equal if reinstall flag is True\).
 * `reinstall`: Boolean - Whether it's allowed to re-install the same version. False by default.
 * `force`: Boolean - Whether we should apply transaction \(schedule Upgrade\) without waiting
 for consensus of this transaction.
+* `package_`: String
 * __->__ `request`: Json
 
 Errors: `Common*`
@@ -1498,7 +1617,7 @@ Errors: `Common*`
 Builds a GET\_REVOC\_REG\_DEF request. Request to get a revocation registry definition,
 that Issuer creates for a particular Credential Definition.
 
-* `submitterDid`: String - DID of the read request sender.
+* `submitterDid`: String - \(Optional\) DID of the read request sender \(if not provided then default Libindy DID will be used\).
 * `id`: String - ID of Revocation Registry Definition in ledger.
 * __->__ `request`: Json
 
@@ -1562,7 +1681,7 @@ Errors: `Common*`
 Builds a GET\_REVOC\_REG request. Request to get the accumulated state of the Revocation Registry
 by ID. The state is defined by the given timestamp.
 
-* `submitterDid`: String - DID of the read request sender.
+* `submitterDid`: String - \(Optional\) DID of the read request sender \(if not provided then default Libindy DID will be used\).
 * `revocRegDefId`: String - ID of the corresponding Revocation Registry Definition in ledger.
 * `timestamp`: Timestamp (Number) - Requested time represented as a total number of seconds from Unix Epoch
 * __->__ `request`: Json
@@ -1592,7 +1711,7 @@ Builds a GET\_REVOC\_REG\_DELTA request. Request to get the delta of the accumul
 The Delta is defined by from and to timestamp fields.
 If from is not specified, then the whole state till to will be returned.
 
-* `submitterDid`: String - DID of the read request sender.
+* `submitterDid`: String - \(Optional\) DID of the read request sender \(if not provided then default Libindy DID will be used\).
 * `revocRegDefId`: String - ID of the corresponding Revocation Registry Definition in ledger.
 * `from`: Timestamp (Number) - Requested time represented as a total number of seconds from Unix Epoch
 * `to`: Timestamp (Number) - Requested time represented as a total number of seconds from Unix Epoch
@@ -1620,6 +1739,38 @@ Parse a GET\_REVOC\_REG\_DELTA response to get Revocation Registry Delta in the 
 
 Errors: `Common*`
 
+#### getResponseMetadata \( response \) -&gt; responseMetadata
+
+Parse transaction response to fetch metadata.
+The important use case for this method is validation of Node's response freshens.
+
+Distributed Ledgers can reply with outdated information for consequence read request after write.
+To reduce pool load libindy sends read requests to one random node in the pool.
+Consensus validation is performed based on validation of nodes multi signature for current ledger Merkle Trie root.
+This multi signature contains information about the latest ldeger's transaction ordering time and sequence number that this method returns.
+
+If node that returned response for some reason is out of consensus and has outdated ledger
+it can be caught by analysis of the returned latest ledger's transaction ordering time and sequence number.
+
+There are two ways to filter outdated responses:
+1\) based on "seqNo" - sender knows the sequence number of transaction that he consider as a fresh enough.
+2\) based on "txnTime" - sender knows the timestamp that he consider as a fresh enough.
+
+Note: response of GET\_VALIDATOR\_INFO request isn't supported
+
+* `response`: Json - response of write or get request.
+* __->__ `responseMetadata`: Json - response metadata.
+```
+{
+    "seqNo": Option<u64> - transaction sequence number,
+    "txnTime": Option<u64> - transaction ordering time,
+    "lastSeqNo": Option<u64> - the latest transaction seqNo for particular Node,
+    "lastTxnTime": Option<u64> - the latest transaction ordering time for particular Node
+}
+````
+
+Errors: `Common*`, `Ledger*`
+
 ### non_secrets
 
 #### addWalletRecord \( wh, type, id, value, tags \) -&gt; void
@@ -1630,7 +1781,7 @@ Create a new non-secret record in the wallet
 * `type`: String - allows to separate different record types collections
 * `id`: String - the id of record
 * `value`: String - the value of record
-* `tags`: Json - the record tags used for search and storing meta information as json:
+* `tags`: Json - \(optional\) the record tags used for search and storing meta information as json:
 ```
   {
     "tagName1": <str>, // string tag (will be stored encrypted)
@@ -1751,13 +1902,13 @@ Get an wallet record by id
 ````
 
 
-#### openWalletSearch \( wh, type, query, options \) -&gt; searchHandle
+#### openWalletSearch \( wh, type, query, options \) -&gt; sh
 
 Search for wallet records.
 
 Note instead of immediately returning of fetched records
 this call returns wallet\_search\_handle that can be used later
-to fetch records by small batches \(with indy\_fetch\_wallet\_search\_next\_records\).
+to fetch records by small batches \(with fetchWalletSearchNextRecords\).
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `type`: String - allows to separate different record types collections
@@ -1782,8 +1933,8 @@ to fetch records by small batches \(with indy\_fetch\_wallet\_search\_next\_reco
    retrieveTags: (optional, false by default) Retrieve record tags,
  }
 ````
-* __->__ `searchHandle`: Handle (Number) - search\_handle: Wallet search handle that can be used later
-to fetch records by small batches \(with indy\_fetch\_wallet\_search\_next\_records\)
+* __->__ `sh`: Handle (Number) - search\_handle: Wallet search handle that can be used later
+to fetch records by small batches \(with fetchWalletSearchNextRecords\)
 
 
 #### fetchWalletSearchNextRecords \( wh, walletSearchHandle, count \) -&gt; records
@@ -1793,7 +1944,7 @@ Fetch next records for wallet search.
 Not if there are no records this call returns WalletNoRecords error.
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
-* `walletSearchHandle`: Handle (Number) - wallet search handle \(created by indy\_open\_wallet\_search\)
+* `walletSearchHandle`: Handle (Number) - wallet search handle \(created by openWalletSearch\)
 * `count`: Number - Count of records to fetch
 * __->__ `records`: Json - wallet records json:
 ```
@@ -1886,12 +2037,9 @@ secret in libindy wallet \(see crypto module\).
 Note that payment method should be able to resolve this
 secret by fully resolvable payment address format.
 
-Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
-in the future releases.
-
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
-* `paymentMethod`: String - Payment method to use \(for example, 'sov'\)
-* `config`: String - payment address config as json:
+* `paymentMethod`: String - payment method to use \(for example, 'sov'\)
+* `config`: Json - payment address config as json:
 ```
   {
     seed: <str>, // allows deterministic creation of payment address
@@ -1922,12 +2070,11 @@ Format of inputs is specific for payment method. Usually it should reference pay
 with at least one output that corresponds to payment address that user owns.
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
-* `submitterDid`: String - DID of request sender
+* `submitterDid`: String - \(Optional\) DID of request sender
 * `req`: Json - initial transaction request as json
 * `inputs`: Json - The list of payment sources as json array:
 \["source1", ...\]
-Notes:
-- input should reference paymentAddress
+- each input should reference paymentAddress
 - this param will be used to determine payment\_method
 * `outputs`: Json - The list of outputs as json array:
 ```
@@ -1936,8 +2083,7 @@ Notes:
     amount: <int>, // amount
   }]
 ````
-* `extra`: String - Optional information for payment operation.
-
+* `extra`: String - \/\/ optional information for payment operation
 * __->__ [ `reqWithFees`: Json, `paymentMethod`: String ] - req\_with\_fees\_json - modified Indy request with added fees info
 payment\_method - used payment method
 
@@ -1948,7 +2094,6 @@ Parses response for Indy request with fees.
 
 * `paymentMethod`: String - payment method to use
 * `resp`: Json - response for Indy request with fees
-Note: this param will be used to determine payment\_method
 * __->__ `receipts`: Json - receipts\_json - parsed \(payment method and node version agnostic\) receipts info as json:
 ```
   [{
@@ -1966,7 +2111,7 @@ Builds Indy request for getting sources list for payment address
 according to this payment method.
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
-* `submitterDid`: String - DID of request sender
+* `submitterDid`: String - \(Optional\) DID of request sender
 * `paymentAddress`: String - target payment address
 * __->__ [ `getSourcesTxn`: Json, `paymentMethod`: String ] - get\_sources\_txn\_json - Indy request for getting sources list for payment address
 payment\_method - used payment method
@@ -1976,9 +2121,8 @@ payment\_method - used payment method
 
 Parses response for Indy request for getting sources list.
 
-* `paymentMethod`: String - payment method to use
+* `paymentMethod`: String - payment method to use.
 * `resp`: Json - response for Indy request for getting sources list
-Note: this param will be used to determine payment\_method
 * __->__ `sources`: Json - sources\_json - parsed \(payment method and node version agnostic\) sources info as json:
 ```
   [{
@@ -1988,6 +2132,7 @@ Note: this param will be used to determine payment\_method
      extra: <str>, // optional data from payment transaction
   }]
 ````
+
 
 #### buildPaymentReq \( wh, submitterDid, inputs, outputs, extra \) -&gt; \[ paymentReq, paymentMethod \]
 
@@ -2000,7 +2145,7 @@ Format of inputs is specific for payment method. Usually it should reference pay
 with at least one output that corresponds to payment address that user owns.
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
-* `submitterDid`: String - DID of request sender
+* `submitterDid`: String - \(Optional\) DID of request sender
 * `inputs`: Json - The list of payment sources as json array:
 \["source1", ...\]
 Note that each source should reference payment address
@@ -2011,8 +2156,7 @@ Note that each source should reference payment address
     amount: <int>, // amount
   }]
 ````
-* `extra`: String - Optional information for payment operation.
-
+* `extra`: String - \/\/ optional information for payment operation
 * __->__ [ `paymentReq`: Json, `paymentMethod`: String ] - payment\_req\_json - Indy request for doing payment
 payment\_method - used payment method
 
@@ -2021,9 +2165,8 @@ payment\_method - used payment method
 
 Parses response for Indy request for payment txn.
 
-* `paymentMethod`: String
+* `paymentMethod`: String - payment method to use
 * `resp`: Json - response for Indy request for payment txn
-Note: this param will be used to determine payment\_method
 * __->__ `receipts`: Json - receipts\_json - parsed \(payment method and node version agnostic\) receipts info as json:
 ```
   [{
@@ -2041,7 +2184,7 @@ Builds Indy request for doing minting
 according to this payment method.
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
-* `submitterDid`: String - DID of request sender
+* `submitterDid`: String - \(Optional\) DID of request sender
 * `outputs`: Json - The list of outputs as json array:
 ```
   [{
@@ -2049,7 +2192,7 @@ according to this payment method.
     amount: <int>, // amount
   }]
 ````
-* `extra`: String - Optional information for mint operation.
+* `extra`: String - \/\/ optional information for mint operation
 * __->__ [ `mintReq`: Json, `paymentMethod`: String ] - mint\_req\_json - Indy request for doing minting
 payment\_method - used payment method
 
@@ -2059,15 +2202,14 @@ payment\_method - used payment method
 Builds Indy request for setting fees for transactions in the ledger
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
-* `submitterDid`: String - DID of request sender
-payment\_method
+* `submitterDid`: String - \(Optional\) DID of request sender
+* `paymentMethod`: String - payment method to use
 fees\_json {
 txnType1: amount1,
 txnType2: amount2,
 .................
 txnTypeN: amountN,
 }
-* `paymentMethod`: String
 * `fees`: Json
 * __->__ `setTxnFees`: Json - set\_txn\_fees\_json - Indy request for setting fees for transactions in the ledger
 
@@ -2077,8 +2219,7 @@ txnTypeN: amountN,
 Builds Indy get request for getting fees for transactions in the ledger
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
-* `submitterDid`: String - DID of request sender
-payment\_method
+* `submitterDid`: String - \(Optional\) DID of request sender
 * `paymentMethod`: String - payment method to use
 * __->__ `getTxnFees`: Json - get\_txn\_fees\_json - Indy request for getting fees for transactions in the ledger
 
@@ -2087,7 +2228,7 @@ payment\_method
 
 Parses response for Indy request for getting fees
 
-* `paymentMethod`: String
+* `paymentMethod`: String - payment method to use
 * `resp`: Json - response for Indy request for getting fees
 * __->__ `fees`: Json - fees\_json {
 txnType1: amount1,
@@ -2096,37 +2237,33 @@ txnType2: amount2,
 txnTypeN: amountN,
 }
 
-#### buildVerifyPaymentReq \( wh, submitterDid, receipt \) -&gt; \[ verifyReq, paymentMethod \]
+
+#### buildVerifyPaymentReq \( wh, submitterDid, receipt \) -&gt; \[ verifyTxn, paymentMethod \]
 
 Builds Indy request for information to verify the payment receipt
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
-* `submitterDid`: String - DID of request sender
+* `submitterDid`: String - \(Optional\) DID of request sender
 * `receipt`: String - payment receipt to verify
+* __->__ [ `verifyTxn`: Json, `paymentMethod`: String ] - verify\_txn\_json: Indy request for verification receipt
+payment\_method: used payment method
 
-* __->__ [ `verifyReq`: Json, `paymentMethod`: String ] - verify\_req\_json - Indy request for verification receipt
-payment\_method - used payment method
 
+#### parseVerifyPaymentResponse \( paymentMethod, resp \) -&gt; txn
 
-#### parseVerifyPaymentResponse \( paymentMethod, resp \) -&gt; receiptInfo
-
-Parses Indy response with information to verify receipt.
+Parses Indy response with information to verify receipt
 
 * `paymentMethod`: String - payment method to use
 * `resp`: Json - response of the ledger for verify txn
-Note: this param will be used to determine payment\_method
-* __->__ `receiptInfo`: Json - txn\_json - parsed \(payment method and node version agnostic\) receipt verification info as json:
-```
-txn_json: {
-    sources: [<str>, ]
-    receipts: [ {
-        recipient: <str>, // payment address of recipient
-        receipt: <str>, // receipt that can be used for payment referencing and verification
-        amount: <int>, // amount
-    } ],
-    extra: <str>, //optional data
+* __->__ `txn`: Json - txn\_json: {
+sources: \[&lt;str&gt;, \]
+receipts: \[ {
+recipient: &lt;str&gt;, \/\/ payment address of recipient
+receipt: &lt;str&gt;, \/\/ receipt that can be used for payment referencing and verification
+amount: &lt;int&gt;, \/\/ amount
+} \],
+extra: &lt;str&gt;, \/\/optional data
 }
-````
 
 
 ### pool
@@ -2152,7 +2289,7 @@ Errors: `Common*`, `Ledger*`
 Opens pool ledger and performs connecting to pool nodes.
 
 Pool ledger configuration with corresponded name must be previously created
-with indy\_create\_pool\_ledger\_config method.
+with createPoolLedgerConfig method.
 It is impossible to open pool with the same name more than once.
 
 config\_name: Name of the pool ledger configuration.
@@ -2163,13 +2300,13 @@ if NULL, then default config will be used. Example:
     "timeout": int (optional), timeout for network request (in sec).
     "extended_timeout": int (optional), extended timeout for network request (in sec).
     "preordered_nodes": array<string> -  (optional), names of nodes which will have a priority during request sending:
-            [ "name_of_1st_prior_node",  "name_of_2nd_prior_node", .... ]
-            Note: Not specified nodes will be placed in a random way.
+        ["name_of_1st_prior_node",  "name_of_2nd_prior_node", .... ]
+        Note: Not specified nodes will be placed in a random way.
 }
 ````
 
 * `configName`: String
-* `config`: String
+* `config`: Json
 * __->__ `poolHandle`: Handle (Number) - Handle to opened pool to use in methods that require pool connection.
 
 Errors: `Common*`, `Ledger*`
@@ -2178,7 +2315,7 @@ Errors: `Common*`, `Ledger*`
 
 Refreshes a local copy of a pool ledger and updates pool nodes connections.
 
-* `handle`: Handle (Number) - pool handle returned by indy\_open\_pool\_ledger
+* `handle`: Handle (Number) - pool handle returned by openPoolLedger
 * __->__ void
 
 Errors: `Common*`, `Ledger*`
@@ -2194,7 +2331,7 @@ Lists names of created pool ledgers
 
 Closes opened pool ledger, opened nodes connections and frees allocated resources.
 
-* `handle`: Handle (Number) - pool handle returned by indy\_open\_pool\_ledger.
+* `handle`: Handle (Number) - pool handle returned by openPoolLedger.
 * __->__ void
 
 Errors: `Common*`, `Ledger*`
@@ -2219,7 +2356,7 @@ By default PROTOCOL\_VERSION=1.
 
 * `protocolVersion`: Number - Protocol version will be used:
 1 - for Indy Node 1.3
-2 - for Indy Node 1.4
+2 - for Indy Node 1.4 and greater
 * __->__ void
 
 Errors: `Common*`
@@ -2228,77 +2365,92 @@ Errors: `Common*`
 
 #### createWallet \( config, credentials \) -&gt; void
 
-Creates a new secure wallet with the given unique name.
+Create a new secure wallet.
 
-* `config`: String - Wallet configuration json.
+* `config`: Json - Wallet configuration json.
 ```
 {
-   "id": string, Identifier of the wallet.
-         Configured storage uses this identifier to lookup exact wallet data placement.
-   "storage_type": optional<string>, Type of the wallet storage. Defaults to 'default'.
-                  'Default' storage type allows to store wallet data in the local file.
-                  Custom storage types can be registered with indy_register_wallet_storage call.
-   "storage_config": optional<object>, Storage configuration json. Storage type defines set of supported keys.
-                     Can be optional if storage supports default configuration.
-                     For 'default' storage type configuration is:
-   {
-     "path": optional<string>, Path to the directory with wallet files.
-             Defaults to $HOME/.indy_client/wallets.
-             Wallet will be stored in the file {path}/{id}/sqlite.db
-   }
+  "id": string, Identifier of the wallet.
+        Configured storage uses this identifier to lookup exact wallet data placement.
+  "storage_type": optional<string>, Type of the wallet storage. Defaults to 'default'.
+                 'Default' storage type allows to store wallet data in the local file.
+                 Custom storage types can be registered with indy_register_wallet_storage call.
+  "storage_config": optional<object>, Storage configuration json. Storage type defines set of supported keys.
+                    Can be optional if storage supports default configuration.
+                    For 'default' storage type configuration is:
+  {
+    "path": optional<string>, Path to the directory with wallet files.
+            Defaults to $HOME/.indy_client/wallet.
+            Wallet will be stored in the file {path}/{id}/sqlite.db
+  }
 }
-```
-* `credentials`: String? - Wallet credentials json. 
+````
+* `credentials`: Json - Wallet credentials json
 ```
 {
-   "key": string, Passphrase used to derive wallet master key
-   "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
-                          Can be optional if storage supports default configuration.
-                          For 'default' storage type should be empty.
-
+  "key": string, Key or passphrase used for wallet key derivation.
+                 Look to key_derivation_method param for information about supported key derivation methods.
+  "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
+                         Can be optional if storage supports default configuration.
+                         For 'default' storage type should be empty.
+  "key_derivation_method": optional<string> Algorithm to use for wallet key derivation:
+                         ARGON2I_MOD - derive secured wallet master key (used by default)
+                         ARGON2I_INT - derive secured wallet master key (less secured but faster)
+                         RAW - raw wallet key master provided (skip derivation).
+                               RAW keys can be generated with generateWalletKey call
 }
-```
-
+````
 * __->__ void
 
 Errors: `Common*`, `Wallet*`
 
 #### openWallet \( config, credentials \) -&gt; handle
 
-Opens the wallet with specific name.
+Open the wallet.
 
-Wallet with corresponded name must be previously created with indy\_create\_wallet method.
-It is impossible to open wallet with the same name more than once.
+Wallet must be previously created with createWallet method.
 
-* `config`: String - Wallet configuration json.
+* `config`: Json - Wallet configuration json.
 ```
-{
-   "id": string, Identifier of the wallet.
-         Configured storage uses this identifier to lookup exact wallet data placement.
-   "storage_type": optional<string>, Type of the wallet storage. Defaults to 'default'.
-                  'Default' storage type allows to store wallet data in the local file.
-                  Custom storage types can be registered with indy_register_wallet_storage call.
-   "storage_config": optional<object>, Storage configuration json. Storage type defines set of supported keys.
-                     Can be optional if storage supports default configuration.
-                     For 'default' storage type configuration is:
-   {
-     "path": optional<string>, Path to the directory with wallet files.
-             Defaults to $HOME/.indy_client/wallets.
-             Wallet will be stored in the file {path}/{id}/sqlite.db
-   }
-}
+  {
+      "id": string, Identifier of the wallet.
+            Configured storage uses this identifier to lookup exact wallet data placement.
+      "storage_type": optional<string>, Type of the wallet storage. Defaults to 'default'.
+                      'Default' storage type allows to store wallet data in the local file.
+                      Custom storage types can be registered with indy_register_wallet_storage call.
+      "storage_config": optional<object>, Storage configuration json. Storage type defines set of supported keys.
+                        Can be optional if storage supports default configuration.
+                        For 'default' storage type configuration is:
+          {
+             "path": optional<string>, Path to the directory with wallet files.
+                     Defaults to $HOME/.indy_client/wallet.
+                     Wallet will be stored in the file {path}/{id}/sqlite.db
+          }
+  }
+````
+* `credentials`: Json - Wallet credentials json
 ```
-* `credentials`: String? - Wallet credentials json. 
-```
-{
-   "key": string, Passphrase used to derive wallet master key
-   "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
-                          Can be optional if storage supports default configuration.
-                          For 'default' storage type should be empty.
-
-}
-```
-* __->__ `handle`: Handle (Number) - Handle to opened wallet to use in methods that require wallet access.
+  {
+      "key": string, Key or passphrase used for wallet key derivation.
+                     Look to key_derivation_method param for information about supported key derivation methods.
+      "rekey": optional<string>, If present than wallet master key will be rotated to a new one.
+      "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
+                             Can be optional if storage supports default configuration.
+                             For 'default' storage type should be empty.
+      "key_derivation_method": optional<string> Algorithm to use for wallet key derivation:
+                         ARGON2I_MOD - derive secured wallet master key (used by default)
+                         ARGON2I_INT - derive secured wallet master key (less secured but faster)
+                         RAW - raw wallet key master provided (skip derivation).
+                               RAW keys can be generated with generateWalletKey call
+      "rekey_derivation_method": optional<string> Algorithm to use for wallet rekey derivation:
+                         ARGON2I_MOD - derive secured wallet master rekey (used by default)
+                         ARGON2I_INT - derive secured wallet master rekey (less secured but faster)
+                         RAW - raw wallet rekey master provided (skip derivation).
+                               RAW keys can be generated with generateWalletKey call
+  }
+````
+* __->__ `handle`: Handle (Number) - err: Error code
+handle: Handle to opened wallet to use in methods that require wallet access.
 
 Errors: `Common*`, `Wallet*`
 
@@ -2307,13 +2459,51 @@ Errors: `Common*`, `Wallet*`
 Exports opened wallet
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
-* `exportConfig`: Json - JSON containing settings for input operation.
+* `exportConfig`: Json
+* __->__ void
+
+Errors: `Common*`, `Wallet*`
+
+#### importWallet \( config, credentials, importConfig \) -&gt; void
+
+Creates a new secure wallet and then imports its content
+according to fields provided in import\_config
+This can be seen as an createWallet call with additional content import
+
+* `config`: Json - Wallet configuration json.
 ```
+{
+  "id": string, Identifier of the wallet.
+        Configured storage uses this identifier to lookup exact wallet data placement.
+  "storage_type": optional<string>, Type of the wallet storage. Defaults to 'default'.
+                 'Default' storage type allows to store wallet data in the local file.
+                 Custom storage types can be registered with indy_register_wallet_storage call.
+  "storage_config": optional<object>, Storage configuration json. Storage type defines set of supported keys.
+                    Can be optional if storage supports default configuration.
+                    For 'default' storage type configuration is:
   {
-    "path": path of the file that contains exported wallet content
-    "key": passphrase used to derive export key
+    "path": optional<string>, Path to the directory with wallet files.
+            Defaults to $HOME/.indy_client/wallet.
+            Wallet will be stored in the file {path}/{id}/sqlite.db
   }
+}
 ````
+* `credentials`: Json - Wallet credentials json
+```
+{
+  "key": string, Key or passphrase used for wallet key derivation.
+                 Look to key_derivation_method param for information about supported key derivation methods.
+  "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
+                         Can be optional if storage supports default configuration.
+                         For 'default' storage type should be empty.
+  "key_derivation_method": optional<string> Algorithm to use for wallet key derivation:
+                            ARGON2I_MOD - derive secured wallet master key (used by default)
+                            ARGON2I_INT - derive secured wallet master key (less secured but faster)
+                            RAW - raw wallet key master provided (skip derivation).
+                               RAW keys can be generated with generateWalletKey call
+}
+````
+* `importConfig`: Json
 * __->__ void
 
 Errors: `Common*`, `Wallet*`
@@ -2327,65 +2517,115 @@ Closes opened wallet and frees allocated resources.
 
 Errors: `Common*`, `Wallet*`
 
-#### importWallet \( config, credentials, importConfigJson \) -&gt; void
-
-Creates a new secure wallet with the given unique name and then imports its content according to fields provided in import_config This can be seen as an indy_create_wallet call with additional content import
-* `config`: String - Wallet configuration json.
-```
-{
-   "id": string, Identifier of the wallet.
-         Configured storage uses this identifier to lookup exact wallet data placement.
-   "storage_type": optional<string>, Type of the wallet storage. Defaults to 'default'.
-                  'Default' storage type allows to store wallet data in the local file.
-                  Custom storage types can be registered with indy_register_wallet_storage call.
-   "storage_config": optional<object>, Storage configuration json. Storage type defines set of supported keys.
-                     Can be optional if storage supports default configuration.
-                     For 'default' storage type configuration is:
-   {
-     "path": optional<string>, Path to the directory with wallet files.
-             Defaults to $HOME/.indy_client/wallets.
-             Wallet will be stored in the file {path}/{id}/sqlite.db
-   }
-}
-```
-* `credentials`: String? - Wallet credentials json. 
-```
-{
-   "key": string, Passphrase used to derive wallet master key
-   "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
-                          Can be optional if storage supports default configuration.
-                          For 'default' storage type should be empty.
-
-}
-```
-* `exportConfigJson`: String - JSON containing settings for input operation.
-```
-{
-    "path": path of the file that contains exported wallet content
-    "key": passphrase used to export key
-}
-```
-=======
-#### deleteWallet \( name, credentials \) -&gt; void
+#### deleteWallet \( config, credentials \) -&gt; void
 
 Deletes created wallet.
 
-* `name`: String - Name of the wallet to delete.
-* `credentials`: Json - Wallet credentials json
->>>>>>> master/master
+* `config`: Json - Wallet configuration json.
 ```
+{
+  "id": string, Identifier of the wallet.
+        Configured storage uses this identifier to lookup exact wallet data placement.
+  "storage_type": optional<string>, Type of the wallet storage. Defaults to 'default'.
+                 'Default' storage type allows to store wallet data in the local file.
+                 Custom storage types can be registered with indy_register_wallet_storage call.
+  "storage_config": optional<object>, Storage configuration json. Storage type defines set of supported keys.
+                    Can be optional if storage supports default configuration.
+                    For 'default' storage type configuration is:
   {
-      "key": string,
-      "rekey": Optional<string>,
-      "storage": Optional<object>  List of supported keys are defined by wallet type.
+    "path": optional<string>, Path to the directory with wallet files.
+            Defaults to $HOME/.indy_client/wallet.
+            Wallet will be stored in the file {path}/{id}/sqlite.db
   }
+}
+````
+* `credentials`: Json - Wallet credentials json
+```
+{
+  "key": string, Key or passphrase used for wallet key derivation.
+                 Look to key_derivation_method param for information about supported key derivation methods.
+  "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
+                         Can be optional if storage supports default configuration.
+                         For 'default' storage type should be empty.
+  "key_derivation_method": optional<string> Algorithm to use for wallet key derivation:
+                            ARGON2I_MOD - derive secured wallet master key (used by default)
+                            ARGON2I_INT - derive secured wallet master key (less secured but faster)
+                            RAW - raw wallet key master provided (skip derivation).
+                               RAW keys can be generated with generateWalletKey call
+}
 ````
 * __->__ void
 
 Errors: `Common*`, `Wallet*`
 
+#### generateWalletKey \( config \) -&gt; key
 
-[//]: # (CODEGEN-END - don't edit by hand see `codegen/index.js`)
+Generate wallet master key.
+Returned key is compatible with "RAW" key derivation method.
+It allows to avoid expensive key derivation for use cases when wallet keys can be stored in a secure enclave.
+
+* `config`: Json - \(optional\) key configuration json.
+```
+{
+  "seed": string, (optional) Seed that allows deterministic key creation (if not set random one will be created).
+                             Can be UTF-8, base64 or hex string.
+}
+````
+* __->__ `key`: String - err: Error code
+
+Errors: `Common*`, `Wallet*`
+
+
+### logger
+
+WARNING: You can only set the logger **once**. Call `setLogger`, `setDefaultLogger`, not both. Once it's been set, libindy won't let you change it.
+
+#### setDefaultLogger \( pattern \)
+
+Calling this turns on the default logger and libindy will write logs to stdout.
+
+* `pattern`: String - pattern that corresponds with the log messages to show.
+
+Errors: `Common*`
+
+NOTE: This is a synchronous function (does not return a promise.)
+
+#### setLogger \( logFn \)
+
+Set a function to be called every time a log is emitted from libindy.
+
+* `logFn`: Function(Int level, String target, String message, String module_path, String file, Int line)
+
+Example:
+```js
+indy.setLogger(function (level, target, message, modulePath, file, line) {
+    console.log('libindy said:', level, target, message, modulePath, file, line)
+})
+```
+
+Errors: `Common*`
+
+NOTE: This is a synchronous function (does not return a promise) but may call `logFn` asynchronously many times.
+
+### mod
+
+#### setRuntimeConfig \( config \)
+
+Set libindy runtime configuration. Can be optionally called to change current params.
+
+* `config`: Json
+```
+{
+  "crypto_thread_pool_size": Optional<int> - size of thread pool for the most expensive crypto operations. (4 by default)
+  "collect_backtrace": Optional<bool> - whether errors backtrace should be collected.
+    Capturing of backtrace can affect library performance.
+    NOTE: must be set before invocation of any other API functions.
+}
+```
+
+Errors: `Common*`
+
+NOTE: This is a synchronous function (does not return a promise.)
 
 ## Advanced
 
@@ -2419,19 +2659,15 @@ Setup an Indy SDK environment, and start a local pool.
 # You will need libindy in your system library path. (i.e. /usr/lib/libindy.so for linux)
 # or in this directory (i.e. wrappers/nodejs/libindy.so)
 
-# Copy over the libindy header files. This is needed for the build step.
-cp -r ../../libindy/include/ .
-
 # Install dependencies and do the initial build.
 npm install
 
 # Run the tests
-RUST_LOG=trace TEST_POOL_IP=10.0.0.2 npm test
+TEST_POOL_IP=10.0.0.2 npm test
+
 # If you built with libindy locally (i.e. wrappers/nodejs/libindy.so) you need to set LD_LIBRARY_PATH
-LD_LIBRARY_PATH=./ RUST_LOG=trace TEST_POOL_IP=10.0.0.2 npm test
+LD_LIBRARY_PATH=./ TEST_POOL_IP=10.0.0.2 npm test
 
 # To recompile the native bindings
 npm run rebuild
 ```
-
-Much of the cpp code and README documentation is generated by scripts in the `codegen` folder.

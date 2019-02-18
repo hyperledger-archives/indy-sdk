@@ -35,7 +35,7 @@ extern "C" {
                                                     const char *  payment_method,
                                                     const char *  config,
 
-                                                    void           (*cb)(indy_handle_t xcommand_handle,
+                                                    void           (*cb)(indy_handle_t command_handle_,
                                                                          indy_error_t  err,
                                                                          const char*   payment_address)
                                                     );
@@ -52,7 +52,7 @@ extern "C" {
     extern indy_error_t indy_list_payment_addresses(indy_handle_t command_handle,
                                                     indy_handle_t wallet_handle,
 
-                                                    void           (*cb)(indy_handle_t xcommand_handle,
+                                                    void           (*cb)(indy_handle_t command_handle_,
                                                                          indy_error_t  err,
                                                                          const char*   payment_addresses_json)
                                                     );
@@ -71,7 +71,7 @@ extern "C" {
     /// #Params
     /// command_handle: Command handle to map callback to caller context.
     /// wallet_handle: wallet handle
-    /// submitter_did : DID of request sender
+    /// submitter_did: (Optional) DID of request sender
     /// req_json: initial transaction request as json
     /// inputs_json: The list of payment sources as json array:
     ///   ["source1", ...]
@@ -96,7 +96,7 @@ extern "C" {
                                               const char *  outputs_json,
                                               const char *  extra,
 
-                                              void           (*cb)(indy_handle_t xcommand_handle,
+                                              void           (*cb)(indy_handle_t command_handle_,
                                                                    indy_error_t  err,
                                                                    const char*   req_with_fees_json,
                                                                    const char*   payment_method)
@@ -123,7 +123,7 @@ extern "C" {
                                                         const char *  payment_method,
                                                         const char *  resp_json,
 
-                                                        void           (*cb)(indy_handle_t xcommand_handle,
+                                                        void           (*cb)(indy_handle_t command_handle_,
                                                                 indy_error_t  err,
                                                                 const char*   receipts_json)
                                                      );
@@ -134,7 +134,7 @@ extern "C" {
     /// #Params
     /// command_handle: Command handle to map callback to caller context.
     /// wallet_handle: wallet handle
-    /// submitter_did : DID of request sender
+    /// submitter_did: (Optional) DID of request sender
     /// payment_address: target payment address
     ///
     /// #Returns
@@ -146,7 +146,7 @@ extern "C" {
                                                                const char *  submitter_did,
                                                                const char *  payment_address,
 
-                                                               void           (*cb)(indy_handle_t xcommand_handle,
+                                                               void           (*cb)(indy_handle_t command_handle_,
                                                                                     indy_error_t  err,
                                                                                     const char*   get_sources_txn_json,
                                                                                     const char*   payment_method)
@@ -173,7 +173,7 @@ extern "C" {
                                                                 const char *  payment_method,
                                                                 const char *  resp_json,
 
-                                                                void           (*cb)(indy_handle_t xcommand_handle,
+                                                                void           (*cb)(indy_handle_t command_handle_,
                                                                                      indy_error_t  err,
                                                                                      const char*   sources_json)
                                                                 );
@@ -189,7 +189,7 @@ extern "C" {
     /// #Params
     /// command_handle: Command handle to map callback to caller context.
     /// wallet_handle: wallet handle
-    /// submitter_did : DID of request sender
+    /// submitter_did: (Optional) DID of request sender
     /// inputs_json: The list of payment sources as json array:
     ///   ["source1", ...]
     ///   Note that each source should reference payment address
@@ -211,7 +211,7 @@ extern "C" {
                                                const char *  outputs_json,
                                                const char *  extra,
 
-                                               void           (*cb)(indy_handle_t xcommand_handle,
+                                               void           (*cb)(indy_handle_t command_handle_,
                                                                     indy_error_t  err,
                                                                     const char*   payment_req_json,
                                                                     const char*   payment_method)
@@ -238,7 +238,7 @@ extern "C" {
                                                     const char *  payment_method,
                                                     const char *  resp_json,
 
-                                                    void           (*cb)(indy_handle_t xcommand_handle,
+                                                    void           (*cb)(indy_handle_t command_handle_,
                                                                          indy_error_t  err,
                                                                          const char*   receipts_json)
                                                     );
@@ -249,7 +249,7 @@ extern "C" {
     /// #Params
     /// command_handle: Command handle to map callback to caller context.
     /// wallet_handle: wallet handle
-    /// submitter_did : DID of request sender
+    /// submitter_did: (Optional) DID of request sender
     /// outputs_json: The list of outputs as json array:
     ///   [{
     ///     recipient: <str>, // payment address of recipient
@@ -267,7 +267,7 @@ extern "C" {
                                             const char *  outputs_json,
                                             const char *  extra,
 
-                                            void           (*cb)(indy_handle_t xcommand_handle,
+                                            void           (*cb)(indy_handle_t command_handle_,
                                                                  indy_error_t  err,
                                                                  const char*   mint_req_json,
                                                                  const char*   payment_method)
@@ -278,7 +278,7 @@ extern "C" {
     /// # Params
     /// command_handle: Command handle to map callback to caller context.
     /// wallet_handle: wallet handle
-    /// submitter_did : DID of request sender
+    /// submitter_did: (Optional) DID of request sender
     /// payment_method: payment method to use
     /// fees_json {
     ///   txnType1: amount1,
@@ -295,7 +295,7 @@ extern "C" {
                                                     const char *  payment_method,
                                                     const char *  fees_json,
 
-                                                    void           (*cb)(indy_handle_t xcommand_handle,
+                                                    void           (*cb)(indy_handle_t command_handle_,
                                                                          indy_error_t  err,
                                                                          const char*   set_txn_fees_json)
                                                     );
@@ -305,7 +305,7 @@ extern "C" {
     /// # Params
     /// command_handle: Command handle to map callback to caller context.
     /// wallet_handle: wallet handle
-    /// submitter_did : DID of request sender
+    /// submitter_did: (Optional) DID of request sender
     /// payment_method: payment method to use
     ///
     /// # Return
@@ -316,7 +316,7 @@ extern "C" {
                                                     const char *  submitter_did,
                                                     const char *  payment_method,
 
-                                                    void           (*cb)(indy_handle_t xcommand_handle,
+                                                    void           (*cb)(indy_handle_t command_handle_,
                                                                          indy_error_t  err,
                                                                          const char*   get_txn_fees_json)
                                                     );
@@ -340,7 +340,7 @@ extern "C" {
                                                          const char *  payment_method,
                                                          const char *  resp_json,
 
-                                                         void           (*cb)(indy_handle_t xcommand_handle,
+                                                         void           (*cb)(indy_handle_t command_handle_,
                                                                               indy_error_t  err,
                                                                               const char*   fees_json)
                                                          );
@@ -350,7 +350,7 @@ extern "C" {
     /// # Params
     /// command_handle: Command handle to map callback to caller context.
     /// wallet_handle: wallet handle
-    /// submitter_did : DID of request sender
+    /// submitter_did: (Optional) DID of request sender
     /// receipt: payment receipt to verify
     ///
     /// # Return
@@ -362,7 +362,7 @@ extern "C" {
                                                       const char *  submitter_did,
                                                       const char *  receipt,
 
-                                                      void           (*cb)(indy_handle_t xcommand_handle,
+                                                      void           (*cb)(indy_handle_t command_handle_,
                                                                            indy_error_t  err,
                                                                            const char*   verify_txn_json,
                                                                            const char*   payment_method)
@@ -390,7 +390,7 @@ extern "C" {
                                                            const char *  payment_method,
                                                            const char *  resp_json,
 
-                                                           void           (*cb)(indy_handle_t xcommand_handle,
+                                                           void           (*cb)(indy_handle_t command_handle_,
                                                                                 indy_error_t  err,
                                                                                 const char*   txn_json)
                                                            );

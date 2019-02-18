@@ -1,9 +1,13 @@
 ﻿using Hyperledger.Indy.DidApi;
 using Hyperledger.Indy.Utils;
 using Hyperledger.Indy.WalletApi;
+using System;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using static Hyperledger.Indy.CryptoApi.NativeMethods;
+#if __IOS__
+using ObjCRuntime;
+#endif
 
 namespace Hyperledger.Indy.CryptoApi
 {
@@ -15,7 +19,10 @@ namespace Hyperledger.Indy.CryptoApi
         /// <summary>
         /// Gets the callback to use when the indy_create_key command has completed.
         /// </summary>
-        private static CreateKeyCompletedDelegate _createKeyCompletedCallback = (xcommand_handle, err, verkey) =>
+#if __IOS__
+        [MonoPInvokeCallback(typeof(CreateKeyCompletedDelegate))]
+#endif
+        private static void CreateKeyCompletedCallbackMethod(int xcommand_handle, int err, string verkey)
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
@@ -23,12 +30,16 @@ namespace Hyperledger.Indy.CryptoApi
                 return;
 
             taskCompletionSource.SetResult(verkey);
-        };
+        }
+        private static CreateKeyCompletedDelegate CreateKeyCompletedCallback = CreateKeyCompletedCallbackMethod;
 
         /// <summary>
         /// Gets the callback to use when the indy_get_key_metadata command has completed.
         /// </summary>
-        private static GetKeyMetadataCompletedDelegate _getKeyMetadataCompletedCallback = (xcommand_handle, err, metadata) =>
+#if __IOS__
+        [MonoPInvokeCallback(typeof(GetKeyMetadataCompletedDelegate))]
+#endif
+        private static void GetKeyMetadataCompletedCallbackMethod(int xcommand_handle, int err, string metadata)
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
@@ -36,12 +47,16 @@ namespace Hyperledger.Indy.CryptoApi
                 return;
 
             taskCompletionSource.SetResult(metadata);
-        };
+        }
+        private static GetKeyMetadataCompletedDelegate GetKeyMetadataCompletedCallback = GetKeyMetadataCompletedCallbackMethod;
 
         /// <summary>
         /// Gets the callback to use when the indy_crypto_sign command has completed.
         /// </summary>
-        private static SignCompletedDelegate _cryptoSignCompletedCallback = (xcommand_handle, err, signature_raw, signature_len) =>
+#if __IOS__
+        [MonoPInvokeCallback(typeof(SignCompletedDelegate))]
+#endif
+        private static void CryptoSignCompletedCallbackMethod(int xcommand_handle, int err, IntPtr signature_raw, int signature_len)
         {
             var taskCompletionSource = PendingCommands.Remove<byte[]>(xcommand_handle);
 
@@ -52,12 +67,16 @@ namespace Hyperledger.Indy.CryptoApi
             Marshal.Copy(signature_raw, signatureBytes, 0, signature_len);
 
             taskCompletionSource.SetResult(signatureBytes);
-        };
+        }
+        private static SignCompletedDelegate CryptoSignCompletedCallback = CryptoSignCompletedCallbackMethod;
 
         /// <summary>
         /// Gets the callback to use when the indy_crypto_verify command  has completed.
         /// </summary>
-        private static VerifyCompletedDelegate _cryptoVerifyCompletedCallback = (xcommand_handle, err, valid) =>
+#if __IOS__
+        [MonoPInvokeCallback(typeof(VerifyCompletedDelegate))]
+#endif
+        private static void CryptoVerifyCompletedCallbackMethod(int xcommand_handle, int err, bool valid)
         {
             var taskCompletionSource = PendingCommands.Remove<bool>(xcommand_handle);
 
@@ -65,12 +84,16 @@ namespace Hyperledger.Indy.CryptoApi
                 return;
 
             taskCompletionSource.SetResult(valid);
-        };
+        }
+        private static VerifyCompletedDelegate CryptoVerifyCompletedCallback = CryptoVerifyCompletedCallbackMethod;
 
         /// <summary>
         /// Gets the callback to use when indy_crypto_auth_crypt or indy_crypto_anon_crypt has completed
         /// </summary>
-        private static EncryptCompletedDelegate _cryptoEncryptCompletedCallback = (xcommand_handle, err, encrypted_msg, encrypted_len) =>
+#if __IOS__
+        [MonoPInvokeCallback(typeof(EncryptCompletedDelegate))]
+#endif
+        private static void CryptoEncryptCompletedCallbackMethod(int xcommand_handle, int err, IntPtr encrypted_msg, int encrypted_len)
         {
             var taskCompletionSource = PendingCommands.Remove<byte[]>(xcommand_handle);
 
@@ -81,12 +104,16 @@ namespace Hyperledger.Indy.CryptoApi
             Marshal.Copy(encrypted_msg, messageBytes, 0, encrypted_len);
 
             taskCompletionSource.SetResult(messageBytes);
-        };
+        }
+        private static EncryptCompletedDelegate CryptoEncryptCompletedCallback = CryptoEncryptCompletedCallbackMethod;
 
         /// <summary>
         /// Gets the callback to use when indy_crypto_auth_decrypt has completed
         /// </summary>
-        private static AuthDecryptCompletedDelegate _cryptoAuthDecryptCompletedCallback = (command_handle, err, their_vk, msg_data, msg_len) =>
+#if __IOS__
+        [MonoPInvokeCallback(typeof(AuthDecryptCompletedDelegate))]
+#endif
+        private static void CryptoAuthDecryptCompletedCallbackMethod(int command_handle, int err, string their_vk, IntPtr msg_data, int msg_len)
         {
             var taskCompletionSource = PendingCommands.Remove<AuthDecryptResult>(command_handle);
 
@@ -99,13 +126,16 @@ namespace Hyperledger.Indy.CryptoApi
             var result = new AuthDecryptResult(their_vk, messageBytes);
 
             taskCompletionSource.SetResult(result);
-        };
-
+        }
+        private static AuthDecryptCompletedDelegate CryptoAuthDecryptCompletedCallback = CryptoAuthDecryptCompletedCallbackMethod;
 
         /// <summary>
         /// Gets the callback to use when the indy_crypto_box_seal_open command has completed.
         /// </summary>
-        private static AnonDecryptCompletedDelegate _cryptoAnonDecryptCompletedCallback = (command_handle, err, msg_data, msg_len) =>
+#if __IOS__
+        [MonoPInvokeCallback(typeof(AnonDecryptCompletedDelegate))]
+#endif
+        private static void CryptoAnonDecryptCompletedCallbackMethod(int command_handle, int err, IntPtr msg_data, int msg_len)
         {
             var taskCompletionSource = PendingCommands.Remove<byte[]>(command_handle);
 
@@ -116,7 +146,42 @@ namespace Hyperledger.Indy.CryptoApi
             Marshal.Copy(msg_data, decryptedMsgBytes, 0, msg_len);
 
             taskCompletionSource.SetResult(decryptedMsgBytes);
-        };
+        }
+        private static AnonDecryptCompletedDelegate CryptoAnonDecryptCompletedCallback = CryptoAnonDecryptCompletedCallbackMethod;
+
+#if __IOS__
+        [MonoPInvokeCallback(typeof(PackMessageCompletedDelegate))]
+#endif
+        private static void PackMessageCompletedCallbackMethod(int command_handle, int err, IntPtr msg_data, int msg_len)
+        {
+            var taskCompletionSource = PendingCommands.Remove<byte[]>(command_handle);
+
+            if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
+                return;
+
+            var decryptedMsgBytes = new byte[msg_len];
+            Marshal.Copy(msg_data, decryptedMsgBytes, 0, msg_len);
+
+            taskCompletionSource.SetResult(decryptedMsgBytes);
+        }
+        private static PackMessageCompletedDelegate PackMessageCompletedCallback = PackMessageCompletedCallbackMethod;
+
+#if __IOS__
+        [MonoPInvokeCallback(typeof(UnpackMessageCompletedDelegate))]
+#endif
+        private static void UnpackMessageCompletedCallbackMethod(int command_handle, int err, IntPtr msg_data, int msg_len)
+        {
+            var taskCompletionSource = PendingCommands.Remove<byte[]>(command_handle);
+
+            if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
+                return;
+
+            var decryptedMsgBytes = new byte[msg_len];
+            Marshal.Copy(msg_data, decryptedMsgBytes, 0, msg_len);
+
+            taskCompletionSource.SetResult(decryptedMsgBytes);
+        }
+        private static UnpackMessageCompletedDelegate UnpackMessageCompletedCallback = UnpackMessageCompletedCallbackMethod;
 
         /// <summary>
         /// Creates a key in the provided wallet.
@@ -150,7 +215,7 @@ namespace Hyperledger.Indy.CryptoApi
                 commandHandle,
                 wallet.Handle,
                 keyJson,
-                _createKeyCompletedCallback
+                CreateKeyCompletedCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);
@@ -168,7 +233,7 @@ namespace Hyperledger.Indy.CryptoApi
         /// <param name="verKey">The verification key of the key pair.</param>
         /// <param name="metadata">The metadata to set.</param>
         /// <returns>An asynchronous <see cref="Task"/> that completes when the operation completes.</returns>
-        /// <exception cref="WalletValueNotFoundException">Thrown if the wallet does not contain a key-pair matching the provided <paramref name="verKey"/>.</exception>
+        /// <exception cref="WalletItemNotFoundException">Thrown if the wallet does not contain a key-pair matching the provided <paramref name="verKey"/>.</exception>
         public static Task SetKeyMetadataAsync(Wallet wallet, string verKey, string metadata)
         {
             ParamGuard.NotNull(wallet, "wallet");
@@ -198,7 +263,7 @@ namespace Hyperledger.Indy.CryptoApi
         /// <param name="wallet">The wallet containing the key-pair.</param>
         /// <param name="verKey">The verification key of the key-pair.</param>
         /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a string containing the metadata associated with the key-pair.</returns>
-        /// <exception cref="WalletValueNotFoundException">Thrown if the wallet does not contain a key-pair matching the provided <paramref name="verKey"/> or they key-pair has no metadata.</exception>
+        /// <exception cref="WalletItemNotFoundException">Thrown if the wallet does not contain a key-pair matching the provided <paramref name="verKey"/> or they key-pair has no metadata.</exception>
         public static Task<string> GetKeyMetadataAsync(Wallet wallet, string verKey)
         {
             ParamGuard.NotNull(wallet, "wallet");
@@ -211,7 +276,7 @@ namespace Hyperledger.Indy.CryptoApi
                 commandHandle,
                 wallet.Handle,
                 verKey,
-                _getKeyMetadataCompletedCallback
+                GetKeyMetadataCompletedCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);
@@ -234,7 +299,7 @@ namespace Hyperledger.Indy.CryptoApi
         /// <param name="myVk">The verification key of the key-pair to sign with.</param>
         /// <param name="message">The message to sign</param>
         /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a byte array containing the signature.</returns>
-        /// <exception cref="WalletValueNotFoundException">Thrown if <paramref name="myVk"/> is not present in the <paramref name="wallet"/>.</exception>
+        /// <exception cref="WalletItemNotFoundException">Thrown if <paramref name="myVk"/> is not present in the <paramref name="wallet"/>.</exception>
         public static Task<byte[]> SignAsync(Wallet wallet, string myVk, byte[] message)
         {
             ParamGuard.NotNull(wallet, "wallet");
@@ -250,7 +315,7 @@ namespace Hyperledger.Indy.CryptoApi
                 myVk,
                 message,
                 message.Length,
-                _cryptoSignCompletedCallback
+                CryptoSignCompletedCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);
@@ -285,7 +350,7 @@ namespace Hyperledger.Indy.CryptoApi
                 message.Length,
                 signature,
                 signature.Length,
-                _cryptoVerifyCompletedCallback
+                CryptoVerifyCompletedCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);
@@ -327,7 +392,7 @@ namespace Hyperledger.Indy.CryptoApi
                 theirVk,
                 message,
                 message.Length,
-                _cryptoEncryptCompletedCallback
+                CryptoEncryptCompletedCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);
@@ -367,7 +432,7 @@ namespace Hyperledger.Indy.CryptoApi
                 myVk,
                 message,
                 message.Length,
-                _cryptoAuthDecryptCompletedCallback
+                CryptoAuthDecryptCompletedCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);
@@ -401,12 +466,12 @@ namespace Hyperledger.Indy.CryptoApi
                 theirVk,
                 message,
                 message.Length,
-                _cryptoEncryptCompletedCallback
+                CryptoEncryptCompletedCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);
 
-            return taskCompletionSource.Task; 
+            return taskCompletionSource.Task;
         }
 
         /// <summary>
@@ -428,7 +493,7 @@ namespace Hyperledger.Indy.CryptoApi
         /// <param name="myVk">The verification key of the intended recipient of the encrypted message.</param>
         /// <param name="encryptedMessage">The encrypted message to decrypt.</param>
         /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a byte array containing the decrypted message.</returns>
-        /// <exception cref="WalletValueNotFoundException">Thrown if <paramref name="myVk"/> is not present in the <paramref name="wallet"/>.</exception>
+        /// <exception cref="WalletItemNotFoundException">Thrown if <paramref name="myVk"/> is not present in the <paramref name="wallet"/>.</exception>
         /// <exception cref="InvalidStructureException">Thrown if <paramref name="myVk"/> was not used to encrypt <paramref name="encryptedMessage"/>.</exception>
         public static Task<byte[]> AnonDecryptAsync(Wallet wallet, string myVk, byte[] encryptedMessage)
         {
@@ -445,8 +510,135 @@ namespace Hyperledger.Indy.CryptoApi
                 myVk,
                 encryptedMessage,
                 encryptedMessage.Length,
-                _cryptoAnonDecryptCompletedCallback
+                CryptoAnonDecryptCompletedCallback
                 );
+
+            CallbackHelper.CheckResult(commandResult);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
+        /// Packs a message (Experimental)
+        ///
+        /// Note to use DID keys with this function you can call indy_key_for_did to get key id (verkey)
+        /// for specific DID.
+        /// </summary>
+        /// <param name="wallet">The wallet containing the key-pair associated with the verification key specified in the <paramref name="recipientVk"/> parameter.</param>
+        /// <param name="recipientVk">A string in the format of a json list which will contain the list of receiver's keys
+        ///                the message is being encrypted for.
+        ///                Example:
+        ///                <code>[&lt;receiver edge_agent_1 verkey>, &lt;receiver edge_agent_2 verkey>]</code>
+        /// </param>
+        /// <param name="senderVk">The sender's verkey as a string or null.
+        /// <remarks>When null pointer is used in this parameter, anoncrypt is used</remarks>
+        /// </param>
+        /// <param name="message">The message data to pack.</param>
+        /// <returns>a JWE using authcrypt alg is defined below:
+        /// <code>
+        /// {
+        ///     "protected": "b64URLencoded({
+        ///        "enc": "xsalsa20poly1305",
+        ///        "typ": "JWM/1.0",
+        ///        "alg": "Authcrypt",
+        ///        "recipients": [
+        ///            {
+        ///                "encrypted_key": base64URLencode(libsodium.crypto_box(my_key, their_vk, cek, cek_iv))
+        ///                "header": {
+        ///                     "kid": "base58encode(recipient_verkey)",
+        ///                     "sender" : base64URLencode(libsodium.crypto_box_seal(their_vk, base58encode(sender_vk)),
+        ///                     "iv" : base64URLencode(cek_iv)
+        ///                }
+        ///            },
+        ///        ],
+        ///     })",
+        ///     "iv": &lt;b64URLencode(iv)>,
+        ///     "ciphertext": b64URLencode(encrypt_detached({'@type'...}, protected_value_encoded, iv, cek),
+        ///     "tag": &lt;b64URLencode(tag)>
+        /// }
+        /// </code>
+        /// Alternative example in using anoncrypt alg is defined below:
+        /// <code>
+        /// {
+        ///     "protected": "b64URLencoded({
+        ///        "enc": "xsalsa20poly1305",
+        ///        "typ": "JWM/1.0",
+        ///        "alg": "Anoncrypt",
+        ///        "recipients": [
+        ///            {
+        ///                "encrypted_key": base64URLencode(libsodium.crypto_box_seal(their_vk, cek)),
+        ///                "header": {
+        ///                    "kid": base58encode(recipient_verkey),
+        ///                }
+        ///            },
+        ///        ],
+        ///     })",
+        ///     "iv": b64URLencode(iv),
+        ///     "ciphertext": b64URLencode(encrypt_detached({'@type'...}, protected_value_encoded, iv, cek),
+        ///     "tag": b64URLencode(tag)
+        /// }
+        /// </code>
+        /// </returns>
+        public static Task<byte[]> PackMessageAsync(Wallet wallet, string recipientVk, string senderVk, byte[] message)
+        {
+            ParamGuard.NotNull(wallet, "wallet");
+            ParamGuard.NotNullOrWhiteSpace(recipientVk, "recipientVk");
+            ParamGuard.NotNull(message, "message");
+
+            var taskCompletionSource = new TaskCompletionSource<byte[]>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var commandResult = NativeMethods.indy_pack_message(
+                commandHandle,
+                wallet.Handle,
+                message,
+                message.Length,
+                recipientVk,
+                senderVk,
+                PackMessageCompletedCallback);
+
+            CallbackHelper.CheckResult(commandResult);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
+        /// Unpacks a message packed using indy_pack_message which follows the wire message format (Experimental)
+        /// </summary>
+        /// <param name="wallet">The wallet.</param>
+        /// <param name="message">The JWE message to be unpacked</param>
+        /// <returns>
+        /// if authcrypt was used to pack the message returns this json structure:
+        /// <code>
+        /// {
+        ///     message: &lt;decrypted message>,
+        ///     sender_verkey: &lt;sender_verkey>,
+        ///     recipient_verkey: &lt;recipient_verkey>
+        /// }
+        /// </code>
+        /// OR
+        /// <code>
+        /// if anoncrypt was used to pack the message returns this json structure:
+        /// {
+        ///     message: &lt;decrypted message>,
+        ///     recipient_verkey: &lt;recipient_verkey>
+        /// }
+        /// </code>
+        /// </returns>
+        public static Task<byte[]> UnpackMessageAsync(Wallet wallet, byte[] message)
+        {
+            ParamGuard.NotNull(wallet, "wallet");
+            ParamGuard.NotNull(message, "message");
+
+            var taskCompletionSource = new TaskCompletionSource<byte[]>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var commandResult = NativeMethods.indy_unpack_message(
+                commandHandle,
+                wallet.Handle,
+                message,
+                message.Length,
+                UnpackMessageCompletedCallback);
 
             CallbackHelper.CheckResult(commandResult);
 

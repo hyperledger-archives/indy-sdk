@@ -1,0 +1,132 @@
+// This is a comment, and will be ignored by the compiler
+// You can test this code by clicking the "Run" button over there ->
+// or if prefer to use your keyboard, you can use the "Ctrl + Enter" shortcut
+
+// This code is editable, feel free to hack it!
+// You can always return to the original code by clicking the "Reset" button ->
+extern crate libloading as lib;
+extern crate libc;
+
+use self::libc::c_char;
+use std::ffi::CStr;
+use std::ffi::CString;
+use std::sync::{Arc, Mutex, Once, ONCE_INIT};
+use std::time::Duration;
+use std::{str, mem, thread};
+//use futures::Future;
+//use std::ptr::null;
+
+//static mut waiting_thread: thread::Thread = thread::current;
+//static mut waiting_thread: thread::Thread = null();
+
+#[derive(Clone)]
+struct CallbackDone {
+    // Since we will be used in many threads, we need to protect
+    // concurrent access
+    inner: Arc<Mutex<u8>>,
+}
+
+// This is the main function
+fn main() {
+    // The statements here will be executed when the compiled binary is called
+
+    // Print text to the console
+    //println!("Hello World!");
+    //panic!("hi bob");
+    //let lib = lib::Library::new("lib/libvcxall.so").unwrap();
+
+    // let lib = lib::Library::new("lib/libvcxall.so").unwrap();
+    // unsafe {
+    //     let func: lib::Symbol<unsafe extern fn() -> u32> = lib.get(b"my_func")?;
+    //     Ok(func())
+    // }
+
+    let libcrypto = lib::Library::new("/data/vcxlib/libcrypto.so").unwrap();
+    //let libz = lib::Library::new("/data/vcxlib/libz.so").unwrap();
+    //let libzmq = lib::Library::new("/data/vcxlib/libzmq.so").unwrap();
+    let libssl = lib::Library::new("/data/vcxlib/libssl.so").unwrap();
+    //let libindy = lib::Library::new("/data/vcxlib/libindy.so").unwrap();
+    //let libvcx = lib::Library::new("/data/vcxlib/libvcx.so").unwrap();
+    let libvcxall = lib::Library::new("/data/vcxlib/libvcxall.so").unwrap();
+    //let libsodium = lib::Library::new("/data/vcxlib/libsodium.so").unwrap();
+    //let lib = lib::Library::new("libvcxall.so")?;
+    //panic!("hi bob");
+
+    // waiting_thread = thread::Builder::new()
+    //     .spawn(|| {
+    //         println!("Parking thread");
+    //         thread::park();
+    //         println!("Thread unparked");
+    //     })
+    //     .unwrap();
+        
+    let version = get_version(&libvcxall);
+    println!("Version: {:?}", version);
+
+    let result = do_provision(&libvcxall);
+    println!("Provision result: {:?}", result);
+
+    //thread::current().thread().park();
+
+    // let handler = thread::Builder::new()
+    //     .name("current thread".into())
+    //     .spawn(|| {
+    //         //let handle = thread::current();
+    //         //assert_eq!(handle.name(), Some("current thread"));
+    //         //thread::park();
+    //     })
+    //     .unwrap();
+
+    // handler.join().unwrap();
+
+
+    // let callbackDone = thread::Builder::new()
+    //     .name("current thread".into())
+    //     .spawn(|| {
+    //         let handle = thread::current();
+    //         assert_eq!(handle.name(), Some("current thread"));
+    //         println!("Parking thread");
+    //         //handle.park();
+    //         println!("Thread unparked");
+    //     }).unwrap();
+
+    // callbackDone
+    // thread::park();
+}
+
+
+fn get_version(libvcxall: &lib::Library) -> lib::Result<&'static str> {
+    unsafe {
+        let vcx_version: lib::Symbol<unsafe extern fn() -> *const c_char> = libvcxall.get(b"vcx_version")?;
+        let version = vcx_version();
+        let c_str: &CStr = { CStr::from_ptr(version) };
+        let str_slice: &str = c_str.to_str().unwrap();
+        Ok(str_slice)
+    }
+}
+
+extern "C" fn generic_cb(command_handle: u32, err: u32, config: *const c_char) {
+    if err != 0 {panic!("generic_cb failed")}
+    //check_useful_c_str!(config, ());
+    println!("successfully called generic_cb: {:?}", config);
+    println!("Unpark the thread");
+    //waiting_thread.thread().unpark();
+    //waiting_thread.join().unwrap();
+    thread::unpark();
+}
+
+fn do_provision(libvcxall: &lib::Library) -> lib::Result<u32> {
+    unsafe {
+        let vcx_agent_provision_async: lib::Symbol<
+            unsafe extern fn(command_handle : u32,
+                json: *const c_char,
+                cb: Option<extern fn(xcommand_handle: u32, err: u32, config: *const c_char)>) -> u32>
+            = libvcxall.get(b"vcx_agent_provision_async")?;
+
+        let json_string = r#"{"agency_url": "https://cagency.pdev.evernym.com", "agency_did": "dTLdJqRZLwMuWSogcKfBT","wallet_name":"wallet2","wallet_key":"wallet-key","agent_seed":null,"enterprise_seed":null, "agency_verkey": "LsPQTDHi294TexkFmZK9Q9vW4YGtQRuLV8wuyZi94yH"}"#;
+        let c_json = CString::new(json_string).unwrap().into_raw();
+
+        let result = vcx_agent_provision_async(0, c_json, Some(generic_cb));
+        Ok(result)
+    }
+}

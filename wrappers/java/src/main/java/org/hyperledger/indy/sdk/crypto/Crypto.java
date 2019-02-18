@@ -37,7 +37,7 @@ public class Crypto extends IndyJava.API {
 		public void callback(int xcommand_handle, int err, String verkey) {
 
 			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			String result = verkey;
 			future.complete(result);
@@ -53,7 +53,7 @@ public class Crypto extends IndyJava.API {
 		public void callback(int xcommand_handle, int err) {
 
 			CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			Void result = null;
 			future.complete(result);
@@ -69,7 +69,7 @@ public class Crypto extends IndyJava.API {
 		public void callback(int xcommand_handle, int err, String metadata) {
 
 			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			String result = metadata;
 			future.complete(result);
@@ -85,7 +85,7 @@ public class Crypto extends IndyJava.API {
 		public void callback(int xcommand_handle, int err, Pointer signature_raw, int signature_len) {
 
 			CompletableFuture<byte[]> future = (CompletableFuture<byte[]>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			byte[] result = new byte[signature_len];
 			signature_raw.read(0, result, 0, signature_len);
@@ -102,7 +102,7 @@ public class Crypto extends IndyJava.API {
 		public void callback(int xcommand_handle, int err, boolean valid) {
 
 			CompletableFuture<Boolean> future = (CompletableFuture<Boolean>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			Boolean result = Boolean.valueOf(valid);
 			future.complete(result);
@@ -118,7 +118,7 @@ public class Crypto extends IndyJava.API {
 		public void callback(int xcommand_handle, int err, Pointer encrypted_msg_raw, int encrypted_msg_len, Pointer nonce_raw, int nonce_len) {
 
 			CompletableFuture<byte[]> future = (CompletableFuture<byte[]>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			byte[] result = new byte[encrypted_msg_len];
 			encrypted_msg_raw.read(0, result, 0, encrypted_msg_len);
@@ -136,7 +136,7 @@ public class Crypto extends IndyJava.API {
 		public void callback(int xcommand_handle, int err, String their_vk, Pointer decrypted_msg_raw, int decrypted_msg_len) {
 
 			CompletableFuture<AuthDecryptResult> future = (CompletableFuture<AuthDecryptResult>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			byte[] decryptedMsg = new byte[decrypted_msg_len];
 			decrypted_msg_raw.read(0, decryptedMsg, 0, decrypted_msg_len);
@@ -156,7 +156,7 @@ public class Crypto extends IndyJava.API {
 		public void callback(int xcommand_handle, int err, Pointer encrypted_msg_raw, int encrypted_msg_len) {
 
 			CompletableFuture<byte[]> future = (CompletableFuture<byte[]>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			byte[] encryptedMsg = new byte[encrypted_msg_len];
 			encrypted_msg_raw.read(0, encryptedMsg, 0, encrypted_msg_len);
@@ -174,10 +174,28 @@ public class Crypto extends IndyJava.API {
 		public void callback(int xcommand_handle, int err, Pointer decrypted_msg_raw, int decrypted_msg_len) {
 
 			CompletableFuture<byte[]> future = (CompletableFuture<byte[]>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			byte[] result = new byte[decrypted_msg_len];
 			decrypted_msg_raw.read(0, result, 0, decrypted_msg_len);
+			future.complete(result);
+		}
+	};
+
+	/**
+	 * Callback for indy-indy_pack_message
+	 */
+	private static Callback packMessageCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err, Pointer encrypted_msg_raw, int encrypted_msg_len) {
+
+			CompletableFuture<byte[]> future = (CompletableFuture<byte[]>) removeFuture(xcommand_handle);
+			if (! checkResult(future, err)) return;
+
+			byte[] result = new byte[encrypted_msg_len];
+			encrypted_msg_raw.read(0, result, 0, encrypted_msg_len);
+
 			future.complete(result);
 		}
 	};
@@ -192,7 +210,8 @@ public class Crypto extends IndyJava.API {
 	 * @param wallet  The wallet.
 	 * @param keyJson Key information as json.
 	 *                {
-	 *                  "seed": string, // Optional (if not set random one will be used); Seed information that allows deterministic key creation.
+	 *                  "seed": string, (optional) Seed that allows deterministic key creation (if not set random one will be created).
+	 *                                             Can be UTF-8, base64 or hex string.
 	 *                  "crypto_type": string, // Optional (if not set then ed25519 curve is used); Currently only 'ed25519' value is supported for this field.
 	 *                }
 	 * @return A future resolving to a verkey
@@ -216,7 +235,7 @@ public class Crypto extends IndyJava.API {
 				keyJson,
 				createKeyCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -251,7 +270,7 @@ public class Crypto extends IndyJava.API {
 				metadata,
 				setKeyMetadataCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -282,7 +301,7 @@ public class Crypto extends IndyJava.API {
 				verkey,
 				getKeyMetadataCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -321,7 +340,7 @@ public class Crypto extends IndyJava.API {
 				message.length,
 				cryptoSignCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -358,7 +377,7 @@ public class Crypto extends IndyJava.API {
 				signature.length,
 				cryptoVerifyCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -410,7 +429,7 @@ public class Crypto extends IndyJava.API {
 				message.length,
 				authCrypCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -458,7 +477,7 @@ public class Crypto extends IndyJava.API {
 				encryptedMsg.length,
 				authDecryptCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -487,7 +506,7 @@ public class Crypto extends IndyJava.API {
 
 		CompletableFuture<byte[]> future = new CompletableFuture<byte[]>();
 		int commandHandle = addFuture(future);
-		
+
 		int result = LibIndy.api.indy_crypto_anon_crypt(
 				commandHandle,
 				recipientVk,
@@ -495,7 +514,7 @@ public class Crypto extends IndyJava.API {
 				message.length,
 				anonCryptCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -538,8 +557,102 @@ public class Crypto extends IndyJava.API {
 				encryptedMsg.length,
 				anonDecryptCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
+
+	/** Packs a message by encrypting the message and serializes it in a JWE-like format (Experimental)
+	 *
+	 * Note to use DID keys with this function you can call Did.keyForDid to get key id (verkey)
+	 * for specific DID.
+	 *
+	 * @param wallet       The wallet.
+	 * @param recipientVk  list of Id (verkey). formatted as json like ["receiver edge_agent_1 verkey", "receiver edge_agent_2 verkey"`]
+	 * @param senderVk     verkey of message sender. if null, will use AnonCrypt mode
+	 * @param message      message to be packed
+	 *                        
+	 * @return A future that resolves to an Agent Wire Message format as a byte array. See HIPE 0028 for detailed formats
+	 *
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<byte[]> packMessage(
+			Wallet wallet,
+			String recipientVk,
+			String senderVk,
+			byte[] message) throws IndyException {
+
+		ParamGuard.notNull(wallet, "wallet");
+		ParamGuard.notNull(message, "message");
+		ParamGuard.notNullOrWhiteSpace(recipientVk, "recipientVk");
+
+		CompletableFuture<byte[]> future = new CompletableFuture<byte[]>();
+		int commandHandle = addFuture(future);
+
+		int walletHandle = wallet.getWalletHandle();
+
+		int result = LibIndy.api.indy_pack_message(
+				commandHandle,
+				walletHandle,
+				message,
+				message.length,
+				recipientVk,
+				senderVk,
+				packMessageCb
+			);
+
+		checkResult(future, result);
+
+		return future;
+	}
+
+	/** Unpacks a JWE-like formatted message outputted by pack_message (Experimental)
+	 *
+	 * @param wallet       The wallet.
+	 * @param jwe_data     The JWE to be unpacked.
+	 *                        
+	 * @return A future that resolves to a byte[] of unpacked data
+	 * 
+	 * if authcrypt was used to pack the message returns this json structure:
+	 *  {
+	 *      message: decrypted message,
+	 *      sender_verkey: sender_verkey,
+	 *      recipient_verkey: recipient_verkey
+	 *  }
+	 * 
+	 *  OR
+	 * 
+	 *  if anoncrypt was used to pack the message returns this json structure:
+	 *  {
+	 *      message: decrypted message,
+	 *      recipient_verkey: recipient_verkey
+	 *  }
+	
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<byte[]> unpackMessage(
+			Wallet wallet,
+			byte[] jwe_data) throws IndyException {
+
+		ParamGuard.notNull(wallet, "wallet");
+		ParamGuard.notNull(jwe_data, "jwe_data");
+
+		CompletableFuture<byte[]> future = new CompletableFuture<byte[]>();
+		int commandHandle = addFuture(future);
+
+		int walletHandle = wallet.getWalletHandle();
+
+		int result = LibIndy.api.indy_unpack_message(
+				commandHandle,
+				walletHandle,
+				jwe_data,
+				jwe_data.length,
+				authCrypCb
+			);
+
+		checkResult(future, result);
+
+		return future;
+	}
+
 }

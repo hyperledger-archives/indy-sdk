@@ -28,96 +28,140 @@ fi
 check_if_emulator_is_running(){
     emus=$(adb devices)
     if [[ ${emus} = *"emulator"* ]]; then
-      echo "emulator is running"
-      else
-       echo "emulator is not running"
-       exit 1
+        echo "emulator is running"
+        until adb -e shell "ls /storage/emulated/0/"
+        do
+            echo "waiting emulator FS"
+            sleep 30
+        done
+    else
+        echo "emulator is not running"
+        exit 1
     fi
 }
 
 kill_avd(){
-    adb devices | grep emulator | cut -f1 | while read line; do adb -s $line emu kill; done
+    adb devices | grep emulator | cut -f1 | while read line; do adb -s $line emu kill; done || true
 }
 delete_existing_avd(){
     kill_avd
-    avdmanager delete avd -n ${ARCH}
+    avdmanager delete avd -n ${ABSOLUTE_ARCH}
 }
 
 create_avd(){
 
-    echo "Creating Android SDK"
-    echo "yes" | \
+    echo "${GREEN}Creating Android SDK${RESET}"
+
+    yes | sdkmanager --licenses
+
+    echo "yes" |
           sdkmanager --no_https \
             "emulator" \
             "platform-tools" \
             "platforms;android-24" \
             "system-images;android-24;default;${ABI}"
 
-    echo "Creating android emulator"
+    echo "${BLUE}Creating android emulator${RESET}"
 
         echo "no" |
              avdmanager create avd \
-                --name ${TARGET_ARCH} \
+                --name ${ABSOLUTE_ARCH} \
                 --package "system-images;android-24;default;${ABI}" \
                 -f \
                 -c 1000M
 
-        ANDROID_SDK_ROOT=${ANDROID_SDK} ANDROID_HOME=${ANDROID_SDK} ${ANDROID_HOME}/tools/emulator -avd ${TARGET_ARCH}
-        ANDROID_SDK_ROOT=${ANDROID_SDK} ANDROID_HOME=${ANDROID_SDK} ${ANDROID_HOME}/tools/emulator -avd arm -no-audio -no-window &
+        ANDROID_SDK_ROOT=${ANDROID_SDK} ANDROID_HOME=${ANDROID_SDK} ${ANDROID_HOME}/tools/emulator -avd ${ABSOLUTE_ARCH} -no-audio -no-window -no-snapshot -no-accel &
+}
+
+download_and_unzip_if_missed() {
+    target_dir=$1
+    url_pref=$2
+    fname=$3
+    url="${url_pref}${fname}"
+    if [ ! -d "${target_dir}" ] ; then
+        echo "${GREEN}Downloading ${fname}${RESET}"
+        curl -sSLO ${url}
+        unzip -qq ${fname}
+        rm ${fname}
+        echo "${GREEN}Done!${RESET}"
+    else
+        echo "${BLUE}Skipping download ${fname}${RESET}"
+    fi
 }
 
 download_sdk(){
-     pushd ${ANDROID_SDK}
-        wget https://dl.google.com/android/repository/sdk-tools-linux-4333796.zip
-        unzip -qq sdk-tools-linux-4333796.zip
+    pushd ${ANDROID_SDK}
+        download_and_unzip_if_missed "tools" "https://dl.google.com/android/repository/" "sdk-tools-linux-4333796.zip"
+
+        set +e
         delete_existing_avd
+        set -e
         create_avd
-     popd
+    popd
 }
 
 
 generate_arch_flags(){
     if [ -z $1 ]; then
-        echo "please provide the arch e.g arm, x86 or arm64"
+        echo STDERR "${RED}Please provide the arch e.g arm,armv7, x86 or arm64${RESET}"
         exit 1
     fi
+    export ABSOLUTE_ARCH=$1
+    export TARGET_ARCH=$1
     if [ $1 == "arm" ]; then
-        export TARGET_ARCH="arm"
         export TARGET_API="16"
         export TRIPLET="arm-linux-androideabi"
+        export ANDROID_TRIPLET=${TRIPLET}
         export ABI="armeabi-v7a"
+        export TOOLCHAIN_SYSROOT_LIB="lib"
+    fi
+
+    if [ $1 == "armv7" ]; then
+        export TARGET_ARCH="arm"
+        export TARGET_API="16"
+        export TRIPLET="armv7-linux-androideabi"
+        export ANDROID_TRIPLET="arm-linux-androideabi"
+        export ABI="armeabi-v7a"
+        export TOOLCHAIN_SYSROOT_LIB="lib"
     fi
 
     if [ $1 == "arm64" ]; then
-        export ARCH="arm64"
         export TARGET_API="21"
         export TRIPLET="aarch64-linux-android"
+        export ANDROID_TRIPLET=${TRIPLET}
         export ABI="arm64-v8a"
+        export TOOLCHAIN_SYSROOT_LIB="lib"
     fi
 
     if [ $1 == "x86" ]; then
-        export ARCH="x86"
         export TARGET_API="16"
         export TRIPLET="i686-linux-android"
+        export ANDROID_TRIPLET=${TRIPLET}
         export ABI="x86"
+        export TOOLCHAIN_SYSROOT_LIB="lib"
+    fi
+
+    if [ $1 == "x86_64" ]; then
+        export TARGET_API="21"
+        export TRIPLET="x86_64-linux-android"
+        export ANDROID_TRIPLET=${TRIPLET}
+        export ABI="x86_64"
+        export TOOLCHAIN_SYSROOT_LIB="lib64"
     fi
 
 }
 
-download_and_unzip_dependencies_for_all_architectures(){
-    #TODO Get dependencies in more optimized way
+
+download_and_unzip_dependencies(){
     pushd ${ANDROID_BUILD_FOLDER}
-        if [ ! -d "indy-android-dependencies" ] ; then
-            git clone https://github.com/evernym/indy-android-dependencies.git
-            pushd ${ANDROID_BUILD_FOLDER}/indy-android-dependencies/prebuilt/
-                git checkout tags/v1.0.2
-                find . -name "*.zip" | xargs -P 5 -I FILENAME sh -c 'unzip -o -qq -d "$(dirname "FILENAME")" "FILENAME"'
-            popd
-        fi
-        export OPENSSL_DIR=${ANDROID_BUILD_FOLDER}/indy-android-dependencies/prebuilt/openssl/openssl_${TARGET_ARCH}
-        export SODIUM_DIR=${ANDROID_BUILD_FOLDER}/indy-android-dependencies/prebuilt/sodium/libsodium_${TARGET_ARCH}
-        export LIBZMQ_DIR=${ANDROID_BUILD_FOLDER}/indy-android-dependencies/prebuilt/zmq/libzmq_${TARGET_ARCH}
-	popd
+        download_and_unzip_if_missed "openssl_$1" "https://repo.sovrin.org/android/libindy/deps/openssl/" "openssl_$1.zip"
+        download_and_unzip_if_missed "libsodium_$1" "https://repo.sovrin.org/android/libindy/deps/sodium/" "libsodium_$1.zip"
+        download_and_unzip_if_missed "libzmq_$1" "https://repo.sovrin.org/android/libindy/deps/zmq/" "libzmq_$1.zip"
+
+        export OPENSSL_DIR=${ANDROID_BUILD_FOLDER}/openssl_$1
+        export SODIUM_DIR=${ANDROID_BUILD_FOLDER}/libsodium_$1
+        export LIBZMQ_DIR=${ANDROID_BUILD_FOLDER}/libzmq_$1
+    popd
 }
 
 
@@ -128,6 +172,7 @@ create_standalone_toolchain_and_rust_target(){
     --arch ${TARGET_ARCH} \
     --api ${TARGET_API} \
     --stl=gnustl \
+    --force \
     --install-dir ${TOOLCHAIN_DIR}
 
     # add rust target
@@ -138,35 +183,21 @@ create_standalone_toolchain_and_rust_target(){
 
 download_and_setup_toolchain(){
     if [ "$(uname)" == "Darwin" ]; then
-        echo "Downloading NDK for OSX"
         export TOOLCHAIN_PREFIX=${ANDROID_BUILD_FOLDER}/toolchains/darwin
         mkdir -p ${TOOLCHAIN_PREFIX}
         pushd $TOOLCHAIN_PREFIX
-        if [ ! -d "android-ndk-r16b" ] ; then
-            echo "Downloading android-ndk-r16b-darwin-x86_64.zip"
-            wget -q https://dl.google.com/android/repository/android-ndk-r16b-darwin-x86_64.zip
-            unzip -qq android-ndk-r16b-darwin-x86_64.zip
-        else
-            echo "Skipping download android-ndk-r16b-linux-x86_64.zip"
-        fi
-        export ANDROID_NDK_ROOT=${TOOLCHAIN_PREFIX}/android-ndk-r16b
+        echo "${GREEN}Resolving NDK for OSX${RESET}"
+        download_and_unzip_if_missed "android-ndk-r16b" "https://dl.google.com/android/repository/" "android-ndk-r16b-darwin-x86_64.zip"
         popd
     elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
-        echo "Downloading NDK for Linux"
         export TOOLCHAIN_PREFIX=${ANDROID_BUILD_FOLDER}/toolchains/linux
         mkdir -p ${TOOLCHAIN_PREFIX}
         pushd $TOOLCHAIN_PREFIX
-        if [ ! -d "android-ndk-r16b" ] ; then
-            echo "Downloading android-ndk-r16b-linux-x86_64.zip"
-            wget -q https://dl.google.com/android/repository/android-ndk-r16b-linux-x86_64.zip
-            unzip -qq android-ndk-r16b-linux-x86_64.zip
-        else
-            echo "Skipping download android-ndk-r16b-linux-x86_64.zip"
-        fi
-        export ANDROID_NDK_ROOT=${TOOLCHAIN_PREFIX}/android-ndk-r16b
+        echo "${GREEN}Resolving NDK for Linux${RESET}"
+        download_and_unzip_if_missed "android-ndk-r16b" "https://dl.google.com/android/repository/" "android-ndk-r16b-linux-x86_64.zip"
         popd
     fi
-
+    export ANDROID_NDK_ROOT=${TOOLCHAIN_PREFIX}/android-ndk-r16b
 }
 
 
@@ -184,11 +215,11 @@ set_env_vars(){
     export TOOLCHAIN_DIR=${TOOLCHAIN_PREFIX}/${TARGET_ARCH}
     export PATH=${TOOLCHAIN_DIR}/bin:${PATH}
     export PKG_CONFIG_ALLOW_CROSS=1
-    export CC=${TOOLCHAIN_DIR}/bin/${TRIPLET}-clang
-    export AR=${TOOLCHAIN_DIR}/bin/${TRIPLET}-ar
-    export CXX=${TOOLCHAIN_DIR}/bin/${TRIPLET}-clang++
-    export CXXLD=${TOOLCHAIN_DIR}/bin/${TRIPLET}-ld
-    export RANLIB=${TOOLCHAIN_DIR}/bin/${TRIPLET}-ranlib
+    export CC=${TOOLCHAIN_DIR}/bin/${ANDROID_TRIPLET}-clang
+    export AR=${TOOLCHAIN_DIR}/bin/${ANDROID_TRIPLET}-ar
+    export CXX=${TOOLCHAIN_DIR}/bin/${ANDROID_TRIPLET}-clang++
+    export CXXLD=${TOOLCHAIN_DIR}/bin/${ANDROID_TRIPLET}-ld
+    export RANLIB=${TOOLCHAIN_DIR}/bin/${ANDROID_TRIPLET}-ranlib
     export TARGET=android
     export OPENSSL_STATIC=1
 }

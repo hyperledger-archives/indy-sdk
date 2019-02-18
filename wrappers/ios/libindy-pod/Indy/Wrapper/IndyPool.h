@@ -93,7 +93,7 @@
  
  @param protocolVersion Protocol version will be used:
     1 - for Indy Node 1.3
-    2 - for Indy Node 1.4
+    2 - for Indy Node 1.4 and greater
  @param completion Completion callback, returns error code.
  */
 + (void)setProtocolVersion:(NSNumber *)protocolVersion

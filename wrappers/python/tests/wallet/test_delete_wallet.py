@@ -21,7 +21,6 @@ async def test_delete_wallet_works_for_closed(wallet_config, wallet_handle, cred
 
 # noinspection PyUnusedLocal
 @pytest.mark.asyncio
-@pytest.mark.skip(reason="checking has been lost")
 async def test_delete_wallet_works_for_opened(wallet_config, wallet_handle, credentials):
     with pytest.raises(IndyError) as e:
         await wallet.delete_wallet(wallet_config, credentials)

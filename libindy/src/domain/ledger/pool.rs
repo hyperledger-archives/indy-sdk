@@ -60,12 +60,14 @@ pub struct PoolUpgradeOperation {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub justification: Option<String>,
     pub reinstall: bool,
-    pub force: bool
+    pub force: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub package: Option<String>
 }
 
 impl PoolUpgradeOperation {
     pub fn new(name: &str, version: &str, action: &str, sha256: &str, timeout: Option<u32>, schedule: Option<HashMap<String, String>>,
-               justification: Option<&str>, reinstall: bool, force: bool) -> PoolUpgradeOperation {
+               justification: Option<&str>, reinstall: bool, force: bool, package: Option<&str>) -> PoolUpgradeOperation {
         PoolUpgradeOperation {
             _type: POOL_UPGRADE.to_string(),
             name: name.to_string(),
@@ -76,7 +78,8 @@ impl PoolUpgradeOperation {
             schedule,
             justification: justification.map(String::from),
             reinstall,
-            force
+            force,
+            package: package.map(String::from),
         }
     }
 }

@@ -2,12 +2,16 @@ cargo-registry
 target
 build
 node_modules
+package-lock.json
 .idea
 *.iml
 .venv
 .cache
 .DS_Store
 Podfile.lock
-
+.vscode
+.pytest_cache
 
 /wrappers/python/venv/
+.vscode
+_build/

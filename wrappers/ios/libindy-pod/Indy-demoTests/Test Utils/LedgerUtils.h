@@ -25,6 +25,11 @@
             withPoolHandle:(IndyHandle)poolHandle
                 resultJson:(NSString **)resultJson;
 
+- (NSError *)submitAction:(NSString *)request
+                    nodes:(NSString *)nodes
+                  timeout:(NSNumber *)timeout
+           withPoolHandle:(IndyHandle)poolHandle
+               resultJson:(NSString **)resultJson;
 
 // MARK: - Nym request
 - (NSError *)buildNymRequestWithSubmitterDid:(NSString *)submitterDid
@@ -118,6 +123,7 @@
                                        justification:(NSString *)justification
                                            reinstall:(BOOL)reinstall
                                                force:(BOOL)force
+                                            package_:(NSString *)package_
                                           resultJson:(NSString **)resultJson;
 
 // MARK: - Revocation registry definition request
@@ -172,6 +178,10 @@
                                  submitterdid:(NSString *)submitterDid
                                   requestJson:(NSString *)requestJson
                                    resultJson:(NSString **)resultJson;
+
+// MARK: - Response Metadata
+- (NSError *)getResponseMetadata:(NSString *)response
+                responseMetadata:(NSString **)responseMetadata;
 
 
 @end

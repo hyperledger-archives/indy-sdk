@@ -1,7 +1,6 @@
 ﻿using Hyperledger.Indy.PairwiseApi;
 using Hyperledger.Indy.WalletApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Newtonsoft.Json.Linq;
 using System.Threading.Tasks;
 
 namespace Hyperledger.Indy.Test.PairwiseTests
@@ -46,7 +45,7 @@ namespace Hyperledger.Indy.Test.PairwiseTests
         [TestMethod]
         public async Task TestSetPairwiseMetadataWorksForNotCreatedPairwise()
         {
-            var ex = await Assert.ThrowsExceptionAsync<WalletValueNotFoundException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<WalletItemNotFoundException>(() =>
                 Pairwise.SetMetadataAsync(wallet, theirDid, METADATA)
             );
         }

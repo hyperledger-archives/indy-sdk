@@ -1,0 +1,9 @@
+libvcx (0.2.2) unstable; urgency=medium
+
+[ Hyperledger ]
+
+* 0.2.1
+    * Bugfixes
+
+* 0.2.0
+    * Initial release

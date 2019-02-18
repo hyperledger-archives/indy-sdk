@@ -1,11 +1,10 @@
-use domain::ledger::constants;
-use errors::common::CommonError;
-use errors::pool::PoolError;
 use serde_json;
 use serde_json::Value as SJsonValue;
+
+use domain::ledger::constants;
+use errors::prelude::*;
 use services::ledger::merkletree::merkletree::MerkleTree;
-use services::pool::types::*;
-use std::error::Error;
+use services::pool::{PoolService, types::*};
 
 pub const REQUESTS_FOR_STATE_PROOFS: [&'static str; 7] = [
     constants::GET_NYM,
@@ -33,6 +32,7 @@ pub enum NetworkerEvent {
         String, //msg
         String, //req_id
         i64, //timeout
+        Option<Vec<String>>, //nodes
     ),
     Resend(
         String, //req_id
@@ -69,7 +69,7 @@ pub enum PoolEvent {
         usize, //target_mt_size
         MerkleTree,
     ),
-    CatchupTargetNotFound(PoolError),
+    CatchupTargetNotFound(IndyError),
     #[allow(dead_code)] //FIXME
     PoolOutdated,
     Synced(
@@ -80,6 +80,8 @@ pub enum PoolEvent {
     SendRequest(
         i32, // cmd_id
         String, // request
+        Option<i32>, // timeout
+        Option<String>, // node list
     ),
     Timeout(
         String, //req_id
@@ -118,6 +120,8 @@ pub enum RequestEvent {
     CustomFullRequest(
         String, // message
         String, // req_id
+        Option<i32>, // timeout
+        Option<String>, // nodes
     ),
     ConsistencyProof(
         ConsistencyProof,
@@ -158,7 +162,7 @@ impl RequestEvent {
         match self {
             &RequestEvent::CustomSingleRequest(_, ref id) => id.to_string(),
             &RequestEvent::CustomConsensusRequest(_, ref id) => id.to_string(),
-            &RequestEvent::CustomFullRequest(_, ref id) => id.to_string(),
+            &RequestEvent::CustomFullRequest(_, ref id, _, _) => id.to_string(),
             &RequestEvent::Reply(_, _, _, ref id) => id.to_string(),
             &RequestEvent::ReqACK(_, _, _, ref id) => id.to_string(),
             &RequestEvent::ReqNACK(_, _, _, ref id) => id.to_string(),
@@ -201,13 +205,24 @@ impl Into<Option<RequestEvent>> for PoolEvent {
                         Message::Pong => RequestEvent::Pong,
                     })
             }
-            PoolEvent::SendRequest(_, msg) => {
+            PoolEvent::SendRequest(_, msg, timeout, nodes) => {
                 let req_id = _parse_req_id_and_op(&msg);
-                match req_id {
-                    Ok((ref req_id, ref op)) if REQUESTS_FOR_STATE_PROOFS.contains(&op.as_str()) => Some(RequestEvent::CustomSingleRequest(msg, req_id.clone())), //FIXME check plugged also
-                    Ok((ref req_id, ref op)) if REQUEST_FOR_FULL.contains(&op.as_str()) => Some(RequestEvent::CustomFullRequest(msg, req_id.clone())),
-                    Ok((ref req_id, _)) => Some(RequestEvent::CustomConsensusRequest(msg, req_id.clone())),
-                    Err(_) => None,
+                if let Ok((ref req_id, ref op)) = req_id {
+                    if REQUEST_FOR_FULL.contains(&op.as_str()) {
+                        Some(RequestEvent::CustomFullRequest(msg, req_id.clone(), timeout, nodes))
+                    } else if timeout.is_some() || nodes.is_some() {
+                        error!("Timeout {:?} or nodes {:?} is specified for non-supported request operation type {}",
+                               timeout, nodes, op);
+                        None
+                    } else if REQUESTS_FOR_STATE_PROOFS.contains(&op.as_str())
+                        || PoolService::get_sp_parser(&op.as_str()).is_some() {
+                        Some(RequestEvent::CustomSingleRequest(msg, req_id.clone()))
+                    } else {
+                        Some(RequestEvent::CustomConsensusRequest(msg, req_id.clone()))
+                    }
+                } else {
+                    error!("Can't parse req_id or op from message {}", msg);
+                    None
                 }
             }
             PoolEvent::Timeout(req_id, node_alias) => Some(RequestEvent::Timeout(req_id, node_alias)),
@@ -220,23 +235,21 @@ fn _parse_msg(msg: &str) -> Option<Message> {
     Message::from_raw_str(msg).map_err(map_err_trace!()).ok()
 }
 
-fn _parse_req_id_and_op(msg: &str) -> Result<(String, String), CommonError> {
+fn _parse_req_id_and_op(msg: &str) -> IndyResult<(String, String)> {
     let req_json = _get_req_json(msg)?;
 
     let req_id: u64 = req_json["reqId"]
         .as_u64()
-        .ok_or(CommonError::InvalidStructure("No reqId in request".to_string()))?;
+        .ok_or(err_msg(IndyErrorKind::InvalidStructure, "No reqId in request"))?;
 
     let op = req_json["operation"]["type"]
         .as_str()
-        .ok_or(CommonError::InvalidStructure("No operation type in request".to_string()))?;
+        .ok_or(err_msg(IndyErrorKind::InvalidStructure, "No operation type in request"))?;
 
     Ok((req_id.to_string(), op.to_string()))
 }
 
-fn _get_req_json(msg: &str) -> Result<SJsonValue, CommonError> {
+fn _get_req_json(msg: &str) -> IndyResult<SJsonValue> {
     serde_json::from_str(msg)
-        .map_err(|err|
-            CommonError::InvalidStructure(
-                format!("Invalid request json: {}", err.description())))
+        .to_indy(IndyErrorKind::InvalidStructure, "Invalid request json") // FIXME: Review kind
 }

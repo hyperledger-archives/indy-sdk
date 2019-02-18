@@ -1,5 +1,6 @@
 extern crate rpassword;
 extern crate libloading;
+extern crate log4rs;
 
 use unescape::unescape;
 
@@ -151,7 +152,6 @@ pub struct CommandContext {
     plugins: RefCell<HashMap<String, libloading::Library>>,
 }
 
-#[allow(dead_code)] //FIXME
 impl CommandContext {
     pub fn new() -> CommandContext {
         CommandContext {
@@ -354,7 +354,7 @@ impl CommandExecutor {
             .params()
             .iter()
             .filter(|param| param.name().starts_with(word))
-            .map(|param| (param.name().to_owned(), '='))
+            .map(|param| (param.name().to_owned(), CommandExecutor::param_complete_symbol(param)))
             .collect::<Vec<(String, char)>>());
 
         completes
@@ -370,12 +370,16 @@ impl CommandExecutor {
         let param_names: Vec<(String, char)> = command_params
             .iter()
             .filter(|param_meta| !params.contains(&param_meta.name) && param_meta.name.starts_with(word))
-            .map(|param_meta| ((*param_meta.name).to_owned(), '='))
+            .map(|param_meta| ((*param_meta.name).to_owned(), CommandExecutor::param_complete_symbol(param_meta)))
             .collect();
 
         completes.extend(param_names);
 
         completes
+    }
+
+    fn param_complete_symbol(param: &ParamMetadata) -> char {
+        if !param.is_deferred() { '=' } else { ' ' }
     }
 
     fn command_names(commands: &HashMap<&'static str, Command>, word: &str) -> Vec<(String, char)> {

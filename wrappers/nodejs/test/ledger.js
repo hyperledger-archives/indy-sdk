@@ -24,12 +24,12 @@ async function waitUntilApplied (ph, req, cond) {
 
 test('ledger', async function (t) {
   var pool = await initTestPool()
-  var walletConfig = {'id': 'wallet-' + cuid()}
-  var walletCredentials = {'key': 'key'}
+  var walletConfig = { 'id': 'wallet-' + cuid() }
+  var walletCredentials = { 'key': 'key' }
   await indy.createWallet(walletConfig, walletCredentials)
   var wh = await indy.openWallet(walletConfig, walletCredentials)
-  var [trusteeDid] = await indy.createAndStoreMyDid(wh, {seed: '000000000000000000000000Trustee1'})
-  var [myDid, myVerkey] = await indy.createAndStoreMyDid(wh, {seed: '00000000000000000000000000000My1', cid: true})
+  var [trusteeDid] = await indy.createAndStoreMyDid(wh, { seed: '000000000000000000000000Trustee1' })
+  var [myDid, myVerkey] = await indy.createAndStoreMyDid(wh, { })
   var schemaName = 'schema-' + cuid()
   var [schemaId, schema] = await indy.issuerCreateSchema(myDid, schemaName, '1.0', ['name', 'age'])
 
@@ -37,6 +37,12 @@ test('ledger', async function (t) {
   var req = await indy.buildNymRequest(trusteeDid, myDid, myVerkey, null, 'TRUSTEE')
   var res = await indy.signAndSubmitRequest(pool.handle, wh, trusteeDid, req)
   t.is(res.result.txn.data.verkey, myVerkey)
+
+  var resMetadata = await indy.getResponseMetadata(res)
+  t.true(resMetadata.hasOwnProperty('seqNo'))
+  t.true(resMetadata.hasOwnProperty('txnTime'))
+  t.false(resMetadata.hasOwnProperty('lastTxnTime'))
+  t.false(resMetadata.hasOwnProperty('lastSeqNo'))
 
   req = await indy.buildGetNymRequest(trusteeDid, myDid)
   t.is(req.identifier, trusteeDid)
@@ -71,12 +77,12 @@ test('ledger', async function (t) {
   t.is(res.op, 'REQNACK')
 
   // Attrib
-  req = await indy.buildAttribRequest(myDid, myDid, null, {endpoint: {ha: '127.0.0.1:5555'}}, null)
+  req = await indy.buildAttribRequest(myDid, myDid, null, { endpoint: { ha: '127.0.0.1:5555' } }, null)
   res = await indy.signAndSubmitRequest(pool.handle, wh, myDid, req)
 
   req = await indy.buildGetAttribRequest(myDid, myDid, 'endpoint', null, null)
   res = await waitUntilApplied(pool.handle, req, data => data['result']['data'] != null)
-  t.deepEqual(JSON.parse(res.result.data), {endpoint: {ha: '127.0.0.1:5555'}})
+  t.deepEqual(JSON.parse(res.result.data), { endpoint: { ha: '127.0.0.1:5555' } })
 
   // Pool
   req = await indy.buildPoolConfigRequest(myDid, false, false)
@@ -85,7 +91,7 @@ test('ledger', async function (t) {
   req = await indy.buildPoolRestartRequest(myDid, 'start', '0')
   t.is(req.operation.action, 'start')
 
-  req = await indy.buildPoolUpgradeRequest(myDid, 'some upgrade action', '2.0.0', 'cancel', 'abc12345', -1, null, null, false, false)
+  req = await indy.buildPoolUpgradeRequest(myDid, 'some upgrade action', '2.0.0', 'cancel', 'abc12345', -1, null, null, false, false, null)
   t.is(req.operation.name, 'some upgrade action')
 
   // DDO
@@ -93,7 +99,7 @@ test('ledger', async function (t) {
   t.is(req.operation.dest, trusteeDid)
 
   // Cred Def
-  var [credDefId, credDef] = await indy.issuerCreateAndStoreCredentialDef(wh, myDid, schema, 'TAG', 'CL', {support_revocation: true})
+  var [credDefId, credDef] = await indy.issuerCreateAndStoreCredentialDef(wh, myDid, schema, 'TAG', 'CL', { support_revocation: true })
   req = await indy.buildCredDefRequest(myDid, credDef)
   res = await indy.signAndSubmitRequest(pool.handle, wh, myDid, req)
 
@@ -108,7 +114,7 @@ test('ledger', async function (t) {
     'base_dir': tempy.directory(),
     'uri_pattern': ''
   })
-  var [revRegDefId, revRegDef, revRegEntry] = await indy.issuerCreateAndStoreRevocReg(wh, myDid, null, 'tag1', credDefId, {max_cred_num: 5}, writerH)
+  var [revRegDefId, revRegDef, revRegEntry] = await indy.issuerCreateAndStoreRevocReg(wh, myDid, null, 'tag1', credDefId, { max_cred_num: 5 }, writerH)
 
   req = await indy.buildRevocRegDefRequest(myDid, revRegDef)
   res = await indy.signAndSubmitRequest(pool.handle, wh, myDid, req)
@@ -139,6 +145,11 @@ test('ledger', async function (t) {
   t.is(res[0], revRegDefId)
   t.is(typeof res[1], 'object')
   t.is(typeof res[2], 'number')
+
+  // Submit Action
+  req = await indy.buildGetValidatorInfoRequest(myDid)
+  req = await indy.signRequest(wh, myDid, req)
+  res = await indy.submitAction(pool.handle, req, null, null)
 
   await indy.closeWallet(wh)
   await indy.deleteWallet(walletConfig, walletCredentials)

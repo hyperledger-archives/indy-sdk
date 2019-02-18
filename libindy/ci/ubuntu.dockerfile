@@ -39,7 +39,7 @@ RUN pip3 install -U \
 	deb-pkg-tools
 
 RUN cd /tmp && \
-   curl https://download.libsodium.org/libsodium/releases/libsodium-1.0.14.tar.gz | tar -xz && \
+   curl https://download.libsodium.org/libsodium/releases/old/libsodium-1.0.14.tar.gz | tar -xz && \
     cd /tmp/libsodium-1.0.14 && \
     ./configure --disable-shared && \
     make && \
@@ -52,10 +52,17 @@ RUN apt-get update && apt-get install -y maven
 
 RUN apt-get install -y zip
 
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        ruby \
+        ruby-dev \
+        rubygems \
+    && gem install --no-ri --no-rdoc rake fpm \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN useradd -ms /bin/bash -u $uid indy
 USER indy
 
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.26.0
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.31.0
 ENV PATH /home/indy/.cargo/bin:$PATH
 
 WORKDIR /home/indy

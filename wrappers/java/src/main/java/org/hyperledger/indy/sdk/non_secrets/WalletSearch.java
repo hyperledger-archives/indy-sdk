@@ -48,7 +48,7 @@ public class WalletSearch extends IndyJava.API implements AutoCloseable {
 		public void callback(int xcommand_handle, int err) {
 
 			CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			Void result = null;
 			future.complete(result);
@@ -64,7 +64,7 @@ public class WalletSearch extends IndyJava.API implements AutoCloseable {
 		public void callback(int xcommand_handle, int err, String str) {
 
 			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			String result = str;
 			future.complete(result);
@@ -80,7 +80,7 @@ public class WalletSearch extends IndyJava.API implements AutoCloseable {
 		public void callback(int xcommand_handle, int err, int handle) {
 
 			CompletableFuture<WalletSearch> future = (CompletableFuture<WalletSearch>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			WalletSearch result = new WalletSearch(handle);
 			future.complete(result);
@@ -138,7 +138,7 @@ public class WalletSearch extends IndyJava.API implements AutoCloseable {
 				optionsJson,
 				searchCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -179,7 +179,7 @@ public class WalletSearch extends IndyJava.API implements AutoCloseable {
 				count,
 				stringCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -204,7 +204,7 @@ public class WalletSearch extends IndyJava.API implements AutoCloseable {
 				searchHandle,
 				voidCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}

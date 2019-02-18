@@ -14,7 +14,8 @@ extern "C" {
     /// wallet_handle: Wallet handle (created by open_wallet).
     /// key_json: Key information as json. Example:
     /// {
-    ///     "seed": string, // Optional (if not set random one will be used); Seed information that allows deterministic key creation.
+    ///     "seed": string, (optional) Seed that allows deterministic key creation (if not set random one will be created).
+    ///                                Can be UTF-8, base64 or hex string.
     ///     "crypto_type": string, // Optional (if not set then ed25519 curve is used); Currently only 'ed25519' value is supported for this field.
     /// }
     /// cb: Callback that takes command result as parameter.
@@ -22,7 +23,7 @@ extern "C" {
     /// #Returns
     /// Error Code
     /// cb:
-    /// - xcommand_handle: command handle to map callback to caller context.
+    /// - command_handle_: command handle to map callback to caller context.
     /// - err: Error code.
     /// - verkey: Ver key of generated key pair, also used as key identifier
     ///
@@ -51,7 +52,7 @@ extern "C" {
     /// #Returns
     /// Error Code
     /// cb:
-    /// - xcommand_handle: command handle to map callback to caller context.
+    /// - command_handle_: command handle to map callback to caller context.
     /// - err: Error code.
     ///
     /// #Errors
@@ -78,7 +79,7 @@ extern "C" {
     /// #Returns
     /// Error Code
     /// cb:
-    /// - xcommand_handle: Command handle to map callback to caller context.
+    /// - command_handle_: Command handle to map callback to caller context.
     /// - err: Error code.
     /// - metadata - The meta information stored with the key; Can be null if no metadata was saved for this key.
     ///
@@ -124,7 +125,7 @@ extern "C" {
                                          const indy_u8_t *  message_raw,
                                          indy_u32_t         message_len,
 
-                                         void           (*cb)(indy_handle_t    xcommand_handle,
+                                         void           (*cb)(indy_handle_t    command_handle_,
                                                               indy_error_t     err,
                                                               const indy_u8_t* signature_raw,
                                                               indy_u32_t       signature_len)
@@ -159,7 +160,7 @@ extern "C" {
                                            const indy_u8_t *  signature_raw,
                                            indy_u32_t         signature_len,
 
-                                           void           (*cb)(indy_handle_t xcommand_handle,
+                                           void           (*cb)(indy_handle_t command_handle_,
                                                                 indy_error_t  err,
                                                                 indy_bool_t   valid )
                                           );
@@ -199,7 +200,7 @@ extern "C" {
                                                const indy_u8_t *  message_raw,
                                                indy_u32_t         message_len,
 
-                                               void           (*cb)(indy_handle_t     xcommand_handle,
+                                               void           (*cb)(indy_handle_t     command_handle_,
                                                                     indy_error_t      err,
                                                                     const indy_u8_t*  encrypted_msg_raw,
                                                                     indy_u32_t        encrypted_msg_len)
@@ -237,7 +238,7 @@ extern "C" {
                                                  const indy_u8_t*   encrypted_msg_raw,
                                                  indy_u32_t         encrypted_msg_len,
 
-                                                 void           (*cb)(indy_handle_t     xcommand_handle,
+                                                 void           (*cb)(indy_handle_t     command_handle_,
                                                                       indy_error_t      err,
                                                                       const char *      sender_vk,
                                                                       const indy_u8_t*  decrypted_msg_raw,
@@ -274,7 +275,7 @@ extern "C" {
                                                const indy_u8_t *  message_raw,
                                                indy_u32_t         message_len,
 
-                                               void           (*cb)(indy_handle_t     xcommand_handle,
+                                               void           (*cb)(indy_handle_t     command_handle_,
                                                                     indy_error_t      err,
                                                                     const indy_u8_t*  encrypted_msg_raw,
                                                                     indy_u32_t        encrypted_msg_len)
@@ -310,12 +311,134 @@ extern "C" {
                                                  const indy_u8_t*   encrypted_msg,
                                                  indy_u32_t         encrypted_len,
 
-                                                 void           (*cb)(indy_handle_t     xcommand_handle,
+                                                 void           (*cb)(indy_handle_t     command_handle_,
                                                                       indy_error_t      err,
                                                                       const indy_u8_t*  decrypted_msg_raw,
                                                                       indy_u32_t        decrypted_msg_len)
                                                  );
 
+
+    /// Packs a message by encrypting the message and serializes it in a JWE-like format (Experimental)
+    ///
+    /// Note to use DID keys with this function you can call indy_key_for_did to get key id (verkey)
+    /// for specific DID.
+    ///
+    /// #Params
+    /// command_handle: command handle to map callback to user context.
+    /// wallet_handle: wallet handle (created by open_wallet).
+    /// message: a pointer to the first byte of the message to be packed
+    /// message_len: the length of the message
+    /// receivers: a string in the format of a json list which will contain the list of receiver's keys
+    ///                the message is being encrypted for.
+    ///                Example:
+    ///                "[<receiver edge_agent_1 verkey>, <receiver edge_agent_2 verkey>]"
+    /// sender: the sender's verkey as a string When null pointer is used in this parameter, anoncrypt is used
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// a JWE using authcrypt alg is defined below:
+    /// {
+    ///     "protected": "b64URLencoded({
+    ///        "enc": "xchachapoly1305_ietf",
+    ///        "typ": "JWM/1.0",
+    ///        "alg": "Authcrypt",
+    ///        "recipients": [
+    ///            {
+    ///                "encrypted_key": base64URLencode(libsodium.crypto_box(my_key, their_vk, cek, cek_iv))
+    ///                "header": {
+    ///                     "kid": "base58encode(recipient_verkey)",
+    ///                     "sender" : base64URLencode(libsodium.crypto_box_seal(their_vk, base58encode(sender_vk)),
+    ///                     "iv" : base64URLencode(cek_iv)
+    ///                }
+    ///            },
+    ///        ],
+    ///     })",
+    ///     "iv": <b64URLencode(iv)>,
+    ///     "ciphertext": b64URLencode(encrypt_detached({'@type'...}, protected_value_encoded, iv, cek),
+    ///     "tag": <b64URLencode(tag)>
+    /// }
+    ///
+    /// Alternative example in using anoncrypt alg is defined below:
+    /// {
+    ///     "protected": "b64URLencoded({
+    ///        "enc": "xchachapoly1305_ietf",
+    ///        "typ": "JWM/1.0",
+    ///        "alg": "Anoncrypt",
+    ///        "recipients": [
+    ///            {
+    ///                "encrypted_key": base64URLencode(libsodium.crypto_box_seal(their_vk, cek)),
+    ///                "header": {
+    ///                    "kid": base58encode(recipient_verkey),
+    ///                }
+    ///            },
+    ///        ],
+    ///     })",
+    ///     "iv": b64URLencode(iv),
+    ///     "ciphertext": b64URLencode(encrypt_detached({'@type'...}, protected_value_encoded, iv, cek),
+    ///     "tag": b64URLencode(tag)
+    /// }
+    ///
+    ///
+    /// #Errors
+    /// Common*
+    /// Wallet*
+    /// Ledger*
+    /// Crypto*
+    extern indy_error_t indy_pack_message(indy_handle_t      command_handle,
+                                          indy_handle_t      wallet_handle,
+                                          const indy_u8_t*   message,
+                                          indy_u32_t         message_len,
+                                          const char *       receiver_keys,
+                                          const char *       sender,
+
+                                          void           (*cb)(indy_handle_t     command_handle_,
+                                                               indy_error_t      err,
+                                                               const indy_u8_t*  jwe_msg_raw,
+                                                               indy_u32_t        jwe_msg_len)
+                                          );
+
+
+    /// Unpacks a JWE-like formatted message outputted by indy_pack_message (Experimental)
+    ///
+    /// #Params
+    /// command_handle: command handle to map callback to user context.
+    /// wallet_handle: wallet handle (created by open_wallet).
+    /// jwe_data: a pointer to the first byte of the JWE to be unpacked
+    /// jwe_len: the length of the JWE message in bytes
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// if authcrypt was used to pack the message returns this json structure:
+    /// {
+    ///     message: <decrypted message>,
+    ///     sender_verkey: <sender_verkey>
+    ///     recipient_verkey: <recipient_verkey>
+    /// }
+    ///
+    /// OR
+    ///
+    /// if anoncrypt was used to pack the message returns this json structure:
+    /// {
+    ///     message: <decrypted message>,
+    ///     recipient_verkey: <recipient_verkey>
+    /// }
+    ///
+    ///
+    /// #Errors
+    /// Common*
+    /// Wallet*
+    /// Ledger*
+    /// Crypto*
+    extern indy_error_t indy_unpack_message(indy_handle_t      command_handle,
+                                            indy_handle_t      wallet_handle,
+                                            const indy_u8_t*   jwe_msg,
+                                            indy_u32_t         jwe_len,
+
+                                            void           (*cb)(indy_handle_t     command_handle_,
+                                                                 indy_error_t      err,
+                                                                 const indy_u8_t*  res_json_raw,
+                                                                 indy_u32_t        res_json_len)
+                                            );
 #ifdef __cplusplus
 }
 #endif

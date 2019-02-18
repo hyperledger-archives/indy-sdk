@@ -1,8 +1,10 @@
 from .libindy import do_call, create_cb
 
+from typing import Optional
 from ctypes import *
 
 import logging
+import json
 
 
 async def create_key(wallet_handle: int,
@@ -13,8 +15,8 @@ async def create_key(wallet_handle: int,
     :param wallet_handle: Wallet handle (created by open_wallet).
     :param key_json: Key information as json. Example:
         {
-            "seed": string, // Optional (if not set random one will be used);
-                    Seed information that allows deterministic key creation.
+	        "seed": string, (optional) Seed that allows deterministic key creation (if not set random one will be created).
+	                                   Can be UTF-8, base64 or hex string.
             "crypto_type": string, // Optional (if not set then ed25519 curve is used);
                     Currently only 'ed25519' value is supported for this field.
         }
@@ -169,7 +171,7 @@ async def crypto_verify(signer_vk: str,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("crypto_verify: >>> my_vk: %r, signed_msg: %r",
+    logger.debug("crypto_verify: >>> my_vk: %r, signed_msg: %r, signature: %r",
                  signer_vk,
                  msg,
                  signature)
@@ -226,7 +228,7 @@ async def auth_crypt(wallet_handle: int,
                  msg)
 
     def transform_cb(arr_ptr: POINTER(c_uint8), arr_len: c_uint32):
-        return bytes(arr_ptr[:arr_len])
+        return bytes(arr_ptr[:arr_len]),
 
     if not hasattr(auth_crypt, "cb"):
         logger.debug("auth_crypt: Creating callback")
@@ -291,7 +293,7 @@ async def auth_decrypt(wallet_handle: int,
     (sender_vk, msg) = await do_call('indy_crypto_auth_decrypt',
                                      c_wallet_handle,
                                      c_recipient_vk,
-                                     bytes(encrypted_msg),
+                                     encrypted_msg,
                                      c_encrypted_msg_len,
                                      auth_decrypt.cb)
 
@@ -325,7 +327,7 @@ async def anon_crypt(recipient_vk: str,
                  msg)
 
     def transform_cb(arr_ptr: POINTER(c_uint8), arr_len: c_uint32):
-        return bytes(arr_ptr[:arr_len])
+        return bytes(arr_ptr[:arr_len]),
 
     if not hasattr(anon_crypt, "cb"):
         logger.debug("anon_crypt: Creating callback")
@@ -382,9 +384,110 @@ async def anon_decrypt(wallet_handle: int,
     decrypted_message = await do_call('indy_crypto_anon_decrypt',
                                       c_wallet_handle,
                                       c_recipient_vk,
-                                      bytes(encrypted_msg),
+                                      encrypted_msg,
                                       c_encrypted_msg_len,
                                       anon_decrypt.cb)
 
     logger.debug("crypto_box_seal_open: <<< res: %r", decrypted_message)
     return decrypted_message
+
+
+async def pack_message(wallet_handle: int,
+                       message: str,
+                       recipient_verkeys: list,
+                       sender_verkey: Optional[str]) -> bytes:
+    """
+    Packs a message by encrypting the message and serializes it in a JWE-like format (Experimental)
+
+    Note to use DID keys with this function you can call did.key_for_did to get key id (verkey)
+    for specific DID.
+
+    #Params
+    command_handle: command handle to map callback to user context.
+    wallet_handle: wallet handler (created by open_wallet)
+    message: the message being sent as a string. If it's JSON formatted it should be converted to a string
+    recipient_verkeys: a list of Strings which are recipient verkeys
+    sender_verkey: the sender's verkey as a string. -> When None is passed in this parameter, anoncrypt mode is used
+
+    returns an Agent Wire Message format as a byte array. See HIPE 0028 for detailed formats
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("pack_message: >>> wallet_handle: %r, message: %r, recipient_verkeys: %r, sender_verkey: %r",
+                 wallet_handle,
+                 message,
+                 recipient_verkeys,
+                 sender_verkey)
+
+    def transform_cb(arr_ptr: POINTER(c_uint8), arr_len: c_uint32):
+        return bytes(arr_ptr[:arr_len]),
+
+    if not hasattr(pack_message, "cb"):
+        logger.debug("pack_message: Creating callback")
+        pack_message.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, POINTER(c_uint8), c_uint32), transform_cb)
+
+    c_wallet_handle = c_int32(wallet_handle)
+    msg_bytes = message.encode("utf-8")
+    c_msg_len = c_uint32(len(msg_bytes))
+    c_recipient_verkeys = c_char_p(json.dumps(recipient_verkeys).encode('utf-8'))
+    c_sender_vk = c_char_p(sender_verkey.encode('utf-8')) if sender_verkey is not None else None
+    res = await do_call('indy_pack_message',
+                        c_wallet_handle,
+                        msg_bytes,
+                        c_msg_len,
+                        c_recipient_verkeys,
+                        c_sender_vk,
+                        pack_message.cb)
+    logger.debug("pack_message: <<< res: %r", res)
+    return res
+
+
+async def unpack_message(wallet_handle: int,
+                         jwe: bytes) -> bytes:
+    """
+    Unpacks a JWE-like formatted message outputted by pack_message (Experimental)
+
+    #Params
+    command_handle: command handle to map callback to user context.
+    wallet_handle: wallet handler (created by open_wallet)
+    message: the output of a pack message
+
+    #Returns -> See HIPE 0028 for details
+    (Authcrypt mode)
+
+    {
+        "message": <decrypted message>,
+        "recipient_verkey": <recipient verkey used to decrypt>,
+        "sender_verkey": <sender verkey used to encrypt>
+    }
+
+    (Anoncrypt mode)
+
+    {
+        "message": <decrypted message>,
+        "recipient_verkey": <recipient verkey used to decrypt>,
+    }
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("unpack_message: >>> wallet_handle: %r, jwe: %r",
+                 wallet_handle,
+                 jwe)
+
+    def transform_cb(arr_ptr: POINTER(c_uint8), arr_len: c_uint32):
+        return bytes(arr_ptr[:arr_len]),
+
+    if not hasattr(unpack_message, "cb"):
+        logger.debug("unpack_message: Creating callback")
+        unpack_message.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, POINTER(c_uint8), c_uint32), transform_cb)
+
+    c_wallet_handle = c_int32(wallet_handle)
+    c_jwe_len = c_uint32(len(jwe))
+    res = await do_call('indy_unpack_message',
+                        c_wallet_handle,
+                        jwe,
+                        c_jwe_len,
+                        unpack_message.cb)
+
+    logger.debug("unpack_message: <<< res: %r", res)
+    return res

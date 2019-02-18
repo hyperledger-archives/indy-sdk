@@ -12,10 +12,10 @@ import static org.junit.Assert.assertTrue;
 public class GetValidatorInfoRequestTest extends IndyIntegrationTestWithPoolAndSingleWallet {
     @Test
     public void testBuildGetValidatorInfoRequestWorks() throws Exception {
-        String expectedResult = String.format("" +
+        String expectedResult = "" +
                 "\"operation\":{" +
                 "\"type\":\"119\"" +
-                "}");
+                "}";
 
         String getValidatorInfoRequest = Ledger.buildGetValidatorInfoRequest(DID).get();
         assertTrue(getValidatorInfoRequest.replace("\\", "").contains(expectedResult));
@@ -23,7 +23,7 @@ public class GetValidatorInfoRequestTest extends IndyIntegrationTestWithPoolAndS
 
     @Test(timeout = PoolUtils.TEST_TIMEOUT_FOR_REQUEST_ENSURE)
     public void testGetValidatorInfoRequestWorks() throws Exception {
-        String did = Did.createAndStoreMyDid(this.wallet, new JSONObject().put("seed", TRUSTEE_SEED).toString()).get().getDid();;
+        String did = Did.createAndStoreMyDid(this.wallet, new JSONObject().put("seed", TRUSTEE_SEED).toString()).get().getDid();
 
         String getValidatorInfoRequest = Ledger.buildGetValidatorInfoRequest(did).get();
         String getValidatorInfoResponse = Ledger.signAndSubmitRequest(pool, wallet, did, getValidatorInfoRequest).get();

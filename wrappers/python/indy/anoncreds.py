@@ -24,7 +24,7 @@ async def issuer_create_schema(issuer_did: str,
     :param issuer_did: DID of schema issuer
     :param name: a name the schema
     :param version: a version of the schema
-    :param attrs: a list of schema attributes descriptions
+    :param attrs: a list of schema attributes descriptions (the number of attributes should be less or equal than 125)
     :return:
         schema_id: identifier of created schema
         schema_json: schema as json
@@ -581,6 +581,7 @@ async def prover_store_credential(wallet_handle: int,
             "schema_version": <credential schema version>,
             "issuer_did": <credential issuer did>,
             "cred_def_id": <credential definition id>,
+            "rev_reg_id": <credential revocation registry id>, # "None" as string if not present
             // for every attribute in <credential values>
             "attr::<attribute name>::marker": "1",
             "attr::<attribute name>::value": <attribute raw value>,

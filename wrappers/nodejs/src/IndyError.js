@@ -1,4 +1,5 @@
 var util = require('util')
+var capi = require('./indyBinding')
 
 var errors = {
   100: 'CommonInvalidParam1',
@@ -33,6 +34,7 @@ var errors = {
   306: 'PoolLedgerConfigAlreadyExistsError',
   307: 'PoolLedgerTimeout',
   308: 'PoolIncompatibleProtocolVersion',
+  309: 'LedgerNotFound',
   400: 'AnoncredsRevocationRegistryFullError',
   401: 'AnoncredsInvalidUserRevocId',
   404: 'AnoncredsMasterSecretDuplicateNameError',
@@ -45,7 +47,8 @@ var errors = {
   701: 'PaymentIncompatibleMethodsError',
   702: 'PaymentInsufficientFundsError',
   703: 'PaymentSourceDoesNotExistError',
-  704: 'PaymentOperationNotSupportedError'
+  704: 'PaymentOperationNotSupportedError',
+  705: 'PaymentExtraFundsError'
 }
 
 function IndyError (err) {
@@ -56,6 +59,17 @@ function IndyError (err) {
     this.message = errors[err]
     this.indyCode = err
     this.indyName = errors[err]
+    try {
+      this.indyCurrentErrorJson = capi.getCurrentError()
+      var details = JSON.parse(this.indyCurrentErrorJson)
+      if (typeof details.message === 'string') {
+        this.indyMessage = details.message
+      }
+      if (typeof details.backtrace === 'string') {
+        this.indyBacktrace = details.backtrace
+      }
+    } catch (e) {
+    }
   } else {
     this.message = (err + '')
   }

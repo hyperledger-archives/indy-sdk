@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Hyperledger.Indy.AnonCredsApi
+﻿namespace Hyperledger.Indy.AnonCredsApi
 {
     /// <summary>
     /// Result from calling IssuerCreateCredentialAsync.

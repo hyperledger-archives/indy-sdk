@@ -68,7 +68,7 @@ public class ProverCreateProofTest extends AnoncredsIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStructureException.class));
 
-		String schemasJson = new JSONObject().toString();;
+		String schemasJson = new JSONObject().toString();
 		String credentialDefsJson = new JSONObject().put(issuer1gvtCredDefId, issuer1gvtCredDef).toString();
 		String revocStatesJson = new JSONObject().toString();
 

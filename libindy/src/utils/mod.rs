@@ -1,20 +1,19 @@
+#[macro_use]
+pub mod memzeroize;
+
 pub mod environment;
 
 #[macro_use]
-pub mod cstring;
+pub mod ctypes;
 
 #[macro_use]
 pub mod ccallback;
-
-#[macro_use]
-pub mod byte_array;
 
 pub mod crypto;
 #[macro_use]
 pub mod logger;
 
 #[cfg(test)]
-#[allow(dead_code)]
 pub mod inmem_wallet;
 
 #[allow(unused_macros)]
@@ -25,7 +24,10 @@ pub mod sequence;
 
 #[cfg(test)]
 #[macro_use]
+#[allow(unused_macros)]
 pub mod test;
 
 #[macro_use]
 pub mod try;
+
+pub mod option;

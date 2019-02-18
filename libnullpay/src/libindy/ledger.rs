@@ -6,19 +6,19 @@ use std::ptr::null;
 use utils::callbacks;
 
 pub fn build_get_txn_request(
-    submitter_did: &str,
+    submitter_did: Option<&str>,
     ledger_type: Option<&str>,
     seq_no: i32,
     cb: Box<FnMut(ErrorCode, String) + Send>,
 ) -> ErrorCode {
     let (command_handle, cb) = callbacks::closure_to_cb_ec_string(cb);
-    let submitter_did = CString::new(submitter_did).unwrap();
+    let submitter_did_str = submitter_did.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
     let ledger_type_str = ledger_type.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
 
     unsafe {
         indy_build_get_txn_request(
             command_handle,
-            submitter_did.as_ptr(),
+            if submitter_did.is_some() { submitter_did_str.as_ptr() } else { null() },
             if ledger_type.is_some() { ledger_type_str.as_ptr() } else { null() },
             seq_no,
             cb,

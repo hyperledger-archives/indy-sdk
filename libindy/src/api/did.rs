@@ -1,13 +1,18 @@
 extern crate libc;
 
-use api::ErrorCode;
-use errors::ToErrorCode;
+use api::{ErrorCode, IndyHandle};
 use commands::{Command, CommandExecutor};
 use commands::did::DidCommand;
-use utils::cstring::CStringUtils;
+use domain::crypto::did::{MyDidInfo, TheirDidInfo};
+use domain::crypto::key::KeyInfo;
+use errors::prelude::*;
+use utils::ctypes;
 
+use serde_json;
 use self::libc::c_char;
+
 use std::ptr;
+use domain::ledger::attrib::Endpoint;
 
 
 /// Creates keys (signing and encryption keys) for a new
@@ -19,13 +24,15 @@ use std::ptr;
 /// #Params
 /// wallet_handle: wallet handler (created by open_wallet).
 /// command_handle: command handle to map callback to user context.
-/// did_json: Identity information as json. Example:
+/// did_info: Identity information as json. See domain::crypto::did::MyDidInfo
+/// Example:
 /// {
 ///     "did": string, (optional;
 ///             if not provided and cid param is false then the first 16 bit of the verkey will be used as a new DID;
 ///             if not provided and cid is true then the full verkey will be used as a new DID;
 ///             if provided, then keys will be replaced - key rotation use case)
-///     "seed": string, (optional; if not provide then a random one will be created)
+///     "seed": string, (optional) Seed that allows deterministic did creation (if not set random one will be created).
+///                                Can be UTF-8, base64 or hex string.
 ///     "crypto_type": string, (optional; if not set then ed25519 curve is used;
 ///               currently only 'ed25519' value is supported for this field)
 ///     "cid": bool, (optional; if not set then false is used;)
@@ -35,7 +42,7 @@ use std::ptr;
 /// #Returns
 /// Error Code
 /// cb:
-/// - xcommand_handle: Command handle to map callback to caller context.
+/// - command_handle_: Command handle to map callback to caller context.
 /// - err: Error code.
 ///   did: DID generated and stored in the wallet
 ///   verkey: The DIDs verification key
@@ -45,34 +52,34 @@ use std::ptr;
 /// Wallet*
 /// Crypto*
 #[no_mangle]
-pub  extern fn indy_create_and_store_my_did(command_handle: i32,
-                                            wallet_handle: i32,
-                                            did_json: *const c_char,
-                                            cb: Option<extern fn(xcommand_handle: i32,
+pub  extern fn indy_create_and_store_my_did(command_handle: IndyHandle,
+                                            wallet_handle: IndyHandle,
+                                            did_info: *const c_char,
+                                            cb: Option<extern fn(command_handle_: IndyHandle,
                                                                  err: ErrorCode,
                                                                  did: *const c_char,
                                                                  verkey: *const c_char)>) -> ErrorCode {
-    trace!("indy_create_and_store_my_did: >>> wallet_handle: {:?}, did_json: {:?}", wallet_handle, did_json);
+    trace!("indy_create_and_store_my_did: >>> wallet_handle: {:?}, did_json: {:?}", wallet_handle, did_info);
 
-    check_useful_c_str!(did_json, ErrorCode::CommonInvalidParam3);
+    check_useful_json!(did_info, ErrorCode::CommonInvalidParam3, MyDidInfo); // redefine to MyDidInfo if valid
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!("indy_create_and_store_my_did: entities >>> wallet_handle: {:?}, did_json: {:?}", wallet_handle, secret!(did_json.as_str()));
+    trace!("indy_create_and_store_my_did: entities >>> wallet_handle: {:?}, did_json: {:?}", wallet_handle, secret!(&did_info));
 
     let result = CommandExecutor::instance()
         .send(Command::Did(DidCommand::CreateAndStoreMyDid(
             wallet_handle,
-            did_json,
+            did_info,
             Box::new(move |result| {
-                let (err, did, verkey) = result_to_err_code_2!(result, String::new(), String::new());
+                let (err, did, verkey) = prepare_result_2!(result, String::new(), String::new());
                 trace!("indy_create_and_store_my_did: did: {:?}, verkey: {:?}", did, verkey);
-                let did = CStringUtils::string_to_cstring(did);
-                let verkey = CStringUtils::string_to_cstring(verkey);
+                let did = ctypes::string_to_cstring(did);
+                let verkey = ctypes::string_to_cstring(verkey);
                 cb(command_handle, err, did.as_ptr(), verkey.as_ptr())
-            })
+            }),
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_create_and_store_my_did: <<< res: {:?}", res);
 
@@ -85,9 +92,11 @@ pub  extern fn indy_create_and_store_my_did(command_handle: i32,
 /// #Params
 /// wallet_handle: wallet handler (created by open_wallet).
 /// command_handle: command handle to map callback to user context.
-/// identity_json: Identity information as json. Example:
+/// did: target did to rotate keys.
+/// key_info: key information as json. Example:
 /// {
-///     "seed": string, (optional; if not provide then a random one will be created)
+///     "seed": string, (optional) Seed that allows deterministic key creation (if not set random one will be created).
+///                                Can be UTF-8, base64 or hex string.
 ///     "crypto_type": string, (optional; if not set then ed25519 curve is used;
 ///               currently only 'ed25519' value is supported for this field)
 /// }
@@ -96,7 +105,7 @@ pub  extern fn indy_create_and_store_my_did(command_handle: i32,
 /// #Returns
 /// Error Code
 /// cb:
-/// - xcommand_handle: Command handle to map callback to caller context.
+/// - command_handle_: Command handle to map callback to caller context.
 /// - err: Error code.
 ///   verkey: The DIDs verification key
 ///
@@ -106,35 +115,35 @@ pub  extern fn indy_create_and_store_my_did(command_handle: i32,
 /// Wallet*
 /// Crypto*
 #[no_mangle]
-pub  extern fn indy_replace_keys_start(command_handle: i32,
-                                       wallet_handle: i32,
+pub  extern fn indy_replace_keys_start(command_handle: IndyHandle,
+                                       wallet_handle: IndyHandle,
                                        did: *const c_char,
-                                       identity_json: *const c_char,
-                                       cb: Option<extern fn(xcommand_handle: i32,
+                                       key_info: *const c_char,
+                                       cb: Option<extern fn(command_handle_: IndyHandle,
                                                             err: ErrorCode,
                                                             verkey: *const c_char)>) -> ErrorCode {
-    trace!("indy_replace_keys_start: >>> wallet_handle: {:?}, did: {:?}, identity_json: {:?}", wallet_handle, did, identity_json);
+    trace!("indy_replace_keys_start: >>> wallet_handle: {:?}, did: {:?}, identity_json: {:?}", wallet_handle, did, key_info);
 
-    check_useful_c_str!(identity_json, ErrorCode::CommonInvalidParam3);
-    check_useful_c_str!(did, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(did, ErrorCode::CommonInvalidParam3);
+    check_useful_json!(key_info, ErrorCode::CommonInvalidParam4, KeyInfo);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
-    trace!("indy_replace_keys_start: entities>>> wallet_handle: {:?}, did: {:?}, identity_json: {:?}", wallet_handle, did, secret!(identity_json.as_str()));
+    trace!("indy_replace_keys_start: entities>>> wallet_handle: {:?}, did: {:?}, key_info: {:?}", wallet_handle, did, secret!(&key_info));
 
     let result = CommandExecutor::instance()
         .send(Command::Did(DidCommand::ReplaceKeysStart(
             wallet_handle,
-            identity_json,
+            key_info,
             did,
             Box::new(move |result| {
-                let (err, verkey) = result_to_err_code_1!(result, String::new());
+                let (err, verkey) = prepare_result_1!(result, String::new());
                 trace!("indy_replace_keys_start: verkey: {:?}", verkey);
-                let verkey = CStringUtils::string_to_cstring(verkey);
+                let verkey = ctypes::string_to_cstring(verkey);
                 cb(command_handle, err, verkey.as_ptr())
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_replace_keys_start: <<< res: {:?}", res);
 
@@ -152,7 +161,7 @@ pub  extern fn indy_replace_keys_start(command_handle: i32,
 /// #Returns
 /// Error Code
 /// cb:
-/// - xcommand_handle: Command handle to map callback to caller context.
+/// - command_handle_: Command handle to map callback to caller context.
 /// - err: Error code.
 ///
 /// #Errors
@@ -160,10 +169,10 @@ pub  extern fn indy_replace_keys_start(command_handle: i32,
 /// Wallet*
 /// Crypto*
 #[no_mangle]
-pub  extern fn indy_replace_keys_apply(command_handle: i32,
-                                       wallet_handle: i32,
+pub  extern fn indy_replace_keys_apply(command_handle: IndyHandle,
+                                       wallet_handle: IndyHandle,
                                        did: *const c_char,
-                                       cb: Option<extern fn(xcommand_handle: i32,
+                                       cb: Option<extern fn(command_handle_: IndyHandle,
                                                             err: ErrorCode)>) -> ErrorCode {
     trace!("indy_replace_keys_apply: >>> wallet_handle: {:?}, did: {:?}", wallet_handle, did);
 
@@ -177,13 +186,13 @@ pub  extern fn indy_replace_keys_apply(command_handle: i32,
             wallet_handle,
             did,
             Box::new(move |result| {
-                let err = result_to_err_code!(result);
+                let err = prepare_result!(result);
                 trace!("indy_replace_keys_apply:");
                 cb(command_handle, err)
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_replace_keys_apply: <<< res: {:?}", res);
 
@@ -206,7 +215,7 @@ pub  extern fn indy_replace_keys_apply(command_handle: i32,
 /// #Returns
 /// Error Code
 /// cb:
-/// - xcommand_handle: Command handle to map callback to caller context.
+/// - command_handle_: Command handle to map callback to caller context.
 /// - err: Error code.
 ///
 /// #Errors
@@ -214,14 +223,14 @@ pub  extern fn indy_replace_keys_apply(command_handle: i32,
 /// Wallet*
 /// Crypto*
 #[no_mangle]
-pub  extern fn indy_store_their_did(command_handle: i32,
-                                    wallet_handle: i32,
+pub  extern fn indy_store_their_did(command_handle: IndyHandle,
+                                    wallet_handle: IndyHandle,
                                     identity_json: *const c_char,
-                                    cb: Option<extern fn(xcommand_handle: i32,
+                                    cb: Option<extern fn(command_handle_: IndyHandle,
                                                          err: ErrorCode)>) -> ErrorCode {
     trace!("indy_store_their_did: >>> wallet_handle: {:?}, identity_json: {:?}", wallet_handle, identity_json);
 
-    check_useful_c_str!(identity_json, ErrorCode::CommonInvalidParam3);
+    check_useful_json!(identity_json, ErrorCode::CommonInvalidParam3, TheirDidInfo);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     trace!("indy_store_their_did: entities >>> wallet_handle: {:?}, identity_json: {:?}", wallet_handle, identity_json);
@@ -231,13 +240,13 @@ pub  extern fn indy_store_their_did(command_handle: i32,
             wallet_handle,
             identity_json,
             Box::new(move |result| {
-                let err = result_to_err_code!(result);
+                let err = prepare_result!(result);
                 trace!("indy_store_their_did:");
                 cb(command_handle, err)
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_store_their_did: <<< res: {:?}", res);
 
@@ -267,7 +276,7 @@ pub  extern fn indy_store_their_did(command_handle: i32,
 /// #Returns
 /// Error Code
 /// cb:
-/// - xcommand_handle: Command handle to map callback to caller context.
+/// - command_handle_: Command handle to map callback to caller context.
 /// - err: Error code.
 /// - key - The DIDs ver key (key id).
 ///
@@ -276,11 +285,11 @@ pub  extern fn indy_store_their_did(command_handle: i32,
 /// Wallet*
 /// Crypto*
 #[no_mangle]
-pub extern fn indy_key_for_did(command_handle: i32,
-                               pool_handle: i32,
-                               wallet_handle: i32,
+pub extern fn indy_key_for_did(command_handle: IndyHandle,
+                               pool_handle: IndyHandle,
+                               wallet_handle: IndyHandle,
                                did: *const c_char,
-                               cb: Option<extern fn(xcommand_handle: i32,
+                               cb: Option<extern fn(command_handle_: IndyHandle,
                                                     err: ErrorCode,
                                                     key: *const c_char)>) -> ErrorCode {
     trace!("indy_key_for_did: >>> pool_handle: {:?}, wallet_handle: {:?}, did: {:?}", pool_handle, wallet_handle, did);
@@ -296,14 +305,14 @@ pub extern fn indy_key_for_did(command_handle: i32,
             wallet_handle,
             did,
             Box::new(move |result| {
-                let (err, key) = result_to_err_code_1!(result, String::new());
+                let (err, key) = prepare_result_1!(result, String::new());
                 trace!("indy_key_for_did: key: {:?}", key);
-                let key = CStringUtils::string_to_cstring(key);
+                let key = ctypes::string_to_cstring(key);
                 cb(command_handle, err, key.as_ptr())
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_key_for_did: <<< res: {:?}", res);
 
@@ -330,7 +339,7 @@ pub extern fn indy_key_for_did(command_handle: i32,
 /// #Returns
 /// Error Code
 /// cb:
-/// - xcommand_handle: Command handle to map callback to caller context.
+/// - command_handle_: Command handle to map callback to caller context.
 /// - err: Error code.
 /// - key - The DIDs ver key (key id).
 ///
@@ -339,10 +348,10 @@ pub extern fn indy_key_for_did(command_handle: i32,
 /// Wallet*
 /// Crypto*
 #[no_mangle]
-pub extern fn indy_key_for_local_did(command_handle: i32,
-                                     wallet_handle: i32,
+pub extern fn indy_key_for_local_did(command_handle: IndyHandle,
+                                     wallet_handle: IndyHandle,
                                      did: *const c_char,
-                                     cb: Option<extern fn(xcommand_handle: i32,
+                                     cb: Option<extern fn(command_handle_: IndyHandle,
                                                           err: ErrorCode,
                                                           key: *const c_char)>) -> ErrorCode {
     trace!("indy_key_for_local_did: >>> wallet_handle: {:?}, did: {:?}", wallet_handle, did);
@@ -357,14 +366,14 @@ pub extern fn indy_key_for_local_did(command_handle: i32,
             wallet_handle,
             did,
             Box::new(move |result| {
-                let (err, key) = result_to_err_code_1!(result, String::new());
+                let (err, key) = prepare_result_1!(result, String::new());
                 trace!("indy_key_for_local_did: key: {:?}", key);
-                let key = CStringUtils::string_to_cstring(key);
+                let key = ctypes::string_to_cstring(key);
                 cb(command_handle, err, key.as_ptr())
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_key_for_local_did: <<< res: {:?}", res);
 
@@ -377,14 +386,14 @@ pub extern fn indy_key_for_local_did(command_handle: i32,
 /// command_handle: Command handle to map callback to caller context.
 /// wallet_handle: Wallet handle (created by open_wallet).
 /// did - The DID to resolve endpoint.
-/// address -  The DIDs endpoint address.
+/// address -  The DIDs endpoint address. indy-node and indy-plenum restrict this to ip_address:port
 /// transport_key - The DIDs transport key (ver key, key id).
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
 /// Error Code
 /// cb:
-/// - xcommand_handle: Command handle to map callback to caller context.
+/// - command_handle_: Command handle to map callback to caller context.
 /// - err: Error code.
 ///
 /// #Errors
@@ -392,12 +401,12 @@ pub extern fn indy_key_for_local_did(command_handle: i32,
 /// Wallet*
 /// Crypto*
 #[no_mangle]
-pub extern fn indy_set_endpoint_for_did(command_handle: i32,
-                                        wallet_handle: i32,
+pub extern fn indy_set_endpoint_for_did(command_handle: IndyHandle,
+                                        wallet_handle: IndyHandle,
                                         did: *const c_char,
                                         address: *const c_char,
                                         transport_key: *const c_char,
-                                        cb: Option<extern fn(command_handle_: i32,
+                                        cb: Option<extern fn(command_handle_: IndyHandle,
                                                              err: ErrorCode)>) -> ErrorCode {
     trace!("indy_set_endpoint_for_did: >>> wallet_handle: {:?}, did: {:?}, address: {:?}, transport_key: {:?}", wallet_handle, did, address, transport_key);
 
@@ -409,20 +418,21 @@ pub extern fn indy_set_endpoint_for_did(command_handle: i32,
     trace!("indy_set_endpoint_for_did: entities >>> wallet_handle: {:?}, did: {:?}, address: {:?}, transport_key: {:?}",
            wallet_handle, did, address, transport_key);
 
+    let endpoint = Endpoint::new(address, Some(transport_key));
+
     let result = CommandExecutor::instance()
         .send(Command::Did(DidCommand::SetEndpointForDid(
             wallet_handle,
             did,
-            address,
-            transport_key,
+            endpoint,
             Box::new(move |result| {
-                let err = result_to_err_code!(result);
+                let err = prepare_result!(result);
                 trace!("indy_set_endpoint_for_did:");
                 cb(command_handle, err)
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_set_endpoint_for_did: <<< res: {:?}", res);
 
@@ -440,7 +450,7 @@ pub extern fn indy_set_endpoint_for_did(command_handle: i32,
 /// #Returns
 /// Error Code
 /// cb:
-/// - xcommand_handle: Command handle to map callback to caller context.
+/// - command_handle_: Command handle to map callback to caller context.
 /// - err: Error code.
 /// - endpoint - The DIDs endpoint.
 /// - transport_vk - The DIDs transport key (ver key, key id).
@@ -450,11 +460,11 @@ pub extern fn indy_set_endpoint_for_did(command_handle: i32,
 /// Wallet*
 /// Crypto*
 #[no_mangle]
-pub extern fn indy_get_endpoint_for_did(command_handle: i32,
-                                        wallet_handle: i32,
-                                        pool_handle: i32,
+pub extern fn indy_get_endpoint_for_did(command_handle: IndyHandle,
+                                        wallet_handle: IndyHandle,
+                                        pool_handle: IndyHandle,
                                         did: *const c_char,
-                                        cb: Option<extern fn(command_handle_: i32,
+                                        cb: Option<extern fn(command_handle_: IndyHandle,
                                                              err: ErrorCode,
                                                              address: *const c_char,
                                                              transport_vk: *const c_char)>) -> ErrorCode {
@@ -471,16 +481,16 @@ pub extern fn indy_get_endpoint_for_did(command_handle: i32,
             pool_handle,
             did,
             Box::new(move |result| {
-                let (err, address, transport_vk) = result_to_err_code_2!(result, String::new(), None);
+                let (err, address, transport_vk) = prepare_result_2!(result, String::new(), None);
                 trace!("indy_get_endpoint_for_did: address: {:?}, transport_vk: {:?}", address, transport_vk);
-                let address = CStringUtils::string_to_cstring(address);
-                let transport_vk = transport_vk.map(CStringUtils::string_to_cstring);
+                let address = ctypes::string_to_cstring(address);
+                let transport_vk = transport_vk.map(ctypes::string_to_cstring);
                 cb(command_handle, err, address.as_ptr(),
                    transport_vk.as_ref().map(|vk| vk.as_ptr()).unwrap_or(ptr::null()));
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_get_endpoint_for_did: <<< res: {:?}", res);
 
@@ -499,7 +509,7 @@ pub extern fn indy_get_endpoint_for_did(command_handle: i32,
 /// #Returns
 /// Error Code
 /// cb:
-/// - xcommand_handle: command handle to map callback to caller context.
+/// - command_handle_: command handle to map callback to caller context.
 /// - err: Error code.
 ///
 /// #Errors
@@ -507,11 +517,11 @@ pub extern fn indy_get_endpoint_for_did(command_handle: i32,
 /// Wallet*
 /// Crypto*
 #[no_mangle]
-pub extern fn indy_set_did_metadata(command_handle: i32,
-                                    wallet_handle: i32,
+pub extern fn indy_set_did_metadata(command_handle: IndyHandle,
+                                    wallet_handle: IndyHandle,
                                     did: *const c_char,
                                     metadata: *const c_char,
-                                    cb: Option<extern fn(command_handle_: i32,
+                                    cb: Option<extern fn(command_handle_: IndyHandle,
                                                          err: ErrorCode)>) -> ErrorCode {
     trace!("indy_set_did_metadata: >>> wallet_handle: {:?}, did: {:?}, metadata: {:?}", wallet_handle, did, metadata);
 
@@ -527,13 +537,13 @@ pub extern fn indy_set_did_metadata(command_handle: i32,
             did,
             metadata,
             Box::new(move |result| {
-                let err = result_to_err_code!(result);
+                let err = prepare_result!(result);
                 trace!("indy_set_did_metadata:");
                 cb(command_handle, err)
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_set_did_metadata: <<< res: {:?}", res);
 
@@ -551,7 +561,7 @@ pub extern fn indy_set_did_metadata(command_handle: i32,
 /// #Returns
 /// Error Code
 /// cb:
-/// - xcommand_handle: Command handle to map callback to caller context.
+/// - command_handle_: Command handle to map callback to caller context.
 /// - err: Error code.
 /// - metadata - The meta information stored with the DID; Can be null if no metadata was saved for this DID.
 ///
@@ -560,10 +570,10 @@ pub extern fn indy_set_did_metadata(command_handle: i32,
 /// Wallet*
 /// Crypto*
 #[no_mangle]
-pub extern fn indy_get_did_metadata(command_handle: i32,
-                                    wallet_handle: i32,
+pub extern fn indy_get_did_metadata(command_handle: IndyHandle,
+                                    wallet_handle: IndyHandle,
                                     did: *const c_char,
-                                    cb: Option<extern fn(command_handle_: i32,
+                                    cb: Option<extern fn(command_handle_: IndyHandle,
                                                          err: ErrorCode,
                                                          metadata: *const c_char)>) -> ErrorCode {
     trace!("indy_get_did_metadata: >>> wallet_handle: {:?}, did: {:?}", wallet_handle, did);
@@ -578,14 +588,14 @@ pub extern fn indy_get_did_metadata(command_handle: i32,
             wallet_handle,
             did,
             Box::new(move |result| {
-                let (err, metadata) = result_to_err_code_1!(result, String::new());
+                let (err, metadata) = prepare_result_1!(result, String::new());
                 trace!("indy_get_did_metadata: metadata: {:?}", metadata);
-                let metadata = CStringUtils::string_to_cstring(metadata);
+                let metadata = ctypes::string_to_cstring(metadata);
                 cb(command_handle, err, metadata.as_ptr())
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_get_did_metadata: <<< res: {:?}", res);
 
@@ -603,11 +613,13 @@ pub extern fn indy_get_did_metadata(command_handle: i32,
 /// #Returns
 /// Error Code
 /// cb:
-/// - xcommand_handle: Command handle to map callback to caller context.
+/// - command_handle_: Command handle to map callback to caller context.
 /// - err: Error code.
 ///   did_with_meta:  {
 ///     "did": string - DID stored in the wallet,
 ///     "verkey": string - The DIDs transport key (ver key, key id),
+///     "tempVerkey": string - Temporary DIDs transport key (ver key, key id), exist only during the rotation of the keys.
+///                            After rotation is done, it becomes a new verkey.
 ///     "metadata": string - The meta information stored with the DID
 ///   }
 ///
@@ -616,10 +628,10 @@ pub extern fn indy_get_did_metadata(command_handle: i32,
 /// Wallet*
 /// Crypto*
 #[no_mangle]
-pub extern fn indy_get_my_did_with_meta(command_handle: i32,
-                                        wallet_handle: i32,
+pub extern fn indy_get_my_did_with_meta(command_handle: IndyHandle,
+                                        wallet_handle: IndyHandle,
                                         my_did: *const c_char,
-                                        cb: Option<extern fn(xcommand_handle: i32,
+                                        cb: Option<extern fn(command_handle_: IndyHandle,
                                                              err: ErrorCode,
                                                              did_with_meta: *const c_char)>) -> ErrorCode {
     trace!("indy_get_my_did_with_meta: >>> wallet_handle: {:?}, my_did: {:?}", wallet_handle, my_did);
@@ -634,14 +646,14 @@ pub extern fn indy_get_my_did_with_meta(command_handle: i32,
             wallet_handle,
             my_did,
             Box::new(move |result| {
-                let (err, did_with_meta) = result_to_err_code_1!(result, String::new());
+                let (err, did_with_meta) = prepare_result_1!(result, String::new());
                 trace!("indy_get_my_did_with_meta: did_with_meta: {:?}", did_with_meta);
-                let did_with_meta = CStringUtils::string_to_cstring(did_with_meta);
+                let did_with_meta = ctypes::string_to_cstring(did_with_meta);
                 cb(command_handle, err, did_with_meta.as_ptr())
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_get_my_did_with_meta: <<< res: {:?}", res);
 
@@ -658,7 +670,7 @@ pub extern fn indy_get_my_did_with_meta(command_handle: i32,
 /// #Returns
 /// Error Code
 /// cb:
-/// - xcommand_handle: Command handle to map callback to caller context.
+/// - command_handle_: Command handle to map callback to caller context.
 /// - err: Error code.
 ///   dids:  [{
 ///     "did": string - DID stored in the wallet,
@@ -671,9 +683,9 @@ pub extern fn indy_get_my_did_with_meta(command_handle: i32,
 /// Wallet*
 /// Crypto*
 #[no_mangle]
-pub extern fn indy_list_my_dids_with_meta(command_handle: i32,
-                                          wallet_handle: i32,
-                                          cb: Option<extern fn(xcommand_handle: i32,
+pub extern fn indy_list_my_dids_with_meta(command_handle: IndyHandle,
+                                          wallet_handle: IndyHandle,
+                                          cb: Option<extern fn(command_handle_: IndyHandle,
                                                                err: ErrorCode,
                                                                dids: *const c_char)>) -> ErrorCode {
     trace!("indy_list_my_dids_with_meta: >>> wallet_handle: {:?}", wallet_handle);
@@ -686,14 +698,14 @@ pub extern fn indy_list_my_dids_with_meta(command_handle: i32,
         .send(Command::Did(DidCommand::ListMyDidsWithMeta(
             wallet_handle,
             Box::new(move |result| {
-                let (err, dids) = result_to_err_code_1!(result, String::new());
+                let (err, dids) = prepare_result_1!(result, String::new());
                 trace!("indy_list_my_dids_with_meta: dids: {:?}", dids);
-                let dids = CStringUtils::string_to_cstring(dids);
+                let dids = ctypes::string_to_cstring(dids);
                 cb(command_handle, err, dids.as_ptr())
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_list_my_dids_with_meta: <<< res: {:?}", res);
 
@@ -710,7 +722,7 @@ pub extern fn indy_list_my_dids_with_meta(command_handle: i32,
 /// #Returns
 /// Error Code
 /// cb:
-/// - xcommand_handle: Command handle to map callback to caller context.
+/// - command_handle_: Command handle to map callback to caller context.
 /// - err: Error code.
 ///   verkey: The DIDs verification key in either abbreviated or full form
 ///
@@ -719,10 +731,10 @@ pub extern fn indy_list_my_dids_with_meta(command_handle: i32,
 /// Wallet*
 /// Crypto*
 #[no_mangle]
-pub  extern fn indy_abbreviate_verkey(command_handle: i32,
+pub  extern fn indy_abbreviate_verkey(command_handle: IndyHandle,
                                       did: *const c_char,
                                       full_verkey: *const c_char,
-                                      cb: Option<extern fn(xcommand_handle: i32,
+                                      cb: Option<extern fn(command_handle_: IndyHandle,
                                                            err: ErrorCode,
                                                            verkey: *const c_char)>) -> ErrorCode {
     trace!("indy_abbreviate_verkey: >>> did: {:?}, full_verkey: {:?}", did, full_verkey);
@@ -738,14 +750,14 @@ pub  extern fn indy_abbreviate_verkey(command_handle: i32,
             did,
             full_verkey,
             Box::new(move |result| {
-                let (err, verkey) = result_to_err_code_1!(result, String::new());
+                let (err, verkey) = prepare_result_1!(result, String::new());
                 trace!("indy_abbreviate_verkey: verkey: {:?}", verkey);
-                let verkey = CStringUtils::string_to_cstring(verkey);
+                let verkey = ctypes::string_to_cstring(verkey);
                 cb(command_handle, err, verkey.as_ptr())
             })
         )));
 
-    let res = result_to_err_code!(result);
+    let res = prepare_result!(result);
 
     trace!("indy_abbreviate_verkey: <<< res: {:?}", res);
 

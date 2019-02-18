@@ -225,6 +225,11 @@ public enum ErrorCode {
 	 */
 	PoolIncompatibleProtocolVersion(308),
 
+	/**
+	 * Item not found on ledger.
+	 */
+	LedgerNotFound(309),
+
 	// Crypto errors
 
 	/**
@@ -293,6 +298,11 @@ public enum ErrorCode {
 	 * Operation is not supported for payment method
 	 */
 	PaymentOperationNotSupportedError(704),
+
+	/**
+	 * Extra funds on inputs
+	 */
+	ExtraFundsError(705),
 	;
 
 	private int value;

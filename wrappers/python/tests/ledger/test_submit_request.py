@@ -42,8 +42,8 @@ async def test_submit_request_works(pool_handle):
 
 
 @pytest.mark.asyncio
-async def test_submit_request_works_for_invalid_pool_handle(pool_handle, identity_my1):
-    (my_did, _) = identity_my1
+async def test_submit_request_works_for_invalid_pool_handle(pool_handle, identity_my):
+    (my_did, _) = identity_my
 
     get_nym_request = await ledger.build_get_nym_request(my_did, my_did)
     invalid_pool_handle = pool_handle + 1
@@ -54,8 +54,8 @@ async def test_submit_request_works_for_invalid_pool_handle(pool_handle, identit
 
 
 @pytest.mark.asyncio
-async def test_send_nym_request_works_without_signature(pool_handle, identity_my1):
-    (my_did, _) = identity_my1
+async def test_send_nym_request_works_without_signature(pool_handle, identity_my):
+    (my_did, _) = identity_my
 
     nym_request = await ledger.build_nym_request(my_did, my_did, None, None, None)
 
@@ -74,9 +74,9 @@ async def test_send_get_nym_request_works(pool_handle, identity_trustee1):
 
 
 @pytest.mark.asyncio
-async def test_nym_requests_works(pool_handle, wallet_handle, identity_trustee1, identity_my1):
+async def test_nym_requests_works(pool_handle, wallet_handle, identity_trustee1, identity_my):
     (trustee_did, _) = identity_trustee1
-    (my_did, my_ver_key) = identity_my1
+    (my_did, my_ver_key) = identity_my
 
     nym_request = await ledger.build_nym_request(trustee_did, my_did, my_ver_key, None, None)
     await ledger.sign_and_submit_request(pool_handle, wallet_handle, trustee_did, nym_request)
@@ -89,8 +89,8 @@ async def test_nym_requests_works(pool_handle, wallet_handle, identity_trustee1,
 
 
 @pytest.mark.asyncio
-async def test_send_attrib_request_works_without_signature(pool_handle, identity_my1):
-    (my_did, _) = identity_my1
+async def test_send_attrib_request_works_without_signature(pool_handle, identity_my):
+    (my_did, _) = identity_my
 
     attrib_request = await ledger.build_attrib_request(my_did, my_did, None,
                                                        "{\"endpoint\":{\"ha\":\"127.0.0.1:5555\"}}", None)
@@ -99,9 +99,9 @@ async def test_send_attrib_request_works_without_signature(pool_handle, identity
 
 
 @pytest.mark.asyncio
-async def test_attrib_requests_works_for_raw_value(pool_handle, wallet_handle, identity_trustee1, identity_my1):
+async def test_attrib_requests_works_for_raw_value(pool_handle, wallet_handle, identity_trustee1, identity_my):
     (trustee_did, _) = identity_trustee1
-    (my_did, my_ver_key) = identity_my1
+    (my_did, my_ver_key) = identity_my
 
     nym_request = await ledger.build_nym_request(trustee_did, my_did, my_ver_key, None, None)
     await ledger.sign_and_submit_request(pool_handle, wallet_handle, trustee_did, nym_request)
@@ -118,9 +118,9 @@ async def test_attrib_requests_works_for_raw_value(pool_handle, wallet_handle, i
 
 
 @pytest.mark.asyncio
-async def test_attrib_requests_works_for_hash_value(pool_handle, wallet_handle, identity_trustee1, identity_my1):
+async def test_attrib_requests_works_for_hash_value(pool_handle, wallet_handle, identity_trustee1, identity_my):
     (trustee_did, _) = identity_trustee1
-    (my_did, my_ver_key) = identity_my1
+    (my_did, my_ver_key) = identity_my
 
     nym_request = await ledger.build_nym_request(trustee_did, my_did, my_ver_key, None, None)
     await ledger.sign_and_submit_request(pool_handle, wallet_handle, trustee_did, nym_request)
@@ -137,9 +137,9 @@ async def test_attrib_requests_works_for_hash_value(pool_handle, wallet_handle, 
 
 
 @pytest.mark.asyncio
-async def test_attrib_requests_works_for_enc_value(pool_handle, wallet_handle, identity_trustee1, identity_my1):
+async def test_attrib_requests_works_for_enc_value(pool_handle, wallet_handle, identity_trustee1, identity_my):
     (trustee_did, _) = identity_trustee1
-    (my_did, my_ver_key) = identity_my1
+    (my_did, my_ver_key) = identity_my
 
     nym_request = await ledger.build_nym_request(trustee_did, my_did, my_ver_key, None, None)
     await ledger.sign_and_submit_request(pool_handle, wallet_handle, trustee_did, nym_request)
@@ -156,8 +156,8 @@ async def test_attrib_requests_works_for_enc_value(pool_handle, wallet_handle, i
 
 
 @pytest.mark.asyncio
-async def test_send_schema_request_works_without_signature(pool_handle, identity_my1):
-    (my_did, _) = identity_my1
+async def test_send_schema_request_works_without_signature(pool_handle, identity_my):
+    (my_did, _) = identity_my
     (schema_id, schema_json) = \
         await anoncreds.issuer_create_schema(my_did, "gvt", "1.0", json.dumps(["name", "age", "sex", "height"]))
 
@@ -184,8 +184,8 @@ async def test_schema_requests_works(pool_handle, wallet_handle, identity_my):
 
 
 @pytest.mark.asyncio
-async def test_send_node_request_works_without_signature(pool_handle, identity_my1):
-    (my_did, _) = identity_my1
+async def test_send_node_request_works_without_signature(pool_handle, identity_my):
+    (my_did, _) = identity_my
 
     node_data = {
         "node_ip": "10.0.0.100",
@@ -374,7 +374,8 @@ async def test_get_txn_request_works(pool_handle, wallet_handle, identity_my):
     get_txn_request = await ledger.build_get_txn_request(my_did, None, seq_no)
     get_txn_response = json.loads(
         await ensure_previous_request_applied(pool_handle, get_txn_request,
-                                              lambda response: response['result']['data']['txnMetadata']['seqNo'] is not None))
+                                              lambda response: response['result']['data']['txnMetadata'][
+                                                                   'seqNo'] is not None))
 
     received_schema = get_txn_response['result']['data']['txn']['data']['data']
     assert schema['name'] == received_schema['name']
@@ -425,12 +426,12 @@ async def test_pool_upgrade_requests_works(pool_handle, wallet_handle, identity_
 
     request = await ledger.build_pool_upgrade_request(did_trustee, 'upgrade-python', '2.0.0', 'start',
                                                       'f284bdc3c1c9e24a494e285cb387c69510f28de51c15bb93179d9c7f28705398',
-                                                      None, json.dumps(schedule), None, False, False)
+                                                      None, json.dumps(schedule), None, False, False, None)
     await ledger.sign_and_submit_request(pool_handle, wallet_handle, did_trustee, request)
 
     request = await ledger.build_pool_upgrade_request(did_trustee, 'upgrade-python', '2.0.0', 'cancel',
                                                       'ac3eb2cc3ac9e24a494e285cb387c69510f28de51c15bb93179d9c7f28705398',
-                                                      None, None, None, False, False)
+                                                      None, None, None, False, False, None)
     json.loads(await ledger.sign_and_submit_request(pool_handle, wallet_handle, did_trustee, request))
 
 
