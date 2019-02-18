@@ -34,6 +34,7 @@ use errors::*;
 use services::pool::pool::{Pool, ZMQPool};
 use utils::environment;
 use utils::sequence;
+use std::u64;
 
 mod catchup;
 mod commander;
@@ -265,7 +266,7 @@ impl PoolService {
 }
 
 lazy_static! {
-    static ref THRESHOLD: Mutex<u64> = Mutex::new(600);
+    static ref THRESHOLD: Mutex<u64> = Mutex::new(u64::MAX);
 }
 
 pub fn set_freshness_threshold(threshold: u64) {
@@ -275,6 +276,7 @@ pub fn set_freshness_threshold(threshold: u64) {
 
 
 pub fn parse_response_metadata(response: &str) -> IndyResult<ResponseMetadata> {
+    trace!("indy::services::pool::parse_response_metadata << response: {}", response);
     let message: Message<serde_json::Value> = serde_json::from_str(response)
         .to_indy(IndyErrorKind::InvalidTransaction, "Cannot deserialize transaction Response")?;
 
@@ -286,6 +288,8 @@ pub fn parse_response_metadata(response: &str) -> IndyResult<ResponseMetadata> {
         Some("1") => _parse_transaction_metadata_v1(&response_result),
         ver @ _ => return Err(err_msg(IndyErrorKind::InvalidTransaction, format!("Unsupported transaction response version: {:?}", ver)))
     };
+
+    trace!("indy::services::pool::parse_response_metadata >> response_metadata: {:?}", response_metadata);
 
     Ok(response_metadata)
 }
