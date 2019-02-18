@@ -132,7 +132,7 @@ public class IssuerApi extends VcxJava.API {
         @SuppressWarnings({"unused", "unchecked"})
         public void callback(int commandHandle, int err, String credentialDefId) {
             logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], credentialDefId = [" + credentialDefId + "]");
-            CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(commandHandle);
+            CompletableFuture<Integer> future = (CompletableFuture<Integer>) removeFuture(commandHandle);
             if (!checkCallback(future, err)) return;
             future.complete(credentialDefId);
         }
