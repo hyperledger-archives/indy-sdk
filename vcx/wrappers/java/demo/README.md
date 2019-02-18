@@ -5,18 +5,17 @@ VCX is the open-source library on top of Libindy which fully implements the cred
 This demo code is written using Kotlin language
 
 ## PREREQUISITES
-**Note** that before you can use this demo you must generate c-callable SDK for libindy,libnullpay and libvcx. And you also need to generate the VCX java wrapper jar file.
 
-## FOR MacOS
+### FOR MacOS
 
 Setup Indy SDK build environment for MacOS by following instructions [here](https://github.com/hyperledger/indy-sdk/blob/master/docs/build-guides/mac-build.md)
 
-## FOR Ubuntu
+### FOR Ubuntu
 
 Setup Indy SDK build environment for Ubuntu by following instructions [here](https://github.com/hyperledger/indy-sdk/blob/master/docs/build-guides/ubuntu-build.md)
 
 
-### Running the Demo
+## Running the Demo
 
 1. Run ```buildlibs.sh``` to auto generate libs and vcx jar file
 2. Start the local Sovrin network by following instructions [here](https://github.com/hyperledger/indy-sdk#how-to-start-local-nodes-pool-with-docker)
