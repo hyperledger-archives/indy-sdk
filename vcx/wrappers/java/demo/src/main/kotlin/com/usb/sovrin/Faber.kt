@@ -22,6 +22,11 @@ import java.util.concurrent.ExecutionException
 
 fun main(args: Array<String>) {
 
+    var libnullpay = "libnullpay.so"
+
+    if(System.getProperty("os.name") == "Mac OS X"){
+        libnullpay = "libnullpay.dylib"
+    }
 
     var defaultLevel: Level = Level.OFF
 
@@ -31,22 +36,29 @@ fun main(args: Array<String>) {
     val root = LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME) as Logger
     root.setLevel(defaultLevel)
 
-    //Clean existing wallets
-    File("${System.getProperty("user.home")}/.indy_client/wallet").listFiles().forEach {
+    val wallets = File("${System.getProperty("user.home")}/.indy_client/wallet")
 
-        if(it.isDirectory && it.name != "forward_agent_wallet_id"){
+    if(wallets.exists()){
 
-            it.deleteRecursively()
+        //Clean existing wallets
+        wallets.listFiles().forEach {
+
+            if(it.isDirectory && it.name != "forward_agent_wallet_id"){
+
+                it.deleteRecursively()
+            }
         }
+
+
     }
 
-    LibVcx.init()
+    //LibVcx.init()
 
     /**Initialize Lib Null Pay library for the payment APIs. Currently there is no java wrapper available for libnullpay So we have to manually
      * load the library. This code written base off of LibVCX.init()
      * com.sun.jna is used to bridge the gap between java and OS specific DLL(libraries)
      **/
-    Native.loadLibrary(File("../../../../libnullpay/target/debug/libnullpay.dylib").absolutePath,PAYMENT_API::class.java)
+    Native.loadLibrary(File("../../../../libnullpay/target/debug/${libnullpay}").absolutePath,PAYMENT_API::class.java)
             .nullpay_init()
 
     try {
