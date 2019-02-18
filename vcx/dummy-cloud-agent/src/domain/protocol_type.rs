@@ -8,9 +8,7 @@ pub struct ProtocolType {}
 
 impl ProtocolType {
     pub fn set(protocol_type_config: Option<ProtocolTypes>) {
-        let protocol_type = protocol_type_config.or(
-            std::env::var("PROTOCOL_TYPE").ok().map(ProtocolTypes::from))
-            .unwrap_or(ProtocolTypes::default());
+        let protocol_type = protocol_type_config.map(ProtocolTypes::from).unwrap_or(ProtocolTypes::default());
         let mut p_t = PROTOCOL_TYPE.lock().unwrap();
         *p_t = protocol_type;
     }

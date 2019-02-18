@@ -1,4 +1,4 @@
-use domain::message_type::{MessageTypeV2, MessageFamilies, MESSAGE_VERSION_V1, MESSAGE_VERSION_V2, DID};
+use domain::message_type::{MessageTypeV2, MessageFamilies, MESSAGE_VERSION_V1, DID};
 use domain::a2a::RemoteMessageType;
 use domain::protocol_type::{ProtocolType, ProtocolTypes};
 use std::collections::HashMap;
@@ -107,7 +107,7 @@ impl PayloadTypes {
         PayloadTypeV2 {
             did: DID.to_string(),
             family: kind.family(),
-            version: MESSAGE_VERSION_V2.to_string(),
+            version: kind.family().version().to_string(),
             type_: kind.name().to_string(),
         }
     }

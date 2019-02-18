@@ -3,6 +3,7 @@ use messages::*;
 use messages::message_type::{MessageTypes, MessageTypeV1, MessageTypeV2};
 use utils::{httpclient, error};
 use utils::constants::*;
+use utils::uuid::uuid;
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 pub struct SendInviteMessageDetails {
@@ -24,8 +25,8 @@ pub struct ConnectionRequest {
     msg_type: MessageTypeV2,
     #[serde(rename = "sendMsg")]
     send_msg: bool,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    uid: Option<String>,
+    #[serde(rename = "@id")]
+    id: String,
     #[serde(rename = "replyToMsgId")]
     reply_to_msg_id: Option<String>,
     #[serde(rename = "keyDlgProof")]
@@ -42,7 +43,8 @@ pub struct ConnectionRequest {
 pub struct ConnectionRequestResponse {
     #[serde(rename = "@type")]
     msg_type: MessageTypeV2,
-    uid: String,
+    #[serde(rename = "@id")]
+    id: String,
     #[serde(rename = "inviteDetail")]
     invite_detail: InviteDetail,
     #[serde(rename = "urlToInviteDetail")]
@@ -70,8 +72,8 @@ pub struct ConnectionRequestAnswer {
     msg_type: MessageTypeV2,
     #[serde(rename = "sendMsg")]
     send_msg: bool,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    uid: Option<String>,
+    #[serde(rename = "@id")]
+    id: String,
     #[serde(rename = "replyToMsgId")]
     reply_to_msg_id: Option<String>,
     #[serde(rename = "keyDlgProof")]
@@ -156,7 +158,8 @@ pub struct SendInviteBuilder {
 pub struct ConnectionRequestAnswerResponse {
     #[serde(rename = "@type")]
     msg_type: MessageTypeV2,
-    uid: String,
+    #[serde(rename = "@id")]
+    id: String,
     sent: bool,
 }
 
@@ -357,7 +360,7 @@ impl AcceptInviteBuilder {
 
         match response.remove(0) {
             A2AMessage::Version1(A2AMessageV1::MessageCreated(res)) => Ok(res.uid),
-            A2AMessage::Version2(A2AMessageV2::ConnectionRequestAnswerResponse(res)) => Ok(res.uid),
+            A2AMessage::Version2(A2AMessageV2::ConnectionRequestAnswerResponse(res)) => Ok(res.id),
             _ => return Err(error::INVALID_HTTP_RESPONSE.code_num)
         }
     }
@@ -405,7 +408,7 @@ impl GeneralMessage for SendInviteBuilder {
                     let msg = ConnectionRequest {
                         msg_type: MessageTypes::build_v2(A2AMessageKinds::ConnectionRequest),
                         send_msg: true,
-                        uid: None,
+                        id: uuid(),
                         reply_to_msg_id: None,
                         key_dlg_proof: self.payload.key_dlg_proof.clone(),
                         target_name: self.payload.target_name.clone(),
@@ -460,7 +463,7 @@ impl GeneralMessage for AcceptInviteBuilder {
                     let msg = ConnectionRequestAnswer {
                         msg_type: MessageTypes::build_v2(A2AMessageKinds::ConnectionRequestAnswer),
                         send_msg: true,
-                        uid: None,
+                        id: uuid(),
                         reply_to_msg_id: self.reply_to_msg_id.clone(),
                         key_dlg_proof: self.payload.key_dlg_proof.clone(),
                         sender_detail: self.payload.sender_detail.clone(),

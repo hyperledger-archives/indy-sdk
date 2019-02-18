@@ -405,16 +405,15 @@ impl<'de> Deserialize<'de> for A2AMessage {
         let value = Value::deserialize(deserializer).map_err(de::Error::custom)?;
         let message_type: MessageTypes = serde_json::from_value(value["@type"].clone()).map_err(de::Error::custom)?;
 
-        match message_type.version() {
-            "1.0" =>
+        match message_type {
+            MessageTypes::MessageTypeV1(_) =>
                 A2AMessageV1::deserialize(value)
                     .map(|msg| A2AMessage::Version1(msg))
                     .map_err(de::Error::custom),
-            "2.0" =>
+            MessageTypes::MessageTypeV2(_) =>
                 A2AMessageV2::deserialize(value)
                     .map(|msg| A2AMessage::Version2(msg))
-                    .map_err(de::Error::custom),
-            _ => Err(de::Error::custom("Unexpected @type field structure."))
+                    .map_err(de::Error::custom)
         }
     }
 }
@@ -493,14 +492,14 @@ pub enum MessageDetail {
 pub struct SendRemoteMessage {
     #[serde(rename = "@type")]
     pub msg_type: MessageTypeV2,
+    #[serde(rename = "@id")]
+    pub id: String,
     pub mtype: RemoteMessageType,
     #[serde(rename = "replyToMsgId")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub reply_to_msg_id: Option<String>,
     #[serde(rename = "sendMsg")]
     pub send_msg: bool,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub uid: Option<String>,
     #[serde(rename = "@msg")]
     msg: Vec<u8>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -514,7 +513,8 @@ pub struct SendRemoteMessage {
 pub struct SendRemoteMessageResponse {
     #[serde(rename = "@type")]
     msg_type: MessageTypes,
-    pub uid: String,
+    #[serde(rename = "@id")]
+    pub id: String,
     pub sent: bool,
 }
 

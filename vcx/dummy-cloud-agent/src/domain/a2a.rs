@@ -467,8 +467,8 @@ pub struct ConfigsRemoved {}
 pub struct ConnectionRequest {
     #[serde(rename = "sendMsg")]
     pub send_msg: bool,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub uid: Option<String>,
+    #[serde(rename = "@id")]
+    id: String,
     #[serde(rename = "replyToMsgId")]
     pub reply_to_msg_id: Option<String>,
     #[serde(rename = "keyDlgProof")]
@@ -483,7 +483,8 @@ pub struct ConnectionRequest {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ConnectionRequestResponse {
-    pub uid: String,
+    #[serde(rename = "@id")]
+    pub id: String,
     #[serde(rename = "inviteDetail")]
     pub invite_detail: InviteDetail,
     #[serde(rename = "urlToInviteDetail")]
@@ -495,8 +496,8 @@ pub struct ConnectionRequestResponse {
 pub struct ConnectionRequestAnswer {
     #[serde(rename = "sendMsg")]
     pub send_msg: bool,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub uid: Option<String>,
+    #[serde(rename = "@id")]
+    pub id: String,
     #[serde(rename = "replyToMsgId")]
     pub reply_to_msg_id: Option<String>,
     #[serde(rename = "keyDlgProof")]
@@ -511,7 +512,8 @@ pub struct ConnectionRequestAnswer {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ConnectionRequestAnswerResponse {
-    pub uid: String,
+    #[serde(rename = "@id")]
+    pub id: String,
     pub sent: bool,
 }
 
@@ -519,13 +521,13 @@ pub struct ConnectionRequestAnswerResponse {
 #[serde(rename_all = "camelCase")]
 pub struct SendRemoteMessage {
     pub mtype: RemoteMessageType,
+    #[serde(rename = "@id")]
+    pub id: String,
     #[serde(rename = "replyToMsgId")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub reply_to_msg_id: Option<String>,
     #[serde(rename = "sendMsg")]
     pub send_msg: bool,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub uid: Option<String>,
     #[serde(rename = "@msg")]
     pub msg: Vec<u8>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -537,7 +539,8 @@ pub struct SendRemoteMessage {
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SendRemoteMessageResponse {
-    pub uid: String,
+    #[serde(rename = "@id")]
+    pub id: String,
     pub sent: bool,
 }
 
@@ -1006,16 +1009,15 @@ impl<'de> Deserialize<'de> for A2AMessage {
         let value = Value::deserialize(deserializer).map_err(de::Error::custom)?;
         let message_type: MessageTypes = serde_json::from_value(value["@type"].clone()).map_err(de::Error::custom)?;
 
-        match message_type.version() {
-            "1.0" =>
+        match message_type {
+            MessageTypes::MessageTypeV1(_) =>
                 A2AMessageV1::deserialize(value)
                     .map(|msg| A2AMessage::Version1(msg))
                     .map_err(de::Error::custom),
-            "2.0" =>
+            MessageTypes::MessageTypeV2(_) =>
                 A2AMessageV2::deserialize(value)
                     .map(|msg| A2AMessage::Version2(msg))
                     .map_err(de::Error::custom),
-            _ => Err(de::Error::custom("Unexpected @type field structure."))
         }
     }
 }

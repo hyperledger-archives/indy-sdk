@@ -9,11 +9,11 @@ use utils::libindy::signus::create_and_store_my_did;
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Connect {
     #[serde(rename = "@type")]
-    pub msg_type: MessageTypes,
+    msg_type: MessageTypes,
     #[serde(rename = "fromDID")]
-    pub from_did: String,
+    from_did: String,
     #[serde(rename = "fromDIDVerKey")]
-    pub from_vk: String,
+    from_vk: String,
 }
 
 impl Connect {
@@ -29,17 +29,17 @@ impl Connect {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ConnectResponse {
     #[serde(rename = "@type")]
-    pub msg_type: MessageTypes,
+    msg_type: MessageTypes,
     #[serde(rename = "withPairwiseDID")]
-    pub from_did: String,
+    from_did: String,
     #[serde(rename = "withPairwiseDIDVerKey")]
-    pub from_vk: String,
+    from_vk: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SignUp {
     #[serde(rename = "@type")]
-    pub msg_type: MessageTypes,
+    msg_type: MessageTypes,
 }
 
 impl SignUp {
@@ -53,13 +53,13 @@ impl SignUp {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SignUpResponse {
     #[serde(rename = "@type")]
-    pub msg_type: MessageTypes,
+    msg_type: MessageTypes,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct CreateAgent {
     #[serde(rename = "@type")]
-    pub msg_type: MessageTypes,
+    msg_type: MessageTypes,
 }
 
 impl CreateAgent {
@@ -73,19 +73,19 @@ impl CreateAgent {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct CreateAgentResponse {
     #[serde(rename = "@type")]
-    pub msg_type: MessageTypes,
+    msg_type: MessageTypes,
     #[serde(rename = "withPairwiseDID")]
-    pub from_did: String,
+    from_did: String,
     #[serde(rename = "withPairwiseDIDVerKey")]
-    pub from_vk: String,
+    from_vk: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct UpdateConnectionMethod {
     #[serde(rename = "@type")]
-    pub  msg_type: MessageTypes,
+    msg_type: MessageTypes,
     #[serde(rename = "comMethod")]
-    pub com_method: ComMethod,
+    com_method: ComMethod,
 }
 
 impl UpdateConnectionMethod {
@@ -155,7 +155,7 @@ pub fn connect_register_provision(config: &str) -> Result<String, u32> {
         settings::set_config_value(settings::CONFIG_WALLET_STORAGE_CREDS, _storage_credentials);
     }
 
-    wallet::init_wallet(&wallet_name, my_config.wallet_type.as_ref().map(String::as_str), 
+    wallet::init_wallet(&wallet_name, my_config.wallet_type.as_ref().map(String::as_str),
                         my_config.storage_config.as_ref().map(String::as_str), my_config.storage_credentials.as_ref().map(String::as_str))?;
     trace!("initialized wallet");
 
@@ -345,7 +345,7 @@ pub fn update_agent_info(id: &str, value: &str) -> Result<(), u32> {
     }
 }
 
-pub fn update_agent_info_v1(to_did: &str, com_method: ComMethod) -> Result<(), u32> {
+fn update_agent_info_v1(to_did: &str, com_method: ComMethod) -> Result<(), u32> {
     if settings::test_agency_mode_enabled() {
         httpclient::set_next_u8_response(REGISTER_RESPONSE.to_vec());
     }
@@ -357,7 +357,7 @@ pub fn update_agent_info_v1(to_did: &str, com_method: ComMethod) -> Result<(), u
     Ok(())
 }
 
-pub fn update_agent_info_v2(to_did: &str, com_method: ComMethod) -> Result<(), u32> {
+fn update_agent_info_v2(to_did: &str, com_method: ComMethod) -> Result<(), u32> {
     let message = A2AMessage::Version2(
         A2AMessageV2::UpdateConnectionMethod(UpdateConnectionMethod::build(com_method))
     );
@@ -365,7 +365,7 @@ pub fn update_agent_info_v2(to_did: &str, com_method: ComMethod) -> Result<(), u
     Ok(())
 }
 
-pub fn send_message_to_agency(message: &A2AMessage, did: &str) -> Result<Vec<A2AMessage>, u32> {
+fn send_message_to_agency(message: &A2AMessage, did: &str) -> Result<Vec<A2AMessage>, u32> {
     let data = prepare_message_for_agency(message, &did)?;
 
     let response = httpclient::post_u8(&data).or(Err(error::INVALID_HTTP_RESPONSE.code_num))?;
@@ -386,11 +386,11 @@ mod tests {
         let host = "http://www.whocares.org";
         let wallet_key = "test_key";
         let config = json!({
-"agency_url": host.to_string(),
-"agency_did": agency_did.to_string(),
-"agency_verkey": agency_vk.to_string(),
-"wallet_key": wallet_key.to_string(),
-});
+            "agency_url": host.to_string(),
+            "agency_did": agency_did.to_string(),
+            "agency_verkey": agency_vk.to_string(),
+            "wallet_key": wallet_key.to_string(),
+        });
 
         let result = connect_register_provision(&config.to_string()).unwrap();
         assert!(result.len() > 0);
@@ -406,11 +406,11 @@ mod tests {
         let host = "http://localhost:8080";
         let wallet_key = "test_key";
         let config = json!({
-"agency_url": host.to_string(),
-"agency_did": agency_did.to_string(),
-"agency_verkey": agency_vk.to_string(),
-"wallet_key": wallet_key.to_string(),
-});
+            "agency_url": host.to_string(),
+            "agency_did": agency_did.to_string(),
+            "agency_verkey": agency_vk.to_string(),
+            "wallet_key": wallet_key.to_string(),
+        });
 
         let result = connect_register_provision(&config.to_string()).unwrap();
         assert!(result.len() > 0);

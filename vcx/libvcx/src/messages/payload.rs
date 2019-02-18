@@ -15,7 +15,7 @@ pub enum Payloads {
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
 pub struct PayloadV1 {
     #[serde(rename = "@type")]
-    pub type_: PayloadTypeV1,
+    type_: PayloadTypeV1,
     #[serde(rename = "@msg")]
     pub msg: String,
 }
@@ -23,7 +23,7 @@ pub struct PayloadV1 {
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
 pub struct PayloadV2 {
     #[serde(rename = "@type")]
-    pub type_: PayloadTypeV2,
+    type_: PayloadTypeV2,
     #[serde(rename = "@id")]
     pub id: String,
     #[serde(rename = "@msg")]
@@ -195,7 +195,7 @@ impl PayloadTypes {
         PayloadTypeV2 {
             did: DID.to_string(),
             family: kind.family(),
-            version: MESSAGE_VERSION_V2.to_string(),
+            version: kind.family().version().to_string(),
             type_: kind.name().to_string(),
         }
     }

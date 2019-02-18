@@ -5,6 +5,7 @@ use messages::*;
 use messages::message_type::MessageTypes;
 use messages::payload::{Payloads, PayloadKinds, Thread};
 use utils::{httpclient, error};
+use utils::uuid::uuid;
 
 #[derive(Debug)]
 pub struct SendMessageBuilder {
@@ -113,7 +114,7 @@ impl SendMessageBuilder {
             A2AMessage::Version1(A2AMessageV1::MessageSent(res)) =>
                 Ok(SendResponse { uid: res.uid, uids: res.uids }),
             A2AMessage::Version2(A2AMessageV2::SendRemoteMessageResponse(res)) =>
-                Ok(SendResponse { uid: Some(res.uid.clone()), uids: if res.sent { vec![res.uid] } else { vec![] } }),
+                Ok(SendResponse { uid: Some(res.id.clone()), uids: if res.sent { vec![res.id] } else { vec![] } }),
             _ => return Err(error::INVALID_HTTP_RESPONSE.code_num)
         }
     }
@@ -151,10 +152,10 @@ impl GeneralMessage for SendMessageBuilder {
                 settings::ProtocolTypes::V2 => {
                     let message = SendRemoteMessage {
                         msg_type: MessageTypes::build_v2(A2AMessageKinds::SendRemoteMessage),
+                        id: uuid(),
                         mtype: self.mtype.clone(),
                         reply_to_msg_id: self.ref_msg_id.clone(),
                         send_msg: true,
-                        uid: self.uid.clone(),
                         msg: self.payload.clone(),
                         title: self.title.clone(),
                         detail: self.detail.clone(),

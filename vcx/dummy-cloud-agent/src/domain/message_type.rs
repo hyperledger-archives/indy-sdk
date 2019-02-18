@@ -4,10 +4,8 @@ use regex::Regex;
 use failure::{err_msg, Error};
 use domain::a2a::A2AMessageKinds;
 
-pub const MESSAGE_VERSION_V1: &str = "1.0";
-pub const MESSAGE_VERSION_V2: &str = "2.0";
-
 pub const DID: &str = "did:sov:123456789abcdefghi1234";
+pub const MESSAGE_VERSION_V1: &str = "1.0";
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(untagged)]
@@ -28,16 +26,9 @@ impl MessageTypes {
         MessageTypes::MessageTypeV2(MessageTypeV2 {
             did: DID.to_string(),
             family: kind.family(),
-            version: MESSAGE_VERSION_V2.to_string(),
+            version: kind.family().version().to_string(),
             type_: kind.name(),
         })
-    }
-
-    pub fn version<'a>(&'a self) -> &'a str {
-        match self {
-            MessageTypes::MessageTypeV1(type_) => type_.ver.as_str(),
-            MessageTypes::MessageTypeV2(type_) => type_.version.as_str(),
-        }
     }
 }
 
@@ -63,6 +54,19 @@ pub enum MessageFamilies {
     Configs,
     CredentialExchange,
     Other(String),
+}
+
+impl MessageFamilies {
+    pub fn version(&self) -> &'static str {
+        match self {
+            MessageFamilies::Routing => "2.0",
+            MessageFamilies::Onboarding => "2.0",
+            MessageFamilies::Pairwise => "2.0",
+            MessageFamilies::Configs => "2.0",
+            MessageFamilies::CredentialExchange => "2.0",
+            _ => "2.0"
+        }
+    }
 }
 
 impl From<String> for MessageFamilies {
