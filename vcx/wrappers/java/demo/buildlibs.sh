@@ -1,16 +1,20 @@
 current_dir=$(pwd)
 source ~/.profile
-cd ..
-./gradlew build
-cd ../../libvcx
+
+cd ../../../libvcx
 cargo build
-cd ../../libindy
+cd ../../../libindy
 cargo build
-cd ../libnullpay
+cd ../../libnullpay
 cargo build
 
 echo $current_dir
 cd $current_dir
+cd ..
+./gradlew build
+
+cd $current_dir
+
 
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
         sudo cp ../../../libvcx/target/debug/libvcx.so /usr/lib/libvcx.so
