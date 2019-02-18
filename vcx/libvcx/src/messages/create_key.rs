@@ -30,9 +30,9 @@ pub struct CreateKeyResponse {
     #[serde(rename = "@type")]
     msg_type: MessageTypes,
     #[serde(rename = "withPairwiseDID")]
-    pub for_did: String,
+    for_did: String,
     #[serde(rename = "withPairwiseDIDVerKey")]
-    pub for_verkey: String,
+    for_verkey: String,
 }
 
 #[derive(Debug)]

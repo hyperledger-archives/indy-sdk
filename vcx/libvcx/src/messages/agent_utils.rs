@@ -9,11 +9,11 @@ use utils::libindy::signus::create_and_store_my_did;
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Connect {
     #[serde(rename = "@type")]
-    pub msg_type: MessageTypes,
+    msg_type: MessageTypes,
     #[serde(rename = "fromDID")]
-    pub from_did: String,
+    from_did: String,
     #[serde(rename = "fromDIDVerKey")]
-    pub from_vk: String,
+    from_vk: String,
 }
 
 impl Connect {
@@ -29,17 +29,17 @@ impl Connect {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ConnectResponse {
     #[serde(rename = "@type")]
-    pub msg_type: MessageTypes,
+    msg_type: MessageTypes,
     #[serde(rename = "withPairwiseDID")]
-    pub from_did: String,
+    from_did: String,
     #[serde(rename = "withPairwiseDIDVerKey")]
-    pub from_vk: String,
+    from_vk: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SignUp {
     #[serde(rename = "@type")]
-    pub msg_type: MessageTypes,
+    msg_type: MessageTypes,
 }
 
 impl SignUp {
@@ -53,13 +53,13 @@ impl SignUp {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SignUpResponse {
     #[serde(rename = "@type")]
-    pub msg_type: MessageTypes,
+    msg_type: MessageTypes,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct CreateAgent {
     #[serde(rename = "@type")]
-    pub msg_type: MessageTypes,
+    msg_type: MessageTypes,
 }
 
 impl CreateAgent {
@@ -73,19 +73,19 @@ impl CreateAgent {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct CreateAgentResponse {
     #[serde(rename = "@type")]
-    pub msg_type: MessageTypes,
+    msg_type: MessageTypes,
     #[serde(rename = "withPairwiseDID")]
-    pub from_did: String,
+    from_did: String,
     #[serde(rename = "withPairwiseDIDVerKey")]
-    pub from_vk: String,
+    from_vk: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct UpdateConnectionMethod {
     #[serde(rename = "@type")]
-    pub  msg_type: MessageTypes,
+    msg_type: MessageTypes,
     #[serde(rename = "comMethod")]
-    pub com_method: ComMethod,
+    com_method: ComMethod,
 }
 
 impl UpdateConnectionMethod {
@@ -386,11 +386,11 @@ mod tests {
         let host = "http://www.whocares.org";
         let wallet_key = "test_key";
         let config = json!({
-"agency_url": host.to_string(),
-"agency_did": agency_did.to_string(),
-"agency_verkey": agency_vk.to_string(),
-"wallet_key": wallet_key.to_string(),
-});
+            "agency_url": host.to_string(),
+            "agency_did": agency_did.to_string(),
+            "agency_verkey": agency_vk.to_string(),
+            "wallet_key": wallet_key.to_string(),
+        });
 
         let result = connect_register_provision(&config.to_string()).unwrap();
         assert!(result.len() > 0);
@@ -406,11 +406,11 @@ mod tests {
         let host = "http://localhost:8080";
         let wallet_key = "test_key";
         let config = json!({
-"agency_url": host.to_string(),
-"agency_did": agency_did.to_string(),
-"agency_verkey": agency_vk.to_string(),
-"wallet_key": wallet_key.to_string(),
-});
+            "agency_url": host.to_string(),
+            "agency_did": agency_did.to_string(),
+            "agency_verkey": agency_vk.to_string(),
+            "wallet_key": wallet_key.to_string(),
+        });
 
         let result = connect_register_provision(&config.to_string()).unwrap();
         assert!(result.len() > 0);

@@ -20,5 +20,6 @@
     "config": null,
     "credentials": null,
     "type": null
-  }
+  },
+  "protocol_type": "1.0"
 }

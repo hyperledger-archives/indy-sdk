@@ -250,7 +250,7 @@ mod tests {
         assert_ne!(delta, delta_after_revoke);
     }
 
-    fn real_proof_demo() {
+    fn _real_proof_demo() {
         let number_of_attributes = 10;
 
         let institution_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
@@ -314,7 +314,7 @@ mod tests {
     fn test_real_proof() {
         init!("agency");
 
-        real_proof_demo();
+        _real_proof_demo();
 
         teardown!("agency");
     }
@@ -409,7 +409,7 @@ mod tests {
     fn test_real_proof_for_protocol_type_v2() {
         init!("agency_2_0");
 
-        real_proof_demo();
+        _real_proof_demo();
 
         teardown!("agency");
     }
