@@ -16,7 +16,7 @@ This section describes how to install and run the Postgres wallet storage plug-i
 
 The Postgres storage plug-in is based on the indy-sdk wallet plug-in storage design:
 
-- https://github.com/hyperledger/indy-sdk/tree/master/doc/design/003-wallet-storage
+- https://github.com/hyperledger/indy-sdk/tree/master/docs/design/003-wallet-storage
 
 This plug-in is implemented for a Postgres database.
 
