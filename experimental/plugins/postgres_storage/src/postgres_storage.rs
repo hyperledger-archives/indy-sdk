@@ -294,6 +294,11 @@ impl StorageIterator for PostgresStorageIterator {
 #[derive(Deserialize, Debug)]
 pub struct PostgresConfig {
     url: String,
+    // TODO add additional configuration options
+    tls: Option<String>,                // default off
+    max_connections: Option<String>,    // default 2
+    min_idle_tim: Option<String>,       // default 0
+    connection_timeout: Option<String>, // default 5
 }
 
 #[derive(Deserialize, Debug)]
