@@ -1,19 +1,29 @@
 current_dir=$(pwd)
 source ~/.profile
 
+echo "######Building LIBVCX######"
 cd ../../../libvcx
 cargo build
-cd ../../../libindy
-cargo build
-cd ../../libnullpay
-cargo build
+echo $(pwd)
 
+echo "#####Building LibIndy#####"
+cd ../../libindy
+cargo build
+echo $(pwd)
+
+echo "#####Building LibNullPay####"
+cd ../libnullpay
+cargo build
+echo $(pwd)
+
+echo "####Building VCX JAR#####"
 echo $current_dir
 cd $current_dir
 cd ..
 ./gradlew build
 
 cd $current_dir
+
 
 
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
