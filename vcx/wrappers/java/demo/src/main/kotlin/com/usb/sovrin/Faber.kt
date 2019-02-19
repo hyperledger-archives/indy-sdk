@@ -71,7 +71,7 @@ fun main(args: Array<String>) {
 
         //Initialize the vcx with provision agent. This is only needed for local network
         //For Test network use vcxInitWithConfig directly
-        var vcxconfig = vcxProvisionAgent("lib/localprovisionconfig.json"
+        var vcxconfig = vcxProvisionAgent("lib/faber-provisionconfig.json"
                 ,"Faber","http://robohash.org/234",
                 "lib/localpoolconfig.json" )
 
