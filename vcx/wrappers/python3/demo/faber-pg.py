@@ -132,7 +132,8 @@ async def main():
             proof_attrs = [
                 {'name': 'name', 'restrictions': [{'issuer_did': config['institution_did']}]},
                 {'name': 'date', 'restrictions': [{'issuer_did': config['institution_did']}]},
-                {'name': 'degree', 'restrictions': [{'issuer_did': config['institution_did']}]}
+                {'name': 'degree', 'restrictions': [{'issuer_did': config['institution_did']}]},
+                {'name': 'self_attested_thing'}
             ]
             proof_predicates = [{'name':'age', 'p_type':'>=', 'p_value':18},]
             proof_uuid = 'proof_uuid'
