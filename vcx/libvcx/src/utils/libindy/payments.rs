@@ -1,15 +1,14 @@
 use futures::Future;
-
-use utils::libindy::wallet::get_wallet_handle;
-use utils::constants::{SUBMIT_SCHEMA_RESPONSE, TRANSFER_TXN_TYPE};
-use utils::libindy::error_codes::{map_rust_indy_sdk_error};
-#[allow(unused_imports)]
-use utils::libindy::ledger::{libindy_submit_request, libindy_sign_and_submit_request, libindy_sign_request};
-
 use indy::payments;
+use serde_json::Value;
+
 use std::fmt;
 use std::collections::HashMap;
-use serde_json::Value;
+
+use utils::libindy::wallet::get_wallet_handle;
+use utils::libindy::ledger::{libindy_submit_request, libindy_sign_and_submit_request, libindy_sign_request};
+use utils::libindy::error_codes::{map_rust_indy_sdk_error};
+use utils::constants::{SUBMIT_SCHEMA_RESPONSE, TRANSFER_TXN_TYPE};
 use settings;
 use error::prelude::*;
 
@@ -560,19 +559,19 @@ pub mod tests {
         let pay_addr_2 = build_test_address("2");
 
         // Success - Exact amount
-        let expected_inputs = format!(r#"["{}","{}","{}","{}"]"#, pay_addr_1, pay_addr_2, pay_addr_1, pay_addr_2);
+        let expected_inputs = vec![pay_addr_1.clone(), pay_addr_2.clone(), pay_addr_1.clone(), pay_addr_2.clone()];
         assert_eq!(inputs(6).unwrap(), (0, expected_inputs, build_test_address("zR3GN9lfbCVtHjp")));
 
         // Success - utxo with remainder tokens
-        let expected_inputs = format!(r#"["{}","{}","{}","{}"]"#, pay_addr_1, pay_addr_2, pay_addr_1, pay_addr_2);
+        let expected_inputs = vec![pay_addr_1.clone(), pay_addr_2.clone(), pay_addr_1.clone(), pay_addr_2.clone()];
         assert_eq!(inputs(5).unwrap(), (1, expected_inputs, build_test_address("zR3GN9lfbCVtHjp")));
 
         // Success - requesting amount that partial address (1 of 2 utxos) can satisfy
-        let expected_inputs = format!(r#"["{}"]"#, pay_addr_1);
+        let expected_inputs = vec![pay_addr_1.clone()];
         assert_eq!(inputs(1).unwrap(), (0, expected_inputs, build_test_address("9UFgyjuJxi1i1HD")));
 
         // Err - request more than wallet contains
-        assert_eq!(inputs(7).err(), Some(PaymentError::InsufficientFunds()));
+        assert_eq!(inputs(7).err().unwrap().kind(), VcxErrorKind::InsufficientTokenAmount);
     }
 
     #[test]
@@ -581,12 +580,12 @@ pub mod tests {
 
         let mut cost = 5;
         let (remainder, _, refund_address) = inputs(cost).unwrap();
-        let mut expected_output = format!(r#"[{{"amount":1,"recipient":"{}"}}]"#, refund_address);
+        let mut expected_output: Vec<Output> = ::serde_json::from_str(&format!(r#"[{{"amount":1,"recipient":"{}"}}]"#, refund_address)).unwrap();
         assert_eq!(outputs(remainder, &refund_address, None, None).unwrap(), expected_output);
 
         // No remainder so don't create an address in outputs
         cost = 6;
-        expected_output = r#"[]"#.to_string();
+        expected_output = vec![];
         let (remainder, _, refund_address) = inputs(cost).unwrap();
         assert_eq!(remainder, 0);
         assert_eq!(outputs(remainder, &refund_address, None, None).unwrap(), expected_output);
@@ -599,7 +598,7 @@ pub mod tests {
         let payee_amount = 11;
         let payee_address = build_test_address("payee_address");
         let refund_address = build_test_address("refund_address");
-        let expected_output = format!(r#"[{{"amount":4,"recipient":"{}"}},{{"amount":11,"recipient":"{}"}}]"#, refund_address, payee_address);
+        let expected_output: Vec<Output> = ::serde_json::from_str(&format!(r#"[{{"amount":4,"recipient":"{}"}},{{"amount":11,"recipient":"{}"}}]"#, refund_address, payee_address)).unwrap();
         assert_eq!(outputs(4, refund_address.as_str(), Some(payee_address), Some(payee_amount)).unwrap(), expected_output);
     }
 
@@ -675,7 +674,7 @@ pub mod tests {
 
         let price = get_my_balance() + 5;
         let result_from_paying = pay_a_payee(price, payment_address);
-        assert_eq!(result_from_paying.err(), Some(PaymentError::InsufficientFunds()));
+        assert_eq!(result_from_paying.err().unwrap().kind(), VcxErrorKind::InsufficientTokenAmount);
         assert_eq!(get_my_balance(), 5);
     }
 
@@ -690,7 +689,7 @@ pub mod tests {
         let result_from_paying = pay_a_payee(0, payment_address);
 
         assert!(result_from_paying.is_err());
-        assert_eq!(result_from_paying.err(), Some(PaymentError::CommonError(error::UNKNOWN_LIBINDY_ERROR.code_num)));
+        assert_eq!(result_from_paying.err().unwrap().kind(), VcxErrorKind::LiibndyError(100)); // TODO: FIXME
     }
 
     #[cfg(feature = "pool_tests")]
@@ -720,7 +719,7 @@ pub mod tests {
         let price = get_my_balance() - not_enough_for_ledger_fee;
         assert!(price > 0);
         let result_from_paying = pay_a_payee(price, payment_address);
-        assert_eq!(result_from_paying.err(), Some(PaymentError::CommonError(error::INSUFFICIENT_TOKEN_AMOUNT.code_num)));
+        assert_eq!(result_from_paying.err().unwrap().kind(), VcxErrorKind::InsufficientTokenAmount);
     }
 
     #[cfg(feature = "pool_tests")]
@@ -756,7 +755,7 @@ pub mod tests {
         assert_eq!(remainder, remaining_balance);
 
         let output = outputs(remainder, &refund_address, None, None).unwrap();
-        assert_eq!(output, format!(r#"[{{"amount":{},"recipient":"{}"}}]"#, remaining_balance, refund_address));
+        let expected_output: Vec<Output> = ::serde_json::from_str(&format!(r#"[{{"amount":{},"recipient":"{}"}}]"#, remaining_balance, refund_address)).unwrap();
 
         let rc = _submit_fees_request(&req, &inputs, &output).unwrap();
         let end_wallet = get_wallet_token_info().unwrap();

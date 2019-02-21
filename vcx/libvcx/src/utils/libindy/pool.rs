@@ -1,8 +1,9 @@
 use futures::Future;
+use indy::{pool, ErrorCode};
 
 use std::sync::RwLock;
+
 use settings;
-use indy::pool;
 use utils::libindy::error_codes::map_rust_indy_sdk_error;
 use error::prelude::*;
 
@@ -10,7 +11,7 @@ lazy_static! {
     static ref POOL_HANDLE: RwLock<Option<i32>> = RwLock::new(None);
 }
 
-pub fn change_pool_handle(handle: Option<i32>){
+pub fn change_pool_handle(handle: Option<i32>) {
     let mut h = POOL_HANDLE.write().unwrap();
     *h = handle;
 }
@@ -24,13 +25,18 @@ pub fn set_protocol_version() -> VcxResult<()> {
 pub fn create_pool_ledger_config(pool_name: &str, path: &str) -> VcxResult<()> {
     let pool_config = json!({"genesis_txn": path}).to_string();
 
-    pool::create_pool_ledger_config(pool_name, Some(&pool_config))
-        .wait()
-        .map_err(map_rust_indy_sdk_error)
+    match pool::create_pool_ledger_config(pool_name, Some(&pool_config))
+        .wait() {
+        Ok(x) => Ok(()),
+        Err(x) => if x.error_code != ErrorCode::PoolLedgerConfigAlreadyExistsError {
+            Err(VcxError::from(VcxErrorKind::UnknownLiibndyError))
+        } else {
+            Ok(())
+        }
+    }
 }
 
 pub fn open_pool_ledger(pool_name: &str, config: Option<&str>) -> VcxResult<u32> {
-
     set_protocol_version()?;
 
     let handle = pool::open_pool_ledger(pool_name, config)
@@ -56,7 +62,7 @@ pub fn delete(pool_name: &str) -> VcxResult<()> {
 
     if settings::test_indy_mode_enabled() {
         change_pool_handle(None);
-        return Ok(())
+        return Ok(());
     }
 
     pool::delete_pool_ledger(pool_name)

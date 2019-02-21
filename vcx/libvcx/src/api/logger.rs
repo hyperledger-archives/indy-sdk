@@ -1,5 +1,5 @@
 extern crate libc;
-extern crate indy_sys;
+
 use utils::logger::{ EnabledCB, FlushCB, LibvcxLogger, LibvcxDefaultLogger, LogCB, LOGGER_STATE, CVoid };
 use utils::cstring::CStringUtils;
 use self::libc::{c_char};

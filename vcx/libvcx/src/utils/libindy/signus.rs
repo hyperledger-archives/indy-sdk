@@ -1,9 +1,9 @@
 use futures::Future;
+use indy::did;
 
 use settings;
 use utils::libindy::error_codes::map_rust_indy_sdk_error;
 use utils::libindy::wallet::get_wallet_handle;
-use indy::did;
 use error::prelude::*;
 
 pub fn create_and_store_my_did(seed: Option<&str>) -> VcxResult<(String, String)> {

@@ -1,8 +1,9 @@
 extern crate num_traits;
 
+use self::num_traits::int::PrimInt;
+
 use indy::IndyError;
 use utils::error;
-use self::num_traits::int::PrimInt;
 use error::prelude::{VcxError, VcxErrorKind};
 
 pub fn map_indy_error<T, C: PrimInt>(rtn: T, error_code: C) -> Result<T, u32> {
@@ -15,6 +16,9 @@ pub fn map_indy_error<T, C: PrimInt>(rtn: T, error_code: C) -> Result<T, u32> {
 
 pub fn map_rust_indy_sdk_error(error: IndyError) -> VcxError {
     match error.error_code as u32 {
+        100 ... 111 => VcxError::from_msg(VcxErrorKind::InvalidLibindyParam, error.message),
+        113 => VcxError::from_msg(VcxErrorKind::LibindyInvalidStructure, error.message),
+        114 => VcxError::from_msg(VcxErrorKind::IOError, error.message),
         200 => VcxError::from_msg(VcxErrorKind::InvalidWalletHandle, error.message),
         203 => VcxError::from_msg(VcxErrorKind::DuplicationWallet, error.message),
         204 => VcxError::from_msg(VcxErrorKind::WalletNotFound, error.message),
@@ -26,7 +30,7 @@ pub fn map_rust_indy_sdk_error(error: IndyError) -> VcxError {
         407 => VcxError::from_msg(VcxErrorKind::CredDefAlreadyCreated, error.message),
         600 => VcxError::from_msg(VcxErrorKind::DuplicationDid, error.message),
         702 => VcxError::from_msg(VcxErrorKind::InsufficientTokenAmount, error.message),
-        _ => VcxError::from_msg(VcxErrorKind::LiibndyError(error.error_code as u32), error.message)
+        _ => VcxError::from_msg(VcxErrorKind::UnknownLiibndyError, error.message)
     }
 }
 
@@ -88,10 +92,10 @@ pub mod tests {
             indy_backtrace: None,
         };
 
-        assert_eq!(map_rust_indy_sdk_error(err100), error::INVALID_LIBINDY_PARAM.code_num);
-        assert_eq!(map_rust_indy_sdk_error(err107), error::INVALID_LIBINDY_PARAM.code_num);
-        assert_eq!(map_rust_indy_sdk_error(err111), error::INVALID_LIBINDY_PARAM.code_num);
+        assert_eq!(map_rust_indy_sdk_error(err100).kind(), VcxErrorKind::InvalidLibindyParam);
+        assert_eq!(map_rust_indy_sdk_error(err107).kind(), VcxErrorKind::InvalidLibindyParam);
+        assert_eq!(map_rust_indy_sdk_error(err111).kind(), VcxErrorKind::InvalidLibindyParam);
         // Test that RC 112 falls out of the range 100...112
-        assert_ne!(map_rust_indy_sdk_error(err112), error::INVALID_LIBINDY_PARAM.code_num);
+        assert_ne!(map_rust_indy_sdk_error(err112).kind(), VcxErrorKind::InvalidLibindyParam);
     }
 }

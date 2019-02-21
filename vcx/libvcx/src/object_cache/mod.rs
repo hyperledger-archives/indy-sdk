@@ -1,5 +1,3 @@
-extern crate rand;
-
 use rand::Rng;
 use std::sync::Mutex;
 use std::sync::MutexGuard;

@@ -29,6 +29,12 @@ pub enum VcxErrorKind {
     NotReady,
     #[fail(display = "IO Error, possibly creating a backup wallet")]
     IOError,
+    #[fail(display = "Object (json, config, key, credential and etc...) passed to libindy has invalid structure")]
+    LibindyInvalidStructure,
+    #[fail(display = "Waiting for callback timed out")]
+    TimeoutLibindy,
+    #[fail(display = "Parameter passed to libindy was invalid")]
+    InvalidLibindyParam,
 
     // Connection
     #[fail(display = "Cannot create connection")]
@@ -87,6 +93,8 @@ pub enum VcxErrorKind {
     // Proof
     #[fail(display = "Invalid proof handle")]
     InvalidProofHandle,
+    #[fail(display = "Invalid disclosed proof handle")]
+    InvalidDisclosedProofHandle,
     #[fail(display = "Proof had invalid format")]
     InvalidProof,
     #[fail(display = "Schema was invalid or corrupt")]
@@ -186,6 +194,8 @@ pub enum VcxErrorKind {
     Common(u32),
     #[fail(display = "Liibndy error {}", 0)]
     LiibndyError(u32),
+    #[fail(display = "Unknown libindy error")]
+    UnknownLiibndyError,
 }
 
 #[derive(Debug)]
@@ -282,6 +292,9 @@ impl From<VcxErrorKind> for ErrorCode {
             VcxErrorKind::InvalidRevocationDetails => error::INVALID_REVOCATION_DETAILS.code_num,
             VcxErrorKind::GeneralConnectionError => error::CONNECTION_ERROR.code_num,
             VcxErrorKind::IOError => error::IOERROR.code_num,
+            VcxErrorKind::LibindyInvalidStructure => error::LIBINDY_INVALID_STRUCTURE.code_num,
+            VcxErrorKind::TimeoutLibindy => error::TIMEOUT_LIBINDY_ERROR.code_num,
+            VcxErrorKind::InvalidLibindyParam => error::INVALID_LIBINDY_PARAM.code_num,
             VcxErrorKind::CreateConnection => error::CREATE_CONNECTION_ERROR.code_num,
             VcxErrorKind::InvalidConnectionHandle => error::INVALID_CONNECTION_HANDLE.code_num,
             VcxErrorKind::InvalidInviteDetail => error::INVALID_INVITE_DETAILS.code_num,
@@ -298,6 +311,7 @@ impl From<VcxErrorKind> for ErrorCode {
             VcxErrorKind::InvalidCredential => error::INVALID_CREDENTIAL_JSON.code_num,
             VcxErrorKind::InsufficientTokenAmount => error::INSUFFICIENT_TOKEN_AMOUNT.code_num,
             VcxErrorKind::InvalidProofHandle => error::INVALID_PROOF_HANDLE.code_num,
+            VcxErrorKind::InvalidDisclosedProofHandle => error::INVALID_DISCLOSED_PROOF_HANDLE.code_num,
             VcxErrorKind::InvalidProof => error::INVALID_PROOF.code_num,
             VcxErrorKind::InvalidSchema => error::INVALID_SCHEMA.code_num,
             VcxErrorKind::InvalidProofCredentialData => error::INVALID_PROOF_CREDENTIAL_DATA.code_num,
@@ -342,6 +356,7 @@ impl From<VcxErrorKind> for ErrorCode {
             VcxErrorKind::InvalidMessages => error::INVALID_MESSAGES.code_num,
             VcxErrorKind::MissingExportedWalletPath => error::MISSING_EXPORTED_WALLET_PATH.code_num,
             VcxErrorKind::MissingBackupKey => error::MISSING_BACKUP_KEY.code_num,
+            VcxErrorKind::UnknownLiibndyError => error::UNKNOWN_LIBINDY_ERROR.code_num,
             VcxErrorKind::Common(num) => num,
             VcxErrorKind::LiibndyError(num) => num,
         }

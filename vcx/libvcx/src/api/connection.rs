@@ -7,7 +7,6 @@ use utils::error::error_string;
 use utils::threadpool::spawn;
 use std::ptr;
 use connection::{get_source_id, create_connection, create_connection_with_invite, connect, to_string, get_state, release, is_valid_handle, update_state, from_string, get_invite_details, delete_connection};
-use error::prelude::*;
 
 /// Delete a Connection object and release its handle
 ///
@@ -31,7 +30,7 @@ pub extern fn vcx_connection_delete_connection(command_handle: u32,
 
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
     if !is_valid_handle(connection_handle) {
-        return VcxErrorKind::InvalidConnectionHandle.into()
+        return error::INVALID_CONNECTION_HANDLE.code_num
     }
     trace!("vcx_connection_delete_connection(command_handle: {}, connection_handle: {})", command_handle, connection_handle);
     spawn(move|| {

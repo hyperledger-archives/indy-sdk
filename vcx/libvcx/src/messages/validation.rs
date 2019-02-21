@@ -68,7 +68,7 @@ mod tests {
     fn test_did_is_b58_but_invalid_length() {
         let to_did = "8XFh8yBzrpJQmNyZzgoT";
         match validate_did(&to_did) {
-            Err(x) => assert_eq!(x, error::INVALID_DID.code_num),
+            Err(x) => assert_eq!(x.kind(), VcxErrorKind::InvalidDid),
             Ok(x) => panic!("Should be invalid did"),
         }
     }
@@ -77,7 +77,7 @@ mod tests {
     fn test_validate_did_with_non_base58() {
         let to_did = "8*Fh8yBzrpJQmNyZzgoTqB";
         match validate_did(&to_did) {
-            Err(x) => assert_eq!(x, error::NOT_BASE58.code_num),
+            Err(x) => assert_eq!(x.kind(), VcxErrorKind::NotBase58),
             Ok(x) => panic!("Should be invalid did"),
         }
     }
@@ -95,7 +95,7 @@ mod tests {
     fn test_verkey_is_b58_but_invalid_length() {
         let verkey = "8XFh8yBzrpJQmNyZzgoT";
         match validate_verkey(&verkey) {
-            Err(x) => assert_eq!(x, error::INVALID_VERKEY.code_num),
+            Err(x) => assert_eq!(x.kind(), VcxErrorKind::InvalidVerkey),
             Ok(x) => panic!("Should be invalid verkey"),
         }
     }
@@ -104,7 +104,7 @@ mod tests {
     fn test_validate_verkey_with_non_base58() {
         let verkey = "*kVTa7SCJ5SntpYyX7CSb2pcBhiVGT9kWSagA8a9T69A";
         match validate_verkey(&verkey) {
-            Err(x) => assert_eq!(x, error::NOT_BASE58.code_num),
+            Err(x) => assert_eq!(x.kind(), VcxErrorKind::NotBase58),
             Ok(x) => panic!("Should be invalid verkey"),
         }
     }

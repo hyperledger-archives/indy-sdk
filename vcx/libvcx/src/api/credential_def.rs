@@ -1,6 +1,6 @@
 extern crate libc;
-extern crate serde_json;
 
+use serde_json;
 use self::libc::c_char;
 use utils::cstring::CStringUtils;
 use utils::error;

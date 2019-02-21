@@ -280,7 +280,7 @@ mod tests {
         };
 
         let uid = response.get_msg_uid().unwrap_err();
-        assert_eq!(error::INVALID_JSON.code_num, uid);
+        assert_eq!(VcxErrorKind::InvalidJson, uid.kind());
     }
 
     #[cfg(feature = "agency")]
@@ -308,7 +308,7 @@ mod tests {
 
         match send_generic_message(handle, "this is the message", "type", "title") {
             Ok(x) => panic!("test shoudl fail: {}", x),
-            Err(x) => assert_eq!(x, error::NOT_READY.code_num),
+            Err(x) => assert_eq!(x.kind(), VcxErrorKind::NotReady),
         };
     }
 }

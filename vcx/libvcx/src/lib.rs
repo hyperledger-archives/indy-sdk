@@ -33,6 +33,8 @@ extern crate uuid;
 
 extern crate failure;
 
+extern crate rmp_serde;
+
 #[macro_use]
 pub mod utils;
 pub mod settings;

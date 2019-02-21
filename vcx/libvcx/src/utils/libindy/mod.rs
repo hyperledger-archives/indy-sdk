@@ -12,8 +12,6 @@ pub mod logger;
 
 pub mod error_codes;
 
-extern crate libc;
-
 use settings;
 use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
 use std::sync::Mutex;

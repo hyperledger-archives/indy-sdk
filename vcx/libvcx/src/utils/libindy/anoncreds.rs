@@ -1,19 +1,15 @@
-extern crate libc;
-
 use futures::Future;
 use serde_json;
 use serde_json::{map::Map, Value};
+use indy::{anoncreds, blob_storage, ledger};
+use time;
+
 use settings;
 use utils::constants::{LIBINDY_CRED_OFFER, REQUESTED_ATTRIBUTES, ATTRS, REV_STATE_JSON};
 use utils::libindy::{error_codes::map_rust_indy_sdk_error, mock_libindy_rc, wallet::get_wallet_handle};
 use utils::libindy::payments::{pay_for_txn, PaymentTxn};
-use utils::libindy::ledger::{Response, parse_response};
+use utils::libindy::ledger::*;
 use utils::constants::{SCHEMA_ID, SCHEMA_JSON, SCHEMA_TXN_TYPE, CRED_DEF_ID, CRED_DEF_JSON, CRED_DEF_TXN_TYPE, REV_REG_DEF_TXN_TYPE, REV_REG_DELTA_TXN_TYPE, REVOC_REG_TYPE, rev_def_json, REV_REG_ID, REV_REG_DELTA_JSON, REV_REG_JSON};
-use utils::libindy::ledger::{libindy_build_schema_request, libindy_build_get_schema_request, libindy_submit_request, libindy_parse_get_cred_def_response, libindy_parse_get_schema_response, libindy_build_create_credential_def_txn, libindy_build_get_credential_def_txn};
-use indy::anoncreds;
-use indy::blob_storage;
-use indy::ledger;
-use time;
 use error::prelude::*;
 
 const BLOB_STORAGE_TYPE: &str = "default";
@@ -480,8 +476,6 @@ pub mod tests {
     use std::thread;
     use std::time::Duration;
     #[cfg(feature = "pool_tests")]
-    use utils::error::LIBINDY_INVALID_STRUCTURE;
-    #[cfg(feature = "pool_tests")]
     use utils::constants::TEST_TAILS_FILE;
 
 
@@ -567,7 +561,7 @@ pub mod tests {
 
         let (cred, cred_rev_id, _) = ::utils::libindy::anoncreds::libindy_issuer_create_credential(&offer, &req, &encoded_attributes, rev_reg_id.clone(), tails_file).unwrap();
         /* store cred */
-        let cred_id = ::utils::libindy::anoncreds::libindy_prover_store_credential(None, &req_meta, &cred, &cred_def_json, rev_def_json).unwrap();
+        let cred_id = ::utils::libindy::anoncreds::libindy_prover_store_credential(None, &req_meta, &cred, &cred_def_json, rev_def_json.as_ref().map(String::as_str)).unwrap();
         (schema_id, schema_json, cred_def_id, cred_def_json, offer, req, req_meta, cred_id, rev_reg_id, cred_rev_id)
     }
 
@@ -697,7 +691,7 @@ pub mod tests {
         init!("ledger");
         let proof_req = "{";
         let result = libindy_prover_get_credentials_for_proof_req(&proof_req);
-        assert_eq!(result.err(), Some(INVALID_PROOF_REQUEST.code_num));
+        assert_eq!(result.unwrap_err().kind(), VcxErrorKind::InvalidProofRequest);
         let proof_req = json!({
            "nonce":"123432421212",
            "name":"proof_req_1",
@@ -717,7 +711,7 @@ pub mod tests {
         let wallet_handle = get_wallet_handle();
         let proof_req_str: String = serde_json::to_string(&proof_req).unwrap();
         assert!(result.is_ok());
-        assert_eq!(result_malformed_json.err(), Some(INVALID_ATTRIBUTES_STRUCTURE.code_num));
+        assert_eq!(result_malformed_json.unwrap_err().kind(), VcxErrorKind::InvalidAttributesStructure);
     }
 
     #[cfg(feature = "pool_tests")]
@@ -772,7 +766,7 @@ pub mod tests {
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
         let rc = create_rev_reg_def(&did, &cred_def_id, get_temp_dir_path(Some("path.txt")).to_str().unwrap(), 2);
 
-        assert_eq!(rc, Err(LIBINDY_INVALID_STRUCTURE.code_num));
+        assert_eq!(rc.unwrap_err().kind(), VcxErrorKind::LibindyInvalidStructure);
     }
 
     #[cfg(feature = "pool_tests")]

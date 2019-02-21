@@ -161,7 +161,7 @@ mod tests {
     fn test_create_key_set_invalid_did_errors() {
         let for_did = "11235yBzrpJQmNyZzgoT";
         let res = create_keys().for_did(for_did).unwrap_err();
-        assert_eq!(res, error::INVALID_DID.code_num);
+        assert_eq!(res.kind(), VcxErrorKind::InvalidDid);
     }
 }
 

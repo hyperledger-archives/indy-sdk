@@ -1,5 +1,3 @@
-extern crate libc;
-
 pub mod vcx;
 pub mod connection;
 pub mod issuer_credential;

@@ -1,5 +1,4 @@
 extern crate libc;
-extern crate serde_json;
 
 use utils::version_constants;
 use self::libc::c_char;
@@ -274,6 +273,7 @@ pub extern fn vcx_mint_tokens(seed: *const c_char, fees: *const c_char) {
 mod tests {
 
     use super::*;
+    use error::prelude::*;
     use std::time::Duration;
     use std::ptr;
     use std::thread;
@@ -394,7 +394,7 @@ mod tests {
         let rc = cb.receive(Some(Duration::from_secs(10)));
         thread::sleep(Duration::from_secs(1));
         assert!(rc.is_err());
-        assert_eq!(get_pool_handle(), Err(error::NO_POOL_OPEN.code_num));
+        assert_eq!(get_pool_handle().unwrap_err().kind(), VcxErrorKind::NoPoolOpen);
         assert_eq!(wallet::get_wallet_handle(), 0);
         wallet::delete_wallet(wallet_name, None, None, None).unwrap();
     }
@@ -520,7 +520,7 @@ mod tests {
 
         //Verify shutdown was successful
         vcx_shutdown(true);
-        assert_eq!(settings::get_config_value("wallet_name"), Err(error::INVALID_CONFIGURATION.code_num));
+        assert_eq!(settings::get_config_value("wallet_name").unwrap_err().kind(), VcxErrorKind::InvalidConfiguration);
 
         // Init for the second time works
         ::utils::devsetup::tests::setup_ledger_env();
@@ -653,7 +653,7 @@ mod tests {
             settings::CONFIG_EXPORTED_WALLET_PATH: export_path,
             settings::CONFIG_WALLET_BACKUP_KEY: settings::DEFAULT_WALLET_BACKUP_KEY,
         }).to_string();
-        assert_eq!(import(&import_config), Err(::error::wallet::WalletError::CommonError(error::WALLET_ALREADY_EXISTS.code_num)));
+        assert_eq!(import(&import_config).unwrap_err().kind(), VcxErrorKind::DuplicationWallet);
 
         delete_import_wallet_path(export_path);
         vcx_shutdown(true);
@@ -707,13 +707,13 @@ mod tests {
         let credential = ::credential::credential_create_with_offer("name", ::utils::constants::CREDENTIAL_OFFER_JSON).unwrap();
 
         vcx_shutdown(true);
-        assert_eq!(::connection::release(connection),Err(::error::connection::ConnectionError::CommonError(error::INVALID_CONNECTION_HANDLE.code_num)));
-        assert_eq!(::issuer_credential::release(issuer_credential),Err(::error::issuer_cred::IssuerCredError::InvalidHandle()));
-        assert_eq!(::schema::release(schema).err(),Some(::error::schema::SchemaError::InvalidHandle()));
-        assert_eq!(::proof::release(proof).err(),Some(::error::proof::ProofError::InvalidHandle()));
-        assert_eq!(::credential_def::release(credentialdef),Err(::error::cred_def::CredDefError::InvalidHandle()));
-        assert_eq!(::credential::release(credential), Err(::error::credential::CredentialError::CommonError(error::INVALID_CREDENTIAL_HANDLE.code_num)));
-        assert_eq!(::disclosed_proof::release(disclosed_proof), Result::Err(error::INVALID_DISCLOSED_PROOF_HANDLE.code_num));
+        assert_eq!(::connection::release(connection).unwrap_err().kind(), VcxErrorKind::InvalidConnectionHandle);
+        assert_eq!(::issuer_credential::release(issuer_credential).unwrap_err().kind(), VcxErrorKind::InvalidIssuerCredentialHandle);
+        assert_eq!(::schema::release(schema).unwrap_err().kind(), VcxErrorKind::InvalidSchemaHandle);
+        assert_eq!(::proof::release(proof).unwrap_err().kind(), VcxErrorKind::InvalidProofHandle);
+        assert_eq!(::credential_def::release(credentialdef).unwrap_err().kind(), VcxErrorKind::InvalidCredDefHandle);
+        assert_eq!(::credential::release(credential).unwrap_err().kind(), VcxErrorKind::InvalidCredentialHandle);
+        assert_eq!(::disclosed_proof::release(disclosed_proof).unwrap_err().kind(), VcxErrorKind::InvalidDisclosedProofHandle);
         assert_eq!(wallet::get_wallet_handle(), 0);
     }
 

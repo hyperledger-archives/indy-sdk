@@ -85,10 +85,7 @@ impl Payloads {
                 let (_, data) = crypto::parse_msg(&my_vk, &to_u8(payload))?;
 
                 let my_payload: PayloadV1 = rmp_serde::from_slice(&data[..])
-                    .map_err(|err| {
-                        error!("could not deserialize bundle with i8 or u8: {}", err);
-                        VcxError::from_msg(VcxErrorKind::InvalidMessagePack, format!("Cannot decrypt payload: {}", err))
-                    })?;
+                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidMessagePack, format!("Cannot decrypt payload: {}", err)))?;
                 Ok((my_payload.msg, None))
             }
             ProtocolTypes::V2 => {

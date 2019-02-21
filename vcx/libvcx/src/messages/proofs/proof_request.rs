@@ -1,15 +1,13 @@
-extern crate rust_base58;
-extern crate serde_json;
+use serde_json;
 
 use std::collections::HashMap;
 use std::vec::Vec;
+
 use messages::validation;
 use error::prelude::*;
 
 static PROOF_REQUEST: &str = "PROOF_REQUEST";
 static PROOF_DATA: &str = "proof_request_data";
-static REQUESTED_ATTRS: &str = "requested_attributes";
-static REQUESTED_PREDICATES: &str = "requested_predicates";
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq, PartialOrd)]
 struct ProofType {
@@ -257,16 +255,16 @@ mod tests {
         let mid = 98;
 
         let mut request = proof_request()
-            .type_version(version)
-            .tid(tid)
-            .mid(mid)
-            .nonce(nonce)
-            .proof_name(data_name)
-            .proof_data_version(data_version)
-            .requested_attrs(REQUESTED_ATTRS)
-            .requested_predicates(REQUESTED_PREDICATES)
-            .to_timestamp(Some(100))
-            .from_timestamp(Some(1))
+            .type_version(version).unwrap()
+            .tid(tid).unwrap()
+            .mid(mid).unwrap()
+            .nonce(nonce).unwrap()
+            .proof_name(data_name).unwrap()
+            .proof_data_version(data_version).unwrap()
+            .requested_attrs(REQUESTED_ATTRS).unwrap()
+            .requested_predicates(REQUESTED_PREDICATES).unwrap()
+            .to_timestamp(Some(100)).unwrap()
+            .from_timestamp(Some(1)).unwrap()
             .clone();
 
         let serialized_msg = request.serialize_message().unwrap();
@@ -288,7 +286,7 @@ mod tests {
         check_req_attrs.insert("age".to_string(), attr_info1);
         check_req_attrs.insert("name".to_string(), attr_info2);
 
-        let request = proof_request().requested_attrs(REQUESTED_ATTRS).clone();
+        let request = proof_request().requested_attrs(REQUESTED_ATTRS).unwrap().clone();
         assert_eq!(request.proof_request_data.requested_attributes, check_req_attrs);
     }
 
@@ -298,7 +296,7 @@ mod tests {
         let attr_info1: PredicateInfo = serde_json::from_str(r#"{ "name":"age","p_type":"GE","p_value":22, "restrictions":[ { "schema_id": "6XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11", "schema_name":"Faber Student Info", "schema_version":"1.0", "schema_issuer_did":"6XFh8yBzrpJQmNyZzgoTqB", "issuer_did":"8XFh8yBzrpJQmNyZzgoTqB", "cred_def_id": "8XFh8yBzrpJQmNyZzgoTqB:3:CL:1766" }, { "schema_id": "5XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11", "schema_name":"BYU Student Info", "schema_version":"1.0", "schema_issuer_did":"5XFh8yBzrpJQmNyZzgoTqB", "issuer_did":"66Fh8yBzrpJQmNyZzgoTqB", "cred_def_id": "66Fh8yBzrpJQmNyZzgoTqB:3:CL:1766" } ] }"#).unwrap();
         check_predicates.insert("age".to_string(), attr_info1);
 
-        let request = proof_request().requested_predicates(REQUESTED_PREDICATES).clone();
+        let request = proof_request().requested_predicates(REQUESTED_PREDICATES).unwrap().clone();
         assert_eq!(request.proof_request_data.requested_predicates, check_predicates);
     }
 

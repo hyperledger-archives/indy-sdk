@@ -1,7 +1,7 @@
 use settings;
-use utils::constants::*;
 use messages::{A2AMessage, A2AMessageV1, A2AMessageV2, A2AMessageKinds, prepare_message_for_agency, parse_response_from_agency};
 use messages::message_type::MessageTypes;
+use utils::constants::*;
 use utils::{error, httpclient};
 use utils::libindy::{wallet, anoncreds};
 use utils::libindy::signus::create_and_store_my_did;
@@ -426,9 +426,6 @@ mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
 
-        match update_agent_info("123", "value") {
-            Ok(_) => assert_eq!(0, 0),
-            Err(x) => assert_eq!(x, 0), // should fail here
-        };
+        update_agent_info("123", "value").unwrap();
     }
 }

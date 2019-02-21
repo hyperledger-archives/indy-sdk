@@ -1,7 +1,8 @@
 use serde_json;
 
-use settings;
 use std::string::ToString;
+
+use settings;
 use utils::libindy::anoncreds;
 use utils::libindy::payments::PaymentTxn;
 use utils::constants::DEFAULT_SERIALIZE_VERSION;
@@ -28,13 +29,10 @@ pub struct CreateSchema {
     schema_id: String,
     name: String,
     source_id: String,
-    sequence_num: u32,
     payment_txn: Option<PaymentTxn>,
 }
 
 impl CreateSchema {
-    pub fn get_sequence_num(&self) -> u32 { self.sequence_num }
-
     pub fn get_source_id(&self) -> &String { &self.source_id }
 
     pub fn get_schema_id(&self) -> &String { &self.schema_id }
@@ -42,7 +40,7 @@ impl CreateSchema {
     fn get_payment_txn(&self) -> VcxResult<PaymentTxn> {
         trace!("CreateSchema::get_payment_txn >>>");
         self.payment_txn.clone()
-            .ok_or(err_msg(VcxErrorKind::NoPaymentInformation, "Payment information not found"))
+            .ok_or(VcxError::from(VcxErrorKind::NoPaymentInformation))
     }
 
     fn to_string(&self) -> VcxResult<String> {
@@ -70,19 +68,17 @@ pub fn create_new_schema(source_id: &str,
 
     debug!("created schema on ledger with id: {}", schema_id);
 
-    let new_schema = CreateSchema {
+    let schema = CreateSchema {
         source_id: source_id.to_string(),
         name,
         data: serde_json::from_str(&data).unwrap_or_default(),
         version,
         schema_id,
-        //Todo: Take sequence number out. Id will be used instead
-        sequence_num: 0,
         payment_txn,
     };
 
-    SCHEMA_MAP.add(new_schema)
-        .map_err(|_| VcxError::from_msg(VcxErrorKind::CreateSchema, "Cannot create schema")) // TODO: looks useless
+    SCHEMA_MAP.add(schema)
+        .or(Err(VcxError::from(VcxErrorKind::CreateSchema)))
 }
 
 
@@ -92,7 +88,7 @@ pub fn get_schema_attrs(source_id: String, schema_id: String) -> VcxResult<(u32,
     let submitter_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
 
     let (schema_id, schema_data_json) = anoncreds::get_schema_json(&schema_id)
-        .map_err(|err| err.map(VcxErrorKind::InvalidSchemaSeqNo, "No Schema for that schema sequence number"))?;
+        .map_err(|err| err.map(VcxErrorKind::InvalidSchemaSeqNo, "Schema not found"))?;
 
     let schema_data: SchemaData = serde_json::from_str(&schema_data_json)
         .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize schema: {}", err)))?;
@@ -100,7 +96,6 @@ pub fn get_schema_attrs(source_id: String, schema_id: String) -> VcxResult<(u32,
     let schema = CreateSchema {
         source_id,
         schema_id,
-        sequence_num: 0,
         name: schema_data.name,
         version: schema_data.version,
         data: schema_data.attr_names,
@@ -110,7 +105,7 @@ pub fn get_schema_attrs(source_id: String, schema_id: String) -> VcxResult<(u32,
     let schema_json = schema.to_string()?;
 
     let handle = SCHEMA_MAP.add(schema)
-        .map_err(|_| VcxError::from_msg(VcxErrorKind::CreateSchema, "Cannot create schema"))?; // TODO: looks useless
+        .or(Err(VcxError::from(VcxErrorKind::CreateSchema)))?;
 
     Ok((handle, schema_json))
 }
@@ -125,21 +120,15 @@ pub fn to_string(handle: u32) -> VcxResult<String> {
     })
 }
 
-pub fn get_sequence_num(handle: u32) -> VcxResult<u32> {
-    SCHEMA_MAP.get(handle, |s| {
-        Ok(s.get_sequence_num())
-    })
-}
-
 pub fn get_source_id(handle: u32) -> VcxResult<String> {
     SCHEMA_MAP.get(handle, |s| {
-        Ok(s.get_source_id().clone())
+        Ok(s.get_source_id().to_string())
     })
 }
 
 pub fn get_schema_id(handle: u32) -> VcxResult<String> {
     SCHEMA_MAP.get(handle, |s| {
-        Ok(s.get_schema_id().clone())
+        Ok(s.get_schema_id().to_string())
     })
 }
 
@@ -191,10 +180,9 @@ pub mod tests {
             schema_id: SCHEMA_ID.to_string(),
             source_id: "testId".to_string(),
             name: "schema_name".to_string(),
-            sequence_num: 306,
             payment_txn: None,
         };
-        let value: serde_json::Value = serde_json::from_str(&create_schema.to_string()).unwrap();
+        let value: serde_json::Value = serde_json::from_str(&create_schema.to_string().unwrap()).unwrap();
         assert_eq!(value["version"], "1.0");
         let create_schema: CreateSchema = serde_json::from_str(&value["data"].to_string()).unwrap();
         assert_eq!(create_schema.source_id, source_id);
@@ -234,7 +222,7 @@ pub mod tests {
                                        "name".to_string(),
                                        "1.0".to_string(),
                                        "".to_string());
-        assert_eq!(schema, Err(SchemaError::CommonError(error::INVALID_LIBINDY_PARAM.code_num)))
+        assert_eq!(schema.unwrap_err().kind(), VcxErrorKind::InvalidLibindyParam)
     }
 
     #[cfg(feature = "pool_tests")]
@@ -287,7 +275,7 @@ pub mod tests {
         assert!(rc.is_ok());
         let rc = create_new_schema("id", did.clone(), schema_name.clone(), schema_version.clone(), data.clone());
 
-        assert_eq!(rc, Err(SchemaError::DuplicateSchema()));
+        assert_eq!(rc.unwrap_err().kind(), VcxErrorKind::DuplicationSchema)
     }
 
     #[test]
@@ -302,18 +290,17 @@ pub mod tests {
         let h4 = create_new_schema("1", did.to_string(), "name".to_string(), version.to_string(), data.to_string()).unwrap();
         let h5 = create_new_schema("1", did.to_string(), "name".to_string(), version.to_string(), data.to_string()).unwrap();
         release_all();
-        assert_eq!(release(h1).err(), Some(SchemaError::InvalidHandle()));
-        assert_eq!(release(h2).err(), Some(SchemaError::InvalidHandle()));
-        assert_eq!(release(h3).err(), Some(SchemaError::InvalidHandle()));
-        assert_eq!(release(h4).err(), Some(SchemaError::InvalidHandle()));
-        assert_eq!(release(h5).err(), Some(SchemaError::InvalidHandle()));
+        assert_eq!(release(h1).unwrap_err().kind(), VcxErrorKind::InvalidSchemaHandle);
+        assert_eq!(release(h2).unwrap_err().kind(), VcxErrorKind::InvalidSchemaHandle);
+        assert_eq!(release(h3).unwrap_err().kind(), VcxErrorKind::InvalidSchemaHandle);
+        assert_eq!(release(h4).unwrap_err().kind(), VcxErrorKind::InvalidSchemaHandle);
+        assert_eq!(release(h5).unwrap_err().kind(), VcxErrorKind::InvalidSchemaHandle);
     }
 
     #[test]
     fn test_errors() {
         init!("false");
-        assert_eq!(get_sequence_num(145661).err(), Some(SchemaError::CommonError(error::INVALID_OBJ_HANDLE.code_num)));
-        assert_eq!(to_string(13435178).err(), Some(SchemaError::CommonError(error::INVALID_OBJ_HANDLE.code_num)));
+        assert_eq!(to_string(13435178).unwrap_err().kind(), VcxErrorKind::InvalidHandle);
     }
 
     #[test]

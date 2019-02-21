@@ -470,7 +470,7 @@ mod tests {
         // Agency returns a bad request response for invalid dids
         let invalid_did = "abc".to_string();
         let bad_req = download_messages(Some(vec![invalid_did]), None, None);
-        assert_eq!(bad_req, Err(error::POST_MSG_FAILURE.code_num));
+        assert_eq!(bad_req.unwrap_err().kind(), VcxErrorKind::PostMessageFailed);
         teardown!("agency");
     }
 }

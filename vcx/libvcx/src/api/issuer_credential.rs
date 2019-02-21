@@ -1,6 +1,6 @@
 extern crate libc;
-extern crate serde_json;
 
+use serde_json;
 use self::libc::c_char;
 use utils::cstring::CStringUtils;
 use utils::error;
@@ -800,7 +800,7 @@ mod tests {
         init!("false");
         //settings::set_defaults();
         let credential = issuer_credential::tests::create_standard_issuer_credential();
-        let s = credential.to_string();
+        let s = credential.to_string().unwrap();
         let handle = issuer_credential::from_string(&s).unwrap();
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         vcx_issuer_credential_get_payment_txn(cb.command_handle, handle, Some(cb.get_callback()));

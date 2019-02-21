@@ -1,15 +1,10 @@
-extern crate libc;
-extern crate time;
-extern crate serde_json;
-
+use serde_json;
 use futures::Future;
+use indy::ledger;
 
 use settings;
-use utils::libindy::{
-    pool::get_pool_handle,
-    wallet::get_wallet_handle,
-};
-use indy::ledger;
+use utils::libindy::pool::get_pool_handle;
+use utils::libindy::wallet::get_wallet_handle;
 use utils::libindy::error_codes::map_rust_indy_sdk_error;
 use error::prelude::*;
 

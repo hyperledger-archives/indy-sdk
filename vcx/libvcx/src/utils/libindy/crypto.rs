@@ -1,12 +1,10 @@
 /* test isn't ready until > libindy 1.0.1 */
-extern crate libc;
-
 use futures::Future;
+use indy::crypto;
 
 use utils::libindy::mock_libindy_rc;
 use utils::libindy::error_codes::map_rust_indy_sdk_error;
 use settings;
-use indy::crypto;
 use error::prelude::*;
 
 pub fn prep_msg(sender_vk: &str, recipient_vk: &str, msg: &[u8]) -> VcxResult<Vec<u8>> {

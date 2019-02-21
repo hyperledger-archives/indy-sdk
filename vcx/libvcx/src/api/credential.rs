@@ -1,6 +1,6 @@
 extern crate libc;
-extern crate serde_json;
 
+use serde_json;
 use self::libc::c_char;
 use utils::cstring::CStringUtils;
 use utils::error;
@@ -9,7 +9,6 @@ use connection;
 use credential;
 use std::ptr;
 use utils::threadpool::spawn;
-use error::prelude::*;
 
 /// Retrieves Payment Info from a Credential
 ///
@@ -131,7 +130,7 @@ pub extern fn vcx_get_credential(command_handle: u32,
 
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
     if !credential::is_valid_handle(credential_handle) {
-        return VcxErrorKind::InvalidCredentialHandle.into()
+        return error::INVALID_CREDENTIAL_HANDLE.code_num
     }
 
     let source_id = credential::get_source_id(credential_handle).unwrap_or_default();
@@ -737,7 +736,7 @@ mod tests {
         cb.receive(Some(Duration::from_secs(10))).unwrap().unwrap();
 
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
-        assert_eq!(vcx_get_credential(cb.command_handle, bad_handle, Some(cb.get_callback())), VcxErrorKind::InvalidCredentialHandle.into());
+        assert_eq!(vcx_get_credential(cb.command_handle, bad_handle, Some(cb.get_callback())), error::INVALID_CREDENTIAL_HANDLE.code_num);
 
         let handle = credential::from_string(DEFAULT_SERIALIZED_CREDENTIAL).unwrap();
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
