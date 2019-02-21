@@ -8,10 +8,12 @@ use connection;
 use messages;
 use messages::GeneralMessage;
 use messages::RemoteMessageType;
+use messages::ObjectWithVersion;
 use messages::payload::{Payloads, PayloadKinds, Thread};
 use messages::proofs::proof_message::ProofMessage;
 use messages::proofs::proof_request::{ProofRequestMessage, ProofRequestData, NonRevokedInterval};
 use time;
+use error::prelude::*;
 
 use utils::libindy::anoncreds;
 use utils::libindy::anoncreds::{get_rev_reg_def_json, get_rev_reg_delta_json};
@@ -22,9 +24,6 @@ use utils::constants::{DEFAULT_SERIALIZE_VERSION, CREDS_FROM_PROOF_REQ, DEFAULT_
 use utils::libindy::cache::{get_rev_reg_cache, set_rev_reg_cache, RevRegCache, RevState};
 
 use serde_json::Value;
-
-use error::ToErrorCode;
-use error::proof::ProofError;
 
 lazy_static! {
     static ref HANDLE_MAP: ObjectCache<DisclosedProof>  = Default::default();
@@ -86,13 +85,11 @@ pub struct CredInfo {
     pub timestamp: Option<u64>
 }
 
-fn credential_def_identifiers(credentials: &str, proof_req: &ProofRequestData)
-                              -> Result<Vec<CredInfo>, ProofError> {
-
+fn credential_def_identifiers(credentials: &str, proof_req: &ProofRequestData) -> VcxResult<Vec<CredInfo>> {
     let mut rtn = Vec::new();
 
     let credentials: Value = serde_json::from_str(credentials)
-        .or(Err(ProofError::InvalidJson()))?;
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize credentials: {}", err)))?;
 
     if let Value::Object(ref attrs) = credentials["attrs"] {
         for (requested_attr, value) in attrs {
@@ -100,7 +97,6 @@ fn credential_def_identifiers(credentials: &str, proof_req: &ProofRequestData)
             (value["credential"]["cred_info"]["referent"].as_str(),
              value["credential"]["cred_info"]["schema_id"].as_str(),
              value["credential"]["cred_info"]["cred_def_id"].as_str()) {
-
                 let rev_reg_id = value["credential"]["cred_info"]["rev_reg_id"]
                     .as_str()
                     .map(|x| x.to_string());
@@ -126,15 +122,14 @@ fn credential_def_identifiers(credentials: &str, proof_req: &ProofRequestData)
                         tails_file,
                     }
                 );
-            } else { return Err(ProofError::InvalidCredData()); }
+            } else { return Err(VcxError::from(VcxErrorKind::InvalidProofCredentialData)); }
         }
     }
 
     Ok(rtn)
 }
 
-fn _get_revocation_interval(attr_name: &str, proof_req: &ProofRequestData)
-                            -> Result<Option<NonRevokedInterval>, ProofError> {
+fn _get_revocation_interval(attr_name: &str, proof_req: &ProofRequestData) -> VcxResult<Option<NonRevokedInterval>> {
     if let Some(ref attr) = proof_req.requested_attributes.get(attr_name) {
         if let Some(ref interval) = attr.non_revoked {
             return Ok(Some(NonRevokedInterval { from: interval.from, to: interval.to }));
@@ -146,11 +141,11 @@ fn _get_revocation_interval(attr_name: &str, proof_req: &ProofRequestData)
     }
     // Todo: Handle case for predicates
 
-    Err(ProofError::InvalidCredData())
+    Err(VcxError::from(VcxErrorKind::InvalidProofCredentialData))
 }
 
 // Also updates timestamp in credentials_identifiers
-fn build_rev_states_json(credentials_identifiers: &mut Vec<CredInfo>) -> Result<String, ProofError> {
+fn build_rev_states_json(credentials_identifiers: &mut Vec<CredInfo>) -> VcxResult<String> {
     let mut rtn: Value = json!({});
     let mut timestamps: HashMap<String, u64> = HashMap::new();
 
@@ -177,14 +172,13 @@ fn build_rev_states_json(credentials_identifiers: &mut Vec<CredInfo>) -> Result<
                             _ => None
                         };
 
-                        let (_, rev_reg_def_json) = get_rev_reg_def_json(&rev_reg_id)
-                            .map_err(|e| ProofError::CommonError(e))?;
+                        let (_, rev_reg_def_json) = get_rev_reg_def_json(&rev_reg_id)?;
 
                         let (rev_reg_id, rev_reg_delta_json, timestamp) = get_rev_reg_delta_json(
                             &rev_reg_id,
                             from,
                             to
-                        ).map_err(|e| ProofError::CommonError(e))?;
+                        )?;
 
                         let rev_state_json = anoncreds::libindy_prover_update_revocation_state(
                             &rev_reg_def_json,
@@ -192,7 +186,7 @@ fn build_rev_states_json(credentials_identifiers: &mut Vec<CredInfo>) -> Result<
                             &rev_reg_delta_json,
                             &cred_rev_id,
                             &tails_file
-                        ).map_err(|e| ProofError::CommonError(e))?;
+                        )?;
 
                         if timestamp > cached_rev_state.timestamp {
                             let new_cache = RevRegCache {
@@ -207,21 +201,20 @@ fn build_rev_states_json(credentials_identifiers: &mut Vec<CredInfo>) -> Result<
                         (rev_state_json, timestamp)
                     }
                 } else {
-                    let (_, rev_reg_def_json) = get_rev_reg_def_json(&rev_reg_id)
-                        .map_err(|e| ProofError::CommonError(e))?;
+                    let (_, rev_reg_def_json) = get_rev_reg_def_json(&rev_reg_id)?;
 
                     let (rev_reg_id, rev_reg_delta_json, timestamp) = get_rev_reg_delta_json(
                         &rev_reg_id,
                         None,
                         to
-                    ).map_err(|e| ProofError::CommonError(e))?;
+                    )?;
 
                     let rev_state_json = anoncreds::libindy_prover_create_revocation_state(
                         &rev_reg_def_json,
                         &rev_reg_delta_json,
                         &cred_rev_id,
                         &tails_file
-                    ).map_err(|e| ProofError::CommonError(e))?;
+                    )?;
 
                     let new_cache = RevRegCache {
                         rev_state: Some(RevState {
@@ -235,7 +228,7 @@ fn build_rev_states_json(credentials_identifiers: &mut Vec<CredInfo>) -> Result<
                 };
 
                 let rev_state_json: Value = serde_json::from_str(&rev_state_json)
-                    .or(Err(ProofError::InvalidJson()))?;
+                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize RevocationState: {}", err)))?;
 
                 // TODO: proover should be able to create multiple states of same revocation policy for different timestamps
                 // see ticket IS-1108
@@ -248,7 +241,7 @@ fn build_rev_states_json(credentials_identifiers: &mut Vec<CredInfo>) -> Result<
 
             // If the rev_reg_id is already in the map, timestamp may not be updated on cred_info
             if cred_info.timestamp.is_none() {
-                cred_info.timestamp = timestamps.get(rev_reg_id).map(|x| x.clone());
+                cred_info.timestamp = timestamps.get(rev_reg_id).cloned();
             }
         }
     }
@@ -268,31 +261,30 @@ impl DisclosedProof {
         self.state = state
     }
 
-    fn retrieve_credentials(&self) -> Result<String, ProofError> {
+    fn retrieve_credentials(&self) -> VcxResult<String> {
         trace!("DisclosedProof::set_state >>>");
         if settings::test_indy_mode_enabled() { return Ok(CREDS_FROM_PROOF_REQ.to_string()); }
 
         let proof_req = self.proof_request
             .as_ref()
-            .ok_or(ProofError::ProofNotReadyError())?;
+            .ok_or(VcxError::from(VcxErrorKind::NotReady))?;
 
         let indy_proof_req = serde_json::to_string(&proof_req.proof_request_data)
-            .or(Err(ProofError::InvalidJson()))?;
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize proof request: {}", err)))?;
 
         anoncreds::libindy_prover_get_credentials_for_proof_req(&indy_proof_req)
-            .map_err(|err| ProofError::CommonError(err))
     }
 
-    fn build_schemas_json(&self, credentials_identifiers: &Vec<CredInfo>) -> Result<String, ProofError> {
+    fn build_schemas_json(&self, credentials_identifiers: &Vec<CredInfo>) -> VcxResult<String> {
         let mut rtn: Value = json!({});
 
         for ref cred_info in credentials_identifiers {
             if rtn.get(&cred_info.schema_id).is_none() {
                 let (_, schema_json) = anoncreds::get_schema_json(&cred_info.schema_id)
-                    .or(Err(ProofError::InvalidSchema()))?;
+                    .map_err(|err| err.map(VcxErrorKind::InvalidSchema, "Cannot get schema"))?;
 
                 let schema_json = serde_json::from_str(&schema_json)
-                    .or(Err(ProofError::InvalidSchema()))?;
+                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidSchema, format!("Cannot deserialize schema: {}", err)))?;
 
                 rtn[cred_info.schema_id.to_owned()] = schema_json;
             }
@@ -300,16 +292,16 @@ impl DisclosedProof {
         Ok(rtn.to_string())
     }
 
-    fn build_cred_def_json(&self, credentials_identifiers: &Vec<CredInfo>) -> Result<String, ProofError> {
+    fn build_cred_def_json(&self, credentials_identifiers: &Vec<CredInfo>) -> VcxResult<String> {
         let mut rtn: Value = json!({});
 
         for ref cred_info in credentials_identifiers {
             if rtn.get(&cred_info.cred_def_id).is_none() {
                 let (_, credential_def) = anoncreds::get_cred_def_json(&cred_info.cred_def_id)
-                    .or(Err(ProofError::InvalidCredData()))?;
+                    .map_err(|err| err.map(VcxErrorKind::InvalidProofCredentialData, "Cannot get credential definition"))?;
 
                 let credential_def = serde_json::from_str(&credential_def)
-                    .or(Err(ProofError::InvalidCredData()))?;
+                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidProofCredentialData, format!("Cannot deserialize credential definition: {}", err)))?;
 
                 rtn[cred_info.cred_def_id.to_owned()] = credential_def;
             }
@@ -317,9 +309,7 @@ impl DisclosedProof {
         Ok(rtn.to_string())
     }
 
-    fn build_requested_credentials_json(&self,
-                                        credentials_identifiers: &Vec<CredInfo>,
-                                        self_attested_attrs: &str) -> Result<String, ProofError> {
+    fn build_requested_credentials_json(&self, credentials_identifiers: &Vec<CredInfo>, self_attested_attrs: &str) -> VcxResult<String> {
         let mut rtn: Value = json!({
               "self_attested_attributes":{},
               "requested_attributes":{},
@@ -335,30 +325,27 @@ impl DisclosedProof {
         }
 
         let self_attested_attrs: Value = serde_json::from_str(self_attested_attrs)
-            .or(Err(ProofError::CommonError(error::INVALID_JSON.code_num)))?;
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize self attested attributes: {}", err)))?;
         rtn["self_attested_attributes"] = self_attested_attrs;
 
         Ok(rtn.to_string())
     }
 
-    fn generate_proof(&mut self, credentials: &str, self_attested_attrs: &str) -> Result<u32, ProofError> {
+    fn generate_proof(&mut self, credentials: &str, self_attested_attrs: &str) -> VcxResult<u32> {
         trace!("DisclosedProof::generate_proof >>> credentials: {}, self_attested_attrs: {}", credentials, self_attested_attrs);
 
         debug!("generating proof {}", self.source_id);
         if settings::test_indy_mode_enabled() { return Ok(error::SUCCESS.code_num); }
 
         let proof_req = self.proof_request.as_ref()
-            .ok_or(ProofError::CreateProofError())?;
+            .ok_or(VcxError::from(VcxErrorKind::CreateProof))?;
         let proof_req_data_json = serde_json::to_string(&proof_req.proof_request_data)
-            .or(Err(ProofError::CommonError(error::INVALID_JSON.code_num)))?;
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize proof request: {}", err)))?;
 
-
-        let mut credentials_identifiers = credential_def_identifiers(credentials,
-                                                                     &proof_req.proof_request_data)?;
+        let mut credentials_identifiers = credential_def_identifiers(credentials, &proof_req.proof_request_data)?;
 
         let revoc_states_json = build_rev_states_json(&mut credentials_identifiers)?;
-        let requested_credentials = self.build_requested_credentials_json(&credentials_identifiers,
-                                                                          self_attested_attrs)?;
+        let requested_credentials = self.build_requested_credentials_json(&credentials_identifiers, self_attested_attrs)?;
 
         let schemas_json = self.build_schemas_json(&credentials_identifiers)?;
         let credential_defs_json = self.build_cred_def_json(&credentials_identifiers)?;
@@ -368,7 +355,7 @@ impl DisclosedProof {
                                                            &self.link_secret_alias,
                                                            &schemas_json,
                                                            &credential_defs_json,
-                                                           Some(&revoc_states_json)).map_err(|ec| ProofError::CommonError(ec))?;
+                                                           Some(&revoc_states_json))?;
         let mut proof_msg = ProofMessage::new();
         proof_msg.libindy_proof = proof;
         self.proof = Some(proof_msg);
@@ -376,17 +363,17 @@ impl DisclosedProof {
         Ok(error::SUCCESS.code_num)
     }
 
-    fn send_proof(&mut self, connection_handle: u32) -> Result<u32, ProofError> {
+    fn send_proof(&mut self, connection_handle: u32) -> VcxResult<u32> {
         trace!("DisclosedProof::send_proof >>> connection_handle: {}", connection_handle);
 
         debug!("sending proof {} via connection: {}", self.source_id, connection::get_source_id(connection_handle).unwrap_or_default());
         // There feels like there's a much more rusty way to do the below.
-        self.my_did = Some(connection::get_pw_did(connection_handle).or(Err(ProofError::ProofConnectionError()))?);
-        self.my_vk = Some(connection::get_pw_verkey(connection_handle).or(Err(ProofError::ProofConnectionError()))?);
-        self.agent_did = Some(connection::get_agent_did(connection_handle).or(Err(ProofError::ProofConnectionError()))?);
-        self.agent_vk = Some(connection::get_agent_verkey(connection_handle).or(Err(ProofError::ProofConnectionError()))?);
-        self.their_did = Some(connection::get_their_pw_did(connection_handle).or(Err(ProofError::ProofConnectionError()))?);
-        self.their_vk = Some(connection::get_their_pw_verkey(connection_handle).or(Err(ProofError::ProofConnectionError()))?);
+        self.my_did = Some(connection::get_pw_did(connection_handle).or(Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle)))?);
+        self.my_vk = Some(connection::get_pw_verkey(connection_handle).or(Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle)))?);
+        self.agent_did = Some(connection::get_agent_did(connection_handle).or(Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle)))?);
+        self.agent_vk = Some(connection::get_agent_verkey(connection_handle).or(Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle)))?);
+        self.their_did = Some(connection::get_their_pw_did(connection_handle).or(Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle)))?);
+        self.their_vk = Some(connection::get_their_pw_verkey(connection_handle).or(Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle)))?);
 
 
         debug!("verifier_did: {:?} -- verifier_vk: {:?} -- agent_did: {:?} -- agent_vk: {:?} -- remote_vk: {:?}",
@@ -396,20 +383,21 @@ impl DisclosedProof {
                self.their_vk,
                self.my_vk);
 
-        self.their_did.as_ref().ok_or(ProofError::ProofConnectionError())?;
-        let local_their_vk = self.their_vk.as_ref().ok_or(ProofError::ProofConnectionError())?;
-        let local_agent_did = self.agent_did.as_ref().ok_or(ProofError::ProofConnectionError())?;
-        let local_agent_vk = self.agent_vk.as_ref().ok_or(ProofError::ProofConnectionError())?;
-        let local_my_did = self.my_did.as_ref().ok_or(ProofError::ProofConnectionError())?;
-        let local_my_vk = self.my_vk.as_ref().ok_or(ProofError::ProofConnectionError())?;
+        self.their_did.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidConnectionHandle))?;
+        let local_their_vk = self.their_vk.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidConnectionHandle))?;
+        let local_agent_did = self.agent_did.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidConnectionHandle))?;
+        let local_agent_vk = self.agent_vk.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidConnectionHandle))?;
+        let local_my_did = self.my_did.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidConnectionHandle))?;
+        let local_my_vk = self.my_vk.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidConnectionHandle))?;
 
-        let proof_req = self.proof_request.as_ref().ok_or(ProofError::CreateProofError())?;
-        let ref_msg_uid = proof_req.msg_ref_id.as_ref().ok_or(ProofError::CreateProofError())?;
+        let proof_req = self.proof_request.as_ref().ok_or(VcxError::from(VcxErrorKind::CreateProof))?;
+        let ref_msg_uid = proof_req.msg_ref_id.as_ref().ok_or(VcxError::from(VcxErrorKind::CreateProof))?;
 
         let proof = match settings::test_indy_mode_enabled() {
             false => {
-                let proof: &ProofMessage = self.proof.as_ref().ok_or(ProofError::CreateProofError())?;
-                serde_json::to_string(&proof).or(Err(ProofError::CommonError(error::INVALID_JSON.code_num)))?
+                let proof: &ProofMessage = self.proof.as_ref().ok_or(VcxError::from(VcxErrorKind::CreateProof))?;
+                serde_json::to_string(&proof)
+                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize proof: {}", err)))?
             }
             true => DEFAULT_GENERATED_PROOF.to_string(),
         };
@@ -422,7 +410,8 @@ impl DisclosedProof {
             .msg_type(&RemoteMessageType::Proof)?
             .agent_did(local_agent_did)?
             .agent_vk(local_agent_vk)?
-            .edge_agent_payload(&local_my_vk, &local_their_vk, &proof, PayloadKinds::Proof, Some(self.thread.clone())).or(Err(ProofError::ProofConnectionError()))?
+            .edge_agent_payload(&local_my_vk, &local_their_vk, &proof, PayloadKinds::Proof, Some(self.thread.clone()))
+            .or(Err(VcxError::from(VcxErrorKind::GeneralConnectionError)))?
             .ref_msg_id(ref_msg_uid)?
             .send_secure()
             .map_err(|err| {
@@ -435,36 +424,35 @@ impl DisclosedProof {
     }
 
     fn set_source_id(&mut self, id: &str) { self.source_id = id.to_string(); }
+
     fn get_source_id(&self) -> &String { &self.source_id }
-    fn to_string(&self) -> String {
+
+    fn to_string(&self) -> VcxResult<String> {
         trace!("DisclosedProof::to_string >>>");
-        json!({
-            "version": DEFAULT_SERIALIZE_VERSION,
-            "data": json!(self),
-        }).to_string()
+        ObjectWithVersion::new(DEFAULT_SERIALIZE_VERSION, self.to_owned())
+            .serialize()
+            .map_err(|err| err.extend("Cannot serialize DisclosedProof"))
     }
-    fn from_str(s: &str) -> Result<DisclosedProof, ProofError> {
-        trace!("DisclosedProof::from_str >>> data: {}", s);
-        let s: Value = serde_json::from_str(&s)
-            .or(Err(ProofError::InvalidJson()))?;
-        let proof: DisclosedProof = serde_json::from_value(s["data"].clone())
-            .or(Err(ProofError::InvalidJson()))?;
-        Ok(proof)
+    fn from_str(data: &str) -> VcxResult<DisclosedProof> {
+        trace!("DisclosedProof::from_str >>> data: {}", data);
+        ObjectWithVersion::deserialize(data)
+            .map(|obj: ObjectWithVersion<DisclosedProof>| obj.data)
+            .map_err(|err| err.extend("Cannot deserialize DisclosedProof"))
     }
 }
 
 //********************************************
 //         HANDLE FUNCTIONS
 //********************************************
-fn handle_err(code_num: u32) -> u32 {
-    if code_num == error::INVALID_OBJ_HANDLE.code_num {
-        error::INVALID_DISCLOSED_PROOF_HANDLE.code_num
+fn handle_err(err: VcxError) -> VcxError {
+    if err.kind() == VcxErrorKind::InvalidHandle {
+        VcxError::from(VcxErrorKind::InvalidProofHandle)
     } else {
-        code_num
+        err
     }
 }
 
-pub fn create_proof(source_id: &str, proof_req: &str) -> Result<u32, ProofError> {
+pub fn create_proof(source_id: &str, proof_req: &str) -> VcxResult<u32> {
     trace!("create_proof >>> source_id: {}, proof_req: {}", source_id, proof_req);
 
     debug!("creating disclosed proof with id: {}", source_id);
@@ -473,70 +461,66 @@ pub fn create_proof(source_id: &str, proof_req: &str) -> Result<u32, ProofError>
 
     new_proof.set_source_id(source_id);
     new_proof.set_proof_request(serde_json::from_str(proof_req)
-        .map_err(|_| ProofError::CommonError(error::INVALID_JSON.code_num))?);
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize proof request: {}", err)))?);
 
     new_proof.set_state(VcxStateType::VcxStateRequestReceived);
 
-    Ok(HANDLE_MAP.add(new_proof).map_err(|ec| ProofError::CommonError(ec))?)
+    HANDLE_MAP.add(new_proof)
 }
 
-pub fn get_state(handle: u32) -> Result<u32, u32> {
+pub fn get_state(handle: u32) -> VcxResult<u32> {
     HANDLE_MAP.get(handle, |obj| {
         Ok(obj.get_state())
     }).map_err(handle_err)
 }
 
 // update_state is just the same as get_state for disclosed_proof
-pub fn update_state(handle: u32) -> Result<u32, u32> {
+pub fn update_state(handle: u32) -> VcxResult<u32> {
     HANDLE_MAP.get(handle, |obj| {
         Ok(obj.get_state())
     })
 }
 
-pub fn to_string(handle: u32) -> Result<String, u32> {
+pub fn to_string(handle: u32) -> VcxResult<String> {
     HANDLE_MAP.get(handle, |obj| {
-        Ok(DisclosedProof::to_string(&obj))
+        DisclosedProof::to_string(&obj)
     })
 }
 
-pub fn from_string(proof_data: &str) -> Result<u32, ProofError> {
-    let derived_proof: DisclosedProof = DisclosedProof::from_str(proof_data)
-        .or(Err(ProofError::CommonError(error::INVALID_JSON.code_num)))?;
+pub fn from_string(proof_data: &str) -> VcxResult<u32> {
+    let derived_proof: DisclosedProof = DisclosedProof::from_str(proof_data)?;
 
-    let new_handle = HANDLE_MAP.add(derived_proof).map_err(|ec| ProofError::CommonError(ec))?;
+    let new_handle = HANDLE_MAP.add(derived_proof)?;
 
     info!("inserting handle {} into proof table", new_handle);
 
     Ok(new_handle)
 }
 
-pub fn release(handle: u32) -> Result<(), u32> {
+pub fn release(handle: u32) -> VcxResult<()> {
     HANDLE_MAP.release(handle).map_err(handle_err)
 }
 
 pub fn release_all() {
-    match HANDLE_MAP.drain() {
-        Ok(_) => (),
-        Err(_) => (),
-    };
+    HANDLE_MAP.drain().ok();
 }
 
-pub fn send_proof(handle: u32, connection_handle: u32) -> Result<u32, ProofError> {
+pub fn send_proof(handle: u32, connection_handle: u32) -> VcxResult<u32> {
     HANDLE_MAP.get_mut(handle, |obj| {
-        obj.send_proof(connection_handle).map_err(|e| e.to_error_code())
-    }).map_err(|ec| ProofError::CommonError(ec))
+        obj.send_proof(connection_handle)
+    })
 }
 
-pub fn generate_proof(handle: u32, credentials: String, self_attested_attrs: String) -> Result<u32, ProofError> {
+pub fn generate_proof(handle: u32, credentials: String, self_attested_attrs: String) -> VcxResult<u32> {
     HANDLE_MAP.get_mut(handle, |obj| {
-        obj.generate_proof(&credentials, &self_attested_attrs).map_err(|e| e.to_error_code())
-    }).map_err(|ec| ProofError::CommonError(ec))
+        obj.generate_proof(&credentials, &self_attested_attrs)
+    })
 }
 
-pub fn retrieve_credentials(handle: u32) -> Result<String, ProofError> {
+pub fn retrieve_credentials(handle: u32) -> VcxResult<String> {
     HANDLE_MAP.get_mut(handle, |obj| {
-        obj.retrieve_credentials().map_err(|e| e.to_error_code())
-    }).map_err(|ec| ProofError::CommonError(ec))
+        obj.retrieve_credentials()
+    })
 }
 
 pub fn is_valid_handle(handle: u32) -> bool {
@@ -544,13 +528,13 @@ pub fn is_valid_handle(handle: u32) -> bool {
 }
 
 //TODO one function with credential
-pub fn get_proof_request(connection_handle: u32, msg_id: &str) -> Result<String, ProofError> {
+pub fn get_proof_request(connection_handle: u32, msg_id: &str) -> VcxResult<String> {
     trace!("get_proof_request >>> connection_handle: {}, msg_id: {}", connection_handle, msg_id);
 
-    let my_did = connection::get_pw_did(connection_handle).map_err(|e| ProofError::CommonError(e.to_error_code()))?;
-    let my_vk = connection::get_pw_verkey(connection_handle).map_err(|e| ProofError::CommonError(e.to_error_code()))?;
-    let agent_did = connection::get_agent_did(connection_handle).map_err(|e| ProofError::CommonError(e.to_error_code()))?;
-    let agent_vk = connection::get_agent_verkey(connection_handle).map_err(|e| ProofError::CommonError(e.to_error_code()))?;
+    let my_did = connection::get_pw_did(connection_handle)?;
+    let my_vk = connection::get_pw_verkey(connection_handle)?;
+    let agent_did = connection::get_agent_did(connection_handle)?;
+    let agent_vk = connection::get_agent_verkey(connection_handle)?;
 
     if settings::test_agency_mode_enabled() { httpclient::set_next_u8_response(::utils::constants::NEW_PROOF_REQUEST_RESPONSE.to_vec()); }
 
@@ -558,33 +542,34 @@ pub fn get_proof_request(connection_handle: u32, msg_id: &str) -> Result<String,
                                                                  &my_vk,
                                                                  &agent_did,
                                                                  &agent_vk,
-                                                                 Some(vec![msg_id.to_string()])).map_err(|ec| ProofError::CommonError(ec))?;
+                                                                 Some(vec![msg_id.to_string()]))?;
 
     if message[0].msg_type == RemoteMessageType::ProofReq {
         let payload = message.get(0).and_then(|msg| msg.payload.as_ref())
-            .ok_or(ProofError::CommonError(error::INVALID_MESSAGES.code_num))?;
-        let (request, thread) = Payloads::decrypt(&my_vk, payload).map_err(|ec| ProofError::CommonError(ec))?;
+            .ok_or(VcxError::from(VcxErrorKind::InvalidMessages))?;
+        let (request, thread) = Payloads::decrypt(&my_vk, payload)?;
 
         let mut request: ProofRequestMessage = serde_json::from_str(&request)
-            .or(Err(ProofError::CommonError(error::INVALID_HTTP_RESPONSE.code_num)))?;
+            .or(Err(VcxError::from(VcxErrorKind::InvalidHttpResponse)))?;
 
         request.thread_id = thread.and_then(|tr| tr.thid.clone());
 
         request.msg_ref_id = Some(message[0].uid.to_owned());
-        Ok(serde_json::to_string_pretty(&request).or(Err(ProofError::InvalidJson()))?)
+        serde_json::to_string_pretty(&request)
+            .or(Err(VcxError::from(VcxErrorKind::InvalidJson)))
     } else {
-        Err(ProofError::CommonError(error::INVALID_MESSAGES.code_num))
+        Err(VcxError::from(VcxErrorKind::InvalidMessages))
     }
 }
 
 //TODO one function with credential
-pub fn get_proof_request_messages(connection_handle: u32, match_name: Option<&str>) -> Result<String, ProofError> {
+pub fn get_proof_request_messages(connection_handle: u32, match_name: Option<&str>) -> VcxResult<String> {
     trace!("get_proof_request_messages >>> connection_handle: {}, match_name: {:?}", connection_handle, match_name);
 
-    let my_did = connection::get_pw_did(connection_handle).map_err(|e| ProofError::CommonError(e.to_error_code()))?;
-    let my_vk = connection::get_pw_verkey(connection_handle).map_err(|e| ProofError::CommonError(e.to_error_code()))?;
-    let agent_did = connection::get_agent_did(connection_handle).map_err(|e| ProofError::CommonError(e.to_error_code()))?;
-    let agent_vk = connection::get_agent_verkey(connection_handle).map_err(|e| ProofError::CommonError(e.to_error_code()))?;
+    let my_did = connection::get_pw_did(connection_handle)?;
+    let my_vk = connection::get_pw_verkey(connection_handle)?;
+    let agent_did = connection::get_agent_did(connection_handle)?;
+    let agent_vk = connection::get_agent_verkey(connection_handle)?;
 
     if settings::test_agency_mode_enabled() { httpclient::set_next_u8_response(::utils::constants::NEW_PROOF_REQUEST_RESPONSE.to_vec()); }
 
@@ -592,7 +577,7 @@ pub fn get_proof_request_messages(connection_handle: u32, match_name: Option<&st
                                                                  &my_vk,
                                                                  &agent_did,
                                                                  &agent_vk,
-                                                                 None).map_err(|ec| ProofError::CommonError(ec))?;
+                                                                 None)?;
 
     let mut messages: Vec<ProofRequestMessage> = Default::default();
 
@@ -600,11 +585,11 @@ pub fn get_proof_request_messages(connection_handle: u32, match_name: Option<&st
         if msg.sender_did.eq(&my_did) { continue; }
 
         if msg.msg_type == RemoteMessageType::ProofReq {
-            let payload = msg.payload.ok_or(ProofError::CommonError(error::INVALID_HTTP_RESPONSE.code_num))?;
-            let (req, thread) = Payloads::decrypt(&my_vk, &payload).map_err(|ec| ProofError::CommonError(ec))?;
+            let payload = msg.payload.ok_or(VcxError::from(VcxErrorKind::InvalidHttpResponse))?;
+            let (req, thread) = Payloads::decrypt(&my_vk, &payload)?;
 
             let mut req: ProofRequestMessage = serde_json::from_str(&req)
-                .or(Err(ProofError::CommonError(error::INVALID_HTTP_RESPONSE.code_num)))?;
+                .or(Err(VcxError::from(VcxErrorKind::InvalidHttpResponse)))?;
 
             req.msg_ref_id = Some(msg.uid.to_owned());
             req.thread_id = thread.and_then(|tr| tr.thid.clone());
@@ -612,10 +597,11 @@ pub fn get_proof_request_messages(connection_handle: u32, match_name: Option<&st
         }
     }
 
-    Ok(serde_json::to_string_pretty(&messages).or(Err(ProofError::InvalidJson()))?)
+    serde_json::to_string_pretty(&messages)
+        .or(Err(VcxError::from(VcxErrorKind::InvalidJson)))
 }
 
-pub fn get_source_id(handle: u32) -> Result<String, u32> {
+pub fn get_source_id(handle: u32) -> VcxResult<String> {
     HANDLE_MAP.get(handle, |obj| {
         Ok(obj.get_source_id().clone())
     }).map_err(handle_err)

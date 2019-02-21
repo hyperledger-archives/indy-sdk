@@ -1,8 +1,8 @@
 use messages::message_type::*;
 use messages::to_u8;
 use settings::{ProtocolTypes, get_protocol_type};
-use utils::error;
 use utils::libindy::crypto;
+use error::prelude::*;
 
 use std::collections::HashMap;
 
@@ -37,7 +37,7 @@ impl Payloads {
     // this will become a CommonError, because multiple types (Connection/Issuer Credential) use this function
     // Possibly this function moves out of this file.
     // On second thought, this should stick as a ConnectionError.
-    pub fn encrypt(my_vk: &str, their_vk: &str, data: &str, msg_type: PayloadKinds, thread: Option<Thread>) -> Result<Vec<u8>, u32> {
+    pub fn encrypt(my_vk: &str, their_vk: &str, data: &str, msg_type: PayloadKinds, thread: Option<Thread>) -> VcxResult<Vec<u8>> {
         match ProtocolTypes::from(get_protocol_type()) {
             ProtocolTypes::V1 => {
                 let payload = PayloadV1 {
@@ -48,14 +48,14 @@ impl Payloads {
                 let bytes = rmp_serde::to_vec_named(&payload)
                     .map_err(|err| {
                         error!("could not encode create_keys msg: {}", err);
-                        error::INVALID_MSGPACK.code_num
+                        VcxError::from_msg(VcxErrorKind::InvalidMessagePack, format!("Cannot encrypt  payload: {}", err))
                     })?;
 
                 trace!("Sending payload: {:?}", bytes);
                 crypto::prep_msg(&my_vk, &their_vk, &bytes)
             }
             ProtocolTypes::V2 => {
-                let thread = thread.ok_or(error::INVALID_CONNECTION_HANDLE.code_num)?;
+                let thread = thread.ok_or(VcxError::from(VcxErrorKind::InvalidState))?;
 
                 let payload = PayloadV2 {
                     type_: PayloadTypes::build_v2(msg_type),
@@ -67,10 +67,11 @@ impl Payloads {
                 let message = ::serde_json::to_string(&payload)
                     .map_err(|err| {
                         error!("could not serialize create_keys msg: {}", err);
-                        error::INVALID_MSGPACK.code_num
+                        VcxError::from_msg(VcxErrorKind::SerializationError, format!("Cannot serialize payload: {}", err))
                     })?;
 
-                let receiver_keys = ::serde_json::to_string(&vec![&their_vk]).or(Err(error::SERIALIZATION_ERROR.code_num))?;
+                let receiver_keys = ::serde_json::to_string(&vec![&their_vk])
+                    .map_err(|err| VcxError::from_msg(VcxErrorKind::SerializationError, format!("Cannot serialize receiver keys: {}", err)))?;
 
                 trace!("Sending payload: {:?}", message.as_bytes());
                 crypto::pack_message(Some(my_vk), &receiver_keys, message.as_bytes())
@@ -78,7 +79,7 @@ impl Payloads {
         }
     }
 
-    pub fn decrypt(my_vk: &str, payload: &Vec<i8>) -> Result<(String, Option<Thread>), u32> {
+    pub fn decrypt(my_vk: &str, payload: &Vec<i8>) -> VcxResult<(String, Option<Thread>)> {
         match ProtocolTypes::from(get_protocol_type()) {
             ProtocolTypes::V1 => {
                 let (_, data) = crypto::parse_msg(&my_vk, &to_u8(payload))?;
@@ -86,7 +87,7 @@ impl Payloads {
                 let my_payload: PayloadV1 = rmp_serde::from_slice(&data[..])
                     .map_err(|err| {
                         error!("could not deserialize bundle with i8 or u8: {}", err);
-                        error::INVALID_MSGPACK.code_num
+                        VcxError::from_msg(VcxErrorKind::InvalidMessagePack, format!("Cannot decrypt payload: {}", err))
                     })?;
                 Ok((my_payload.msg, None))
             }
@@ -96,18 +97,19 @@ impl Payloads {
         }
     }
 
-    pub fn decrypt_payload_v2(my_vk: &str, payload: &Vec<i8>) -> Result<(String, Option<Thread>), u32> {
+    pub fn decrypt_payload_v2(my_vk: &str, payload: &Vec<i8>) -> VcxResult<(String, Option<Thread>)> {
         let unpacked_msg = crypto::unpack_message(&to_u8(payload))?;
 
         let message: ::serde_json::Value = ::serde_json::from_slice(unpacked_msg.as_slice())
-            .or(Err(error::INVALID_JSON.code_num))?;
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize payload: {}", err)))?;
 
-        let message = message["message"].as_str().ok_or(error::INVALID_JSON.code_num)?.to_string();
+        let message = message["message"].as_str()
+            .ok_or(VcxError::from_msg(VcxErrorKind::InvalidJson, "Cannot find `message` field"))?.to_string();
 
         let mut my_payload: PayloadV2 = serde_json::from_str(&message)
             .map_err(|err| {
                 error!("could not deserialize bundle with i8 or u8: {}", err);
-                error::INVALID_MSGPACK.code_num
+                VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize payload: {}", err))
             })?;
 
         if my_payload.thread.thid.is_none() {

@@ -4,7 +4,6 @@ use self::libc::c_char;
 use utils::cstring::CStringUtils;
 use utils::error;
 use utils::error::error_string;
-use error::ToErrorCode;
 use utils::libindy::payments::{pay_a_payee, get_wallet_token_info, create_address};
 use utils::libindy::wallet::{export, import, get_wallet_handle};
 use utils::libindy::wallet;
@@ -40,17 +39,17 @@ pub extern fn vcx_wallet_get_token_info(command_handle: u32,
         match get_wallet_token_info() {
             Ok(x) => {
                 trace!("vcx_wallet_get_token_info_cb(command_handle: {}, rc: {}, info: {})",
-                    command_handle, error_string(0), x.to_string());
+                    command_handle, 0, x);
 
                 let msg = CStringUtils::string_to_cstring(x.to_string());
                 cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
             },
             Err(x) => {
                 warn!("vcx_wallet_get_token_info_cb(command_handle: {}, rc: {}, info: {})",
-                    command_handle, error_string(x), "null");
+                    command_handle, x, "null");
 
         		let msg = CStringUtils::string_to_cstring("".to_string());
-                cb(command_handle, x, msg.as_ptr());
+                cb(command_handle, x.into(), msg.as_ptr());
             },
         };
 
@@ -97,10 +96,10 @@ pub extern fn vcx_wallet_create_payment_address(command_handle: u32,
             },
             Err(x) => {
                 warn!("vcx_wallet_create_payment_address_cb(command_handle: {}, rc: {}, address: {})",
-                    command_handle, error_string(x), "null");
+                    command_handle, x, "null");
 
         		let msg = CStringUtils::string_to_cstring("".to_string());
-                cb(command_handle, x, msg.as_ptr());
+                cb(command_handle, x.into(), msg.as_ptr());
             },
         };
 
@@ -167,9 +166,9 @@ pub extern fn vcx_wallet_add_record(command_handle: u32,
             },
             Err(x) => {
                 trace!("vcx_wallet_add_record(command_handle: {}, rc: {})",
-                      command_handle, error_string(x));
+                      command_handle, x);
 
-                cb(command_handle, x);
+                cb(command_handle, x.into());
             },
         };
 
@@ -223,9 +222,9 @@ pub extern fn vcx_wallet_update_record_value(command_handle: u32,
             },
             Err(x) => {
                 trace!("vcx_wallet_update_record_value(command_handle: {}, rc: {})",
-                      command_handle, error_string(x));
+                      command_handle, x);
 
-                cb(command_handle, x);
+                cb(command_handle, x.into());
             },
         };
 
@@ -407,10 +406,10 @@ pub extern fn vcx_wallet_get_record(command_handle: u32,
             },
             Err(x) => {
                 trace!("vcx_wallet_get_record(command_handle: {}, rc: {}, record_json: {})",
-                      command_handle, error_string(x), "null");
+                      command_handle, x, "null");
 
                 let msg = CStringUtils::string_to_cstring("".to_string());
-                cb(command_handle, x, msg.as_ptr());
+                cb(command_handle, x.into(), msg.as_ptr());
             },
         };
 
@@ -461,9 +460,9 @@ pub extern fn vcx_wallet_delete_record(command_handle: u32,
             },
             Err(x) => {
                 trace!("vcx_wallet_delete_record(command_handle: {}, rc: {})",
-                      command_handle, error_string(x));
+                      command_handle, x);
 
-                cb(command_handle, x);
+                cb(command_handle, x.into());
             },
         };
 
@@ -520,9 +519,9 @@ pub extern fn vcx_wallet_send_tokens(command_handle: u32,
             },
             Err(e) => {
                 let msg = "Failed to send tokens".to_string();
-                trace!("vcx_wallet_send_tokens_cb(command_handle: {}, rc: {}, reciept: {})", command_handle, e.to_error_code(), msg);
+                trace!("vcx_wallet_send_tokens_cb(command_handle: {}, rc: {}, reciept: {})", command_handle, e, msg);
                 let msg = CStringUtils::string_to_cstring("".to_string());
-                cb(command_handle, e.to_error_code(), msg.as_ptr());
+                cb(command_handle, e.into(), msg.as_ptr());
             },
         };
 
@@ -696,9 +695,8 @@ pub extern fn vcx_wallet_export(command_handle: u32,
                 cb(command_handle, return_code);
             }
             Err(e) => {
-                let return_code = e.to_error_code();
-                warn!("vcx_wallet_export(command_handle: {}, rc: {})", command_handle, return_code);
-                cb(command_handle, return_code);
+                warn!("vcx_wallet_export(command_handle: {}, rc: {})", command_handle, e);
+                cb(command_handle, e.into());
             }
         };
 
@@ -745,9 +743,8 @@ pub extern fn vcx_wallet_import(command_handle: u32,
                 cb(command_handle, return_code);
             }
             Err(e) => {
-                let return_code = e.to_error_code();
-                warn!("vcx_wallet_import(command_handle: {}, rc: {})", command_handle, return_code);
-                cb(command_handle, return_code);
+                warn!("vcx_wallet_import(command_handle: {}, rc: {})", command_handle, e);
+                cb(command_handle, e.into());
             }
         };
     });

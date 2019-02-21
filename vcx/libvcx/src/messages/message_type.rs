@@ -4,7 +4,7 @@ use serde::{de, Deserializer, Deserialize, Serializer, Serialize};
 use serde_json::Value;
 use regex::Regex;
 use messages::A2AMessageKinds;
-use utils::error;
+use error::prelude::*;
 
 pub const MESSAGE_VERSION_V1: &str = "1.0";
 pub const DID: &str = "did:sov:123456789abcdefghi1234";
@@ -105,7 +105,7 @@ impl ::std::string::ToString for MessageFamilies {
 }
 
 
-fn parse_message_type(message_type: &str) -> Result<(String, String, String, String), u32> {
+fn parse_message_type(message_type: &str) -> VcxResult<(String, String, String, String)> {
     lazy_static! {
         static ref RE: Regex = Regex::new(r"(?x)
             (?P<did>[\d\w:]*);
@@ -127,7 +127,7 @@ fn parse_message_type(message_type: &str) -> Result<(String, String, String, Str
                     Some((did.to_string(), family.to_string(), version.to_string(), type_.to_string())),
                 _ => None
             }
-        }).ok_or(error::INVALID_OPTION.code_num) // TODO: Check Error
+        }).ok_or(VcxError::from_msg(VcxErrorKind::InvalidOption, "Cannot parse @type"))
 }
 
 impl<'de> Deserialize<'de> for MessageTypeV2 {

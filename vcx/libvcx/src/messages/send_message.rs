@@ -4,8 +4,9 @@ use api::VcxStateType;
 use messages::*;
 use messages::message_type::MessageTypes;
 use messages::payload::{Payloads, PayloadKinds, Thread};
-use utils::{httpclient, error};
+use utils::httpclient;
 use utils::uuid::uuid;
+use error::prelude::*;
 
 #[derive(Debug)]
 pub struct SendMessageBuilder {
@@ -41,46 +42,46 @@ impl SendMessageBuilder {
         }
     }
 
-    pub fn msg_type(&mut self, msg: &RemoteMessageType) -> Result<&mut Self, u32> {
+    pub fn msg_type(&mut self, msg: &RemoteMessageType) -> VcxResult<&mut Self> {
         //Todo: validate msg??
         self.mtype = msg.clone();
         Ok(self)
     }
 
-    pub fn uid(&mut self, uid: Option<&str>) -> Result<&mut Self, u32> {
+    pub fn uid(&mut self, uid: Option<&str>) -> VcxResult<&mut Self> {
         //Todo: validate msg_uid??
         self.uid = uid.map(String::from);
         Ok(self)
     }
 
-    pub fn status_code(&mut self, code: &MessageStatusCode) -> Result<&mut Self, u32> {
+    pub fn status_code(&mut self, code: &MessageStatusCode) -> VcxResult<&mut Self> {
         //Todo: validate that it can be parsed to number??
         self.status_code = code.clone();
         Ok(self)
     }
 
-    pub fn edge_agent_payload(&mut self, my_vk: &str, their_vk: &str, data: &str, payload_type: PayloadKinds, thread: Option<Thread>) -> Result<&mut Self, u32> {
+    pub fn edge_agent_payload(&mut self, my_vk: &str, their_vk: &str, data: &str, payload_type: PayloadKinds, thread: Option<Thread>) -> VcxResult<&mut Self> {
         //todo: is this a json value, String??
         self.payload = Payloads::encrypt(my_vk, their_vk, data, payload_type, thread)?;
         Ok(self)
     }
 
-    pub fn ref_msg_id(&mut self, id: &str) -> Result<&mut Self, u32> {
+    pub fn ref_msg_id(&mut self, id: &str) -> VcxResult<&mut Self> {
         self.ref_msg_id = Some(String::from(id));
         Ok(self)
     }
 
-    pub fn set_title(&mut self, title: &str) -> Result<&mut Self, u32> {
+    pub fn set_title(&mut self, title: &str) -> VcxResult<&mut Self> {
         self.title = Some(title.to_string());
         Ok(self)
     }
 
-    pub fn set_detail(&mut self, detail: &str) -> Result<&mut Self, u32> {
+    pub fn set_detail(&mut self, detail: &str) -> VcxResult<&mut Self> {
         self.detail = Some(detail.to_string());
         Ok(self)
     }
 
-    pub fn send_secure(&mut self) -> Result<SendResponse, u32> {
+    pub fn send_secure(&mut self) -> VcxResult<SendResponse> {
         trace!("SendMessage::send >>>");
 
         if settings::test_agency_mode_enabled() {
@@ -89,21 +90,21 @@ impl SendMessageBuilder {
 
         let data = self.prepare_request()?;
 
-        let response = httpclient::post_u8(&data).or(Err(error::POST_MSG_FAILURE.code_num))?;
+        let response = httpclient::post_u8(&data)?;
 
         let result = self.parse_response(response)?;
 
         Ok(result)
     }
 
-    fn parse_response(&self, response: Vec<u8>) -> Result<SendResponse, u32> {
+    fn parse_response(&self, response: Vec<u8>) -> VcxResult<SendResponse> {
         let mut response = parse_response_from_agency(&response)?;
 
         let index = match settings::get_protocol_type() {
             // TODO: THINK better
             settings::ProtocolTypes::V1 => {
                 if response.len() <= 1 {
-                    return Err(error::INVALID_HTTP_RESPONSE.code_num);
+                    return Err(VcxError::from(VcxErrorKind::InvalidHttpResponse));
                 }
                 1
             }
@@ -115,7 +116,7 @@ impl SendMessageBuilder {
                 Ok(SendResponse { uid: res.uid, uids: res.uids }),
             A2AMessage::Version2(A2AMessageV2::SendRemoteMessageResponse(res)) =>
                 Ok(SendResponse { uid: Some(res.id.clone()), uids: if res.sent { vec![res.id] } else { vec![] } }),
-            _ => return Err(error::INVALID_HTTP_RESPONSE.code_num)
+            _ => return Err(VcxError::from(VcxErrorKind::InvalidHttpResponse))
         }
     }
 }
@@ -129,7 +130,7 @@ impl GeneralMessage for SendMessageBuilder {
     fn set_to_did(&mut self, to_did: String) { self.to_did = to_did; }
     fn set_to_vk(&mut self, to_vk: String) { self.to_vk = to_vk; }
 
-    fn prepare_request(&mut self) -> Result<Vec<u8>, u32> {
+    fn prepare_request(&mut self) -> VcxResult<Vec<u8>> {
         let messages =
             match settings::get_protocol_type() {
                 settings::ProtocolTypes::V1 => {
@@ -175,24 +176,24 @@ pub struct SendResponse {
 }
 
 impl SendResponse {
-    pub fn get_msg_uid(&self) -> Result<String, u32> {
+    pub fn get_msg_uid(&self) -> VcxResult<String> {
         self.uids
             .get(0)
             .map(|uid| uid.to_string())
-            .ok_or(error::INVALID_JSON.code_num)
+            .ok_or(VcxError::from(VcxErrorKind::InvalidJson))
     }
 }
 
-pub fn send_generic_message(connection_handle: u32, msg: &str, msg_type: &str, msg_title: &str) -> Result<String, u32> {
+pub fn send_generic_message(connection_handle: u32, msg: &str, msg_type: &str, msg_title: &str) -> VcxResult<String> {
     if connection::get_state(connection_handle) != VcxStateType::VcxStateAccepted as u32 {
-        return Err(error::NOT_READY.code_num);
+        return Err(VcxError::from(VcxErrorKind::NotReady));
     }
 
-    let agent_did = connection::get_agent_did(connection_handle).or(Err(error::INVALID_CONNECTION_HANDLE.code_num))?;
-    let agent_vk = connection::get_agent_verkey(connection_handle).or(Err(error::INVALID_CONNECTION_HANDLE.code_num))?;
-    let did = connection::get_pw_did(connection_handle).or(Err(error::INVALID_CONNECTION_HANDLE.code_num))?;
-    let vk = connection::get_pw_verkey(connection_handle).or(Err(error::INVALID_CONNECTION_HANDLE.code_num))?;
-    let remote_vk = connection::get_their_pw_verkey(connection_handle).or(Err(error::INVALID_CONNECTION_HANDLE.code_num))?;
+    let agent_did = connection::get_agent_did(connection_handle)?;
+    let agent_vk = connection::get_agent_verkey(connection_handle)?;
+    let did = connection::get_pw_did(connection_handle)?;
+    let vk = connection::get_pw_verkey(connection_handle)?;
+    let remote_vk = connection::get_their_pw_verkey(connection_handle)?;
 
     let response =
         send_message()

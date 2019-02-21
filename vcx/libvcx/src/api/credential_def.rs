@@ -8,7 +8,6 @@ use utils::error::error_string;
 use std::ptr;
 use credential_def;
 use settings;
-use error::ToErrorCode;
 use utils::threadpool::spawn;
 
 /// Create a new CredentialDef object that can create credential definitions on the ledger
@@ -63,7 +62,7 @@ pub extern fn vcx_credentialdef_create(command_handle: u32,
     } else {
         match settings::get_config_value(settings::CONFIG_INSTITUTION_DID) {
             Ok(x) => x,
-            Err(x) => return x,
+            Err(x) => return x.into(),
         }
     };
     
@@ -90,8 +89,8 @@ pub extern fn vcx_credentialdef_create(command_handle: u32,
             },
             Err(x) => {
                 warn!("vcx_credential_def_create_cb(command_handle: {}, rc: {}, credentialdef_handle: {}), source_id: {:?}",
-                      command_handle, error_string(x.to_error_code()), 0, "");
-                (x.to_error_code(), 0)
+                      command_handle, x, 0, "");
+                (x.into(), 0)
             },
         };
         cb(command_handle, rc, handle);
@@ -139,8 +138,8 @@ pub extern fn vcx_credentialdef_serialize(command_handle: u32,
             },
             Err(x) => {
                 warn!("vcx_credentialdef_serialize_cb(command_handle: {}, credentialdef_handle: {}, rc: {}, state: {}), source_id: {:?}",
-                      command_handle, credentialdef_handle, error_string(x), "null", source_id);
-                cb(command_handle, x, ptr::null_mut());
+                      command_handle, credentialdef_handle, x, "null", source_id);
+                cb(command_handle, x.into(), ptr::null_mut());
             },
         };
 
@@ -180,10 +179,9 @@ pub extern fn vcx_credentialdef_deserialize(command_handle: u32,
                 (error::SUCCESS.code_num, x)
             },
             Err(e) => {
-                let error_code = e.to_error_code();
                 warn!("vcx_credentialdef_deserialize_cb(command_handle: {}, rc: {}, handle: {}), source_id: {}",
-                      command_handle, error_code, 0, "");
-                (error_code, 0)
+                      command_handle, e, 0, "");
+                (e.into(), 0)
             },
         };
         cb(command_handle, rc, handle);
@@ -227,8 +225,8 @@ pub extern fn vcx_credentialdef_get_cred_def_id(command_handle: u32,
             },
             Err(x) => {
                 warn!("vcx_credentialdef_get_cred_def_id(command_handle: {}, cred_def_handle: {}, rc: {}, cred_def_id: {}) source_id: {}",
-                      command_handle, cred_def_handle, x.to_string(), "", source_id);
-                cb(command_handle, x.to_error_code(), ptr::null_mut());
+                      command_handle, cred_def_handle, x, "", source_id);
+                cb(command_handle, x.into(), ptr::null_mut());
             },
         };
 
@@ -280,15 +278,15 @@ pub extern fn vcx_credentialdef_get_payment_txn(command_handle: u32,
                     }
                     Err(_) => {
                         error!("vcx_credentialdef_get_payment_txn_cb(command_handle: {}, rc: {}, txn: {}), source_id: {}",
-                               command_handle, error_string(error::INVALID_JSON.code_num), "null", credential_def::get_source_id(handle).unwrap_or_default());
+                               command_handle, error::INVALID_JSON.message, "null", credential_def::get_source_id(handle).unwrap_or_default());
                         cb(command_handle, error::INVALID_JSON.code_num, ptr::null_mut());
                     }
                 }
             },
             Err(x) => {
                 error!("vcx_credentialdef_get_payment_txn_cb(command_handle: {}, rc: {}, txn: {}), source_id: {}",
-                       command_handle, x.to_string(), "null", credential_def::get_source_id(handle).unwrap_or_default());
-                cb(command_handle, x.to_error_code(), ptr::null());
+                       command_handle, x, "null", credential_def::get_source_id(handle).unwrap_or_default());
+                cb(command_handle, x.into(), ptr::null());
             },
         };
 
@@ -319,8 +317,8 @@ pub extern fn vcx_credentialdef_release(credentialdef_handle: u32) -> u32 {
 
         Err(x) => {
             warn!("vcx_credentialdef_release(credentialdef_handle: {}, rc: {}), source_id: {}",
-                        credentialdef_handle, x.to_string(), source_id);
-            x.to_error_code()
+                        credentialdef_handle, x, source_id);
+            x.into()
         }
     }
 }

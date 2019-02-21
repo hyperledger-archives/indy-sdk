@@ -31,6 +31,8 @@ extern crate regex;
 
 extern crate uuid;
 
+extern crate failure;
+
 #[macro_use]
 pub mod utils;
 pub mod settings;

@@ -6,9 +6,8 @@ use utils::error;
 use utils::error::error_string;
 use utils::threadpool::spawn;
 use std::ptr;
-use error::ToErrorCode;
-use error::connection::ConnectionError;
 use connection::{get_source_id, create_connection, create_connection_with_invite, connect, to_string, get_state, release, is_valid_handle, update_state, from_string, get_invite_details, delete_connection};
+use error::prelude::*;
 
 /// Delete a Connection object and release its handle
 ///
@@ -32,7 +31,7 @@ pub extern fn vcx_connection_delete_connection(command_handle: u32,
 
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
     if !is_valid_handle(connection_handle) {
-        return ConnectionError::InvalidHandle().to_error_code()
+        return VcxErrorKind::InvalidConnectionHandle.into()
     }
     trace!("vcx_connection_delete_connection(command_handle: {}, connection_handle: {})", command_handle, connection_handle);
     spawn(move|| {
@@ -43,7 +42,7 @@ pub extern fn vcx_connection_delete_connection(command_handle: u32,
             },
             Err(e) => {
                 trace!("vcx_connection_delete_connection_cb(command_handle: {}, rc: {})", command_handle, e);
-                cb(command_handle, e.to_error_code());
+                cb(command_handle, e.into());
             },
         }
 
@@ -83,8 +82,8 @@ pub extern fn vcx_connection_create(command_handle: u32,
             },
             Err(x) => {
                 warn!("vcx_connection_create_cb(command_handle: {}, rc: {}, handle: {}) source_id: {}",
-                      command_handle, x.to_string(), 0, source_id);
-                cb(command_handle, x.to_error_code(), 0);
+                      command_handle, x, 0, source_id);
+                cb(command_handle, x.into(), 0);
             },
         };
 
@@ -127,8 +126,8 @@ pub extern fn vcx_connection_create_with_invite(command_handle: u32,
             },
             Err(x) => {
                 warn!("vcx_connection_create_with_invite_cb(command_handle: {}, rc: {}, handle: {}) source_id: {}",
-                      command_handle, x.to_string(), 0, source_id);
-                cb(command_handle, x.to_error_code(), 0);
+                      command_handle, x, 0, source_id);
+                cb(command_handle, x.into(), 0);
             },
         };
 
@@ -198,8 +197,8 @@ pub extern fn vcx_connection_connect(command_handle:u32,
             },
             Err(x) => {
                 warn!("vcx_connection_connect_cb(command_handle: {}, connection_handle: {}, rc: {}, details: {}, source_id: {})",
-                      command_handle, connection_handle, x.to_string(), "null", source_id);
-                cb(command_handle,x.to_error_code(), ptr::null_mut());
+                      command_handle, connection_handle, x, "null", source_id);
+                cb(command_handle,x.into(), ptr::null_mut());
             },
         };
 
@@ -247,8 +246,8 @@ pub extern fn vcx_connection_serialize(command_handle: u32,
             },
             Err(x) => {
                 warn!("vcx_connection_serialize_cb(command_handle: {}, connection_handle: {}, rc: {}, state: {}), source_id: {:?}",
-                      command_handle, connection_handle, error_string(x), "null", source_id);
-                cb(command_handle, x, ptr::null_mut());
+                      command_handle, connection_handle, x, "null", source_id);
+                cb(command_handle, x.into(), ptr::null_mut());
             },
         };
 
@@ -290,8 +289,8 @@ pub extern fn vcx_connection_deserialize(command_handle: u32,
             },
             Err(x) => {
                 warn!("vcx_connection_deserialize_cb(command_handle: {}, rc: {}, handle: {} )",
-                      command_handle, error_string(x.to_error_code()), 0);
-                (x.to_error_code(), 0)
+                      command_handle, x, 0);
+                (x.into(), 0)
             },
         };
 
@@ -342,8 +341,8 @@ pub extern fn vcx_connection_update_state(command_handle: u32,
             Err(x) => {
                 warn!("vcx_connection_update_state_cb(command_handle: {}, rc: {}, connection_handle: {}, state: {}), source_id: {:?}",
                       // TODO: Refactor Error
-                      command_handle, error_string(x.to_error_code()), connection_handle, get_state(connection_handle), source_id);
-                x.to_error_code()
+                      command_handle, x, connection_handle, get_state(connection_handle), source_id);
+                x.into()
             },
         };
         let state = get_state(connection_handle);
@@ -434,8 +433,8 @@ pub extern fn vcx_connection_invite_details(command_handle: u32,
             },
             Err(x) => {
                 warn!("vcx_connection_invite_details_cb(command_handle: {}, connection_handle: {}, rc: {}, details: {}, source_id: {:?})",
-                      command_handle, connection_handle, error_string(x.to_error_code()), "null", source_id);
-                cb(command_handle, x.to_error_code(), ptr::null_mut());
+                      command_handle, connection_handle, x, "null", source_id);
+                cb(command_handle, x.into(), ptr::null_mut());
             }
         };
 
@@ -492,9 +491,9 @@ pub extern fn vcx_connection_send_message(command_handle: u32,
             },
             Err(e) => {
                 warn!("vcx_connection_send_message_cb(command_handle: {}, rc: {})",
-                      command_handle, error_string(e));
+                      command_handle, e);
 
-                cb(command_handle, e, ptr::null_mut());
+                cb(command_handle, e.into(), ptr::null_mut());
             },
         };
 
@@ -545,7 +544,7 @@ pub extern fn vcx_connection_sign_data(command_handle: u32,
 
     let vk = match ::connection::get_pw_verkey(connection_handle) {
         Ok(x) => x,
-        Err(e) => return e.to_error_code(),
+        Err(e) => return e.into(),
     };
 
     spawn (move || {
@@ -559,9 +558,9 @@ pub extern fn vcx_connection_sign_data(command_handle: u32,
             },
             Err(e) => {
                 warn!("vcx_messages_sign_data_cb(command_handle: {}, rc: {}, signature: null)",
-                      command_handle, error_string(e));
+                      command_handle, e);
 
-                cb(command_handle, e, ptr::null_mut(), 0);
+                cb(command_handle, e.into(), ptr::null_mut(), 0);
             },
         };
 
@@ -618,7 +617,7 @@ pub extern fn vcx_connection_verify_signature(command_handle: u32,
 
     let vk = match ::connection::get_their_pw_verkey(connection_handle) {
         Ok(x) => x,
-        Err(e) => return e.to_error_code(),
+        Err(e) => return e.into(),
     };
 
     spawn (move || {
@@ -631,9 +630,9 @@ pub extern fn vcx_connection_verify_signature(command_handle: u32,
             },
             Err(e) => {
                 warn!("vcx_connection_verify_signature_cb(command_handle: {}, rc: {}, valid: {})",
-                      command_handle, error_string(e), false);
+                      command_handle, e, false);
 
-                cb(command_handle, e, false);
+                cb(command_handle, e.into(), false);
             },
         };
 
@@ -663,8 +662,8 @@ pub extern fn vcx_connection_release(connection_handle: u32) -> u32 {
         },
         Err(e) => {
             warn!("vcx_connection_release(connection_handle: {}), rc: {}), source_id: {:?}",
-                        connection_handle, error_string(e.to_error_code()), source_id);
-            e.to_error_code()
+                        connection_handle, e, source_id);
+            e.into()
         },
     }
 }

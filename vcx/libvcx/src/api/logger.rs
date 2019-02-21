@@ -33,7 +33,7 @@ pub extern fn vcx_set_default_logger(pattern: *const c_char) -> u32 {
         },
         Err(ec) => {
             error!("Logger Failed To Initialize: {}", ec);
-            ec
+            ec.into()
         },
     }
 }
@@ -68,7 +68,7 @@ pub extern fn vcx_set_logger(context: *const CVoid,
         },
         Err(ec) => {
             error!("Logger Failed To Initialize: {}", ec);
-            ec
+            ec.into()
         },
     }
 }

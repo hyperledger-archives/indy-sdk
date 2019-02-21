@@ -43,7 +43,7 @@ pub extern fn vcx_init_with_config(command_handle: u32,
         match settings::process_config_string(&config) {
             Err(e) => {
                 error!("Invalid configuration specified: {}", e);
-                return e;
+                return e.into();
             },
             Ok(_) => (),
         }
@@ -91,7 +91,7 @@ pub extern fn vcx_init (command_handle: u32,
                 Ok(_) => {
                     match settings::validate_payment_method() {
                         Ok(_) => (),
-                        Err(e) => return e
+                        Err(e) => return e.into()
                     }
                 },
             };
@@ -136,7 +136,7 @@ fn _finish_init(command_handle: u32, cb: extern fn(xcommand_handle: u32, err: u3
                 Ok(_) => (),
                 Err(e) => {
                     error!("Init Pool Error {}.", e);
-                    return Ok(cb(command_handle, e))
+                    return Ok(cb(command_handle, e.into()))
                 },
             }
         }
@@ -149,7 +149,7 @@ fn _finish_init(command_handle: u32, cb: extern fn(xcommand_handle: u32, err: u3
             },
             Err(e) => {
                 error!("Init Wallet Error {}.", e);
-                cb(command_handle, e);
+                cb(command_handle, e.into());
             }
         }
         Ok(())

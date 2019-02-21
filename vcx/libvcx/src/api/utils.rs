@@ -77,8 +77,8 @@ pub extern fn vcx_agent_provision_async(command_handle : u32,
     thread::spawn(move|| {
         match messages::agent_utils::connect_register_provision(&config) {
             Err(e) => {
-                error!("vcx_agent_provision_async_cb(command_handle: {}, rc: {}, config: NULL", command_handle, error_string(e));
-                cb(command_handle, e, ptr::null_mut());
+                error!("vcx_agent_provision_async_cb(command_handle: {}, rc: {}, config: NULL", command_handle, e);
+                cb(command_handle, e.into(), ptr::null_mut());
             },
             Ok(s) => {
                 trace!("vcx_agent_provision_async_cb(command_handle: {}, rc: {}, config: {})",
@@ -132,8 +132,8 @@ pub extern fn vcx_agent_update_info(command_handle: u32,
             },
             Err(e) => {
                 error!("vcx_agent_update_info_cb(command_handle: {}, rc: {})",
-                      command_handle, error::error_string(e));
-                cb(command_handle, e);
+                      command_handle, e);
+                cb(command_handle, e.into());
             },
         };
 
@@ -173,9 +173,9 @@ pub extern fn vcx_ledger_get_fees(command_handle: u32,
             },
             Err(e) => {
                 warn!("vcx_ledget_get_fees_cb(command_handle: {}, rc: {}, fees: {})",
-                      command_handle, error_string(e), "null");
+                      command_handle, e, "null");
 
-                cb(command_handle, e, ptr::null_mut());
+                cb(command_handle, e.into(), ptr::null_mut());
             },
         };
 
@@ -280,9 +280,9 @@ pub extern fn vcx_messages_download(command_handle: u32,
             },
             Err(e) => {
                 warn!("vcx_messages_download_cb(command_handle: {}, rc: {}, messages: {})",
-                      command_handle, error_string(e), "null");
+                      command_handle, e, "null");
 
-                cb(command_handle, e, ptr::null_mut());
+                cb(command_handle, e.into(), ptr::null_mut());
             },
         };
 
@@ -331,9 +331,9 @@ pub extern fn vcx_messages_update_status(command_handle: u32,
             },
             Err(e) => {
                 warn!("vcx_messages_set_status_cb(command_handle: {}, rc: {})",
-                      command_handle, error_string(e));
+                      command_handle, e);
 
-                cb(command_handle, e);
+                cb(command_handle, e.into());
             },
         };
 
