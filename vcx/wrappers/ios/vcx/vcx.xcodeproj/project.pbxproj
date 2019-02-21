@@ -21,6 +21,8 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
+		8E1E709F221B653B00EF3CBB /* IndySdk.m in Sources */ = {isa = PBXBuildFile; fileRef = 8E1E709E221B653B00EF3CBB /* IndySdk.m */; };
+		8E1E70A7221B7B8C00EF3CBB /* IndyCallbacks.m in Sources */ = {isa = PBXBuildFile; fileRef = 8E1E70A6221B7B8C00EF3CBB /* IndyCallbacks.m */; };
 		8EFD49F922133FBF002E58D5 /* VcxLogger.h in Headers */ = {isa = PBXBuildFile; fileRef = 8EFD49F722133FBF002E58D5 /* VcxLogger.h */; };
 		8EFD49FA22133FBF002E58D5 /* VcxLogger.m in Sources */ = {isa = PBXBuildFile; fileRef = 8EFD49F822133FBF002E58D5 /* VcxLogger.m */; };
 		8EFD93C9220269BD00A0400A /* vcx.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DD2566EE209705E3002EBEBA /* vcx.framework */; };
@@ -105,6 +107,11 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		8E1E709E221B653B00EF3CBB /* IndySdk.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = IndySdk.m; sourceTree = "<group>"; };
+		8E1E70A0221B659E00EF3CBB /* IndySdk.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = IndySdk.h; sourceTree = "<group>"; };
+		8E1E70A5221B77D100EF3CBB /* IndyTypes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = IndyTypes.h; sourceTree = "<group>"; };
+		8E1E70A6221B7B8C00EF3CBB /* IndyCallbacks.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = IndyCallbacks.m; sourceTree = "<group>"; };
+		8E1E70A8221B7BC100EF3CBB /* IndyCallbacks.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = IndyCallbacks.h; sourceTree = "<group>"; };
 		8EFD49F722133FBF002E58D5 /* VcxLogger.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = VcxLogger.h; sourceTree = "<group>"; };
 		8EFD49F822133FBF002E58D5 /* VcxLogger.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = VcxLogger.m; sourceTree = "<group>"; };
 		8EFD93CA22026CA400A0400A /* RNIndy.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RNIndy.m; sourceTree = "<group>"; };
@@ -299,6 +306,11 @@
 				DD858CB820A4AF7B004B3CB5 /* VcxCallbacks.mm */,
 				DD858CB720A4AF7B004B3CB5 /* VcxErrors.h */,
 				DD858CB920A4AF7B004B3CB5 /* VcxTypes.h */,
+				8E1E709E221B653B00EF3CBB /* IndySdk.m */,
+				8E1E70A0221B659E00EF3CBB /* IndySdk.h */,
+				8E1E70A5221B77D100EF3CBB /* IndyTypes.h */,
+				8E1E70A6221B7B8C00EF3CBB /* IndyCallbacks.m */,
+				8E1E70A8221B7BC100EF3CBB /* IndyCallbacks.h */,
 			);
 			path = utils;
 			sourceTree = "<group>";
@@ -539,7 +551,9 @@
 			files = (
 				DD858CBE20A4AF7C004B3CB5 /* VcxCallbacks.mm in Sources */,
 				DD858C9E20A45C11004B3CB5 /* ConnectMeVcx.m in Sources */,
+				8E1E709F221B653B00EF3CBB /* IndySdk.m in Sources */,
 				DD858CC120A4AF7C004B3CB5 /* NSError+VcxError.m in Sources */,
+				8E1E70A7221B7B8C00EF3CBB /* IndyCallbacks.m in Sources */,
 				8EFD49FA22133FBF002E58D5 /* VcxLogger.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -929,6 +943,7 @@
 				CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = ES8QU3D2A4;
+				HEADER_SEARCH_PATHS = $SOURCE_ROOT/include;
 				INFOPLIST_FILE = "vcx-demoTests/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				LIBRARY_SEARCH_PATHS = "$(PROJECT_DIR)/lib";
@@ -950,6 +965,7 @@
 				CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = ES8QU3D2A4;
+				"HEADER_SEARCH_PATHS[arch=*]" = $SOURCE_ROOT/include;
 				INFOPLIST_FILE = "vcx-demoTests/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				LIBRARY_SEARCH_PATHS = "$(PROJECT_DIR)/lib";

@@ -8,6 +8,7 @@
 
 #import <XCTest/XCTest.h>
 #import "RNIndyTests.h"
+#import "IndyCallbacks.h"
 
 @interface vcx_demoTests : XCTestCase
 
@@ -32,6 +33,7 @@
 
     RNIndy *indy = [[RNIndy alloc] init];
     VcxLogger *vcxLogger = [[VcxLogger alloc] init];
+    IndyCallbacks *indyCallbacks = [[IndyCallbacks alloc] init];
     
     [RNIndyTests startFreshAndGeneratePassphrase:indy completion:^(BOOL success) {
         NSLog(@"TEST startFreshAndGeneratePassphrase %@!", success ? @"succeeded" : @"failed");

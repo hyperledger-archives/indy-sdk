@@ -41,7 +41,7 @@ public class VcxJava {
 
 		/**
 		 * Generates and returns a new command handle.
-		 * 
+		 *
 		 * @return The new command handle.
 		 */
 		static int newCommandHandle() {
@@ -51,7 +51,7 @@ public class VcxJava {
 
 		/**
 		 * Adds a future to track.
-		 * 
+		 *
 		 * @param future The future to track.
 		 * @return The command handle the future is being tracked against.
 		 */
@@ -66,7 +66,7 @@ public class VcxJava {
 
 		/**
 		 * Stops tracking the future associated with the provided command handle and returns it.
-		 * 
+		 *
 		 * @param commandHandle The command handle for the future to stop tracking.
 		 * @return The future associated with the command handle.
 		 */
@@ -84,7 +84,7 @@ public class VcxJava {
 
 		/**
 		 * Sets the provided future with an exception if the error code provided does not indicate success.
-		 * 
+		 *
 		 * @param future The future.
 		 * @param err The error value to check.
 		 * @return true if the error code indicate SUCCESS, otherwise false.
@@ -113,7 +113,7 @@ public class VcxJava {
 		//TODO: Is this redundant?
 		/**
 		 * Throws an VcxException if the provided error code does not indicate success.
-		 * 
+		 *
 		 * @param err The error code to check.
 		 * @throws VcxException Thrown if the error code does not indicate success.
 		 */
@@ -125,7 +125,7 @@ public class VcxJava {
 
 		/**
 		 * Throws an VcxException if the provided error code does not indicate success.
-		 * 
+		 *
 		 * @param err The error code to check.
 		 * @throws VcxException Thrown if the error code does not indicate success.
 		 */
@@ -136,6 +136,28 @@ public class VcxJava {
 			} else{
 				logger.debug("checkResult() returned: " + err);
 			}
+		}
+
+
+		/**
+		 * Sets the provided future with an exception if the error code provided does not indicate success.
+		 *
+		 * @param future The future.
+		 * @param err    The error value to check.
+		 * @return true if the error code indicated Success, otherwise false.
+		 */
+		protected static boolean checkResult(CompletableFuture<?> future, int err) {
+
+			ErrorCode errorCode = ErrorCode.valueOf(err);
+			if (! ErrorCode.SUCCESS.equals(errorCode)) {
+
+				VcxException vcxException = VcxException.fromSdkError(err);
+				future.completeExceptionally(vcxException);
+
+				return false;
+			}
+
+			return true;
 		}
 
 		/*
@@ -178,7 +200,7 @@ public class VcxJava {
 
 		/**
 		 * Converts the map of parameters to a JSON string.
-		 * 
+		 *
 		 * @return The JSON string.
 		 */
 		final String toJson() {
