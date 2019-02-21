@@ -1,11 +1,16 @@
+use std::cell::RefCell;
 use std::fmt;
+use std::ffi::CString;
+use std::ptr;
 
 use failure::{Context, Backtrace, Fail};
+use libc::c_char;
 
 use utils::error;
+use utils::cstring::CStringUtils;
 
 pub mod prelude {
-    pub use super::{err_msg, VcxError, VcxErrorExt, VcxErrorKind, VcxResult, VcxResultExt};
+    pub use super::{err_msg, VcxError, VcxErrorExt, VcxErrorKind, VcxResult, VcxResultExt, get_current_error_c_json};
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
@@ -35,6 +40,8 @@ pub enum VcxErrorKind {
     TimeoutLibindy,
     #[fail(display = "Parameter passed to libindy was invalid")]
     InvalidLibindyParam,
+    #[fail(display = "Library already initialized")]
+    AlreadyInitialized,
 
     // Connection
     #[fail(display = "Cannot create connection")]
@@ -269,16 +276,15 @@ impl From<Context<VcxErrorKind>> for VcxError {
     }
 }
 
-pub type ErrorCode = u32;
-
-impl From<VcxError> for ErrorCode {
-    fn from(code: VcxError) -> ErrorCode {
+impl From<VcxError> for u32 {
+    fn from(code: VcxError) -> u32 {
+        set_current_error(&code);
         code.kind().into()
     }
 }
 
-impl From<VcxErrorKind> for ErrorCode {
-    fn from(code: VcxErrorKind) -> ErrorCode {
+impl From<VcxErrorKind> for u32 {
+    fn from(code: VcxErrorKind) -> u32 {
         match code {
             VcxErrorKind::InvalidState => error::INVALID_STATE.code_num,
             VcxErrorKind::InvalidConfiguration => error::INVALID_CONFIGURATION.code_num,
@@ -295,6 +301,7 @@ impl From<VcxErrorKind> for ErrorCode {
             VcxErrorKind::LibindyInvalidStructure => error::LIBINDY_INVALID_STRUCTURE.code_num,
             VcxErrorKind::TimeoutLibindy => error::TIMEOUT_LIBINDY_ERROR.code_num,
             VcxErrorKind::InvalidLibindyParam => error::INVALID_LIBINDY_PARAM.code_num,
+            VcxErrorKind::AlreadyInitialized => error::ALREADY_INITIALIZED.code_num,
             VcxErrorKind::CreateConnection => error::CREATE_CONNECTION_ERROR.code_num,
             VcxErrorKind::InvalidConnectionHandle => error::INVALID_CONNECTION_HANDLE.code_num,
             VcxErrorKind::InvalidInviteDetail => error::INVALID_INVITE_DETAILS.code_num,
@@ -387,4 +394,28 @@ impl<E> VcxErrorExt for E where E: Fail
     fn to_vcx<D>(self, kind: VcxErrorKind, msg: D) -> VcxError where D: fmt::Display + Send + Sync + 'static {
         self.context(msg).context(kind).into()
     }
+}
+
+thread_local! {
+    pub static CURRENT_ERROR_C_JSON: RefCell<Option<CString>> = RefCell::new(None);
+}
+
+pub fn set_current_error(err: &VcxError) {
+    CURRENT_ERROR_C_JSON.with(|error| {
+        let error_json = json!({
+            "message": err.to_string(),
+            "backtrace": err.backtrace().map(|bt| bt.to_string())
+        }).to_string();
+        error.replace(Some(CStringUtils::string_to_cstring(error_json)));
+    });
+}
+
+pub fn get_current_error_c_json() -> *const c_char {
+    let mut value = ptr::null();
+
+    CURRENT_ERROR_C_JSON.with(|err|
+        err.borrow().as_ref().map(|err| value = err.as_ptr())
+    );
+
+    value
 }

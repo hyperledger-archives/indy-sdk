@@ -1,14 +1,12 @@
-extern crate libc;
-
 use utils::version_constants;
-use self::libc::c_char;
+use libc::c_char;
 use utils::cstring::CStringUtils;
 use utils::libindy::{wallet, pool};
 use utils::error;
 use settings;
 use std::ffi::CString;
 use utils::threadpool::spawn;
-
+use error::prelude::*;
 
 /// Initializes VCX with config settings
 ///
@@ -26,24 +24,24 @@ use utils::threadpool::spawn;
 #[no_mangle]
 pub extern fn vcx_init_with_config(command_handle: u32,
                                    config: *const c_char,
-                                   cb: Option<extern fn(xcommand_handle: u32, err:u32)>) -> u32 {
+                                   cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
     info!("vcx_init_with_config >>>");
 
-    check_useful_c_str!(config,error::INVALID_OPTION.code_num);
-    check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
+    check_useful_c_str!(config,VcxErrorKind::InvalidOption);
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
 
     trace!("vcx_init(command_handle: {}, config: {:?})",
            command_handle, config);
 
     if config == "ENABLE_TEST_MODE" {
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
         settings::set_defaults();
     } else {
         match settings::process_config_string(&config) {
             Err(e) => {
                 error!("Invalid configuration specified: {}", e);
                 return e.into();
-            },
+            }
             Ok(_) => (),
         }
     };
@@ -65,53 +63,52 @@ pub extern fn vcx_init_with_config(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_init (command_handle: u32,
-                        config_path:*const c_char,
-                        cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
+pub extern fn vcx_init(command_handle: u32,
+                       config_path: *const c_char,
+                       cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
     info!("vcx_init >>>");
 
-    check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
 
     trace!("vcx_init(command_handle: {}, config_path: {:?})",
            command_handle, config_path);
 
 
     if !config_path.is_null() {
-        check_useful_c_str!(config_path,error::INVALID_OPTION.code_num);
+        check_useful_c_str!(config_path,VcxErrorKind::InvalidOption);
 
         if config_path == "ENABLE_TEST_MODE" {
-            settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+            settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
             settings::set_defaults();
         } else {
             match settings::process_config_file(&config_path) {
                 Err(e) => {
-                    return error::INVALID_CONFIGURATION.code_num;
-                },
+                    return VcxError::from_msg(VcxErrorKind::InvalidConfiguration, "Cannot initialize with given config path.").into();
+                }
                 Ok(_) => {
                     match settings::validate_payment_method() {
                         Ok(_) => (),
                         Err(e) => return e.into()
                     }
-                },
+                }
             };
         }
     } else {
         error!("Cannot initialize with given config path: config path is null.");
-        return error::INVALID_CONFIGURATION.code_num;
+        return VcxError::from_msg(VcxErrorKind::InvalidConfiguration, "Cannot initialize with given config path: config path is null.").into();
     }
 
     _finish_init(command_handle, cb)
 }
 
 fn _finish_init(command_handle: u32, cb: extern fn(xcommand_handle: u32, err: u32)) -> u32 {
-
     ::utils::threadpool::init();
 
     settings::log_settings();
 
     if wallet::get_wallet_handle() > 0 {
         error!("Library was already initialized");
-        return error::ALREADY_INITIALIZED.code_num;
+        return VcxError::from_msg(VcxErrorKind::AlreadyInitialized, "Library was already initialized").into();
     }
     // Wallet name was already validated
     let wallet_name = match settings::get_config_value(settings::CONFIG_WALLET_NAME) {
@@ -129,23 +126,23 @@ fn _finish_init(command_handle: u32, cb: extern fn(xcommand_handle: u32, err: u3
 
     trace!("libvcx version: {}{}", version_constants::VERSION, version_constants::REVISION);
 
-    spawn(move|| {
+    spawn(move || {
         if settings::get_config_value(settings::CONFIG_GENESIS_PATH).is_ok() {
             match ::utils::libindy::init_pool() {
                 Ok(_) => (),
                 Err(e) => {
                     error!("Init Pool Error {}.", e);
-                    return Ok(cb(command_handle, e.into()))
-                },
+                    return Ok(cb(command_handle, e.into()));
+                }
             }
         }
 
-        match wallet::open_wallet(&wallet_name, wallet_type.as_ref().map(String::as_str), 
-                        storage_config.as_ref().map(String::as_str), storage_creds.as_ref().map(String::as_str)) {
+        match wallet::open_wallet(&wallet_name, wallet_type.as_ref().map(String::as_str),
+                                  storage_config.as_ref().map(String::as_str), storage_creds.as_ref().map(String::as_str)) {
             Ok(_) => {
                 debug!("Init Wallet Successful");
                 cb(command_handle, error::SUCCESS.code_num);
-            },
+            }
             Err(e) => {
                 error!("Init Wallet Error {}.", e);
                 cb(command_handle, e.into());
@@ -157,7 +154,7 @@ fn _finish_init(command_handle: u32, cb: extern fn(xcommand_handle: u32, err: u3
     error::SUCCESS.code_num
 }
 
-lazy_static!{
+lazy_static! {
     pub static ref VERSION_STRING: CString = CString::new(format!("{}{}", version_constants::VERSION, version_constants::REVISION)).unwrap();
 }
 
@@ -182,13 +179,13 @@ pub extern fn vcx_shutdown(delete: bool) -> u32 {
     trace!("vcx_shutdown(delete: {})", delete);
 
     match wallet::close_wallet() {
-        Ok(_) => {},
-        Err(_) => {},
+        Ok(_) => {}
+        Err(_) => {}
     };
 
     match pool::close() {
-        Ok(_) => {},
-        Err(_) => {},
+        Ok(_) => {}
+        Err(_) => {}
     };
 
     ::schema::release_all();
@@ -235,8 +232,8 @@ pub extern fn vcx_error_c_message(error_code: u32) -> *const c_char {
 pub extern fn vcx_update_institution_info(name: *const c_char, logo_url: *const c_char) -> u32 {
     info!("vcx_update_institution_info >>>");
 
-    check_useful_c_str!(name, error::INVALID_CONFIGURATION.code_num);
-    check_useful_c_str!(logo_url, error::INVALID_CONFIGURATION.code_num);
+    check_useful_c_str!(name, VcxErrorKind::InvalidOption);
+    check_useful_c_str!(logo_url, VcxErrorKind::InvalidOption);
     trace!("vcx_update_institution_info(name: {}, logo_url: {})", name, logo_url);
 
     settings::set_config_value(::settings::CONFIG_INSTITUTION_NAME, &name);
@@ -249,19 +246,22 @@ pub extern fn vcx_update_institution_info(name: *const c_char, logo_url: *const 
 pub extern fn vcx_mint_tokens(seed: *const c_char, fees: *const c_char) {
     info!("vcx_mint_tokens >>>");
 
+    // TODO: CHEC
     let seed = if !seed.is_null() {
-        check_useful_opt_c_str!(seed, ());
-        seed.to_owned()
-    }
-    else {
+        match CStringUtils::c_str_to_string(seed) {
+            Ok(opt_val) => opt_val.map(String::from),
+            Err(_) => return ()
+        }
+    } else {
         None
     };
 
     let fees = if !fees.is_null() {
-        check_useful_opt_c_str!(fees, ());
-        fees.to_owned()
-    }
-    else {
+        match CStringUtils::c_str_to_string(fees) {
+            Ok(opt_val) => opt_val.map(String::from),
+            Err(_) => return ()
+        }
+    } else {
         None
     };
     trace!("vcx_mint_tokens(seed: {:?}, fees: {:?})", seed, fees);
@@ -271,16 +271,14 @@ pub extern fn vcx_mint_tokens(seed: *const c_char, fees: *const c_char) {
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
-    use error::prelude::*;
     use std::time::Duration;
     use std::ptr;
     use std::thread;
     use utils::{
         libindy::{
-            wallet::{import, tests::export_test_wallet, tests::delete_import_wallet_path},
-            pool::get_pool_handle
+        wallet::{import, tests::export_test_wallet, tests::delete_import_wallet_path},
+        pool::get_pool_handle
         },
         get_temp_dir_path
     };
@@ -357,8 +355,8 @@ mod tests {
 
         let cb = return_types_u32::Return_U32::new().unwrap();
         assert_eq!(vcx_init_with_config(cb.command_handle,
-                                          CString::new(content).unwrap().into_raw(),
-                                          Some(cb.get_callback())),
+                                        CString::new(content).unwrap().into_raw(),
+                                        Some(cb.get_callback())),
                    error::SUCCESS.code_num);
         cb.receive(Some(Duration::from_secs(10))).unwrap();
         // Assert pool was initialized
@@ -372,8 +370,8 @@ mod tests {
         vcx_shutdown(true);
         use std::fs;
         use std::io::Write;
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
-        settings::set_config_value(settings::CONFIG_WALLET_KEY,settings::DEFAULT_WALLET_KEY);
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
+        settings::set_config_value(settings::CONFIG_WALLET_KEY, settings::DEFAULT_WALLET_KEY);
 
         // Write invalid genesis.txn
         let mut f = fs::File::create(get_temp_dir_path(Some(::utils::constants::GENESIS_PATH)).to_str().unwrap()).unwrap();
@@ -549,8 +547,8 @@ mod tests {
 
         let cb = return_types_u32::Return_U32::new().unwrap();
         assert_eq!(vcx_init(cb.command_handle,
-                                        CString::new(config_path).unwrap().into_raw(),
-                                        Some(cb.get_callback())),
+                            CString::new(config_path).unwrap().into_raw(),
+                            Some(cb.get_callback())),
                    error::ALREADY_INITIALIZED.code_num);
     }
 
@@ -621,7 +619,7 @@ mod tests {
         assert_eq!(cb.receive(Some(Duration::from_secs(10))).err(), Some(error::WALLET_NOT_FOUND.code_num));
 
         delete_import_wallet_path(export_path);
-        settings::set_config_value(settings::CONFIG_WALLET_NAME,settings::DEFAULT_WALLET_NAME);
+        settings::set_config_value(settings::CONFIG_WALLET_NAME, settings::DEFAULT_WALLET_NAME);
         vcx_shutdown(true);
     }
 
@@ -666,13 +664,13 @@ mod tests {
         let config_path = "";
         let cb = return_types_u32::Return_U32::new().unwrap();
         assert_eq!(vcx_init(cb.command_handle,
-                                        CString::new(config_path).unwrap().into_raw(),
-                                        Some(cb.get_callback())),
+                            CString::new(config_path).unwrap().into_raw(),
+                            Some(cb.get_callback())),
                    error::INVALID_OPTION.code_num);
 
         match get_pool_handle() {
-            Ok(h) => {pool::close().unwrap();},
-            Err(_) => {},
+            Ok(h) => { pool::close().unwrap(); }
+            Err(_) => {}
         };
     }
 
@@ -682,8 +680,8 @@ mod tests {
         init!("true");
         let cb = return_types_u32::Return_U32::new().unwrap();
         assert_eq!(vcx_init(cb.command_handle,
-                                        ptr::null(),
-                                        Some(cb.get_callback())),
+                            ptr::null(),
+                            Some(cb.get_callback())),
                    error::INVALID_CONFIGURATION.code_num);
     }
 
@@ -699,11 +697,11 @@ mod tests {
 
         let data = r#"["name","male"]"#;
         let connection = ::connection::tests::build_test_connection();
-        let credentialdef = ::credential_def::create_new_credentialdef("SID".to_string(),"NAME".to_string(),"4fUDR9R7fjwELRvH9JT6HH".to_string(), "id".to_string(), "tag".to_string(),"{}".to_string() ).unwrap();
-        let issuer_credential = ::issuer_credential::issuer_credential_create(credentialdef,"1".to_string(),"8XFh8yBzrpJQmNyZzgoTqB".to_owned(),"credential_name".to_string(),"{\"attr\":\"value\"}".to_owned(), 1).unwrap();
-        let proof = ::proof::create_proof("1".to_string(),"[]".to_string(), "[]".to_string(),r#"{"support_revocation":false}"#.to_string(), "Optional".to_owned()).unwrap();
-        let schema = ::schema::create_new_schema("5",  "VsKV7grR1BUE29mG2Fm2kX".to_string(),"name".to_string(), "0.1".to_string(), data.to_string()).unwrap();
-        let disclosed_proof = ::disclosed_proof::create_proof("id",::utils::constants::PROOF_REQUEST_JSON).unwrap();
+        let credentialdef = ::credential_def::create_new_credentialdef("SID".to_string(), "NAME".to_string(), "4fUDR9R7fjwELRvH9JT6HH".to_string(), "id".to_string(), "tag".to_string(), "{}".to_string()).unwrap();
+        let issuer_credential = ::issuer_credential::issuer_credential_create(credentialdef, "1".to_string(), "8XFh8yBzrpJQmNyZzgoTqB".to_owned(), "credential_name".to_string(), "{\"attr\":\"value\"}".to_owned(), 1).unwrap();
+        let proof = ::proof::create_proof("1".to_string(), "[]".to_string(), "[]".to_string(), r#"{"support_revocation":false}"#.to_string(), "Optional".to_owned()).unwrap();
+        let schema = ::schema::create_new_schema("5", "VsKV7grR1BUE29mG2Fm2kX".to_string(), "name".to_string(), "0.1".to_string(), data.to_string()).unwrap();
+        let disclosed_proof = ::disclosed_proof::create_proof("id", ::utils::constants::PROOF_REQUEST_JSON).unwrap();
         let credential = ::credential::credential_create_with_offer("name", ::utils::constants::CREDENTIAL_OFFER_JSON).unwrap();
 
         vcx_shutdown(true);
@@ -721,16 +719,16 @@ mod tests {
     fn test_error_c_message() {
         init!("true");
         let c_message = CStringUtils::c_str_to_string(vcx_error_c_message(0)).unwrap().unwrap();
-        assert_eq!(c_message,error::SUCCESS.message);
+        assert_eq!(c_message, error::SUCCESS.message);
 
         let c_message = CStringUtils::c_str_to_string(vcx_error_c_message(1001)).unwrap().unwrap();
-        assert_eq!(c_message,error::UNKNOWN_ERROR.message);
+        assert_eq!(c_message, error::UNKNOWN_ERROR.message);
 
         let c_message = CStringUtils::c_str_to_string(vcx_error_c_message(100100)).unwrap().unwrap();
-        assert_eq!(c_message,error::UNKNOWN_ERROR.message);
+        assert_eq!(c_message, error::UNKNOWN_ERROR.message);
 
         let c_message = CStringUtils::c_str_to_string(vcx_error_c_message(1021)).unwrap().unwrap();
-        assert_eq!(c_message,error::INVALID_ATTRIBUTES_STRUCTURE.message);
+        assert_eq!(c_message, error::INVALID_ATTRIBUTES_STRUCTURE.message);
     }
 
     #[test]
