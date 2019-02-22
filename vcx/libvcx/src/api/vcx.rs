@@ -831,5 +831,6 @@ mod tests {
 
         let config = CString::new("{}").unwrap();
         ::api::utils::vcx_agent_provision_async(0, config.as_ptr(), Some(cb));
+        ::std::thread::sleep(::std::time::Duration::from_secs(1));
     }
 }

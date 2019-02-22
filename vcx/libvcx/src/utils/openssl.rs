@@ -11,16 +11,16 @@ pub fn encode(s: &str ) -> VcxResult<String> {
             let hash = sha256(s.as_bytes());
             let bignum = match BigNum::from_slice(&hash) {
                 Ok(b) => b,
-                Err(_) => {
+                Err(err) => {
                     warn!("{}", BIG_NUMBER_ERROR.message);
-                    return Err(VcxError::from(VcxErrorKind::EncodeError))
+                    return Err(VcxError::from_msg(VcxErrorKind::EncodeError, format!("Cannot encode string: {}", err)))
                 }
             };
             match bignum.to_dec_str() {
                 Ok(s) => Ok(s.to_string()),
-                Err(_) => {
+                Err(err) => {
                     warn!("{}", BIG_NUMBER_ERROR.message);
-                    Err(VcxError::from(VcxErrorKind::EncodeError))
+                    return Err(VcxError::from_msg(VcxErrorKind::EncodeError, format!("Cannot encode string: {}", err)))
                 }
             }
         }

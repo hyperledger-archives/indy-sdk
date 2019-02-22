@@ -75,6 +75,8 @@ public class VcxException extends Exception {
     private static final long serialVersionUID = 2650355290834266234L;
     private int sdkErrorCode;
     private String  sdkMessage;
+    private String  sdkFullMessage;
+    private String  sdkCause;
     private String sdkBacktrace;
 
     /**
@@ -95,7 +97,9 @@ public class VcxException extends Exception {
 
         try {
             JSONObject errorDetails = new JSONObject(errorDetailsJson.getValue().getString(0));
-            this.sdkMessage = errorDetails.optString("message");
+            this.sdkMessage = errorDetails.optString("error");
+            this.sdkFullMessage = errorDetails.optString("message");
+            this.sdkCause = errorDetails.optString("cause");
             this.sdkBacktrace = errorDetails.optString("backtrace");
         } catch(Exception e) {
            // TODO
@@ -117,6 +121,20 @@ public class VcxException extends Exception {
      * @return The SDK error message used to construct the exception.
      */
     public String  getSdkMessage() {return sdkMessage;}
+
+    /**
+     * Gets the SDK full error message for the exception.
+     *
+     * @return The SDK full error message used to construct the exception.
+     */
+    public String  getSdkFullMessage() {return sdkFullMessage;}
+
+    /**
+     * Gets the SDK error cause for the exception.
+     *
+     * @return The SDK error cause used to construct the exception.
+     */
+    public String  getSdkCause() {return sdkCause;}
 
     /**
      * Gets the SDK error backtrace for the exception.

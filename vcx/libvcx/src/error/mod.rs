@@ -266,7 +266,7 @@ pub fn err_msg<D>(kind: VcxErrorKind, msg: D) -> VcxError
 
 impl From<VcxErrorKind> for VcxError {
     fn from(kind: VcxErrorKind) -> VcxError {
-        VcxError::from_msg(kind, ::utils::error::error_string(kind.clone().into()))
+        VcxError::from_msg(kind, ::utils::error::error_message(&kind.clone().into()))
     }
 }
 
@@ -403,7 +403,9 @@ thread_local! {
 pub fn set_current_error(err: &VcxError) {
     CURRENT_ERROR_C_JSON.with(|error| {
         let error_json = json!({
+            "error": err.kind().to_string(),
             "message": err.to_string(),
+            "cause": Fail::find_root_cause(err).to_string(),
             "backtrace": err.backtrace().map(|bt| bt.to_string())
         }).to_string();
         error.replace(Some(CStringUtils::string_to_cstring(error_json)));

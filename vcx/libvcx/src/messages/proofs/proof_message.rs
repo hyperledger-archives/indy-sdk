@@ -63,7 +63,7 @@ impl ProofMessage {
                             timestamp,
                         }
                     );
-                } else { return Err(VcxError::from(VcxErrorKind::InvalidProofCredentialData)); }
+                } else { return Err(VcxError::from_msg(VcxErrorKind::InvalidProofCredentialData, "Cannot get identifiers")); }
             }
         }
 

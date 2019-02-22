@@ -96,7 +96,7 @@ pub fn create_new_credentialdef(source_id: String,
             err
         } else {
             error!("{}", err);
-            VcxError::from(VcxErrorKind::CreateCredDef)
+            VcxError::from_msg(VcxErrorKind::CreateCredDef, err)
         }
     })?;
 

@@ -266,7 +266,7 @@ fn _submit_fees_request(req: &str, inputs: &Vec<String>, outputs: &Vec<Output>) 
 
     let parsed_response = payments::parse_response_with_fees(&payment_method, &response)
         .wait()
-        .or(Err(VcxError::from(VcxErrorKind::InvalidLedgerResponse)))?;
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidLedgerResponse, format!("Cannot parse response: {}", err)))?;
 
     Ok((parsed_response, response))
 }

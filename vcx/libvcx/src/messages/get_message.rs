@@ -132,7 +132,7 @@ impl GetMessagesBuilder {
         match response.remove(0) {
             A2AMessage::Version1(A2AMessageV1::GetMessagesResponse(res)) => Ok(res.msgs),
             A2AMessage::Version2(A2AMessageV2::GetMessagesResponse(res)) => Ok(res.msgs),
-            _ => return Err(VcxError::from(VcxErrorKind::InvalidHttpResponse))
+            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of GetMessagesResponse"))
         }
     }
 
@@ -186,7 +186,7 @@ impl GetMessagesBuilder {
         let msgs = match response.remove(0) {
             A2AMessage::Version1(A2AMessageV1::GetMessagesByConnectionsResponse(res)) => res.msgs,
             A2AMessage::Version2(A2AMessageV2::GetMessagesByConnectionsResponse(res)) => res.msgs,
-            _ => return Err(VcxError::from(VcxErrorKind::InvalidHttpResponse))
+            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of GetMessagesByConnectionsResponse"))
         };
 
         msgs
@@ -289,10 +289,7 @@ pub fn get_connection_messages(pw_did: &str, pw_vk: &str, agent_did: &str, agent
         .agent_vk(&agent_vk)?
         .uid(msg_uid)?
         .send_secure()
-        .map_err(|err| {
-            error!("could not post get_messages: {}", err);
-            VcxError::from(VcxErrorKind::PostMessageFailed)
-        })?;
+        .map_err(|err| err.extend("Cannot get messages"))?;
 
     trace!("message returned: {:?}", response);
     Ok(response)
@@ -307,7 +304,7 @@ pub fn get_ref_msg(msg_id: &str, pw_did: &str, pw_vk: &str, agent_did: &str, age
 
     let msg_id = match message.get(0).as_ref().and_then(|message| message.ref_msg_id.as_ref()) {
         Some(ref ref_msg_id) if message[0].status_code == MessageStatusCode::Accepted => ref_msg_id.to_string(),
-        _ => return Err(VcxError::from(VcxErrorKind::NotReady)),
+        _ => return Err(VcxError::from_msg(VcxErrorKind::NotReady, "Cannot find referent message")),
     };
 
     let message: Vec<Message> = get_connection_messages(pw_did, pw_vk, agent_did, agent_vk, Some(vec![msg_id]))?;
@@ -320,7 +317,7 @@ pub fn get_ref_msg(msg_id: &str, pw_did: &str, pw_vk: &str, agent_did: &str, age
             // TODO: check returned verkey
             Ok((message[0].uid.clone(), payload.to_owned()))
         }
-        _ => return Err(VcxError::from(VcxErrorKind::InvalidHttpResponse)),
+        _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Cannot find referent message")),
     }
 }
 

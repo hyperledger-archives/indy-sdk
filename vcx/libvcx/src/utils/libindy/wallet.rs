@@ -28,7 +28,7 @@ pub fn create_wallet(wallet_name: &str, wallet_type: Option<&str>, storage_confi
         Ok(x) => Ok(()),
         Err(x) => if x.error_code != ErrorCode::WalletAlreadyExistsError {
             warn!("could not create wallet {}: {:?}", wallet_name, x.message);
-            Err(VcxError::from(VcxErrorKind::WalletCreate))
+            Err(VcxError::from_msg(VcxErrorKind::WalletCreate, format!("could not create wallet {}: {:?}", wallet_name, x.message)))
         } else {
             warn!("could not create wallet {}: {:?}", wallet_name, x.message);
             Ok(())

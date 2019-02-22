@@ -25,7 +25,9 @@ static NSString *const VcxErrorDomain = @"VcxErrorDomain";
     //                                                                                        options:kNilOptions
     //                                                                                        error: &error];
     //
-    //       [userInfo setValue:errorDetails[@"message"] forKey:@"sdk_message"];
+    //       [userInfo setValue:errorDetails[@"error"] forKey:@"sdk_message"];
+    //        [userInfo setValue:errorDetails[@"message"] forKey:@"sdk_full_message"];
+    //        [userInfo setValue:errorDetails[@"cause"] forKey:@"sdk_cause"];
     //        [userInfo setValue:errorDetails[@"backtrace"] forKey:@"sdk_backtrace"];
     //   }
 

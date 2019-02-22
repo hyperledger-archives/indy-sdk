@@ -28,4 +28,6 @@ async def test_error_details():
     with pytest.raises(VcxError) as e:
         await vcx_agent_provision("")
     assert ErrorCode.InvalidOption == e.value.error_code
-    assert e.value.vcx_error_msg
+    assert e.value.error_msg
+    assert e.value.sdk_error_full_message
+    assert e.value.sdk_error_cause

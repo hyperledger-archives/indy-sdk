@@ -212,7 +212,8 @@ impl IssuerCredential {
             CRED_MSG.to_string()
         } else {
             let cred = self.generate_credential(&attrs_with_encodings, &to)?;
-            serde_json::to_string(&cred).or(Err(VcxError::from(VcxErrorKind::InvalidCredential)))?
+            serde_json::to_string(&cred)
+                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidCredential, format!("Cannot serialize credential: {}", err)))?
         };
 
         debug!("credential data: {}", data);

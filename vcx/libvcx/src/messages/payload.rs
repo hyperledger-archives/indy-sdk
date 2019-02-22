@@ -55,7 +55,7 @@ impl Payloads {
                 crypto::prep_msg(&my_vk, &their_vk, &bytes)
             }
             ProtocolTypes::V2 => {
-                let thread = thread.ok_or(VcxError::from(VcxErrorKind::InvalidState))?;
+                let thread = thread.ok_or(VcxError::from_msg(VcxErrorKind::InvalidState, "Cannot get thread"))?;
 
                 let payload = PayloadV2 {
                     type_: PayloadTypes::build_v2(msg_type),

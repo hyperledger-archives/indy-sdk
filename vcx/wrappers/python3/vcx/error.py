@@ -113,8 +113,9 @@ class ErrorCode(IntEnum):
 class VcxError(Exception):
     # error_code: ErrorCode
     # error_msg: Optional[str] - human-readable error description
-    # vcx_error_msg: Optional[str] - vcx error message.
-    # vcx_error_backtrace: Optional[str] - vcx error backtrace.
+    # sdk_error_full_message: Optional[str] - vcx full error message.
+    # sdk_error_cause: Optional[str] - vcx error cause.
+    # sdk_error_backtrace: Optional[str] - vcx error backtrace.
     #   Collecting of backtrace can be enabled by setting environment variable `RUST_BACKTRACE=1`
 
     def __init__(self, error_code: ErrorCode):
@@ -123,8 +124,10 @@ class VcxError(Exception):
         if error_code != ErrorCode.Success:
             error_details = get_error_details()
             if error_details:
-                self.vcx_error_msg = error_details['message']
-                self.vcx_error_backtrace = error_details['backtrace']
+                self.error_msg = error_details['error']
+                self.sdk_error_full_message = error_details['message']
+                self.sdk_error_cause = error_details['cause']
+                self.sdk_error_backtrace = error_details['backtrace']
 
 
 def error_message(error_code: int) -> str:

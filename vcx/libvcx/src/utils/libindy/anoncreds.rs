@@ -170,7 +170,7 @@ pub fn libindy_prover_get_credentials_for_proof_req(proof_req: &str) -> VcxResul
             Ok(creds)
         }
         None => {
-            Err(VcxError::from(VcxErrorKind::InvalidAttributesStructure))
+            Err(VcxError::from_msg(VcxErrorKind::InvalidAttributesStructure, "Invalid Json Parsing of Requested Attributes Retrieved From Libindy"))
         }
     }
 }

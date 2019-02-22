@@ -286,7 +286,7 @@ impl SendInviteBuilder {
                 Ok((res.invite_detail, res.url_to_invite_detail)),
             A2AMessage::Version2(A2AMessageV2::ConnectionRequestResponse(res)) =>
                 Ok((res.invite_detail, res.url_to_invite_detail)),
-            _ => return Err(VcxError::from(VcxErrorKind::InvalidHttpResponse))
+            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of ConnectionRequestResponse"))
         }
     }
 }
@@ -383,7 +383,7 @@ impl AcceptInviteBuilder {
         match response.remove(0) {
             A2AMessage::Version1(A2AMessageV1::MessageCreated(res)) => Ok(res.uid),
             A2AMessage::Version2(A2AMessageV2::ConnectionRequestAnswerResponse(res)) => Ok(res.id),
-            _ => return Err(VcxError::from(VcxErrorKind::InvalidHttpResponse))
+            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of ConnectionAnswerResponse"))
         }
     }
 }

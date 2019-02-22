@@ -29,7 +29,7 @@ pub fn create_pool_ledger_config(pool_name: &str, path: &str) -> VcxResult<()> {
         .wait() {
         Ok(x) => Ok(()),
         Err(x) => if x.error_code != ErrorCode::PoolLedgerConfigAlreadyExistsError {
-            Err(VcxError::from(VcxErrorKind::UnknownLiibndyError))
+            Err(VcxError::from_msg(VcxErrorKind::UnknownLiibndyError, x))
         } else {
             Ok(())
         }
@@ -72,8 +72,8 @@ pub fn delete(pool_name: &str) -> VcxResult<()> {
 
 pub fn get_pool_handle() -> VcxResult<i32> {
     POOL_HANDLE.read()
-        .or(Err(VcxError::from(VcxErrorKind::NoPoolOpen)))?
-        .ok_or(VcxError::from(VcxErrorKind::NoPoolOpen))
+        .or(Err(VcxError::from_msg(VcxErrorKind::NoPoolOpen, "There is no pool opened")))?
+        .ok_or(VcxError::from_msg(VcxErrorKind::NoPoolOpen, "There is no pool opened"))
 }
 
 #[cfg(test)]

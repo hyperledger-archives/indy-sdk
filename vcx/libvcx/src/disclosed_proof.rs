@@ -119,7 +119,7 @@ fn credential_def_identifiers(credentials: &str, proof_req: &ProofRequestData) -
                         tails_file,
                     }
                 );
-            } else { return Err(VcxError::from(VcxErrorKind::InvalidProofCredentialData)); }
+            } else { return Err(VcxError::from_msg(VcxErrorKind::InvalidProofCredentialData, "Cannot get identifiers")); }
         }
     }
 
@@ -128,7 +128,7 @@ fn credential_def_identifiers(credentials: &str, proof_req: &ProofRequestData) -
 
 fn _get_revocation_interval(attr_name: &str, proof_req: &ProofRequestData) -> VcxResult<Option<NonRevokedInterval>> {
     let attr = proof_req.requested_attributes.get(attr_name)
-        .ok_or(VcxError::from(VcxErrorKind::InvalidProofCredentialData))?;
+        .ok_or(VcxError::from_msg(VcxErrorKind::InvalidProofCredentialData, format!("Attribute not found for: {}", attr_name)))?;
 
     Ok(attr.non_revoked.clone().or(proof_req.non_revoked.clone().or(None)))
 
@@ -258,7 +258,7 @@ impl DisclosedProof {
 
         let proof_req = self.proof_request
             .as_ref()
-            .ok_or(VcxError::from(VcxErrorKind::NotReady))?;
+            .ok_or(VcxError::from_msg(VcxErrorKind::NotReady, "Cannot get proot request"))?;
 
         let indy_proof_req = serde_json::to_string(&proof_req.proof_request_data)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize proof request: {}", err)))?;
@@ -328,7 +328,7 @@ impl DisclosedProof {
         debug!("generating proof {}", self.source_id);
         if settings::test_indy_mode_enabled() { return Ok(error::SUCCESS.code_num); }
 
-        let proof_req = self.proof_request.as_ref().ok_or(VcxError::from(VcxErrorKind::CreateProof))?;
+        let proof_req = self.proof_request.as_ref().ok_or(VcxError::from_msg(VcxErrorKind::CreateProof, "Cannot get proof request"))?;
 
         let proof_req_data_json = serde_json::to_string(&proof_req.proof_request_data)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize proof request: {}", err)))?;
@@ -402,7 +402,7 @@ impl DisclosedProof {
             .agent_did(local_agent_did)?
             .agent_vk(local_agent_vk)?
             .edge_agent_payload(&local_my_vk, &local_their_vk, &proof, PayloadKinds::Proof, self.thread.clone())
-            .or(Err(VcxError::from(VcxErrorKind::GeneralConnectionError)))?
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::GeneralConnectionError, format!("Cannot encrypt payload: {}", err)))?
             .ref_msg_id(ref_msg_uid)?
             .send_secure()
             .map_err(|err| err.extend("Could not send proof"))?;
@@ -536,9 +536,9 @@ pub fn get_proof_request(connection_handle: u32, msg_id: &str) -> VcxResult<Stri
         let request = _parse_proof_req_message(&message[0], &my_vk)?;
 
         serde_json::to_string_pretty(&request)
-            .or(Err(VcxError::from(VcxErrorKind::InvalidJson)))
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize message: {}", err)))
     } else {
-        Err(VcxError::from(VcxErrorKind::InvalidMessages))
+        Err(VcxError::from_msg(VcxErrorKind::InvalidMessages, "Message has different type"))
     }
 }
 
@@ -571,17 +571,17 @@ pub fn get_proof_request_messages(connection_handle: u32, match_name: Option<&st
     }
 
     serde_json::to_string_pretty(&messages)
-        .or(Err(VcxError::from(VcxErrorKind::InvalidJson)))
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize proof request: {}", err)))
 }
 
 fn _parse_proof_req_message(message: &Message, my_vk: &str) -> VcxResult<ProofRequestMessage> {
     let payload = message.payload.as_ref()
-        .ok_or(VcxError::from(VcxErrorKind::InvalidHttpResponse))?;
+        .ok_or(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Cannot get payload"))?;
 
     let (request, thread) = Payloads::decrypt(&my_vk, payload)?;
 
     let mut request: ProofRequestMessage = serde_json::from_str(&request)
-        .or(Err(VcxError::from(VcxErrorKind::InvalidHttpResponse)))?;
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, format!("Cannot deserialize proof request: {}", err)))?;
 
     request.thread_id = thread.and_then(|tr| tr.thid.clone());
     request.msg_ref_id = Some(message.uid.to_owned());

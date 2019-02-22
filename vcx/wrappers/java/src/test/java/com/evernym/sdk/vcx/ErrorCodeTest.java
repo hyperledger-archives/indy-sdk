@@ -33,6 +33,8 @@ public class ErrorCodeTest {
         } catch (VcxException e){
             assert(!e.getMessage().isEmpty());
             assert(!e.getSdkMessage().isEmpty());
+            assert(!e.getSdkFullMessage().isEmpty());
+            assert(!e.getSdkCause().isEmpty());
         }
     }
 }
