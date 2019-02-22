@@ -65,7 +65,7 @@ pub struct IssuerCredential {
     remote_did: String,
     //their_pw_did for this relationship
     remote_vk: String,
-    thread: Thread
+    thread: Option<Thread>
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -173,7 +173,7 @@ impl IssuerCredential {
                 .to(&self.issued_did)?
                 .to_vk(&self.issued_vk)?
                 .msg_type(&RemoteMessageType::CredOffer)?
-                .edge_agent_payload(&self.issued_vk, &self.remote_vk, &payload, PayloadKinds::CredOffer, Some(self.thread.clone()))?
+                .edge_agent_payload(&self.issued_vk, &self.remote_vk, &payload, PayloadKinds::CredOffer, self.thread.clone())?
                 .agent_did(&self.agent_did)?
                 .agent_vk(&self.agent_vk)?
                 .set_title(&title)?
@@ -221,14 +221,14 @@ impl IssuerCredential {
         let cred_req_msg_id = self.credential_request.as_ref().and_then(|cred_req| cred_req.msg_ref_id.as_ref())
             .ok_or(IssuerCredError::InvalidCredRequest())?;
 
-        self.thread.sender_order += 1;
+        self.thread.as_mut().map(|thread| thread.sender_order += 1);
 
         let response = messages::send_message()
             .to(&self.issued_did)?
             .to_vk(&self.issued_vk)?
             .msg_type(&RemoteMessageType::Cred)?
             .status_code(&MessageStatusCode::Accepted)?
-            .edge_agent_payload(&self.issued_vk, &self.remote_vk, &data, PayloadKinds::Cred, Some(self.thread.clone()))?
+            .edge_agent_payload(&self.issued_vk, &self.remote_vk, &data, PayloadKinds::Cred, self.thread.clone())?
             .agent_did(&self.agent_did)?
             .agent_vk(&self.agent_vk)?
             .ref_msg_id(cred_req_msg_id)?
@@ -270,7 +270,8 @@ impl IssuerCredential {
         let cred_req = parse_credential_req_payload(offer_uid, payload)?;
 
         if let Some(tr) = thread {
-            self.thread.increment_receiver(self.remote_did.as_str());
+            let remote_did = self.remote_did.as_str();
+            self.thread.as_mut().map(|thread| thread.increment_receiver(&remote_did));
         }
 
         self.credential_request = Some(cred_req);
@@ -582,7 +583,7 @@ pub fn issuer_credential_create(cred_def_handle: u32,
         agent_vk: String::new(),
         cred_def_id,
         cred_def_handle,
-        thread: Thread::new(),
+        thread: Some(Thread::new()),
     };
 
     new_issuer_credential.validate_credential_offer()?;
@@ -787,12 +788,7 @@ pub mod tests {
             agent_vk: VERKEY.to_string(),
             cred_def_id: CRED_DEF_ID.to_string(),
             cred_def_handle: 0,
-            thread: Thread {
-                thid: None,
-                pthid: None,
-                sender_order: 0,
-                received_orders: HashMap::new(),
-            },
+            thread: Some(Thread::new()),
         };
         issuer_credential
     }
@@ -848,12 +844,7 @@ pub mod tests {
             agent_vk: String::new(),
             cred_def_id,
             cred_def_handle,
-            thread: Thread {
-                thid: None,
-                pthid: None,
-                sender_order: 0,
-                received_orders: HashMap::new(),
-            },
+            thread: Some(Thread::new()),
         };
 
         let payment = issuer_credential.generate_payment_info().unwrap();
@@ -1023,12 +1014,7 @@ pub mod tests {
             remote_vk: VERKEY.to_string(),
             agent_did: DID.to_string(),
             agent_vk: VERKEY.to_string(),
-            thread: Thread {
-                thid: None,
-                pthid: None,
-                sender_order: 0,
-                received_orders: HashMap::new(),
-            },
+            thread: Some(Thread::new()),
         };
 
         ::utils::httpclient::set_next_u8_response(CREDENTIAL_REQ_RESPONSE.to_vec());

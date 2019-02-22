@@ -52,7 +52,7 @@ impl Default for Credential {
             credential: None,
             payment_info: None,
             payment_txn: None,
-            thread: Thread::new(),
+            thread: Some(Thread::new())
         }
     }
 }
@@ -76,7 +76,7 @@ pub struct Credential {
     cred_id: Option<String>,
     payment_info: Option<PaymentInfo>,
     payment_txn: Option<PaymentTxn>,
-    thread: Thread
+    thread: Option<Thread>
 }
 
 impl Credential {
@@ -160,7 +160,7 @@ impl Credential {
                 .msg_type(&RemoteMessageType::CredReq)?
                 .agent_did(local_agent_did)?
                 .agent_vk(local_agent_vk)?
-                .edge_agent_payload(&local_my_vk, &local_their_vk, &cred_req_json, PayloadKinds::CredReq, Some(self.thread.clone()))?
+                .edge_agent_payload(&local_my_vk, &local_their_vk, &cred_req_json, PayloadKinds::CredReq, self.thread.clone())?
                 .ref_msg_id(&offer_msg_id)?
                 .send_secure()
                 .map_err(|err| {
@@ -188,7 +188,8 @@ impl Credential {
         let (credential, thread) = Payloads::decrypt(&my_vk, &payload)?;
 
         if let Some(_) = thread {
-            self.thread.increment_receiver(self.their_did.as_ref().map(String::as_str).unwrap_or(""));
+            let their_did = self.their_did.as_ref().map(String::as_str).unwrap_or("");
+            self.thread.as_mut().map(|thread| thread.increment_receiver(&their_did));
         }
 
         let credential_msg: CredentialMessage = serde_json::from_str(&credential)

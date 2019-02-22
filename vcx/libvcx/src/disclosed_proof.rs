@@ -45,7 +45,7 @@ impl Default for DisclosedProof {
             their_vk: None,
             agent_did: None,
             agent_vk: None,
-            thread: Thread::new()
+            thread: Some(Thread::new())
         }
     }
 }
@@ -63,7 +63,7 @@ pub struct DisclosedProof {
     their_vk: Option<String>,
     agent_did: Option<String>,
     agent_vk: Option<String>,
-    thread: Thread
+    thread: Option<Thread>
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -414,7 +414,8 @@ impl DisclosedProof {
             true => DEFAULT_GENERATED_PROOF.to_string(),
         };
 
-        self.thread.increment_receiver(self.their_did.as_ref().map(String::as_str).unwrap_or(""));
+        let their_did = self.their_did.as_ref().map(String::as_str).unwrap_or("");
+        self.thread.as_mut().map(|thread| thread.increment_receiver(&their_did));
 
         messages::send_message()
             .to(local_my_did)?
@@ -422,7 +423,7 @@ impl DisclosedProof {
             .msg_type(&RemoteMessageType::Proof)?
             .agent_did(local_agent_did)?
             .agent_vk(local_agent_vk)?
-            .edge_agent_payload(&local_my_vk, &local_their_vk, &proof, PayloadKinds::Proof, Some(self.thread.clone())).or(Err(ProofError::ProofConnectionError()))?
+            .edge_agent_payload(&local_my_vk, &local_their_vk, &proof, PayloadKinds::Proof, self.thread.clone()).or(Err(ProofError::ProofConnectionError()))?
             .ref_msg_id(ref_msg_uid)?
             .send_secure()
             .map_err(|err| {
