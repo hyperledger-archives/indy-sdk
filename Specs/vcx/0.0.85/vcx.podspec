@@ -13,7 +13,7 @@
 
 Pod::Spec.new do |s|
   s.name             = 'vcx'
-  s.version          = '0.0.83'
+  s.version          = '0.0.85'
   s.summary          = 'The Objective-C wrapper around the libvcx shared library.'
 
 # This description is used to generate tags and improve search results.
