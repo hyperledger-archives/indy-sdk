@@ -1,6 +1,9 @@
 package com.evernym.sdk.vcx;
 
 
+import com.evernym.sdk.vcx.connection.ConnectionApi;
+import java9.util.concurrent.CompletableFuture;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 
 import static com.evernym.sdk.vcx.ErrorCode.CONNECTION_ERROR;
@@ -20,5 +23,16 @@ public class ErrorCodeTest {
     public void assertKnownErrorCodeisHandled(){
         ErrorCode errorCode = ErrorCode.valueOf(1002);
         assertEquals(CONNECTION_ERROR,errorCode);
+    }
+
+    @Test
+    public void testGetErrorDetails(){
+        try {
+            CompletableFuture<String> future = ConnectionApi.connectionSerialize(0);
+            Awaitility.await().until(future::isDone);
+        } catch (VcxException e){
+            assert(!e.getMessage().isEmpty());
+            assert(!e.getSdkMessage().isEmpty());
+        }
     }
 }
