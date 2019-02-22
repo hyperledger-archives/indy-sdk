@@ -269,6 +269,34 @@ pub extern fn vcx_mint_tokens(seed: *const c_char, fees: *const c_char) {
     ::utils::libindy::payments::mint_tokens_and_set_fees(None, None, fees, seed).unwrap_or_default();
 }
 
+/// Get details for last occurred error.
+///
+/// This function should be called in two places to handle both cases of error occurrence:
+///     1) synchronous  - in the same application thread
+///     2) asynchronous - inside of function callback
+///
+/// NOTE: Error is stored until the next one occurs in the same execution thread or until asynchronous callback finished.
+///       Returning pointer has the same lifetime.
+///
+/// #Params
+/// * `error_json_p` - Reference that will contain error details (if any error has occurred before)
+///  in the format:
+/// {
+///     "backtrace": Optional<str> - error backtrace.
+///         Collecting of backtrace can be enabled by setting environment variable `RUST_BACKTRACE=1`
+///     "message": str - human-readable error description
+/// }
+///
+#[no_mangle]
+pub extern fn vcx_get_current_error(error_json_p: *mut *const c_char) {
+    trace!("vcx_get_current_error >>> error_json_p: {:?}", error_json_p);
+
+    let error = get_current_error_c_json();
+    unsafe { *error_json_p = error };
+
+    trace!("vcx_get_current_error: <<<");
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -772,5 +800,36 @@ mod tests {
         cb.receive(Some(Duration::from_secs(10))).unwrap();
         assert_ne!(get_pool_handle().unwrap(), 0);
         debug!("This statement should log");
+    }
+
+    #[test]
+    fn get_current_error_works_for_no_error() {
+        let mut error_json_p: *const c_char = ptr::null();
+
+        vcx_get_current_error(&mut error_json_p);
+        assert_eq!(None, CStringUtils::c_str_to_string(error_json_p).unwrap());
+    }
+
+    #[test]
+    fn get_current_error_works_for_sync_error() {
+        ::api::utils::vcx_provision_agent(ptr::null());
+
+        let mut error_json_p: *const c_char = ptr::null();
+        vcx_get_current_error(&mut error_json_p);
+        assert!(CStringUtils::c_str_to_string(error_json_p).unwrap().is_some());
+    }
+
+    #[test]
+    fn get_current_error_works_for_async_error() {
+        extern fn cb(storage_handle: u32,
+                     err: u32,
+                     config: *const c_char) {
+            let mut error_json_p: *const c_char = ptr::null();
+            vcx_get_current_error(&mut error_json_p);
+            assert!(CStringUtils::c_str_to_string(error_json_p).unwrap().is_some());
+        }
+
+        let config = CString::new("{}").unwrap();
+        ::api::utils::vcx_agent_provision_async(0, config.as_ptr(), Some(cb));
     }
 }

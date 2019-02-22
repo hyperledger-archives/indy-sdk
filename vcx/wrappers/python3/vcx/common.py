@@ -97,27 +97,28 @@ def create_cb(cb_type: CFUNCTYPE, transform_fn=None):
     def _cb(command_handle: int, err: int, *args):
         if transform_fn:
             args = transform_fn(*args)
-        _cxs_callback(command_handle, err, *args)
+        error = VcxError(ErrorCode(err))
+        _cxs_callback(command_handle, error, *args)
 
     res = cb_type(_cb)
 
     return res
 
 
-def _cxs_callback(command_handle: int, err: int, *args):
+def _cxs_callback(command_handle: int, err: VcxError, *args):
     (event_loop, future) = _futures[command_handle]
     event_loop.call_soon_threadsafe(_cxs_loop_callback, command_handle, err, *args)
 
 
-def _cxs_loop_callback(command_handle: int, err, *args):
+def _cxs_loop_callback(command_handle: int, err: VcxError, *args):
 
     (event_loop, future) = _futures.pop(command_handle)
 
     if future.cancelled():
         print("_indy_loop_callback: Future was cancelled earlier")
     else:
-        if err != ErrorCode.Success:
-            future.set_exception(VcxError(ErrorCode(err)))
+        if err.error_code != ErrorCode.Success:
+            future.set_exception(err)
         else:
             if len(args) == 0:
                 res = None

@@ -1,8 +1,11 @@
+import json
+
 LIBRARY = "libvcx.so"
 from vcx.cdll import _cdll
 from enum import IntEnum
-from ctypes import c_char_p, cast, c_uint32
+from ctypes import c_char_p, byref, c_uint32
 import logging
+from typing import Optional
 
 
 class ErrorCode(IntEnum):
@@ -55,7 +58,7 @@ class ErrorCode(IntEnum):
     InvalidMasterSecret = 1043,
     AlreadyInitialized = 1044,
     InvalidInviteDetails = 1045,
-    InvalidSelfAttestedVal =  1046,
+    InvalidSelfAttestedVal = 1046,
     InvalidPredicate = 1047,
     InvalidObjHandle = 1048,
     InvalidDisclosedProofHandle = 1049,
@@ -109,10 +112,19 @@ class ErrorCode(IntEnum):
 
 class VcxError(Exception):
     # error_code: ErrorCode
+    # error_msg: Optional[str] - human-readable error description
+    # vcx_error_msg: Optional[str] - vcx error message.
+    # vcx_error_backtrace: Optional[str] - vcx error backtrace.
+    #   Collecting of backtrace can be enabled by setting environment variable `RUST_BACKTRACE=1`
 
     def __init__(self, error_code: ErrorCode):
         self.error_code = error_code
         self.error_msg = error_message(error_code)
+        if error_code != ErrorCode.Success:
+            error_details = get_error_details()
+            if error_details:
+                self.vcx_error_msg = error_details['message']
+                self.vcx_error_backtrace = error_details['backtrace']
 
 
 def error_message(error_code: int) -> str:
@@ -123,3 +135,15 @@ def error_message(error_code: int) -> str:
     err_msg = getattr(_cdll(), name)(c_error_code)
     logger.debug("error_message: Function %s[%s] returned error_message: %s", name, error_code, err_msg)
     return err_msg.decode()
+
+
+def get_error_details() -> Optional[dict]:
+    logger = logging.getLogger(__name__)
+    logger.debug("get_error_details: >>>")
+
+    error_c = c_char_p()
+    getattr(_cdll(), 'vcx_get_current_error')(byref(error_c))
+    error_details = json.loads(error_c.value.decode()) if error_c.value else None
+
+    logger.debug("get_error_details: <<< error_details: %s", error_details)
+    return error_details
