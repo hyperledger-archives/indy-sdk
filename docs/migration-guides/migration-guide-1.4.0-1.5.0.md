@@ -48,8 +48,8 @@ Functions from older version are listed in the left column, and the equivalent n
 
 References:
 
-* [Wallet Storage Design](https://github.com/hyperledger/indy-sdk/tree/master/doc/design/003-wallet-storage)
-* [Wallet Export/Import Design](https://github.com/hyperledger/indy-sdk/tree/master/doc/design/009-wallet-export-import)
+* [Wallet Storage Design](https://github.com/hyperledger/indy-sdk/tree/master/docs/design/003-wallet-storage)
+* [Wallet Export/Import Design](https://github.com/hyperledger/indy-sdk/tree/master/docs/design/009-wallet-export-import)
 
 <table>
   <tr>  
@@ -256,7 +256,7 @@ identity data in the wallet. This API doesn't have an access to secrets stored i
 
 References:
 
-* [Wallet Storage Design](https://github.com/hyperledger/indy-sdk/tree/master/doc/design/003-wallet-storage)
+* [Wallet Storage Design](https://github.com/hyperledger/indy-sdk/tree/master/docs/design/003-wallet-storage)
 
 <table>  
   <tr>
@@ -490,7 +490,7 @@ in the future releases.
 
 References:
 
-* [Payment Interface Design](https://github.com/hyperledger/indy-sdk/tree/master/doc/design/004-payment-interface)
+* [Payment Interface Design](https://github.com/hyperledger/indy-sdk/tree/master/docs/design/004-payment-interface)
 
 <table>
   <tr>
