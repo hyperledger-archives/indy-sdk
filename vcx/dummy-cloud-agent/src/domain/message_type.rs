@@ -1,6 +1,6 @@
 use serde::{de, Deserializer, Deserialize, Serializer, Serialize};
 use serde_json::Value;
-use regex::Regex;
+use regex::{Regex, Match};
 use failure::{err_msg, Error};
 use domain::a2a::A2AMessageKinds;
 
@@ -103,10 +103,10 @@ fn parse_message_type(message_type: &str) -> Result<(String, String, String, Str
 
     RE.captures(message_type)
         .and_then(|cap| {
-            let did = cap.name("did").map(|s| s.as_str());
-            let family = cap.name("family").map(|s| s.as_str());
-            let version = cap.name("version").map(|s| s.as_str());
-            let type_ = cap.name("type").map(|s| s.as_str());
+            let did = cap.name("did").as_ref().map(Match::as_str);
+            let family = cap.name("family").as_ref().map(Match::as_str);
+            let version = cap.name("version").as_ref().map(Match::as_str);
+            let type_ = cap.name("type").as_ref().map(Match::as_str);
 
             match (did, family, version, type_) {
                 (Some(did), Some(family), Some(version), Some(type_)) =>
