@@ -35,7 +35,7 @@ Functions from version 1.3.0 are listed in the left column, and the equivalent 1
 
 ### Anoncreds API mapping
 Anoncreds API is the most affected part of Libindy. 
-The complete design of Anoncreds can be found [here](https://github.com/hyperledger/indy-sdk/tree/master/doc/design/anoncreds).
+The complete design of Anoncreds can be found [here](https://github.com/hyperledger/indy-sdk/tree/master/docs/design/anoncreds).
 
 Here are three main types of changes that have been done:
 * Improved support of Revocation.
