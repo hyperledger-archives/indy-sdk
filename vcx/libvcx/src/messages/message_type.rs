@@ -7,7 +7,6 @@ use messages::A2AMessageKinds;
 use utils::error;
 
 pub const MESSAGE_VERSION_V1: &str = "1.0";
-pub const MESSAGE_VERSION_V2: &str = "2.0";
 pub const DID: &str = "did:sov:123456789abcdefghi1234";
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
@@ -29,7 +28,7 @@ impl MessageTypes {
         MessageTypeV2 {
             did: DID.to_string(),
             family: kind.family(),
-            version: MESSAGE_VERSION_V2.to_string(),
+            version: kind.family().version().to_string(),
             type_: kind.name(),
         }
     }
@@ -45,13 +44,6 @@ impl MessageTypes {
         match self {
             MessageTypes::MessageTypeV1(type_) => type_.name.as_str(),
             MessageTypes::MessageTypeV2(type_) => type_.type_.as_str(),
-        }
-    }
-
-    pub fn version<'a>(&'a self) -> &'a str {
-        match self {
-            MessageTypes::MessageTypeV1(type_) => type_.ver.as_str(),
-            MessageTypes::MessageTypeV2(type_) => type_.version.as_str(),
         }
     }
 }
@@ -78,6 +70,19 @@ pub enum MessageFamilies {
     Configs,
     CredentialExchange,
     Unknown(String),
+}
+
+impl MessageFamilies {
+    pub fn version(&self) -> &'static str {
+        match self {
+            MessageFamilies::Routing => "2.0",
+            MessageFamilies::Onboarding => "2.0",
+            MessageFamilies::Pairwise => "2.0",
+            MessageFamilies::Configs => "2.0",
+            MessageFamilies::CredentialExchange => "2.0",
+            _ => "2.0"
+        }
+    }
 }
 
 impl From<String> for MessageFamilies {
