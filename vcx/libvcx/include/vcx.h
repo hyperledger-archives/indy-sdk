@@ -1623,7 +1623,7 @@ vcx_error_t vcx_get_logger(const void*  vcx_get_logger,
 ///     "message": str - human-readable error description
 /// }
 ///
-vcx_error_t vcx_current_error(const char ** error_json_p);
+vcx_error_t vcx_get_current_error(const char ** error_json_p);
 
 #ifdef __cplusplus
 } // extern "C"

@@ -26,7 +26,7 @@ pub enum VcxErrorKind {
     InvalidJson,
     #[fail(display = "Invalid Option")]
     InvalidOption,
-    #[fail(display = "Invalid message pack")]
+    #[fail(display = "Invalid MessagePack")]
     InvalidMessagePack,
     #[fail(display = "Object cache error")]
     ObjectCacheError,
@@ -44,19 +44,19 @@ pub enum VcxErrorKind {
     AlreadyInitialized,
 
     // Connection
-    #[fail(display = "Cannot create connection")]
+    #[fail(display = "Could not create connection")]
     CreateConnection,
-    #[fail(display = "Invalid connection handle")]
+    #[fail(display = "Invalid Connection Handle")]
     InvalidConnectionHandle,
-    #[fail(display = "Invalid invite detail")]
+    #[fail(display = "Invalid invite details structure")]
     InvalidInviteDetail,
-    #[fail(display = "Cannot delete connection")]
+    #[fail(display = "Cannot Delete Connection. Check status of connection is appropriate to be deleted from agency.")]
     DeleteConnection,
     #[fail(display = "Error with Connection")]
     GeneralConnectionError,
 
     // Payment
-    #[fail(display = "Payment information not found")]
+    #[fail(display = "No payment information associated with object")]
     NoPaymentInformation,
     #[fail(display = "Insufficient amount of tokens to process request")]
     InsufficientTokenAmount,
@@ -64,19 +64,19 @@ pub enum VcxErrorKind {
     InvalidPaymentAddress,
 
     // Credential Definition error
-    #[fail(display = "Cannot create credential definition")]
+    #[fail(display = "Call to create Credential Definition failed")]
     CreateCredDef,
-    #[fail(display = "Credential definition already created")]
+    #[fail(display = "Can't create, Credential Def already on ledger")]
     CredDefAlreadyCreated,
-    #[fail(display = "Invalid credential definition handle")]
+    #[fail(display = "Invalid Credential Definition handle")]
     InvalidCredDefHandle,
 
     // Revocation
-    #[fail(display = "Cannot create revocation registry definition")]
+    #[fail(display = "Failed to create Revocation Registration Definition")]
     CreateRevRegDef,
-    #[fail(display = "Invalid revocation deltas")]
+    #[fail(display = "Invalid Revocation Details")]
     InvalidRevocationDetails,
-    #[fail(display = "Invalid revocation entry")]
+    #[fail(display = "Unable to Update Revocation Delta On Ledger")]
     InvalidRevocationEntry,
     #[fail(display = "Invalid Credential Revocation timestamp")]
     InvalidRevocationTimestamp,
@@ -88,11 +88,11 @@ pub enum VcxErrorKind {
     CreateCredentialRequest,
 
     // Issuer Credential
-    #[fail(display = "Invalid issuer credential handle")]
+    #[fail(display = "Invalid Credential Issuer Handle")]
     InvalidIssuerCredentialHandle,
     #[fail(display = "Invalid Credential Request")]
     InvalidCredentialRequest,
-    #[fail(display = "Invalid Credential")]
+    #[fail(display = "Invalid credential json")]
     InvalidCredential,
     #[fail(display = "Attributes provided to Credential Offer are not correct, possibly malformed")]
     InvalidAttributesStructure,
@@ -100,7 +100,7 @@ pub enum VcxErrorKind {
     // Proof
     #[fail(display = "Invalid proof handle")]
     InvalidProofHandle,
-    #[fail(display = "Invalid disclosed proof handle")]
+    #[fail(display = "Obj was not found with handle")]
     InvalidDisclosedProofHandle,
     #[fail(display = "Proof had invalid format")]
     InvalidProof,
@@ -132,7 +132,7 @@ pub enum VcxErrorKind {
     InvalidLedgerResponse,
     #[fail(display = "No Pool open. Can't return handle.")]
     NoPoolOpen,
-    #[fail(display = "Message failed in post.")]
+    #[fail(display = "Message failed in post")]
     PostMessageFailed,
 
     // Wallet

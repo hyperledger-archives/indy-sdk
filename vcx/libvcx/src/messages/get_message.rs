@@ -289,7 +289,7 @@ pub fn get_connection_messages(pw_did: &str, pw_vk: &str, agent_did: &str, agent
         .agent_vk(&agent_vk)?
         .uid(msg_uid)?
         .send_secure()
-        .map_err(|err| err.extend("Cannot get messages"))?;
+        .map_err(|err| err.map(VcxErrorKind::PostMessageFailed, "Cannot get messages"))?;
 
     trace!("message returned: {:?}", response);
     Ok(response)
