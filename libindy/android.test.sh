@@ -71,6 +71,9 @@ execute_on_device(){
     adb -e push \
     "${LIBZMQ_LIB_DIR}/libzmq.so" "/data/local/tmp/libzmq.so"
 
+    adb -e push \
+    "${LIBINDY_WORKDIR}/target/${TRIPLET}/release/libindy.so" "/data/local/tmp/libindy.so"
+
     adb -e logcat | grep indy &
 
     for i in "${EXE_ARRAY[@]}"
