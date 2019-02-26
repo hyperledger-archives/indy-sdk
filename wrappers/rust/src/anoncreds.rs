@@ -384,6 +384,7 @@ fn _prover_get_credential(command_handle: IndyHandle, wallet_handle: IndyHandle,
 ///      "nonce": string
 ///    }
 /// * `cred_req_metadata_json`: Credential request metadata json for further processing of received form Issuer credential.
+///     Note: cred_req_metadata_json mustn't be shared with Issuer.
 pub fn prover_create_credential_req(wallet_handle: IndyHandle, prover_did: &str, cred_offer_json: &str, cred_def_json: &str, master_secret_id: &str) -> Box<Future<Item=(String, String), Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_string();
 
@@ -914,7 +915,7 @@ fn _prover_close_credentials_search_for_proof_req(command_handle: IndyHandle, se
 /// Each proof is associated with a credential and corresponding schema_id, cred_def_id, rev_reg_id and timestamp.
 /// There is also aggregated proof part common for all credential proofs.
 ///     {
-///         "requested": {
+///         "requested_proof": {
 ///             "revealed_attrs": {
 ///                 "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string},
 ///                 "requested_attr4_id": {sub_proof_index: number: string, encoded: string},
@@ -983,7 +984,7 @@ fn _prover_create_proof(command_handle: IndyHandle, wallet_handle: IndyHandle, p
 ///     }
 /// * `proof_json`: created for request proof json
 ///     {
-///         "requested": {
+///         "requested_proof": {
 ///             "revealed_attrs": {
 ///                 "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string},
 ///                 "requested_attr4_id": {sub_proof_index: number: string, encoded: string},
