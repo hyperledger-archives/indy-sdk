@@ -1006,16 +1006,15 @@ impl<'de> Deserialize<'de> for A2AMessage {
         let value = Value::deserialize(deserializer).map_err(de::Error::custom)?;
         let message_type: MessageTypes = serde_json::from_value(value["@type"].clone()).map_err(de::Error::custom)?;
 
-        match message_type.version() {
-            "1.0" =>
+        match message_type {
+            MessageTypes::MessageTypeV1(_) =>
                 A2AMessageV1::deserialize(value)
                     .map(|msg| A2AMessage::Version1(msg))
                     .map_err(de::Error::custom),
-            "2.0" =>
+            MessageTypes::MessageTypeV2(_) =>
                 A2AMessageV2::deserialize(value)
                     .map(|msg| A2AMessage::Version2(msg))
                     .map_err(de::Error::custom),
-            _ => Err(de::Error::custom("Unexpected @type field structure."))
         }
     }
 }
