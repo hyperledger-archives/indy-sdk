@@ -120,6 +120,8 @@ def runValdiationRust(dir) {
             testEnv = dockerBuild("static-validation-libindy", "libindy/ci/ubuntu.dockerfile libindy/ci")
         }
         testEnv.inside {
+            //FIXME waiting on IS-823
+            //sh "cargo clippy --manifest-path ${dir}/Cargo.toml"
             sh "cargo clippy --manifest-path ${dir}/Cargo.toml -- -W clippy::style -W clippy::correctness -W clippy::complexity -W clippy::perf"
         }
     }
