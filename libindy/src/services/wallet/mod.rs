@@ -239,9 +239,18 @@ impl WalletService {
         Ok(())
     }
 
+    fn _map_wallet_storage_error(err: IndyError, type_: &str, name: &str) -> IndyError {
+        match err.kind() {
+            IndyErrorKind::WalletItemAlreadyExists => err_msg(IndyErrorKind::WalletItemAlreadyExists, format!("Wallet item already exists with type: {}, id: {}", type_, name)),
+            IndyErrorKind::WalletItemNotFound => err_msg(IndyErrorKind::WalletItemNotFound, format!("Wallet item not found with type: {}, id: {}", type_, name)),
+            _ => err
+        }
+    }
+
     pub fn add_record(&self, wallet_handle: i32, type_: &str, name: &str, value: &str, tags: &Tags) -> IndyResult<()> {
         match self.wallets.borrow_mut().get_mut(&wallet_handle) {
-            Some(wallet) => wallet.add(type_, name, value, tags),
+            Some(wallet) => wallet.add(type_, name, value, tags)
+                .map_err(|err| WalletService::_map_wallet_storage_error(err, type_, name)),
             None => Err(err_msg(IndyErrorKind::InvalidWalletHandle, "Unknown wallet handle"))
         }
     }
@@ -259,7 +268,9 @@ impl WalletService {
 
     pub fn update_record_value(&self, wallet_handle: i32, type_: &str, name: &str, value: &str) -> IndyResult<()> {
         match self.wallets.borrow().get(&wallet_handle) {
-            Some(wallet) => wallet.update(type_, name, value),
+            Some(wallet) =>
+                wallet.update(type_, name, value)
+                    .map_err(|err| WalletService::_map_wallet_storage_error(err, type_, name)),
             None => Err(err_msg(IndyErrorKind::InvalidWalletHandle, "Unknown wallet handle"))
         }
     }
@@ -279,28 +290,32 @@ impl WalletService {
 
     pub fn add_record_tags(&self, wallet_handle: i32, type_: &str, name: &str, tags: &Tags) -> IndyResult<()> {
         match self.wallets.borrow_mut().get_mut(&wallet_handle) {
-            Some(wallet) => wallet.add_tags(type_, name, tags),
+            Some(wallet) => wallet.add_tags(type_, name, tags)
+                .map_err(|err| WalletService::_map_wallet_storage_error(err, type_, name)),
             None => Err(err_msg(IndyErrorKind::InvalidWalletHandle, "Unknown wallet handle"))
         }
     }
 
     pub fn update_record_tags(&self, wallet_handle: i32, type_: &str, name: &str, tags: &Tags) -> IndyResult<()> {
         match self.wallets.borrow_mut().get_mut(&wallet_handle) {
-            Some(wallet) => wallet.update_tags(type_, name, tags),
+            Some(wallet) => wallet.update_tags(type_, name, tags)
+                .map_err(|err| WalletService::_map_wallet_storage_error(err, type_, name)),
             None => Err(err_msg(IndyErrorKind::InvalidWalletHandle, "Unknown wallet handle"))
         }
     }
 
     pub fn delete_record_tags(&self, wallet_handle: i32, type_: &str, name: &str, tag_names: &[&str]) -> IndyResult<()> {
         match self.wallets.borrow().get(&wallet_handle) {
-            Some(wallet) => wallet.delete_tags(type_, name, tag_names),
+            Some(wallet) => wallet.delete_tags(type_, name, tag_names)
+                .map_err(|err| WalletService::_map_wallet_storage_error(err, type_, name)),
             None => Err(err_msg(IndyErrorKind::InvalidWalletHandle, "Unknown wallet handle"))
         }
     }
 
     pub fn delete_record(&self, wallet_handle: i32, type_: &str, name: &str) -> IndyResult<()> {
         match self.wallets.borrow().get(&wallet_handle) {
-            Some(wallet) => wallet.delete(type_, name),
+            Some(wallet) => wallet.delete(type_, name)
+                .map_err(|err| WalletService::_map_wallet_storage_error(err, type_, name)),
             None => Err(err_msg(IndyErrorKind::InvalidWalletHandle, "Unknown wallet handle"))
         }
     }
@@ -311,7 +326,9 @@ impl WalletService {
 
     pub fn get_record(&self, wallet_handle: i32, type_: &str, name: &str, options_json: &str) -> IndyResult<WalletRecord> {
         match self.wallets.borrow().get(&wallet_handle) {
-            Some(wallet) => wallet.get(type_, name, options_json),
+            Some(wallet) =>
+                wallet.get(type_, name, options_json)
+                    .map_err(|err| WalletService::_map_wallet_storage_error(err, type_, name)),
             None => Err(err_msg(IndyErrorKind::InvalidWalletHandle, "Unknown wallet handle"))
         }
     }
@@ -959,7 +976,6 @@ mod tests {
 
         let res = wallet_service.delete_wallet(&_config(), &ARGON_INT_CREDENTIAL);
         assert_eq!(IndyErrorKind::WalletAccessFailed, res.unwrap_err().kind());
-
     }
 
     #[test]
