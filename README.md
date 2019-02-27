@@ -237,7 +237,7 @@ Use method 3 to configure the IPs of the docker containers to match the pool.**
 Start the pool of local nodes on `127.0.0.1:9701-9708` with Docker by running:
 
 ```
-docker build -f ci/indy-pool.dockerfile -t indy_pool .
+docker build -f ci/ubuntu.dockerfile -t indy_pool .
 docker run -itd -p 9701-9708:9701-9708 indy_pool
 ```
 
