@@ -199,7 +199,9 @@ def macosModuleTesting(library) {
 def androidTesting() {
     env_name = "android_on_linux"
     network_name = "pool_network"
-    linuxModuleTesting("ci/ubuntu.dockerfile ci", env_name, network_name, this.&linuxAndroidOnEmulatorTesting, "android")
+    linuxModuleTesting("ci/ubuntu.dockerfile ci", env_name, network_name, this.&linuxLibindyAndroidOnEmulatorTesting, "android")
+    linuxModuleTesting("ci/ubuntu.dockerfile ci", env_name, network_name, this.&linuxLibnullpayAndroidOnEmulatorTesting, "android")
+    linuxModuleTesting("ci/ubuntu.dockerfile ci", env_name, network_name, this.&linuxLibvcxAndroidOnEmulatorTesting, "android")
 }
 
 def iosTesting() {
@@ -531,7 +533,7 @@ def linuxModuleTesting(file, env_name, network_name, module_tester, node_label) 
     }
 }
 
-def linuxAndroidOnEmulatorTesting(env_name, network_name, testEnv) {
+def linuxLibindyAndroidOnEmulatorTesting(env_name, network_name, testEnv) {
     sh 'chmod -R 777 libindy/ci/*.sh'
     sh 'chmod -R 777 libindy/*.sh'
 
@@ -540,6 +542,39 @@ def linuxAndroidOnEmulatorTesting(env_name, network_name, testEnv) {
     echo "${env_name} Libindy Test: Test on ${emu_arch} emulator"
     testEnv.inside("--network=${network_name}") {
         sh "cd libindy && ./android.test.sh ${emu_arch} --release"
+        //TODO: Fix target from hardcoded
+        stash includes: "libindy/target/i686-linux-android/release/libindy.so", name: "AndroidLibindySo"
+    }
+}
+
+def linuxLibnullpayAndroidOnEmulatorTesting(env_name, network_name, testEnv) {
+    sh 'chmod -R 777 libnullpay/ci/*.sh'
+    sh 'chmod -R 777 libnullpay/*.sh'
+
+    def emu_arch = "x86"
+
+    echo "${env_name} Libnullpay Test: Test on ${emu_arch} emulator"
+    testEnv.inside("--network=${network_name}") {
+        sh "cd libnullpay && ./android.test.sh ${emu_arch} --release"
+        //TODO: Fix target from hardcoded
+        stash includes: "libnullpay/target/i686-linux-android/release/libnullpay.so", name: "AndroidLibnullpaySo"
+    }
+}
+
+def linuxLibvcxAndroidOnEmulatorTesting(env_name, network_name, testEnv) {
+    sh 'chmod -R 777 vcx/libvcx/ci/*.sh'
+    sh 'chmod -R 777 vcx/libvcx/*.sh'
+
+    def emu_arch = "x86"
+
+    echo "${env_name} LibVCX Test: Test on ${emu_arch} emulator"
+    testEnv.inside("--network=${network_name}") {
+        unstash name: "AndroidLibindySo"
+        sh "mkdir /libindy && cp libindy/target/i686-linux-android/release/libindy.so /libindy"
+        unstash name: "AndroidLibnullpaySo"
+        sh "cp libnullpay/target/i686-linux-android/release/libindy.so vcx/libvcx"
+        sh "cd vcx/dummy-cloud-agent && cargo run sample-config.json &"
+        sh "LIBINDY_DIR=/libindy cd vcx/libvcx && ./android.test.sh ${emu_arch} --release"
     }
 }
 
