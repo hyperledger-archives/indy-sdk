@@ -18,15 +18,11 @@ fn _serialize_signature(v: Value, is_top_level: bool, _type: Option<&str>) -> Re
         Value::Number(value) => Ok(value.to_string()),
         Value::String(value) => Ok(value),
         Value::Array(array) => {
-            let mut result = "".to_string();
-            let length = array.len();
-            for (index, element) in array.iter().enumerate() {
-                result += &_serialize_signature(element.clone(), false, _type)?;
-                if index < length - 1 {
-                    result += ",";
-                }
-            }
-            Ok(result)
+            array
+                .into_iter()
+                .map(|element| _serialize_signature(element, false, _type))
+                .collect::<Result<Vec<String>, IndyError>>()
+                .map(|res| res.join(","))
         }
         Value::Object(map) => {
             let mut result = "".to_string();
