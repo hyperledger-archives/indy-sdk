@@ -199,7 +199,7 @@ def macosModuleTesting(library) {
 def androidTesting() {
     env_name = "android_on_linux"
     network_name = "pool_network"
-    linuxModuleTesting("ci/ubuntu.dockerfile ci", env_name, network_name, this.&linuxAndroidOnEmulatorTesting)
+    linuxModuleTesting("ci/ubuntu.dockerfile ci", env_name, network_name, this.&linuxAndroidOnEmulatorTesting, "android")
 }
 
 def iosTesting() {
@@ -510,7 +510,11 @@ def linuxVcxBuild(file, env_name, network_name) {
 }
 
 def linuxModuleTesting(file, env_name, network_name, module_tester) {
-    node('ubuntu') {
+    linuxModuleTesting(file, env_name, network_name, module_tester, android)
+}
+
+def linuxModuleTesting(file, env_name, network_name, module_tester, node_label) {
+    node(node_label) {
         def poolInst
         try {
             echo "${env_name} Test: Checkout csm"
