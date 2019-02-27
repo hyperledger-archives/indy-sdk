@@ -1524,6 +1524,6 @@ def androidBuildAsTesting() {
 
 def setupBrewPackages() {
     sh "brew switch libsodium 1.0.12"
-    sh "brew switch openssl 1.0.2l"
+    sh "brew switch openssl 1.0.2q"
     sh "brew switch zeromq 4.2.3"
 }
