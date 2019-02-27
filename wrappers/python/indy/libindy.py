@@ -9,6 +9,7 @@ import sys
 import itertools
 import logging
 from logging import ERROR, WARNING, INFO, DEBUG
+from typing import Optional
 
 TRACE = 5
 
@@ -70,18 +71,17 @@ def _get_indy_error(err: int) -> IndyError:
         return IndyError(ErrorCode(err))
     else:
         error_details = _get_error_details()
-        error = IndyError(ErrorCode(err), error_details['message'])
-        error.indy_backtrace = error_details['backtrace']
+        error = IndyError(ErrorCode(err), error_details)
         return error
 
 
-def _get_error_details() -> dict:
+def _get_error_details() -> Optional[dict]:
     logger = logging.getLogger(__name__)
     logger.debug("_get_error_details: >>>")
 
     error_c = c_char_p()
     getattr(_cdll(), 'indy_get_current_error')(byref(error_c))
-    error_details = json.loads(error_c.value.decode())
+    error_details = json.loads(error_c.value.decode()) if error_c.value else None
 
     logger.debug("_get_error_details: <<< error_details: %s", error_details)
     return error_details
