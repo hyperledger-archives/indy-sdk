@@ -1464,7 +1464,11 @@ def androidPublishArtifact(buildEnv, arch, packageVersion, artifact) {
 }
 
 def linuxModuleTesting(file, env_name, network_name, module_tester, stashBuildResults) {
-    node('ubuntu') {
+    linuxModuleTesting(file, env_name, network_name, module_tester, stashBuildResults, 'ubuntu')
+}
+
+def linuxModuleTesting(file, env_name, network_name, module_tester, stashBuildResults, node_label) {
+    node(node_label) {
         def poolInst
         try {
             echo "${env_name} Test: Checkout csm"
@@ -1486,7 +1490,7 @@ def androidTesting() {
     network_name = "pool_network"
     parallel([
             "${env_name}-android-test"    : {
-                linuxModuleTesting("ci/ubuntu.dockerfile ci", env_name, network_name, this.&linuxAndroidOnEmulatorTesting, false)
+                linuxModuleTesting("ci/ubuntu.dockerfile ci", env_name, network_name, this.&linuxAndroidOnEmulatorTesting, false, 'android')
             },
             "${env_name}-android-building": { androidBuildAsTesting() }
     ])
