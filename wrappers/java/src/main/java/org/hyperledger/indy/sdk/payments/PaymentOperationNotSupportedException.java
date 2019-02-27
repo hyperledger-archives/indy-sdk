@@ -13,14 +13,4 @@ public class PaymentOperationNotSupportedException extends IndyException {
 	public PaymentOperationNotSupportedException() {
 		super(message, ErrorCode.PaymentOperationNotSupportedError.value());
 	}
-
-	/**
-	 * Initializes a new {@link PaymentOperationNotSupportedException} with the specified message.
-	 *
-	 * @param sdkMessage The SDK error message.
-	 * @param sdkBacktrace The SDK error backtrace.
-	 */
-	public PaymentOperationNotSupportedException(String sdkMessage, String sdkBacktrace) {
-		super(sdkMessage, ErrorCode.PaymentOperationNotSupportedError.value(), sdkBacktrace);
-	}
 }
