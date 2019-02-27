@@ -548,7 +548,6 @@ def linuxLibindyAndroidOnEmulatorTesting(env_name, network_name, testEnv) {
 }
 
 def linuxLibnullpayAndroidOnEmulatorTesting(env_name, network_name, testEnv) {
-    sh 'chmod -R 777 libnullpay/ci/*.sh'
     sh 'chmod -R 777 libnullpay/*.sh'
 
     def emu_arch = "x86"
