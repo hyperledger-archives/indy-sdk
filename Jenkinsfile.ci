@@ -510,7 +510,7 @@ def linuxVcxBuild(file, env_name, network_name) {
 }
 
 def linuxModuleTesting(file, env_name, network_name, module_tester) {
-    linuxModuleTesting(file, env_name, network_name, module_tester, android)
+    linuxModuleTesting(file, env_name, network_name, module_tester, "ubuntu")
 }
 
 def linuxModuleTesting(file, env_name, network_name, module_tester, node_label) {
