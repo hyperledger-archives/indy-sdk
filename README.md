@@ -242,7 +242,7 @@ docker run -itd -p 9701-9708:9701-9708 indy_pool
 ```
 
 ### 2) Starting the test pool on a specific IP address
- Dockerfile `ci/indy-pool.dockerfile` supports an optional pool_ip param that allows
+ Dockerfile `ci/ubuntu.dockerfile` supports an optional pool_ip param that allows
  changing ip of pool nodes in generated pool configuration.
 
  You can start the pool with e.g. with the IP address of your development machine's WIFI interface
@@ -250,7 +250,7 @@ docker run -itd -p 9701-9708:9701-9708 indy_pool
 
  ```
  # replace 192.168.179.90 with your wifi IP address
- docker build --build-arg pool_ip=192.168.179.90 -f ci/indy-pool.dockerfile -t indy_pool .
+ docker build --build-arg pool_ip=192.168.179.90 -f ci/ubuntu.dockerfile -t indy_pool .
  docker run -itd -p 192.168.179.90:9701-9708:9701-9708 indy_pool
  ```
  To connect to the pool the IP addresses in /var/lib/indy/sandbox/pool_transactions_genesis (in docker) and
@@ -262,7 +262,7 @@ docker run -itd -p 9701-9708:9701-9708 indy_pool
 
  ```
  docker network create --subnet 10.0.0.0/8 indy_pool_network
- docker build --build-arg pool_ip=10.0.0.2 -f ci/indy-pool.dockerfile -t indy_pool .
+ docker build --build-arg pool_ip=10.0.0.2 -f ci/ubuntu.dockerfile -t indy_pool .
  docker run -d --ip="10.0.0.2" --net=indy_pool_network indy_pool
  ```
  Note that for Windows and MacOS this approach has some issues. Docker for these OS run in
