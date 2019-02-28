@@ -152,7 +152,12 @@ pub mod tests {
         });
     }
 
-    #[cfg(all(unix, test))]
+    #[cfg(all(unix, test, any(target_os="android", target_os="androideabi")))]
+    fn _load_lib(library: &str) -> libloading::Result<libloading::Library> {
+        libloading::Library::new(library)
+    }
+
+    #[cfg(all(unix, test, all(not(target_os="android"), not(target_os="androideabi"))))]
     fn _load_lib(library: &str) -> libloading::Result<libloading::Library> {
         libloading::os::unix::Library::open(Some(library), libc::RTLD_NOW | libc::RTLD_NODELETE)
             .map(libloading::Library::from)

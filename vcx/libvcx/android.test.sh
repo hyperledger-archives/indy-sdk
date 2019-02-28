@@ -38,12 +38,15 @@ build_test_artifacts(){
         cargo clean
 
         RUSTFLAGS="-L${TOOLCHAIN_DIR}/sysroot/usr/${TOOLCHAIN_SYSROOT_LIB} -lc -lz -L${TOOLCHAIN_DIR}/${TRIPLET}/lib -L${LIBZMQ_LIB_DIR} -L${SODIUM_LIB_DIR} -lsodium -lzmq -lgnustl_shared" \
-        cargo build ${BUILD_TYPE} --target=${TRIPLET}
+        cargo build ${BUILD_TYPE} --target=${TRIPLET} --verbose
 
         # build - separate step to see origin build output
         # TODO move RUSTFLAGS to cargo config and do not duplicate it here
 
         SET_OF_TESTS="--all-features -- --exact"
+
+        RUSTFLAGS="-L${TOOLCHAIN_DIR}/sysroot/usr/${TOOLCHAIN_SYSROOT_LIB} -lc -lz -L${TOOLCHAIN_DIR}/${TRIPLET}/lib -L${LIBZMQ_LIB_DIR} -L${SODIUM_LIB_DIR} -lsodium -lzmq -lgnustl_shared" \
+            cargo test ${BUILD_TYPE} --target=${TRIPLET} --no-run
 
         # collect items to execute tests, uses resulting files from previous step
         EXE_ARRAY=($( RUSTFLAGS="-L${TOOLCHAIN_DIR}/sysroot/usr/${TOOLCHAIN_SYSROOT_LIB} -lc -lz -L${TOOLCHAIN_DIR}/${TRIPLET}/lib -L${LIBZMQ_LIB_DIR} -L${SODIUM_LIB_DIR} -lsodium -lzmq -lgnustl_shared" \
@@ -77,7 +80,13 @@ execute_on_device(){
     "${LIBINDY_DIR}/libindy.so" "/data/local/tmp/libindy.so"
 
     adb -e push \
-    "${LIBVCX_WORKDIR}/target/${TRIPLET}/release/libvcx.so" "/data/local/tmp/libindy.so"
+    "${LIBINDY_DIR}/libindy.a" "/data/local/tmp/libindy.a"
+
+    adb -e push \
+    "${LIBVCX_WORKDIR}/target/${TRIPLET}/release/libvcx.so" "/data/local/tmp/libvcx.so"
+
+    adb -e push \
+    "${LIBVCX_WORKDIR}/target/${TRIPLET}/release/libvcx.a" "/data/local/tmp/libvcx.a"
 
     adb -e logcat | grep indy &
 
