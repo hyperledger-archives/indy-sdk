@@ -542,8 +542,15 @@ def linuxLibindyAndroidOnEmulatorTesting(env_name, network_name, testEnv) {
     echo "${env_name} Libindy Test: Test on ${emu_arch} emulator"
     testEnv.inside("--network=${network_name}") {
         sh "cd libindy && ./android.test.sh ${emu_arch} --release"
+
+        sh "cp libindy/target/i686-linux-android/release/libindy.so libnullpay"
+        sh "cp libindy/target/i686-linux-android/release/libindy.so vcx/libvcx"
+        sh "cp libindy/target/i686-linux-android/release/libindy.so vcx/dummy-cloud-agent"
+
         //TODO: Fix target from hardcoded
-        stash includes: "libindy/target/i686-linux-android/release/libindy.so", name: "AndroidLibindySo"
+        stash includes: 'libnullpay/libindy.so', name: "AndroidLibnullpayLibindySO"
+        stash includes: 'vcx/libvcx/libindy.so', name: "AndroidVCXLibindySO"
+        stash includes: 'vcx/dummy-cloud-agent/libindy.so', name: "AndroidDummyAgentLibindySO"
     }
 }
 
@@ -554,9 +561,14 @@ def linuxLibnullpayAndroidOnEmulatorTesting(env_name, network_name, testEnv) {
 
     echo "${env_name} Libnullpay Test: Test on ${emu_arch} emulator"
     testEnv.inside("--network=${network_name}") {
-        sh "cd libnullpay && ./android.test.sh ${emu_arch} --release"
+        unstash name: "AndroidLibnullpayLibindySO"
+
+        sh "LIBRARY_PATH=./ cd libnullpay && ./android.test.sh ${emu_arch} --release"
+
+        sh "cp libnullpay/target/i686-linux-android/release/libnullpay.so vcx/libvcx"
+
         //TODO: Fix target from hardcoded
-        stash includes: "libnullpay/target/i686-linux-android/release/libnullpay.so", name: "AndroidLibnullpaySo"
+        stash includes: "vcx/libvcx/libnullpay.so", name: "AndroidVCXLibnullpaySo"
     }
 }
 
@@ -568,12 +580,12 @@ def linuxLibvcxAndroidOnEmulatorTesting(env_name, network_name, testEnv) {
 
     echo "${env_name} LibVCX Test: Test on ${emu_arch} emulator"
     testEnv.inside("--network=${network_name}") {
-        unstash name: "AndroidLibindySo"
-        sh "mkdir /libindy && cp libindy/target/i686-linux-android/release/libindy.so /libindy"
-        unstash name: "AndroidLibnullpaySo"
-        sh "cp libnullpay/target/i686-linux-android/release/libindy.so vcx/libvcx"
-        sh "cd vcx/dummy-cloud-agent && cargo run sample-config.json &"
-        sh "LIBINDY_DIR=/libindy cd vcx/libvcx && ./android.test.sh ${emu_arch} --release"
+        unstash name: "AndroidVCXLibindySO"
+        unstash name: "AndroidVCXLibnullpaySo"
+        unstash name: "AndroidDummyAgentLibindySO"
+
+        sh "LIBRARY_PATH=./ cd vcx/dummy-cloud-agent && cargo run sample-config.json &"
+        sh "LIBRARY_PATH=./ cd vcx/libvcx && ./android.test.sh ${emu_arch} --release"
     }
 }
 

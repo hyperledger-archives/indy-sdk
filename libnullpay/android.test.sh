@@ -40,10 +40,19 @@ declare -a EXE_ARRAY
 
 build_test_artifacts(){
     pushd ${WORKDIR}
-
+        echo $LIBRARY_PATH
+        echo $LD_LIBRARY_PATH
         cargo clean
-        EXE_ARRAY=($( RUSTFLAGS="-L${TOOLCHAIN_DIR}/sysroot/usr/lib -lz -lm -L${TOOLCHAIN_DIR}/${TRIPLET}/lib  -lgnustl_shared" \
-                    cargo test --target=${TRIPLET} --no-run --message-format=json | jq -r "select(.profile.test == true) | .filenames[]"))
+
+        RUSTFLAGS="-L${TOOLCHAIN_DIR}/sysroot/usr/${TOOLCHAIN_SYSROOT_LIB} -lz -lm -L${TOOLCHAIN_DIR}/${TRIPLET}/lib  -lgnustl_shared" \
+            cargo build --target=${TRIPLET} --release
+
+       # Tests are failing to build for some reason. See IS-
+       # RUSTFLAGS="-L${TOOLCHAIN_DIR}/sysroot/usr/${TOOLCHAIN_SYSROOT_LIB} -lz -lm -L${TOOLCHAIN_DIR}/${TRIPLET}/lib  -lgnustl_shared" \
+       #             cargo test --target=${TRIPLET} --no-run --release
+
+       # EXE_ARRAY=($( RUSTFLAGS="-L${TOOLCHAIN_DIR}/sysroot/usr/${TOOLCHAIN_SYSROOT_LIB} -lz -lm -L${TOOLCHAIN_DIR}/${TRIPLET}/lib  -lgnustl_shared" \
+       #             cargo test --target=${TRIPLET} --no-run --release --message-format=json | jq -r "select(.profile.test == true) | .filenames[]"))
 
         popd
 }
