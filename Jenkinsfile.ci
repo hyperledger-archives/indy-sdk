@@ -199,7 +199,7 @@ def macosModuleTesting(library) {
 def androidTesting() {
     env_name = "android_on_linux"
     network_name = "pool_network"
-    linuxModuleTesting("ci/ubuntu.dockerfile ci", env_name, network_name, this.&linuxAndroidOnEmulatorTesting)
+    linuxModuleTesting("ci/ubuntu.dockerfile ci", env_name, network_name, this.&linuxAndroidOnEmulatorTesting, "android")
 }
 
 def iosTesting() {
@@ -235,7 +235,7 @@ def iosTesting() {
                 createSimulators()
 
                 withEnv([
-                    "BUNDLE_PATH=$HOME/.gem.indy_sdk"
+                        "BUNDLE_PATH=$HOME/.gem.indy_sdk"
                 ]) {
                     dir('wrappers/ios') {
                         echo "iOS Test: Installing ruby, bundler and gems"
@@ -489,10 +489,10 @@ def linuxVcxBuild(file, env_name, network_name) {
 
         libvcxBuildFinished[env_name] = true
 
+        sh "cp vcx/libvcx/libindy.so vcx/dummy-cloud-agent"
+
         testEnv.inside("--network=${network_name}") {
-            echo "${env_name} Libvcx Test: Run Cloud Agent"
             sh '''
-                cp vcx/libvcx/libindy.so vcx/dummy-cloud-agent
                 cd vcx/dummy-cloud-agent
                 LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy=info cargo run sample-config.json &
             '''
@@ -503,6 +503,20 @@ def linuxVcxBuild(file, env_name, network_name) {
                 LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=vcx=debug,indy=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --features "pool_tests agency"
             '''
         }
+
+        testEnv.inside("--network=${network_name}") {
+            sh '''
+                cd vcx/dummy-cloud-agent
+                sed -i 's/\\("protocol_type": "\\)1.0/\\12.0/' sample-config.json
+                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy=info cargo run sample-config.json &
+            '''
+
+            echo "${env_name} Libvcx Test: Run tests"
+            sh '''
+                cd vcx/libvcx
+                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=vcx=debug,indy=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --features "pool_tests agency_v2" tests::test_real_proof_for_protocol_type_v2 -- --exact
+            '''
+        }
     }
     finally {
         closePool(env_name, network_name, poolInst)
@@ -510,7 +524,11 @@ def linuxVcxBuild(file, env_name, network_name) {
 }
 
 def linuxModuleTesting(file, env_name, network_name, module_tester) {
-    node('ubuntu') {
+    linuxModuleTesting(file, env_name, network_name, module_tester, "ubuntu")
+}
+
+def linuxModuleTesting(file, env_name, network_name, module_tester, node_label) {
+    node(node_label) {
         def poolInst
         try {
             echo "${env_name} Test: Checkout csm"
@@ -528,16 +546,14 @@ def linuxModuleTesting(file, env_name, network_name, module_tester) {
 }
 
 def linuxAndroidOnEmulatorTesting(env_name, network_name, testEnv) {
-    dir('libindy') {
-        sh 'chmod -R 777 ci/*.sh'
-        sh 'chmod -R 777 *.sh'
+    sh 'chmod -R 777 libindy/ci/*.sh'
+    sh 'chmod -R 777 libindy/*.sh'
 
-        def emu_arch = "x86"
+    def emu_arch = "x86"
 
-        echo "${env_name} Libindy Test: Test on ${emu_arch} emulator"
-        testEnv.inside("--network=${network_name}") {
-            sh "./android.test.sh ${emu_arch} --release"
-        }
+    echo "${env_name} Libindy Test: Test on ${emu_arch} emulator"
+    testEnv.inside("--network=${network_name}") {
+        sh "cd libindy && ./android.test.sh ${emu_arch} --release"
     }
 }
 
@@ -751,6 +767,6 @@ def setupRust() {
 
 def setupBrewPackages() {
     sh "brew switch libsodium 1.0.12"
-    sh "brew switch openssl 1.0.2l"
+    sh "brew switch openssl 1.0.2q"
     sh "brew switch zeromq 4.2.3"
 }

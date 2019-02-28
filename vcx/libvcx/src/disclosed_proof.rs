@@ -7,14 +7,12 @@ use utils::error;
 use connection;
 use messages;
 use messages::GeneralMessage;
+use messages::{RemoteMessageType, PayloadKinds};
 use messages::proofs::proof_message::{ProofMessage };
 use messages::proofs::proof_request::{ ProofRequestMessage, ProofRequestData, NonRevokedInterval };
-use messages::extract_json_payload;
-use messages::to_u8;
 use time;
 
 use utils::libindy::anoncreds;
-use utils::libindy::crypto;
 use utils::libindy::anoncreds::{ get_rev_reg_def_json, get_rev_reg_delta_json };
 
 use settings;
@@ -402,9 +400,7 @@ impl DisclosedProof {
                self.their_vk,
                self.my_vk);
 
-        let e_code: u32 = error::INVALID_CONNECTION_HANDLE.code_num;
-
-        let local_their_did = self.their_did.as_ref().ok_or(ProofError::ProofConnectionError())?;
+        self.their_did.as_ref().ok_or(ProofError::ProofConnectionError())?;
         let local_their_vk = self.their_vk.as_ref().ok_or(ProofError::ProofConnectionError())?;
         let local_agent_did = self.agent_did.as_ref().ok_or(ProofError::ProofConnectionError())?;
         let local_agent_vk = self.agent_vk.as_ref().ok_or(ProofError::ProofConnectionError())?;
@@ -422,26 +418,22 @@ impl DisclosedProof {
             true => DEFAULT_GENERATED_PROOF.to_string(),
         };
 
-        let data: Vec<u8> = connection::generate_encrypted_payload(local_my_vk, local_their_vk, &proof, "PROOF")
-            .or(Err(ProofError::ProofConnectionError()))?;
+        messages::send_message()
+            .to(local_my_did)?
+            .to_vk(local_my_vk)?
+            .msg_type(&RemoteMessageType::Proof)?
+            .agent_did(local_agent_did)?
+            .agent_vk(local_agent_vk)?
+            .edge_agent_payload(&local_my_vk, &local_their_vk, &proof, PayloadKinds::Proof).or(Err(ProofError::ProofConnectionError()))?
+            .ref_msg_id(ref_msg_uid)?
+            .send_secure()
+            .map_err(|err|{
+                warn!("could not send proof: {}", err);
+                err
+            })?;
 
-        match messages::send_message().to(local_my_did)
-            .to_vk(local_my_vk)
-            .msg_type("proof")
-            .agent_did(local_agent_did)
-            .agent_vk(local_agent_vk)
-            .edge_agent_payload(&data)
-            .ref_msg_id(ref_msg_uid)
-            .send_secure() {
-            Ok(response) => {
-                self.state = VcxStateType::VcxStateAccepted;
-                return Ok(error::SUCCESS.code_num)
-            },
-            Err(x) => {
-                warn!("could not send proof: {}", x);
-                return Err(ProofError::CommonError(x));
-            }
-        }
+        self.state = VcxStateType::VcxStateAccepted;
+        return Ok(error::SUCCESS.code_num)
     }
 
     fn set_source_id(&mut self, id: &str) { self.source_id = id.to_string(); }
@@ -511,10 +503,8 @@ pub fn to_string(handle: u32) -> Result<String, u32> {
 }
 
 pub fn from_string(proof_data: &str) -> Result<u32, ProofError> {
-    let derived_proof: DisclosedProof = match DisclosedProof::from_str(proof_data) {
-        Ok(x) => x,
-        Err(y) => return Err(ProofError::CommonError(error::INVALID_JSON.code_num)),
-    };
+    let derived_proof: DisclosedProof = DisclosedProof::from_str(proof_data)
+        .or(Err(ProofError::CommonError(error::INVALID_JSON.code_num)))?;
 
     let new_handle = HANDLE_MAP.add(derived_proof).map_err(|ec| ProofError::CommonError(ec))?;
 
@@ -573,16 +563,11 @@ pub fn get_proof_request(connection_handle: u32, msg_id: &str) -> Result<String,
                                                                  &agent_vk,
                                                                  Some(vec![msg_id.to_string()])).map_err(|ec| ProofError::CommonError(ec))?;
 
-    if message[0].msg_type.eq("proofReq") {
-        let (_, msg_data) = match message[0].payload {
-            Some(ref data) => {
-                let data = to_u8(data);
-                crypto::parse_msg(&my_vk, data.as_slice()).map_err(|ec| ProofError::CommonError(ec))?
-            },
-            None => return Err(ProofError::CommonError(error::INVALID_HTTP_RESPONSE.code_num))
-        };
+    if message[0].msg_type == RemoteMessageType::ProofReq {
+        let payload = message.get(0).and_then(|msg| msg.payload.as_ref())
+            .ok_or(ProofError::CommonError(error::INVALID_MESSAGES.code_num))?;
+        let request = messages::Payload::decrypted(&my_vk, payload).map_err(|ec| ProofError::CommonError(ec))?;
 
-        let request = extract_json_payload(&msg_data).map_err(|ec| ProofError::CommonError(ec))?;
         let mut request: ProofRequestMessage = serde_json::from_str(&request)
            .or(Err(ProofError::CommonError(error::INVALID_HTTP_RESPONSE.code_num)))?;
 
@@ -615,17 +600,9 @@ pub fn get_proof_request_messages(connection_handle: u32, match_name: Option<&st
     for msg in payload {
         if msg.sender_did.eq(&my_did){ continue; }
 
-        if msg.msg_type.eq("proofReq") {
-            let (_, msg_data) = match msg.payload {
-                Some(ref data) => {
-                    let data = to_u8(data);
-                    crypto::parse_msg(&my_vk, data.as_slice())
-                        .map_err(|ec| ProofError::CommonError(ec))?
-                },
-                None => return Err(ProofError::CommonError(error::INVALID_HTTP_RESPONSE.code_num))
-            };
-
-            let req = extract_json_payload(&msg_data).map_err(|ec| ProofError::CommonError(ec))?;
+        if msg.msg_type == RemoteMessageType::ProofReq {
+            let payload = msg.payload.ok_or(ProofError::CommonError(error::INVALID_HTTP_RESPONSE.code_num))?;
+            let req = messages::Payload::decrypted(&my_vk, &payload).map_err(|ec| ProofError::CommonError(ec))?;
 
             let mut req: ProofRequestMessage = serde_json::from_str(&req)
                 .or(Err(ProofError::CommonError(error::INVALID_HTTP_RESPONSE.code_num)))?;

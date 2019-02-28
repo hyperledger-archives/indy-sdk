@@ -201,6 +201,8 @@ async def auth_crypt(wallet_handle: int,
                      recipient_vk: str,
                      msg: bytes) -> bytes:
     """
+    **** THIS FUNCTION WILL BE DEPRECATED USE pack_message INSTEAD ****
+
     Encrypt a message by authenticated-encryption scheme.
 
     Sender can encrypt a confidential message specifically for Recipient, using Sender's public key.
@@ -255,6 +257,8 @@ async def auth_decrypt(wallet_handle: int,
                        recipient_vk: str,
                        encrypted_msg: bytes) -> (str, bytes):
     """
+    **** THIS FUNCTION WILL BE DEPRECATED USE unpack_message INSTEAD ****
+
     Decrypt a message by authenticated-encryption scheme.
 
     Sender can encrypt a confidential message specifically for Recipient, using Sender's public key.
@@ -316,6 +320,8 @@ async def anon_crypt(recipient_vk: str,
     Note to use DID keys with this function you can call key_for_did to get key id (verkey)
     for specific DID.
 
+    Note: use pack_message function for A2A goals.
+
     :param recipient_vk: verkey of message recipient
     :param msg: a message to be signed
     :return: an encrypted message as an array of bytes
@@ -358,6 +364,8 @@ async def anon_decrypt(wallet_handle: int,
 
     Note to use DID keys with this function you can call key_for_did to get key id (verkey)
     for specific DID.
+
+    Note: use unpack_message function for A2A goals.
 
     :param wallet_handle: wallet handler (created by open_wallet).
     :param recipient_vk: id (verkey) of my key. The key must be created by calling indy_create_key or create_and_store_my_did
