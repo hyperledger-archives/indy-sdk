@@ -17,15 +17,4 @@ public class CredDefAlreadyExistsException extends IndyException
 	public CredDefAlreadyExistsException() {
 		super(message, ErrorCode.AnoncredsCredDefAlreadyExistsError.value());
 	}
-
-	/**
-	 * Initializes a new CredDefAlreadyExistsException.
-	 *
-	 * @param sdkMessage The SDK error message.
-	 * @param sdkBacktrace The SDK error backtrace.
-	 */
-	public CredDefAlreadyExistsException(String sdkMessage, String sdkBacktrace)
-    {
-    	super(sdkMessage, ErrorCode.AnoncredsCredDefAlreadyExistsError.value(), sdkBacktrace);
-    }
 }

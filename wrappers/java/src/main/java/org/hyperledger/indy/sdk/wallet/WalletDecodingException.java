@@ -18,15 +18,4 @@ public class WalletDecodingException extends IndyException
 	{
 		super(message, ErrorCode.WalletDecodingError.value());
 	}
-
-	/**
-	 * Initializes a new WalletDecodingException.
-	 *
-	 * @param sdkMessage The SDK error message.
-	 * @param sdkBacktrace The SDK error backtrace.
-	 */
-	public WalletDecodingException(String sdkMessage, String sdkBacktrace)
-    {
-    	super(sdkMessage, ErrorCode.WalletDecodingError.value(), sdkBacktrace);
-    }
 }
