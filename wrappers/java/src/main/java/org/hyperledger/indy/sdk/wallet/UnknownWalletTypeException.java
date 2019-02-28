@@ -18,15 +18,4 @@ public class UnknownWalletTypeException extends IndyException
 	{
 		super(message, ErrorCode.WalletUnknownTypeError.value());
 	}
-
-	/**
-	 * Initializes a new UnknownWalletTypeException.
-	 *
-	 * @param sdkMessage The SDK error message.
-	 * @param sdkBacktrace The SDK error backtrace.
-	 */
-	public UnknownWalletTypeException(String sdkMessage, String sdkBacktrace)
-    {
-    	super(sdkMessage, ErrorCode.WalletUnknownTypeError.value(), sdkBacktrace);
-    }
 }
