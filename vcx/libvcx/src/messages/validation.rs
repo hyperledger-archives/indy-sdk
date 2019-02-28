@@ -27,15 +27,11 @@ pub fn validate_verkey(verkey: &str) -> Result<String, u32> {
 }
 
 pub fn validate_nonce(nonce: &str) -> Result<String, u32> {
-    match BigNum::from_dec_str(nonce) {
-        Ok(x) => {
-            if x.num_bits() > 80 {
-                return Err(error::INVALID_NONCE.code_num)
-            }
-            Ok(nonce.to_string())
-        },
-        Err(_) => Err(error::INVALID_NONCE.code_num),
+    let nonce = BigNum::from_dec_str(nonce).or(Err(error::INVALID_NONCE.code_num))?;
+    if nonce.num_bits() > 80 {
+        return Err(error::INVALID_NONCE.code_num)
     }
+    Ok(nonce.to_string())
 }
 
 pub fn validate_key_delegate(delegate: &str) -> Result<String, u32> {
@@ -45,10 +41,8 @@ pub fn validate_key_delegate(delegate: &str) -> Result<String, u32> {
 }
 
 pub fn validate_url(url: &str)->Result<String, u32>{
-    match Url::parse(url) {
-        Ok(_) => Ok(url.to_string()),
-        Err(x) => Err(error::INVALID_URL.code_num),
-    }
+    Url::parse(url).or(Err(error::INVALID_URL.code_num))?;
+    Ok(url.to_string())
 }
 
 pub fn validate_phone_number(p_num: &str)->Result<String, u32>{
