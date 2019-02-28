@@ -179,7 +179,8 @@ class IndyError(Exception):
     #             1) setting environment variable `RUST_BACKTRACE=1`
     #             2) calling `set_runtime_config` function with `collect_backtrace: true`
 
-    def __init__(self, error_code: ErrorCode, message: Optional[str] = None, indy_backtrace: Optional[str] = None):
+    def __init__(self, error_code: ErrorCode, error_details: Optional[dict] = None):
         self.error_code = error_code
-        self.message = message
-        self.indy_backtrace = indy_backtrace
+        if error_details:
+            self.message = error_details.get('message')
+            self.indy_backtrace = error_details.get('backtrace')

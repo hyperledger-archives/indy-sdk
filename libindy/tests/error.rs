@@ -16,7 +16,7 @@ fn get_current_error_works_for_no_error() {
 }
 
 #[test]
-fn get_current_error_works_for_error_occurred() {
+fn get_current_error_works_for_sync_error_occurred() {
     let mut error_json_p: *const c_char = ptr::null();
 
     unsafe { indy_set_runtime_config(ptr::null()) };
@@ -25,12 +25,34 @@ fn get_current_error_works_for_error_occurred() {
     assert!(c_str_to_string(error_json_p).unwrap().is_some());
 }
 
+#[test]
+fn get_current_error_works_for_async_error_occurred() {
+    extern fn cb(_command_handle_: i32,
+                 _err: u32,
+                 _verkey: *const c_char) {
+        let mut error_json_p: *const c_char = ptr::null();
+        unsafe {indy_get_current_error(&mut error_json_p) };
+        assert!(c_str_to_string(error_json_p).unwrap().is_some());
+    }
+
+    let did = ::std::ffi::CString::new("wrongdid").unwrap();
+    let verkey = ::std::ffi::CString::new("verkey").unwrap();
+    unsafe { indy_abbreviate_verkey(1, did.as_ptr(), verkey.as_ptr(), Some(cb)) };
+    ::std::thread::sleep(::std::time::Duration::from_secs(1));
+}
+
 extern {
     #[no_mangle]
     pub fn indy_set_runtime_config(config: *const c_char) -> i32;
 
     #[no_mangle]
     pub fn indy_get_current_error(error_json: *mut *const c_char);
+
+    #[no_mangle]
+    pub fn indy_abbreviate_verkey(command_handle: i32, did: *const c_char, full_verkey: *const c_char,
+                                  cb: Option<extern fn(command_handle_: i32,
+                                                       err: u32,
+                                                       verkey: *const c_char)>) -> i32;
 }
 
 pub fn c_str_to_string<'a>(cstr: *const c_char) -> Result<Option<&'a str>, Utf8Error> {

@@ -18,15 +18,4 @@ public class WalletNotFoundException extends IndyException
 	{
 		super(message, ErrorCode.WalletNotFoundError.value());
 	}
-
-	/**
-	 * Initializes a new WalletNotFoundException.
-	 *
-	 * @param sdkMessage The SDK error message.
-	 * @param sdkBacktrace The SDK error backtrace.
-	 */
-	public WalletNotFoundException(String sdkMessage, String sdkBacktrace)
-    {
-    	super(sdkMessage, ErrorCode.WalletNotFoundError.value(), sdkBacktrace);
-    }
 }
