@@ -40,6 +40,8 @@ build_test_artifacts(){
         # TODO empty for full testing SET_OF_TESTS=''
         SET_OF_TESTS='--lib --test interaction'
 
+        # TODO move RUSTFLAGS to cargo config and do not duplicate it here
+        # build - separate step to see origin build output
         RUSTFLAGS="-L${TOOLCHAIN_DIR}/sysroot/usr/${TOOLCHAIN_SYSROOT_LIB} -lc -lz -L${TOOLCHAIN_DIR}/${TRIPLET}/lib -L${LIBZMQ_LIB_DIR} -L${SODIUM_LIB_DIR} -lsodium -lzmq -lgnustl_shared" \
             cargo build ${BUILD_TYPE} --target=${TRIPLET}
 
