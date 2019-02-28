@@ -23,10 +23,14 @@ extern crate base64;
 extern crate rand;
 extern crate hyper;
 extern crate indyrs;
+extern crate regex;
+#[macro_use]
+extern crate lazy_static;
 
 use actix::prelude::*;
 use actors::forward_agent::ForwardAgent;
 use domain::config::Config;
+use domain::protocol_type::ProtocolType;
 use failure::*;
 use futures::*;
 use std::env;
@@ -73,6 +77,7 @@ fn _start(config_path: &str) {
         forward_agent: forward_agent_config,
         server: server_config,
         wallet_storage: wallet_storage_config,
+        protocol_type: protocol_type_config,
     } = File::open(config_path)
         .context("Can't open config file")
         .and_then(|reader| serde_json::from_reader(reader)
@@ -83,6 +88,8 @@ fn _start(config_path: &str) {
 
     Arbiter::spawn_fn(move || {
         info!("Starting Forward Agent with config: {:?}", forward_agent_config);
+
+        ProtocolType::set(protocol_type_config);
 
         ForwardAgent::create_or_restore(forward_agent_config, wallet_storage_config)
             .map(move |forward_agent| {
