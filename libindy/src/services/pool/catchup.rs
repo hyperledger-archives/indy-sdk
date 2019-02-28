@@ -17,6 +17,7 @@ pub enum CatchupProgress {
         MerkleTree,
     ),
     NotNeeded(MerkleTree),
+    Restart(MerkleTree),
     InProgress,
 }
 
@@ -71,8 +72,13 @@ pub fn check_nodes_responses_on_status(nodes_votes: &HashMap<(String, usize, Opt
             let positive_votes_cnt = votes_cnt + (node_cnt - reps_cnt);
             let is_consensus_reachable = positive_votes_cnt < node_cnt - f;
             if is_consensus_reachable {
-                //TODO: maybe we should change the error, but it was made to escape changing of ErrorCode returned to client
-                return Err(err_msg(IndyErrorKind::PoolTimeout, "No consensus possible"));
+                if merkle_tree_factory::drop_cache(pool_name).is_ok() {
+                    let merkle_tree = merkle_tree_factory::create(pool_name)?;
+                    return Ok(CatchupProgress::Restart(merkle_tree))
+                } else {
+                    //TODO: maybe we should change the error, but it was made to escape changing of ErrorCode returned to client
+                    return Err(err_msg(IndyErrorKind::PoolTimeout, "No consensus possible"));
+                }
             }
         }
     }
