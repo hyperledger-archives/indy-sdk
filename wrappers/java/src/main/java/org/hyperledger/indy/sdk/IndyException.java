@@ -1,7 +1,6 @@
 package org.hyperledger.indy.sdk;
 
 import com.sun.jna.ptr.PointerByReference;
-import netscape.javascript.JSException;
 import org.hyperledger.indy.sdk.anoncreds.*;
 import org.hyperledger.indy.sdk.did.DidAlreadyExistsException;
 import org.hyperledger.indy.sdk.ledger.ConsensusException;
@@ -50,10 +49,10 @@ public class IndyException extends Exception {
 	}
 
 	/**
-	 * Sets the SDK error backtrace for the exception.
+	 * Sets the SDK error message for the exception.
 	 */
-	private void setSdkBacktrace(String sdkBacktrace) {
-		this.sdkBacktrace = sdkBacktrace;
+	private String setSdkMessage() {
+		return sdkMessage;
 	}
 
 	/**
@@ -78,8 +77,8 @@ public class IndyException extends Exception {
 				JSONObject errorDetails = new JSONObject(errorDetailsJson.getValue().getString(0));
 				this.message = errorDetails.optString("message");
 				this.backtrace = errorDetails.optString("backtrace");
-			} catch (JSException ignored){
-
+			} catch (Exception ignored){
+				// Nothing to do
 			}
 		}
 	}
