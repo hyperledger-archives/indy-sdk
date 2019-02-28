@@ -44,3 +44,13 @@ pub fn verify(signer_vk: &str,
     crypto::verify(signer_vk, message, signature)
         .into_box()
 }
+
+pub fn pack_message(wallet_handle: i32, sender_vk: Option<&str>, receiver_keys: &str, msg: &[u8]) -> Box<Future<Item=Vec<u8>, Error=IndyError>> {
+    crypto::pack_message(wallet_handle, msg, receiver_keys, sender_vk)
+        .into_box()
+}
+
+pub fn unpack_message(wallet_handle: i32, msg: &[u8]) -> Box<Future<Item=Vec<u8>, Error=IndyError>> {
+    crypto::unpack_message(wallet_handle, msg)
+        .into_box()
+}
