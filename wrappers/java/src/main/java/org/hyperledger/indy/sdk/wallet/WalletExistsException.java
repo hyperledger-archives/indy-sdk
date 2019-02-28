@@ -18,15 +18,4 @@ public class WalletExistsException extends IndyException
 	{
 		super(message, ErrorCode.WalletAlreadyExistsError.value());
 	}
-
-	/**
-	 * Initializes a new WalletExistsException.
-	 *
-	 * @param sdkMessage The SDK error message.
-	 * @param sdkBacktrace The SDK error backtrace.
-	 */
-	public WalletExistsException(String sdkMessage, String sdkBacktrace)
-    {
-    	super(sdkMessage, ErrorCode.WalletAlreadyExistsError.value(), sdkBacktrace);
-    }
 }

@@ -13,14 +13,4 @@ public class PaymentSourceDoesNotExistException extends IndyException {
     public PaymentSourceDoesNotExistException() {
         super(message, ErrorCode.PaymentSourceDoesNotExistError.value());
     }
-
-    /**
-     * Initializes a new {@link PaymentSourceDoesNotExistException} with the specified message.
-     *
-     * @param sdkMessage The SDK error message.
-     * @param sdkBacktrace The SDK error backtrace.
-     */
-    public PaymentSourceDoesNotExistException(String sdkMessage, String sdkBacktrace) {
-        super(sdkMessage, ErrorCode.PaymentSourceDoesNotExistError.value(), sdkBacktrace);
-    }
 }
