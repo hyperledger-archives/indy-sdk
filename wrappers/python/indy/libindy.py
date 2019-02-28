@@ -8,7 +8,7 @@ import asyncio
 import sys
 import itertools
 import logging
-from logging import ERROR, WARNING, INFO, DEBUG
+from logging import ERROR, WARNING, INFO, DEBUG, CRITICAL
 
 TRACE = 5
 
@@ -163,6 +163,7 @@ def _load_cdll() -> CDLL:
 def _set_logger():
     logger = logging.getLogger(__name__)
     logging.addLevelName(TRACE, "TRACE")
+    logging.basicConfig(level=CRITICAL)
 
     logger.debug("set_logger: >>>")
 
