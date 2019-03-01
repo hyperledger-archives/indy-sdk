@@ -436,7 +436,6 @@ pub  extern fn indy_crypto_auth_decrypt(command_handle: IndyHandle,
     res
 }
 
-/// **** THIS FUNCTION WILL BE DEPRECATED USE indy_pack_message() INSTEAD ****
 /// Encrypts a message by anonymous-encryption scheme.
 ///
 /// Sealed boxes are designed to anonymously send messages to a Recipient given its public key.
@@ -445,6 +444,8 @@ pub  extern fn indy_crypto_auth_decrypt(command_handle: IndyHandle,
 ///
 /// Note to use DID keys with this function you can call indy_key_for_did to get key id (verkey)
 /// for specific DID.
+///
+/// Note: use indy_pack_message() function for A2A goals.
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
@@ -497,7 +498,6 @@ pub  extern fn indy_crypto_anon_crypt(command_handle: IndyHandle,
     res
 }
 
-/// **** THIS FUNCTION WILL BE DEPRECATED USE indy_unpack_message() INSTEAD ****
 /// Decrypts a message by anonymous-encryption scheme.
 ///
 /// Sealed boxes are designed to anonymously send messages to a Recipient given its public key.
@@ -506,6 +506,8 @@ pub  extern fn indy_crypto_anon_crypt(command_handle: IndyHandle,
 ///
 /// Note to use DID keys with this function you can call indy_key_for_did to get key id (verkey)
 /// for specific DID.
+///
+/// Note: use indy_unpack_message() function for A2A goals.
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
