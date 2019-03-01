@@ -77,6 +77,12 @@ execute_on_device(){
     adb push \
     "${LIBZMQ_LIB_DIR}/libzmq.so" "/data/local/tmp/libzmq.so"
 
+    adb -e push \
+    "${LIBINDY_DIR}/libindy.so" "/data/local/tmp/libindy.so"
+
+    adb -e push \
+    "${LIBINDY_DIR}/libindy.a" "/data/local/tmp/libindy.a"
+
     for i in "${EXE_ARRAY[@]}"
     do
        :

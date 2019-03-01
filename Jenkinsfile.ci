@@ -9,12 +9,12 @@ testing()
 def testing() {
     stage('Testing') {
         parallel([
-                'ubuntu-test' : { ubuntuTesting() },
+                // 'ubuntu-test' : { ubuntuTesting() },
                 'android-test': { androidTesting() },
-                'macos-test'  : { macosTesting() },
-                'ios-test'    : { iosTesting() },
-                'redhat-test' : { rhelTesting() },
-                'windows-test': { windowsTesting() }
+                // 'macos-test'  : { macosTesting() },
+                // 'ios-test'    : { iosTesting() },
+                // 'redhat-test' : { rhelTesting() },
+                // 'windows-test': { windowsTesting() }
         ])
     }
 }
@@ -558,14 +558,19 @@ def linuxLibindyAndroidOnEmulatorTesting(env_name, network_name, testEnv) {
         sh "cd libindy && ./android.test.sh ${emu_arch} --release"
 
         sh "cp libindy/target/i686-linux-android/release/libindy.so libnullpay"
+        sh "cp libindy/target/i686-linux-android/release/libindy.a libnullpay"
+
         sh "cp libindy/target/i686-linux-android/release/libindy.so vcx/libvcx"
         sh "cp libindy/target/i686-linux-android/release/libindy.a vcx/libvcx"
+
         sh "cp libindy/target/i686-linux-android/release/libindy.so vcx/dummy-cloud-agent"
+        sh "cp libindy/target/i686-linux-android/release/libindy.a vcx/dummy-cloud-agent"
+
 
         //TODO: Fix target from hardcoded
-        stash includes: 'libnullpay/libindy.so', name: "AndroidLibnullpayLibindySO"
-        stash includes: 'vcx/libvcx/libindy.so, vcx/libvcx/libindy.so', name: "AndroidVCXLibindySO"
-        stash includes: 'vcx/dummy-cloud-agent/libindy.so', name: "AndroidDummyAgentLibindySO"
+        stash includes: 'libnullpay/libindy.so, libnullpay/libindy.a', name: "AndroidLibnullpayLibindySO"
+        stash includes: 'vcx/libvcx/libindy.so, vcx/libvcx/libindy.a', name: "AndroidVCXLibindySO"
+        stash includes: 'vcx/dummy-cloud-agent/libindy.so, vcx/dummy-cloud-agent/libindy.a', name: "AndroidDummyAgentLibindySO"
     }
 }
 
@@ -578,12 +583,13 @@ def linuxLibnullpayAndroidOnEmulatorTesting(env_name, network_name, testEnv) {
     testEnv.inside("--network=${network_name}") {
         unstash name: "AndroidLibnullpayLibindySO"
 
-        sh "cd libnullpay && LIBRARY_PATH=./ ./android.test.sh ${emu_arch} --release"
+        sh "cd libnullpay && LIBRARY_PATH=./ LIBINDY_DIR=./ ./android.test.sh ${emu_arch} --release"
 
         sh "cp libnullpay/target/i686-linux-android/release/libnullpay.so vcx/libvcx"
+        sh "cp libnullpay/target/i686-linux-android/release/libnullpay.a vcx/libvcx"
 
         //TODO: Fix target from hardcoded
-        stash includes: "vcx/libvcx/libnullpay.so", name: "AndroidVCXLibnullpaySo"
+        stash includes: "vcx/libvcx/libnullpay.so, vcx/libvcx/libnullpay.a", name: "AndroidVCXLibnullpaySo"
     }
 }
 
@@ -599,8 +605,8 @@ def linuxLibvcxAndroidOnEmulatorTesting(env_name, network_name, testEnv) {
         unstash name: "AndroidVCXLibnullpaySo"
         unstash name: "AndroidDummyAgentLibindySO"
 
-        sh "cd vcx/dummy-cloud-agent && LIBRARY_PATH=./ cargo run sample-config.json &"
-        sh "cd vcx/libvcx && LIBRARY_PATH=./ ./android.test.sh ${emu_arch} --release"
+//        sh 'cd vcx/dummy-cloud-agent && LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} cargo run sample-config.json &'
+        sh 'cd vcx/libvcx && LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} LIBINDY_DIR=./ ./android.test.sh x86 --release'
     }
 }
 
