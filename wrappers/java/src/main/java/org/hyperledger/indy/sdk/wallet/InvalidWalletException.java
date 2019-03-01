@@ -17,15 +17,4 @@ public class InvalidWalletException extends IndyException
 	public InvalidWalletException() {
 		super(message, ErrorCode.WalletInvalidHandle.value());
 	}
-
-	/**
-	 * Initializes a new WalletClosedException.
-	 *
-	 * @param sdkMessage The SDK error message.
-	 * @param sdkBacktrace The SDK error backtrace.
-	 */
-	public InvalidWalletException(String sdkMessage, String sdkBacktrace)
-    {
-    	super(sdkMessage, ErrorCode.WalletInvalidHandle.value(), sdkBacktrace);
-    }
 }

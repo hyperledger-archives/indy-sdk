@@ -7,15 +7,44 @@ libvcxBuildFinished = ["Ubuntu": false, "RedHat": false]
 testing()
 
 def testing() {
+    stage('Static Analysis') {
+        staticValidation()
+    }
     stage('Testing') {
         parallel([
-                'ubuntu-test' : { ubuntuTesting() },
-                'android-test': { androidTesting() },
-                'macos-test'  : { macosTesting() },
-                'ios-test'    : { iosTesting() },
-                'redhat-test' : { rhelTesting() },
-                'windows-test': { windowsTesting() }
+            'ubuntu-test' : { ubuntuTesting() },
+            'android-test': { androidTesting() },
+            'macos-test'  : { macosTesting() },
+            'ios-test'    : { iosTesting() },
+            'redhat-test' : { rhelTesting() },
+            'windows-test': { windowsTesting() }
         ])
+    }
+}
+
+def staticValidation() {
+    parallel([
+        'libindy'    : { runValdiationRust('libindy') },
+        'libnullpay' : { runValdiationRust('libnullpay') },
+        'libvcx'     : { runValdiationRust('vcx/libvcx') },
+        'cli'        : { runValdiationRust('cli') }
+    ])
+}
+
+def runValdiationRust(dir) {
+    node('ubuntu') {
+        checkout scm
+        def testEnv
+        if (dir == 'vcx/libvcx') {
+            testEnv = dockerBuild("static-validation-libvcx", "vcx/ci/ubuntu.dockerfile .")
+        } else {
+            testEnv = dockerBuild("static-validation-libindy", "libindy/ci/ubuntu.dockerfile libindy/ci")
+        }
+        testEnv.inside {
+            //FIXME waiting on IS-823
+            //sh "cargo clippy --manifest-path ${dir}/Cargo.toml"
+            sh "cargo clippy --manifest-path ${dir}/Cargo.toml -- -W clippy::style -W clippy::correctness -W clippy::complexity -W clippy::perf"
+        }
     }
 }
 
@@ -237,7 +266,7 @@ def iosTesting() {
                 createSimulators()
 
                 withEnv([
-                    "BUNDLE_PATH=$HOME/.gem.indy_sdk"
+                        "BUNDLE_PATH=$HOME/.gem.indy_sdk"
                 ]) {
                     dir('wrappers/ios') {
                         echo "iOS Test: Installing ruby, bundler and gems"
@@ -491,10 +520,10 @@ def linuxVcxBuild(file, env_name, network_name) {
 
         libvcxBuildFinished[env_name] = true
 
+        sh "cp vcx/libvcx/libindy.so vcx/dummy-cloud-agent"
+
         testEnv.inside("--network=${network_name}") {
-            echo "${env_name} Libvcx Test: Run Cloud Agent"
             sh '''
-                cp vcx/libvcx/libindy.so vcx/dummy-cloud-agent
                 cd vcx/dummy-cloud-agent
                 LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy=info cargo run sample-config.json &
             '''
@@ -503,6 +532,20 @@ def linuxVcxBuild(file, env_name, network_name) {
             sh '''
                 cd vcx/libvcx
                 LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=vcx=debug,indy=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --features "pool_tests agency"
+            '''
+        }
+
+        testEnv.inside("--network=${network_name}") {
+            sh '''
+                cd vcx/dummy-cloud-agent
+                sed -i 's/\\("protocol_type": "\\)1.0/\\12.0/' sample-config.json
+                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy=info cargo run sample-config.json &
+            '''
+
+            echo "${env_name} Libvcx Test: Run tests"
+            sh '''
+                cd vcx/libvcx
+                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=vcx=debug,indy=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --features "pool_tests agency_v2" tests::test_real_proof_for_protocol_type_v2 -- --exact
             '''
         }
     }

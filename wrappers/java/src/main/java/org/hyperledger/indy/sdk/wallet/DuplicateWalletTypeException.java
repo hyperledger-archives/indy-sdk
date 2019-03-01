@@ -18,15 +18,4 @@ public class DuplicateWalletTypeException extends IndyException
 	{
 		super(message, ErrorCode.WalletTypeAlreadyRegisteredError.value());
 	}
-
-	/**
-	 * Initializes a new DuplicateWalletTypeException.
-	 *
-	 * @param sdkMessage The SDK error message.
-	 * @param sdkBacktrace The SDK error backtrace.
-	 */
-	public DuplicateWalletTypeException(String sdkMessage, String sdkBacktrace)
-    {
-    	super(sdkMessage, ErrorCode.WalletTypeAlreadyRegisteredError.value(), sdkBacktrace);
-    }
 }

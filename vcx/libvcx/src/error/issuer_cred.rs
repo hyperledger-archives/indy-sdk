@@ -59,3 +59,9 @@ impl From<serde_json::Error> for IssuerCredError {
     }
 }
 
+impl From<u32> for IssuerCredError{
+    fn from(err: u32) -> Self {
+        IssuerCredError::CommonError(err)
+    }
+}
+
