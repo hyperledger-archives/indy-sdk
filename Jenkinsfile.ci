@@ -199,7 +199,7 @@ def macosModuleTesting(library) {
 def androidTesting() {
     env_name = "android_on_linux"
     network_name = "pool_network"
-    linuxModuleTesting("ci/ubuntu.dockerfile ci", env_name, network_name, this.&linuxAndroidOnEmulatorTesting)
+    linuxModuleTesting("ci/ubuntu.dockerfile ci", env_name, network_name, this.&linuxAndroidOnEmulatorTesting, "android")
 }
 
 def iosTesting() {
@@ -524,7 +524,11 @@ def linuxVcxBuild(file, env_name, network_name) {
 }
 
 def linuxModuleTesting(file, env_name, network_name, module_tester) {
-    node('ubuntu') {
+    linuxModuleTesting(file, env_name, network_name, module_tester, "ubuntu")
+}
+
+def linuxModuleTesting(file, env_name, network_name, module_tester, node_label) {
+    node(node_label) {
         def poolInst
         try {
             echo "${env_name} Test: Checkout csm"
@@ -542,16 +546,14 @@ def linuxModuleTesting(file, env_name, network_name, module_tester) {
 }
 
 def linuxAndroidOnEmulatorTesting(env_name, network_name, testEnv) {
-    dir('libindy') {
-        sh 'chmod -R 777 ci/*.sh'
-        sh 'chmod -R 777 *.sh'
+    sh 'chmod -R 777 libindy/ci/*.sh'
+    sh 'chmod -R 777 libindy/*.sh'
 
-        def emu_arch = "x86"
+    def emu_arch = "x86"
 
-        echo "${env_name} Libindy Test: Test on ${emu_arch} emulator"
-        testEnv.inside("--network=${network_name}") {
-            sh "./android.test.sh ${emu_arch} --release"
-        }
+    echo "${env_name} Libindy Test: Test on ${emu_arch} emulator"
+    testEnv.inside("--network=${network_name}") {
+        sh "cd libindy && ./android.test.sh ${emu_arch} --release"
     }
 }
 
