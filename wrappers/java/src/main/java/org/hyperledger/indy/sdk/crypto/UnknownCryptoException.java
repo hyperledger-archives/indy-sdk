@@ -17,15 +17,4 @@ public class UnknownCryptoException extends IndyException
 	public UnknownCryptoException() {
 		super(message, ErrorCode.UnknownCryptoTypeError.value());
 	}
-
-	/**
-	 * Initializes a new UnknownCryptoException.
-	 *
-	 * @param sdkMessage The SDK error message.
-	 * @param sdkBacktrace The SDK error backtrace.
-	 */
-	public UnknownCryptoException(String sdkMessage, String sdkBacktrace)
-    {
-    	super(sdkMessage, ErrorCode.UnknownCryptoTypeError.value(), sdkBacktrace);
-    }
 }

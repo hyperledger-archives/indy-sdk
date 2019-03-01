@@ -165,7 +165,7 @@ impl CryptoCommandExecutor {
     }
 
     fn crypto_sign(&self, wallet_handle: i32, my_vk: &str, msg: &[u8]) -> IndyResult<Vec<u8>> {
-        debug!(
+        trace!(
             "crypto_sign >>> wallet_handle: {:?}, sender_vk: {:?}, msg: {:?}",
             wallet_handle, my_vk, msg
         );
@@ -180,7 +180,7 @@ impl CryptoCommandExecutor {
 
         let res = self.crypto_service.sign(&key, msg)?;
 
-        debug!("crypto_sign <<< res: {:?}", res);
+        trace!("crypto_sign <<< res: {:?}", res);
 
         Ok(res)
     }
@@ -189,7 +189,7 @@ impl CryptoCommandExecutor {
                      their_vk: &str,
                      msg: &[u8],
                      signature: &[u8]) -> IndyResult<bool> {
-        debug!(
+        trace!(
             "crypto_verify >>> their_vk: {:?}, msg: {:?}, signature: {:?}",
             their_vk, msg, signature
         );
@@ -198,7 +198,7 @@ impl CryptoCommandExecutor {
 
         let res = self.crypto_service.verify(their_vk, msg, signature)?;
 
-        debug!("crypto_verify <<< res: {:?}", res);
+        trace!("crypto_verify <<< res: {:?}", res);
 
         Ok(res)
     }
@@ -211,7 +211,7 @@ impl CryptoCommandExecutor {
         their_vk: &str,
         msg: &[u8],
     ) -> IndyResult<Vec<u8>> {
-        debug!("authenticated_encrypt >>> wallet_handle: {:?}, my_vk: {:?}, their_vk: {:?}, msg: {:?}", wallet_handle, my_vk, their_vk, msg);
+        trace!("authenticated_encrypt >>> wallet_handle: {:?}, my_vk: {:?}, their_vk: {:?}, msg: {:?}", wallet_handle, my_vk, their_vk, msg);
 
         self.crypto_service.validate_key(my_vk)?;
         self.crypto_service.validate_key(their_vk)?;
@@ -229,7 +229,7 @@ impl CryptoCommandExecutor {
 
         let res = self.crypto_service.crypto_box_seal(&their_vk, &msg)?;
 
-        debug!("authenticated_encrypt <<< res: {:?}", res);
+        trace!("authenticated_encrypt <<< res: {:?}", res);
 
         Ok(res)
     }
@@ -241,7 +241,7 @@ impl CryptoCommandExecutor {
         my_vk: &str,
         msg: &[u8],
     ) -> IndyResult<(String, Vec<u8>)> {
-        debug!("authenticated_decrypt >>> wallet_handle: {:?}, my_vk: {:?}, msg: {:?}", wallet_handle, my_vk, msg);
+        trace!("authenticated_decrypt >>> wallet_handle: {:?}, my_vk: {:?}, msg: {:?}", wallet_handle, my_vk, msg);
 
         self.crypto_service.validate_key(my_vk)?;
 
@@ -266,7 +266,7 @@ impl CryptoCommandExecutor {
 
         let res = (parsed_msg.sender, decrypted_msg);
 
-        debug!("authenticated_decrypt <<< res: {:?}", res);
+        trace!("authenticated_decrypt <<< res: {:?}", res);
 
         Ok(res)
     }
@@ -274,7 +274,7 @@ impl CryptoCommandExecutor {
     fn anonymous_encrypt(&self,
                          their_vk: &str,
                          msg: &[u8]) -> IndyResult<Vec<u8>> {
-        debug!(
+        trace!(
             "anonymous_encrypt >>> their_vk: {:?}, msg: {:?}",
             their_vk, msg
         );
@@ -283,7 +283,7 @@ impl CryptoCommandExecutor {
 
         let res = self.crypto_service.crypto_box_seal(their_vk, &msg)?;
 
-        debug!("anonymous_encrypt <<< res: {:?}", res);
+        trace!("anonymous_encrypt <<< res: {:?}", res);
 
         Ok(res)
     }
@@ -292,7 +292,7 @@ impl CryptoCommandExecutor {
                          wallet_handle: i32,
                          my_vk: &str,
                          encrypted_msg: &[u8]) -> IndyResult<Vec<u8>> {
-        debug!(
+        trace!(
             "anonymous_decrypt >>> wallet_handle: {:?}, my_vk: {:?}, encrypted_msg: {:?}",
             wallet_handle, my_vk, encrypted_msg
         );
@@ -309,7 +309,7 @@ impl CryptoCommandExecutor {
             .crypto_service
             .crypto_box_seal_open(&my_key, &encrypted_msg)?;
 
-        debug!("anonymous_decrypt <<< res: {:?}", res);
+        trace!("anonymous_decrypt <<< res: {:?}", res);
 
         Ok(res)
     }
@@ -381,6 +381,8 @@ impl CryptoCommandExecutor {
         }
 
         let (base64_protected, cek) = if let Some(sender_vk) = sender_vk {
+            self.crypto_service.validate_key(&sender_vk)?;
+
             //returns authcrypted pack_message format. See Wire message format HIPE for details
             self._prepare_protected_authcrypt(receiver_list, &sender_vk, wallet_handle)?
         } else {

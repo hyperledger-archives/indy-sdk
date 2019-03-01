@@ -12,6 +12,7 @@ use std::io::prelude::*;
 use serde_json::Value;
 
 pub static CONFIG_POOL_NAME: &'static str = "pool_name";
+pub static CONFIG_PROTOCOL_TYPE: &'static str = "protocol_type";
 pub static CONFIG_AGENCY_ENDPOINT: &'static str = "agency_endpoint";
 pub static CONFIG_AGENCY_DID: &'static str = "agency_did";
 pub static CONFIG_AGENCY_VERKEY: &'static str = "agency_verkey";
@@ -32,6 +33,8 @@ pub static CONFIG_WALLET_BACKUP_KEY: &str = "backup_key";
 pub static CONFIG_WALLET_KEY: &str = "wallet_key";
 pub static CONFIG_WALLET_NAME: &'static str = "wallet_name";
 pub static CONFIG_WALLET_TYPE: &'static str = "wallet_type";
+pub static CONFIG_WALLET_STORAGE_CONFIG: &'static str = "storage_config";
+pub static CONFIG_WALLET_STORAGE_CREDS: &'static str = "storage_credentials";
 pub static CONFIG_WALLET_HANDLE: &'static str = "wallet_handle";
 pub static CONFIG_THREADPOOL_SIZE: &'static str = "threadpool_size";
 pub static CONFIG_WALLET_KEY_DERIVATION: &'static str = "wallet_key_derivation";
@@ -59,6 +62,7 @@ pub static DEFAULT_WALLET_KEY_DERIVATION: &str = "RAW";
 pub static DEFAULT_PAYMENT_PLUGIN: &str = "libnullpay.so";
 pub static DEFAULT_PAYMENT_INIT_FUNCTION: &str = "nullpay_init";
 pub static DEFAULT_PAYMENT_METHOD: &str = "null";
+pub static DEFAULT_PROTOCOL_TYPE: &str = "1.0";
 pub static MAX_THREADPOOL_SIZE: usize = 128;
 
 lazy_static! {
@@ -82,21 +86,21 @@ pub fn set_defaults() -> u32 {
     // if this fails the program should exit
     let mut settings = SETTINGS.write().unwrap();
 
-    settings.insert(CONFIG_POOL_NAME.to_string(),DEFAULT_POOL_NAME.to_string());
-    settings.insert(CONFIG_WALLET_NAME.to_string(),DEFAULT_WALLET_NAME.to_string());
-    settings.insert(CONFIG_WALLET_TYPE.to_string(),DEFAULT_DEFAULT.to_string());
-    settings.insert(CONFIG_AGENCY_ENDPOINT.to_string(),DEFAULT_URL.to_string());
-    settings.insert(CONFIG_AGENCY_DID.to_string(),DEFAULT_DID.to_string());
-    settings.insert(CONFIG_AGENCY_VERKEY.to_string(),DEFAULT_VERKEY.to_string());
-    settings.insert(CONFIG_REMOTE_TO_SDK_DID.to_string(),DEFAULT_DID.to_string());
-    settings.insert(CONFIG_REMOTE_TO_SDK_VERKEY.to_string(),DEFAULT_VERKEY.to_string());
-    settings.insert(CONFIG_INSTITUTION_DID.to_string(),DEFAULT_DID.to_string());
-    settings.insert(CONFIG_INSTITUTION_NAME.to_string(),DEFAULT_DEFAULT.to_string());
-    settings.insert(CONFIG_INSTITUTION_LOGO_URL.to_string(),DEFAULT_URL.to_string());
-    settings.insert(CONFIG_SDK_TO_REMOTE_DID.to_string(),DEFAULT_DID.to_string());
-    settings.insert(CONFIG_SDK_TO_REMOTE_VERKEY.to_string(),DEFAULT_VERKEY.to_string());
-    settings.insert(CONFIG_WALLET_KEY.to_string(),DEFAULT_WALLET_KEY.to_string());
-    settings.insert(CONFIG_WALLET_KEY_DERIVATION.to_string(),DEFAULT_WALLET_KEY_DERIVATION.to_string());
+    settings.insert(CONFIG_POOL_NAME.to_string(), DEFAULT_POOL_NAME.to_string());
+    settings.insert(CONFIG_WALLET_NAME.to_string(), DEFAULT_WALLET_NAME.to_string());
+    settings.insert(CONFIG_WALLET_TYPE.to_string(), DEFAULT_DEFAULT.to_string());
+    settings.insert(CONFIG_AGENCY_ENDPOINT.to_string(), DEFAULT_URL.to_string());
+    settings.insert(CONFIG_AGENCY_DID.to_string(), DEFAULT_DID.to_string());
+    settings.insert(CONFIG_AGENCY_VERKEY.to_string(), DEFAULT_VERKEY.to_string());
+    settings.insert(CONFIG_REMOTE_TO_SDK_DID.to_string(), DEFAULT_DID.to_string());
+    settings.insert(CONFIG_REMOTE_TO_SDK_VERKEY.to_string(), DEFAULT_VERKEY.to_string());
+    settings.insert(CONFIG_INSTITUTION_DID.to_string(), DEFAULT_DID.to_string());
+    settings.insert(CONFIG_INSTITUTION_NAME.to_string(), DEFAULT_DEFAULT.to_string());
+    settings.insert(CONFIG_INSTITUTION_LOGO_URL.to_string(), DEFAULT_URL.to_string());
+    settings.insert(CONFIG_SDK_TO_REMOTE_DID.to_string(), DEFAULT_DID.to_string());
+    settings.insert(CONFIG_SDK_TO_REMOTE_VERKEY.to_string(), DEFAULT_VERKEY.to_string());
+    settings.insert(CONFIG_WALLET_KEY.to_string(), DEFAULT_WALLET_KEY.to_string());
+    settings.insert(CONFIG_WALLET_KEY_DERIVATION.to_string(), DEFAULT_WALLET_KEY_DERIVATION.to_string());
     settings.insert(CONFIG_LINK_SECRET_ALIAS.to_string(), DEFAULT_LINK_SECRET_ALIAS.to_string());
     settings.insert(CONFIG_PROTOCOL_VERSION.to_string(), DEFAULT_PROTOCOL_VERSION.to_string());
     settings.insert(CONFIG_EXPORTED_WALLET_PATH.to_string(),
@@ -142,14 +146,12 @@ fn validate_wallet_key(key: &str) -> Result<u32, u32> {
 
 fn validate_optional_config_val<F, S, E>(val: Option<&String>, err: u32, closure: F) -> Result<u32, u32>
     where F: Fn(&str) -> Result<S, E> {
-
-    if val.is_none() {return Ok(error::SUCCESS.code_num)}
+    if val.is_none() { return Ok(error::SUCCESS.code_num); }
 
     closure(val.as_ref().ok_or(error::INVALID_CONFIGURATION.code_num)?)
         .or(Err(err))?;
 
     Ok(error::SUCCESS.code_num)
-
 }
 
 pub fn log_settings() {
@@ -162,7 +164,7 @@ pub fn test_indy_mode_enabled() -> bool {
 
     match config.get(CONFIG_ENABLE_TEST_MODE) {
         None => false,
-        Some(value) => if value == "true" { true } else { if value == "indy" { true } else {false }},
+        Some(value) => if value == "true" { true } else { if value == "indy" { true } else { false } },
     }
 }
 
@@ -184,7 +186,7 @@ pub fn test_agency_mode_enabled() -> bool {
 
     match config.get(CONFIG_ENABLE_TEST_MODE) {
         None => false,
-        Some(value) => if value == "true" { true } else { if value == "agency" { true } else {false }},
+        Some(value) => if value == "true" { true } else { if value == "agency" { true } else { false } },
     }
 }
 
@@ -249,12 +251,27 @@ pub fn set_config_value(key: &str, value: &str) {
     SETTINGS.write().unwrap().insert(key.to_string(), value.to_string());
 }
 
-pub fn get_wallet_credentials() -> String {
+pub fn get_wallet_config(wallet_name: &str, wallet_type: Option<&str>, storage_config: Option<&str>) -> String {
+    let mut config = json!({
+        "id": wallet_name,
+        "storage_type": wallet_type
+    });
+    
+    let storage_config = get_config_value(CONFIG_WALLET_STORAGE_CONFIG).ok();
+    if let Some(_config) = storage_config { config["storage_config"] = serde_json::from_str(&_config).unwrap(); }
+
+    config.to_string()
+}
+
+pub fn get_wallet_credentials(storage_creds: Option<&str>) -> String {
     let key = get_config_value(CONFIG_WALLET_KEY).unwrap_or(UNINITIALIZED_WALLET_KEY.to_string());
     let mut credentials = json!({"key": key});
 
     let key_derivation = get_config_value(CONFIG_WALLET_KEY_DERIVATION).ok();
     if let Some(_key) = key_derivation { credentials["key_derivation_method"] = json!(_key); }
+
+    let storage_creds = get_config_value(CONFIG_WALLET_STORAGE_CREDS).ok();
+    if let Some(_creds) = storage_creds { credentials["storage_credentials"] = serde_json::from_str(&_creds).unwrap(); }
 
     credentials.to_string()
 }
@@ -270,10 +287,49 @@ pub fn validate_payment_method() -> Result<(), u32> {
 }
 
 pub fn get_payment_method() -> String {
-
     let payment_method = get_config_value(CONFIG_PAYMENT_METHOD).unwrap_or(DEFAULT_PAYMENT_METHOD.to_string());
 
     payment_method
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub enum ProtocolTypes {
+    #[serde(rename = "1.0")]
+    V1,
+    #[serde(rename = "2.0")]
+    V2,
+}
+
+impl Default for ProtocolTypes {
+    fn default() -> Self {
+        ProtocolTypes::V1
+    }
+}
+
+impl From<String> for ProtocolTypes {
+    fn from(type_: String) -> Self {
+        match type_.as_str() {
+            "1.0" => ProtocolTypes::V1,
+            "2.0" => ProtocolTypes::V2,
+            type_ @ _ => {
+                error!("Unknown protocol type: {:?}. Use default", type_);
+                ProtocolTypes::default()
+            }
+        }
+    }
+}
+
+impl ::std::string::ToString for ProtocolTypes {
+    fn to_string(&self) -> String {
+        match self {
+            ProtocolTypes::V1 => "1.0".to_string(),
+            ProtocolTypes::V2 => "2.0".to_string(),
+        }
+    }
+}
+
+pub fn get_protocol_type() -> ProtocolTypes {
+    ProtocolTypes::from(get_config_value(CONFIG_PROTOCOL_TYPE).unwrap_or(DEFAULT_PROTOCOL_TYPE.to_string()))
 }
 
 pub fn write_config_to_file(config: &str, path_string: &str) -> Result<(), u32> {
@@ -295,7 +351,7 @@ pub fn read_config_file(path: &str) -> Result<String, u32> {
     Ok(config)
 }
 
-pub fn remove_file_if_exists(filename: &str){
+pub fn remove_file_if_exists(filename: &str) {
     trace!("remove_file_if_exists >>> filename: {}", filename);
     if Path::new(filename).exists() {
         match fs::remove_file(filename) {

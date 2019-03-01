@@ -18,15 +18,4 @@ public class DuplicateMasterSecretNameException extends IndyException
 	{
 		super(message, ErrorCode.AnoncredsMasterSecretDuplicateNameError.value());
 	}
-
-	/**
-	 * Initializes a new DuplicateMasterSecretNameException.
-	 *
-	 * @param sdkMessage The SDK error message.
-	 * @param sdkBacktrace The SDK error backtrace.
-	 */
-	public DuplicateMasterSecretNameException(String sdkMessage, String sdkBacktrace)
-    {
-    	super(sdkMessage, ErrorCode.AnoncredsMasterSecretDuplicateNameError.value(), sdkBacktrace);
-    }
 }

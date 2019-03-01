@@ -1,7 +1,7 @@
 [package]
 
 name = "libvcx"
-version = "0.2.0"
+version = "0.2.2"
 authors = [ "Evernym Inc." ]
 publish = false
 description = "This is the official SDK for Evernym's VCX"
@@ -16,6 +16,7 @@ crate-type = ["staticlib","rlib", "cdylib"]
 default = []
 pool_tests = []
 agency = []
+agency_v2 = []
 # Causes the build to fail on all warnings
 fatal_warnings = []
 
@@ -37,6 +38,7 @@ json = "*"
 serde_derive = "1.0"
 url = "1.5.1"
 reqwest = "0.9.5"
+regex = "1.1.0"
 rust-base58 = "0.0.4"
 rmpv = "0.4.0"
 rmp = "0.8"
@@ -44,8 +46,8 @@ rmp-serde = "0.13.7"
 base64 = "0.8.0"
 openssl = "0.10"
 num-traits = "0.2.0"
-indy = { version = "1.7.0", path = "../../wrappers/rust/" }
-indy-sys = { version = "1.7.0", path = "../../wrappers/rust/indy-sys/" }
+indy = { version = "1.8.1", path = "../../wrappers/rust/" }
+indy-sys = { version = "1.8.1", path = "../../wrappers/rust/indy-sys/" }
 log-panics = "2.0.0"
 tokio-threadpool = "0.1.6"
 futures = "0.1.23"
@@ -68,7 +70,7 @@ dirs = "1.0.4"
 [package.metadata.deb]
 maintainer = "Evernym, Inc."
 copyright = "2018, Evernym Inc."
-depends = "$auto, libindy (=1.7.0)"
+depends = "$auto, libindy (=1.8.1)"
 extended-description = """\
 This is Evernym's SDK for managing Verifiable Credential eXchange against an Indy network. For specific instructions on building see the README in the corresponding github repo https://github.com/evernym/sdk"""
 section = "admin"

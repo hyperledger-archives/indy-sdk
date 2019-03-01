@@ -190,4 +190,41 @@
     return err;
 }
 
+- (NSError *)packMessage:(NSData *)message
+               receivers:(NSString *)receivers
+                  sender:(NSString *)sender
+            walletHandle:(IndyHandle)walletHandle
+                     jwe:(NSData **)jwe
+{
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+
+    [IndyCrypto packMessage:message receivers:receivers sender:sender walletHandle:walletHandle completion:^(NSError *error, NSData *outJwe) {
+        err = error;
+        if (jwe) *jwe = outJwe;
+        [completionExpectation fulfill];
+    }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils defaultTimeout]];
+
+    return err;
+}
+
+- (NSError *)unpackMessage:(NSData *)jwe
+              walletHandle:(IndyHandle)walletHandle
+           unpackedMessage:(NSData **)unpackedMessage {
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+
+    [IndyCrypto unpackMessage:jwe walletHandle:walletHandle completion:^(NSError *error, NSData *outRes) {
+        err = error;
+        if (unpackedMessage) {*unpackedMessage = outRes;}
+        [completionExpectation fulfill];
+    }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
+
+    return err;
+}
+
 @end

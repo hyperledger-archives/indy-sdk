@@ -165,6 +165,7 @@ extern "C" {
                                                                 indy_bool_t   valid )
                                           );
 
+    /// **** THIS FUNCTION WILL BE DEPRECATED USE indy_pack_message() INSTEAD ****
     /// Encrypt a message by authenticated-encryption scheme.
     ///
     /// Sender can encrypt a confidential message specifically for Recipient, using Sender's public key.
@@ -192,7 +193,7 @@ extern "C" {
     /// Common*
     /// Wallet*
     /// Ledger*
-/// Crypto*
+    /// Crypto*
     extern indy_error_t indy_crypto_auth_crypt(indy_handle_t      command_handle,
                                                indy_handle_t      wallet_handle,
                                                const char *       sender_vk,
@@ -206,6 +207,7 @@ extern "C" {
                                                                     indy_u32_t        encrypted_msg_len)
                                               );
 
+    /// **** THIS FUNCTION WILL BE DEPRECATED USE indy_unpack_message() INSTEAD ****
     /// Decrypt a message by authenticated-encryption scheme.
     ///
     /// Sender can encrypt a confidential message specifically for Recipient, using Sender's public key.
@@ -255,6 +257,8 @@ extern "C" {
     /// Note to use DID keys with this function you can call indy_key_for_did to get key id (verkey)
     /// for specific DID.
     ///
+    /// Note: use indy_pack_message() function for A2A goals.
+    ///
     /// #Params
     /// command_handle: command handle to map callback to user context.
     /// recipient_vk: verkey of message recipient
@@ -290,6 +294,8 @@ extern "C" {
     /// Note to use DID keys with this function you can call indy_key_for_did to get key id (verkey)
     /// for specific DID.
     ///
+    /// Note: use indy_unpack_message() function for A2A goals.
+    ///
     /// #Params
     /// command_handle: command handle to map callback to user context.
     /// wallet_handle: wallet handler (created by open_wallet).
@@ -318,13 +324,14 @@ extern "C" {
                                                  );
 
 
-    /// Packs a message (Experimental)
+    /// Packs a message by encrypting the message and serializes it in a JWE-like format (Experimental)
     ///
     /// Note to use DID keys with this function you can call indy_key_for_did to get key id (verkey)
     /// for specific DID.
     ///
     /// #Params
     /// command_handle: command handle to map callback to user context.
+    /// wallet_handle: wallet handle (created by open_wallet).
     /// message: a pointer to the first byte of the message to be packed
     /// message_len: the length of the message
     /// receivers: a string in the format of a json list which will contain the list of receiver's keys
@@ -397,11 +404,11 @@ extern "C" {
                                           );
 
 
-    /// Unpacks a message packed using indy_pack_message which follows the wire message format HIPE
-    /// (Experimental)
+    /// Unpacks a JWE-like formatted message outputted by indy_pack_message (Experimental)
     ///
     /// #Params
     /// command_handle: command handle to map callback to user context.
+    /// wallet_handle: wallet handle (created by open_wallet).
     /// jwe_data: a pointer to the first byte of the JWE to be unpacked
     /// jwe_len: the length of the JWE message in bytes
     /// cb: Callback that takes command result as parameter.

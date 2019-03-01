@@ -48,7 +48,7 @@ end
 1. Edit script build-libindy-core-ios.sh: set the following variables to fit your environment:
    
    ```
-   export OPENSSL_DIR=/usr/local/Cellar/openssl/1.0.2k
+   export OPENSSL_DIR=/usr/local/Cellar/openssl/1.0.2q
    export EVERNYM_REPO_KEY=~/Documents/EvernymRepo
    export LIBINDY_POD_VERSION=0.0.1
    ```

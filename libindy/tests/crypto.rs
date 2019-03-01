@@ -527,7 +527,7 @@ mod high_cases {
             let receiver_keys = serde_json::to_string(&rec_key_vec).unwrap();
             let message = "Hello World".as_bytes();
             let res = crypto::pack_message(wallet_handle, message, &receiver_keys, Some(INVALID_BASE58_VERKEY));
-            assert_code!(ErrorCode::WalletItemNotFound, res);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
             utils::tear_down_with_wallet(wallet_handle);
         }
 

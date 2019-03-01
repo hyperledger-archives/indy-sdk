@@ -19,7 +19,7 @@ use domain::ledger::node::{NodeOperation, NodeOperationData};
 use domain::ledger::nym::GetNymOperation;
 use domain::ledger::pool::{PoolConfigOperation, PoolRestartOperation, PoolUpgradeOperation};
 use domain::ledger::request::Request;
-use domain::ledger::response::{Message, Reply, ReplyType, ResponseMetadata};
+use domain::ledger::response::{Message, Reply, ReplyType};
 use domain::ledger::rev_reg::{GetRevocRegDeltaReplyResult, GetRevocRegReplyResult, GetRevRegDeltaOperation, GetRevRegOperation, RevRegEntryOperation};
 use domain::ledger::rev_reg_def::{GetRevocRegDefReplyResult, GetRevRegDefOperation, RevRegDefOperation};
 use domain::ledger::schema::{GetSchemaOperation, GetSchemaOperationData, GetSchemaReplyResult, SchemaOperation, SchemaOperationData};
@@ -548,47 +548,6 @@ impl LedgerService {
         Ok(res)
     }
 
-    pub fn get_response_metadata(&self, response: &str) -> IndyResult<String> {
-        info!("get_response_metadata >>> response: {:?}", response);
-
-        let message: Message<serde_json::Value> = serde_json::from_str(response)
-            .to_indy(IndyErrorKind::InvalidTransaction, "Cannot deserialize transaction Response")?;
-
-        let response_object: Reply<serde_json::Value> = LedgerService::handle_response_message_type(message)?;
-        let response_result = response_object.result();
-
-        let response_metadata = match response_result["ver"].as_str() {
-            None => LedgerService::parse_transaction_metadata_v0(&response_result),
-            Some("1") => LedgerService::parse_transaction_metadata_v1(&response_result),
-            ver @ _ => return Err(err_msg(IndyErrorKind::InvalidTransaction, format!("Unsupported transaction response version: {:?}", ver)))
-        };
-
-        let res = serde_json::to_string(&response_metadata)
-            .to_indy(IndyErrorKind::InvalidState, "Cannot serialize ResponseMetadata")?;
-
-        info!("get_response_metadata <<< res: {:?}", res);
-
-        Ok(res)
-    }
-
-    fn parse_transaction_metadata_v0(message: &serde_json::Value) -> ResponseMetadata {
-        ResponseMetadata {
-            seq_no: message["seqNo"].as_u64(),
-            txn_time: message["txnTime"].as_u64(),
-            last_txn_time: message["state_proof"]["multi_signature"]["value"]["timestamp"].as_u64(),
-            last_seq_no: None,
-        }
-    }
-
-    fn parse_transaction_metadata_v1(message: &serde_json::Value) -> ResponseMetadata {
-        ResponseMetadata {
-            seq_no: message["txnMetadata"]["seqNo"].as_u64(),
-            txn_time: message["txnMetadata"]["txnTime"].as_u64(),
-            last_txn_time: message["multiSignature"]["signedState"]["stateMetadata"]["timestamp"].as_u64(),
-            last_seq_no: None,
-        }
-    }
-
     pub fn parse_response<T>(response: &str) -> IndyResult<Reply<T>> where T: DeserializeOwned + ReplyType + ::std::fmt::Debug {
         trace!("parse_response >>> response {:?}", response);
 
@@ -601,12 +560,6 @@ impl LedgerService {
 
         let message: Message<T> = serde_json::from_value(message)
             .to_indy(IndyErrorKind::LedgerItemNotFound, "Structure doesn't correspond to type. Most probably not found")?; // FIXME: Review how we handle not found
-
-        LedgerService::handle_response_message_type(message)
-    }
-
-    fn handle_response_message_type<T>(message: Message<T>) -> IndyResult<Reply<T>> where T: DeserializeOwned + ::std::fmt::Debug {
-        trace!("handle_response_message_type >>> message {:?}", message);
 
         match message {
             Message::Reject(response) | Message::ReqNACK(response) =>

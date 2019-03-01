@@ -317,6 +317,7 @@ The blinded master secret is a part of the credential request.
      "nonce": string
    }
 cred_req_metadata_json: Credential request metadata json for further processing of received form Issuer credential.
+    Note: cred_req_metadata_json mustn't be shared with Issuer.
 ````
 
 Errors: `Annoncreds*`, `Common*`, `Wallet*`
@@ -660,7 +661,7 @@ Each proof is associated with a credential and corresponding schema\_id, cred\_d
 There is also aggregated proof part common for all credential proofs.
 ```
     {
-        "requested": {
+        "requested_proof": {
             "revealed_attrs": {
                 "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string},
                 "requested_attr4_id": {sub_proof_index: number: string, encoded: string},
@@ -714,7 +715,7 @@ All required schemas, public keys and revocation registries must be provided.
 * `proof`: Json - created for request proof json
 ```
     {
-        "requested": {
+        "requested_proof": {
             "revealed_attrs": {
                 "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string},
                 "requested_attr4_id": {sub_proof_index: number: string, encoded: string},
@@ -905,6 +906,8 @@ Errors: `Common*`, `Wallet*`, `Ledger*`, `Crypto*`
 
 #### cryptoAuthCrypt \( wh, senderVk, recipientVk, messageRaw \) -&gt; encryptedMsgRaw
 
+  **** THIS FUNCTION WILL BE DEPRECATED USE packMessage INSTEAD ****
+  
 Encrypt a message by authenticated-encryption scheme.
 
 Sender can encrypt a confidential message specifically for Recipient, using Sender's public key.
@@ -926,6 +929,8 @@ Errors: `Common*`, `Wallet*`, `Ledger*`, `Crypto*`
 
 #### cryptoAuthDecrypt \( wh, recipientVk, encryptedMsgRaw \) -&gt; \[ senderVk, decryptedMsgRaw \]
 
+  **** THIS FUNCTION WILL BE DEPRECATED USE unpackMessage INSTEAD ****
+  
 Decrypt a message by authenticated-encryption scheme.
 
 Sender can encrypt a confidential message specifically for Recipient, using Sender's public key.
@@ -955,6 +960,8 @@ While the Recipient can verify the integrity of the message, it cannot verify th
 Note to use DID keys with this function you can call keyForDid to get key id \(verkey\)
 for specific DID.
 
+Note: use packMessage function for A2A goals.
+
 * `recipientVk`: String - verkey of message recipient
 * `messageRaw`: Buffer - a pointer to first byte of message that to be encrypted
 * __->__ `encryptedMsgRaw`: Buffer - an encrypted message as a pointer to array of bytes
@@ -972,12 +979,98 @@ While the Recipient can verify the integrity of the message, it cannot verify th
 Note to use DID keys with this function you can call keyForDid to get key id \(verkey\)
 for specific DID.
 
+Note: use unpackMessage function for A2A goals.
+
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `recipientVk`: String - id \(verkey\) of my key. The key must be created by calling createKey or createAndStoreMyDid
 * `encryptedMsg`: Buffer
 * __->__ `decryptedMsgRaw`: Buffer - decrypted message as a pointer to an array of bytes
 
 Errors: `Common*`, `Wallet*`, `Crypto*`
+
+#### packMessage \( wh, message, receiverKeys, senderVk \) -&gt; jwe
+
+Packs a message by encrypting the message and serializes it in a JWE-like format (Experimental)
+
+Note to use DID keys with this function you can call keyForDid to get key id (verkey) for specific DID.
+
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
+* `message`: Buffer - message that to be packed
+* `receiverKeys`: Array - an array of strings which contains receiver's keys the message is being encrypted for.
+    Example: \['receiver edge_agent_1 verkey', 'receiver edge_agent_2 verkey'\]
+* `senderVk`: String - the sender's verkey as a string When null pointer is used in this parameter, anoncrypt is used
+* __->__ `jwe`: Buffer - a JWE 
+```
+using authcrypt alg:
+{
+    "protected": "b64URLencoded({
+       "enc": "xsalsa20poly1305",
+       "typ": "JWM/1.0",
+       "alg": "Authcrypt",
+       "recipients": [
+           {
+               "encrypted_key": base64URLencode(libsodium.crypto_box(my_key, their_vk, cek, cek_iv))
+               "header": {
+                    "kid": "base58encode(recipient_verkey)",
+                    "sender" : base64URLencode(libsodium.crypto_box_seal(their_vk, base58encode(sender_vk)),
+                    "iv" : base64URLencode(cek_iv)
+               }
+           },
+       ],
+    })",
+    "iv": <b64URLencode(iv)>,
+    "ciphertext": b64URLencode(encrypt_detached({'@type'...}, protected_value_encoded, iv, cek),
+    "tag": <b64URLencode(tag)>
+}
+
+Alternative example in using anoncrypt alg is defined below:
+{
+    "protected": "b64URLencoded({
+       "enc": "xsalsa20poly1305",
+       "typ": "JWM/1.0",
+       "alg": "Anoncrypt",
+       "recipients": [
+           {
+               "encrypted_key": base64URLencode(libsodium.crypto_box_seal(their_vk, cek)),
+               "header": {
+                   "kid": base58encode(recipient_verkey),
+               }
+           },
+       ],
+    })",
+    "iv": b64URLencode(iv),
+    "ciphertext": b64URLencode(encrypt_detached({'@type'...}, protected_value_encoded, iv, cek),
+    "tag": b64URLencode(tag)
+}
+````
+
+Errors: `Common*`, `Wallet*`, `Ledger*`, `Crypto*`
+
+#### unpackMessage \( wh, jwe \) -&gt; res
+
+Unpacks a JWE-like formatted message outputted by packMessage (Experimental)
+
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
+* `jwe`: Buffer - JWE to be unpacked
+* __->__ `res`: Buffer - a result message
+```
+if authcrypt was used to pack the message returns this json structure:
+{
+    message: <decrypted message>,
+    sender_verkey: <sender_verkey>,
+    recipient_verkey: <recipient_verkey>
+}
+
+OR
+
+if anoncrypt was used to pack the message returns this json structure:
+{
+    message: <decrypted message>,
+    recipient_verkey: <recipient_verkey>
+}
+````
+
+Errors: `Common*`, `Wallet*`, `Ledger*`, `Crypto*`
 
 ### did
 
