@@ -18,15 +18,4 @@ public class WalletInvalidQueryException extends IndyException
 	{
 		super(message, ErrorCode.WalletQueryError.value());
 	}
-
-	/**
-	 * Initializes a new WalletInvalidQueryException.
-	 *
-	 * @param sdkMessage The SDK error message.
-	 * @param sdkBacktrace The SDK error backtrace.
-	 */
-	public WalletInvalidQueryException(String sdkMessage, String sdkBacktrace)
-    {
-    	super(sdkMessage, ErrorCode.WalletQueryError.value(), sdkBacktrace);
-    }
 }

@@ -22,7 +22,7 @@ Indy SDK release process produces the following artifacts for components:
   * RHEL binaries planned, but no support in CD pipeline now.
 * Wrappers for programming languages:
   * Python wrapper PyPy package. Available in PyPi as python3-indy package.
-  * Java wrapper maven package. Available as org.hyperledger/indy package in https://repo.evernym.com/artifactory/libindy-maven-local maven repo.
+  * Java wrapper maven package. Available as org.hyperledger/indy package in https://repo.sovrin.org/repository/maven-public maven repo.
   * ObjectiveC (iOS) Cocoapods package. Available in https://repo.sovrin.org/ios/libindy/{master|stable}/libindy-objc/{version}/libindy-objc.tar.gz.
   * .Net. Packages planned, but no support in CD pipeline now.
 * Indy CLI tool

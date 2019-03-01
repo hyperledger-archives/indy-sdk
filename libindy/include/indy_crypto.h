@@ -165,6 +165,7 @@ extern "C" {
                                                                 indy_bool_t   valid )
                                           );
 
+    /// **** THIS FUNCTION WILL BE DEPRECATED USE indy_pack_message() INSTEAD ****
     /// Encrypt a message by authenticated-encryption scheme.
     ///
     /// Sender can encrypt a confidential message specifically for Recipient, using Sender's public key.
@@ -192,7 +193,7 @@ extern "C" {
     /// Common*
     /// Wallet*
     /// Ledger*
-/// Crypto*
+    /// Crypto*
     extern indy_error_t indy_crypto_auth_crypt(indy_handle_t      command_handle,
                                                indy_handle_t      wallet_handle,
                                                const char *       sender_vk,
@@ -206,6 +207,7 @@ extern "C" {
                                                                     indy_u32_t        encrypted_msg_len)
                                               );
 
+    /// **** THIS FUNCTION WILL BE DEPRECATED USE indy_unpack_message() INSTEAD ****
     /// Decrypt a message by authenticated-encryption scheme.
     ///
     /// Sender can encrypt a confidential message specifically for Recipient, using Sender's public key.
@@ -255,6 +257,8 @@ extern "C" {
     /// Note to use DID keys with this function you can call indy_key_for_did to get key id (verkey)
     /// for specific DID.
     ///
+    /// Note: use indy_pack_message() function for A2A goals.
+    ///
     /// #Params
     /// command_handle: command handle to map callback to user context.
     /// recipient_vk: verkey of message recipient
@@ -289,6 +293,8 @@ extern "C" {
     ///
     /// Note to use DID keys with this function you can call indy_key_for_did to get key id (verkey)
     /// for specific DID.
+    ///
+    /// Note: use indy_unpack_message() function for A2A goals.
     ///
     /// #Params
     /// command_handle: command handle to map callback to user context.

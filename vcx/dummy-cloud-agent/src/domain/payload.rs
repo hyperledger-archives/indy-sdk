@@ -95,20 +95,23 @@ impl PayloadKinds {
 }
 
 impl PayloadTypes {
-    pub fn build_v1(kind: PayloadKinds, fmt: &str) -> PayloadTypeV1 {
-        PayloadTypeV1 {
-            name: kind.name().to_string(),
-            ver: MESSAGE_VERSION_V1.to_string(),
-            fmt: fmt.to_string(),
-        }
-    }
-
-    pub fn build_v2(kind: PayloadKinds) -> PayloadTypeV2 {
-        PayloadTypeV2 {
-            did: DID.to_string(),
-            family: kind.family(),
-            version: kind.family().version().to_string(),
-            type_: kind.name().to_string(),
+    pub fn build(kind: PayloadKinds) -> PayloadTypes {
+        match ProtocolType::get() {
+            ProtocolTypes::V1 => {
+                PayloadTypes::PayloadTypeV1(PayloadTypeV1 {
+                    name: kind.name().to_string(),
+                    ver: MESSAGE_VERSION_V1.to_string(),
+                    fmt: "json".to_string(),
+                })
+            }
+            ProtocolTypes::V2 => {
+                PayloadTypes::PayloadTypeV2(PayloadTypeV2 {
+                    did: DID.to_string(),
+                    family: kind.family(),
+                    version: kind.family().version().to_string(),
+                    type_: kind.name().to_string(),
+                })
+            }
         }
     }
 }

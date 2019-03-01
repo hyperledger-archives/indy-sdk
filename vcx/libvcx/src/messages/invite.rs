@@ -130,12 +130,12 @@ pub struct SenderAgencyDetail {
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct InviteDetail {
-    pub status_code: String,
+    status_code: String,
     pub conn_req_id: String,
     pub sender_detail: SenderDetail,
     pub sender_agency_detail: SenderAgencyDetail,
-    pub target_name: String,
-    pub status_msg: String,
+    target_name: String,
+    status_msg: String,
     pub thread_id: Option<String>
 }
 
