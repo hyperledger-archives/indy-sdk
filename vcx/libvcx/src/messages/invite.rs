@@ -1,7 +1,6 @@
 use settings;
 use messages::*;
 use messages::message_type::{MessageTypes, MessageTypeV1, MessageTypeV2};
-use messages::payload::Thread;
 use utils::httpclient;
 use utils::constants::*;
 use utils::uuid::uuid;
@@ -39,8 +38,6 @@ pub struct ConnectionRequest {
     phone_no: Option<String>,
     #[serde(rename = "usePublicDID")]
     include_public_did: bool,
-    #[serde(rename = "~thread")]
-    pub thread: Thread,
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
@@ -88,8 +85,6 @@ pub struct ConnectionRequestAnswer {
     sender_agency_detail: Option<SenderAgencyDetail>,
     #[serde(rename = "answerStatusCode")]
     answer_status_code: Option<MessageStatusCode>,
-    #[serde(rename = "~thread")]
-    pub thread: Thread,
 }
 
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
@@ -131,13 +126,12 @@ pub struct SenderAgencyDetail {
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct InviteDetail {
-    pub status_code: String,
+    status_code: String,
     pub conn_req_id: String,
     pub sender_detail: SenderDetail,
     pub sender_agency_detail: SenderAgencyDetail,
-    pub target_name: String,
-    pub status_msg: String,
-    pub thread_id: Option<String>
+    target_name: String,
+    status_msg: String,
 }
 
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
@@ -159,7 +153,6 @@ pub struct SendInviteBuilder {
     agent_did: String,
     agent_vk: String,
     public_did: Option<String>,
-    thread: Thread
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
@@ -195,7 +188,6 @@ impl InviteDetail {
             },
             target_name: String::new(),
             status_msg: String::new(),
-            thread_id: None,
         }
     }
 }
@@ -217,7 +209,6 @@ impl SendInviteBuilder {
             agent_did: String::new(),
             agent_vk: String::new(),
             public_did: None,
-            thread: Thread::new(),
         }
     }
 
@@ -240,11 +231,6 @@ impl SendInviteBuilder {
             validation::validate_phone_number(p_num)?;
             self.payload.phone_no = phone_number.map(String::from);
         }
-        Ok(self)
-    }
-
-    pub fn thread(&mut self, thread: &Thread) -> VcxResult<&mut Self> {
-        self.thread = thread.clone();
         Ok(self)
     }
 
@@ -299,7 +285,6 @@ pub struct AcceptInviteBuilder {
     agent_did: String,
     agent_vk: String,
     reply_to_msg_id: Option<String>,
-    thread: Thread
 }
 
 impl AcceptInviteBuilder {
@@ -320,7 +305,6 @@ impl AcceptInviteBuilder {
             agent_did: String::new(),
             agent_vk: String::new(),
             reply_to_msg_id: None,
-            thread: Thread::new(),
         }
     }
 
@@ -347,11 +331,6 @@ impl AcceptInviteBuilder {
 
     pub fn reply_to(&mut self, id: &str) -> VcxResult<&mut Self> {
         self.reply_to_msg_id = Some(id.to_string());
-        Ok(self)
-    }
-
-    pub fn thread(&mut self, thread: &Thread) -> VcxResult<&mut Self> {
-        self.thread = thread.clone();
         Ok(self)
     }
 
@@ -436,7 +415,6 @@ impl GeneralMessage for SendInviteBuilder {
                         target_name: self.payload.target_name.clone(),
                         phone_no: self.payload.phone_no.clone(),
                         include_public_did: self.payload.include_public_did,
-                        thread: self.thread.clone(),
                     };
 
                     vec![A2AMessage::Version2(A2AMessageV2::ConnectionRequest(msg))]
@@ -490,7 +468,6 @@ impl GeneralMessage for AcceptInviteBuilder {
                         sender_detail: self.payload.sender_detail.clone(),
                         sender_agency_detail: self.payload.sender_agency_detail.clone(),
                         answer_status_code: self.payload.answer_status_code.clone(),
-                        thread: self.thread.clone(),
                     };
 
                     vec![A2AMessage::Version2(A2AMessageV2::ConnectionRequestAnswer(msg))]

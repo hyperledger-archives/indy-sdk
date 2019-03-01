@@ -24,7 +24,6 @@ pub fn post_u8(body_content: &Vec<u8>) -> VcxResult<Vec<u8>> {
         info!("::Android code");
         set_ssl_cert_location();
     }
-
     let client = reqwest::ClientBuilder::new().timeout(::utils::timeout::TimeoutUtils::long_timeout()).build()
         .or(Err(VcxError::from_msg(VcxErrorKind::PostMessageFailed, "Preparing Post failed")))?;
     debug!("Posting encrypted bundle to: \"{}\"", url);

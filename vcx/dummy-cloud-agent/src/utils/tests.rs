@@ -341,7 +341,6 @@ pub fn compose_create_connection_request(wallet_handle: i32,
                 target_name: None,
                 phone_no: Some(PHONE_NO.to_string()),
                 use_public_did: Some(true),
-                thread_id: None,
             })));
 
     let msgs = [create_msg, msg_details];
@@ -392,7 +391,6 @@ pub fn compose_create_connection_request_answer(wallet_handle: i32,
                     endpoint: FORWARD_AGENT_ENDPOINT.to_string(),
                 },
                 answer_status_code: MessageStatusCode::Accepted,
-                thread: None,
             }
         )));
 

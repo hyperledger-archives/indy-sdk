@@ -4,8 +4,6 @@ use settings::{ProtocolTypes, get_protocol_type};
 use utils::libindy::crypto;
 use error::prelude::*;
 
-use std::collections::HashMap;
-
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
 pub enum Payloads {
     PayloadV1(PayloadV1),
@@ -28,8 +26,6 @@ pub struct PayloadV2 {
     pub id: String,
     #[serde(rename = "@msg")]
     pub msg: String,
-    #[serde(rename = "~thread")]
-    pub thread: Thread,
 }
 
 impl Payloads {
@@ -37,7 +33,7 @@ impl Payloads {
     // this will become a CommonError, because multiple types (Connection/Issuer Credential) use this function
     // Possibly this function moves out of this file.
     // On second thought, this should stick as a ConnectionError.
-    pub fn encrypt(my_vk: &str, their_vk: &str, data: &str, msg_type: PayloadKinds, thread: Option<Thread>) -> VcxResult<Vec<u8>> {
+    pub fn encrypt(my_vk: &str, their_vk: &str, data: &str, msg_type: PayloadKinds) -> VcxResult<Vec<u8>> {
         match ProtocolTypes::from(get_protocol_type()) {
             ProtocolTypes::V1 => {
                 let payload = PayloadV1 {
@@ -55,13 +51,10 @@ impl Payloads {
                 crypto::prep_msg(&my_vk, &their_vk, &bytes)
             }
             ProtocolTypes::V2 => {
-                let thread = thread.ok_or(VcxError::from_msg(VcxErrorKind::InvalidState, "Cannot get thread"))?;
-
                 let payload = PayloadV2 {
                     type_: PayloadTypes::build_v2(msg_type),
                     id: String::new(),
-                    msg: data.to_string(),
-                    thread,
+                    msg: data.to_string()
                 };
 
                 let message = ::serde_json::to_string(&payload)
@@ -79,14 +72,14 @@ impl Payloads {
         }
     }
 
-    pub fn decrypt(my_vk: &str, payload: &Vec<i8>) -> VcxResult<(String, Option<Thread>)> {
+    pub fn decrypt(my_vk: &str, payload: &Vec<i8>) -> VcxResult<String> {
         match ProtocolTypes::from(get_protocol_type()) {
             ProtocolTypes::V1 => {
                 let (_, data) = crypto::parse_msg(&my_vk, &to_u8(payload))?;
 
                 let my_payload: PayloadV1 = rmp_serde::from_slice(&data[..])
                     .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidMessagePack, format!("Cannot decrypt payload: {}", err)))?;
-                Ok((my_payload.msg, None))
+                Ok(my_payload.msg)
             }
             ProtocolTypes::V2 => {
                 Payloads::decrypt_payload_v2(my_vk, payload)
@@ -94,7 +87,7 @@ impl Payloads {
         }
     }
 
-    pub fn decrypt_payload_v2(my_vk: &str, payload: &Vec<i8>) -> VcxResult<(String, Option<Thread>)> {
+    pub fn decrypt_payload_v2(my_vk: &str, payload: &Vec<i8>) -> VcxResult<String> {
         let unpacked_msg = crypto::unpack_message(&to_u8(payload))?;
 
         let message: ::serde_json::Value = ::serde_json::from_slice(unpacked_msg.as_slice())
@@ -103,17 +96,13 @@ impl Payloads {
         let message = message["message"].as_str()
             .ok_or(VcxError::from_msg(VcxErrorKind::InvalidJson, "Cannot find `message` field"))?.to_string();
 
-        let mut my_payload: PayloadV2 = serde_json::from_str(&message)
+        let my_payload: PayloadV2 = serde_json::from_str(&message)
             .map_err(|err| {
                 error!("could not deserialize bundle with i8 or u8: {}", err);
                 VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize payload: {}", err))
             })?;
 
-        if my_payload.thread.thid.is_none() {
-            my_payload.thread.thid = Some(my_payload.id);
-        }
-
-        Ok((my_payload.msg, Some(my_payload.thread)))
+        Ok(my_payload.msg)
     }
 }
 
@@ -197,30 +186,5 @@ impl PayloadTypes {
             version: kind.family().version().to_string(),
             type_: kind.name().to_string(),
         }
-    }
-}
-
-#[derive(Debug, Deserialize, Serialize, PartialEq, Clone)]
-pub struct Thread {
-    pub thid: Option<String>,
-    pub pthid: Option<String>,
-    pub sender_order: u32,
-    pub received_orders: HashMap<String, u32>,
-}
-
-impl Thread {
-    pub fn new() -> Thread {
-        Thread {
-            thid: None,
-            pthid: None,
-            sender_order: 0,
-            received_orders: HashMap::new(),
-        }
-    }
-
-    pub fn increment_receiver(&mut self, did: &str) {
-        self.received_orders.entry(did.to_string())
-            .and_modify(|e| *e += 1)
-            .or_insert(0);
     }
 }

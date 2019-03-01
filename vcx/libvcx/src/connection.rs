@@ -2,14 +2,12 @@ use serde_json;
 use serde_json::Value;
 use rmp_serde;
 
-use std::collections::HashMap;
-
 use api::VcxStateType;
 use settings;
 use messages;
 use messages::{GeneralMessage, MessageStatusCode, RemoteMessageType, ObjectWithVersion};
 use messages::invite::{InviteDetail, SenderDetail, Payload as ConnectionPayload, AcceptanceDetails};
-use messages::payload::{Payloads, Thread};
+use messages::payload::Payloads;
 use messages::get_message::Message;
 use object_cache::ObjectCache;
 use error::prelude::*;
@@ -76,7 +74,6 @@ impl Connection {
                 .agent_did(&self.agent_did)?
                 .agent_vk(&self.agent_vk)?
                 .public_did(self.public_did.as_ref().map(String::as_str))?
-                .thread(&Thread::new())?
                 .send_secure()
                 .map_err(|err| err.extend("Cannot send invite"))?;
 
@@ -118,25 +115,12 @@ impl Connection {
             .sender_agency_details(&details.sender_agency_detail)?
             .answer_status_code(&MessageStatusCode::Accepted)?
             .reply_to(&details.conn_req_id)?
-            .thread(&self._build_thread_accept_invite(&details))?
             .send_secure()
             .map_err(|err| err.extend("Cannot accept invite"))?;
 
         self.state = VcxStateType::VcxStateAccepted;
 
         Ok(error::SUCCESS.code_num)
-    }
-
-    fn _build_thread_accept_invite(&self, invite_detail: &InviteDetail) -> Thread {
-        let mut received_orders = HashMap::new();
-        received_orders.insert(invite_detail.sender_detail.did.clone(), 0);
-
-        Thread {
-            thid: invite_detail.thread_id.clone(),
-            pthid: None,
-            sender_order: 0,
-            received_orders,
-        }
     }
 
     fn connect(&mut self, options: &ConnectionOptions) -> VcxResult<u32> {
@@ -463,7 +447,7 @@ pub fn parse_acceptance_details(handle: u32, message: &Message) -> VcxResult<Sen
             Ok(response.sender_detail)
         }
         settings::ProtocolTypes::V2 => {
-            let (payload, _) = Payloads::decrypt_payload_v2(&my_vk, &payload)?;
+            let payload = Payloads::decrypt_payload_v2(&my_vk, &payload)?;
             let response: AcceptanceDetails = serde_json::from_str(&payload)
                 .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize AcceptanceDetails: {}", err)))?;
 
@@ -1031,27 +1015,39 @@ pub mod tests {
 
         let handle = CONNECTION_MAP.add(c).unwrap();
 
-        assert_eq!(connect(handle, Some("{}".to_string())).unwrap_err().kind(), VcxErrorKind::GeneralConnectionError);;
+        assert_eq!(connect(handle, Some("{}".to_string())).unwrap_err().kind(), VcxErrorKind::GeneralConnectionError);
+        ;
 
         // from_string throws a ConnectionError
-        assert_eq!(from_string("").unwrap_err().kind(), VcxErrorKind::InvalidJson);;
+        assert_eq!(from_string("").unwrap_err().kind(), VcxErrorKind::InvalidJson);
+        ;
 
         // release throws a connection Error
-        assert_eq!(release(1234).unwrap_err().kind(), VcxErrorKind::InvalidConnectionHandle);;
+        assert_eq!(release(1234).unwrap_err().kind(), VcxErrorKind::InvalidConnectionHandle);
+        ;
     }
 
     #[test]
     fn test_void_functions_actually_have_results() {
-        assert_eq!(set_their_pw_verkey(1, "blah").unwrap_err().kind(), VcxErrorKind::InvalidConnectionHandle);;
-        assert_eq!(set_state(1, VcxStateType::VcxStateNone).unwrap_err().kind(), VcxErrorKind::InvalidConnectionHandle);;
-        assert_eq!(set_pw_did(1, "blah").unwrap_err().kind(), VcxErrorKind::InvalidConnectionHandle);;
-        assert_eq!(set_their_pw_did(1, "blah").unwrap_err().kind(), VcxErrorKind::InvalidConnectionHandle);;
-        assert_eq!(set_uuid(1, "blah").unwrap_err().kind(), VcxErrorKind::InvalidConnectionHandle);;
-        assert_eq!(set_endpoint(1, "blah").unwrap_err().kind(), VcxErrorKind::InvalidConnectionHandle);;
-        assert_eq!(set_agent_verkey(1, "blah").unwrap_err().kind(), VcxErrorKind::InvalidConnectionHandle);;
+        assert_eq!(set_their_pw_verkey(1, "blah").unwrap_err().kind(), VcxErrorKind::InvalidConnectionHandle);
+        ;
+        assert_eq!(set_state(1, VcxStateType::VcxStateNone).unwrap_err().kind(), VcxErrorKind::InvalidConnectionHandle);
+        ;
+        assert_eq!(set_pw_did(1, "blah").unwrap_err().kind(), VcxErrorKind::InvalidConnectionHandle);
+        ;
+        assert_eq!(set_their_pw_did(1, "blah").unwrap_err().kind(), VcxErrorKind::InvalidConnectionHandle);
+        ;
+        assert_eq!(set_uuid(1, "blah").unwrap_err().kind(), VcxErrorKind::InvalidConnectionHandle);
+        ;
+        assert_eq!(set_endpoint(1, "blah").unwrap_err().kind(), VcxErrorKind::InvalidConnectionHandle);
+        ;
+        assert_eq!(set_agent_verkey(1, "blah").unwrap_err().kind(), VcxErrorKind::InvalidConnectionHandle);
+        ;
         let details: InviteDetail = serde_json::from_str(INVITE_DETAIL_STRING).unwrap();
-        assert_eq!(set_invite_details(1, &details).unwrap_err().kind(), VcxErrorKind::InvalidConnectionHandle);;
-        assert_eq!(set_pw_verkey(1, "blah").unwrap_err().kind(), VcxErrorKind::InvalidConnectionHandle);;
+        assert_eq!(set_invite_details(1, &details).unwrap_err().kind(), VcxErrorKind::InvalidConnectionHandle);
+        ;
+        assert_eq!(set_pw_verkey(1, "blah").unwrap_err().kind(), VcxErrorKind::InvalidConnectionHandle);
+        ;
     }
 
     #[test]

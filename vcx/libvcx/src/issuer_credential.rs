@@ -5,7 +5,7 @@ use api::VcxStateType;
 use messages;
 use settings;
 use messages::{RemoteMessageType, MessageStatusCode, GeneralMessage, ObjectWithVersion};
-use messages::payload::{Payloads, PayloadKinds, Thread};
+use messages::payload::{Payloads, PayloadKinds};
 use connection;
 use credential_request::CredentialRequest;
 use utils::error;
@@ -59,7 +59,6 @@ pub struct IssuerCredential {
     remote_did: String,
     //their_pw_did for this relationship
     remote_vk: String,
-    thread: Option<Thread>
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -79,7 +78,6 @@ pub struct CredentialOffer {
     pub claim_name: String,
     pub claim_id: String,
     pub msg_ref_id: Option<String>,
-    pub thread_id: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
@@ -172,7 +170,7 @@ impl IssuerCredential {
                 .to(&self.issued_did)?
                 .to_vk(&self.issued_vk)?
                 .msg_type(&RemoteMessageType::CredOffer)?
-                .edge_agent_payload(&self.issued_vk, &self.remote_vk, &payload, PayloadKinds::CredOffer, self.thread.clone())?
+                .edge_agent_payload(&self.issued_vk, &self.remote_vk, &payload, PayloadKinds::CredOffer)?
                 .agent_did(&self.agent_did)?
                 .agent_vk(&self.agent_vk)?
                 .set_title(&title)?
@@ -223,14 +221,12 @@ impl IssuerCredential {
             .and_then(|cred_req| cred_req.msg_ref_id.as_ref())
             .ok_or(VcxError::from(VcxErrorKind::InvalidCredentialRequest))?;
 
-        self.thread.as_mut().map(|thread| thread.sender_order += 1);
-
         let response = messages::send_message()
             .to(&self.issued_did)?
             .to_vk(&self.issued_vk)?
             .msg_type(&RemoteMessageType::Cred)?
             .status_code(&MessageStatusCode::Accepted)?
-            .edge_agent_payload(&self.issued_vk, &self.remote_vk, &data, PayloadKinds::Cred, self.thread.clone())?
+            .edge_agent_payload(&self.issued_vk, &self.remote_vk, &data, PayloadKinds::Cred)?
             .agent_did(&self.agent_did)?
             .agent_vk(&self.agent_vk)?
             .ref_msg_id(cred_req_msg_id)?
@@ -264,18 +260,13 @@ impl IssuerCredential {
                                                                       &self.agent_did,
                                                                       &self.agent_vk)?;
 
-        let (payload, thread) = Payloads::decrypt(&self.issued_vk, &payload)
+        let payload = Payloads::decrypt(&self.issued_vk, &payload)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::Common(err.into()), "Cannot decrypt CredentialOffer payload"))?;
 
         let mut cred_req: CredentialRequest = serde_json::from_str(&payload)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize CredentialRequest: {}", err)))?;
 
         cred_req.msg_ref_id = Some(offer_uid);
-
-        if let Some(tr) = thread {
-            let remote_did = self.remote_did.as_str();
-            self.thread.as_mut().map(|thread| thread.increment_receiver(remote_did));
-        }
 
         self.credential_request = Some(cred_req);
         debug!("received credential request for credential offer: {}", self.source_id);
@@ -348,7 +339,6 @@ impl IssuerCredential {
             msg_ref_id: None,
             cred_def_id: self.cred_def_id.clone(),
             libindy_offer,
-            thread_id: None,
         })
     }
 
@@ -556,7 +546,6 @@ pub fn issuer_credential_create(cred_def_handle: u32,
         agent_vk: String::new(),
         cred_def_id,
         cred_def_handle,
-        thread: Some(Thread::new()),
     };
 
     new_issuer_credential.validate_credential_offer()?;
@@ -725,7 +714,6 @@ pub mod tests {
             agent_vk: VERKEY.to_string(),
             cred_def_id: CRED_DEF_ID.to_string(),
             cred_def_handle: 0,
-            thread: Some(Thread::new()),
         };
         issuer_credential
     }
@@ -781,7 +769,6 @@ pub mod tests {
             agent_vk: String::new(),
             cred_def_id,
             cred_def_handle,
-            thread: Some(Thread::new()),
         };
 
         let payment = issuer_credential.generate_payment_info().unwrap();
@@ -950,7 +937,6 @@ pub mod tests {
             remote_vk: VERKEY.to_string(),
             agent_did: DID.to_string(),
             agent_vk: VERKEY.to_string(),
-            thread: Some(Thread::new()),
         };
 
         ::utils::httpclient::set_next_u8_response(CREDENTIAL_REQ_RESPONSE.to_vec());

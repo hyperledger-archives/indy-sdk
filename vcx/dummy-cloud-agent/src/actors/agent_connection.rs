@@ -7,7 +7,7 @@ use domain::status::{ConnectionStatus, MessageStatusCode};
 use domain::invite::{ForwardAgentDetail, InviteDetail, SenderDetail, AgentDetail};
 use domain::internal_message::InternalMessage;
 use domain::key_deligation_proof::KeyDlgProof;
-use domain::payload::{PayloadV1, PayloadV2, PayloadTypes, PayloadKinds, Thread};
+use domain::payload::{PayloadV1, PayloadV2, PayloadTypes, PayloadKinds};
 use domain::protocol_type::{ProtocolType, ProtocolTypes};
 use failure::{err_msg, Error, Fail};
 use futures::*;
@@ -349,8 +349,7 @@ impl AgentConnection {
                                                                 &sender_did,
                                                                 None,
                                                                 None,
-                                                                Some(map! { "phone_no".to_string() => msg_detail.phone_no.clone() }),
-                                                                None);
+                                                                Some(map! { "phone_no".to_string() => msg_detail.phone_no.clone() }));
 
                 (msg, msg_detail)
             })
@@ -461,8 +460,7 @@ impl AgentConnection {
                                                          &sender_did,
                                                          None,
                                                          Some(msg_detail.msg),
-                                                         Some(map! {"detail".to_string() => msg_detail.detail, "title".to_string()=> msg_detail.title}),
-                                                         None);
+                                                         Some(map! {"detail".to_string() => msg_detail.detail, "title".to_string()=> msg_detail.title}));
 
         if let Some(msg_id) = reply_to_msg_id.as_ref() {
             self.answer_message(msg_id, &msg.uid, &MessageStatusCode::Accepted).unwrap();
@@ -641,7 +639,6 @@ impl AgentConnection {
                                                                          &msg_detail.sender_detail.did,
                                                                          None,
                                                                          None,
-                                                                         None,
                                                                          None);
 
                 let sender_did = slf.user_pairwise_did.clone();
@@ -651,8 +648,7 @@ impl AgentConnection {
                                                                        &sender_did,
                                                                        Some(conn_req_msg.uid.as_str()),
                                                                        None,
-                                                                       None,
-                                                                       msg_detail.thread.clone());
+                                                                       None);
                 slf.state.agent_key_dlg_proof = Some(key_dlg_proof);
 
                 slf.state.remote_connection_detail = Some(RemoteConnectionDetail {
@@ -713,8 +709,7 @@ impl AgentConnection {
                                                                        &msg_detail.sender_detail.did,
                                                                        None,
                                                                        None,
-                                                                       None,
-                                                                       msg_detail.thread.clone());
+                                                                       None);
 
                 slf.state.remote_connection_detail = Some(RemoteConnectionDetail {
                     forward_agent_detail: msg_detail.sender_agency_detail.clone(),
@@ -763,8 +758,7 @@ impl AgentConnection {
                                          sender_did: &str,
                                          ref_msg_id: Option<&str>,
                                          payload: Option<Vec<u8>>,
-                                         sending_data: Option<HashMap<String, Option<String>>>,
-                                         thread: Option<Thread>) -> InternalMessage {
+                                         sending_data: Option<HashMap<String, Option<String>>>) -> InternalMessage {
         trace!("AgentConnection::create_and_store_internal_message >> {:?}, {:?}, {:?}, {:?}, {:?}, {:?}, {:?}",
                uid, mtype, status_code, sender_did, ref_msg_id, payload, sending_data);
 
@@ -774,8 +768,7 @@ impl AgentConnection {
                                        sender_did,
                                        ref_msg_id,
                                        payload,
-                                       sending_data,
-                                       thread);
+                                       sending_data);
         self.state.messages.insert(msg.uid.to_string(), msg.clone());
         msg
     }
@@ -1164,7 +1157,6 @@ impl AgentConnection {
                     type_: PayloadTypes::build_v2(PayloadKinds::from(type_)),
                     id: String::new(),
                     msg,
-                    thread: Thread::new(),
                 };
 
                 let message = ftry!(serde_json::to_string(&payload_msg));
@@ -1207,7 +1199,6 @@ impl AgentConnection {
             },
             status_code: msg.status_code.clone(),
             status_msg: msg.status_code.message().to_string(),
-            thread_id: msg_detail.thread_id.clone(),
         };
 
         match ProtocolType::get() {
@@ -1267,7 +1258,6 @@ impl AgentConnection {
                         sender_detail,
                         sender_agency_detail: self.forward_agent_detail.clone(),
                         answer_status_code: MessageStatusCode::Accepted,
-                        thread: None,
                     };
 
                     vec![A2AMessage::Version1(A2AMessageV1::CreateMessage(msg_create)),
@@ -1282,7 +1272,6 @@ impl AgentConnection {
                         sender_detail,
                         sender_agency_detail: self.forward_agent_detail.clone(),
                         answer_status_code: MessageStatusCode::Accepted,
-                        thread: message.thread.clone().unwrap_or(Thread::new()),
                     };
                     vec![A2AMessage::Version2(A2AMessageV2::ConnectionRequestAnswer(msg))]
                 }

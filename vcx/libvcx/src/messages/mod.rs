@@ -413,7 +413,7 @@ impl<'de> Deserialize<'de> for A2AMessage {
             MessageTypes::MessageTypeV2(_) =>
                 A2AMessageV2::deserialize(value)
                     .map(|msg| A2AMessage::Version2(msg))
-                    .map_err(de::Error::custom)
+                    .map_err(de::Error::custom),
         }
     }
 }

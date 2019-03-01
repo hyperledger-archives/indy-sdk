@@ -1,7 +1,6 @@
 use domain::message_type::{MessageTypeV2, MessageFamilies, MESSAGE_VERSION_V1, DID};
 use domain::a2a::RemoteMessageType;
 use domain::protocol_type::{ProtocolType, ProtocolTypes};
-use std::collections::HashMap;
 
 #[derive(Deserialize, Serialize, Debug)]
 pub enum Payloads {
@@ -25,8 +24,6 @@ pub struct PayloadV2 {
     pub id: String,
     #[serde(rename = "@msg")]
     pub msg: String,
-    #[serde(rename = "~thread")]
-    pub thread: Thread,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -124,25 +121,6 @@ impl From<RemoteMessageType> for PayloadKinds {
             RemoteMessageType::ProofReq => PayloadKinds::ProofRequest,
             RemoteMessageType::Proof => PayloadKinds::Proof,
             RemoteMessageType::Other(other) => PayloadKinds::Other(other.to_string()),
-        }
-    }
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct Thread {
-    pub thid: Option<String>,
-    pub pthid: Option<String>,
-    pub sender_order: u32,
-    pub received_orders: HashMap<String, u32>,
-}
-
-impl Thread {
-    pub fn new() -> Thread {
-        Thread {
-            thid: None,
-            pthid: None,
-            sender_order: 0,
-            received_orders: HashMap::new(),
         }
     }
 }
