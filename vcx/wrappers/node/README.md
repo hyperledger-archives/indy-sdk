@@ -33,3 +33,21 @@ npm run doc-gen
 ```
 * A directory will be created locally `./docs` which contains an `index.html` file which can be used to navigate the generated documents.
 
+## Run Demo
+- Install dependencies 
+```
+npm install
+```
+- Compile vcx wrapper
+```
+npm compile
+```
+- Start [Dummy Cloud Agent](../../dummy-cloud-agent)
+- Run Faber agent, representing an institution
+```
+npm run demo:faber
+```
+- Give it a few seconds, then run Alice's agent which will connect with Faber's agent
+```
+npm run demo:alice
+```
