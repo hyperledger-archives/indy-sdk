@@ -35,6 +35,9 @@ try {
 }
 
 def testing() {
+    stage('Static Analysis') {
+        staticValidation()   
+    }
     stage('Testing') {
         parallel([
                 'ubuntu-test' : { ubuntuTesting() },
@@ -96,6 +99,31 @@ def notifyingFailure() {
     currentBuild.result = "FAILED"
     node('ubuntu-master') {
         sendNotification.fail([slack: true])
+    }
+}
+
+def staticValidation() {
+    parallel([
+        'libindy'    : { runValdiationRust('libindy') },
+        'libnullpay' : { runValdiationRust('libnullpay') },
+        'libvcx'     : { runValdiationRust('vcx/libvcx') },
+        'cli'        : { runValdiationRust('cli') }
+    ])
+}
+
+def runValdiationRust(dir) {
+    node('ubuntu') {
+        checkout scm
+        if (dir == 'vcx/libvcx') {
+            testEnv = dockerBuild("static-validation-libvcx", "vcx/ci/ubuntu.dockerfile .")
+        } else {
+            testEnv = dockerBuild("static-validation-libindy", "libindy/ci/ubuntu.dockerfile libindy/ci")
+        }
+        testEnv.inside {
+            //FIXME waiting on IS-823
+            //sh "cargo clippy --manifest-path ${dir}/Cargo.toml"
+            sh "cargo clippy --manifest-path ${dir}/Cargo.toml -- -W clippy::style -W clippy::correctness -W clippy::complexity -W clippy::perf"
+        }
     }
 }
 
