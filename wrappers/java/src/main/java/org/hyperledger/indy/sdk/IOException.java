@@ -15,15 +15,4 @@ public class IOException extends IndyException
 	{
 		super(message, ErrorCode.CommonIOError.value());
 	}
-
-	/**
-	 * Initializes a new IOException.
-	 *
-	 * @param sdkMessage The SDK error message.
-	 * @param sdkBacktrace The SDK error backtrace.
-	 */
-	public IOException(String sdkMessage, String sdkBacktrace)
-    {
-    	super(sdkMessage, ErrorCode.CommonIOError.value(), sdkBacktrace);
-    }
 }
