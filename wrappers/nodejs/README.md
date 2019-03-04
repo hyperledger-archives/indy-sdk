@@ -317,6 +317,7 @@ The blinded master secret is a part of the credential request.
      "nonce": string
    }
 cred_req_metadata_json: Credential request metadata json for further processing of received form Issuer credential.
+    Note: cred_req_metadata_json mustn't be shared with Issuer.
 ````
 
 Errors: `Annoncreds*`, `Common*`, `Wallet*`
@@ -714,7 +715,7 @@ All required schemas, public keys and revocation registries must be provided.
 * `proof`: Json - created for request proof json
 ```
     {
-        "requested": {
+        "requested_proof": {
             "revealed_attrs": {
                 "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string},
                 "requested_attr4_id": {sub_proof_index: number: string, encoded: string},
