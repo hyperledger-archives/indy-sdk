@@ -17,14 +17,4 @@ public class IncompatiblePaymentException extends IndyException {
     public IncompatiblePaymentException() {
         super(message, ErrorCode.IncompatiblePaymentError.value());
     }
-
-    /**
-     * Initializes a new {@link IncompatiblePaymentException} with the specified message.
-     *
-     * @param sdkMessage The SDK error message.
-     * @param sdkBacktrace The SDK error backtrace.
-     */
-    public IncompatiblePaymentException(String sdkMessage, String sdkBacktrace) {
-        super(sdkMessage, ErrorCode.IncompatiblePaymentError.value(), sdkBacktrace);
-    }
 }

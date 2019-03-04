@@ -64,6 +64,9 @@ ARG RUST_VER="1.31.0"
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain $RUST_VER
 ENV PATH /home/vcx/.cargo/bin:$PATH
 
+# Install clippy to the Rust toolchain
+RUN rustup component add clippy
+
 RUN cargo install cargo-deb --color=never
 
 CMD ["sh", "vcx/ci/scripts/package.sh"]

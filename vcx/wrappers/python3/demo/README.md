@@ -1,5 +1,11 @@
 # Content
 
+There are 2 versions of this demo, the original version (faber.py and alice.py), and a slightly modified 
+version (faber-pg.py and alice-pg.py) that supports postgres wallet storage, and illustrated how the vcx 
+object serialization/deserialization can be used.
+
+# Running the original demo
+
 This directory contains the following files:
 
 * faber.py - a script that acts as an institution/enterprise by sending a connection 
@@ -15,8 +21,6 @@ is specified for Python scripts (`faber.py` and `alice.py`) by environment varia
 `POOL_TXN_FILE=sandbox/pool_transactions_genesis` where `sandbox` is a Docker volume shared by
 `vcx-demo-indy-pool` container, containing the `pool_transactions_genesis` file generated in the Docker 
 image `vcx-demo-indy-pool`.
-
-# Run the demo
 
 You can run on local (dev) environment, or in Docker environment.
 
@@ -62,3 +66,22 @@ from current sources :
     Once they have interacted they will both exit.
     
  You can clean the Docker environment with the command `make docker-clean`.
+ 
+# Slightly Modified Demo
+
+This demo is run using the following files:
+
+* faber-pg.py : same as faber.py, however once a connection is established, this script provides a menu:
+  * 1 = send credential to Alice
+  * 2 = send proof request to Alice
+  * 3 = poll the Alice connection to see if Alice has sent any messages
+  * x = stop and exit
+
+* alice-pg.py : same as alice.py, however once a connection is established, this script provides a menu:
+  * y = poll the connection for messages (credential offers or proof requests)
+  * n = stop and exit
+
+To create the alice/faber wallets using postgres storage, just add the "--postgres" option when running the script.
+
+Internally, the scripts serialize and deserialize the vcx objects between operations.  
+In "real life", these serialized objects could be stored to the database or to wallet non-secrets storage.
