@@ -337,6 +337,7 @@ impl<T: Networker> RequestSM<T> {
                         } else {
                             state.denied_nodes.insert(node_alias.clone());
                             if state.denied_nodes.len() + state.replies.len() == nodes.len() {
+                                _send_replies(&cmd_ids, Err(err_msg(IndyErrorKind::PoolTimeout, "Consensus is impossible")));
                                 (RequestState::finish(), None)
                             } else {
                                 (RequestState::Consensus(state), None)
