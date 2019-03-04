@@ -194,6 +194,9 @@ impl Issuer {
         // It is important Post and Get Schema from Ledger and parse it to get the correct Schema JSON and correspondent it seq_no in Ledger
         // After that we can create CredentialDefinition for received Schema(not for result of indy_issuer_create_schema)
         let _schema_response = pool.submit_schema(&self.issuer_did, self.issuer_wallet_handle,&schema_json);
+
+        ::std::thread::sleep(::std::time::Duration::from_secs(2));
+
         // Issuer gets Schema from Ledger
         let (_ , schema_json) = pool.get_schema(Some(&self.issuer_did),&schema_id);
 

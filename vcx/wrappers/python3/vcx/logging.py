@@ -1,7 +1,7 @@
 from ctypes import *
 
 import logging
-from logging import ERROR, WARNING, INFO, DEBUG
+from logging import ERROR, WARNING, INFO, DEBUG, CRITICAL
 
 TRACE = 5
 
@@ -9,6 +9,7 @@ TRACE = 5
 def set_logger(cdll):
     logger = logging.getLogger(__name__)
     logging.addLevelName(TRACE, "TRACE")
+    logging.basicConfig(level=CRITICAL)
 
     logger.debug("set_logger: >>>")
 
