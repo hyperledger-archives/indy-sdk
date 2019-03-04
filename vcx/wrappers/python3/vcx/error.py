@@ -124,7 +124,6 @@ class VcxError(Exception):
         if error_code != ErrorCode.Success:
             error_details = get_error_details()
             if error_details:
-                self.error_msg = error_details['error']
                 self.sdk_error_full_message = error_details['message']
                 self.sdk_error_cause = error_details['cause']
                 self.sdk_error_backtrace = error_details['backtrace']

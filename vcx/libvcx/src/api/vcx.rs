@@ -232,8 +232,8 @@ pub extern fn vcx_error_c_message(error_code: u32) -> *const c_char {
 pub extern fn vcx_update_institution_info(name: *const c_char, logo_url: *const c_char) -> u32 {
     info!("vcx_update_institution_info >>>");
 
-    check_useful_c_str!(name, VcxErrorKind::InvalidOption);
-    check_useful_c_str!(logo_url, VcxErrorKind::InvalidOption);
+    check_useful_c_str!(name, VcxErrorKind::InvalidConfiguration);
+    check_useful_c_str!(logo_url, VcxErrorKind::InvalidConfiguration);
     trace!("vcx_update_institution_info(name: {}, logo_url: {})", name, logo_url);
 
     settings::set_config_value(::settings::CONFIG_INSTITUTION_NAME, &name);
