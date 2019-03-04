@@ -383,6 +383,8 @@ public class Crypto extends IndyJava.API {
 	}
 
 	/**
+	 * **** THIS FUNCTION WILL BE DEPRECATED USE packMessage INSTEAD ****
+	 *
 	 * Encrypt a message by authenticated-encryption scheme.
 	 *
 	 * Sender can encrypt a confidential message specifically for Recipient, using Sender's public key.
@@ -435,6 +437,8 @@ public class Crypto extends IndyJava.API {
 	}
 
 	/**
+	 * **** THIS FUNCTION WILL BE DEPRECATED USE unpackMessage INSTEAD ****
+	 *
 	 * Decrypt a message by authenticated-encryption scheme.
 	 *
 	 * Sender can encrypt a confidential message specifically for Recipient, using Sender's public key.
@@ -492,6 +496,8 @@ public class Crypto extends IndyJava.API {
 	 * Note to use DID keys with this function you can call keyForDid to get key id (verkey)
 	 * for specific DID.
 	 *
+	 * Note: use packMessage function for A2A goals.
+	 *
 	 * @param recipientVk verkey of message recipient
 	 * @param message a message to be signed
 	 * @return A future that resolves to an encrypted message as an array of bytes.
@@ -528,6 +534,8 @@ public class Crypto extends IndyJava.API {
 	 *
 	 * Note to use DID keys with this function you can call indy_key_for_did to get key id (verkey)
 	 * for specific DID.
+	 *
+	 * Note: use unpackMessage function for A2A goals.
 	 *
 	 * @param wallet       The wallet.
 	 * @param recipientVk  Id (verkey) of my key. The key must be created by calling createKey or createAndStoreMyDid

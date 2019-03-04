@@ -84,6 +84,7 @@
              completion:(void (^)(NSError *error, BOOL valid))completion;
 
 /**
+  **** THIS FUNCTION WILL BE DEPRECATED USE unpackMessage() INSTEAD ****
   Encrypt a message by authenticated-encryption scheme.
 
   Sender can encrypt a confidential message specifically for Recipient, using Sender's public key.
@@ -111,6 +112,7 @@
        completion:(void (^)(NSError *error, NSData *encryptedMsg))completion;
 
 /**
+  **** THIS FUNCTION WILL BE DEPRECATED USE packMessage() INSTEAD ****
   Decrypt a message by authenticated-encryption scheme.
 
   Sender can encrypt a confidential message specifically for Recipient, using Sender's public key.
@@ -145,6 +147,8 @@
   Note to use DID keys with this function you can call keyForDid to get key id (verkey)
   for specific DID.
 
+  Note: use packMessage function for A2A goals.
+
   @param theirKey verkey of message recipient
   @param message a message to be encrypted
   Returns encrypted message
@@ -162,6 +166,8 @@
 
   Note to use DID keys with this function you can call keyForDid to get key id (verkey)
   for specific DID.
+
+  Note: use unpackMessage function for A2A goals.
 
   @param walletHandle       The wallet.
   @param myKey  Id (verkey) of my key. The key must be created by calling createKey or createAndStoreMyDid
