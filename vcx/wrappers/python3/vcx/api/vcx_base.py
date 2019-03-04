@@ -89,7 +89,6 @@ class VcxBase:
 
         self.logger.debug("serialized {} object".format(cls))
         j = json.loads(data.decode())
-        print(j)
         return j
 
     def _release(self, cls, fn: str):

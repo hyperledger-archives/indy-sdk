@@ -11,17 +11,17 @@ macro_rules! init {
         "true" => {
             ::settings::set_defaults();
             ::settings::set_config_value(::settings::CONFIG_ENABLE_TEST_MODE,"true");
-            ::utils::libindy::wallet::init_wallet(::settings::DEFAULT_WALLET_NAME, None).unwrap();
+            ::utils::libindy::wallet::init_wallet(::settings::DEFAULT_WALLET_NAME, None, None, None).unwrap();
         },
         "false" => {
             ::settings::set_defaults();
             ::settings::set_config_value(::settings::CONFIG_ENABLE_TEST_MODE,"false");
-            ::utils::libindy::wallet::init_wallet(::settings::DEFAULT_WALLET_NAME, None).unwrap();
+            ::utils::libindy::wallet::init_wallet(::settings::DEFAULT_WALLET_NAME, None, None, None).unwrap();
         },
         "indy" => {
             ::settings::set_defaults();
             ::settings::set_config_value(::settings::CONFIG_ENABLE_TEST_MODE,"indy");
-            ::utils::libindy::wallet::init_wallet(::settings::DEFAULT_WALLET_NAME, None).unwrap();
+            ::utils::libindy::wallet::init_wallet(::settings::DEFAULT_WALLET_NAME, None, None, None).unwrap();
         },
         "ledger" => {
             ::settings::set_config_value(::settings::CONFIG_ENABLE_TEST_MODE,"false");
@@ -181,7 +181,7 @@ pub mod tests {
 
         pool::tests::open_sandbox_pool();
 
-        wallet::init_wallet(settings::DEFAULT_WALLET_NAME, None).unwrap();
+        wallet::init_wallet(settings::DEFAULT_WALLET_NAME, None, None, None).unwrap();
 
         ::utils::libindy::anoncreds::libindy_prover_create_master_secret(settings::DEFAULT_LINK_SECRET_ALIAS).unwrap();
         set_trustee_did();
@@ -286,13 +286,13 @@ pub mod tests {
         settings::clear_config();
 
         // make enterprise and consumer trustees on the ledger
-        wallet::init_wallet(settings::DEFAULT_WALLET_NAME, None).unwrap();
+        wallet::init_wallet(settings::DEFAULT_WALLET_NAME, None, None, None).unwrap();
         let (trustee_did, _) = ::utils::libindy::signus::create_and_store_my_did(Some(TRUSTEE)).unwrap();
         let req_nym = ledger::build_nym_request(&trustee_did, &did1, Some(&vk1), None, Some("TRUSTEE")).wait().unwrap();
         ::utils::libindy::ledger::libindy_sign_and_submit_request(&trustee_did, &req_nym).unwrap();
         let req_nym = ledger::build_nym_request(&trustee_did, &did2, Some(&vk2), None, Some("TRUSTEE")).wait().unwrap();
         ::utils::libindy::ledger::libindy_sign_and_submit_request(&trustee_did, &req_nym).unwrap();
-        wallet::delete_wallet(settings::DEFAULT_WALLET_NAME, None).unwrap();
+        wallet::delete_wallet(settings::DEFAULT_WALLET_NAME, None, None, None).unwrap();
 
         // as trustees, mint tokens into each wallet
         set_consumer();
@@ -303,7 +303,7 @@ pub mod tests {
     }
 
     fn _config_with_wallet_handle(wallet_n: &str, config: &str) -> String {
-        let wallet_handle = wallet::open_wallet(wallet_n, None).unwrap();
+        let wallet_handle = wallet::open_wallet(wallet_n, None, None, None).unwrap();
         let mut config: serde_json::Value = serde_json::from_str(config).unwrap();
         config[settings::CONFIG_WALLET_HANDLE] = json!(wallet_handle.to_string());
         config.to_string()
@@ -319,13 +319,13 @@ pub mod tests {
     pub fn setup_wallet_env(test_name: &str) -> Result<i32, String> {
         use utils::libindy::wallet::init_wallet;
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
-        init_wallet(test_name, None).map_err(|e| format!("Unable to init_wallet in tests: {}", e))
+        init_wallet(test_name, None, None, None).map_err(|e| format!("Unable to init_wallet in tests: {}", e))
     }
 
     pub fn cleanup_wallet_env(test_name: &str) -> Result<(), String> {
         use utils::libindy::wallet::delete_wallet;
         println!("Deleting Wallet");
-        delete_wallet(test_name, None).or(Err(format!("Unable to delete wallet: {}", test_name)))
+        delete_wallet(test_name, None, None, None).or(Err(format!("Unable to delete wallet: {}", test_name)))
     }
 
     #[cfg(feature = "agency")]
