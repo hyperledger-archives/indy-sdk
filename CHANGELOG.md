@@ -1,13 +1,19 @@
 # Changelog
 
-## 1.8.0 - 2018-1-31
+## 1.8.1 - 2019-02-08
+* Bugfixes:
+    * Set default freshness threshold to u64::MAX -- if you need to change it, look at the `indy_set_runtime_config` call.
+    * Fixed a bug in freshness threshold calculation.
+    * Fixed a bug with libnullpay and VCX connected to logging initialization.
+
+## 1.8.0 - 2019-01-31
 * Added function `indy_get_current_error` to get additional information for last error occurred in Libindy.
 * Updated Libindy wrappers for automatic getting error details:
     * Python - added `message` and `indy_backtrace` fields to `IndyError` object.
     * Java - added `sdkBacktrace` field to `IndyException`. Libindy `error message` set as the main for `IndyException`.
     * NodeJS - added `indyMessage` and `indyBacktrace` fields to `IndyError` object.
     * Rust - changed type of returning value from enum `ErrorCode` on structure `IndyError` with `error_code`, `message`, `indy_backtrace` fields.
-    * Objective-C - added `message` and `indy_backtrace` fields to `userInfo` dictionary in `NSError` object. 
+    * Objective-C - added `message` and `indy_backtrace` fields to `userInfo` dictionary in `NSError` object.
 * Updated Indy-Cli to show Libindy error message in some cases.
 * Implemented automatic filtering of outdated responses based on comparison of local time with latest transaction ordering time.
 * Added *EXPERIMENTAL* `indy_pack_message` and `indy_unpack_message` functions to support *Wire Messages* described in [AMES HIPE](https://github.com/hyperledger/indy-hipe/pull/43)
@@ -26,7 +32,7 @@ NOTE: This version of libindy will work slower with older versions of node due t
     * Added function `indy_set_logger` for client apps and wrappers to receive logs from libindy
     * Integrated libindy logging into Slf4j for Java wrapper and into python logging facade
 * Updated API of Rust wrapper. Now there is no three methods for each API call, there is only one that returns Future.
-* Introduced multithreading for Wallet API and CRED_DEF generation 
+* Introduced multithreading for Wallet API and CRED_DEF generation
 * Bugfixes
 
 ## 1.6.8 - 2018-11-22
@@ -36,7 +42,7 @@ NOTE: This version of libindy will work slower with older versions of node due t
 
 ## 1.6.7 - 2018-10-9
 * Supported setting fees in `did rotate-key` CLI command.
-* Supported hexadecimal seed for did and key creation. 
+* Supported hexadecimal seed for did and key creation.
 * Removed TGB role.
 * Added EXPERIMENTAL Rust wrapper for Libindy.
 * Bugfixes.
@@ -59,7 +65,7 @@ NOTE: This version of libindy will work slower with older versions of node due t
 ## 1.6.3 - 2018-08-28
 * Performed the following changes related to Libindy Wallet API:
     * Added separate API function `indy_generate_wallet_key` to generate a random wallet master key.
-    * Updated `key_derivation_method` parameter of wallet `credentials` to accept the addition type - `RAW`. 
+    * Updated `key_derivation_method` parameter of wallet `credentials` to accept the addition type - `RAW`.
       By using this type, the result of `indy_generate_wallet_key` can be passed as a wallet master key (key derivation will be skipped).
     * Updated Indy CLI wallet related commands to accept the addition parameter `key_derivation_method`.
 * Updated `data` parameter of `indy_build_node_request` API function to accept `blskey_pop` (Proof of possession for BLS key).
@@ -69,7 +75,7 @@ NOTE: This version of libindy will work slower with older versions of node due t
 
 ## 1.6.2 - 2018-08-14
 * Performed the following changes related to Libindy Ledger API:
-    * Added `indy_submit_action` endpoint that provides the ability to send either GET_VALIDATOR_INFO or 
+    * Added `indy_submit_action` endpoint that provides the ability to send either GET_VALIDATOR_INFO or
       POOL_RESTART request to specific nodes and to specify custom timeout for a response from a node.
     * Updated `indy_build_pool_upgrade_request` API function to accept the additional parameter `package` that allow specify package to be upgraded.* Bugfixes
 * Added `pool restart` command in Indy CLI.
@@ -77,11 +83,11 @@ NOTE: This version of libindy will work slower with older versions of node due t
 * Updated wallet `credentials` to accept the additional parameter `key_derivation_method`.
   This parameter provides the ability to use different crypto algorithms for master key derivation.
 * Bugfixes
- 
+
 ## 1.6.1 bugfixes - 2018-07-30
 * Fix connection performance issue
 * Fix Android publishing
-  
+
 ## 1.6.0 - 2018-07-27
 * Integrated tags based search in Anoncreds workflow:
     * Updated `indy_prover_store_credential` API function to create tags for a stored credential object.
@@ -89,14 +95,14 @@ NOTE: This version of libindy will work slower with older versions of node due t
     * Added two chains of APIs related to credentials search that allows fetching records by batches:
         * Simple credentials search - `indy_prover_search_credentials`
         * Search credentials for proof request - `indy_prover_search_credentials_for_proof_req`
-    * Supported [WQL query language](https://github.com/hyperledger/indy-sdk/tree/master/doc/design/011-wallet-query-language) for all search functions in Anoncreds API.
+    * Supported [WQL query language](https://github.com/hyperledger/indy-sdk/tree/master/docs/design/011-wallet-query-language) for all search functions in Anoncreds API.
 * Added `indy_prover_get_credential` API function allows to get human-readable credential by the specific id from Wallet.
 * Performed changes related to Libindy Wallet behavior:
     * Changed Wallet export serialization format to use the same message pack as the rest of LibIndy.
     * Removed association between Wallet and Pool.
     * Removed persistence of Wallet configuration by Libindy.
     * Updated `wallet_create`, `wallet_open`, `wallet_delete` functions to accept wallet configuration as a single JSON.
-* Performed changes related to Libindy [Pool behavior](https://github.com/hyperledger/indy-sdk/tree/master/doc/design/009-efficient-connections):
+* Performed changes related to Libindy [Pool behavior](https://github.com/hyperledger/indy-sdk/tree/master/docs/design/009-efficient-connections):
     * Changed Pool connection logic to avoid unnecessary opened connections.
     * Changed Catch-up process to get all transactions from a single node.
     * Implemented logic of persisting of actual Pool Leger at the end of catch-up process and starting from this point on the next time.
@@ -117,29 +123,29 @@ Notes:
 * There is [migration guide](doc/migration-guide-1.5.0-1.6.0.md) about API changes.
 * Wallet format of libindy v1.6 isn't compatible with a wallet format of libindy v1.5. As result it is impossible to use wallets
   created with older libindy versions with libindy v1.6.
-  
+
 ## 1.5.0 - 2018-06-28
 
-* Introduction of [Wallet Storage](https://github.com/hyperledger/indy-sdk/tree/master/doc/design/003-wallet-storage) concept:
+* Introduction of [Wallet Storage](https://github.com/hyperledger/indy-sdk/tree/master/docs/design/003-wallet-storage) concept:
   * In v1.4 libindy allowed to plug different wallet implementations. Plugged wallet in v1.4 handled both security
     and storage layers. In contrast Libindy v1.5 restricts plugged interface by handling only storage layer.
     All encryption is performed in libindy. It simplifies plugged wallets and provides warranty of a good security level
     for 3d party wallets implementations.
   * The format of wallet data was changed for better security and support of efficient search
-* Added EXPERIMENTAL [Wallet Export/Import API](https://github.com/hyperledger/indy-sdk/tree/master/doc/design/009-wallet-export-import) and
+* Added EXPERIMENTAL [Wallet Export/Import API](https://github.com/hyperledger/indy-sdk/tree/master/docs/design/009-wallet-export-import) and
   corresponded commands to Indy CLI
 * ```indy_list_wallets``` endpoint is DEPRECATED and will be removed in the next release. The main idea is avoid
   maintaining created wallet list on libindy side. It will allow to access wallets from a cluster and solve
   some problems on mobile platforms. ```indy_create_wallet``` and ```indy_open_wallet``` endpoints will
   also get related changes in the next release.
-* Added [Non-Secrets API](https://github.com/hyperledger/indy-sdk/tree/master/doc/design/003-wallet-storage#non-secrets-api) that allows store and read  
+* Added [Non-Secrets API](https://github.com/hyperledger/indy-sdk/tree/master/docs/design/003-wallet-storage#non-secrets-api) that allows store and read  
   application specific data in the wallet
-* Added EXPERIMENTAL [Generic Payments API](https://github.com/hyperledger/indy-sdk/tree/master/doc/design/004-payment-interface#payment-method-api) that provides
+* Added EXPERIMENTAL [Generic Payments API](https://github.com/hyperledger/indy-sdk/tree/master/docs/design/004-payment-interface#payment-method-api) that provides
   ability to register custom payment method
   and then create payment addresses, build payment-related transactions, assign fees to transactions
-* Added ability to [load custom plugins using Indy CLI](https://github.com/hyperledger/indy-sdk/tree/master/doc/design/006-cli-plugins)
+* Added ability to [load custom plugins using Indy CLI](https://github.com/hyperledger/indy-sdk/tree/master/docs/design/006-cli-plugins)
 * Added the set of commands in Indy CLI providing ability to perform
-  [the main payments operations](https://github.com/hyperledger/indy-sdk/tree/master/doc/design/007-cli-payments):
+  [the main payments operations](https://github.com/hyperledger/indy-sdk/tree/master/docs/design/007-cli-payments):
   * Creation of payment address
   * Listing of payment addresses
   * Getting list of UTXO for payment address

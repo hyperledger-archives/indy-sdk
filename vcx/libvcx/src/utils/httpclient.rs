@@ -18,7 +18,8 @@ pub fn post_u8(body_content: &Vec<u8>) -> Result<Vec<u8>,String> {
         info!("::Android code");
         set_ssl_cert_location();
     }
-    let client = reqwest::ClientBuilder::new().build().or(Err("Preparing Post failed".to_string()))?;
+
+    let client = reqwest::ClientBuilder::new().timeout(::utils::timeout::TimeoutUtils::long_timeout()).build().or(Err("Preparing Post failed".to_string()))?;
     debug!("Posting encrypted bundle to: \"{}\"", url);
     let mut response = match  client.post(&url).body(body_content.to_owned()).header(CONTENT_TYPE, "octet_stream").send() {
         Ok(result) => {

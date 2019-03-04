@@ -1,11 +1,11 @@
 println!("9. Generating and storing client DID and Verkey");
-let (client_did, _client_verkey) = Did::new(wallet_handle, &"{}".to_string()).unwrap();
+let (client_did, _client_verkey) = did::create_and_store_my_did(wallet_handle, &"{}".to_string()).wait().unwrap();
 
 println!("10. Building the GET_NYM request to query Trust Anchor's Verkey as the Client");
-let build_get_nym_request: String = Ledger::build_get_nym_request(Some(&client_did), &trustee_did).unwrap();
+let build_get_nym_request: String = ledger::build_get_nym_request(Some(&client_did), &trustee_did).wait().unwrap();
 
 println!("11. Sending the GET_NYM request to the ledger");
-let build_get_nym_submit_result: String = Ledger::submit_request(pool_handle, &build_get_nym_request).unwrap();
+let build_get_nym_submit_result: String = ledger::submit_request(pool_handle, &build_get_nym_request).wait().unwrap();
 
 println!("12. Comparing Trust Anchor Verkey as written by Steward and as retrieved in Client's query");
 let refresh_json: Value = serde_json::from_str(&build_get_nym_submit_result).unwrap();
@@ -17,9 +17,9 @@ assert_eq!(trustee_verkey, trustee_verkey_from_ledger, "verkeys did not match as
 
 // CLEAN UP
 println!("13. Close and delete wallet");
-Wallet::close(wallet_handle).unwrap();
-Wallet::delete(&config, USEFUL_CREDENTIALS).unwrap();
+wallet::close_wallet(wallet_handle);
+wallet::delete_wallet(&config, USEFUL_CREDENTIALS);
 
 println!("14. Close pool and delete pool ledger config");
-Pool::close(pool_handle).unwrap();
-Pool::delete(&pool_name).unwrap();
+pool::close_pool_ledger(pool_handle);
+pool::delete_pool_ledger(&pool_name);
