@@ -118,15 +118,14 @@ class VcxError(Exception):
     # sdk_error_backtrace: Optional[str] - vcx error backtrace.
     #   Collecting of backtrace can be enabled by setting environment variable `RUST_BACKTRACE=1`
 
-    def __init__(self, error_code: ErrorCode):
+    def __init__(self, error_code: ErrorCode, error_details: Optional[dict] = None):
         self.error_code = error_code
         self.error_msg = error_message(error_code)
-        if error_code != ErrorCode.Success:
-            error_details = get_error_details()
-            if error_details:
-                self.sdk_error_full_message = error_details['message']
-                self.sdk_error_cause = error_details['cause']
-                self.sdk_error_backtrace = error_details['backtrace']
+        if error_details:
+            self.error_msg = error_details['error']
+            self.sdk_error_full_message = error_details['message']
+            self.sdk_error_cause = error_details['cause']
+            self.sdk_error_backtrace = error_details['backtrace']
 
 
 def error_message(error_code: int) -> str:

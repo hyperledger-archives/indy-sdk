@@ -3,7 +3,7 @@ from ctypes import *
 import asyncio
 import itertools
 import logging
-from .error import VcxError, ErrorCode
+from .error import VcxError, ErrorCode, get_error_details
 from vcx.cdll import _cdll
 
 _futures = {}
@@ -27,7 +27,8 @@ def do_call(name: str, *args):
 
     if err != ErrorCode.Success:
         logger.warning("_do_call: Function %s returned error %i", name, err)
-        future.set_exception(VcxError(ErrorCode(err)))
+        error_details = get_error_details()
+        future.set_exception(VcxError(ErrorCode(err), error_details))
 
     logger.debug("do_call: <<< %s", future)
     return future
@@ -52,7 +53,8 @@ def release(name, handle):
 
     if err != ErrorCode.Success:
         logger.warning("release: Function %s returned error %i", name, err)
-        raise VcxError(ErrorCode(err))
+        error_details = get_error_details()
+        raise VcxError(ErrorCode(err), error_details)
 
 
 def get_version() -> str:
@@ -84,7 +86,8 @@ def shutdown(delete_wallet: bool):
     err = do_call_sync(name, c_delete)
 
     if err != ErrorCode.Success:
-        raise VcxError(ErrorCode(err))
+        error_details = get_error_details()
+        raise VcxError(ErrorCode(err), error_details)
 
 
 def mint_tokens():
@@ -97,7 +100,8 @@ def create_cb(cb_type: CFUNCTYPE, transform_fn=None):
     def _cb(command_handle: int, err: int, *args):
         if transform_fn:
             args = transform_fn(*args)
-        error = VcxError(ErrorCode(err))
+        error_details = get_error_details() if err != ErrorCode.Success else None
+        error = VcxError(ErrorCode(err), error_details)
         _cxs_callback(command_handle, error, *args)
 
     res = cb_type(_cb)
