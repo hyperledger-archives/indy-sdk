@@ -645,10 +645,10 @@
 
 - (void)testBuildAuthRuleRequestsWorks {
     NSDictionary *constraint = @{
-        @"sig_count": @(1)",
+        @"sig_count": @(1),
         @"role": @"0",
         @"constraint_id": @"ROLE",
-        @"need_to_be_owner": false
+        @"need_to_be_owner": @(false)
     };
     
     NSDictionary *expectedResult = @{
@@ -670,7 +670,7 @@
                                                                  field:@"role"
                                                                   oldValue:nil
                                                                    newValue:@"101"
-                                                                   constraint:[NSDictionary toString:constraint]"
+                                                                   constraint:[NSDictionary toString:constraint]
                                                              outRequest:&requestJson];
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildNymRequestWithSubmitterDid() failed!");
 
