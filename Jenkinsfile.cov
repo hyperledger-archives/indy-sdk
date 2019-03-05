@@ -9,7 +9,7 @@ def testing () {
 
         def image 
         stage("Building kcov docker image") {
-            image = docker.build("indy-sdk-kcov", "-f ci/code_coverage.dockerfile")
+            image = docker.build("indy-sdk-kcov", "-f ci/code_coverage.dockerfile ci/")
         }
         
 
