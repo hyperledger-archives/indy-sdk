@@ -1748,6 +1748,21 @@ Parse a GET\_REVOC\_REG\_DELTA response to get Revocation Registry Delta in the 
 
 Errors: `Common*`
 
+#### buildAuthRuleRequest \( submitterDid, authType, authAction, field, oldValue, newValue, constraint \) -&gt; request
+
+Builds a AUTH_RULE request.
+
+* `submitterDid`: String - \(Optional\) DID of the read request sender \(if not provided then default Libindy DID will be used\).
+* `authType`: String - 
+* `authAction`: String - 
+* `field`: String - 
+* `oldValue`: String - \(Optional\)
+* `newValue`: String - 
+* `constraint`: String - 
+* __->__ `request`: Json
+
+Errors: `Common*`
+
 #### getResponseMetadata \( response \) -&gt; responseMetadata
 
 Parse transaction response to fetch metadata.
