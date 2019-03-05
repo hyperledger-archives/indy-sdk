@@ -179,6 +179,16 @@
                                   requestJson:(NSString *)requestJson
                                    resultJson:(NSString **)resultJson;
 
+// MARK: - Auth Rule request
+- (NSError *)buildAuthRuleRequestWithSubmitterDid:(NSString *)submitterDid
+                                         authType:(NSString *)authType
+                                       authAction:(NSString *)authAction
+                                            field:(NSString *)field
+                                         oldValue:(NSString *)oldValue
+                                         newValue:(NSString *)newValue
+                                       constraint:(NSString *)constraint
+                                       outRequest:(NSString **)resultJson;
+
 // MARK: - Response Metadata
 - (NSError *)getResponseMetadata:(NSString *)response
                 responseMetadata:(NSString **)responseMetadata;

@@ -568,7 +568,30 @@
  */
 + (void)parseGetRevocRegDeltaResponse:(NSString *)getRevocRegDeltaResponse
                            completion:(void (^)(NSError *error, NSString *revocRegDefId, NSString *revocRegDeltaJson, NSNumber *timestamp))completion;
-                           
+
+// MARK: - Auth Rule request
+
+/**
+ Builds a AUTH_RULE request.
+
+ @param submitterDid DID of the submitter stored in secured Wallet.
+ @param authType
+ @param authAction
+ @param field
+ @param oldValue
+ @param newValue
+ @param constraint
+ @param completion Callback that takes command result as parameter. Returns request result as json.
+ */
++ (void)buildAuthRuleRequestWithSubmitterDid:(NSString *)submitterDid
+                                    authType:(NSString *)authType
+                                  authAction:(NSString *)authAction
+                                       field:(NSString *)field
+                                    oldValue:(NSString *)oldValue
+                                    newValue:(NSString *)newValue
+                                  constraint:(NSString *)constraint
+                                  completion:(void (^)(NSError *error, NSString *requestJSON))completion;
+
 /**
  Parse transaction response to fetch metadata.
  The important use case for this method is validation of Node's response freshens.
