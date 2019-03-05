@@ -17,15 +17,4 @@ public class CredentialRevokedException extends IndyException
 	public CredentialRevokedException() {
 		super(message, ErrorCode.AnoncredsCredentialRevoked.value());
 	}
-
-	/**
-	 * Initializes a new CredentialRevokedException.
-	 *
-	 * @param sdkMessage The SDK error message.
-	 * @param sdkBacktrace The SDK error backtrace.
-	 */
-	public CredentialRevokedException(String sdkMessage, String sdkBacktrace)
-    {
-    	super(sdkMessage, ErrorCode.AnoncredsCredentialRevoked.value(), sdkBacktrace);
-    }
 }

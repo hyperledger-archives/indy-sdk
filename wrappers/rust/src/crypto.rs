@@ -132,6 +132,7 @@ fn _verify(command_handle: IndyHandle, signer_vk: &str, message: &[u8], signatur
     })
 }
 
+/// **** THIS FUNCTION WILL BE DEPRECATED USE pack_message INSTEAD ****
 /// Encrypt a message by authenticated-encryption scheme.
 ///
 /// Sender can encrypt a confidential message specifically for Recipient, using Sender's public key.
@@ -169,6 +170,7 @@ fn _auth_crypt(command_handle: IndyHandle, wallet_handle: IndyHandle, sender_vk:
     })
 }
 
+/// **** THIS FUNCTION WILL BE DEPRECATED USE unpack_message INSTEAD ****
 /// Decrypt a message by authenticated-encryption scheme.
 ///
 /// Sender can encrypt a confidential message specifically for Recipient, using Sender's public key.
@@ -214,6 +216,8 @@ fn _auth_decrypt(command_handle: IndyHandle, wallet_handle: IndyHandle, recipien
 /// Note to use DID keys with this function you can call Did::get_ver_key to get key id (verkey)
 /// for specific DID.
 ///
+/// Note: use pack_message function for A2A goals.
+///
 /// # Arguments
 /// * `wallet_handle`: wallet handle (created by Wallet::open)
 /// * `recipient_vk`: verkey of message recipient
@@ -248,6 +252,8 @@ fn _anon_crypt(command_handle: IndyHandle, recipient_vk: &str, message: &[u8], c
 ///
 /// Note to use DID keys with this function you can call Did::get_ver_key to get key id (verkey)
 /// for specific DID.
+///
+/// Note: use unpack_message function for A2A goals.
 ///
 /// # Arguments
 /// * `wallet_handle`: wallet handle (created by Wallet::open).

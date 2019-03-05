@@ -6,6 +6,7 @@ use std::collections::HashSet;
 use std::iter::FromIterator;
 use std::rc::Rc;
 use std::time::{SystemTime, UNIX_EPOCH};
+use std::u64;
 
 use rmp_serde;
 use serde_json;
@@ -33,7 +34,6 @@ use super::indy_crypto::bls::VerKey;
 
 use self::rust_base58::FromBase58;
 use std::hash::{Hash, Hasher};
-use std::ops::Mul;
 
 struct RequestSM<T: Networker> {
     f: usize,
@@ -311,7 +311,7 @@ impl<T: Networker> RequestSM<T> {
                     RequestEvent::Reply(_, raw_msg, node_alias, req_id) |
                     RequestEvent::ReqNACK(_, raw_msg, node_alias, req_id) |
                     RequestEvent::Reject(_, raw_msg, node_alias, req_id)
-                        => {
+                    => {
                         if let Ok((_, result_without_proof)) = _get_msg_result_without_state_proof(&raw_msg) {
                             let hashable = HashableValue { inner: result_without_proof };
 
@@ -335,7 +335,13 @@ impl<T: Networker> RequestSM<T> {
                                 (RequestState::finish(), None)
                             }
                         } else {
-                            (RequestState::Consensus(state), None)
+                            state.denied_nodes.insert(node_alias.clone());
+                            if state.denied_nodes.len() + state.replies.len() == nodes.len() {
+                                _send_replies(&cmd_ids, Err(err_msg(IndyErrorKind::PoolTimeout, "Consensus is impossible")));
+                                (RequestState::finish(), None)
+                            } else {
+                                (RequestState::Consensus(state), None)
+                            }
                         }
                     }
                     RequestEvent::ReqACK(_, _, node_alias, req_id) => {
@@ -382,11 +388,12 @@ impl<T: Networker> RequestSM<T> {
                                 )
                             };
 
+                            trace!("Last signed time: {}", last_write_time);
                             if cnt > f
                                 || _check_state_proof(&result, f, &generator, &nodes, &raw_msg)
-                                    && _get_cur_time() as u64 <= _get_freshness_threshold() + last_write_time {
+                                && (_get_freshness_threshold() == u64::MAX || _get_cur_time() as u64 <= _get_freshness_threshold() + last_write_time) {
                                 state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
-                                _send_ok_replies(&cmd_ids, if cnt > f {&soonest} else {&raw_msg});
+                                _send_ok_replies(&cmd_ids, if cnt > f { &soonest } else { &raw_msg });
                                 (RequestState::finish(), None)
                             } else {
                                 (state.try_to_continue(req_id, node_alias, &cmd_ids, nodes.len(), timeout), None)
@@ -724,13 +731,14 @@ fn _check_state_proof(msg_result: &SJsonValue, f: usize, gen: &Generator, bls_ke
 }
 
 fn _get_freshness_threshold() -> u64 {
-    let t = THRESHOLD.lock().unwrap();
-    t.mul(1000)
+    THRESHOLD.lock().unwrap().clone()
 }
 
 fn _get_cur_time() -> u64 {
     let since_epoch = SystemTime::now().duration_since(UNIX_EPOCH).expect("Time has gone backwards");
-    since_epoch.as_secs() * 1000 + since_epoch.subsec_millis() as u64
+    let res = since_epoch.as_secs();
+    trace!("Current time: {}", res);
+    res
 }
 
 #[cfg(test)]
@@ -996,17 +1004,13 @@ pub mod tests {
             request_handler.process_event(Some(RequestEvent::Reject(Response::default(), REJECT_REPLY.to_string(), NODE_4.to_string(), REQ_ID.to_string())));
 
             assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
-
         }
 
-        // this test is marked ignore until https://jira.hyperledger.org/browse/IS-1137 is resolved
         #[test]
-        #[ignore]
         fn request_handler_process_reply_event_from_consensus_state_works_for_consensus_reached_with_0_concensus() {
-
             // the test will use 4 nodes, each node replying with a response to the "custom consensus request" message
             // some nodes accept, some reject and some nack.  the end result is consensus should not be reached
-            let mut request_handler = _request_handler(0, 4);
+            let mut request_handler = _request_handler(1, 4);
 
             request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), SIMPLE_REPLY.to_string(), NODE.to_string(), REQ_ID.to_string())));
@@ -1043,7 +1047,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_reply_event_from_consensus_state_works_for_invalid_message() {
-            let mut request_handler = _request_handler(0, 1);
+            let mut request_handler = _request_handler(1, 4);
             request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), "".to_string(), NODE.to_string(), REQ_ID.to_string())));
             assert_match!(RequestState::Consensus(_), request_handler.request_wrapper.unwrap().state);
@@ -1051,7 +1055,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_reqack_event_from_consensus_state_works() {
-            let mut request_handler = _request_handler(0, 1);
+            let mut request_handler = _request_handler(1, 4);
             request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::ReqACK(Response::default(), "{}".to_string(), NODE.to_string(), REQ_ID.to_string())));
             assert_match!(RequestState::Consensus(_), request_handler.request_wrapper.unwrap().state);
@@ -1133,7 +1137,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_other_event_from_consensus_state_works() {
-            let mut request_handler = _request_handler(0, 1);
+            let mut request_handler = _request_handler(1, 4);
             request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Ping));
             assert_match!(RequestState::Consensus(_), request_handler.request_wrapper.unwrap().state);
@@ -1177,7 +1181,7 @@ pub mod tests {
             let mut request_handler = _request_handler(1, 2);
             request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(
-                RequestEvent::Reply(Reply::default(), correct_state_proof_reply(_get_cur_time() - 300000), NODE.to_string(), REQ_ID.to_string()))
+                RequestEvent::Reply(Reply::default(), correct_state_proof_reply(_get_cur_time() - 300), NODE.to_string(), REQ_ID.to_string()))
             );
             assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
         }
@@ -1189,7 +1193,7 @@ pub mod tests {
             let mut request_handler = _request_handler(1, 2);
             request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(
-                Some(RequestEvent::Reply(Reply::default(), correct_state_proof_reply(_get_cur_time() + 300000), NODE.to_string(), REQ_ID.to_string()))
+                Some(RequestEvent::Reply(Reply::default(), correct_state_proof_reply(_get_cur_time() + 300), NODE.to_string(), REQ_ID.to_string()))
             );
             assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
         }
@@ -1222,9 +1226,9 @@ pub mod tests {
             //
             request_handler.process_event(Some(RequestEvent::Reply(
                 Reply::default(),
-                correct_state_proof_reply(_get_cur_time() - 700000),
-                   NODE.to_string(),
-                   REQ_ID.to_string())));
+                correct_state_proof_reply(_get_cur_time() - 700),
+                NODE.to_string(),
+                REQ_ID.to_string())));
 
             {
                 let request_handler_ref = request_handler.request_wrapper.as_ref().unwrap();
@@ -1233,7 +1237,7 @@ pub mod tests {
 
             request_handler.process_event(Some(RequestEvent::Reply(
                 Reply::default(),
-                correct_state_proof_reply(_get_cur_time() - 300000),
+                correct_state_proof_reply(_get_cur_time() - 300),
                 NODE.to_string(),
                 REQ_ID.to_string())));
             assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
@@ -1251,7 +1255,7 @@ pub mod tests {
             //
             request_handler.process_event(Some(RequestEvent::Reply(
                 Reply::default(),
-                correct_state_proof_reply(_get_cur_time() - 400000),
+                correct_state_proof_reply(_get_cur_time() - 400),
                 NODE.to_string(),
                 REQ_ID.to_string())));
 
@@ -1262,7 +1266,7 @@ pub mod tests {
 
             request_handler.process_event(Some(RequestEvent::Reply(
                 Reply::default(),
-                correct_state_proof_reply(_get_cur_time() - 200000),
+                correct_state_proof_reply(_get_cur_time() - 200),
                 NODE.to_string(),
                 REQ_ID.to_string())));
             assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);

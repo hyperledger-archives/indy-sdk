@@ -18,7 +18,8 @@ export interface ISchemaCreateData {
  * @description
  * name: name of schema
  * version:
- * attrNames: a list of named attribtes inteded to be added to the schema (the number of attributes should be less or equal than 125)
+ * attrNames: a list of named attribtes inteded to be added to the schema
+ * (the number of attributes should be less or equal than 125)
  */
 export interface ISchemaAttrs {
   name: string,

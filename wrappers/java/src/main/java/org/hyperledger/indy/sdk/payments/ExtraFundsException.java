@@ -13,14 +13,4 @@ public class ExtraFundsException extends IndyException {
     public ExtraFundsException() {
         super(message, ErrorCode.ExtraFundsError.value());
     }
-
-    /**
-     * Initializes a new {@link ExtraFundsException} with the specified message.
-     *
-     * @param sdkMessage The SDK error message.
-     * @param sdkBacktrace The SDK error backtrace.
-     */
-    public ExtraFundsException(String sdkMessage, String sdkBacktrace) {
-        super(sdkMessage, ErrorCode.ExtraFundsError.value(), sdkBacktrace);
-    }
 }
