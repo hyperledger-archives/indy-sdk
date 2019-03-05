@@ -1221,13 +1221,26 @@ pub mod sign_multi_command {
 pub mod auth_rule_command {
     use super::*;
 
-    command!(CommandMetadata::build("auth-rule", "Send AUTH_RULE transaction to the Ledger.")
-                .add_required_param("type", "")
-                .add_required_param("action", "")
-                .add_required_param("field", "")
-                .add_optional_param("old_value", "")
-                .add_required_param("new_value", "")
-                .add_required_param("constraint", "")
+    command!(CommandMetadata::build("auth-rule", "Send AUTH_RULE request to change authentication rules for a ledger transaction.")
+                .add_required_param("type", "Ledger transaction for which authentication rules will be applied. Can be an alias or associated value")
+                .add_required_param("action", "Type of action for which authentication rules will be applied. One of: ADD, EDIT")
+                .add_required_param("field", "Transaction field for which authentication rule will be applied")
+                .add_optional_param("old_value", "Old value of field, which can be changed to a new_value (must be specified for EDIT action)")
+                .add_required_param("new_value", "New value that can be used to fill the field")
+                .add_required_param("constraint", r#"Set of constraints required for execution of action
+         {
+             constraint_id - type of a constraint. Can be either "ROLE" to specify final constraint or  "AND"/"OR" to combine constraints.
+             role - role of a user which satisfy to constrain.
+             sig_count - the number of signatures required to execution action.
+             need_to_be_owner - if user must be an owner of transaction.
+             metadata - additional parameters of constraint.
+         }
+         can be combined by
+         {
+             constraint_id: <"AND" or "OR">
+             auth_constraints: [<constraint_1>, <constraint_2>]
+         }
+                "#)
                 .add_example(r#"ledger change-auth-rule type=NYM action=ADD field=role new_value=101 constraint={"sig_count":1,"role":0,"constraint_id":"role","need_to_be_owner":false}"#)
                 .add_example(r#"ledger change-auth-rule type=NYM action=EDIT field=role old_value=101 new_value=0 constraint={"sig_count":1,"role":0,"constraint_id":"role","need_to_be_owner":false}"#)
                 .finalize()
@@ -1482,7 +1495,6 @@ fn get_txn_title(role: &serde_json::Value) -> serde_json::Value {
         Some("111") => "POOL_CONFIG",
         Some("113") => "REVOC_REG_DEF",
         Some("114") => "REVOC_REG_ENTRY",
-        Some("118") => "POOL_RESTART",
         Some(val) => val,
         _ => "-"
     }.to_string())

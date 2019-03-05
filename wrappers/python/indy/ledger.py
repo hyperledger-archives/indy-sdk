@@ -1271,15 +1271,40 @@ async def build_auth_rule_request(submitter_did: str,
                                   new_value: str,
                                   constraint: str) -> str:
     """
-    Builds a AUTH_RULE request.
+    Builds a AUTH_RULE request. Request to change authentication rules for a ledger transaction.
 
     :param submitter_did: DID of the submitter stored in secured Wallet.
-    :param auth_type:
-    :param auth_action:
-    :param field:
-    :param old_value:
-    :param new_value:
-    :param constraint:
+    :param auth_type: ledger transaction for which authentication rules will be applied.
+       Can be an alias or associated value:
+           NODE or 0
+           NYM or 1
+           ATTRIB or 100
+           SCHEMA or 101
+           CRED_DEF or 102
+           POOL_UPGRADE or 109
+           POOL_CONFIG or 111
+           REVOC_REG_DEF or 113
+           REVOC_REG_ENTRY or 114
+    :param auth_action: type of action for which authentication rules will be applied.
+       Can be either "ADD" (to add new rule) or "EDIT" (to edit an existing one).
+    :param field: transaction field for which authentication rule will be applied.
+    :param old_value: old value of field, which can be changed to a new_value (must be specified for EDIT action).
+    :param new_value: new value that can be used to fill the field.
+    :param constraint: set of constraints required for execution of action in the following format:
+        {
+            constraint_id - <string> type of a constraint.
+                Can be either "ROLE" to specify final constraint or  "AND"/"OR" to combine constraints.
+            role - <string> role of a user which satisfy to constrain.
+            sig_count - <u32> the number of signatures required to execution action.
+            need_to_be_owner - <bool> if user must be an owner of transaction.
+            metadata - <object> additional parameters of constraint.
+        }
+      can be combined by
+        {
+            'constraint_id': <"AND" or "OR">
+            'auth_constraints': [<constraint_1>, <constraint_2>]
+        }
+
     :return: Request result as json.
     """
 

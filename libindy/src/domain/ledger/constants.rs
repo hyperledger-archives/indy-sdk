@@ -20,7 +20,7 @@ pub const GET_VALIDATOR_INFO: &str = "119";
 pub const AUTH_RULE: &str = "120";
 pub const GET_DDO: &str = "120";//TODO change number
 
-pub const WRITE_REQUESTS: [&str; 10] = [NODE, NYM, ATTRIB, SCHEMA, CRED_DEF, POOL_UPGRADE, POOL_RESTART, POOL_CONFIG, REVOC_REG_DEF, REVOC_REG_ENTRY];
+pub const WRITE_REQUESTS: [&str; 10] = [NODE, NYM, ATTRIB, SCHEMA, CRED_DEF, POOL_UPGRADE, POOL_CONFIG, REVOC_REG_DEF, REVOC_REG_ENTRY];
 
 pub const TRUSTEE: &str = "0";
 pub const STEWARD: &str = "2";
@@ -39,9 +39,9 @@ pub fn txn_name_to_code(txn: &str) -> Option<&str> {
         "NYM" => Some(NYM),
         "ATTRIB" => Some(ATTRIB),
         "SCHEMA" => Some(SCHEMA),
-        "CRED_DEF" => Some(CRED_DEF),
+        "CRED_DEF" | "CLAIM_DEF" => Some(CRED_DEF),
         "POOL_UPGRADE" => Some(POOL_UPGRADE),
-        "POOL_RESTART" => Some(POOL_RESTART),
+        "POOL_CONFIG" => Some(POOL_CONFIG),
         "REVOC_REG_DEF" => Some(REVOC_REG_DEF),
         "REVOC_REG_ENTRY" => Some(REVOC_REG_ENTRY),
         _ => None
