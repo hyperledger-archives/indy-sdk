@@ -333,6 +333,12 @@ Send custom transaction with user defined json body and optional signature
 ledger custom [txn=]<txn-json-value> [sign=<true|false>]
 ```
 
+#### AUTH_RULE transaction
+Send AUTH_RULE transaction
+```
+ledger auth-rule type=<txn type> action=<add or edit> field=<txn field> [old_value=<value>] new_value=<new_value> constraint=<{constraint json}>
+```
+
 #### GET_PAYMENT_SOURCES transaction
 Send GET_PAYMENT_SOURCES transaction
 ```
