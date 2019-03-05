@@ -14,14 +14,7 @@ def testing () {
         
 
         image.inside {
-            sh '''
-            cd libindy
-            cargo test --no-run
-                for i in $(find target/debug -maxdepth 1 -executable -type f | grep -v '\\.so\$')
-                do
-                    RUST_TEST_THREADS=1 kcov --exclude-pattern=$CARGO_HOME,/usr/lib --verify test_coverage \$i
-                done
-            '''
+            calcCoverageRust("libindy")
         }
     }
 }
@@ -35,3 +28,15 @@ def getUserUid() {
 def dockerBuild(name, file = 'ci/ubuntu.dockerfile ci', customParams = '') {
     return docker.build("$name-test", "--build-arg uid=${getUserUid()} ${customParams} -f $file")
 }
+
+def calcCoverageRust(dir) {
+    sh '''
+    cd ${dir}
+    cargo test --no-run
+        for i in $(find target/debug -maxdepth 1 -executable -type f | grep -v '\\.so\$')
+        do
+            RUST_TEST_THREADS=1 kcov --exclude-pattern=$CARGO_HOME,/usr/lib --verify test_coverage \$i
+        done
+    '''
+}
+
