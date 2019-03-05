@@ -24,7 +24,7 @@ public class AuthRuleRequestsTest extends IndyIntegrationTest {
 				.put("operation",
 						new JSONObject()
 								.put("type", "120")
-								.put("auth_type", authType)
+								.put("auth_type", "1")
 								.put("auth_action", addAuthAction)
 								.put("field", field)
 								.put("new_value", newValue)
@@ -48,7 +48,7 @@ public class AuthRuleRequestsTest extends IndyIntegrationTest {
 				.put("operation",
 						new JSONObject()
 								.put("type", "120")
-								.put("auth_type", authType)
+								.put("auth_type", "1")
 								.put("auth_action", editAuthAction)
 								.put("field", field)
 								.put("old_value", oldValue)
@@ -57,6 +57,28 @@ public class AuthRuleRequestsTest extends IndyIntegrationTest {
 				);
 
 		String request = Ledger.buildAuthRuleRequest(DID, authType, editAuthAction, field, oldValue, newValue, constraint.toString()).get();
+
+		assert (new JSONObject(request).toMap().entrySet()
+				.containsAll(
+						expectedResult.toMap().entrySet()));
+	}
+
+	@Test
+	public void testBuildGetAuthRuleRequestWorksForAddAction() throws Exception {
+		String addAuthAction = "ADD";
+
+		JSONObject expectedResult = new JSONObject()
+				.put("identifier", DID)
+				.put("operation",
+						new JSONObject()
+								.put("type", "121")
+								.put("auth_type", "1")
+								.put("auth_action", addAuthAction)
+								.put("field", field)
+								.put("new_value", newValue)
+				);
+
+		String request = Ledger.buildGetAuthRuleRequest(DID, authType, addAuthAction, field, null, newValue).get();
 
 		assert (new JSONObject(request).toMap().entrySet()
 				.containsAll(
