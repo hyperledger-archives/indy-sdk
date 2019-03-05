@@ -1265,4 +1265,50 @@ public class Ledger extends IndyJava.API {
 
 		return future;
 	}
+
+	/**
+	 * Builds a AUTH_RULE request.
+	 *
+	 * @param submitterDid DID of the submitter stored in secured Wallet.
+	 * @param authType -
+	 * @param authAction -
+	 * @param field -
+	 * @param oldValue -
+	 * @param newValue -
+	 * @param constraint -
+
+	 * @return A future resolving to a request result as json.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<String> buildAuthRuleRequest(
+			String submitterDid,
+			String authType,
+			String authAction,
+			String field,
+			String oldValue,
+			String newValue,
+			String constraint) throws IndyException {
+
+		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
+		ParamGuard.notNullOrWhiteSpace(authType, "authType");
+		ParamGuard.notNullOrWhiteSpace(authAction, "authAction");
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int result = LibIndy.api.indy_build_auth_rule_request(
+				commandHandle,
+				submitterDid,
+				authType,
+				authAction,
+				field,
+				oldValue,
+				newValue,
+				constraint,
+				buildRequestCb);
+
+		checkResult(future, result);
+
+		return future;
+	}
 }
