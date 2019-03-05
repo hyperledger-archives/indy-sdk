@@ -9,14 +9,14 @@ def testing () {
 
         def image 
         stage("Building kcov docker image") {
-            image = dockerBuild("indy-sdk-kcov", "-f ci/code_coverage.dockerfile ci/")
+            image = dockerBuild("indy-sdk-kcov", "ci/code_coverage.dockerfile ci/")
         }
         
 
         image.inside {
-            sh "cd libindy"
-            sh "cargo test --no-run"
             sh '''
+            cd libindy
+            cargo test --no-run
                 for i in $(find target/debug -maxdepth 1 -executable -type f | grep -v '\\.so\$')
                 do
                     RUST_TEST_THREADS=1 kcov --exclude-pattern=$CARGO_HOME,/usr/lib --verify test_coverage \$i
