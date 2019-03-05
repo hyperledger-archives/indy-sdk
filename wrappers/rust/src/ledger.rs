@@ -994,15 +994,39 @@ fn _get_response_metadata(command_handle: IndyHandle, response: &str, cb: Option
     ErrorCode::from(unsafe { ledger::indy_get_response_metadata(command_handle, response.as_ptr(), cb) })
 }
 
-/// Builds a AUTH_RULE request.
+/// Builds a AUTH_RULE request. Request to change authentication rules for a ledger transaction.
 ///
 /// # Arguments
-/// * `auth_type`:
-/// * `field`:
-/// * `auth_action`:
-/// * `old_value`:
-/// * `new_value`:
-/// * `constraint`:
+/// * `auth_type`: ledger transaction for which authentication rules will be applied.
+///     Can be an alias or associated value:
+///         NODE or 0
+///         NYM or 1
+///         ATTRIB or 100
+///         SCHEMA or 101
+///         CRED_DEF or 102
+///         POOL_UPGRADE or 109
+///         POOL_CONFIG or 111
+///         REVOC_REG_DEF or 113
+///         REVOC_REG_ENTRY or 114
+/// * `field`: type of action for which authentication rules will be applied.
+///     Can be either "ADD" (to add new rule) or "EDIT" (to edit an existing one).
+/// * `auth_action`: transaction field for which authentication rule will be applied.
+/// * `old_value`: old value of field, which can be changed to a new_value (must be specified for EDIT action).
+/// * `new_value`: new value that can be used to fill the field.
+/// * `constraint`: set of constraints required for execution of action in the following format:
+///     {
+///         constraint_id - <string> type of a constraint.
+///             Can be either "ROLE" to specify final constraint or  "AND"/"OR" to combine constraints.
+///         role - <string> role of a user which satisfy to constrain.
+///         sig_count - <u32> the number of signatures required to execution action.
+///         need_to_be_owner - <bool> if user must be an owner of transaction.
+///         metadata - <object> additional parameters of constraint.
+///     }
+/// can be combined by
+///     {
+///         'constraint_id': <"AND" or "OR">
+///         'auth_constraints': [<constraint_1>, <constraint_2>]
+///     }
 ///
 /// # Returns
 /// Request result as json.
@@ -1043,5 +1067,64 @@ fn _build_auth_rule_request(command_handle: IndyHandle,
                                              new_value.as_ptr(),
                                              constraint.as_ptr(),
                                              cb)
+    })
+}
+
+/// Builds a GET_AUTH_RULE request. Request to get authentication rules for a ledger transaction.
+///
+/// # Arguments
+/// * `auth_type`: target ledger transaction type.
+///     Can be an alias or associated value:
+///         NODE or 0
+///         NYM or 1
+///         ATTRIB or 100
+///         SCHEMA or 101
+///         CRED_DEF or 102
+///         POOL_UPGRADE or 109
+///         POOL_CONFIG or 111
+///         REVOC_REG_DEF or 113
+///         REVOC_REG_ENTRY or 114
+/// * `auth_action`: target action type. Can be either "ADD" or "EDIT".
+/// * `field`: target transaction field.
+/// * `old_value`: old value of field, which can be changed to a new_value (must be specified for EDIT action).
+/// * `new_value`: new value that can be used to fill the field.
+///
+/// # Returns
+/// Request result as json.
+pub fn build_get_auth_rule_request(submitter_did: Option<&str>, auth_type: &str, auth_action: &str, field: &str,
+                                   old_value: Option<&str>, new_value: &str) -> Box<Future<Item=String, Error=IndyError>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+
+    let err = _build_get_auth_rule_request(command_handle, submitter_did, auth_type, auth_action, field, old_value, new_value, cb);
+
+    ResultHandler::str(command_handle, err, receiver)
+}
+
+fn _build_get_auth_rule_request(command_handle: IndyHandle,
+                                submitter_did: Option<&str>,
+                                auth_type: &str,
+                                auth_action: &str,
+                                field: &str,
+                                old_value: Option<&str>,
+                                new_value: &str,
+                                cb: Option<ResponseStringCB>) -> ErrorCode {
+    let submitter_did_str = opt_c_str!(submitter_did);
+
+    let auth_type = c_str!(auth_type);
+    let auth_action = c_str!(auth_action);
+    let field = c_str!(field);
+    let new_value = c_str!(new_value);
+
+    let old_value_str = opt_c_str!(old_value);
+
+    ErrorCode::from(unsafe {
+        ledger::indy_build_get_auth_rule_request(command_handle,
+                                                 opt_c_ptr!(submitter_did, submitter_did_str),
+                                                 auth_type.as_ptr(),
+                                                 auth_action.as_ptr(),
+                                                 field.as_ptr(),
+                                                 opt_c_ptr!(old_value, old_value_str),
+                                                 new_value.as_ptr(),
+                                                 cb)
     })
 }

@@ -232,6 +232,16 @@ extern {
                                         new_value: CString,
                                         constraint: CString,
                                         cb: Option<ResponseStringCB>) -> Error;
+
+    #[no_mangle]
+    pub fn indy_build_get_auth_rule_request(command_handle: Handle,
+                                            submitter_did: CString,
+                                            auth_type: CString,
+                                            auth_action: CString,
+                                            field: CString,
+                                            old_value: CString,
+                                            new_value: CString,
+                                            cb: Option<ResponseStringCB>) -> Error;
 }
 
 pub type CustomTransactionParser = extern fn(reply_from_node: CString, parsed_sp: *mut CString) -> Error;

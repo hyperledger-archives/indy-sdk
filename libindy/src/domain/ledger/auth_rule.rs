@@ -1,6 +1,6 @@
 use serde_json::Value;
 
-use super::constants::AUTH_RULE;
+use super::constants::{AUTH_RULE, GET_AUTH_RULE};
 
 #[allow(non_camel_case_types)]
 #[derive(Deserialize, Debug, Serialize, PartialEq)]
@@ -59,6 +59,32 @@ impl AuthRuleOperation {
             old_value,
             new_value,
             constraint,
+        }
+    }
+}
+
+#[derive(Serialize, PartialEq, Debug)]
+pub struct GetAuthRuleOperation {
+    #[serde(rename = "type")]
+    pub _type: String,
+    pub auth_type: String,
+    pub field: String,
+    pub auth_action: AuthAction,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub old_value: Option<String>,
+    pub new_value: String
+}
+
+impl GetAuthRuleOperation {
+    pub fn new(auth_type: String, field: String, auth_action: AuthAction,
+               old_value: Option<String>, new_value: String) -> GetAuthRuleOperation {
+        GetAuthRuleOperation {
+            _type: GET_AUTH_RULE.to_string(),
+            auth_type,
+            field,
+            auth_action,
+            old_value,
+            new_value,
         }
     }
 }

@@ -626,12 +626,22 @@ mod test_build_auth_rule_request {
 
     #[test]
     pub fn build_auth_rule_request_success() {
-        let _nym_result = ledger::build_auth_rule_request(DID,
-                                                          NYM_AUTH_TYPE,
-                                                          &ADD_AUTH_ACTION,
-                                                          FIELD,
-                                                          None,
-                                                          NEW_VALUE,
-                                                          ROLE_CONSTRAINT).wait().unwrap();
+        let _auth_rule_request = ledger::build_auth_rule_request(DID,
+                                                                 NYM_AUTH_TYPE,
+                                                                 &ADD_AUTH_ACTION,
+                                                                 FIELD,
+                                                                 None,
+                                                                 NEW_VALUE,
+                                                                 ROLE_CONSTRAINT).wait().unwrap();
+    }
+
+    #[test]
+    pub fn build_get_auth_rule_request_success() {
+        let _get_auth_rule_request = ledger::build_get_auth_rule_request(Some(DID),
+                                                                         NYM_AUTH_TYPE,
+                                                                         &ADD_AUTH_ACTION,
+                                                                         FIELD,
+                                                                         None,
+                                                                         NEW_VALUE).wait().unwrap();
     }
 }

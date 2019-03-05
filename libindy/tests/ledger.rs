@@ -1805,6 +1805,25 @@ mod high_cases {
         }
 
         #[test]
+        fn indy_build_get_auth_rule_request_works() {
+            let expected_result = json!({
+                "type": constants::GET_AUTH_RULE,
+                "auth_type": constants::NYM,
+                "field": FIELD,
+                "new_value": NEW_VALUE,
+                "auth_action": ADD_AUTH_ACTION,
+            });
+
+            let request = ledger::build_get_auth_rule_request(Some(DID_TRUSTEE),
+                                                          constants::NYM,
+                                                          &ADD_AUTH_ACTION,
+                                                          FIELD,
+                                                          None,
+                                                          NEW_VALUE).unwrap();
+            check_request(&request, expected_result);
+        }
+
+        #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_auth_rule_request_works() {
             let (wallet_handle, pool_handle, trustee_did) = utils::setup_trustee();
@@ -1817,6 +1836,23 @@ mod high_cases {
                                                                     NEW_VALUE,
                                                                     ROLE_CONSTRAINT).unwrap();
             let response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &auth_rule_request).unwrap();
+            pool::check_response_type(&response, ResponseType::REPLY);
+
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_get_auth_rule_request_works() {
+            let (wallet_handle, pool_handle, trustee_did) = utils::setup_trustee();
+
+            let get_auth_rule_request = ledger::build_get_auth_rule_request(Some(&trustee_did),
+                                                                    constants::NYM,
+                                                                    &ADD_AUTH_ACTION,
+                                                                    FIELD,
+                                                                    None,
+                                                                    NEW_VALUE).unwrap();
+            let response = ledger::submit_request(pool_handle, &get_auth_rule_request).unwrap();
             pool::check_response_type(&response, ResponseType::REPLY);
 
             utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);

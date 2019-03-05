@@ -210,6 +210,15 @@ pub fn build_auth_rule_request(submitter_did: &str,
     ledger::build_auth_rule_request(submitter_did, auth_type, auth_action, field, old_value, new_value, constraint).wait()
 }
 
+pub fn build_get_auth_rule_request(submitter_did: Option<&str>,
+                                   auth_type: &str,
+                                   auth_action: &str,
+                                   field: &str,
+                                   old_value: Option<&str>,
+                                   new_value: &str, ) -> Result<String, IndyError> {
+    ledger::build_get_auth_rule_request(submitter_did, auth_type, auth_action, field, old_value, new_value).wait()
+}
+
 pub fn post_entities() -> (&'static str, &'static str, &'static str) {
     lazy_static! {
                     static ref COMMON_ENTITIES_INIT: Once = ONCE_INIT;
