@@ -30,7 +30,7 @@ def dockerBuild(name, file = 'ci/ubuntu.dockerfile ci', customParams = '') {
 }
 
 def calcCoverageRust(dir) {
-    withEnv("[RUST_PROJECT_DIR=${dir}]") {
+    withEnv(["RUST_PROJECT_DIR=${dir}"]) {
         sh '''
         cd $RUST_PROJECT_DIR
         cargo test --no-run
