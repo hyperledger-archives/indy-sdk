@@ -1834,3 +1834,73 @@ pub extern fn indy_get_response_metadata(command_handle: IndyHandle,
 
     res
 }
+
+/// Builds a AUTH_RULE request.
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// auth_type:
+/// field:
+/// auth_action:
+/// old_value:
+/// new_value:
+/// constraint:
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Request result as json.
+///
+/// #Errors
+/// Common*
+#[no_mangle]
+pub extern fn indy_build_auth_rule_request(command_handle: IndyHandle,
+                                           submitter_did: *const c_char,
+                                           auth_type: *const c_char,
+                                           auth_action: *const c_char,
+                                           field: *const c_char,
+                                           old_value: *const c_char,
+                                           new_value: *const c_char,
+                                           constraint: *const c_char,
+                                           cb: Option<extern fn(command_handle_: IndyHandle,
+                                                                err: ErrorCode,
+                                                                request_json: *const c_char)>) -> ErrorCode {
+    trace!("indy_build_auth_rule_request: >>> submitter_did: {:?}, auth_type: {:?}, auth_action: {:?}, field: {:?}, \
+    old_value: {:?}, new_value: {:?}, constraint: {:?}",
+           submitter_did, auth_type, auth_action, field, old_value, new_value, constraint);
+
+    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
+    check_useful_c_str!(auth_type, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(auth_action, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(field, ErrorCode::CommonInvalidParam5);
+    check_useful_opt_c_str!(old_value, ErrorCode::CommonInvalidParam6);
+    check_useful_c_str!(new_value, ErrorCode::CommonInvalidParam7);
+    check_useful_c_str!(constraint, ErrorCode::CommonInvalidParam8);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam9);
+
+    trace!("indy_build_auth_rule_request: entities >>> submitter_did: {:?}, auth_type: {:?}, auth_action: {:?}, field: {:?}, \
+    old_value: {:?}, new_value: {:?}, constraint: {:?}",
+           submitter_did, auth_type, auth_action, field, old_value, new_value, constraint);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Ledger(LedgerCommand::BuildAuthRuleRequest(
+            submitter_did,
+            auth_type,
+            auth_action,
+            field,
+            old_value,
+            new_value,
+            constraint,
+            Box::new(move |result| {
+                let (err, request_json) = prepare_result_1!(result, String::new());
+                trace!("indy_build_nym_request: request_json: {:?}", request_json);
+                let request_json = ctypes::string_to_cstring(request_json);
+                cb(command_handle, err, request_json.as_ptr())
+            })
+        )));
+
+    let res = prepare_result!(result);
+
+    trace!("indy_build_auth_rule_request: <<< res: {:?}", res);
+
+    res
+}

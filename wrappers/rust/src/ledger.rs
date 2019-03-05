@@ -85,7 +85,7 @@ fn _submit_action(command_handle: IndyHandle, pool_handle: IndyHandle, request_j
     let nodes_str = opt_c_str!(nodes);
 
     ErrorCode::from(unsafe {
-      ledger::indy_submit_action(command_handle, pool_handle, request_json.as_ptr(), opt_c_ptr!(nodes, nodes_str), wait_timeout.unwrap_or(-1), cb)
+        ledger::indy_submit_action(command_handle, pool_handle, request_json.as_ptr(), opt_c_ptr!(nodes, nodes_str), wait_timeout.unwrap_or(-1), cb)
     })
 }
 
@@ -259,7 +259,7 @@ pub fn build_get_txn_request(submitter_did: Option<&str>, ledger_type: Option<&s
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _build_get_txn_request(command_handle: IndyHandle, submitter_did: Option<&str>, ledger_type: Option<&str>, seq_no: i32, cb: Option<ResponseStringCB>) ->  ErrorCode {
+fn _build_get_txn_request(command_handle: IndyHandle, submitter_did: Option<&str>, ledger_type: Option<&str>, seq_no: i32, cb: Option<ResponseStringCB>) -> ErrorCode {
     let submitter_did_str = opt_c_str!(submitter_did);
     let ledger_type_str = opt_c_str!(ledger_type);
 
@@ -566,7 +566,7 @@ fn _build_get_validator_info_request(command_handle: IndyHandle, submitter_did: 
     let submitter_did = c_str!(submitter_did);
 
     ErrorCode::from(unsafe {
-      ledger::indy_build_get_validator_info_request(command_handle, submitter_did.as_ptr(), cb)
+        ledger::indy_build_get_validator_info_request(command_handle, submitter_did.as_ptr(), cb)
     })
 }
 
@@ -890,7 +890,7 @@ pub fn parse_get_revoc_reg_response(get_revoc_reg_response: &str) -> Box<Future<
 fn _parse_get_revoc_reg_response(command_handle: IndyHandle, get_revoc_reg_response: &str, cb: Option<ResponseStringStringU64CB>) -> ErrorCode {
     let get_revoc_reg_response = c_str!(get_revoc_reg_response);
 
-    ErrorCode::from(unsafe { ledger::indy_parse_get_revoc_reg_response(command_handle,get_revoc_reg_response.as_ptr(), cb) })
+    ErrorCode::from(unsafe { ledger::indy_parse_get_revoc_reg_response(command_handle, get_revoc_reg_response.as_ptr(), cb) })
 }
 
 /// Builds a GET_REVOC_REG_DELTA request. Request to get the delta of the accumulated state of the Revocation Registry.
@@ -947,7 +947,7 @@ pub fn parse_get_revoc_reg_delta_response(get_revoc_reg_delta_response: &str) ->
 fn _parse_get_revoc_reg_delta_response(command_handle: IndyHandle, get_revoc_reg_delta_response: &str, cb: Option<ResponseStringStringU64CB>) -> ErrorCode {
     let get_revoc_reg_delta_response = c_str!(get_revoc_reg_delta_response);
 
-    ErrorCode::from(unsafe { ledger::indy_parse_get_revoc_reg_delta_response(command_handle,get_revoc_reg_delta_response.as_ptr(), cb) })
+    ErrorCode::from(unsafe { ledger::indy_parse_get_revoc_reg_delta_response(command_handle, get_revoc_reg_delta_response.as_ptr(), cb) })
 }
 
 /// Parse transaction response to fetch metadata.
@@ -991,5 +991,57 @@ pub fn get_response_metadata(response: &str) -> Box<Future<Item=String, Error=In
 fn _get_response_metadata(command_handle: IndyHandle, response: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
     let response = c_str!(response);
 
-    ErrorCode::from(unsafe { ledger::indy_get_response_metadata(command_handle,response.as_ptr(), cb) })
+    ErrorCode::from(unsafe { ledger::indy_get_response_metadata(command_handle, response.as_ptr(), cb) })
+}
+
+/// Builds a AUTH_RULE request.
+///
+/// # Arguments
+/// * `auth_type`:
+/// * `field`:
+/// * `auth_action`:
+/// * `old_value`:
+/// * `new_value`:
+/// * `constraint`:
+///
+/// # Returns
+/// Request result as json.
+pub fn build_auth_rule_request(submitter_did: &str, auth_type: &str, auth_action: &str, field: &str,
+                               old_value: Option<&str>, new_value: &str, constraint: &str) -> Box<Future<Item=String, Error=IndyError>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+
+    let err = _build_auth_rule_request(command_handle, submitter_did, auth_type, auth_action, field, old_value, new_value, constraint, cb);
+
+    ResultHandler::str(command_handle, err, receiver)
+}
+
+fn _build_auth_rule_request(command_handle: IndyHandle,
+                            submitter_did: &str,
+                            auth_type: &str,
+                            auth_action: &str,
+                            field: &str,
+                            old_value: Option<&str>,
+                            new_value: &str,
+                            constraint: &str,
+                            cb: Option<ResponseStringCB>) -> ErrorCode {
+    let submitter_did = c_str!(submitter_did);
+    let auth_type = c_str!(auth_type);
+    let auth_action = c_str!(auth_action);
+    let field = c_str!(field);
+    let new_value = c_str!(new_value);
+    let constraint = c_str!(constraint);
+
+    let old_value_str = opt_c_str!(old_value);
+
+    ErrorCode::from(unsafe {
+        ledger::indy_build_auth_rule_request(command_handle,
+                                             submitter_did.as_ptr(),
+                                             auth_type.as_ptr(),
+                                             auth_action.as_ptr(),
+                                             field.as_ptr(),
+                                             opt_c_ptr!(old_value, old_value_str),
+                                             new_value.as_ptr(),
+                                             constraint.as_ptr(),
+                                             cb)
+    })
 }

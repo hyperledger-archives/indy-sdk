@@ -955,6 +955,37 @@ extern "C" {
                                                                         const char*   response_metadata)
                                                   );
 
+    /// Builds a AUTH_RULE request.
+    ///
+    /// #Params
+    /// command_handle: command handle to map callback to caller context.
+    /// auth_type:
+    /// field:
+    /// auth_action:
+    /// old_value:
+    /// new_value:
+    /// constraint:
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// Request result as json.
+    ///
+    /// #Errors
+    /// Common*
+    extern indy_error_t indy_build_auth_rule_request(indy_handle_t command_handle,
+                                                     const char *  submitter_did,
+                                                     const char *  auth_type,
+                                                     const char *  auth_action,
+                                                     const char *  field,
+                                                     const char *  old_value,
+                                                     const char *  new_value,
+                                                     const char *  constraint,
+
+                                                     void           (*cb)(indy_handle_t command_handle_,
+                                                                          indy_error_t  err,
+                                                                          const char*   request_json)
+                                                    );
+
 #ifdef __cplusplus
 }
 #endif

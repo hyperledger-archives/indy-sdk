@@ -17,10 +17,33 @@ pub const GET_REVOC_REG_DEF: &str = "115";
 pub const GET_REVOC_REG: &str = "116";
 pub const GET_REVOC_REG_DELTA: &str = "117";
 pub const GET_VALIDATOR_INFO: &str = "119";
+pub const AUTH_RULE: &str = "120";
 pub const GET_DDO: &str = "120";//TODO change number
+
+pub const WRITE_REQUESTS: [&str; 11] = [NODE, NYM, ATTRIB, ATTRIB, SCHEMA, CRED_DEF, POOL_UPGRADE, POOL_RESTART, POOL_CONFIG, REVOC_REG_DEF, REVOC_REG_ENTRY];
 
 pub const TRUSTEE: &str = "0";
 pub const STEWARD: &str = "2";
 pub const TRUST_ANCHOR: &str = "101";
 pub const NETWORK_MONITOR: &str = "201";
 pub const ROLE_REMOVE: &str = "";
+
+
+pub fn txn_name_to_code(txn: &str) -> Option<&str> {
+    if WRITE_REQUESTS.contains(&txn) {
+        return Some(txn)
+    }
+
+    match txn {
+        "NODE" => Some(NODE),
+        "NYM" => Some(NYM),
+        "ATTRIB" => Some(ATTRIB),
+        "SCHEMA" => Some(SCHEMA),
+        "CRED_DEF" => Some(CRED_DEF),
+        "POOL_UPGRADE" => Some(POOL_UPGRADE),
+        "POOL_RESTART" => Some(POOL_RESTART),
+        "REVOC_REG_DEF" => Some(REVOC_REG_DEF),
+        "REVOC_REG_ENTRY" => Some(REVOC_REG_ENTRY),
+        _ => None
+    }
+}

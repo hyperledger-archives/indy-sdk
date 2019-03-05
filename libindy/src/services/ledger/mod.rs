@@ -12,7 +12,7 @@ use domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefini
 use domain::anoncreds::revocation_registry_delta::{RevocationRegistryDelta, RevocationRegistryDeltaV1};
 use domain::anoncreds::schema::{Schema, SchemaV1, MAX_ATTRIBUTES_COUNT};
 use domain::ledger::attrib::{AttribOperation, GetAttribOperation};
-use domain::ledger::constants::{GET_VALIDATOR_INFO, NYM, POOL_RESTART, ROLE_REMOVE, STEWARD, TRUST_ANCHOR, TRUSTEE, NETWORK_MONITOR};
+use domain::ledger::constants::{GET_VALIDATOR_INFO, NYM, POOL_RESTART, ROLE_REMOVE, STEWARD, TRUST_ANCHOR, TRUSTEE, NETWORK_MONITOR, txn_name_to_code};
 use domain::ledger::cred_def::{CredDefOperation, GetCredDefOperation, GetCredDefReplyResult};
 use domain::ledger::ddo::GetDdoOperation;
 use domain::ledger::node::{NodeOperation, NodeOperationData};
@@ -25,6 +25,7 @@ use domain::ledger::rev_reg_def::{GetRevocRegDefReplyResult, GetRevRegDefOperati
 use domain::ledger::schema::{GetSchemaOperation, GetSchemaOperationData, GetSchemaReplyResult, SchemaOperation, SchemaOperationData};
 use domain::ledger::txn::{GetTxnOperation, LedgerType};
 use domain::ledger::validator_info::GetValidatorInfoOperation;
+use domain::ledger::auth_rule::*;
 use errors::prelude::*;
 
 pub mod merkletree;
@@ -74,6 +75,35 @@ impl LedgerService {
             .to_indy(IndyErrorKind::InvalidState, "NYM request json is invalid")?;
 
         info!("build_nym_request <<< request: {:?}", request);
+
+        Ok(request)
+    }
+
+    pub fn build_auth_rule_request(&self, submitter_did: &str, auth_type: &str, auth_action: &str, field: &str,
+                                   old_value: Option<&str>, new_value: &str, constraint: &str) -> IndyResult<String> {
+        info!("build_auth_rule_request >>> submitter_did: {:?}, auth_type: {:?}, auth_action: {:?}, field: {:?}, \
+            old_value: {:?}, new_value: {:?}, constraint: {:?}", submitter_did, auth_type, auth_action, field, old_value, new_value, constraint);
+
+        let auth_type = txn_name_to_code(&auth_type)
+            .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("Unsupported `auth_type`: {}", auth_type)))?;
+
+        let auth_action = serde_json::from_str::<AuthAction>(&format!("\"{}\"", auth_action))
+            .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Cannot parse auth action: {}", err)))?;
+
+        if auth_action == AuthAction::EDIT && old_value.is_none() {
+            return Err(err_msg(IndyErrorKind::InvalidStructure, "`old_value` must be specified for EDIT auth action"));
+        }
+
+        let constraint = serde_json::from_str::<Constraint>(constraint)
+            .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Can not deserialize Constraint: {}", err)))?;
+
+        let operation = AuthRuleOperation::new(auth_type.to_string(), field.to_string(), auth_action,
+                                               old_value.map(String::from), new_value.to_string(), constraint);
+
+        let request = Request::build_request(Some(submitter_did), operation)
+            .to_indy(IndyErrorKind::InvalidState, "AUTH_RULE request json is invalid")?;
+
+        info!("build_auth_rule_request <<< request: {:?}", request);
 
         Ok(request)
     }
@@ -922,6 +952,130 @@ mod tests {
         let ledger_service = LedgerService::new();
         let request = ledger_service.build_get_validator_info_request(IDENTIFIER).unwrap();
         ledger_service.validate_action(&request).unwrap();
+    }
+
+    mod auth_rule {
+        use super::*;
+
+        const ADD_AUTH_ACTION: &str = "ADD";
+        const EDIT_AUTH_ACTION: &str = "EDIT";
+        const FIELD: &str = "role";
+        const OLD_VALUE: &str = "0";
+        const NEW_VALUE: &str = "101";
+
+        fn _role_constraint() -> Constraint {
+            Constraint::RoleConstraint(RoleConstraint {
+                sig_count: 0,
+                metadata: None,
+                role: String::new(),
+                need_to_be_owner: Some(false),
+            })
+        }
+
+        fn _role_constraint_json() -> String {
+            serde_json::to_string(&_role_constraint()).unwrap()
+        }
+
+        #[test]
+        fn build_auth_rule_request_works_for_role_constraint() {
+            let ledger_service = LedgerService::new();
+
+            let expected_result = json!({
+                "type": AUTH_RULE,
+                "auth_type": NYM,
+                "field": FIELD,
+                "new_value": NEW_VALUE,
+                "auth_action": AuthAction::ADD,
+                "constraint": _role_constraint(),
+            });
+
+            let request = ledger_service.build_auth_rule_request(IDENTIFIER, NYM, ADD_AUTH_ACTION, FIELD,
+                                                                 None, NEW_VALUE,
+                                                                 &_role_constraint_json()).unwrap();
+            check_request(&request, expected_result);
+        }
+
+        #[test]
+        fn build_auth_rule_request_works_for_combination_constraints() {
+            let ledger_service = LedgerService::new();
+
+            let constraint = Constraint::AndConstraint(
+                CombinationConstraint {
+                    auth_constraints: vec![
+                        _role_constraint(),
+                        Constraint::OrConstraint(
+                            CombinationConstraint {
+                                auth_constraints: vec![
+                                    _role_constraint(), _role_constraint(), ]
+                            }
+                        )
+                    ]
+                });
+            let constraint_json = serde_json::to_string(&constraint).unwrap();
+
+            let expected_result = json!({
+                "type": AUTH_RULE,
+                "auth_type": NYM,
+                "field": FIELD,
+                "new_value": NEW_VALUE,
+                "auth_action": AuthAction::ADD,
+                "constraint": constraint,
+            });
+
+            let request = ledger_service.build_auth_rule_request(IDENTIFIER, NYM, ADD_AUTH_ACTION, FIELD,
+                                                                 None, NEW_VALUE,
+                                                                 &constraint_json).unwrap();
+
+            check_request(&request, expected_result);
+        }
+
+        #[test]
+        fn build_auth_rule_request_works_for_edit_auth_action() {
+            let ledger_service = LedgerService::new();
+
+            let expected_result = json!({
+                "type": AUTH_RULE,
+                "auth_type": NYM,
+                "field": FIELD,
+                "old_value": OLD_VALUE,
+                "new_value": NEW_VALUE,
+                "auth_action": AuthAction::EDIT,
+                "constraint": _role_constraint(),
+            });
+
+            let request = ledger_service.build_auth_rule_request(IDENTIFIER, NYM, EDIT_AUTH_ACTION, FIELD,
+                                                                 Some(OLD_VALUE), NEW_VALUE,
+                                                                 &_role_constraint_json()).unwrap();
+            check_request(&request, expected_result);
+        }
+
+        #[test]
+        fn build_auth_rule_request_works_for_edit_auth_action_missed_old_value() {
+            let ledger_service = LedgerService::new();
+
+            let res = ledger_service.build_auth_rule_request(IDENTIFIER, NYM, EDIT_AUTH_ACTION, FIELD,
+                                                             None, NEW_VALUE,
+                                                             &_role_constraint_json());
+            assert_kind!(IndyErrorKind::InvalidStructure, res);
+        }
+
+        #[test]
+        fn build_auth_rule_request_works_for_invalid_auth_type() {
+            let ledger_service = LedgerService::new();
+
+            let res = ledger_service.build_auth_rule_request(IDENTIFIER, "WRONG", ADD_AUTH_ACTION, FIELD,
+                                                             None, NEW_VALUE,
+                                                             &_role_constraint_json());
+            assert_kind!(IndyErrorKind::InvalidStructure, res);
+        }
+
+        #[test]
+        fn build_auth_rule_request_works_for_invalid_auth_action() {
+            let ledger_service = LedgerService::new();
+
+            let res = ledger_service.build_auth_rule_request(IDENTIFIER, NYM, "WRONG", FIELD, None, NEW_VALUE, &_role_constraint_json());
+            assert_kind!(IndyErrorKind::InvalidStructure, res);
+        }
     }
 
     fn check_request(request: &str, expected_result: serde_json::Value) {
