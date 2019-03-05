@@ -994,15 +994,39 @@ fn _get_response_metadata(command_handle: IndyHandle, response: &str, cb: Option
     ErrorCode::from(unsafe { ledger::indy_get_response_metadata(command_handle, response.as_ptr(), cb) })
 }
 
-/// Builds a AUTH_RULE request.
+/// Builds a AUTH_RULE request. Request to change authentication rules for a ledger transaction.
 ///
 /// # Arguments
-/// * `auth_type`:
-/// * `field`:
-/// * `auth_action`:
-/// * `old_value`:
-/// * `new_value`:
-/// * `constraint`:
+/// * `auth_type`: ledger transaction for which authentication rules will be applied.
+///     Can be an alias or associated value:
+///         NODE or 0
+///         NYM or 1
+///         ATTRIB or 100
+///         SCHEMA or 101
+///         CRED_DEF or 102
+///         POOL_UPGRADE or 109
+///         POOL_CONFIG or 111
+///         REVOC_REG_DEF or 113
+///         REVOC_REG_ENTRY or 114
+/// * `field`: type of action for which authentication rules will be applied.
+///     Can be either "ADD" (to add new rule) or "EDIT" (to edit an existing one).
+/// * `auth_action`: transaction field for which authentication rule will be applied.
+/// * `old_value`: old value of field, which can be changed to a new_value (must be specified for EDIT action).
+/// * `new_value`: new value that can be used to fill the field.
+/// * `constraint`: set of constraints required for execution of action in the following format:
+///     {
+///         constraint_id - <string> type of a constraint.
+///             Can be either "ROLE" to specify final constraint or  "AND"/"OR" to combine constraints.
+///         role - <string> role of a user which satisfy to constrain.
+///         sig_count - <u32> the number of signatures required to execution action.
+///         need_to_be_owner - <bool> if user must be an owner of transaction.
+///         metadata - <object> additional parameters of constraint.
+///     }
+/// can be combined by
+///     {
+///         'constraint_id': <"AND" or "OR">
+///         'auth_constraints': [<constraint_1>, <constraint_2>]
+///     }
 ///
 /// # Returns
 /// Request result as json.
