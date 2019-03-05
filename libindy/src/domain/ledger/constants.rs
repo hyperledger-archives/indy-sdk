@@ -20,7 +20,7 @@ pub const GET_VALIDATOR_INFO: &str = "119";
 pub const AUTH_RULE: &str = "120";
 pub const GET_DDO: &str = "120";//TODO change number
 
-pub const WRITE_REQUESTS: [&str; 10] = [NODE, NYM, ATTRIB, SCHEMA, CRED_DEF, POOL_UPGRADE, POOL_CONFIG, REVOC_REG_DEF, REVOC_REG_ENTRY];
+pub const WRITE_REQUESTS: [&str; 9] = [NODE, NYM, ATTRIB, SCHEMA, CRED_DEF, POOL_UPGRADE, POOL_CONFIG, REVOC_REG_DEF, REVOC_REG_ENTRY];
 
 pub const TRUSTEE: &str = "0";
 pub const STEWARD: &str = "2";
