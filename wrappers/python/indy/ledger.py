@@ -1261,3 +1261,61 @@ async def get_response_metadata(response: str) -> str:
     res = response_metadata.decode()
     logger.debug("get_response_metadata: <<< res: %r", res)
     return res
+
+
+async def build_auth_rule_request(submitter_did: str,
+                                  auth_type: str,
+                                  auth_action: str,
+                                  field: str,
+                                  old_value: Optional[str],
+                                  new_value: str,
+                                  constraint: str) -> str:
+    """
+    Builds a AUTH_RULE request.
+
+    :param submitter_did: DID of the submitter stored in secured Wallet.
+    :param auth_type:
+    :param auth_action:
+    :param field:
+    :param old_value:
+    :param new_value:
+    :param constraint:
+    :return: Request result as json.
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("build_auth_rule_request: >>> submitter_did: %r, auth_type: %r, auth_action: %r, field: %r, "
+                 "old_value: %r, new_value: %r, constraint: %r",
+                 submitter_did,
+                 auth_type,
+                 auth_action,
+                 field,
+                 old_value,
+                 new_value,
+                 constraint)
+
+    if not hasattr(build_auth_rule_request, "cb"):
+        logger.debug("build_auth_rule_request: Creating callback")
+        build_auth_rule_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
+    c_auth_type = c_char_p(auth_type.encode('utf-8'))
+    c_auth_action = c_char_p(auth_action.encode('utf-8'))
+    c_field = c_char_p(field.encode('utf-8'))
+    c_old_value = c_char_p(old_value.encode('utf-8')) if old_value is not None else None
+    c_new_value = c_char_p(new_value.encode('utf-8'))
+    c_constraint = c_char_p(constraint.encode('utf-8'))
+
+    request_json = await do_call('indy_build_auth_rule_request',
+                                 c_submitter_did,
+                                 c_auth_type,
+                                 c_auth_action,
+                                 c_field,
+                                 c_old_value,
+                                 c_new_value,
+                                 c_constraint,
+                                 build_auth_rule_request.cb)
+
+    res = request_json.decode()
+    logger.debug("build_auth_rule_request: <<< res: %r", res)
+    return res
