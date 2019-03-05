@@ -42,6 +42,7 @@ RUN cd /tmp && \
    curl https://download.libsodium.org/libsodium/releases/libsodium-1.0.17.tar.gz | tar -xz && \
     cd /tmp/libsodium-1.0.17 && \
 #    ./configure --disable-shared && \
+    ./configure && \
     make && \
     make install && \
     rm -rf /tmp/libsodium-1.0.17
