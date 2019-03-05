@@ -26,7 +26,7 @@ async def test_build_auth_rule_request_works_for_add_auth_action():
         "identifier": identifier,
         "operation": {
             "type": "120",
-            "auth_type": auth_type,
+            "auth_type": "1",
             "auth_action": add_auth_action,
             "field": field,
             "new_value": new_value,
@@ -46,7 +46,7 @@ async def test_build_auth_rule_request_works_for_edit_auth_action():
         "identifier": identifier,
         "operation": {
             "type": "120",
-            "auth_type": auth_type,
+            "auth_type": "1",
             "auth_action": edit_auth_action,
             "field": field,
             "old_value": old_value,

@@ -24,7 +24,7 @@ public class AuthRuleRequestsTest extends IndyIntegrationTest {
 				.put("operation",
 						new JSONObject()
 								.put("type", "120")
-								.put("auth_type", authType)
+								.put("auth_type", "1")
 								.put("auth_action", addAuthAction)
 								.put("field", field)
 								.put("new_value", newValue)
@@ -48,7 +48,7 @@ public class AuthRuleRequestsTest extends IndyIntegrationTest {
 				.put("operation",
 						new JSONObject()
 								.put("type", "120")
-								.put("auth_type", authType)
+								.put("auth_type", "1")
 								.put("auth_action", editAuthAction)
 								.put("field", field)
 								.put("old_value", oldValue)
