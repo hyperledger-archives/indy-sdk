@@ -547,6 +547,12 @@ indy.buildAuthRuleRequest = function buildAuthRuleRequest (submitterDid, authTyp
   return cb.promise
 }
 
+indy.buildGetAuthRuleRequest = function buildGetAuthRuleRequest (submitterDid, authType, authAction, field, oldValue, newValue, cb) {
+  cb = wrapIndyCallback(cb, fromJson)
+  capi.buildGetAuthRuleRequest(submitterDid, authType, authAction, field, oldValue, newValue, cb)
+  return cb.promise
+}
+
 indy.getResponseMetadata = function getResponseMetadata (response, cb) {
   cb = wrapIndyCallback(cb, fromJson)
   capi.getResponseMetadata(toJson(response), cb)
