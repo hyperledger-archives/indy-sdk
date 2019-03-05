@@ -9,7 +9,7 @@ def testing () {
 
         def image 
         stage("Building kcov docker image") {
-            image = docker.build("indy-sdk-kcov", "-f ci/code_coverage.dockerfile ci/")
+            image = dockerBuild("indy-sdk-kcov", "-f ci/code_coverage.dockerfile ci/")
         }
         
 
@@ -27,3 +27,11 @@ def testing () {
 }
 
 testing()
+
+def getUserUid() {
+    return sh(returnStdout: true, script: 'id -u').trim()
+}
+
+def dockerBuild(name, file = 'ci/ubuntu.dockerfile ci', customParams = '') {
+    return docker.build("$name-test", "--build-arg uid=${getUserUid()} ${customParams} -f $file")
+}

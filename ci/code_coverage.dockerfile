@@ -1,14 +1,13 @@
 FROM ubuntu:16.04
 
+ARG uid=1000
+RUN useradd -ms /bin/bash -u $uid indy
+
 RUN apt-get update && apt-get upgrade -y
 
 RUN apt-get update && apt-get install -y \
         curl \
         git
-
-# Rust installation
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.31.0
-ENV PATH /root/.cargo/bin:$PATH
 
 # kcov build deps
 RUN apt-get update && apt-get install -y \
@@ -38,3 +37,10 @@ RUN apt-get update && apt-get install -y \
     libsqlite3-dev \
     libzmq3-dev \
     libncursesw5-dev
+
+USER indy
+WORKDIR /home/indy
+
+# Rust installation
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.31.0
+ENV PATH /home/indy/.cargo/bin:$PATH
