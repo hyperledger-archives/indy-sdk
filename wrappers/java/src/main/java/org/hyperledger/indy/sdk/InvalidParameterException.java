@@ -49,16 +49,4 @@ public class InvalidParameterException extends IndyException {
 	public int getParameterIndex() {
 		return parameterIndex;
 	}
-
-    /**
-     * Initializes a new InvalidParameterException with the SDK error code.
-     *
-     * @param sdkErrorCode The SDK error code.
-     * @param sdkMessage The SDK error message.
-     * @param sdkBacktrace The SDK error backtrace.
-     */
-    public InvalidParameterException(int sdkErrorCode, String sdkMessage, String sdkBacktrace)
-    {
-    	super(sdkMessage, sdkErrorCode, sdkBacktrace);
-    }
 }

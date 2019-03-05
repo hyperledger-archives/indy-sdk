@@ -333,9 +333,11 @@ impl Prover {
                     res.push(serde_json::Value::Object(sub_query));
                 }
 
-                sub_queries.push(serde_json::Value::Object(serde_map!(
+                if !res.is_empty() {
+                    sub_queries.push(serde_json::Value::Object(serde_map!(
                     "$or".to_string() => serde_json::Value::Array(res)
-                )));
+                    )));
+                }
             }
             Some(&serde_json::Value::Object(ref object)) => {
                 sub_queries.push(serde_json::Value::Object(object.clone()));
@@ -579,6 +581,20 @@ mod tests {
                 ]
             });
 
+            assert_eq!(expected_query, _value(&query));
+        }
+
+        #[test]
+        fn build_query_works_for_empty_restrictions() {
+            let ps = Prover::new();
+            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &Some(json!([])), &None).unwrap();
+            let expected_query = json!({
+                "$and": vec![
+                    json!({
+                        "attr::name::marker": ATTRIBUTE_EXISTENCE_MARKER
+                    })
+                ]
+            });
             assert_eq!(expected_query, _value(&query));
         }
 

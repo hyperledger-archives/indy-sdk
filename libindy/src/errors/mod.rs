@@ -243,8 +243,9 @@ impl<T> From<IndyResult<T>> for ErrorCode {
 }
 
 impl From<IndyError> for ErrorCode {
-    fn from(code: IndyError) -> ErrorCode {
-        code.kind().into()
+    fn from(err: IndyError) -> ErrorCode {
+        set_current_error(&err);
+        err.kind().into()
     }
 }
 

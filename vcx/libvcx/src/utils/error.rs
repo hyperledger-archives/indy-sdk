@@ -397,6 +397,7 @@ mod tests {
         assert_eq!(error_message(&TIMEOUT_LIBINDY_ERROR.code_num), TIMEOUT_LIBINDY_ERROR.message);
     }
 
+    #[test]
     fn test_invalid_credential_def_json() {
         assert_eq!(error_message(&INVALID_CREDENTIAL_DEF_JSON.code_num), INVALID_CREDENTIAL_DEF_JSON.message);
     }
