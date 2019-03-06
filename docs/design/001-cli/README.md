@@ -336,7 +336,13 @@ ledger custom [txn=]<txn-json-value> [sign=<true|false>]
 #### AUTH_RULE transaction
 Send AUTH_RULE transaction
 ```
-ledger auth-rule type=<txn type> action=<add or edit> field=<txn field> [old_value=<value>] new_value=<new_value> constraint=<{constraint json}>
+ledger auth-rule type=<txn type> action=<ADD or EDIT> field=<txn field> [old_value=<value>] new_value=<new_value> constraint=<{constraint json}>
+```
+
+#### GET_AUTH_RULE transaction
+Send GET_AUTH_RULE transaction
+```
+ledger get-auth-rule type=<txn type> action=<ADD or EDIT> field=<txn field> [old_value=<value>] new_value=<new_value>
 ```
 
 #### GET_PAYMENT_SOURCES transaction

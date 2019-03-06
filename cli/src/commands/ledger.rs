@@ -1225,7 +1225,7 @@ pub mod auth_rule_command {
                 .add_required_param("type", "Ledger transaction for which authentication rules will be applied. Can be an alias or associated value")
                 .add_required_param("action", "Type of action for which authentication rules will be applied. One of: ADD, EDIT")
                 .add_required_param("field", "Transaction field for which authentication rule will be applied")
-                .add_optional_param("old_value", "Old value of field, which can be changed to a new_value (must be specified for EDIT action)")
+                .add_optional_param("old_value", "Old value of field, which can be changed to a new_value (mandatory for EDIT action)")
                 .add_required_param("new_value", "New value that can be used to fill the field")
                 .add_required_param("constraint", r#"Set of constraints required for execution of action
          {
@@ -1241,8 +1241,8 @@ pub mod auth_rule_command {
              auth_constraints: [<constraint_1>, <constraint_2>]
          }
                 "#)
-                .add_example(r#"ledger change-auth-rule type=NYM action=ADD field=role new_value=101 constraint={"sig_count":1,"role":0,"constraint_id":"role","need_to_be_owner":false}"#)
-                .add_example(r#"ledger change-auth-rule type=NYM action=EDIT field=role old_value=101 new_value=0 constraint={"sig_count":1,"role":0,"constraint_id":"role","need_to_be_owner":false}"#)
+                .add_example(r#"ledger auth-rule type=NYM action=ADD field=role new_value=101 constraint={"sig_count":1,"role":0,"constraint_id":"role","need_to_be_owner":false}"#)
+                .add_example(r#"ledger auth-rule type=NYM action=EDIT field=role old_value=101 new_value=0 constraint={"sig_count":1,"role":0,"constraint_id":"role","need_to_be_owner":false}"#)
                 .finalize()
     );
 
@@ -1288,6 +1288,63 @@ pub mod auth_rule_command {
         Ok(res)
     }
 }
+
+pub mod get_auth_rule_command {
+    use super::*;
+
+    command!(CommandMetadata::build("get-auth-rule", "Send GET_AUTH_RULE request to get authentication rules for a ledger transaction.")
+                .add_required_param("type", "Ledger transaction for which authentication rules will be applied. Can be an alias or associated value")
+                .add_required_param("action", "Type of action for which authentication rules will be applied. One of: ADD, EDIT")
+                .add_required_param("field", "Transaction field for which authentication rule will be applied")
+                .add_optional_param("old_value", "Old value of field, which can be changed to a new_value (mandatory for EDIT action)")
+                .add_required_param("new_value", "New value that can be used to fill the field")
+                .add_example(r#"ledger get-auth-rule type=NYM action=ADD field=role new_value=101"#)
+                .add_example(r#"ledger get-auth-rule type=NYM action=EDIT field=role old_value=101 new_value=0"#)
+                .finalize()
+    );
+
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
+
+        let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
+        let (_, wallet_name) = ensure_opened_wallet(&ctx)?;
+        let submitter_did = get_active_did(&ctx);
+
+        let auth_type = get_str_param("type", params).map_err(error_err!())?;
+        let auth_action = get_str_param("action", params).map_err(error_err!())?;
+        let field = get_str_param("field", params).map_err(error_err!())?;
+        let old_value = get_opt_str_param("old_value", params).map_err(error_err!())?;
+        let new_value = get_str_param("new_value", params).map_err(error_err!())?;
+
+        let request = Ledger::build_get_auth_rule_request(submitter_did.as_ref().map(String::as_str), auth_type, &auth_action.to_uppercase(), field, old_value, new_value)
+            .map_err(|err| handle_indy_error(err, None, None, None))?;
+
+        let response_json = Ledger::submit_request(pool_handle, &request)
+            .map_err(|err| handle_indy_error(err, submitter_did.as_ref().map(String::as_str), Some(&pool_name), Some(&wallet_name)))?;
+
+        let mut response: Response<serde_json::Value> = serde_json::from_str::<Response<serde_json::Value>>(&response_json)
+            .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
+
+        if let Some(result) = response.result.as_mut() {
+            result["txn"]["data"]["auth_type"] = get_txn_title(&result["txn"]["data"]["auth_type"]);
+        }
+
+        let res = handle_transaction_response(response)
+            .map(|result| print_transaction_response(result,
+                                                     "Following Auth Rule has been received",
+                                                     None,
+                                                     &mut vec![("auth_type", "Type"),
+                                                               ("auth_action", "Action"),
+                                                               ("field", "Field"),
+                                                               ("old_value", "Old Value"),
+                                                               ("new_value", "New Value"),
+                                                               ("constraint", "Constraint")]))?;
+
+        trace!("execute << {:?}", res);
+        Ok(res)
+    }
+}
+
 
 pub fn set_request_fees(request: &mut String, wallet_handle: i32, submitter_did: Option<&str>, fees_inputs: &Option<Vec<&str>>, fees_outputs: &Option<Vec<String>>, extra: Option<&str>) -> Result<Option<String>, ()> {
     let mut payment_method: Option<String> = None;
@@ -3563,6 +3620,10 @@ pub mod tests {
     mod auth_rule {
         use super::*;
 
+        const AUTH_TYPE: &str = "NYM";
+        const AUTH_ACTION: &str = "ADD";
+        const FIELD: &str = "role";
+        const NEW_VALUE: &str = "101";
         const ROLE_CONSTRAINT: &str = r#"{
             "sig_count": 1,
             "metadata": {},
@@ -3575,17 +3636,46 @@ pub mod tests {
         pub fn auth_rule_works() {
             let ctx = setup_with_wallet_and_pool();
             use_trustee(&ctx);
-            let (did, verkey) = create_new_did(&ctx);
+            let did = create_new_did(&ctx);
             {
                 let cmd = auth_rule_command::new();
                 let mut params = CommandParams::new();
-                params.insert("type", "NYM".to_string());
-                params.insert("action", "add".to_string());
-                params.insert("field", "role".to_string());
-                params.insert("new_value", "101".to_string());
+                params.insert("type", AUTH_TYPE.to_string());
+                params.insert("action", AUTH_ACTION.to_string());
+                params.insert("field", FIELD.to_string());
+                params.insert("new_value", NEW_VALUE.to_string());
                 params.insert("constraint", ROLE_CONSTRAINT.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
+            tear_down_with_wallet_and_pool(&ctx);
+        }
+
+        #[test]
+        pub fn get_auth_rule_works() {
+            let ctx = setup_with_wallet_and_pool();
+            use_trustee(&ctx);
+            let did = create_new_did(&ctx);
+            {
+                let cmd = auth_rule_command::new();
+                let mut params = CommandParams::new();
+                params.insert("type", AUTH_TYPE.to_string());
+                params.insert("action", AUTH_ACTION.to_string());
+                params.insert("field", FIELD.to_string());
+                params.insert("new_value", NEW_VALUE.to_string());
+                params.insert("constraint", ROLE_CONSTRAINT.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+
+            {
+                let cmd = get_auth_rule_command::new();
+                let mut params = CommandParams::new();
+                params.insert("type", AUTH_TYPE.to_string());
+                params.insert("action", AUTH_ACTION.to_string());
+                params.insert("field", FIELD.to_string());
+                params.insert("new_value", NEW_VALUE.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+
             tear_down_with_wallet_and_pool(&ctx);
         }
     }
