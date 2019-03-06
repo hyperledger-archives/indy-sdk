@@ -79,7 +79,7 @@ public class AuthRuleRequestsTest extends IndyIntegrationTest {
 								.put("new_value", newValue)
 				);
 
-		String request = Ledger.buildGetAuthRuleRequest(DID, authType, addAuthAction, field, null, newValue).get();
+		String request = Ledger.buildGetAuthRuleRequest(DID, txnType, addAuthAction, field, null, newValue).get();
 
 		assert (new JSONObject(request).toMap().entrySet()
 				.containsAll(

@@ -1839,6 +1839,7 @@ pub extern fn indy_get_response_metadata(command_handle: CommandHandle,
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
+/// submitter_did: DID of the read request sender.
 /// txn_type: ledger transaction alias or associated value for which authentication rules will be applied.
 /// action: type of an action for which authentication rules will be applied.
 ///     Can be either "ADD" (to add a new rule) or "EDIT" (to edit an existing one).
@@ -1925,18 +1926,8 @@ pub extern fn indy_build_auth_rule_request(command_handle: CommandHandle,
 /// #Params
 /// command_handle: command handle to map callback to caller context.
 /// submitter_did: (Optional) DID of the read request sender.
-/// auth_type: target ledger transaction type.
-///     Can be an alias or associated value:
-///         NODE or 0
-///         NYM or 1
-///         ATTRIB or 100
-///         SCHEMA or 101
-///         CRED_DEF or 102
-///         POOL_UPGRADE or 109
-///         POOL_CONFIG or 111
-///         REVOC_REG_DEF or 113
-///         REVOC_REG_ENTRY or 114
-/// auth_action: target action type. Can be either "ADD" or "EDIT".
+/// txn_type: target ledger transaction alias or associated value.
+/// action: target action type. Can be either "ADD" or "EDIT".
 /// field: target transaction field.
 /// old_value: old value of field, which can be changed to a new_value (must be specified for EDIT action).
 /// new_value: new value that can be used to fill the field.
@@ -1949,37 +1940,37 @@ pub extern fn indy_build_auth_rule_request(command_handle: CommandHandle,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_build_get_auth_rule_request(command_handle: IndyHandle,
+pub extern fn indy_build_get_auth_rule_request(command_handle: CommandHandle,
                                                submitter_did: *const c_char,
-                                               auth_type: *const c_char,
-                                               auth_action: *const c_char,
+                                               txn_type: *const c_char,
+                                               action: *const c_char,
                                                field: *const c_char,
                                                old_value: *const c_char,
                                                new_value: *const c_char,
-                                               cb: Option<extern fn(command_handle_: IndyHandle,
+                                               cb: Option<extern fn(command_handle_: CommandHandle,
                                                                     err: ErrorCode,
                                                                     request_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_build_get_auth_rule_request: >>> submitter_did: {:?}, auth_type: {:?}, auth_action: {:?}, field: {:?}, \
+    trace!("indy_build_get_auth_rule_request: >>> submitter_did: {:?}, txn_type: {:?}, action: {:?}, field: {:?}, \
     old_value: {:?}, new_value: {:?}",
-           submitter_did, auth_type, auth_action, field, old_value, new_value);
+           submitter_did, txn_type, action, field, old_value, new_value);
 
     check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(auth_type, ErrorCode::CommonInvalidParam3);
-    check_useful_c_str!(auth_action, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(txn_type, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(action, ErrorCode::CommonInvalidParam4);
     check_useful_c_str!(field, ErrorCode::CommonInvalidParam5);
     check_useful_opt_c_str!(old_value, ErrorCode::CommonInvalidParam6);
     check_useful_c_str!(new_value, ErrorCode::CommonInvalidParam7);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam8);
 
-    trace!("indy_build_get_auth_rule_request: entities >>> submitter_did: {:?}, auth_type: {:?}, auth_action: {:?}, field: {:?}, \
+    trace!("indy_build_get_auth_rule_request: entities >>> submitter_did: {:?}, txn_type: {:?}, action: {:?}, field: {:?}, \
     old_value: {:?}, new_value: {:?}",
-           submitter_did, auth_type, auth_action, field, old_value, new_value);
+           submitter_did, txn_type, action, field, old_value, new_value);
 
     let result = CommandExecutor::instance()
         .send(Command::Ledger(LedgerCommand::BuildGetAuthRuleRequest(
             submitter_did,
-            auth_type,
-            auth_action,
+            txn_type,
+            action,
             field,
             old_value,
             new_value,

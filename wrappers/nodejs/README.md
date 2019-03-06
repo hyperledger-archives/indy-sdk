@@ -1781,23 +1781,13 @@ can be combined by
 Errors: `Common*`
 
 
-#### buildGetAuthRuleRequest \( submitterDid, authType, authAction, field, oldValue, newValue \) -&gt; request
+#### buildGetAuthRuleRequest \( submitterDid, txnType, action, field, oldValue, newValue \) -&gt; request
 
 Builds a GET_AUTH_RULE request. Request to get authentication rules for a ledger transaction.
 
 * `submitterDid`: String - \(Optional\) DID of the read request sender \(if not provided then default Libindy DID will be used\).
-* `authType`: String - target ledger transaction type.
-Can be an alias or associated value:
-    * NODE or 0
-    * NYM or 1
-    * ATTRIB or 100
-    * SCHEMA or 101
-    * CRED_DEF or 102
-    * POOL_UPGRADE or 109
-    * POOL_CONFIG or 111
-    * REVOC_REG_DEF or 113
-    * REVOC_REG_ENTRY or 114
-* `authAction`: String - target action type. Can be either "ADD" or "EDIT".
+* `txnType`: String - target ledger transaction alias or associated value.
+* `action`: String - target action type. Can be either "ADD" or "EDIT".
 * `field`: String - target transaction field.
 * `oldValue`: String - \(Optional\) old value of field, which can be changed to a new_value (must be specified for EDIT action).
 * `newValue`: String - new value that can be used to fill the field. 

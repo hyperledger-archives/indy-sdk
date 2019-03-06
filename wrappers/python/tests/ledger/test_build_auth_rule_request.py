@@ -75,5 +75,5 @@ async def test_build_get_auth_rule_request_works():
     }
 
     request = json.loads(
-        await ledger.build_get_auth_rule_request(identifier, auth_type, add_auth_action, field, None, new_value))
+        await ledger.build_get_auth_rule_request(identifier, txn_type, add_auth_action, field, None, new_value))
     assert expected_request.items() <= request.items()

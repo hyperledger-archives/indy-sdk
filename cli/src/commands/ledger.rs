@@ -1293,13 +1293,13 @@ pub mod get_auth_rule_command {
     use super::*;
 
     command!(CommandMetadata::build("get-auth-rule", "Send GET_AUTH_RULE request to get authentication rules for a ledger transaction.")
-                .add_required_param("type", "Ledger transaction for which authentication rules will be applied. Can be an alias or associated value")
-                .add_required_param("action", "Type of action for which authentication rules will be applied. One of: ADD, EDIT")
-                .add_required_param("field", "Transaction field for which authentication rule will be applied")
+                .add_required_param("txn_type", "Ledger transaction alias or associated value.")
+                .add_required_param("action", "Type of action for. One of: ADD, EDIT")
+                .add_required_param("field", "Transaction field")
                 .add_optional_param("old_value", "Old value of field, which can be changed to a new_value (mandatory for EDIT action)")
                 .add_required_param("new_value", "New value that can be used to fill the field")
-                .add_example(r#"ledger get-auth-rule type=NYM action=ADD field=role new_value=101"#)
-                .add_example(r#"ledger get-auth-rule type=NYM action=EDIT field=role old_value=101 new_value=0"#)
+                .add_example(r#"ledger get-auth-rule txn_type=NYM action=ADD field=role new_value=101"#)
+                .add_example(r#"ledger get-auth-rule txn_type=NYM action=EDIT field=role old_value=101 new_value=0"#)
                 .finalize()
     );
 
@@ -1310,13 +1310,13 @@ pub mod get_auth_rule_command {
         let (_, wallet_name) = ensure_opened_wallet(&ctx)?;
         let submitter_did = get_active_did(&ctx);
 
-        let auth_type = get_str_param("type", params).map_err(error_err!())?;
-        let auth_action = get_str_param("action", params).map_err(error_err!())?;
+        let txn_type = get_str_param("txn_type", params).map_err(error_err!())?;
+        let action = get_str_param("action", params).map_err(error_err!())?;
         let field = get_str_param("field", params).map_err(error_err!())?;
         let old_value = get_opt_str_param("old_value", params).map_err(error_err!())?;
         let new_value = get_str_param("new_value", params).map_err(error_err!())?;
 
-        let request = Ledger::build_get_auth_rule_request(submitter_did.as_ref().map(String::as_str), auth_type, &auth_action.to_uppercase(), field, old_value, new_value)
+        let request = Ledger::build_get_auth_rule_request(submitter_did.as_ref().map(String::as_str), txn_type, &action.to_uppercase(), field, old_value, new_value)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
 
         let response_json = Ledger::submit_request(pool_handle, &request)
@@ -3668,7 +3668,7 @@ pub mod tests {
             {
                 let cmd = auth_rule_command::new();
                 let mut params = CommandParams::new();
-                params.insert("type", AUTH_TYPE.to_string());
+                params.insert("txn_type", AUTH_TYPE.to_string());
                 params.insert("action", AUTH_ACTION.to_string());
                 params.insert("field", FIELD.to_string());
                 params.insert("new_value", NEW_VALUE.to_string());
@@ -3679,7 +3679,7 @@ pub mod tests {
             {
                 let cmd = get_auth_rule_command::new();
                 let mut params = CommandParams::new();
-                params.insert("type", AUTH_TYPE.to_string());
+                params.insert("txn_type", AUTH_TYPE.to_string());
                 params.insert("action", AUTH_ACTION.to_string());
                 params.insert("field", FIELD.to_string());
                 params.insert("new_value", NEW_VALUE.to_string());

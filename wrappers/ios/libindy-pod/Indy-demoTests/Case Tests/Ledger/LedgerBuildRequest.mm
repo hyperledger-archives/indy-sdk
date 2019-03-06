@@ -693,8 +693,8 @@
 
     NSString *requestJson;
     ret = [[LedgerUtils sharedInstance] buildGetAuthRuleRequestWithSubmitterDid:[TestUtils trusteeDid]
-                                                                       authType:@"NYM"
-                                                                     authAction:@"ADD"
+                                                                        txnType:@"NYM"
+                                                                         action:@"ADD"
                                                                           field:@"role"
                                                                        oldValue:nil
                                                                        newValue:@"101"

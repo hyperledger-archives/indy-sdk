@@ -611,18 +611,8 @@
  Builds a GET_AUTH_RULE request. Request to get authentication rules for a ledger transaction.
 
  @param submitterDid DID of the submitter stored in secured Wallet.
- @param authType - target ledger transaction type.
-      Can be an alias or associated value:
-          NODE or 0
-          NYM or 1
-          ATTRIB or 100
-          SCHEMA or 101
-          CRED_DEF or 102
-          POOL_UPGRADE or 109
-          POOL_CONFIG or 111
-          REVOC_REG_DEF or 113
-          REVOC_REG_ENTRY or 114
- @param authAction - target action type. Can be either "ADD" or "EDIT".
+ @param txnType - target ledger transaction alias or associated value.
+ @param action - target action type. Can be either "ADD" or "EDIT".
  @param field - target transaction field.
  @param oldValue - old value of field, which can be changed to a new_value (must be specified for EDIT action).
  @param newValue - new value that can be used to fill the field.
@@ -630,8 +620,8 @@
  @param completion Callback that takes command result as parameter. Returns request result as json.
  */
 + (void)buildGetAuthRuleRequestWithSubmitterDid:(NSString *)submitterDid
-                                       authType:(NSString *)authType
-                                     authAction:(NSString *)authAction
+                                        txnType:(NSString *)txnType
+                                         action:(NSString *)action
                                           field:(NSString *)field
                                        oldValue:(NSString *)oldValue
                                        newValue:(NSString *)newValue

@@ -2081,8 +2081,8 @@ void buildGetAuthRuleRequest_cb(indy_handle_t handle, indy_error_t xerr, const c
 NAN_METHOD(buildGetAuthRuleRequest) {
   INDY_ASSERT_NARGS(buildGetAuthRuleRequest, 7)
   INDY_ASSERT_STRING(buildGetAuthRuleRequest, 0, submitterDid)
-  INDY_ASSERT_STRING(buildGetAuthRuleRequest, 1, authType)
-  INDY_ASSERT_STRING(buildGetAuthRuleRequest, 2, authAction)
+  INDY_ASSERT_STRING(buildGetAuthRuleRequest, 1, txnType)
+  INDY_ASSERT_STRING(buildGetAuthRuleRequest, 2, action)
   INDY_ASSERT_STRING(buildGetAuthRuleRequest, 3, field)
   INDY_ASSERT_STRING(buildGetAuthRuleRequest, 4, oldValue)
   INDY_ASSERT_STRING(buildGetAuthRuleRequest, 5, newValue)

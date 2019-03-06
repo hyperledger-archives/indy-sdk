@@ -1330,18 +1330,8 @@ public class Ledger extends IndyJava.API {
 	 * Builds a GET_AUTH_RULE request. Request to get authentication rules for a ledger transaction.
 	 *
 	 * @param submitterDid (Optional) DID of the read request sender.
-	 * @param authType - ledger transaction for which authentication rules will be applied.
-	 *     Can be an alias or associated value:
-	 *         NODE or 0
-	 *         NYM or 1
-	 *         ATTRIB or 100
-	 *         SCHEMA or 101
-	 *         CRED_DEF or 102
-	 *         POOL_UPGRADE or 109
-	 *         POOL_CONFIG or 111
-	 *         REVOC_REG_DEF or 113
-	 *         REVOC_REG_ENTRY or 114
-	 * @param authAction - type of action for which authentication rules will be applied.
+	 * @param txnType - target ledger transaction alias or associated value.
+	 * @param action - type of action for which authentication rules will be applied.
 	 *     Can be either "ADD" (to add new rule) or "EDIT" (to edit an existing one).
 	 * @param field - transaction field for which authentication rule will be applied.
 	 * @param oldValue - old value of field, which can be changed to a new_value (must be specified for EDIT action).
@@ -1352,15 +1342,15 @@ public class Ledger extends IndyJava.API {
 	 */
 	public static CompletableFuture<String> buildGetAuthRuleRequest(
 			String submitterDid,
-			String authType,
-			String authAction,
+			String txnType,
+			String action,
 			String field,
 			String oldValue,
 			String newValue) throws IndyException {
 
 		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
-		ParamGuard.notNullOrWhiteSpace(authType, "authType");
-		ParamGuard.notNullOrWhiteSpace(authAction, "authAction");
+		ParamGuard.notNullOrWhiteSpace(txnType, "txnType");
+		ParamGuard.notNullOrWhiteSpace(action, "action");
 
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
@@ -1368,8 +1358,8 @@ public class Ledger extends IndyJava.API {
 		int result = LibIndy.api.indy_build_get_auth_rule_request(
 				commandHandle,
 				submitterDid,
-				authType,
-				authAction,
+				txnType,
+				action,
 				field,
 				oldValue,
 				newValue,

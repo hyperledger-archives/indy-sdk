@@ -762,8 +762,8 @@
 }
 
 - (NSError *)buildGetAuthRuleRequestWithSubmitterDid:(NSString *)submitterDid
-                                            authType:(NSString *)authType
-                                          authAction:(NSString *)authAction
+                                             txnType:(NSString *)txnType
+                                              action:(NSString *)action
                                                field:(NSString *)field
                                             oldValue:(NSString *)oldValue
                                             newValue:(NSString *)newValue
@@ -773,8 +773,8 @@
     __block NSString *outJson = nil;
 
     [IndyLedger buildGetAuthRuleRequestWithSubmitterDid:submitterDid
-                                               authType:authType
-                                              authAction:authAction
+                                                txnType:txnType
+                                                 action:action
                                                    field:field
                                                 oldValue:oldValue
                                                 newValue:newValue

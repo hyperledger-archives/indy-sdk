@@ -1006,18 +1006,8 @@ extern "C" {
     /// #Params
     /// command_handle: command handle to map callback to caller context.
     /// submitter_did: (Optional) DID of the read request sender.
-    /// auth_type: target ledger transaction type.
-    ///     Can be an alias or associated value:
-    ///         NODE or 0
-    ///         NYM or 1
-    ///         ATTRIB or 100
-    ///         SCHEMA or 101
-    ///         CRED_DEF or 102
-    ///         POOL_UPGRADE or 109
-    ///         POOL_CONFIG or 111
-    ///         REVOC_REG_DEF or 113
-    ///         REVOC_REG_ENTRY or 114
-    /// auth_action: target action type. Can be either "ADD" or "EDIT".
+    /// txn_type: target ledger transaction alias or associated value.
+    /// action: target action type. Can be either "ADD" or "EDIT".
     /// field: target transaction field.
     /// old_value: old value of field, which can be changed to a new_value (must be specified for EDIT action).
     /// new_value: new value that can be used to fill the field.
@@ -1031,8 +1021,8 @@ extern "C" {
     /// Common*
     extern indy_error_t indy_build_get_auth_rule_request(indy_handle_t command_handle,
                                                          const char *  submitter_did,
-                                                         const char *  auth_type,
-                                                         const char *  auth_action,
+                                                         const char *  txn_type,
+                                                         const char *  action,
                                                          const char *  field,
                                                          const char *  old_value,
                                                          const char *  new_value,

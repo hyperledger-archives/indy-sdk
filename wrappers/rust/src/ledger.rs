@@ -1063,45 +1063,35 @@ fn _build_auth_rule_request(command_handle: IndyHandle,
 /// Builds a GET_AUTH_RULE request. Request to get authentication rules for a ledger transaction.
 ///
 /// # Arguments
-/// * `auth_type`: target ledger transaction type.
-///     Can be an alias or associated value:
-///         NODE or 0
-///         NYM or 1
-///         ATTRIB or 100
-///         SCHEMA or 101
-///         CRED_DEF or 102
-///         POOL_UPGRADE or 109
-///         POOL_CONFIG or 111
-///         REVOC_REG_DEF or 113
-///         REVOC_REG_ENTRY or 114
-/// * `auth_action`: target action type. Can be either "ADD" or "EDIT".
+/// * `txn_type`: target ledger transaction alias or associated value.
+/// * `action`: target action type. Can be either "ADD" or "EDIT".
 /// * `field`: target transaction field.
 /// * `old_value`: old value of field, which can be changed to a new_value (must be specified for EDIT action).
 /// * `new_value`: new value that can be used to fill the field.
 ///
 /// # Returns
 /// Request result as json.
-pub fn build_get_auth_rule_request(submitter_did: Option<&str>, auth_type: &str, auth_action: &str, field: &str,
+pub fn build_get_auth_rule_request(submitter_did: Option<&str>, txn_type: &str, action: &str, field: &str,
                                    old_value: Option<&str>, new_value: &str) -> Box<Future<Item=String, Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
-    let err = _build_get_auth_rule_request(command_handle, submitter_did, auth_type, auth_action, field, old_value, new_value, cb);
+    let err = _build_get_auth_rule_request(command_handle, submitter_did, txn_type, action, field, old_value, new_value, cb);
 
     ResultHandler::str(command_handle, err, receiver)
 }
 
 fn _build_get_auth_rule_request(command_handle: IndyHandle,
                                 submitter_did: Option<&str>,
-                                auth_type: &str,
-                                auth_action: &str,
+                                txn_type: &str,
+                                action: &str,
                                 field: &str,
                                 old_value: Option<&str>,
                                 new_value: &str,
                                 cb: Option<ResponseStringCB>) -> ErrorCode {
     let submitter_did_str = opt_c_str!(submitter_did);
 
-    let auth_type = c_str!(auth_type);
-    let auth_action = c_str!(auth_action);
+    let txn_type = c_str!(txn_type);
+    let action = c_str!(action);
     let field = c_str!(field);
     let new_value = c_str!(new_value);
 
@@ -1110,8 +1100,8 @@ fn _build_get_auth_rule_request(command_handle: IndyHandle,
     ErrorCode::from(unsafe {
         ledger::indy_build_get_auth_rule_request(command_handle,
                                                  opt_c_ptr!(submitter_did, submitter_did_str),
-                                                 auth_type.as_ptr(),
-                                                 auth_action.as_ptr(),
+                                                 txn_type.as_ptr(),
+                                                 action.as_ptr(),
                                                  field.as_ptr(),
                                                  opt_c_ptr!(old_value, old_value_str),
                                                  new_value.as_ptr(),

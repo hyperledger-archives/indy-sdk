@@ -190,8 +190,8 @@
                                        outRequest:(NSString **)resultJson;
 
 - (NSError *)buildGetAuthRuleRequestWithSubmitterDid:(NSString *)submitterDid
-                                            authType:(NSString *)authType
-                                          authAction:(NSString *)authAction
+                                             txnType:(NSString *)txnType
+                                              action:(NSString *)action
                                                field:(NSString *)field
                                             oldValue:(NSString *)oldValue
                                             newValue:(NSString *)newValue
