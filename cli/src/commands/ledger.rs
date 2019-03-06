@@ -1225,7 +1225,7 @@ pub mod auth_rule_command {
                 .add_required_param("type", "Ledger transaction for which authentication rules will be applied. Can be an alias or associated value")
                 .add_required_param("action", "Type of action for which authentication rules will be applied. One of: ADD, EDIT")
                 .add_required_param("field", "Transaction field for which authentication rule will be applied")
-                .add_optional_param("old_value", "Old value of field, which can be changed to a new_value (must be specified for EDIT action)")
+                .add_optional_param("old_value", "Old value of field, which can be changed to a new_value (mandatory for EDIT action)")
                 .add_required_param("new_value", "New value that can be used to fill the field")
                 .add_required_param("constraint", r#"Set of constraints required for execution of action
          {
@@ -1241,8 +1241,8 @@ pub mod auth_rule_command {
              auth_constraints: [<constraint_1>, <constraint_2>]
          }
                 "#)
-                .add_example(r#"ledger change-auth-rule type=NYM action=ADD field=role new_value=101 constraint={"sig_count":1,"role":0,"constraint_id":"role","need_to_be_owner":false}"#)
-                .add_example(r#"ledger change-auth-rule type=NYM action=EDIT field=role old_value=101 new_value=0 constraint={"sig_count":1,"role":0,"constraint_id":"role","need_to_be_owner":false}"#)
+                .add_example(r#"ledger auth-rule type=NYM action=ADD field=role new_value=101 constraint={"sig_count":1,"role":0,"constraint_id":"role","need_to_be_owner":false}"#)
+                .add_example(r#"ledger auth-rule type=NYM action=EDIT field=role old_value=101 new_value=0 constraint={"sig_count":1,"role":0,"constraint_id":"role","need_to_be_owner":false}"#)
                 .finalize()
     );
 
