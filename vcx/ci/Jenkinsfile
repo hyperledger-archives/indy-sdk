@@ -19,11 +19,11 @@ class Globals {
 
     static String libindyVersion = "1.8.1"
 
-    static String libindyTag = null
+    static String libindyTag = "1003"
 
     static String libnullVersion = "1.8.1"
 
-    static String nullpayTag = null
+    static String nullpayTag = "1003"
 
     static String libsovtokenVersion = "0.9.6~-.1.126"
 
@@ -31,9 +31,9 @@ class Globals {
 
     static String iosSovtokenArtifact = "libsovtoken_0.9.6-201811211710-4901e95_all.zip"
 
-    static String indyBranch = 'stable'
+    static String indyBranch = 'master'
 
-    static String nullBranch = 'stable'
+    static String nullBranch = 'master'
 
     static String vcxVersion = null
 

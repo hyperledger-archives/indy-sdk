@@ -2,9 +2,11 @@ import asyncio
 import json
 from ctypes import cdll
 from time import sleep
+import platform
 
 import logging
 
+from demo_utils import file_ext
 from vcx.api.connection import Connection
 from vcx.api.credential import Credential
 from vcx.api.disclosed_proof import DisclosedProof
@@ -24,10 +26,9 @@ provisionConfig = {
     'enterprise_seed': '000000000000000000000000Trustee1'
 }
 
-
 async def main():
 
-    payment_plugin = cdll.LoadLibrary("libnullpay.so")
+    payment_plugin = cdll.LoadLibrary('libnullpay' + file_ext())
     payment_plugin.nullpay_init()
 
     print("#7 Provision an agent and wallet, get back configuration details")
