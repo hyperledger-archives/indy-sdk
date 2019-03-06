@@ -34,8 +34,8 @@ def dockerBuild(name, file = 'ci/ubuntu.dockerfile ci', customParams = '') {
 def calcCoverageRust(dir) {
     withEnv(["RUST_PROJECT_DIR=${dir}"]) {
         sh '''
-        cd $RUST_PROJECT_DIR
-        cargo test --no-run
+            cd $RUST_PROJECT_DIR
+            cargo test --no-run
             for i in $(find target/debug -maxdepth 1 -executable -type f | grep -v '\\.so\$')
             do
                 RUST_TEST_THREADS=1 kcov --exclude-pattern=$CARGO_HOME,/usr/lib --verify test_coverage \$i
