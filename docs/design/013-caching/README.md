@@ -27,6 +27,10 @@ Note: In all calls `pool_handle` may be removed if did resolver is implemented.
 /// wallet_handle: wallet handle (created by open_wallet).
 /// submitter_did: DID of the submitter stored in secured Wallet.
 /// id: identifier of credential definition.
+/// options_json:
+///  {
+///    forceUpdate: (optional, false by default) Force update of record in cache from the ledger,
+///  }
 /// cb: Callback that takes command result as parameter.
 #[no_mangle]
 pub extern fn indy_get_cred_def(command_handle: IndyHandle,
@@ -34,6 +38,7 @@ pub extern fn indy_get_cred_def(command_handle: IndyHandle,
                                 wallet_handle: IndyHandle,
                                 submitter_did: *const c_char,
                                 id: *const c_char,
+                                options_json: *const c_char,
                                 cb: Option<extern fn(command_handle_: IndyHandle,
                                                      err: ErrorCode,
                                                      cred_def_json: *const c_char)>) -> ErrorCode {
@@ -49,6 +54,10 @@ pub extern fn indy_get_cred_def(command_handle: IndyHandle,
 /// wallet_handle: wallet handle (created by open_wallet).
 /// submitter_did: DID of the submitter stored in secured Wallet.
 /// id: identifier of schema.
+/// options_json:
+///  {
+///    forceUpdate: (optional, false by default) Force update of record in cache from the ledger,
+///  }
 /// cb: Callback that takes command result as parameter.
 #[no_mangle]
 pub extern fn indy_get_schema(command_handle: IndyHandle,
@@ -56,6 +65,7 @@ pub extern fn indy_get_schema(command_handle: IndyHandle,
                               wallet_handle: IndyHandle,
                               submitter_did: *const c_char,
                               id: *const c_char,
+                              options_json: *const c_char,
                               cb: Option<extern fn(command_handle_: IndyHandle,
                                                    err: ErrorCode,
                                                    schema_json: *const c_char)>) -> ErrorCode {
