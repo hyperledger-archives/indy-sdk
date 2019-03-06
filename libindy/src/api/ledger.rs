@@ -1850,19 +1850,19 @@ pub extern fn indy_get_response_metadata(command_handle: IndyHandle,
 ///         POOL_CONFIG or 111
 ///         REVOC_REG_DEF or 113
 ///         REVOC_REG_ENTRY or 114
-/// auth_action: type of action for which authentication rules will be applied.
-///     Can be either "ADD" (to add new rule) or "EDIT" (to edit an existing one).
+/// auth_action: type of an action for which authentication rules will be applied.
+///     Can be either "ADD" (to add a new rule) or "EDIT" (to edit an existing one).
 /// field: transaction field for which authentication rule will be applied.
-/// old_value: old value of field, which can be changed to a new_value (must be specified for EDIT action).
+/// old_value: old value of a field, which can be changed to a new_value (mandatory for EDIT action).
 /// new_value: new value that can be used to fill the field.
-/// constraint: set of constraints required for execution of action in the following format:
+/// constraint: set of constraints required for execution of an action in the following format:
 ///     {
 ///         constraint_id - <string> type of a constraint.
 ///             Can be either "ROLE" to specify final constraint or  "AND"/"OR" to combine constraints.
 ///         role - <string> role of a user which satisfy to constrain.
 ///         sig_count - <u32> the number of signatures required to execution action.
 ///         need_to_be_owner - <bool> if user must be an owner of transaction.
-///         metadata - <object> additional parameters of constraint.
+///         metadata - <object> additional parameters of the constraint.
 ///     }
 /// can be combined by
 ///     {
@@ -1917,7 +1917,7 @@ pub extern fn indy_build_auth_rule_request(command_handle: IndyHandle,
             constraint,
             Box::new(move |result| {
                 let (err, request_json) = prepare_result_1!(result, String::new());
-                trace!("indy_build_nym_request: request_json: {:?}", request_json);
+                trace!("indy_build_auth_rule_request: request_json: {:?}", request_json);
                 let request_json = ctypes::string_to_cstring(request_json);
                 cb(command_handle, err, request_json.as_ptr())
             })

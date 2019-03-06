@@ -586,19 +586,19 @@
           POOL_CONFIG or 111
           REVOC_REG_DEF or 113
           REVOC_REG_ENTRY or 114
- @param authAction - type of action for which authentication rules will be applied.
-          Can be either "ADD" (to add new rule) or "EDIT" (to edit an existing one).
+ @param authAction - type of an action for which authentication rules will be applied.
+          Can be either "ADD" (to add a new rule) or "EDIT" (to edit an existing one).
  @param field - transaction field for which authentication rule will be applied.
- @param oldValue - old value of field, which can be changed to a new_value (must be specified for EDIT action).
+ @param oldValue - old value of a field, which can be changed to a new_value (mandatory for EDIT action).
  @param newValue - new value that can be used to fill the field.
- @param constraint - set of constraints required for execution of action in the following format:
+ @param constraint - set of constraints required for execution of an action in the following format:
         {
             constraint_id - <string> type of a constraint.
                 Can be either "ROLE" to specify final constraint or  "AND"/"OR" to combine constraints.
             role - <string> role of a user which satisfy to constrain.
             sig_count - <u32> the number of signatures required to execution action.
             need_to_be_owner - <bool> if user must be an owner of transaction.
-            metadata - <object> additional parameters of constraint.
+            metadata - <object> additional parameters of the constraint.
         }
       can be combined by
         {
