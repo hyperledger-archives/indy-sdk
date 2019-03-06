@@ -19,6 +19,12 @@ use utils::ctypes;
 
 pub type IndyHandle = i32;
 
+pub type WalletHandle = i32;
+pub type PoolHandle = i32;
+pub type CommandHandle = i32;
+pub type StorageHandle = i32;
+pub type SearchHandle = i32;
+
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 #[repr(i32)]
 pub enum ErrorCode

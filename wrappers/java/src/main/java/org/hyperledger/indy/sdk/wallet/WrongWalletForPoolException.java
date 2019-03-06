@@ -18,15 +18,4 @@ public class WrongWalletForPoolException extends IndyException
 	{
 		super(message, ErrorCode.WalletIncompatiblePoolError.value());
 	}
-
-	/**
-	 * Initializes a new WrongWalletForPoolException.
-	 *
-	 * @param sdkMessage The SDK error message.
-	 * @param sdkBacktrace The SDK error backtrace.
-	 */
-	public WrongWalletForPoolException(String sdkMessage, String sdkBacktrace)
-    {
-    	super(sdkMessage, ErrorCode.WalletIncompatiblePoolError.value(), sdkBacktrace);
-    }
 }

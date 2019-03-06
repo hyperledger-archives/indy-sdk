@@ -18,15 +18,4 @@ public class PoolLedgerConfigExistsException extends IndyException
 	{
 		super(message, ErrorCode.PoolLedgerConfigAlreadyExistsError.value());
 	}
-
-	/**
-	 * Initializes a new PoolLedgerConfigExistsException.
-	 *
-	 * @param sdkMessage The SDK error message.
-	 * @param sdkBacktrace The SDK error backtrace.
-	 */
-	public PoolLedgerConfigExistsException(String sdkMessage, String sdkBacktrace)
-    {
-    	super(sdkMessage, ErrorCode.PoolLedgerConfigAlreadyExistsError.value(), sdkBacktrace);
-    }
 }

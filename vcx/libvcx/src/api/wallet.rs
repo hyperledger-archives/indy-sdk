@@ -1085,7 +1085,7 @@ pub mod tests {
                           Some(cb.get_callback())), error::SUCCESS.code_num);
         cb.receive(Some(Duration::from_secs(50))).unwrap();
 
-        delete_wallet(&wallet_name, None).unwrap();
+        delete_wallet(&wallet_name, None, None, None).unwrap();
 
         let cb = return_types_u32::Return_U32::new().unwrap();
         let exported_path = dir.to_str().unwrap();
@@ -1103,7 +1103,7 @@ pub mod tests {
 
         let handle = setup_wallet_env(&wallet_name).unwrap();
 
-        delete_wallet(&wallet_name, None).unwrap();
+        delete_wallet(&wallet_name, None, None, None).unwrap();
         fs::remove_file(Path::new(&dir)).unwrap();
         assert!(!Path::new(&dir).exists());
     }
