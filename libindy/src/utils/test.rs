@@ -1,24 +1,27 @@
 use utils::environment;
 
 use std::fs;
+use std::path::PathBuf;
 
-pub fn cleanup_indy_home() {
-    let path = environment::indy_home_path();
+fn cleanup_files(dir: &PathBuf, name: &str) {
+    let path = dir.join(name);
+
     if path.exists() {
-        fs::remove_dir_all(path).unwrap();
+        fs::remove_dir_all(path).unwrap()
     }
 }
 
-pub fn cleanup_temp() {
-    let path = environment::tmp_path();
-    if path.exists() {
-        fs::remove_dir_all(path).unwrap();
-    }
+pub fn cleanup_indy_home(name: &str) {
+    cleanup_files(&environment::indy_home_path(), name);
 }
 
-pub fn cleanup_storage() {
-    cleanup_indy_home();
-    cleanup_temp();
+pub fn cleanup_temp(name: &str) {
+    cleanup_files(&environment::tmp_path(), name);
+}
+
+pub fn cleanup_storage(name: &str) {
+    cleanup_indy_home(name);
+    cleanup_temp(name);
 }
 
 pub fn gen_txns() -> Vec<String> {

@@ -35,7 +35,7 @@ use utils::constants::*;
 
 #[test]
 fn indy_set_logger_works() {
-    test::cleanup_storage();
+    test::cleanup_storage("indy_set_logger_works");
 
     wallet::create_wallet(DEFAULT_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
 
@@ -46,12 +46,12 @@ fn indy_set_logger_works() {
     let wallet_handle = wallet::open_wallet(DEFAULT_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
 
     wallet::close_wallet(wallet_handle).unwrap();
-    test::cleanup_storage();
+    test::cleanup_storage("indy_set_logger_works");
 }
 
 #[test]
 fn indy_set_default_logger_works() {
-    test::cleanup_storage();
+    test::cleanup_storage("indy_set_default_logger_works");
 
     wallet::create_wallet(DEFAULT_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
 
@@ -60,6 +60,6 @@ fn indy_set_default_logger_works() {
     let wallet_handle = wallet::open_wallet(DEFAULT_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
 
     wallet::close_wallet(wallet_handle).unwrap();
-    test::cleanup_storage();
+    test::cleanup_storage("indy_set_default_logger_works");
 }
 

@@ -371,7 +371,7 @@ mod tests {
 
         #[test]
         fn pool_service_close_works() {
-            test::cleanup_storage();
+            test::cleanup_storage("pool_service_close_works");
 
             let ps = PoolService::new();
             let pool_id = sequence::get_next_id();
@@ -390,7 +390,7 @@ mod tests {
 
         #[test]
         fn pool_service_refresh_works() {
-            test::cleanup_storage();
+            test::cleanup_storage("pool_service_refresh_works");
 
             let ps = PoolService::new();
             let pool_id = sequence::get_next_id();
@@ -409,7 +409,7 @@ mod tests {
 
         #[test]
         fn pool_service_delete_works() {
-            test::cleanup_storage();
+            test::cleanup_storage("pool_service_delete_works");
 
             let ps = PoolService::new();
             let pool_name = "pool_service_delete_works";
@@ -422,7 +422,7 @@ mod tests {
 
         #[test]
         fn pool_service_delete_works_for_opened() {
-            test::cleanup_storage();
+            test::cleanup_storage("pool_service_delete_works_for_opened");
 
             let zmq_ctx = zmq::Context::new();
             let send_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR).unwrap();
@@ -448,7 +448,7 @@ mod tests {
 
         #[test]
         fn pool_send_tx_works() {
-            test::cleanup_storage();
+            test::cleanup_storage("pool_send_tx_works");
 
             let name = "test";
             let zmq_ctx = zmq::Context::new();
@@ -467,7 +467,7 @@ mod tests {
 
         #[test]
         fn pool_send_tx_works_for_closed_socket() {
-            test::cleanup_storage();
+            test::cleanup_storage("pool_send_tx_works_for_closed_socket");
 
             let name = "test";
             let zmq_ctx = zmq::Context::new();
@@ -482,7 +482,7 @@ mod tests {
 
         #[test]
         fn pool_send_tx_works_for_invalid_handle() {
-            test::cleanup_storage();
+            test::cleanup_storage("pool_send_tx_works_for_invalid_handle");
             let ps = PoolService::new();
             let res = ps.send_tx(-1, "txn");
             assert_eq!(IndyErrorKind::InvalidPoolHandle, res.unwrap_err().kind());
@@ -490,7 +490,7 @@ mod tests {
 
         #[test]
         fn pool_send_action_works() {
-            test::cleanup_storage();
+            test::cleanup_storage("pool_send_action_works");
 
             let name = "test";
             let zmq_ctx = zmq::Context::new();
@@ -509,7 +509,7 @@ mod tests {
 
         #[test]
         fn pool_close_works_for_invalid_handle() {
-            test::cleanup_storage();
+            test::cleanup_storage("pool_close_works_for_invalid_handle");
             let ps = PoolService::new();
             let res = ps.close(-1);
             assert_eq!(IndyErrorKind::InvalidPoolHandle, res.unwrap_err().kind());
@@ -517,7 +517,7 @@ mod tests {
 
         #[test]
         fn pool_refresh_works_for_invalid_handle() {
-            test::cleanup_storage();
+            test::cleanup_storage("pool_refresh_works_for_invalid_handle");
             let ps = PoolService::new();
             let res = ps.refresh(-1);
             assert_eq!(IndyErrorKind::InvalidPoolHandle, res.unwrap_err().kind());
@@ -525,7 +525,7 @@ mod tests {
 
         #[test]
         fn pool_register_sp_parser_works() {
-            test::cleanup_storage();
+            test::cleanup_storage("pool_register_sp_parser_works");
             REGISTERED_SP_PARSERS.lock().unwrap().clear();
             extern fn test_sp(_reply_from_node: *const c_char, _parsed_sp: *mut *const c_char) -> ErrorCode {
                 ErrorCode::Success
@@ -538,7 +538,7 @@ mod tests {
 
         #[test]
         fn pool_get_sp_parser_works() {
-            test::cleanup_storage();
+            test::cleanup_storage("pool_get_sp_parser_works");
             REGISTERED_SP_PARSERS.lock().unwrap().clear();
             extern fn test_sp(_reply_from_node: *const c_char, _parsed_sp: *mut *const c_char) -> ErrorCode {
                 ErrorCode::Success
@@ -552,14 +552,14 @@ mod tests {
 
         #[test]
         fn pool_get_sp_parser_works_for_invalid_name() {
-            test::cleanup_storage();
+            test::cleanup_storage("pool_get_sp_parser_works_for_invalid_name");
             REGISTERED_SP_PARSERS.lock().unwrap().clear();
             assert_eq!(None, PoolService::get_sp_parser("test"));
         }
 
         #[test]
         pub fn pool_add_open_pool_works() {
-            test::cleanup_storage();
+            test::cleanup_storage("pool_add_open_pool_works");
             let name = "test";
             let ps = PoolService::new();
             let zmq_ctx = zmq::Context::new();
@@ -571,7 +571,7 @@ mod tests {
 
         #[test]
         pub fn pool_add_open_pool_works_for_no_pending_pool() {
-            test::cleanup_storage();
+            test::cleanup_storage("pool_add_open_pool_works_for_no_pending_pool");
             let ps = PoolService::new();
             let res = ps.add_open_pool(-1);
             assert_eq!(IndyErrorKind::InvalidPoolHandle, res.unwrap_err().kind());
@@ -583,10 +583,10 @@ mod tests {
         use utils::test;
         use std::time;
 
-        test::cleanup_storage();
+        test::cleanup_storage("pool_drop_works_for_after_close");
 
         fn drop_test() {
-            test::cleanup_storage();
+            test::cleanup_storage("drop_test");
             _set_protocol_version(TEST_PROTOCOL_VERSION);
             let ps = PoolService::new();
 
@@ -617,7 +617,7 @@ mod tests {
         }
 
         drop_test();
-        test::cleanup_storage();
+        test::cleanup_storage("drop_test");
     }
 
     pub mod nodes_emulator {

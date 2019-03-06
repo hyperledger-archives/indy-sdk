@@ -215,7 +215,7 @@ mod tests {
 
     #[test]
     fn export_import_works_for_empty_wallet() {
-        _cleanup();
+        _cleanup("export_import_works_for_empty_wallet");
 
         let mut output: Vec<u8> = Vec::new();
         export(&_wallet1(), &mut output, _passphrase(), _version1(), &KeyDerivationMethod::ARGON2I_MOD).unwrap();
@@ -229,7 +229,7 @@ mod tests {
 
     #[test]
     fn export_import_works_for_2_items() {
-        _cleanup();
+        _cleanup("export_import_works_for_2_items");
 
         let mut output: Vec<u8> = Vec::new();
         export(&_add_2_records(_wallet1()), &mut output, _passphrase(), _version1(), &KeyDerivationMethod::ARGON2I_MOD).unwrap();
@@ -243,7 +243,7 @@ mod tests {
 
     #[test]
     fn export_import_works_for_2_items_and_interactive_method() {
-        _cleanup();
+        _cleanup("export_import_works_for_2_items_and_interactive_method");
 
         let mut output: Vec<u8> = Vec::new();
         export(&_add_2_records(_wallet1()), &mut output, _passphrase(), _version1(), &KeyDerivationMethod::ARGON2I_INT).unwrap();
@@ -257,7 +257,7 @@ mod tests {
 
     #[test]
     fn export_import_works_for_multiple_items() {
-        _cleanup();
+        _cleanup("export_import_works_for_multiple_items");
 
         let mut output: Vec<u8> = Vec::new();
         export(&_add_300_records(_wallet1()), &mut output, _passphrase(), _version1(), &KeyDerivationMethod::ARGON2I_MOD).unwrap();
@@ -271,7 +271,7 @@ mod tests {
 
     #[test]
     fn import_works_for_empty() {
-        _cleanup();
+        _cleanup("import_works_for_empty");
 
         let res = import(&_wallet1(), &mut "".as_bytes(), _passphrase());
         assert_eq!(IndyErrorKind::InvalidStructure, res.unwrap_err().kind());
@@ -279,7 +279,7 @@ mod tests {
 
     #[test]
     fn import_works_for_cut_header_length() {
-        _cleanup();
+        _cleanup("import_works_for_cut_header_length");
 
         let res = import(&_wallet1(), &mut "\x00".as_bytes(), _passphrase());
         assert_eq!(IndyErrorKind::InvalidStructure, res.unwrap_err().kind());
@@ -287,7 +287,7 @@ mod tests {
 
     #[test]
     fn import_works_for_cut_header_body() {
-        _cleanup();
+        _cleanup("import_works_for_cut_header_body");
 
         let res = import(&_wallet1(), &mut "\x00\x20small".as_bytes(), _passphrase());
         assert_eq!(IndyErrorKind::InvalidStructure, res.unwrap_err().kind());
@@ -295,7 +295,7 @@ mod tests {
 
     #[test]
     fn import_works_for_invalid_header_body() {
-        _cleanup();
+        _cleanup("import_works_for_invalid_header_body");
 
         let output = {
             let invalid_header = "invalid_header".as_bytes();
@@ -312,7 +312,7 @@ mod tests {
 
     #[test]
     fn import_works_for_invalid_header_hash() {
-        _cleanup();
+        _cleanup("import_works_for_invalid_header_hash");
 
         let mut output: Vec<u8> = Vec::new();
         export(&_wallet1(), &mut output, _passphrase(), _version1(), &KeyDerivationMethod::ARGON2I_MOD).unwrap();
@@ -327,7 +327,7 @@ mod tests {
 
     #[test]
     fn export_import_works_for_changed_record() {
-        _cleanup();
+        _cleanup("export_import_works_for_changed_record");
 
         let mut output: Vec<u8> = Vec::new();
         export(&_add_300_records(_wallet1()), &mut output, _passphrase(), _version1(), &KeyDerivationMethod::ARGON2I_MOD).unwrap();
@@ -342,7 +342,7 @@ mod tests {
 
     #[test]
     fn import_works_for_data_cut() {
-        _cleanup();
+        _cleanup("import_works_for_data_cut");
 
         let mut output: Vec<u8> = Vec::new();
         export(&_add_2_records(_wallet1()), &mut output, _passphrase(), _version1(), &KeyDerivationMethod::ARGON2I_MOD).unwrap();
@@ -355,7 +355,7 @@ mod tests {
 
     #[test]
     fn import_works_for_data_extended() {
-        _cleanup();
+        _cleanup("import_works_for_data_extended");
 
         let mut output: Vec<u8> = Vec::new();
         export(&_add_2_records(_wallet1()), &mut output, _passphrase(), _version1(), &KeyDerivationMethod::ARGON2I_MOD).unwrap();
@@ -366,8 +366,8 @@ mod tests {
         assert_eq!(IndyErrorKind::InvalidStructure, res.unwrap_err().kind());
     }
 
-    fn _cleanup() {
-        test::cleanup_storage()
+    fn _cleanup(name: &str) {
+        test::cleanup_storage(name)
     }
 
     fn _wallet1_id() -> &'static str {

@@ -252,17 +252,17 @@ mod tests {
 
     #[test]
     fn wallet_get_id_works() {
-        _cleanup();
+        _cleanup("wallet_get_id_works");
 
-        let wallet = _wallet();
-        assert_eq!(wallet.get_id(), _wallet_id());
+        let wallet = _wallet("wallet_get_id_works");
+        assert_eq!(wallet.get_id(), "wallet_get_id_works");
     }
 
     #[test]
     fn wallet_add_get_works() {
-        _cleanup();
+        _cleanup("wallet_add_get_works");
 
-        let wallet = _wallet();
+        let wallet = _wallet("wallet_add_get_works");
         wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
 
         let record = wallet.get(_type1(), _id1(), &_fetch_options(false, true, true)).unwrap();
@@ -273,13 +273,13 @@ mod tests {
 
     #[test]
     fn wallet_add_get_works_for_reopen() {
-        _cleanup();
+        _cleanup("wallet_add_get_works_for_reopen");
 
-        let mut wallet = _wallet();
+        let mut wallet = _wallet("wallet_add_get_works_for_reopen");
         wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
         wallet.close().unwrap();
 
-        let wallet = _exists_wallet();
+        let wallet = _exists_wallet("wallet_add_get_works_for_reopen");
 
         let record = wallet.get(_type1(), _id1(), &_fetch_options(false, true, true)).unwrap();
         assert_eq!(record.id, _id1());
@@ -289,9 +289,9 @@ mod tests {
 
     #[test]
     fn wallet_get_works_for_non_existing() {
-        _cleanup();
+        _cleanup("wallet_get_works_for_non_existing");
 
-        let wallet = _wallet();
+        let wallet = _wallet("wallet_get_works_for_non_existing");
         wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
 
         let res = wallet.get(_type1(), _id2(), &_fetch_options(false, true, true));
@@ -300,9 +300,9 @@ mod tests {
 
     #[test]
     fn wallet_add_works_for_already_existing() {
-        _cleanup();
+        _cleanup("wallet_add_works_for_already_existing");
 
-        let wallet = _wallet();
+        let wallet = _wallet("wallet_add_works_for_already_existing");
         wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
 
         let res = wallet.add(_type1(), _id1(), _value2(), &_tags());
@@ -311,9 +311,9 @@ mod tests {
 
     #[test]
     fn wallet_update_works() {
-        _cleanup();
+        _cleanup("wallet_update_works");
 
-        let wallet = _wallet();
+        let wallet = _wallet("wallet_update_works");
         wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
 
         let record = wallet.get(_type1(), _id1(), &_fetch_options(false, true, true)).unwrap();
@@ -331,9 +331,9 @@ mod tests {
 
     #[test]
     fn wallet_update_works_for_non_existing_id() {
-        _cleanup();
+        _cleanup("wallet_update_works_for_non_existing_id");
 
-        let wallet = _wallet();
+        let wallet = _wallet("wallet_update_works_for_non_existing_id");
         wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
 
         let res = wallet.update(_type1(), _id2(), _value2());
@@ -342,9 +342,9 @@ mod tests {
 
     #[test]
     fn wallet_update_works_for_non_existing_type() {
-        _cleanup();
+        _cleanup("wallet_update_works_for_non_existing_type");
 
-        let wallet = _wallet();
+        let wallet = _wallet("wallet_update_works_for_non_existing_type");
         wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
 
         let res = wallet.update(_type2(), _id1(), _value2());
@@ -356,14 +356,14 @@ mod tests {
      */
     #[test]
     fn wallet_add_tags_works() {
-        _cleanup();
+        _cleanup("wallet_add_tags_works");
 
         let tags = jsonmap!({
             "tag_name_1": "tag_value_1",
             "tag_name_2": "tag_value_2",
          });
 
-        let wallet = _wallet();
+        let wallet = _wallet("wallet_add_tags_works");
         wallet.add(_type1(), _id1(), _value1(), &tags).unwrap();
 
         let new_tags = jsonmap!({
@@ -385,14 +385,14 @@ mod tests {
 
     #[test]
     fn wallet_update_tags_works() {
-        _cleanup();
+        _cleanup("wallet_update_tags_works");
 
         let tags = jsonmap!({
             "tag_name_1": "tag_value_1",
             "tag_name_2": "tag_value_2",
          });
 
-        let wallet = _wallet();
+        let wallet = _wallet("wallet_update_tags_works");
         wallet.add(_type1(), _id1(), _value1(), &tags).unwrap();
 
         let new_tags = jsonmap!({
@@ -408,7 +408,7 @@ mod tests {
 
     #[test]
     fn wallet_delete_tags_works() {
-        _cleanup();
+        _cleanup("wallet_delete_tags_works");
 
         let tags = jsonmap!({
             "tag_name_1": "tag_value_1",
@@ -417,7 +417,7 @@ mod tests {
             "~tag_name_4": "~tag_value_4",
          });
 
-        let wallet = _wallet();
+        let wallet = _wallet("wallet_delete_tags_works");
         wallet.add(_type1(), _id1(), _value1(), &tags).unwrap();
 
         wallet.delete_tags(_type1(), _id1(), &vec!["tag_name_1", "~tag_name_3", "tag_name_5", "~tag_name_6"]).unwrap();
@@ -433,9 +433,9 @@ mod tests {
 
     #[test]
     fn wallet_delete_works() {
-        _cleanup();
+        _cleanup("wallet_delete_works");
 
-        let wallet = _wallet();
+        let wallet = _wallet("wallet_delete_works");
         wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
 
         let record = wallet.get(_type1(), _id1(), &_fetch_options(false, true, true)).unwrap();
@@ -451,9 +451,9 @@ mod tests {
 
     #[test]
     fn wallet_delete_works_for_non_existing_id() {
-        _cleanup();
+        _cleanup("wallet_delete_works_for_non_existing_id");
 
-        let wallet = _wallet();
+        let wallet = _wallet("wallet_delete_works_for_non_existing_id");
         wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
 
         let res = wallet.delete(_type1(), _id2());
@@ -462,9 +462,9 @@ mod tests {
 
     #[test]
     fn wallet_delete_works_for_non_existing_type() {
-        _cleanup();
+        _cleanup("wallet_delete_works_for_non_existing_type");
 
-        let wallet = _wallet();
+        let wallet = _wallet("wallet_delete_works_for_non_existing_type");
         wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
 
         let res = wallet.delete(_type2(), _id1());
@@ -473,7 +473,7 @@ mod tests {
 
     #[test]
     fn language_parse_from_json_ecrypt_query_works() {
-        _cleanup();
+        _cleanup("language_parse_from_json_ecrypt_query_works");
 
         let query = jsonstr!({
             "k1": "v1",
@@ -514,9 +514,9 @@ mod tests {
 
     #[test]
     fn wallet_search_works_for_empty_query() {
-        _cleanup();
+        _cleanup("wallet_search_works_for_empty_query");
 
-        let wallet = _wallet();
+        let wallet = _wallet("wallet_search_works_for_empty_query");
         wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
         wallet.add(_type1(), _id2(), _value2(), &_tags()).unwrap();
 
@@ -546,9 +546,9 @@ mod tests {
 
     #[test]
     fn wallet_search_works_for_empty_query_with_count() {
-        _cleanup();
+        _cleanup("wallet_search_works_for_empty_query_with_count");
 
-        let wallet = _wallet();
+        let wallet = _wallet("wallet_search_works_for_empty_query_with_count");
         wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
         wallet.add(_type1(), _id2(), _value2(), &_tags()).unwrap();
 
@@ -578,9 +578,9 @@ mod tests {
 
     #[test]
     fn wallet_search_works_for_empty_query_with_only_count() {
-        _cleanup();
+        _cleanup("wallet_search_works_for_empty_query_with_only_count");
 
-        let wallet = _wallet();
+        let wallet = _wallet("wallet_search_works_for_empty_query_with_only_count");
         wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
         wallet.add(_type1(), _id2(), _value2(), &_tags()).unwrap();
 
@@ -595,9 +595,9 @@ mod tests {
 
     #[test]
     fn wallet_search_works_for_eq_encrypted() {
-        _cleanup();
+        _cleanup("wallet_search_works_for_eq_encrypted");
 
-        let wallet = _wallet();
+        let wallet = _wallet("wallet_search_works_for_eq_encrypted");
 
         let tags = jsonmap!({
             "tag_name_1": "tag_value_1",
@@ -657,9 +657,9 @@ mod tests {
 
     #[test]
     fn wallet_search_works_for_empty_tag_plain() {
-        _cleanup();
+        _cleanup("wallet_search_works_for_empty_tag_plain");
 
-        let wallet = _wallet();
+        let wallet = _wallet("wallet_search_works_for_empty_tag_plain");
         wallet.add(_type1(), _id1(), _type1(), &_tags()).unwrap();
 
         let res = wallet.search(_type1(),
@@ -674,9 +674,9 @@ mod tests {
 
     #[test]
     fn wallet_search_works_for_empty_tag_encrypted() {
-        _cleanup();
+        _cleanup("wallet_search_works_for_empty_tag_encrypted");
 
-        let wallet = _wallet();
+        let wallet = _wallet("wallet_search_works_for_empty_tag_encrypted");
         wallet.add(_type1(), _id1(), _type1(), &_tags()).unwrap();
 
         let res = wallet.search(_type1(),
@@ -691,9 +691,9 @@ mod tests {
 
     #[test]
     fn wallet_search_works_for_eq_plan() {
-        _cleanup();
+        _cleanup("wallet_search_works_for_eq_plan");
 
-        let wallet = _wallet();
+        let wallet = _wallet("wallet_search_works_for_eq_plan");
 
         let tags = jsonmap!({
             "~tag_name_1": "tag_value_1",
@@ -754,9 +754,9 @@ mod tests {
     // neq tests //
     #[test]
     fn wallet_search_works_for_neq_encrypted() {
-        _cleanup();
+        _cleanup("wallet_search_works_for_neq_encrypted");
 
-        let wallet = _wallet();
+        let wallet = _wallet("wallet_search_works_for_neq_encrypted");
 
         let tags = jsonmap!({
             "tag_name_1": "tag_value_1",
@@ -816,9 +816,9 @@ mod tests {
 
     #[test]
     fn wallet_search_works_for_neq_plain() {
-        _cleanup();
+        _cleanup("wallet_search_works_for_neq_plain");
 
-        let wallet = _wallet();
+        let wallet = _wallet("wallet_search_works_for_neq_plain");
 
         let tags = jsonmap!({
             "~tag_name_1": "tag_value_1",
@@ -878,9 +878,9 @@ mod tests {
 
     #[test]
     fn wallet_search_works_for_gt_plain() {
-        _cleanup();
+        _cleanup("wallet_search_works_for_gt_plain");
 
-        let wallet = _wallet();
+        let wallet = _wallet("wallet_search_works_for_gt_plain");
         wallet.add(_type1(), _id1(), _value1(), &jsonmap!({"~tag_name":"1"})).unwrap();
         wallet.add(_type1(), _id2(), _value2(), &jsonmap!({"~tag_name":"2"})).unwrap();
         wallet.add(_type1(), _id3(), _value3(), &jsonmap!({"~tag_name":"3"})).unwrap();
@@ -934,9 +934,9 @@ mod tests {
 
     #[test]
     fn wallet_search_works_for_gt_encrypted() {
-        _cleanup();
+        _cleanup("wallet_search_works_for_gt_encrypted");
 
-        let wallet = _wallet();
+        let wallet = _wallet("wallet_search_works_for_gt_encrypted");
 
         let res = wallet.search(_type1(),
                                 &jsonstr!({"tag_name": {"$gt": "1"}}),
@@ -947,9 +947,9 @@ mod tests {
 
     #[test]
     fn wallet_search_works_for_gte_plain() {
-        _cleanup();
+        _cleanup("wallet_search_works_for_gte_plain");
 
-        let wallet = _wallet();
+        let wallet = _wallet("wallet_search_works_for_gte_plain");
         wallet.add(_type1(), _id1(), _value1(), &jsonmap!({"~tag_name":"1"})).unwrap();
         wallet.add(_type1(), _id2(), _value2(), &jsonmap!({"~tag_name":"2"})).unwrap();
         wallet.add(_type1(), _id3(), _value3(), &jsonmap!({"~tag_name":"3"})).unwrap();
@@ -1003,9 +1003,9 @@ mod tests {
 
     #[test]
     fn wallet_search_works_for_gte_encrypted() {
-        _cleanup();
+        _cleanup("wallet_search_works_for_gte_encrypted");
 
-        let wallet = _wallet();
+        let wallet = _wallet("wallet_search_works_for_gte_encrypted");
 
         let res = wallet.search(_type1(),
                                 &jsonstr!({"tag_name": {"$gte": "1"}}),
@@ -1016,9 +1016,9 @@ mod tests {
 
     #[test]
     fn wallet_search_works_for_lt_plain() {
-        _cleanup();
+        _cleanup("wallet_search_works_for_lt_plain");
 
-        let wallet = _wallet();
+        let wallet = _wallet("wallet_search_works_for_lt_plain");
         wallet.add(_type1(), _id1(), _value1(), &jsonmap!({"~tag_name":"2"})).unwrap();
         wallet.add(_type1(), _id2(), _value2(), &jsonmap!({"~tag_name":"3"})).unwrap();
         wallet.add(_type1(), _id3(), _value3(), &jsonmap!({"~tag_name":"4"})).unwrap();
@@ -1072,9 +1072,9 @@ mod tests {
 
     #[test]
     fn wallet_search_works_for_lt_encrypted() {
-        _cleanup();
+        _cleanup("wallet_search_works_for_lt_encrypted");
 
-        let wallet = _wallet();
+        let wallet = _wallet("wallet_search_works_for_lt_encrypted");
 
         let res = wallet.search(_type1(),
                                 &jsonstr!({"tag_name": {"$lt": "4"}}),
@@ -1085,9 +1085,9 @@ mod tests {
 
     #[test]
     fn wallet_search_works_for_lte_plain() {
-        _cleanup();
+        _cleanup("wallet_search_works_for_lte_plain");
 
-        let wallet = _wallet();
+        let wallet = _wallet("wallet_search_works_for_lte_plain");
         wallet.add(_type1(), _id1(), _value1(), &jsonmap!({"~tag_name":"2"})).unwrap();
         wallet.add(_type1(), _id2(), _value2(), &jsonmap!({"~tag_name":"3"})).unwrap();
         wallet.add(_type1(), _id3(), _value3(), &jsonmap!({"~tag_name":"4"})).unwrap();
@@ -1141,9 +1141,9 @@ mod tests {
 
     #[test]
     fn wallet_search_works_for_lte_encrypted() {
-        _cleanup();
+        _cleanup("wallet_search_works_for_lte_encrypted");
 
-        let wallet = _wallet();
+        let wallet = _wallet("wallet_search_works_for_lte_encrypted");
 
         let res = wallet.search(_type1(),
                                 &jsonstr!({"tag_name": {"$lte": "3"}}),
@@ -1154,9 +1154,9 @@ mod tests {
 
     #[test]
     fn wallet_search_works_for_like_plain() {
-        _cleanup();
+        _cleanup("wallet_search_works_for_like_plain");
 
-        let wallet = _wallet();
+        let wallet = _wallet("wallet_search_works_for_like_plain");
         wallet.add(_type1(), _id1(), _value1(), &jsonmap!({"~tag_name": "tag_value_1"})).unwrap();
         wallet.add(_type1(), _id2(), _value2(), &jsonmap!({"~tag_name": "tag_value_2"})).unwrap();
         wallet.add(_type1(), _id3(), _value3(), &jsonmap!({"~tag_name": "not_matching"})).unwrap();
@@ -1210,9 +1210,9 @@ mod tests {
 
     #[test]
     fn wallet_search_works_for_like_encrypted() {
-        _cleanup();
+        _cleanup("wallet_search_works_for_like_encrypted");
 
-        let wallet = _wallet();
+        let wallet = _wallet("wallet_search_works_for_like_encrypted");
 
         let res = wallet.search(_type1(),
                                 &jsonstr!({"tag_name": {"$like": "1"}}),
@@ -1223,9 +1223,9 @@ mod tests {
 
     #[test]
     fn wallet_search_works_for_in_plain() {
-        _cleanup();
+        _cleanup("wallet_search_works_for_in_plain");
 
-        let wallet = _wallet();
+        let wallet = _wallet("wallet_search_works_for_in_plain");
         wallet.add(_type1(), _id1(), _value1(), &jsonmap!({"~tag_name": "tag_value_1"})).unwrap();
         wallet.add(_type1(), _id2(), _value2(), &jsonmap!({"~tag_name": "tag_value_2"})).unwrap();
         wallet.add(_type1(), _id3(), _value3(), &jsonmap!({"~tag_name": "tag_value_3"})).unwrap();
@@ -1287,9 +1287,9 @@ mod tests {
 
     #[test]
     fn wallet_search_works_for_in_encrypted() {
-        _cleanup();
+        _cleanup("wallet_search_works_for_in_encrypted");
 
-        let wallet = _wallet();
+        let wallet = _wallet("wallet_search_works_for_in_encrypted");
         wallet.add(_type1(), _id1(), _value1(), &jsonmap!({"tag_name": "tag_value_1"})).unwrap();
         wallet.add(_type1(), _id2(), _value2(), &jsonmap!({"tag_name": "tag_value_2"})).unwrap();
         wallet.add(_type1(), _id3(), _value3(), &jsonmap!({"tag_name": "tag_value_3"})).unwrap();
@@ -1352,9 +1352,9 @@ mod tests {
 
     #[test]
     fn wallet_search_works_for_and() {
-        _cleanup();
+        _cleanup("wallet_search_works_for_and");
 
-        let wallet = _wallet();
+        let wallet = _wallet("wallet_search_works_for_and");
 
         wallet.add(_type1(),
                    _id1(),
@@ -1486,9 +1486,9 @@ mod tests {
 
     #[test]
     fn wallet_search_works_for_or() {
-        _cleanup();
+        _cleanup("wallet_search_works_for_or");
 
-        let wallet = _wallet();
+        let wallet = _wallet("wallet_search_works_for_or");
 
         wallet.add(_type1(),
                    _id1(),
@@ -1628,9 +1628,9 @@ mod tests {
 
     #[test]
     fn wallet_search_works_for_not() {
-        _cleanup();
+        _cleanup("wallet_search_works_for_not");
 
-        let wallet = _wallet();
+        let wallet = _wallet("wallet_search_works_for_not");
 
         wallet.add(_type1(),
                    _id1(),
@@ -1723,9 +1723,9 @@ mod tests {
 
     #[test]
     fn wallet_search_works_for_nested() {
-        _cleanup();
+        _cleanup("wallet_search_works_for_nested");
 
-        let wallet = _wallet();
+        let wallet = _wallet("wallet_search_works_for_nested");
         wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
 
         let query = jsonstr!({
@@ -1762,8 +1762,8 @@ mod tests {
         assert!(iterator.get_total_count().unwrap().is_none());
     }
 
-    fn _cleanup() {
-        test::cleanup_storage();
+    fn _cleanup(name: &str) {
+        test::cleanup_storage(name);
     }
 
     fn _type1() -> &'static str {
@@ -1802,11 +1802,11 @@ mod tests {
         jsonmap!({"tag1": "tag_value_1"})
     }
 
-    fn _wallet_id() -> &'static str {
-        "w1"
-    }
+//    fn _wallet_id() -> &'static str {
+//        "w1"
+//    }
 
-    fn _wallet() -> Wallet {
+    fn _wallet(name: &str) -> Wallet {
         let storage_type = SQLiteStorageType::new();
         let master_key = _master_key();
 
@@ -1823,19 +1823,19 @@ mod tests {
             serde_json::to_vec(&metadata).unwrap()
         };
 
-        storage_type.create_storage(_wallet_id(),
+        storage_type.create_storage(name,
                                     None,
                                     None,
                                     &metadata).unwrap();
 
-        let storage = storage_type.open_storage(_wallet_id(), None, None).unwrap();
+        let storage = storage_type.open_storage(name, None, None).unwrap();
 
-        Wallet::new(_wallet_id().to_string(), storage, Rc::new(keys))
+        Wallet::new(name.to_string(), storage, Rc::new(keys))
     }
 
-    fn _exists_wallet() -> Wallet {
+    fn _exists_wallet(name: &str) -> Wallet {
         let storage_type = SQLiteStorageType::new();
-        let storage = storage_type.open_storage(_wallet_id(), None, None).unwrap();
+        let storage = storage_type.open_storage(name, None, None).unwrap();
 
         let metadata: MetadataArgon = {
             let metadata = storage.get_storage_metadata().unwrap();
@@ -1845,7 +1845,7 @@ mod tests {
         let master_key = _master_key();
         let keys = Keys::deserialize_encrypted(&metadata.keys, &master_key).unwrap();
 
-        Wallet::new(_wallet_id().to_string(), storage, Rc::new(keys))
+        Wallet::new(name.to_string(), storage, Rc::new(keys))
     }
 
     fn _master_key() -> chacha20poly1305_ietf::Key {

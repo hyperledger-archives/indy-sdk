@@ -539,7 +539,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_default()
 // the common function for two previous tests
 fn anoncreds_revocation_interaction_test_one_prover(revocation_registry_config: &str)
 {
-    utils::setup();
+    utils::setup("anoncreds_revocation_interaction_test_one_prover");
 
     let pool = Pool::new();
 
@@ -629,7 +629,7 @@ fn anoncreds_revocation_interaction_test_one_prover(revocation_registry_config: 
 
     pool.close();
 
-    utils::tear_down();
+    utils::tear_down("anoncreds_revocation_interaction_test_one_prover");
 }
 
 
@@ -655,7 +655,7 @@ fn multi_steps_create_revocation_credential(pool : &Pool, issuer: &Issuer, prove
 #[cfg(any(feature = "force_full_interaction_tests", not(target_os = "android")))]
 #[test]
 fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_post_entry_three_times_proving_first() {
-    utils::setup();
+    utils::setup("anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_post_entry_three_times_proving_first");
 
     let pool = Pool::new();
 
@@ -726,14 +726,14 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_po
 
     pool.close();
 
-    utils::tear_down();
+    utils::tear_down("anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_post_entry_three_times_proving_first");
 }
 
 #[cfg(feature = "revocation_tests")]
 #[cfg(any(feature = "force_full_interaction_tests", not(target_os = "android")))]
 #[test]
 fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_post_common_entry_proving_all() {
-    utils::setup();
+    utils::setup("anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_post_common_entry_proving_all");
 
     let pool = Pool::new();
 
@@ -827,5 +827,5 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_po
     pool.close();
 
 
-    utils::tear_down();
+    utils::tear_down("anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_post_common_entry_proving_all");
 }

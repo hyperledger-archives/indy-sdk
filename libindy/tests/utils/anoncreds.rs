@@ -26,7 +26,7 @@ pub static mut CREDENTIAL_DEF_JSON: &'static str = "";
 pub static mut CREDENTIAL_OFFER_JSON: &'static str = "";
 pub static mut CREDENTIAL_REQUEST_JSON: &'static str = "";
 pub static mut CREDENTIAL_JSON: &'static str = "";
-pub const ANONCREDS_WALLET_CONFIG: &'static str = r#"{"id": "anoncreds_wallet"}"#;
+//pub const ANONCREDS_WALLET_CONFIG: &'static str = r#"{"id": "anoncreds_wallet"}"#;
 pub const COMMON_MASTER_SECRET: &'static str = "common_master_secret_name";
 pub const CREDENTIAL1_ID: &'static str = "credential1_id";
 pub const CREDENTIAL2_ID: &'static str = "credential2_id";
@@ -454,7 +454,137 @@ pub fn tails_writer_config() -> String {
     json.to_string()
 }
 
-pub fn init_common_wallet() -> (&'static str, &'static str, &'static str, &'static str) {
+pub fn init_anoncreds_wallet(name: &str) -> (String, String, String, String, String) {
+    test::cleanup_storage(name);
+
+    pool::set_protocol_version(PROTOCOL_VERSION).unwrap();
+
+    let config = json!({"id": name}).to_string();
+
+    //1. Create and Open wallet
+    wallet::create_wallet(&config, WALLET_CREDENTIALS).unwrap();
+    let wallet_handle = wallet::open_wallet(&config, WALLET_CREDENTIALS).unwrap();
+
+    //2. Issuer1 Creates GVT CredentialDefinition
+    let (issuer1_gvt_cred_deg_id, issuer1_gvt_credential_def_json) =
+        issuer_create_credential_definition(wallet_handle,
+                                            ISSUER_DID,
+                                            &gvt_schema_json(),
+                                            TAG_1,
+                                            None,
+                                            Some(&default_cred_def_config())).unwrap();
+
+    //3. Issuer1 Creates XYZ CredentialDefinition
+    let (issuer1_xyz_cred_deg_id, issuer1_xyz_credential_def_json) =
+        issuer_create_credential_definition(wallet_handle,
+                                            ISSUER_DID,
+                                            &xyz_schema_json(),
+                                            TAG_1,
+                                            None,
+                                            Some(&default_cred_def_config())).unwrap();
+
+    //4. Issuer2 Creates GVT CredentialDefinition
+    let (issuer2_gvt_cred_def_id, issuer2_gvt_credential_def_json) =
+        issuer_create_credential_definition(wallet_handle,
+                                            ISSUER_DID_2,
+                                            &gvt_schema_json(),
+                                            TAG_1,
+                                            None,
+                                            Some(&default_cred_def_config())).unwrap();
+
+    //5. Issuer1 Creates GVT CredentialOffer
+    let issuer1_gvt_credential_offer = issuer_create_credential_offer(wallet_handle, &issuer1_gvt_cred_deg_id).unwrap();
+
+    //6. Issuer1 Creates XYZ CredentialOffer
+    let issuer1_xyz_credential_offer = issuer_create_credential_offer(wallet_handle, &issuer1_xyz_cred_deg_id).unwrap();
+
+    //7. Issuer2 Creates GVT CredentialOffer
+    let issuer2_gvt_credential_offer = issuer_create_credential_offer(wallet_handle, &issuer2_gvt_cred_def_id).unwrap();
+
+    //8. Prover creates MasterSecret
+    prover_create_master_secret(wallet_handle, COMMON_MASTER_SECRET).unwrap();
+
+    // Issuer1 issues GVT Credential
+    //9. Prover creates  Credential Request
+    let (issuer1_gvt_credential_req, issuer1_gvt_credential_req_metadata) = prover_create_credential_req(wallet_handle,
+                                                                                                         DID_MY1,
+                                                                                                         &issuer1_gvt_credential_offer,
+                                                                                                         &issuer1_gvt_credential_def_json,
+                                                                                                         COMMON_MASTER_SECRET).unwrap();
+    //10. Issuer1 creates GVT Credential
+    let (issuer1_gvt_cred, _, _) = issuer_create_credential(wallet_handle,
+                                                            &issuer1_gvt_credential_offer,
+                                                            &issuer1_gvt_credential_req,
+                                                            &gvt_credential_values_json(),
+                                                            None,
+                                                            None).unwrap();
+
+    //11. Prover stores Credential
+    prover_store_credential(wallet_handle,
+                            CREDENTIAL1_ID,
+                            &issuer1_gvt_credential_req_metadata,
+                            &issuer1_gvt_cred,
+                            &issuer1_gvt_credential_def_json,
+                            None).unwrap();
+
+    // Issuer1 issue XYZ Credential
+    //12. Prover Creates Credential Request
+    let (issuer1_xyz_credential_req, issuer1_xyz_credential_req_metadata) = prover_create_credential_req(wallet_handle,
+                                                                                                         DID_MY1,
+                                                                                                         &issuer1_xyz_credential_offer,
+                                                                                                         &issuer1_xyz_credential_def_json,
+                                                                                                         COMMON_MASTER_SECRET).unwrap();
+    //13. Issuer1 Creates XYZ Credential
+    let (issuer1_xyz_cred, _, _) = issuer_create_credential(wallet_handle,
+                                                            &issuer1_xyz_credential_offer,
+                                                            &issuer1_xyz_credential_req,
+                                                            &xyz_credential_values_json(),
+                                                            None,
+                                                            None).unwrap();
+
+    //14. Prover stores Credential
+    prover_store_credential(wallet_handle,
+                            CREDENTIAL2_ID,
+                            &issuer1_xyz_credential_req_metadata,
+                            &issuer1_xyz_cred,
+                            &issuer1_xyz_credential_def_json,
+                            None).unwrap();
+
+    // Issuer2 issues GVT Credential
+    //15. Prover Creates Credential Request
+    let (issuer2_gvt_credential_req, issuer2_gvt_credential_req_metadata) = prover_create_credential_req(wallet_handle,
+                                                                                                         DID_MY1,
+                                                                                                         &issuer2_gvt_credential_offer,
+                                                                                                         &issuer2_gvt_credential_def_json,
+                                                                                                         COMMON_MASTER_SECRET).unwrap();
+
+    //16. Issuer2 Creates XYZ Credential
+    let (issuer2_gvt_cred, _, _) = issuer_create_credential(wallet_handle,
+                                                            &issuer2_gvt_credential_offer,
+                                                            &issuer2_gvt_credential_req,
+                                                            &gvt2_credential_values_json(),
+                                                            None,
+                                                            None).unwrap();
+
+    //17. Prover Stores Credential
+    prover_store_credential(wallet_handle,
+                            CREDENTIAL3_ID,
+                            &issuer2_gvt_credential_req_metadata,
+                            &issuer2_gvt_cred,
+                            &issuer2_gvt_credential_def_json,
+                            None).unwrap();
+
+
+    wallet::close_wallet(wallet_handle).unwrap();
+
+    (issuer1_gvt_credential_def_json,
+     issuer1_gvt_credential_offer,
+     issuer1_gvt_credential_req,
+     issuer1_gvt_cred,
+     config)
+}
+
+pub fn init_common_wallet_once() -> (&'static str, &'static str, &'static str, &'static str) {
     lazy_static! {
                     static ref COMMON_WALLET_INIT: Once = ONCE_INIT;
 
@@ -462,122 +592,11 @@ pub fn init_common_wallet() -> (&'static str, &'static str, &'static str, &'stat
 
     unsafe {
         COMMON_WALLET_INIT.call_once(|| {
-            test::cleanup_storage();
-
-            pool::set_protocol_version(PROTOCOL_VERSION).unwrap();
-
-            //1. Create and Open wallet
-            wallet::create_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
-            let wallet_handle = wallet::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
-
-            //2. Issuer1 Creates GVT CredentialDefinition
-            let (issuer1_gvt_cred_deg_id, issuer1_gvt_credential_def_json) =
-                issuer_create_credential_definition(wallet_handle,
-                                                    ISSUER_DID,
-                                                    &gvt_schema_json(),
-                                                    TAG_1,
-                                                    None,
-                                                    Some(&default_cred_def_config())).unwrap();
-
-            //3. Issuer1 Creates XYZ CredentialDefinition
-            let (issuer1_xyz_cred_deg_id, issuer1_xyz_credential_def_json) =
-                issuer_create_credential_definition(wallet_handle,
-                                                    ISSUER_DID,
-                                                    &xyz_schema_json(),
-                                                    TAG_1,
-                                                    None,
-                                                    Some(&default_cred_def_config())).unwrap();
-
-            //4. Issuer2 Creates GVT CredentialDefinition
-            let (issuer2_gvt_cred_def_id, issuer2_gvt_credential_def_json) =
-                issuer_create_credential_definition(wallet_handle,
-                                                    ISSUER_DID_2,
-                                                    &gvt_schema_json(),
-                                                    TAG_1,
-                                                    None,
-                                                    Some(&default_cred_def_config())).unwrap();
-
-            //5. Issuer1 Creates GVT CredentialOffer
-            let issuer1_gvt_credential_offer = issuer_create_credential_offer(wallet_handle, &issuer1_gvt_cred_deg_id).unwrap();
-
-            //6. Issuer1 Creates XYZ CredentialOffer
-            let issuer1_xyz_credential_offer = issuer_create_credential_offer(wallet_handle, &issuer1_xyz_cred_deg_id).unwrap();
-
-            //7. Issuer2 Creates GVT CredentialOffer
-            let issuer2_gvt_credential_offer = issuer_create_credential_offer(wallet_handle, &issuer2_gvt_cred_def_id).unwrap();
-
-            //8. Prover creates MasterSecret
-            prover_create_master_secret(wallet_handle, COMMON_MASTER_SECRET).unwrap();
-
-            // Issuer1 issues GVT Credential
-            //9. Prover creates  Credential Request
-            let (issuer1_gvt_credential_req, issuer1_gvt_credential_req_metadata) = prover_create_credential_req(wallet_handle,
-                                                                                                                 DID_MY1,
-                                                                                                                 &issuer1_gvt_credential_offer,
-                                                                                                                 &issuer1_gvt_credential_def_json,
-                                                                                                                 COMMON_MASTER_SECRET).unwrap();
-            //10. Issuer1 creates GVT Credential
-            let (issuer1_gvt_cred, _, _) = issuer_create_credential(wallet_handle,
-                                                                    &issuer1_gvt_credential_offer,
-                                                                    &issuer1_gvt_credential_req,
-                                                                    &gvt_credential_values_json(),
-                                                                    None,
-                                                                    None).unwrap();
-
-            //11. Prover stores Credential
-            prover_store_credential(wallet_handle,
-                                    CREDENTIAL1_ID,
-                                    &issuer1_gvt_credential_req_metadata,
-                                    &issuer1_gvt_cred,
-                                    &issuer1_gvt_credential_def_json,
-                                    None).unwrap();
-
-            // Issuer1 issue XYZ Credential
-            //12. Prover Creates Credential Request
-            let (issuer1_xyz_credential_req, issuer1_xyz_credential_req_metadata) = prover_create_credential_req(wallet_handle,
-                                                                                                                 DID_MY1,
-                                                                                                                 &issuer1_xyz_credential_offer,
-                                                                                                                 &issuer1_xyz_credential_def_json,
-                                                                                                                 COMMON_MASTER_SECRET).unwrap();
-            //13. Issuer1 Creates XYZ Credential
-            let (issuer1_xyz_cred, _, _) = issuer_create_credential(wallet_handle,
-                                                                    &issuer1_xyz_credential_offer,
-                                                                    &issuer1_xyz_credential_req,
-                                                                    &xyz_credential_values_json(),
-                                                                    None,
-                                                                    None).unwrap();
-
-            //14. Prover stores Credential
-            prover_store_credential(wallet_handle,
-                                    CREDENTIAL2_ID,
-                                    &issuer1_xyz_credential_req_metadata,
-                                    &issuer1_xyz_cred,
-                                    &issuer1_xyz_credential_def_json,
-                                    None).unwrap();
-
-            // Issuer2 issues GVT Credential
-            //15. Prover Creates Credential Request
-            let (issuer2_gvt_credential_req, issuer2_gvt_credential_req_metadata) = prover_create_credential_req(wallet_handle,
-                                                                                                                 DID_MY1,
-                                                                                                                 &issuer2_gvt_credential_offer,
-                                                                                                                 &issuer2_gvt_credential_def_json,
-                                                                                                                 COMMON_MASTER_SECRET).unwrap();
-
-            //16. Issuer2 Creates XYZ Credential
-            let (issuer2_gvt_cred, _, _) = issuer_create_credential(wallet_handle,
-                                                                    &issuer2_gvt_credential_offer,
-                                                                    &issuer2_gvt_credential_req,
-                                                                    &gvt2_credential_values_json(),
-                                                                    None,
-                                                                    None).unwrap();
-
-            //17. Prover Stores Credential
-            prover_store_credential(wallet_handle,
-                                    CREDENTIAL3_ID,
-                                    &issuer2_gvt_credential_req_metadata,
-                                    &issuer2_gvt_cred,
-                                    &issuer2_gvt_credential_def_json,
-                                    None).unwrap();
+            let (issuer1_gvt_credential_def_json,
+                 issuer1_gvt_credential_offer,
+                 issuer1_gvt_credential_req,
+                 issuer1_gvt_cred,
+                _) = init_anoncreds_wallet("anoncreds_common_wallet");
 
             let res = mem::transmute(&issuer1_gvt_credential_def_json as &str);
             mem::forget(issuer1_gvt_credential_def_json);
@@ -594,8 +613,6 @@ pub fn init_common_wallet() -> (&'static str, &'static str, &'static str, &'stat
             let res = mem::transmute(&issuer1_gvt_cred as &str);
             mem::forget(issuer1_gvt_cred);
             CREDENTIAL_JSON = res;
-
-            wallet::close_wallet(wallet_handle).unwrap();
         });
 
         (CREDENTIAL_DEF_JSON, CREDENTIAL_OFFER_JSON, CREDENTIAL_REQUEST_JSON, CREDENTIAL_JSON)

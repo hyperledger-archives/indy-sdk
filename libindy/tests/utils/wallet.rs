@@ -81,27 +81,29 @@ pub fn open_wallet(config: &str, credentials: &str) -> Result<i32, IndyError> {
     wallet::open_wallet(config, credentials).wait()
 }
 
-pub fn create_and_open_wallet(storage_type: Option<&str>) -> Result<i32, IndyError> {
+pub fn create_and_open_wallet(storage_type: Option<&str>) -> Result<(i32, String), IndyError> {
     let config = json!({
             "id": format!("default-wallet_id-{}", sequence::get_next_id()),
             "storage_type": storage_type.unwrap_or(TYPE)
         }).to_string();
 
     create_wallet(&config, WALLET_CREDENTIALS)?;
-    open_wallet(&config, WALLET_CREDENTIALS)
+    let wallet_handle = open_wallet(&config, WALLET_CREDENTIALS);
+    Ok((wallet_handle, config))
 }
 
-pub fn create_and_open_default_wallet() -> Result<i32, IndyError> {
+pub fn create_and_open_default_wallet() -> Result<(i32, String), IndyError> {
     let config = json!({
             "id": format!("default-wallet_id-{}", sequence::get_next_id()),
             "storage_type": TYPE
         }).to_string();
 
     create_wallet(&config, WALLET_CREDENTIALS)?;
-    open_wallet(&config, WALLET_CREDENTIALS)
+    let wallet_handle = open_wallet(&config, WALLET_CREDENTIALS);
+    Ok((wallet_handle, config))
 }
 
-pub fn create_and_open_plugged_wallet() -> Result<i32, IndyError> {
+pub fn create_and_open_plugged_wallet() -> Result<(i32, String), IndyError> {
     let config = json!({
             "id": format!("default-wallet_id-{}", sequence::get_next_id()),
             "storage_type": INMEM_TYPE
@@ -109,7 +111,8 @@ pub fn create_and_open_plugged_wallet() -> Result<i32, IndyError> {
 
     register_wallet_storage("inmem", false).unwrap();
     create_wallet(&config, WALLET_CREDENTIALS)?;
-    open_wallet(&config, WALLET_CREDENTIALS)
+    let wallet_handle = open_wallet(&config, WALLET_CREDENTIALS);
+    Ok((wallet_handle, config))
 }
 
 pub fn delete_wallet(config: &str, credentials: &str) -> Result<(), IndyError> {

@@ -53,7 +53,7 @@ use std::thread;
 
 #[test]
 fn anoncreds_demo_works() {
-    utils::setup();
+    utils::setup("anoncreds_demo_works");
 
     let (issuer_create_wallet_receiver, issuer_create_wallet_command_handle, issuer_create_wallet_callback) = callback::_closure_to_cb_ec();
     let (prover_create_wallet_receiver, prover_create_wallet_command_handle, prover_create_wallet_callback) = callback::_closure_to_cb_ec();
@@ -473,13 +473,13 @@ fn anoncreds_demo_works() {
     let res = prover_close_wallet_receiver.recv_timeout(timeout::medium_timeout()).unwrap();
     assert_eq!(ErrorCode::from(res), ErrorCode::Success);
 
-    utils::tear_down();
+    utils::tear_down("anoncreds_demo_works");
 }
 
 #[test]
 #[cfg(feature = "local_nodes_pool")]
 fn ledger_demo_works() {
-    utils::setup();
+    utils::setup("ledger_demo_works");
     let my_wallet_config = json!({"id": "my_wallet"}).to_string();
     let their_wallet_config = json!({"id": "their_wallet"}).to_string();
 
@@ -718,7 +718,7 @@ fn ledger_demo_works() {
     let res = close_their_wallet_receiver.recv_timeout(timeout::medium_timeout()).unwrap();
     assert_eq!(ErrorCode::from(res), ErrorCode::Success);
 
-    utils::tear_down();
+    utils::tear_down("ledger_demo_works");
 
     #[derive(Deserialize, Eq, PartialEq, Debug)]
     struct Reply {
@@ -745,7 +745,7 @@ fn ledger_demo_works() {
 
 #[test]
 fn crypto_demo_works() {
-    utils::setup();
+    utils::setup("crypto_demo_works");
 
     let (create_wallet_receiver, create_wallet_command_handle, create_wallet_callback) = callback::_closure_to_cb_ec();
     let (open_wallet_receiver, open_wallet_command_handle, open_wallet_callback) = callback::_closure_to_cb_ec_i32();
@@ -846,5 +846,5 @@ fn crypto_demo_works() {
     let res = close_wallet_receiver.recv_timeout(timeout::medium_timeout()).unwrap();
     assert_eq!(ErrorCode::from(res), ErrorCode::Success);
 
-    utils::tear_down();
+    utils::tear_down("crypto_demo_works");
 }

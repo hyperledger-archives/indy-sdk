@@ -261,7 +261,7 @@ mod tests {
 
     #[test]
     fn pool_worker_build_node_state_works_for_new_txns_format_and_1_protocol_version() {
-        test::cleanup_storage();
+        test::cleanup_storage("pool_worker_build_node_state_works_for_new_txns_format_and_1_protocol_version");
 
         _set_protocol_version(1);
 
@@ -277,7 +277,7 @@ mod tests {
 
     #[test]
     pub fn pool_worker_works_for_deserialize_cache() {
-        test::cleanup_storage();
+        test::cleanup_storage("pool_worker_works_for_deserialize_cache");
 
         _set_protocol_version(TEST_PROTOCOL_VERSION);
 
@@ -310,7 +310,7 @@ mod tests {
 
     #[test]
     fn pool_worker_restore_merkle_tree_works_from_genesis_txns() {
-        test::cleanup_storage();
+        test::cleanup_storage("pool_worker_restore_merkle_tree_works_from_genesis_txns");
 
         let node_txns = test::gen_txns();
         let txns_src = format!("{}\n{}",
@@ -326,7 +326,7 @@ mod tests {
 
     #[test]
     fn pool_worker_build_node_state_works_for_old_format() {
-        test::cleanup_storage();
+        test::cleanup_storage("pool_worker_build_node_state_works_for_old_format");
 
         _set_protocol_version(1);
 
@@ -352,7 +352,7 @@ mod tests {
 
     #[test]
     fn pool_worker_build_node_state_works_for_new_format() {
-        test::cleanup_storage();
+        test::cleanup_storage("pool_worker_build_node_state_works_for_new_format");
 
         _set_protocol_version(TEST_PROTOCOL_VERSION);
 
@@ -380,7 +380,7 @@ mod tests {
 
     #[test]
     fn pool_worker_build_node_state_works_for_old_txns_format_and_2_protocol_version() {
-        test::cleanup_storage();
+        test::cleanup_storage("pool_worker_build_node_state_works_for_old_txns_format_and_2_protocol_version");
 
         _set_protocol_version(TEST_PROTOCOL_VERSION);
 
