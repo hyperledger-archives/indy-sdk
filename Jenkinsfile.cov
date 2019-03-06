@@ -13,8 +13,10 @@ def testing () {
         }
         
 
-        image.inside {
-            calcCoverageRust("libindy")
+        stage("Collecting test coverage") {
+            image.inside {
+                calcCoverageRust("libindy")
+            }
         }
     }
 }
