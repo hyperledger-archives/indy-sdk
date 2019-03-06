@@ -1795,12 +1795,12 @@ mod high_cases {
         #[test]
         fn indy_build_auth_rule_request_works_for_invalid_constraint() {
             let res = ledger::build_auth_rule_request(DID_TRUSTEE,
-                                                          constants::NYM,
-                                                          &ADD_AUTH_ACTION,
-                                                          FIELD,
-                                                          None,
-                                                          NEW_VALUE,
-                                                          r#"{"field":"value"}"#);
+                                                      constants::NYM,
+                                                      &ADD_AUTH_ACTION,
+                                                      FIELD,
+                                                      None,
+                                                      NEW_VALUE,
+                                                      r#"{"field":"value"}"#);
             assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
 
@@ -1815,11 +1815,11 @@ mod high_cases {
             });
 
             let request = ledger::build_get_auth_rule_request(Some(DID_TRUSTEE),
-                                                          constants::NYM,
-                                                          &ADD_AUTH_ACTION,
-                                                          FIELD,
-                                                          None,
-                                                          NEW_VALUE).unwrap();
+                                                              constants::NYM,
+                                                              &ADD_AUTH_ACTION,
+                                                              FIELD,
+                                                              None,
+                                                              NEW_VALUE).unwrap();
             check_request(&request, expected_result);
         }
 
@@ -1846,14 +1846,31 @@ mod high_cases {
         fn indy_get_auth_rule_request_works() {
             let (wallet_handle, pool_handle, trustee_did) = utils::setup_trustee();
 
-            let get_auth_rule_request = ledger::build_get_auth_rule_request(Some(&trustee_did),
+            let auth_rule_request = ledger::build_auth_rule_request(&trustee_did,
                                                                     constants::NYM,
                                                                     &ADD_AUTH_ACTION,
                                                                     FIELD,
                                                                     None,
-                                                                    NEW_VALUE).unwrap();
+                                                                    NEW_VALUE,
+                                                                    ROLE_CONSTRAINT).unwrap();
+            let response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &auth_rule_request).unwrap();
+            pool::check_response_type(&response, ResponseType::REPLY);
+
+            let get_auth_rule_request = ledger::build_get_auth_rule_request(None,
+                                                                            constants::NYM,
+                                                                            &ADD_AUTH_ACTION,
+                                                                            FIELD,
+                                                                            None,
+                                                                            NEW_VALUE).unwrap();
             let response = ledger::submit_request(pool_handle, &get_auth_rule_request).unwrap();
             pool::check_response_type(&response, ResponseType::REPLY);
+
+            let response: serde_json::Value = serde_json::from_str(&response).unwrap();
+
+            let expected_constraint: serde_json::Value = serde_json::from_str(ROLE_CONSTRAINT).unwrap();
+            let actual_constraint = response["txn"]["data"]["constraint"].clone();
+
+            assert_eq!(expected_constraint, actual_constraint);
 
             utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
         }
