@@ -1264,7 +1264,7 @@ async def get_response_metadata(response: str) -> str:
 
 
 async def build_auth_rule_request(submitter_did: str,
-                                  auth_type: str,
+                                  txn_type: str,
                                   auth_action: str,
                                   field: str,
                                   old_value: Optional[str],
@@ -1274,18 +1274,8 @@ async def build_auth_rule_request(submitter_did: str,
     Builds a AUTH_RULE request. Request to change authentication rules for a ledger transaction.
 
     :param submitter_did: DID of the submitter stored in secured Wallet.
-    :param auth_type: ledger transaction for which authentication rules will be applied.
-       Can be an alias or associated value:
-           NODE or 0
-           NYM or 1
-           ATTRIB or 100
-           SCHEMA or 101
-           CRED_DEF or 102
-           POOL_UPGRADE or 109
-           POOL_CONFIG or 111
-           REVOC_REG_DEF or 113
-           REVOC_REG_ENTRY or 114
-    :param auth_action: type of an action for which authentication rules will be applied.
+    :param txn_type: ledger transaction alias or associated value for which authentication rules will be applied.
+    :param action: type of an action for which authentication rules will be applied.
        Can be either "ADD" (to add a new rule) or "EDIT" (to edit an existing one).
     :param field: transaction field for which authentication rule will be applied.
     :param old_value: old value of a field, which can be changed to a new_value (mandatory for EDIT action).
@@ -1309,11 +1299,11 @@ async def build_auth_rule_request(submitter_did: str,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("build_auth_rule_request: >>> submitter_did: %r, auth_type: %r, auth_action: %r, field: %r, "
+    logger.debug("build_auth_rule_request: >>> submitter_did: %r, txn_type: %r, action: %r, field: %r, "
                  "old_value: %r, new_value: %r, constraint: %r",
                  submitter_did,
-                 auth_type,
-                 auth_action,
+                 txn_type,
+                 action,
                  field,
                  old_value,
                  new_value,
@@ -1324,8 +1314,8 @@ async def build_auth_rule_request(submitter_did: str,
         build_auth_rule_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
 
     c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
-    c_auth_type = c_char_p(auth_type.encode('utf-8'))
-    c_auth_action = c_char_p(auth_action.encode('utf-8'))
+    c_txn_type = c_char_p(txn_type.encode('utf-8'))
+    c_action = c_char_p(action.encode('utf-8'))
     c_field = c_char_p(field.encode('utf-8'))
     c_old_value = c_char_p(old_value.encode('utf-8')) if old_value is not None else None
     c_new_value = c_char_p(new_value.encode('utf-8'))
@@ -1333,8 +1323,8 @@ async def build_auth_rule_request(submitter_did: str,
 
     request_json = await do_call('indy_build_auth_rule_request',
                                  c_submitter_did,
-                                 c_auth_type,
-                                 c_auth_action,
+                                 c_txn_type,
+                                 c_action,
                                  c_field,
                                  c_old_value,
                                  c_new_value,

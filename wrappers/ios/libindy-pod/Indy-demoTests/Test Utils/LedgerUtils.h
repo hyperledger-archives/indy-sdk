@@ -181,8 +181,8 @@
 
 // MARK: - Auth Rule request
 - (NSError *)buildAuthRuleRequestWithSubmitterDid:(NSString *)submitterDid
-                                         authType:(NSString *)authType
-                                       authAction:(NSString *)authAction
+                                          txnType:(NSString *)txnType
+                                           action:(NSString *)action
                                             field:(NSString *)field
                                          oldValue:(NSString *)oldValue
                                          newValue:(NSString *)newValue

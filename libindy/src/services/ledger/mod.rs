@@ -79,25 +79,25 @@ impl LedgerService {
         Ok(request)
     }
 
-    pub fn build_auth_rule_request(&self, submitter_did: &str, auth_type: &str, auth_action: &str, field: &str,
+    pub fn build_auth_rule_request(&self, submitter_did: &str, txn_type: &str, action: &str, field: &str,
                                    old_value: Option<&str>, new_value: &str, constraint: &str) -> IndyResult<String> {
-        info!("build_auth_rule_request >>> submitter_did: {:?}, auth_type: {:?}, auth_action: {:?}, field: {:?}, \
-            old_value: {:?}, new_value: {:?}, constraint: {:?}", submitter_did, auth_type, auth_action, field, old_value, new_value, constraint);
+        info!("build_auth_rule_request >>> submitter_did: {:?}, txn_type: {:?}, action: {:?}, field: {:?}, \
+            old_value: {:?}, new_value: {:?}, constraint: {:?}", submitter_did, txn_type, action, field, old_value, new_value, constraint);
 
-        let auth_type = txn_name_to_code(&auth_type)
-            .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("Unsupported `auth_type`: {}", auth_type)))?;
+        let txn_type = txn_name_to_code(&txn_type)
+            .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("Unsupported `txn_type`: {}", txn_type)))?;
 
-        let auth_action = serde_json::from_str::<AuthAction>(&format!("\"{}\"", auth_action))
-            .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Cannot parse auth action: {}", err)))?;
+        let action = serde_json::from_str::<AuthAction>(&format!("\"{}\"", action))
+            .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Cannot parse action: {}", err)))?;
 
-        if auth_action == AuthAction::EDIT && old_value.is_none() {
+        if action == AuthAction::EDIT && old_value.is_none() {
             return Err(err_msg(IndyErrorKind::InvalidStructure, "`old_value` must be specified for EDIT auth action"));
         }
 
         let constraint = serde_json::from_str::<Constraint>(constraint)
             .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Can not deserialize Constraint: {}", err)))?;
 
-        let operation = AuthRuleOperation::new(auth_type.to_string(), field.to_string(), auth_action,
+        let operation = AuthRuleOperation::new(txn_type.to_string(), field.to_string(), action,
                                                old_value.map(String::from), new_value.to_string(), constraint);
 
         let request = Request::build_request(Some(submitter_did), operation)

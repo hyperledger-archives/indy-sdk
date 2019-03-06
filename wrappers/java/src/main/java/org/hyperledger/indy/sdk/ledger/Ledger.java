@@ -1270,18 +1270,8 @@ public class Ledger extends IndyJava.API {
 	 * Builds a AUTH_RULE request. Request to change authentication rules for a ledger transaction.
 	 *
 	 * @param submitterDid DID of the submitter stored in secured Wallet.
-	 * @param authType - ledger transaction for which authentication rules will be applied.
-	 *     Can be an alias or associated value:
-	 *         NODE or 0
-	 *         NYM or 1
-	 *         ATTRIB or 100
-	 *         SCHEMA or 101
-	 *         CRED_DEF or 102
-	 *         POOL_UPGRADE or 109
-	 *         POOL_CONFIG or 111
-	 *         REVOC_REG_DEF or 113
-	 *         REVOC_REG_ENTRY or 114
-	 * @param authAction - type of an action for which authentication rules will be applied.
+	 * @param txnType - ledger transaction alias or associated value for which authentication rules will be applied.
+	 * @param action - type of an action for which authentication rules will be applied.
 	 *     Can be either "ADD" (to add a new rule) or "EDIT" (to edit an existing one).
 	 * @param field - transaction field for which authentication rule will be applied.
 	 * @param oldValue - old value of a field, which can be changed to a new_value (mandatory for EDIT action).
@@ -1306,16 +1296,16 @@ public class Ledger extends IndyJava.API {
 	 */
 	public static CompletableFuture<String> buildAuthRuleRequest(
 			String submitterDid,
-			String authType,
-			String authAction,
+			String txnType,
+			String action,
 			String field,
 			String oldValue,
 			String newValue,
 			String constraint) throws IndyException {
 
 		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
-		ParamGuard.notNullOrWhiteSpace(authType, "authType");
-		ParamGuard.notNullOrWhiteSpace(authAction, "authAction");
+		ParamGuard.notNullOrWhiteSpace(txnType, "txnType");
+		ParamGuard.notNullOrWhiteSpace(action, "action");
 
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
@@ -1323,8 +1313,8 @@ public class Ledger extends IndyJava.API {
 		int result = LibIndy.api.indy_build_auth_rule_request(
 				commandHandle,
 				submitterDid,
-				authType,
-				authAction,
+				txnType,
+				action,
 				field,
 				oldValue,
 				newValue,

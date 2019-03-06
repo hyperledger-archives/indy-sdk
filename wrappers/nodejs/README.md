@@ -1748,23 +1748,13 @@ Parse a GET\_REVOC\_REG\_DELTA response to get Revocation Registry Delta in the 
 
 Errors: `Common*`
 
-#### buildAuthRuleRequest \( submitterDid, authType, authAction, field, oldValue, newValue, constraint \) -&gt; request
+#### buildAuthRuleRequest \( submitterDid, txnType, action, field, oldValue, newValue, constraint \) -&gt; request
 
 Builds a AUTH_RULE request. Request to change authentication rules for a ledger transaction.
 
 * `submitterDid`: String - \(Optional\) DID of the read request sender \(if not provided then default Libindy DID will be used\).
-* `authType`: String - ledger transaction for which authentication rules will be applied.
-Can be an alias or associated value:
-    * NODE or 0
-    * NYM or 1
-    * ATTRIB or 100
-    * SCHEMA or 101
-    * CRED_DEF or 102
-    * POOL_UPGRADE or 109
-    * POOL_CONFIG or 111
-    * REVOC_REG_DEF or 113
-    * REVOC_REG_ENTRY or 114
-* `authAction`: String - type of an action for which authentication rules will be applied.
+* `txnType`: String - ledger transaction alias or associated value for which authentication rules will be applied.
+* `action`: String - type of an action for which authentication rules will be applied.
     * "ADD" - to add a new rule
     * "EDIT" - to edit an existing one
 * `field`: String - transaction field for which authentication rule will be applied.

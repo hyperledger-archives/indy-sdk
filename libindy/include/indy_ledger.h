@@ -959,18 +959,8 @@ extern "C" {
     ///
     /// #Params
     /// command_handle: command handle to map callback to caller context.
-    /// auth_type: ledger transaction for which authentication rules will be applied.
-    ///     Can be an alias or associated value:
-    ///         NODE or 0
-    ///         NYM or 1
-    ///         ATTRIB or 100
-    ///         SCHEMA or 101
-    ///         CRED_DEF or 102
-    ///         POOL_UPGRADE or 109
-    ///         POOL_CONFIG or 111
-    ///         REVOC_REG_DEF or 113
-    ///         REVOC_REG_ENTRY or 114
-    /// auth_action: type of an action for which authentication rules will be applied.
+    /// txn_type: ledger transaction alias or associated value for which authentication rules will be applied.
+    /// action: type of an action for which authentication rules will be applied.
     ///     Can be either "ADD" (to add a new rule) or "EDIT" (to edit an existing one).
     /// field: transaction field for which authentication rule will be applied.
     /// old_value: old value of a field, which can be changed to a new_value (mandatory for EDIT action).
@@ -999,8 +989,8 @@ extern "C" {
     /// Common*
     extern indy_error_t indy_build_auth_rule_request(indy_handle_t command_handle,
                                                      const char *  submitter_did,
-                                                     const char *  auth_type,
-                                                     const char *  auth_action,
+                                                     const char *  txn_type,
+                                                     const char *  action,
                                                      const char *  field,
                                                      const char *  old_value,
                                                      const char *  new_value,

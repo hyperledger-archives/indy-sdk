@@ -6,7 +6,7 @@ import org.junit.Test;
 
 public class AuthRuleRequestsTest extends IndyIntegrationTest {
 
-	private String authType = "NYM";
+	private String txnType = "NYM";
 	private String field = "role";
 	private String newValue = "101";
 	private JSONObject constraint = new JSONObject()
@@ -31,7 +31,7 @@ public class AuthRuleRequestsTest extends IndyIntegrationTest {
 								.put("constraint", constraint)
 				);
 
-		String request = Ledger.buildAuthRuleRequest(DID, authType, addAuthAction, field, null, newValue, constraint.toString()).get();
+		String request = Ledger.buildAuthRuleRequest(DID, txnType, addAuthAction, field, null, newValue, constraint.toString()).get();
 
 		assert (new JSONObject(request).toMap().entrySet()
 				.containsAll(
@@ -56,7 +56,7 @@ public class AuthRuleRequestsTest extends IndyIntegrationTest {
 								.put("constraint", constraint)
 				);
 
-		String request = Ledger.buildAuthRuleRequest(DID, authType, editAuthAction, field, oldValue, newValue, constraint.toString()).get();
+		String request = Ledger.buildAuthRuleRequest(DID, txnType, editAuthAction, field, oldValue, newValue, constraint.toString()).get();
 
 		assert (new JSONObject(request).toMap().entrySet()
 				.containsAll(

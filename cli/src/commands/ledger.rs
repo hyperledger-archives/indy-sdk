@@ -1222,7 +1222,7 @@ pub mod auth_rule_command {
     use super::*;
 
     command!(CommandMetadata::build("auth-rule", "Send AUTH_RULE request to change authentication rules for a ledger transaction.")
-                .add_required_param("type", "Ledger transaction for which authentication rules will be applied. Can be an alias or associated value")
+                .add_required_param("txn_type", "Ledger transaction alias or associated value for which authentication rules will be applied")
                 .add_required_param("action", "Type of an action for which authentication rules will be applied. One of: ADD, EDIT")
                 .add_required_param("field", "Transaction field for which authentication rule will be applied")
                 .add_optional_param("old_value", "Old value of field, which can be changed to a new_value (mandatory for EDIT action)")
@@ -1241,8 +1241,8 @@ pub mod auth_rule_command {
              auth_constraints: [<constraint_1>, <constraint_2>]
          }
                 "#)
-                .add_example(r#"ledger auth-rule type=NYM action=ADD field=role new_value=101 constraint={"sig_count":1,"role":0,"constraint_id":"role","need_to_be_owner":false}"#)
-                .add_example(r#"ledger auth-rule type=NYM action=EDIT field=role old_value=101 new_value=0 constraint={"sig_count":1,"role":0,"constraint_id":"role","need_to_be_owner":false}"#)
+                .add_example(r#"ledger auth-rule txn_type=NYM action=ADD field=role new_value=101 constraint={"sig_count":1,"role":0,"constraint_id":"role","need_to_be_owner":false}"#)
+                .add_example(r#"ledger auth-rule txn_type=NYM action=EDIT field=role old_value=101 new_value=0 constraint={"sig_count":1,"role":0,"constraint_id":"role","need_to_be_owner":false}"#)
                 .finalize()
     );
 
@@ -1253,14 +1253,14 @@ pub mod auth_rule_command {
         let (wallet_handle, wallet_name) = ensure_opened_wallet(&ctx)?;
         let submitter_did = ensure_active_did(&ctx)?;
 
-        let auth_type = get_str_param("type", params).map_err(error_err!())?;
-        let auth_action = get_str_param("action", params).map_err(error_err!())?;
+        let txn_type = get_str_param("txn_type", params).map_err(error_err!())?;
+        let action = get_str_param("action", params).map_err(error_err!())?;
         let field = get_str_param("field", params).map_err(error_err!())?;
         let old_value = get_opt_str_param("old_value", params).map_err(error_err!())?;
         let new_value = get_str_param("new_value", params).map_err(error_err!())?;
         let constraint = get_str_param("constraint", params).map_err(error_err!())?;
 
-        let request = Ledger::build_auth_rule_request(&submitter_did, auth_type, &auth_action.to_uppercase(), field, old_value, new_value, constraint)
+        let request = Ledger::build_auth_rule_request(&submitter_did, txn_type, &action.to_uppercase(), field, old_value, new_value, constraint)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
 
         let response_json = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request)
@@ -1277,7 +1277,7 @@ pub mod auth_rule_command {
             .map(|result| print_transaction_response(result,
                                                      "Auth Rule request has been sent to Ledger.",
                                                      None,
-                                                     &mut vec![("auth_type", "Type"),
+                                                     &mut vec![("auth_type", "Txn Type"),
                                                                ("auth_action", "Action"),
                                                                ("field", "Field"),
                                                                ("old_value", "Old Value"),
@@ -1488,13 +1488,24 @@ fn get_txn_title(role: &serde_json::Value) -> serde_json::Value {
     serde_json::Value::String(match role.as_str() {
         Some("0") => "NODE",
         Some("1") => "NYM",
+        Some("3") => "GET_TXN",
         Some("100") => "ATTRIB",
         Some("101") => "SCHEMA",
+        Some("104") => "GET_ATTR",
+        Some("105") => "GET_NYM",
+        Some("107") => "GET_SCHEMA",
+        Some("108") => "GET_CRED_DEF",
         Some("102") => "CRED_DEF",
         Some("109") => "POOL_UPGRADE",
         Some("111") => "POOL_CONFIG",
         Some("113") => "REVOC_REG_DEF",
         Some("114") => "REVOC_REG_ENTRY",
+        Some("115") => "GET_REVOC_REG_DEF",
+        Some("116") => "GET_REVOC_REG",
+        Some("117") => "GET_REVOC_REG_DELTA",
+        Some("118") => "POOL_RESTART",
+        Some("119") => "GET_VALIDATOR_INFO",
+        Some("120") => "AUTH_RULE",
         Some(val) => val,
         _ => "-"
     }.to_string())
@@ -3575,11 +3586,10 @@ pub mod tests {
         pub fn auth_rule_works() {
             let ctx = setup_with_wallet_and_pool();
             use_trustee(&ctx);
-            let (did, verkey) = create_new_did(&ctx);
             {
                 let cmd = auth_rule_command::new();
                 let mut params = CommandParams::new();
-                params.insert("type", "NYM".to_string());
+                params.insert("txn_type", "NYM".to_string());
                 params.insert("action", "add".to_string());
                 params.insert("field", "role".to_string());
                 params.insert("new_value", "101".to_string());
