@@ -541,9 +541,9 @@ indy.parseGetRevocRegDeltaResponse = function parseGetRevocRegDeltaResponse (get
   return cb.promise
 }
 
-indy.buildAuthRuleRequest = function buildAuthRuleRequest (submitterDid, authType, authAction, field, oldValue, newValue, constraint, cb) {
+indy.buildAuthRuleRequest = function buildAuthRuleRequest (submitterDid, txnType, action, field, oldValue, newValue, constraint, cb) {
   cb = wrapIndyCallback(cb, fromJson)
-  capi.buildAuthRuleRequest(submitterDid, authType, authAction, field, oldValue, newValue, toJson(constraint), cb)
+  capi.buildAuthRuleRequest(submitterDid, txnType, action, field, oldValue, newValue, toJson(constraint), cb)
   return cb.promise
 }
 

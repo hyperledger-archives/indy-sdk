@@ -82,13 +82,13 @@ impl Ledger {
     }
 
     pub fn build_auth_rule_request(submitter_did: &str,
-                                   auth_type: &str,
-                                   auth_action: &str,
+                                   txn_type: &str,
+                                   action: &str,
                                    field: &str,
                                    old_value: Option<&str>,
                                    new_value: &str,
                                    constraint: &str, ) -> Result<String, IndyError> {
-        ledger::build_auth_rule_request(submitter_did, auth_type, auth_action, field,
+        ledger::build_auth_rule_request(submitter_did, txn_type, action, field,
                                         old_value, new_value, constraint).wait()
     }
 

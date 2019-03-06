@@ -575,30 +575,20 @@
  Builds a AUTH_RULE request. Request to change authentication rules for a ledger transaction.
 
  @param submitterDid DID of the submitter stored in secured Wallet.
- @param authType - ledger transaction for which authentication rules will be applied.
-      Can be an alias or associated value:
-          NODE or 0
-          NYM or 1
-          ATTRIB or 100
-          SCHEMA or 101
-          CRED_DEF or 102
-          POOL_UPGRADE or 109
-          POOL_CONFIG or 111
-          REVOC_REG_DEF or 113
-          REVOC_REG_ENTRY or 114
- @param authAction - type of action for which authentication rules will be applied.
-          Can be either "ADD" (to add new rule) or "EDIT" (to edit an existing one).
+ @param txnType - ledger transaction alias or associated value for which authentication rules will be applied.
+ @param action - type of an action for which authentication rules will be applied.
+          Can be either "ADD" (to add a new rule) or "EDIT" (to edit an existing one).
  @param field - transaction field for which authentication rule will be applied.
- @param oldValue - old value of field, which can be changed to a new_value (must be specified for EDIT action).
+ @param oldValue - old value of a field, which can be changed to a new_value (mandatory for EDIT action).
  @param newValue - new value that can be used to fill the field.
- @param constraint - set of constraints required for execution of action in the following format:
+ @param constraint - set of constraints required for execution of an action in the following format:
         {
             constraint_id - <string> type of a constraint.
                 Can be either "ROLE" to specify final constraint or  "AND"/"OR" to combine constraints.
             role - <string> role of a user which satisfy to constrain.
             sig_count - <u32> the number of signatures required to execution action.
             need_to_be_owner - <bool> if user must be an owner of transaction.
-            metadata - <object> additional parameters of constraint.
+            metadata - <object> additional parameters of the constraint.
         }
       can be combined by
         {
@@ -609,8 +599,8 @@
  @param completion Callback that takes command result as parameter. Returns request result as json.
  */
 + (void)buildAuthRuleRequestWithSubmitterDid:(NSString *)submitterDid
-                                    authType:(NSString *)authType
-                                  authAction:(NSString *)authAction
+                                     txnType:(NSString *)txnType
+                                      action:(NSString *)action
                                        field:(NSString *)field
                                     oldValue:(NSString *)oldValue
                                     newValue:(NSString *)newValue

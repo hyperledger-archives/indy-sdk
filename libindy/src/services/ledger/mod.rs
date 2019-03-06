@@ -79,6 +79,35 @@ impl LedgerService {
         Ok(request)
     }
 
+    pub fn build_auth_rule_request(&self, submitter_did: &str, txn_type: &str, action: &str, field: &str,
+                                   old_value: Option<&str>, new_value: &str, constraint: &str) -> IndyResult<String> {
+        info!("build_auth_rule_request >>> submitter_did: {:?}, txn_type: {:?}, action: {:?}, field: {:?}, \
+            old_value: {:?}, new_value: {:?}, constraint: {:?}", submitter_did, txn_type, action, field, old_value, new_value, constraint);
+
+        let txn_type = txn_name_to_code(&txn_type)
+            .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("Unsupported `txn_type`: {}", txn_type)))?;
+
+        let action = serde_json::from_str::<AuthAction>(&format!("\"{}\"", action))
+            .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Cannot parse action: {}", err)))?;
+
+        if action == AuthAction::EDIT && old_value.is_none() {
+            return Err(err_msg(IndyErrorKind::InvalidStructure, "`old_value` must be specified for EDIT auth action"));
+        }
+
+        let constraint = serde_json::from_str::<Constraint>(constraint)
+            .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Can not deserialize Constraint: {}", err)))?;
+
+        let operation = AuthRuleOperation::new(txn_type.to_string(), field.to_string(), action,
+                                               old_value.map(String::from), new_value.to_string(), constraint);
+
+        let request = Request::build_request(Some(submitter_did), operation)
+            .to_indy(IndyErrorKind::InvalidState, "AUTH_RULE request json is invalid")?;
+
+        info!("build_auth_rule_request <<< request: {:?}", request);
+
+        Ok(request)
+    }
+
     pub fn build_get_nym_request(&self, identifier: Option<&str>, dest: &str) -> IndyResult<String> {
         info!("build_get_nym_request >>> identifier: {:?}, dest: {:?}", identifier, dest);
 

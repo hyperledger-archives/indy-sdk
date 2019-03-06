@@ -707,8 +707,8 @@
 }
 
 + (void)buildAuthRuleRequestWithSubmitterDid:(NSString *)submitterDid
-                                    authType:(NSString *)authType
-                                  authAction:(NSString *)authAction
+                                     txnType:(NSString *)txnType
+                                      action:(NSString *)action
                                        field:(NSString *)field
                                     oldValue:(NSString *)oldValue
                                     newValue:(NSString *)newValue
@@ -721,8 +721,8 @@
 
     ret = indy_build_auth_rule_request(handle,
             [submitterDid UTF8String],
-            [authType UTF8String],
-            [authAction UTF8String],
+            [txnType UTF8String],
+            [action UTF8String],
             [field UTF8String],
             [oldValue UTF8String],
             [newValue UTF8String],
