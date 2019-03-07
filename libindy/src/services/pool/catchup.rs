@@ -65,8 +65,8 @@ pub fn check_nodes_responses_on_status(nodes_votes: &HashMap<(String, usize, Opt
 
     let timeout_votes = timeout_votes.iter().last();
 
-    if let Some((most_popular_not_timeout_vote, vote_cnt)) = most_popular_not_timeout {
-        if *vote_cnt == f + 1 {
+    if let Some((most_popular_not_timeout_vote, votes_cnt)) = most_popular_not_timeout {
+        if *votes_cnt == f + 1 {
             return _try_to_catch_up(most_popular_not_timeout_vote, merkle_tree).or_else(|err| {
                 if merkle_tree_factory::drop_cache(pool_name).is_ok() {
                     let merkle_tree = merkle_tree_factory::create(pool_name)?;
@@ -75,22 +75,35 @@ pub fn check_nodes_responses_on_status(nodes_votes: &HashMap<(String, usize, Opt
                     Err(err)
                 }
             });
+        } else {
+            return _if_consensus_reachable(nodes_votes, node_cnt, *votes_cnt, f, pool_name);
         }
     } else if let Some((_, votes_cnt)) = timeout_votes {
         if *votes_cnt == node_cnt - f {
             return _try_to_restart_catch_up(pool_name, err_msg(IndyErrorKind::PoolTimeout, "Pool timeout"));
         } else {
-            let reps_cnt: usize = nodes_votes.values().map(HashSet::len).sum();
-            let positive_votes_cnt = votes_cnt + (node_cnt - reps_cnt);
-            let is_consensus_reachable = positive_votes_cnt < node_cnt - f;
-            if is_consensus_reachable {
-                //TODO: maybe we should change the error, but it was made to escape changing of ErrorCode returned to client
-                return _try_to_restart_catch_up(pool_name, err_msg(IndyErrorKind::PoolTimeout, "No consensus possible"));
-            }
+            return _if_consensus_reachable(nodes_votes, node_cnt, *votes_cnt, f, pool_name);
         }
     }
     Ok(CatchupProgress::InProgress)
 }
+
+fn _if_consensus_reachable(nodes_votes: &HashMap<(String, usize, Option<Vec<String>>), HashSet<String>>,
+                           node_cnt: usize,
+                           votes_cnt: usize,
+                           f: usize,
+                           pool_name: &str) -> IndyResult<CatchupProgress> {
+    let reps_cnt: usize = nodes_votes.values().map(HashSet::len).sum();
+    let positive_votes_cnt = votes_cnt + (node_cnt - reps_cnt);
+    let is_consensus_reachable = positive_votes_cnt < node_cnt - f;
+    if is_consensus_reachable {
+        //TODO: maybe we should change the error, but it was made to escape changing of ErrorCode returned to client
+        _try_to_restart_catch_up(pool_name, err_msg(IndyErrorKind::PoolTimeout, "No consensus possible"))
+    } else {
+        Ok(CatchupProgress::InProgress)
+    }
+}
+
 
 fn _try_to_restart_catch_up(pool_name: &str, err: IndyError) -> IndyResult<CatchupProgress> {
     if merkle_tree_factory::drop_cache(pool_name).is_ok() {
