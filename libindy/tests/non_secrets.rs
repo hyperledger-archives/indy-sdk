@@ -51,16 +51,16 @@ mod high_cases {
 
             add_wallet_record(wallet_handle, TYPE, ID, VALUE, None).unwrap();
 
-            utils::tear_down_with_wallet(wallet_handle, "indy_add_wallet_record_works");
+            utils::tear_down_with_wallet(wallet_handle, "indy_add_wallet_record_works", &wallet_config);
         }
 
         #[test]
         fn indy_add_wallet_record_works_for_plugged_wallet() {
-            let wallet_handle = utils::setup_with_plugged_wallet("indy_add_wallet_record_works_for_plugged_wallet");
+            let (wallet_handle, wallet_config) = utils::setup_with_plugged_wallet("indy_add_wallet_record_works_for_plugged_wallet");
 
             add_wallet_record(wallet_handle, TYPE, ID, VALUE, None).unwrap();
 
-            utils::tear_down_with_wallet(wallet_handle, "indy_add_wallet_record_works_for_plugged_wallet");
+            utils::tear_down_with_wallet(wallet_handle, "indy_add_wallet_record_works_for_plugged_wallet", &wallet_config);
         }
 
         #[test]
@@ -72,7 +72,7 @@ mod high_cases {
             let res = add_wallet_record(wallet_handle, TYPE, ID, VALUE, None);
             assert_code!(ErrorCode::WalletItemAlreadyExists, res);
 
-            utils::tear_down_with_wallet(wallet_handle, "indy_add_wallet_record_works_for_duplicate");
+            utils::tear_down_with_wallet(wallet_handle, "indy_add_wallet_record_works_for_duplicate", &wallet_config);
         }
 
         #[test]
@@ -82,7 +82,7 @@ mod high_cases {
             add_wallet_record(wallet_handle, TYPE, ID, VALUE, Some(TAGS)).unwrap();
             check_record_field(wallet_handle, TYPE, ID, "tags", TAGS);
 
-            utils::tear_down_with_wallet(wallet_handle, "indy_add_wallet_record_works_for_tags");
+            utils::tear_down_with_wallet(wallet_handle, "indy_add_wallet_record_works_for_tags", &wallet_config);
         }
 
         #[test]
@@ -92,7 +92,7 @@ mod high_cases {
             add_wallet_record(wallet_handle, TYPE, ID, VALUE, None).unwrap();
             add_wallet_record(wallet_handle, TYPE, ID_2, VALUE, None).unwrap();
 
-            utils::tear_down_with_wallet(wallet_handle, "indy_add_wallet_record_works_same_types_different_ids");
+            utils::tear_down_with_wallet(wallet_handle, "indy_add_wallet_record_works_same_types_different_ids", &wallet_config);
         }
 
         #[test]
@@ -102,7 +102,7 @@ mod high_cases {
             add_wallet_record(wallet_handle, TYPE, ID, VALUE, None).unwrap();
             add_wallet_record(wallet_handle, TYPE_2, ID, VALUE, None).unwrap();
 
-            utils::tear_down_with_wallet(wallet_handle, "indy_add_wallet_record_works_same_ids_different_types");
+            utils::tear_down_with_wallet(wallet_handle, "indy_add_wallet_record_works_same_ids_different_types", &wallet_config);
         }
 
         #[test]
@@ -112,7 +112,7 @@ mod high_cases {
             let res = add_wallet_record(wallet_handle, FORBIDDEN_TYPE, ID, VALUE, None);
             assert_code!(ErrorCode::WalletAccessFailed, res);
 
-            utils::tear_down_with_wallet(wallet_handle, "indy_add_wallet_record_works_for_invalid_type");
+            utils::tear_down_with_wallet(wallet_handle, "indy_add_wallet_record_works_for_invalid_type", &wallet_config);
         }
 
         #[test]
@@ -170,7 +170,7 @@ mod high_cases {
 
         #[test]
         fn indy_update_record_value_works_for_plugged_wallet() {
-            let wallet_handle = utils::setup_with_plugged_wallet("indy_update_record_value_works_for_plugged_wallet");
+            let (wallet_handle, wallet_config) = utils::setup_with_plugged_wallet("indy_update_record_value_works_for_plugged_wallet");
 
             add_wallet_record(wallet_handle, TYPE, ID, VALUE, None).unwrap();
             check_record_field(wallet_handle, TYPE, ID, "value", VALUE);
@@ -222,7 +222,7 @@ mod high_cases {
             let res = update_wallet_record_value(wallet_handle, FORBIDDEN_TYPE, ID, VALUE);
             assert_code!(ErrorCode::WalletAccessFailed, res);
 
-            utils::tear_down_with_wallet(wallet_handle, "indy_update_record_value_works_for_invalid_type");
+            utils::tear_down_with_wallet(wallet_handle, "indy_update_record_value_works_for_invalid_type", &wallet_config);
         }
     }
 
@@ -336,7 +336,7 @@ mod high_cases {
             let expected_tags = r#"{"tagName1": "str1", "tagName2": "str2"}"#;
             check_record_field(wallet_handle, TYPE, ID, "tags", expected_tags);
 
-            utils::tear_down_with_wallet(wallet_handle, "indy_add_wallet_record_tags_works_for_twice");
+            utils::tear_down_with_wallet(wallet_handle, "indy_add_wallet_record_tags_works_for_twice", &wallet_config);
         }
 
         #[test]
@@ -605,7 +605,7 @@ mod high_cases {
 
         #[test]
         fn indy_get_wallet_record_works_for_plugged_wallet_default_options() {
-            let wallet_handle = utils::setup_with_plugged_wallet("indy_get_wallet_record_works_for_plugged_wallet_default_options");
+            let (wallet_handle, wallet_config) = utils::setup_with_plugged_wallet("indy_get_wallet_record_works_for_plugged_wallet_default_options");
 
             add_wallet_record(wallet_handle, TYPE, ID, VALUE, None).unwrap();
 
@@ -634,7 +634,7 @@ mod high_cases {
             let expected_record = WalletRecord { id: ID.to_string(), value: None, tags: None, type_: None };
             check_record(&record, expected_record);
 
-            utils::tear_down_with_wallet(wallet_handle, "indy_get_wallet_record_works_for_id_only");
+            utils::tear_down_with_wallet(wallet_handle, "indy_get_wallet_record_works_for_id_only", &wallet_config);
         }
 
         #[test]
@@ -705,8 +705,7 @@ mod high_cases {
             assert_code!(ErrorCode::WalletItemNotFound, res);
 
             wallet::close_wallet(wallet_handle).unwrap();
-
-            utils::tear_down("indy_get_wallet_record_works_for_not_found");
+            wallet::delete_wallet(&wallet_config, WALLET_CREDENTIALS).unwrap();
         }
 
         #[test]

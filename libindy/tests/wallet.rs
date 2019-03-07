@@ -198,12 +198,14 @@ mod high_cases {
         fn indy_open_wallet_works() {
             utils::setup("indy_open_wallet_works");
 
-            wallet::create_wallet(WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+            let config = json!({
+                "id": "indy_open_wallet_works",
+                "storage_type": "default"
+            }).to_string();
+            wallet::create_wallet(&config, WALLET_CREDENTIALS).unwrap();
             let wallet_handle = wallet::open_wallet(WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
 
-            wallet::close_wallet(wallet_handle).unwrap();
-
-            utils::tear_down("indy_open_wallet_works");
+            utils::tear_down_with_wallet(wallet_handle, "indy_open_wallet_works", &config);
         }
 
         #[test]
@@ -211,7 +213,7 @@ mod high_cases {
             utils::setup("indy_open_wallet_works_for_custom_path");
 
             let config = json!({
-                "id": "wallet_1",
+                "id": "indy_open_wallet_works_for_custom_path",
                 "storage_type": "default",
                 "storage_config": {
                     "path": _custom_path(),
@@ -223,7 +225,7 @@ mod high_cases {
 
             wallet::close_wallet(wallet_handle).unwrap();
 
-            utils::tear_down("indy_open_wallet_works_for_custom_path");
+            utils::tear_down_with_wallet(wallet_handle, "indy_open_wallet_works_for_custom_path", &config);
         }
 
         #[test]
@@ -249,14 +251,14 @@ mod high_cases {
         fn indy_close_wallet_works() {
             utils::setup("indy_close_wallet_works");
 
-            wallet::create_wallet(WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+            let (wallet_handle, wallet_config) = utils::setup_with_wallet("indy_close_wallet_works");
 
-            let wallet_handle = wallet::open_wallet(WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
             wallet::close_wallet(wallet_handle).unwrap();
 
-            let wallet_handle = wallet::open_wallet(WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+            let wallet_handle = wallet::open_wallet(&wallet_config, WALLET_CREDENTIALS).unwrap();
 
-            utils::tear_down_with_wallet(wallet_handle, "indy_close_wallet_works");
+            wallet::close_wallet(wallet_handle).unwrap();
+            utils::tear_down_with_wallet(wallet_handle, "indy_close_wallet_works", &wallet_config);
         }
 
         #[test]
@@ -283,7 +285,7 @@ mod high_cases {
 
         #[test]
         fn indy_export_wallet_works() {
-            let wallet_handle = utils::setup_with_wallet("indy_export_wallet_works");
+            let (wallet_handle, wallet_config) = utils::setup_with_wallet("indy_export_wallet_works");
 
             let path = wallet::export_wallet_path();
             let config_json = wallet::prepare_export_wallet_config(&path);
@@ -295,7 +297,7 @@ mod high_cases {
 
             assert!(path.exists());
 
-            utils::tear_down_with_wallet(wallet_handle, "indy_export_wallet_works");
+            utils::tear_down_with_wallet(wallet_handle, "indy_export_wallet_works", &wallet_config);
         }
     }
 
@@ -309,8 +311,7 @@ mod high_cases {
             let path = wallet::export_wallet_path();
             let config_json = wallet::prepare_export_wallet_config(&path);
 
-            wallet::create_wallet(WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
-            let wallet_handle = wallet::open_wallet(WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+            let (wallet_handle, wallet_config) = wallet::create_and_open_default_wallet().unwrap();
 
             let (did, _) = did::create_my_did(wallet_handle, "{}").unwrap();
             did::set_did_metadata(wallet_handle, &did, METADATA).unwrap();
@@ -330,7 +331,7 @@ mod high_cases {
 
             assert_eq!(did_with_meta, did_with_meta_after_import);
 
-            utils::tear_down_with_wallet(wallet_handle, "indy_import_wallet_works");
+            utils::tear_down_with_wallet(wallet_handle, "indy_import_wallet_works", &wallet_config);
         }
     }
 
@@ -590,23 +591,23 @@ mod medium_cases {
 
         #[test]
         fn indy_close_wallet_works_for_invalid_handle() {
-            let wallet_handle = utils::setup_with_wallet("indy_close_wallet_works_for_invalid_handle");
+            let (wallet_handle, wallet_config) = utils::setup_with_wallet("indy_close_wallet_works_for_invalid_handle");
 
             let res = wallet::close_wallet(wallet_handle + 1);
             assert_code!(ErrorCode::WalletInvalidHandle, res);
 
-            utils::tear_down_with_wallet(wallet_handle, "indy_close_wallet_works_for_invalid_handle");
+            utils::tear_down_with_wallet(wallet_handle, "indy_close_wallet_works_for_invalid_handle", &wallet_config);
         }
 
         #[test]
         fn indy_close_wallet_works_for_twice() {
-            let wallet_handle = utils::setup_with_wallet("indy_close_wallet_works_for_twice");
+            let (wallet_handle, wallet_config) = utils::setup_with_wallet("indy_close_wallet_works_for_twice");
 
             wallet::close_wallet(wallet_handle).unwrap();
             let res = wallet::close_wallet(wallet_handle);
             assert_code!(ErrorCode::WalletInvalidHandle, res);
 
-            utils::tear_down("indy_close_wallet_works_for_twice");
+            wallet::delete_wallet(&wallet_config, WALLET_CREDENTIALS).unwrap();
         }
     }
 
@@ -616,7 +617,7 @@ mod medium_cases {
 
         #[test]
         fn indy_export_wallet_returns_error_if_path_exists() {
-            let wallet_handle = utils::setup_with_wallet("indy_export_wallet_returns_error_if_path_exists");
+            let (wallet_handle, wallet_config) = utils::setup_with_wallet("indy_export_wallet_returns_error_if_path_exists");
 
             let path = wallet::export_wallet_path();
             let config_json = wallet::prepare_export_wallet_config(&path);
@@ -628,22 +629,22 @@ mod medium_cases {
             let res = wallet::export_wallet(wallet_handle, &config_json);
             assert_code!(ErrorCode::CommonIOError, res);
 
-            utils::tear_down_with_wallet(wallet_handle, "indy_export_wallet_returns_error_if_path_exists");
+            utils::tear_down_with_wallet(wallet_handle, "indy_export_wallet_returns_error_if_path_exists", &wallet_config);
         }
 
         #[test]
         fn indy_export_wallet_returns_error_if_invalid_config() {
-            let wallet_handle = utils::setup_with_wallet("indy_export_wallet_returns_error_if_invalid_config");
+            let (wallet_handle, wallet_config) = utils::setup_with_wallet("indy_export_wallet_returns_error_if_invalid_config");
 
             let res = wallet::export_wallet(wallet_handle, "{}");
             assert_code!(ErrorCode::CommonInvalidStructure, res);
 
-            utils::tear_down_with_wallet(wallet_handle, "indy_export_wallet_returns_error_if_invalid_config");
+            utils::tear_down_with_wallet(wallet_handle, "indy_export_wallet_returns_error_if_invalid_config", &wallet_config);
         }
 
         #[test]
         fn indy_export_wallet_returns_error_if_invalid_handle() {
-            let wallet_handle = utils::setup_with_wallet("indy_export_wallet_returns_error_if_invalid_handle");
+            let (wallet_handle, wallet_config) = utils::setup_with_wallet("indy_export_wallet_returns_error_if_invalid_handle");
 
             let path = wallet::export_wallet_path();
             let config_json = wallet::prepare_export_wallet_config(&path);
@@ -651,7 +652,7 @@ mod medium_cases {
             let res = wallet::export_wallet(wallet_handle + 1, &config_json);
             assert_code!(ErrorCode::WalletInvalidHandle, res);
 
-            utils::tear_down_with_wallet(wallet_handle, "indy_export_wallet_returns_error_if_invalid_handle");
+            utils::tear_down_with_wallet(wallet_handle, "indy_export_wallet_returns_error_if_invalid_handle", &wallet_config);
         }
     }
 

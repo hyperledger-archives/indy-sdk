@@ -88,7 +88,7 @@ pub fn create_and_open_wallet(storage_type: Option<&str>) -> Result<(i32, String
         }).to_string();
 
     create_wallet(&config, WALLET_CREDENTIALS)?;
-    let wallet_handle = open_wallet(&config, WALLET_CREDENTIALS);
+    let wallet_handle = open_wallet(&config, WALLET_CREDENTIALS).unwrap();
     Ok((wallet_handle, config))
 }
 
@@ -99,7 +99,7 @@ pub fn create_and_open_default_wallet() -> Result<(i32, String), IndyError> {
         }).to_string();
 
     create_wallet(&config, WALLET_CREDENTIALS)?;
-    let wallet_handle = open_wallet(&config, WALLET_CREDENTIALS);
+    let wallet_handle = open_wallet(&config, WALLET_CREDENTIALS).unwrap();
     Ok((wallet_handle, config))
 }
 
@@ -111,7 +111,7 @@ pub fn create_and_open_plugged_wallet() -> Result<(i32, String), IndyError> {
 
     register_wallet_storage("inmem", false).unwrap();
     create_wallet(&config, WALLET_CREDENTIALS)?;
-    let wallet_handle = open_wallet(&config, WALLET_CREDENTIALS);
+    let wallet_handle = open_wallet(&config, WALLET_CREDENTIALS).unwrap();
     Ok((wallet_handle, config))
 }
 
@@ -121,6 +121,11 @@ pub fn delete_wallet(config: &str, credentials: &str) -> Result<(), IndyError> {
 
 pub fn close_wallet(wallet_handle: i32) -> Result<(), IndyError> {
     wallet::close_wallet(wallet_handle).wait()
+}
+
+pub fn close_and_delete_wallet(wallet_handle: i32, wallet_config: &str) -> Result<(), IndyError> {
+    close_wallet(wallet_handle)?;
+    delete_wallet(wallet_config, WALLET_CREDENTIALS)
 }
 
 pub fn export_wallet(wallet_handle: i32, export_config_json: &str) -> Result<(), IndyError> {

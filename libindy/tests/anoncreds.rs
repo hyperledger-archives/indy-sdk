@@ -69,6 +69,7 @@ mod high_cases {
         #[test]
         fn issuer_create_and_store_credential_def_works() {
             let (_, _, _, _, config) = anoncreds::init_anoncreds_wallet("issuer_create_and_store_credential_def_works");
+            wallet::delete_wallet( &config, WALLET_CREDENTIALS).unwrap();
         }
 
         #[test]
@@ -88,6 +89,7 @@ mod high_cases {
             assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             wallet::close_wallet(wallet_handle).unwrap();
+            wallet::delete_wallet(&config, WALLET_CREDENTIALS).unwrap();
         }
     }
 
@@ -97,6 +99,7 @@ mod high_cases {
         #[test]
         fn issuer_create_credential_offer_works() {
             let (_, _, _, _, config) = anoncreds::init_anoncreds_wallet("issuer_create_credential_offer_works");
+            wallet::delete_wallet(&config, WALLET_CREDENTIALS).unwrap();
         }
 
         #[test]
@@ -113,6 +116,7 @@ mod high_cases {
             assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             wallet::close_wallet(wallet_handle).unwrap();
+            wallet::delete_wallet(&config, WALLET_CREDENTIALS).unwrap();
         }
     }
 
@@ -122,6 +126,7 @@ mod high_cases {
         #[test]
         fn prover_create_master_secret_works() {
             let (_, _, _, _, config) = anoncreds::init_anoncreds_wallet("prover_create_master_secret_works");
+            wallet::delete_wallet(&config, WALLET_CREDENTIALS).unwrap();
         }
 
         #[test]
@@ -135,6 +140,7 @@ mod high_cases {
             assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             wallet::close_wallet(wallet_handle).unwrap();
+            wallet::delete_wallet(&config, WALLET_CREDENTIALS).unwrap();
         }
     }
 
@@ -161,11 +167,12 @@ mod high_cases {
             assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             wallet::close_wallet(wallet_handle).unwrap();
+            wallet::delete_wallet(&config, WALLET_CREDENTIALS).unwrap();
         }
 
         #[test]
         fn prover_create_credential_req_works_for_credential_def_not_correspond_to_credential_offer() {
-            let (issuer1_gvt_credential_def, issuer1_gvt_credential_offer, _, config) =
+            let (issuer1_gvt_credential_def, issuer1_gvt_credential_offer, _, _, config) =
                 anoncreds::init_anoncreds_wallet("prover_create_credential_req_works_for_credential_def_not_correspond_to_credential_offer");
 
             let wallet_handle = wallet::open_wallet(
@@ -253,7 +260,7 @@ mod high_cases {
             let wallet_handle = wallet::open_wallet(
                 &config,
                 WALLET_CREDENTIALS).unwrap();
-            let prover_wallet_handle = wallet::create_and_open_default_wallet().unwrap();
+            let (prover_wallet_handle, prover_wallet_config) = wallet::create_and_open_default_wallet().unwrap();
 
             anoncreds::prover_create_master_secret(prover_wallet_handle, COMMON_MASTER_SECRET).unwrap();
 
@@ -280,13 +287,14 @@ mod high_cases {
             assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             wallet::close_wallet(wallet_handle).unwrap();
+            wallet::delete_wallet(&config, WALLET_CREDENTIALS).unwrap();
             wallet::close_wallet(prover_wallet_handle).unwrap();
+            wallet::delete_wallet(&prover_wallet_config, WALLET_CREDENTIALS).unwrap();
         }
     }
 
     mod prover_get_credentials {
         use super::*;
-        use core::ffi::c_void::__variant1;
 
         #[test]
         fn prover_get_credentials_works_for_empty_filter() {
@@ -1019,9 +1027,6 @@ mod high_cases {
 
             #[test]
             fn prover_get_credentials_for_proof_req_works_for_revealed_attr_for_specific_schema_id_or_specific_cred_def_id() {
-                // this config an the one in init_anoncreds_wallet have to match
-                let config = r#"{"id": "attribute_restrictions_libindy_1_5_format_prover_get_credentials_for_proof_rea_works_for_revealed_attr_for_multiple_schemas"}"#;
-
                 let (_, _, _, _, config) = anoncreds::init_anoncreds_wallet("attribute_restrictions_libindy_1_5_format_prover_get_credentials_for_proof_rea_works_for_revealed_attr_for_multiple_schemas");
 
                 let wallet_handle = wallet::open_wallet(
@@ -1055,9 +1060,6 @@ mod high_cases {
 
             #[test]
             fn prover_get_credentials_for_proof_rea_works_for_revealed_attr_for_multiple_schemas() {
-                // this config an the one in init_anoncreds_wallet have to match
-                let config = r#"{"id": "attribute_restrictions_libindy_1_5_format_prover_get_credentials_for_proof_rea_works_for_revealed_attr_for_multiple_schemas"}"#;
-
                 let (_, _, _, _, config) = anoncreds::init_anoncreds_wallet("attribute_restrictions_libindy_1_5_format_prover_get_credentials_for_proof_rea_works_for_revealed_attr_for_multiple_schemas");
 
                 let wallet_handle = wallet::open_wallet(
@@ -1091,8 +1093,6 @@ mod high_cases {
 
             #[test]
             fn prover_get_credentials_for_proof_req_works_for_revealed_attr_for_specific_cred_def_id() {
-                // this config an the one in init_anoncreds_wallet have to match
-                let config = r#"{"id": "attribute_restrictions_libindy_1_5_format_prover_get_credentials_for_proof_req_works_for_revealed_attr_for_specific_cred_def_id"}"#;
                 let (_, _, _, _, config) = anoncreds::init_anoncreds_wallet("attribute_restrictions_libindy_1_5_format_prover_get_credentials_for_proof_req_works_for_revealed_attr_for_specific_cred_def_id");
 
                 let wallet_handle = wallet::open_wallet(
@@ -1127,8 +1127,6 @@ mod high_cases {
             #[test]
             fn prover_get_credentials_for_proof_rea_works_for_revealed_attr_for_multiple_cred_def_ids() {
                 // this config an the one in init_anoncreds_wallet have to match
-                let config = r#"{"id": "attribute_restrictions_libindy_1_5_format_prover_get_credentials_for_proof_rea_works_for_revealed_attr_for_multiple_cred_def_ids"}"#;
-
                 let (_, _, _, _, config) = anoncreds::init_anoncreds_wallet("attribute_restrictions_libindy_1_5_format_prover_get_credentials_for_proof_rea_works_for_revealed_attr_for_multiple_cred_def_ids");
 
                 let wallet_handle = wallet::open_wallet(
@@ -4089,7 +4087,7 @@ mod demos {
         let (issuer_wallet_handle, issuer_wallet_config) = wallet::create_and_open_default_wallet().unwrap();
 
         //2. Create Prover wallet, gets wallet handle
-        let (prover_wallet_handle, prover_wallet_handle) = wallet::create_and_open_default_wallet().unwrap();
+        let (prover_wallet_handle, prover_wallet_config) = wallet::create_and_open_default_wallet().unwrap();
 
         //3. Issuer creates Schema and Credential Definition
         let (schema_id, schema_json, cred_def_id, cred_def_json) = anoncreds::multi_steps_issuer_preparation(issuer_wallet_handle,
@@ -4546,7 +4544,7 @@ mod demos {
         assert!(valid);
 
         wallet::close_wallet(prover_wallet_handle).unwrap();
-        wallet::delete_wallet(&prover_wallet__config, WALLET_CREDENTIALS).unwrap();
+        wallet::delete_wallet(&prover_wallet_config, WALLET_CREDENTIALS).unwrap();
         wallet::close_wallet(issuer_wallet_handle).unwrap();
         wallet::delete_wallet(&issuer_wallet_config, WALLET_CREDENTIALS).unwrap();
 
@@ -5933,9 +5931,8 @@ mod demos {
         assert!(!valid);
 
 
-        utils::tear_down();
-
-        utils::tear_down("anoncreds_works_for_issuance_by_default_revocation_strategy_revoke_credential");
+        wallet::close_and_delete_wallet(issuer_wallet_handle, &issuer_wallet_config).unwrap();
+        wallet::close_and_delete_wallet(prover_wallet_handle, &prover_wallet_config).unwrap();
     }
 
     #[cfg(feature = "revocation_tests")]
@@ -6036,16 +6033,16 @@ mod demos {
         utils::setup("anoncreds_works_for_issuance_by_default_revocation_strategy_for_full_revocation_registry");
 
         //1. Issuer creates wallet, gets wallet handle
-        let issuer_wallet_handle = wallet::create_and_open_default_wallet().unwrap();
+        let (issuer_wallet_handle, issuer_wallet_config) = wallet::create_and_open_default_wallet().unwrap();
 
         //2. Prover creates wallet, gets wallet handle
-        let prover_1_wallet_handle = wallet::create_and_open_default_wallet().unwrap();
+        let (prover_1_wallet_handle, prover_1_wallet_config) = wallet::create_and_open_default_wallet().unwrap();
 
         //3. Prover creates wallet, gets wallet handle
-        let prover_2_wallet_handle = wallet::create_and_open_default_wallet().unwrap();
+        let (prover_2_wallet_handle, prover_2_wallet_config) = wallet::create_and_open_default_wallet().unwrap();
 
         //4. Prover creates wallet, gets wallet handle
-        let prover_3_wallet_handle = wallet::create_and_open_default_wallet().unwrap();
+        let (prover_3_wallet_handle, prover_3_wallet_config) = wallet::create_and_open_default_wallet().unwrap();
 
         //5 Issuer creates Schema, Credential Definition and Revocation Registry
         let (_, _,

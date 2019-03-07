@@ -159,7 +159,7 @@ impl Issuer {
 
     pub fn new(pool: &Pool) -> Issuer{
 
-        let wallet_handle = wallet::create_and_open_default_wallet().unwrap();
+        let (wallet_handle, _wallet_config) = wallet::create_and_open_default_wallet().unwrap();
         Issuer {
             // Issuer creates wallet, gets wallet handle
             issuer_wallet_handle: wallet_handle,
@@ -295,7 +295,7 @@ impl Prover
     pub fn new(master_secret_id : Option<&str>) -> Prover
     {
         // Prover creates wallet, gets wallet handle
-        let prover_wallet_handle = wallet::create_and_open_default_wallet().unwrap();
+        let (prover_wallet_handle, _prover_wallet_config) = wallet::create_and_open_default_wallet().unwrap();
         // Prover create DID
         let (prover_did, prover_verkey) = did::create_my_did(prover_wallet_handle, "{}").unwrap();
         // Prover creates Master Secret
