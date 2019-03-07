@@ -44,11 +44,11 @@ def calcCoverageRust(dir) {
             cargo test --no-run
             for i in $(find target/debug -maxdepth 1 -executable -type f | grep -v '\\.so\$')
             do
-                LD_LIBRARY_PATH=$LD_LIBRARY_PATH:INDY_SDK_DIR/libindy/target/debug/ \ // use libindy.so
+                LD_LIBRARY_PATH=$LD_LIBRARY_PATH:INDY_SDK_DIR/libindy/target/debug/ \
                 RUST_TEST_THREADS=1 \
                 kcov \
-                    --exclude-pattern=$CARGO_HOME,/usr/lib \ // Don't report on coverage of cargo or system libs
-                    --verify \ // Results are prone to inaccuracies if this flag is not set
+                    --exclude-pattern=$CARGO_HOME,/usr/lib \
+                    --verify \
                     ../cov \
                     \$i
             done
