@@ -22,3 +22,9 @@ export async function initVcxWithProvisionedAgentConfig(config) {
     config['genesis_path'] = 'docker.txn';
     await initVcxWithConfig(JSON.stringify(config));
 }
+
+export async function getRandomInt(min, max) {
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min)) + min;
+}

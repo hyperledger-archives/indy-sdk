@@ -6,12 +6,8 @@ import {Schema} from "./../dist/src/api/schema";
 import {StateType, ProofState} from "../dist/src";
 import sleepPromise from 'sleep-promise'
 import * as demoCommon from "./common";
+import {getRandomInt} from "./common";
 
-function getRandomInt(min, max) {
-    min = Math.ceil(min);
-    max = Math.floor(max);
-    return Math.floor(Math.random() * (max - min)) + min;
-}
 
 const provisionConfig = {
     'agency_url': 'http://localhost:8080',

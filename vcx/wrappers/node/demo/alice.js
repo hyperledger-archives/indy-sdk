@@ -6,12 +6,6 @@ import readlineSync from 'readline-sync'
 import sleepPromise from 'sleep-promise'
 import * as demoCommon from './common'
 
-function getRandomInt(min, max) {
-    min = Math.ceil(min);
-    max = Math.floor(max);
-    return Math.floor(Math.random() * (max - min)) + min;
-}
-
 const provisionConfig = {
     'agency_url': 'http://localhost:8080',
     'agency_did': 'VsKV7grR1BUE29mG2Fm2kX',
