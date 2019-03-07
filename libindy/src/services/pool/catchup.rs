@@ -52,41 +52,50 @@ pub fn check_nodes_responses_on_status(nodes_votes: &HashMap<(String, usize, Opt
                                        node_cnt: usize,
                                        f: usize,
                                        pool_name: &str) -> IndyResult<CatchupProgress> {
-    //FIXME fetch not just most popular vote but most popular not a timeout
-    if let Some((most_popular_vote, votes_cnt)) = nodes_votes.iter().map(|(key, val)| (key, val.len())).max_by_key(|entry| entry.1) {
-        let is_consensus_reached =
-            votes_cnt == node_cnt - f
-                || votes_cnt == f + 1 && most_popular_vote.0.neq("timeout");
-        if is_consensus_reached {
-            if most_popular_vote.0.eq("timeout") {
-                return _try_to_restart_catch_up(pool_name, err_msg(IndyErrorKind::PoolTimeout, "Pool timeout"))
-            }
+    let (votes, timeout_votes): (HashMap<&(String, usize, Option<Vec<String>>), usize>, HashMap<&(String, usize, Option<Vec<String>>), usize>) =
+        nodes_votes
+            .iter()
+            .map(|(key, val)| (key, val.len()))
+            .partition(|((key, _, _), _)| key != "timeout");
 
-            return _try_to_catch_up(most_popular_vote, merkle_tree).or_else(|err| {
+    let most_popular_not_timeout =
+        votes
+            .iter()
+            .max_by_key(|entry| entry.1);
+
+    let timeout_votes = timeout_votes.iter().last();
+
+    if let Some((most_popular_not_timeout_vote, vote_cnt)) = most_popular_not_timeout {
+        if *vote_cnt == f + 1 {
+            return _try_to_catch_up(most_popular_not_timeout_vote, merkle_tree).or_else(|err| {
                 if merkle_tree_factory::drop_cache(pool_name).is_ok() {
                     let merkle_tree = merkle_tree_factory::create(pool_name)?;
-                    _try_to_catch_up(most_popular_vote, &merkle_tree)
+                    _try_to_catch_up(most_popular_not_timeout_vote, &merkle_tree)
                 } else {
                     Err(err)
                 }
             });
+        }
+    } else if let Some((_, votes_cnt)) = timeout_votes {
+        if *votes_cnt == node_cnt - f {
+            return _try_to_restart_catch_up(pool_name, err_msg(IndyErrorKind::PoolTimeout, "Pool timeout"));
         } else {
             let reps_cnt: usize = nodes_votes.values().map(HashSet::len).sum();
             let positive_votes_cnt = votes_cnt + (node_cnt - reps_cnt);
             let is_consensus_reachable = positive_votes_cnt < node_cnt - f;
             if is_consensus_reachable {
                 //TODO: maybe we should change the error, but it was made to escape changing of ErrorCode returned to client
-               return  _try_to_restart_catch_up(pool_name, err_msg(IndyErrorKind::PoolTimeout, "No consensus possible"))
+                return _try_to_restart_catch_up(pool_name, err_msg(IndyErrorKind::PoolTimeout, "No consensus possible"));
             }
         }
     }
     Ok(CatchupProgress::InProgress)
 }
 
-fn _try_to_restart_catch_up(pool_name: &str, err: IndyError) -> IndyResult<CatchupProgress>{
+fn _try_to_restart_catch_up(pool_name: &str, err: IndyError) -> IndyResult<CatchupProgress> {
     if merkle_tree_factory::drop_cache(pool_name).is_ok() {
         let merkle_tree = merkle_tree_factory::create(pool_name)?;
-        return Ok(CatchupProgress::Restart(merkle_tree))
+        return Ok(CatchupProgress::Restart(merkle_tree));
     } else {
         return Err(err);
     }
