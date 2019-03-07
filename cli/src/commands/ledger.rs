@@ -1271,6 +1271,7 @@ pub mod auth_rule_command {
 
         if let Some(result) = response.result.as_mut() {
             result["txn"]["data"]["auth_type"] = get_txn_title(&result["txn"]["data"]["auth_type"]);
+            result["txn"]["data"]["constraint"] = serde_json::Value::String(::serde_json::to_string_pretty(&result["txn"]["data"]["constraint"]).unwrap());
         }
 
         let res = handle_transaction_response(response)
@@ -1347,7 +1348,7 @@ pub mod get_auth_rule_command {
                     "field": parts.get(2),
                     "old_value": parts.get(3),
                     "new_value": parts.get(4),
-                    "constraint": constraint,
+                    "constraint": ::serde_json::to_string_pretty(&constraint).unwrap(),
                 })
             })
             .collect::<Vec<serde_json::Value>>();
@@ -3714,7 +3715,7 @@ pub mod tests {
 
             {
                 let cmd = get_auth_rule_command::new();
-                let mut params = CommandParams::new();
+                let params = CommandParams::new();
                 cmd.execute(&ctx, &params).unwrap();
             }
 
