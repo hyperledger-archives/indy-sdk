@@ -1274,10 +1274,10 @@ async def build_auth_rule_request(submitter_did: str,
     Builds a AUTH_RULE request. Request to change authentication rules for a ledger transaction.
 
     :param submitter_did: DID of the submitter stored in secured Wallet.
-    :param txn_type: ledger transaction alias or associated value for which authentication rules will be applied.
-    :param action: type of an action for which authentication rules will be applied.
+    :param txn_type: ledger transaction alias or associated value.
+    :param action: type of an action.
        Can be either "ADD" (to add a new rule) or "EDIT" (to edit an existing one).
-    :param field: transaction field for which authentication rule will be applied.
+    :param field: transaction field.
     :param old_value: old value of a field, which can be changed to a new_value (mandatory for EDIT action).
     :param new_value: new value that can be used to fill the field.
     :param constraint: set of constraints required for execution of an action in the following format:

@@ -959,10 +959,10 @@ extern "C" {
     ///
     /// #Params
     /// command_handle: command handle to map callback to caller context.
-    /// txn_type: ledger transaction alias or associated value for which authentication rules will be applied.
-    /// action: type of an action for which authentication rules will be applied.
+    /// txn_type: ledger transaction alias or associated value.
+    /// action: type of an action.
     ///     Can be either "ADD" (to add a new rule) or "EDIT" (to edit an existing one).
-    /// field: transaction field for which authentication rule will be applied.
+    /// field: transaction field.
     /// old_value: old value of a field, which can be changed to a new_value (mandatory for EDIT action).
     /// new_value: new value that can be used to fill the field.
     /// constraint: set of constraints required for execution of an action in the following format

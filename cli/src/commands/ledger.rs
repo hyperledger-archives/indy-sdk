@@ -1222,9 +1222,9 @@ pub mod auth_rule_command {
     use super::*;
 
     command!(CommandMetadata::build("auth-rule", "Send AUTH_RULE request to change authentication rules for a ledger transaction.")
-                .add_required_param("txn_type", "Ledger transaction alias or associated value for which authentication rules will be applied")
-                .add_required_param("action", "Type of an action for which authentication rules will be applied. One of: ADD, EDIT")
-                .add_required_param("field", "Transaction field for which authentication rule will be applied")
+                .add_required_param("txn_type", "Ledger transaction alias or associated value")
+                .add_required_param("action", "Type of an action. One of: ADD, EDIT")
+                .add_required_param("field", "Transaction field")
                 .add_optional_param("old_value", "Old value of field, which can be changed to a new_value (mandatory for EDIT action)")
                 .add_required_param("new_value", "New value that can be used to fill the field")
                 .add_required_param("constraint", r#"Set of constraints required for execution of an action
