@@ -16,7 +16,7 @@ def testing () {
         
 
         stage("Collecting test coverage") {
-            image.inside {
+            image.inside("--security-opt seccomp=unconfined") {
                 sh 'cargo build --manifest-path=libindy/Cargo.toml' // create libindy.so
 
                 calcCoverageRust("libindy")
