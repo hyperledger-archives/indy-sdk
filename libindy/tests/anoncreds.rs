@@ -1227,7 +1227,7 @@ mod high_cases {
 
             #[test]
             fn prover_get_credentials_for_proof_req_works_for_revealed_attr_for_other_schema_id() {
-                let (_, _, _, _, config) = anoncreds::init_anoncreds_wallet("prover_get_credentials_for_proof_req_works_for_revealed_attr_for_other_schema_id");
+                let (_, _, _, _, config) = anoncreds::init_anoncreds_wallet("attribute_restrictions_libindy_1_5_format_prover_get_credentials_for_proof_req_works_for_revealed_attr_for_other_schema_id");
 
                 let wallet_handle = wallet::open_wallet(
                     &config,
@@ -1798,7 +1798,7 @@ mod high_cases {
 
             #[test]
             fn prover_get_credentials_for_proof_req_works_for_revealed_attr_for_other_schema_id() {
-                let (_, _, _, _, config) = anoncreds::init_anoncreds_wallet("prover_get_credentials_for_proof_req_works_for_revealed_attr_for_other_schema_id");
+                let (_, _, _, _, config) = anoncreds::init_anoncreds_wallet("attribute_restrictions_wql_format_prover_get_credentials_for_proof_req_works_for_revealed_attr_for_other_schema_id");
 
                 let wallet_handle = wallet::open_wallet(
                     &config,
