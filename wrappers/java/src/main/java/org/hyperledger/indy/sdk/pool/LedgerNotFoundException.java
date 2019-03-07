@@ -18,15 +18,4 @@ public class LedgerNotFoundException extends IndyException
 	{
 		super(message, ErrorCode.LedgerNotFound.value());
 	}
-
-	/**
-	 * Initializes a new PoolIncompatibleProtocolVersionException.
-	 *
-	 * @param sdkMessage The SDK error message.
-	 * @param sdkBacktrace The SDK error backtrace.
-	 */
-	public LedgerNotFoundException(String sdkMessage, String sdkBacktrace)
-	{
-		super(sdkMessage, ErrorCode.LedgerNotFound.value(), sdkBacktrace);
-	}
 }

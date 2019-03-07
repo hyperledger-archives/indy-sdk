@@ -18,14 +18,4 @@ public class TimeoutException extends IndyException implements Serializable {
     public TimeoutException() {
         super(message, ErrorCode.PoolLedgerTimeout.value());
     }
-
-    /**
-     * Initializes a new TimeoutException.
-     *
-     * @param sdkMessage The SDK error message.
-     * @param sdkBacktrace The SDK error backtrace.
-     */
-    public TimeoutException(String sdkMessage, String sdkBacktrace) {
-        super(sdkMessage, ErrorCode.PoolLedgerTimeout.value(), sdkBacktrace);
-    }
 }
