@@ -16,12 +16,13 @@ const provisionConfig = {
     'enterprise_seed': '000000000000000000000000Trustee1'
 };
 
+const logLevel = 'warn';
 
 async function run() {
     await demoCommon.initLibNullPay();
 
     console.log("#0 initialize rust API from NodeJS");
-    await demoCommon.initRustApiAndLogger();
+    await demoCommon.initRustApiAndLogger(logLevel);
 
     console.log("#1 Provision an agent and wallet, get back configuration details");
     let config = await demoCommon.provisionAgentInAgency(provisionConfig);

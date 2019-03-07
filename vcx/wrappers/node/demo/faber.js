@@ -19,11 +19,13 @@ const provisionConfig = {
     'enterprise_seed': '000000000000000000000000Trustee1'
 };
 
+const logLevel = 'error';
+
 async function run() {
     await demoCommon.initLibNullPay();
 
     console.log("#0 initialize rust API from NodeJS");
-    await demoCommon.initRustApiAndLogger();
+    await demoCommon.initRustApiAndLogger(logLevel);
 
     console.log("#1 Provision an agent and wallet, get back configuration details");
     let config = await demoCommon.provisionAgentInAgency(provisionConfig);
@@ -68,17 +70,20 @@ async function run() {
     await connectionToAlice.connect('{"use_public_did": true}');
     await connectionToAlice.updateState();
     const details = await connectionToAlice.inviteDetails(false);
-    console.log("**invite details**");
-    console.log(JSON.stringify(JSON.parse(details)), null, 0);
-    console.log("******************");
+    console.log("\n\n**invite details**");
+    console.log("**You'll ge queried to paste this data to alice side of the demo. This is invitation to connect.**");
+    console.log("**It's assumed this is obtained by Alice from Faber by some existing secure channel.**");
+    console.log("**Could be on website via HTTPS, QR code scanned at Faber institution, ...**");
+    console.log("\n******************\n\n");
+    console.log(JSON.stringify(JSON.parse(details)));
+    console.log("\n\n******************\n\n");
 
-    console.log("#6 Poll agency and wait for alice to accept the invitation (start alice.py now)");
+    console.log("#6 Polling agency and waiting for alice to accept the invitation. (start alice.py now)");
     let connection_state = await connectionToAlice.getState();
     while (connection_state !== StateType.Accepted) {
         await sleepPromise(2000);
         await connectionToAlice.updateState();
         connection_state = await connectionToAlice.getState();
-        console.log(`Connection to Alice is in state: ${connection_state}`);
     }
     console.log(`Connection to alice was Accepted!`);
 
