@@ -1337,13 +1337,17 @@ async def build_auth_rule_request(submitter_did: str,
 
 
 async def build_get_auth_rule_request(submitter_did: Optional[str],
-                                      txn_type: str,
-                                      action: str,
-                                      field: str,
+                                      auth_type: Optional[str],
+                                      auth_action: Optional[str],
+                                      field: Optional[str],
                                       old_value: Optional[str],
-                                      new_value: str) -> str:
+                                      new_value: Optional[str]) -> str:
     """
     Builds a GET_AUTH_RULE request. Request to get authentication rules for a ledger transaction.
+
+    NOTE: Either none or all transaction related parameters must be specified (`old_value` can be skipped for `ADD` action).
+        * none - to get all authentication rules for all ledger transactions
+        * all - to get authentication rules for specific action (`old_value` can be skipped for `ADD` action)
 
     :param submitter_did: (Optional) DID of the read request sender.
     :param txn_type: target ledger transaction alias or associated value.
@@ -1370,11 +1374,11 @@ async def build_get_auth_rule_request(submitter_did: Optional[str],
         build_get_auth_rule_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
 
     c_submitter_did = c_char_p(submitter_did.encode('utf-8')) if submitter_did is not None else None
-    c_txn_type = c_char_p(txn_type.encode('utf-8'))
-    c_action = c_char_p(action.encode('utf-8'))
-    c_field = c_char_p(field.encode('utf-8'))
+    c_auth_type = c_char_p(auth_type.encode('utf-8')) if auth_type is not None else None
+    c_auth_action = c_char_p(auth_action.encode('utf-8')) if auth_action is not None else None
+    c_field = c_char_p(field.encode('utf-8')) if field is not None else None
     c_old_value = c_char_p(old_value.encode('utf-8')) if old_value is not None else None
-    c_new_value = c_char_p(new_value.encode('utf-8'))
+    c_new_value = c_char_p(new_value.encode('utf-8')) if new_value is not None else None
 
     request_json = await do_call('indy_build_get_auth_rule_request',
                                  c_submitter_did,

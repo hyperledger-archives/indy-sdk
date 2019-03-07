@@ -1329,13 +1329,17 @@ public class Ledger extends IndyJava.API {
 	/**
 	 * Builds a GET_AUTH_RULE request. Request to get authentication rules for a ledger transaction.
 	 *
+	 * NOTE: Either none or all transaction related parameters must be specified (`oldValue` can be skipped for `ADD` action).
+	 *     * none - to get all authentication rules for all ledger transactions
+	 *     * all - to get authentication rules for specific action (`oldValue` can be skipped for `ADD` action)
+	 * 
 	 * @param submitterDid (Optional) DID of the read request sender.
-	 * @param txnType - target ledger transaction alias or associated value.
-	 * @param action - type of action for which authentication rules will be applied.
+	 * @param txnType - (Optional) target ledger transaction alias or associated value.
+	 * @param action - (Optional) type of action for which authentication rules will be applied.
 	 *     Can be either "ADD" (to add new rule) or "EDIT" (to edit an existing one).
-	 * @param field - transaction field for which authentication rule will be applied.
-	 * @param oldValue - old value of field, which can be changed to a new_value (must be specified for EDIT action).
-	 * @param newValue - new value that can be used to fill the field.
+	 * @param field - (Optional) transaction field for which authentication rule will be applied.
+	 * @param oldValue - (Optional) old value of field, which can be changed to a new_value (must be specified for EDIT action).
+	 * @param newValue - (Optional) new value that can be used to fill the field.
 	 *
 	 * @return A future resolving to a request result as json.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.

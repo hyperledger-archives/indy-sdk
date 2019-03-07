@@ -1921,16 +1921,20 @@ pub extern fn indy_build_auth_rule_request(command_handle: CommandHandle,
     res
 }
 
-/// Builds a GET_AUTH_RULE request. Request to get authentication rules for a ledger transaction.
+/// Builds a GET_AUTH_RULE request. Request to get authentication rules for ledger transactions.
+///
+/// NOTE: Either none or all transaction related parameters must be specified (`old_value` can be skipped for `ADD` action).
+///     * none - to get all authentication rules for all ledger transactions
+///     * all - to get authentication rules for specific action (`old_value` can be skipped for `ADD` action)
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
 /// submitter_did: (Optional) DID of the read request sender.
-/// txn_type: target ledger transaction alias or associated value.
-/// action: target action type. Can be either "ADD" or "EDIT".
-/// field: target transaction field.
-/// old_value: old value of field, which can be changed to a new_value (must be specified for EDIT action).
-/// new_value: new value that can be used to fill the field.
+/// txn_type: (Optional) target ledger transaction alias or associated value.
+/// action: (Optional) target action type. Can be either "ADD" or "EDIT".
+/// field: (Optional) target transaction field.
+/// old_value: (Optional) old value of field, which can be changed to a new_value (must be specified for EDIT action).
+/// new_value: (Optional) new value that can be used to fill the field.
 ///
 /// cb: Callback that takes command result as parameter.
 ///
@@ -1955,11 +1959,11 @@ pub extern fn indy_build_get_auth_rule_request(command_handle: CommandHandle,
            submitter_did, txn_type, action, field, old_value, new_value);
 
     check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(txn_type, ErrorCode::CommonInvalidParam3);
-    check_useful_c_str!(action, ErrorCode::CommonInvalidParam4);
-    check_useful_c_str!(field, ErrorCode::CommonInvalidParam5);
+    check_useful_opt_c_str!(txn_type, ErrorCode::CommonInvalidParam3);
+    check_useful_opt_c_str!(action, ErrorCode::CommonInvalidParam4);
+    check_useful_opt_c_str!(field, ErrorCode::CommonInvalidParam5);
     check_useful_opt_c_str!(old_value, ErrorCode::CommonInvalidParam6);
-    check_useful_c_str!(new_value, ErrorCode::CommonInvalidParam7);
+    check_useful_opt_c_str!(new_value, ErrorCode::CommonInvalidParam7);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam8);
 
     trace!("indy_build_get_auth_rule_request: entities >>> submitter_did: {:?}, txn_type: {:?}, action: {:?}, field: {:?}, \

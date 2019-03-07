@@ -195,11 +195,11 @@ pub enum LedgerCommand {
         Box<Fn(IndyResult<String>) + Send>),
     BuildGetAuthRuleRequest(
         Option<String>, // submitter did
-        String, // auth type
-        String, // auth action
-        String, // field
+        Option<String>, // auth type
+        Option<String>, // auth action
+        Option<String>, // field
         Option<String>, // old value
-        String, // new value
+        Option<String>, // new value
         Box<Fn(IndyResult<String>) + Send>),
 }
 
@@ -384,7 +384,12 @@ impl LedgerCommandExecutor {
             }
             LedgerCommand::BuildGetAuthRuleRequest(submitter_did, txn_type, action, field, old_value, new_value, cb) => {
                 info!(target: "ledger_command_executor", "BuildGetAuthRuleRequest command received");
-                cb(self.build_get_auth_rule_request(submitter_did.as_ref().map(String::as_str), &txn_type, &action, &field, old_value.as_ref().map(String::as_str), &new_value));
+                cb(self.build_get_auth_rule_request(submitter_did.as_ref().map(String::as_str),
+                                                    txn_type.as_ref().map(String::as_str),
+                                                    action.as_ref().map(String::as_str),
+                                                    field.as_ref().map(String::as_str),
+                                                    old_value.as_ref().map(String::as_str),
+                                                    new_value.as_ref().map(String::as_str)));
             }
         };
     }
@@ -937,12 +942,12 @@ impl LedgerCommandExecutor {
 
     fn build_get_auth_rule_request(&self,
                                    submitter_did: Option<&str>,
-                                   txn_type: &str,
-                                   action: &str,
-                                   field: &str,
+                                   txn_type: Option<&str>,
+                                   action: Option<&str>,
+                                   field: Option<&str>,
                                    old_value: Option<&str>,
-                                   new_value: &str) -> IndyResult<String> {
-        debug!("build_get_auth_rule_request >>> submitter_did: {:?}, txn_type: {:?}, action: {:?}, field: {:?}, \
+                                   new_value: Option<&str>) -> IndyResult<String> {
+        debug!("build_get_auth_rule_request >>> submitter_did: {:?}, auth_type: {:?}, auth_action: {:?}, field: {:?}, \
             old_value: {:?}, new_value: {:?}", submitter_did, txn_type, action, field, old_value, new_value);
 
         self.validate_opt_did(submitter_did)?;

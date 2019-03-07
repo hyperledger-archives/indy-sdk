@@ -1003,14 +1003,18 @@ extern "C" {
 
     /// Builds a GET_AUTH_RULE request. Request to get authentication rules for a ledger transaction.
     ///
+    /// NOTE: Either none or all transaction related parameters must be specified (`old_value` can be skipped for `ADD` action).
+    ///     * none - to get all authentication rules for all ledger transactions
+    ///     * all - to get authentication rules for specific action (`old_value` can be skipped for `ADD` action)
+    ///
     /// #Params
     /// command_handle: command handle to map callback to caller context.
     /// submitter_did: (Optional) DID of the read request sender.
-    /// txn_type: target ledger transaction alias or associated value.
-    /// action: target action type. Can be either "ADD" or "EDIT".
-    /// field: target transaction field.
-    /// old_value: old value of field, which can be changed to a new_value (must be specified for EDIT action).
-    /// new_value: new value that can be used to fill the field.
+    /// txn_type: (Optional) target ledger transaction alias or associated value.
+    /// action: (Optional) target action type. Can be either "ADD" or "EDIT".
+    /// field: (Optional) target transaction field.
+    /// old_value: (Optional) old value of field, which can be changed to a new_value (must be specified for EDIT action).
+    /// new_value: (Optional) new value that can be used to fill the field.
     ///
     /// cb: Callback that takes command result as parameter.
     ///

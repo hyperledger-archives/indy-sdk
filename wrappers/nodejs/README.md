@@ -1785,12 +1785,16 @@ Errors: `Common*`
 
 Builds a GET_AUTH_RULE request. Request to get authentication rules for a ledger transaction.
 
+NOTE: Either none or all transaction related parameters must be specified (`oldValue` can be skipped for `ADD` action).
+* none - to get all authentication rules for all ledger transactions
+* all - to get authentication rules for specific action (`oldValue` can be skipped for `ADD` action)
+
 * `submitterDid`: String - \(Optional\) DID of the read request sender \(if not provided then default Libindy DID will be used\).
 * `txnType`: String - target ledger transaction alias or associated value.
 * `action`: String - target action type. Can be either "ADD" or "EDIT".
 * `field`: String - target transaction field.
 * `oldValue`: String - \(Optional\) old value of field, which can be changed to a new_value (must be specified for EDIT action).
-* `newValue`: String - new value that can be used to fill the field. 
+* `newValue`: String - \(Optional\) new value that can be used to fill the field. 
 
 * __->__ `request`: Json
 

@@ -342,7 +342,7 @@ ledger auth-rule txn_type=<txn type> action=<add or edit> field=<txn field> [old
 #### GET_AUTH_RULE transaction
 Send GET_AUTH_RULE transaction
 ```
-ledger get-auth-rule txn_type=<txn type> action=<ADD or EDIT> field=<txn field> [old_value=<value>] new_value=<new_value>
+ledger get-auth-rule [txn_type=<txn type>] [action=<ADD or EDIT>] [field=<txn field>] [old_value=<value>] [new_value=<new_value>]
 ```
 
 #### GET_PAYMENT_SOURCES transaction

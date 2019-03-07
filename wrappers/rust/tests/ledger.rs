@@ -615,6 +615,7 @@ mod test_build_auth_rule_request {
     const NYM_AUTH_TYPE: &str = "1";
     const ADD_AUTH_ACTION: &str = "ADD";
     const FIELD: &str = "role";
+    const OLD_VALUE: &str = "0";
     const NEW_VALUE: &str = "101";
     const ROLE_CONSTRAINT: &str = r#"{
         "sig_count": 1,
@@ -638,10 +639,20 @@ mod test_build_auth_rule_request {
     #[test]
     pub fn build_get_auth_rule_request_success() {
         let _get_auth_rule_request = ledger::build_get_auth_rule_request(Some(DID),
-                                                                         NYM_AUTH_TYPE,
-                                                                         &ADD_AUTH_ACTION,
-                                                                         FIELD,
+                                                                         Some(NYM_AUTH_TYPE),
+                                                                         Some(ADD_AUTH_ACTION),
+                                                                         Some(FIELD),
+                                                                         Some(OLD_VALUE),
+                                                                         Some(NEW_VALUE)).wait().unwrap();
+    }
+
+    #[test]
+    pub fn build_get_auth_rule_request_success_for_all_params_skipped() {
+        let _get_auth_rule_request = ledger::build_get_auth_rule_request(None,
                                                                          None,
-                                                                         NEW_VALUE).wait().unwrap();
+                                                                         None,
+                                                                         None,
+                                                                         None,
+                                                                         None).wait().unwrap();
     }
 }

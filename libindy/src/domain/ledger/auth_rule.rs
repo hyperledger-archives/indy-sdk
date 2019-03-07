@@ -67,17 +67,21 @@ impl AuthRuleOperation {
 pub struct GetAuthRuleOperation {
     #[serde(rename = "type")]
     pub _type: String,
-    pub auth_type: String,
-    pub field: String,
-    pub auth_action: AuthAction,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub auth_type: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub field: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub auth_action: Option<AuthAction>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub old_value: Option<String>,
-    pub new_value: String
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub new_value: Option<String>
 }
 
 impl GetAuthRuleOperation {
-    pub fn new(auth_type: String, field: String, auth_action: AuthAction,
-               old_value: Option<String>, new_value: String) -> GetAuthRuleOperation {
+    pub fn new(auth_type: Option<String>, field: Option<String>, auth_action: Option<AuthAction>,
+               old_value: Option<String>, new_value: Option<String>) -> GetAuthRuleOperation {
         GetAuthRuleOperation {
             _type: GET_AUTH_RULE.to_string(),
             auth_type,
