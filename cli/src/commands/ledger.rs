@@ -1271,6 +1271,7 @@ pub mod auth_rule_command {
 
         if let Some(result) = response.result.as_mut() {
             result["txn"]["data"]["auth_type"] = get_txn_title(&result["txn"]["data"]["auth_type"]);
+            result["txn"]["data"]["constraint"] = serde_json::Value::String(::serde_json::to_string_pretty(&result["txn"]["data"]["constraint"]).unwrap());
         }
 
         let res = handle_transaction_response(response)
