@@ -196,6 +196,8 @@ See section "Release channels" for more details.
 
 Clone the repo and run `mac.build.sh` in the `libindy` folder.
 
+Please see [here](docs/build-guides/mac-build.md) for manual build steps.
+
 ### RHEL-based distributions (Amazon Linux 2017.03)
 Pre-built libraries are not provided for RHEL-based distributions. Please look [here](docs/build-guides/rhel-build.md)
 for details on building from source for RHEL-based distributions.
