@@ -4,9 +4,11 @@ import random
 import os
 from ctypes import cdll
 from time import sleep
+import platform
 
 import logging
 
+from demo_utils import file_ext
 from vcx.api.connection import Connection
 from vcx.api.credential_def import CredentialDef
 from vcx.api.issuer_credential import IssuerCredential
@@ -38,7 +40,7 @@ provisionConfig = {
 
 async def main():
 
-    payment_plugin = cdll.LoadLibrary("libnullpay.so")
+    payment_plugin = cdll.LoadLibrary('libnullpay' + file_ext())
     payment_plugin.nullpay_init()
 
     print("#1 Provision an agent and wallet, get back configuration details")
