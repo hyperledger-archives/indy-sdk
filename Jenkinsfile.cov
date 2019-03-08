@@ -14,12 +14,25 @@ def testing () {
             image = dockerBuild("indy-sdk-kcov", "ci/code_coverage.dockerfile ci/")
         }
         
+        try {
+            stage("Starting test pool") {
+                createPool()
+            }
 
-        stage("Collecting test coverage") {
-            image.inside("--security-opt seccomp=unconfined") {
-                sh 'cargo build --manifest-path=libindy/Cargo.toml' // create libindy.so
+            stage("Collecting test coverage") {
+                image.inside("--security-opt seccomp=unconfined") {
+                    sh 'cargo build --manifest-path=libindy/Cargo.toml' // create libindy.so
 
-                calcCoverageRust("libindy")
+                    calcCoverageRust("libindy")
+                    calcCoverageRust("cli")
+                    calcCoverageRust("libnullpay")
+                    //TODO add libvcx
+                    //calcCoverageRust("vcx/libvcx")
+                }
+            }
+        } finally {
+            stage("Destroying test pool") {
+                destroyPool()
             }
         }
     }
