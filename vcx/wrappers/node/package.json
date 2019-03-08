@@ -57,7 +57,7 @@
         "typedoc": "0.11.1",
         "typescript": "^2.9.1"
     },
-    "main": "dist/index.js",
+    "main": "dist/src/index.js",
     "homepage": "https://github.com/evernym/vcx#readme",
     "name": "node-vcx-wrapper"
 }
