@@ -70,3 +70,9 @@ impl ToErrorCode for ProofError {
     }
 }
 
+impl From<u32> for ProofError{
+    fn from(err: u32) -> Self {
+        ProofError::CommonError(err)
+    }
+}
+

@@ -70,8 +70,7 @@ pub extern fn indy_issuer_create_schema(command_handle: IndyHandle,
     trace!("indy_issuer_create_schema: entity >>> issuer_did: {:?}, name: {:?}, version: {:?}, attrs: {:?}", issuer_did, name, version, attrs);
 
     if attrs.is_empty() {
-        set_current_error(&err_msg(IndyErrorKind::InvalidStructure, "Empty list of Schema attributes has been passed"));
-        return ErrorCode::CommonInvalidStructure;
+        return err_msg(IndyErrorKind::InvalidStructure, "Empty list of Schema attributes has been passed").into();
     }
 
     let result = CommandExecutor::instance()
@@ -682,6 +681,7 @@ pub extern fn indy_prover_create_master_secret(command_handle: IndyHandle,
 ///      "nonce": string
 ///    }
 /// cred_req_metadata_json: Credential request metadata json for further processing of received form Issuer credential.
+///     Note: cred_req_metadata_json mustn't be shared with Issuer.
 ///
 /// #Errors
 /// Annoncreds*
@@ -1508,7 +1508,7 @@ pub  extern fn indy_prover_close_credentials_search_for_proof_req(command_handle
 /// Each proof is associated with a credential and corresponding schema_id, cred_def_id, rev_reg_id and timestamp.
 /// There is also aggregated proof part common for all credential proofs.
 ///     {
-///         "requested": {
+///         "requested_proof": {
 ///             "revealed_attrs": {
 ///                 "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string},
 ///                 "requested_attr4_id": {sub_proof_index: number: string, encoded: string},
@@ -1612,7 +1612,7 @@ pub extern fn indy_prover_create_proof(command_handle: IndyHandle,
 ///     }
 /// proof_json: created for request proof json
 ///     {
-///         "requested": {
+///         "requested_proof": {
 ///             "revealed_attrs": {
 ///                 "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string},
 ///                 "requested_attr4_id": {sub_proof_index: number: string, encoded: string},

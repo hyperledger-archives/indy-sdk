@@ -12,8 +12,8 @@ In your maven project add to pom.xml file next content:
     
     
     <repository>
-        <id>evernym</id>
-        <url>https://repo.evernym.com/artifactory/libindy-maven-local</url>
+        <id>sovrin</id>
+        <url>https://repo.sovrin.org/repository/maven-public</url>
     </repository>
 
 2. Inside dependencies tag block add:    
@@ -22,7 +22,7 @@ In your maven project add to pom.xml file next content:
     <dependency>
         <groupId>org.hyperledger</groupId>
         <artifactId>indy</artifactId>
-        <version>1.3.1-dev-410</version>
+        <version>1.8.1-dev-985</version>
     </dependency>
      
 Note that before you can use java wrapper you must install  c-callable SDK. 

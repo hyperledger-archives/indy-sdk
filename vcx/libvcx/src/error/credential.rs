@@ -54,3 +54,9 @@ impl From<payment::PaymentError> for CredentialError {
         CredentialError::PaymentError(error)
     }
 }
+
+impl From<u32> for CredentialError{
+    fn from(err: u32) -> Self {
+        CredentialError::CommonError(err)
+    }
+}
