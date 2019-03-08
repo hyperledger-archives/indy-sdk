@@ -317,6 +317,7 @@ The blinded master secret is a part of the credential request.
      "nonce": string
    }
 cred_req_metadata_json: Credential request metadata json for further processing of received form Issuer credential.
+    Note: cred_req_metadata_json mustn't be shared with Issuer.
 ````
 
 Errors: `Annoncreds*`, `Common*`, `Wallet*`
@@ -660,7 +661,7 @@ Each proof is associated with a credential and corresponding schema\_id, cred\_d
 There is also aggregated proof part common for all credential proofs.
 ```
     {
-        "requested": {
+        "requested_proof": {
             "revealed_attrs": {
                 "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string},
                 "requested_attr4_id": {sub_proof_index: number: string, encoded: string},
@@ -714,7 +715,7 @@ All required schemas, public keys and revocation registries must be provided.
 * `proof`: Json - created for request proof json
 ```
     {
-        "requested": {
+        "requested_proof": {
             "revealed_attrs": {
                 "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string},
                 "requested_attr4_id": {sub_proof_index: number: string, encoded: string},
@@ -905,6 +906,8 @@ Errors: `Common*`, `Wallet*`, `Ledger*`, `Crypto*`
 
 #### cryptoAuthCrypt \( wh, senderVk, recipientVk, messageRaw \) -&gt; encryptedMsgRaw
 
+  **** THIS FUNCTION WILL BE DEPRECATED USE packMessage INSTEAD ****
+  
 Encrypt a message by authenticated-encryption scheme.
 
 Sender can encrypt a confidential message specifically for Recipient, using Sender's public key.
@@ -926,6 +929,8 @@ Errors: `Common*`, `Wallet*`, `Ledger*`, `Crypto*`
 
 #### cryptoAuthDecrypt \( wh, recipientVk, encryptedMsgRaw \) -&gt; \[ senderVk, decryptedMsgRaw \]
 
+  **** THIS FUNCTION WILL BE DEPRECATED USE unpackMessage INSTEAD ****
+  
 Decrypt a message by authenticated-encryption scheme.
 
 Sender can encrypt a confidential message specifically for Recipient, using Sender's public key.
@@ -955,6 +960,8 @@ While the Recipient can verify the integrity of the message, it cannot verify th
 Note to use DID keys with this function you can call keyForDid to get key id \(verkey\)
 for specific DID.
 
+Note: use packMessage function for A2A goals.
+
 * `recipientVk`: String - verkey of message recipient
 * `messageRaw`: Buffer - a pointer to first byte of message that to be encrypted
 * __->__ `encryptedMsgRaw`: Buffer - an encrypted message as a pointer to array of bytes
@@ -971,6 +978,8 @@ While the Recipient can verify the integrity of the message, it cannot verify th
 
 Note to use DID keys with this function you can call keyForDid to get key id \(verkey\)
 for specific DID.
+
+Note: use unpackMessage function for A2A goals.
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `recipientVk`: String - id \(verkey\) of my key. The key must be created by calling createKey or createAndStoreMyDid

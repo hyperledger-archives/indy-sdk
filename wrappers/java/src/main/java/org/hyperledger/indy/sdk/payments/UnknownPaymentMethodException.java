@@ -17,14 +17,4 @@ public class UnknownPaymentMethodException extends IndyException {
     public UnknownPaymentMethodException() {
         super(MESSAGE, ErrorCode.UnknownPaymentMethod.value());
     }
-
-    /**
-     * Initializes a new {@link UnknownPaymentMethodException}
-     *
-     * @param sdkMessage The SDK error message.
-     * @param sdkBacktrace The SDK error backtrace.
-     */
-    public UnknownPaymentMethodException(String sdkMessage, String sdkBacktrace) {
-        super(sdkMessage, ErrorCode.UnknownPaymentMethod.value(), sdkBacktrace);
-    }
 }

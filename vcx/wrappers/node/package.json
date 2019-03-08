@@ -20,7 +20,7 @@
         "url": "git+https://github.com/evernym/vcx.git",
         "type": "git"
     },
-    "version": "0.2.1",
+    "version": "0.2.2",
     "dependencies": {
         "@types/ffi": "0.0.19",
         "@types/node": "^8.0.47",
@@ -57,7 +57,7 @@
         "typedoc": "0.11.1",
         "typescript": "^2.9.1"
     },
-    "main": "dist/index.js",
+    "main": "dist/src/index.js",
     "homepage": "https://github.com/evernym/vcx#readme",
     "name": "node-vcx-wrapper"
 }
