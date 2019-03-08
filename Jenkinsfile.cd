@@ -35,6 +35,9 @@ try {
 }
 
 def testing() {
+    stage('Static Analysis') {
+        staticValidation()
+    }
     stage('Testing') {
         parallel([
                 'ubuntu-test' : { ubuntuTesting() },
@@ -96,6 +99,31 @@ def notifyingFailure() {
     currentBuild.result = "FAILED"
     node('ubuntu-master') {
         sendNotification.fail([slack: true])
+    }
+}
+
+def staticValidation() {
+    parallel([
+            'libindy'   : { runValdiationRust('libindy') },
+            'libnullpay': { runValdiationRust('libnullpay') },
+            'libvcx'    : { runValdiationRust('vcx/libvcx') },
+            'cli'       : { runValdiationRust('cli') }
+    ])
+}
+
+def runValdiationRust(dir) {
+    node('ubuntu') {
+        checkout scm
+        if (dir == 'vcx/libvcx') {
+            testEnv = dockerBuild("static-validation-libvcx", "vcx/ci/ubuntu.dockerfile .")
+        } else {
+            testEnv = dockerBuild("static-validation-libindy", "libindy/ci/ubuntu.dockerfile libindy/ci")
+        }
+        testEnv.inside {
+            //FIXME waiting on IS-823
+            //sh "cargo clippy --manifest-path ${dir}/Cargo.toml"
+            sh "cargo clippy --manifest-path ${dir}/Cargo.toml -- -W clippy::style -W clippy::correctness -W clippy::complexity -W clippy::perf"
+        }
     }
 }
 
@@ -369,11 +397,10 @@ def linuxVcxBuild(file, env_name, network_name, stashBuildResults) {
 
         libvcxBuildFinished[env_name] = true
 
+        sh "cp vcx/libvcx/libindy.so vcx/dummy-cloud-agent"
 
         testEnv.inside("--network=${network_name}") {
-            echo "${env_name} Libvcx Test: Run Cloud Agent"
             sh '''
-                cp vcx/libvcx/libindy.so vcx/dummy-cloud-agent
                 cd vcx/dummy-cloud-agent
                 LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy=info cargo run sample-config.json &
             '''
@@ -382,6 +409,20 @@ def linuxVcxBuild(file, env_name, network_name, stashBuildResults) {
             sh '''
                 cd vcx/libvcx
                 LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=vcx=debug,indy=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release --features "pool_tests agency"
+            '''
+        }
+
+        testEnv.inside("--network=${network_name}") {
+            sh '''
+                cd vcx/dummy-cloud-agent
+                sed -i 's/\\("protocol_type": "\\)1.0/\\12.0/' sample-config.json
+                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy=info cargo run sample-config.json &
+            '''
+
+            echo "${env_name} Libvcx Test: Run vcx demo test for protocol version 2.0"
+            sh '''
+                cd vcx/libvcx
+                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=vcx=debug,indy=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test  --release --features "pool_tests agency_v2" tests::test_real_proof_for_protocol_type_v2 -- --exact
             '''
         }
     }
@@ -492,7 +533,7 @@ def linuxVcxJavaTesting(env_name, network_name, testEnv, stashBuildResults) {
 def linuxVcxPythonTesting(env_name, network_name, testEnv, stashBuildResults) {
     unstash name: "VcxPythonLibvcxSO${env_name}"
     unstash name: "VcxPythonLibindyAndLibnullpaySO${env_name}"
-    
+
     dir('vcx/wrappers/python3') {
         testEnv.inside {
             echo "${env_name} Vcx Test: Test python wrapper"
@@ -660,16 +701,14 @@ def ubuntuTesting() {
 }
 
 def linuxAndroidOnEmulatorTesting(env_name, network_name, testEnv, stashBuildResult) {
-    dir('libindy') {
-        sh 'chmod -R 777 ci/*.sh'
-        sh 'chmod -R 777 *.sh'
+    sh 'chmod -R 777 libindy/ci/*.sh'
+    sh 'chmod -R 777 libindy/*.sh'
 
-        def emu_arch = "x86"
+    def emu_arch = "x86"
 
-        echo "${env_name} Libindy Test: Test on ${emu_arch} emulator"
-        testEnv.inside("--network=${network_name}") {
-            sh "./android.test.sh ${emu_arch} --release"
-        }
+    echo "${env_name} Libindy Test: Test on ${emu_arch} emulator"
+    testEnv.inside("--network=${network_name}") {
+        sh "cd libindy && ./android.test.sh ${emu_arch} --release"
     }
 }
 
@@ -706,7 +745,7 @@ def iosTesting() {
                 createSimulators()
 
                 withEnv([
-                    "BUNDLE_PATH=$HOME/.gem.indy_sdk"
+                        "BUNDLE_PATH=$HOME/.gem.indy_sdk"
                 ]) {
                     dir('wrappers/ios') {
                         echo "iOS Test: Installing ruby, bundler and gems"
@@ -842,7 +881,7 @@ def ubuntuPublishing() {
                 libindyDebPublishing(testEnv, libindyVersion)
 
                 pythonWrapperPublishing(testEnv, false, 'wrappers/python', 'libindy')
-                nodejsWrapperPublishing(testEnv, false, 'wrappers/nodejs', 'libindy')
+                nodejsWrapperPublishing(testEnv, false, 'libindy')
                 javaWrapperPublishing(testEnv, false)
                 rustWrapperPublishing(testEnv, false)
                 libindyCliDebPublishing(testEnv, libindyVersion)
@@ -850,7 +889,7 @@ def ubuntuPublishing() {
                 libvcxDebPublishing(testEnv)
                 vcxJavaWrapperPublishing(testEnv, false)
                 pythonWrapperPublishing(testEnv, false, 'vcx/wrappers/python3', 'vcx/libvcx')
-                nodejsWrapperPublishing(testEnv, false, 'vcx/wrappers/node', 'vcx/libvcx')
+                nodejsWrapperPublishing(testEnv, false,'vcx')
             }
             finally {
                 echo 'Publish Ubuntu files: Cleanup'
@@ -945,7 +984,7 @@ def windowsPublishArtifact(testEnv, folder, packageName, packageType, packageVer
 
         withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'repo_key')]) {
             withEnv([
-                "SOVRIN_REPO_HOST=$SOVRIN_REPO_HOST",
+                    "SOVRIN_REPO_HOST=$SOVRIN_REPO_HOST",
             ]) {
                 sh "ci/win-zip-and-upload.sh $folder $packageName $packageType $packageVersion '${repo_key}' $env.BRANCH_NAME $env.BUILD_NUMBER"
             }
@@ -1093,18 +1132,30 @@ def pythonWrapperPublishing(testEnv, isRelease, directory, base_library) {
     }
 }
 
-def nodejsWrapperPublishing(testEnv, isRelease, directory, base_library) {
-    def version = getSrcVersion(base_library)
+def nodejsWrapperPublishing(testEnv, isRelease, library) {
+    def paths = ['libindy': ['dir': 'wrappers/nodejs', 'base_library': 'libindy'],
+                 'vcx'    : ['dir': 'vcx/wrappers/node', 'base_library': 'vcx/libvcx']]
+
+    def version = getSrcVersion(paths[library]['base_library'])
+
     def suffix = getSuffix(isRelease, "nodejs")
 
-    testEnv.inside {
-        withCredentials([file(credentialsId: 'npm_credentials', variable: 'credentialsFile')]) {
-            sh 'cp $credentialsFile ~/.npmrc'
+    dir(paths[library]['dir']) {
+        testEnv.inside {
+            if (library == 'vcx') { // need addition step for VCX to create .js files
+                sh "npm run compile"
+            }
 
-            sh "cd $directory && " +
-                    "npm version --no-git-tag-version --allow-same-version $version$suffix &&" +
-                    "npm publish"
+            npmPublish(version, suffix)
         }
+    }
+}
+
+def npmPublish(version, suffix) {
+    withCredentials([file(credentialsId: 'npm_credentials', variable: 'credentialsFile')]) {
+        sh 'cp $credentialsFile ~/.npmrc'
+        sh "npm version --no-git-tag-version --allow-same-version $version$suffix"
+        sh "npm publish"
     }
 }
 
@@ -1147,7 +1198,7 @@ def vcxJavaWrapperPublishing(testEnv, isRelease) {
                 sh "chmod +x ci/publishJar.sh"
 
                 withEnv([
-                    "MAVEN_ADD_OPTIONS=$mavenDeployAddOptions",
+                        "MAVEN_ADD_OPTIONS=$mavenDeployAddOptions",
                 ]) {
                     sh 'ci/publishJar.sh'
                 }
@@ -1185,7 +1236,7 @@ def publishingRCtoStable() {
                 pythonWrapperPublishing(testEnv, true, 'wrappers/python', 'libindy')
 
                 echo 'Moving Ubuntu RC artifacts to Stable: nodejs wrapper'
-                nodejsWrapperPublishing(testEnv, true, 'wrappers/nodejs', 'libindy')
+                nodejsWrapperPublishing(testEnv, true, 'libindy')
 
                 echo 'Moving Ubuntu RC artifacts to Stable: java wrapper'
                 javaWrapperPublishing(testEnv, true)
@@ -1218,7 +1269,7 @@ def publishingRCtoStable() {
                 pythonWrapperPublishing(testEnv, true, 'vcx/wrappers/python3', 'vcx/libvcx')
 
                 echo 'Moving Ubuntu RC artifacts to Stable: vcx nodejs wrapper'
-                nodejsWrapperPublishing(testEnv, true, 'vcx/wrappers/node', 'vcx/libvcx')
+                nodejsWrapperPublishing(testEnv, true, 'vcx')
 
                 echo 'Moving Android RC artifacts to Stable: libindy'
                 publishLibindAndroidFilesRCtoStable(libindyVersion)
@@ -1457,7 +1508,7 @@ def androidPublishArtifact(buildEnv, arch, packageVersion, artifact) {
 
         withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'repo_key')]) {
             withEnv([
-                "SOVRIN_REPO_HOST=$SOVRIN_REPO_HOST",
+                    "SOVRIN_REPO_HOST=$SOVRIN_REPO_HOST",
             ]) {
                 sh "ci/android-zip-and-upload.sh $arch $packageVersion '${repo_key}' $env.BRANCH_NAME $env.BUILD_NUMBER $artifact"
             }
@@ -1466,7 +1517,11 @@ def androidPublishArtifact(buildEnv, arch, packageVersion, artifact) {
 }
 
 def linuxModuleTesting(file, env_name, network_name, module_tester, stashBuildResults) {
-    node('ubuntu') {
+    linuxModuleTesting(file, env_name, network_name, module_tester, stashBuildResults, 'ubuntu')
+}
+
+def linuxModuleTesting(file, env_name, network_name, module_tester, stashBuildResults, node_label) {
+    node(node_label) {
         def poolInst
         try {
             echo "${env_name} Test: Checkout csm"
@@ -1488,7 +1543,7 @@ def androidTesting() {
     network_name = "pool_network"
     parallel([
             "${env_name}-android-test"    : {
-                linuxModuleTesting("ci/ubuntu.dockerfile ci", env_name, network_name, this.&linuxAndroidOnEmulatorTesting, false)
+                linuxModuleTesting("ci/ubuntu.dockerfile ci", env_name, network_name, this.&linuxAndroidOnEmulatorTesting, false, 'android')
             },
             "${env_name}-android-building": { androidBuildAsTesting() }
     ])

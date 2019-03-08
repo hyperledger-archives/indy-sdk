@@ -15,15 +15,4 @@ public class InvalidStateException extends IndyException
 	{
 		super(message, ErrorCode.CommonInvalidState.value());
 	}
-
-	/**
-	 * Initializes a new InvalidStateException.
-	 *
-	 * @param sdkMessage The SDK error message.
-	 * @param sdkBacktrace The SDK error backtrace.
-	 */
-	public InvalidStateException(String sdkMessage, String sdkBacktrace)
-    {
-    	super(sdkMessage, ErrorCode.CommonInvalidState.value(), sdkBacktrace);
-    }
 }
