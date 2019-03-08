@@ -194,16 +194,7 @@ See section "Release channels" for more details.
 
 ### MacOS
 
-Pre-built libraries are not provided for MacOS. Please look [here](docs/build-guides/mac-build.md)
-for details on building from source for MacOS.
-
- **Note:** After building `libindy`, add the path containing the library the `LD_LIBRARY_PATH` and
-`DYLD_LIBRARY_PATH` environment variables. This is necessary for dynamically linking
-your application with `libindy`. The dynamic linker will first check for the library in
-`LD_LIBRARY_PATH` if the library in your application doesn't include directory names.
-If the library in your application does include any directory name, then dynamic
-linker will search for the library in `DYLD_LIBRARY_PATH` (not `LD_LIBRARY_PATH`)
-so we recommend you set both variables to be safe.
+Clone the repo and run `mac.build.sh` in the `libindy` folder.
 
 ### RHEL-based distributions (Amazon Linux 2017.03)
 Pre-built libraries are not provided for RHEL-based distributions. Please look [here](docs/build-guides/rhel-build.md)
