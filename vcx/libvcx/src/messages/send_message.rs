@@ -3,7 +3,9 @@ extern crate serde_json;
 extern crate serde;
 extern crate rmp_serde;
 
+use connection;
 use settings;
+use api::VcxStateType;
 use utils::httpclient;
 use utils::error;
 use serde::Deserialize;
@@ -195,6 +197,41 @@ fn parse_send_message_response(response: Vec<u8>) -> Result<String, u32> {
     serde_json::to_string(&response).or(Err(error::INVALID_JSON.code_num))
 }
 
+pub fn send_generic_message(connection_handle: u32, msg: &str, msg_type: &str, msg_title: &str) -> Result<String, u32> {
+
+    if connection::get_state(connection_handle) != VcxStateType::VcxStateAccepted as u32 {
+        return Err(error::NOT_READY.code_num)
+    }
+
+    let agent_did = connection::get_agent_did(connection_handle).map_err(|e| error::INVALID_CONNECTION_HANDLE.code_num)?;
+    let agent_vk = connection::get_agent_verkey(connection_handle).map_err(|e| error::INVALID_CONNECTION_HANDLE.code_num)?;
+    let did = connection::get_pw_did(connection_handle).map_err(|x| error::INVALID_CONNECTION_HANDLE.code_num)?;
+    let vk = connection::get_pw_verkey(connection_handle).map_err(|x| error::INVALID_CONNECTION_HANDLE.code_num)?;
+    let remote_vk = connection::get_their_pw_verkey(connection_handle).map_err(|x| error::INVALID_CONNECTION_HANDLE.code_num)?;
+
+    let data = connection::generate_encrypted_payload(&vk, &remote_vk, &msg, msg_type)
+            .map_err(|e| error::UNKNOWN_LIBINDY_ERROR.code_num)?;
+
+    match send_message().to(&did)
+        .to_vk(&vk)
+        .msg_type(msg_type)
+        .edge_agent_payload(&data)
+        .agent_did(&agent_did)
+        .agent_vk(&agent_vk)
+        .set_title(&msg_title)
+        .set_detail(&msg_title)
+        .status_code(&MessageResponseCode::MessageAccepted.as_string())
+        .send_secure() {
+        Err(x) => {
+            warn!("could not send message: {}", x);
+            return Err(x);
+        },
+        Ok(response) => {
+            let msg_uid = parse_msg_uid(&response[0]).map_err(|ec| error::INVALID_HTTP_RESPONSE.code_num)?;
+            return Ok(msg_uid);
+        }
+    }
+}
 
 pub fn parse_msg_uid(response: &str) -> Result<String,u32> {
     serde_json::from_str::<serde_json::Value>(response)
@@ -281,5 +318,34 @@ mod tests {
         let to_str = serde_json::to_string(&test_json).unwrap();
         let uid = parse_msg_uid(&to_str).unwrap_err();
         assert_eq!(error::INVALID_JSON.code_num, uid);
+    }
+
+    #[cfg(feature = "agency")]
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn test_send_generic_message() {
+        init!("agency");
+        let institution_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
+        let (faber, alice) = ::connection::tests::create_connected_connections();
+
+        match send_generic_message(alice, "this is the message", "type", "title") {
+            Ok(x) => println!("message id: {}", x),
+            Err(x) => panic!("paniced! {}", x),
+        };
+        ::utils::devsetup::tests::set_consumer();
+        let all_messages = get_message::download_messages(None, None, None).unwrap();
+        println!("{}", serde_json::to_string(&all_messages).unwrap());
+        teardown!("agency");
+    }
+
+    #[test]
+    fn test_send_generic_message_fails_with_invalid_connection() {
+        init!("true");
+        let handle = ::connection::tests::build_test_connection();
+
+        match send_generic_message(handle, "this is the message", "type", "title") {
+            Ok(x) => panic!("test shoudl fail: {}", x),
+            Err(x) => assert_eq!(x, error::NOT_READY.code_num),
+        };
     }
 }

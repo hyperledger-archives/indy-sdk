@@ -1,4 +1,5 @@
 import * as ffi from 'ffi'
+import * as ref from 'ref'
 import { VCXInternalError } from '../errors'
 import { rustAPI } from '../rustlib'
 import { createFFICallbackPromise } from '../utils/ffi-helpers'
@@ -37,6 +38,27 @@ export interface IConnectOptions {
   data: string
 }
 
+export interface IMessageData {
+  msg: string,
+  type: string,
+  title: string
+}
+
+export interface ISignatureData {
+  data: Buffer,
+  signature: Buffer
+}
+
+function voidPtrToUint8Array (origPtr: any, length: number): Buffer {
+  /**
+   * Read the contents of the pointer and copy it into a new Buffer
+   */
+  const ptrType = ref.refType('uint8 *')
+  const pointerBuf = ref.alloc(ptrType, origPtr)
+  const newPtr = ref.readPointer(pointerBuf, 0, length)
+  const newBuffer = Buffer.from(newPtr)
+  return newBuffer
+}
 /**
  * @class Class representing a Connection
  */
@@ -170,6 +192,119 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
                 return
               }
               resolve(details)
+            })
+        )
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
+  /**
+   * Sends a message to the connection.
+   *
+   * Example:
+   * ```
+   * msg_id = await connection.send_message(
+   *     {msg:"are you there?",type:"question","title":"Sending you a question"})
+   * ```
+   * @returns {Promise<string}
+   */
+  public async sendMessage (msgData: IMessageData): Promise<string> {
+    try {
+      return await createFFICallbackPromise<string>(
+          (resolve, reject, cb) => {
+            const rc = rustAPI().vcx_connection_send_message(0, this.handle,
+              msgData.msg, msgData.type, msgData.title, cb)
+            if (rc) {
+              reject(rc)
+            }
+          },
+          (resolve, reject) => ffi.Callback(
+            'void',
+            ['uint32', 'uint32', 'string'],
+            (xHandle: number, err: number, details: string) => {
+              if (err) {
+                reject(err)
+                return
+              }
+              if (!details) {
+                reject(`Connection ${this.sourceId} connect returned empty string`)
+                return
+              }
+              resolve(details)
+            })
+        )
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
+  /**
+   * Sign data using pairwise key.
+   *
+   * Example:
+   * ```
+   * signature = await connection.signData(bufferOfBits)
+   * ```
+   * @returns {Promise<string}
+   */
+  public async signData (data: Buffer): Promise<Buffer> {
+    try {
+      return await createFFICallbackPromise<Buffer>(
+          (resolve, reject, cb) => {
+            const rc = rustAPI().vcx_connection_sign_data(0, this.handle,
+              ref.address(data), data.length, cb)
+            if (rc) {
+              reject(rc)
+            }
+          },
+          (resolve, reject) => ffi.Callback(
+            'void',
+            ['uint32', 'uint32', 'pointer', 'uint32'],
+            (xHandle: number, err: number, details: any, length: number) => {
+              if (err) {
+                reject(err)
+                return
+              }
+              if (!details) {
+                reject(`Connection ${this.sourceId}  returned empty buffer`)
+                return
+              }
+              const newBuffer = voidPtrToUint8Array(details, length)
+              resolve(newBuffer)
+            })
+        )
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
+  /**
+   * Verify the signature of the data using pairwise key.
+   *
+   * Example:
+   * ```
+   * valid = await connection.verifySignature({data: bufferOfBits, signature: signatureBits})
+   * ```
+   * @returns {Promise<string}
+   */
+  public async verifySignature (signatureData: ISignatureData): Promise<boolean> {
+    try {
+      return await createFFICallbackPromise<boolean>(
+          (resolve, reject, cb) => {
+            const rc = rustAPI().vcx_connection_verify_signature(0, this.handle,
+              ref.address(signatureData.data), signatureData.data.length,
+              ref.address(signatureData.signature), signatureData.signature.length, cb)
+            if (rc) {
+              reject(rc)
+            }
+          },
+          (resolve, reject) => ffi.Callback(
+            'void',
+            ['uint32', 'uint32', 'bool'],
+            (xHandle: number, err: number, valid: boolean) => {
+              if (err) {
+                reject(err)
+                return
+              }
+              resolve(valid)
             })
         )
     } catch (err) {
