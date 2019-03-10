@@ -88,7 +88,8 @@ pub struct ProofRequestMessage{
     validate_rc: u32,
     pub msg_ref_id: Option<String>,
     from_timestamp: Option<u64>,
-    to_timestamp: Option<u64>
+    to_timestamp: Option<u64>,
+    pub thread_id: Option<String>
 }
 
 impl ProofPredicates {
@@ -122,6 +123,7 @@ impl ProofRequestMessage {
             msg_ref_id: None,
             from_timestamp: None,
             to_timestamp: None,
+            thread_id: None,
         }
     }
 
