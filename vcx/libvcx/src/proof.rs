@@ -9,7 +9,8 @@ use connection;
 use api::{VcxStateType, ProofStateType};
 use messages::proofs::proof_message::{ProofMessage, CredInfo};
 use messages;
-use messages::{RemoteMessageType, PayloadKinds};
+use messages::RemoteMessageType;
+use messages::payload::{Payloads, PayloadKinds, Thread};
 use messages::proofs::proof_request::ProofRequestMessage;
 use messages::GeneralMessage;
 use utils::error;
@@ -53,7 +54,8 @@ pub struct Proof {
     remote_vk: String,
     agent_did: String,
     agent_vk: String,
-    revocation_interval: RevocationInterval
+    revocation_interval: RevocationInterval,
+    thread: Option<Thread>
 }
 
 impl Proof {
@@ -286,7 +288,7 @@ impl Proof {
             .set_title(&title)?
             .set_detail(&title)?
             .agent_vk(&self.agent_vk)?
-            .edge_agent_payload(&self.prover_vk, &self.remote_vk, &proof_request, PayloadKinds::ProofRequest).or(Err(ProofError::ProofConnectionError()))?
+            .edge_agent_payload(&self.prover_vk, &self.remote_vk, &proof_request, PayloadKinds::ProofRequest, self.thread.clone()).or(Err(ProofError::ProofConnectionError()))?
             .send_secure()
             .map_err(|err| {
                 warn!("{} could not send proofReq: {}", self.source_id, err);
@@ -315,12 +317,17 @@ impl Proof {
                                                               &self.agent_vk)
             .map_err(|ec| ProofError::ProofMessageError(ec))?;
 
-        let payload = messages::Payload::decrypted(&self.prover_vk, &payload).map_err(|ec| ProofError::CommonError(ec))?;
+        let (payload, thread) = Payloads::decrypt(&self.prover_vk, &payload).map_err(|ec| ProofError::CommonError(ec))?;
 
         self.proof = match parse_proof_payload(&payload) {
             Err(err) => return Ok(self.get_state()),
             Ok(x) => Some(x),
         };
+
+        if let Some(tr) = thread {
+            let remote_did = self.remote_did.as_str();
+            self.thread.as_mut().map(|thread| thread.increment_receiver(&remote_did));
+        }
 
         self.state = VcxStateType::VcxStateAccepted;
 
@@ -416,7 +423,8 @@ pub fn create_proof(source_id: String,
         remote_vk: String::new(),
         agent_did: String::new(),
         agent_vk: String::new(),
-        revocation_interval: revocation_details
+        revocation_interval: revocation_details,
+        thread: Some(Thread::new()),
     };
 
     new_proof.validate_proof_request().map_err(|ec| ProofError::CommonError(ec))?;
@@ -564,7 +572,8 @@ mod tests {
             remote_vk: VERKEY.to_string(),
             agent_did: DID.to_string(),
             agent_vk: VERKEY.to_string(),
-            revocation_interval: RevocationInterval { from: None, to: None }
+            revocation_interval: RevocationInterval { from: None, to: None },
+            thread: Some(Thread::new()),
         })
     }
 
@@ -726,7 +735,8 @@ mod tests {
             remote_vk: VERKEY.to_string(),
             agent_did: DID.to_string(),
             agent_vk: VERKEY.to_string(),
-            revocation_interval: RevocationInterval { from: None, to: None }
+            revocation_interval: RevocationInterval { from: None, to: None },
+            thread: Some(Thread::new()),
         });
 
         httpclient::set_next_u8_response(PROOF_RESPONSE.to_vec());
@@ -761,7 +771,8 @@ mod tests {
             remote_vk: VERKEY.to_string(),
             agent_did: DID.to_string(),
             agent_vk: VERKEY.to_string(),
-            revocation_interval: RevocationInterval { from: None, to: None }
+            revocation_interval: RevocationInterval { from: None, to: None },
+            thread: Some(Thread::new()),
         });
 
         httpclient::set_next_u8_response(PROOF_RESPONSE.to_vec());
@@ -935,7 +946,8 @@ mod tests {
             remote_vk: VERKEY.to_string(),
             agent_did: DID.to_string(),
             agent_vk: VERKEY.to_string(),
-            revocation_interval: RevocationInterval { from: None, to: None }
+            revocation_interval: RevocationInterval { from: None, to: None },
+            thread: Some(Thread::new()),
         };
         let rc = proof.proof_validation();
         assert!(rc.is_ok());
