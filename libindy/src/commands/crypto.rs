@@ -15,6 +15,7 @@ use std::str;
 use utils::crypto::base64;
 use utils::crypto::chacha20poly1305_ietf;
 use domain::crypto::combo_box::ComboBox;
+use api::WalletHandle;
 
 pub enum CryptoCommand {
     CreateKey(
@@ -148,7 +149,7 @@ impl CryptoCommandExecutor {
         };
     }
 
-    fn create_key(&self, wallet_handle: i32, key_info: &KeyInfo) -> IndyResult<String> {
+    fn create_key(&self, wallet_handle: WalletHandle, key_info: &KeyInfo) -> IndyResult<String> {
         debug!(
             "create_key >>> wallet_handle: {:?}, key_info: {:?}",
             wallet_handle,
@@ -164,7 +165,7 @@ impl CryptoCommandExecutor {
         Ok(res)
     }
 
-    fn crypto_sign(&self, wallet_handle: i32, my_vk: &str, msg: &[u8]) -> IndyResult<Vec<u8>> {
+    fn crypto_sign(&self, wallet_handle: WalletHandle, my_vk: &str, msg: &[u8]) -> IndyResult<Vec<u8>> {
         trace!(
             "crypto_sign >>> wallet_handle: {:?}, sender_vk: {:?}, msg: {:?}",
             wallet_handle, my_vk, msg
@@ -206,7 +207,7 @@ impl CryptoCommandExecutor {
     //TODO begin deprecation process this function. It will be replaced by pack
     fn authenticated_encrypt(
         &self,
-        wallet_handle: i32,
+        wallet_handle: WalletHandle,
         my_vk: &str,
         their_vk: &str,
         msg: &[u8],
@@ -237,7 +238,7 @@ impl CryptoCommandExecutor {
     //TODO begin deprecation process this function. It will be replaced by unpack
     fn authenticated_decrypt(
         &self,
-        wallet_handle: i32,
+        wallet_handle: WalletHandle,
         my_vk: &str,
         msg: &[u8],
     ) -> IndyResult<(String, Vec<u8>)> {
@@ -289,7 +290,7 @@ impl CryptoCommandExecutor {
     }
 
     fn anonymous_decrypt(&self,
-                         wallet_handle: i32,
+                         wallet_handle: WalletHandle,
                          my_vk: &str,
                          encrypted_msg: &[u8]) -> IndyResult<Vec<u8>> {
         trace!(
@@ -314,7 +315,7 @@ impl CryptoCommandExecutor {
         Ok(res)
     }
 
-    fn set_key_metadata(&self, wallet_handle: i32, verkey: &str, metadata: &str) -> IndyResult<()> {
+    fn set_key_metadata(&self, wallet_handle: WalletHandle, verkey: &str, metadata: &str) -> IndyResult<()> {
         debug!(
             "set_key_metadata >>> wallet_handle: {:?}, verkey: {:?}, metadata: {:?}",
             wallet_handle, verkey, metadata
@@ -334,7 +335,7 @@ impl CryptoCommandExecutor {
         Ok(())
     }
 
-    fn get_key_metadata(&self, wallet_handle: i32, verkey: &str) -> IndyResult<String> {
+    fn get_key_metadata(&self, wallet_handle: WalletHandle, verkey: &str) -> IndyResult<String> {
         debug!(
             "get_key_metadata >>> wallet_handle: {:?}, verkey: {:?}",
             wallet_handle, verkey
@@ -362,7 +363,7 @@ impl CryptoCommandExecutor {
         message: Vec<u8>,
         receivers: &str,
         sender_vk: Option<String>,
-        wallet_handle: i32,
+        wallet_handle: WalletHandle,
     ) -> IndyResult<Vec<u8>> {
 
         //parse receivers to structs
@@ -424,7 +425,7 @@ impl CryptoCommandExecutor {
 
     fn _prepare_protected_authcrypt(&self,
                                     receiver_list: Vec<String>, sender_vk: &str,
-                                    wallet_handle: i32,
+                                    wallet_handle: WalletHandle,
     ) -> IndyResult<(String, chacha20poly1305_ietf::Key)> {
         let mut encrypted_recipients_struct : Vec<Recipient> = vec![];
 

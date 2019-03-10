@@ -5,6 +5,7 @@ use services::wallet::{RecordOptions, WalletService};
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::str;
+use api::WalletHandle;
 
 
 pub enum PairwiseCommand {
@@ -69,7 +70,7 @@ impl PairwiseCommandExecutor {
     }
 
     fn pairwise_exists(&self,
-                       wallet_handle: i32,
+                       wallet_handle: WalletHandle,
                        their_did: &str) -> IndyResult<bool> {
         debug!("pairwise_exists >>> wallet_handle: {:?}, their_did: {:?}", wallet_handle, their_did);
 
@@ -81,7 +82,7 @@ impl PairwiseCommandExecutor {
     }
 
     fn create_pairwise(&self,
-                       wallet_handle: i32,
+                       wallet_handle: WalletHandle,
                        their_did: &str,
                        my_did: &str,
                        metadata: Option<&str>) -> IndyResult<()> {
@@ -130,7 +131,7 @@ impl PairwiseCommandExecutor {
     }
 
     fn get_pairwise(&self,
-                    wallet_handle: i32,
+                    wallet_handle: WalletHandle,
                     their_did: &str) -> IndyResult<String> {
         debug!("get_pairwise >>> wallet_handle: {:?}, their_did: {:?}", wallet_handle, their_did);
 
@@ -148,7 +149,7 @@ impl PairwiseCommandExecutor {
 
 
     fn set_pairwise_metadata(&self,
-                             wallet_handle: i32,
+                             wallet_handle: WalletHandle,
                              their_did: &str,
                              metadata: Option<&str>) -> IndyResult<()> {
         debug!("set_pairwise_metadata >>> wallet_handle: {:?}, their_did: {:?}, metadata: {:?}", wallet_handle, their_did, metadata);

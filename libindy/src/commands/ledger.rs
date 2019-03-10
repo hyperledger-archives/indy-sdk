@@ -23,11 +23,12 @@ use services::pool::{
 use services::wallet::{RecordOptions, WalletService};
 use utils::crypto::base58;
 use utils::crypto::signature_serializer::serialize_signature;
+use api::WalletHandle;
 
 pub enum LedgerCommand {
     SignAndSubmitRequest(
         i32, // pool handle
-        i32, // wallet handle
+        WalletHandle,
         String, // submitter did
         String, // request json
         Box<Fn(IndyResult<String>) + Send>),
@@ -375,7 +376,7 @@ impl LedgerCommandExecutor {
 
     fn sign_and_submit_request(&self,
                                pool_handle: i32,
-                               wallet_handle: i32,
+                               wallet_handle: WalletHandle,
                                submitter_did: &str,
                                request_json: &str,
                                cb: Box<Fn(IndyResult<String>) + Send>) {
@@ -389,7 +390,7 @@ impl LedgerCommandExecutor {
     }
 
     fn _sign_request(&self,
-                     wallet_handle: i32,
+                     wallet_handle: WalletHandle,
                      submitter_did: &str,
                      request_json: &str,
                      signature_type: SignatureType) -> IndyResult<String> {
@@ -463,7 +464,7 @@ impl LedgerCommandExecutor {
     }
 
     fn sign_request(&self,
-                    wallet_handle: i32,
+                    wallet_handle: WalletHandle,
                     submitter_did: &str,
                     request_json: &str) -> IndyResult<String> {
         debug!("sign_request >>> wallet_handle: {:?}, submitter_did: {:?}, request_json: {:?}", wallet_handle, submitter_did, request_json);
@@ -476,7 +477,7 @@ impl LedgerCommandExecutor {
     }
 
     fn multi_sign_request(&self,
-                          wallet_handle: i32,
+                          wallet_handle: WalletHandle,
                           submitter_did: &str,
                           request_json: &str) -> IndyResult<String> {
         debug!("multi_sign_request >>> wallet_handle: {:?}, submitter_did: {:?}, request_json: {:?}", wallet_handle, submitter_did, request_json);

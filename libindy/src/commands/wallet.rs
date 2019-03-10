@@ -10,6 +10,7 @@ use services::crypto::CryptoService;
 use services::wallet::{KeyDerivationData, WalletService};
 use utils::crypto::{base58, chacha20poly1305_ietf, randombytes};
 use utils::crypto::chacha20poly1305_ietf::Key as MasterKey;
+use api::WalletHandle;
 
 type DeriveKeyResult<T> = IndyResult<T>;
 
@@ -51,7 +52,7 @@ pub enum WalletCommand {
     Open(Config, // config
          Credentials, // credentials
          Box<Fn(IndyResult<i32>) + Send>),
-    OpenContinue(i32, // wallet handle
+    OpenContinue(WalletHandle,
                  DeriveKeyResult<(MasterKey, Option<MasterKey>)>, // derive_key_result
     ),
     Close(i32, // handle
@@ -64,10 +65,10 @@ pub enum WalletCommand {
                    Metadata, // credentials
                    DeriveKeyResult<MasterKey>,
                    i32),
-    Export(i32, // wallet_handle
+    Export(WalletHandle,
            ExportConfig, // export config
            Box<Fn(IndyResult<()>) + Send>),
-    ExportContinue(i32, // wallet_handle
+    ExportContinue(WalletHandle,
                    ExportConfig, // export config
                    KeyDerivationData,
                    DeriveKeyResult<MasterKey>,
@@ -299,7 +300,7 @@ impl WalletCommandExecutor {
         trace!("_open <<< res: {:?}", res);
     }
 
-    fn _derive_rekey_and_continue(wallet_handle: i32, key_result: MasterKey, rekey_data: KeyDerivationData) {
+    fn _derive_rekey_and_continue(wallet_handle: WalletHandle, key_result: MasterKey, rekey_data: KeyDerivationData) {
         CommandExecutor::instance().send(
             Command::Wallet(WalletCommand::DeriveKey(
                 rekey_data,
@@ -312,7 +313,7 @@ impl WalletCommandExecutor {
         ).unwrap();
     }
 
-    fn _send_open_continue(wallet_handle: i32, key_result: DeriveKeyResult<(MasterKey, Option<MasterKey>)>) {
+    fn _send_open_continue(wallet_handle: WalletHandle, key_result: DeriveKeyResult<(MasterKey, Option<MasterKey>)>) {
         CommandExecutor::instance().send(
             Command::Wallet(WalletCommand::OpenContinue(
                 wallet_handle,
@@ -322,7 +323,7 @@ impl WalletCommandExecutor {
     }
 
     fn _open_continue(&self,
-                      wallet_handle: i32,
+                      wallet_handle: WalletHandle,
                       key_result: DeriveKeyResult<(MasterKey, Option<MasterKey>)>) {
         let cb = self.open_callbacks.borrow_mut().remove(&wallet_handle).unwrap();
         cb(key_result
@@ -470,7 +471,7 @@ impl WalletCommandExecutor {
     }
 
     fn _import_continue(&self,
-                        wallet_handle: i32,
+                        wallet_handle: WalletHandle,
                         config: &Config,
                         credential: &Credentials,
                         key_result: DeriveKeyResult<(MasterKey, MasterKey)>) {

@@ -6,6 +6,7 @@ use domain::wallet::Tags;
 use errors::prelude::*;
 use services::wallet::{RecordOptions, SearchOptions, WalletRecord, WalletSearch, WalletService};
 use utils::sequence;
+use api::WalletHandle;
 
 pub enum NonSecretsCommand {
     AddRecord(i32, // handle
@@ -115,7 +116,7 @@ impl NonSecretsCommandExecutor {
     }
 
     fn add_record(&self,
-                  wallet_handle: i32,
+                  wallet_handle: WalletHandle,
                   type_: &str,
                   id: &str,
                   value: &str,
@@ -132,7 +133,7 @@ impl NonSecretsCommandExecutor {
     }
 
     fn update_record_value(&self,
-                           wallet_handle: i32,
+                           wallet_handle: WalletHandle,
                            type_: &str,
                            id: &str,
                            value: &str) -> IndyResult<()> {
@@ -148,7 +149,7 @@ impl NonSecretsCommandExecutor {
     }
 
     fn update_record_tags(&self,
-                          wallet_handle: i32,
+                          wallet_handle: WalletHandle,
                           type_: &str,
                           id: &str,
                           tags: &Tags) -> IndyResult<()> {
@@ -164,7 +165,7 @@ impl NonSecretsCommandExecutor {
     }
 
     fn add_record_tags(&self,
-                       wallet_handle: i32,
+                       wallet_handle: WalletHandle,
                        type_: &str,
                        id: &str,
                        tags: &Tags) -> IndyResult<()> {
@@ -180,7 +181,7 @@ impl NonSecretsCommandExecutor {
     }
 
     fn delete_record_tags(&self,
-                          wallet_handle: i32,
+                          wallet_handle: WalletHandle,
                           type_: &str,
                           id: &str,
                           tag_names_json: &str) -> IndyResult<()> {
@@ -199,7 +200,7 @@ impl NonSecretsCommandExecutor {
     }
 
     fn delete_record(&self,
-                     wallet_handle: i32,
+                     wallet_handle: WalletHandle,
                      type_: &str,
                      id: &str) -> IndyResult<()> {
         trace!("delete_record >>> wallet_handle: {:?}, type_: {:?}, id: {:?}", wallet_handle, type_, id);
@@ -214,7 +215,7 @@ impl NonSecretsCommandExecutor {
     }
 
     fn get_record(&self,
-                  wallet_handle: i32,
+                  wallet_handle: WalletHandle,
                   type_: &str,
                   id: &str,
                   options_json: &str) -> IndyResult<String> {
@@ -236,7 +237,7 @@ impl NonSecretsCommandExecutor {
     }
 
     fn open_search(&self,
-                   wallet_handle: i32,
+                   wallet_handle: WalletHandle,
                    type_: &str,
                    query_json: &str,
                    options_json: &str) -> IndyResult<i32> {
@@ -259,7 +260,7 @@ impl NonSecretsCommandExecutor {
     }
 
     fn fetch_search_next_records(&self,
-                                 wallet_handle: i32,
+                                 wallet_handle: WalletHandle,
                                  wallet_search_handle: i32,
                                  count: usize) -> IndyResult<String> {
         trace!("fetch_search_next_records >>> wallet_handle: {:?}, wallet_search_handle: {:?}, count: {:?}", wallet_handle, wallet_search_handle, count);
