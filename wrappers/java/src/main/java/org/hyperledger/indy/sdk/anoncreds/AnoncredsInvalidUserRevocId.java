@@ -18,15 +18,4 @@ public class AnoncredsInvalidUserRevocId extends IndyException
 	{
 		super(message, ErrorCode.AnoncredsInvalidUserRevocId.value());
 	}
-	
-	/**
-	 * Initializes a new AnoncredsInvalidUserRevocId.
-	 *
-	 * @param sdkMessage The SDK error message.
-	 * @param sdkBacktrace The SDK error backtrace.
-	 */
-	public AnoncredsInvalidUserRevocId(String sdkMessage, String sdkBacktrace)
-    {
-    	super(sdkMessage, ErrorCode.AnoncredsInvalidUserRevocId.value(), sdkBacktrace);
-    }
 }

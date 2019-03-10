@@ -2,11 +2,11 @@
 use std::fmt;
 use error::ToErrorCode;
 use std::error::Error;
-use utils::error::{ INVALID_CONNECTION_HANDLE,
+use utils::error::{INVALID_CONNECTION_HANDLE,
                    CONNECTION_ERROR, NOT_READY,
                    INVALID_INVITE_DETAILS, INVALID_MSGPACK, INVALID_JSON,
                    UNKNOWN_LIBINDY_ERROR, CANNOT_DELETE_CONNECTION, CREATE_CONNECTION_ERROR,
-                   INVALID_WALLET_SETUP, COMMON_ERROR };
+                   INVALID_WALLET_SETUP, COMMON_ERROR};
 
 #[derive(Debug)]
 pub enum ConnectionError {
@@ -22,6 +22,11 @@ pub enum ConnectionError {
     CommonError(u32),
 }
 
+impl From<u32> for ConnectionError {
+    fn from(err: u32) -> Self {
+        ConnectionError::CommonError(err)
+    }
+}
 
 impl fmt::Display for ConnectionError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -82,20 +87,20 @@ impl Error for ConnectionError {
 }
 
 impl ToErrorCode for ConnectionError {
-   fn to_error_code(&self) -> u32 {
-       match *self {
-           ConnectionError::InvalidHandle() => INVALID_CONNECTION_HANDLE.code_num,
-           ConnectionError::GeneralConnectionError() => CONNECTION_ERROR.code_num,
-           ConnectionError::ConnectionNotReady() => NOT_READY.code_num,
-           ConnectionError::InviteDetailError() => INVALID_INVITE_DETAILS.code_num,
-           ConnectionError::InvalidMessagePack() => INVALID_MSGPACK.code_num,
-           ConnectionError::CannotDeleteConnection() => CANNOT_DELETE_CONNECTION.code_num,
+    fn to_error_code(&self) -> u32 {
+        match *self {
+            ConnectionError::InvalidHandle() => INVALID_CONNECTION_HANDLE.code_num,
+            ConnectionError::GeneralConnectionError() => CONNECTION_ERROR.code_num,
+            ConnectionError::ConnectionNotReady() => NOT_READY.code_num,
+            ConnectionError::InviteDetailError() => INVALID_INVITE_DETAILS.code_num,
+            ConnectionError::InvalidMessagePack() => INVALID_MSGPACK.code_num,
+            ConnectionError::CannotDeleteConnection() => CANNOT_DELETE_CONNECTION.code_num,
            ConnectionError::CreateError(key) => CREATE_CONNECTION_ERROR.code_num,
-           ConnectionError::InvalidWalletSetup() => INVALID_WALLET_SETUP.code_num,
-           ConnectionError::InvalidJson() => INVALID_JSON.code_num,
-           ConnectionError::CommonError(x) => x,
-       }
-   }
+            ConnectionError::InvalidWalletSetup() => INVALID_WALLET_SETUP.code_num,
+            ConnectionError::InvalidJson() => INVALID_JSON.code_num,
+            ConnectionError::CommonError(x) => x,
+        }
+    }
 }
 
 impl PartialEq for ConnectionError {
@@ -108,7 +113,7 @@ impl PartialEq for ConnectionError {
 mod tests {
     use super::*;
     #[test]
-    fn test_to_error_code(){
+    fn test_to_error_code() {
         assert_eq!(ConnectionError::GeneralConnectionError().to_string(), "Error with Connection");
         assert_eq!(ConnectionError::GeneralConnectionError().to_error_code(), CONNECTION_ERROR.code_num);
         assert_eq!(ConnectionError::ConnectionNotReady().to_string(), "Object not ready for specified action");

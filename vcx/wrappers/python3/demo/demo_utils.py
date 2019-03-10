@@ -232,15 +232,12 @@ async def handle_proof_request(my_connection, request):
     print("Sent")
 
 
+EXTENSION = {"darwin": ".dylib", "linux": ".so", "win32": ".dll", 'windows': '.dll'}
+
+
 def file_ext():
-    if platform.system() == 'Linux':
-        return '.so'
-    elif platform.system() == 'Darwin':
-        return '.dylib'
-    elif platform.system() == 'Windows':
-        return '.dll'
-    else:
-        return '.so'
+    your_platform = platform.system().lower()
+    return EXTENSION[your_platform] if (your_platform in EXTENSION) else '.so'
 
 
 # load postgres dll and configure postgres wallet

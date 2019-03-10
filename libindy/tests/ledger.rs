@@ -2168,6 +2168,45 @@ mod medium_cases {
             let res = ledger::build_get_cred_def_request(Some(INVALID_IDENTIFIER), &anoncreds::issuer_1_gvt_cred_def_id());
             assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_cred_def_requests_works_for_hash_field() {
+            let (wallet_handle, pool_handle) = utils::setup_with_wallet_and_pool();
+
+            let (issuer_did, _) = did::create_store_and_publish_my_did_from_trustee(wallet_handle, pool_handle).unwrap();
+
+            let (schema_id, schema_json) = anoncreds::issuer_create_schema(&issuer_did,
+                                                                           GVT_SCHEMA_NAME,
+                                                                           SCHEMA_VERSION,
+                                                                           r#"["enc", "raw", "hash"]"#).unwrap();
+
+            let schema_request = ledger::build_schema_request(&issuer_did, &schema_json).unwrap();
+            let schema_response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &issuer_did, &schema_request).unwrap();
+            pool::check_response_type(&schema_response, ::utils::types::ResponseType::REPLY);
+
+            let get_schema_request = ledger::build_get_schema_request(Some(&issuer_did), &schema_id).unwrap();
+            let get_schema_response = ledger::submit_request_with_retries(pool_handle, &get_schema_request, &schema_response).unwrap();
+            let (_, schema_json) = ledger::parse_get_schema_response(&get_schema_response).unwrap();
+
+            let (cred_def_id, cred_def_json) = anoncreds::issuer_create_credential_definition(wallet_handle,
+                                                                                              &issuer_did,
+                                                                                              &schema_json,
+                                                                                              TAG_1,
+                                                                                              None,
+                                                                                              Some(&anoncreds::default_cred_def_config())).unwrap();
+            let cred_def_request = ledger::build_cred_def_txn(&issuer_did, &cred_def_json).unwrap();
+            let cred_def_response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &issuer_did, &cred_def_request).unwrap();
+            pool::check_response_type(&cred_def_response, ::utils::types::ResponseType::REPLY);
+
+            let get_cred_def_request = ledger::build_get_cred_def_request(Some(DID_MY1), &cred_def_id).unwrap();
+            let get_cred_def_response = ledger::submit_request(pool_handle, &get_cred_def_request).unwrap();
+            let (_, cred_def_json) = ledger::parse_get_cred_def_response(&get_cred_def_response).unwrap();
+
+            let _cred_def: CredentialDefinitionV1 = serde_json::from_str(&cred_def_json).unwrap();
+
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
+        }
     }
 }
 
