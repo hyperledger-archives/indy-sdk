@@ -18,6 +18,7 @@ pub mod openssl;
 pub mod json;
 pub mod libindy;
 pub mod threadpool;
+pub mod uuid;
 
 use std::sync::atomic::{AtomicUsize, ATOMIC_USIZE_INIT, Ordering};
 use std::path::PathBuf;
