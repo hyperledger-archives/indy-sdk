@@ -1,0 +1,40 @@
+@startuml components
+
+[Application] as application
+
+package "Libindy static API" {
+    () "Libindy API" as i_libindy_api
+    application  ..> i_libindy_api
+
+    note left of i_libindy_api
+    Existing APIs Libindy provides
+    and  cannot be replaced,
+    like Anoncred, Wallet and else.
+    end note
+
+    () "A2A State Machine" as i_state_machine
+    application  ..> i_state_machine
+
+    note left of i_state_machine
+    State Machine that defines the minimal
+    set of base messages and transitions
+    every message family must satisfy.
+    end note
+
+}
+
+package "Expandable Libindy API" {
+    () "Message Family API Helpers" as i_custom_api
+    application ..> i_custom_api
+
+    note right of i_custom_api
+    An API that provides a set of functions to
+    support a new custom message family protocol.
+    This API provides functionality like
+    some transport layer implementation,
+    message preparation, parsing responses
+    and else.
+    end note
+}
+
+@enduml
