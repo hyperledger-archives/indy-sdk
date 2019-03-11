@@ -436,7 +436,6 @@ mod tests {
     fn test_download_messages() {
         use std::thread;
         use std::time::Duration;
-        ::utils::logger::LibvcxDefaultLogger::init_testing_logger();
 
         init!("agency");
         let institution_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
