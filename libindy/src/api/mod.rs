@@ -20,6 +20,7 @@ use utils::ctypes;
 pub type IndyHandle = i32;
 
 //pub type WalletHandle = i32;
+#[repr(transparent)]
 #[derive(Debug, Hash, PartialEq, Eq, Copy, Clone)]
 pub struct WalletHandle(pub i32);
 pub const INVALID_WALLET_HANDLE : WalletHandle = WalletHandle(0);
