@@ -9,6 +9,7 @@ pub mod agent_utils;
 pub mod update_connection;
 pub mod update_message;
 pub mod message_type;
+pub mod payload;
 
 use std::u8;
 use settings;
@@ -30,7 +31,6 @@ use self::message_type::*;
 
 use serde::{de, Deserialize, Deserializer, ser, Serialize, Serializer};
 use serde_json::Value;
-use std::collections::HashMap;
 
 #[derive(Debug, Serialize)]
 #[serde(untagged)]
@@ -413,7 +413,7 @@ impl<'de> Deserialize<'de> for A2AMessage {
             MessageTypes::MessageTypeV2(_) =>
                 A2AMessageV2::deserialize(value)
                     .map(|msg| A2AMessage::Version2(msg))
-                    .map_err(de::Error::custom),
+                    .map_err(de::Error::custom)
         }
     }
 }
@@ -492,14 +492,14 @@ pub enum MessageDetail {
 pub struct SendRemoteMessage {
     #[serde(rename = "@type")]
     pub msg_type: MessageTypeV2,
+    #[serde(rename = "@id")]
+    pub id: String,
     pub mtype: RemoteMessageType,
     #[serde(rename = "replyToMsgId")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub reply_to_msg_id: Option<String>,
     #[serde(rename = "sendMsg")]
     pub send_msg: bool,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub uid: Option<String>,
     #[serde(rename = "@msg")]
     msg: Vec<u8>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -513,7 +513,8 @@ pub struct SendRemoteMessage {
 pub struct SendRemoteMessageResponse {
     #[serde(rename = "@type")]
     msg_type: MessageTypes,
-    pub uid: String,
+    #[serde(rename = "@id")]
+    pub id: String,
     pub sent: bool,
 }
 
@@ -561,7 +562,6 @@ impl<'de> Deserialize<'de> for RemoteMessageType {
         }
     }
 }
-
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(untagged)]
@@ -779,14 +779,6 @@ impl A2AMessageKinds {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, PartialEq)]
-pub struct Thread {
-    pub thid: String,
-    pub pthid: Option<String>,
-    pub sender_order: u32,
-    pub received_orders: Option<HashMap<String, u32>>,
-}
-
 pub fn prepare_message_for_agency(message: &A2AMessage, agency_did: &str) -> Result<Vec<u8>, u32> {
     match settings::get_protocol_type() {
         settings::ProtocolTypes::V1 => bundle_for_agency_v1(message, &agency_did),
@@ -904,87 +896,6 @@ pub fn bundle_from_u8(data: Vec<u8>) -> Result<Bundled<Vec<u8>>, u32> {
             error!("could not deserialize bundle with i8 or u8: {}", err);
             error::INVALID_MSGPACK.code_num
         })
-}
-
-#[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
-pub struct Payload {
-    #[serde(rename = "@type")]
-    pub type_: PayloadTypes,
-    #[serde(rename = "@msg")]
-    pub msg: String,
-}
-
-impl Payload {
-    // TODO: Refactor Error
-    // this will become a CommonError, because multiple types (Connection/Issuer Credential) use this function
-    // Possibly this function moves out of this file.
-    // On second thought, this should stick as a ConnectionError.
-    pub fn encrypted(my_vk: &str, their_vk: &str, data: &str, msg_type: PayloadKinds) -> Result<Vec<u8>, u32> {
-        match settings::ProtocolTypes::from(settings::get_protocol_type()) {
-            settings::ProtocolTypes::V1 => {
-                let payload = ::messages::Payload {
-                    type_: PayloadTypes::build_v1(msg_type, "json"),
-                    msg: data.to_string(),
-                };
-
-                let bytes = rmp_serde::to_vec_named(&payload)
-                    .map_err(|err| {
-                        error!("could not encode create_keys msg: {}", err);
-                        error::INVALID_MSGPACK.code_num
-                    })?;
-
-                trace!("Sending payload: {:?}", bytes);
-                ::utils::libindy::crypto::prep_msg(&my_vk, &their_vk, &bytes)
-            }
-            settings::ProtocolTypes::V2 => {
-                let payload = ::messages::Payload {
-                    type_: PayloadTypes::build_v2(msg_type),
-                    msg: data.to_string(),
-                };
-
-                let message = serde_json::to_string(&payload)
-                    .map_err(|err| {
-                        error!("could not serialize create_keys msg: {}", err);
-                        error::INVALID_MSGPACK.code_num
-                    })?;
-
-                let receiver_keys = serde_json::to_string(&vec![&their_vk]).or(Err(error::SERIALIZATION_ERROR.code_num))?;
-
-                trace!("Sending payload: {:?}", message.as_bytes());
-                ::utils::libindy::crypto::pack_message(Some(my_vk), &receiver_keys, message.as_bytes())
-            }
-        }
-    }
-
-    pub fn decrypted(my_vk: &str, payload: &Vec<i8>) -> Result<String, u32> {
-        match settings::ProtocolTypes::from(settings::get_protocol_type()) {
-            settings::ProtocolTypes::V1 => {
-                let (_, data) = crypto::parse_msg(&my_vk, &to_u8(payload))?;
-
-                let my_payload: Payload = rmp_serde::from_slice(&data[..])
-                    .map_err(|err| {
-                        error!("could not deserialize bundle with i8 or u8: {}", err);
-                        error::INVALID_MSGPACK.code_num
-                    })?;
-                Ok(my_payload.msg)
-            }
-            settings::ProtocolTypes::V2 => {
-                let unpacked_msg = crypto::unpack_message(&to_u8(payload))?;
-
-                let message: Value = ::serde_json::from_slice(unpacked_msg.as_slice())
-                    .or(Err(error::INVALID_JSON.code_num))?;
-
-                let message = message["message"].as_str().ok_or(error::INVALID_JSON.code_num)?.to_string();
-
-                let my_payload: Payload = serde_json::from_str(&message)
-                    .map_err(|err| {
-                        error!("could not deserialize bundle with i8 or u8: {}", err);
-                        error::INVALID_MSGPACK.code_num
-                    })?;
-                Ok(my_payload.msg)
-            }
-        }
-    }
 }
 
 fn prepare_forward_message(message: Vec<u8>, did: &str) -> Result<Vec<u8>, u32> {
