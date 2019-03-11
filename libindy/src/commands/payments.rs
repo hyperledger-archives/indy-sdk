@@ -18,19 +18,19 @@ pub enum PaymentsCommand {
         PaymentsMethodCBs, //method callbacks
         Box<Fn(IndyResult<()>) + Send>),
     CreateAddress(
-        i32, //wallet_handle
+        WalletHandle,
         String, //type
         String, //config
         Box<Fn(IndyResult<String>) + Send>),
     CreateAddressAck(
         i32, //handle
-        i32, //wallet handle
+        WalletHandle,
         IndyResult<String /* address */>),
     ListAddresses(
-        i32, //wallet handle
+        WalletHandle,
         Box<Fn(IndyResult<String>) + Send>),
     AddRequestFees(
-        i32, //wallet handle
+        WalletHandle,
         Option<String>, //submitter did
         String, //req
         String, //inputs
@@ -48,7 +48,7 @@ pub enum PaymentsCommand {
         i32, //handle
         IndyResult<String>),
     BuildGetPaymentSourcesRequest(
-        i32, //wallet_handle
+        WalletHandle,
         Option<String>, //submitter did
         String, //payment address
         Box<Fn(IndyResult<(String, String)>) + Send>),
@@ -63,7 +63,7 @@ pub enum PaymentsCommand {
         i32, //cmd_handle
         IndyResult<String>),
     BuildPaymentReq(
-        i32, //wallet_handle
+        WalletHandle,
         Option<String>, //submitter did
         String, //inputs
         String, //outputs
@@ -80,7 +80,7 @@ pub enum PaymentsCommand {
         i32,
         IndyResult<String>),
     BuildMintReq(
-        i32, //wallet_handle
+        WalletHandle,
         Option<String>, //submitter did
         String, //outputs
         Option<String>, //extra
@@ -89,7 +89,7 @@ pub enum PaymentsCommand {
         i32,
         IndyResult<String>),
     BuildSetTxnFeesReq(
-        i32, //wallet_handle
+        WalletHandle,
         Option<String>, //submitter did
         String, //method
         String, //fees
@@ -98,7 +98,7 @@ pub enum PaymentsCommand {
         i32,
         IndyResult<String>),
     BuildGetTxnFeesReq(
-        i32, //wallet_handle
+        WalletHandle,
         Option<String>, //submitter did
         String, //method
         Box<Fn(IndyResult<String>) + Send>),
@@ -113,7 +113,7 @@ pub enum PaymentsCommand {
         i32,
         IndyResult<String>),
     BuildVerifyPaymentReq(
-        i32, //wallet_handle
+        WalletHandle,
         Option<String>, //submitter_did
         String, //receipt
         Box<Fn(IndyResult<(String, String)>) + Send>),

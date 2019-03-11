@@ -9,47 +9,47 @@ use utils::sequence;
 use api::WalletHandle;
 
 pub enum NonSecretsCommand {
-    AddRecord(i32, // handle
+    AddRecord(WalletHandle,
               String, // type
               String, // id
               String, // value
               Option<Tags>, //tags
               Box<Fn(IndyResult<()>) + Send>),
-    UpdateRecordValue(i32, // handle
+    UpdateRecordValue(WalletHandle,
                       String, // type
                       String, // id
                       String, // value
                       Box<Fn(IndyResult<()>) + Send>),
-    UpdateRecordTags(i32, // handle
+    UpdateRecordTags(WalletHandle,
                      String, // type
                      String, // id
                      Tags, //tags
                      Box<Fn(IndyResult<()>) + Send>),
-    AddRecordTags(i32, // handle
+    AddRecordTags(WalletHandle,
                   String, // type
                   String, // id
                   Tags, //tags
                   Box<Fn(IndyResult<()>) + Send>),
-    DeleteRecordTags(i32, // handle
+    DeleteRecordTags(WalletHandle,
                      String, // type
                      String, // id
                      String, //tag names json
                      Box<Fn(IndyResult<()>) + Send>),
-    DeleteRecord(i32, // handle
+    DeleteRecord(WalletHandle,
                  String, // type
                  String, // id
                  Box<Fn(IndyResult<()>) + Send>),
-    GetRecord(i32, // handle
+    GetRecord(WalletHandle,
               String, // type
               String, // id
               String, // options json
               Box<Fn(IndyResult<String>) + Send>),
-    OpenSearch(i32, // handle
+    OpenSearch(WalletHandle,
                String, // type
                String, // query json
                String, // options json
                Box<Fn(IndyResult<i32>) + Send>),
-    FetchSearchNextRecords(i32, // wallet handle
+    FetchSearchNextRecords(WalletHandle,
                            i32, // wallet search handle
                            usize, // count
                            Box<Fn(IndyResult<String>) + Send>),

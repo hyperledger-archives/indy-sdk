@@ -52,7 +52,7 @@ use services::pool::PoolService;
 use services::wallet::{RecordOptions, WalletService};
 
 use super::tails::{SDKTailsAccessor, store_tails_from_generator};
-use api::WalletHandle;
+use api::{WalletHandle, CallbackHandle};
 
 pub enum IssuerCommand {
     CreateSchema(
@@ -62,7 +62,7 @@ pub enum IssuerCommand {
         AttributeNames, // attribute names
         Box<Fn(IndyResult<(String, String)>) + Send>),
     CreateAndStoreCredentialDefinition(
-        i32, // wallet handle
+        WalletHandle,
         String, // issuer did
         Schema, // schema
         String, // tag
@@ -75,7 +75,7 @@ pub enum IssuerCommand {
                                                   CredentialPrivateKey,
                                                   CredentialKeyCorrectnessProof)>) + Send>),
     CreateAndStoreCredentialDefinitionContinue(
-        i32, // config
+        WalletHandle,
         SchemaV1, // credentials
         String,
         String,
@@ -86,7 +86,7 @@ pub enum IssuerCommand {
                     CredentialKeyCorrectnessProof)>,
         i32),
     CreateAndStoreRevocationRegistry(
-        i32, // wallet handle
+        WalletHandle,
         String, // issuer did
         Option<String>, // type
         String, // tag
@@ -95,11 +95,11 @@ pub enum IssuerCommand {
         i32, // tails writer handle
         Box<Fn(IndyResult<(String, String, String)>) + Send>),
     CreateCredentialOffer(
-        i32, // wallet handle
+        WalletHandle,
         String, // credential definition id
         Box<Fn(IndyResult<String>) + Send>),
     CreateCredential(
-        i32, // wallet handle
+        WalletHandle,
         CredentialOffer, // credential offer
         CredentialRequest, // credential request
         HashMap<String, AttributeValues>, // credential values
@@ -107,13 +107,13 @@ pub enum IssuerCommand {
         Option<i32>, // blob storage reader config handle
         Box<Fn(IndyResult<(String, Option<String>, Option<String>)>) + Send>),
     RevokeCredential(
-        i32, // wallet handle
+        WalletHandle,
         i32, // blob storage reader config handle
         String, //revocation revoc id
         String, //credential revoc id
         Box<Fn(IndyResult<String>) + Send>),
     /*    RecoverCredential(
-            i32, // wallet handle
+            WalletHandle,
             i32, // blob storage reader config handle
             String, //revocation revoc id
             String, //credential revoc id
@@ -290,7 +290,7 @@ impl IssuerCommandExecutor {
     }
 
     fn _create_and_store_credential_definition_continue(&self,
-                                                        cb_id: i32,
+                                                        cb_id: CallbackHandle,
                                                         wallet_handle: WalletHandle,
                                                         schema: &SchemaV1,
                                                         schema_id: &str,

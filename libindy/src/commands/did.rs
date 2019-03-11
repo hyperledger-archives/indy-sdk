@@ -22,55 +22,55 @@ use api::WalletHandle;
 
 pub enum DidCommand {
     CreateAndStoreMyDid(
-        i32, // wallet handle
+        WalletHandle,
         MyDidInfo, // my did info
         Box<Fn(IndyResult<(String, String)>) + Send>),
     ReplaceKeysStart(
-        i32, // wallet handle
+        WalletHandle,
         KeyInfo, // key info
         String, // did
         Box<Fn(IndyResult<String>) + Send>),
     ReplaceKeysApply(
-        i32, // wallet handle
+        WalletHandle,
         String, // my did
         Box<Fn(IndyResult<()>) + Send>),
     StoreTheirDid(
-        i32, // wallet handle
+        WalletHandle,
         TheirDidInfo, // their did info json
         Box<Fn(IndyResult<()>) + Send>),
     GetMyDidWithMeta(
-        i32, // wallet handle
+        WalletHandle,
         String, // my did
         Box<Fn(IndyResult<String>) + Send>),
     ListMyDidsWithMeta(
-        i32, // wallet handle
+        WalletHandle,
         Box<Fn(IndyResult<String>) + Send>),
     KeyForDid(
         i32, // pool handle
-        i32, // wallet handle
+        WalletHandle,
         String, // did (my or their)
         Box<Fn(IndyResult<String/*key*/>) + Send>),
     KeyForLocalDid(
-        i32, // wallet handle
+        WalletHandle,
         String, // did (my or their)
         Box<Fn(IndyResult<String/*key*/>) + Send>),
     SetEndpointForDid(
-        i32, // wallet handle
+        WalletHandle,
         String, // did
         Endpoint, // endpoint address and optional verkey
         Box<Fn(IndyResult<()>) + Send>),
     GetEndpointForDid(
-        i32, // wallet handle
+        WalletHandle,
         i32, // pool handle
         String, // did
         Box<Fn(IndyResult<(String, Option<String>)>) + Send>),
     SetDidMetadata(
-        i32, // wallet handle
+        WalletHandle,
         String, // did
         String, // metadata
         Box<Fn(IndyResult<()>) + Send>),
     GetDidMetadata(
-        i32, // wallet handle
+        WalletHandle,
         String, // did
         Box<Fn(IndyResult<String>) + Send>),
     AbbreviateVerkey(
@@ -287,7 +287,7 @@ impl DidCommandExecutor {
         Ok(res)
     }
 
-    fn list_my_dids_with_meta(&self, wallet_handle: i32) -> IndyResult<String> {
+    fn list_my_dids_with_meta(&self, wallet_handle: WalletHandle) -> IndyResult<String> {
         debug!("list_my_dids_with_meta >>> wallet_handle: {:?}", wallet_handle);
 
         let mut did_search =

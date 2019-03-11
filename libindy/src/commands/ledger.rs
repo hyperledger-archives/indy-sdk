@@ -47,12 +47,12 @@ pub enum LedgerCommand {
         Option<i32>, // timeout
         Box<Fn(IndyResult<String>) + Send>),
     SignRequest(
-        i32, // wallet handle
+        WalletHandle,
         String, // submitter did
         String, // request json
         Box<Fn(IndyResult<String>) + Send>),
     MultiSignRequest(
-        i32, // wallet handle
+        WalletHandle,
         String, // submitter did
         String, // request json
         Box<Fn(IndyResult<String>) + Send>),

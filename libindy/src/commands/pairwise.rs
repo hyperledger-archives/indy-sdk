@@ -10,24 +10,24 @@ use api::WalletHandle;
 
 pub enum PairwiseCommand {
     PairwiseExists(
-        i32, // wallet handle
+        WalletHandle,
         String, // their_did
         Box<Fn(IndyResult<bool>) + Send>),
     CreatePairwise(
-        i32, // wallet handle
+        WalletHandle,
         String, // their_did
         String, // my_did
         Option<String>, // metadata
         Box<Fn(IndyResult<()>) + Send>),
     ListPairwise(
-        i32, // wallet handle
+        WalletHandle,
         Box<Fn(IndyResult<String>) + Send>),
     GetPairwise(
-        i32, // wallet handle
+        WalletHandle,
         String, // their_did
         Box<Fn(IndyResult<String>) + Send>),
     SetPairwiseMetadata(
-        i32, // wallet handle
+        WalletHandle,
         String, // their_did
         Option<String>, // metadata
         Box<Fn(IndyResult<()>) + Send>)
@@ -105,7 +105,7 @@ impl PairwiseCommandExecutor {
     }
 
     fn list_pairwise(&self,
-                     wallet_handle: i32) -> IndyResult<String> {
+                     wallet_handle: WalletHandle) -> IndyResult<String> {
         debug!("list_pairwise >>> wallet_handle: {:?}", wallet_handle);
 
         let mut pairwise_search =

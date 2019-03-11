@@ -29,18 +29,18 @@ use api::WalletHandle;
 
 pub enum ProverCommand {
     CreateMasterSecret(
-        i32, // wallet handle
+        WalletHandle,
         Option<String>, // master secret id
         Box<Fn(IndyResult<String>) + Send>),
     CreateCredentialRequest(
-        i32, // wallet handle
+        WalletHandle,
         String, // prover did
         CredentialOffer, // credential offer
         CredentialDefinition, // credential def
         String, // master secret name
         Box<Fn(IndyResult<(String, String)>) + Send>),
     StoreCredential(
-        i32, // wallet handle
+        WalletHandle,
         Option<String>, // credential id
         CredentialRequestMetadata, // credential request metadata
         Credential, // credentials
@@ -48,15 +48,15 @@ pub enum ProverCommand {
         Option<RevocationRegistryDefinition>, // revocation registry definition
         Box<Fn(IndyResult<String>) + Send>),
     GetCredentials(
-        i32, // wallet handle
+        WalletHandle,
         Option<String>, // filter json
         Box<Fn(IndyResult<String>) + Send>),
     GetCredential(
-        i32, // wallet handle
+        WalletHandle,
         String, // credential id
         Box<Fn(IndyResult<String>) + Send>),
     SearchCredentials(
-        i32, // wallet handle
+        WalletHandle,
         Option<String>, // query json
         Box<Fn(IndyResult<(i32, usize)>) + Send>),
     FetchCredentials(
@@ -67,11 +67,11 @@ pub enum ProverCommand {
         i32, // search handle
         Box<Fn(IndyResult<()>) + Send>),
     GetCredentialsForProofReq(
-        i32, // wallet handle
+        WalletHandle,
         ProofRequest, // proof request
         Box<Fn(IndyResult<String>) + Send>),
     SearchCredentialsForProofReq(
-        i32, // wallet handle
+        WalletHandle,
         ProofRequest, // proof request
         Option<ProofRequestExtraQuery>, // extra query
         Box<Fn(IndyResult<i32>) + Send>),
@@ -84,7 +84,7 @@ pub enum ProverCommand {
         i32, // search handle
         Box<Fn(IndyResult<()>) + Send>),
     CreateProof(
-        i32, // wallet handle
+        WalletHandle,
         ProofRequest, // proof request
         RequestedCredentials, // requested credentials
         String, // master secret name

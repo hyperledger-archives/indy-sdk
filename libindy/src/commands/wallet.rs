@@ -10,7 +10,7 @@ use services::crypto::CryptoService;
 use services::wallet::{KeyDerivationData, WalletService};
 use utils::crypto::{base58, chacha20poly1305_ietf, randombytes};
 use utils::crypto::chacha20poly1305_ietf::Key as MasterKey;
-use api::WalletHandle;
+use api::{WalletHandle, CallbackHandle};
 
 type DeriveKeyResult<T> = IndyResult<T>;
 
@@ -48,14 +48,14 @@ pub enum WalletCommand {
                    Credentials, // credentials
                    KeyDerivationData,
                    DeriveKeyResult<MasterKey>, // derive_key_result
-                   i32),
+                   CallbackHandle),
     Open(Config, // config
          Credentials, // credentials
-         Box<Fn(IndyResult<i32>) + Send>),
+         Box<Fn(IndyResult<WalletHandle>) + Send>),
     OpenContinue(WalletHandle,
                  DeriveKeyResult<(MasterKey, Option<MasterKey>)>, // derive_key_result
     ),
-    Close(i32, // handle
+    Close(WalletHandle,
           Box<Fn(IndyResult<()>) + Send>),
     Delete(Config, // config
            Credentials, // credentials
@@ -64,7 +64,7 @@ pub enum WalletCommand {
                    Credentials, // credentials
                    Metadata, // credentials
                    DeriveKeyResult<MasterKey>,
-                   i32),
+                   CallbackHandle),
     Export(WalletHandle,
            ExportConfig, // export config
            Box<Fn(IndyResult<()>) + Send>),
@@ -72,7 +72,7 @@ pub enum WalletCommand {
                    ExportConfig, // export config
                    KeyDerivationData,
                    DeriveKeyResult<MasterKey>,
-                   i32),
+                   CallbackHandle),
     Import(Config, // config
            Credentials, // credentials
            ExportConfig, // import config
@@ -80,7 +80,8 @@ pub enum WalletCommand {
     ImportContinue(Config, // config
                    Credentials, // credentials
                    DeriveKeyResult<(MasterKey, MasterKey)>, // derive_key_result
-                   i32, // handle
+                   WalletHandle,
+                   CallbackHandle
     ),
     GenerateKey(Option<KeyConfig>, // config
                 Box<Fn(IndyResult<String>) + Send>),
@@ -98,8 +99,8 @@ macro_rules! get_cb {
 pub struct WalletCommandExecutor {
     wallet_service: Rc<WalletService>,
     crypto_service: Rc<CryptoService>,
-    open_callbacks: RefCell<HashMap<i32, Box<Fn(IndyResult<i32>) + Send>>>,
-    pending_callbacks: RefCell<HashMap<i32, Box<Fn(IndyResult<()>) + Send>>>
+    open_callbacks: RefCell<HashMap<WalletHandle, Box<Fn(IndyResult<WalletHandle>) + Send>>>,
+    pending_callbacks: RefCell<HashMap<CallbackHandle, Box<Fn(IndyResult<()>) + Send>>>
 }
 
 impl WalletCommandExecutor {
@@ -168,9 +169,9 @@ impl WalletCommandExecutor {
                 debug!(target: "wallet_command_executor", "Import command received");
                 self._import(&config, &credentials, &import_config, cb);
             }
-            WalletCommand::ImportContinue(config, credential, key_result, wallet_handle) => {
+            WalletCommand::ImportContinue(config, credential, key_result, wallet_handle, cb_id) => {
                 debug!(target: "wallet_command_executor", "ImportContinue command received");
-                self._import_continue(wallet_handle, &config, &credential, key_result);
+                self._import_continue(cb_id, wallet_handle, &config, &credential, key_result);
             }
             WalletCommand::GenerateKey(config, cb) => {
                 debug!(target: "wallet_command_executor", "DeriveKey command received");
@@ -232,7 +233,7 @@ impl WalletCommandExecutor {
 
         let key_data = KeyDerivationData::from_passphrase_with_new_salt(&credentials.key, &credentials.key_derivation_method);
 
-        let cb_id = ::utils::sequence::get_next_id();
+        let cb_id : CallbackHandle = ::utils::sequence::get_next_id();
         self.pending_callbacks.borrow_mut().insert(cb_id, cb);
 
         let config = config.clone();
@@ -249,7 +250,7 @@ impl WalletCommandExecutor {
                                 credentials.clone(),
                                 key_data.clone(),
                                 master_key_res,
-                                cb_id,
+                                cb_id
                             ))).unwrap();
                 }))
             )).unwrap();
@@ -258,7 +259,7 @@ impl WalletCommandExecutor {
     }
 
     fn _create_continue(&self,
-                        cb_id: i32,
+                        cb_id: CallbackHandle,
                         config: &Config,
                         credentials: &Credentials,
                         key_data: KeyDerivationData,
@@ -271,7 +272,7 @@ impl WalletCommandExecutor {
     fn _open(&self,
              config: &Config,
              credentials: &Credentials,
-             cb: Box<Fn(IndyResult<i32>) + Send>) {
+             cb: Box<Fn(IndyResult<WalletHandle>) + Send>) {
         trace!("_open >>> config: {:?}, credentials: {:?}", config, secret!(credentials));
 
         let (wallet_handle, key_derivation_data, rekey_data) = try_cb!(self.wallet_service.open_wallet_prepare(config, credentials), cb);
@@ -331,10 +332,10 @@ impl WalletCommandExecutor {
     }
 
     fn _close(&self,
-              handle: i32) -> IndyResult<()> {
-        trace!("_close >>> handle: {:?}", handle);
+              wallet_handle: WalletHandle) -> IndyResult<()> {
+        trace!("_close >>> handle: {:?}", wallet_handle);
 
-        let res = self.wallet_service.close_wallet(handle)?;
+        let res = self.wallet_service.close_wallet(wallet_handle)?;
 
         trace!("_close <<< res: {:?}", res);
         Ok(res)
@@ -348,7 +349,7 @@ impl WalletCommandExecutor {
 
         let (metadata, key_derivation_data) = try_cb!(self.wallet_service.delete_wallet_prepare(&config, &credentials), cb);
 
-        let cb_id = ::utils::sequence::get_next_id();
+        let cb_id: CallbackHandle = ::utils::sequence::get_next_id();
         self.pending_callbacks.borrow_mut().insert(cb_id, cb);
 
         let config = config.clone();
@@ -375,7 +376,7 @@ impl WalletCommandExecutor {
     }
 
     fn _delete_continue(&self,
-                        cb_id: i32,
+                        cb_id: CallbackHandle,
                         config: &Config,
                         credentials: &Credentials,
                         metadata: &Metadata,
@@ -386,7 +387,7 @@ impl WalletCommandExecutor {
     }
 
     fn _export(&self,
-               wallet_handle: i32,
+               wallet_handle: WalletHandle,
                export_config: &ExportConfig,
                cb: Box<Fn(IndyResult<()>) + Send>) {
         trace!("_export >>> handle: {:?}, export_config: {:?}", wallet_handle, secret!(export_config));
@@ -417,8 +418,8 @@ impl WalletCommandExecutor {
     }
 
     fn _export_continue(&self,
-                        cb_id: i32,
-                        wallet_handle: i32,
+                        cb_id: CallbackHandle,
+                        wallet_handle: WalletHandle,
                         export_config: &ExportConfig,
                         key_data: KeyDerivationData,
                         key_result: DeriveKeyResult<MasterKey>) {
@@ -437,7 +438,8 @@ impl WalletCommandExecutor {
 
         let (wallet_handle, key_data, import_key_data) = try_cb!(self.wallet_service.import_wallet_prepare(&config, &credentials, &import_config), cb);
 
-        self.pending_callbacks.borrow_mut().insert(wallet_handle, cb);
+        let cb_id : CallbackHandle = ::utils::sequence::get_next_id();
+        self.pending_callbacks.borrow_mut().insert(cb_id, cb);
 
         let config = config.clone();
         let credentials = credentials.clone();
@@ -459,6 +461,7 @@ impl WalletCommandExecutor {
                                     credentials.clone(),
                                     import_key_result.and_then(|import_key| key_result.map(|key| (import_key, key))),
                                     wallet_handle,
+                                    cb_id
                                 ))).unwrap();
                             }),
                         ))
@@ -471,11 +474,12 @@ impl WalletCommandExecutor {
     }
 
     fn _import_continue(&self,
+                        cb_id: CallbackHandle,
                         wallet_handle: WalletHandle,
                         config: &Config,
                         credential: &Credentials,
                         key_result: DeriveKeyResult<(MasterKey, MasterKey)>) {
-        let cb = get_cb!(self, wallet_handle);
+        let cb = get_cb!(self, cb_id);
         cb(key_result
             .and_then(|key| self.wallet_service.import_wallet_continue(wallet_handle, &config, &credential, key)))
     }
