@@ -4,9 +4,8 @@ use regex::{Regex, Match};
 use failure::{err_msg, Error};
 use domain::a2a::A2AMessageKinds;
 
-pub const MESSAGE_VERSION_V1: &str = "1.0";
-
 pub const DID: &str = "did:sov:123456789abcdefghi1234";
+pub const MESSAGE_VERSION_V1: &str = "1.0";
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(untagged)]

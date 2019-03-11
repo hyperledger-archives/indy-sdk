@@ -7,20 +7,21 @@ use utils::error;
 use connection;
 use messages;
 use messages::GeneralMessage;
-use messages::{RemoteMessageType, PayloadKinds};
-use messages::proofs::proof_message::{ProofMessage };
-use messages::proofs::proof_request::{ ProofRequestMessage, ProofRequestData, NonRevokedInterval };
+use messages::RemoteMessageType;
+use messages::payload::{Payloads, PayloadKinds, Thread};
+use messages::proofs::proof_message::ProofMessage;
+use messages::proofs::proof_request::{ProofRequestMessage, ProofRequestData, NonRevokedInterval};
 use time;
 
 use utils::libindy::anoncreds;
-use utils::libindy::anoncreds::{ get_rev_reg_def_json, get_rev_reg_delta_json };
+use utils::libindy::anoncreds::{get_rev_reg_def_json, get_rev_reg_delta_json};
 
 use settings;
 use utils::httpclient;
-use utils::constants::{ DEFAULT_SERIALIZE_VERSION, CREDS_FROM_PROOF_REQ, DEFAULT_GENERATED_PROOF };
+use utils::constants::{DEFAULT_SERIALIZE_VERSION, CREDS_FROM_PROOF_REQ, DEFAULT_GENERATED_PROOF};
 use utils::libindy::cache::{get_rev_reg_cache, set_rev_reg_cache, RevRegCache, RevState};
 
-use serde_json::{Value};
+use serde_json::Value;
 
 use error::ToErrorCode;
 use error::proof::ProofError;
@@ -44,6 +45,7 @@ impl Default for DisclosedProof {
             their_vk: None,
             agent_did: None,
             agent_vk: None,
+            thread: Some(Thread::new())
         }
     }
 }
@@ -61,6 +63,7 @@ pub struct DisclosedProof {
     their_vk: Option<String>,
     agent_did: Option<String>,
     agent_vk: Option<String>,
+    thread: Option<Thread>
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -84,7 +87,7 @@ pub struct CredInfo {
 }
 
 fn credential_def_identifiers(credentials: &str, proof_req: &ProofRequestData)
-    -> Result<Vec<CredInfo>, ProofError> {
+                              -> Result<Vec<CredInfo>, ProofError> {
 
     let mut rtn = Vec::new();
 
@@ -123,7 +126,7 @@ fn credential_def_identifiers(credentials: &str, proof_req: &ProofRequestData)
                         tails_file,
                     }
                 );
-            } else { return Err(ProofError::InvalidCredData()) }
+            } else { return Err(ProofError::InvalidCredData()); }
         }
     }
 
@@ -131,18 +134,15 @@ fn credential_def_identifiers(credentials: &str, proof_req: &ProofRequestData)
 }
 
 fn _get_revocation_interval(attr_name: &str, proof_req: &ProofRequestData)
-    -> Result<Option<NonRevokedInterval>, ProofError> {
-
+                            -> Result<Option<NonRevokedInterval>, ProofError> {
     if let Some(ref attr) = proof_req.requested_attributes.get(attr_name) {
-
         if let Some(ref interval) = attr.non_revoked {
-            return Ok(Some(NonRevokedInterval {from: interval.from, to: interval.to}))
-        }
-        else if let Some(ref interval) = proof_req.non_revoked {
-            return Ok(Some(NonRevokedInterval { from: interval.from, to: interval.to }))
+            return Ok(Some(NonRevokedInterval { from: interval.from, to: interval.to }));
+        } else if let Some(ref interval) = proof_req.non_revoked {
+            return Ok(Some(NonRevokedInterval { from: interval.from, to: interval.to }));
         }
 
-        return Ok(None)
+        return Ok(None);
     }
     // Todo: Handle case for predicates
 
@@ -157,14 +157,12 @@ fn build_rev_states_json(credentials_identifiers: &mut Vec<CredInfo>) -> Result<
     for cred_info in credentials_identifiers.iter_mut() {
         if let (Some(rev_reg_id), Some(cred_rev_id), Some(tails_file)) =
         (&cred_info.rev_reg_id, &cred_info.cred_rev_id, &cred_info.tails_file) {
-
             if rtn.get(&rev_reg_id).is_none() {
                 let (from, to) = if let Some(ref interval) = cred_info.revocation_interval
-                    { (interval.from, interval.to) }
-                else { (None, None )};
+                    { (interval.from, interval.to) } else { (None, None) };
 
-//                let from = from.unwrap_or(0);
-//                let to = to.unwrap_or(time::get_time().sec as u64);
+                //                let from = from.unwrap_or(0);
+                //                let to = to.unwrap_or(time::get_time().sec as u64);
                 let cache = get_rev_reg_cache(&rev_reg_id);
 
                 let (rev_state_json, timestamp) = if let Some(cached_rev_state) = cache.rev_state {
@@ -175,7 +173,7 @@ fn build_rev_states_json(credentials_identifiers: &mut Vec<CredInfo>) -> Result<
                         let from = match from {
                             Some(from) if from >= cached_rev_state.timestamp => {
                                 Some(cached_rev_state.timestamp)
-                            },
+                            }
                             _ => None
                         };
 
@@ -256,12 +254,10 @@ fn build_rev_states_json(credentials_identifiers: &mut Vec<CredInfo>) -> Result<
     }
 
     Ok(rtn.to_string())
-
 }
 
 impl DisclosedProof {
-
-    fn set_proof_request(&mut self, req: ProofRequestMessage) {self.proof_request = Some(req)}
+    fn set_proof_request(&mut self, req: ProofRequestMessage) { self.proof_request = Some(req) }
 
     fn get_state(&self) -> u32 {
         trace!("DisclosedProof::get_state >>>");
@@ -274,7 +270,7 @@ impl DisclosedProof {
 
     fn retrieve_credentials(&self) -> Result<String, ProofError> {
         trace!("DisclosedProof::set_state >>>");
-        if settings::test_indy_mode_enabled() {return Ok(CREDS_FROM_PROOF_REQ.to_string())}
+        if settings::test_indy_mode_enabled() { return Ok(CREDS_FROM_PROOF_REQ.to_string()); }
 
         let proof_req = self.proof_request
             .as_ref()
@@ -293,7 +289,7 @@ impl DisclosedProof {
         for ref cred_info in credentials_identifiers {
             if rtn.get(&cred_info.schema_id).is_none() {
                 let (_, schema_json) = anoncreds::get_schema_json(&cred_info.schema_id)
-                    .or( Err(ProofError::InvalidSchema()))?;
+                    .or(Err(ProofError::InvalidSchema()))?;
 
                 let schema_json = serde_json::from_str(&schema_json)
                     .or(Err(ProofError::InvalidSchema()))?;
@@ -349,7 +345,7 @@ impl DisclosedProof {
         trace!("DisclosedProof::generate_proof >>> credentials: {}, self_attested_attrs: {}", credentials, self_attested_attrs);
 
         debug!("generating proof {}", self.source_id);
-        if settings::test_indy_mode_enabled() {return Ok(error::SUCCESS.code_num)}
+        if settings::test_indy_mode_enabled() { return Ok(error::SUCCESS.code_num); }
 
         let proof_req = self.proof_request.as_ref()
             .ok_or(ProofError::CreateProofError())?;
@@ -369,10 +365,10 @@ impl DisclosedProof {
 
         let proof = anoncreds::libindy_prover_create_proof(&proof_req_data_json,
                                                            &requested_credentials,
-                                                          &self.link_secret_alias,
+                                                           &self.link_secret_alias,
                                                            &schemas_json,
-                                                          &credential_defs_json,
-                                                          Some(&revoc_states_json)).map_err(|ec| ProofError::CommonError(ec))?;
+                                                           &credential_defs_json,
+                                                           Some(&revoc_states_json)).map_err(|ec| ProofError::CommonError(ec))?;
         let mut proof_msg = ProofMessage::new();
         proof_msg.libindy_proof = proof;
         self.proof = Some(proof_msg);
@@ -414,9 +410,12 @@ impl DisclosedProof {
             false => {
                 let proof: &ProofMessage = self.proof.as_ref().ok_or(ProofError::CreateProofError())?;
                 serde_json::to_string(&proof).or(Err(ProofError::CommonError(error::INVALID_JSON.code_num)))?
-            },
+            }
             true => DEFAULT_GENERATED_PROOF.to_string(),
         };
+
+        let their_did = self.their_did.as_ref().map(String::as_str).unwrap_or("");
+        self.thread.as_mut().map(|thread| thread.increment_receiver(&their_did));
 
         messages::send_message()
             .to(local_my_did)?
@@ -424,16 +423,16 @@ impl DisclosedProof {
             .msg_type(&RemoteMessageType::Proof)?
             .agent_did(local_agent_did)?
             .agent_vk(local_agent_vk)?
-            .edge_agent_payload(&local_my_vk, &local_their_vk, &proof, PayloadKinds::Proof).or(Err(ProofError::ProofConnectionError()))?
+            .edge_agent_payload(&local_my_vk, &local_their_vk, &proof, PayloadKinds::Proof, self.thread.clone()).or(Err(ProofError::ProofConnectionError()))?
             .ref_msg_id(ref_msg_uid)?
             .send_secure()
-            .map_err(|err|{
+            .map_err(|err| {
                 warn!("could not send proof: {}", err);
                 err
             })?;
 
         self.state = VcxStateType::VcxStateAccepted;
-        return Ok(error::SUCCESS.code_num)
+        return Ok(error::SUCCESS.code_num);
     }
 
     fn set_source_id(&mut self, id: &str) { self.source_id = id.to_string(); }
@@ -447,9 +446,9 @@ impl DisclosedProof {
     }
     fn from_str(s: &str) -> Result<DisclosedProof, ProofError> {
         trace!("DisclosedProof::from_str >>> data: {}", s);
-        let s:Value = serde_json::from_str(&s)
+        let s: Value = serde_json::from_str(&s)
             .or(Err(ProofError::InvalidJson()))?;
-        let proof: DisclosedProof= serde_json::from_value(s["data"].clone())
+        let proof: DisclosedProof = serde_json::from_value(s["data"].clone())
             .or(Err(ProofError::InvalidJson()))?;
         Ok(proof)
     }
@@ -461,8 +460,7 @@ impl DisclosedProof {
 fn handle_err(code_num: u32) -> u32 {
     if code_num == error::INVALID_OBJ_HANDLE.code_num {
         error::INVALID_DISCLOSED_PROOF_HANDLE.code_num
-    }
-    else {
+    } else {
         code_num
     }
 }
@@ -491,13 +489,13 @@ pub fn get_state(handle: u32) -> Result<u32, u32> {
 
 // update_state is just the same as get_state for disclosed_proof
 pub fn update_state(handle: u32) -> Result<u32, u32> {
-    HANDLE_MAP.get(handle, |obj|{
+    HANDLE_MAP.get(handle, |obj| {
         Ok(obj.get_state())
     })
 }
 
 pub fn to_string(handle: u32) -> Result<String, u32> {
-    HANDLE_MAP.get(handle, |obj|{
+    HANDLE_MAP.get(handle, |obj| {
         Ok(DisclosedProof::to_string(&obj))
     })
 }
@@ -525,19 +523,19 @@ pub fn release_all() {
 }
 
 pub fn send_proof(handle: u32, connection_handle: u32) -> Result<u32, ProofError> {
-    HANDLE_MAP.get_mut(handle, |obj|{
+    HANDLE_MAP.get_mut(handle, |obj| {
         obj.send_proof(connection_handle).map_err(|e| e.to_error_code())
     }).map_err(|ec| ProofError::CommonError(ec))
 }
 
 pub fn generate_proof(handle: u32, credentials: String, self_attested_attrs: String) -> Result<u32, ProofError> {
-    HANDLE_MAP.get_mut(handle, |obj|{
+    HANDLE_MAP.get_mut(handle, |obj| {
         obj.generate_proof(&credentials, &self_attested_attrs).map_err(|e| e.to_error_code())
     }).map_err(|ec| ProofError::CommonError(ec))
 }
 
 pub fn retrieve_credentials(handle: u32) -> Result<String, ProofError> {
-    HANDLE_MAP.get_mut(handle, |obj|{
+    HANDLE_MAP.get_mut(handle, |obj| {
         obj.retrieve_credentials().map_err(|e| e.to_error_code())
     }).map_err(|ec| ProofError::CommonError(ec))
 }
@@ -566,10 +564,12 @@ pub fn get_proof_request(connection_handle: u32, msg_id: &str) -> Result<String,
     if message[0].msg_type == RemoteMessageType::ProofReq {
         let payload = message.get(0).and_then(|msg| msg.payload.as_ref())
             .ok_or(ProofError::CommonError(error::INVALID_MESSAGES.code_num))?;
-        let request = messages::Payload::decrypted(&my_vk, payload).map_err(|ec| ProofError::CommonError(ec))?;
+        let (request, thread) = Payloads::decrypt(&my_vk, payload).map_err(|ec| ProofError::CommonError(ec))?;
 
         let mut request: ProofRequestMessage = serde_json::from_str(&request)
-           .or(Err(ProofError::CommonError(error::INVALID_HTTP_RESPONSE.code_num)))?;
+            .or(Err(ProofError::CommonError(error::INVALID_HTTP_RESPONSE.code_num)))?;
+
+        request.thread_id = thread.and_then(|tr| tr.thid.clone());
 
         request.msg_ref_id = Some(message[0].uid.to_owned());
         Ok(serde_json::to_string_pretty(&request).or(Err(ProofError::InvalidJson()))?)
@@ -598,16 +598,17 @@ pub fn get_proof_request_messages(connection_handle: u32, match_name: Option<&st
     let mut messages: Vec<ProofRequestMessage> = Default::default();
 
     for msg in payload {
-        if msg.sender_did.eq(&my_did){ continue; }
+        if msg.sender_did.eq(&my_did) { continue; }
 
         if msg.msg_type == RemoteMessageType::ProofReq {
             let payload = msg.payload.ok_or(ProofError::CommonError(error::INVALID_HTTP_RESPONSE.code_num))?;
-            let req = messages::Payload::decrypted(&my_vk, &payload).map_err(|ec| ProofError::CommonError(ec))?;
+            let (req, thread) = Payloads::decrypt(&my_vk, &payload).map_err(|ec| ProofError::CommonError(ec))?;
 
             let mut req: ProofRequestMessage = serde_json::from_str(&req)
                 .or(Err(ProofError::CommonError(error::INVALID_HTTP_RESPONSE.code_num)))?;
 
             req.msg_ref_id = Some(msg.uid.to_owned());
+            req.thread_id = thread.and_then(|tr| tr.thid.clone());
             messages.push(req);
         }
     }
@@ -629,8 +630,8 @@ mod tests {
     use serde_json::Value;
     use utils::{
         constants::{ ADDRESS_CRED_ID, LICENCE_CRED_ID, ADDRESS_SCHEMA_ID,
-                     ADDRESS_CRED_DEF_ID, CRED_DEF_ID, SCHEMA_ID, ADDRESS_CRED_REV_ID,
-                     ADDRESS_REV_REG_ID, REV_REG_ID, CRED_REV_ID, TEST_TAILS_FILE, REV_STATE_JSON },
+        ADDRESS_CRED_DEF_ID, CRED_DEF_ID, SCHEMA_ID, ADDRESS_CRED_REV_ID,
+        ADDRESS_REV_REG_ID, REV_REG_ID, CRED_REV_ID, TEST_TAILS_FILE, REV_STATE_JSON },
         get_temp_dir_path
     };
     #[cfg(feature = "pool_tests")]
@@ -661,7 +662,7 @@ mod tests {
     #[test]
     fn test_create_fails() {
         init!("true");
-        assert_eq!(create_proof("1","{}").err(),
+        assert_eq!(create_proof("1", "{}").err(),
                    Some(ProofError::CommonError(error::INVALID_JSON.code_num)));
     }
 
@@ -672,7 +673,7 @@ mod tests {
         let connection_h = connection::tests::build_test_connection();
 
         let requests = get_proof_request_messages(connection_h, None).unwrap();
-        let requests:Value = serde_json::from_str(&requests).unwrap();
+        let requests: Value = serde_json::from_str(&requests).unwrap();
         let requests = serde_json::to_string(&requests[0]).unwrap();
 
         let handle = create_proof("TEST_CREDENTIAL", &requests).unwrap();
@@ -682,20 +683,20 @@ mod tests {
     }
 
     #[test]
-    fn get_state_test(){
+    fn get_state_test() {
         init!("true");
-        let proof: DisclosedProof =  Default::default();
+        let proof: DisclosedProof = Default::default();
         assert_eq!(VcxStateType::VcxStateNone as u32, proof.get_state());
-        let handle = create_proof("id",::utils::constants::PROOF_REQUEST_JSON).unwrap();
+        let handle = create_proof("id", ::utils::constants::PROOF_REQUEST_JSON).unwrap();
         assert_eq!(VcxStateType::VcxStateRequestReceived as u32, get_state(handle).unwrap())
     }
 
     #[test]
     fn to_string_test() {
         init!("true");
-        let handle = create_proof("id",::utils::constants::PROOF_REQUEST_JSON).unwrap();
+        let handle = create_proof("id", ::utils::constants::PROOF_REQUEST_JSON).unwrap();
         let serialized = to_string(handle).unwrap();
-        let j:Value = serde_json::from_str(&serialized).unwrap();
+        let j: Value = serde_json::from_str(&serialized).unwrap();
         assert_eq!(j["version"], "1.0");
         DisclosedProof::from_str(&serialized).unwrap();
     }
@@ -703,7 +704,7 @@ mod tests {
     #[test]
     fn test_deserialize_fails() {
         assert_eq!(from_string("{}").err(),
-        Some(ProofError::CommonError(error::INVALID_JSON.code_num)));
+                   Some(ProofError::CommonError(error::INVALID_JSON.code_num)));
     }
 
     #[test]
@@ -943,7 +944,7 @@ mod tests {
         // All lower case
         let retrieved_creds = proof.retrieve_credentials().unwrap();
         assert!(retrieved_creds.contains(r#""zip":"84000""#));
-        let ret_creds_as_value:Value = serde_json::from_str(&retrieved_creds).unwrap();
+        let ret_creds_as_value: Value = serde_json::from_str(&retrieved_creds).unwrap();
         assert_eq!(ret_creds_as_value["attrs"]["zip_1"][0]["cred_info"]["attrs"]["zip"], "84000");
         // First letter upper
         req["requested_attributes"]["zip_1"]["name"] = json!("Zip");
@@ -992,7 +993,7 @@ mod tests {
             tails_file: None,
             timestamp: None,
         };
-        let selected_credentials : Value = json!({
+        let selected_credentials: Value = json!({
            "attrs":{
               "height_1":{
                 "credential": {
@@ -1062,7 +1063,7 @@ mod tests {
         assert_eq!(credential_def_identifiers(r#"{"attrs":{}}"#, &proof_req_no_interval()), Ok(Vec::new()));
 
         // missing cred info
-        let selected_credentials : Value = json!({
+        let selected_credentials: Value = json!({
            "attrs":{
               "height_1":{ "interval":null }
            },
@@ -1073,7 +1074,7 @@ mod tests {
         assert_eq!(credential_def_identifiers(&selected_credentials.to_string(), &proof_req_no_interval()), Err(ProofError::InvalidCredData()));
 
         // Optional Revocation
-        let mut selected_credentials : Value = json!({
+        let mut selected_credentials: Value = json!({
            "attrs":{
               "height_1":{
                 "credential": {
@@ -1114,7 +1115,7 @@ mod tests {
         assert_eq!(&credential_def_identifiers(&selected_credentials.to_string(), &proof_req_no_interval()).unwrap(), &creds);
 
         // Missing schema ID
-        let mut selected_credentials : Value = json!({
+        let mut selected_credentials: Value = json!({
            "attrs":{
               "height_1":{
                 "credential": {
@@ -1177,7 +1178,7 @@ mod tests {
         proof.link_secret_alias = "main".to_string();
 
         let all_creds: Value = serde_json::from_str(&proof.retrieve_credentials().unwrap()).unwrap();
-        let selected_credentials : Value = json!({
+        let selected_credentials: Value = json!({
            "attrs":{
               "address1_1": {
                 "credential": all_creds["attrs"]["address1_1"][0],
@@ -1222,7 +1223,7 @@ mod tests {
         }).to_string();
         proof_req.proof_request_data = serde_json::from_str(&indy_proof_req).unwrap();
 
-        let selected_credentials : Value = json!({});
+        let selected_credentials: Value = json!({});
 
         let self_attested: Value = json!({
               "address1_1":"attested_address",
@@ -1397,7 +1398,7 @@ mod tests {
             rev_reg_id: rev_reg_id.clone(),
             cred_rev_id: cred_rev_id,
             tails_file: Some(get_temp_dir_path(Some(TEST_TAILS_FILE)).to_str().unwrap().to_string()),
-            revocation_interval: Some(NonRevokedInterval{from: Some(cached_timestamp + 1), to: None}),
+            revocation_interval: Some(NonRevokedInterval { from: Some(cached_timestamp + 1), to: None }),
             timestamp: None,
         };
         let rev_reg_id = rev_reg_id.unwrap();
@@ -1452,7 +1453,7 @@ mod tests {
             rev_reg_id: rev_reg_id.clone(),
             cred_rev_id: cred_rev_id,
             tails_file: Some(get_temp_dir_path(Some(TEST_TAILS_FILE)).to_str().unwrap().to_string()),
-            revocation_interval: Some(NonRevokedInterval{from: None, to: Some(cached_timestamp - 1)}),
+            revocation_interval: Some(NonRevokedInterval { from: None, to: Some(cached_timestamp - 1) }),
             timestamp: None,
         };
         let rev_reg_id = rev_reg_id.unwrap();
@@ -1489,7 +1490,6 @@ mod tests {
 
     #[test]
     fn test_get_credential_intervals_from_proof_req() {
-
         let proof_req = json!({
             "nonce": "123432421212",
             "name": "proof_req_1",
@@ -1510,11 +1510,11 @@ mod tests {
         assert_eq!(_get_revocation_interval("not here", &proof_req), Err(ProofError::InvalidCredData()));
 
         // attribute interval overrides proof request interval
-        let interval = Some(NonRevokedInterval {from: Some(123), to: Some(456)});
+        let interval = Some(NonRevokedInterval { from: Some(123), to: Some(456) });
         assert_eq!(_get_revocation_interval("address1_1", &proof_req), Ok(interval));
 
         // when attribute interval is None, defaults to proof req interval
-        let interval = Some(NonRevokedInterval {from: Some(098), to: Some(123)});
+        let interval = Some(NonRevokedInterval { from: Some(098), to: Some(123) });
         assert_eq!(_get_revocation_interval("zip_2", &proof_req), Ok(interval));
 
         // No interval provided for attribute or proof req
