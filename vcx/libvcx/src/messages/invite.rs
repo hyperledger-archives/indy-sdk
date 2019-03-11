@@ -1,8 +1,10 @@
 use settings;
 use messages::*;
 use messages::message_type::{MessageTypes, MessageTypeV1, MessageTypeV2};
+use messages::payload::Thread;
 use utils::{httpclient, error};
 use utils::constants::*;
+use utils::uuid::uuid;
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 pub struct SendInviteMessageDetails {
@@ -24,8 +26,8 @@ pub struct ConnectionRequest {
     msg_type: MessageTypeV2,
     #[serde(rename = "sendMsg")]
     send_msg: bool,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    uid: Option<String>,
+    #[serde(rename = "@id")]
+    id: String,
     #[serde(rename = "replyToMsgId")]
     reply_to_msg_id: Option<String>,
     #[serde(rename = "keyDlgProof")]
@@ -36,13 +38,16 @@ pub struct ConnectionRequest {
     phone_no: Option<String>,
     #[serde(rename = "usePublicDID")]
     include_public_did: bool,
+    #[serde(rename = "~thread")]
+    pub thread: Thread,
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 pub struct ConnectionRequestResponse {
     #[serde(rename = "@type")]
     msg_type: MessageTypeV2,
-    uid: String,
+    #[serde(rename = "@id")]
+    id: String,
     #[serde(rename = "inviteDetail")]
     invite_detail: InviteDetail,
     #[serde(rename = "urlToInviteDetail")]
@@ -70,8 +75,8 @@ pub struct ConnectionRequestAnswer {
     msg_type: MessageTypeV2,
     #[serde(rename = "sendMsg")]
     send_msg: bool,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    uid: Option<String>,
+    #[serde(rename = "@id")]
+    id: String,
     #[serde(rename = "replyToMsgId")]
     reply_to_msg_id: Option<String>,
     #[serde(rename = "keyDlgProof")]
@@ -82,6 +87,8 @@ pub struct ConnectionRequestAnswer {
     sender_agency_detail: Option<SenderAgencyDetail>,
     #[serde(rename = "answerStatusCode")]
     answer_status_code: Option<MessageStatusCode>,
+    #[serde(rename = "~thread")]
+    pub thread: Thread,
 }
 
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
@@ -129,6 +136,7 @@ pub struct InviteDetail {
     pub sender_agency_detail: SenderAgencyDetail,
     target_name: String,
     status_msg: String,
+    pub thread_id: Option<String>
 }
 
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
@@ -150,13 +158,15 @@ pub struct SendInviteBuilder {
     agent_did: String,
     agent_vk: String,
     public_did: Option<String>,
+    thread: Thread
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 pub struct ConnectionRequestAnswerResponse {
     #[serde(rename = "@type")]
     msg_type: MessageTypeV2,
-    uid: String,
+    #[serde(rename = "@id")]
+    id: String,
     sent: bool,
 }
 
@@ -184,6 +194,7 @@ impl InviteDetail {
             },
             target_name: String::new(),
             status_msg: String::new(),
+            thread_id: None,
         }
     }
 }
@@ -205,6 +216,7 @@ impl SendInviteBuilder {
             agent_did: String::new(),
             agent_vk: String::new(),
             public_did: None,
+            thread: Thread::new(),
         }
     }
 
@@ -227,6 +239,11 @@ impl SendInviteBuilder {
             validation::validate_phone_number(p_num)?;
             self.payload.phone_no = phone_number.map(String::from);
         }
+        Ok(self)
+    }
+
+    pub fn thread(&mut self, thread: &Thread) -> Result<&mut Self, u32> {
+        self.thread = thread.clone();
         Ok(self)
     }
 
@@ -280,7 +297,8 @@ pub struct AcceptInviteBuilder {
     payload: AcceptInviteMessageDetails,
     agent_did: String,
     agent_vk: String,
-    reply_to_msg_id: Option<String>
+    reply_to_msg_id: Option<String>,
+    thread: Thread
 }
 
 impl AcceptInviteBuilder {
@@ -301,6 +319,7 @@ impl AcceptInviteBuilder {
             agent_did: String::new(),
             agent_vk: String::new(),
             reply_to_msg_id: None,
+            thread: Thread::new(),
         }
     }
 
@@ -327,6 +346,11 @@ impl AcceptInviteBuilder {
 
     pub fn reply_to(&mut self, id: &str) -> Result<&mut Self, u32> {
         self.reply_to_msg_id = Some(id.to_string());
+        Ok(self)
+    }
+
+    pub fn thread(&mut self, thread: &Thread) -> Result<&mut Self, u32> {
+        self.thread = thread.clone();
         Ok(self)
     }
 
@@ -357,7 +381,7 @@ impl AcceptInviteBuilder {
 
         match response.remove(0) {
             A2AMessage::Version1(A2AMessageV1::MessageCreated(res)) => Ok(res.uid),
-            A2AMessage::Version2(A2AMessageV2::ConnectionRequestAnswerResponse(res)) => Ok(res.uid),
+            A2AMessage::Version2(A2AMessageV2::ConnectionRequestAnswerResponse(res)) => Ok(res.id),
             _ => return Err(error::INVALID_HTTP_RESPONSE.code_num)
         }
     }
@@ -405,12 +429,13 @@ impl GeneralMessage for SendInviteBuilder {
                     let msg = ConnectionRequest {
                         msg_type: MessageTypes::build_v2(A2AMessageKinds::ConnectionRequest),
                         send_msg: true,
-                        uid: None,
+                        id: uuid(),
                         reply_to_msg_id: None,
                         key_dlg_proof: self.payload.key_dlg_proof.clone(),
                         target_name: self.payload.target_name.clone(),
                         phone_no: self.payload.phone_no.clone(),
                         include_public_did: self.payload.include_public_did,
+                        thread: self.thread.clone(),
                     };
 
                     vec![A2AMessage::Version2(A2AMessageV2::ConnectionRequest(msg))]
@@ -451,21 +476,20 @@ impl GeneralMessage for AcceptInviteBuilder {
                         uid: None,
                     };
 
-                    let details = self.payload.clone();
-
                     vec![A2AMessage::Version1(A2AMessageV1::CreateMessage(msg_created)),
-                         A2AMessage::Version1(A2AMessageV1::MessageDetail(MessageDetail::ConnectionRequestAnswer(details)))]
+                         A2AMessage::Version1(A2AMessageV1::MessageDetail(MessageDetail::ConnectionRequestAnswer(self.payload.clone())))]
                 }
                 settings::ProtocolTypes::V2 => {
                     let msg = ConnectionRequestAnswer {
                         msg_type: MessageTypes::build_v2(A2AMessageKinds::ConnectionRequestAnswer),
                         send_msg: true,
-                        uid: None,
+                        id: uuid(),
                         reply_to_msg_id: self.reply_to_msg_id.clone(),
                         key_dlg_proof: self.payload.key_dlg_proof.clone(),
                         sender_detail: self.payload.sender_detail.clone(),
                         sender_agency_detail: self.payload.sender_agency_detail.clone(),
                         answer_status_code: self.payload.answer_status_code.clone(),
+                        thread: self.thread.clone(),
                     };
 
                     vec![A2AMessage::Version2(A2AMessageV2::ConnectionRequestAnswer(msg))]
@@ -476,15 +500,24 @@ impl GeneralMessage for AcceptInviteBuilder {
     }
 }
 
-pub fn parse_invitation_acceptance_details(payload: Vec<u8>) -> Result<SenderDetail, u32> {
-    #[serde(rename_all = "camelCase")]
-    #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
-    struct Details {
-        sender_detail: SenderDetail,
-    }
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct Payload {
+    #[serde(rename = "@type")]
+    msg_type: ::messages::payload::PayloadTypes,
+    #[serde(rename = "@msg")]
+    pub msg: Vec<i8>,
+}
 
+#[serde(rename_all = "camelCase")]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+pub struct AcceptanceDetails {
+    pub sender_detail: SenderDetail,
+}
+
+pub fn parse_invitation_acceptance_details(payload: Vec<u8>) -> Result<SenderDetail, u32> {
     debug!("parsing invitation acceptance details: {:?}", payload);
-    let response: Details = rmp_serde::from_slice(&payload[..]).or(Err(error::INVALID_MSGPACK.code_num))?;
+    let response: AcceptanceDetails = rmp_serde::from_slice(&payload[..]).or(Err(error::INVALID_MSGPACK.code_num))?;
     Ok(response.sender_detail)
 }
 

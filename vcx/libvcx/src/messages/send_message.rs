@@ -3,8 +3,9 @@ use connection;
 use api::VcxStateType;
 use messages::*;
 use messages::message_type::MessageTypes;
+use messages::payload::{Payloads, PayloadKinds, Thread};
 use utils::{httpclient, error};
-
+use utils::uuid::uuid;
 
 #[derive(Debug)]
 pub struct SendMessageBuilder {
@@ -58,9 +59,9 @@ impl SendMessageBuilder {
         Ok(self)
     }
 
-    pub fn edge_agent_payload(&mut self, my_vk: &str, their_vk: &str, data: &str, payload_type: PayloadKinds) -> Result<&mut Self, u32> {
+    pub fn edge_agent_payload(&mut self, my_vk: &str, their_vk: &str, data: &str, payload_type: PayloadKinds, thread: Option<Thread>) -> Result<&mut Self, u32> {
         //todo: is this a json value, String??
-        self.payload = Payload::encrypted(my_vk, their_vk, data, payload_type)?;
+        self.payload = Payloads::encrypt(my_vk, their_vk, data, payload_type, thread)?;
         Ok(self)
     }
 
@@ -105,7 +106,7 @@ impl SendMessageBuilder {
                     return Err(error::INVALID_HTTP_RESPONSE.code_num);
                 }
                 1
-            },
+            }
             settings::ProtocolTypes::V2 => 0
         };
 
@@ -113,7 +114,7 @@ impl SendMessageBuilder {
             A2AMessage::Version1(A2AMessageV1::MessageSent(res)) =>
                 Ok(SendResponse { uid: res.uid, uids: res.uids }),
             A2AMessage::Version2(A2AMessageV2::SendRemoteMessageResponse(res)) =>
-                Ok(SendResponse { uid: Some(res.uid.clone()), uids: if res.sent { vec![res.uid] } else { vec![] } }),
+                Ok(SendResponse { uid: Some(res.id.clone()), uids: if res.sent { vec![res.id] } else { vec![] } }),
             _ => return Err(error::INVALID_HTTP_RESPONSE.code_num)
         }
     }
@@ -151,10 +152,10 @@ impl GeneralMessage for SendMessageBuilder {
                 settings::ProtocolTypes::V2 => {
                     let message = SendRemoteMessage {
                         msg_type: MessageTypes::build_v2(A2AMessageKinds::SendRemoteMessage),
+                        id: uuid(),
                         mtype: self.mtype.clone(),
                         reply_to_msg_id: self.ref_msg_id.clone(),
                         send_msg: true,
-                        uid: self.uid.clone(),
                         msg: self.payload.clone(),
                         title: self.title.clone(),
                         detail: self.detail.clone(),
@@ -198,7 +199,7 @@ pub fn send_generic_message(connection_handle: u32, msg: &str, msg_type: &str, m
             .to(&did)?
             .to_vk(&vk)?
             .msg_type(&RemoteMessageType::Other(msg_type.to_string()))?
-            .edge_agent_payload(&vk, &remote_vk, &msg, PayloadKinds::Other(msg_type.to_string()))?
+            .edge_agent_payload(&vk, &remote_vk, &msg, PayloadKinds::Other(msg_type.to_string()), None)?
             .agent_did(&agent_did)?
             .agent_vk(&agent_vk)?
             .set_title(&msg_title)?

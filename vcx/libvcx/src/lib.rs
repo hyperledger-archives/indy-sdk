@@ -29,6 +29,8 @@ extern crate time;
 
 extern crate regex;
 
+extern crate uuid;
+
 #[macro_use]
 pub mod utils;
 pub mod settings;

@@ -12,6 +12,7 @@ use domain::key_deligation_proof::KeyDlgProof;
 use domain::status::{MessageStatusCode, ConnectionStatus};
 use domain::message_type::*;
 use domain::protocol_type::{ProtocolType, ProtocolTypes};
+use domain::payload::Thread;
 
 #[derive(Debug)]
 pub enum A2AMessageV1 {
@@ -359,6 +360,7 @@ pub struct ConnectionRequestMessageDetail {
     pub phone_no: Option<String>,
     #[serde(rename = "usePublicDID")]
     pub use_public_did: Option<bool>,
+    pub thread_id: Option<String>,
 }
 
 impl From<ConnectionRequest> for ConnectionRequestMessageDetail {
@@ -368,6 +370,7 @@ impl From<ConnectionRequest> for ConnectionRequestMessageDetail {
             target_name: con_req.target_name,
             phone_no: con_req.phone_no,
             use_public_did: Some(con_req.include_public_did),
+            thread_id: Some(con_req.id),
         }
     }
 }
@@ -390,6 +393,8 @@ pub struct ConnectionRequestAnswerMessageDetail {
     pub sender_agency_detail: ForwardAgentDetail,
     #[serde(rename = "answerStatusCode")]
     pub answer_status_code: MessageStatusCode,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub thread: Option<Thread>
 }
 
 impl From<ConnectionRequestAnswer> for ConnectionRequestAnswerMessageDetail {
@@ -399,6 +404,7 @@ impl From<ConnectionRequestAnswer> for ConnectionRequestAnswerMessageDetail {
             sender_detail: con_req_answer.sender_detail,
             sender_agency_detail: con_req_answer.sender_agency_detail,
             answer_status_code: con_req_answer.answer_status_code,
+            thread: Some(con_req_answer.thread),
         }
     }
 }
@@ -467,8 +473,8 @@ pub struct ConfigsRemoved {}
 pub struct ConnectionRequest {
     #[serde(rename = "sendMsg")]
     pub send_msg: bool,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub uid: Option<String>,
+    #[serde(rename = "@id")]
+    id: String,
     #[serde(rename = "replyToMsgId")]
     pub reply_to_msg_id: Option<String>,
     #[serde(rename = "keyDlgProof")]
@@ -479,11 +485,14 @@ pub struct ConnectionRequest {
     pub phone_no: Option<String>,
     #[serde(rename = "usePublicDID")]
     pub include_public_did: bool,
+    #[serde(rename = "~thread")]
+    pub thread: Thread,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ConnectionRequestResponse {
-    pub uid: String,
+    #[serde(rename = "@id")]
+    pub id: String,
     #[serde(rename = "inviteDetail")]
     pub invite_detail: InviteDetail,
     #[serde(rename = "urlToInviteDetail")]
@@ -495,8 +504,8 @@ pub struct ConnectionRequestResponse {
 pub struct ConnectionRequestAnswer {
     #[serde(rename = "sendMsg")]
     pub send_msg: bool,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub uid: Option<String>,
+    #[serde(rename = "@id")]
+    pub id: String,
     #[serde(rename = "replyToMsgId")]
     pub reply_to_msg_id: Option<String>,
     #[serde(rename = "keyDlgProof")]
@@ -507,11 +516,14 @@ pub struct ConnectionRequestAnswer {
     pub sender_agency_detail: ForwardAgentDetail,
     #[serde(rename = "answerStatusCode")]
     pub answer_status_code: MessageStatusCode,
+    #[serde(rename = "~thread")]
+    pub thread: Thread,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ConnectionRequestAnswerResponse {
-    pub uid: String,
+    #[serde(rename = "@id")]
+    pub id: String,
     pub sent: bool,
 }
 
@@ -519,13 +531,13 @@ pub struct ConnectionRequestAnswerResponse {
 #[serde(rename_all = "camelCase")]
 pub struct SendRemoteMessage {
     pub mtype: RemoteMessageType,
+    #[serde(rename = "@id")]
+    pub id: String,
     #[serde(rename = "replyToMsgId")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub reply_to_msg_id: Option<String>,
     #[serde(rename = "sendMsg")]
     pub send_msg: bool,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub uid: Option<String>,
     #[serde(rename = "@msg")]
     pub msg: Vec<u8>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -537,7 +549,8 @@ pub struct SendRemoteMessage {
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SendRemoteMessageResponse {
-    pub uid: String,
+    #[serde(rename = "@id")]
+    pub id: String,
     pub sent: bool,
 }
 
