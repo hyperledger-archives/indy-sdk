@@ -79,8 +79,8 @@ impl MessageFamilies {
             MessageFamilies::Onboarding => "1.0",
             MessageFamilies::Pairwise => "1.0",
             MessageFamilies::Configs => "1.0",
-            MessageFamilies::CredentialExchange => "2.0",
-            _ => "2.0"
+            MessageFamilies::CredentialExchange => "1.0",
+            _ => "1.0"
         }
     }
 }

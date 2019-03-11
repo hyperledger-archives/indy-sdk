@@ -155,7 +155,7 @@ pub fn connect_register_provision(config: &str) -> Result<String, u32> {
         settings::set_config_value(settings::CONFIG_WALLET_STORAGE_CREDS, _storage_credentials);
     }
 
-    wallet::init_wallet(&wallet_name, my_config.wallet_type.as_ref().map(String::as_str), 
+    wallet::init_wallet(&wallet_name, my_config.wallet_type.as_ref().map(String::as_str),
                         my_config.storage_config.as_ref().map(String::as_str), my_config.storage_credentials.as_ref().map(String::as_str))?;
     trace!("initialized wallet");
 
@@ -345,7 +345,7 @@ pub fn update_agent_info(id: &str, value: &str) -> Result<(), u32> {
     }
 }
 
-pub fn update_agent_info_v1(to_did: &str, com_method: ComMethod) -> Result<(), u32> {
+fn update_agent_info_v1(to_did: &str, com_method: ComMethod) -> Result<(), u32> {
     if settings::test_agency_mode_enabled() {
         httpclient::set_next_u8_response(REGISTER_RESPONSE.to_vec());
     }
@@ -357,7 +357,7 @@ pub fn update_agent_info_v1(to_did: &str, com_method: ComMethod) -> Result<(), u
     Ok(())
 }
 
-pub fn update_agent_info_v2(to_did: &str, com_method: ComMethod) -> Result<(), u32> {
+fn update_agent_info_v2(to_did: &str, com_method: ComMethod) -> Result<(), u32> {
     let message = A2AMessage::Version2(
         A2AMessageV2::UpdateConnectionMethod(UpdateConnectionMethod::build(com_method))
     );
@@ -365,7 +365,7 @@ pub fn update_agent_info_v2(to_did: &str, com_method: ComMethod) -> Result<(), u
     Ok(())
 }
 
-pub fn send_message_to_agency(message: &A2AMessage, did: &str) -> Result<Vec<A2AMessage>, u32> {
+fn send_message_to_agency(message: &A2AMessage, did: &str) -> Result<Vec<A2AMessage>, u32> {
     let data = prepare_message_for_agency(message, &did)?;
 
     let response = httpclient::post_u8(&data).or(Err(error::INVALID_HTTP_RESPONSE.code_num))?;
