@@ -7,7 +7,7 @@ use issuer_credential::{CredentialOffer, CredentialMessage, PaymentInfo};
 use credential_request::CredentialRequest;
 use messages;
 use messages::{GeneralMessage, RemoteMessageType, ObjectWithVersion};
-use messages::payload::{Payloads, PayloadKinds};
+use messages::payload::{Payloads, PayloadKinds, Thread};
 use messages::get_message;
 use connection;
 use settings;
@@ -42,6 +42,7 @@ impl Default for Credential {
             credential: None,
             payment_info: None,
             payment_txn: None,
+            thread: Some(Thread::new())
         }
     }
 }
@@ -65,6 +66,7 @@ pub struct Credential {
     cred_id: Option<String>,
     payment_info: Option<PaymentInfo>,
     payment_txn: Option<PaymentTxn>,
+    thread: Option<Thread>
 }
 
 impl Credential {
@@ -150,7 +152,7 @@ impl Credential {
                 .msg_type(&RemoteMessageType::CredReq)?
                 .agent_did(local_agent_did)?
                 .agent_vk(local_agent_vk)?
-                .edge_agent_payload(&local_my_vk, &local_their_vk, &cred_req_json, PayloadKinds::CredReq)?
+                .edge_agent_payload(&local_my_vk, &local_their_vk, &cred_req_json, PayloadKinds::CredReq, self.thread.clone())?
                 .ref_msg_id(&offer_msg_id)?
                 .send_secure()
                 .map_err(|err| err.extend(format!("{} could not send proof", self.source_id)))?;
@@ -170,7 +172,12 @@ impl Credential {
 
         let (_, payload) = get_message::get_ref_msg(msg_uid, my_did, my_vk, agent_did, agent_vk)?;
 
-        let credential = Payloads::decrypt(&my_vk, &payload)?;
+        let (credential, thread) = Payloads::decrypt(&my_vk, &payload)?;
+
+        if let Some(_) = thread {
+            let their_did = self.their_did.as_ref().map(String::as_str).unwrap_or("");
+            self.thread.as_mut().map(|thread| thread.increment_receiver(&their_did));
+        }
 
         let credential_msg: CredentialMessage = serde_json::from_str(&credential)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidCredential, format!("Cannot deserialize CredentialMessage: {}", err)))?;
@@ -464,11 +471,14 @@ pub fn get_credential_offer_messages(connection_handle: u32) -> VcxResult<String
 }
 
 fn _set_cred_offer_ref_message(payload: &Vec<i8>, my_vk: &str, msg_id: &str) -> VcxResult<Vec<Value>> {
-    let offer = Payloads::decrypt(my_vk, payload)?;
+    let (offer, thread) = Payloads::decrypt(my_vk, payload)?;
 
     let (mut offer, payment_info) = parse_json_offer(&offer)?;
 
     offer.msg_ref_id = Some(msg_id.to_owned());
+    if let Some(tr) = thread {
+        offer.thread_id = tr.thid.clone();
+    }
 
     let mut payload = Vec::new();
     payload.push(json!(offer));

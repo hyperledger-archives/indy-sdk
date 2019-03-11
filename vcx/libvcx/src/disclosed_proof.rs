@@ -9,7 +9,7 @@ use api::VcxStateType;
 use connection;
 use messages;
 use messages::{GeneralMessage, RemoteMessageType, ObjectWithVersion};
-use messages::payload::{Payloads, PayloadKinds};
+use messages::payload::{Payloads, PayloadKinds, Thread};
 use messages::proofs::proof_message::ProofMessage;
 use messages::proofs::proof_request::{ProofRequestMessage, ProofRequestData, NonRevokedInterval};
 use messages::get_message::Message;
@@ -41,6 +41,7 @@ impl Default for DisclosedProof {
             their_vk: None,
             agent_did: None,
             agent_vk: None,
+            thread: Some(Thread::new())
         }
     }
 }
@@ -58,6 +59,7 @@ pub struct DisclosedProof {
     their_vk: Option<String>,
     agent_did: Option<String>,
     agent_vk: Option<String>,
+    thread: Option<Thread>
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -391,6 +393,7 @@ impl DisclosedProof {
         };
 
         let their_did = self.their_did.as_ref().map(String::as_str).unwrap_or("");
+        self.thread.as_mut().map(|thread| thread.increment_receiver(&their_did));
 
         messages::send_message()
             .to(local_my_did)?
@@ -398,7 +401,7 @@ impl DisclosedProof {
             .msg_type(&RemoteMessageType::Proof)?
             .agent_did(local_agent_did)?
             .agent_vk(local_agent_vk)?
-            .edge_agent_payload(&local_my_vk, &local_their_vk, &proof, PayloadKinds::Proof)
+            .edge_agent_payload(&local_my_vk, &local_their_vk, &proof, PayloadKinds::Proof, self.thread.clone())
             .map_err(|err| VcxError::from_msg(VcxErrorKind::GeneralConnectionError, format!("Cannot encrypt payload: {}", err)))?
             .ref_msg_id(ref_msg_uid)?
             .send_secure()
@@ -575,12 +578,13 @@ fn _parse_proof_req_message(message: &Message, my_vk: &str) -> VcxResult<ProofRe
     let payload = message.payload.as_ref()
         .ok_or(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Cannot get payload"))?;
 
-    let request = Payloads::decrypt(&my_vk, payload)?;
+    let (request, thread) = Payloads::decrypt(&my_vk, payload)?;
 
     let mut request: ProofRequestMessage = serde_json::from_str(&request)
         .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, format!("Cannot deserialize proof request: {}", err)))?;
 
     request.msg_ref_id = Some(message.uid.to_owned());
+    request.thread_id = thread.and_then(|tr| tr.thid.clone());
 
     Ok(request)
 }

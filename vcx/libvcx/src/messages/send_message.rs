@@ -3,7 +3,7 @@ use connection;
 use api::VcxStateType;
 use messages::*;
 use messages::message_type::MessageTypes;
-use messages::payload::{Payloads, PayloadKinds};
+use messages::payload::{Payloads, PayloadKinds, Thread};
 use utils::httpclient;
 use utils::uuid::uuid;
 use error::prelude::*;
@@ -60,11 +60,12 @@ impl SendMessageBuilder {
         Ok(self)
     }
 
-    pub fn edge_agent_payload(&mut self, my_vk: &str, their_vk: &str, data: &str, payload_type: PayloadKinds) -> VcxResult<&mut Self> {
+    pub fn edge_agent_payload(&mut self, my_vk: &str, their_vk: &str, data: &str, payload_type: PayloadKinds, thread: Option<Thread>) -> VcxResult<&mut Self> {
         //todo: is this a json value, String??
-        self.payload = Payloads::encrypt(my_vk, their_vk, data, payload_type)?;
+        self.payload = Payloads::encrypt(my_vk, their_vk, data, payload_type, thread)?;
         Ok(self)
     }
+
 
     pub fn ref_msg_id(&mut self, id: &str) -> VcxResult<&mut Self> {
         self.ref_msg_id = Some(String::from(id));
@@ -200,17 +201,13 @@ pub fn send_generic_message(connection_handle: u32, msg: &str, msg_type: &str, m
             .to(&did)?
             .to_vk(&vk)?
             .msg_type(&RemoteMessageType::Other(msg_type.to_string()))?
-            .edge_agent_payload(&vk, &remote_vk, &msg, PayloadKinds::Other(msg_type.to_string()))?
+            .edge_agent_payload(&vk, &remote_vk, &msg, PayloadKinds::Other(msg_type.to_string()), None)?
             .agent_did(&agent_did)?
             .agent_vk(&agent_vk)?
             .set_title(&msg_title)?
             .set_detail(&msg_title)?
             .status_code(&MessageStatusCode::Accepted)?
-            .send_secure()
-            .map_err(|err| {
-                warn!("could not send message: {}", err);
-                err
-            })?;
+            .send_secure()?;
 
     let msg_uid = response.get_msg_uid()?;
     return Ok(msg_uid);

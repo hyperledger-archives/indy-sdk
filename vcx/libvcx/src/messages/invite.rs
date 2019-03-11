@@ -132,6 +132,7 @@ pub struct InviteDetail {
     pub sender_agency_detail: SenderAgencyDetail,
     target_name: String,
     status_msg: String,
+    pub thread_id: Option<String>
 }
 
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
@@ -188,6 +189,7 @@ impl InviteDetail {
             },
             target_name: String::new(),
             status_msg: String::new(),
+            thread_id: None,
         }
     }
 }
