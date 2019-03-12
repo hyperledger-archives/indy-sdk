@@ -13,10 +13,12 @@ pub struct SendInviteMessageDetails {
     #[serde(rename = "keyDlgProof")]
     key_dlg_proof: KeyDlgProof,
     #[serde(rename = "targetName")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     target_name: Option<String>,
     #[serde(rename = "phoneNo")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     phone_no: Option<String>,
-    #[serde(rename = "usePublicDID")]
+    #[serde(rename = "includePublicDID")]
     include_public_did: bool,
 }
 
@@ -567,5 +569,28 @@ mod tests {
         println!("payload: {:?}", payload);
         let response = parse_invitation_acceptance_details(payload).unwrap();
         println!("response: {:?}", response);
+    }
+
+    #[test]
+    fn test_send_invite_null_parameters() {
+        let details = SendInviteMessageDetails {
+            msg_type: MessageTypeV1 {
+                name: "Name".to_string(),
+                ver: "1.0".to_string()
+            },
+            key_dlg_proof: KeyDlgProof {
+                agent_did: "did".to_string(),
+                agent_delegated_key: "key".to_string(),
+                signature: "sig".to_string(),
+            },
+            target_name: None,
+            phone_no: None,
+            include_public_did: true
+        };
+
+        let string: String = serde_json::to_string(&details).unwrap();
+        assert!(!string.contains("phoneNo"));
+        assert!(!string.contains("targetName"));
+        assert!(string.contains("includePublicDID"));
     }
 }
