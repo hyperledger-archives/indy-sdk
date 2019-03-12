@@ -75,7 +75,3 @@ RUN useradd -ms /bin/bash -u $uid indy
 USER indy
 
 WORKDIR /home/indy
-
-RUN mkdir /home/indy/.cargo
-RUN echo "[target.x86_64-unknown-linux-gnu]" >> /home/indy/.cargo/config
-RUN echo "linker = \"/usr/bin/cc\"" >> /home/indy/.cargo/config
