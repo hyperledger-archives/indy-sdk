@@ -447,6 +447,7 @@ pub struct CreateMessage {
     send_msg: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     uid: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "replyToMsgId")]
     reply_to_msg_id: Option<String>,
 }
@@ -457,7 +458,9 @@ pub struct GeneralMessageDetail {
     msg_type: MessageTypeV1,
     #[serde(rename = "@msg")]
     msg: Vec<u8>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     title: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     detail: Option<String>,
 }
 
@@ -988,5 +991,40 @@ pub mod tests {
         let vec: Vec<u8> = vec![129, 167, 98, 117, 110, 100, 108, 101, 100, 145, 220, 19, 13];
         let buf = to_i8(&vec);
         println!("new bundle: {:?}", buf);
+    }
+
+    #[test]
+    fn test_general_message_null_parameters() {
+        let details = GeneralMessageDetail {
+            msg_type: MessageTypeV1 {
+                name: "Name".to_string(),
+                ver: "1.0".to_string()
+            },
+            msg: vec![1,2,3],
+            title: None,
+            detail: None
+        };
+
+        let string: String = serde_json::to_string(&details).unwrap();
+        assert!(!string.contains("title"));
+        assert!(!string.contains("detail"));
+    }
+
+    #[test]
+    fn test_create_message_null_parameters() {
+        let details = CreateMessage {
+            msg_type: MessageTypeV1 {
+                name: "Name".to_string(),
+                ver: "1.0".to_string()
+            },
+            mtype: RemoteMessageType::ProofReq,
+            send_msg: true,
+            uid: None,
+            reply_to_msg_id: None
+        };
+
+        let string: String = serde_json::to_string(&details).unwrap();
+        assert!(!string.contains("uid"));
+        assert!(!string.contains("replyToMsgId"));
     }
 }
