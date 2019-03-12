@@ -20,7 +20,7 @@ def testing () {
             }
 
             stage("Collecting test coverage") {
-                image.inside("--security-opt seccomp=unconfined") {
+                image.inside("-p 9701-9708:9701-9708 --security-opt seccomp=unconfined") {
                     sh 'cargo build --manifest-path=libindy/Cargo.toml' // create libindy.so
 
                     calcCoverageRust("libindy")
@@ -28,6 +28,8 @@ def testing () {
                     calcCoverageRust("libnullpay")
                     //TODO add libvcx
                     //calcCoverageRust("vcx/libvcx")
+
+                    cobertura coberturaReportFile: 'cov/kcov-merged/cobertura.xml'
                 }
             }
         } finally {
@@ -62,7 +64,7 @@ def calcCoverageRust(dir) {
                 kcov \
                     --exclude-pattern=$CARGO_HOME,/usr/lib \
                     --verify \
-                    ../cov \
+                    $INDY_SDK_DIR/cov \
                     \$i
             done
         '''
