@@ -1,5 +1,7 @@
 @startuml components
 
+title Components
+
 [Application] as application
 
 package "Libindy static API" {
@@ -20,7 +22,6 @@ package "Libindy static API" {
     set of base messages and transitions
     every message family must satisfy.
     end note
-
 }
 
 package "Expandable Libindy API" {
@@ -30,10 +31,10 @@ package "Expandable Libindy API" {
     note right of i_custom_api
     An API that provides a set of functions to
     support a new custom message family protocol.
-    This API provides functionality like
-    some transport layer implementation,
-    message preparation, parsing responses
-    and else.
+    This API provides functionality like:
+    - message builders
+    - response parsers
+    - else
     end note
 }
 
