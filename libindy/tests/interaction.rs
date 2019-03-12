@@ -769,6 +769,8 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_po
 
     // Issuer merge Revocation Registry Deltas
     let _revoc_reg_delta_json = anoncreds::issuer_merge_revocation_registry_deltas(&revoc_reg_delta_json, &revoc_reg_delta3_json).unwrap();
+
+
     // TODO: test if the issuer can submit one delta instead of multiple deltas consequently
 //    let rev_reg_entry_request =
 //        ledger::build_revoc_reg_entry_request(&issuer_did, &rev_reg_id, REVOC_REG_TYPE, &revoc_reg_delta_json).unwrap();
