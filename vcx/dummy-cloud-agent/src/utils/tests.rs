@@ -237,9 +237,9 @@ pub fn compose_connect(wallet_handle: i32) -> BoxedFuture<Vec<u8>, Error> {
         }))];
 
     let msg = A2AMessage::prepare_authcrypted(wallet_handle,
-                                             EDGE_AGENT_DID_VERKEY,
-                                             FORWARD_AGENT_DID_VERKEY,
-                                             &msgs).wait().unwrap();
+                                              EDGE_AGENT_DID_VERKEY,
+                                              FORWARD_AGENT_DID_VERKEY,
+                                              &msgs).wait().unwrap();
     compose_forward(wallet_handle, FORWARD_AGENT_DID, FORWARD_AGENT_DID_VERKEY, msg)
 }
 
@@ -260,9 +260,9 @@ pub fn compose_signup(wallet_handle: i32, pairwise_did: &str, pairwise_verkey: &
     let msgs = [A2AMessage::Version1(A2AMessageV1::SignUp(SignUp {}))];
 
     let msg = A2AMessage::prepare_authcrypted(wallet_handle,
-                                             EDGE_AGENT_DID_VERKEY,
-                                             pairwise_verkey,
-                                             &msgs).wait().unwrap();
+                                              EDGE_AGENT_DID_VERKEY,
+                                              pairwise_verkey,
+                                              &msgs).wait().unwrap();
     compose_forward(wallet_handle,&pairwise_did, FORWARD_AGENT_DID_VERKEY, msg)
 }
 
@@ -282,9 +282,9 @@ pub fn compose_create_agent(wallet_handle: i32, pairwise_did: &str, pairwise_ver
     let msgs = vec![A2AMessage::Version1(A2AMessageV1::CreateAgent(CreateAgent {}))];
 
     let msg = A2AMessage::prepare_authcrypted(wallet_handle,
-                                             EDGE_AGENT_DID_VERKEY,
-                                             pairwise_verkey,
-                                             &msgs).wait().unwrap();
+                                              EDGE_AGENT_DID_VERKEY,
+                                              pairwise_verkey,
+                                              &msgs).wait().unwrap();
     compose_forward(wallet_handle,pairwise_did, FORWARD_AGENT_DID_VERKEY, msg)
 }
 
@@ -309,9 +309,9 @@ pub fn compose_create_key(wallet_handle: i32, agent_did: &str, agent_verkey: &st
         }))];
 
     let msg = A2AMessage::prepare_authcrypted(wallet_handle,
-                                             EDGE_AGENT_DID_VERKEY,
-                                             agent_verkey,
-                                             &msgs).wait().unwrap();
+                                              EDGE_AGENT_DID_VERKEY,
+                                              agent_verkey,
+                                              &msgs).wait().unwrap();
     compose_forward(wallet_handle,agent_did, FORWARD_AGENT_DID_VERKEY, msg)
 }
 
@@ -341,6 +341,7 @@ pub fn compose_create_connection_request(wallet_handle: i32,
                 target_name: None,
                 phone_no: Some(PHONE_NO.to_string()),
                 use_public_did: Some(true),
+                thread_id: None,
             })));
 
     let msgs = [create_msg, msg_details];
@@ -354,7 +355,7 @@ pub fn decompose_connection_request_created(wallet_handle: i32, msg: &[u8]) -> B
             assert_eq!(2, msgs.len());
             match (msgs.remove(0), msgs.remove(0)) {
                 (A2AMessage::Version1(A2AMessageV1::MessageCreated(msg_created)),
-            A2AMessage::Version1(A2AMessageV1::MessageDetail(MessageDetail::ConnectionRequestResp(msg_details)))) =>
+                    A2AMessage::Version1(A2AMessageV1::MessageDetail(MessageDetail::ConnectionRequestResp(msg_details)))) =>
                     Ok((sender_verkey, msg_created.uid, msg_details.invite_detail)),
                 _ => Err(err_msg("Invalid message"))
             }
@@ -391,6 +392,7 @@ pub fn compose_create_connection_request_answer(wallet_handle: i32,
                     endpoint: FORWARD_AGENT_ENDPOINT.to_string(),
                 },
                 answer_status_code: MessageStatusCode::Accepted,
+                thread: None,
             }
         )));
 
@@ -544,9 +546,9 @@ pub fn compose_get_messages_by_connection(wallet_handle: i32,
         pairwise_dids: Vec::new(),
     }))];
     let msg = A2AMessage::prepare_authcrypted(wallet_handle,
-                                             EDGE_AGENT_DID_VERKEY,
-                                             agent_verkey,
-                                             &msgs).wait().unwrap();
+                                              EDGE_AGENT_DID_VERKEY,
+                                              agent_verkey,
+                                              &msgs).wait().unwrap();
     compose_forward(wallet_handle,agent_did, FORWARD_AGENT_DID_VERKEY, msg)
 }
 pub fn decompose_get_messages_by_connection(wallet_handle: i32, msg: &[u8]) -> BoxedFuture<(String, Vec<MessagesByConnection>), Error> {
@@ -572,9 +574,9 @@ pub fn compose_update_configs(wallet_handle: i32, agent_did: &str, agent_verkey:
         }))];
 
     let msg = A2AMessage::prepare_authcrypted(wallet_handle,
-                                             EDGE_AGENT_DID_VERKEY,
-                                             agent_verkey,
-                                             &msgs).wait().unwrap();
+                                              EDGE_AGENT_DID_VERKEY,
+                                              agent_verkey,
+                                              &msgs).wait().unwrap();
 
     compose_forward(wallet_handle, agent_did, FORWARD_AGENT_DID_VERKEY, msg)
 }
@@ -586,9 +588,9 @@ pub fn compose_get_configs(wallet_handle: i32, agent_did: &str, agent_verkey: &s
         }))];
 
     let msg = A2AMessage::prepare_authcrypted(wallet_handle,
-                                             EDGE_AGENT_DID_VERKEY,
-                                             agent_verkey,
-                                             &msgs).wait().unwrap();
+                                              EDGE_AGENT_DID_VERKEY,
+                                              agent_verkey,
+                                              &msgs).wait().unwrap();
 
     compose_forward(wallet_handle, agent_did, FORWARD_AGENT_DID_VERKEY, msg)
 }
@@ -612,9 +614,9 @@ pub fn compose_remove_configs(wallet_handle: i32, agent_did: &str, agent_verkey:
         }))];
 
     let msg = A2AMessage::prepare_authcrypted(wallet_handle,
-                                             EDGE_AGENT_DID_VERKEY,
-                                             agent_verkey,
-                                             &msgs).wait().unwrap();
+                                              EDGE_AGENT_DID_VERKEY,
+                                              agent_verkey,
+                                              &msgs).wait().unwrap();
 
     compose_forward(wallet_handle, agent_did, FORWARD_AGENT_DID_VERKEY, msg)
 }

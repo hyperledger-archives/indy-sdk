@@ -12,6 +12,7 @@ use domain::key_deligation_proof::KeyDlgProof;
 use domain::status::{MessageStatusCode, ConnectionStatus};
 use domain::message_type::*;
 use domain::protocol_type::{ProtocolType, ProtocolTypes};
+use domain::payload::Thread;
 
 #[derive(Debug)]
 pub enum A2AMessageV1 {
@@ -359,6 +360,7 @@ pub struct ConnectionRequestMessageDetail {
     pub phone_no: Option<String>,
     #[serde(rename = "usePublicDID")]
     pub use_public_did: Option<bool>,
+    pub thread_id: Option<String>,
 }
 
 impl From<ConnectionRequest> for ConnectionRequestMessageDetail {
@@ -368,6 +370,7 @@ impl From<ConnectionRequest> for ConnectionRequestMessageDetail {
             target_name: con_req.target_name,
             phone_no: con_req.phone_no,
             use_public_did: Some(con_req.include_public_did),
+            thread_id: Some(con_req.id),
         }
     }
 }
@@ -390,6 +393,8 @@ pub struct ConnectionRequestAnswerMessageDetail {
     pub sender_agency_detail: ForwardAgentDetail,
     #[serde(rename = "answerStatusCode")]
     pub answer_status_code: MessageStatusCode,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub thread: Option<Thread>
 }
 
 impl From<ConnectionRequestAnswer> for ConnectionRequestAnswerMessageDetail {
@@ -399,6 +404,7 @@ impl From<ConnectionRequestAnswer> for ConnectionRequestAnswerMessageDetail {
             sender_detail: con_req_answer.sender_detail,
             sender_agency_detail: con_req_answer.sender_agency_detail,
             answer_status_code: con_req_answer.answer_status_code,
+            thread: Some(con_req_answer.thread),
         }
     }
 }
@@ -479,6 +485,8 @@ pub struct ConnectionRequest {
     pub phone_no: Option<String>,
     #[serde(rename = "usePublicDID")]
     pub include_public_did: bool,
+    #[serde(rename = "~thread")]
+    pub thread: Thread,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -508,6 +516,8 @@ pub struct ConnectionRequestAnswer {
     pub sender_agency_detail: ForwardAgentDetail,
     #[serde(rename = "answerStatusCode")]
     pub answer_status_code: MessageStatusCode,
+    #[serde(rename = "~thread")]
+    pub thread: Thread,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -1281,4 +1291,3 @@ struct UnpackMessage {
     message: String,
     sender_verkey: Option<String>
 }
-
