@@ -95,8 +95,8 @@ fn _if_consensus_reachable(nodes_votes: &HashMap<(String, usize, Option<Vec<Stri
                            pool_name: &str) -> IndyResult<CatchupProgress> {
     let reps_cnt: usize = nodes_votes.values().map(HashSet::len).sum();
     let positive_votes_cnt = votes_cnt + (node_cnt - reps_cnt);
-    let is_consensus_reachable = positive_votes_cnt < node_cnt - f;
-    if is_consensus_reachable {
+    let is_consensus_not_reachable = positive_votes_cnt < node_cnt - f;
+    if is_consensus_not_reachable {
         //TODO: maybe we should change the error, but it was made to escape changing of ErrorCode returned to client
         _try_to_restart_catch_up(pool_name, err_msg(IndyErrorKind::PoolTimeout, "No consensus possible"))
     } else {

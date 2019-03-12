@@ -1510,7 +1510,7 @@ pub mod tests {
             assert_match!(&RequestState::CatchupConsensus(_), &request_handler.request_wrapper.as_ref().unwrap().state);
 
             request_handler.process_event(Some(RequestEvent::LedgerStatus(LedgerStatus::default(), Some("n3".to_string()), Some(MerkleTree::default()))));
-            assert_match!(&RequestState::CatchupConsensus(_), &request_handler.request_wrapper.as_ref().unwrap().state);
+            assert_match!(&RequestState::Finish(_), &request_handler.request_wrapper.as_ref().unwrap().state);
             request_handler.process_event(Some(RequestEvent::LedgerStatus(LedgerStatus::default(), Some("n4".to_string()), Some(MerkleTree::default()))));
             assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
         }
