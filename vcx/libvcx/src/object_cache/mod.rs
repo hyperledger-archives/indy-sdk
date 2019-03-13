@@ -1,12 +1,11 @@
-extern crate rand;
-
 use rand::Rng;
 use std::sync::Mutex;
 use std::sync::MutexGuard;
 use std::collections::HashMap;
 use std::ops::Deref;
 use std::ops::DerefMut;
-use utils::error;
+
+use error::prelude::*;
 
 pub struct ObjectCache<T>{
     pub store: Mutex<HashMap<u32, Mutex<T>>>,
@@ -23,12 +22,12 @@ impl<T> Default for ObjectCache<T> {
 
 impl<T> ObjectCache<T> {
 
-    fn _lock_store(&self) -> Result<MutexGuard<HashMap<u32, Mutex<T>>>, u32> {
+    fn _lock_store(&self) -> VcxResult<MutexGuard<HashMap<u32, Mutex<T>>>> {
         match self.store.lock() {
             Ok(g) => Ok(g),
             Err(e) => {
                 error!("Unable to lock Object Store: {:?}", e);
-                Err(10)
+                Err(VcxError::from_msg(VcxErrorKind::Common(10), format!("Unable to lock Object Store: {:?}", e)))
             }
         }
     }
@@ -41,33 +40,33 @@ impl<T> ObjectCache<T> {
         store.contains_key(&handle)
     }
 
-    pub fn get<F,R>(&self, handle:u32, closure: F) -> Result<R,u32>
-        where F: Fn(&T) -> Result<R,u32> {
+    pub fn get<F,R>(&self, handle:u32, closure: F) -> VcxResult<R>
+        where F: Fn(&T) -> VcxResult<R> {
 
         let store = self._lock_store()?;
         match store.get(&handle) {
             Some(m) => match m.lock() {
                 Ok(obj) => closure(obj.deref()),
-                Err(err) => return Err(10) //TODO better error
+                Err(err) => return Err(VcxError::from_msg(VcxErrorKind::Common(10), "Unable to lock Object Store")) //TODO better error
             },
-            None => return Err(error::INVALID_OBJ_HANDLE.code_num)
+            None => return Err(VcxError::from_msg(VcxErrorKind::InvalidHandle, format!("Object not found for handle: {}", handle)))
         }
     }
 
-    pub fn get_mut<F, R>(&self, handle:u32, closure: F) -> Result<R,u32>
-        where F: Fn(&mut T) -> Result<R,u32> {
+    pub fn get_mut<F, R>(&self, handle:u32, closure: F) -> VcxResult<R>
+        where F: Fn(&mut T) -> VcxResult<R> {
 
         let mut store = self._lock_store()?;
         match store.get_mut(&handle) {
             Some(m) => match m.lock() {
                 Ok(mut obj) => closure(obj.deref_mut()),
-                Err(err) => return Err(10) //TODO better error
+                Err(err) => return Err(VcxError::from_msg(VcxErrorKind::Common(10), "Unable to lock Object Store")) //TODO better error
             },
-            None => return Err(error::INVALID_OBJ_HANDLE.code_num)
+            None => return Err(VcxError::from_msg(VcxErrorKind::InvalidHandle, format!("Object not found for handle: {}", handle)))
         }
     }
 
-    pub fn add(&self, obj:T) -> Result<u32, u32> {
+    pub fn add(&self, obj:T) -> VcxResult<u32> {
         let mut store = self._lock_store()?;
 
         let mut new_handle = rand::thread_rng().gen::<u32>();
@@ -84,15 +83,15 @@ impl<T> ObjectCache<T> {
         }
     }
 
-    pub fn release(&self, handle:u32) -> Result<(),u32> {
+    pub fn release(&self, handle:u32) -> VcxResult<()> {
         let mut store = self._lock_store()?;
         match store.remove(&handle) {
             Some(_) => Ok(()),
-            None => Err(error::INVALID_OBJ_HANDLE.code_num)
+            None => return Err(VcxError::from_msg(VcxErrorKind::InvalidHandle, format!("Object not found for handle: {}", handle)))
         }
     }
 
-    pub fn drain(&self) -> Result<(), u32> {
+    pub fn drain(&self) -> VcxResult<()> {
         let mut store = self._lock_store()?;
         Ok(store.clear())
     }
