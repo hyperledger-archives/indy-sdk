@@ -1291,4 +1291,3 @@ struct UnpackMessage {
     message: String,
     sender_verkey: Option<String>
 }
-

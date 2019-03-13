@@ -12,11 +12,10 @@ pub mod logger;
 
 pub mod error_codes;
 
-extern crate libc;
-
 use settings;
 use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
 use std::sync::Mutex;
+use error::prelude::*;
 
 lazy_static!{
     static ref NEXT_LIBINDY_RC: Mutex<Vec<i32>> = Mutex::new(vec![]);
@@ -36,7 +35,7 @@ pub fn next_u32_command_handle() -> u32 {
     (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as u32
 }
 
-pub fn init_pool() -> Result<(), u32>  {
+pub fn init_pool() -> VcxResult<()>  {
     trace!("init_pool >>>");
 
     if settings::test_indy_mode_enabled() {return Ok (()); }
