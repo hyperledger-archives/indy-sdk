@@ -36,12 +36,12 @@ try {
 
 def testing() {
     stage('Static Analysis') {
-        staticValidation()   
+        staticValidation()
     }
     stage('Testing') {
         parallel([
                 'ubuntu-test' : { ubuntuTesting() },
-                'redhat-test' : { rhelTesting() },
+                //  FIXME 'redhat-test' : { rhelTesting() }, https://jira.hyperledger.org/browse/IS-1212
                 'android-test': { androidTesting() },
                 'windows-test': { windowsTesting() },
                 'ios-test'    : { iosTesting() }
@@ -104,10 +104,10 @@ def notifyingFailure() {
 
 def staticValidation() {
     parallel([
-        'libindy'    : { runValdiationRust('libindy') },
-        'libnullpay' : { runValdiationRust('libnullpay') },
-        'libvcx'     : { runValdiationRust('vcx/libvcx') },
-        'cli'        : { runValdiationRust('cli') }
+            'libindy'   : { runValdiationRust('libindy') },
+            'libnullpay': { runValdiationRust('libnullpay') },
+            'libvcx'    : { runValdiationRust('vcx/libvcx') },
+            'cli'       : { runValdiationRust('cli') }
     ])
 }
 
@@ -533,7 +533,7 @@ def linuxVcxJavaTesting(env_name, network_name, testEnv, stashBuildResults) {
 def linuxVcxPythonTesting(env_name, network_name, testEnv, stashBuildResults) {
     unstash name: "VcxPythonLibvcxSO${env_name}"
     unstash name: "VcxPythonLibindyAndLibnullpaySO${env_name}"
-    
+
     dir('vcx/wrappers/python3') {
         testEnv.inside {
             echo "${env_name} Vcx Test: Test python wrapper"
@@ -745,7 +745,7 @@ def iosTesting() {
                 createSimulators()
 
                 withEnv([
-                    "BUNDLE_PATH=$HOME/.gem.indy_sdk"
+                        "BUNDLE_PATH=$HOME/.gem.indy_sdk"
                 ]) {
                     dir('wrappers/ios') {
                         echo "iOS Test: Installing ruby, bundler and gems"
@@ -881,7 +881,7 @@ def ubuntuPublishing() {
                 libindyDebPublishing(testEnv, libindyVersion)
 
                 pythonWrapperPublishing(testEnv, false, 'wrappers/python', 'libindy')
-                nodejsWrapperPublishing(testEnv, false, 'wrappers/nodejs', 'libindy')
+                nodejsWrapperPublishing(testEnv, false, 'libindy')
                 javaWrapperPublishing(testEnv, false)
                 rustWrapperPublishing(testEnv, false)
                 libindyCliDebPublishing(testEnv, libindyVersion)
@@ -889,7 +889,7 @@ def ubuntuPublishing() {
                 libvcxDebPublishing(testEnv)
                 vcxJavaWrapperPublishing(testEnv, false)
                 pythonWrapperPublishing(testEnv, false, 'vcx/wrappers/python3', 'vcx/libvcx')
-                nodejsWrapperPublishing(testEnv, false, 'vcx/wrappers/node', 'vcx/libvcx')
+                nodejsWrapperPublishing(testEnv, false,'vcx')
             }
             finally {
                 echo 'Publish Ubuntu files: Cleanup'
@@ -984,7 +984,7 @@ def windowsPublishArtifact(testEnv, folder, packageName, packageType, packageVer
 
         withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'repo_key')]) {
             withEnv([
-                "SOVRIN_REPO_HOST=$SOVRIN_REPO_HOST",
+                    "SOVRIN_REPO_HOST=$SOVRIN_REPO_HOST",
             ]) {
                 sh "ci/win-zip-and-upload.sh $folder $packageName $packageType $packageVersion '${repo_key}' $env.BRANCH_NAME $env.BUILD_NUMBER"
             }
@@ -1132,18 +1132,31 @@ def pythonWrapperPublishing(testEnv, isRelease, directory, base_library) {
     }
 }
 
-def nodejsWrapperPublishing(testEnv, isRelease, directory, base_library) {
-    def version = getSrcVersion(base_library)
+def nodejsWrapperPublishing(testEnv, isRelease, library) {
+    def paths = ['libindy': ['dir': 'wrappers/nodejs', 'base_library': 'libindy'],
+                 'vcx'    : ['dir': 'vcx/wrappers/node', 'base_library': 'vcx/libvcx']]
+
+    def version = getSrcVersion(paths[library]['base_library'])
+
     def suffix = getSuffix(isRelease, "nodejs")
 
-    testEnv.inside {
-        withCredentials([file(credentialsId: 'npm_credentials', variable: 'credentialsFile')]) {
-            sh 'cp $credentialsFile ~/.npmrc'
+    def directory = paths[library]['dir']
 
-            sh "cd $directory && " +
-                    "npm version --no-git-tag-version --allow-same-version $version$suffix &&" +
-                    "npm publish"
+    testEnv.inside {
+        if (library == 'vcx') { // need addition step for VCX to create .js files
+            sh "cd $directory && npm i && npm run compile"
         }
+
+        npmPublish(version, suffix, directory)
+    }
+}
+
+def npmPublish(version, suffix, directory) {
+    withCredentials([file(credentialsId: 'npm_credentials', variable: 'credentialsFile')]) {
+        sh 'cp $credentialsFile ~/.npmrc'
+        sh "cd $directory && " +
+        "npm version --no-git-tag-version --allow-same-version $version$suffix &&" +
+                "npm publish"
     }
 }
 
@@ -1186,7 +1199,7 @@ def vcxJavaWrapperPublishing(testEnv, isRelease) {
                 sh "chmod +x ci/publishJar.sh"
 
                 withEnv([
-                    "MAVEN_ADD_OPTIONS=$mavenDeployAddOptions",
+                        "MAVEN_ADD_OPTIONS=$mavenDeployAddOptions",
                 ]) {
                     sh 'ci/publishJar.sh'
                 }
@@ -1224,7 +1237,7 @@ def publishingRCtoStable() {
                 pythonWrapperPublishing(testEnv, true, 'wrappers/python', 'libindy')
 
                 echo 'Moving Ubuntu RC artifacts to Stable: nodejs wrapper'
-                nodejsWrapperPublishing(testEnv, true, 'wrappers/nodejs', 'libindy')
+                nodejsWrapperPublishing(testEnv, true, 'libindy')
 
                 echo 'Moving Ubuntu RC artifacts to Stable: java wrapper'
                 javaWrapperPublishing(testEnv, true)
@@ -1257,7 +1270,7 @@ def publishingRCtoStable() {
                 pythonWrapperPublishing(testEnv, true, 'vcx/wrappers/python3', 'vcx/libvcx')
 
                 echo 'Moving Ubuntu RC artifacts to Stable: vcx nodejs wrapper'
-                nodejsWrapperPublishing(testEnv, true, 'vcx/wrappers/node', 'vcx/libvcx')
+                nodejsWrapperPublishing(testEnv, true, 'vcx')
 
                 echo 'Moving Android RC artifacts to Stable: libindy'
                 publishLibindAndroidFilesRCtoStable(libindyVersion)
@@ -1496,7 +1509,7 @@ def androidPublishArtifact(buildEnv, arch, packageVersion, artifact) {
 
         withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'repo_key')]) {
             withEnv([
-                "SOVRIN_REPO_HOST=$SOVRIN_REPO_HOST",
+                    "SOVRIN_REPO_HOST=$SOVRIN_REPO_HOST",
             ]) {
                 sh "ci/android-zip-and-upload.sh $arch $packageVersion '${repo_key}' $env.BRANCH_NAME $env.BUILD_NUMBER $artifact"
             }
