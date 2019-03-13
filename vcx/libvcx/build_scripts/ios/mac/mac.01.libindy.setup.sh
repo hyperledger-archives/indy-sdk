@@ -75,7 +75,7 @@ if [[ $RUSTUP_VERSION =~ ^'rustup ' ]]; then
     #2) Install required native libraries and utilities (libsodium is added with URL to homebrew since version<1.0.15 is required)
     INSTALL_LIBSODIUM=https://raw.githubusercontent.com/Homebrew/homebrew-core/65effd2b617bade68a8a2c5b39e1c3089cc0e945/Formula/libsodium.rb
     brew list pkg-config &>/dev/null || brew install pkg-config
-    brew list ${INSTALL_LIBSODIUM} &>/dev/null || ${INSTALL_LIBSODIUM} brew install
+    brew list libsodium &>/dev/null || brew install ${INSTALL_LIBSODIUM}
     brew list automake &>/dev/null || brew install automake
     brew list autoconf &>/dev/null || brew install autoconf
     brew list cmake &>/dev/null || brew install cmake
