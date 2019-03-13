@@ -1,77 +1,79 @@
-extern crate libc;
-
 use futures::Future;
+use indy::{pool, ErrorCode};
 
-use utils::error;
 use std::sync::RwLock;
+
 use settings;
-use indy::pool;
-use indy::ErrorCode;
 use utils::libindy::error_codes::map_rust_indy_sdk_error;
+use error::prelude::*;
 
 lazy_static! {
     static ref POOL_HANDLE: RwLock<Option<i32>> = RwLock::new(None);
 }
 
-pub fn change_pool_handle(handle: Option<i32>){
+pub fn change_pool_handle(handle: Option<i32>) {
     let mut h = POOL_HANDLE.write().unwrap();
     *h = handle;
 }
 
-pub fn set_protocol_version() -> u32 {
-    match pool::set_protocol_version(settings::get_protocol_version()).wait() {
-        Ok(_) => error::SUCCESS.code_num,
-        Err(_) => error::UNKNOWN_LIBINDY_ERROR.code_num,
-    }
+pub fn set_protocol_version() -> VcxResult<()> {
+    pool::set_protocol_version(settings::get_protocol_version())
+        .wait()
+        .map_err(map_rust_indy_sdk_error)
 }
 
-pub fn create_pool_ledger_config(pool_name: &str, path: &str) -> Result<(), u32> {
-    let pool_config = format!(r#"{{"genesis_txn":"{}"}}"#, path);
+pub fn create_pool_ledger_config(pool_name: &str, path: &str) -> VcxResult<()> {
+    let pool_config = json!({"genesis_txn": path}).to_string();
 
-    match pool::create_pool_ledger_config(pool_name, Some(&pool_config)).wait() {
-        Ok(_) => Ok(()),
+    match pool::create_pool_ledger_config(pool_name, Some(&pool_config))
+        .wait() {
+        Ok(x) => Ok(()),
         Err(x) => if x.error_code != ErrorCode::PoolLedgerConfigAlreadyExistsError {
-            Err(error::UNKNOWN_LIBINDY_ERROR.code_num)
+            Err(VcxError::from_msg(VcxErrorKind::UnknownLiibndyError, x))
         } else {
             Ok(())
         }
     }
 }
 
-pub fn open_pool_ledger(pool_name: &str, config: Option<&str>) -> Result<u32, u32> {
+pub fn open_pool_ledger(pool_name: &str, config: Option<&str>) -> VcxResult<u32> {
+    set_protocol_version()?;
 
-    set_protocol_version();
+    let handle = pool::open_pool_ledger(pool_name, config)
+        .wait()
+        .map_err(map_rust_indy_sdk_error)?;
 
-    //TODO there was timeout here (before future-based Rust wrapper)
-    match pool::open_pool_ledger(pool_name, config).wait().map_err(map_rust_indy_sdk_error) {
-        Ok(x) => {
-            change_pool_handle(Some(x));
-            Ok(x as u32)
-        },
-        Err(_) => Err(error::UNKNOWN_LIBINDY_ERROR.code_num),
-    }
+    change_pool_handle(Some(handle));
+    Ok(handle as u32)
 }
 
-pub fn close() -> Result<(), u32> {
+pub fn close() -> VcxResult<()> {
     let handle = get_pool_handle()?;
     change_pool_handle(None);
+
     //TODO there was timeout here (before future-based Rust wrapper)
-    pool::close_pool_ledger(handle).wait().map_err(map_rust_indy_sdk_error)
+    pool::close_pool_ledger(handle)
+        .wait()
+        .map_err(map_rust_indy_sdk_error)
 }
 
-pub fn delete(pool_name: &str) -> Result<(), u32> {
+pub fn delete(pool_name: &str) -> VcxResult<()> {
     trace!("delete >>> pool_name: {}", pool_name);
 
     if settings::test_indy_mode_enabled() {
         change_pool_handle(None);
-        return Ok(())
+        return Ok(());
     }
 
-    pool::delete_pool_ledger(pool_name).wait().map_err(map_rust_indy_sdk_error)
+    pool::delete_pool_ledger(pool_name)
+        .wait()
+        .map_err(map_rust_indy_sdk_error)
 }
 
-pub fn get_pool_handle() -> Result<i32, u32> {
-    Ok(POOL_HANDLE.read().or(Err(error::NO_POOL_OPEN.code_num))?.ok_or(error::NO_POOL_OPEN.code_num)?)
+pub fn get_pool_handle() -> VcxResult<i32> {
+    POOL_HANDLE.read()
+        .or(Err(VcxError::from_msg(VcxErrorKind::NoPoolOpen, "There is no pool opened")))?
+        .ok_or(VcxError::from_msg(VcxErrorKind::NoPoolOpen, "There is no pool opened"))
 }
 
 #[cfg(test)]
