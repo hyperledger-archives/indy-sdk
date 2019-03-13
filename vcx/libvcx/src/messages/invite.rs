@@ -14,10 +14,12 @@ pub struct SendInviteMessageDetails {
     #[serde(rename = "keyDlgProof")]
     key_dlg_proof: KeyDlgProof,
     #[serde(rename = "targetName")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     target_name: Option<String>,
     #[serde(rename = "phoneNo")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     phone_no: Option<String>,
-    #[serde(rename = "usePublicDID")]
+    #[serde(rename = "includePublicDID")]
     include_public_did: bool,
 }
 
