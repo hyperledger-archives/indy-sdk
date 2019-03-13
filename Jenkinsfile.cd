@@ -41,7 +41,7 @@ def testing() {
     stage('Testing') {
         parallel([
                 'ubuntu-test' : { ubuntuTesting() },
-                'redhat-test' : { rhelTesting() },
+                //  FIXME 'redhat-test' : { rhelTesting() }, https://jira.hyperledger.org/browse/IS-1212
                 'android-test': { androidTesting() },
                 'windows-test': { windowsTesting() },
                 'ios-test'    : { iosTesting() }
@@ -1140,22 +1140,23 @@ def nodejsWrapperPublishing(testEnv, isRelease, library) {
 
     def suffix = getSuffix(isRelease, "nodejs")
 
-    dir(paths[library]['dir']) {
-        testEnv.inside {
-            if (library == 'vcx') { // need addition step for VCX to create .js files
-                sh "npm run compile"
-            }
+    def directory = paths[library]['dir']
 
-            npmPublish(version, suffix)
+    testEnv.inside {
+        if (library == 'vcx') { // need addition step for VCX to create .js files
+            sh "cd $directory && npm run compile"
         }
+
+        npmPublish(version, suffix, directory)
     }
 }
 
-def npmPublish(version, suffix) {
+def npmPublish(version, suffix, directory) {
     withCredentials([file(credentialsId: 'npm_credentials', variable: 'credentialsFile')]) {
         sh 'cp $credentialsFile ~/.npmrc'
-        sh "npm version --no-git-tag-version --allow-same-version $version$suffix"
-        sh "npm publish"
+        sh "cd $directory && " +
+        "npm version --no-git-tag-version --allow-same-version $version$suffix &&" +
+                "npm publish"
     }
 }
 
