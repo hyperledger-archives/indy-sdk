@@ -52,7 +52,7 @@
         "@types/chai": "^4.1.4",
         "@types/lodash": "^4.14.109",
         "@types/mocha": "^5.2.3",
-        "@types/sinon": "^5.0.1",
+        "@types/sinon": ">=5.0.1",
         "@types/weak": "^1.0.0",
         "app-module-path": "^2.2.0",
         "chai": "^4.1.2",
