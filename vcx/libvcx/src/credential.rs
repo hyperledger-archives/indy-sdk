@@ -12,8 +12,8 @@ use issuer_credential::{CredentialOffer, CredentialMessage, PaymentInfo};
 use credential_request::CredentialRequest;
 
 use messages;
-use messages::GeneralMessage;
-use messages::{RemoteMessageType, PayloadKinds};
+use messages::{GeneralMessage, RemoteMessageType};
+use messages::payload::{Payloads, PayloadKinds, Thread};
 
 use utils::libindy::anoncreds::{libindy_prover_create_credential_req, libindy_prover_store_credential};
 use utils::libindy::anoncreds;
@@ -52,10 +52,10 @@ impl Default for Credential {
             credential: None,
             payment_info: None,
             payment_txn: None,
+            thread: Some(Thread::new())
         }
     }
 }
-
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct Credential {
@@ -76,6 +76,7 @@ pub struct Credential {
     cred_id: Option<String>,
     payment_info: Option<PaymentInfo>,
     payment_txn: Option<PaymentTxn>,
+    thread: Option<Thread>
 }
 
 impl Credential {
@@ -89,8 +90,7 @@ impl Credential {
         let prover_did = self.my_did.as_ref().ok_or(CredentialError::CommonError(error::INVALID_DID.code_num))?;
         let credential_offer = self.credential_offer.as_ref().ok_or(CredentialError::InvalidCredentialJson())?;
 
-        let (cred_def_id, cred_def_json) = anoncreds::get_cred_def_json(&credential_offer.cred_def_id)
-            .map_err(|err| CredentialError::CommonError(err))?;
+        let (cred_def_id, cred_def_json) = anoncreds::get_cred_def_json(&credential_offer.cred_def_id)?;
 
         /*
                 debug!("storing credential offer: {}", credential_offer);
@@ -99,8 +99,7 @@ impl Credential {
 
         let (req, req_meta) = libindy_prover_create_credential_req(&prover_did,
                                                                    &credential_offer.libindy_offer,
-                                                                   &cred_def_json)
-            .map_err(|ec| CredentialError::CommonError(ec))?;
+                                                                   &cred_def_json)?;
 
         Ok(CredentialRequest {
             libindy_cred_req: req,
@@ -161,7 +160,7 @@ impl Credential {
                 .msg_type(&RemoteMessageType::CredReq)?
                 .agent_did(local_agent_did)?
                 .agent_vk(local_agent_vk)?
-                .edge_agent_payload(&local_my_vk, &local_their_vk, &cred_req_json, PayloadKinds::CredReq)?
+                .edge_agent_payload(&local_my_vk, &local_their_vk, &cred_req_json, PayloadKinds::CredReq, self.thread.clone())?
                 .ref_msg_id(&offer_msg_id)?
                 .send_secure()
                 .map_err(|err| {
@@ -186,7 +185,12 @@ impl Credential {
 
         let (_, payload) = messages::get_message::get_ref_msg(msg_uid, my_did, my_vk, agent_did, agent_vk)?;
 
-        let credential = messages::Payload::decrypted(&my_vk, &payload)?;
+        let (credential, thread) = Payloads::decrypt(&my_vk, &payload)?;
+
+        if let Some(_) = thread {
+            let their_did = self.their_did.as_ref().map(String::as_str).unwrap_or("");
+            self.thread.as_mut().map(|thread| thread.increment_receiver(&their_did));
+        }
 
         let credential_msg: CredentialMessage = serde_json::from_str(&credential)
             .or(Err(error::INVALID_CREDENTIAL_JSON.code_num))?;
@@ -448,11 +452,16 @@ pub fn get_credential_offer_msg(connection_handle: u32, msg_id: &str) -> Result<
     if message[0].msg_type == RemoteMessageType::CredOffer {
         let payload = message.get(0).and_then(|msg| msg.payload.as_ref())
             .ok_or(CredentialError::CommonError(error::INVALID_MESSAGES.code_num))?;
-        let offer = messages::Payload::decrypted(&my_vk, &payload).map_err(|ec| CredentialError::CommonError(ec))?;
+
+        let (offer, thread) = Payloads::decrypt(&my_vk, &payload).map_err(|ec| CredentialError::CommonError(ec))?;
 
         let (mut offer, payment_info) = parse_json_offer(&offer)?;
 
         offer.msg_ref_id = Some(message[0].uid.to_owned());
+
+        if let Some(tr) = thread {
+            offer.thread_id = tr.thid.clone();
+        }
         let mut payload = Vec::new();
         payload.push(json!(offer));
         if let Some(p) = payment_info { payload.push(json!(p)); }
@@ -485,11 +494,15 @@ pub fn get_credential_offer_messages(connection_handle: u32) -> Result<String, C
     for msg in payload {
         if msg.msg_type == RemoteMessageType::CredOffer {
             let payload = msg.payload.ok_or(CredentialError::CommonError(error::INVALID_MESSAGES.code_num))?;
-            let offer = messages::Payload::decrypted(&my_vk, &payload).map_err(|ec| CredentialError::CommonError(ec))?;
+            let (offer, thread) = Payloads::decrypt(&my_vk, &payload).map_err(|ec| CredentialError::CommonError(ec))?;
 
-            let (mut offer, payment_info) = parse_json_offer(&offer).unwrap();
+            let (mut offer, payment_info) = parse_json_offer(&offer)?;
 
             offer.msg_ref_id = Some(msg.uid.to_owned());
+            if let Some(tr) = thread {
+                offer.thread_id = tr.thid.clone();
+            }
+
             let mut payload = Vec::new();
             payload.push(json!(offer));
             if let Some(p) = payment_info { payload.push(json!(p)); }
