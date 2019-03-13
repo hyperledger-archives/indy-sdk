@@ -132,7 +132,7 @@ fn _get_revocation_interval(attr_name: &str, proof_req: &ProofRequestData) -> Vc
             return Ok(attr.non_revoked.clone().or(proof_req.non_revoked.clone().or(None)));
         },
         None => {
-            // Todo: Handle case for predicates
+            // Handle case for predicates
             match proof_req.requested_predicates.get(attr_name) {
                 Some (attr) => {
                     return Ok(attr.non_revoked.clone().or(proof_req.non_revoked.clone().or(None)));
@@ -319,8 +319,7 @@ impl DisclosedProof {
               "requested_attributes":{},
               "requested_predicates":{}
         });
-        //Todo: need to do same for predicates and self_attested
-        //Todo: need to handle if the attribute is not revealed
+        // do same for predicates and self_attested
         if let Value::Object(ref mut map) = rtn["requested_attributes"] {
             for ref cred_info in credentials_identifiers {
                 if let Some(ref attr) = proof_req.requested_attributes.get(&cred_info.requested_attr) {
@@ -339,6 +338,7 @@ impl DisclosedProof {
             }
         }
 
+        // handle if the attribute is not revealed
         let self_attested_attrs: Value = serde_json::from_str(self_attested_attrs)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize self attested attributes: {}", err)))?;
         rtn["self_attested_attributes"] = self_attested_attrs;
