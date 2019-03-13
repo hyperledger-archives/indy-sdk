@@ -12,12 +12,12 @@ def testing() {
     }
     stage('Testing') {
         parallel([
-            'ubuntu-test' : { ubuntuTesting() },
-            'android-test': { androidTesting() },
-            'macos-test'  : { macosTesting() },
-            'ios-test'    : { iosTesting() },
-            'redhat-test' : { rhelTesting() },
-            'windows-test': { windowsTesting() }
+                'ubuntu-test' : { ubuntuTesting() },
+                'android-test': { androidTesting() },
+                'macos-test'  : { macosTesting() },
+                'ios-test'    : { iosTesting() },
+                //  FIXME 'redhat-test' : { rhelTesting() }, https://jira.hyperledger.org/browse/IS-1212
+                'windows-test': { windowsTesting() }
         ])
     }
 }

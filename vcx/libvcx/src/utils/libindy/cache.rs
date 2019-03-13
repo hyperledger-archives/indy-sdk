@@ -1,4 +1,4 @@
-extern crate serde_json;
+use serde_json;
 
 use utils::libindy::wallet::{add_record, get_record, update_record_value};
 
