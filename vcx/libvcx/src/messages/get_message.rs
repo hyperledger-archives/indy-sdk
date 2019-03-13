@@ -1,7 +1,8 @@
 use settings;
 use messages::*;
 use messages::message_type::MessageTypes;
-use utils::{httpclient, error};
+use utils::httpclient;
+use error::prelude::*;
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -86,35 +87,35 @@ impl GetMessagesBuilder {
         }
     }
 
-    pub fn uid(&mut self, uids: Option<Vec<String>>) -> Result<&mut Self, u32> {
+    pub fn uid(&mut self, uids: Option<Vec<String>>) -> VcxResult<&mut Self> {
         //Todo: validate msg_uid??
         self.uids = uids;
         Ok(self)
     }
 
-    pub fn status_codes(&mut self, status_codes: Option<Vec<MessageStatusCode>>) -> Result<&mut Self, u32> {
+    pub fn status_codes(&mut self, status_codes: Option<Vec<MessageStatusCode>>) -> VcxResult<&mut Self> {
         self.status_codes = status_codes;
         Ok(self)
     }
 
-    pub fn pairwise_dids(&mut self, pairwise_dids: Option<Vec<String>>) -> Result<&mut Self, u32> {
+    pub fn pairwise_dids(&mut self, pairwise_dids: Option<Vec<String>>) -> VcxResult<&mut Self> {
         //Todo: validate msg_uid??
         self.pairwise_dids = pairwise_dids;
         Ok(self)
     }
 
-    pub fn include_edge_payload(&mut self, payload: &str) -> Result<&mut Self, u32> {
+    pub fn include_edge_payload(&mut self, payload: &str) -> VcxResult<&mut Self> {
         //todo: is this a json value, String??
         self.exclude_payload = Some(payload.to_string());
         Ok(self)
     }
 
-    pub fn send_secure(&mut self) -> Result<Vec<Message>, u32> {
+    pub fn send_secure(&mut self) -> VcxResult<Vec<Message>> {
         trace!("GetMessages::send >>>");
 
         let data = self.prepare_request()?;
 
-        let response = httpclient::post_u8(&data).or(Err(error::POST_MSG_FAILURE.code_num))?;
+        let response = httpclient::post_u8(&data)?;
 
         if settings::test_agency_mode_enabled() && response.len() == 0 {
             return Ok(Vec::new());
@@ -123,7 +124,7 @@ impl GetMessagesBuilder {
         self.parse_response(response)
     }
 
-    fn parse_response(&self, response: Vec<u8>) -> Result<Vec<Message>, u32> {
+    fn parse_response(&self, response: Vec<u8>) -> VcxResult<Vec<Message>> {
         trace!("parse_get_messages_response >>>");
 
         let mut response = parse_response_from_agency(&response)?;
@@ -131,16 +132,16 @@ impl GetMessagesBuilder {
         match response.remove(0) {
             A2AMessage::Version1(A2AMessageV1::GetMessagesResponse(res)) => Ok(res.msgs),
             A2AMessage::Version2(A2AMessageV2::GetMessagesResponse(res)) => Ok(res.msgs),
-            _ => Err(error::INVALID_HTTP_RESPONSE.code_num)
+            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of GetMessagesResponse"))
         }
     }
 
-    pub fn download_messages(&mut self) -> Result<Vec<MessageByConnection>, u32> {
+    pub fn download_messages(&mut self) -> VcxResult<Vec<MessageByConnection>> {
         trace!("GetMessages::download >>>");
 
         let data = self.prepare_download_request()?;
 
-        let response = httpclient::post_u8(&data).or(Err(error::POST_MSG_FAILURE.code_num))?;
+        let response = httpclient::post_u8(&data)?;
 
         if settings::test_agency_mode_enabled() && response.len() == 0 {
             return Ok(Vec::new());
@@ -151,7 +152,7 @@ impl GetMessagesBuilder {
         Ok(response)
     }
 
-    fn prepare_download_request(&self) -> Result<Vec<u8>, u32> {
+    fn prepare_download_request(&self) -> VcxResult<Vec<u8>> {
         let message = match settings::get_protocol_type() {
             settings::ProtocolTypes::V1 =>
                 A2AMessage::Version1(
@@ -178,14 +179,14 @@ impl GetMessagesBuilder {
         prepare_message_for_agency(&message, &agency_did)
     }
 
-    fn parse_download_messages_response(response: Vec<u8>) -> Result<Vec<MessageByConnection>, u32> {
+    fn parse_download_messages_response(response: Vec<u8>) -> VcxResult<Vec<MessageByConnection>> {
         trace!("parse_get_connection_messages_response >>>");
         let mut response = parse_response_from_agency(&response)?;
 
         let msgs = match response.remove(0) {
             A2AMessage::Version1(A2AMessageV1::GetMessagesByConnectionsResponse(res)) => res.msgs,
             A2AMessage::Version2(A2AMessageV2::GetMessagesByConnectionsResponse(res)) => res.msgs,
-            _ => return Err(error::INVALID_HTTP_RESPONSE.code_num)
+            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of GetMessagesByConnectionsResponse"))
         };
 
         msgs
@@ -210,7 +211,7 @@ impl GeneralMessage for GetMessagesBuilder {
     fn set_to_did(&mut self, to_did: String) { self.to_did = to_did; }
     fn set_to_vk(&mut self, to_vk: String) { self.to_vk = to_vk; }
 
-    fn prepare_request(&mut self) -> Result<Vec<u8>, u32> {
+    fn prepare_request(&mut self) -> VcxResult<Vec<u8>> {
         let message = match settings::get_protocol_type() {
             settings::ProtocolTypes::V1 =>
                 A2AMessage::Version1(
@@ -277,7 +278,7 @@ impl Message {
     }
 }
 
-pub fn get_connection_messages(pw_did: &str, pw_vk: &str, agent_did: &str, agent_vk: &str, msg_uid: Option<Vec<String>>) -> Result<Vec<Message>, u32> {
+pub fn get_connection_messages(pw_did: &str, pw_vk: &str, agent_did: &str, agent_vk: &str, msg_uid: Option<Vec<String>>) -> VcxResult<Vec<Message>> {
     trace!("get_connection_messages >>> pw_did: {}, pw_vk: {}, agent_vk: {}, msg_uid: {:?}",
            pw_did, pw_vk, agent_vk, msg_uid);
 
@@ -288,16 +289,13 @@ pub fn get_connection_messages(pw_did: &str, pw_vk: &str, agent_did: &str, agent
         .agent_vk(&agent_vk)?
         .uid(msg_uid)?
         .send_secure()
-        .map_err(|err| {
-            error!("could not post get_messages: {}", err);
-            error::POST_MSG_FAILURE.code_num
-        })?;
+        .map_err(|err| err.map(VcxErrorKind::PostMessageFailed, "Cannot get messages"))?;
 
     trace!("message returned: {:?}", response);
     Ok(response)
 }
 
-pub fn get_ref_msg(msg_id: &str, pw_did: &str, pw_vk: &str, agent_did: &str, agent_vk: &str) -> Result<(String, Vec<i8>), u32> {
+pub fn get_ref_msg(msg_id: &str, pw_did: &str, pw_vk: &str, agent_did: &str, agent_vk: &str) -> VcxResult<(String, Vec<i8>)> {
     trace!("get_ref_msg >>> msg_id: {}, pw_did: {}, pw_vk: {}, agent_did: {}, agent_vk: {}",
            msg_id, pw_did, pw_vk, agent_did, agent_vk);
 
@@ -306,7 +304,7 @@ pub fn get_ref_msg(msg_id: &str, pw_did: &str, pw_vk: &str, agent_did: &str, age
 
     let msg_id = match message.get(0).as_ref().and_then(|message| message.ref_msg_id.as_ref()) {
         Some(ref ref_msg_id) if message[0].status_code == MessageStatusCode::Accepted => ref_msg_id.to_string(),
-        _ => return Err(error::NOT_READY.code_num),
+        _ => return Err(VcxError::from_msg(VcxErrorKind::NotReady, "Cannot find referent message")),
     };
 
     let message: Vec<Message> = get_connection_messages(pw_did, pw_vk, agent_did, agent_vk, Some(vec![msg_id]))?;
@@ -319,11 +317,11 @@ pub fn get_ref_msg(msg_id: &str, pw_did: &str, pw_vk: &str, agent_did: &str, age
             // TODO: check returned verkey
             Ok((message[0].uid.clone(), payload.to_owned()))
         }
-        _ => Err(error::INVALID_HTTP_RESPONSE.code_num)
+        _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Cannot find referent message")),
     }
 }
 
-pub fn download_messages(pairwise_dids: Option<Vec<String>>, status_codes: Option<Vec<String>>, uids: Option<Vec<String>>) -> Result<Vec<MessageByConnection>, u32> {
+pub fn download_messages(pairwise_dids: Option<Vec<String>>, status_codes: Option<Vec<String>>, uids: Option<Vec<String>>) -> VcxResult<Vec<MessageByConnection>> {
     trace!("download_messages >>> pairwise_dids: {:?}, status_codes: {:?}, uids: {:?}",
            pairwise_dids, status_codes, uids);
 
@@ -337,8 +335,9 @@ pub fn download_messages(pairwise_dids: Option<Vec<String>>, status_codes: Optio
                 let codes = codes
                     .iter()
                     .map(|code|
-                        serde_json::from_str::<MessageStatusCode>(&format!("\"{}\"", code)).or(Err(error::INVALID_JSON.code_num))
-                    ).collect::<Result<Vec<MessageStatusCode>, u32>>()?;
+                        ::serde_json::from_str::<MessageStatusCode>(&format!("\"{}\"", code))
+                            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot parse message status code: {}", err)))
+                    ).collect::<VcxResult<Vec<MessageStatusCode>>>()?;
                 Some(codes)
             }
             None => None
@@ -436,7 +435,6 @@ mod tests {
     fn test_download_messages() {
         use std::thread;
         use std::time::Duration;
-        ::utils::logger::LibvcxDefaultLogger::init_testing_logger();
 
         init!("agency");
         let institution_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
@@ -468,7 +466,7 @@ mod tests {
         // Agency returns a bad request response for invalid dids
         let invalid_did = "abc".to_string();
         let bad_req = download_messages(Some(vec![invalid_did]), None, None);
-        assert_eq!(bad_req, Err(error::POST_MSG_FAILURE.code_num));
+        assert_eq!(bad_req.unwrap_err().kind(), VcxErrorKind::PostMessageFailed);
         teardown!("agency");
     }
 }
