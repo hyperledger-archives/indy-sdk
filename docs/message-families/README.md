@@ -241,11 +241,11 @@ The Credential Issuance positive workflow is demonstrated on the following diagr
 
 ![Workflow](credential-issuance-positive-flow.svg)
 
-## Credential Exchange
+## Credential Presentation
 
 ### Message Family
 
-The Credential Exchange Message Family consists of the following messages:
+The Credential Presentation Message Family consists of the following messages:
 
 * Presentation Request
 * Presentation
@@ -258,7 +258,7 @@ need to be revealed and predicates that need to be fulfilled.
 Schema:
 ```json
 {
-    "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/credential-exchange/1.0/presentation-request",
+    "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/credential-presentation/1.0/presentation-request",
     "@id": "<uuid-request>",
     "comment": "some comment",
     "~attach": [
@@ -283,7 +283,7 @@ This message is a response to a Presentation Request message and contains signed
 Schema:
 ```json
 {
-    "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/credential-exchange/1.0/presentation",
+    "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/credential-presentation/1.0/presentation",
     "@id": "<uuid-presentation>",
     "comment": "some comment",
     "~attach": [
@@ -333,7 +333,7 @@ Schema:
 
 ### State Machine
 
-The Credential Exchange State Machine consists of the following states:
+The Credential Presentation State Machine consists of the following states:
 
 * Initialized
 * Verifier related states:
@@ -406,7 +406,7 @@ Transitions:
 
 ### Workflow
 
-The Credential Exchange positive workflow is demonstrated on the following diagram:
+The Credential Presentation positive workflow is demonstrated on the following diagram:
 
 ![Workflow](credential-presentation-positive-flow.svg)
 
