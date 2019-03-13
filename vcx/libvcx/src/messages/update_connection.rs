@@ -1,7 +1,8 @@
 use messages::*;
 use messages::message_type::MessageTypes;
 use settings;
-use utils::{error, httpclient};
+use utils::httpclient;
+use error::prelude::*;
 
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -72,7 +73,7 @@ impl DeleteConnectionBuilder {
         }
     }
 
-    pub fn send_secure(&mut self) -> Result<(), u32> {
+    pub fn send_secure(&mut self) -> VcxResult<()> {
         trace!("DeleteConnection::send >>>");
 
         if settings::test_agency_mode_enabled() {
@@ -81,14 +82,14 @@ impl DeleteConnectionBuilder {
 
         let data = self.prepare_request()?;
 
-        let response = httpclient::post_u8(&data).or(Err(error::POST_MSG_FAILURE.code_num))?;
+        let response = httpclient::post_u8(&data)?;
 
         let response = self.parse_response(&response)?;
 
         Ok(response)
     }
 
-    fn parse_response(&self, response: &Vec<u8>) -> Result<(), u32> {
+    fn parse_response(&self, response: &Vec<u8>) -> VcxResult<()> {
         trace!("parse_create_keys_response >>>");
 
         let mut response = parse_response_from_agency(response)?;
@@ -96,7 +97,7 @@ impl DeleteConnectionBuilder {
         match response.remove(0) {
             A2AMessage::Version1(A2AMessageV1::UpdateConnectionResponse(res)) => Ok(()),
             A2AMessage::Version2(A2AMessageV2::UpdateConnectionResponse(res)) => Ok(()),
-            _ => Err(error::INVALID_HTTP_RESPONSE.code_num)
+            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of UpdateConnectionResponse"))
         }
     }
 
@@ -124,7 +125,7 @@ impl GeneralMessage for DeleteConnectionBuilder {
     fn set_to_did(&mut self, to_did: String) { self.to_did = to_did; }
     fn set_to_vk(&mut self, to_vk: String) { self.to_vk = to_vk; }
 
-    fn prepare_request(&mut self) -> Result<Vec<u8>, u32> {
+    fn prepare_request(&mut self) -> VcxResult<Vec<u8>> {
         let message = match settings::get_protocol_type() {
             settings::ProtocolTypes::V1 =>
                 A2AMessage::Version1(

@@ -39,6 +39,3 @@ impl InternalMessage {
         }
     }
 }
-
-
-
