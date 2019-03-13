@@ -7,7 +7,7 @@ use settings;
 use messages;
 use messages::{GeneralMessage, MessageStatusCode, RemoteMessageType, ObjectWithVersion};
 use messages::invite::{InviteDetail, SenderDetail, Payload as ConnectionPayload, AcceptanceDetails};
-use messages::payload::Payloads;
+use messages::payload::{Payloads, Thread};
 use messages::get_message::Message;
 use object_cache::ObjectCache;
 use error::prelude::*;
@@ -17,6 +17,7 @@ use utils::libindy::crypto;
 use utils::json::mapped_key_rewrite;
 use utils::constants::DEFAULT_SERIALIZE_VERSION;
 use utils::json::KeyMatch;
+use std::collections::HashMap;
 
 lazy_static! {
     static ref CONNECTION_MAP: ObjectCache<Connection> = Default::default();
@@ -74,6 +75,7 @@ impl Connection {
                 .agent_did(&self.agent_did)?
                 .agent_vk(&self.agent_vk)?
                 .public_did(self.public_did.as_ref().map(String::as_str))?
+                .thread(&Thread::new())?
                 .send_secure()
                 .map_err(|err| err.extend("Cannot send invite"))?;
 
@@ -115,12 +117,24 @@ impl Connection {
             .sender_agency_details(&details.sender_agency_detail)?
             .answer_status_code(&MessageStatusCode::Accepted)?
             .reply_to(&details.conn_req_id)?
+            .thread(&self._build_thread(&details))?
             .send_secure()
             .map_err(|err| err.extend("Cannot accept invite"))?;
 
         self.state = VcxStateType::VcxStateAccepted;
 
         Ok(error::SUCCESS.code_num)
+    }
+
+    fn _build_thread(&self, invite_detail: &InviteDetail) -> Thread {
+        let mut received_orders = HashMap::new();
+        received_orders.insert(invite_detail.sender_detail.did.clone(), 0);
+        Thread {
+            thid: invite_detail.thread_id.clone(),
+            pthid: None,
+            sender_order: 0,
+            received_orders,
+        }
     }
 
     fn connect(&mut self, options: &ConnectionOptions) -> VcxResult<u32> {

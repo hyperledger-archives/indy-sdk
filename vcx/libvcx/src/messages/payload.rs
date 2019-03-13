@@ -103,11 +103,15 @@ impl Payloads {
         let message = message["message"].as_str()
             .ok_or(VcxError::from_msg(VcxErrorKind::InvalidJson, "Cannot find `message` field"))?.to_string();
 
-        let my_payload: PayloadV2 = serde_json::from_str(&message)
+        let mut my_payload: PayloadV2 = serde_json::from_str(&message)
             .map_err(|err| {
                 error!("could not deserialize bundle with i8 or u8: {}", err);
                 VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize payload: {}", err))
             })?;
+
+        if my_payload.thread.thid.is_none() {
+            my_payload.thread.thid = Some(my_payload.id);
+        }
 
         Ok((my_payload.msg, Some(my_payload.thread)))
     }
