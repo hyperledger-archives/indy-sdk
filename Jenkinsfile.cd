@@ -1144,7 +1144,7 @@ def nodejsWrapperPublishing(testEnv, isRelease, library) {
 
     testEnv.inside {
         if (library == 'vcx') { // need addition step for VCX to create .js files
-            sh "cd $directory && npm run compile"
+            sh "cd $directory && npm i && npm run compile"
         }
 
         npmPublish(version, suffix, directory)
