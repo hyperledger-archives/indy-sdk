@@ -1,7 +1,5 @@
 @startuml components
 
-title Components
-
 [Application] as application
 
 package "Libindy static API" {
@@ -9,8 +7,8 @@ package "Libindy static API" {
     application  ..> i_libindy_api
 
     note left of i_libindy_api
-    Existing APIs Libindy provides
-    and  cannot be replaced,
+    Existing Libindy APIs
+    that cannot be replaced,
     like Anoncred, Wallet and else.
     end note
 
@@ -18,8 +16,8 @@ package "Libindy static API" {
     application  ..> i_state_machine
 
     note left of i_state_machine
-    State Machine that defines the minimal
-    set of base messages and transitions
+    State Machine that defines a set
+    of messages and transitions
     every message family must satisfy.
     end note
 }
