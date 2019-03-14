@@ -163,6 +163,11 @@ pub fn libindy_prover_get_credentials_for_proof_req(proof_req: &str) -> VcxResul
         }).ok()
     });
 
+    // handle special case of "empty because json is bad" vs "empty because no attributes sepected"
+    if requested_attributes == None && requested_predicates == None {
+        return Err(VcxError::from_msg(VcxErrorKind::InvalidAttributesStructure, "Invalid Json Parsing of Requested Attributes Retrieved From Libindy"));
+    }
+
     let mut fetch_attrs: Map<String, Value> = match requested_attributes {
         Some(attrs) => attrs.clone(),
         None => Map::new()
@@ -185,7 +190,7 @@ pub fn libindy_prover_get_credentials_for_proof_req(proof_req: &str) -> VcxResul
         let _ = close_search_handle(search_handle);
         Ok(creds)
     } else {
-        Err(VcxError::from_msg(VcxErrorKind::InvalidAttributesStructure, "Invalid Json Parsing of Requested Attributes Retrieved From Libindy"))
+        Ok("{}".to_string())
     }
 }
 
