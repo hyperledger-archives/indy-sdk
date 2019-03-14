@@ -1265,7 +1265,7 @@ async def get_response_metadata(response: str) -> str:
 
 async def build_auth_rule_request(submitter_did: str,
                                   txn_type: str,
-                                  auth_action: str,
+                                  action: str,
                                   field: str,
                                   old_value: Optional[str],
                                   new_value: str,
