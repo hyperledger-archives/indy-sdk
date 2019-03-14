@@ -1,8 +1,9 @@
 use settings;
 use messages::*;
 use messages::message_type::MessageTypes;
-use utils::{httpclient, error};
+use utils::httpclient;
 use utils::constants::*;
+use error::prelude::*;
 
 #[derive(Debug)]
 pub struct UpdateProfileDataBuilder {
@@ -41,26 +42,26 @@ impl UpdateProfileDataBuilder {
         }
     }
 
-    pub fn to(&mut self, did: &str) -> Result<&mut Self, u32> {
+    pub fn to(&mut self, did: &str) -> VcxResult<&mut Self> {
         validation::validate_did(did)?;
         self.to_did = did.to_string();
         Ok(self)
     }
 
-    pub fn name(&mut self, name: &str) -> Result<&mut Self, u32> {
+    pub fn name(&mut self, name: &str) -> VcxResult<&mut Self> {
         let config = ConfigOption { name: "name".to_string(), value: name.to_string() };
         self.configs.push(config);
         Ok(self)
     }
 
-    pub fn logo_url(&mut self, url: &str) -> Result<&mut Self, u32> {
+    pub fn logo_url(&mut self, url: &str) -> VcxResult<&mut Self> {
         validation::validate_url(url)?;
         let config = ConfigOption { name: "logoUrl".to_string(), value: url.to_string() };
         self.configs.push(config);
         Ok(self)
     }
 
-    pub fn use_public_did(&mut self, did: &Option<String>) -> Result<&mut Self, u32> {
+    pub fn use_public_did(&mut self, did: &Option<String>) -> VcxResult<&mut Self> {
         if let Some(x) = did {
             let config = ConfigOption { name: "publicDid".to_string(), value: x.to_string() };
             self.configs.push(config);
@@ -68,7 +69,7 @@ impl UpdateProfileDataBuilder {
         Ok(self)
     }
 
-    pub fn send_secure(&mut self) -> Result<(), u32> {
+    pub fn send_secure(&mut self) -> VcxResult<()> {
         trace!("UpdateProfileData::send_secure >>>");
 
         if settings::test_agency_mode_enabled() {
@@ -77,12 +78,12 @@ impl UpdateProfileDataBuilder {
 
         let data = self.prepare_request()?;
 
-        let response = httpclient::post_u8(&data).or(Err(error::POST_MSG_FAILURE.code_num))?;
+        let response = httpclient::post_u8(&data)?;
 
         self.parse_response(response)
     }
 
-    fn prepare_request(&self) -> Result<Vec<u8>, u32> {
+    fn prepare_request(&self) -> VcxResult<Vec<u8>> {
         let message = match settings::get_protocol_type() {
             settings::ProtocolTypes::V1 =>
                 A2AMessage::Version1(
@@ -109,13 +110,13 @@ impl UpdateProfileDataBuilder {
         prepare_message_for_agency(&message, &agency_did)
     }
 
-    fn parse_response(&self, response: Vec<u8>) -> Result<(), u32> {
+    fn parse_response(&self, response: Vec<u8>) -> VcxResult<()> {
         let mut response = parse_response_from_agency(&response)?;
 
         match response.remove(0) {
             A2AMessage::Version1(A2AMessageV1::UpdateConfigsResponse(res)) => Ok(()),
             A2AMessage::Version2(A2AMessageV2::UpdateConfigsResponse(res)) => Ok(()),
-            _ => Err(error::INVALID_HTTP_RESPONSE.code_num)
+            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of UpdateConfigsResponse"))
         }
     }
 }

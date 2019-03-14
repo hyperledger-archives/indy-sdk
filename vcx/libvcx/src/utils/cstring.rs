@@ -1,6 +1,4 @@
-extern crate libc;
-
-use self::libc::c_char;
+use libc::c_char;
 
 use std::ffi::CStr;
 use std::str::Utf8Error;
@@ -43,11 +41,11 @@ macro_rules! check_useful_c_str {
     ($x:ident, $e:expr) => {
         let $x = match CStringUtils::c_str_to_string($x) {
             Ok(Some(val)) => val,
-            _ => return $e,
+            _ => return VcxError::from_msg($e, "Invalid pointer has been passed").into()
         };
 
         if $x.is_empty() {
-            return $e
+            return VcxError::from_msg($e, "Empty string has been passed").into()
         }
     }
 }
@@ -56,7 +54,7 @@ macro_rules! check_useful_opt_c_str {
     ($x:ident, $e:expr) => {
         let $x = match CStringUtils::c_str_to_string($x) {
             Ok(opt_val) => opt_val,
-            Err(_) => return $e
+            Err(_) => return VcxError::from_msg($e, "Invalid pointer has been passed").into()
         };
     }
 }
@@ -65,11 +63,11 @@ macro_rules! check_useful_opt_c_str {
 macro_rules! check_useful_c_byte_array {
     ($ptr:ident, $len:expr, $err1:expr, $err2:expr) => {
         if $ptr.is_null() {
-            return $err1;
+            return VcxError::from_msg($err1, "Invalid pointer has been passed").into()
         }
 
         if $len <= 0 {
-            return $err2;
+            return VcxError::from_msg($err2, "Array length must be greater than 0").into()
         }
 
         let $ptr = unsafe { $crate::std::slice::from_raw_parts($ptr, $len as usize) };
