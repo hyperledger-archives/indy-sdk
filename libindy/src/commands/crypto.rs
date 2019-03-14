@@ -383,7 +383,7 @@ impl CryptoCommandExecutor {
         //generate content encryption key that will encrypt `message`
         let cek = chacha20poly1305_ietf::gen_key();
 
-        let base64_protected = if let Some(sender_vk) = sender_vk {
+        let (raw, base64_protected) = if let Some(sender_vk) = sender_vk {
             self.crypto_service.validate_key(&sender_vk)?;
 
             //returns authcrypted pack_message format. See Wire message format HIPE for details
@@ -393,10 +393,17 @@ impl CryptoCommandExecutor {
             self._prepare_protected_anoncrypt(&cek, receiver_list)?
         };
 
+        let raw_s = String::from_utf8(raw).map_err(|err| {
+            err_msg(IndyErrorKind::InvalidStructure, format!(
+                "Failed to utf8 encode data {}",
+                err
+            ))
+        })?;
+
         // Use AEAD to encrypt `message` with "protected" data as "associated data"
         let (ciphertext, iv, tag) =
             self.crypto_service
-                .encrypt_plaintext(message, &base64_protected, &cek);
+                .encrypt_plaintext(message, &raw_s, &cek);
 
         self._format_pack_message(&base64_protected, &ciphertext, &iv, &tag)
     }
@@ -404,7 +411,7 @@ impl CryptoCommandExecutor {
     fn _prepare_protected_anoncrypt(&self,
                                     cek: &chacha20poly1305_ietf::Key,
                                     receiver_list: Vec<String>,
-    ) -> IndyResult<String> {
+    ) -> IndyResult<(Vec<u8>, String)> {
         let mut encrypted_recipients_struct : Vec<Recipient> = vec![];
 
         for their_vk in receiver_list {
@@ -428,7 +435,7 @@ impl CryptoCommandExecutor {
                                     cek: &chacha20poly1305_ietf::Key,
                                     receiver_list: Vec<String>, sender_vk: &str,
                                     wallet_handle: i32,
-    ) -> IndyResult<String> {
+    ) -> IndyResult<(Vec<u8>, String)> {
         let mut encrypted_recipients_struct : Vec<Recipient> = vec![];
 
         //get my_key from my wallet
@@ -458,7 +465,7 @@ impl CryptoCommandExecutor {
         Ok(self._base64_encode_protected(encrypted_recipients_struct, true)?)
     }
 
-    fn _base64_encode_protected(&self, encrypted_recipients_struct: Vec<Recipient>, alg_is_authcrypt: bool) -> IndyResult<String> {
+    fn _base64_encode_protected(&self, encrypted_recipients_struct: Vec<Recipient>, alg_is_authcrypt: bool) -> IndyResult<(Vec<u8>, String)> {
         let alg_val = if alg_is_authcrypt { String::from("Authcrypt") } else { String::from("Anoncrypt") };
 
         //structure protected and base64URL encode it
@@ -475,7 +482,13 @@ impl CryptoCommandExecutor {
             ))
         })?;
 
-        Ok(base64::encode_urlsafe(protected_encoded.as_bytes()))
+        let b = protected_encoded.as_bytes();
+        let r = base64::encode_urlsafe(b);
+        let s = str::from_utf8(&b).unwrap();
+        println!("b={}", b.len());
+        println!("s={}", s.len());
+        println!("r={}", r.len());
+        Ok((b.to_vec(), r))
     }
 
     fn _format_pack_message(
@@ -539,7 +552,7 @@ impl CryptoCommandExecutor {
         //decrypt message
         let message = self.crypto_service.decrypt_ciphertext(
             &jwe_struct.ciphertext,
-            &jwe_struct.protected,
+            &protected_decoded_str,
             &jwe_struct.iv,
             &jwe_struct.tag,
             &cek,
