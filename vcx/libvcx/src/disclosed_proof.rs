@@ -1249,6 +1249,67 @@ mod tests {
         assert!(generated_proof.is_ok());
     }
 
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn test_generate_proof_with_predicates() {
+        init!("ledger");
+        let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
+        let (schema_id, _, cred_def_id, _, _, _, _, cred_id, _, _) = ::utils::libindy::anoncreds::tests::create_and_store_credential(::utils::constants::DEFAULT_SCHEMA_ATTRS, true);
+        let mut proof_req = ProofRequestMessage::create();
+        let to = time::get_time().sec;
+        let indy_proof_req = json!({
+            "nonce": "123432421212",
+            "name": "proof_req_1",
+            "version": "0.1",
+            "requested_attributes": {
+                "address1_1": {
+                    "name": "address1",
+                    "restrictions": [{"issuer_did": did}],
+                    "non_revoked":  {"from": 123, "to": to}
+                },
+                "zip_2": { "name": "zip" }
+            },
+            "self_attested_attr_3": json!({
+                   "name":"self_attested_attr",
+             }),
+            "requested_predicates": json!({
+                "zip_3": {"name":"zip", "p_type":">=", "p_value":18}
+            }),
+            "non_revoked": {"from": 098, "to": to}
+        }).to_string();
+        proof_req.proof_request_data = serde_json::from_str(&indy_proof_req).unwrap();
+
+        let mut proof: DisclosedProof = Default::default();
+        proof.proof_request = Some(proof_req);
+        proof.link_secret_alias = "main".to_string();
+
+        let all_creds: Value = serde_json::from_str(&proof.retrieve_credentials().unwrap()).unwrap();
+        let selected_credentials: Value = json!({
+           "attrs":{
+              "address1_1": {
+                "credential": all_creds["attrs"]["address1_1"][0],
+                "tails_file": get_temp_dir_path(Some(TEST_TAILS_FILE)).to_str().unwrap().to_string()
+              },
+              "zip_2": {
+                "credential": all_creds["attrs"]["zip_2"][0],
+                "tails_file": get_temp_dir_path(Some(TEST_TAILS_FILE)).to_str().unwrap().to_string()
+              },
+           },
+           "predicates":{ 
+               "zip_3": {
+                "credential": all_creds["attrs"]["zip_3"][0],
+               }
+           }
+        });
+
+        let self_attested: Value = json!({
+              "self_attested_attr_3":"attested_val"
+        });
+
+        let generated_proof = proof.generate_proof(&selected_credentials.to_string(), &self_attested.to_string());
+        assert!(generated_proof.is_ok());
+    }
+
     #[test]
     fn test_build_rev_states_json() {
         init!("true");
