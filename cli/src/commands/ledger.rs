@@ -1230,7 +1230,7 @@ pub mod auth_rule_command {
                 .add_required_param("constraint", r#"Set of constraints required for execution of an action
          {
              constraint_id - type of a constraint. Can be either "ROLE" to specify final constraint or  "AND"/"OR" to combine constraints.
-             role - role of a user which satisfy to constrain.
+             role - role associated value of a user which have to satisfy to constrain {TRUSTEE: 0, STEWARD: 2, TRUST_ANCHOR: 101, NETWORK_MONITOR: 201, ANY: *}.
              sig_count - the number of signatures required to execution action.
              need_to_be_owner - if user must be an owner of transaction.
              metadata - additional parameters of the constraint.
@@ -1241,8 +1241,8 @@ pub mod auth_rule_command {
              auth_constraints: [<constraint_1>, <constraint_2>]
          }
                 "#)
-                .add_example(r#"ledger auth-rule txn_type=NYM action=ADD field=role new_value=101 constraint={"sig_count":1,"role":0,"constraint_id":"role","need_to_be_owner":false}"#)
-                .add_example(r#"ledger auth-rule txn_type=NYM action=EDIT field=role old_value=101 new_value=0 constraint={"sig_count":1,"role":0,"constraint_id":"role","need_to_be_owner":false}"#)
+                .add_example(r#"ledger auth-rule txn_type=NYM action=ADD field=role new_value=101 constraint={"sig_count":1,"role":"0","constraint_id":"ROLE","need_to_be_owner":false}"#)
+                .add_example(r#"ledger auth-rule txn_type=NYM action=EDIT field=role old_value=101 new_value=0 constraint={"sig_count":1,"role":"0","constraint_id":"ROLE","need_to_be_owner":false}"#)
                 .finalize()
     );
 
