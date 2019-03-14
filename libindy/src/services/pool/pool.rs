@@ -305,6 +305,17 @@ impl<T: Networker, R: RequestHandler<T>> PoolSM<T, R> {
                         CommandExecutor::instance().send(Command::Pool(pc)).unwrap();
                         PoolState::Terminated(state.into())
                     }
+                    PoolEvent::CatchupRestart(merkle_tree) => {
+                        if let Ok((nodes, remotes)) = _get_nodes_and_remotes(&merkle_tree) {
+                            state.networker.borrow_mut().process_event(Some(NetworkerEvent::NodesStateUpdated(remotes)));
+                            state.request_handler = R::new(state.networker.clone(), _get_f(nodes.len()), &vec![], &nodes, None, &pool_name, timeout, extended_timeout);
+                            let ls = _ledger_status(&merkle_tree);
+                            state.request_handler.process_event(Some(RequestEvent::LedgerStatus(ls, None, Some(merkle_tree))));
+                            PoolState::GettingCatchupTarget(state)
+                        } else {
+                            PoolState::Terminated(state.into())
+                        }
+                    }
                     PoolEvent::CatchupTargetFound(target_mt_root, target_mt_size, merkle_tree) => {
                         if let Ok((nodes, remotes)) = _get_nodes_and_remotes(&merkle_tree) {
                             state.networker.borrow_mut().process_event(Some(NetworkerEvent::NodesStateUpdated(remotes)));
@@ -605,19 +616,22 @@ fn _get_request_handler_with_ledger_status_sent<T: Networker, R: RequestHandler<
     };
     networker.borrow_mut().process_event(Some(NetworkerEvent::NodesStateUpdated(remotes)));
     let mut request_handler = R::new(networker.clone(), _get_f(nodes.len()), &vec![], &nodes, None, pool_name, timeout, extended_timeout);
+    let ls = _ledger_status(&merkle);
+    request_handler.process_event(Some(RequestEvent::LedgerStatus(ls, None, Some(merkle))));
+    Ok(request_handler)
+}
+
+fn _ledger_status(merkle: &MerkleTree) -> LedgerStatus{
     let protocol_version = ProtocolVersion::get();
 
-    let ls = LedgerStatus {
+    LedgerStatus {
         txnSeqNo: merkle.count(),
         merkleRoot: merkle.root_hash().as_slice().to_base58(),
         ledgerId: 0,
         ppSeqNo: None,
         viewNo: None,
         protocolVersion: if protocol_version > 1 { Some(protocol_version) } else { None },
-    };
-
-    request_handler.process_event(Some(RequestEvent::LedgerStatus(ls, None, Some(merkle))));
-    Ok(request_handler)
+    }
 }
 
 fn _get_nodes_and_remotes(merkle: &MerkleTree) -> IndyResult<(HashMap<String, Option<VerKey>>, Vec<RemoteNode>)> {
