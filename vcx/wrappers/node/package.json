@@ -63,7 +63,7 @@
         "tslint": "^5.8.0",
         "tslint-config-standard": "^7.1.0",
         "typedoc": "0.11.1",
-        "typescript": "^2.9.1"
+        "typescript": "^3.0.0"
     },
     "main": "dist/src/index.js",
     "homepage": "https://github.com/evernym/vcx#readme",
