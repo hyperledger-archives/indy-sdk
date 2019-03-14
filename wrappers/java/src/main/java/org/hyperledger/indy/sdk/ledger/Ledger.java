@@ -1290,7 +1290,11 @@ public class Ledger extends IndyJava.API {
 	 *         'constraint_id': "AND" or "OR"
 	 *         'auth_constraints': [[constraint_1], [constraint_2]]
 	 *     }
-
+	 *
+	 * Default ledger auth rules: https://github.com/hyperledger/indy-node/blob/master/docs/source/auth_rules.md
+	 *
+	 * More about AUTH_RULE request: https://github.com/hyperledger/indy-node/blob/master/docs/source/requests.md#auth_rule
+	 *
 	 * @return A future resolving to a request result as json.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
