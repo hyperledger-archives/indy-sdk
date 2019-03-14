@@ -184,6 +184,15 @@ pub enum LedgerCommand {
     GetResponseMetadata(
         String, // response
         Box<Fn(IndyResult<String>) + Send>),
+    BuildAuthRuleRequest(
+        String, // submitter did
+        String, // auth type
+        String, // auth action
+        String, // field
+        Option<String>, // old value
+        String, // new value
+        String, // constraint
+        Box<Fn(IndyResult<String>) + Send>),
 }
 
 pub struct LedgerCommandExecutor {
@@ -360,6 +369,10 @@ impl LedgerCommandExecutor {
             LedgerCommand::GetResponseMetadata(response, cb) => {
                 info!(target: "ledger_command_executor", "GetResponseMetadata command received");
                 cb(self.get_response_metadata(&response));
+            }
+            LedgerCommand::BuildAuthRuleRequest(submitter_did, txn_type, action, field, old_value, new_value, constraint, cb) => {
+                info!(target: "ledger_command_executor", "BuildAuthRuleRequest command received");
+                cb(self.build_auth_rule_request(&submitter_did, &txn_type, &action, &field, old_value.as_ref().map(String::as_str), &new_value, &constraint));
             }
         };
     }
@@ -886,6 +899,26 @@ impl LedgerCommandExecutor {
             .to_indy(IndyErrorKind::InvalidState, "Cannot serialize ResponseMetadata")?;
 
         debug!("get_response_metadata <<< res: {:?}", res);
+
+        Ok(res)
+    }
+
+    fn build_auth_rule_request(&self,
+                               submitter_did: &str,
+                               txn_type: &str,
+                               action: &str,
+                               field: &str,
+                               old_value: Option<&str>,
+                               new_value: &str,
+                               constraint: &str) -> IndyResult<String> {
+        debug!("build_auth_rule_request >>> submitter_did: {:?}, txn_type: {:?}, action: {:?}, field: {:?}, \
+            old_value: {:?}, new_value: {:?}, constraint: {:?}", submitter_did, txn_type, action, field, old_value, new_value, constraint);
+
+        self.validate_opt_did(Some(submitter_did))?;
+
+        let res = self.ledger_service.build_auth_rule_request(submitter_did, txn_type, action, field, old_value, new_value, constraint)?;
+
+        debug!("build_auth_rule_request <<< res: {:?}", res);
 
         Ok(res)
     }

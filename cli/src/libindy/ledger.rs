@@ -77,7 +77,18 @@ impl Ledger {
     pub fn indy_build_pool_upgrade_request(submitter_did: &str, name: &str, version: &str, action: &str, sha256: &str, timeout: Option<u32>, schedule: Option<&str>,
                                            justification: Option<&str>, reinstall: bool, force: bool, package: Option<&str>) -> Result<String, IndyError> {
         ledger::build_pool_upgrade_request(submitter_did, name, version, action, sha256,
-                                               timeout, schedule, justification,
-                                               reinstall, force, package).wait()
+                                           timeout, schedule, justification,
+                                           reinstall, force, package).wait()
+    }
+
+    pub fn build_auth_rule_request(submitter_did: &str,
+                                   txn_type: &str,
+                                   action: &str,
+                                   field: &str,
+                                   old_value: Option<&str>,
+                                   new_value: &str,
+                                   constraint: &str, ) -> Result<String, IndyError> {
+        ledger::build_auth_rule_request(submitter_did, txn_type, action, field,
+                                        old_value, new_value, constraint).wait()
     }
 }

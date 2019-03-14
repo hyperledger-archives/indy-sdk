@@ -61,6 +61,8 @@ import com.evernym.sdk.vcx.wallet.WalletAlreadyExistsException;
 import com.evernym.sdk.vcx.wallet.WalletItemAlreadyExistsException;
 import com.evernym.sdk.vcx.wallet.WalletItemNotFoundException;
 
+import com.sun.jna.ptr.PointerByReference;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,6 +74,10 @@ public class VcxException extends Exception {
     private static final Logger logger = LoggerFactory.getLogger("VcxException");
     private static final long serialVersionUID = 2650355290834266234L;
     private int sdkErrorCode;
+    private String  sdkMessage;
+    private String  sdkFullMessage;
+    private String  sdkCause;
+    private String sdkBacktrace;
 
     /**
      * Initializes a new VcxException with the specified message.
@@ -81,6 +87,23 @@ public class VcxException extends Exception {
     protected VcxException(String message, int sdkErrorCode) {
         super(message);
         this.sdkErrorCode = sdkErrorCode;
+        setSdkErrorDetails();
+    }
+
+    private void setSdkErrorDetails(){
+        PointerByReference errorDetailsJson = new PointerByReference();
+
+        LibVcx.api.vcx_get_current_error(errorDetailsJson);
+
+        try {
+            JSONObject errorDetails = new JSONObject(errorDetailsJson.getValue().getString(0));
+            this.sdkMessage = errorDetails.optString("error");
+            this.sdkFullMessage = errorDetails.optString("message");
+            this.sdkCause = errorDetails.optString("cause");
+            this.sdkBacktrace = errorDetails.optString("backtrace");
+        } catch(Exception e) {
+           // TODO
+        }
     }
 
     /**
@@ -91,6 +114,34 @@ public class VcxException extends Exception {
     public int getSdkErrorCode() {
         return sdkErrorCode;
     }
+
+    /**
+     * Gets the SDK error message for the exception.
+     *
+     * @return The SDK error message used to construct the exception.
+     */
+    public String  getSdkMessage() {return sdkMessage;}
+
+    /**
+     * Gets the SDK full error message for the exception.
+     *
+     * @return The SDK full error message used to construct the exception.
+     */
+    public String  getSdkFullMessage() {return sdkFullMessage;}
+
+    /**
+     * Gets the SDK error cause for the exception.
+     *
+     * @return The SDK error cause used to construct the exception.
+     */
+    public String  getSdkCause() {return sdkCause;}
+
+    /**
+     * Gets the SDK error backtrace for the exception.
+     *
+     * @return The SDK error backtrace used to construct the exception.
+     */
+    public String  getSdkBacktrace() {return sdkBacktrace;}
 
     /**
      * Initializes a new VcxException using the specified SDK error code.
