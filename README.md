@@ -194,6 +194,8 @@ See section "Release channels" for more details.
 
 ### MacOS
 
+Pre-built libraries are not provided for MacOS.
+
 Clone the repo and run `mac.build.sh` in the `libindy` folder.
 
 Please see [here](docs/build-guides/mac-build.md) for manual build steps.
