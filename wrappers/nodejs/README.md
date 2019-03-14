@@ -1748,6 +1748,38 @@ Parse a GET\_REVOC\_REG\_DELTA response to get Revocation Registry Delta in the 
 
 Errors: `Common*`
 
+#### buildAuthRuleRequest \( submitterDid, txnType, action, field, oldValue, newValue, constraint \) -&gt; request
+
+Builds a AUTH_RULE request. Request to change authentication rules for a ledger transaction.
+
+* `submitterDid`: String - \(Optional\) DID of the read request sender \(if not provided then default Libindy DID will be used\).
+* `txnType`: String - ledger transaction alias or associated value.
+* `action`: String - type of an action.
+    * "ADD" - to add a new rule
+    * "EDIT" - to edit an existing one
+* `field`: String - transaction field.
+* `oldValue`: String - \(Optional\) old value of a field, which can be changed to a new_value (mandatory for EDIT action).
+* `newValue`: String - new value that can be used to fill the field. 
+* `constraint`: String - set of constraints required for execution of an action in the following format:
+```
+ {
+     constraint_id - <string> type of a constraint.
+         Can be either "ROLE" to specify final constraint or  "AND"/"OR" to combine constraints.
+     role - <string> role of a user which satisfy to constrain.
+     sig_count - <u32> the number of signatures required to execution action.
+     need_to_be_owner - <bool> if user must be an owner of transaction.
+     metadata - <object> additional parameters of the constraint.
+ }
+can be combined by
+ {
+     'constraint_id': <"AND" or "OR">
+     'auth_constraints': [<constraint_1>, <constraint_2>]
+ }
+```
+* __->__ `request`: Json
+
+Errors: `Common*`
+
 #### getResponseMetadata \( response \) -&gt; responseMetadata
 
 Parse transaction response to fetch metadata.

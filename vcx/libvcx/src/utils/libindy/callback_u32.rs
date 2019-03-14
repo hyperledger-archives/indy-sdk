@@ -1,6 +1,4 @@
-extern crate libc;
-
-use self::libc::c_char;
+use libc::c_char;
 use std::collections::HashMap;
 use std::sync::Mutex;
 use std::ops::Deref;

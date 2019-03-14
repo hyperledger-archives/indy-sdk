@@ -1,8 +1,9 @@
 use settings;
 use messages::*;
 use messages::message_type::MessageTypes;
-use utils::{httpclient, error};
+use utils::httpclient;
 use utils::constants::CREATE_KEYS_RESPONSE;
+use error::prelude::*;
 
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -51,19 +52,19 @@ impl CreateKeyBuilder {
         }
     }
 
-    pub fn for_did(&mut self, did: &str) -> Result<&mut Self, u32> {
+    pub fn for_did(&mut self, did: &str) -> VcxResult<&mut Self> {
         validation::validate_did(did)?;
         self.for_did = did.to_string();
         Ok(self)
     }
 
-    pub fn for_verkey(&mut self, verkey: &str) -> Result<&mut Self, u32> {
+    pub fn for_verkey(&mut self, verkey: &str) -> VcxResult<&mut Self> {
         validation::validate_verkey(verkey)?;
         self.for_verkey = verkey.to_string();
         Ok(self)
     }
 
-    pub fn send_secure(&self) -> Result<(String, String), u32> {
+    pub fn send_secure(&self) -> VcxResult<(String, String)> {
         trace!("CreateKeyMsg::send >>>");
 
         if settings::test_agency_mode_enabled() {
@@ -72,12 +73,12 @@ impl CreateKeyBuilder {
 
         let data = self.prepare_request()?;
 
-        let response = httpclient::post_u8(&data).or(Err(error::POST_MSG_FAILURE.code_num))?;
+        let response = httpclient::post_u8(&data)?;
 
         self.parse_response(&response)
     }
 
-    fn prepare_request(&self) -> Result<Vec<u8>, u32> {
+    fn prepare_request(&self) -> VcxResult<Vec<u8>> {
         let message = match settings::get_protocol_type() {
             settings::ProtocolTypes::V1 =>
                 A2AMessage::Version1(
@@ -94,7 +95,7 @@ impl CreateKeyBuilder {
         prepare_message_for_agency(&message, &agency_did)
     }
 
-    fn parse_response(&self, response: &Vec<u8>) -> Result<(String, String), u32> {
+    fn parse_response(&self, response: &Vec<u8>) -> VcxResult<(String, String)> {
         trace!("parse_response >>>");
 
         let mut response = parse_response_from_agency(response)?;
@@ -102,7 +103,7 @@ impl CreateKeyBuilder {
         match response.remove(0) {
             A2AMessage::Version1(A2AMessageV1::CreateKeyResponse(res)) => Ok((res.for_did, res.for_verkey)),
             A2AMessage::Version2(A2AMessageV2::CreateKeyResponse(res)) => Ok((res.for_did, res.for_verkey)),
-            _ => Err(error::INVALID_HTTP_RESPONSE.code_num)
+            _ => return Err(VcxError::from(VcxErrorKind::InvalidHttpResponse))
         }
     }
 }
@@ -160,7 +161,7 @@ mod tests {
     fn test_create_key_set_invalid_did_errors() {
         let for_did = "11235yBzrpJQmNyZzgoT";
         let res = create_keys().for_did(for_did).unwrap_err();
-        assert_eq!(res, error::INVALID_DID.code_num);
+        assert_eq!(res.kind(), VcxErrorKind::InvalidDid);
     }
 }
 

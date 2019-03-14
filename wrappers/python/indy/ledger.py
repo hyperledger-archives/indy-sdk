@@ -1261,3 +1261,76 @@ async def get_response_metadata(response: str) -> str:
     res = response_metadata.decode()
     logger.debug("get_response_metadata: <<< res: %r", res)
     return res
+
+
+async def build_auth_rule_request(submitter_did: str,
+                                  txn_type: str,
+                                  action: str,
+                                  field: str,
+                                  old_value: Optional[str],
+                                  new_value: str,
+                                  constraint: str) -> str:
+    """
+    Builds a AUTH_RULE request. Request to change authentication rules for a ledger transaction.
+
+    :param submitter_did: DID of the submitter stored in secured Wallet.
+    :param txn_type: ledger transaction alias or associated value.
+    :param action: type of an action.
+       Can be either "ADD" (to add a new rule) or "EDIT" (to edit an existing one).
+    :param field: transaction field.
+    :param old_value: old value of a field, which can be changed to a new_value (mandatory for EDIT action).
+    :param new_value: new value that can be used to fill the field.
+    :param constraint: set of constraints required for execution of an action in the following format:
+        {
+            constraint_id - <string> type of a constraint.
+                Can be either "ROLE" to specify final constraint or  "AND"/"OR" to combine constraints.
+            role - <string> role of a user which satisfy to constrain.
+            sig_count - <u32> the number of signatures required to execution action.
+            need_to_be_owner - <bool> if user must be an owner of transaction.
+            metadata - <object> additional parameters of the constraint.
+        }
+      can be combined by
+        {
+            'constraint_id': <"AND" or "OR">
+            'auth_constraints': [<constraint_1>, <constraint_2>]
+        }
+
+    :return: Request result as json.
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("build_auth_rule_request: >>> submitter_did: %r, txn_type: %r, action: %r, field: %r, "
+                 "old_value: %r, new_value: %r, constraint: %r",
+                 submitter_did,
+                 txn_type,
+                 action,
+                 field,
+                 old_value,
+                 new_value,
+                 constraint)
+
+    if not hasattr(build_auth_rule_request, "cb"):
+        logger.debug("build_auth_rule_request: Creating callback")
+        build_auth_rule_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
+    c_txn_type = c_char_p(txn_type.encode('utf-8'))
+    c_action = c_char_p(action.encode('utf-8'))
+    c_field = c_char_p(field.encode('utf-8'))
+    c_old_value = c_char_p(old_value.encode('utf-8')) if old_value is not None else None
+    c_new_value = c_char_p(new_value.encode('utf-8'))
+    c_constraint = c_char_p(constraint.encode('utf-8'))
+
+    request_json = await do_call('indy_build_auth_rule_request',
+                                 c_submitter_did,
+                                 c_txn_type,
+                                 c_action,
+                                 c_field,
+                                 c_old_value,
+                                 c_new_value,
+                                 c_constraint,
+                                 build_auth_rule_request.cb)
+
+    res = request_json.decode()
+    logger.debug("build_auth_rule_request: <<< res: %r", res)
+    return res
