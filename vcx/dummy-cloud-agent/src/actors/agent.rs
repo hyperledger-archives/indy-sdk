@@ -262,6 +262,7 @@ impl Agent {
             A2AMessageV1::UpdateConfigs(msg) => self.handle_update_configs_v1(msg),
             A2AMessageV1::GetConfigs(msg) => self.handle_get_configs_v1(msg),
             A2AMessageV1::RemoveConfigs(msg) => self.handle_remove_configs_v1(msg),
+            A2AMessageV1::UpdateComMethod(msg) => self.handle_update_com_method_v1(msg),
             _ => err_act!(self, err_msg("Unsupported message"))
         }
             .and_then(move |msgs, slf, _|
@@ -545,6 +546,12 @@ impl Agent {
                     .into_actor(slf)
             })
             .into_box()
+    }
+
+    fn handle_update_com_method_v1(&mut self, _msg: UpdateComMethod) -> ResponseActFuture<Self, Vec<A2AMessage>, Error> {
+        trace!("UpdateComMethod: {:?}", _msg);
+        let messages = vec![A2AMessage::Version1(A2AMessageV1::ComMethodUpdated(ComMethodUpdated {id: "123".to_string()}))];
+        ok_act!(self,  messages)
     }
 
     fn handle_update_configs_v1(&mut self, msg: UpdateConfigs) -> ResponseActFuture<Self, Vec<A2AMessage>, Error> {

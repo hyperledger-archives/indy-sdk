@@ -82,7 +82,7 @@ pub struct CreateAgentResponse {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct UpdateComMethodResponse {
+pub struct ComMethodUpdated {
     #[serde(rename = "@type")]
     msg_type: MessageTypes,
     id: String
