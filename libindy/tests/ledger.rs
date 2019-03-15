@@ -2471,7 +2471,7 @@ mod medium_cases {
             pool::check_response_type(&cred_def_response, ::utils::types::ResponseType::REPLY);
 
             let get_cred_def_request = ledger::build_get_cred_def_request(Some(DID_MY1), &cred_def_id).unwrap();
-            let get_cred_def_response = ledger::submit_request(pool_handle, &get_cred_def_request).unwrap();
+            let get_cred_def_response = ledger::submit_request_with_retries(pool_handle, &get_cred_def_request, &cred_def_response).unwrap();
             let (_, cred_def_json) = ledger::parse_get_cred_def_response(&get_cred_def_response).unwrap();
 
             let _cred_def: CredentialDefinitionV1 = serde_json::from_str(&cred_def_json).unwrap();

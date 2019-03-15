@@ -1222,15 +1222,15 @@ pub mod auth_rule_command {
     use super::*;
 
     command!(CommandMetadata::build("auth-rule", "Send AUTH_RULE request to change authentication rules for a ledger transaction.")
-                .add_required_param("txn_type", "Ledger transaction for which authentication rules will be applied. Can be an alias or associated value")
-                .add_required_param("action", "Type of action for which authentication rules will be applied. One of: ADD, EDIT")
-                .add_required_param("field", "Transaction field for which authentication rule will be applied")
+                .add_required_param("txn_type", "Ledger transaction alias or associated value")
+                .add_required_param("action", "Type of an action. One of: ADD, EDIT")
+                .add_required_param("field", "Transaction field")
                 .add_optional_param("old_value", "Old value of field, which can be changed to a new_value (mandatory for EDIT action)")
                 .add_required_param("new_value", "New value that can be used to fill the field")
                 .add_required_param("constraint", r#"Set of constraints required for execution of an action
          {
              constraint_id - type of a constraint. Can be either "ROLE" to specify final constraint or  "AND"/"OR" to combine constraints.
-             role - role of a user which satisfy to constrain.
+             role - role associated value {TRUSTEE: 0, STEWARD: 2, TRUST_ANCHOR: 101, NETWORK_MONITOR: 201, ANY: *}.
              sig_count - the number of signatures required to execution action.
              need_to_be_owner - if user must be an owner of transaction.
              metadata - additional parameters of the constraint.
@@ -1241,8 +1241,8 @@ pub mod auth_rule_command {
              auth_constraints: [<constraint_1>, <constraint_2>]
          }
                 "#)
-                .add_example(r#"ledger auth-rule txn_type=NYM action=ADD field=role new_value=101 constraint={"sig_count":1,"role":0,"constraint_id":"role","need_to_be_owner":false}"#)
-                .add_example(r#"ledger auth-rule txn_type=NYM action=EDIT field=role old_value=101 new_value=0 constraint={"sig_count":1,"role":0,"constraint_id":"role","need_to_be_owner":false}"#)
+                .add_example(r#"ledger auth-rule txn_type=NYM action=ADD field=role new_value=101 constraint="{"sig_count":1,"role":"0","constraint_id":"ROLE","need_to_be_owner":false}""#)
+                .add_example(r#"ledger auth-rule txn_type=NYM action=EDIT field=role old_value=101 new_value=0 constraint="{"sig_count":1,"role":"0","constraint_id":"ROLE","need_to_be_owner":false}""#)
                 .finalize()
     );
 

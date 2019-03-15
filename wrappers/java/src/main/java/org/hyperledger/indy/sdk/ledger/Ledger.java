@@ -1270,10 +1270,10 @@ public class Ledger extends IndyJava.API {
 	 * Builds a AUTH_RULE request. Request to change authentication rules for a ledger transaction.
 	 *
 	 * @param submitterDid DID of the submitter stored in secured Wallet.
-	 * @param txnType - ledger transaction alias or associated value for which authentication rules will be applied.
-	 * @param action - type of an action for which authentication rules will be applied.
+	 * @param txnType - ledger transaction alias or associated value.
+	 * @param action - type of an action.
 	 *     Can be either "ADD" (to add a new rule) or "EDIT" (to edit an existing one).
-	 * @param field - transaction field for which authentication rule will be applied.
+	 * @param field - transaction field.
 	 * @param oldValue - old value of a field, which can be changed to a new_value (mandatory for EDIT action).
 	 * @param newValue - new value that can be used to fill the field.
 	 * @param constraint - set of constraints required for execution of an action in the following format:
@@ -1290,7 +1290,11 @@ public class Ledger extends IndyJava.API {
 	 *         'constraint_id': "AND" or "OR"
 	 *         'auth_constraints': [[constraint_1], [constraint_2]]
 	 *     }
-
+	 *
+	 * Default ledger auth rules: https://github.com/hyperledger/indy-node/blob/master/docs/source/auth_rules.md
+	 *
+	 * More about AUTH_RULE request: https://github.com/hyperledger/indy-node/blob/master/docs/source/requests.md#auth_rule
+	 *
 	 * @return A future resolving to a request result as json.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */

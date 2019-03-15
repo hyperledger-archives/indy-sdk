@@ -1839,11 +1839,10 @@ pub extern fn indy_get_response_metadata(command_handle: CommandHandle,
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// submitter_did: DID of the read request sender.
-/// txn_type: ledger transaction alias or associated value for which authentication rules will be applied.
-/// action: type of an action for which authentication rules will be applied.
+/// txn_type: ledger transaction alias or associated value.
+/// action: type of an action.
 ///     Can be either "ADD" (to add a new rule) or "EDIT" (to edit an existing one).
-/// field: transaction field for which authentication rule will be applied.
+/// field: transaction field.
 /// old_value: old value of a field, which can be changed to a new_value (mandatory for EDIT action).
 /// new_value: new value that can be used to fill the field.
 /// constraint: set of constraints required for execution of an action in the following format:
@@ -1860,6 +1859,10 @@ pub extern fn indy_get_response_metadata(command_handle: CommandHandle,
 ///         'constraint_id': <"AND" or "OR">
 ///         'auth_constraints': [<constraint_1>, <constraint_2>]
 ///     }
+///
+/// Default ledger auth rules: https://github.com/hyperledger/indy-node/blob/master/docs/source/auth_rules.md
+///
+/// More about AUTH_RULE request: https://github.com/hyperledger/indy-node/blob/master/docs/source/requests.md#auth_rule
 ///
 /// cb: Callback that takes command result as parameter.
 ///

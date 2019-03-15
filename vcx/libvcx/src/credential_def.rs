@@ -1,18 +1,17 @@
-extern crate serde_json;
-extern crate rand;
-extern crate libc;
+use serde_json;
 
-use utils::error;
-use utils::libindy::payments::{PaymentTxn};
-use utils::libindy::anoncreds;
-use error::cred_def::CredDefError;
 use object_cache::ObjectCache;
+use messages::ObjectWithVersion;
+use error::prelude::*;
+use utils::constants::DEFAULT_SERIALIZE_VERSION;
+use utils::libindy::payments::PaymentTxn;
+use utils::libindy::anoncreds;
 
 lazy_static! {
     static ref CREDENTIALDEF_MAP: ObjectCache<CredentialDef> = Default::default();
 }
 
-#[derive(Deserialize, Debug, Serialize, PartialEq)]
+#[derive(Clone, Deserialize, Debug, Serialize, PartialEq)]
 pub struct CredentialDef {
     id: String,
     tag: String,
@@ -35,40 +34,26 @@ pub struct RevocationDetails {
     pub max_creds: Option<u32>,
 }
 
-impl Default for CredentialDef {
-    fn default() -> CredentialDef {
-        CredentialDef {
-            id: String::new(),
-            tag: String::new(),
-            name: String::new(),
-            source_id: String::new(),
-            issuer_did: None,
-            cred_def_payment_txn: None,
-            rev_reg_def_payment_txn: None,
-            rev_reg_delta_payment_txn: None,
-            rev_reg_id: None,
-            rev_reg_def: None,
-            rev_reg_entry: None,
-            tails_file: None,
-        }
-    }
-}
-
 impl CredentialDef {
-
-    pub fn from_str(input: &str) -> Result<CredentialDef, CredDefError> {
-        CredentialDef::from_string_with_version(&input).or(Err(CredDefError::CreateCredDefError()))
+    pub fn from_str(data: &str) -> VcxResult<CredentialDef> {
+        ObjectWithVersion::deserialize(data)
+            .map(|obj: ObjectWithVersion<CredentialDef>| obj.data)
+            .map_err(|err| err.map(VcxErrorKind::CreateCredDef,"Cannot deserialize CredentialDefinition"))
     }
 
-    pub fn to_string(&self) -> String { self.to_string_with_version() }
+    pub fn to_string(&self) -> VcxResult<String> {
+        ObjectWithVersion::new(DEFAULT_SERIALIZE_VERSION, self.to_owned())
+            .serialize()
+            .map_err(|err| err.extend("Cannot serialize CredentialDefinition"))
+    }
 
     pub fn get_source_id(&self) -> &String { &self.source_id }
 
-    pub fn get_rev_reg_id(&self) -> Option<String> { self.rev_reg_id.clone() }
+    pub fn get_rev_reg_id(&self) -> Option<&String> { self.rev_reg_id.as_ref() }
 
-    pub fn get_tails_file(&self) -> Option<String> {self.tails_file.clone() }
+    pub fn get_tails_file(&self) -> Option<&String> { self.tails_file.as_ref() }
 
-    pub fn get_rev_reg_def(&self) -> Option<String> { self.rev_reg_def.clone() }
+    pub fn get_rev_reg_def(&self) -> Option<&String> { self.rev_reg_def.as_ref() }
 
     pub fn get_cred_def_id(&self) -> &String { &self.id }
 
@@ -76,25 +61,14 @@ impl CredentialDef {
 
     pub fn set_source_id(&mut self, source_id: String) { self.source_id = source_id.clone(); }
 
-    fn get_cred_def_payment_txn(&self) -> Result<PaymentTxn, u32> { Ok(self.cred_def_payment_txn.clone().ok_or(error::NOT_READY.code_num)?) }
+    fn get_cred_def_payment_txn(&self) -> VcxResult<PaymentTxn> {
+        self.cred_def_payment_txn.clone()
+            .ok_or(VcxError::from(VcxErrorKind::NoPaymentInformation))
+    }
 
     fn get_rev_reg_def_payment_txn(&self) -> Option<PaymentTxn> { self.rev_reg_def_payment_txn.clone() }
 
     fn get_rev_reg_delta_payment_txn(&self) -> Option<PaymentTxn> { self.rev_reg_delta_payment_txn.clone() }
-
-    fn to_string_with_version(&self) -> String {
-        json!({
-            "version": "1.0",
-            "data": json!(self),
-        }).to_string()
-    }
-
-    fn from_string_with_version(data: &str) -> Result<CredentialDef, CredDefError> {
-        let values:serde_json::Value = serde_json::from_str(data).or(Err(CredDefError::CommonError(error::INVALID_JSON.code_num)))?;
-        let version = values["version"].to_string();
-        let data = values["data"].to_string();
-        serde_json::from_str(&data).or(Err(CredDefError::CreateCredDefError()))
-    }
 }
 
 pub fn create_new_credentialdef(source_id: String,
@@ -102,31 +76,29 @@ pub fn create_new_credentialdef(source_id: String,
                                 issuer_did: String,
                                 schema_id: String,
                                 tag: String,
-                                revocation_details: String) -> Result<u32, CredDefError> {
+                                revocation_details: String) -> VcxResult<u32> {
     trace!("create_new_credentialdef >>> source_id: {}, name: {}, issuer_did: {}, schema_id: {}, revocation_details: {}",
            source_id, name, issuer_did, schema_id, revocation_details);
 
     let revocation_details: RevocationDetails = serde_json::from_str(&revocation_details)
-        .or(Err(CredDefError::InvalidRevocationDetails()))?;
+        .to_vcx(VcxErrorKind::InvalidRevocationDetails, "Cannot deserialize RevocationDeltas")?;
 
-    let (_, schema_json) = anoncreds::get_schema_json(&schema_id)
-        .map_err(|x| CredDefError::CommonError(x))?;
+    let (_, schema_json) = anoncreds::get_schema_json(&schema_id)?;
 
     // Creates Credential Definition in both wallet and on ledger
     let (id, cred_def_payment_txn) = anoncreds::create_cred_def(&issuer_did,
-                                                             &schema_json,
-                                                             &tag,
-                                                             None,
-                                                             revocation_details.support_revocation)
-        .map_err(|err| {
-            if err == error::CREDENTIAL_DEF_ALREADY_CREATED.code_num {
-                error!("Credential Definition for issuer_did {} already in wallet", issuer_did);
-                CredDefError::CredDefAlreadyCreatedError()
-            } else {
-                error!("{} with: {}", error::CREATE_CREDENTIAL_DEF_ERR.message, err);
-                CredDefError::CreateCredDefError()
-            }
-        })?;
+                                                                &schema_json,
+                                                                &tag,
+                                                                None,
+                                                                revocation_details.support_revocation).map_err(|err| {
+        if err.kind() == VcxErrorKind::CredDefAlreadyCreated {
+            error!("Credential Definition for issuer_did {} already in wallet", issuer_did);
+            err
+        } else {
+            error!("{}", err);
+            VcxError::from_msg(VcxErrorKind::CreateCredDef, err)
+        }
+    })?;
 
     // Creates Revocation Definition in wallet and on ledger
     // Posts Revocation Delta to Ledger
@@ -136,25 +108,25 @@ pub fn create_new_credentialdef(source_id: String,
             let tails_file = revocation_details
                 .tails_file
                 .as_ref()
-                .ok_or(CredDefError::InvalidRevocationDetails())?;
+                .ok_or(VcxError::from_msg(VcxErrorKind::InvalidRevocationDetails, "Invalid RevocationDetails: `tails_file` field not found"))?;
 
             let max_creds = revocation_details
                 .max_creds
-                .ok_or(CredDefError::InvalidRevocationDetails())?;
+                .ok_or(VcxError::from_msg(VcxErrorKind::InvalidRevocationDetails, "Invalid RevocationDetails: `max_creds` field not found"))?;
 
             let (rev_reg_id, rev_reg_def, rev_reg_entry, rev_def_payment) =
                 anoncreds::create_rev_reg_def(&issuer_did, &id, &tails_file, max_creds)
-                    .or(Err(CredDefError::CreateRevRegDefError()))?;
+                    .map_err(|err| err.map(VcxErrorKind::CreateCredDef, "Cannot create CredentialDefinition"))?;
 
             let (delta_payment, _) = anoncreds::post_rev_reg_delta(&issuer_did, &rev_reg_id, &rev_reg_entry)
-                .or(Err(CredDefError::InvalidRevocationEntry()))?;
+                .map_err(|err| err.map(VcxErrorKind::InvalidRevocationEntry, "Cannot post RevocationEntry"))?;
 
             (Some(rev_reg_id), Some(rev_reg_def), Some(rev_reg_entry), rev_def_payment, delta_payment)
         }
         _ => (None, None, None, None, None),
     };
 
-    let new_cred_def = CredentialDef {
+    let cred_def = CredentialDef {
         source_id,
         name,
         tag,
@@ -169,104 +141,82 @@ pub fn create_new_credentialdef(source_id: String,
         tails_file: revocation_details.tails_file,
     };
 
-    let new_handle = CREDENTIALDEF_MAP.add(new_cred_def).map_err(|key|CredDefError::CreateCredDefError())?;
+    let handle = CREDENTIALDEF_MAP.add(cred_def).or(Err(VcxError::from(VcxErrorKind::CreateCredDef)))?;
 
-    Ok(new_handle)
+    Ok(handle)
 }
 
 pub fn is_valid_handle(handle: u32) -> bool {
     CREDENTIALDEF_MAP.has_handle(handle)
 }
 
-pub fn to_string(handle: u32) -> Result<String, u32> {
+pub fn to_string(handle: u32) -> VcxResult<String> {
     CREDENTIALDEF_MAP.get(handle, |cd| {
-        Ok(CredentialDef::to_string_with_version(&cd))
+        cd.to_string()
     })
 }
 
-pub fn from_string(credentialdef_data: &str) -> Result<u32, CredDefError> {
-    let derived_credentialdef: CredentialDef = CredentialDef::from_str(credentialdef_data)?;
-    let source_id = derived_credentialdef.source_id.clone();
-    let new_handle = CREDENTIALDEF_MAP.add(derived_credentialdef).map_err(|ec|CredDefError::CommonError(ec))?;
-
-    Ok(new_handle)
+pub fn from_string(data: &str) -> VcxResult<u32> {
+    let cred_def: CredentialDef = CredentialDef::from_str(data)?;
+    CREDENTIALDEF_MAP.add(cred_def)
 }
 
-pub fn get_source_id(handle: u32) -> Result<String, CredDefError> {
-    CREDENTIALDEF_MAP.get(handle,|c| {
+pub fn get_source_id(handle: u32) -> VcxResult<String> {
+    CREDENTIALDEF_MAP.get(handle, |c| {
         Ok(c.get_source_id().clone())
-    }).map_err(|ec|CredDefError::CommonError(ec))
+    })
 }
 
-pub fn get_cred_def_payment_txn(handle: u32) -> Result<PaymentTxn, CredDefError> {
-    CREDENTIALDEF_MAP.get(handle,|c| {
+pub fn get_cred_def_payment_txn(handle: u32) -> VcxResult<PaymentTxn> {
+    CREDENTIALDEF_MAP.get(handle, |c| {
         c.get_cred_def_payment_txn()
-    }).or(Err(CredDefError::NoPaymentInformation()))
+    })
 }
 
-pub fn get_cred_def_id(handle: u32) -> Result<String, CredDefError> {
-    CREDENTIALDEF_MAP.get(handle,|c| {
+pub fn get_cred_def_id(handle: u32) -> VcxResult<String> {
+    CREDENTIALDEF_MAP.get(handle, |c| {
         Ok(c.get_cred_def_id().clone())
-    }).map_err(|ec|CredDefError::CommonError(ec))
+    })
 }
 
-pub fn get_rev_reg_id(handle: u32) -> Result<Option<String>, CredDefError> {
-    CREDENTIALDEF_MAP.get(handle,|c| {
-        Ok(c.get_rev_reg_id().clone())
-    }).map_err(|ec|CredDefError::CommonError(ec))
+pub fn get_rev_reg_id(handle: u32) -> VcxResult<Option<String>> {
+    CREDENTIALDEF_MAP.get(handle, |c| {
+        Ok(c.get_rev_reg_id().cloned())
+    })
 }
 
-pub fn get_tails_file(handle: u32) -> Result<Option<String>, CredDefError> {
-    CREDENTIALDEF_MAP.get(handle,|c| {
-        Ok(c.get_tails_file().clone())
-    }).map_err(|ec|CredDefError::CommonError(ec))
+pub fn get_tails_file(handle: u32) -> VcxResult<Option<String>> {
+    CREDENTIALDEF_MAP.get(handle, |c| {
+        Ok(c.get_tails_file().cloned())
+    })
 }
 
-pub fn get_rev_reg_def(handle: u32) -> Result<Option<String>, CredDefError> {
-    CREDENTIALDEF_MAP.get(handle,|c| {
-        Ok(c.get_rev_reg_def().clone())
-    }).map_err(|ec|CredDefError::CommonError(ec))
+pub fn get_rev_reg_def(handle: u32) -> VcxResult<Option<String>> {
+    CREDENTIALDEF_MAP.get(handle, |c| {
+        Ok(c.get_rev_reg_def().cloned())
+    })
 }
 
-pub fn get_rev_reg_def_payment_txn(handle: u32) -> Result<Option<PaymentTxn>, CredDefError> {
-    CREDENTIALDEF_MAP.get(handle,|c| {
+pub fn get_rev_reg_def_payment_txn(handle: u32) -> VcxResult<Option<PaymentTxn>> {
+    CREDENTIALDEF_MAP.get(handle, |c| {
         Ok(c.get_rev_reg_def_payment_txn())
-    }).map_err(|ec|CredDefError::CommonError(ec))
+    })
 }
 
 
-pub fn get_rev_reg_delta_payment_txn(handle: u32) -> Result<Option<PaymentTxn>, CredDefError> {
-    CREDENTIALDEF_MAP.get(handle,|c| {
+pub fn get_rev_reg_delta_payment_txn(handle: u32) -> VcxResult<Option<PaymentTxn>> {
+    CREDENTIALDEF_MAP.get(handle, |c| {
         Ok(c.get_rev_reg_delta_payment_txn())
-    }).map_err(|ec|CredDefError::CommonError(ec))
+    })
 }
 
-pub fn release(handle: u32) -> Result<(), CredDefError> {
-    match CREDENTIALDEF_MAP.release(handle) {
-        Ok(_) => Ok(()),
-        Err(_) => Err(CredDefError::InvalidHandle()),
-    }
-}
-
-pub fn find_handle(cred_def_id: &str) -> Result<u32, CredDefError> {
-    let mut handles = Vec::new();
-
-    for handle in CREDENTIALDEF_MAP.store.lock().unwrap().iter() {
-        handles.push(handle.0.clone());
-    }
-    for handle in handles.iter() {
-        let id = get_cred_def_id(*handle).unwrap();
-        println!("id: {}", id);
-    }
-
-    Ok(error::SUCCESS.code_num)
+pub fn release(handle: u32) -> VcxResult<()> {
+    CREDENTIALDEF_MAP.release(handle)
+        .or(Err(VcxError::from(VcxErrorKind::InvalidCredDefHandle)))
 }
 
 pub fn release_all() {
-    match CREDENTIALDEF_MAP.drain() {
-        Ok(_) => (),
-        Err(_) => (),
-    };
+    CREDENTIALDEF_MAP.drain().ok();
 }
 
 #[cfg(test)]
@@ -334,8 +284,7 @@ pub mod tests {
 
         let payment = serde_json::to_string(&get_cred_def_payment_txn(handle).unwrap()).unwrap();
         assert!(payment.len() > 0);
-        find_handle("123").unwrap();
-}
+    }
 
     #[test]
     fn test_get_credential_def_by_send_request_fails() {
@@ -370,12 +319,12 @@ pub mod tests {
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
 
         let rc = create_new_credentialdef("1".to_string(),
-                                              wallet_name.to_string(),
-                                              did,
-                                              schema_id,
-                                              "tag_1".to_string(),
-                                              r#"{"support_revocation":true}"#.to_string());
-        assert_eq!(rc, Err(CredDefError::InvalidRevocationDetails()));
+                                          wallet_name.to_string(),
+                                          did,
+                                          schema_id,
+                                          "tag_1".to_string(),
+                                          r#"{"support_revocation":true}"#.to_string());
+        assert_eq!(rc.unwrap_err().kind(), VcxErrorKind::InvalidRevocationDetails);
     }
 
     #[cfg(feature = "pool_tests")]
@@ -454,7 +403,7 @@ pub mod tests {
                                           "tag_1".to_string(),
                                           r#"{"support_revocation":false}"#.to_string());
 
-        assert_eq!(rc.err(), Some(CredDefError::CredDefAlreadyCreatedError()));
+        assert_eq!(rc.unwrap_err().kind(), VcxErrorKind::CredDefAlreadyCreated);
     }
 
     #[test]
@@ -484,8 +433,8 @@ pub mod tests {
         let new_credentialdef_data = to_string(new_handle).unwrap();
         let credentialdef1: CredentialDef = CredentialDef::from_str(&credentialdef_data).unwrap();
         let credentialdef2: CredentialDef = CredentialDef::from_str(&new_credentialdef_data).unwrap();
-        assert_eq!(credentialdef1,credentialdef2);
-        assert_eq!(CredentialDef::from_str("{}").err(), Some(CredDefError::CreateCredDefError()));
+        assert_eq!(credentialdef1, credentialdef2);
+        assert_eq!(CredentialDef::from_str("{}").unwrap_err().kind(), VcxErrorKind::CreateCredDef);
     }
 
     #[test]
@@ -497,11 +446,11 @@ pub mod tests {
         let h4 = create_new_credentialdef("SourceId".to_string(), CREDENTIAL_DEF_NAME.to_string(), ISSUER_DID.to_string(), SCHEMA_ID.to_string(), "tag".to_string(), "{}".to_string()).unwrap();
         let h5 = create_new_credentialdef("SourceId".to_string(), CREDENTIAL_DEF_NAME.to_string(), ISSUER_DID.to_string(), SCHEMA_ID.to_string(), "tag".to_string(), "{}".to_string()).unwrap();
         release_all();
-        assert_eq!(release(h1),Err(CredDefError::InvalidHandle()));
-        assert_eq!(release(h2),Err(CredDefError::InvalidHandle()));
-        assert_eq!(release(h3),Err(CredDefError::InvalidHandle()));
-        assert_eq!(release(h4),Err(CredDefError::InvalidHandle()));
-        assert_eq!(release(h5),Err(CredDefError::InvalidHandle()));
+        assert_eq!(release(h1).unwrap_err().kind(), VcxErrorKind::InvalidCredDefHandle);
+        assert_eq!(release(h2).unwrap_err().kind(), VcxErrorKind::InvalidCredDefHandle);
+        assert_eq!(release(h3).unwrap_err().kind(), VcxErrorKind::InvalidCredDefHandle);
+        assert_eq!(release(h4).unwrap_err().kind(), VcxErrorKind::InvalidCredDefHandle);
+        assert_eq!(release(h5).unwrap_err().kind(), VcxErrorKind::InvalidCredDefHandle);
     }
 
     #[test]

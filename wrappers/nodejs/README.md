@@ -1752,12 +1752,12 @@ Errors: `Common*`
 
 Builds a AUTH_RULE request. Request to change authentication rules for a ledger transaction.
 
-* `submitterDid`: String - DID of the read request sender (TRUSTEE only).
-* `txnType`: String - ledger transaction alias or associated value for which authentication rules will be applied.
-* `action`: String - type of an action for which authentication rules will be applied.
+* `submitterDid`: String - \(Optional\) DID of the read request sender \(if not provided then default Libindy DID will be used\).
+* `txnType`: String - ledger transaction alias or associated value.
+* `action`: String - type of an action.
     * "ADD" - to add a new rule
     * "EDIT" - to edit an existing one
-* `field`: String - transaction field for which authentication rule will be applied.
+* `field`: String - transaction field.
 * `oldValue`: String - \(Optional\) old value of a field, which can be changed to a new_value (mandatory for EDIT action).
 * `newValue`: String - new value that can be used to fill the field. 
 * `constraint`: String - set of constraints required for execution of an action in the following format:
@@ -1776,6 +1776,11 @@ can be combined by
      'auth_constraints': [<constraint_1>, <constraint_2>]
  }
 ```
+
+Default ledger auth rules: https://github.com/hyperledger/indy-node/blob/master/docs/source/auth_rules.md
+
+More about AUTH_RULE request: https://github.com/hyperledger/indy-node/blob/master/docs/source/requests.md#auth_rule   
+
 * __->__ `request`: Json
 
 Errors: `Common*`

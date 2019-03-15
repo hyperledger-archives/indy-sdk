@@ -265,15 +265,6 @@ pub fn error_string(code_num:u32) -> String {
     }
 }
 
-pub fn map_libindy_err(check_rtn: u32, default_rtn: u32) -> u32 {
-    match check_rtn {
-        x if x == TIMEOUT_LIBINDY_ERROR.code_num => {
-            x
-        },
-        _ => default_rtn
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -433,22 +424,5 @@ mod tests {
     #[test]
     fn test_invalid_master_secret() {
         assert_eq!(error_message(&INVALID_MASTER_SECRET.code_num), INVALID_MASTER_SECRET.message);
-    }
-
-    #[test]
-    fn test_map_libindy_err() {
-        let default = UNKNOWN_ERROR.code_num;
-        // Pass in arbitrary check val, rtn default err
-        assert_eq!(map_libindy_err(INVALID_SCHEMA_SEQ_NO.code_num, default),
-                   default);
-        // Pass libindy timeout, rtn Err(libindy timeout)
-        assert_eq!(map_libindy_err(TIMEOUT_LIBINDY_ERROR.code_num, default),
-                   TIMEOUT_LIBINDY_ERROR.code_num);
-
-        let fn_map_err = |x: Result<u32, u32>| x;
-        // map_libindy_err not called with Ok returned
-        assert_eq!(fn_map_err(Ok(0)).map_err(|x| map_libindy_err(x, default)), Ok(0));
-        // map_libindy_err called with Err returned
-        assert_eq!(fn_map_err(Err(0)).map_err(|x| map_libindy_err(x, default)), Err(default))
     }
 }
