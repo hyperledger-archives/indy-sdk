@@ -1313,7 +1313,7 @@ pub mod get_auth_rule_command {
         let (_, wallet_name) = ensure_opened_wallet(&ctx)?;
         let submitter_did = get_active_did(&ctx);
 
-        let auth_type = get_opt_str_param("type", params).map_err(error_err!())?;
+        let auth_type = get_opt_str_param("txn_type", params).map_err(error_err!())?;
         let auth_action = get_opt_str_param("action", params).map_err(error_err!())?;
         let field = get_opt_str_param("field", params).map_err(error_err!())?;
         let old_value = get_opt_str_param("old_value", params).map_err(error_err!())?;
@@ -1325,17 +1325,15 @@ pub mod get_auth_rule_command {
         let response_json = Ledger::submit_request(pool_handle, &request)
             .map_err(|err| handle_indy_error(err, submitter_did.as_ref().map(String::as_str), Some(&pool_name), Some(&wallet_name)))?;
 
-        let mut response: Response<serde_json::Value> = serde_json::from_str::<Response<serde_json::Value>>(&response_json)
+        let response: Response<serde_json::Value> = serde_json::from_str::<Response<serde_json::Value>>(&response_json)
             .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
-
-        if let Some(result) = response.result.as_mut() {
-            result["txn"]["data"]["auth_type"] = get_txn_title(&result["txn"]["data"]["auth_type"]);
-        }
 
         let result = handle_transaction_response(response)?;
 
-        let rules = result["txn"]["data"].as_object()
-            .ok_or(println_err!("Invalid data has been received"))?;
+        let rules = match result["data"].as_object() {
+            Some(r) => r,
+            None => return Err(println_err!("Invalid data has been received"))
+        };
 
         let constraints = rules
             .iter()
@@ -1343,7 +1341,7 @@ pub mod get_auth_rule_command {
                 let parts: Vec<&str> = constraint_id.split("--").collect();
 
                 json!({
-                    "auth_type": parts.get(1),
+                    "auth_type": get_txn_title(&serde_json::Value::String(parts.get(1).cloned().unwrap_or("-").to_string())),
                     "auth_action": parts.get(0),
                     "field": parts.get(2),
                     "old_value": parts.get(3),
@@ -3717,6 +3715,23 @@ pub mod tests {
                 let cmd = get_auth_rule_command::new();
                 let params = CommandParams::new();
                 cmd.execute(&ctx, &params).unwrap();
+            }
+
+            tear_down_with_wallet_and_pool(&ctx);
+        }
+
+        #[test]
+        pub fn get_auth_rule_works_for_no_constraint() {
+            let ctx = setup_with_wallet_and_pool();
+            use_trustee(&ctx);
+            {
+                let cmd = get_auth_rule_command::new();
+                let mut params = CommandParams::new();
+                params.insert("txn_type", AUTH_TYPE.to_string());
+                params.insert("action", AUTH_ACTION.to_string());
+                params.insert("field", "WRONG_FIELD".to_string());
+                params.insert("new_value", "WRONG_VALUE".to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
             }
 
             tear_down_with_wallet_and_pool(&ctx);
