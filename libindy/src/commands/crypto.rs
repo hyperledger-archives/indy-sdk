@@ -383,7 +383,7 @@ impl CryptoCommandExecutor {
         //generate content encryption key that will encrypt `message`
         let cek = chacha20poly1305_ietf::gen_key();
 
-        let (raw, base64_protected) = if let Some(sender_vk) = sender_vk {
+        let (json_str, base64_protected) = if let Some(sender_vk) = sender_vk {
             self.crypto_service.validate_key(&sender_vk)?;
 
             //returns authcrypted pack_message format. See Wire message format HIPE for details
@@ -392,127 +392,13 @@ impl CryptoCommandExecutor {
             //returns anoncrypted pack_message format. See Wire message format HIPE for details
             self._prepare_protected_anoncrypt(&cek, receiver_list)?
         };
-
-        let raw_s = String::from_utf8(raw).map_err(|err| {
-            err_msg(IndyErrorKind::InvalidStructure, format!(
-                "Failed to utf8 encode data {}",
-                err
-            ))
-        })?;
-
+        
         // Use AEAD to encrypt `message` with "protected" data as "associated data"
         let (ciphertext, iv, tag) =
             self.crypto_service
-                .encrypt_plaintext(message, &raw_s, &cek);
+                .encrypt_plaintext(message, &json_str, &cek);
 
         self._format_pack_message(&base64_protected, &ciphertext, &iv, &tag)
-    }
-
-    fn _prepare_protected_anoncrypt(&self,
-                                    cek: &chacha20poly1305_ietf::Key,
-                                    receiver_list: Vec<String>,
-    ) -> IndyResult<(Vec<u8>, String)> {
-        let mut encrypted_recipients_struct : Vec<Recipient> = vec![];
-
-        for their_vk in receiver_list {
-            //encrypt sender verkey
-            let enc_cek = self.crypto_service.crypto_box_seal(&their_vk, &cek[..])?;
-
-            //create recipient struct and push to encrypted list
-            encrypted_recipients_struct.push(Recipient {
-                encrypted_key: base64::encode_urlsafe(enc_cek.as_slice()),
-                header: Header {
-                    kid: their_vk,
-                    sender: None,
-                    iv: None
-                },
-            });
-        } // end for-loop
-        Ok(self._base64_encode_protected(encrypted_recipients_struct, false)?)
-    }
-
-    fn _prepare_protected_authcrypt(&self,
-                                    cek: &chacha20poly1305_ietf::Key,
-                                    receiver_list: Vec<String>, sender_vk: &str,
-                                    wallet_handle: i32,
-    ) -> IndyResult<(Vec<u8>, String)> {
-        let mut encrypted_recipients_struct : Vec<Recipient> = vec![];
-
-        //get my_key from my wallet
-        let my_key = self.wallet_service.get_indy_object(
-            wallet_handle,
-            sender_vk,
-            &RecordOptions::id_value()
-        )?;
-
-        //encrypt cek for recipient
-        for their_vk in receiver_list {
-            let (enc_cek, iv) = self.crypto_service.crypto_box(&my_key, &their_vk, &cek[..])?;
-
-            let enc_sender = self.crypto_service.crypto_box_seal(&their_vk, sender_vk.as_bytes())?;
-
-            //create recipient struct and push to encrypted list
-            encrypted_recipients_struct.push(Recipient {
-                encrypted_key: base64::encode_urlsafe(enc_cek.as_slice()),
-                header: Header {
-                    kid: their_vk,
-                    sender: Some(base64::encode_urlsafe(enc_sender.as_slice())),
-                    iv: Some(base64::encode_urlsafe(iv.as_slice()))
-                },
-            });
-        } // end for-loop
-
-        Ok(self._base64_encode_protected(encrypted_recipients_struct, true)?)
-    }
-
-    fn _base64_encode_protected(&self, encrypted_recipients_struct: Vec<Recipient>, alg_is_authcrypt: bool) -> IndyResult<(Vec<u8>, String)> {
-        let alg_val = if alg_is_authcrypt { String::from("Authcrypt") } else { String::from("Anoncrypt") };
-
-        //structure protected and base64URL encode it
-        let protected_struct = Protected {
-            enc: "xchacha20poly1305_ietf".to_string(),
-            typ: "JWM/1.0".to_string(),
-            alg: alg_val,
-            recipients: encrypted_recipients_struct,
-        };
-        let protected_encoded = serde_json::to_string(&protected_struct).map_err(|err| {
-            err_msg(IndyErrorKind::InvalidStructure, format!(
-                "Failed to serialize protected field {}",
-                err
-            ))
-        })?;
-
-        let b = protected_encoded.as_bytes();
-        let r = base64::encode_urlsafe(b);
-        let s = str::from_utf8(&b).unwrap();
-        println!("b={}", b.len());
-        println!("s={}", s.len());
-        println!("r={}", r.len());
-        Ok((b.to_vec(), r))
-    }
-
-    fn _format_pack_message(
-        &self,
-        base64_protected: &str,
-        ciphertext: &str,
-        iv: &str,
-        tag: &str
-    ) -> IndyResult<Vec<u8>> {
-
-        //serialize pack message and return as vector of bytes
-        let jwe_struct = JWE {
-            protected: base64_protected.to_string(),
-            iv: iv.to_string(),
-            ciphertext: ciphertext.to_string(),
-            tag: tag.to_string()
-        };
-
-        serde_json::to_vec(&jwe_struct).map_err(|err| {
-            err_msg(IndyErrorKind::InvalidStructure, format!(
-                "Failed to serialize JWE {}",
-                err
-            ))
-        })
     }
 
     pub fn unpack_msg(&self, jwe_json: Vec<u8>, wallet_handle: i32) -> IndyResult<Vec<u8>> {
@@ -571,6 +457,109 @@ impl CryptoCommandExecutor {
                 err
             ))
         });
+    }
+
+    fn _prepare_protected_anoncrypt(&self,
+                                    cek: &chacha20poly1305_ietf::Key,
+                                    receiver_list: Vec<String>,
+    ) -> IndyResult<(String, String)> {
+        let mut encrypted_recipients_struct : Vec<Recipient> = vec![];
+
+        for their_vk in receiver_list {
+            //encrypt sender verkey
+            let enc_cek = self.crypto_service.crypto_box_seal(&their_vk, &cek[..])?;
+
+            //create recipient struct and push to encrypted list
+            encrypted_recipients_struct.push(Recipient {
+                encrypted_key: base64::encode_urlsafe(enc_cek.as_slice()),
+                header: Header {
+                    kid: their_vk,
+                    sender: None,
+                    iv: None
+                },
+            });
+        } // end for-loop
+        Ok(self._base64_encode_protected(encrypted_recipients_struct, false)?)
+    }
+
+    fn _prepare_protected_authcrypt(&self,
+                                    cek: &chacha20poly1305_ietf::Key,
+                                    receiver_list: Vec<String>, sender_vk: &str,
+                                    wallet_handle: i32,
+    ) -> IndyResult<(String, String)> {
+        let mut encrypted_recipients_struct : Vec<Recipient> = vec![];
+
+        //get my_key from my wallet
+        let my_key = self.wallet_service.get_indy_object(
+            wallet_handle,
+            sender_vk,
+            &RecordOptions::id_value()
+        )?;
+
+        //encrypt cek for recipient
+        for their_vk in receiver_list {
+            let (enc_cek, iv) = self.crypto_service.crypto_box(&my_key, &their_vk, &cek[..])?;
+
+            let enc_sender = self.crypto_service.crypto_box_seal(&their_vk, sender_vk.as_bytes())?;
+
+            //create recipient struct and push to encrypted list
+            encrypted_recipients_struct.push(Recipient {
+                encrypted_key: base64::encode_urlsafe(enc_cek.as_slice()),
+                header: Header {
+                    kid: their_vk,
+                    sender: Some(base64::encode_urlsafe(enc_sender.as_slice())),
+                    iv: Some(base64::encode_urlsafe(iv.as_slice()))
+                },
+            });
+        } // end for-loop
+
+        Ok(self._base64_encode_protected(encrypted_recipients_struct, true)?)
+    }
+
+    fn _base64_encode_protected(&self, encrypted_recipients_struct: Vec<Recipient>, alg_is_authcrypt: bool) -> IndyResult<(String, String)> {
+        let alg_val = if alg_is_authcrypt { String::from("Authcrypt") } else { String::from("Anoncrypt") };
+
+        //structure protected and base64URL encode it
+        let protected_struct = Protected {
+            enc: "xchacha20poly1305_ietf".to_string(),
+            typ: "JWM/1.0".to_string(),
+            alg: alg_val,
+            recipients: encrypted_recipients_struct,
+        };
+        let protected_json = serde_json::to_string(&protected_struct).map_err(|err| {
+            err_msg(IndyErrorKind::InvalidStructure, format!(
+                "Failed to serialize protected field {}",
+                err
+            ))
+        })?;
+
+//        let protected_json_bytes = protected_json.as_bytes();
+        let protected_json_b64 = base64::encode_urlsafe(protected_json.as_bytes());
+        Ok((protected_json, protected_json_b64))
+    }
+
+    fn _format_pack_message(
+        &self,
+        base64_protected: &str,
+        ciphertext: &str,
+        iv: &str,
+        tag: &str
+    ) -> IndyResult<Vec<u8>> {
+
+        //serialize pack message and return as vector of bytes
+        let jwe_struct = JWE {
+            protected: base64_protected.to_string(),
+            iv: iv.to_string(),
+            ciphertext: ciphertext.to_string(),
+            tag: tag.to_string()
+        };
+
+        serde_json::to_vec(&jwe_struct).map_err(|err| {
+            err_msg(IndyErrorKind::InvalidStructure, format!(
+                "Failed to serialize JWE {}",
+                err
+            ))
+        })
     }
 
     fn _find_correct_recipient(&self, protected_struct: Protected, wallet_handle: i32) -> IndyResult<(Recipient, bool)>{
