@@ -69,6 +69,9 @@ pub enum PoolEvent {
         usize, //target_mt_size
         MerkleTree,
     ),
+    CatchupRestart(
+        MerkleTree,
+    ),
     CatchupTargetNotFound(IndyError),
     #[allow(dead_code)] //FIXME
     PoolOutdated,

@@ -25,21 +25,22 @@ use services::wallet::{RecordOptions, SearchOptions, WalletRecord, WalletSearch,
 use utils::sequence;
 
 use super::tails::SDKTailsAccessor;
+use api::WalletHandle;
 
 pub enum ProverCommand {
     CreateMasterSecret(
-        i32, // wallet handle
+        WalletHandle,
         Option<String>, // master secret id
         Box<Fn(IndyResult<String>) + Send>),
     CreateCredentialRequest(
-        i32, // wallet handle
+        WalletHandle,
         String, // prover did
         CredentialOffer, // credential offer
         CredentialDefinition, // credential def
         String, // master secret name
         Box<Fn(IndyResult<(String, String)>) + Send>),
     StoreCredential(
-        i32, // wallet handle
+        WalletHandle,
         Option<String>, // credential id
         CredentialRequestMetadata, // credential request metadata
         Credential, // credentials
@@ -47,15 +48,15 @@ pub enum ProverCommand {
         Option<RevocationRegistryDefinition>, // revocation registry definition
         Box<Fn(IndyResult<String>) + Send>),
     GetCredentials(
-        i32, // wallet handle
+        WalletHandle,
         Option<String>, // filter json
         Box<Fn(IndyResult<String>) + Send>),
     GetCredential(
-        i32, // wallet handle
+        WalletHandle,
         String, // credential id
         Box<Fn(IndyResult<String>) + Send>),
     SearchCredentials(
-        i32, // wallet handle
+        WalletHandle,
         Option<String>, // query json
         Box<Fn(IndyResult<(i32, usize)>) + Send>),
     FetchCredentials(
@@ -66,11 +67,11 @@ pub enum ProverCommand {
         i32, // search handle
         Box<Fn(IndyResult<()>) + Send>),
     GetCredentialsForProofReq(
-        i32, // wallet handle
+        WalletHandle,
         ProofRequest, // proof request
         Box<Fn(IndyResult<String>) + Send>),
     SearchCredentialsForProofReq(
-        i32, // wallet handle
+        WalletHandle,
         ProofRequest, // proof request
         Option<ProofRequestExtraQuery>, // extra query
         Box<Fn(IndyResult<i32>) + Send>),
@@ -83,7 +84,7 @@ pub enum ProverCommand {
         i32, // search handle
         Box<Fn(IndyResult<()>) + Send>),
     CreateProof(
-        i32, // wallet handle
+        WalletHandle,
         ProofRequest, // proof request
         RequestedCredentials, // requested credentials
         String, // master secret name
@@ -225,7 +226,7 @@ impl ProverCommandExecutor {
     }
 
     fn create_master_secret(&self,
-                            wallet_handle: i32,
+                            wallet_handle: WalletHandle,
                             master_secret_id: Option<&str>) -> IndyResult<String> {
         debug!("create_master_secret >>> wallet_handle: {:?}, master_secret_id: {:?}", wallet_handle, master_secret_id);
 
@@ -249,7 +250,7 @@ impl ProverCommandExecutor {
     }
 
     fn create_credential_request(&self,
-                                 wallet_handle: i32,
+                                 wallet_handle: WalletHandle,
                                  prover_did: &str,
                                  cred_offer: &CredentialOffer,
                                  cred_def: &CredentialDefinitionV1,
@@ -294,7 +295,7 @@ impl ProverCommandExecutor {
     }
 
     fn store_credential(&self,
-                        wallet_handle: i32,
+                        wallet_handle: WalletHandle,
                         cred_id: Option<&str>,
                         cred_req_metadata: &CredentialRequestMetadata,
                         credential: &mut Credential,
@@ -325,7 +326,7 @@ impl ProverCommandExecutor {
     }
 
     fn get_credentials(&self,
-                       wallet_handle: i32,
+                       wallet_handle: WalletHandle,
                        filter_json: Option<&str>) -> IndyResult<String> {
         debug!("get_credentials >>> wallet_handle: {:?}, filter_json: {:?}", wallet_handle, filter_json);
 
@@ -349,7 +350,7 @@ impl ProverCommandExecutor {
     }
 
     fn get_credential(&self,
-                      wallet_handle: i32,
+                      wallet_handle: WalletHandle,
                       cred_id: &str) -> IndyResult<String> {
         debug!("get_credentials >>> wallet_handle: {:?}, cred_id: {:?}", wallet_handle, cred_id);
 
@@ -366,7 +367,7 @@ impl ProverCommandExecutor {
     }
 
     fn search_credentials(&self,
-                          wallet_handle: i32,
+                          wallet_handle: WalletHandle,
                           query_json: Option<&str>) -> IndyResult<(i32, usize)> {
         debug!("search_credentials >>> wallet_handle: {:?}, query_json: {:?}", wallet_handle, query_json);
 
@@ -429,7 +430,7 @@ impl ProverCommandExecutor {
     }
 
     fn get_credentials_for_proof_req(&self,
-                                     wallet_handle: i32,
+                                     wallet_handle: WalletHandle,
                                      proof_request: &ProofRequest) -> IndyResult<String> {
         debug!("get_credentials_for_proof_req >>> wallet_handle: {:?}, proof_request: {:?}", wallet_handle, proof_request);
 
@@ -471,7 +472,7 @@ impl ProverCommandExecutor {
     }
 
     fn search_credentials_for_proof_req(&self,
-                                        wallet_handle: i32,
+                                        wallet_handle: WalletHandle,
                                         proof_request: &ProofRequest,
                                         extra_query: Option<&ProofRequestExtraQuery>) -> IndyResult<i32> {
         debug!("search_credentials_for_proof_req >>> wallet_handle: {:?}, proof_request: {:?}, extra_query: {:?}", wallet_handle, proof_request, extra_query);
@@ -550,7 +551,7 @@ impl ProverCommandExecutor {
     }
 
     fn create_proof(&self,
-                    wallet_handle: i32,
+                    wallet_handle: WalletHandle,
                     proof_req: &ProofRequest,
                     requested_credentials: &RequestedCredentials,
                     master_secret_id: &str,
@@ -701,7 +702,7 @@ impl ProverCommandExecutor {
     }
 
     fn _query_requested_credentials(&self,
-                                    wallet_handle: i32,
+                                    wallet_handle: WalletHandle,
                                     query_json: &str,
                                     predicate_info: Option<&PredicateInfo>,
                                     interval: &Option<NonRevocedInterval>) -> IndyResult<Vec<RequestedCredential>> {
@@ -758,7 +759,7 @@ impl ProverCommandExecutor {
     }
 
 
-    fn _wallet_get_master_secret(&self, wallet_handle: i32, key: &str) -> IndyResult<MasterSecret> {
+    fn _wallet_get_master_secret(&self, wallet_handle: WalletHandle, key: &str) -> IndyResult<MasterSecret> {
         self.wallet_service.get_indy_object(wallet_handle, &key, &RecordOptions::id_value())
     }
 }
