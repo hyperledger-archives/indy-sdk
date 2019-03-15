@@ -534,7 +534,6 @@ impl CryptoCommandExecutor {
             ))
         })?;
 
-//        let protected_json_bytes = protected_json.as_bytes();
         let protected_json_b64 = base64::encode_urlsafe(protected_json.as_bytes());
         Ok((protected_json, protected_json_b64))
     }
