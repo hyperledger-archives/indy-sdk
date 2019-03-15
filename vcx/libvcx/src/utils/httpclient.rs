@@ -4,14 +4,15 @@ use std::sync::Mutex;
 use reqwest;
 use reqwest::header::CONTENT_TYPE;
 use std::env;
+use error::prelude::*;
 
 lazy_static! {
     static ref NEXT_U8_RESPONSE: Mutex<Vec<Vec<u8>>> = Mutex::new(vec![]);
 }
 
 //Todo: change this RC to a u32
-pub fn post_u8(body_content: &Vec<u8>) -> Result<Vec<u8>, &'static str> {
-    let endpoint = settings::get_config_value(settings::CONFIG_AGENCY_ENDPOINT).or(Err("Invalid Configuration"))?;
+pub fn post_u8(body_content: &Vec<u8>) -> VcxResult<Vec<u8>> {
+    let endpoint = settings::get_config_value(settings::CONFIG_AGENCY_ENDPOINT)?;
     let url = format!("{}/agency/msg", endpoint);
 
     if settings::test_agency_mode_enabled() {
@@ -23,7 +24,8 @@ pub fn post_u8(body_content: &Vec<u8>) -> Result<Vec<u8>, &'static str> {
         info!("::Android code");
         set_ssl_cert_location();
     }
-    let client = reqwest::ClientBuilder::new().timeout(::utils::timeout::TimeoutUtils::long_timeout()).build().or(Err("Preparing Post failed"))?;
+    let client = reqwest::ClientBuilder::new().timeout(::utils::timeout::TimeoutUtils::long_timeout()).build()
+        .or(Err(VcxError::from_msg(VcxErrorKind::PostMessageFailed, "Preparing Post failed")))?;
     debug!("Posting encrypted bundle to: \"{}\"", url);
 
     let mut response =
@@ -33,7 +35,7 @@ pub fn post_u8(body_content: &Vec<u8>) -> Result<Vec<u8>, &'static str> {
             .send()
             .map_err(|err| {
                 error!("error: {}", err);
-                "Could not connect"
+                VcxError::from_msg(VcxErrorKind::PostMessageFailed, "Could not connect")
             })?;
 
     trace!("Response Header: {:?}", response);
@@ -43,11 +45,12 @@ pub fn post_u8(body_content: &Vec<u8>) -> Result<Vec<u8>, &'static str> {
             Ok(x) => info!("Request failed: {}", content),
             Err(x) => info!("could not read response"),
         };
-        return Err("POST failed");
+        return Err(VcxError::from_msg(VcxErrorKind::PostMessageFailed, format!("POST failed with: {}", content)));
     }
 
     let mut content = Vec::new();
-    response.read_to_end(&mut content).or(Err("could not read response"))?;
+    response.read_to_end(&mut content)
+        .or(Err(VcxError::from_msg(VcxErrorKind::PostMessageFailed, "could not read response")))?;
 
     Ok(content)
 }

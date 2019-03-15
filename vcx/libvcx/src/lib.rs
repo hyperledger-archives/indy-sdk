@@ -16,6 +16,8 @@ extern crate futures;
 extern crate log;
 extern crate log4rs;
 
+extern crate libc;
+
 #[macro_use]
 extern crate serde_derive;
 
@@ -30,6 +32,10 @@ extern crate time;
 extern crate regex;
 
 extern crate uuid;
+
+extern crate failure;
+
+extern crate rmp_serde;
 
 #[macro_use]
 pub mod utils;
