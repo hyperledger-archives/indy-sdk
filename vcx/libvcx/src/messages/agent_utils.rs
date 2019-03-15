@@ -82,17 +82,24 @@ pub struct CreateAgentResponse {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct UpdateConnectionMethod {
+pub struct UpdateComMethodResponse {
+    #[serde(rename = "@type")]
+    msg_type: MessageTypes,
+    id: String
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct UpdateComMethod {
     #[serde(rename = "@type")]
     msg_type: MessageTypes,
     #[serde(rename = "comMethod")]
     com_method: ComMethod,
 }
 
-impl UpdateConnectionMethod {
-    fn build(com_method: ComMethod) -> UpdateConnectionMethod {
-        UpdateConnectionMethod {
-            msg_type: MessageTypes::build(A2AMessageKinds::CreateAgent),
+impl UpdateComMethod {
+    fn build(com_method: ComMethod) -> UpdateComMethod {
+        UpdateComMethod {
+            msg_type: MessageTypes::build(A2AMessageKinds::UpdateComMethod),
             com_method,
         }
     }
@@ -354,7 +361,7 @@ fn update_agent_info_v1(to_did: &str, com_method: ComMethod) -> VcxResult<()> {
     }
 
     let message = A2AMessage::Version1(
-        A2AMessageV1::UpdateConnectionMethod(UpdateConnectionMethod::build(com_method))
+        A2AMessageV1::UpdateComMethod(UpdateComMethod::build(com_method))
     );
     send_message_to_agency(&message, to_did)?;
     Ok(())
@@ -362,7 +369,7 @@ fn update_agent_info_v1(to_did: &str, com_method: ComMethod) -> VcxResult<()> {
 
 fn update_agent_info_v2(to_did: &str, com_method: ComMethod) -> VcxResult<()> {
     let message = A2AMessage::Version2(
-        A2AMessageV2::UpdateConnectionMethod(UpdateConnectionMethod::build(com_method))
+        A2AMessageV2::UpdateComMethod(UpdateComMethod::build(com_method))
     );
     send_message_to_agency(&message, to_did)?;
     Ok(())
@@ -427,5 +434,15 @@ mod tests {
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
 
         update_agent_info("123", "value").unwrap();
+    }
+
+    #[cfg(feature = "agency")]
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn test_update_agent_info_real() {
+        init!("agency");
+        ::utils::devsetup::tests::set_consumer();
+        assert!(update_agent_info("7b7f97f2","FCM:Value").is_ok());
+        teardown!("agency");
     }
 }
