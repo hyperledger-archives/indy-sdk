@@ -1860,6 +1860,10 @@ pub extern fn indy_get_response_metadata(command_handle: CommandHandle,
 ///         'auth_constraints': [<constraint_1>, <constraint_2>]
 ///     }
 ///
+/// Default ledger auth rules: https://github.com/hyperledger/indy-node/blob/master/docs/source/auth_rules.md
+///
+/// More about AUTH_RULE request: https://github.com/hyperledger/indy-node/blob/master/docs/source/requests.md#auth_rule
+///
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
