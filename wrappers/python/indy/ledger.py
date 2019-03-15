@@ -1295,6 +1295,10 @@ async def build_auth_rule_request(submitter_did: str,
             'auth_constraints': [<constraint_1>, <constraint_2>]
         }
 
+    Default ledger auth rules: https://github.com/hyperledger/indy-node/blob/master/docs/source/auth_rules.md
+
+    More about AUTH_RULE request: https://github.com/hyperledger/indy-node/blob/master/docs/source/requests.md#auth_rule
+
     :return: Request result as json.
     """
 
