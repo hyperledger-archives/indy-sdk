@@ -127,21 +127,13 @@ fn credential_def_identifiers(credentials: &str, proof_req: &ProofRequestData) -
 }
 
 fn _get_revocation_interval(attr_name: &str, proof_req: &ProofRequestData) -> VcxResult<Option<NonRevokedInterval>> {
-    match proof_req.requested_attributes.get(attr_name) {
-        Some(attr) => {
-            return Ok(attr.non_revoked.clone().or(proof_req.non_revoked.clone().or(None)));
-        },
-        None => {
-            // Handle case for predicates
-            match proof_req.requested_predicates.get(attr_name) {
-                Some (attr) => {
-                    return Ok(attr.non_revoked.clone().or(proof_req.non_revoked.clone().or(None)));
-                },
-                None => {
-                    return Err(VcxError::from_msg(VcxErrorKind::InvalidProofCredentialData, format!("Attribute not found for: {}", attr_name)));
-                }
-            }
-        }
+    if let Some(attr) = proof_req.requested_attributes.get(attr_name) {
+        Ok(attr.non_revoked.clone().or(proof_req.non_revoked.clone().or(None)))
+    } else if let Some(attr) = proof_req.requested_predicates.get(attr_name) {
+        // Handle case for predicates
+        Ok(attr.non_revoked.clone().or(proof_req.non_revoked.clone().or(None)))
+    } else {
+        Err(VcxError::from_msg(VcxErrorKind::InvalidProofCredentialData, format!("Attribute not found for: {}", attr_name)))
     }
 }
 
@@ -332,7 +324,7 @@ impl DisclosedProof {
         if let Value::Object(ref mut map) = rtn["requested_predicates"] {
             for ref cred_info in credentials_identifiers {
                 if let Some(ref attr) = proof_req.requested_predicates.get(&cred_info.requested_attr) {
-                    let insert_val = json!({"cred_id": cred_info.referent, "revealed": false, "timestamp": cred_info.timestamp});
+                    let insert_val = json!({"cred_id": cred_info.referent, "timestamp": cred_info.timestamp});
                     map.insert(cred_info.requested_attr.to_owned(), insert_val);
                 }
             }
