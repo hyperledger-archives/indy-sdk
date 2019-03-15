@@ -393,6 +393,10 @@ impl CryptoCommandExecutor {
             self._prepare_protected_anoncrypt(&cek, receiver_list)?
         };
 
+        println!("raw={}", &raw.len());
+        println!("base64_protected={}", &base64_protected.len());
+        println!("message={}", &message.len());
+
         let raw_s = String::from_utf8(raw).map_err(|err| {
             err_msg(IndyErrorKind::InvalidStructure, format!(
                 "Failed to utf8 encode data {}",
@@ -405,7 +409,66 @@ impl CryptoCommandExecutor {
             self.crypto_service
                 .encrypt_plaintext(message, &raw_s, &cek);
 
+        println!("ciphertext={}", &ciphertext.len());
         self._format_pack_message(&base64_protected, &ciphertext, &iv, &tag)
+    }
+
+    pub fn unpack_msg(&self, jwe_json: Vec<u8>, wallet_handle: i32) -> IndyResult<Vec<u8>> {
+        //serialize JWE to struct
+        let jwe_struct: JWE = serde_json::from_slice(jwe_json.as_slice()).map_err(|err| {
+            err_msg(IndyErrorKind::InvalidStructure, format!(
+                "Failed to deserialize JWE {}",
+                err
+            ))
+        })?;
+        //decode protected data
+        let protected_decoded_vec = base64::decode_urlsafe(&jwe_struct.protected)?;
+        let protected_decoded_str = String::from_utf8(protected_decoded_vec).map_err(|err| {
+            err_msg(IndyErrorKind::InvalidStructure, format!(
+                "Failed to utf8 encode data {}",
+                err
+            ))
+        })?;
+        //convert protected_data_str to struct
+        let protected_struct: Protected = serde_json::from_str(&protected_decoded_str).map_err(|err| {
+            err_msg(IndyErrorKind::InvalidStructure, format!(
+                "Failed to deserialize protected data {}",
+                err
+            ))
+        })?;
+
+        //extract recipient that matches a key in the wallet
+        let (recipient, is_auth_recipient) = self._find_correct_recipient(protected_struct, wallet_handle)?;
+
+        //get cek and sender data
+        let (sender_verkey_option, cek) = if is_auth_recipient {
+            self._unpack_cek_authcrypt(recipient.clone(), wallet_handle)
+        } else {
+            self._unpack_cek_anoncrypt(recipient.clone(), wallet_handle)
+        }?; //close cek and sender_data match statement
+
+        //decrypt message
+        let message = self.crypto_service.decrypt_ciphertext(
+            &jwe_struct.ciphertext,
+            &protected_decoded_str,
+            &jwe_struct.iv,
+            &jwe_struct.tag,
+            &cek,
+        )?;
+
+        //serialize and return decrypted message
+        let res = UnpackMessage {
+            message,
+            sender_verkey: sender_verkey_option,
+            recipient_verkey: recipient.header.kid
+        };
+
+        return serde_json::to_vec(&res).map_err(|err| {
+            err_msg(IndyErrorKind::InvalidStructure, format!(
+                "Failed to serialize message {}",
+                err
+            ))
+        });
     }
 
     fn _prepare_protected_anoncrypt(&self,
@@ -484,10 +547,8 @@ impl CryptoCommandExecutor {
 
         let b = protected_encoded.as_bytes();
         let r = base64::encode_urlsafe(b);
-        let s = str::from_utf8(&b).unwrap();
-        println!("b={}", b.len());
-        println!("s={}", s.len());
-        println!("r={}", r.len());
+        /*println!("b={}", b.len());
+        println!("r={}", r.len());*/
         Ok((b.to_vec(), r))
     }
 
@@ -513,64 +574,6 @@ impl CryptoCommandExecutor {
                 err
             ))
         })
-    }
-
-    pub fn unpack_msg(&self, jwe_json: Vec<u8>, wallet_handle: i32) -> IndyResult<Vec<u8>> {
-        //serialize JWE to struct
-        let jwe_struct: JWE = serde_json::from_slice(jwe_json.as_slice()).map_err(|err| {
-            err_msg(IndyErrorKind::InvalidStructure, format!(
-                "Failed to deserialize JWE {}",
-                err
-            ))
-        })?;
-        //decode protected data
-        let protected_decoded_vec = base64::decode_urlsafe(&jwe_struct.protected)?;
-        let protected_decoded_str = String::from_utf8(protected_decoded_vec).map_err(|err| {
-            err_msg(IndyErrorKind::InvalidStructure, format!(
-                "Failed to utf8 encode data {}",
-                err
-            ))
-        })?;
-        //convert protected_data_str to struct
-        let protected_struct: Protected = serde_json::from_str(&protected_decoded_str).map_err(|err| {
-            err_msg(IndyErrorKind::InvalidStructure, format!(
-                "Failed to deserialize protected data {}",
-                err
-            ))
-        })?;
-
-        //extract recipient that matches a key in the wallet
-        let (recipient, is_auth_recipient) = self._find_correct_recipient(protected_struct, wallet_handle)?;
-
-        //get cek and sender data
-        let (sender_verkey_option, cek) = if is_auth_recipient {
-            self._unpack_cek_authcrypt(recipient.clone(), wallet_handle)
-        } else {
-            self._unpack_cek_anoncrypt(recipient.clone(), wallet_handle)
-        }?; //close cek and sender_data match statement
-
-        //decrypt message
-        let message = self.crypto_service.decrypt_ciphertext(
-            &jwe_struct.ciphertext,
-            &protected_decoded_str,
-            &jwe_struct.iv,
-            &jwe_struct.tag,
-            &cek,
-        )?;
-
-        //serialize and return decrypted message
-        let res = UnpackMessage {
-            message,
-            sender_verkey: sender_verkey_option,
-            recipient_verkey: recipient.header.kid
-        };
-
-        return serde_json::to_vec(&res).map_err(|err| {
-            err_msg(IndyErrorKind::InvalidStructure, format!(
-                "Failed to serialize message {}",
-                err
-            ))
-        });
     }
 
     fn _find_correct_recipient(&self, protected_struct: Protected, wallet_handle: i32) -> IndyResult<(Recipient, bool)>{

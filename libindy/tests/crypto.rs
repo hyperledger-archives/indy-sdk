@@ -489,6 +489,44 @@ mod high_cases {
         }
 
         #[test]
+        fn indy_pack_message_authcrypt_repeated_works() {
+            let (wallet_handle, verkey) = setup_with_key();
+            let rec_key_vec = vec![VERKEY_MY1, VERKEY_MY2, VERKEY_TRUSTEE];
+            let receiver_keys_1 = serde_json::to_string(&rec_key_vec[..1]).unwrap();
+            let receiver_keys_2 = serde_json::to_string(&rec_key_vec[1..2]).unwrap();
+            let receiver_keys_3 = serde_json::to_string(&rec_key_vec[2..3]).unwrap();
+            let m0 = "Hello World".as_bytes().to_vec();
+            let mut m00 = vec![];
+            for _ in 0..10000 {
+                m00.extend_from_slice(&m0);
+            }
+            let message = &m00;
+            let res_1 = crypto::pack_message(wallet_handle, message, &receiver_keys_1, Some(&verkey));
+            assert!(res_1.is_ok());
+            let m2 = res_1.unwrap();
+            let res_2 = crypto::pack_message(wallet_handle, &m2, &receiver_keys_2, Some(&verkey));
+            assert!(res_2.is_ok());
+            let m3 = res_2.unwrap();
+            let res_3 = crypto::pack_message(wallet_handle, &m3, &receiver_keys_3, Some(&verkey));
+            assert!(res_3.is_ok());
+            let m4 = res_3.unwrap();
+            println!("message={}", message.len());
+            println!("m2={}", m2.len());
+            println!("m3={}", m3.len());
+            println!("m4={}", m4.len());
+            utils::tear_down_with_wallet(wallet_handle);
+        }
+
+        #[test]
+        fn indy_crypto_auth_crypt_pack_works() {
+            let (wallet_handle, verkey) = setup_with_key();
+
+            crypto::auth_crypt(wallet_handle, &verkey, VERKEY_MY2, MESSAGE.as_bytes()).unwrap();
+
+            utils::tear_down_with_wallet(wallet_handle);
+        }
+
+        #[test]
         fn indy_pack_message_authcrypt_fails_empty_message() {
             let (wallet_handle, verkey) = setup_with_key();
             let rec_key_vec = vec![VERKEY_MY1, VERKEY_MY2, VERKEY_TRUSTEE];
