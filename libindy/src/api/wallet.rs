@@ -1,6 +1,6 @@
 extern crate libc;
 
-use api::{ErrorCode, IndyHandle, CommandHandle, WalletHandle, SearchHandle, StorageHandle};
+use api::{ErrorCode, IndyHandle, CommandHandle, WalletHandle, SearchHandle, StorageHandle, INVALID_WALLET_HANDLE};
 use commands::{Command, CommandExecutor};
 use commands::wallet::WalletCommand;
 use domain::wallet::{Config, Credentials, ExportConfig, KeyConfig};
@@ -268,7 +268,7 @@ pub extern fn indy_open_wallet(command_handle: CommandHandle,
                                credentials: *const c_char,
                                cb: Option<extern fn(command_handle_: CommandHandle,
                                                     err: ErrorCode,
-                                                    handle: IndyHandle)>) -> ErrorCode {
+                                                    wallet_handle: WalletHandle)>) -> ErrorCode {
     trace!("indy_open_wallet: >>> command_handle: {:?}, config: {:?}, credentials: {:?}, cb: {:?}",
            command_handle, config, credentials, cb);
 
@@ -284,7 +284,7 @@ pub extern fn indy_open_wallet(command_handle: CommandHandle,
             config,
             credentials,
             Box::new(move |result| {
-                let (err, handle) = prepare_result_1!(result, 0);
+                let (err, handle) = prepare_result_1!(result, INVALID_WALLET_HANDLE);
                 trace!("indy_open_wallet: cb command_handle: {:?} err: {:?}, handle: {:?}",
                        command_handle, err, handle);
                 cb(command_handle, err, handle)
