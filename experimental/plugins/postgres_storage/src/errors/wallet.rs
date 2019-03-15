@@ -134,13 +134,6 @@ impl From<io::Error> for WalletError {
     }
 }
 
-impl From<indy_crypto::errors::IndyCryptoError> for WalletError {
-    fn from(err: indy_crypto::errors::IndyCryptoError) -> Self {
-        WalletError::CommonError(CommonError::from(err))
-    }
-}
-
-
 impl From<WalletStorageError> for WalletError {
     fn from(err: WalletStorageError) -> Self {
         match err {
