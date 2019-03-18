@@ -15,7 +15,7 @@ static NSString *const VcxErrorDomain = @"VcxErrorDomain";
 {
     NSMutableDictionary *userInfo = [NSMutableDictionary new];
 
-    if (error != Success) {
+    if (error != 0) {
         const char * error_json_p;
             vcx_get_current_error(&error_json_p);
 
