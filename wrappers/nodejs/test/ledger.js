@@ -163,8 +163,8 @@ test('ledger', async function (t) {
   t.is(res.op, 'REPLY')
 
   req = await indy.buildGetAuthRuleRequest(trusteeDid, 'NYM', 'ADD', 'role', null, '101')
-  res = await indy.submitRequest(pool.handle, req)
-  t.is(constraint, res['txn']['data']['constraint'])
+  res = await waitUntilApplied(pool.handle, req, res => res['result']['data'] != null)
+  t.deepEqual(res['result']['data']['ADD--1--role--*--101'], constraint)
 
   await indy.closeWallet(wh)
   await indy.deleteWallet(walletConfig, walletCredentials)
