@@ -1,10 +1,11 @@
 use settings;
-use utils::constants::*;
 use messages::{A2AMessage, A2AMessageV1, A2AMessageV2, A2AMessageKinds, prepare_message_for_agency, parse_response_from_agency};
 use messages::message_type::MessageTypes;
+use utils::constants::*;
 use utils::{error, httpclient};
 use utils::libindy::{wallet, anoncreds};
 use utils::libindy::signus::create_and_store_my_did;
+use error::prelude::*;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Connect {
@@ -81,17 +82,24 @@ pub struct CreateAgentResponse {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct UpdateConnectionMethod {
+pub struct ComMethodUpdated {
+    #[serde(rename = "@type")]
+    msg_type: MessageTypes,
+    id: String
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct UpdateComMethod {
     #[serde(rename = "@type")]
     msg_type: MessageTypes,
     #[serde(rename = "comMethod")]
     com_method: ComMethod,
 }
 
-impl UpdateConnectionMethod {
-    fn build(com_method: ComMethod) -> UpdateConnectionMethod {
-        UpdateConnectionMethod {
-            msg_type: MessageTypes::build(A2AMessageKinds::CreateAgent),
+impl UpdateComMethod {
+    fn build(com_method: ComMethod) -> UpdateComMethod {
+        UpdateComMethod {
+            msg_type: MessageTypes::build(A2AMessageKinds::UpdateComMethod),
             com_method,
         }
     }
@@ -126,11 +134,12 @@ pub struct Config {
 }
 
 
-pub fn connect_register_provision(config: &str) -> Result<String, u32> {
+pub fn connect_register_provision(config: &str) -> VcxResult<String> {
     trace!("connect_register_provision >>> config: {:?}", config);
 
     trace!("***Registering with agency");
-    let my_config: Config = serde_json::from_str(&config).or(Err(error::INVALID_CONFIGURATION.code_num))?;
+    let my_config: Config = ::serde_json::from_str(&config)
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidConfiguration, format!("Cannot parse config: {}", err)))?;
 
     let wallet_name = my_config.wallet_name.unwrap_or(settings::DEFAULT_WALLET_NAME.to_string());
 
@@ -155,8 +164,9 @@ pub fn connect_register_provision(config: &str) -> Result<String, u32> {
         settings::set_config_value(settings::CONFIG_WALLET_STORAGE_CREDS, _storage_credentials);
     }
 
-    wallet::init_wallet(&wallet_name, my_config.wallet_type.as_ref().map(String::as_str), 
-                        my_config.storage_config.as_ref().map(String::as_str), my_config.storage_credentials.as_ref().map(String::as_str))?;
+    wallet::init_wallet(&wallet_name, my_config.wallet_type.as_ref().map(String::as_str),
+                        my_config.storage_config.as_ref().map(String::as_str),
+                        my_config.storage_credentials.as_ref().map(String::as_str))?;
     trace!("initialized wallet");
 
     anoncreds::libindy_prover_create_master_secret(::settings::DEFAULT_LINK_SECRET_ALIAS).ok(); // If MS is already in wallet then just continue
@@ -221,7 +231,7 @@ pub fn connect_register_provision(config: &str) -> Result<String, u32> {
     Ok(final_config.to_string())
 }
 
-fn onboarding_v1(my_did: &str, my_vk: &str, agency_did: &str) -> Result<(String, String), u32> {
+fn onboarding_v1(my_did: &str, my_vk: &str, agency_did: &str) -> VcxResult<(String, String)> {
     /* STEP 1 - CONNECT */
     if settings::test_agency_mode_enabled() {
         httpclient::set_next_u8_response(CONNECTED_RESPONSE.to_vec());
@@ -236,7 +246,7 @@ fn onboarding_v1(my_did: &str, my_vk: &str, agency_did: &str) -> Result<(String,
     let ConnectResponse { from_vk: agency_pw_vk, from_did: agency_pw_did, .. } =
         match response.remove(0) {
             A2AMessage::Version1(A2AMessageV1::ConnectResponse(resp)) => resp,
-            _ => return Err(error::INVALID_HTTP_RESPONSE.code_num)
+            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of ConnectResponse"))
         };
 
     settings::set_config_value(settings::CONFIG_REMOTE_TO_SDK_VERKEY, &agency_pw_vk);
@@ -255,7 +265,7 @@ fn onboarding_v1(my_did: &str, my_vk: &str, agency_did: &str) -> Result<(String,
     let _response: SignUpResponse =
         match response.remove(0) {
             A2AMessage::Version1(A2AMessageV1::SignUpResponse(resp)) => resp,
-            _ => return Err(error::INVALID_HTTP_RESPONSE.code_num)
+            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of SignUpResponse"))
         };
 
     /* STEP 3 - CREATE AGENT */
@@ -272,14 +282,14 @@ fn onboarding_v1(my_did: &str, my_vk: &str, agency_did: &str) -> Result<(String,
     let response: CreateAgentResponse =
         match response.remove(0) {
             A2AMessage::Version1(A2AMessageV1::CreateAgentResponse(resp)) => resp,
-            _ => return Err(error::INVALID_HTTP_RESPONSE.code_num)
+            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of CreateAgentResponse"))
         };
 
     Ok((response.from_did, response.from_vk))
 }
 
 // it will be changed next
-fn onboarding_v2(my_did: &str, my_vk: &str, agency_did: &str) -> Result<(String, String), u32> {
+fn onboarding_v2(my_did: &str, my_vk: &str, agency_did: &str) -> VcxResult<(String, String)> {
     /* STEP 1 - CONNECT */
     let message = A2AMessage::Version2(
         A2AMessageV2::Connect(Connect::build(my_did, my_vk))
@@ -290,7 +300,7 @@ fn onboarding_v2(my_did: &str, my_vk: &str, agency_did: &str) -> Result<(String,
     let ConnectResponse { from_vk: agency_pw_vk, from_did: agency_pw_did, .. } =
         match response.remove(0) {
             A2AMessage::Version2(A2AMessageV2::ConnectResponse(resp)) => resp,
-            _ => return Err(error::INVALID_HTTP_RESPONSE.code_num)
+            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of ConnectResponse"))
         };
 
     settings::set_config_value(settings::CONFIG_REMOTE_TO_SDK_VERKEY, &agency_pw_vk);
@@ -305,7 +315,7 @@ fn onboarding_v2(my_did: &str, my_vk: &str, agency_did: &str) -> Result<(String,
     let _response: SignUpResponse =
         match response.remove(0) {
             A2AMessage::Version2(A2AMessageV2::SignUpResponse(resp)) => resp,
-            _ => return Err(error::INVALID_HTTP_RESPONSE.code_num)
+            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of SignUpResponse"))
         };
 
     /* STEP 3 - CREATE AGENT */
@@ -318,13 +328,13 @@ fn onboarding_v2(my_did: &str, my_vk: &str, agency_did: &str) -> Result<(String,
     let response: CreateAgentResponse =
         match response.remove(0) {
             A2AMessage::Version2(A2AMessageV2::CreateAgentResponse(resp)) => resp,
-            _ => return Err(error::INVALID_HTTP_RESPONSE.code_num)
+            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of CreateAgentResponse"))
         };
 
     Ok((response.from_did, response.from_vk))
 }
 
-pub fn update_agent_info(id: &str, value: &str) -> Result<(), u32> {
+pub fn update_agent_info(id: &str, value: &str) -> VcxResult<()> {
     trace!("update_agent_info >>> id: {}, value: {}", id, value);
 
     let to_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
@@ -345,30 +355,31 @@ pub fn update_agent_info(id: &str, value: &str) -> Result<(), u32> {
     }
 }
 
-pub fn update_agent_info_v1(to_did: &str, com_method: ComMethod) -> Result<(), u32> {
+fn update_agent_info_v1(to_did: &str, com_method: ComMethod) -> VcxResult<()> {
     if settings::test_agency_mode_enabled() {
         httpclient::set_next_u8_response(REGISTER_RESPONSE.to_vec());
     }
 
     let message = A2AMessage::Version1(
-        A2AMessageV1::UpdateConnectionMethod(UpdateConnectionMethod::build(com_method))
+        A2AMessageV1::UpdateComMethod(UpdateComMethod::build(com_method))
     );
     send_message_to_agency(&message, to_did)?;
     Ok(())
 }
 
-pub fn update_agent_info_v2(to_did: &str, com_method: ComMethod) -> Result<(), u32> {
+fn update_agent_info_v2(to_did: &str, com_method: ComMethod) -> VcxResult<()> {
     let message = A2AMessage::Version2(
-        A2AMessageV2::UpdateConnectionMethod(UpdateConnectionMethod::build(com_method))
+        A2AMessageV2::UpdateComMethod(UpdateComMethod::build(com_method))
     );
     send_message_to_agency(&message, to_did)?;
     Ok(())
 }
 
-pub fn send_message_to_agency(message: &A2AMessage, did: &str) -> Result<Vec<A2AMessage>, u32> {
+fn send_message_to_agency(message: &A2AMessage, did: &str) -> VcxResult<Vec<A2AMessage>> {
     let data = prepare_message_for_agency(message, &did)?;
 
-    let response = httpclient::post_u8(&data).or(Err(error::INVALID_HTTP_RESPONSE.code_num))?;
+    let response = httpclient::post_u8(&data)
+        .map_err(|err| err.map(VcxErrorKind::InvalidHttpResponse, error::INVALID_HTTP_RESPONSE.message))?;
 
     parse_response_from_agency(&response)
 }
@@ -422,9 +433,16 @@ mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
 
-        match update_agent_info("123", "value") {
-            Ok(_) => assert_eq!(0, 0),
-            Err(x) => assert_eq!(x, 0), // should fail here
-        };
+        update_agent_info("123", "value").unwrap();
+    }
+
+    #[cfg(feature = "agency")]
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn test_update_agent_info_real() {
+        init!("agency");
+        ::utils::devsetup::tests::set_consumer();
+        assert!(update_agent_info("7b7f97f2","FCM:Value").is_ok());
+        teardown!("agency");
     }
 }

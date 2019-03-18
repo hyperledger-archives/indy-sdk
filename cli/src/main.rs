@@ -126,6 +126,8 @@ fn build_executor() -> CommandExecutor {
         .add_command(ledger::set_fees_prepare_command::new())
         .add_command(ledger::verify_payment_receipt_command::new())
         .add_command(ledger::sign_multi_command::new())
+        .add_command(ledger::auth_rule_command::new())
+        .add_command(ledger::get_auth_rule_command::new())
         .finalize_group()
         .add_group(payment_address::group::new())
         .add_command(payment_address::create_command::new())

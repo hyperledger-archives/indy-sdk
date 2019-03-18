@@ -23,11 +23,12 @@ use services::pool::{
 use services::wallet::{RecordOptions, WalletService};
 use utils::crypto::base58;
 use utils::crypto::signature_serializer::serialize_signature;
+use api::WalletHandle;
 
 pub enum LedgerCommand {
     SignAndSubmitRequest(
         i32, // pool handle
-        i32, // wallet handle
+        WalletHandle,
         String, // submitter did
         String, // request json
         Box<Fn(IndyResult<String>) + Send>),
@@ -46,12 +47,12 @@ pub enum LedgerCommand {
         Option<i32>, // timeout
         Box<Fn(IndyResult<String>) + Send>),
     SignRequest(
-        i32, // wallet handle
+        WalletHandle,
         String, // submitter did
         String, // request json
         Box<Fn(IndyResult<String>) + Send>),
     MultiSignRequest(
-        i32, // wallet handle
+        WalletHandle,
         String, // submitter did
         String, // request json
         Box<Fn(IndyResult<String>) + Send>),
@@ -183,6 +184,23 @@ pub enum LedgerCommand {
         Box<Fn(IndyResult<()>) + Send>),
     GetResponseMetadata(
         String, // response
+        Box<Fn(IndyResult<String>) + Send>),
+    BuildAuthRuleRequest(
+        String, // submitter did
+        String, // auth type
+        String, // auth action
+        String, // field
+        Option<String>, // old value
+        String, // new value
+        String, // constraint
+        Box<Fn(IndyResult<String>) + Send>),
+    BuildGetAuthRuleRequest(
+        Option<String>, // submitter did
+        Option<String>, // auth type
+        Option<String>, // auth action
+        Option<String>, // field
+        Option<String>, // old value
+        Option<String>, // new value
         Box<Fn(IndyResult<String>) + Send>),
 }
 
@@ -361,6 +379,19 @@ impl LedgerCommandExecutor {
                 info!(target: "ledger_command_executor", "GetResponseMetadata command received");
                 cb(self.get_response_metadata(&response));
             }
+            LedgerCommand::BuildAuthRuleRequest(submitter_did, txn_type, action, field, old_value, new_value, constraint, cb) => {
+                info!(target: "ledger_command_executor", "BuildAuthRuleRequest command received");
+                cb(self.build_auth_rule_request(&submitter_did, &txn_type, &action, &field, old_value.as_ref().map(String::as_str), &new_value, &constraint));
+            }
+            LedgerCommand::BuildGetAuthRuleRequest(submitter_did, txn_type, action, field, old_value, new_value, cb) => {
+                info!(target: "ledger_command_executor", "BuildGetAuthRuleRequest command received");
+                cb(self.build_get_auth_rule_request(submitter_did.as_ref().map(String::as_str),
+                                                    txn_type.as_ref().map(String::as_str),
+                                                    action.as_ref().map(String::as_str),
+                                                    field.as_ref().map(String::as_str),
+                                                    old_value.as_ref().map(String::as_str),
+                                                    new_value.as_ref().map(String::as_str)));
+            }
         };
     }
 
@@ -375,7 +406,7 @@ impl LedgerCommandExecutor {
 
     fn sign_and_submit_request(&self,
                                pool_handle: i32,
-                               wallet_handle: i32,
+                               wallet_handle: WalletHandle,
                                submitter_did: &str,
                                request_json: &str,
                                cb: Box<Fn(IndyResult<String>) + Send>) {
@@ -389,7 +420,7 @@ impl LedgerCommandExecutor {
     }
 
     fn _sign_request(&self,
-                     wallet_handle: i32,
+                     wallet_handle: WalletHandle,
                      submitter_did: &str,
                      request_json: &str,
                      signature_type: SignatureType) -> IndyResult<String> {
@@ -463,7 +494,7 @@ impl LedgerCommandExecutor {
     }
 
     fn sign_request(&self,
-                    wallet_handle: i32,
+                    wallet_handle: WalletHandle,
                     submitter_did: &str,
                     request_json: &str) -> IndyResult<String> {
         debug!("sign_request >>> wallet_handle: {:?}, submitter_did: {:?}, request_json: {:?}", wallet_handle, submitter_did, request_json);
@@ -476,7 +507,7 @@ impl LedgerCommandExecutor {
     }
 
     fn multi_sign_request(&self,
-                          wallet_handle: i32,
+                          wallet_handle: WalletHandle,
                           submitter_did: &str,
                           request_json: &str) -> IndyResult<String> {
         debug!("multi_sign_request >>> wallet_handle: {:?}, submitter_did: {:?}, request_json: {:?}", wallet_handle, submitter_did, request_json);
@@ -886,6 +917,45 @@ impl LedgerCommandExecutor {
             .to_indy(IndyErrorKind::InvalidState, "Cannot serialize ResponseMetadata")?;
 
         debug!("get_response_metadata <<< res: {:?}", res);
+
+        Ok(res)
+    }
+
+    fn build_auth_rule_request(&self,
+                               submitter_did: &str,
+                               txn_type: &str,
+                               action: &str,
+                               field: &str,
+                               old_value: Option<&str>,
+                               new_value: &str,
+                               constraint: &str) -> IndyResult<String> {
+        debug!("build_auth_rule_request >>> submitter_did: {:?}, txn_type: {:?}, action: {:?}, field: {:?}, \
+            old_value: {:?}, new_value: {:?}, constraint: {:?}", submitter_did, txn_type, action, field, old_value, new_value, constraint);
+
+        self.validate_opt_did(Some(submitter_did))?;
+
+        let res = self.ledger_service.build_auth_rule_request(submitter_did, txn_type, action, field, old_value, new_value, constraint)?;
+
+        debug!("build_auth_rule_request <<< res: {:?}", res);
+
+        Ok(res)
+    }
+
+    fn build_get_auth_rule_request(&self,
+                                   submitter_did: Option<&str>,
+                                   txn_type: Option<&str>,
+                                   action: Option<&str>,
+                                   field: Option<&str>,
+                                   old_value: Option<&str>,
+                                   new_value: Option<&str>) -> IndyResult<String> {
+        debug!("build_get_auth_rule_request >>> submitter_did: {:?}, auth_type: {:?}, auth_action: {:?}, field: {:?}, \
+            old_value: {:?}, new_value: {:?}", submitter_did, txn_type, action, field, old_value, new_value);
+
+        self.validate_opt_did(submitter_did)?;
+
+        let res = self.ledger_service.build_get_auth_rule_request(submitter_did, txn_type, action, field, old_value, new_value)?;
+
+        debug!("build_get_auth_rule_request <<< res: {:?}", res);
 
         Ok(res)
     }

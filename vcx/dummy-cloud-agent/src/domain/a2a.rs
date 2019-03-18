@@ -12,6 +12,7 @@ use domain::key_deligation_proof::KeyDlgProof;
 use domain::status::{MessageStatusCode, ConnectionStatus};
 use domain::message_type::*;
 use domain::protocol_type::{ProtocolType, ProtocolTypes};
+use domain::payload::Thread;
 
 #[derive(Debug)]
 pub enum A2AMessageV1 {
@@ -54,6 +55,8 @@ pub enum A2AMessageV1 {
     Configs(Configs),
     RemoveConfigs(RemoveConfigs),
     ConfigsRemoved(ConfigsRemoved),
+    UpdateComMethod(UpdateComMethod),
+    ComMethodUpdated(ComMethodUpdated),
 }
 
 #[derive(Debug)]
@@ -92,6 +95,8 @@ pub enum A2AMessageV2 {
     Configs(Configs),
     RemoveConfigs(RemoveConfigs),
     ConfigsRemoved(ConfigsRemoved),
+    UpdateComMethod(UpdateComMethod),
+    ComMethodUpdated(ComMethodUpdated),
 
     ConnectionRequest(ConnectionRequest),
     ConnectionRequestResponse(ConnectionRequestResponse),
@@ -359,6 +364,7 @@ pub struct ConnectionRequestMessageDetail {
     pub phone_no: Option<String>,
     #[serde(rename = "usePublicDID")]
     pub use_public_did: Option<bool>,
+    pub thread_id: Option<String>,
 }
 
 impl From<ConnectionRequest> for ConnectionRequestMessageDetail {
@@ -368,6 +374,7 @@ impl From<ConnectionRequest> for ConnectionRequestMessageDetail {
             target_name: con_req.target_name,
             phone_no: con_req.phone_no,
             use_public_did: Some(con_req.include_public_did),
+            thread_id: Some(con_req.id),
         }
     }
 }
@@ -390,6 +397,8 @@ pub struct ConnectionRequestAnswerMessageDetail {
     pub sender_agency_detail: ForwardAgentDetail,
     #[serde(rename = "answerStatusCode")]
     pub answer_status_code: MessageStatusCode,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub thread: Option<Thread>
 }
 
 impl From<ConnectionRequestAnswer> for ConnectionRequestAnswerMessageDetail {
@@ -399,6 +408,7 @@ impl From<ConnectionRequestAnswer> for ConnectionRequestAnswerMessageDetail {
             sender_detail: con_req_answer.sender_detail,
             sender_agency_detail: con_req_answer.sender_agency_detail,
             answer_status_code: con_req_answer.answer_status_code,
+            thread: Some(con_req_answer.thread),
         }
     }
 }
@@ -464,11 +474,30 @@ pub struct RemoveConfigs {
 pub struct ConfigsRemoved {}
 
 #[derive(Debug, Deserialize, Serialize)]
+pub struct ComMethod {
+    id: String,
+    #[serde(rename = "type")]
+    e_type: i32,
+    value: String,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct UpdateComMethod {
+    #[serde(rename = "comMethod")]
+    com_method: ComMethod,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ComMethodUpdated {
+    pub id: String
+}
+
+#[derive(Debug, Deserialize, Serialize)]
 pub struct ConnectionRequest {
     #[serde(rename = "sendMsg")]
     pub send_msg: bool,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub uid: Option<String>,
+    #[serde(rename = "@id")]
+    id: String,
     #[serde(rename = "replyToMsgId")]
     pub reply_to_msg_id: Option<String>,
     #[serde(rename = "keyDlgProof")]
@@ -479,11 +508,14 @@ pub struct ConnectionRequest {
     pub phone_no: Option<String>,
     #[serde(rename = "usePublicDID")]
     pub include_public_did: bool,
+    #[serde(rename = "~thread")]
+    pub thread: Thread,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ConnectionRequestResponse {
-    pub uid: String,
+    #[serde(rename = "@id")]
+    pub id: String,
     #[serde(rename = "inviteDetail")]
     pub invite_detail: InviteDetail,
     #[serde(rename = "urlToInviteDetail")]
@@ -495,8 +527,8 @@ pub struct ConnectionRequestResponse {
 pub struct ConnectionRequestAnswer {
     #[serde(rename = "sendMsg")]
     pub send_msg: bool,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub uid: Option<String>,
+    #[serde(rename = "@id")]
+    pub id: String,
     #[serde(rename = "replyToMsgId")]
     pub reply_to_msg_id: Option<String>,
     #[serde(rename = "keyDlgProof")]
@@ -507,11 +539,14 @@ pub struct ConnectionRequestAnswer {
     pub sender_agency_detail: ForwardAgentDetail,
     #[serde(rename = "answerStatusCode")]
     pub answer_status_code: MessageStatusCode,
+    #[serde(rename = "~thread")]
+    pub thread: Thread,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ConnectionRequestAnswerResponse {
-    pub uid: String,
+    #[serde(rename = "@id")]
+    pub id: String,
     pub sent: bool,
 }
 
@@ -519,13 +554,13 @@ pub struct ConnectionRequestAnswerResponse {
 #[serde(rename_all = "camelCase")]
 pub struct SendRemoteMessage {
     pub mtype: RemoteMessageType,
+    #[serde(rename = "@id")]
+    pub id: String,
     #[serde(rename = "replyToMsgId")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub reply_to_msg_id: Option<String>,
     #[serde(rename = "sendMsg")]
     pub send_msg: bool,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub uid: Option<String>,
     #[serde(rename = "@msg")]
     pub msg: Vec<u8>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -537,7 +572,8 @@ pub struct SendRemoteMessage {
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SendRemoteMessageResponse {
-    pub uid: String,
+    #[serde(rename = "@id")]
+    pub id: String,
     pub sent: bool,
 }
 
@@ -578,6 +614,8 @@ pub enum A2AMessageKinds {
     ConnectionRequestAnswerResponse,
     SendRemoteMessage,
     SendRemoteMessageResponse,
+    UpdateComMethod,
+    ComMethodUpdated,
 }
 
 impl A2AMessageKinds {
@@ -617,6 +655,8 @@ impl A2AMessageKinds {
             A2AMessageKinds::Configs => MessageFamilies::Configs,
             A2AMessageKinds::RemoveConfigs => MessageFamilies::Configs,
             A2AMessageKinds::ConfigsRemoved => MessageFamilies::Configs,
+            A2AMessageKinds::UpdateComMethod => MessageFamilies::Configs,
+            A2AMessageKinds::ComMethodUpdated => MessageFamilies::Configs,
             A2AMessageKinds::SendRemoteMessage => MessageFamilies::Routing,
             A2AMessageKinds::SendRemoteMessageResponse => MessageFamilies::Routing,
         }
@@ -658,6 +698,8 @@ impl A2AMessageKinds {
             A2AMessageKinds::Configs => "CONFIGS".to_string(),
             A2AMessageKinds::RemoveConfigs => "REMOVE_CONFIGS".to_string(),
             A2AMessageKinds::ConfigsRemoved => "CONFIGS_REMOVED".to_string(),
+            A2AMessageKinds::UpdateComMethod => "UPDATE_COM_METHOD".to_string(),
+            A2AMessageKinds::ComMethodUpdated => "COM_METHOD_UPDATED".to_string(),
             A2AMessageKinds::SendRemoteMessage => "SEND_REMOTE_MSG".to_string(),
             A2AMessageKinds::SendRemoteMessageResponse => "REMOTE_MSG_SENT".to_string(),
         }
@@ -800,6 +842,16 @@ impl<'de> Deserialize<'de> for A2AMessageV1 {
                     .map(|msg| A2AMessageV1::ConfigsRemoved(msg))
                     .map_err(de::Error::custom)
             }
+            "UPDATE_COM_METHOD" => {
+                UpdateComMethod::deserialize(value)
+                    .map(|msg| A2AMessageV1::UpdateComMethod(msg))
+                    .map_err(de::Error::custom)
+            }
+            "COM_METHOD_UPDATED" => {
+                ComMethodUpdated::deserialize(value)
+                    .map(|msg| A2AMessageV1::ComMethodUpdated(msg))
+                    .map_err(de::Error::custom)
+            }
             "CREATE_MSG" => {
                 CreateMessage::deserialize(value)
                     .map(|msg| A2AMessageV1::CreateMessage(msg))
@@ -904,6 +956,16 @@ impl<'de> Deserialize<'de> for A2AMessageV2 {
             "MSG_STATUS_UPDATED" => {
                 MessageStatusUpdated::deserialize(value)
                     .map(|msg| A2AMessageV2::MessageStatusUpdated(msg))
+                    .map_err(de::Error::custom)
+            }
+            "UPDATE_COM_METHOD" => {
+                UpdateComMethod::deserialize(value)
+                    .map(|msg| A2AMessageV2::UpdateComMethod(msg))
+                    .map_err(de::Error::custom)
+            }
+            "COM_METHOD_UPDATED" => {
+                ComMethodUpdated::deserialize(value)
+                    .map(|msg| A2AMessageV2::ComMethodUpdated(msg))
                     .map_err(de::Error::custom)
             }
             "GET_MSGS" => {
@@ -1059,6 +1121,8 @@ impl Serialize for A2AMessageV1 {
             A2AMessageV1::MessageStatusUpdatedByConnections(msg) => set_a2a_message_type_v1(msg, A2AMessageKinds::MessageStatusUpdatedByConnections),
             A2AMessageV1::UpdateConfigs(msg) => set_a2a_message_type_v1(msg, A2AMessageKinds::UpdateConfigs),
             A2AMessageV1::ConfigsUpdated(msg) => set_a2a_message_type_v1(msg, A2AMessageKinds::ConfigsUpdated),
+            A2AMessageV1::UpdateComMethod(msg) => set_a2a_message_type_v1(msg, A2AMessageKinds::UpdateComMethod),
+            A2AMessageV1::ComMethodUpdated(msg) => set_a2a_message_type_v1(msg, A2AMessageKinds::ComMethodUpdated),
             A2AMessageV1::GetConfigs(msg) => set_a2a_message_type_v1(msg, A2AMessageKinds::GetConfigs),
             A2AMessageV1::Configs(msg) => set_a2a_message_type_v1(msg, A2AMessageKinds::Configs),
             A2AMessageV1::RemoveConfigs(msg) => set_a2a_message_type_v1(msg, A2AMessageKinds::RemoveConfigs),
@@ -1099,6 +1163,8 @@ impl Serialize for A2AMessageV2 {
             A2AMessageV2::MessageStatusUpdatedByConnections(msg) => set_a2a_message_type_v2(msg, A2AMessageKinds::MessageStatusUpdatedByConnections),
             A2AMessageV2::UpdateConfigs(msg) => set_a2a_message_type_v2(msg, A2AMessageKinds::UpdateConfigs),
             A2AMessageV2::ConfigsUpdated(msg) => set_a2a_message_type_v2(msg, A2AMessageKinds::ConfigsUpdated),
+            A2AMessageV2::UpdateComMethod(msg) => set_a2a_message_type_v2(msg, A2AMessageKinds::UpdateComMethod),
+            A2AMessageV2::ComMethodUpdated(msg) => set_a2a_message_type_v2(msg, A2AMessageKinds::ComMethodUpdated),
             A2AMessageV2::GetConfigs(msg) => set_a2a_message_type_v2(msg, A2AMessageKinds::GetConfigs),
             A2AMessageV2::Configs(msg) => set_a2a_message_type_v2(msg, A2AMessageKinds::Configs),
             A2AMessageV2::RemoveConfigs(msg) => set_a2a_message_type_v2(msg, A2AMessageKinds::RemoveConfigs),
@@ -1278,4 +1344,3 @@ struct UnpackMessage {
     message: String,
     sender_verkey: Option<String>
 }
-

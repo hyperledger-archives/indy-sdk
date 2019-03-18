@@ -1,7 +1,8 @@
 use settings;
 use messages::*;
 use messages::message_type::MessageTypes;
-use utils::{httpclient, error};
+use utils::httpclient;
+use error::prelude::*;
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -44,19 +45,19 @@ impl UpdateMessageStatusByConnectionsBuilder {
         }
     }
 
-    pub fn uids_by_conns(&mut self, uids_by_conns: Vec<UIDsByConn>) -> Result<&mut Self, u32> {
+    pub fn uids_by_conns(&mut self, uids_by_conns: Vec<UIDsByConn>) -> VcxResult<&mut Self> {
         //Todo: validate msg_uid??
         self.uids_by_conns = uids_by_conns;
         Ok(self)
     }
 
-    pub fn status_code(&mut self, code: MessageStatusCode) -> Result<&mut Self, u32> {
+    pub fn status_code(&mut self, code: MessageStatusCode) -> VcxResult<&mut Self> {
         //Todo: validate that it can be parsed to number??
         self.status_code = Some(code.clone());
         Ok(self)
     }
 
-    pub fn send_secure(&mut self) -> Result<(), u32> {
+    pub fn send_secure(&mut self) -> VcxResult<()> {
         trace!("UpdateMessages::send >>>");
 
         if settings::test_agency_mode_enabled() {
@@ -65,12 +66,12 @@ impl UpdateMessageStatusByConnectionsBuilder {
 
         let data = self.prepare_request()?;
 
-        let response = httpclient::post_u8(&data).or(Err(error::POST_MSG_FAILURE.code_num))?;
+        let response = httpclient::post_u8(&data)?;
 
         self.parse_response(&response)
     }
 
-    fn prepare_request(&mut self) -> Result<Vec<u8>, u32> {
+    fn prepare_request(&mut self) -> VcxResult<Vec<u8>> {
         let message = match settings::get_protocol_type() {
             settings::ProtocolTypes::V1 =>
                 A2AMessage::Version1(
@@ -98,7 +99,7 @@ impl UpdateMessageStatusByConnectionsBuilder {
         prepare_message_for_agency(&message, &agency_did)
     }
 
-    fn parse_response(&self, response: &Vec<u8>) -> Result<(), u32> {
+    fn parse_response(&self, response: &Vec<u8>) -> VcxResult<()> {
         trace!("parse_create_keys_response >>>");
 
         let mut response = parse_response_from_agency(response)?;
@@ -106,19 +107,21 @@ impl UpdateMessageStatusByConnectionsBuilder {
         match response.remove(0) {
             A2AMessage::Version1(A2AMessageV1::UpdateMessageStatusByConnectionsResponse(res)) => Ok(()),
             A2AMessage::Version2(A2AMessageV2::UpdateMessageStatusByConnectionsResponse(res)) => Ok(()),
-            _ => Err(error::INVALID_HTTP_RESPONSE.code_num)
+            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of UpdateMessageStatusByConnectionsResponse"))
         }
     }
 }
 
-pub fn update_agency_messages(status_code: &str, msg_json: &str) -> Result<(), u32> {
+pub fn update_agency_messages(status_code: &str, msg_json: &str) -> VcxResult<()> {
     trace!("update_agency_messages >>> status_code: {:?}, msg_json: {:?}", status_code, msg_json);
 
-    let status_code: MessageStatusCode = serde_json::from_str(&format!("\"{}\"", status_code)).or(Err(error::INVALID_JSON.code_num))?;
+    let status_code: MessageStatusCode = ::serde_json::from_str(&format!("\"{}\"", status_code))
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize MessageStatusCode: {}", err)))?;
 
     debug!("updating agency messages {} to status code: {:?}", msg_json, status_code);
 
-    let uids_by_conns: Vec<UIDsByConn> = serde_json::from_str(msg_json).or(Err(error::INVALID_JSON.code_num))?;
+    let uids_by_conns: Vec<UIDsByConn> = serde_json::from_str(msg_json)
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize UIDsByConn: {}", err)))?;
 
     UpdateMessageStatusByConnectionsBuilder::create()
         .uids_by_conns(uids_by_conns)?

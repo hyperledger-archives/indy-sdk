@@ -1,9 +1,3 @@
-extern crate serde_json;
-
-static ISSUER_DID: &'static str = "issuer_did";
-static SEQUENCE_NUMBER: &'static str = "schema_seq_no";
-static BLINDED_MS: &'static str = "blinded_ms";
-static PROVER_DID: &'static str = "prover_did";
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct CredentialRequest {
@@ -38,6 +32,7 @@ impl CredentialRequest {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde_json;
     use utils::constants::{CREDENTIAL_REQ_STRING, CRED_REQ, CRED_REQ_META};
 
     static TEMP_ISSUER_DID: &'static str = "4reqXeZVm7JZAffAoaNLsb";
