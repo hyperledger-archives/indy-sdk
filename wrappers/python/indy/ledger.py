@@ -1338,3 +1338,61 @@ async def build_auth_rule_request(submitter_did: str,
     res = request_json.decode()
     logger.debug("build_auth_rule_request: <<< res: %r", res)
     return res
+
+
+async def build_get_auth_rule_request(submitter_did: Optional[str],
+                                      txn_type: Optional[str],
+                                      action: Optional[str],
+                                      field: Optional[str],
+                                      old_value: Optional[str],
+                                      new_value: Optional[str]) -> str:
+    """
+    Builds a GET_AUTH_RULE request. Request to get authentication rules for a ledger transaction.
+
+    NOTE: Either none or all transaction related parameters must be specified (`old_value` can be skipped for `ADD` action).
+        * none - to get all authentication rules for all ledger transactions
+        * all - to get authentication rules for specific action (`old_value` can be skipped for `ADD` action)
+
+    :param submitter_did: (Optional) DID of the read request sender.
+    :param txn_type: target ledger transaction alias or associated value.
+    :param action: target action type. Can be either "ADD" or "EDIT".
+    :param field: target transaction field.
+    :param old_value: old value of field, which can be changed to a new_value (must be specified for EDIT action).
+    :param new_value: new value that can be used to fill the field.
+
+    :return: Request result as json.
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("build_get_auth_rule_request: >>> submitter_did: %r, txn_type: %r, action: %r, field: %r, "
+                 "old_value: %r, new_value: %r",
+                 submitter_did,
+                 txn_type,
+                 action,
+                 field,
+                 old_value,
+                 new_value)
+
+    if not hasattr(build_get_auth_rule_request, "cb"):
+        logger.debug("build_get_auth_rule_request: Creating callback")
+        build_get_auth_rule_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_submitter_did = c_char_p(submitter_did.encode('utf-8')) if submitter_did is not None else None
+    c_txn_type = c_char_p(txn_type.encode('utf-8')) if txn_type is not None else None
+    c_action = c_char_p(action.encode('utf-8')) if action is not None else None
+    c_field = c_char_p(field.encode('utf-8')) if field is not None else None
+    c_old_value = c_char_p(old_value.encode('utf-8')) if old_value is not None else None
+    c_new_value = c_char_p(new_value.encode('utf-8')) if new_value is not None else None
+
+    request_json = await do_call('indy_build_get_auth_rule_request',
+                                 c_submitter_did,
+                                 c_txn_type,
+                                 c_action,
+                                 c_field,
+                                 c_old_value,
+                                 c_new_value,
+                                 build_get_auth_rule_request.cb)
+
+    res = request_json.decode()
+    logger.debug("build_get_auth_rule_request: <<< res: %r", res)
+    return res

@@ -1001,6 +1001,41 @@ extern "C" {
                                                                           const char*   request_json)
                                                     );
 
+    /// Builds a GET_AUTH_RULE request. Request to get authentication rules for a ledger transaction.
+    ///
+    /// NOTE: Either none or all transaction related parameters must be specified (`old_value` can be skipped for `ADD` action).
+    ///     * none - to get all authentication rules for all ledger transactions
+    ///     * all - to get authentication rules for specific action (`old_value` can be skipped for `ADD` action)
+    ///
+    /// #Params
+    /// command_handle: command handle to map callback to caller context.
+    /// submitter_did: (Optional) DID of the read request sender.
+    /// txn_type: (Optional) target ledger transaction alias or associated value.
+    /// action: (Optional) target action type. Can be either "ADD" or "EDIT".
+    /// field: (Optional) target transaction field.
+    /// old_value: (Optional) old value of field, which can be changed to a new_value (must be specified for EDIT action).
+    /// new_value: (Optional) new value that can be used to fill the field.
+    ///
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// Request result as json.
+    ///
+    /// #Errors
+    /// Common*
+    extern indy_error_t indy_build_get_auth_rule_request(indy_handle_t command_handle,
+                                                         const char *  submitter_did,
+                                                         const char *  txn_type,
+                                                         const char *  action,
+                                                         const char *  field,
+                                                         const char *  old_value,
+                                                         const char *  new_value,
+
+                                                         void           (*cb)(indy_handle_t command_handle_,
+                                                                              indy_error_t  err,
+                                                                              const char*   request_json)
+                                                        );
+
 #ifdef __cplusplus
 }
 #endif

@@ -672,7 +672,34 @@
                                                                    newValue:@"101"
                                                                    constraint:[NSDictionary toString:constraint]
                                                              outRequest:&requestJson];
-    XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildNymRequestWithSubmitterDid() failed!");
+    XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildAuthRuleRequestWithSubmitterDid() failed!");
+
+    NSDictionary *request = [NSDictionary fromString:requestJson];
+
+    XCTAssertTrue([request contains:expectedResult], @"Request doesn't contain expectedResult");
+}
+
+- (void)testBuildGetAuthRuleRequestsWorks {
+    NSDictionary *expectedResult = @{
+            @"identifier": [TestUtils trusteeDid],
+            @"operation": @{
+                    @"type": @"121",
+                    @"auth_type": @"1",
+                    @"auth_action": @"ADD",
+                    @"field": @"role",
+                    @"new_value": @"101",
+            }
+    };
+
+    NSString *requestJson;
+    ret = [[LedgerUtils sharedInstance] buildGetAuthRuleRequestWithSubmitterDid:[TestUtils trusteeDid]
+                                                                        txnType:@"NYM"
+                                                                         action:@"ADD"
+                                                                          field:@"role"
+                                                                       oldValue:nil
+                                                                       newValue:@"101"
+                                                                     outRequest:&requestJson];
+    XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildGetAuthRuleRequestWithSubmitterDid() failed!");
 
     NSDictionary *request = [NSDictionary fromString:requestJson];
 
