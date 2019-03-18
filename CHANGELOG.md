@@ -1,5 +1,30 @@
 # Changelog
 
+## 1.8.2 - 2019-03-18
+* Updated Vcx to support community A2A protocol. 
+Added `protocol_type` field to VCX provisioning config with indicates A2A message format will be used.
+    * `1.0` means the current protocol.
+    * `2.0` means community (IN PROGRESS) protocol which in the current state includes implementation of the following HIPES:
+        * [Message Types](https://github.com/hyperledger/indy-hipe/tree/master/text/0021-message-types), 
+        * [Message Threading](https://github.com/hyperledger/indy-hipe/tree/master/text/0027-message-id-and-threading)
+        * [Wire Message](https://github.com/hyperledger/indy-hipe/tree/master/text/0028-wire-message-format).
+* Added new functions to Libindy Ledger API:
+    * `indy_build_auth_rule_request` to change an existing ledger auth rule.
+    * `indy_build_get_auth_rule_request` to get either specific one or all ledger auth rules.
+* Added `ledger auth-rule` and `ledger get-auth-rule` commands to Indy CLI.
+* Added function `vcx_get_current_error` to get additional information for last error occurred in Libvcx.
+* Updated Libvcx wrappers for automatic getting error details:
+    * Python - added `sdk_error_full_message`, `sdk_error_cause` and `sdk_error_backtrace` fields to `VcxError` object.
+    * Java - added `sdkMessage`, `sdkFullMessage`, `sdkCause`  and `sdkBacktrace` fields to `VcxException`.
+    * Objective-C - added `error`, `message`, `cause`, `backtrace` fields to `userInfo` dictionary in `NSError` object.
+* Removed Deprecation warnings from `indy_crypto_anon_crypt` and `indy_crypto_anon_decrypt` functions.
+* Changed location of Java artifacts on `repo.sovrin.org`.
+* Added Postgres wallet storage plugin. Updated Libvcx and Cli to support work with it. 
+* Bugfixes:
+    * Restart catchup in case of outdated pool cache.
+    * Fixed publishing of nodejs package for VCX wrapper.
+    * others minor bugfixes
+
 ## 1.8.1 - 2019-02-08
 * Bugfixes:
     * Set default freshness threshold to u64::MAX -- if you need to change it, look at the `indy_set_runtime_config` call.

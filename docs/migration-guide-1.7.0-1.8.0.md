@@ -217,3 +217,65 @@ indy_crypto_auth_decrypt(
 ### Ledger API
 * Added `NETWORK_MONITOR` to list of acceptable values for `role` parameter in `indy_build_nym_request` API function.
 * Implemented automatic filtering of outdated responses based on comparison of local time with latest transaction ordering time.
+
+## Libindy 1.8.1 to 1.8.2 migration Guide
+
+<table>
+  <tr>
+    <th>v1.8.1 - Ledger API</th>
+    <th>v1.8.2 - Ledger API</th>
+  </tr>  
+  <tr>
+    <th colspan="2">
+        <a https://github.com/hyperledger/indy-sdk/blob/v1.8.2/libindy/src/api/ledger.rs#L1838">
+            Builds a AUTH_RULE request to change authentication rules for a ledger transaction 
+        </a>
+    </th>
+  </tr>
+  <tr>
+    <td>
+      <b>NEW</b>
+    </td>
+    <td>
+      <pre>
+indy_build_auth_rule_request(command_handle: CommandHandle,
+                             submitter_did: *const c_char,
+                             txn_type: *const c_char,
+                             action: *const c_char,
+                             field: *const c_char,
+                             old_value: *const c_char,
+                             new_value: *const c_char,
+                             constraint: *const c_char,
+                             cb: fn(command_handle_: CommandHandle,
+                                    err: ErrorCode,
+                                    request_json: *const c_char))
+      </pre>
+    </td>
+  </tr>
+  <tr>
+    <th colspan="2">
+        <a https://github.com/hyperledger/indy-sdk/blob/v1.8.2/libindy/src/api/ledger.rs#L1927">
+            Builds a GET_AUTH_RULE request to get authentication rules for ledger
+        </a>
+    </th>
+  </tr>
+  <tr>
+    <td>
+      <b>NEW</b>
+    </td>
+    <td>
+      <pre>
+indy_build_get_auth_rule_request(command_handle: CommandHandle,
+                                 submitter_did: *const c_char,
+                                 txn_type: *const c_char,
+                                 action: *const c_char,
+                                 field: *const c_char,
+                                 old_value: *const c_char,
+                                 new_value: *const c_char,
+                                 cb: fn(command_handle_: CommandHandle,
+                                        err: ErrorCode,
+                                        request_json: *const c_char))
+      </pre>
+    </td>
+  </tr>
+</table>
