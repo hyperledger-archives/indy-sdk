@@ -477,6 +477,26 @@ mod high_cases {
     mod pack_message_authcrypt {
         use super::*;
 
+        #[derive(Clone, Serialize, Deserialize, Debug, PartialEq, PartialOrd)]
+        pub struct Forward1 {
+            #[serde(rename = "@type")]
+            msg_type: String,
+            #[serde(rename = "@fwd")]
+            fwd: String,
+            #[serde(rename = "@msg")]
+            msg: Vec<u8>,
+        }
+
+        #[derive(Clone, Serialize, Deserialize, Debug, PartialEq, PartialOrd)]
+        pub struct Forward2 {
+            #[serde(rename = "@type")]
+            msg_type: String,
+            #[serde(rename = "@fwd")]
+            fwd: String,
+            #[serde(rename = "@msg")]
+            msg: String,
+        }
+
         #[test]
         fn indy_pack_message_authcrypt_works() {
             let (wallet_handle, verkey) = setup_with_key();
@@ -485,6 +505,9 @@ mod high_cases {
             let message = "Hello World".as_bytes();
             let res = crypto::pack_message(wallet_handle, message, &receiver_keys, Some(&verkey));
             assert!(res.is_ok());
+            let x = res.unwrap();
+            println!("x_len={:?}", x.len());
+            println!("x={:?}", &x);
             utils::tear_down_with_wallet(wallet_handle);
         }
 
@@ -518,10 +541,35 @@ mod high_cases {
         }
 
         #[test]
-        fn indy_crypto_auth_crypt_pack_works() {
+        fn indy_crypto_pack_fwd_pack_works() {
             let (wallet_handle, verkey) = setup_with_key();
+            let rec_key_vec = vec![VERKEY_MY1, VERKEY_MY2, VERKEY_TRUSTEE];
+            let receiver_keys_1 = serde_json::to_string(&rec_key_vec[..1]).unwrap();
+            let res_1 = crypto::pack_message(wallet_handle, MESSAGE.as_bytes(), &receiver_keys_1, Some(&verkey)).unwrap();
+            println!("res_1_len={:?}", res_1.len());
+            //println!("res_1={:?}", &res_1);
+            let y = serde_json::to_string(&res_1).unwrap();
+            println!("y_len={:?}", y.len());
+            //println!("y={:?}", &y);
 
-            crypto::auth_crypt(wallet_handle, &verkey, VERKEY_MY2, MESSAGE.as_bytes()).unwrap();
+            let fwd1 = Forward1 {
+                msg_type: "f".to_string(),
+                fwd: "a".to_string(),
+                msg: res_1.clone()
+            };
+            let f1 = serde_json::to_string(&fwd1).unwrap();
+            println!("f1_len={:?}", f1.len());
+            println!("f1={:?}", &f1);
+
+            let fwd2 = Forward2 {
+                msg_type: "f".to_string(),
+                fwd: "a".to_string(),
+                msg: String::from_utf8(res_1).unwrap()
+            };
+            let f2 = serde_json::to_string(&fwd2).unwrap();
+            println!("f2_len={:?}", f2.len());
+            println!("f2={:?}", &f2);
+
 
             utils::tear_down_with_wallet(wallet_handle);
         }

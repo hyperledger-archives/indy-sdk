@@ -1,8 +1,11 @@
-# Setup Indy SDK build environment for MacOS
+# MacOS build guide
+
+Automated build: clone the repo and run `mac.build.sh` in the `libindy` folder.
+
+## Manual steps
 
 1. Install Rust and rustup (https://www.rust-lang.org/install.html).
 2. Install required native libraries and utilities (libsodium is added with URL to homebrew since version<1.0.15 is required)
-
    ```
    brew install pkg-config
    brew install https://raw.githubusercontent.com/Homebrew/homebrew-core/65effd2b617bade68a8a2c5b39e1c3089cc0e945/Formula/libsodium.rb   
@@ -13,8 +16,6 @@
    brew install zeromq
    brew install zmq
    ```
-   
-
 3. Setup environment variables:
    ```
    export PKG_CONFIG_ALLOW_CROSS=1
@@ -24,7 +25,10 @@
    ```
 4. Setup OPENSSL_DIR variable: path to installed openssl library
    ```
-   export OPENSSL_DIR=/usr/local/Cellar/openssl/1.0.2n   # path changes with version number
+   for version in `ls -t /usr/local/Cellar/openssl/`; do
+        export OPENSSL_DIR=/usr/local/Cellar/openssl/$version
+        break
+   done
    ```
 5. Checkout and build the library:
    ```
@@ -38,13 +42,14 @@
    cd ../cli
    cargo build
    ```
+7. Set your `DYLD_LIBRARY_PATH` and `LD_LIBRARY_PATH` environment variables to the path of `indy-sdk/libindy/target/debug`. You may want to put these in your `.bash_profile` to persist them.
 
-# Note on running local nodes
+## Note on running local nodes
 
 In order to run local nodes on MacOS, it may be necessary to set up port mapping between the Docker container
 and local host. Follow the instructions in [Indy SDK README](https://github.com/hyperledger/indy-sdk#how-to-start-local-nodes-pool-with-docker)
 
-# IOError while running of whole set of tests on MacOS
+## IOError while running of whole set of tests on MacOS
 
 There is a possible case when some tests are failed if whole set of tests is run (`cargo test`).
 But failed tests will be successful in case of separate runs.
