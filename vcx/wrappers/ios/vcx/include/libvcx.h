@@ -33,6 +33,7 @@ typedef unsigned int vcx_bool_t;
 typedef unsigned int vcx_payment_handle_t;
 typedef unsigned int vcx_u32_t;
 typedef SInt32 VcxHandle;
+typedef const uint8_t vcx_data_t;
 
 typedef struct
 {
@@ -152,6 +153,87 @@ vcx_error_t vcx_connection_create_with_invite(vcx_command_handle_t command_handl
 
 /** Deletes a connection, send an API call to agency to stop sending messages from this connection */
 vcx_error_t vcx_connection_delete_connection(vcx_command_handle_t command_handle, vcx_connection_handle_t connection_handle, void (*cb)(vcx_command_handle_t, vcx_error_t err));
+    
+/** Send a message to the specified connection
+///
+/// #params
+///
+/// command_handle: command handle to map callback to user context.
+///
+/// connection_handle: connection to receive the message
+///
+/// msg: actual message to send
+///
+/// msg_type: type of message to send
+///
+/// msg_title: message title (user notification)
+///
+/// cb: Callback that provides array of matching messages retrieved
+///
+/// #Returns
+/// Error code as a u32
+ */
+vcx_error_t vcx_connection_send_message(vcx_command_handle_t command_handle,
+                                        vcx_connection_handle_t connection_handle,
+                                        const char *msg,
+                                        const char *msg_type,
+                                        const char *msg_title,
+                                        void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err, const char *msg_id));
+    
+/// Generate a signature for the specified data
+///
+/// #params
+///
+/// command_handle: command handle to map callback to user context.
+///
+/// connection_handle: connection to receive the message
+///
+/// data_raw: raw data buffer for signature
+///
+/// data:len: length of data buffer
+///
+/// cb: Callback that provides the generated signature
+///
+/// #Returns
+/// Error code as a u32
+vcx_error_t vcx_connection_sign_data(vcx_command_handle_t command_handle,
+                                     vcx_connection_handle_t connection_handle,
+                                     vcx_data_t *data_raw,
+                                     vcx_u32_t data_len,
+                                     void(*cb)(vcx_command_handle_t command_handle,
+                                               vcx_error_t err,
+                                               vcx_data_t *signature_raw,
+                                               vcx_u32_t signature_len));
+    
+/// Verify the signature is valid for the specified data
+///
+/// #params
+///
+/// command_handle: command handle to map callback to user context.
+///
+/// connection_handle: connection to receive the message
+///
+/// data_raw: raw data buffer for signature
+///
+/// data_len: length of data buffer
+///
+/// signature_raw: raw data buffer for signature
+///
+/// signature_len: length of data buffer
+///
+/// cb: Callback that specifies whether the signature was valid or not
+///
+/// #Returns
+/// Error code as a u32
+vcx_error_t vcx_connection_verify_signature(vcx_command_handle_t command_handle,
+                                            vcx_connection_handle_t connection_handle,
+                                            vcx_data_t *data_raw,
+                                            vcx_u32_t data_len,
+                                            vcx_data_t *signature_raw,
+                                            vcx_u32_t signature_len,
+                                            void (*cb)(vcx_command_handle_t command_handle,
+                                                       vcx_error_t err,
+                                                       vcx_bool_t valid));
 
 /**
  * credential issuer object

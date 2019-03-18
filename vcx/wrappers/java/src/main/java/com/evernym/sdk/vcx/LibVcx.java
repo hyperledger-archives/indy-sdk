@@ -134,6 +134,68 @@ public abstract class LibVcx {
          */
         public int vcx_connection_delete_connection(int command_handle, int connection_handle, Callback cb);
 
+        /** Send a message to the specified connection
+        ///
+        /// #params
+        ///
+        /// command_handle: command handle to map callback to user context.
+        ///
+        /// connection_handle: connection to receive the message
+        ///
+        /// msg: actual message to send
+        ///
+        /// msg_type: type of message to send
+        ///
+        /// msg_title: message title (user notification)
+        ///
+        /// cb: Callback that provides array of matching messages retrieved
+        ///
+        /// #Returns
+        /// Error code as a u32
+         */
+        public int vcx_connection_send_message(int command_handle, int connection_handle, String msg, String msg_type, String msg_title, Callback cb);
+
+        /** Generate a signature for the specified data
+        ///
+        /// #params
+        ///
+        /// command_handle: command handle to map callback to user context.
+        ///
+        /// connection_handle: connection to receive the message
+        ///
+        /// data_raw: raw data buffer for signature
+        ///
+        /// data:len: length of data buffer
+        ///
+        /// cb: Callback that provides the generated signature
+        ///
+        /// #Returns
+        /// Error code as a u32
+         */
+        public int vcx_connection_sign_data(int command_handle, int connection_handle, byte[] data_raw, int data_len, Callback cb);
+
+        /** Verify the signature is valid for the specified data
+        ///
+        /// #params
+        ///
+        /// command_handle: command handle to map callback to user context.
+        ///
+        /// connection_handle: connection to receive the message
+        ///
+        /// data_raw: raw data buffer for signature
+        ///
+        /// data_len: length of data buffer
+        ///
+        /// signature_raw: raw data buffer for signature
+        ///
+        /// signature_len: length of data buffer
+        ///
+        /// cb: Callback that specifies whether the signature was valid or not
+        ///
+        /// #Returns
+        /// Error code as a u32
+         */
+        public int vcx_connection_verify_signature(int command_handle, int connection_handle, byte[] data_raw, int data_len, byte[] signature_raw, int signature_len, Callback cb);
 
     /**
      * credential issuer object

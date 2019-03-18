@@ -10,6 +10,7 @@ import com.evernym.sdk.vcx.ParamGuard;
 import com.evernym.sdk.vcx.VcxException;
 import com.evernym.sdk.vcx.VcxJava;
 import com.sun.jna.Callback;
+import com.sun.jna.Pointer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -281,6 +282,81 @@ public class ConnectionApi extends VcxJava.API {
         int commandHandle = addFuture(future);
         int result = LibVcx.api.vcx_connection_get_state(commandHandle, connnectionHandle, vcxConnectionGetStateCB);
         checkResult(result);
+        return future;
+    }
+
+
+    private static Callback vcxConnectionSendMessageCB = new Callback() {
+        @SuppressWarnings({"unused", "unchecked"})
+        public void callback(int commandHandle, int err, String msgId) {
+            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], msgId = [" + msgId + "]");
+            CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(commandHandle);
+            if (!checkCallback(future, err)) return;
+            future.complete(msgId);
+        }
+    };
+
+    public static CompletableFuture<String> connectionSendMessage(int connectionHandle, String message, String messageType, String messageTitle) throws VcxException {
+        logger.debug("connectionSendMessage() called with: connectionHandle = [" + connectionHandle + "], message = [" + message + "], messageType = [" + messageType + "], messageTitle = [" + messageTitle + "]");
+        CompletableFuture<String> future = new CompletableFuture<>();
+        int commandHandle = addFuture(future);
+        int result = LibVcx.api.vcx_connection_send_message(commandHandle, connectionHandle, message, messageType, messageTitle, vcxConnectionSendMessageCB);
+        checkResult(result);
+        return future;
+    }
+
+
+    private static Callback vcxConnectionSignDataCB = new Callback() {
+
+        @SuppressWarnings({"unused", "unchecked"})
+        public void callback(int xcommand_handle, int err, Pointer signature_raw, int signature_len) {
+
+            CompletableFuture<byte[]> future = (CompletableFuture<byte[]>) removeFuture(xcommand_handle);
+            if (! checkResult(future, err)) return;
+
+            byte[] encryptedMsg = new byte[signature_len];
+            signature_raw.read(0, encryptedMsg, 0, signature_len);
+
+            future.complete(encryptedMsg);
+        }
+    };
+
+
+    public static CompletableFuture<byte[]> connectionSignData(int connectionHandle, byte[] data, int dataLength) throws VcxException {
+
+        ParamGuard.notNull(data, "data");
+
+        CompletableFuture<byte[]> future = new CompletableFuture<byte[]>();
+        int commandHandle = addFuture(future);
+        int result = LibVcx.api.vcx_connection_sign_data(commandHandle, connectionHandle, data, dataLength, vcxConnectionSignDataCB);
+        checkResult(future, result);
+
+        return future;
+    }
+
+    private static Callback vcxConnectionVerifySignatureCB = new Callback() {
+
+        @SuppressWarnings({"unused", "unchecked"})
+        public void callback(int xcommand_handle, int err, boolean valid) {
+
+            CompletableFuture<Boolean> future = (CompletableFuture<Boolean>) removeFuture(xcommand_handle);
+            if (! checkResult(future, err)) return;
+
+            future.complete(valid);
+        }
+    };
+
+
+    public static CompletableFuture<Boolean> connectionVerifySignature(int connectionHandle, byte[] data, int dataLength, byte[] signature, int signatureLength) throws VcxException {
+
+        ParamGuard.notNull(data, "data");
+        ParamGuard.notNull(signature, "signature");
+
+        CompletableFuture<Boolean> future = new CompletableFuture<Boolean>();
+        int commandHandle = addFuture(future);
+        int result = LibVcx.api.vcx_connection_verify_signature(commandHandle, connectionHandle, data, dataLength, signature, signatureLength, vcxConnectionVerifySignatureCB);
+        checkResult(future, result);
+
         return future;
     }
 }

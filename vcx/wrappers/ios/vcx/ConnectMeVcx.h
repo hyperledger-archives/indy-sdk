@@ -102,6 +102,21 @@ extern void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_h
 - (void)deleteConnection:(VcxHandle)connectionHandle
           withCompletion:(void (^)(NSError *error))completion;
 
+- (void)connectionSendMessage:(VcxHandle)connectionHandle
+                  withMessage:(NSString *)message
+                     withType:(NSString *)type
+                    withTitle:(NSString *)title
+               withCompletion:(void (^)(NSError *error, NSString *msg_id))completion;
+
+- (void)connectionSignData:(VcxHandle)connectionHandle
+                  withData:(NSData *)dataRaw
+            withCompletion:(void (^)(NSError *error, NSData *signature_raw, vcx_u32_t signature_len))completion;
+
+- (void)connectionVerifySignature:(VcxHandle)connectionHandle
+                         withData:(NSData *)dataRaw
+                withSignatureData:(NSData *)signatureRaw
+                   withCompletion:(void (^)(NSError *error, vcx_bool_t valid))completion;
+
 - (void)agentUpdateInfo:(NSString *)config
              completion:(void (^)(NSError *error))completion;
 
