@@ -52,6 +52,7 @@ use services::pool::PoolService;
 use services::wallet::{RecordOptions, WalletService};
 
 use super::tails::{SDKTailsAccessor, store_tails_from_generator};
+use api::{WalletHandle, CallbackHandle};
 
 pub enum IssuerCommand {
     CreateSchema(
@@ -61,7 +62,7 @@ pub enum IssuerCommand {
         AttributeNames, // attribute names
         Box<Fn(IndyResult<(String, String)>) + Send>),
     CreateAndStoreCredentialDefinition(
-        i32, // wallet handle
+        WalletHandle,
         String, // issuer did
         Schema, // schema
         String, // tag
@@ -74,7 +75,7 @@ pub enum IssuerCommand {
                                                   CredentialPrivateKey,
                                                   CredentialKeyCorrectnessProof)>) + Send>),
     CreateAndStoreCredentialDefinitionContinue(
-        i32, // config
+        WalletHandle,
         SchemaV1, // credentials
         String,
         String,
@@ -85,7 +86,7 @@ pub enum IssuerCommand {
                     CredentialKeyCorrectnessProof)>,
         i32),
     CreateAndStoreRevocationRegistry(
-        i32, // wallet handle
+        WalletHandle,
         String, // issuer did
         Option<String>, // type
         String, // tag
@@ -94,11 +95,11 @@ pub enum IssuerCommand {
         i32, // tails writer handle
         Box<Fn(IndyResult<(String, String, String)>) + Send>),
     CreateCredentialOffer(
-        i32, // wallet handle
+        WalletHandle,
         String, // credential definition id
         Box<Fn(IndyResult<String>) + Send>),
     CreateCredential(
-        i32, // wallet handle
+        WalletHandle,
         CredentialOffer, // credential offer
         CredentialRequest, // credential request
         HashMap<String, AttributeValues>, // credential values
@@ -106,13 +107,13 @@ pub enum IssuerCommand {
         Option<i32>, // blob storage reader config handle
         Box<Fn(IndyResult<(String, Option<String>, Option<String>)>) + Send>),
     RevokeCredential(
-        i32, // wallet handle
+        WalletHandle,
         i32, // blob storage reader config handle
         String, //revocation revoc id
         String, //credential revoc id
         Box<Fn(IndyResult<String>) + Send>),
     /*    RecoverCredential(
-            i32, // wallet handle
+            WalletHandle,
             i32, // blob storage reader config handle
             String, //revocation revoc id
             String, //credential revoc id
@@ -234,7 +235,7 @@ impl IssuerCommandExecutor {
     }
 
     fn create_and_store_credential_definition(&self,
-                                              wallet_handle: i32,
+                                              wallet_handle: WalletHandle,
                                               issuer_did: &str,
                                               schema: &SchemaV1,
                                               tag: &str,
@@ -289,8 +290,8 @@ impl IssuerCommandExecutor {
     }
 
     fn _create_and_store_credential_definition_continue(&self,
-                                                        cb_id: i32,
-                                                        wallet_handle: i32,
+                                                        cb_id: CallbackHandle,
+                                                        wallet_handle: WalletHandle,
                                                         schema: &SchemaV1,
                                                         schema_id: &str,
                                                         cred_def_id: &str,
@@ -307,7 +308,7 @@ impl IssuerCommandExecutor {
     }
 
     fn _prepare_create_and_store_credential_definition(&self,
-                                                       wallet_handle: i32,
+                                                       wallet_handle: WalletHandle,
                                                        issuer_did: &str,
                                                        schema: &SchemaV1,
                                                        tag: &str,
@@ -337,7 +338,7 @@ impl IssuerCommandExecutor {
     }
 
     fn _complete_create_and_store_credential_definition(&self,
-                                                        wallet_handle: i32,
+                                                        wallet_handle: WalletHandle,
                                                         schema: &SchemaV1,
                                                         schema_id: &str,
                                                         cred_def_id: &str,
@@ -377,7 +378,7 @@ impl IssuerCommandExecutor {
     }
 
     fn create_and_store_revocation_registry(&self,
-                                            wallet_handle: i32,
+                                            wallet_handle: WalletHandle,
                                             issuer_did: &str,
                                             type_: Option<&str>,
                                             tag: &str,
@@ -466,7 +467,7 @@ impl IssuerCommandExecutor {
     }
 
     fn create_credential_offer(&self,
-                               wallet_handle: i32,
+                               wallet_handle: WalletHandle,
                                cred_def_id: &str) -> IndyResult<String> {
         debug!("create_credential_offer >>> wallet_handle: {:?}, cred_def_id: {:?}", wallet_handle, cred_def_id);
 
@@ -493,7 +494,7 @@ impl IssuerCommandExecutor {
     }
 
     fn new_credential(&self,
-                      wallet_handle: i32,
+                      wallet_handle: WalletHandle,
                       cred_offer: &CredentialOffer,
                       cred_request: &CredentialRequest,
                       cred_values: &HashMap<String, AttributeValues>,
@@ -614,7 +615,7 @@ impl IssuerCommandExecutor {
     }
 
     fn revoke_credential(&self,
-                         wallet_handle: i32,
+                         wallet_handle: WalletHandle,
                          blob_storage_reader_handle: i32,
                          rev_reg_id: &str,
                          cred_revoc_id: &str) -> IndyResult<String> {
@@ -673,7 +674,7 @@ impl IssuerCommandExecutor {
     }
 
     fn _recovery_credential(&self,
-                            wallet_handle: i32,
+                            wallet_handle: WalletHandle,
                             blob_storage_reader_handle: i32,
                             rev_reg_id: &str,
                             cred_revoc_id: &str) -> IndyResult<String> {
@@ -749,26 +750,26 @@ impl IssuerCommandExecutor {
     }
 
     // TODO: DELETE IT
-    fn _wallet_set_schema_id(&self, wallet_handle: i32, id: &str, schema_id: &str) -> IndyResult<()> {
+    fn _wallet_set_schema_id(&self, wallet_handle: WalletHandle, id: &str, schema_id: &str) -> IndyResult<()> {
         self.wallet_service.add_record(wallet_handle, &self.wallet_service.add_prefix("SchemaId"), id, schema_id, &Tags::new())
     }
 
     // TODO: DELETE IT
-    fn _wallet_get_schema_id(&self, wallet_handle: i32, key: &str) -> IndyResult<String> {
+    fn _wallet_get_schema_id(&self, wallet_handle: WalletHandle, key: &str) -> IndyResult<String> {
         let schema_id_record = self.wallet_service.get_record(wallet_handle, &self.wallet_service.add_prefix("SchemaId"), &key, &RecordOptions::id_value())?;
         Ok(schema_id_record.get_value()
             .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("SchemaId not found for id: {}", key)))?.to_string())
     }
 
-    fn _wallet_get_rev_reg_def(&self, wallet_handle: i32, key: &str) -> IndyResult<RevocationRegistryDefinition> {
+    fn _wallet_get_rev_reg_def(&self, wallet_handle: WalletHandle, key: &str) -> IndyResult<RevocationRegistryDefinition> {
         self.wallet_service.get_indy_object(wallet_handle, &key, &RecordOptions::id_value())
     }
 
-    fn _wallet_get_rev_reg(&self, wallet_handle: i32, key: &str) -> IndyResult<RevocationRegistry> {
+    fn _wallet_get_rev_reg(&self, wallet_handle: WalletHandle, key: &str) -> IndyResult<RevocationRegistry> {
         self.wallet_service.get_indy_object(wallet_handle, &key, &RecordOptions::id_value())
     }
 
-    fn _wallet_get_rev_reg_info(&self, wallet_handle: i32, key: &str) -> IndyResult<RevocationRegistryInfo> {
+    fn _wallet_get_rev_reg_info(&self, wallet_handle: WalletHandle, key: &str) -> IndyResult<RevocationRegistryInfo> {
         self.wallet_service.get_indy_object(wallet_handle, &key, &RecordOptions::id_value())
     }
 }
