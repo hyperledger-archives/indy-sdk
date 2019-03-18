@@ -67,7 +67,7 @@ npm install
 
 - Compile LibVCX Wrapper
 ```
-npm compile
+npm run compile
 ```
 - Start [Dummy Cloud Agent](../../dummy-cloud-agent)
 - Run Faber agent, representing an institution

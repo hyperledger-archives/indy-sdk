@@ -3,7 +3,8 @@ extern crate zeroize;
 
 use domain::wallet::KeyDerivationMethod;
 use errors::prelude::*;
-use self::sodiumoxide::crypto::aead::chacha20poly1305_ietf;
+use self::sodiumoxide::crypto::aead::
+chacha20poly1305_ietf;
 use self::sodiumoxide::utils;
 use std::cmp;
 use std::io;
