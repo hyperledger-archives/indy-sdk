@@ -24,7 +24,7 @@ class Proof(VcxStateful):
         self._proof_state = x
 
     @staticmethod
-    async def create(source_id: str, name: str, requested_attrs: list, revocation_interval: dict):
+    async def create(source_id: str, name: str, requested_attrs: list, revocation_interval: dict, requested_predicates: list = []):
         """
          Builds a generic proof object
         :param source_id: Tag associated by user of sdk
@@ -42,7 +42,7 @@ class Proof(VcxStateful):
 
         c_source_id = c_char_p(source_id.encode('utf-8'))
         c_name = c_char_p(name.encode('utf-8'))
-        c_req_predicates = c_char_p('[]'.encode('utf-8'))
+        c_req_predicates = c_char_p(json.dumps(requested_predicates).encode('utf-8'))
         c_req_attrs = c_char_p(json.dumps(requested_attrs).encode('utf-8'))
         c_revocation_interval = c_char_p(json.dumps(revocation_interval).encode('utf-8'))
         c_params = (c_source_id, c_req_attrs, c_req_predicates, c_revocation_interval, c_name)

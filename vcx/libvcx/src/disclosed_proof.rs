@@ -127,12 +127,14 @@ fn credential_def_identifiers(credentials: &str, proof_req: &ProofRequestData) -
 }
 
 fn _get_revocation_interval(attr_name: &str, proof_req: &ProofRequestData) -> VcxResult<Option<NonRevokedInterval>> {
-    let attr = proof_req.requested_attributes.get(attr_name)
-        .ok_or(VcxError::from_msg(VcxErrorKind::InvalidProofCredentialData, format!("Attribute not found for: {}", attr_name)))?;
-
-    Ok(attr.non_revoked.clone().or(proof_req.non_revoked.clone().or(None)))
-
-    // Todo: Handle case for predicates
+    if let Some(attr) = proof_req.requested_attributes.get(attr_name) {
+        Ok(attr.non_revoked.clone().or(proof_req.non_revoked.clone().or(None)))
+    } else if let Some(attr) = proof_req.requested_predicates.get(attr_name) {
+        // Handle case for predicates
+        Ok(attr.non_revoked.clone().or(proof_req.non_revoked.clone().or(None)))
+    } else {
+        Err(VcxError::from_msg(VcxErrorKind::InvalidProofCredentialData, format!("Attribute not found for: {}", attr_name)))
+    }
 }
 
 // Also updates timestamp in credentials_identifiers
@@ -300,21 +302,35 @@ impl DisclosedProof {
         Ok(rtn.to_string())
     }
 
-    fn build_requested_credentials_json(&self, credentials_identifiers: &Vec<CredInfo>, self_attested_attrs: &str) -> VcxResult<String> {
+    fn build_requested_credentials_json(&self, 
+                                        credentials_identifiers: &Vec<CredInfo>, 
+                                        self_attested_attrs: &str,
+                                        proof_req: &ProofRequestData) -> VcxResult<String> {
         let mut rtn: Value = json!({
               "self_attested_attributes":{},
               "requested_attributes":{},
               "requested_predicates":{}
         });
-        //Todo: need to do same for predicates and self_attested
-        //Todo: need to handle if the attribute is not revealed
+        // do same for predicates and self_attested
         if let Value::Object(ref mut map) = rtn["requested_attributes"] {
             for ref cred_info in credentials_identifiers {
-                let insert_val = json!({"cred_id": cred_info.referent, "revealed": true, "timestamp": cred_info.timestamp});
-                map.insert(cred_info.requested_attr.to_owned(), insert_val);
+                if let Some(ref attr) = proof_req.requested_attributes.get(&cred_info.requested_attr) {
+                    let insert_val = json!({"cred_id": cred_info.referent, "revealed": true, "timestamp": cred_info.timestamp});
+                    map.insert(cred_info.requested_attr.to_owned(), insert_val);
+                }
             }
         }
 
+        if let Value::Object(ref mut map) = rtn["requested_predicates"] {
+            for ref cred_info in credentials_identifiers {
+                if let Some(ref attr) = proof_req.requested_predicates.get(&cred_info.requested_attr) {
+                    let insert_val = json!({"cred_id": cred_info.referent, "timestamp": cred_info.timestamp});
+                    map.insert(cred_info.requested_attr.to_owned(), insert_val);
+                }
+            }
+        }
+
+        // handle if the attribute is not revealed
         let self_attested_attrs: Value = serde_json::from_str(self_attested_attrs)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize self attested attributes: {}", err)))?;
         rtn["self_attested_attributes"] = self_attested_attrs;
@@ -333,10 +349,13 @@ impl DisclosedProof {
         let proof_req_data_json = serde_json::to_string(&proof_req.proof_request_data)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize proof request: {}", err)))?;
 
-        let mut credentials_identifiers = credential_def_identifiers(credentials, &proof_req.proof_request_data)?;
+        let mut credentials_identifiers = credential_def_identifiers(credentials,
+                                                                     &proof_req.proof_request_data)?;
 
         let revoc_states_json = build_rev_states_json(&mut credentials_identifiers)?;
-        let requested_credentials = self.build_requested_credentials_json(&credentials_identifiers, self_attested_attrs)?;
+        let requested_credentials = self.build_requested_credentials_json(&credentials_identifiers,
+                                                                          self_attested_attrs,
+                                                                          &proof_req.proof_request_data)?;
 
         let schemas_json = self.build_schemas_json(&credentials_identifiers)?;
         let credential_defs_json = self.build_cred_def_json(&credentials_identifiers)?;
@@ -829,7 +848,22 @@ mod tests {
         });
 
         let proof: DisclosedProof = Default::default();
-        let requested_credential = proof.build_requested_credentials_json(&creds, &self_attested_attrs).unwrap();
+        let proof_req = json!({
+            "nonce": "123432421212",
+            "name": "proof_req_1",
+            "version": "0.1",
+            "requested_attributes": {
+                "height_1": {
+                    "name": "height_1",
+                    "non_revoked":  {"from": 123, "to": 456}
+                },
+                "zip_2": { "name": "zip_2" }
+            },
+            "requested_predicates": {},
+            "non_revoked": {"from": 098, "to": 123}
+        });
+        let proof_req: ProofRequestData = serde_json::from_value(proof_req).unwrap();
+        let requested_credential = proof.build_requested_credentials_json(&creds, &self_attested_attrs, &proof_req).unwrap();
         assert_eq!(test.to_string(), requested_credential);
     }
 
@@ -1204,6 +1238,67 @@ mod tests {
         proof.link_secret_alias = "main".to_string();
         let generated_proof = proof.generate_proof(&selected_credentials.to_string(), &self_attested.to_string());
 
+        assert!(generated_proof.is_ok());
+    }
+
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn test_generate_proof_with_predicates() {
+        init!("ledger");
+        let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
+        let (schema_id, _, cred_def_id, _, _, _, _, cred_id, _, _) = ::utils::libindy::anoncreds::tests::create_and_store_credential(::utils::constants::DEFAULT_SCHEMA_ATTRS, true);
+        let mut proof_req = ProofRequestMessage::create();
+        let to = time::get_time().sec;
+        let indy_proof_req = json!({
+            "nonce": "123432421212",
+            "name": "proof_req_1",
+            "version": "0.1",
+            "requested_attributes": {
+                "address1_1": {
+                    "name": "address1",
+                    "restrictions": [{"issuer_did": did}],
+                    "non_revoked":  {"from": 123, "to": to}
+                },
+                "zip_2": { "name": "zip" }
+            },
+            "self_attested_attr_3": json!({
+                   "name":"self_attested_attr",
+             }),
+            "requested_predicates": json!({
+                "zip_3": {"name":"zip", "p_type":">=", "p_value":18}
+            }),
+            "non_revoked": {"from": 098, "to": to}
+        }).to_string();
+        proof_req.proof_request_data = serde_json::from_str(&indy_proof_req).unwrap();
+
+        let mut proof: DisclosedProof = Default::default();
+        proof.proof_request = Some(proof_req);
+        proof.link_secret_alias = "main".to_string();
+
+        let all_creds: Value = serde_json::from_str(&proof.retrieve_credentials().unwrap()).unwrap();
+        let selected_credentials: Value = json!({
+           "attrs":{
+              "address1_1": {
+                "credential": all_creds["attrs"]["address1_1"][0],
+                "tails_file": get_temp_dir_path(Some(TEST_TAILS_FILE)).to_str().unwrap().to_string()
+              },
+              "zip_2": {
+                "credential": all_creds["attrs"]["zip_2"][0],
+                "tails_file": get_temp_dir_path(Some(TEST_TAILS_FILE)).to_str().unwrap().to_string()
+              },
+           },
+           "predicates":{ 
+               "zip_3": {
+                "credential": all_creds["attrs"]["zip_3"][0],
+               }
+           }
+        });
+
+        let self_attested: Value = json!({
+              "self_attested_attr_3":"attested_val"
+        });
+
+        let generated_proof = proof.generate_proof(&selected_credentials.to_string(), &self_attested.to_string());
         assert!(generated_proof.is_ok());
     }
 
