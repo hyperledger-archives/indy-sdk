@@ -279,7 +279,6 @@ impl Message {
         if let Some(ref payload) = self.payload {
             let payload = ::messages::to_u8(payload);
             let payload = ::utils::libindy::crypto::parse_msg(&vk, &payload).unwrap_or((String::new(), Vec::new()));
-            //new_message.decrypted_payload = rmp_serde::from_slice(&payload.1[..]).ok();
             let payload = Message::to_json(&payload.1).unwrap_or(json!(null));
             new_message.decrypted_payload = serde_json::to_string(&payload).ok();
         }
