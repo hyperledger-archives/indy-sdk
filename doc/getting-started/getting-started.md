@@ -4,7 +4,7 @@
 
 ![logo](https://raw.githubusercontent.com/hyperledger/indy-node/master/collateral/logos/indy-logo.png)
 
-* [Getting Started with Libndy](#getting-started-with-libindy)
+* [Getting Started with Libindy](#getting-started-with-libindy)
   * [What Indy and Libindy are and Why They Matter](#what-indy-and-libindy-are-and-why-they-matter)
   * [What We'll Cover](#what-well-cover)
   * [About Alice](#about-alice)
