@@ -140,7 +140,7 @@ To build libvcx on your own you can follow these steps --
     - Copy generated `libindy.a` file to whatever location you want
     - Set env variable `LIBINDY_DIR=<Directory_containing_libindy.a>`. e.g `export LIBINDY_DIR=/usr/local/aarch64-linux-android/libindy` libindy directory holds libindy.a
 4) Run `install_toolchains.sh`. You need to run this once to setup toolchains for android
-5) Run `android_build.sh aarm64` to build libvcx for aarm64 architecture.(Other architerctures will follow soon)
+5) Run `android.build.sh aarm64` to build libvcx for aarm64 architecture.(Other architerctures will follow soon)
 6) Tests are not working on Android as of now.
 
 ## How to build VCX from source
