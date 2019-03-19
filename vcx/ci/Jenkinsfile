@@ -51,9 +51,9 @@ def testing() {
 
         stage('Testing') {
             parallel([
-                    'Xenial' : { mainUbuntu() },
+                 //   'Xenial' : { mainUbuntu() },
                     'Android': { android() },
-                    'iOS' : { ios() }
+                  //  'iOS' : { ios() }
             ])
         }
     } else {
@@ -403,6 +403,12 @@ def packageAndroid(android) {
     for (arch in all_archs) {
         dir("runtime_android_build/libvcx_${arch}") {
             unstash name: "libvcx_${arch}"
+        }
+        sh "cp runtime_android_build/libvcx_${arch}/libvcx.so runtime_android_build/libvcx_${arch}/libvcx_${arch}.so"
+        withCredentials([usernameColonPassword(credentialsId: 'jenkins-kraken-svc', variable: 'KRAKEN_CREDENTIALS')]) {
+            artifactLocation="runtime_android_build/libvcx_${arch}"
+            artifactName="libvcx_${arch}.so"
+            archiveArtifacts allowEmptyArchive: true, artifacts: "${artifactLocation}/${artifactName}"
         }
     }
     android.inside {
