@@ -142,6 +142,7 @@ pub static PROOF_LIBINDY: &str = r#"{"proofs":{"claim::1f927d68-8905-4188-afd6-3
 pub static PROOF_REQUEST: &str = r#"{"name":"proof name","nonce":"2771519439","requested_attrs":{"height_0":{"issuer_did":"DunkM3x1y7S4ECgSL4Wkru","name":"height","schema_seq_no":694},"weight_1":{"issuer_did":"DunkM3x1y7S4ECgSL4Wkru","name":"weight","schema_seq_no":694}},"requested_predicates":{"age_2":{"attr_name":"age","p_type":"GE","issuer_did":"DunkM3x1y7S4ECgSL4Wkru","schema_seq_no":694,"value":18}},"version":"0.1"}"#;
 
 pub static REQUESTED_ATTRIBUTES: &str = "requested_attributes";
+pub static PROOF_REQUESTED_PREDICATES: &str = "requested_predicates";
 pub static ATTRS: &str = "attrs";
 pub static ENTERPRISE_PREFIX: &str = "enterprise";
 pub static CONSUMER_PREFIX: &str = "consumer";
