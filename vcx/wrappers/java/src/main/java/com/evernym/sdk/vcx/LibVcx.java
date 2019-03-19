@@ -1,6 +1,7 @@
 package com.evernym.sdk.vcx;
 
 import com.sun.jna.*;
+import com.sun.jna.ptr.PointerByReference;
 
 import java.io.File;
 
@@ -30,7 +31,7 @@ public abstract class LibVcx {
      * Helper API for testing purposes.
      */
         public void vcx_set_next_agency_response(int msg);
-
+        public void vcx_get_current_error(PointerByReference error);
 
     /**
      * Schema object

@@ -2038,6 +2038,71 @@ NAN_METHOD(parseGetRevocRegDeltaResponse) {
   delete arg0;
 }
 
+void buildAuthRuleRequest_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbString(xerr, arg0);
+  }
+}
+NAN_METHOD(buildAuthRuleRequest) {
+  INDY_ASSERT_NARGS(buildAuthRuleRequest, 8)
+  INDY_ASSERT_STRING(buildAuthRuleRequest, 0, submitterDid)
+  INDY_ASSERT_STRING(buildAuthRuleRequest, 1, txnType)
+  INDY_ASSERT_STRING(buildAuthRuleRequest, 2, action)
+  INDY_ASSERT_STRING(buildAuthRuleRequest, 3, field)
+  INDY_ASSERT_STRING(buildAuthRuleRequest, 4, oldValue)
+  INDY_ASSERT_STRING(buildAuthRuleRequest, 5, newValue)
+  INDY_ASSERT_STRING(buildAuthRuleRequest, 6, constraint)
+  INDY_ASSERT_FUNCTION(buildAuthRuleRequest, 7)
+  const char* arg0 = argToCString(info[0]);
+  const char* arg1 = argToCString(info[1]);
+  const char* arg2 = argToCString(info[2]);
+  const char* arg3 = argToCString(info[3]);
+  const char* arg4 = argToCString(info[4]);
+  const char* arg5 = argToCString(info[5]);
+  const char* arg6 = argToCString(info[6]);
+  IndyCallback* icb = argToIndyCb(info[7]);
+  indyCalled(icb, indy_build_auth_rule_request(icb->handle, arg0, arg1, arg2, arg3, arg4, arg5, arg6, buildAuthRuleRequest_cb));
+  delete arg0;
+  delete arg1;
+  delete arg2;
+  delete arg3;
+  delete arg4;
+  delete arg5;
+  delete arg6;
+}
+
+void buildGetAuthRuleRequest_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbString(xerr, arg0);
+  }
+}
+NAN_METHOD(buildGetAuthRuleRequest) {
+  INDY_ASSERT_NARGS(buildGetAuthRuleRequest, 7)
+  INDY_ASSERT_STRING(buildGetAuthRuleRequest, 0, submitterDid)
+  INDY_ASSERT_STRING(buildGetAuthRuleRequest, 1, txnType)
+  INDY_ASSERT_STRING(buildGetAuthRuleRequest, 2, action)
+  INDY_ASSERT_STRING(buildGetAuthRuleRequest, 3, field)
+  INDY_ASSERT_STRING(buildGetAuthRuleRequest, 4, oldValue)
+  INDY_ASSERT_STRING(buildGetAuthRuleRequest, 5, newValue)
+  INDY_ASSERT_FUNCTION(buildGetAuthRuleRequest, 6)
+  const char* arg0 = argToCString(info[0]);
+  const char* arg1 = argToCString(info[1]);
+  const char* arg2 = argToCString(info[2]);
+  const char* arg3 = argToCString(info[3]);
+  const char* arg4 = argToCString(info[4]);
+  const char* arg5 = argToCString(info[5]);
+  IndyCallback* icb = argToIndyCb(info[6]);
+  indyCalled(icb, indy_build_get_auth_rule_request(icb->handle, arg0, arg1, arg2, arg3, arg4, arg5, buildGetAuthRuleRequest_cb));
+  delete arg0;
+  delete arg1;
+  delete arg2;
+  delete arg3;
+  delete arg4;
+  delete arg5;
+}
+
 void getResponseMetadata_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
   IndyCallback* icb = IndyCallback::getCallback(handle);
   if(icb != nullptr){
@@ -3115,6 +3180,8 @@ NAN_MODULE_INIT(InitAll) {
   Nan::Export(target, "parseGetRevocRegResponse", parseGetRevocRegResponse);
   Nan::Export(target, "buildGetRevocRegDeltaRequest", buildGetRevocRegDeltaRequest);
   Nan::Export(target, "parseGetRevocRegDeltaResponse", parseGetRevocRegDeltaResponse);
+  Nan::Export(target, "buildAuthRuleRequest", buildAuthRuleRequest);
+  Nan::Export(target, "buildGetAuthRuleRequest", buildGetAuthRuleRequest);
   Nan::Export(target, "getResponseMetadata", getResponseMetadata);
   Nan::Export(target, "addWalletRecord", addWalletRecord);
   Nan::Export(target, "updateWalletRecordValue", updateWalletRecordValue);
