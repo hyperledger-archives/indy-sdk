@@ -152,13 +152,16 @@ impl GeneralMessage for SendMessageBuilder {
                          A2AMessage::Version1(A2AMessageV1::MessageDetail(MessageDetail::General(detail)))]
                 }
                 settings::ProtocolTypes::V2 => {
+                    let msg: ::serde_json::Value = ::serde_json::from_slice(self.payload.as_slice())
+                        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidState, err))?;
+
                     let message = SendRemoteMessage {
                         msg_type: MessageTypes::build_v2(A2AMessageKinds::SendRemoteMessage),
                         id: uuid(),
                         mtype: self.mtype.clone(),
                         reply_to_msg_id: self.ref_msg_id.clone(),
                         send_msg: true,
-                        msg: self.payload.clone(),
+                        msg,
                         title: self.title.clone(),
                         detail: self.detail.clone(),
                     };
