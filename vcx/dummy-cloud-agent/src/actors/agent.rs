@@ -752,7 +752,7 @@ mod tests {
                             status_code: MessageStatusCode::Created,
                             sender_did: EDGE_PAIRWISE_DID.to_string(),
                             type_: RemoteMessageType::CredOffer,
-                            payload: Some(to_i8(&PAYLOAD.to_vec())),
+                            payload: Some(MessageDetailPayload::V1(to_i8(&PAYLOAD.to_vec()))),
                             ref_msg_id: None,
                         }]
                     };
