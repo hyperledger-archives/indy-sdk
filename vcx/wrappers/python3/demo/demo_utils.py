@@ -85,10 +85,10 @@ async def send_credential_request(my_connection, cred_def_json, schema_attrs, cr
     print("Done")
 
 
-async def send_proof_request(my_connection, institution_did, proof_attrs, proof_uuid, proof_name):
+async def send_proof_request(my_connection, institution_did, proof_attrs, proof_uuid, proof_name, proof_predicates):
 
     print("#19 Create a Proof object")
-    proof = await Proof.create(proof_uuid, proof_name, proof_attrs, {})
+    proof = await Proof.create(proof_uuid, proof_name, proof_attrs, {}, requested_predicates=proof_predicates)
 
     print("#20 Request proof of degree from alice")
     await proof.request_proof(my_connection)
@@ -188,15 +188,26 @@ async def handle_proof_request(my_connection, request):
     print("#24 Query for credentials in the wallet that satisfy the proof request")
     credentials = await proof.get_creds()
 
-    # TODO list credentials and let Alice select
+    # include self-attested attributes (not included in credentials)
+    self_attested = {}
+
     # Use the first available credentials to satisfy the proof request
     for attr in credentials['attrs']:
-        credentials['attrs'][attr] = {
-            'credential': credentials['attrs'][attr][0]
-        }
+        if 0 < len(credentials['attrs'][attr]):
+            credentials['attrs'][attr] = {
+                'credential': credentials['attrs'][attr][0]
+            }
+        else:
+            self_attested[attr] = 'my self-attested value'
+
+    for attr in self_attested:
+        del credentials['attrs'][attr]
+
+    print('credentials', credentials)
+    print('self_attested', self_attested)
 
     print("#25 Generate the proof")
-    await proof.generate_proof(credentials, {})
+    await proof.generate_proof(credentials, self_attested)
 
     # TODO figure out why this always segfaults
     print("#26 Send the proof to X")
