@@ -1,6 +1,9 @@
 extern crate indy_crypto;
 extern crate serde_json;
 extern crate zeroize;
+extern crate regex;
+
+use self::regex::Regex;
 
 use std::collections::HashMap;
 
@@ -16,6 +19,9 @@ use utils::crypto::base64;
 use utils::crypto::chacha20poly1305_ietf;
 use domain::crypto::combo_box::ComboBox;
 use api::WalletHandle;
+use std::mem::uninitialized;
+use serde_json::Value;
+
 
 pub enum CryptoCommand {
     CreateKey(
@@ -82,6 +88,27 @@ pub enum CryptoCommand {
         WalletHandle,
         Box<Fn(IndyResult<Vec<u8>>) + Send>,
     ),
+    PostPCPackedMessage(
+        Vec<u8>, // packed message
+        Box<Fn(IndyResult<Vec<u8>>) + Send>,
+    ),
+    ForwardMessageWithCD(
+        String, // type
+        String, // to
+        Vec<u8>, // packed message
+        Box<Fn(IndyResult<Vec<u8>>) + Send>,
+    ),
+    PackAlreadyPackedMessage(
+        Vec<u8>, // plaintext message
+        String,  // list of receiver's keys
+        Option<String>,  // senders verkey
+        WalletHandle,
+        Box<Fn(IndyResult<Vec<u8>>) + Send>,
+    ),
+    PrePCPackedMessage(
+        Vec<u8>, // packed message
+        Box<Fn(IndyResult<Vec<u8>>) + Send>,
+    ),
 }
 
 pub struct CryptoCommandExecutor {
@@ -145,6 +172,25 @@ impl CryptoCommandExecutor {
             CryptoCommand::UnpackMessage(jwe_json, wallet_handle, cb) => {
                 info!("UnpackMessage command received");
                 cb(self.unpack_msg(jwe_json, wallet_handle));
+            }
+            CryptoCommand::PostPCPackedMessage(message, cb) => {
+                info!("PostPCPackedMessage command received");
+                // TODO: Don't take ownership of message but borrow it
+                cb(Self::post_pc_packed_msg(&message));
+            }
+            CryptoCommand::ForwardMessageWithCD(typ, to, message, cb) => {
+                info!("ForwardMessageWithCD command received");
+                // TODO: Don't take ownership of message but borrow it
+                cb(Self::forward_msg_with_cd(&typ, &to, &message));
+            }
+            CryptoCommand::PackAlreadyPackedMessage(message, receivers, sender_vk, wallet_handle, cb) => {
+                info!("PackAlreadyPackedMessage command received");
+                cb(self.pack_already_packed(message, &receivers, sender_vk, wallet_handle));
+            }
+            CryptoCommand::PrePCPackedMessage(message, cb) => {
+                info!("PrePCPackedMessage command received");
+                // TODO: Don't take ownership of message but borrow it
+                cb(Self::pre_pc_packed_msg(&message));
             }
         };
     }
@@ -460,6 +506,168 @@ impl CryptoCommandExecutor {
         });
     }
 
+    pub fn post_pc_packed_msg(packed_msg: &[u8]) -> IndyResult<Vec<u8>> {
+        let jwe_cd_struct: JWEWithCD = serde_json::from_slice(packed_msg).map_err(|err| {
+            err_msg(IndyErrorKind::InvalidStructure, format!(
+                "Failed to deserialize JWE {}",
+                err
+            ))
+        })?;
+
+        let (iv, tag, ciphertext) = (jwe_cd_struct.iv, jwe_cd_struct.tag, jwe_cd_struct.ciphertext);
+
+        lazy_static! {
+            static ref idx_reg: Regex = Regex::new(r"^\$[0-9]+$").unwrap();
+        }
+
+        let b1 = idx_reg.is_match(&iv);
+        let b2 = idx_reg.is_match(&tag);
+        let b3 = idx_reg.is_match(&ciphertext);
+
+        match (b1, b2, b3) {
+            (false, false, false) => {
+                let mut cts: Vec<EmbeddedCT> = match jwe_cd_struct.ciphertexts {
+                    Some(cts) => {
+                        let ect: Vec<EmbeddedCT> = serde_json::from_str(&cts).map_err(|err| {
+                            err_msg(IndyErrorKind::InvalidStructure, format!(
+                                "Failed to deserialize EmbeddedCT vector {}",
+                                err
+                            ))
+                        })?;
+                        ect
+                    },
+                    None => Vec::<EmbeddedCT>::new()
+                };
+                let next_idx_str = format!("${}", cts.len());
+                let new_emd_ct = EmbeddedCT {
+                    iv,
+                    ciphertext,
+                    tag
+                };
+                cts.push(new_emd_ct);
+                let new_jwe_cd = JWEWithCD {
+                    protected: jwe_cd_struct.protected,
+                    iv: next_idx_str.clone(),
+                    ciphertext: next_idx_str.clone(),
+                    tag: next_idx_str.clone(),
+                    ciphertexts: Some(serde_json::to_string(&cts).map_err(|err| {
+                        err_msg(IndyErrorKind::InvalidStructure, format!(
+                            "Failed to serialize EmbeddedCT vector {}",
+                            err
+                        ))
+                    })?)
+                };
+                return serde_json::to_vec(&new_jwe_cd).map_err(|err| {
+                    err_msg(IndyErrorKind::InvalidStructure, format!(
+                        "Failed to serialize JWEWithCD {}",
+                        err
+                    ))
+                });
+            },
+            (true, true, true) => {
+                if iv == tag && tag == ciphertext {
+                    // Already processed so return original message
+                    println!("Already processed so return original message");
+                    return Ok(packed_msg.to_vec());
+                } else {
+                    return Err(err_msg(IndyErrorKind::InvalidStructure, format!(
+                        "all iv, tag, ciphertext should have same index"
+                    )));
+                }
+            },
+            (_, _, _) => {
+                return Err(err_msg(IndyErrorKind::InvalidStructure, format!(
+                    "all iv, tag, ciphertext should either have index or not"
+                )));
+            }
+        }
+    }
+
+    pub fn forward_msg_with_cd(typ: &str, to: &str, packed_msg: &[u8]) -> IndyResult<Vec<u8>> {
+        let mut jwe_cd_struct: JWEWithCD = serde_json::from_slice(packed_msg).map_err(|err| {
+            err_msg(IndyErrorKind::InvalidStructure, format!(
+                "Failed to deserialize JWE {}",
+                err
+            ))
+        })?;
+
+        let cts = jwe_cd_struct.ciphertexts.clone();
+        jwe_cd_struct.ciphertexts = None;
+        let msg = serde_json::to_string(&jwe_cd_struct).map_err(|err| {
+            err_msg(IndyErrorKind::InvalidStructure, format!(
+                "Failed to serialize JWEWithCD {}",
+                err
+            ))
+        })?;
+
+        let fwd = ForwardWithCD {
+            msg_type: typ.to_string(),
+            fwd: to.to_string(),
+            msg,
+            ciphertexts: cts
+        };
+
+        serde_json::to_vec(&fwd).map_err(|err| {
+            err_msg(IndyErrorKind::InvalidStructure, format!(
+                "Failed to serialize ForwardWithCD {}",
+                err
+            ))
+        })
+    }
+
+    pub fn pack_already_packed(
+        &self,
+        packed_msg: Vec<u8>,
+        receivers: &str,
+        sender_vk: Option<String>,
+        wallet_handle: WalletHandle,
+    ) -> IndyResult<Vec<u8>> {
+        let mut msg_json: Value = serde_json::from_slice(&packed_msg).map_err(|err| {
+            err_msg(IndyErrorKind::InvalidStructure, format!(
+                "Failed to deserialize message {}",
+                err
+            ))
+        })?;
+
+        // TODO: Remove unwrap by mapping err
+        let msg_obj = msg_json.as_object_mut().unwrap();
+        // TODO: "$ciphertexts" should be a constant
+        let special_key = "$ciphertexts";
+        if msg_obj.contains_key(special_key) {
+            println!("Found special key in pack_already_packed");
+            let cts = msg_obj.remove(special_key).unwrap();
+            let arg = serde_json::to_vec(&msg_obj).map_err(|err| {
+                err_msg(IndyErrorKind::InvalidStructure, format!(
+                    "Failed to serialize ForwardWithCD {}",
+                    err
+                ))
+            })?;
+            let new_msg = self.pack_msg(arg, receivers,
+                                        sender_vk, wallet_handle)?;
+            let mut new_msg_json: Value = serde_json::from_slice(&new_msg).map_err(|err| {
+                err_msg(IndyErrorKind::InvalidStructure, format!(
+                    "Failed to deserialize message {}",
+                    err
+                ))
+            })?;
+            let new_msg_obj = new_msg_json.as_object_mut().unwrap();
+            new_msg_obj.insert(special_key.to_string(), cts);
+            serde_json::to_vec(&new_msg_obj).map_err(|err| {
+                err_msg(IndyErrorKind::InvalidStructure, format!(
+                    "Failed to serialize {}",
+                    err
+                ))
+            })
+        } else {
+            println!("Did not find special key in pack_already_packed");
+            self.pack_msg(packed_msg, receivers, sender_vk, wallet_handle)
+        }
+    }
+
+    pub fn pre_pc_packed_msg(packed_msg: &[u8]) -> IndyResult<Vec<u8>> {
+        unimplemented!()
+    }
+
     fn _prepare_protected_anoncrypt(&self,
                                     cek: &chacha20poly1305_ietf::Key,
                                     receiver_list: Vec<String>,
@@ -554,9 +762,9 @@ impl CryptoCommandExecutor {
             tag: tag.to_string()
         };
 
-        let x = serde_json::to_string(&jwe_struct).unwrap();
+        /*let x = serde_json::to_string(&jwe_struct).unwrap();
         println!("js_l={}", x.len());
-        println!("js={}", x);
+        println!("js={}", x);*/
 
         serde_json::to_vec(&jwe_struct).map_err(|err| {
             err_msg(IndyErrorKind::InvalidStructure, format!(
@@ -643,3 +851,14 @@ impl CryptoCommandExecutor {
     }
 
 }
+
+/*
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn indy_crypto_post_pc_packed_msg_works() {
+
+    }
+}*/

@@ -48,3 +48,15 @@ pub fn pack_message(wallet_handle: i32, message: &[u8], receiver_keys: &str, sen
 pub fn unpack_message(wallet_handle: i32, jwe: &[u8]) -> Result<Vec<u8>, IndyError> {
     crypto::unpack_message(wallet_handle, jwe).wait()
 }
+
+pub fn post_pc_packed_msg(message: &[u8]) -> Result<Vec<u8>, IndyError> {
+    crypto::post_pc_packed_msg(message).wait()
+}
+
+pub fn forward_msg_with_cd(typ: &str, to: &str, message: &[u8]) -> Result<Vec<u8>, IndyError> {
+    crypto::forward_msg_with_cd(typ, to, message).wait()
+}
+
+pub fn pack_already_packed(wallet_handle: i32, message: &[u8], receiver_keys: &str, sender: Option<&str>) -> Result<Vec<u8>, IndyError> {
+    crypto::pack_already_packed(wallet_handle, message, receiver_keys, sender).wait()
+}

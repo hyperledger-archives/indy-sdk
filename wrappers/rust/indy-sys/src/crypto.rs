@@ -87,5 +87,34 @@ extern {
                                jwe_msg: BString,
                                jwe_len: u32,
                                cb: Option<ResponseSliceCB>) -> Error;
+
+    #[no_mangle]
+    pub fn indy_post_pc_packed_msg(command_handle: Handle,
+        message: BString,
+        message_len: u32,
+        cb: Option<ResponseSliceCB>) -> Error;
+
+    #[no_mangle]
+    pub fn indy_forward_msg_with_cd(command_handle: Handle,
+        typ: CString,
+        to: CString,
+        message: BString,
+        message_len: u32,
+        cb: Option<ResponseSliceCB>) -> Error;
+
+    #[no_mangle]
+    pub fn indy_pack_already_packed(command_handle: Handle,
+                             wallet_handle: Handle,
+                             message: BString,
+                             message_len: u32,
+                             receiver_keys: CString,
+                             sender: CString,
+                             cb: Option<ResponseSliceCB>) -> Error;
+
+    #[no_mangle]
+    pub fn indy_pre_pc_packed_msg(command_handle: Handle,
+                                   message: BString,
+                                   message_len: u32,
+                                   cb: Option<ResponseSliceCB>) -> Error;
 }
 

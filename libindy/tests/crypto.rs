@@ -541,7 +541,7 @@ mod high_cases {
         }
 
         #[test]
-        fn indy_crypto_pack_fwd_pack_works() {
+        fn indy_crypto_pack_fwd_works() {
             let (wallet_handle, verkey) = setup_with_key();
             let rec_key_vec = vec![VERKEY_MY1, VERKEY_MY2, VERKEY_TRUSTEE];
             let receiver_keys_1 = serde_json::to_string(&rec_key_vec[..1]).unwrap();
@@ -558,8 +558,8 @@ mod high_cases {
                 msg: res_1.clone()
             };
             let f1 = serde_json::to_string(&fwd1).unwrap();
-            println!("f1_len={:?}", f1.len());
-            println!("f1={:?}", &f1);
+            //println!("f1_len={:?}", f1.len());
+            //println!("f1={:?}", &f1);
 
             let fwd2 = Forward2 {
                 msg_type: "f".to_string(),
@@ -567,9 +567,95 @@ mod high_cases {
                 msg: String::from_utf8(res_1).unwrap()
             };
             let f2 = serde_json::to_string(&fwd2).unwrap();
-            println!("f2_len={:?}", f2.len());
-            println!("f2={:?}", &f2);
+            //println!("f2_len={:?}", f2.len());
+            //println!("f2={:?}", &f2);
 
+
+            utils::tear_down_with_wallet(wallet_handle);
+        }
+
+        #[test]
+        fn indy_crypto_post_pc_packed_msg_works() {
+            let (wallet_handle, verkey) = setup_with_key();
+            let verkey_1 = crypto::create_key(wallet_handle, None).unwrap();
+            let receiver_key = serde_json::to_string(&vec![verkey_1]).unwrap();
+            let res_1 = crypto::pack_message(wallet_handle, MESSAGE.as_bytes(), &receiver_key, Some(&verkey)).unwrap();
+            let p1 = String::from_utf8(res_1.clone()).unwrap();
+            let res_2 = crypto::post_pc_packed_msg(&res_1).unwrap();
+            let p2 = String::from_utf8(res_2.clone()).unwrap();
+            let res_3 = crypto::post_pc_packed_msg(&res_2).unwrap();
+            let p3 = String::from_utf8(res_3.clone()).unwrap();
+            println!("p1={}", &p1);
+            println!("p2={}", &p2);
+            println!("p3={}", &p3);
+            assert_eq!(res_2, res_3);
+
+            utils::tear_down_with_wallet(wallet_handle);
+        }
+
+        #[test]
+        fn indy_crypto_forward_msg_with_cd_works() {
+            let (wallet_handle, verkey) = setup_with_key();
+            let verkey_1 = crypto::create_key(wallet_handle, None).unwrap();
+            let receiver_key = serde_json::to_string(&vec![verkey_1]).unwrap();
+            let (typ, to) = (String::from("forward"), String::from("someone"));
+            let res_1 = crypto::pack_message(wallet_handle, MESSAGE.as_bytes(), &receiver_key, Some(&verkey)).unwrap();
+            let res_2 = crypto::post_pc_packed_msg(&res_1).unwrap();
+            let res_3 = crypto::forward_msg_with_cd(&typ, &to, &res_2).unwrap();
+            let p1 = String::from_utf8(res_1.clone()).unwrap();
+            let p2 = String::from_utf8(res_2.clone()).unwrap();
+            let p3 = String::from_utf8(res_3.clone()).unwrap();
+            println!("p1={}", &p1);
+            println!("p2={}", &p2);
+            println!("p3={}", &p3);
+
+            utils::tear_down_with_wallet(wallet_handle);
+        }
+
+        #[test]
+        fn indy_crypto_pack_fwd_repeat_works() {
+            let (wallet_handle, verkey_A1) = setup_with_key();
+            let verkey_B3 = crypto::create_key(wallet_handle, None).unwrap();
+            let verkey_B4 = crypto::create_key(wallet_handle, None).unwrap();
+            let verkey_B9 = crypto::create_key(wallet_handle, None).unwrap();
+            let receiver_key_B3 = serde_json::to_string(&vec![verkey_B3]).unwrap();
+            let receiver_key_B4 = serde_json::to_string(&vec![verkey_B4]).unwrap();
+            let receiver_key_B9 = serde_json::to_string(&vec![verkey_B9]).unwrap();
+
+            let (typ, to) = (String::from("forward"), String::from("someone"));
+
+            let m = MESSAGE.as_bytes();
+
+            let M1 = crypto::pack_message(wallet_handle,
+                                          m,
+                                          &receiver_key_B4, Some(&verkey_A1)).unwrap();
+            println!("M1_len={}", &M1.len());
+
+            let M2 = crypto::post_pc_packed_msg(&M1).unwrap();
+
+            let M3 = crypto::forward_msg_with_cd(&typ, &to, &M2).unwrap();
+
+            let M4 = crypto::pack_already_packed(wallet_handle,
+                                          &M3,
+                                          &receiver_key_B3, Some(&verkey_A1)).unwrap();
+            let p4 = String::from_utf8(M4.clone()).unwrap();
+            println!("p4={}", &p4);
+
+            let M5 = crypto::post_pc_packed_msg(&M4).unwrap();
+            println!("M5_len={}", &M5.len());
+            let p5 = String::from_utf8(M5.clone()).unwrap();
+            println!("p5={}", &p5);
+
+            let M6 = crypto::forward_msg_with_cd(&typ, &to, &M5).unwrap();
+            println!("M6_len={}", &M6.len());
+            let p6 = String::from_utf8(M6.clone()).unwrap();
+            println!("p6={}", &p6);
+
+            let M7 = crypto::pack_already_packed(wallet_handle,
+                                                 &M6,
+                                                 &receiver_key_B9, Some(&verkey_A1)).unwrap();
+            let p7 = String::from_utf8(M7.clone()).unwrap();
+            println!("p7={}", &p7);
 
             utils::tear_down_with_wallet(wallet_handle);
         }

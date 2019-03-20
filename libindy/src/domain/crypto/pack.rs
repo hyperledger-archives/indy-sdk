@@ -4,7 +4,6 @@ pub struct JWE {
     pub iv: String,
     pub ciphertext: String,
     pub tag: String
-
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
@@ -38,4 +37,39 @@ pub struct UnpackMessage {
     pub recipient_verkey: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sender_verkey: Option<String>
+}
+
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, PartialOrd)]
+pub struct EmbeddedCT {
+    pub iv: String,
+    pub ciphertext: String,
+    pub tag: String
+}
+
+/// Forward message with ciphertexts detached
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, PartialOrd)]
+pub struct ForwardWithCD {
+    #[serde(rename = "@type")]
+    pub msg_type: String,
+    #[serde(rename = "@fwd")]
+    pub fwd: String,
+    #[serde(rename = "@msg")]
+    pub msg: String,
+    #[serde(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "$ciphertexts")]
+    pub ciphertexts: Option<String>
+}
+
+/// JWE with ciphertexts detached
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
+pub struct JWEWithCD {
+    pub protected: String,
+    pub iv: String,
+    pub ciphertext: String,
+    pub tag: String,
+    #[serde(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "$ciphertexts")]
+    pub ciphertexts: Option<String>
 }

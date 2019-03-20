@@ -754,3 +754,143 @@ pub extern fn indy_unpack_message(
 
     res
 }
+
+#[no_mangle]
+pub extern fn indy_post_pc_packed_msg(
+    command_handle: CommandHandle,
+    message: *const u8,
+    message_len: u32,
+    cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, jwe_data: *const u8, jwe_len: u32)>,
+) -> ErrorCode {
+    trace!("indy_post_pc_packed_msg: >>> message: {:?}, message_len {:?}", message, message_len);
+
+    check_useful_c_byte_array!(message, message_len, ErrorCode::CommonInvalidParam2, ErrorCode::CommonInvalidParam3);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    trace!("indy_post_pc_packed_msg: entities >>> message: {:?}, message_len {:?}", message, message_len);
+
+    let result = CommandExecutor::instance().send(Command::Crypto(CryptoCommand::PostPCPackedMessage(
+        message,
+        Box::new(move |result| {
+            let (err, jwe) = prepare_result_1!(result, Vec::new());
+            trace!("indy_post_pc_packed_msg: jwe: {:?}", jwe);
+            let (jwe_data, jwe_len) = ctypes::vec_to_pointer(&jwe);
+            cb(command_handle, err, jwe_data, jwe_len)
+        }),
+    )));
+
+    let res = prepare_result!(result);
+
+    trace!("indy_post_pc_packed_msg: <<< res: {:?}", res);
+
+    res
+}
+
+#[no_mangle]
+pub extern fn indy_forward_msg_with_cd(
+    command_handle: CommandHandle,
+    typ: *const c_char,
+    to: *const c_char,
+    message: *const u8,
+    message_len: u32,
+    cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, jwe_data: *const u8, jwe_len: u32)>,
+) -> ErrorCode {
+    trace!("indy_forward_msg_with_cd: >>> message: {:?}, message_len {:?}", message, message_len);
+
+    check_useful_c_str!(typ, ErrorCode::CommonInvalidParam2);
+    check_useful_c_str!(to, ErrorCode::CommonInvalidParam3);
+    check_useful_c_byte_array!(message, message_len, ErrorCode::CommonInvalidParam4, ErrorCode::CommonInvalidParam5);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
+
+    trace!("indy_forward_msg_with_cd: entities >>> message: {:?}, message_len {:?}", message, message_len);
+
+    let result = CommandExecutor::instance().send(Command::Crypto(CryptoCommand::ForwardMessageWithCD(
+        typ,
+        to,
+        message,
+        Box::new(move |result| {
+            let (err, jwe) = prepare_result_1!(result, Vec::new());
+            trace!("indy_post_pc_packed_msg: jwe: {:?}", jwe);
+            let (jwe_data, jwe_len) = ctypes::vec_to_pointer(&jwe);
+            cb(command_handle, err, jwe_data, jwe_len)
+        }),
+    )));
+
+    let res = prepare_result!(result);
+
+    trace!("indy_forward_msg_with_cd: <<< res: {:?}", res);
+
+    res
+}
+
+#[no_mangle]
+pub extern fn indy_pack_already_packed(
+    command_handle: CommandHandle,
+    wallet_handle: WalletHandle,
+    message: *const u8,
+    message_len: u32,
+    receiver_keys: *const c_char,
+    sender: *const c_char,
+    cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, jwe_data: *const u8, jwe_len: u32)>,
+) -> ErrorCode {
+    trace!("indy_pack_message: >>> wallet_handle: {:?}, message: {:?}, message_len {:?},\
+            receiver_keys: {:?}, sender: {:?}", wallet_handle, message, message_len, receiver_keys, sender);
+
+    check_useful_c_byte_array!(message, message_len, ErrorCode::CommonInvalidParam2, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(receiver_keys, ErrorCode::CommonInvalidParam4);
+    check_useful_opt_c_str!(sender, ErrorCode::CommonInvalidParam5);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
+
+    trace!("indy_pack_message: entities >>> wallet_handle: {:?}, message: {:?}, message_len {:?},\
+            receiver_keys: {:?}, sender: {:?}", wallet_handle, message, message_len, receiver_keys, sender);
+
+    let result = CommandExecutor::instance().send(Command::Crypto(CryptoCommand::PackAlreadyPackedMessage(
+        message,
+        receiver_keys,
+        sender,
+        wallet_handle,
+        Box::new(move |result| {
+            let (err, jwe) = prepare_result_1!(result, Vec::new());
+            trace!("indy_auth_pack_message: jwe: {:?}", jwe);
+            let (jwe_data, jwe_len) = ctypes::vec_to_pointer(&jwe);
+            cb(command_handle, err, jwe_data, jwe_len)
+        }),
+    )));
+
+    let res = prepare_result!(result);
+
+    trace!("indy_auth_pack_message: <<< res: {:?}", res);
+
+    res
+}
+
+#[no_mangle]
+pub extern fn indy_pre_pc_packed_msg(
+    command_handle: CommandHandle,
+    message: *const u8,
+    message_len: u32,
+    cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, jwe_data: *const u8, jwe_len: u32)>,
+) -> ErrorCode {
+    trace!("indy_pre_pc_packed_msg: >>> message: {:?}, message_len {:?}", message, message_len);
+
+    check_useful_c_byte_array!(message, message_len, ErrorCode::CommonInvalidParam2, ErrorCode::CommonInvalidParam3);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    trace!("indy_pre_pc_packed_msg: entities >>> message: {:?}, message_len {:?}", message, message_len);
+
+    let result = CommandExecutor::instance().send(Command::Crypto(CryptoCommand::PrePCPackedMessage(
+        message,
+        Box::new(move |result| {
+            let (err, jwe) = prepare_result_1!(result, Vec::new());
+            trace!("indy_post_pc_packed_msg: jwe: {:?}", jwe);
+            let (jwe_data, jwe_len) = ctypes::vec_to_pointer(&jwe);
+            cb(command_handle, err, jwe_data, jwe_len)
+        }),
+    )));
+
+    let res = prepare_result!(result);
+
+    trace!("indy_pre_pc_packed_msg: <<< res: {:?}", res);
+
+    res
+}
