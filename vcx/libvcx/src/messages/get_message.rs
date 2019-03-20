@@ -265,22 +265,14 @@ pub struct Message {
 }
 
 impl Message {
-    fn to_json(bytes: &Vec<u8>) -> VcxResult<serde_json::Value> {
-        use rmp_serde::Deserializer;
-        let mut de = Deserializer::new(&bytes[..]);
-        match Deserialize::deserialize(&mut de) {
-            Ok(x) => Ok(x),
-            Err(x) => Err(VcxError::from_msg(VcxErrorKind::InvalidJson, "Cannot parse message JSON")),
-        }
-    }
     pub fn decrypt(&self, vk: &str) -> Message {
         // TODO: must be Result
         let mut new_message = self.clone();
         if let Some(ref payload) = self.payload {
             let payload = ::messages::to_u8(payload);
             let payload = ::utils::libindy::crypto::parse_msg(&vk, &payload).unwrap_or((String::new(), Vec::new()));
-            let payload = Message::to_json(&payload.1).unwrap_or(json!(null));
-            new_message.decrypted_payload = serde_json::to_string(&payload).ok();
+            let payload = ::rmp_serde::from_slice(&payload.1[..]).unwrap_or(json!(null)); 
+            new_message.decrypted_payload = ::serde_json::to_string(&payload).ok();
         }
         new_message.payload = None;
         new_message
@@ -462,7 +454,6 @@ mod tests {
         // AS CONSUMER GET MESSAGES
         ::utils::devsetup::tests::set_consumer();
         let all_messages = download_messages(None, None, None).unwrap();
-        println!("{}", serde_json::to_string(&all_messages).unwrap());
         let pending = download_messages(None, Some(vec!["MS-103".to_string()]), None).unwrap();
         assert_eq!(pending.len(), 1);
         assert!(pending[0].msgs[0].decrypted_payload.is_some());
