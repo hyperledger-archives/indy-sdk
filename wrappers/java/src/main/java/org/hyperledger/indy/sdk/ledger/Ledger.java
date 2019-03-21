@@ -1329,4 +1329,52 @@ public class Ledger extends IndyJava.API {
 
 		return future;
 	}
+
+	/**
+	 * Builds a GET_AUTH_RULE request. Request to get authentication rules for a ledger transaction.
+	 *
+	 * NOTE: Either none or all transaction related parameters must be specified (`oldValue` can be skipped for `ADD` action).
+	 *     * none - to get all authentication rules for all ledger transactions
+	 *     * all - to get authentication rules for specific action (`oldValue` can be skipped for `ADD` action)
+	 * 
+	 * @param submitterDid (Optional) DID of the read request sender.
+	 * @param txnType - (Optional) target ledger transaction alias or associated value.
+	 * @param action - (Optional) type of action for which authentication rules will be applied.
+	 *     Can be either "ADD" (to add new rule) or "EDIT" (to edit an existing one).
+	 * @param field - (Optional) transaction field for which authentication rule will be applied.
+	 * @param oldValue - (Optional) old value of field, which can be changed to a new_value (must be specified for EDIT action).
+	 * @param newValue - (Optional) new value that can be used to fill the field.
+	 *
+	 * @return A future resolving to a request result as json.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<String> buildGetAuthRuleRequest(
+			String submitterDid,
+			String txnType,
+			String action,
+			String field,
+			String oldValue,
+			String newValue) throws IndyException {
+
+		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
+		ParamGuard.notNullOrWhiteSpace(txnType, "txnType");
+		ParamGuard.notNullOrWhiteSpace(action, "action");
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int result = LibIndy.api.indy_build_get_auth_rule_request(
+				commandHandle,
+				submitterDid,
+				txnType,
+				action,
+				field,
+				oldValue,
+				newValue,
+				buildRequestCb);
+
+		checkResult(future, result);
+
+		return future;
+	}
 }

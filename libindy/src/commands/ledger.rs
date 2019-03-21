@@ -194,6 +194,14 @@ pub enum LedgerCommand {
         String, // new value
         String, // constraint
         Box<Fn(IndyResult<String>) + Send>),
+    BuildGetAuthRuleRequest(
+        Option<String>, // submitter did
+        Option<String>, // auth type
+        Option<String>, // auth action
+        Option<String>, // field
+        Option<String>, // old value
+        Option<String>, // new value
+        Box<Fn(IndyResult<String>) + Send>),
 }
 
 pub struct LedgerCommandExecutor {
@@ -374,6 +382,15 @@ impl LedgerCommandExecutor {
             LedgerCommand::BuildAuthRuleRequest(submitter_did, txn_type, action, field, old_value, new_value, constraint, cb) => {
                 info!(target: "ledger_command_executor", "BuildAuthRuleRequest command received");
                 cb(self.build_auth_rule_request(&submitter_did, &txn_type, &action, &field, old_value.as_ref().map(String::as_str), &new_value, &constraint));
+            }
+            LedgerCommand::BuildGetAuthRuleRequest(submitter_did, txn_type, action, field, old_value, new_value, cb) => {
+                info!(target: "ledger_command_executor", "BuildGetAuthRuleRequest command received");
+                cb(self.build_get_auth_rule_request(submitter_did.as_ref().map(String::as_str),
+                                                    txn_type.as_ref().map(String::as_str),
+                                                    action.as_ref().map(String::as_str),
+                                                    field.as_ref().map(String::as_str),
+                                                    old_value.as_ref().map(String::as_str),
+                                                    new_value.as_ref().map(String::as_str)));
             }
         };
     }
@@ -920,6 +937,25 @@ impl LedgerCommandExecutor {
         let res = self.ledger_service.build_auth_rule_request(submitter_did, txn_type, action, field, old_value, new_value, constraint)?;
 
         debug!("build_auth_rule_request <<< res: {:?}", res);
+
+        Ok(res)
+    }
+
+    fn build_get_auth_rule_request(&self,
+                                   submitter_did: Option<&str>,
+                                   txn_type: Option<&str>,
+                                   action: Option<&str>,
+                                   field: Option<&str>,
+                                   old_value: Option<&str>,
+                                   new_value: Option<&str>) -> IndyResult<String> {
+        debug!("build_get_auth_rule_request >>> submitter_did: {:?}, auth_type: {:?}, auth_action: {:?}, field: {:?}, \
+            old_value: {:?}, new_value: {:?}", submitter_did, txn_type, action, field, old_value, new_value);
+
+        self.validate_opt_did(submitter_did)?;
+
+        let res = self.ledger_service.build_get_auth_rule_request(submitter_did, txn_type, action, field, old_value, new_value)?;
+
+        debug!("build_get_auth_rule_request <<< res: {:?}", res);
 
         Ok(res)
     }
