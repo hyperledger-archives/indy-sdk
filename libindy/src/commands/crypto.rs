@@ -591,6 +591,7 @@ impl CryptoCommandExecutor {
         }
     }
 
+    // This can probably be removed and moved to test
     pub fn forward_msg_with_cd(typ: &str, to: &str, packed_msg: &[u8]) -> IndyResult<Vec<u8>> {
         let mut jwe_cd_struct: JWEWithCD = serde_json::from_slice(packed_msg).map_err(|err| {
             err_msg(IndyErrorKind::InvalidStructure, format!(
