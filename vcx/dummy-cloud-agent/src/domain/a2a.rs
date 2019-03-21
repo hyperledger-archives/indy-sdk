@@ -17,7 +17,7 @@ use domain::payload::Thread;
 #[derive(Debug)]
 pub enum A2AMessageV1 {
     /// base
-    Forward(Forward),
+    Forward(ForwardV1),
 
     /// onboarding
     Connect(Connect),
@@ -55,12 +55,14 @@ pub enum A2AMessageV1 {
     Configs(Configs),
     RemoveConfigs(RemoveConfigs),
     ConfigsRemoved(ConfigsRemoved),
+    UpdateComMethod(UpdateComMethod),
+    ComMethodUpdated(ComMethodUpdated),
 }
 
 #[derive(Debug)]
 pub enum A2AMessageV2 {
     /// base
-    Forward(Forward),
+    Forward(ForwardV2),
 
     /// onboarding
     Connect(Connect),
@@ -93,6 +95,8 @@ pub enum A2AMessageV2 {
     Configs(Configs),
     RemoveConfigs(RemoveConfigs),
     ConfigsRemoved(ConfigsRemoved),
+    UpdateComMethod(UpdateComMethod),
+    ComMethodUpdated(ComMethodUpdated),
 
     ConnectionRequest(ConnectionRequest),
     ConnectionRequestResponse(ConnectionRequestResponse),
@@ -108,12 +112,20 @@ pub enum A2AMessage {
     Version2(A2AMessageV2),
 }
 
-#[derive(Debug, Deserialize, Serialize)]
-pub struct Forward {
+#[derive(Clone, Serialize, Deserialize, Debug)]
+pub struct ForwardV1 {
     #[serde(rename = "@fwd")]
     pub fwd: String,
     #[serde(rename = "@msg")]
     pub msg: Vec<u8>,
+}
+
+#[derive(Clone, Serialize, Deserialize, Debug)]
+pub struct ForwardV2 {
+    #[serde(rename = "@fwd")]
+    pub fwd: String,
+    #[serde(rename = "@msg")]
+    pub msg: Value,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -266,7 +278,14 @@ pub struct MessagesByConnections {
     pub msgs: Vec<MessagesByConnection>,
 }
 
-#[derive(Debug, Deserialize, Serialize, Eq, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
+#[serde(untagged)]
+pub enum MessageDetailPayload {
+    V1(Vec<i8>),
+    V2(serde_json::Value),
+}
+
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
 pub struct GetMessagesDetailResponse {
     pub uid: String,
     #[serde(rename = "statusCode")]
@@ -275,7 +294,7 @@ pub struct GetMessagesDetailResponse {
     pub sender_did: String,
     #[serde(rename = "type")]
     pub type_: RemoteMessageType,
-    pub payload: Option<Vec<i8>>,
+    pub payload: Option<MessageDetailPayload>,
     #[serde(rename = "refMsgId")]
     pub ref_msg_id: Option<String>,
 }
@@ -417,16 +436,6 @@ pub struct GeneralMessageDetail {
     pub detail: Option<String>,
 }
 
-impl From<SendRemoteMessage> for GeneralMessageDetail {
-    fn from(message: SendRemoteMessage) -> GeneralMessageDetail {
-        GeneralMessageDetail {
-            msg: message.msg,
-            title: message.title,
-            detail: message.detail,
-        }
-    }
-}
-
 #[derive(Debug, Deserialize, Serialize)]
 pub struct SendMessageDetail {
     #[serde(rename = "@msg")]
@@ -468,6 +477,25 @@ pub struct RemoveConfigs {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ConfigsRemoved {}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ComMethod {
+    id: String,
+    #[serde(rename = "type")]
+    e_type: i32,
+    value: String,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct UpdateComMethod {
+    #[serde(rename = "comMethod")]
+    com_method: ComMethod,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ComMethodUpdated {
+    pub id: String
+}
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ConnectionRequest {
@@ -539,7 +567,7 @@ pub struct SendRemoteMessage {
     #[serde(rename = "sendMsg")]
     pub send_msg: bool,
     #[serde(rename = "@msg")]
-    pub msg: Vec<u8>,
+    pub msg: serde_json::Value,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub title: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -591,6 +619,8 @@ pub enum A2AMessageKinds {
     ConnectionRequestAnswerResponse,
     SendRemoteMessage,
     SendRemoteMessageResponse,
+    UpdateComMethod,
+    ComMethodUpdated,
 }
 
 impl A2AMessageKinds {
@@ -630,6 +660,8 @@ impl A2AMessageKinds {
             A2AMessageKinds::Configs => MessageFamilies::Configs,
             A2AMessageKinds::RemoveConfigs => MessageFamilies::Configs,
             A2AMessageKinds::ConfigsRemoved => MessageFamilies::Configs,
+            A2AMessageKinds::UpdateComMethod => MessageFamilies::Configs,
+            A2AMessageKinds::ComMethodUpdated => MessageFamilies::Configs,
             A2AMessageKinds::SendRemoteMessage => MessageFamilies::Routing,
             A2AMessageKinds::SendRemoteMessageResponse => MessageFamilies::Routing,
         }
@@ -671,6 +703,8 @@ impl A2AMessageKinds {
             A2AMessageKinds::Configs => "CONFIGS".to_string(),
             A2AMessageKinds::RemoveConfigs => "REMOVE_CONFIGS".to_string(),
             A2AMessageKinds::ConfigsRemoved => "CONFIGS_REMOVED".to_string(),
+            A2AMessageKinds::UpdateComMethod => "UPDATE_COM_METHOD".to_string(),
+            A2AMessageKinds::ComMethodUpdated => "COM_METHOD_UPDATED".to_string(),
             A2AMessageKinds::SendRemoteMessage => "SEND_REMOTE_MSG".to_string(),
             A2AMessageKinds::SendRemoteMessageResponse => "REMOTE_MSG_SENT".to_string(),
         }
@@ -684,7 +718,7 @@ impl<'de> Deserialize<'de> for A2AMessageV1 {
 
         match message_type.name.as_str() {
             "FWD" => {
-                Forward::deserialize(value)
+                ForwardV1::deserialize(value)
                     .map(|msg| A2AMessageV1::Forward(msg))
                     .map_err(de::Error::custom)
             }
@@ -813,6 +847,16 @@ impl<'de> Deserialize<'de> for A2AMessageV1 {
                     .map(|msg| A2AMessageV1::ConfigsRemoved(msg))
                     .map_err(de::Error::custom)
             }
+            "UPDATE_COM_METHOD" => {
+                UpdateComMethod::deserialize(value)
+                    .map(|msg| A2AMessageV1::UpdateComMethod(msg))
+                    .map_err(de::Error::custom)
+            }
+            "COM_METHOD_UPDATED" => {
+                ComMethodUpdated::deserialize(value)
+                    .map(|msg| A2AMessageV1::ComMethodUpdated(msg))
+                    .map_err(de::Error::custom)
+            }
             "CREATE_MSG" => {
                 CreateMessage::deserialize(value)
                     .map(|msg| A2AMessageV1::CreateMessage(msg))
@@ -845,7 +889,7 @@ impl<'de> Deserialize<'de> for A2AMessageV2 {
 
         match message_type.type_.as_str() {
             "FWD" => {
-                Forward::deserialize(value)
+                ForwardV2::deserialize(value)
                     .map(|msg| A2AMessageV2::Forward(msg))
                     .map_err(de::Error::custom)
             }
@@ -917,6 +961,16 @@ impl<'de> Deserialize<'de> for A2AMessageV2 {
             "MSG_STATUS_UPDATED" => {
                 MessageStatusUpdated::deserialize(value)
                     .map(|msg| A2AMessageV2::MessageStatusUpdated(msg))
+                    .map_err(de::Error::custom)
+            }
+            "UPDATE_COM_METHOD" => {
+                UpdateComMethod::deserialize(value)
+                    .map(|msg| A2AMessageV2::UpdateComMethod(msg))
+                    .map_err(de::Error::custom)
+            }
+            "COM_METHOD_UPDATED" => {
+                ComMethodUpdated::deserialize(value)
+                    .map(|msg| A2AMessageV2::ComMethodUpdated(msg))
                     .map_err(de::Error::custom)
             }
             "GET_MSGS" => {
@@ -1072,6 +1126,8 @@ impl Serialize for A2AMessageV1 {
             A2AMessageV1::MessageStatusUpdatedByConnections(msg) => set_a2a_message_type_v1(msg, A2AMessageKinds::MessageStatusUpdatedByConnections),
             A2AMessageV1::UpdateConfigs(msg) => set_a2a_message_type_v1(msg, A2AMessageKinds::UpdateConfigs),
             A2AMessageV1::ConfigsUpdated(msg) => set_a2a_message_type_v1(msg, A2AMessageKinds::ConfigsUpdated),
+            A2AMessageV1::UpdateComMethod(msg) => set_a2a_message_type_v1(msg, A2AMessageKinds::UpdateComMethod),
+            A2AMessageV1::ComMethodUpdated(msg) => set_a2a_message_type_v1(msg, A2AMessageKinds::ComMethodUpdated),
             A2AMessageV1::GetConfigs(msg) => set_a2a_message_type_v1(msg, A2AMessageKinds::GetConfigs),
             A2AMessageV1::Configs(msg) => set_a2a_message_type_v1(msg, A2AMessageKinds::Configs),
             A2AMessageV1::RemoveConfigs(msg) => set_a2a_message_type_v1(msg, A2AMessageKinds::RemoveConfigs),
@@ -1112,6 +1168,8 @@ impl Serialize for A2AMessageV2 {
             A2AMessageV2::MessageStatusUpdatedByConnections(msg) => set_a2a_message_type_v2(msg, A2AMessageKinds::MessageStatusUpdatedByConnections),
             A2AMessageV2::UpdateConfigs(msg) => set_a2a_message_type_v2(msg, A2AMessageKinds::UpdateConfigs),
             A2AMessageV2::ConfigsUpdated(msg) => set_a2a_message_type_v2(msg, A2AMessageKinds::ConfigsUpdated),
+            A2AMessageV2::UpdateComMethod(msg) => set_a2a_message_type_v2(msg, A2AMessageKinds::UpdateComMethod),
+            A2AMessageV2::ComMethodUpdated(msg) => set_a2a_message_type_v2(msg, A2AMessageKinds::ComMethodUpdated),
             A2AMessageV2::GetConfigs(msg) => set_a2a_message_type_v2(msg, A2AMessageKinds::GetConfigs),
             A2AMessageV2::Configs(msg) => set_a2a_message_type_v2(msg, A2AMessageKinds::Configs),
             A2AMessageV2::RemoveConfigs(msg) => set_a2a_message_type_v2(msg, A2AMessageKinds::RemoveConfigs),

@@ -79,35 +79,6 @@ impl LedgerService {
         Ok(request)
     }
 
-    pub fn build_auth_rule_request(&self, submitter_did: &str, txn_type: &str, action: &str, field: &str,
-                                   old_value: Option<&str>, new_value: &str, constraint: &str) -> IndyResult<String> {
-        info!("build_auth_rule_request >>> submitter_did: {:?}, txn_type: {:?}, action: {:?}, field: {:?}, \
-            old_value: {:?}, new_value: {:?}, constraint: {:?}", submitter_did, txn_type, action, field, old_value, new_value, constraint);
-
-        let txn_type = txn_name_to_code(&txn_type)
-            .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("Unsupported `txn_type`: {}", txn_type)))?;
-
-        let action = serde_json::from_str::<AuthAction>(&format!("\"{}\"", action))
-            .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Cannot parse action: {}", err)))?;
-
-        if action == AuthAction::EDIT && old_value.is_none() {
-            return Err(err_msg(IndyErrorKind::InvalidStructure, "`old_value` must be specified for EDIT auth action"));
-        }
-
-        let constraint = serde_json::from_str::<Constraint>(constraint)
-            .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Can not deserialize Constraint: {}", err)))?;
-
-        let operation = AuthRuleOperation::new(txn_type.to_string(), field.to_string(), action,
-                                               old_value.map(String::from), new_value.to_string(), constraint);
-
-        let request = Request::build_request(Some(submitter_did), operation)
-            .to_indy(IndyErrorKind::InvalidState, "AUTH_RULE request json is invalid")?;
-
-        info!("build_auth_rule_request <<< request: {:?}", request);
-
-        Ok(request)
-    }
-
     pub fn build_get_nym_request(&self, identifier: Option<&str>, dest: &str) -> IndyResult<String> {
         info!("build_get_nym_request >>> identifier: {:?}, dest: {:?}", identifier, dest);
 
@@ -576,6 +547,77 @@ impl LedgerService {
         info!("parse_get_revoc_reg_delta_response <<< res: {:?}", res);
 
         Ok(res)
+    }
+
+    fn _parse_auth_action(&self, action: &str, old_value: Option<&str>) -> IndyResult<AuthAction> {
+        let action = serde_json::from_str::<AuthAction>(&format!("\"{}\"", action))
+            .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Cannot parse auth action: {}", err)))?;
+
+        if action == AuthAction::EDIT && old_value.is_none() {
+            return Err(err_msg(IndyErrorKind::InvalidStructure, "`old_value` must be specified for EDIT auth action"));
+        }
+
+        Ok(action)
+    }
+
+    pub fn build_auth_rule_request(&self, submitter_did: &str, txn_type: &str, action: &str, field: &str,
+                                   old_value: Option<&str>, new_value: &str, constraint: &str) -> IndyResult<String> {
+        info!("build_auth_rule_request >>> submitter_did: {:?}, txn_type: {:?}, action: {:?}, field: {:?}, \
+            old_value: {:?}, new_value: {:?}, constraint: {:?}", submitter_did, txn_type, action, field, old_value, new_value, constraint);
+
+        let txn_type = txn_name_to_code(&txn_type)
+            .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("Unsupported `txn_type`: {}", txn_type)))?;
+
+        let action = self._parse_auth_action(action, old_value)?;
+
+        let constraint = serde_json::from_str::<Constraint>(constraint)
+            .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Can not deserialize Constraint: {}", err)))?;
+
+        let operation = AuthRuleOperation::new(txn_type.to_string(), field.to_string(), action,
+                                               old_value.map(String::from), new_value.to_string(), constraint);
+
+        let request = Request::build_request(Some(submitter_did), operation)
+            .to_indy(IndyErrorKind::InvalidState, "AUTH_RULE request json is invalid")?;
+
+        info!("build_auth_rule_request <<< request: {:?}", request);
+
+        Ok(request)
+    }
+
+    pub fn build_get_auth_rule_request(&self, submitter_did: Option<&str>, auth_type: Option<&str>, auth_action: Option<&str>,
+                                       field: Option<&str>, old_value: Option<&str>, new_value: Option<&str>) -> IndyResult<String> {
+        info!("build_get_auth_rule_request >>> submitter_did: {:?}, auth_type: {:?}, auth_action: {:?}, field: {:?}, \
+            old_value: {:?}, new_value: {:?}", submitter_did, auth_type, auth_action, field, old_value, new_value);
+
+        if !(auth_type.is_some() && auth_action.is_some() && field.is_some() && new_value.is_some() ||
+            auth_type.is_none() && auth_action.is_none() && field.is_none() && new_value.is_none()) {
+            return Err(err_msg(IndyErrorKind::InvalidStructure, "Either none or all transaction related parameters must be specified (`old_value` can be skipped for `ADD` action)"));
+        }
+
+        let auth_type = match auth_type {
+            Some(type_) => Some(
+                txn_name_to_code(&type_)
+                    .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("Unsupported `auth_type`: {}", type_)))?),
+            None => None
+        };
+
+        let auth_action = match auth_action {
+            Some(action) => Some(self._parse_auth_action(action, old_value)?),
+            None => None
+        };
+
+        let operation = GetAuthRuleOperation::new(auth_type.map(String::from),
+                                                  field.map(String::from),
+                                                  auth_action,
+                                                  old_value.map(String::from),
+                                                  new_value.map(String::from));
+
+        let request = Request::build_request(submitter_did, operation)
+            .to_indy(IndyErrorKind::InvalidState, "GET_AUTH_RULE request json is invalid")?;
+
+        info!("build_get_auth_rule_request <<< request: {:?}", request);
+
+        Ok(request)
     }
 
     pub fn parse_response<T>(response: &str) -> IndyResult<Reply<T>> where T: DeserializeOwned + ReplyType + ::std::fmt::Debug {
@@ -1074,6 +1116,65 @@ mod tests {
             let ledger_service = LedgerService::new();
 
             let res = ledger_service.build_auth_rule_request(IDENTIFIER, NYM, "WRONG", FIELD, None, NEW_VALUE, &_role_constraint_json());
+            assert_kind!(IndyErrorKind::InvalidStructure, res);
+        }
+
+        #[test]
+        fn build_get_auth_rule_request_works_for_all_fields() {
+            let ledger_service = LedgerService::new();
+
+            let expected_result = json!({
+                "type": GET_AUTH_RULE,
+                "auth_type": NYM,
+                "field": FIELD,
+                "old_value": OLD_VALUE,
+                "new_value": NEW_VALUE,
+                "auth_action": AuthAction::ADD,
+            });
+
+            let request = ledger_service.build_get_auth_rule_request(Some(IDENTIFIER), Some(NYM),
+                                                                     Some(ADD_AUTH_ACTION), Some(FIELD),
+                                                                     Some(OLD_VALUE), Some(NEW_VALUE)).unwrap();
+            check_request(&request, expected_result);
+        }
+
+        #[test]
+        fn build_get_auth_rule_request_works_for_none_params() {
+            let ledger_service = LedgerService::new();
+
+            let expected_result = json!({
+                "type": GET_AUTH_RULE,
+            });
+
+            let request = ledger_service.build_get_auth_rule_request(Some(IDENTIFIER), None,
+                                                                     None, None,
+                                                                     None, None).unwrap();
+            check_request(&request, expected_result);
+        }
+
+        #[test]
+        fn build_get_auth_rule_request_works_for_some_fields_are_specified() {
+            let ledger_service = LedgerService::new();
+
+            let res = ledger_service.build_get_auth_rule_request(Some(IDENTIFIER), Some(NYM),
+                                                                 None, Some(FIELD),
+                                                                 None, None);
+            assert_kind!(IndyErrorKind::InvalidStructure, res);
+        }
+
+        #[test]
+        fn build_get_auth_rule_request_works_for_invalid_auth_action() {
+            let ledger_service = LedgerService::new();
+
+            let res = ledger_service.build_get_auth_rule_request(Some(IDENTIFIER), None, Some("WRONG"), None, None, None);
+            assert_kind!(IndyErrorKind::InvalidStructure, res);
+        }
+
+        #[test]
+        fn build_get_auth_rule_request_works_for_invalid_auth_type() {
+            let ledger_service = LedgerService::new();
+
+            let res = ledger_service.build_get_auth_rule_request(Some(IDENTIFIER), Some("WRONG"), None, None, None, None);
             assert_kind!(IndyErrorKind::InvalidStructure, res);
         }
     }
