@@ -3,6 +3,9 @@
 
 def pool_env = null
 
+def POOL_NET_NAME = 'pool-network'
+def POOL_IP='10.0.0.2'
+
 def testing () {
     node('ubuntu') {
         stage("Checking out source code") {
@@ -20,7 +23,7 @@ def testing () {
             }
 
             stage("Collecting test coverage") {
-                image.inside("-p 9701-9708:9701-9708 --security-opt seccomp=unconfined") {
+                image.inside("--security-opt seccomp=unconfined") {
                     sh 'cargo build --manifest-path=libindy/Cargo.toml' // create libindy.so
 
                     calcCoverageRust("libindy")
@@ -51,7 +54,10 @@ def dockerBuild(name, file = 'ci/ubuntu.dockerfile ci', customParams = '') {
 }
 
 def calcCoverageRust(dir) {
-    withEnv(["RUST_PROJECT_DIR=${dir}"]) {
+    withEnv([
+        "RUST_PROJECT_DIR=${dir}",
+        "TEST_POOL_IP=${POOL_IP}"
+    ]) {
         sh '''
             INDY_SDK_DIR=$(pwd)
 
@@ -74,8 +80,10 @@ def calcCoverageRust(dir) {
 
 
 def createPool() {
+    sh "docker network create --subnet=10.0.0.0/8 ${POOL_NET_NAME}"
+
     pool_env = dockerBuild('indy_pool', 'ci/indy-pool.dockerfile ci')
-    pool_env.run("-p 9701-9708:9701-9708")
+    pool_env.run("--ip \"${POOL_IP}\" --network=${POOL_NET_NAME}")
 }
 
 def destroyPool() {
@@ -83,4 +91,6 @@ def destroyPool() {
         pool_env.stop()
     }
     pool_env = null
+    
+    sh "docker network rm ${POOL_NET_NAME}"
 }
