@@ -63,7 +63,7 @@ export class IssuerCredential extends VCXBaseWithState<IIssuerCredentialData> {
    * Builds a generic Issuer Credential object
    * ```
    * issuerCredential = await IssuerCredential.create({sourceId: "12",
-   * credDefId: "credDefId", attr: {key: "value"}, credentialName: "name", price: 0})
+   * credDefId: "credDefId", attr: {key: "value"}, credentialName: "name", price: "0"})
    * ```
    * @returns {Promise<IssuerCredential>} An Issuer credential Object
    */
