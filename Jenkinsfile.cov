@@ -1,10 +1,10 @@
 #!groovy
 
 
-def pool_env = null
+pool_env = null
 
-def POOL_NET_NAME = 'pool-network'
-def POOL_IP='10.0.0.2'
+POOL_NET_NAME = 'pool-network'
+POOL_IP='10.0.0.2'
 
 def testing () {
     node('ubuntu') {
