@@ -7,6 +7,7 @@ use error::prelude::*;
 use std::collections::HashMap;
 
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
+#[serde(untagged)]
 pub enum Payloads {
     PayloadV1(PayloadV1),
     PayloadV2(PayloadV2),
