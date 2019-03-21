@@ -461,8 +461,8 @@ pub fn parse_acceptance_details(handle: u32, message: &Message) -> VcxResult<Sen
             Ok(response.sender_detail)
         }
         MessagePayload::V2(payload) => {
-            let (payload, _) = Payloads::decrypt_payload_v2(&my_vk, &payload)?;
-            let response: AcceptanceDetails = serde_json::from_str(&payload)
+            let payload = Payloads::decrypt_payload_v2(&my_vk, &payload)?;
+            let response: AcceptanceDetails = serde_json::from_str(&payload.msg)
                 .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize AcceptanceDetails: {}", err)))?;
 
             Ok(response.sender_detail)

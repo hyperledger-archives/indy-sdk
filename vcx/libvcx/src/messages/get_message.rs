@@ -277,8 +277,17 @@ impl Message {
         // TODO: must be Result
         let mut new_message = self.clone();
         if let Some(ref payload) = self.payload {
-            let (payload, _) = Payloads::decrypt(&vk, &payload).unwrap_or((String::new(), None));
-            new_message.decrypted_payload = Some(payload);
+            let payload = match payload {
+                MessagePayload::V1(payload) => Payloads::decrypt_payload_v1(&vk, &payload)
+                    .map(|payload| Payloads::PayloadV1(payload)),
+                MessagePayload::V2(payload) => Payloads::decrypt_payload_v2(&vk, &payload)
+                    .map(|payload| Payloads::PayloadV2(payload))
+            };
+
+            new_message.decrypted_payload = match payload {
+                Ok(payload) => ::serde_json::to_string(&payload).ok(),
+                _ => ::serde_json::to_string(&json!(null)).ok()
+            }
         }
         new_message.payload = None;
         new_message
@@ -460,9 +469,9 @@ mod tests {
         // AS CONSUMER GET MESSAGES
         ::utils::devsetup::tests::set_consumer();
         let all_messages = download_messages(None, None, None).unwrap();
-        println!("{}", serde_json::to_string(&all_messages).unwrap());
         let pending = download_messages(None, Some(vec!["MS-103".to_string()]), None).unwrap();
         assert_eq!(pending.len(), 1);
+        assert!(pending[0].msgs[0].decrypted_payload.is_some());
         let accepted = download_messages(None, Some(vec!["MS-104".to_string()]), None).unwrap();
         assert_eq!(accepted[0].msgs.len(), 2);
         let specific = download_messages(None, None, Some(vec![accepted[0].msgs[0].uid.clone()])).unwrap();

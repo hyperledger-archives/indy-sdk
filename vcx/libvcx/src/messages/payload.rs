@@ -82,20 +82,27 @@ impl Payloads {
 
     pub fn decrypt(my_vk: &str, payload: &MessagePayload) -> VcxResult<(String, Option<Thread>)> {
         match payload {
-            MessagePayload::V1(payload) => Payloads::decrypt_payload_v1(my_vk, payload),
-            MessagePayload::V2(payload) => Payloads::decrypt_payload_v2(my_vk, payload)
+            MessagePayload::V1(payload) => {
+                let payload = Payloads::decrypt_payload_v1(my_vk, payload)?;
+                Ok((payload.msg, None))
+            },
+            MessagePayload::V2(payload) => {
+                let payload = Payloads::decrypt_payload_v2(my_vk, payload)?;
+                Ok((payload.msg, Some(payload.thread)))
+            }
         }
     }
 
-    pub fn decrypt_payload_v1(my_vk: &str, payload: &Vec<i8>) -> VcxResult<(String, Option<Thread>)> {
+    pub fn decrypt_payload_v1(my_vk: &str, payload: &Vec<i8>) -> VcxResult<PayloadV1> {
         let (_, data) = crypto::parse_msg(&my_vk, &to_u8(payload))?;
 
         let my_payload: PayloadV1 = rmp_serde::from_slice(&data[..])
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidMessagePack, format!("Cannot decrypt payload: {}", err)))?;
-        Ok((my_payload.msg, None))
+
+        Ok(my_payload)
     }
 
-    pub fn decrypt_payload_v2(my_vk: &str, payload: &::serde_json::Value) -> VcxResult<(String, Option<Thread>)> {
+    pub fn decrypt_payload_v2(my_vk: &str, payload: &::serde_json::Value) -> VcxResult<PayloadV2> {
         let payload = ::serde_json::to_vec(&payload)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidState, err))?;
 
@@ -114,10 +121,10 @@ impl Payloads {
             })?;
 
         if my_payload.thread.thid.is_none() {
-            my_payload.thread.thid = Some(my_payload.id);
+            my_payload.thread.thid = Some(my_payload.id.clone());
         }
 
-        Ok((my_payload.msg, Some(my_payload.thread)))
+        Ok(my_payload)
     }
 }
 
