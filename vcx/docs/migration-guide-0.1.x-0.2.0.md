@@ -436,7 +436,7 @@ The Libvcx 0.2.1 release contains fixes that don't affect API functions.
 
 The Libvcx 0.2.2 release contains fixes that don't affect API functions. 
 
-## Libvcx 0.2.2 to 0.2.23 migration Guide
+## Libvcx 0.2.2 to 0.2.3 migration Guide
 
 #### Changes
 * Migrated Libvcx to *failure* crate for better handling and error chaining.
