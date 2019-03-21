@@ -25,7 +25,7 @@ use self::get_message::{GetMessagesBuilder, GetMessages, GetMessagesResponse, Me
 use self::send_message::SendMessageBuilder;
 use self::update_message::{UpdateMessageStatusByConnections, UpdateMessageStatusByConnectionsResponse};
 use self::proofs::proof_request::ProofRequestMessage;
-use self::agent_utils::{Connect, ConnectResponse, SignUp, SignUpResponse, CreateAgent, CreateAgentResponse, UpdateConnectionMethod};
+use self::agent_utils::{Connect, ConnectResponse, SignUp, SignUpResponse, CreateAgent, CreateAgentResponse, UpdateComMethod, ComMethodUpdated};
 use self::message_type::*;
 use error::prelude::*;
 
@@ -68,7 +68,8 @@ pub enum A2AMessageV1 {
     /// Configs
     UpdateConfigs(UpdateConfigs),
     UpdateConfigsResponse(UpdateConfigsResponse),
-    UpdateConnectionMethod(UpdateConnectionMethod),
+    UpdateComMethod(UpdateComMethod),
+    ComMethodUpdated(ComMethodUpdated),
 }
 
 impl<'de> Deserialize<'de> for A2AMessageV1 {
@@ -113,8 +114,13 @@ impl<'de> Deserialize<'de> for A2AMessageV1 {
                     .map_err(de::Error::custom)
             }
             "UPDATE_COM_METHOD" => {
-                UpdateConnectionMethod::deserialize(value)
-                    .map(|msg| A2AMessageV1::UpdateConnectionMethod(msg))
+                UpdateComMethod::deserialize(value)
+                    .map(|msg| A2AMessageV1::UpdateComMethod(msg))
+                    .map_err(de::Error::custom)
+            }
+            "COM_METHOD_UPDATED" => {
+                ComMethodUpdated::deserialize(value)
+                    .map(|msg| A2AMessageV1::ComMethodUpdated(msg))
                     .map_err(de::Error::custom)
             }
             "CREATE_KEY" => {
@@ -241,7 +247,8 @@ pub enum A2AMessageV2 {
     /// config
     UpdateConfigs(UpdateConfigs),
     UpdateConfigsResponse(UpdateConfigsResponse),
-    UpdateConnectionMethod(UpdateConnectionMethod),
+    UpdateComMethod(UpdateComMethod),
+    ComMethodUpdated(ComMethodUpdated),
 }
 
 impl<'de> Deserialize<'de> for A2AMessageV2 {
@@ -283,11 +290,6 @@ impl<'de> Deserialize<'de> for A2AMessageV2 {
             "AGENT_CREATED" => {
                 CreateAgentResponse::deserialize(value)
                     .map(|msg| A2AMessageV2::CreateAgentResponse(msg))
-                    .map_err(de::Error::custom)
-            }
-            "UPDATE_COM_METHOD" => {
-                UpdateConnectionMethod::deserialize(value)
-                    .map(|msg| A2AMessageV2::UpdateConnectionMethod(msg))
                     .map_err(de::Error::custom)
             }
             "CREATE_KEY" => {
@@ -378,6 +380,16 @@ impl<'de> Deserialize<'de> for A2AMessageV2 {
             "CONFIGS_UPDATED" => {
                 UpdateConfigsResponse::deserialize(value)
                     .map(|msg| A2AMessageV2::UpdateConfigsResponse(msg))
+                    .map_err(de::Error::custom)
+            }
+            "UPDATE_COM_METHOD" => {
+                UpdateComMethod::deserialize(value)
+                    .map(|msg| A2AMessageV2::UpdateComMethod(msg))
+                    .map_err(de::Error::custom)
+            }
+            "COM_METHOD_UPDATED" => {
+                ComMethodUpdated::deserialize(value)
+                    .map(|msg| A2AMessageV2::ComMethodUpdated(msg))
                     .map_err(de::Error::custom)
             }
             _ => Err(de::Error::custom("Unexpected @type field structure."))
@@ -628,7 +640,8 @@ pub enum A2AMessageKinds {
     UpdateConnectionStatus,
     UpdateConfigs,
     ConfigsUpdated,
-    UpdateConMethod,
+    UpdateComMethod,
+    ComMethodUpdated,
     ConnectionRequest,
     ConnectionRequestAnswer,
     SendRemoteMessage,
@@ -661,7 +674,8 @@ impl A2AMessageKinds {
             A2AMessageKinds::MessageStatusUpdatedByConnections => MessageFamilies::Pairwise,
             A2AMessageKinds::UpdateConfigs => MessageFamilies::Configs,
             A2AMessageKinds::ConfigsUpdated => MessageFamilies::Configs,
-            A2AMessageKinds::UpdateConMethod => MessageFamilies::Configs,
+            A2AMessageKinds::UpdateComMethod => MessageFamilies::Configs,
+            A2AMessageKinds::ComMethodUpdated => MessageFamilies::Configs,
             A2AMessageKinds::SendRemoteMessage => MessageFamilies::Routing,
             A2AMessageKinds::SendRemoteMessageResponse => MessageFamilies::Routing,
         }
@@ -692,7 +706,8 @@ impl A2AMessageKinds {
             A2AMessageKinds::ConnectionRequestAnswer => "CONN_REQUEST_ANSWER".to_string(),
             A2AMessageKinds::UpdateConfigs => "UPDATE_CONFIGS".to_string(),
             A2AMessageKinds::ConfigsUpdated => "CONFIGS_UPDATED".to_string(),
-            A2AMessageKinds::UpdateConMethod => "UPDATE_CONNECTION_METHOD".to_string(),
+            A2AMessageKinds::UpdateComMethod => "UPDATE_COM_METHOD".to_string(),
+            A2AMessageKinds::ComMethodUpdated => "COM_METHOD_UPDATED".to_string(),
             A2AMessageKinds::SendRemoteMessage => "SEND_REMOTE_MSG".to_string(),
             A2AMessageKinds::SendRemoteMessageResponse => "REMOTE_MSG_SENT".to_string(),
         }
