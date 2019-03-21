@@ -12,11 +12,11 @@ def testing () {
             checkout scm
         }
 
-        def image 
+        def image
         stage("Building kcov docker image") {
             image = dockerBuild("indy-sdk-kcov", "ci/code_coverage.dockerfile ci/")
         }
-        
+
         try {
             stage("Starting test pool") {
                 createPool()
@@ -24,7 +24,7 @@ def testing () {
 
             stage("Collecting test coverage") {
                 sh "rm -r cov/"
-                image.inside("--security-opt seccomp=unconfined") {
+                image.inside("--network ${POOL_NET_NAME} --security-opt seccomp=unconfined") {
                     sh 'cargo clean --manifest-path=libindy/Cargo.toml'
                     sh 'cargo clean --manifest-path=cli/Cargo.toml'
                     sh 'cargo clean --manifest-path=libnullpay/Cargo.toml'
@@ -97,6 +97,6 @@ def destroyPool() {
         pool_env.stop()
     }
     pool_env = null
-    
+
     sh "docker network rm ${POOL_NET_NAME}"
 }
