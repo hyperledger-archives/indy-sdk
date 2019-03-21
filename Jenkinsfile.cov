@@ -23,7 +23,13 @@ def testing () {
             }
 
             stage("Collecting test coverage") {
+                sh "rm -r cov/"
                 image.inside("--security-opt seccomp=unconfined") {
+                    sh 'cargo clean --manifest-path=libindy/Cargo.toml'
+                    sh 'cargo clean --manifest-path=cli/Cargo.toml'
+                    sh 'cargo clean --manifest-path=libnullpay/Cargo.toml'
+                    //sh 'cargo clean --manifest-path=vcx/libvcx/Cargo.toml'
+
                     sh 'cargo build --manifest-path=libindy/Cargo.toml' // create libindy.so
 
                     calcCoverageRust("libindy")
@@ -32,7 +38,7 @@ def testing () {
                     //TODO add libvcx
                     //calcCoverageRust("vcx/libvcx")
 
-                    cobertura coberturaReportFile: 'cov/kcov-merged/cobertura.xml'
+                    //cobertura coberturaReportFile: 'cov/kcov-merged/cobertura.xml'
                 }
             }
         } finally {
@@ -82,7 +88,7 @@ def calcCoverageRust(dir) {
 def createPool() {
     sh "docker network create --subnet=10.0.0.0/8 ${POOL_NET_NAME}"
 
-    pool_env = dockerBuild('indy_pool', 'ci/indy-pool.dockerfile ci')
+    pool_env = dockerBuild('indy_pool', 'ci/indy-pool.dockerfile ci', '--build-arg pool_ip=10.0.0.2')
     pool_env.run("--ip \"${POOL_IP}\" --network=${POOL_NET_NAME}")
 }
 
