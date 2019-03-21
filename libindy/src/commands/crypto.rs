@@ -642,7 +642,6 @@ impl CryptoCommandExecutor {
         // TODO: "$ciphertexts" should be a constant
         let special_key = "$ciphertexts";
         if msg_obj.contains_key(special_key) {
-            println!("Found special key in pack_already_packed");
             let cts = msg_obj.remove(special_key).unwrap();
 
             let new_msg = serde_json::to_vec(&msg_obj).map_err(|err| {
