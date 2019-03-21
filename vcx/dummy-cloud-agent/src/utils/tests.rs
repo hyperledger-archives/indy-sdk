@@ -623,7 +623,7 @@ pub fn compose_remove_configs(wallet_handle: i32, agent_did: &str, agent_verkey:
 
 pub fn compose_forward(wallet_handle: i32, recipient_did: &str, recipient_vk: &str, msg: Vec<u8>) -> BoxedFuture<Vec<u8>, Error> {
     let msgs = [A2AMessage::Version1(A2AMessageV1::Forward(
-        Forward {
+        ForwardV1 {
             fwd: recipient_did.into(),
             msg,
         }))];
@@ -633,7 +633,7 @@ pub fn compose_forward(wallet_handle: i32, recipient_did: &str, recipient_vk: &s
 
 pub fn compose_authcrypted_forward(wallet_handle: i32, sender_vk: &str, recipient_did: &str, recipient_vk: &str, msg: Vec<u8>) -> BoxedFuture<Vec<u8>, Error> {
     let msgs = [A2AMessage::Version1(A2AMessageV1::Forward(
-        Forward {
+        ForwardV1 {
             fwd: recipient_did.into(),
             msg,
         }))];
