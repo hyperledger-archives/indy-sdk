@@ -271,7 +271,8 @@ impl Message {
         if let Some(ref payload) = self.payload {
             let payload = ::messages::to_u8(payload);
             let payload = ::utils::libindy::crypto::parse_msg(&vk, &payload).unwrap_or((String::new(), Vec::new()));
-            new_message.decrypted_payload = rmp_serde::from_slice(&payload.1[..]).ok();
+            let payload = ::rmp_serde::from_slice(&payload.1[..]).unwrap_or(json!(null)); 
+            new_message.decrypted_payload = ::serde_json::to_string(&payload).ok();
         }
         new_message.payload = None;
         new_message
@@ -453,9 +454,9 @@ mod tests {
         // AS CONSUMER GET MESSAGES
         ::utils::devsetup::tests::set_consumer();
         let all_messages = download_messages(None, None, None).unwrap();
-        println!("{}", serde_json::to_string(&all_messages).unwrap());
         let pending = download_messages(None, Some(vec!["MS-103".to_string()]), None).unwrap();
         assert_eq!(pending.len(), 1);
+        assert!(pending[0].msgs[0].decrypted_payload.is_some());
         let accepted = download_messages(None, Some(vec!["MS-104".to_string()]), None).unwrap();
         assert_eq!(accepted[0].msgs.len(), 2);
         let specific = download_messages(None, None, Some(vec![accepted[0].msgs[0].uid.clone()])).unwrap();
