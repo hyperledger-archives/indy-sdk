@@ -103,13 +103,6 @@ pub enum CryptoCommand {
         Vec<u8>, // packed message
         Box<Fn(IndyResult<Vec<u8>>) + Send>,
     ),
-    PackMsgWithCts(
-        Vec<u8>, // plaintext message
-        String,  // list of receiver's keys
-        Option<String>,  // senders verkey
-        WalletHandle,
-        Box<Fn(IndyResult<Vec<u8>>) + Send>,
-    ),
     PrePCPackedMessage(
         Vec<u8>, // packed message
         Box<Fn(IndyResult<Vec<u8>>) + Send>,
@@ -196,10 +189,6 @@ impl CryptoCommandExecutor {
                 info!("ForwardMessageWithCD command received");
                 // TODO: Don't take ownership of message but borrow it
                 cb(Self::forward_msg_with_cd(&typ, &to, &message));
-            }
-            CryptoCommand::PackMsgWithCts(message, receivers, sender_vk, wallet_handle, cb) => {
-                info!("PackAlreadyPackedMessage command received");
-                cb(self.pack_msg_with_cts(message, &receivers, sender_vk, wallet_handle));
             }
             CryptoCommand::PrePCPackedMessage(message, cb) => {
                 info!("PrePCPackedMessage command received");
@@ -632,61 +621,6 @@ impl CryptoCommandExecutor {
                 err
             ))
         })
-    }
-
-    // This can be merged with `pack_msg`
-    pub fn pack_msg_with_cts(
-        &self,
-        packed_msg: Vec<u8>,
-        receivers: &str,
-        sender_vk: Option<String>,
-        wallet_handle: WalletHandle,
-    ) -> IndyResult<Vec<u8>> {
-        let mut msg_json: Value = serde_json::from_slice(&packed_msg).map_err(|err| {
-            err_msg(IndyErrorKind::InvalidStructure, format!(
-                "Failed to deserialize message {}",
-                err
-            ))
-        })?;
-
-        let msg_obj = match msg_json.as_object_mut() {
-            Some(o) => o,
-            None => return Err(err_msg(IndyErrorKind::InvalidStructure, format!(
-                "Expected an object"
-            )))
-        };
-        // TODO: "$ciphertexts" should be a constant
-        let special_key = "$ciphertexts";
-
-        if msg_obj.contains_key(special_key) {
-            println!("Found special key in pack_already_packed");
-            let cts = msg_obj.remove(special_key).unwrap();
-            let arg = serde_json::to_vec(&msg_obj).map_err(|err| {
-                err_msg(IndyErrorKind::InvalidStructure, format!(
-                    "Failed to serialize ForwardWithCD {}",
-                    err
-                ))
-            })?;
-            let new_msg = self.pack_msg(arg, receivers,
-                                        sender_vk, wallet_handle)?;
-            let mut new_msg_json: Value = serde_json::from_slice(&new_msg).map_err(|err| {
-                err_msg(IndyErrorKind::InvalidStructure, format!(
-                    "Failed to deserialize message {}",
-                    err
-                ))
-            })?;
-            let new_msg_obj = new_msg_json.as_object_mut().unwrap();
-            new_msg_obj.insert(special_key.to_string(), cts);
-            serde_json::to_vec(&new_msg_obj).map_err(|err| {
-                err_msg(IndyErrorKind::InvalidStructure, format!(
-                    "Failed to serialize {}",
-                    err
-                ))
-            })
-        } else {
-            println!("Did not find special key in pack_already_packed");
-            self.pack_msg(packed_msg, receivers, sender_vk, wallet_handle)
-        }
     }
 
     pub fn remove_cts_from_msg(json_msg: &[u8]) -> IndyResult<(Vec<u8>, Vec<u8>)> {

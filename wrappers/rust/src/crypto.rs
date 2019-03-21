@@ -386,30 +386,6 @@ fn _forward_msg_with_cd(command_handle: IndyHandle, typ: &str, to: &str, message
 
 }
 
-pub fn pack_msg_with_cts(wallet_handle: IndyHandle, message: &[u8], receiver_keys: &str, sender: Option<&str>) -> Box<Future<Item=Vec<u8>, Error=IndyError>> {
-    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
-
-    let err= _pack_msg_with_cts(command_handle, wallet_handle, message, receiver_keys, sender, cb);
-
-    ResultHandler::slice(command_handle, err, receiver)
-}
-
-fn _pack_msg_with_cts(command_handle: IndyHandle, wallet_handle: IndyHandle, message: &[u8], receiver_keys: &str, sender: Option<&str>, cb: Option<ResponseSliceCB>) -> ErrorCode {
-    let receiver_keys = c_str!(receiver_keys);
-    let sender_str = opt_c_str!(sender);
-
-    ErrorCode::from(unsafe {
-        crypto::pack_msg_with_cts(command_handle,
-                                  wallet_handle,
-                                  message.as_ptr() as *const u8,
-                                  message.len() as u32,
-                                  receiver_keys.as_ptr(),
-                                  opt_c_ptr!(sender, sender_str),
-                                  cb)
-    })
-
-}
-
 pub fn pre_pc_packed_msg(message: &[u8]) -> Box<Future<Item=Vec<u8>, Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
 

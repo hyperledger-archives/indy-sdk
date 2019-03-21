@@ -57,10 +57,6 @@ pub fn forward_msg_with_cd(typ: &str, to: &str, message: &[u8]) -> Result<Vec<u8
     crypto::forward_msg_with_cd(typ, to, message).wait()
 }
 
-pub fn pack_msg_with_cts(wallet_handle: i32, message: &[u8], receiver_keys: &str, sender: Option<&str>) -> Result<Vec<u8>, IndyError> {
-    crypto::pack_msg_with_cts(wallet_handle, message, receiver_keys, sender).wait()
-}
-
 pub fn remove_cts_from_msg(message: &[u8]) -> Result<(Vec<u8>, Vec<u8>), IndyError> {
     crypto::remove_cts_from_msg(message).wait()
 }
