@@ -188,15 +188,23 @@ impl ForwardAgent {
                     .into_actor(slf)
             })
             .and_then(move |mut msgs, slf, _| {
+                let send_to_router = |fwd: String, msg: Vec<u8>| {
+                    slf.router
+                        .send(RouteA2AMsg(fwd, msg))
+                        .from_err()
+                        .and_then(|res| res)
+                        .into_actor(slf)
+                        .into_box()
+                };
+
+
                 match msgs.pop() {
-                    Some(A2AMessage::Version1(A2AMessageV1::Forward(msg))) |
+                    Some(A2AMessage::Version1(A2AMessageV1::Forward(msg))) => {
+                        send_to_router(msg.fwd, msg.msg)
+                    }
                     Some(A2AMessage::Version2(A2AMessageV2::Forward(msg))) => {
-                        slf.router
-                            .send(RouteA2AMsg(msg.fwd, msg.msg))
-                            .from_err()
-                            .and_then(|res| res)
-                            .into_actor(slf)
-                            .into_box()
+                        let msg_ = ftry_act!(slf, serde_json::to_vec(&msg.msg));
+                        send_to_router(msg.fwd, msg_)
                     }
                     _ => err_act!(slf, err_msg("Unsupported message"))
                 }
@@ -264,7 +272,7 @@ impl ForwardAgent {
                     with_pairwise_did_verkey: my_verkey,
                 });
 
-                A2AMessage::pack_v2(slf.wallet_handle, Some(&slf.verkey), &their_verkey,& msg)
+                A2AMessage::pack_v2(slf.wallet_handle, Some(&slf.verkey), &their_verkey, &msg)
                     .map_err(|err| err.context("Can't bundle and authcrypt connected message.").into())
                     .into_actor(slf)
             })
