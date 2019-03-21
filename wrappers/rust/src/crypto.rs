@@ -3,7 +3,8 @@ use ffi::{ResponseEmptyCB,
           ResponseStringCB,
           ResponseSliceCB,
           ResponseBoolCB,
-          ResponseStringSliceCB};
+          ResponseStringSliceCB,
+          ResponseSliceSliceCB};
 
 use futures::Future;
 
@@ -385,20 +386,20 @@ fn _forward_msg_with_cd(command_handle: IndyHandle, typ: &str, to: &str, message
 
 }
 
-pub fn pack_already_packed(wallet_handle: IndyHandle, message: &[u8], receiver_keys: &str, sender: Option<&str>) -> Box<Future<Item=Vec<u8>, Error=IndyError>> {
+pub fn pack_msg_with_cts(wallet_handle: IndyHandle, message: &[u8], receiver_keys: &str, sender: Option<&str>) -> Box<Future<Item=Vec<u8>, Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
 
-    let err= _pack_already_packed(command_handle, wallet_handle, message, receiver_keys, sender, cb);
+    let err= _pack_msg_with_cts(command_handle, wallet_handle, message, receiver_keys, sender, cb);
 
     ResultHandler::slice(command_handle, err, receiver)
 }
 
-fn _pack_already_packed(command_handle: IndyHandle, wallet_handle: IndyHandle, message: &[u8], receiver_keys: &str, sender: Option<&str>, cb: Option<ResponseSliceCB>) -> ErrorCode {
+fn _pack_msg_with_cts(command_handle: IndyHandle, wallet_handle: IndyHandle, message: &[u8], receiver_keys: &str, sender: Option<&str>, cb: Option<ResponseSliceCB>) -> ErrorCode {
     let receiver_keys = c_str!(receiver_keys);
     let sender_str = opt_c_str!(sender);
 
     ErrorCode::from(unsafe {
-        crypto::indy_pack_already_packed(command_handle,
+        crypto::pack_msg_with_cts(command_handle,
                                   wallet_handle,
                                   message.as_ptr() as *const u8,
                                   message.len() as u32,
@@ -423,6 +424,46 @@ fn _pre_pc_packed_msg(command_handle: IndyHandle, message: &[u8], cb: Option<Res
         crypto::indy_pre_pc_packed_msg(command_handle,
                                         message.as_ptr() as *const u8,
                                         message.len() as u32,
+                                        cb)
+    })
+
+}
+
+pub fn remove_cts_from_msg(message: &[u8]) -> Box<Future<Item=(Vec<u8>, Vec<u8>), Error=IndyError>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice_slice();
+
+    let err= _remove_cts_from_msg(command_handle, message, cb);
+
+    ResultHandler::slice_slice(command_handle, err, receiver)
+}
+
+fn _remove_cts_from_msg(command_handle: IndyHandle, message: &[u8], cb: Option<ResponseSliceSliceCB>) -> ErrorCode {
+
+    ErrorCode::from(unsafe {
+        crypto::indy_remove_cts_from_msg(command_handle,
+                                        message.as_ptr() as *const u8,
+                                        message.len() as u32,
+                                        cb)
+    })
+
+}
+
+pub fn add_cts_to_msg(message: &[u8], cts: &[u8]) -> Box<Future<Item=Vec<u8>, Error=IndyError>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
+
+    let err= _add_cts_to_msg(command_handle, message, cts, cb);
+
+    ResultHandler::slice(command_handle, err, receiver)
+}
+
+fn _add_cts_to_msg(command_handle: IndyHandle, message: &[u8], cts: &[u8], cb: Option<ResponseSliceCB>) -> ErrorCode {
+
+    ErrorCode::from(unsafe {
+        crypto::indy_add_cts_to_msg(command_handle,
+                                        message.as_ptr() as *const u8,
+                                        message.len() as u32,
+                                        cts.as_ptr() as *const u8,
+                                        cts.len() as u32,
                                         cb)
     })
 

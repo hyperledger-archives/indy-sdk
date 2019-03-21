@@ -57,6 +57,18 @@ pub fn forward_msg_with_cd(typ: &str, to: &str, message: &[u8]) -> Result<Vec<u8
     crypto::forward_msg_with_cd(typ, to, message).wait()
 }
 
-pub fn pack_already_packed(wallet_handle: i32, message: &[u8], receiver_keys: &str, sender: Option<&str>) -> Result<Vec<u8>, IndyError> {
-    crypto::pack_already_packed(wallet_handle, message, receiver_keys, sender).wait()
+pub fn pack_msg_with_cts(wallet_handle: i32, message: &[u8], receiver_keys: &str, sender: Option<&str>) -> Result<Vec<u8>, IndyError> {
+    crypto::pack_msg_with_cts(wallet_handle, message, receiver_keys, sender).wait()
+}
+
+pub fn remove_cts_from_msg(message: &[u8]) -> Result<(Vec<u8>, Vec<u8>), IndyError> {
+    crypto::remove_cts_from_msg(message).wait()
+}
+
+pub fn add_cts_to_msg(message: &[u8], cts: &[u8]) -> Result<Vec<u8>, IndyError> {
+    crypto::add_cts_to_msg(message, cts).wait()
+}
+
+pub fn pre_pc_packed_msg(message: &[u8]) -> Result<Vec<u8>, IndyError> {
+    crypto::pre_pc_packed_msg(message).wait()
 }

@@ -28,6 +28,7 @@ pub type ResponseStringCB = extern fn(xcommand_handle: Handle, err: Error, str1:
 pub type ResponseStringStringCB = extern fn(xcommand_handle: Handle, err: Error, str1: CString, str2: CString);
 pub type ResponseStringStringStringCB = extern fn(xcommand_handle: Handle, err: Error, str1: CString, str2: CString, str3: CString);
 pub type ResponseSliceCB = extern fn(xcommand_handle: Handle, err: Error, raw: BString, len: u32);
+pub type ResponseSliceSliceCB = extern fn(xcommand_handle: Handle, err: Error, raw1: BString, len1: u32, raw2: BString, len2: u32);
 pub type ResponseStringSliceCB = extern fn(xcommand_handle: Handle, err: Error, str1: CString, raw: BString, len: u32);
 pub type ResponseStringStringU64CB = extern fn(xcommand_handle: Handle, err: Error, arg1: CString, arg2: CString, arg3: u64);
 

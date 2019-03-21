@@ -103,7 +103,7 @@ extern {
         cb: Option<ResponseSliceCB>) -> Error;
 
     #[no_mangle]
-    pub fn indy_pack_already_packed(command_handle: Handle,
+    pub fn pack_msg_with_cts(command_handle: Handle,
                              wallet_handle: Handle,
                              message: BString,
                              message_len: u32,
@@ -115,6 +115,20 @@ extern {
     pub fn indy_pre_pc_packed_msg(command_handle: Handle,
                                    message: BString,
                                    message_len: u32,
+                                   cb: Option<ResponseSliceCB>) -> Error;
+
+    #[no_mangle]
+    pub fn indy_remove_cts_from_msg(command_handle: Handle,
+                                   message: BString,
+                                   message_len: u32,
+                                   cb: Option<ResponseSliceSliceCB>) -> Error;
+
+    #[no_mangle]
+    pub fn indy_add_cts_to_msg(command_handle: Handle,
+                                   message: BString,
+                                   message_len: u32,
+                                   cts: BString,
+                                   cts_len: u32,
                                    cb: Option<ResponseSliceCB>) -> Error;
 }
 

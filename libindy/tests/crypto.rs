@@ -476,6 +476,7 @@ mod high_cases {
 
     mod pack_message_authcrypt {
         use super::*;
+        use serde_json::Value;
 
         #[derive(Clone, Serialize, Deserialize, Debug, PartialEq, PartialOrd)]
         pub struct Forward1 {
@@ -495,6 +496,26 @@ mod high_cases {
             fwd: String,
             #[serde(rename = "@msg")]
             msg: String,
+        }
+
+        #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
+        pub struct UnpackMessage {
+            pub message: String,
+            pub recipient_verkey: String,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            pub sender_verkey: Option<String>
+        }
+
+        fn extract_forward_msg(msg: &[u8]) -> Vec<u8> {
+            let (M9_1, cts3) = crypto::remove_cts_from_msg(msg).unwrap();
+            let mut M9_2_json: Value = serde_json::from_slice(&M9_1).unwrap();
+            let M9_2_obj = M9_2_json.as_object_mut().unwrap();
+            let M9_3_msg = M9_2_obj.remove("@msg").unwrap();
+            let M9_3_str = str::replace(&M9_3_msg.to_string(), "\\", "");
+            let M9_4_str = &M9_3_str.trim_matches('"');
+            let M9_3_json: Value = serde_json::from_str(&M9_4_str).unwrap();
+            let M9_4 = serde_json::to_vec(&M9_3_json).unwrap();
+            crypto::add_cts_to_msg(&M9_4, &cts3).unwrap()
         }
 
         #[test]
@@ -594,6 +615,31 @@ mod high_cases {
         }
 
         #[test]
+        fn indy_crypto_add_remove_cts_works() {
+            let (wallet_handle, verkey) = setup_with_key();
+            let verkey_1 = crypto::create_key(wallet_handle, None).unwrap();
+            let receiver_key = serde_json::to_string(&vec![verkey_1]).unwrap();
+            let res_1 = crypto::pack_message(wallet_handle, MESSAGE.as_bytes(), &receiver_key, Some(&verkey)).unwrap();
+            let p1 = String::from_utf8(res_1.clone()).unwrap();
+            let res_2 = crypto::post_pc_packed_msg(&res_1).unwrap();
+            let p2 = String::from_utf8(res_2.clone()).unwrap();
+            let (res_3, res_4) = crypto::remove_cts_from_msg(&res_2).unwrap();
+            let p3 = String::from_utf8(res_3.clone()).unwrap();
+            let p4 = String::from_utf8(res_4.clone()).unwrap();
+            //println!("p1={}", &p1);
+            println!("p2={}", &p2);
+            //println!("p3={}", &p3);
+            //println!("p4={}", &p4);
+            // Adding cts to a message already containing cts gives erros
+            assert!(crypto::add_cts_to_msg(&res_2, &res_4).is_err());
+            let res_5 = crypto::add_cts_to_msg(&res_3, &res_4).unwrap();
+            let p5 = String::from_utf8(res_5.clone()).unwrap();
+            println!("p5={}", &p5);
+            // TODO: Need to compare JSON without considering order of keys
+            //assert_eq!(res_2, res_5)
+        }
+
+        #[test]
         fn indy_crypto_forward_msg_with_cd_works() {
             let (wallet_handle, verkey) = setup_with_key();
             let verkey_1 = crypto::create_key(wallet_handle, None).unwrap();
@@ -626,6 +672,7 @@ mod high_cases {
 
             let m = MESSAGE.as_bytes();
 
+            // A.1 packs m for B.4
             let M1 = crypto::pack_message(wallet_handle,
                                           m,
                                           &receiver_key_B4, Some(&verkey_A1)).unwrap();
@@ -633,11 +680,16 @@ mod high_cases {
 
             let M2 = crypto::post_pc_packed_msg(&M1).unwrap();
 
+            // A.1 creates forward message for B.4
             let M3 = crypto::forward_msg_with_cd(&typ, &to, &M2).unwrap();
 
-            let M4 = crypto::pack_already_packed(wallet_handle,
-                                          &M3,
+            let (M4_1, cts) = crypto::remove_cts_from_msg(&M3).unwrap();
+
+            // A.1 packs the above forward message for B.3
+            let M4_2 = crypto::pack_message(wallet_handle,
+                                          &M4_1,
                                           &receiver_key_B3, Some(&verkey_A1)).unwrap();
+            let M4 = crypto::add_cts_to_msg(&M4_2, &cts).unwrap();
             let p4 = String::from_utf8(M4.clone()).unwrap();
             println!("p4={}", &p4);
 
@@ -646,16 +698,66 @@ mod high_cases {
             let p5 = String::from_utf8(M5.clone()).unwrap();
             println!("p5={}", &p5);
 
+            // A.1 creates forward message for B.3
             let M6 = crypto::forward_msg_with_cd(&typ, &to, &M5).unwrap();
             println!("M6_len={}", &M6.len());
             let p6 = String::from_utf8(M6.clone()).unwrap();
             println!("p6={}", &p6);
 
-            let M7 = crypto::pack_already_packed(wallet_handle,
-                                                 &M6,
-                                                 &receiver_key_B9, Some(&verkey_A1)).unwrap();
+            let (M7_1, cts1) = crypto::remove_cts_from_msg(&M6).unwrap();
+
+            let M7_2 = crypto::pack_message(wallet_handle,
+                                            &M7_1,
+                                            &receiver_key_B9, Some(&verkey_A1)).unwrap();
+            let M7 = crypto::add_cts_to_msg(&M7_2, &cts1).unwrap();
             let p7 = String::from_utf8(M7.clone()).unwrap();
             println!("p7={}", &p7);
+
+            let (M8_1, cts2) = crypto::remove_cts_from_msg(&M7).unwrap();
+
+            let M8_2 = crypto::unpack_message(wallet_handle, &M8_1).unwrap();
+            let M8_2_unpacked : UnpackMessage = serde_json::from_slice(&M8_2).unwrap();
+            let M8_3 = M8_2_unpacked.message.as_bytes().to_vec();
+            let p8_3 = String::from_utf8(M8_3.clone()).unwrap();
+            println!("p8_3={}", &p8_3);
+
+            let M8 = crypto::add_cts_to_msg(&M8_3, &cts2).unwrap();
+            let p8 = String::from_utf8(M8.clone()).unwrap();
+            println!("p8={}", &p8);
+
+            let M9 = extract_forward_msg(&M8);
+            let p9 = String::from_utf8(M9.clone()).unwrap();
+            println!("p9={}", &p9);
+
+            let M10 = crypto::pre_pc_packed_msg(&M9).unwrap();
+            let p10 = String::from_utf8(M10.clone()).unwrap();
+            println!("p10={}", &p10);
+
+            let (M11_1, cts4) = crypto::remove_cts_from_msg(&M10).unwrap();
+
+            let M11_2 = crypto::unpack_message(wallet_handle, &M11_1).unwrap();
+            let M11_2_unpacked : UnpackMessage = serde_json::from_slice(&M11_2).unwrap();
+            let M11_3 = M11_2_unpacked.message.as_bytes().to_vec();
+            let p11_3 = String::from_utf8(M11_3.clone()).unwrap();
+            println!("p8_3={}", &p8_3);
+
+            let M11 = crypto::add_cts_to_msg(&M11_3, &cts4).unwrap();
+            let p11 = String::from_utf8(M11.clone()).unwrap();
+            println!("p11={}", &p11);
+
+            let M12 = extract_forward_msg(&M11);
+            let p12 = String::from_utf8(M12.clone()).unwrap();
+            println!("p12={}", &p12);
+
+            let M13 = crypto::pre_pc_packed_msg(&M12).unwrap();
+            let p13 = String::from_utf8(M13.clone()).unwrap();
+            println!("p13={}", &p13);
+
+            let M14 = crypto::unpack_message(wallet_handle, &M13).unwrap();
+            let M14_unpacked : UnpackMessage = serde_json::from_slice(&M14).unwrap();
+            let M15 = M14_unpacked.message;
+
+            assert_eq!(M15, MESSAGE);
 
             utils::tear_down_with_wallet(wallet_handle);
         }

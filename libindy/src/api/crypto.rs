@@ -824,7 +824,7 @@ pub extern fn indy_forward_msg_with_cd(
 }
 
 #[no_mangle]
-pub extern fn indy_pack_already_packed(
+pub extern fn pack_msg_with_cts(
     command_handle: CommandHandle,
     wallet_handle: WalletHandle,
     message: *const u8,
@@ -844,7 +844,7 @@ pub extern fn indy_pack_already_packed(
     trace!("indy_pack_message: entities >>> wallet_handle: {:?}, message: {:?}, message_len {:?},\
             receiver_keys: {:?}, sender: {:?}", wallet_handle, message, message_len, receiver_keys, sender);
 
-    let result = CommandExecutor::instance().send(Command::Crypto(CryptoCommand::PackAlreadyPackedMessage(
+    let result = CommandExecutor::instance().send(Command::Crypto(CryptoCommand::PackMsgWithCts(
         message,
         receiver_keys,
         sender,
@@ -891,6 +891,73 @@ pub extern fn indy_pre_pc_packed_msg(
     let res = prepare_result!(result);
 
     trace!("indy_pre_pc_packed_msg: <<< res: {:?}", res);
+
+    res
+}
+
+#[no_mangle]
+pub extern fn indy_remove_cts_from_msg(
+    command_handle: CommandHandle,
+    json_message: *const u8,
+    json_message_len: u32,
+    cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, new_json: *const u8, new_json_len: u32, cts_json: *const u8, cts_json_len: u32)>,
+) -> ErrorCode {
+    trace!("indy_remove_cts_from_msg: >>> json_message: {:?}, json_message_len {:?}", json_message, json_message_len);
+
+    check_useful_c_byte_array!(json_message, json_message_len, ErrorCode::CommonInvalidParam2, ErrorCode::CommonInvalidParam3);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    trace!("indy_remove_cts_from_msg: entities >>> json_message: {:?}, json_message_len {:?}", json_message, json_message_len);
+
+    let result = CommandExecutor::instance().send(Command::Crypto(CryptoCommand::RemoveCtsFromMsg(
+        json_message,
+        Box::new(move |result| {
+            let (err, new_json, cts_json) = prepare_result_2!(result, Vec::new(), Vec::new());
+            trace!("indy_remove_cts_from_msg: jwe: {:?}", new_json);
+            let (new_json, new_json_len) = ctypes::vec_to_pointer(&new_json);
+            let (cts_json, cts_json_len) = ctypes::vec_to_pointer(&cts_json);
+            cb(command_handle, err, new_json, new_json_len, cts_json, cts_json_len)
+        }),
+    )));
+
+    let res = prepare_result!(result);
+
+    trace!("indy_post_pc_packed_msg: <<< res: {:?}", res);
+
+    res
+}
+
+#[no_mangle]
+pub extern fn indy_add_cts_to_msg(
+    command_handle: CommandHandle,
+    message: *const u8,
+    message_len: u32,
+    cts: *const u8,
+    cts_len: u32,
+    cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, msg_data: *const u8, msg_len: u32)>,
+) -> ErrorCode {
+    trace!("indy_add_cts_to_msg: >>> message: {:?}, message_len {:?}", message, message_len);
+
+    check_useful_c_byte_array!(message, message_len, ErrorCode::CommonInvalidParam2, ErrorCode::CommonInvalidParam3);
+    check_useful_c_byte_array!(cts, cts_len, ErrorCode::CommonInvalidParam4, ErrorCode::CommonInvalidParam5);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
+
+    trace!("indy_add_cts_to_msg: entities >>> message: {:?}, message_len {:?}", message, message_len);
+
+    let result = CommandExecutor::instance().send(Command::Crypto(CryptoCommand::AddCtsToMsg(
+        message,
+        cts,
+        Box::new(move |result| {
+            let (err, jwe) = prepare_result_1!(result, Vec::new());
+            trace!("indy_add_cts_to_msg: jwe: {:?}", jwe);
+            let (jwe_data, jwe_len) = ctypes::vec_to_pointer(&jwe);
+            cb(command_handle, err, jwe_data, jwe_len)
+        }),
+    )));
+
+    let res = prepare_result!(result);
+
+    trace!("indy_post_pc_packed_msg: <<< res: {:?}", res);
 
     res
 }

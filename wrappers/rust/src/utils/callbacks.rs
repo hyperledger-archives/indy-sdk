@@ -16,6 +16,7 @@ lazy_static! {
     static ref CALLBACKS_SLICE: Mutex<HashMap<IndyHandle, oneshot::Sender<Result<Vec<u8>, IndyError>>>> = Default::default();
     static ref CALLBACKS_HANDLE: Mutex<HashMap<IndyHandle, oneshot::Sender<Result<IndyHandle, IndyError>>>> = Default::default();
     static ref CALLBACKS_BOOL: Mutex<HashMap<IndyHandle, oneshot::Sender<Result<bool, IndyError>>>> = Default::default();
+    static ref CALLBACKS_SLICE_SLICE: Mutex<HashMap<IndyHandle, oneshot::Sender<Result<(Vec<u8>, Vec<u8>), IndyError>>>> = Default::default();
     static ref CALLBACKS_STR_SLICE: Mutex<HashMap<IndyHandle, oneshot::Sender<Result<(String, Vec<u8>), IndyError>>>> = Default::default();
     static ref CALLBACKS_HANDLE_USIZE: Mutex<HashMap<IndyHandle, oneshot::Sender<Result<(IndyHandle, usize), IndyError>>>> = Default::default();
     static ref CALLBACKS_STR_STR_U64: Mutex<HashMap<IndyHandle, oneshot::Sender<Result<(String, String, u64), IndyError>>>> = Default::default();
@@ -93,6 +94,10 @@ impl ClosureHandler {
 
     cb_ec!(cb_ec_slice(data:*const u8, len:u32)->Vec<u8>, CALLBACKS_SLICE, rust_slice!(data, len).to_owned());
 
+    cb_ec!(cb_ec_slice_slice(data1:*const u8, len1:u32, data2:*const u8, len2:u32)->(Vec<u8>, Vec<u8>),
+           CALLBACKS_SLICE_SLICE,
+           (rust_slice!(data1, len1).to_owned(), rust_slice!(data2, len2).to_owned()));
+
     cb_ec!(cb_ec_string_slice(str: *const c_char, data:*const u8, len:u32)->(String, Vec<u8>),
            CALLBACKS_STR_SLICE,
            (rust_str!(str), rust_slice!(data, len).to_owned()));
@@ -127,6 +132,7 @@ impl ResultHandler {
     result_handler!(bool(bool), CALLBACKS_BOOL);
     result_handler!(str(String), CALLBACKS_STR);
     result_handler!(handle_usize((IndyHandle, usize)), CALLBACKS_HANDLE_USIZE);
+    result_handler!(slice_slice((Vec<u8>, Vec<u8>)), CALLBACKS_SLICE_SLICE);
     result_handler!(str_slice((String, Vec<u8>)), CALLBACKS_STR_SLICE);
     result_handler!(str_str((String, String)), CALLBACKS_STR_STR);
     result_handler!(str_optstr((String, Option<String>)), CALLBACKS_STR_OPTSTR);
