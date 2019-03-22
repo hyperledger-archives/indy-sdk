@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.8.2 - 2019-03-18
+## 1.8.2 - 2019-03-25
 * Added new functions to Libindy Ledger API:
     * `indy_build_auth_rule_request` to change an existing ledger auth rule.
     * `indy_build_get_auth_rule_request` to get either specific one or all ledger auth rules.
