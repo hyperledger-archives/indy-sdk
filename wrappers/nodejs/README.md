@@ -543,7 +543,7 @@ to fetch records by small batches \(with proverFetchCredentialsForProofReq\).
         "<attr_referent>": <wql query>,
         "<predicate_referent>": <wql query>,
     }
-where wql query: indy-sdk/doc/design/011-wallet-query-language/README.md
+where wql query: indy-sdk/docs/design/011-wallet-query-language/README.md
 ````
 * __->__ `sh`: Handle (Number) - search\_handle: Search handle that can be used later to fetch records by small batches \(with proverFetchCredentialsForProofReq\)
 
@@ -652,7 +652,7 @@ The proof contains either proof or self-attested attribute value for each reques
         },
     }
 where
-where wql query: indy-sdk/doc/design/011-wallet-query-language/README.md
+where wql query: indy-sdk/docs/design/011-wallet-query-language/README.md
 ````
 * __->__ `proof`: Json - Proof json
 For each requested attribute either a proof \(with optionally revealed attribute value\) or
@@ -2717,9 +2717,9 @@ indy.capi.abbreviateVerkey(did, fullVerkey, function(err, verkey){
 
 Setup an Indy SDK environment, and start a local pool.
 
- * [ubuntu](https://github.com/hyperledger/indy-sdk/blob/master/doc/ubuntu-build.md)
- * [osx](https://github.com/hyperledger/indy-sdk/blob/master/doc/mac-build.md)
- * [windows](https://github.com/hyperledger/indy-sdk/blob/master/doc/windows-build.md)
+ * [ubuntu](https://github.com/hyperledger/indy-sdk/blob/master/docs/ubuntu-build.md)
+ * [osx](https://github.com/hyperledger/indy-sdk/blob/master/docs/mac-build.md)
+ * [windows](https://github.com/hyperledger/indy-sdk/blob/master/docs/windows-build.md)
 
 ```sh
 # You will need libindy in your system library path. (i.e. /usr/lib/libindy.so for linux)
