@@ -889,7 +889,7 @@ def ubuntuPublishing() {
                 libvcxDebPublishing(testEnv)
                 vcxJavaWrapperPublishing(testEnv, false)
                 pythonWrapperPublishing(testEnv, false, 'vcx/wrappers/python3', 'vcx/libvcx')
-                nodejsWrapperPublishing(testEnv, false,'vcx')
+                nodejsWrapperPublishing(testEnv, false, 'vcx')
             }
             finally {
                 echo 'Publish Ubuntu files: Cleanup'
@@ -1069,6 +1069,8 @@ def libindyDebPublishing(testEnv, version) {
 def libindyCliDebPublishing(testEnv, version) {
     echo 'Publish Indy Cli deb files to Apt'
 
+    setLibindyDependencyVersion("cli/debian/control")
+
     debPublishing(testEnv, "cli", "indy-cli", version, "IndyCliUbuntuBuildResult", "libindyCliDebs")
 }
 
@@ -1076,6 +1078,8 @@ def libnullpayDebPublishing(testEnv) {
     echo 'Publish Libnullpay deb files to Apt'
 
     def libnullpayVersion = getSrcVersion("libnullpay")
+
+    setLibindyDependencyVersion("libnullpay/debian/control")
 
     debPublishing(testEnv, "libnullpay", "libnullpay", libnullpayVersion, "LibnullpayUbuntuBuildResult", "libnullpayDebs")
 }
@@ -1085,11 +1089,16 @@ def libvcxDebPublishing(testEnv) {
 
     def libvcxVersion = getSrcVersion("vcx/libvcx")
 
-    def libindyVersion = getSrcVersion("libindy")
-    def replaceVersion = "$libindyVersion~$env.BUILD_NUMBER"
-    sh "sed -i -e \"s/^\\(Depends: .*libindy\\)\\(\\s*[,]\\{,1\\}.*\\)/\\1 (= $replaceVersion)\\2/\" vcx/libvcx/debian/control"
+    setLibindyDependencyVersion("vcx/libvcx/debian/control")
 
     debPublishing(testEnv, "vcx/libvcx", "libvcx", libvcxVersion, "LibvcxUbuntuBuildResult", "libvcxDebs")
+}
+
+def setLibindyDependencyVersion(file) {
+    def libindyVersion = getSrcVersion("libindy")
+    def replaceVersion = "$libindyVersion~$env.BUILD_NUMBER"
+
+    sh "sed -i -e \"s/^\\(Depends: .*libindy\\)\\(\\s*[,]\\{,1\\}.*\\)/\\1 (= $replaceVersion)\\2/\" $file"
 }
 
 def debPublishing(testEnv, directory, packageName, version, inStashName, outStashName) {
@@ -1155,7 +1164,7 @@ def npmPublish(version, suffix, directory) {
     withCredentials([file(credentialsId: 'npm_credentials', variable: 'credentialsFile')]) {
         sh 'cp $credentialsFile ~/.npmrc'
         sh "cd $directory && " +
-        "npm version --no-git-tag-version --allow-same-version $version$suffix &&" +
+                "npm version --no-git-tag-version --allow-same-version $version$suffix &&" +
                 "npm publish"
     }
 }
