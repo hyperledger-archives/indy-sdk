@@ -466,6 +466,7 @@ mod tests {
                                                                              1).unwrap();
         ::issuer_credential::send_credential_offer(credential_offer, alice).unwrap();
         thread::sleep(Duration::from_millis(2000));
+        let hello_uid = ::messages::send_message::send_generic_message(alice, "hello", "hello", "hello").unwrap();
         // AS CONSUMER GET MESSAGES
         ::utils::devsetup::tests::set_consumer();
         let all_messages = download_messages(None, None, None).unwrap();
@@ -479,6 +480,8 @@ mod tests {
         // No pending will return empty list
         let empty = download_messages(None, Some(vec!["MS-103".to_string()]), Some(vec![accepted[0].msgs[0].uid.clone()])).unwrap();
         assert_eq!(empty.len(), 1);
+        let hello_msg = download_messages(None, None, Some(vec![hello_uid])).unwrap();
+        assert_eq!(hello_msg[0].msgs[0].decrypted_payload, Some("{\"@type\":{\"name\":\"hello\",\"ver\":\"1.0\",\"fmt\":\"json\"},\"@msg\":\"hello\"}".to_string()));
         // Agency returns a bad request response for invalid dids
         let invalid_did = "abc".to_string();
         let bad_req = download_messages(Some(vec![invalid_did]), None, None);
