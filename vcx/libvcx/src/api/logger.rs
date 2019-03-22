@@ -1,10 +1,8 @@
-extern crate libc;
-extern crate indy_sys;
-use utils::logger::{ EnabledCB, FlushCB, LibvcxLogger, LibvcxDefaultLogger, LogCB, LOGGER_STATE, CVoid };
+use libc::c_char;
+use utils::logger::{EnabledCB, FlushCB, LibvcxLogger, LibvcxDefaultLogger, LogCB, LOGGER_STATE, CVoid};
 use utils::cstring::CStringUtils;
-use self::libc::{c_char};
-
-use utils::error::{ INVALID_CONFIGURATION, SUCCESS };
+use utils::error::SUCCESS;
+use error::prelude::*;
 
 /// Set default logger implementation.
 ///
@@ -22,7 +20,7 @@ use utils::error::{ INVALID_CONFIGURATION, SUCCESS };
 pub extern fn vcx_set_default_logger(pattern: *const c_char) -> u32 {
     info!("vcx_set_default_logger >>>");
 
-    check_useful_opt_c_str!(pattern, INVALID_CONFIGURATION.code_num);
+    check_useful_opt_c_str!(pattern, VcxErrorKind::InvalidConfiguration);
 
     trace!("vcx_set_default_logger(pattern: {:?})", pattern);
 
@@ -30,11 +28,11 @@ pub extern fn vcx_set_default_logger(pattern: *const c_char) -> u32 {
         Ok(_) => {
             debug!("Logger Successfully Initialized");
             SUCCESS.code_num
-        },
+        }
         Err(ec) => {
             error!("Logger Failed To Initialize: {}", ec);
-            ec
-        },
+            ec.into()
+        }
     }
 }
 
@@ -59,17 +57,18 @@ pub extern fn vcx_set_logger(context: *const CVoid,
 
     trace!("vcx_set_logger( context: {:?}, enabled: {:?}, log: {:?}, flush: {:?}",
            context, enabled, log, flush);
-    check_useful_c_callback!(log, SUCCESS.code_num);
+    check_useful_c_callback!(log, VcxErrorKind::InvalidOption);
+
     let res = LibvcxLogger::init(context, enabled, log, flush);
     match res {
         Ok(_) => {
             debug!("Logger Successfully Initialized");
             SUCCESS.code_num
-        },
+        }
         Err(ec) => {
             error!("Logger Failed To Initialize: {}", ec);
-            ec
-        },
+            ec.into()
+        }
     }
 }
 
@@ -89,9 +88,9 @@ pub extern fn vcx_set_logger(context: *const CVoid,
 /// This is tested in wrapper tests (python3)
 #[no_mangle]
 pub extern fn vcx_get_logger(context_p: *mut *const CVoid,
-                              enabled_cb_p: *mut Option<EnabledCB>,
-                              log_cb_p: *mut Option<LogCB>,
-                              flush_cb_p: *mut Option<FlushCB>) -> u32 {
+                             enabled_cb_p: *mut Option<EnabledCB>,
+                             log_cb_p: *mut Option<LogCB>,
+                             flush_cb_p: *mut Option<FlushCB>) -> u32 {
     info!("vcx_get_logger >>>");
 
     trace!("vcx_get_logger >>> context_p: {:?}, enabled_cb_p: {:?}, log_cb_p: {:?}, flush_cb_p: {:?}", context_p, enabled_cb_p, log_cb_p, flush_cb_p);

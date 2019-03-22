@@ -40,18 +40,18 @@ fatal_warnings = []
 [dependencies]
 #indy = { version="1.6.7", path="../../../wrappers/rust" }
 rust-libindy-wrapper = "0.2.13"
-indy-crypto = { version = "=0.4.3", optional = true }
+indy-crypto = { version = "=0.5.1", optional = true }
 int_traits = { version = "0.1.1", optional = true }
-digest = "0.6.2"
+digest = "0.7.0"
 env_logger = "0.5.10"
 errno = "0.2.3"
 etcommon-rlp = "0.2.3"
-generic-array = "0.8.3"
+generic-array = "0.9.0"
 hex = "0.2.0"
 libc = "0.2.21"
 log = "0.4.1"
 dirs = "1.0.4"
-openssl = { version = "=0.9.24", optional = true }
+openssl = { version = "=0.10.12", optional = true }
 owning_ref = "0.3.3"
 rand = "0.3"
 rust-base58 = {version = "0.0.4", optional = true}
@@ -59,8 +59,8 @@ base64 = {version = "0.6.0", optional = true}
 serde = "1.0"
 serde_json = "1.0"
 serde_derive = "1.0"
-sha2 = "0.6.0"
-sha3 = "0.6.0"
+sha2 = "0.7.0"
+sha3 = "0.7.0"
 rmp-serde = "0.13.6"
 sodiumoxide = {version = "0.0.16", optional = true}
 time = "0.1.36"

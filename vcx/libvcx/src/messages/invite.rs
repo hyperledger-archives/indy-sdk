@@ -2,9 +2,10 @@ use settings;
 use messages::*;
 use messages::message_type::{MessageTypes, MessageTypeV1, MessageTypeV2};
 use messages::payload::Thread;
-use utils::{httpclient, error};
+use utils::httpclient;
 use utils::constants::*;
 use utils::uuid::uuid;
+use error::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 pub struct SendInviteMessageDetails {
@@ -222,13 +223,13 @@ impl SendInviteBuilder {
         }
     }
 
-    pub fn key_delegate(&mut self, key: &str) -> Result<&mut Self, u32> {
+    pub fn key_delegate(&mut self, key: &str) -> VcxResult<&mut Self> {
         validation::validate_key_delegate(key)?;
         self.payload.key_dlg_proof.agent_delegated_key = key.to_string();
         Ok(self)
     }
 
-    pub fn public_did(&mut self, did: Option<&str>) -> Result<&mut Self, u32> {
+    pub fn public_did(&mut self, did: Option<&str>) -> VcxResult<&mut Self> {
         if did.is_some() {
             self.payload.include_public_did = true;
         }
@@ -236,7 +237,7 @@ impl SendInviteBuilder {
         Ok(self)
     }
 
-    pub fn phone_number(&mut self, phone_number: Option<&str>) -> Result<&mut Self, u32> {
+    pub fn phone_number(&mut self, phone_number: Option<&str>) -> VcxResult<&mut Self> {
         if let Some(ref p_num) = phone_number {
             validation::validate_phone_number(p_num)?;
             self.payload.phone_no = phone_number.map(String::from);
@@ -244,12 +245,12 @@ impl SendInviteBuilder {
         Ok(self)
     }
 
-    pub fn thread(&mut self, thread: &Thread) -> Result<&mut Self, u32> {
+    pub fn thread(&mut self, thread: &Thread) -> VcxResult<&mut Self> {
         self.thread = thread.clone();
         Ok(self)
     }
 
-    pub fn generate_signature(&mut self) -> Result<(), u32> {
+    pub fn generate_signature(&mut self) -> VcxResult<()> {
         let signature = format!("{}{}", self.payload.key_dlg_proof.agent_did, self.payload.key_dlg_proof.agent_delegated_key);
         let signature = ::utils::libindy::crypto::sign(&self.to_vk, signature.as_bytes())?;
         let signature = base64::encode(&signature);
@@ -257,7 +258,7 @@ impl SendInviteBuilder {
         Ok(())
     }
 
-    pub fn send_secure(&mut self) -> Result<(InviteDetail, String), u32> {
+    pub fn send_secure(&mut self) -> VcxResult<(InviteDetail, String)> {
         trace!("SendInvite::send >>>");
 
         if settings::test_agency_mode_enabled() {
@@ -266,14 +267,14 @@ impl SendInviteBuilder {
 
         let data = self.prepare_request()?;
 
-        let response = httpclient::post_u8(&data).or(Err(error::POST_MSG_FAILURE.code_num))?;
+        let response = httpclient::post_u8(&data)?;
 
         let (invite, url) = self.parse_response(response)?;
 
         Ok((invite, url))
     }
 
-    fn parse_response(&self, response: Vec<u8>) -> Result<(InviteDetail, String), u32> {
+    fn parse_response(&self, response: Vec<u8>) -> VcxResult<(InviteDetail, String)> {
         let mut response = parse_response_from_agency(&response)?;
 
         let index = match settings::get_protocol_type() {
@@ -287,7 +288,7 @@ impl SendInviteBuilder {
                 Ok((res.invite_detail, res.url_to_invite_detail)),
             A2AMessage::Version2(A2AMessageV2::ConnectionRequestResponse(res)) =>
                 Ok((res.invite_detail, res.url_to_invite_detail)),
-            _ => return Err(error::INVALID_HTTP_RESPONSE.code_num)
+            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of ConnectionRequestResponse"))
         }
     }
 }
@@ -307,7 +308,6 @@ impl AcceptInviteBuilder {
     pub fn create() -> AcceptInviteBuilder {
         trace!("AcceptInvite::create_message >>>");
 
-
         AcceptInviteBuilder {
             to_did: String::new(),
             to_vk: String::new(),
@@ -325,38 +325,38 @@ impl AcceptInviteBuilder {
         }
     }
 
-    pub fn key_delegate(&mut self, key: &str) -> Result<&mut Self, u32> {
+    pub fn key_delegate(&mut self, key: &str) -> VcxResult<&mut Self> {
         validation::validate_key_delegate(key)?;
         self.payload.key_dlg_proof.agent_delegated_key = key.to_string();
         Ok(self)
     }
 
-    pub fn sender_details(&mut self, details: &SenderDetail) -> Result<&mut Self, u32> {
+    pub fn sender_details(&mut self, details: &SenderDetail) -> VcxResult<&mut Self> {
         self.payload.sender_detail = Some(details.clone());
         Ok(self)
     }
 
-    pub fn sender_agency_details(&mut self, details: &SenderAgencyDetail) -> Result<&mut Self, u32> {
+    pub fn sender_agency_details(&mut self, details: &SenderAgencyDetail) -> VcxResult<&mut Self> {
         self.payload.sender_agency_detail = Some(details.clone());
         Ok(self)
     }
 
-    pub fn answer_status_code(&mut self, code: &MessageStatusCode) -> Result<&mut Self, u32> {
+    pub fn answer_status_code(&mut self, code: &MessageStatusCode) -> VcxResult<&mut Self> {
         self.payload.answer_status_code = Some(code.clone());
         Ok(self)
     }
 
-    pub fn reply_to(&mut self, id: &str) -> Result<&mut Self, u32> {
+    pub fn reply_to(&mut self, id: &str) -> VcxResult<&mut Self> {
         self.reply_to_msg_id = Some(id.to_string());
         Ok(self)
     }
 
-    pub fn thread(&mut self, thread: &Thread) -> Result<&mut Self, u32> {
+    pub fn thread(&mut self, thread: &Thread) -> VcxResult<&mut Self> {
         self.thread = thread.clone();
         Ok(self)
     }
 
-    pub fn generate_signature(&mut self) -> Result<(), u32> {
+    pub fn generate_signature(&mut self) -> VcxResult<()> {
         let signature = format!("{}{}", self.payload.key_dlg_proof.agent_did, self.payload.key_dlg_proof.agent_delegated_key);
         let signature = crypto::sign(&self.to_vk, signature.as_bytes())?;
         let signature = base64::encode(&signature);
@@ -364,7 +364,7 @@ impl AcceptInviteBuilder {
         Ok(())
     }
 
-    pub fn send_secure(&mut self) -> Result<String, u32> {
+    pub fn send_secure(&mut self) -> VcxResult<String> {
         trace!("AcceptInvite::send >>>");
 
         if settings::test_agency_mode_enabled() {
@@ -373,18 +373,18 @@ impl AcceptInviteBuilder {
 
         let data = self.prepare_request()?;
 
-        let response = httpclient::post_u8(&data).or(Err(error::POST_MSG_FAILURE.code_num))?;
+        let response = httpclient::post_u8(&data)?;
 
         self.parse_response(response)
     }
 
-    fn parse_response(&self, response: Vec<u8>) -> Result<String, u32> {
+    fn parse_response(&self, response: Vec<u8>) -> VcxResult<String> {
         let mut response = parse_response_from_agency(&response)?;
 
         match response.remove(0) {
             A2AMessage::Version1(A2AMessageV1::MessageCreated(res)) => Ok(res.uid),
             A2AMessage::Version2(A2AMessageV2::ConnectionRequestAnswerResponse(res)) => Ok(res.id),
-            _ => return Err(error::INVALID_HTTP_RESPONSE.code_num)
+            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of ConnectionAnswerResponse"))
         }
     }
 }
@@ -408,7 +408,7 @@ impl GeneralMessage for SendInviteBuilder {
 
     fn set_to_vk(&mut self, to_vk: String) { self.to_vk = to_vk; }
 
-    fn prepare_request(&mut self) -> Result<Vec<u8>, u32> {
+    fn prepare_request(&mut self) -> VcxResult<Vec<u8>> {
         self.generate_signature()?;
 
         let messages =
@@ -464,7 +464,7 @@ impl GeneralMessage for AcceptInviteBuilder {
     fn set_to_did(&mut self, to_did: String) { self.to_did = to_did; }
     fn set_to_vk(&mut self, to_vk: String) { self.to_vk = to_vk; }
 
-    fn prepare_request(&mut self) -> Result<Vec<u8>, u32> {
+    fn prepare_request(&mut self) -> VcxResult<Vec<u8>> {
         self.generate_signature()?;
 
         let messages =
@@ -517,9 +517,10 @@ pub struct AcceptanceDetails {
     pub sender_detail: SenderDetail,
 }
 
-pub fn parse_invitation_acceptance_details(payload: Vec<u8>) -> Result<SenderDetail, u32> {
+pub fn parse_invitation_acceptance_details(payload: Vec<u8>) -> VcxResult<SenderDetail> {
     debug!("parsing invitation acceptance details: {:?}", payload);
-    let response: AcceptanceDetails = rmp_serde::from_slice(&payload[..]).or(Err(error::INVALID_MSGPACK.code_num))?;
+    let response: AcceptanceDetails = rmp_serde::from_slice(&payload[..])
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidMessagePack, format!("Cannot decode acceptance details: {:?}", err)))?;
     Ok(response.sender_detail)
 }
 

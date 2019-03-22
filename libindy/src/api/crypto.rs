@@ -706,7 +706,7 @@ pub extern fn indy_pack_message(
 #[no_mangle]
 pub extern fn indy_unpack_message(
     command_handle: i32,
-    wallet_handle: i32,
+    wallet_handle: WalletHandle,
     jwe_data: *const u8,
     jwe_len: u32,
     cb: Option<
