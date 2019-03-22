@@ -68,7 +68,7 @@ def calcCoverageRust(dir) {
             INDY_SDK_DIR=$(pwd)
 
             cd $RUST_PROJECT_DIR
-            LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$INDY_SDK_DIR/libindy/target/debug/ cargo test --no-run
+            RUSTFLAGS="-L $INDY_SDK_DIR/libindy/target/debug/" cargo test --no-run
             for i in $(find target/debug -maxdepth 1 -executable -type f | grep -v '\\.so\$')
             do
                 LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$INDY_SDK_DIR/libindy/target/debug/ \
