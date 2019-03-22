@@ -4,6 +4,7 @@ use domain::protocol_type::{ProtocolType, ProtocolTypes};
 use std::collections::HashMap;
 
 #[derive(Deserialize, Serialize, Debug)]
+#[serde(untagged)]
 pub enum Payloads {
     PayloadV1(PayloadV1),
     PayloadV2(PayloadV2),
