@@ -472,6 +472,7 @@ mod tests {
         let all_messages = download_messages(None, None, None).unwrap();
         let pending = download_messages(None, Some(vec!["MS-103".to_string()]), None).unwrap();
         assert_eq!(pending.len(), 1);
+        assert!(pending[0].msgs[0].decrypted_payload.is_some());
         let accepted = download_messages(None, Some(vec!["MS-104".to_string()]), None).unwrap();
         assert_eq!(accepted[0].msgs.len(), 2);
         let specific = download_messages(None, None, Some(vec![accepted[0].msgs[0].uid.clone()])).unwrap();
