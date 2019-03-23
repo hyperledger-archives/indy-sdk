@@ -1851,18 +1851,24 @@ mod high_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
-        fn indy_auth_rule_request_works() {
+        fn indy_auth_rule_requests_work() {
             let (wallet_handle, pool_handle, trustee_did) = utils::setup_trustee();
 
-            let auth_rule_request = ledger::build_auth_rule_request(&trustee_did,
-                                                                    constants::NYM,
-                                                                    &ADD_AUTH_ACTION,
-                                                                    FIELD,
-                                                                    None,
-                                                                    NEW_VALUE,
-                                                                    ROLE_CONSTRAINT).unwrap();
-            let response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &auth_rule_request).unwrap();
-            pool::check_response_type(&response, ResponseType::REPLY);
+            let constraint_id = _build_constraint_id(ADD_AUTH_ACTION, constants::NYM, FIELD, None, NEW_VALUE);
+
+            let default_constraint = _get_constraint(pool_handle, &constraint_id);
+
+            _change_constraint(pool_handle, wallet_handle, &trustee_did, ROLE_CONSTRAINT);
+
+            ::std::thread::sleep(::std::time::Duration::from_secs(1));
+
+            let actual_constraint = _get_constraint(pool_handle, &constraint_id);
+
+            let expected_constraint: serde_json::Value = serde_json::from_str(ROLE_CONSTRAINT).unwrap();
+
+            assert_eq!(expected_constraint, actual_constraint);
+
+            _change_constraint(pool_handle, wallet_handle, &trustee_did, &serde_json::to_string(&default_constraint).unwrap());
 
             utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
         }
@@ -1875,44 +1881,36 @@ mod high_cases {
             format!("{}--{}--{}--{}--{}", auth_action, auth_type, field, old_value.unwrap_or("*"), new_value)
         }
 
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
-        fn indy_get_auth_rule_request_works_for_one() {
-            let (wallet_handle, pool_handle, trustee_did) = utils::setup_trustee();
-
+        fn _change_constraint(pool_handle: i32, wallet_handle: i32, trustee_did: &str, constraint: &str) {
             let auth_rule_request = ledger::build_auth_rule_request(&trustee_did,
                                                                     constants::NYM,
                                                                     &ADD_AUTH_ACTION,
                                                                     FIELD,
                                                                     None,
                                                                     NEW_VALUE,
-                                                                    ROLE_CONSTRAINT).unwrap();
+                                                                    constraint).unwrap();
             let response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &auth_rule_request).unwrap();
             pool::check_response_type(&response, ResponseType::REPLY);
+        }
 
+        fn _get_constraint(pool_handle: i32, constraint_id: &str) -> serde_json::Value {
             let get_auth_rule_request = ledger::build_get_auth_rule_request(None,
                                                                             Some(constants::NYM),
                                                                             Some(ADD_AUTH_ACTION),
                                                                             Some(FIELD),
                                                                             None,
                                                                             Some(NEW_VALUE)).unwrap();
-
-            let constraint_id = _build_constraint_id(ADD_AUTH_ACTION, constants::NYM, FIELD, None, NEW_VALUE);
-
             let response = ledger::submit_request(pool_handle, &get_auth_rule_request).unwrap();
-            let response: Reply<serde_json::Value> = serde_json::from_str(&response).unwrap();
 
-            let expected_constraint: serde_json::Value = serde_json::from_str(ROLE_CONSTRAINT).unwrap();
+            _extract_constraint(&response, constraint_id)
+        }
+
+        fn _extract_constraint(response: &str, constraint_id: &str) -> serde_json::Value {
+            let response: Reply<serde_json::Value> = serde_json::from_str(response).unwrap();
             let constraints = response.result["data"].as_object().unwrap();
             assert_eq!(constraints.len(), 1);
-
-            assert!(constraints.contains_key(&constraint_id));
-
-            let actual_constraint = constraints[&constraint_id].clone();
-
-            assert_eq!(expected_constraint, actual_constraint);
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
+            assert!(constraints.contains_key(constraint_id));
+            constraints[constraint_id].clone()
         }
 
         #[test]

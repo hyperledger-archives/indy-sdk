@@ -9,6 +9,7 @@ use messages;
 use messages::{GeneralMessage, RemoteMessageType, ObjectWithVersion};
 use messages::payload::{Payloads, PayloadKinds, Thread};
 use messages::get_message;
+use messages::get_message::MessagePayload;
 use connection;
 use settings;
 use utils::libindy::anoncreds::{libindy_prover_create_credential_req, libindy_prover_store_credential};
@@ -470,7 +471,7 @@ pub fn get_credential_offer_messages(connection_handle: u32) -> VcxResult<String
         .or(Err(VcxError::from(VcxErrorKind::InvalidMessages)))
 }
 
-fn _set_cred_offer_ref_message(payload: &Vec<i8>, my_vk: &str, msg_id: &str) -> VcxResult<Vec<Value>> {
+fn _set_cred_offer_ref_message(payload: &MessagePayload, my_vk: &str, msg_id: &str) -> VcxResult<Vec<Value>> {
     let (offer, thread) = Payloads::decrypt(my_vk, payload)?;
 
     let (mut offer, payment_info) = parse_json_offer(&offer)?;

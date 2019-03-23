@@ -372,7 +372,7 @@
   
  @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
  @param queryJSON Wql style filter for credentials searching based on tags.
-        (indy-sdk/doc/design/011-wallet-query-language/README.md)
+        (indy-sdk/docs/design/011-wallet-query-language/README.md)
  @param completion Callback that takes command result as parameter. 
  Returns 
     searchHandle: Search handle that can be used later to fetch records by small batches (with proverFetchCredentialsWithSearchHandle)
@@ -524,7 +524,7 @@
         "<attr_referent>": <wql query>,
         "<predicate_referent>": <wql query>,
     }
- where wql query: indy-sdk/doc/design/011-wallet-query-language/README.md
+ where wql query: indy-sdk/docs/design/011-wallet-query-language/README.md
  @param completion Callback that takes command result as parameter.
  Returns
     searchHandle: Search handle that can be used later to fetch records by small batches (with proverFetchCredentialsForProofReqItemReferent)

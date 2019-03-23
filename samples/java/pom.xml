@@ -109,7 +109,7 @@
 		<dependency>
 			<groupId>org.hyperledger</groupId>
 			<artifactId>indy</artifactId>
-			<version>1.8.1-dev-985</version>
+			<version>1.8.1-dev-1039</version>
 		</dependency>
 	</dependencies>
 </project>

@@ -954,7 +954,7 @@ pub extern fn indy_prover_get_credentials(command_handle: CommandHandle,
 /// #Params
 /// wallet_handle: wallet handler (created by open_wallet).
 /// query_json: Wql query filter for credentials searching based on tags.
-/// where query: indy-sdk/doc/design/011-wallet-query-language/README.md
+/// where query: indy-sdk/docs/design/011-wallet-query-language/README.md
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
@@ -1242,7 +1242,7 @@ pub extern fn indy_prover_get_credentials_for_proof_req(command_handle: CommandH
 ///         "<attr_referent>": <wql query>,
 ///         "<predicate_referent>": <wql query>,
 ///     }
-/// where wql query: indy-sdk/doc/design/011-wallet-query-language/README.md
+/// where wql query: indy-sdk/docs/design/011-wallet-query-language/README.md
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
@@ -1472,7 +1472,7 @@ pub  extern fn indy_prover_close_credentials_search_for_proof_req(command_handle
 /// cb: Callback that takes command result as parameter.
 ///
 /// where
-/// where wql query: indy-sdk/doc/design/011-wallet-query-language/README.md
+/// where wql query: indy-sdk/docs/design/011-wallet-query-language/README.md
 /// attr_referent: Proof-request local identifier of requested attribute
 /// attr_info: Describes requested attribute
 ///     {
