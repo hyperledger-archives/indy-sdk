@@ -1126,7 +1126,7 @@ mod tests {
 
         #[test]
         pub fn pool_wrapper_sends_requests_to_two_nodes() {
-            test::cleanup_storage();
+            test::cleanup_storage("pool_wrapper_sends_requests_to_two_nodes");
 
             ProtocolVersion::set(2);
             _write_genesis_txns();
@@ -1150,7 +1150,7 @@ mod tests {
                 _ => assert!(false)
             };
 
-            test::cleanup_storage();
+            test::cleanup_storage("pool_wrapper_sends_requests_to_two_nodes");
         }
 
         #[test]

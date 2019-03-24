@@ -549,7 +549,7 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_attrib_requests_works_for_raw_value() {
-            let (wallet_handle, pool_handle, did, _) = utils::setup_new_identity();
+            let (wallet_handle, pool_handle, did, _my_vk, wallet_config) = utils::setup_new_identity("indy_attrib_requests_works_for_raw_value");
 
             let attrib_request = ledger::build_attrib_request(&did,
                                                               &did,
@@ -1852,7 +1852,7 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_auth_rule_requests_work() {
-            let (wallet_handle, pool_handle, trustee_did) = utils::setup_trustee();
+            let (wallet_handle, pool_handle, trustee_did, wallet_config) = utils::setup_trustee("indy_auth_rule_requests_work");
 
             let constraint_id = _build_constraint_id(ADD_AUTH_ACTION, constants::NYM, FIELD, None, NEW_VALUE);
 
@@ -1870,7 +1870,7 @@ mod high_cases {
 
             _change_constraint(pool_handle, wallet_handle, &trustee_did, &serde_json::to_string(&default_constraint).unwrap());
 
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_auth_rule_requests_work", &wallet_config);
         }
 
         fn _build_constraint_id(auth_action: &str,
@@ -1916,7 +1916,7 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_get_auth_rule_request_works_for_getting_all() {
-            let (wallet_handle, pool_handle) = utils::setup_with_wallet_and_pool();
+            let (wallet_handle, pool_handle, wallet_config) = utils::setup_with_wallet_and_pool("indy_get_auth_rule_request_works_for_getting_all");
 
             let get_auth_rule_request = ledger::build_get_auth_rule_request(None,
                                                                             None,
@@ -1932,13 +1932,13 @@ mod high_cases {
             let constraints = response.result["data"].as_object().unwrap();
             assert!(constraints.len() > 0);
 
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_get_auth_rule_request_works_for_getting_all", &wallet_config);
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_get_auth_rule_request_works_for_no_constraint() {
-            let (wallet_handle, pool_handle) = utils::setup_with_wallet_and_pool();
+            let (wallet_handle, pool_handle, wallet_config) = utils::setup_with_wallet_and_pool("indy_get_auth_rule_request_works_for_no_constraint");
 
             let get_auth_rule_request = ledger::build_get_auth_rule_request(None,
                                                                             Some(constants::NYM),
@@ -1950,7 +1950,7 @@ mod high_cases {
             let response = ledger::submit_request(pool_handle, &get_auth_rule_request).unwrap();
             pool::check_response_type(&response, ResponseType::REQNACK);
 
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_get_auth_rule_request_works_for_getting_all", &wallet_config);
         }
     }
 }
@@ -2457,7 +2457,7 @@ mod medium_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_cred_def_requests_works_for_hash_field() {
-            let (wallet_handle, pool_handle) = utils::setup_with_wallet_and_pool();
+            let (wallet_handle, pool_handle, wallet_config) = utils::setup_with_wallet_and_pool("indy_cred_def_requests_works_for_hash_field");
 
             let (issuer_did, _) = did::create_store_and_publish_my_did_from_trustee(wallet_handle, pool_handle).unwrap();
 
@@ -2490,7 +2490,7 @@ mod medium_cases {
 
             let _cred_def: CredentialDefinitionV1 = serde_json::from_str(&cred_def_json).unwrap();
 
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_cred_def_requests_works_for_hash_field", &wallet_config);
         }
     }
 }
