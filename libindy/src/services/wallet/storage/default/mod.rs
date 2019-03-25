@@ -862,13 +862,13 @@ mod tests {
     #[test]
     fn sqlite_storage_type_open_works() {
         _cleanup("sqlite_storage_type_open_works");
-        _storage("sqlite_storage_get_storage_metadata_works");
+        _storage("sqlite_storage_type_open_works");
     }
 
     #[test]
     fn sqlite_storage_type_open_works_for_custom() {
         _cleanup("sqlite_storage_type_open_works_for_custom");
-        _storage_custom("sqlite_storage_get_storage_metadata_works");
+        _storage_custom("sqlite_storage_type_open_works_for_custom");
     }
 
     #[test]
