@@ -34,7 +34,6 @@ use errors::*;
 use services::pool::pool::{Pool, ZMQPool};
 use utils::environment;
 use utils::sequence;
-use std::u64;
 
 mod catchup;
 mod commander;
@@ -266,7 +265,7 @@ impl PoolService {
 }
 
 lazy_static! {
-    static ref THRESHOLD: Mutex<u64> = Mutex::new(u64::MAX);
+    static ref THRESHOLD: Mutex<u64> = Mutex::new(600);
 }
 
 pub fn set_freshness_threshold(threshold: u64) {
@@ -355,6 +354,7 @@ mod tests {
 
         #[test]
         fn pool_service_new_works() {
+            ::utils::logger::LibindyDefaultLogger::init(Some("trace"));
             PoolService::new();
             assert!(true, "No crashes on PoolService::new");
         }
