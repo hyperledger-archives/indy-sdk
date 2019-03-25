@@ -736,7 +736,7 @@ async def prover_search_credentials(wallet_handle: int,
 
     :param wallet_handle: wallet handler (created by open_wallet).
     :param query_json: wql style filter for credentials searching based on tags.
-        where wql query: indy-sdk/doc/design/011-wallet-query-language/README.md
+        where wql query: indy-sdk/docs/design/011-wallet-query-language/README.md
     :return:
         search_handle: Search handle that can be used later to fetch records by small batches
             (with prover_credentials_search_fetch_records)
@@ -964,7 +964,7 @@ async def prover_search_credentials_for_proof_req(wallet_handle: int,
             "<attr_referent>": <wql query>,
             "<predicate_referent>": <wql query>,
         }
-        where wql query: indy-sdk/doc/design/011-wallet-query-language/README.md
+        where wql query: indy-sdk/docs/design/011-wallet-query-language/README.md
     :return: search_handle: Search handle that can be used later to fetch records by small batches (with prover_fetch_credentials_for_proof_req)
     """
 
@@ -1145,7 +1145,7 @@ async def prover_create_proof(wallet_handle: int,
               },
           }
     where
-     wql query: indy-sdk/doc/design/011-wallet-query-language/README.md
+     wql query: indy-sdk/docs/design/011-wallet-query-language/README.md
      attr_referent: Proof-request local identifier of requested attribute
      attr_info: Describes requested attribute
          {
