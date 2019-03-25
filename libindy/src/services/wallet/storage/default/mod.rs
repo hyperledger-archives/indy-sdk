@@ -694,7 +694,7 @@ impl WalletStorageType for SQLiteStorageType {
         let db_path = SQLiteStorageType::_db_path(id, config.as_ref());
 
         if db_path.exists() {
-            return Err(err_msg(IndyErrorKind::WalletAlreadyExists, "Wallet database file already exists"));
+            return Err(err_msg(IndyErrorKind::WalletAlreadyExists, format!("Wallet database file already exists: '{:?}'", db_path)));
         }
 
         fs::DirBuilder::new()
@@ -799,7 +799,7 @@ mod tests {
         _cleanup("sqlite_storage_type_create_works");
 
         let storage_type = SQLiteStorageType::new();
-        storage_type.create_storage(_wallet_id(), None, None, &_metadata()).unwrap();
+        storage_type.create_storage("sqlite_storage_type_create_works", None, None, &_metadata()).unwrap();
     }
 
     #[test]
@@ -811,7 +811,7 @@ mod tests {
         }).to_string();
 
         let storage_type = SQLiteStorageType::new();
-        storage_type.create_storage(_wallet_id(), Some(&config), None, &_metadata()).unwrap();
+        storage_type.create_storage("sqlite_storage_type_create_works_for_custom_path", Some(&config), None, &_metadata()).unwrap();
     }
 
     #[test]
@@ -819,9 +819,9 @@ mod tests {
         _cleanup("sqlite_storage_type_create_works_for_twice");
 
         let storage_type = SQLiteStorageType::new();
-        storage_type.create_storage(_wallet_id(), None, None, &_metadata()).unwrap();
+        storage_type.create_storage("sqlite_storage_type_create_works_for_twice", None, None, &_metadata()).unwrap();
 
-        let res = storage_type.create_storage(_wallet_id(), None, None, &_metadata());
+        let res = storage_type.create_storage("sqlite_storage_type_create_works_for_twice", None, None, &_metadata());
         assert_kind!(IndyErrorKind::WalletAlreadyExists, res);
     }
 
@@ -829,7 +829,7 @@ mod tests {
     fn sqlite_storage_get_storage_metadata_works() {
         _cleanup("sqlite_storage_get_storage_metadata_works");
 
-        let storage = _storage();
+        let storage = _storage("sqlite_storage_get_storage_metadata_works");
         let metadata = storage.get_storage_metadata().unwrap();
 
         assert_eq!(metadata, _metadata());
@@ -840,9 +840,9 @@ mod tests {
         _cleanup("sqlite_storage_type_delete_works");
 
         let storage_type = SQLiteStorageType::new();
-        storage_type.create_storage(_wallet_id(), None, None, &_metadata()).unwrap();
+        storage_type.create_storage("sqlite_storage_type_delete_works", None, None, &_metadata()).unwrap();
 
-        storage_type.delete_storage(_wallet_id(), None, None).unwrap();
+        storage_type.delete_storage("sqlite_storage_type_delete_works", None, None).unwrap();
     }
 
 
@@ -851,24 +851,24 @@ mod tests {
         _cleanup("sqlite_storage_type_delete_works_for_non_existing");
 
         let storage_type = SQLiteStorageType::new();
-        storage_type.create_storage(_wallet_id(), None, None, &_metadata()).unwrap();
+        storage_type.create_storage("sqlite_storage_type_delete_works_for_non_existing", None, None, &_metadata()).unwrap();
 
         let res = storage_type.delete_storage("unknown", None, None);
         assert_kind!(IndyErrorKind::WalletNotFound, res);
 
-        storage_type.delete_storage(_wallet_id(), None, None).unwrap();
+        storage_type.delete_storage("sqlite_storage_type_delete_works_for_non_existing", None, None).unwrap();
     }
 
     #[test]
     fn sqlite_storage_type_open_works() {
         _cleanup("sqlite_storage_type_open_works");
-        _storage();
+        _storage("sqlite_storage_get_storage_metadata_works");
     }
 
     #[test]
     fn sqlite_storage_type_open_works_for_custom() {
         _cleanup("sqlite_storage_type_open_works_for_custom");
-        _storage_custom();
+        _storage_custom("sqlite_storage_get_storage_metadata_works");
     }
 
     #[test]
@@ -885,7 +885,7 @@ mod tests {
     fn sqlite_storage_add_works_for_is_802() {
         _cleanup("sqlite_storage_add_works_for_is_802");
 
-        let storage = _storage();
+        let storage = _storage("sqlite_storage_add_works_for_is_802");
 
         storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
 
@@ -900,7 +900,7 @@ mod tests {
     fn sqlite_storage_set_get_works() {
         _cleanup("sqlite_storage_set_get_works");
 
-        let storage = _storage();
+        let storage = _storage("sqlite_storage_set_get_works");
 
         storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
         let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
@@ -913,7 +913,7 @@ mod tests {
     fn sqlite_storage_set_get_works_for_custom() {
         _cleanup("sqlite_storage_set_get_works_for_custom");
 
-        let storage = _storage_custom();
+        let storage = _storage_custom("sqlite_storage_set_get_works_for_custom");
 
         storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
         let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
@@ -928,7 +928,7 @@ mod tests {
     fn sqlite_storage_set_get_works_for_twice() {
         _cleanup("sqlite_storage_set_get_works_for_twice");
 
-        let storage = _storage();
+        let storage = _storage("sqlite_storage_set_get_works_for_twice");
         storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
 
         let res = storage.add(&_type1(), &_id1(), &_value2(), &_tags());
@@ -940,11 +940,11 @@ mod tests {
         _cleanup("sqlite_storage_set_get_works_for_reopen");
 
         {
-            _storage().add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
+            _storage("sqlite_storage_set_get_works_for_reopen").add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
         }
 
         let storage_type = SQLiteStorageType::new();
-        let storage = storage_type.open_storage(_wallet_id(), Some("{}"), Some("{}")).unwrap();
+        let storage = storage_type.open_storage("sqlite_storage_set_get_works_for_reopen", Some("{}"), Some("{}")).unwrap();
         let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
 
         assert_eq!(record.value.unwrap(), _value1());
@@ -955,7 +955,7 @@ mod tests {
     fn sqlite_storage_get_works_for_wrong_key() {
         _cleanup("sqlite_storage_get_works_for_wrong_key");
 
-        let storage = _storage();
+        let storage = _storage("sqlite_storage_get_works_for_wrong_key");
         storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
 
         let res = storage.get(&_type1(), &_id2(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##);
@@ -966,7 +966,7 @@ mod tests {
     fn sqlite_storage_delete_works() {
         _cleanup("sqlite_storage_delete_works");
 
-        let storage = _storage();
+        let storage = _storage("sqlite_storage_delete_works");
         storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
 
         let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
@@ -982,7 +982,7 @@ mod tests {
     fn sqlite_storage_delete_works_for_non_existing() {
         _cleanup("sqlite_storage_delete_works_for_non_existing");
 
-        let storage = _storage();
+        let storage = _storage("sqlite_storage_delete_works_for_non_existing");
         storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
 
         let res = storage.delete(&_type1(), &_id2());
@@ -993,7 +993,7 @@ mod tests {
     fn sqlite_storage_delete_returns_error_item_not_found_if_no_such_type() {
         _cleanup("sqlite_storage_delete_returns_error_item_not_found_if_no_such_type");
 
-        let storage = _storage();
+        let storage = _storage("sqlite_storage_delete_returns_error_item_not_found_if_no_such_type");
 
         storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
         let res = storage.delete(&_type2(), &_id2());
@@ -1004,7 +1004,7 @@ mod tests {
     fn sqlite_storage_get_all_works() {
         _cleanup("sqlite_storage_get_all_works");
 
-        let storage = _storage();
+        let storage = _storage("sqlite_storage_get_all_works");
         storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
         storage.add(&_type2(), &_id2(), &_value2(), &_tags()).unwrap();
 
@@ -1028,7 +1028,7 @@ mod tests {
     fn sqlite_storage_get_all_works_for_empty() {
         _cleanup("sqlite_storage_get_all_works_for_empty");
 
-        let storage = _storage();
+        let storage = _storage("sqlite_storage_get_all_works_for_empty");
         let mut storage_iterator = storage.get_all().unwrap();
 
         let record = storage_iterator.next().unwrap();
@@ -1039,7 +1039,7 @@ mod tests {
     fn sqlite_storage_update_works() {
         _cleanup("sqlite_storage_update_works");
 
-        let storage = _storage();
+        let storage = _storage("sqlite_storage_update_works");
 
         storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
         let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
@@ -1054,7 +1054,7 @@ mod tests {
     fn sqlite_storage_update_works_for_non_existing_id() {
         _cleanup("sqlite_storage_update_works_for_non_existing_id");
 
-        let storage = _storage();
+        let storage = _storage("sqlite_storage_update_works_for_non_existing_id");
 
         storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
         let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
@@ -1068,7 +1068,7 @@ mod tests {
     fn sqlite_storage_update_works_for_non_existing_type() {
         _cleanup("sqlite_storage_update_works_for_non_existing_type");
 
-        let storage = _storage();
+        let storage = _storage("sqlite_storage_update_works_for_non_existing_type");
 
         storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
         let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
@@ -1082,7 +1082,7 @@ mod tests {
     fn sqlite_storage_add_tags_works() {
         _cleanup("sqlite_storage_add_tags_works");
 
-        let storage = _storage();
+        let storage = _storage("sqlite_storage_add_tags_works");
         storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
 
         storage.add_tags(&_type1(), &_id1(), &_new_tags()).unwrap();
@@ -1103,7 +1103,7 @@ mod tests {
     fn sqlite_storage_add_tags_works_for_non_existing_id() {
         _cleanup("sqlite_storage_add_tags_works_for_non_existing_id");
 
-        let storage = _storage();
+        let storage = _storage("sqlite_storage_add_tags_works_for_non_existing_id");
         storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
 
         let res = storage.add_tags(&_type1(), &_id2(), &_new_tags());
@@ -1114,7 +1114,7 @@ mod tests {
     fn sqlite_storage_add_tags_works_for_non_existing_type() {
         _cleanup("sqlite_storage_add_tags_works_for_non_existing_type");
 
-        let storage = _storage();
+        let storage = _storage("sqlite_storage_add_tags_works_for_non_existing_type");
         storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
 
         let res = storage.add_tags(&_type2(), &_id1(), &_new_tags());
@@ -1125,7 +1125,7 @@ mod tests {
     fn sqlite_storage_add_tags_works_for_already_existing() {
         _cleanup("sqlite_storage_add_tags_works_for_already_existing");
 
-        let storage = _storage();
+        let storage = _storage("sqlite_storage_add_tags_works_for_already_existing");
         storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
 
         let tags_with_existing = {
@@ -1152,7 +1152,7 @@ mod tests {
     fn sqlite_storage_update_tags_works() {
         _cleanup("sqlite_storage_update_tags_works");
 
-        let storage = _storage();
+        let storage = _storage("sqlite_storage_update_tags_works");
         storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
 
         storage.update_tags(&_type1(), &_id1(), &_new_tags()).unwrap();
@@ -1166,7 +1166,7 @@ mod tests {
     fn sqlite_storage_update_tags_works_for_non_existing_id() {
         _cleanup("sqlite_storage_update_tags_works_for_non_existing_id");
 
-        let storage = _storage();
+        let storage = _storage("sqlite_storage_update_tags_works_for_non_existing_id");
         storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
 
         let res = storage.update_tags(&_type1(), &_id2(), &_new_tags());
@@ -1177,7 +1177,7 @@ mod tests {
     fn sqlite_storage_update_tags_works_for_non_existing_type() {
         _cleanup("sqlite_storage_update_tags_works_for_non_existing_type");
 
-        let storage = _storage();
+        let storage = _storage("sqlite_storage_update_tags_works_for_non_existing_type");
         storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
 
         let res = storage.update_tags(&_type1(), &_id2(), &_new_tags());
@@ -1188,7 +1188,7 @@ mod tests {
     fn sqlite_storage_update_tags_works_for_already_existing() {
         _cleanup("sqlite_storage_update_tags_works_for_already_existing");
 
-        let storage = _storage();
+        let storage = _storage("sqlite_storage_update_tags_works_for_already_existing");
         storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
 
         let tags_with_existing = {
@@ -1215,7 +1215,7 @@ mod tests {
     fn sqlite_storage_delete_tags_works() {
         _cleanup("sqlite_storage_delete_tags_works");
 
-        let storage = _storage();
+        let storage = _storage("sqlite_storage_delete_tags_works");
 
         let tag_name1 = vec![0, 0, 0];
         let tag_name2 = vec![1, 1, 1];
@@ -1238,7 +1238,7 @@ mod tests {
     fn sqlite_storage_delete_tags_works_for_non_existing_type() {
         _cleanup("sqlite_storage_delete_tags_works_for_non_existing_type");
 
-        let storage = _storage();
+        let storage = _storage("sqlite_storage_delete_tags_works_for_non_existing_type");
 
         let tag_name1 = vec![0, 0, 0];
         let tag_name2 = vec![1, 1, 1];
@@ -1259,7 +1259,7 @@ mod tests {
     fn sqlite_storage_delete_tags_works_for_non_existing_id() {
         _cleanup("sqlite_storage_delete_tags_works_for_non_existing_id");
 
-        let storage = _storage();
+        let storage = _storage("sqlite_storage_delete_tags_works_for_non_existing_id");
 
         let tag_name1 = vec![0, 0, 0];
         let tag_name2 = vec![1, 1, 1];
@@ -1280,25 +1280,21 @@ mod tests {
         test::cleanup_storage(name)
     }
 
-    fn _wallet_id() -> &'static str {
-        "w1"
-    }
-
-    fn _storage() -> Box<WalletStorage> {
+    fn _storage(name: &str) -> Box<WalletStorage> {
         let storage_type = SQLiteStorageType::new();
-        storage_type.create_storage(_wallet_id(), None, None, &_metadata()).unwrap();
-        storage_type.open_storage(_wallet_id(), None, None).unwrap()
+        storage_type.create_storage(name, None, None, &_metadata()).unwrap();
+        storage_type.open_storage(name, None, None).unwrap()
     }
 
-    fn _storage_custom() -> Box<WalletStorage> {
+    fn _storage_custom(name: &str) -> Box<WalletStorage> {
         let storage_type = SQLiteStorageType::new();
 
         let config = json!({
             "path": _custom_path()
         }).to_string();
 
-        storage_type.create_storage(_wallet_id(), Some(&config), None, &_metadata()).unwrap();
-        storage_type.open_storage(_wallet_id(), Some(&config), None).unwrap()
+        storage_type.create_storage(name, Some(&config), None, &_metadata()).unwrap();
+        storage_type.open_storage(name, Some(&config), None).unwrap()
     }
 
     fn _metadata() -> Vec<u8> {
