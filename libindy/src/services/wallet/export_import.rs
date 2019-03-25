@@ -218,9 +218,9 @@ mod tests {
         _cleanup("export_import_works_for_empty_wallet");
 
         let mut output: Vec<u8> = Vec::new();
-        export(&_wallet1(), &mut output, _passphrase(), _version1(), &KeyDerivationMethod::ARGON2I_MOD).unwrap();
+        export(&_wallet("export_import_works_for_empty_wallet1"), &mut output, _passphrase(), _version1(), &KeyDerivationMethod::ARGON2I_MOD).unwrap();
 
-        let wallet = _wallet2();
+        let wallet = _wallet("export_import_works_for_empty_wallet2");
         _assert_is_empty(&wallet);
 
         import(&wallet, &mut output.as_slice(), _passphrase()).unwrap();
@@ -232,9 +232,9 @@ mod tests {
         _cleanup("export_import_works_for_2_items");
 
         let mut output: Vec<u8> = Vec::new();
-        export(&_add_2_records(_wallet1()), &mut output, _passphrase(), _version1(), &KeyDerivationMethod::ARGON2I_MOD).unwrap();
+        export(&_add_2_records(_wallet("export_import_works_for_2_items1")), &mut output, _passphrase(), _version1(), &KeyDerivationMethod::ARGON2I_MOD).unwrap();
 
-        let wallet = _wallet2();
+        let wallet = _wallet("export_import_works_for_2_items2");
         _assert_is_empty(&wallet);
 
         import(&wallet, &mut output.as_slice(), _passphrase()).unwrap();
@@ -246,9 +246,9 @@ mod tests {
         _cleanup("export_import_works_for_2_items_and_interactive_method");
 
         let mut output: Vec<u8> = Vec::new();
-        export(&_add_2_records(_wallet1()), &mut output, _passphrase(), _version1(), &KeyDerivationMethod::ARGON2I_INT).unwrap();
+        export(&_add_2_records(_wallet("export_import_works_for_2_items_and_interactive_method1")), &mut output, _passphrase(), _version1(), &KeyDerivationMethod::ARGON2I_INT).unwrap();
 
-        let wallet = _wallet2();
+        let wallet = _wallet("export_import_works_for_2_items_and_interactive_method2");
         _assert_is_empty(&wallet);
 
         import(&wallet, &mut output.as_slice(), _passphrase()).unwrap();
@@ -260,9 +260,9 @@ mod tests {
         _cleanup("export_import_works_for_multiple_items");
 
         let mut output: Vec<u8> = Vec::new();
-        export(&_add_300_records(_wallet1()), &mut output, _passphrase(), _version1(), &KeyDerivationMethod::ARGON2I_MOD).unwrap();
+        export(&_add_300_records(_wallet("export_import_works_for_multiple_items")), &mut output, _passphrase(), _version1(), &KeyDerivationMethod::ARGON2I_MOD).unwrap();
 
-        let wallet = _wallet2();
+        let wallet = _wallet("export_import_works_for_multiple_items2");
         _assert_is_empty(&wallet);
 
         import(&wallet, &mut output.as_slice(), _passphrase()).unwrap();
@@ -273,7 +273,7 @@ mod tests {
     fn import_works_for_empty() {
         _cleanup("import_works_for_empty");
 
-        let res = import(&_wallet1(), &mut "".as_bytes(), _passphrase());
+        let res = import(&_wallet("import_works_for_empty"), &mut "".as_bytes(), _passphrase());
         assert_eq!(IndyErrorKind::InvalidStructure, res.unwrap_err().kind());
     }
 
@@ -281,7 +281,7 @@ mod tests {
     fn import_works_for_cut_header_length() {
         _cleanup("import_works_for_cut_header_length");
 
-        let res = import(&_wallet1(), &mut "\x00".as_bytes(), _passphrase());
+        let res = import(&_wallet("import_works_for_cut_header_length"), &mut "\x00".as_bytes(), _passphrase());
         assert_eq!(IndyErrorKind::InvalidStructure, res.unwrap_err().kind());
     }
 
@@ -289,7 +289,7 @@ mod tests {
     fn import_works_for_cut_header_body() {
         _cleanup("import_works_for_cut_header_body");
 
-        let res = import(&_wallet1(), &mut "\x00\x20small".as_bytes(), _passphrase());
+        let res = import(&_wallet("import_works_for_cut_header_body"), &mut "\x00\x20small".as_bytes(), _passphrase());
         assert_eq!(IndyErrorKind::InvalidStructure, res.unwrap_err().kind());
     }
 
@@ -306,7 +306,7 @@ mod tests {
             output
         };
 
-        let res = import(&_wallet1(), &mut output.as_slice(), _passphrase());
+        let res = import(&_wallet("import_works_for_invalid_header_body"), &mut output.as_slice(), _passphrase());
         assert_eq!(IndyErrorKind::InvalidStructure, res.unwrap_err().kind());
     }
 
@@ -315,13 +315,13 @@ mod tests {
         _cleanup("import_works_for_invalid_header_hash");
 
         let mut output: Vec<u8> = Vec::new();
-        export(&_wallet1(), &mut output, _passphrase(), _version1(), &KeyDerivationMethod::ARGON2I_MOD).unwrap();
+        export(&_wallet("import_works_for_invalid_header_hash1"), &mut output, _passphrase(), _version1(), &KeyDerivationMethod::ARGON2I_MOD).unwrap();
 
         // Modifying one of the bytes in the header hash
         let pos = (&mut output.as_slice()).read_u32::<LittleEndian>().unwrap() as usize + 2;
         _change_byte(&mut output, pos);
 
-        let res = import(&mut _wallet2(), &mut output.as_slice(), _passphrase());
+        let res = import(&mut _wallet("import_works_for_invalid_header_hash2"), &mut output.as_slice(), _passphrase());
         assert_eq!(IndyErrorKind::InvalidStructure, res.unwrap_err().kind());
     }
 
@@ -330,13 +330,13 @@ mod tests {
         _cleanup("export_import_works_for_changed_record");
 
         let mut output: Vec<u8> = Vec::new();
-        export(&_add_300_records(_wallet1()), &mut output, _passphrase(), _version1(), &KeyDerivationMethod::ARGON2I_MOD).unwrap();
+        export(&_add_300_records(_wallet("export_import_works_for_changed_record1")), &mut output, _passphrase(), _version1(), &KeyDerivationMethod::ARGON2I_MOD).unwrap();
 
         // Modifying one byte in the middle of encrypted part
         let pos = output.len() / 2;
         _change_byte(&mut output, pos);
 
-        let res = import(&mut _wallet2(), &mut output.as_slice(), _passphrase());
+        let res = import(&mut _wallet("export_import_works_for_changed_record2"), &mut output.as_slice(), _passphrase());
         assert_eq!(IndyErrorKind::InvalidStructure, res.unwrap_err().kind());
     }
 
@@ -345,11 +345,11 @@ mod tests {
         _cleanup("import_works_for_data_cut");
 
         let mut output: Vec<u8> = Vec::new();
-        export(&_add_2_records(_wallet1()), &mut output, _passphrase(), _version1(), &KeyDerivationMethod::ARGON2I_MOD).unwrap();
+        export(&_add_2_records(_wallet("import_works_for_data_cut1")), &mut output, _passphrase(), _version1(), &KeyDerivationMethod::ARGON2I_MOD).unwrap();
 
         output.pop().unwrap();
 
-        let res = import(&mut _wallet2(), &mut output.as_slice(), _passphrase());
+        let res = import(&mut _wallet("import_works_for_data_cut2"), &mut output.as_slice(), _passphrase());
         assert_eq!(IndyErrorKind::InvalidStructure, res.unwrap_err().kind());
     }
 
@@ -358,24 +358,16 @@ mod tests {
         _cleanup("import_works_for_data_extended");
 
         let mut output: Vec<u8> = Vec::new();
-        export(&_add_2_records(_wallet1()), &mut output, _passphrase(), _version1(), &KeyDerivationMethod::ARGON2I_MOD).unwrap();
+        export(&_add_2_records(_wallet("import_works_for_data_extended1")), &mut output, _passphrase(), _version1(), &KeyDerivationMethod::ARGON2I_MOD).unwrap();
 
         output.push(10);
 
-        let res = import(&mut _wallet2(), &mut output.as_slice(), _passphrase());
+        let res = import(&mut _wallet("import_works_for_data_extended2"), &mut output.as_slice(), _passphrase());
         assert_eq!(IndyErrorKind::InvalidStructure, res.unwrap_err().kind());
     }
 
     fn _cleanup(name: &str) {
         test::cleanup_storage(name)
-    }
-
-    fn _wallet1_id() -> &'static str {
-        "w1"
-    }
-
-    fn _wallet2_id() -> &'static str {
-        "w2"
     }
 
     fn _wallet(id: &str) -> Wallet {
@@ -403,14 +395,6 @@ mod tests {
         let storage = storage_type.open_storage(id, None, None).unwrap();
 
         Wallet::new(id.to_string(), storage, Rc::new(keys))
-    }
-
-    fn _wallet1() -> Wallet {
-        _wallet(_wallet1_id())
-    }
-
-    fn _wallet2() -> Wallet {
-        _wallet(_wallet2_id())
     }
 
     fn _assert_is_empty(wallet: &Wallet) {
