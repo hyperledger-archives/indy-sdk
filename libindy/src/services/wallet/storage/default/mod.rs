@@ -807,7 +807,7 @@ mod tests {
         _cleanup("sqlite_storage_type_create_works_for_custom_path");
 
         let config = json!({
-            "path": _custom_path()
+            "path": _custom_path("sqlite_storage_type_create_works_for_custom_path")
         }).to_string();
 
         let storage_type = SQLiteStorageType::new();
@@ -1290,7 +1290,7 @@ mod tests {
         let storage_type = SQLiteStorageType::new();
 
         let config = json!({
-            "path": _custom_path()
+            "path": _custom_path(name)
         }).to_string();
 
         storage_type.create_storage(name, Some(&config), None, &_metadata()).unwrap();
@@ -1365,9 +1365,10 @@ mod tests {
         v
     }
 
-    fn _custom_path() -> String {
+    fn _custom_path(name: &str) -> String {
         let mut path = environment::tmp_path();
         path.push("custom_wallet_path");
+        path.push(name);
         path.to_str().unwrap().to_owned()
     }
 }
