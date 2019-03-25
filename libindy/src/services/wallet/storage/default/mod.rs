@@ -793,6 +793,7 @@ mod tests {
 
     use super::*;
     use super::super::Tag;
+    use std::path::Path;
 
     #[test]
     fn sqlite_storage_type_create_works() {
@@ -810,8 +811,15 @@ mod tests {
             "path": _custom_path("sqlite_storage_type_create_works_for_custom_path")
         }).to_string();
 
+        let my_path = _custom_path("sqlite_storage_type_create_works_for_custom_path");
+        let path = Path::new(&my_path);
+        if path.exists() {
+            fs::remove_file(path).unwrap();
+        }
         let storage_type = SQLiteStorageType::new();
         storage_type.create_storage("sqlite_storage_type_create_works_for_custom_path", Some(&config), None, &_metadata()).unwrap();
+
+        storage_type.delete_storage("sqlite_storage_type_create_works_for_custom_path", None, None).unwrap();
     }
 
     #[test]
@@ -823,6 +831,8 @@ mod tests {
 
         let res = storage_type.create_storage("sqlite_storage_type_create_works_for_twice", None, None, &_metadata());
         assert_kind!(IndyErrorKind::WalletAlreadyExists, res);
+
+        storage_type.delete_storage("sqlite_storage_type_create_works_for_twice", None, None).unwrap();
     }
 
     #[test]
