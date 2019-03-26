@@ -9,7 +9,7 @@ pub enum A2ConnMessage {
     MessageStatusUpdatedByConnection(UidByConnection),
 }
 
-#[derive(Debug, Deserialize, Serialize, Eq, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
 pub struct MessagesByConnection {
     #[serde(rename = "pairwiseDID")]
     #[serde(default)]

@@ -151,6 +151,11 @@ test('ledger', async function (t) {
   req = await indy.signRequest(wh, myDid, req)
   res = await indy.submitAction(pool.handle, req, null, null)
 
+  // Auth Rule
+  req = await indy.buildGetAuthRuleRequest(trusteeDid, 'NYM', 'ADD', 'role', null, '101')
+  res = await indy.submitRequest(pool.handle, req)
+  var defaultConstraint = res['result']['data']['ADD--1--role--*--101']
+
   var constraint = {
     'sig_count': 1,
     'metadata': {},
@@ -162,9 +167,16 @@ test('ledger', async function (t) {
   res = await indy.signAndSubmitRequest(pool.handle, wh, trusteeDid, req)
   t.is(res.op, 'REPLY')
 
+  await sleep(1000)
+
   req = await indy.buildGetAuthRuleRequest(trusteeDid, 'NYM', 'ADD', 'role', null, '101')
-  res = await waitUntilApplied(pool.handle, req, res => res['result']['data'] != null)
+  res = await indy.submitRequest(pool.handle, req)
   t.deepEqual(res['result']['data']['ADD--1--role--*--101'], constraint)
+
+  // set back
+  req = await indy.buildAuthRuleRequest(trusteeDid, 'NYM', 'ADD', 'role', null, '101', defaultConstraint)
+  res = await indy.signAndSubmitRequest(pool.handle, wh, trusteeDid, req)
+  t.is(res.op, 'REPLY')
 
   await indy.closeWallet(wh)
   await indy.deleteWallet(walletConfig, walletCredentials)

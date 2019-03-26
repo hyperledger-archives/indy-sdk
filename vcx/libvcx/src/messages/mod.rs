@@ -212,7 +212,7 @@ impl<'de> Deserialize<'de> for A2AMessageV1 {
 #[serde(untagged)]
 pub enum A2AMessageV2 {
     /// routing
-    Forward(Forward),
+    Forward(ForwardV2),
 
     /// onbording
     Connect(Connect),
@@ -258,7 +258,7 @@ impl<'de> Deserialize<'de> for A2AMessageV2 {
 
         match message_type.type_.as_str() {
             "FWD" => {
-                Forward::deserialize(value)
+                ForwardV2::deserialize(value)
                     .map(|msg| A2AMessageV2::Forward(msg))
                     .map_err(de::Error::custom)
             }
@@ -433,19 +433,47 @@ impl<'de> Deserialize<'de> for A2AMessage {
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 pub struct Forward {
     #[serde(rename = "@type")]
-    msg_type: MessageTypes,
+    msg_type: MessageTypeV1,
     #[serde(rename = "@fwd")]
     fwd: String,
     #[serde(rename = "@msg")]
     msg: Vec<u8>,
 }
 
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
+pub struct ForwardV2 {
+    #[serde(rename = "@type")]
+    msg_type: MessageTypeV2,
+    #[serde(rename = "@fwd")]
+    fwd: String,
+    #[serde(rename = "@msg")]
+    msg: Value,
+}
+
 impl Forward {
-    fn new(fwd: String, msg: Vec<u8>) -> Forward {
-        Forward {
-            msg_type: MessageTypes::build(A2AMessageKinds::Forward),
-            fwd,
-            msg,
+    fn new(fwd: String, msg: Vec<u8>) -> VcxResult<A2AMessage> {
+        match settings::get_protocol_type() {
+            settings::ProtocolTypes::V1 => {
+                Ok(A2AMessage::Version1(A2AMessageV1::Forward(
+                    Forward {
+                        msg_type: MessageTypes::build_v1(A2AMessageKinds::Forward),
+                        fwd,
+                        msg,
+                    }
+                )))
+            }
+            settings::ProtocolTypes::V2 => {
+                let msg = serde_json::from_slice(msg.as_slice())
+                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidState, err))?;
+
+                Ok(A2AMessage::Version2(A2AMessageV2::Forward(
+                    ForwardV2 {
+                        msg_type: MessageTypes::build_v2(A2AMessageKinds::Forward),
+                        fwd,
+                        msg,
+                    }
+                )))
+            }
         }
     }
 }
@@ -516,7 +544,7 @@ pub struct SendRemoteMessage {
     #[serde(rename = "sendMsg")]
     pub send_msg: bool,
     #[serde(rename = "@msg")]
-    msg: Vec<u8>,
+    msg: Value,
     #[serde(skip_serializing_if = "Option::is_none")]
     title: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -843,11 +871,12 @@ pub fn bundle_from_u8(data: Vec<u8>) -> VcxResult<Bundled<Vec<u8>>> {
 fn prepare_forward_message(message: Vec<u8>, did: &str) -> VcxResult<Vec<u8>> {
     let agency_vk = settings::get_config_value(settings::CONFIG_AGENCY_VERKEY)?;
 
-    let message = Forward::new(did.to_string(), message);
+    let message = Forward::new(did.to_string(), message)?;
 
-    match settings::get_protocol_type() {
-        settings::ProtocolTypes::V1 => prepare_forward_message_for_agency_v1(&message, &agency_vk),
-        settings::ProtocolTypes::V2 => prepare_forward_message_for_agency_v2(&message, &agency_vk)
+    match message {
+        A2AMessage::Version1(A2AMessageV1::Forward(msg)) => prepare_forward_message_for_agency_v1(&msg, &agency_vk),
+        A2AMessage::Version2(A2AMessageV2::Forward(msg)) => prepare_forward_message_for_agency_v2(&msg, &agency_vk),
+        _ => Err(VcxError::from_msg(VcxErrorKind::InvalidState, "Invalid message type"))
     }
 }
 
@@ -858,7 +887,7 @@ fn prepare_forward_message_for_agency_v1(message: &Forward, agency_vk: &str) -> 
     crypto::prep_anonymous_msg(agency_vk, &message[..])
 }
 
-fn prepare_forward_message_for_agency_v2(message: &Forward, agency_vk: &str) -> VcxResult<Vec<u8>> {
+fn prepare_forward_message_for_agency_v2(message: &ForwardV2, agency_vk: &str) -> VcxResult<Vec<u8>> {
     let message = serde_json::to_string(message)
         .map_err(|err| VcxError::from_msg(VcxErrorKind::SerializationError, format!("Cannot serialize Forward message: {}", err)))?;
 
@@ -887,11 +916,11 @@ fn prepare_message_for_agent_v1(messages: Vec<A2AMessage>, pw_vk: &str, agent_di
     let message = crypto::prep_msg(&pw_vk, agent_vk, &message[..])?;
 
     /* forward to did */
-    let message = Forward::new(agent_did.to_owned(), message);
+    let message = Forward::new(agent_did.to_owned(), message)?;
 
     let to_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
 
-    bundle_for_agency_v1(&A2AMessage::Version1(A2AMessageV1::Forward(message)), &to_did)
+    bundle_for_agency_v1(&message, &to_did)
 }
 
 fn prepare_message_for_agent_v2(messages: Vec<A2AMessage>, pw_vk: &str, agent_did: &str, agent_vk: &str) -> VcxResult<Vec<u8>> {
@@ -907,11 +936,11 @@ fn prepare_message_for_agent_v2(messages: Vec<A2AMessage>, pw_vk: &str, agent_di
     let message = crypto::pack_message(Some(pw_vk), &receiver_keys, message.as_bytes())?;
 
     /* forward to did */
-    let message = Forward::new(agent_did.to_owned(), message);
+    let message = Forward::new(agent_did.to_owned(), message)?;
 
     let to_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
 
-    pack_for_agency_v2(&A2AMessage::Version2(A2AMessageV2::Forward(message)), &to_did)
+    pack_for_agency_v2(&message, &to_did)
 }
 
 pub trait GeneralMessage {
@@ -1015,7 +1044,7 @@ pub mod tests {
                 name: "Name".to_string(),
                 ver: "1.0".to_string()
             },
-            msg: vec![1,2,3],
+            msg: vec![1, 2, 3],
             title: None,
             detail: None
         };
