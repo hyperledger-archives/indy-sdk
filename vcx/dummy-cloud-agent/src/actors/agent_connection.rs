@@ -419,10 +419,18 @@ impl AgentConnection {
         let reply_to_msg_id = msg.reply_to_msg_id.clone();
         let sender_verkey = sender_verkey.to_string();
 
+        let msg_ = ftry_act!(self, {serde_json::to_vec(&msg.msg)});
+
+        let msg_detail = GeneralMessageDetail {
+            msg: msg_,
+            title: msg.title,
+            detail: msg.detail,
+        };
+
         future::ok(())
             .into_actor(self)
             .and_then(move |_, slf, _| {
-                slf.handle_create_general_message(mtype, msg.into(), reply_to_msg_id.clone(), Some(uid), sender_verkey)
+                slf.handle_create_general_message(mtype, msg_detail, reply_to_msg_id.clone(), Some(uid), sender_verkey)
                     .map(|(msg_uid, a2a_msgs), _, _| (msg_uid, a2a_msgs, reply_to_msg_id))
             })
             .and_then(move |(msg_uid, a2a_msgs, reply_to_msg_id), slf, _| {
@@ -518,7 +526,12 @@ impl AgentConnection {
                     type_: message._type.clone(),
                     payload: match exclude_payload.as_ref().map(String::as_str) {
                         Some("Y") => None,
-                        _ => message.payload.as_ref().map(|payload| to_i8(payload))
+                        _ => message.payload.as_ref().map(|payload| {
+                            match ProtocolType::get() {
+                                ProtocolTypes::V1 => MessageDetailPayload::V1(to_i8(payload)),
+                                ProtocolTypes::V2 => MessageDetailPayload::V2(serde_json::from_slice(&payload).unwrap()), // TODO: FIXME
+                            }
+                        })
                     },
                     ref_msg_id: message.ref_msg_id.clone(),
                 }
@@ -1182,8 +1195,11 @@ impl AgentConnection {
                fwd, message);
 
         let message = match ProtocolType::get() {
-            ProtocolTypes::V1 => A2AMessage::Version1(A2AMessageV1::Forward(Forward { fwd: fwd.to_string(), msg: message })),
-            ProtocolTypes::V2 => A2AMessage::Version2(A2AMessageV2::Forward(Forward { fwd: fwd.to_string(), msg: message }))
+            ProtocolTypes::V1 => A2AMessage::Version1(A2AMessageV1::Forward(ForwardV1 { fwd: fwd.to_string(), msg: message })),
+            ProtocolTypes::V2 => A2AMessage::Version2(A2AMessageV2::Forward(ForwardV2 {
+                fwd: fwd.to_string(),
+                msg: serde_json::from_slice(message.as_slice())?
+            }))
         };
 
         Ok(vec![message])
@@ -1322,7 +1338,7 @@ impl AgentConnection {
                         id: message.uid,
                         send_msg: false,
                         reply_to_msg_id: reply_to.map(String::from),
-                        msg,
+                        msg: serde_json::from_slice(&msg)?,
                         title,
                         detail
                     };
@@ -1515,7 +1531,7 @@ mod tests {
                         status_code: MessageStatusCode::Created,
                         sender_did: EDGE_PAIRWISE_DID.to_string(),
                         type_: RemoteMessageType::CredOffer,
-                        payload: Some(to_i8(&PAYLOAD.to_vec())),
+                        payload: Some(MessageDetailPayload::V1(to_i8(&PAYLOAD.to_vec()))),
                         ref_msg_id: None,
                     };
                     assert_eq!(expected_message, messages[0]);
