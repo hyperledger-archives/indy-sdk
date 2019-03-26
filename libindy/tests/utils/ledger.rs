@@ -187,10 +187,10 @@ pub fn register_transaction_parser_for_sp(txn_type: &str, parse: CustomTransacti
     let err =
         unsafe {
             indy_register_transaction_parser_for_sp(command_handle,
-                                                            txn_type.as_ptr(),
-                                                            Some(parse),
-                                                            Some(free),
-                                                            cb)
+                                                    txn_type.as_ptr(),
+                                                    Some(parse),
+                                                    Some(free),
+                                                    cb)
         };
 
     super::results::result_to_empty(err, receiver)
@@ -198,6 +198,25 @@ pub fn register_transaction_parser_for_sp(txn_type: &str, parse: CustomTransacti
 
 pub fn get_response_metadata(response: &str) -> Result<String, IndyError> {
     ledger::get_response_metadata(response).wait()
+}
+
+pub fn build_auth_rule_request(submitter_did: &str,
+                               txn_type: &str,
+                               action: &str,
+                               field: &str,
+                               old_value: Option<&str>,
+                               new_value: &str,
+                               constraint: &str, ) -> Result<String, IndyError> {
+    ledger::build_auth_rule_request(submitter_did, txn_type, action, field, old_value, new_value, constraint).wait()
+}
+
+pub fn build_get_auth_rule_request(submitter_did: Option<&str>,
+                                   auth_type: Option<&str>,
+                                   auth_action: Option<&str>,
+                                   field: Option<&str>,
+                                   old_value: Option<&str>,
+                                   new_value: Option<&str>, ) -> Result<String, IndyError> {
+    ledger::build_get_auth_rule_request(submitter_did, auth_type, auth_action, field, old_value, new_value).wait()
 }
 
 pub fn post_entities() -> (&'static str, &'static str, &'static str) {

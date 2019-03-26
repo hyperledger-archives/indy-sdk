@@ -955,6 +955,87 @@ extern "C" {
                                                                         const char*   response_metadata)
                                                   );
 
+    /// Builds a AUTH_RULE request. Request to change authentication rules for a ledger transaction.
+    ///
+    /// #Params
+    /// command_handle: command handle to map callback to caller context.
+    /// txn_type: ledger transaction alias or associated value.
+    /// action: type of an action.
+    ///     Can be either "ADD" (to add a new rule) or "EDIT" (to edit an existing one).
+    /// field: transaction field.
+    /// old_value: old value of a field, which can be changed to a new_value (mandatory for EDIT action).
+    /// new_value: new value that can be used to fill the field.
+    /// constraint: set of constraints required for execution of an action in the following format
+    ///     {
+    ///         constraint_id - <string> type of a constraint.
+    ///             Can be either "ROLE" to specify final constraint or  "AND"/"OR" to combine constraints.
+    ///         role - <string> role of a user which satisfy to constrain.
+    ///         sig_count - <u32> the number of signatures required to execution action.
+    ///         need_to_be_owner - <bool> if user must be an owner of transaction.
+    ///         metadata - <object> additional parameters of the constraint.
+    ///     }
+    /// can be combined by
+    ///     {
+    ///         'constraint_id': <"AND" or "OR">
+    ///         'auth_constraints': [<constraint_1>, <constraint_2>]
+    ///     }
+    ///
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// Request result as json.
+    ///
+    /// #Errors
+    /// Common*
+    extern indy_error_t indy_build_auth_rule_request(indy_handle_t command_handle,
+                                                     const char *  submitter_did,
+                                                     const char *  txn_type,
+                                                     const char *  action,
+                                                     const char *  field,
+                                                     const char *  old_value,
+                                                     const char *  new_value,
+                                                     const char *  constraint,
+
+                                                     void           (*cb)(indy_handle_t command_handle_,
+                                                                          indy_error_t  err,
+                                                                          const char*   request_json)
+                                                    );
+
+    /// Builds a GET_AUTH_RULE request. Request to get authentication rules for a ledger transaction.
+    ///
+    /// NOTE: Either none or all transaction related parameters must be specified (`old_value` can be skipped for `ADD` action).
+    ///     * none - to get all authentication rules for all ledger transactions
+    ///     * all - to get authentication rules for specific action (`old_value` can be skipped for `ADD` action)
+    ///
+    /// #Params
+    /// command_handle: command handle to map callback to caller context.
+    /// submitter_did: (Optional) DID of the read request sender.
+    /// txn_type: (Optional) target ledger transaction alias or associated value.
+    /// action: (Optional) target action type. Can be either "ADD" or "EDIT".
+    /// field: (Optional) target transaction field.
+    /// old_value: (Optional) old value of field, which can be changed to a new_value (must be specified for EDIT action).
+    /// new_value: (Optional) new value that can be used to fill the field.
+    ///
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// Request result as json.
+    ///
+    /// #Errors
+    /// Common*
+    extern indy_error_t indy_build_get_auth_rule_request(indy_handle_t command_handle,
+                                                         const char *  submitter_did,
+                                                         const char *  txn_type,
+                                                         const char *  action,
+                                                         const char *  field,
+                                                         const char *  old_value,
+                                                         const char *  new_value,
+
+                                                         void           (*cb)(indy_handle_t command_handle_,
+                                                                              indy_error_t  err,
+                                                                              const char*   request_json)
+                                                        );
+
 #ifdef __cplusplus
 }
 #endif

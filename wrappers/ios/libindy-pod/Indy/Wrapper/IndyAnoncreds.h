@@ -262,6 +262,7 @@
       "nonce": string
     }
     credReqMetadataJSON: Credential request metadata json for further processing of received form Issuer credential.
+        Note: credReqMetadataJSON mustn't be shared with Issuer.
  */
 + (void)proverCreateCredentialReqForCredentialOffer:(NSString *)credOfferJSON
                                   credentialDefJSON:(NSString *)credentialDefJSON
@@ -371,7 +372,7 @@
   
  @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
  @param queryJSON Wql style filter for credentials searching based on tags.
-        (indy-sdk/doc/design/011-wallet-query-language/README.md)
+        (indy-sdk/docs/design/011-wallet-query-language/README.md)
  @param completion Callback that takes command result as parameter. 
  Returns 
     searchHandle: Search handle that can be used later to fetch records by small batches (with proverFetchCredentialsWithSearchHandle)
@@ -523,7 +524,7 @@
         "<attr_referent>": <wql query>,
         "<predicate_referent>": <wql query>,
     }
- where wql query: indy-sdk/doc/design/011-wallet-query-language/README.md
+ where wql query: indy-sdk/docs/design/011-wallet-query-language/README.md
  @param completion Callback that takes command result as parameter.
  Returns
     searchHandle: Search handle that can be used later to fetch records by small batches (with proverFetchCredentialsForProofReqItemReferent)
@@ -657,7 +658,7 @@
   Each proof is associated with a credential and corresponding schema_id, cred_def_id, rev_reg_id and timestamp.
   There is also aggregated proof part common for all credential proofs.
       {
-          "requested": {
+          "requested_proof": {
               "revealed_attrs": {
                   "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string},
                   "requested_attr4_id": {sub_proof_index: number: string, encoded: string},
@@ -713,7 +714,7 @@
     }
  @param proofJSON: proof json
       {
-          "requested": {
+          "requested_proof": {
               "revealed_attrs": {
                   "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string},
                   "requested_attr4_id": {sub_proof_index: number: string, encoded: string},

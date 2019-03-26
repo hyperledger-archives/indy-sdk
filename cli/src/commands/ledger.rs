@@ -1218,6 +1218,153 @@ pub mod sign_multi_command {
     }
 }
 
+pub mod auth_rule_command {
+    use super::*;
+
+    command!(CommandMetadata::build("auth-rule", "Send AUTH_RULE request to change authentication rules for a ledger transaction.")
+                .add_required_param("txn_type", "Ledger transaction alias or associated value")
+                .add_required_param("action", "Type of an action. One of: ADD, EDIT")
+                .add_required_param("field", "Transaction field")
+                .add_optional_param("old_value", "Old value of field, which can be changed to a new_value (mandatory for EDIT action)")
+                .add_required_param("new_value", "New value that can be used to fill the field")
+                .add_required_param("constraint", r#"Set of constraints required for execution of an action
+         {
+             constraint_id - type of a constraint. Can be either "ROLE" to specify final constraint or  "AND"/"OR" to combine constraints.
+             role - role associated value {TRUSTEE: 0, STEWARD: 2, TRUST_ANCHOR: 101, NETWORK_MONITOR: 201, ANY: *}.
+             sig_count - the number of signatures required to execution action.
+             need_to_be_owner - if user must be an owner of transaction.
+             metadata - additional parameters of the constraint.
+         }
+         can be combined by
+         {
+             constraint_id: <"AND" or "OR">
+             auth_constraints: [<constraint_1>, <constraint_2>]
+         }
+                "#)
+                .add_example(r#"ledger auth-rule txn_type=NYM action=ADD field=role new_value=101 constraint="{"sig_count":1,"role":"0","constraint_id":"ROLE","need_to_be_owner":false}""#)
+                .add_example(r#"ledger auth-rule txn_type=NYM action=EDIT field=role old_value=101 new_value=0 constraint="{"sig_count":1,"role":"0","constraint_id":"ROLE","need_to_be_owner":false}""#)
+                .finalize()
+    );
+
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
+
+        let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
+        let (wallet_handle, wallet_name) = ensure_opened_wallet(&ctx)?;
+        let submitter_did = ensure_active_did(&ctx)?;
+
+        let txn_type = get_str_param("txn_type", params).map_err(error_err!())?;
+        let action = get_str_param("action", params).map_err(error_err!())?;
+        let field = get_str_param("field", params).map_err(error_err!())?;
+        let old_value = get_opt_str_param("old_value", params).map_err(error_err!())?;
+        let new_value = get_str_param("new_value", params).map_err(error_err!())?;
+        let constraint = get_str_param("constraint", params).map_err(error_err!())?;
+
+        let request = Ledger::build_auth_rule_request(&submitter_did, txn_type, &action.to_uppercase(), field, old_value, new_value, constraint)
+            .map_err(|err| handle_indy_error(err, None, None, None))?;
+
+        let response_json = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request)
+            .map_err(|err| handle_indy_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name)))?;
+
+        let mut response: Response<serde_json::Value> = serde_json::from_str::<Response<serde_json::Value>>(&response_json)
+            .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
+
+        if let Some(result) = response.result.as_mut() {
+            result["txn"]["data"]["auth_type"] = get_txn_title(&result["txn"]["data"]["auth_type"]);
+            result["txn"]["data"]["constraint"] = serde_json::Value::String(::serde_json::to_string_pretty(&result["txn"]["data"]["constraint"]).unwrap());
+        }
+
+        let res = handle_transaction_response(response)
+            .map(|result| print_transaction_response(result,
+                                                     "Auth Rule request has been sent to Ledger.",
+                                                     None,
+                                                     &mut vec![("auth_type", "Txn Type"),
+                                                               ("auth_action", "Action"),
+                                                               ("field", "Field"),
+                                                               ("old_value", "Old Value"),
+                                                               ("new_value", "New Value"),
+                                                               ("constraint", "Constraint")]))?;
+
+        trace!("execute << {:?}", res);
+        Ok(res)
+    }
+}
+
+pub mod get_auth_rule_command {
+    use super::*;
+
+    command!(CommandMetadata::build("get-auth-rule", r#"Send GET_AUTH_RULE request to get authentication rules for ledger transactions.
+        Note: Either none or all parameters must be specified (`old_value` can be skipped for `ADD` action)."#)
+                .add_required_param("txn_type", "Ledger transaction alias or associated value.")
+                .add_required_param("action", "Type of action for. One of: ADD, EDIT")
+                .add_required_param("field", "Transaction field")
+                .add_optional_param("old_value", "Old value of field, which can be changed to a new_value (mandatory for EDIT action)")
+                .add_required_param("new_value", "New value that can be used to fill the field")
+                .add_example(r#"ledger get-auth-rule txn_type=NYM action=ADD field=role new_value=101"#)
+                .add_example(r#"ledger get-auth-rule txn_type=NYM action=EDIT field=role old_value=101 new_value=0"#)
+                .add_example(r#"ledger get-auth-rule"#)
+                .finalize()
+    );
+
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
+
+        let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
+        let (_, wallet_name) = ensure_opened_wallet(&ctx)?;
+        let submitter_did = get_active_did(&ctx);
+
+        let auth_type = get_opt_str_param("txn_type", params).map_err(error_err!())?;
+        let auth_action = get_opt_str_param("action", params).map_err(error_err!())?;
+        let field = get_opt_str_param("field", params).map_err(error_err!())?;
+        let old_value = get_opt_str_param("old_value", params).map_err(error_err!())?;
+        let new_value = get_opt_str_param("new_value", params).map_err(error_err!())?;
+
+        let request = Ledger::build_get_auth_rule_request(submitter_did.as_ref().map(String::as_str), auth_type, auth_action, field, old_value, new_value)
+            .map_err(|err| handle_indy_error(err, None, None, None))?;
+
+        let response_json = Ledger::submit_request(pool_handle, &request)
+            .map_err(|err| handle_indy_error(err, submitter_did.as_ref().map(String::as_str), Some(&pool_name), Some(&wallet_name)))?;
+
+        let response: Response<serde_json::Value> = serde_json::from_str::<Response<serde_json::Value>>(&response_json)
+            .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
+
+        let result = handle_transaction_response(response)?;
+
+        let rules = match result["data"].as_object() {
+            Some(r) => r,
+            None => return Err(println_err!("Invalid data has been received"))
+        };
+
+        let constraints = rules
+            .iter()
+            .map(|(constraint_id, constraint)| {
+                let parts: Vec<&str> = constraint_id.split("--").collect();
+
+                json!({
+                    "auth_type": get_txn_title(&serde_json::Value::String(parts.get(1).cloned().unwrap_or("-").to_string())),
+                    "auth_action": parts.get(0),
+                    "field": parts.get(2),
+                    "old_value": parts.get(3),
+                    "new_value": parts.get(4),
+                    "constraint": ::serde_json::to_string_pretty(&constraint).unwrap(),
+                })
+            })
+            .collect::<Vec<serde_json::Value>>();
+
+        let res = print_list_table(&constraints,
+                                   &vec![("auth_type", "Type"),
+                                         ("auth_action", "Action"),
+                                         ("field", "Field"),
+                                         ("old_value", "Old Value"),
+                                         ("new_value", "New Value"),
+                                         ("constraint", "Constraint")],
+                                   "There are no rules set");
+
+        trace!("execute << {:?}", res);
+        Ok(res)
+    }
+}
+
 pub fn set_request_fees(request: &mut String, wallet_handle: i32, submitter_did: Option<&str>, fees_inputs: &Option<Vec<&str>>, fees_outputs: &Option<Vec<String>>, extra: Option<&str>) -> Result<Option<String>, ()> {
     let mut payment_method: Option<String> = None;
     if let &Some(ref inputs) = fees_inputs {
@@ -1413,6 +1560,33 @@ fn get_role_title(role: &serde_json::Value) -> serde_json::Value {
     }.to_string())
 }
 
+fn get_txn_title(role: &serde_json::Value) -> serde_json::Value {
+    serde_json::Value::String(match role.as_str() {
+        Some("0") => "NODE",
+        Some("1") => "NYM",
+        Some("3") => "GET_TXN",
+        Some("100") => "ATTRIB",
+        Some("101") => "SCHEMA",
+        Some("104") => "GET_ATTR",
+        Some("105") => "GET_NYM",
+        Some("107") => "GET_SCHEMA",
+        Some("108") => "GET_CRED_DEF",
+        Some("102") => "CRED_DEF",
+        Some("109") => "POOL_UPGRADE",
+        Some("111") => "POOL_CONFIG",
+        Some("113") => "REVOC_REG_DEF",
+        Some("114") => "REVOC_REG_ENTRY",
+        Some("115") => "GET_REVOC_REG_DEF",
+        Some("116") => "GET_REVOC_REG",
+        Some("117") => "GET_REVOC_REG_DELTA",
+        Some("118") => "POOL_RESTART",
+        Some("119") => "GET_VALIDATOR_INFO",
+        Some("120") => "AUTH_RULE",
+        Some(val) => val,
+        _ => "-"
+    }.to_string())
+}
+
 fn timestamp_to_datetime(_time: i64) -> String {
     NaiveDateTime::from_timestamp(_time, 0).to_string()
 }
@@ -1444,7 +1618,7 @@ pub struct ReplyResult<T> {
 pub mod tests {
     use super::*;
     use commands::wallet::tests::{create_and_open_wallet, close_and_delete_wallet, open_wallet, close_wallet};
-    use commands::pool::tests::{disconnect_and_delete_pool};
+    use commands::pool::tests::disconnect_and_delete_pool;
     use commands::did::tests::{new_did, use_did, SEED_TRUSTEE, DID_TRUSTEE, DID_MY1, VERKEY_MY1, SEED_MY3, DID_MY3, VERKEY_MY3};
     #[cfg(feature = "nullpay_plugin")]
     use commands::common::tests::{load_null_payment_plugin, NULL_PAYMENT_METHOD};
@@ -3469,6 +3643,97 @@ pub mod tests {
                 params.insert("txn", r#"1496822211362017764"#.to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
             }
+            tear_down_with_wallet_and_pool(&ctx);
+        }
+    }
+
+    mod auth_rule {
+        use super::*;
+
+        const AUTH_TYPE: &str = "NYM";
+        const AUTH_ACTION: &str = "ADD";
+        const FIELD: &str = "role";
+        const NEW_VALUE: &str = "101";
+        const ROLE_CONSTRAINT: &str = r#"{
+            "sig_count": 1,
+            "metadata": {},
+            "role": "0",
+            "constraint_id": "ROLE",
+            "need_to_be_owner": false
+        }"#;
+
+        #[test]
+        pub fn auth_rule_works() {
+            let ctx = setup_with_wallet_and_pool();
+            use_trustee(&ctx);
+            {
+                let cmd = auth_rule_command::new();
+                let mut params = CommandParams::new();
+                params.insert("txn_type", "NYM".to_string());
+                params.insert("action", "add".to_string());
+                params.insert("field", "role".to_string());
+                params.insert("new_value", "101".to_string());
+                params.insert("constraint", ROLE_CONSTRAINT.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            tear_down_with_wallet_and_pool(&ctx);
+        }
+
+        #[test]
+        pub fn get_auth_rule_works_for_one_constraint() {
+            let ctx = setup_with_wallet_and_pool();
+            use_trustee(&ctx);
+            {
+                let cmd = auth_rule_command::new();
+                let mut params = CommandParams::new();
+                params.insert("txn_type", AUTH_TYPE.to_string());
+                params.insert("action", AUTH_ACTION.to_string());
+                params.insert("field", FIELD.to_string());
+                params.insert("new_value", NEW_VALUE.to_string());
+                params.insert("constraint", ROLE_CONSTRAINT.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+
+            {
+                let cmd = get_auth_rule_command::new();
+                let mut params = CommandParams::new();
+                params.insert("txn_type", AUTH_TYPE.to_string());
+                params.insert("action", AUTH_ACTION.to_string());
+                params.insert("field", FIELD.to_string());
+                params.insert("new_value", NEW_VALUE.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+
+            tear_down_with_wallet_and_pool(&ctx);
+        }
+
+        #[test]
+        pub fn get_auth_rule_works_for_get_all() {
+            let ctx = setup_with_wallet_and_pool();
+
+            {
+                let cmd = get_auth_rule_command::new();
+                let params = CommandParams::new();
+                cmd.execute(&ctx, &params).unwrap();
+            }
+
+            tear_down_with_wallet_and_pool(&ctx);
+        }
+
+        #[test]
+        pub fn get_auth_rule_works_for_no_constraint() {
+            let ctx = setup_with_wallet_and_pool();
+            use_trustee(&ctx);
+            {
+                let cmd = get_auth_rule_command::new();
+                let mut params = CommandParams::new();
+                params.insert("txn_type", AUTH_TYPE.to_string());
+                params.insert("action", AUTH_ACTION.to_string());
+                params.insert("field", "WRONG_FIELD".to_string());
+                params.insert("new_value", "WRONG_VALUE".to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+
             tear_down_with_wallet_and_pool(&ctx);
         }
     }

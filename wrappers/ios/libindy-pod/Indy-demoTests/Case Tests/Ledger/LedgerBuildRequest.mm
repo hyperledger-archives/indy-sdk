@@ -641,4 +641,69 @@
     XCTAssertTrue([getTxnRequest contains:expectedResult], @"getTxnRequest json doesn't contain expectedResult json");
 }
 
+// MARK: Auth Rule request
+
+- (void)testBuildAuthRuleRequestsWorks {
+    NSDictionary *constraint = @{
+        @"sig_count": @(1),
+        @"role": @"0",
+        @"constraint_id": @"ROLE",
+        @"need_to_be_owner": @(false)
+    };
+    
+    NSDictionary *expectedResult = @{
+            @"identifier": [TestUtils trusteeDid],
+            @"operation": @{
+                    @"type": @"120",
+                    @"auth_type": @"1",
+                    @"auth_action": @"ADD",
+                    @"field": @"role",
+                    @"new_value": @"101",
+                    @"constraint": constraint,
+            }
+    };
+
+    NSString *requestJson;
+    ret = [[LedgerUtils sharedInstance] buildAuthRuleRequestWithSubmitterDid:[TestUtils trusteeDid]
+                                                              txnType:@"NYM"
+                                                               action:@"ADD"
+                                                                 field:@"role"
+                                                                  oldValue:nil
+                                                                   newValue:@"101"
+                                                                   constraint:[NSDictionary toString:constraint]
+                                                             outRequest:&requestJson];
+    XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildAuthRuleRequestWithSubmitterDid() failed!");
+
+    NSDictionary *request = [NSDictionary fromString:requestJson];
+
+    XCTAssertTrue([request contains:expectedResult], @"Request doesn't contain expectedResult");
+}
+
+- (void)testBuildGetAuthRuleRequestsWorks {
+    NSDictionary *expectedResult = @{
+            @"identifier": [TestUtils trusteeDid],
+            @"operation": @{
+                    @"type": @"121",
+                    @"auth_type": @"1",
+                    @"auth_action": @"ADD",
+                    @"field": @"role",
+                    @"new_value": @"101",
+            }
+    };
+
+    NSString *requestJson;
+    ret = [[LedgerUtils sharedInstance] buildGetAuthRuleRequestWithSubmitterDid:[TestUtils trusteeDid]
+                                                                        txnType:@"NYM"
+                                                                         action:@"ADD"
+                                                                          field:@"role"
+                                                                       oldValue:nil
+                                                                       newValue:@"101"
+                                                                     outRequest:&requestJson];
+    XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildGetAuthRuleRequestWithSubmitterDid() failed!");
+
+    NSDictionary *request = [NSDictionary fromString:requestJson];
+
+    XCTAssertTrue([request contains:expectedResult], @"Request doesn't contain expectedResult");
+}
+
 @end

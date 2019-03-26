@@ -15,7 +15,7 @@ import java.util.concurrent.ExecutionException;
 public class PoolUtils {
 
 	private static final String DEFAULT_POOL_NAME = "default_pool";
-	public static final int TEST_TIMEOUT_FOR_REQUEST_ENSURE = 20_000;
+	public static final int TEST_TIMEOUT_FOR_REQUEST_ENSURE = 200_000;
 	private static final int RESUBMIT_REQUEST_TIMEOUT = 5_000;
 	private static final int RESUBMIT_REQUEST_CNT = 3;
 

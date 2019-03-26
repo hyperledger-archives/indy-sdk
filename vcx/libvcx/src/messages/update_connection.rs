@@ -1,124 +1,118 @@
-extern crate rmp_serde;
-extern crate serde_json;
-
-use error::{ToErrorCode, messages};
-use serde::Deserialize;
-use self::rmp_serde::{encode, Deserializer};
-use messages::{Bundled, MsgType, bundle_for_agent, unbundle_from_agency, GeneralMessage};
-use utils::{error, httpclient};
+use messages::*;
+use messages::message_type::MessageTypes;
 use settings;
-use utils::constants::DELETE_CONNECTION_RESPONSE;
+use utils::httpclient;
+use error::prelude::*;
 
-
-#[derive(Clone, Serialize, Debug, PartialEq, PartialOrd)]
+#[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
-pub struct DeleteConnection {
-    #[serde(rename = "to")]
+pub struct UpdateConnection {
+    #[serde(rename = "@type")]
+    msg_type: MessageTypes,
+    #[serde(rename = "statusCode")]
+    status_code: ConnectionStatus,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum ConnectionStatus {
+    AlreadyConnected,
+    NotConnected,
+    Deleted,
+}
+
+impl Serialize for ConnectionStatus {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
+        let value = match self {
+            ConnectionStatus::AlreadyConnected => "CS-101",
+            ConnectionStatus::NotConnected => "CS-102",
+            ConnectionStatus::Deleted => "CS-103",
+        };
+        serde_json::Value::String(value.to_string()).serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for ConnectionStatus {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
+        let value = Value::deserialize(deserializer).map_err(de::Error::custom)?;
+        match value.as_str() {
+            Some("CS-101") => Ok(ConnectionStatus::AlreadyConnected),
+            Some("CS-102") => Ok(ConnectionStatus::NotConnected),
+            Some("CS-103") => Ok(ConnectionStatus::Deleted),
+            _ => Err(de::Error::custom("Unexpected message type."))
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
+pub struct UpdateConnectionResponse {
+    #[serde(rename = "@type")]
+    msg_type: MessageTypes,
+    #[serde(rename = "statusCode")]
+    status_code: ConnectionStatus,
+}
+
+#[derive(Debug)]
+pub struct DeleteConnectionBuilder {
     to_did: String,
     to_vk: String,
-    #[serde(skip_serializing, default)]
-    payload: DeleteConnectionPayload,
-    #[serde(skip_serializing, default)]
-    validate_rc: u32,
+    status_code: ConnectionStatus,
     agent_did: String,
     agent_vk: String,
 }
 
-
-
-#[derive(Clone,Deserialize, Serialize, Debug, PartialEq, PartialOrd)]
-#[serde(rename_all = "camelCase")]
-struct DeleteConnectionPayload{
-    #[serde(rename = "@type")]
-    msg_type: MsgType,
-    status_code: String,
-
-}
-
-impl DeleteConnectionPayload {
-    pub fn create() -> DeleteConnectionPayload {
-        DeleteConnectionPayload {
-            msg_type: MsgType {
-                name: "UPDATE_CONN_STATUS".to_string(),
-                ver: "1.0".to_string()
-            },
-            status_code: "CS-103".to_string(),
-        }
-    }
-
-    pub fn deserialize(data: Vec<u8>) ->
-    Result< DeleteConnectionPayload,
-        messages::MessageError> {
-        let mut de = Deserializer::new(&data[..]);
-        let message: Self = match Deserialize::deserialize(&mut de) {
-            Ok(x) => x,
-            Err(x) => {
-                return Err(messages::MessageError::MessagePackError())
-            },
-        };
-        Ok(message)
-
-    }
-}
-impl DeleteConnection {
-    pub fn create() -> DeleteConnection {
+impl DeleteConnectionBuilder {
+    pub fn create() -> DeleteConnectionBuilder {
         trace!("DeleteConnection::create_message >>>");
 
-        DeleteConnection {
+        DeleteConnectionBuilder {
             to_did: String::new(),
             to_vk: String::new(),
-            payload: DeleteConnectionPayload::create(),
-            validate_rc: error::SUCCESS.code_num,
+            status_code: ConnectionStatus::Deleted,
             agent_did: String::new(),
             agent_vk: String::new(),
         }
     }
-    pub fn send_secure(&mut self) -> Result<Vec<String>, u32> {
+
+    pub fn send_secure(&mut self) -> VcxResult<()> {
         trace!("DeleteConnection::send >>>");
 
-        let data = match self.msgpack() {
-            Ok(x) => x,
-            Err(x) => return Err(x),
-        };
+        if settings::test_agency_mode_enabled() {
+            return Ok(());
+        }
 
-        if settings::test_agency_mode_enabled() { httpclient::set_next_u8_response(DELETE_CONNECTION_RESPONSE.to_vec()); }
+        let data = self.prepare_request()?;
 
-        let mut result = Vec::new();
-        match httpclient::post_u8(&data) {
-            Err(_) => return Err(error::POST_MSG_FAILURE.code_num),
-            Ok(response) => {
-                let response = self.parse_response_as_delete_connection_payload(&response)?;
-                result.push(response);
-            },
-        };
+        let response = httpclient::post_u8(&data)?;
 
-        Ok(result.to_owned())
+        let response = self.parse_response(&response)?;
+
+        Ok(response)
     }
 
-    pub fn parse_response_as_delete_connection_payload(&self, response: &Vec<u8> ) -> Result<String, u32> {
-        if settings::test_agency_mode_enabled() {
-            let data = response.clone();
-            return Ok(serde_json::to_string(&DeleteConnectionPayload::deserialize(data.to_owned()).unwrap()).unwrap())
+    fn parse_response(&self, response: &Vec<u8>) -> VcxResult<()> {
+        trace!("parse_create_keys_response >>>");
+
+        let mut response = parse_response_from_agency(response)?;
+
+        match response.remove(0) {
+            A2AMessage::Version1(A2AMessageV1::UpdateConnectionResponse(res)) => Ok(()),
+            A2AMessage::Version2(A2AMessageV2::UpdateConnectionResponse(res)) => Ok(()),
+            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of UpdateConnectionResponse"))
         }
-        let data = unbundle_from_agency(response.clone())?;
-        let response = DeleteConnectionPayload::deserialize(data[0].to_owned())
-            .map_err(|e| e.to_error_code())?;
-        serde_json::to_string(&response).or(Err(error::INVALID_JSON.code_num))
     }
 
     fn print_info(&self) {
         println!("\n****\n**** message pack: Delete Connection");
-        println!("payload {}", serde_json::to_string(&self.payload).unwrap());
+        println!("self.status_code {:?}", &self.status_code);
         println!("self.to_vk: {}", &self.to_vk);
         println!("self.agent_did: {}", &self.agent_did);
         println!("self.agent_vk: {}", &self.agent_vk);
-        debug!("connection invitation details: {}", serde_json::to_string(&self.payload).unwrap_or("failure".to_string()));
     }
 }
 
 //TODO Every GeneralMessage extension, duplicates code
-impl GeneralMessage for DeleteConnection{
-    type Msg = DeleteConnection;
+impl GeneralMessage for DeleteConnectionBuilder {
+    type Msg = DeleteConnectionBuilder;
 
     fn set_agent_did(&mut self, did: String) {
         self.agent_did = did;
@@ -128,32 +122,44 @@ impl GeneralMessage for DeleteConnection{
         self.agent_vk = vk;
     }
 
-    fn set_to_did(&mut self, to_did: String){ self.to_did = to_did; }
+    fn set_to_did(&mut self, to_did: String) { self.to_did = to_did; }
     fn set_to_vk(&mut self, to_vk: String) { self.to_vk = to_vk; }
-    fn set_validate_rc(&mut self, rc: u32){ self.validate_rc = rc; }
 
-    fn msgpack(&mut self) -> Result<Vec<u8>,u32> {
-        if self.validate_rc != error::SUCCESS.code_num {
-            return Err(self.validate_rc)
-        }
-        let payload = encode::to_vec_named(&self.payload).or(Err(error::INVALID_JSON.code_num))?;
+    fn prepare_request(&mut self) -> VcxResult<Vec<u8>> {
+        let message = match settings::get_protocol_type() {
+            settings::ProtocolTypes::V1 =>
+                A2AMessage::Version1(
+                    A2AMessageV1::UpdateConnection(
+                        UpdateConnection {
+                            msg_type: MessageTypes::build(A2AMessageKinds::UpdateConnectionStatus),
+                            status_code: self.status_code.clone()
+                        }
+                    )
+                ),
+            settings::ProtocolTypes::V2 =>
+                A2AMessage::Version2(
+                    A2AMessageV2::UpdateConnection(
+                        UpdateConnection {
+                            msg_type: MessageTypes::build(A2AMessageKinds::UpdateConnectionStatus),
+                            status_code: self.status_code.clone(),
+                        }
+                    )
+                )
+        };
 
-        let bundle = Bundled::create(payload);
-
-        let msg = bundle.encode()?;
-
-        bundle_for_agent(msg, &self.to_vk, &self.agent_did, &self.agent_vk)
+        prepare_message_for_agent(vec![message], &self.to_vk, &self.agent_did, &self.agent_vk)
     }
 }
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
     #[test]
-    fn test_deserialize_delete_connection_payload(){
+    fn test_deserialize_delete_connection_payload() {
         let payload = vec![130, 165, 64, 116, 121, 112, 101, 130, 164, 110, 97, 109, 101, 179, 67, 79, 78, 78, 95, 83, 84, 65, 84, 85, 83, 95, 85, 80, 68, 65, 84, 69, 68, 163, 118, 101, 114, 163, 49, 46, 48, 170, 115, 116, 97, 116, 117, 115, 67, 111, 100, 101, 166, 67, 83, 45, 49, 48, 51];
         let msg_str = r#"{ "@type": { "name": "CONN_STATUS_UPDATED", "ver": "1.0" }, "statusCode": "CS-103" }"#;
-        let delete_connection_payload: DeleteConnectionPayload = serde_json::from_str(msg_str).unwrap();
-        assert_eq!(delete_connection_payload, DeleteConnectionPayload::deserialize(payload.clone()).unwrap());
-        let delete_connection: DeleteConnection = DeleteConnection::create();
+        let delete_connection_payload: UpdateConnectionResponse = serde_json::from_str(&msg_str).unwrap();
+        assert_eq!(delete_connection_payload, rmp_serde::from_slice(&payload).unwrap());
     }
 }

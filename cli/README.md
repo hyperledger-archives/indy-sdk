@@ -32,7 +32,7 @@ by beginning the line with a `#`.
 
 ### Getting help
 The most simple way is just start cli by `indy-cli` command and put `help` command. Also you can look to
-[Indy CLI Design](../doc/design/001-cli) doc that contains the list of commands and architecture overview.
+[Indy CLI Design](https://github.com/hyperledger/indy-sdk/tree/master/docs/design/001-cli) doc that contains the list of commands and architecture overview.
 
 ### Options
 * -h and --help - Print usage.

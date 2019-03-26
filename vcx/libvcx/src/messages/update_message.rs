@@ -1,105 +1,138 @@
-extern crate rust_base58;
-extern crate serde_json;
-extern crate serde;
-extern crate rmp_serde;
-
 use settings;
-use utils::httpclient;
-use utils::error;
 use messages::*;
+use messages::message_type::MessageTypes;
+use utils::httpclient;
+use error::prelude::*;
 
-#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, PartialOrd)]
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
-struct UIDsByConn{
+pub struct UpdateMessageStatusByConnections {
+    #[serde(rename = "@type")]
+    msg_type: MessageTypes,
+    status_code: Option<MessageStatusCode>,
+    uids_by_conns: Vec<UIDsByConn>
+}
+
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateMessageStatusByConnectionsResponse {
+    #[serde(rename = "@type")]
+    msg_type: MessageTypes,
+    status_code: Option<String>,
+    updated_uids_by_conns: Vec<UIDsByConn>
+}
+
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
+#[serde(rename_all = "camelCase")]
+struct UIDsByConn {
     #[serde(rename = "pairwiseDID")]
     pairwise_did: String,
     uids: Vec<String>,
 }
 
-#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, PartialOrd)]
-#[serde(rename_all = "camelCase")]
-struct UpdateMessages {
-    #[serde(rename = "@type")]
-    msg_type: MsgType,
-    status_code: Option<String>,
+struct UpdateMessageStatusByConnectionsBuilder {
+    status_code: Option<MessageStatusCode>,
     uids_by_conns: Vec<UIDsByConn>
 }
 
-#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, PartialOrd)]
-#[serde(rename_all = "camelCase")]
-struct UpdateMessagesResponse {
-    #[serde(rename = "@type")]
-    msg_type: MsgType,
-    status_code: Option<String>,
-    updated_uids_by_conns: Vec<UIDsByConn>
-}
+impl UpdateMessageStatusByConnectionsBuilder {
+    pub fn create() -> UpdateMessageStatusByConnectionsBuilder {
+        trace!("UpdateMessageStatusByConnectionsBuilder::create >>>");
 
-impl UpdateMessages{
+        UpdateMessageStatusByConnectionsBuilder {
+            status_code: None,
+            uids_by_conns: Vec::new(),
+        }
+    }
 
-    pub fn send_secure(&mut self) -> Result<(), u32> {
+    pub fn uids_by_conns(&mut self, uids_by_conns: Vec<UIDsByConn>) -> VcxResult<&mut Self> {
+        //Todo: validate msg_uid??
+        self.uids_by_conns = uids_by_conns;
+        Ok(self)
+    }
+
+    pub fn status_code(&mut self, code: MessageStatusCode) -> VcxResult<&mut Self> {
+        //Todo: validate that it can be parsed to number??
+        self.status_code = Some(code.clone());
+        Ok(self)
+    }
+
+    pub fn send_secure(&mut self) -> VcxResult<()> {
         trace!("UpdateMessages::send >>>");
-
-        let data = encode::to_vec_named(&self).or(Err(error::UNKNOWN_ERROR.code_num))?;
-        trace!("update_message content: {:?}", data);
-
-        let msg = Bundled::create(data).encode()?;
-
-        let to_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
-        let data = bundle_for_agency(msg, &to_did)?;
 
         if settings::test_agency_mode_enabled() {
             ::utils::httpclient::set_next_u8_response(::utils::constants::UPDATE_MESSAGES_RESPONSE.to_vec());
         }
 
-        match httpclient::post_u8(&data) {
-            Err(_) => return Err(error::POST_MSG_FAILURE.code_num),
-            Ok(response) => if settings::test_agency_mode_enabled() && response.len() == 0 {
-                return Ok(());
-            } else {
-                parse_update_messages_response(response)
-            },
+        let data = self.prepare_request()?;
+
+        let response = httpclient::post_u8(&data)?;
+
+        self.parse_response(&response)
+    }
+
+    fn prepare_request(&mut self) -> VcxResult<Vec<u8>> {
+        let message = match settings::get_protocol_type() {
+            settings::ProtocolTypes::V1 =>
+                A2AMessage::Version1(
+                    A2AMessageV1::UpdateMessageStatusByConnections(
+                        UpdateMessageStatusByConnections {
+                            msg_type: MessageTypes::build(A2AMessageKinds::UpdateMessageStatusByConnections),
+                            uids_by_conns: self.uids_by_conns.clone(),
+                            status_code: self.status_code.clone(),
+                        }
+                    )
+                ),
+            settings::ProtocolTypes::V2 =>
+                A2AMessage::Version2(
+                    A2AMessageV2::UpdateMessageStatusByConnections(
+                        UpdateMessageStatusByConnections {
+                            msg_type: MessageTypes::build(A2AMessageKinds::UpdateMessageStatusByConnections),
+                            uids_by_conns: self.uids_by_conns.clone(),
+                            status_code: self.status_code.clone(),
+                        }
+                    )
+                ),
+        };
+
+        let agency_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
+        prepare_message_for_agency(&message, &agency_did)
+    }
+
+    fn parse_response(&self, response: &Vec<u8>) -> VcxResult<()> {
+        trace!("parse_create_keys_response >>>");
+
+        let mut response = parse_response_from_agency(response)?;
+
+        match response.remove(0) {
+            A2AMessage::Version1(A2AMessageV1::UpdateMessageStatusByConnectionsResponse(res)) => Ok(()),
+            A2AMessage::Version2(A2AMessageV2::UpdateMessageStatusByConnectionsResponse(res)) => Ok(()),
+            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of UpdateMessageStatusByConnectionsResponse"))
         }
     }
 }
 
-fn parse_update_messages_response(response: Vec<u8>) -> Result<(), u32> {
-    let data = unbundle_from_agency(response)?;
+pub fn update_agency_messages(status_code: &str, msg_json: &str) -> VcxResult<()> {
+    trace!("update_agency_messages >>> status_code: {:?}, msg_json: {:?}", status_code, msg_json);
 
-    debug!("parse_update_messages_response: {:?}", data[0]);
-    let mut de = Deserializer::new(&data[0][..]);
-    let response: UpdateMessagesResponse = match Deserialize::deserialize(&mut de) {
-        Ok(x) => x,
-        Err(x) => {
-            error!("Could not parse messagepack: {}", x);
+    let status_code: MessageStatusCode = ::serde_json::from_str(&format!("\"{}\"", status_code))
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize MessageStatusCode: {}", err)))?;
 
-            return Err(error::INVALID_MSGPACK.code_num)
-        },
-    };
+    debug!("updating agency messages {} to status code: {:?}", msg_json, status_code);
+
+    let uids_by_conns: Vec<UIDsByConn> = serde_json::from_str(msg_json)
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize UIDsByConn: {}", err)))?;
+
+    UpdateMessageStatusByConnectionsBuilder::create()
+        .uids_by_conns(uids_by_conns)?
+        .status_code(status_code)?
+        .send_secure()?;
 
     Ok(())
 }
 
-pub fn update_agency_messages(status_code: &str, msg_json: &str) -> Result<(), u32> {
-    trace!("update_agency_messages >>> status_code: {:?}, msg_json: {:?}", status_code, msg_json);
-
-    debug!("updating agency messages {} to status code: {}", msg_json, status_code);
-    let uids_by_conns: Vec<UIDsByConn> = serde_json::from_str(msg_json)
-        .map_err(|ec| {error::INVALID_JSON.code_num})?;
-    let mut messages = UpdateMessages {
-        msg_type: MsgType { name: "UPDATE_MSG_STATUS_BY_CONNS".to_string(), ver: "1.0".to_string(), },
-        uids_by_conns,
-        status_code: Some(status_code.to_string()),
-    };
-
-    match messages.send_secure() {
-        Ok(x) => Ok(x),
-        Err(x) => Err(error::POST_MSG_FAILURE.code_num)
-    }
-}
-
 #[cfg(test)]
 mod tests {
-
     use super::*;
 
     #[test]
@@ -107,7 +140,7 @@ mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
 
-        let result = parse_update_messages_response(::utils::constants::UPDATE_MESSAGES_RESPONSE.to_vec()).unwrap();
+        UpdateMessageStatusByConnectionsBuilder::create().parse_response(&::utils::constants::UPDATE_MESSAGES_RESPONSE.to_vec()).unwrap();
     }
 
     #[cfg(feature = "agency")]
@@ -139,8 +172,8 @@ mod tests {
         assert!(pending.len() > 0);
         let did = pending[0].pairwise_did.clone();
         let uid = pending[0].msgs[0].uid.clone();
-        let message = serde_json::to_string(&vec![UIDsByConn{ pairwise_did: did, uids: vec![uid]}]).unwrap();
-        update_agency_messages("MS-106",&message).unwrap();
+        let message = serde_json::to_string(&vec![UIDsByConn { pairwise_did: did, uids: vec![uid] }]).unwrap();
+        update_agency_messages("MS-106", &message).unwrap();
         let updated = ::messages::get_message::download_messages(None, Some(vec!["MS-106".to_string()]), None).unwrap();
         assert_eq!(pending[0].msgs[0].uid, updated[0].msgs[0].uid);
 

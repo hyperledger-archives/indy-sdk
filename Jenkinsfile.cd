@@ -2,6 +2,8 @@
 
 @Library('SovrinHelpers') _
 
+testReleaseVersion = env.INDY_SDK_TEST_RELEASE_VERSION ?: null
+
 properties([
         [$class: 'BuildDiscarderProperty', strategy: [
                 $class               : 'LogRotator',
@@ -14,6 +16,11 @@ properties([
 
 libindyBuildFinished = ["Ubuntu": false, "RedHat": false]
 libvcxBuildFinished = ["Ubuntu": false, "RedHat": false]
+
+gitHubUserCredId = env.GITHUB_BOT_USER ?: 'sovbot-github'
+sovrinPackagingRepo = env.SOVRIN_PACKAGING_REPO ?: 'https://github.com/sovrin-foundation/sovrin-packaging'
+sovrinPackagingBranch = env.SOVRIN_PACKAGING_BRANCH ?: 'master'
+mavenDeployAddOptions = env.MAVEN_DEPLOY_ADD_OPTIONS ?: ''
 
 try {
     testing()
@@ -28,10 +35,13 @@ try {
 }
 
 def testing() {
+    stage('Static Analysis') {
+        staticValidation()
+    }
     stage('Testing') {
         parallel([
                 'ubuntu-test' : { ubuntuTesting() },
-                'redhat-test' : { rhelTesting() },
+                //  FIXME 'redhat-test' : { rhelTesting() }, https://jira.hyperledger.org/browse/IS-1212
                 'android-test': { androidTesting() },
                 'windows-test': { windowsTesting() },
                 'ios-test'    : { iosTesting() }
@@ -89,6 +99,31 @@ def notifyingFailure() {
     currentBuild.result = "FAILED"
     node('ubuntu-master') {
         sendNotification.fail([slack: true])
+    }
+}
+
+def staticValidation() {
+    parallel([
+            'libindy'   : { runValdiationRust('libindy') },
+            'libnullpay': { runValdiationRust('libnullpay') },
+            'libvcx'    : { runValdiationRust('vcx/libvcx') },
+            'cli'       : { runValdiationRust('cli') }
+    ])
+}
+
+def runValdiationRust(dir) {
+    node('ubuntu') {
+        checkout scm
+        if (dir == 'vcx/libvcx') {
+            testEnv = dockerBuild("static-validation-libvcx", "vcx/ci/ubuntu.dockerfile .")
+        } else {
+            testEnv = dockerBuild("static-validation-libindy", "libindy/ci/ubuntu.dockerfile libindy/ci")
+        }
+        testEnv.inside {
+            //FIXME waiting on IS-823
+            //sh "cargo clippy --manifest-path ${dir}/Cargo.toml"
+            sh "cargo clippy --manifest-path ${dir}/Cargo.toml -- -W clippy::style -W clippy::correctness -W clippy::complexity -W clippy::perf"
+        }
     }
 }
 
@@ -160,10 +195,14 @@ def closePool(env_name, network_name, poolInst) {
 }
 
 
-void getSrcVersion(folder) {
-    commit = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
-    def version = sh(returnStdout: true, script: "wget -q https://raw.githubusercontent.com/hyperledger/indy-sdk/$commit/$folder/Cargo.toml -O - | grep -E '^version =' | head -n1 | cut -f2 -d= | cut -f2 -d '\"'").trim()
-    return version
+String getSrcVersion(folder) {
+    if (testReleaseVersion) {
+        return testReleaseVersion
+    } else {
+        commit = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
+        def version = sh(returnStdout: true, script: "wget -q https://raw.githubusercontent.com/hyperledger/indy-sdk/$commit/$folder/Cargo.toml -O - | grep -E '^version =' | head -n1 | cut -f2 -d= | cut -f2 -d '\"'").trim()
+        return version
+    }
 }
 
 def linuxTesting(file, env_name, network_name, stashBuildResults) {
@@ -358,11 +397,10 @@ def linuxVcxBuild(file, env_name, network_name, stashBuildResults) {
 
         libvcxBuildFinished[env_name] = true
 
+        sh "cp vcx/libvcx/libindy.so vcx/dummy-cloud-agent"
 
         testEnv.inside("--network=${network_name}") {
-            echo "${env_name} Libvcx Test: Run Cloud Agent"
             sh '''
-                cp vcx/libvcx/libindy.so vcx/dummy-cloud-agent
                 cd vcx/dummy-cloud-agent
                 LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy=info cargo run sample-config.json &
             '''
@@ -371,6 +409,20 @@ def linuxVcxBuild(file, env_name, network_name, stashBuildResults) {
             sh '''
                 cd vcx/libvcx
                 LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=vcx=debug,indy=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release --features "pool_tests agency"
+            '''
+        }
+
+        testEnv.inside("--network=${network_name}") {
+            sh '''
+                cd vcx/dummy-cloud-agent
+                sed -i 's/\\("protocol_type": "\\)1.0/\\12.0/' sample-config.json
+                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy=info cargo run sample-config.json &
+            '''
+
+            echo "${env_name} Libvcx Test: Run vcx demo test for protocol version 2.0"
+            sh '''
+                cd vcx/libvcx
+                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=vcx=debug,indy=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test  --release --features "pool_tests agency_v2" tests::test_real_proof_for_protocol_type_v2 -- --exact
             '''
         }
     }
@@ -481,7 +533,7 @@ def linuxVcxJavaTesting(env_name, network_name, testEnv, stashBuildResults) {
 def linuxVcxPythonTesting(env_name, network_name, testEnv, stashBuildResults) {
     unstash name: "VcxPythonLibvcxSO${env_name}"
     unstash name: "VcxPythonLibindyAndLibnullpaySO${env_name}"
-    
+
     dir('vcx/wrappers/python3') {
         testEnv.inside {
             echo "${env_name} Vcx Test: Test python wrapper"
@@ -649,16 +701,14 @@ def ubuntuTesting() {
 }
 
 def linuxAndroidOnEmulatorTesting(env_name, network_name, testEnv, stashBuildResult) {
-    dir('libindy') {
-        sh 'chmod -R 777 ci/*.sh'
-        sh 'chmod -R 777 *.sh'
+    sh 'chmod -R 777 libindy/ci/*.sh'
+    sh 'chmod -R 777 libindy/*.sh'
 
-        def emu_arch = "x86"
+    def emu_arch = "x86"
 
-        echo "${env_name} Libindy Test: Test on ${emu_arch} emulator"
-        testEnv.inside("--network=${network_name}") {
-            sh "./android.test.sh ${emu_arch} --release"
-        }
+    echo "${env_name} Libindy Test: Test on ${emu_arch} emulator"
+    testEnv.inside("--network=${network_name}") {
+        sh "cd libindy && ./android.test.sh ${emu_arch} --release"
     }
 }
 
@@ -695,7 +745,7 @@ def iosTesting() {
                 createSimulators()
 
                 withEnv([
-                    "BUNDLE_PATH=$HOME/.gem.indy_sdk"
+                        "BUNDLE_PATH=$HOME/.gem.indy_sdk"
                 ]) {
                     dir('wrappers/ios') {
                         echo "iOS Test: Installing ruby, bundler and gems"
@@ -831,7 +881,7 @@ def ubuntuPublishing() {
                 libindyDebPublishing(testEnv, libindyVersion)
 
                 pythonWrapperPublishing(testEnv, false, 'wrappers/python', 'libindy')
-                nodejsWrapperPublishing(testEnv, false, 'wrappers/nodejs', 'libindy')
+                nodejsWrapperPublishing(testEnv, false, 'libindy')
                 javaWrapperPublishing(testEnv, false)
                 rustWrapperPublishing(testEnv, false)
                 libindyCliDebPublishing(testEnv, libindyVersion)
@@ -839,7 +889,7 @@ def ubuntuPublishing() {
                 libvcxDebPublishing(testEnv)
                 vcxJavaWrapperPublishing(testEnv, false)
                 pythonWrapperPublishing(testEnv, false, 'vcx/wrappers/python3', 'vcx/libvcx')
-                nodejsWrapperPublishing(testEnv, false, 'vcx/wrappers/node', 'vcx/libvcx')
+                nodejsWrapperPublishing(testEnv, false, 'vcx')
             }
             finally {
                 echo 'Publish Ubuntu files: Cleanup'
@@ -864,14 +914,22 @@ def rustWrapperPublishing(testEnv, isRelease) {
     echo 'Publish Indy to Cargo'
 
     dir('wrappers/rust') {
-        sh "sed -i -- 's/indy-sys = { path =\"indy-sys\", version = \"=$ver\" }/indy-sys = { path =\"indy-sys\", version = \"=$ver$suffix\" }/g' Cargo.toml"
+        if (testReleaseVersion) {
+            sh "sed -i -E -- 's/indy-sys = \\{ path =\"indy-sys\", version = \"=([0-9,.]+)\" \\}/indy-sys = \\{ path =\"indy-sys\", version = \"=${testReleaseVersion}${suffix}\" \\}/g' Cargo.toml"
+        } else {
+            sh "sed -i -- 's/indy-sys = { path =\"indy-sys\", version = \"=$ver\" }/indy-sys = { path =\"indy-sys\", version = \"=$ver$suffix\" }/g' Cargo.toml"
+        }
         publishToCargo(testEnv, suffix, ver)
     }
 }
 
 def publishToCargo(testEnv, suffix, ver) {
     testEnv.inside {
-        sh "sed -i -E -e 'H;1h;\$!d;x' -e \"s/version = \\\"$ver/version = \\\"$ver$suffix/\" Cargo.toml"
+        if (testReleaseVersion) {
+            sh "sed -i -E -e 'H;1h;\$!d;x' -e \"s/version = \\\"([0-9,.]+)/version = \\\"${testReleaseVersion}${suffix}/\" Cargo.toml"
+        } else {
+            sh "sed -i -E -e 'H;1h;\$!d;x' -e \"s/version = \\\"$ver/version = \\\"$ver$suffix/\" Cargo.toml"
+        }
 
         withCredentials([string(credentialsId: 'cargoSecretKey', variable: 'LOGIN')]) {
             sh 'cargo login $LOGIN'
@@ -925,8 +983,11 @@ def windowsPublishArtifact(testEnv, folder, packageName, packageType, packageVer
         unstash name: stashName
 
         withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'repo_key')]) {
-
-            sh "ci/win-zip-and-upload.sh $folder $packageName $packageType $packageVersion '${repo_key}' $env.BRANCH_NAME $env.BUILD_NUMBER"
+            withEnv([
+                    "SOVRIN_REPO_HOST=$SOVRIN_REPO_HOST",
+            ]) {
+                sh "ci/win-zip-and-upload.sh $folder $packageName $packageType $packageVersion '${repo_key}' $env.BRANCH_NAME $env.BUILD_NUMBER"
+            }
         }
     }
 }
@@ -973,11 +1034,11 @@ def publishIOSAtrifacts(testEnv, packageName, stashName, version, targetName) {
         withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'sovrin_repo_key')]) {
             target = "/var/repository/repos/ios/$packageName/$env.BRANCH_NAME/$packageName-core"
 
-            sh "ssh -v -oStrictHostKeyChecking=no -i '$sovrin_repo_key' repo@192.168.11.115 mkdir -p $target/$version"
-            sh "scp -r -oStrictHostKeyChecking=no -i $sovrin_repo_key $packageName/out_pod/${packageName}.tar.gz repo@192.168.11.115:$target/$version/"
+            sh "ssh -v -oStrictHostKeyChecking=no -i '$sovrin_repo_key' repo@$SOVRIN_REPO_HOST mkdir -p $target/$version"
+            sh "scp -r -oStrictHostKeyChecking=no -i $sovrin_repo_key $packageName/out_pod/${packageName}.tar.gz repo@$SOVRIN_REPO_HOST:$target/$version/"
 
             if (targetName != null) {
-                sh "ssh -v -oStrictHostKeyChecking=no -i $sovrin_repo_key repo@192.168.11.115 mv $target/$version/${packageName}.tar.gz $target/$version/$targetName"
+                sh "ssh -v -oStrictHostKeyChecking=no -i $sovrin_repo_key repo@$SOVRIN_REPO_HOST mv $target/$version/${packageName}.tar.gz $target/$version/$targetName"
             }
         }
     }
@@ -1008,6 +1069,8 @@ def libindyDebPublishing(testEnv, version) {
 def libindyCliDebPublishing(testEnv, version) {
     echo 'Publish Indy Cli deb files to Apt'
 
+    setLibindyDependencyVersion("cli/debian/control")
+
     debPublishing(testEnv, "cli", "indy-cli", version, "IndyCliUbuntuBuildResult", "libindyCliDebs")
 }
 
@@ -1015,6 +1078,8 @@ def libnullpayDebPublishing(testEnv) {
     echo 'Publish Libnullpay deb files to Apt'
 
     def libnullpayVersion = getSrcVersion("libnullpay")
+
+    setLibindyDependencyVersion("libnullpay/debian/control")
 
     debPublishing(testEnv, "libnullpay", "libnullpay", libnullpayVersion, "LibnullpayUbuntuBuildResult", "libnullpayDebs")
 }
@@ -1024,11 +1089,16 @@ def libvcxDebPublishing(testEnv) {
 
     def libvcxVersion = getSrcVersion("vcx/libvcx")
 
-    def libindyVersion = getSrcVersion("libindy")
-    def replaceVersion = "$libindyVersion~$env.BUILD_NUMBER"
-    sh "sed -i -e \"s/^\\(Depends: .*libindy\\)\\(\\s*[,]\\{,1\\}.*\\)/\\1 (= $replaceVersion)\\2/\" vcx/libvcx/debian/control"
+    setLibindyDependencyVersion("vcx/libvcx/debian/control")
 
     debPublishing(testEnv, "vcx/libvcx", "libvcx", libvcxVersion, "LibvcxUbuntuBuildResult", "libvcxDebs")
+}
+
+def setLibindyDependencyVersion(file) {
+    def libindyVersion = getSrcVersion("libindy")
+    def replaceVersion = "$libindyVersion~$env.BUILD_NUMBER"
+
+    sh "sed -i -e \"s/^\\(Depends: .*libindy\\)\\(\\s*[,]\\{,1\\}.*\\)/\\1 (= $replaceVersion)\\2/\" $file"
 }
 
 def debPublishing(testEnv, directory, packageName, version, inStashName, outStashName) {
@@ -1071,18 +1141,31 @@ def pythonWrapperPublishing(testEnv, isRelease, directory, base_library) {
     }
 }
 
-def nodejsWrapperPublishing(testEnv, isRelease, directory, base_library) {
-    def version = getSrcVersion(base_library)
+def nodejsWrapperPublishing(testEnv, isRelease, library) {
+    def paths = ['libindy': ['dir': 'wrappers/nodejs', 'base_library': 'libindy'],
+                 'vcx'    : ['dir': 'vcx/wrappers/node', 'base_library': 'vcx/libvcx']]
+
+    def version = getSrcVersion(paths[library]['base_library'])
+
     def suffix = getSuffix(isRelease, "nodejs")
 
-    testEnv.inside {
-        withCredentials([file(credentialsId: 'npm_credentials', variable: 'credentialsFile')]) {
-            sh 'cp $credentialsFile ~/.npmrc'
+    def directory = paths[library]['dir']
 
-            sh "cd $directory && " +
-                    "npm version --no-git-tag-version --allow-same-version $version$suffix &&" +
-                    "npm publish"
+    testEnv.inside {
+        if (library == 'vcx') { // need addition step for VCX to create .js files
+            sh "cd $directory && npm i && npm run compile"
         }
+
+        npmPublish(version, suffix, directory)
+    }
+}
+
+def npmPublish(version, suffix, directory) {
+    withCredentials([file(credentialsId: 'npm_credentials', variable: 'credentialsFile')]) {
+        sh 'cp $credentialsFile ~/.npmrc'
+        sh "cd $directory && " +
+                "npm version --no-git-tag-version --allow-same-version $version$suffix &&" +
+                "npm publish"
     }
 }
 
@@ -1094,12 +1177,16 @@ def javaWrapperPublishing(testEnv, isRelease) {
         testEnv.inside {
             echo "Publish To Maven Test: Test"
 
-            sh "sed -i -E -e 'H;1h;\$!d;x' -e \"s/<version>([0-9,.]+)</<version>\\1$suffix</\" pom.xml"
+            if (testReleaseVersion) {
+                sh "sed -i -E -e 'H;1h;\$!d;x' -e \"s/<version>([0-9,.]+)</<version>${testReleaseVersion}${suffix}</\" pom.xml"
+            } else {
+                sh "sed -i -E -e 'H;1h;\$!d;x' -e \"s/<version>([0-9,.]+)</<version>\\1$suffix</\" pom.xml"
+            }
 
             withCredentials([file(credentialsId: 'maven-settings', variable: 'settingsFile')]) {
                 sh 'cp $settingsFile .'
 
-                sh "mvn clean deploy -DskipTests --settings settings.xml"
+                sh "mvn clean deploy -DskipTests $mavenDeployAddOptions --settings settings.xml"
             }
         }
     }
@@ -1119,7 +1206,12 @@ def vcxJavaWrapperPublishing(testEnv, isRelease) {
                 sh "ci/buildJar.sh ${version}${suffix}"
 
                 sh "chmod +x ci/publishJar.sh"
-                sh 'ci/publishJar.sh'
+
+                withEnv([
+                        "MAVEN_ADD_OPTIONS=$mavenDeployAddOptions",
+                ]) {
+                    sh 'ci/publishJar.sh'
+                }
             }
         }
     }
@@ -1154,7 +1246,7 @@ def publishingRCtoStable() {
                 pythonWrapperPublishing(testEnv, true, 'wrappers/python', 'libindy')
 
                 echo 'Moving Ubuntu RC artifacts to Stable: nodejs wrapper'
-                nodejsWrapperPublishing(testEnv, true, 'wrappers/nodejs', 'libindy')
+                nodejsWrapperPublishing(testEnv, true, 'libindy')
 
                 echo 'Moving Ubuntu RC artifacts to Stable: java wrapper'
                 javaWrapperPublishing(testEnv, true)
@@ -1187,7 +1279,7 @@ def publishingRCtoStable() {
                 pythonWrapperPublishing(testEnv, true, 'vcx/wrappers/python3', 'vcx/libvcx')
 
                 echo 'Moving Ubuntu RC artifacts to Stable: vcx nodejs wrapper'
-                nodejsWrapperPublishing(testEnv, true, 'vcx/wrappers/node', 'vcx/libvcx')
+                nodejsWrapperPublishing(testEnv, true, 'vcx')
 
                 echo 'Moving Android RC artifacts to Stable: libindy'
                 publishLibindAndroidFilesRCtoStable(libindyVersion)
@@ -1274,8 +1366,8 @@ def fullVersion(version) {
 
 def copyFilesFromRcToStable(src, target) {
     withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'sovrin_repo_key')]) {
-        sh "ssh -v -oStrictHostKeyChecking=no -i '$sovrin_repo_key' repo@192.168.11.115 '! ls $target'"
-        sh "ssh -v -oStrictHostKeyChecking=no -i '$sovrin_repo_key' repo@192.168.11.115 cp -r $src $target"
+        sh "ssh -v -oStrictHostKeyChecking=no -i '$sovrin_repo_key' repo@$SOVRIN_REPO_HOST '! ls $target'"
+        sh "ssh -v -oStrictHostKeyChecking=no -i '$sovrin_repo_key' repo@$SOVRIN_REPO_HOST cp -r $src $target"
     }
 }
 
@@ -1297,7 +1389,11 @@ def publishLibvcxDebRCtoStable(testEnv) {
     def libindyVersion = getSrcVersion("libindy")
     def rcFullVersion = "$libvcxVersion~$env.BUILD_NUMBER"
 
-    sh "fpm -s deb -t deb --version $rcFullVersion --no-auto-depends --depends 'libindy = $libindyVersion' -f -p vcx/libvcx/debs vcx/libvcx/debs/libvcx_\"$rcFullVersion\"_amd64.deb"
+    testEnv.inside {
+        unstash name: "libvcxDebs"
+        sh "fpm -s deb -t deb --version $rcFullVersion --no-auto-depends --depends 'libindy = $libindyVersion' -f -p vcx/libvcx/debs vcx/libvcx/debs/libvcx_\"$rcFullVersion\"_amd64.deb"
+        stash includes: "vcx/libvcx/debs/*", name: "libvcxDebs"
+    }
 
     publishDebRCtoStable(testEnv, "libvcx", "vcx/libvcx", libvcxVersion, "libvcxDebs", false)
 }
@@ -1330,7 +1426,7 @@ def buildTestEnv(file, env_name) {
 }
 
 def downloadPackagingUtils() {
-    git branch: 'master', credentialsId: 'evernym-github-machine-user', url: 'https://github.com/evernym/sovrin-packaging'
+    git branch: sovrinPackagingBranch, credentialsId: gitHubUserCredId, url: sovrinPackagingRepo
 }
 
 def shell(command) {
@@ -1342,7 +1438,7 @@ def shell(command) {
 }
 
 def setupRust() {
-    shell("rustup default 1.31.0")
+    shell("rustup default 1.32.0")
 }
 
 def androidPublishing() {
@@ -1421,13 +1517,21 @@ def androidPublishArtifact(buildEnv, arch, packageVersion, artifact) {
         unstash name: "${artifact}_${arch}_zip"
 
         withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'repo_key')]) {
-            sh "ci/android-zip-and-upload.sh $arch $packageVersion '${repo_key}' $env.BRANCH_NAME $env.BUILD_NUMBER $artifact"
+            withEnv([
+                    "SOVRIN_REPO_HOST=$SOVRIN_REPO_HOST",
+            ]) {
+                sh "ci/android-zip-and-upload.sh $arch $packageVersion '${repo_key}' $env.BRANCH_NAME $env.BUILD_NUMBER $artifact"
+            }
         }
     }
 }
 
 def linuxModuleTesting(file, env_name, network_name, module_tester, stashBuildResults) {
-    node('ubuntu') {
+    linuxModuleTesting(file, env_name, network_name, module_tester, stashBuildResults, 'ubuntu')
+}
+
+def linuxModuleTesting(file, env_name, network_name, module_tester, stashBuildResults, node_label) {
+    node(node_label) {
         def poolInst
         try {
             echo "${env_name} Test: Checkout csm"
@@ -1449,7 +1553,7 @@ def androidTesting() {
     network_name = "pool_network"
     parallel([
             "${env_name}-android-test"    : {
-                linuxModuleTesting("ci/ubuntu.dockerfile ci", env_name, network_name, this.&linuxAndroidOnEmulatorTesting, false)
+                linuxModuleTesting("ci/ubuntu.dockerfile ci", env_name, network_name, this.&linuxAndroidOnEmulatorTesting, false, 'android')
             },
             "${env_name}-android-building": { androidBuildAsTesting() }
     ])
@@ -1483,6 +1587,6 @@ def androidBuildAsTesting() {
 
 def setupBrewPackages() {
     sh "brew switch libsodium 1.0.12"
-    sh "brew switch openssl 1.0.2l"
+    sh "brew switch openssl 1.0.2q"
     sh "brew switch zeromq 4.2.3"
 }
