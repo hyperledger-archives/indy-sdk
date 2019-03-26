@@ -256,6 +256,7 @@ mod tests {
 
         let wallet = _wallet("wallet_get_id_works");
         assert_eq!(wallet.get_id(), "wallet_get_id_works");
+        _cleanup("wallet_get_id_works");
     }
 
     #[test]
@@ -269,6 +270,7 @@ mod tests {
         assert_eq!(record.id, _id1());
         assert_eq!(record.value.unwrap(), _value1());
         assert_eq!(record.tags.unwrap(), _tags());
+        _cleanup("wallet_add_get_works");
     }
 
     #[test]
@@ -285,6 +287,7 @@ mod tests {
         assert_eq!(record.id, _id1());
         assert_eq!(record.value.unwrap(), _value1());
         assert_eq!(record.tags.unwrap(), _tags());
+        _cleanup("wallet_add_get_works_for_reopen");
     }
 
     #[test]
@@ -296,6 +299,7 @@ mod tests {
 
         let res = wallet.get(_type1(), _id2(), &_fetch_options(false, true, true));
         assert_kind!(IndyErrorKind::WalletItemNotFound, res);
+        _cleanup("wallet_get_works_for_non_existing");
     }
 
     #[test]
@@ -307,6 +311,7 @@ mod tests {
 
         let res = wallet.add(_type1(), _id1(), _value2(), &_tags());
         assert_kind!(IndyErrorKind::WalletItemAlreadyExists, res);
+        _cleanup("wallet_add_works_for_already_existing");
     }
 
     #[test]
@@ -327,6 +332,7 @@ mod tests {
         assert_eq!(record.id, _id1());
         assert_eq!(record.value.unwrap(), _value2());
         assert_eq!(record.tags.unwrap(), _tags());
+        _cleanup("wallet_update_works");
     }
 
     #[test]
@@ -338,6 +344,7 @@ mod tests {
 
         let res = wallet.update(_type1(), _id2(), _value2());
         assert_kind!(IndyErrorKind::WalletItemNotFound, res);
+        _cleanup("wallet_update_works_for_non_existing_id");
     }
 
     #[test]
@@ -349,6 +356,8 @@ mod tests {
 
         let res = wallet.update(_type2(), _id1(), _value2());
         assert_kind!(IndyErrorKind::WalletItemNotFound, res);
+        wallet.delete(_type1(), _id1()).unwrap();
+        _cleanup("wallet_update_works_for_non_existing_type");
     }
 
     /**
@@ -381,6 +390,7 @@ mod tests {
          });
 
         assert_eq!(record.tags.unwrap(), expected_tags);
+        _cleanup("wallet_add_tags_works");
     }
 
     #[test]
@@ -404,6 +414,7 @@ mod tests {
 
         let record = wallet.get(_type1(), _id1(), &_fetch_options(false, true, true)).unwrap();
         assert_eq!(record.tags.unwrap(), new_tags);
+        _cleanup("wallet_update_tags_works");
     }
 
     #[test]
@@ -429,6 +440,7 @@ mod tests {
 
         let record = wallet.get(_type1(), _id1(), &_fetch_options(false, true, true)).unwrap();
         assert_eq!(record.tags.unwrap(), expected_tags);
+        _cleanup("wallet_delete_tags_works");
     }
 
     #[test]
@@ -447,6 +459,7 @@ mod tests {
 
         let res = wallet.get(_type1(), _id1(), &_fetch_options(false, true, true));
         assert_kind!(IndyErrorKind::WalletItemNotFound, res);
+        _cleanup("wallet_delete_works");
     }
 
     #[test]
@@ -458,6 +471,7 @@ mod tests {
 
         let res = wallet.delete(_type1(), _id2());
         assert_kind!(IndyErrorKind::WalletItemNotFound, res);
+        _cleanup("wallet_delete_works_for_non_existing_id");
     }
 
     #[test]
@@ -469,6 +483,7 @@ mod tests {
 
         let res = wallet.delete(_type2(), _id1());
         assert_kind!(IndyErrorKind::WalletItemNotFound, res);
+        _cleanup("wallet_delete_works_for_non_existing_type");
     }
 
     #[test]
@@ -510,6 +525,7 @@ mod tests {
         let encrypted_query = encrypt_query(query, &Keys::new()).unwrap();
 
         assert_match!(Operator::And(_), encrypted_query);
+        _cleanup("language_parse_from_json_ecrypt_query_works");
     }
 
     #[test]
@@ -542,6 +558,7 @@ mod tests {
 
         assert_eq!(_fetch_all(&mut iterator), expected_records);
         assert!(iterator.get_total_count().unwrap().is_none());
+        _cleanup("wallet_search_works_for_empty_query");
     }
 
     #[test]
@@ -574,6 +591,7 @@ mod tests {
 
         assert_eq!(_fetch_all(&mut iterator), expected_records);
         assert_eq!(iterator.get_total_count().unwrap().unwrap(), 2);
+        _cleanup("wallet_search_works_for_empty_query_with_count");
     }
 
     #[test]
@@ -591,6 +609,7 @@ mod tests {
 
         assert!(iterator.next().unwrap().is_none());
         assert_eq!(iterator.get_total_count().unwrap().unwrap(), 2);
+        _cleanup("wallet_search_works_for_empty_query_with_only_count");
     }
 
     #[test]
@@ -653,6 +672,8 @@ mod tests {
 
         assert!(iterator.next().unwrap().is_none());
         assert!(iterator.get_total_count().unwrap().is_none());
+
+        _cleanup("wallet_search_works_for_eq_encrypted");
     }
 
     #[test]
@@ -670,6 +691,7 @@ mod tests {
                                 Some(&_search_options(true, false, false, true, false)));
 
         assert_kind!(IndyErrorKind::WalletQueryError, res);
+        _cleanup("wallet_search_works_for_empty_tag_plain");
     }
 
     #[test]
@@ -687,6 +709,7 @@ mod tests {
                                 Some(&_search_options(true, false, false, true, false)));
 
         assert_kind!(IndyErrorKind::WalletQueryError, res);
+        _cleanup("wallet_search_works_for_empty_tag_encrypted");
     }
 
     #[test]
@@ -749,6 +772,7 @@ mod tests {
 
         assert!(iterator.next().unwrap().is_none());
         assert!(iterator.get_total_count().unwrap().is_none());
+        _cleanup("wallet_search_works_for_eq_plan");
     }
 
     // neq tests //
@@ -812,6 +836,7 @@ mod tests {
 
         assert!(iterator.next().unwrap().is_none());
         assert!(iterator.get_total_count().unwrap().is_none());
+        _cleanup("wallet_search_works_for_neq_encrypted");
     }
 
     #[test]
@@ -874,6 +899,7 @@ mod tests {
 
         assert!(iterator.next().unwrap().is_none());
         assert!(iterator.get_total_count().unwrap().is_none());
+        _cleanup("wallet_search_works_for_neq_plain");
     }
 
     #[test]
@@ -930,6 +956,7 @@ mod tests {
 
         assert!(iterator.next().unwrap().is_none());
         assert!(iterator.get_total_count().unwrap().is_none());
+        _cleanup("wallet_search_works_for_gt_plain");
     }
 
     #[test]
@@ -943,6 +970,7 @@ mod tests {
                                 Some(&_search_options(true, false, false, true, false)));
 
         assert_kind!(IndyErrorKind::WalletQueryError, res);
+        _cleanup("wallet_search_works_for_gt_encrypted");
     }
 
     #[test]
@@ -999,6 +1027,7 @@ mod tests {
 
         assert!(iterator.next().unwrap().is_none());
         assert!(iterator.get_total_count().unwrap().is_none());
+        _cleanup("wallet_search_works_for_gte_plain");
     }
 
     #[test]
@@ -1012,6 +1041,7 @@ mod tests {
                                 Some(&_search_options(true, false, false, true, false)));
 
         assert_kind!(IndyErrorKind::WalletQueryError, res);
+        _cleanup("wallet_search_works_for_gte_encrypted");
     }
 
     #[test]
@@ -1067,7 +1097,7 @@ mod tests {
                                          Some(&_search_options(true, false, false, true, false))).unwrap();
 
         assert!(iterator.next().unwrap().is_none());
-        assert!(iterator.get_total_count().unwrap().is_none());
+        _cleanup("wallet_search_works_for_lt_plain");
     }
 
     #[test]
@@ -1081,6 +1111,7 @@ mod tests {
                                 Some(&_search_options(true, false, false, true, false)));
 
         assert_kind!(IndyErrorKind::WalletQueryError, res);
+        _cleanup("wallet_search_works_for_lt_encrypted");
     }
 
     #[test]
@@ -1137,6 +1168,7 @@ mod tests {
 
         assert!(iterator.next().unwrap().is_none());
         assert!(iterator.get_total_count().unwrap().is_none());
+        _cleanup("wallet_search_works_for_lte_plain");
     }
 
     #[test]
@@ -1150,6 +1182,7 @@ mod tests {
                                 Some(&_search_options(true, false, false, true, false)));
 
         assert_kind!(IndyErrorKind::WalletQueryError, res);
+        _cleanup("wallet_search_works_for_lte_encrypted");
     }
 
     #[test]
@@ -1206,6 +1239,7 @@ mod tests {
 
         assert!(iterator.next().unwrap().is_none());
         assert!(iterator.get_total_count().unwrap().is_none());
+        _cleanup("wallet_search_works_for_like_plain");
     }
 
     #[test]
@@ -1219,6 +1253,7 @@ mod tests {
                                 Some(&_search_options(true, false, false, true, false)));
 
         assert_kind!(IndyErrorKind::WalletQueryError, res);
+        _cleanup("wallet_search_works_for_like_encrypted");
     }
 
     #[test]
@@ -1283,6 +1318,7 @@ mod tests {
 
         assert!(iterator.next().unwrap().is_none());
         assert!(iterator.get_total_count().unwrap().is_none());
+        _cleanup("wallet_search_works_for_in_plain");
     }
 
     #[test]
@@ -1347,6 +1383,7 @@ mod tests {
 
         assert!(iterator.next().unwrap().is_none());
         assert!(iterator.get_total_count().unwrap().is_none());
+        _cleanup("wallet_search_works_for_in_encrypted")
     }
 
 
@@ -1482,6 +1519,7 @@ mod tests {
 
         assert!(iterator.next().unwrap().is_none());
         assert!(iterator.get_total_count().unwrap().is_none());
+        _cleanup("wallet_search_works_for_and");
     }
 
     #[test]
@@ -1624,6 +1662,7 @@ mod tests {
 
         assert!(iterator.next().unwrap().is_none());
         assert!(iterator.get_total_count().unwrap().is_none());
+        _cleanup("wallet_search_works_for_or");
     }
 
     #[test]
@@ -1719,6 +1758,7 @@ mod tests {
 
         assert!(iterator.next().unwrap().is_none());
         assert!(iterator.get_total_count().unwrap().is_none());
+        _cleanup("wallet_search_works_for_not");
     }
 
     #[test]
@@ -1760,6 +1800,7 @@ mod tests {
 
         assert_eq!(_fetch_all(&mut iterator), expected_records);
         assert!(iterator.get_total_count().unwrap().is_none());
+        _cleanup("wallet_search_works_for_nested");
     }
 
     fn _cleanup(name: &str) {

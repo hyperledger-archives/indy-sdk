@@ -225,6 +225,7 @@ mod tests {
 
         import(&wallet, &mut output.as_slice(), _passphrase()).unwrap();
         _assert_is_empty(&wallet);
+        _cleanup("export_import_works_for_empty_wallet");
     }
 
     #[test]
@@ -239,6 +240,7 @@ mod tests {
 
         import(&wallet, &mut output.as_slice(), _passphrase()).unwrap();
         _assert_has_2_records(&wallet);
+        _cleanup("export_import_works_for_2_items");
     }
 
     #[test]
@@ -253,6 +255,7 @@ mod tests {
 
         import(&wallet, &mut output.as_slice(), _passphrase()).unwrap();
         _assert_has_2_records(&wallet);
+        _cleanup("export_import_works_for_2_items_and_interactive_method");
     }
 
     #[test]
@@ -267,6 +270,7 @@ mod tests {
 
         import(&wallet, &mut output.as_slice(), _passphrase()).unwrap();
         _assert_has_300_records(&wallet);
+        _cleanup("export_import_works_for_multiple_items");
     }
 
     #[test]
@@ -275,6 +279,7 @@ mod tests {
 
         let res = import(&_wallet("import_works_for_empty"), &mut "".as_bytes(), _passphrase());
         assert_eq!(IndyErrorKind::InvalidStructure, res.unwrap_err().kind());
+        _cleanup("import_works_for_empty");
     }
 
     #[test]
@@ -283,6 +288,7 @@ mod tests {
 
         let res = import(&_wallet("import_works_for_cut_header_length"), &mut "\x00".as_bytes(), _passphrase());
         assert_eq!(IndyErrorKind::InvalidStructure, res.unwrap_err().kind());
+        _cleanup("import_works_for_cut_header_length");
     }
 
     #[test]
@@ -291,6 +297,7 @@ mod tests {
 
         let res = import(&_wallet("import_works_for_cut_header_body"), &mut "\x00\x20small".as_bytes(), _passphrase());
         assert_eq!(IndyErrorKind::InvalidStructure, res.unwrap_err().kind());
+        _cleanup("import_works_for_cut_header_length");
     }
 
     #[test]
@@ -308,6 +315,7 @@ mod tests {
 
         let res = import(&_wallet("import_works_for_invalid_header_body"), &mut output.as_slice(), _passphrase());
         assert_eq!(IndyErrorKind::InvalidStructure, res.unwrap_err().kind());
+        _cleanup("import_works_for_invalid_header_body");
     }
 
     #[test]
@@ -323,6 +331,7 @@ mod tests {
 
         let res = import(&mut _wallet("import_works_for_invalid_header_hash2"), &mut output.as_slice(), _passphrase());
         assert_eq!(IndyErrorKind::InvalidStructure, res.unwrap_err().kind());
+        _cleanup("import_works_for_invalid_header_hash");
     }
 
     #[test]
@@ -338,6 +347,7 @@ mod tests {
 
         let res = import(&mut _wallet("export_import_works_for_changed_record2"), &mut output.as_slice(), _passphrase());
         assert_eq!(IndyErrorKind::InvalidStructure, res.unwrap_err().kind());
+        _cleanup("export_import_works_for_changed_record");
     }
 
     #[test]
@@ -351,6 +361,7 @@ mod tests {
 
         let res = import(&mut _wallet("import_works_for_data_cut2"), &mut output.as_slice(), _passphrase());
         assert_eq!(IndyErrorKind::InvalidStructure, res.unwrap_err().kind());
+        _cleanup("import_works_for_data_cut");
     }
 
     #[test]
@@ -364,6 +375,7 @@ mod tests {
 
         let res = import(&mut _wallet("import_works_for_data_extended2"), &mut output.as_slice(), _passphrase());
         assert_eq!(IndyErrorKind::InvalidStructure, res.unwrap_err().kind());
+        _cleanup("import_works_for_data_extended");
     }
 
     fn _cleanup(name: &str) {
