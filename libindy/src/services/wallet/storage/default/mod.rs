@@ -814,12 +814,12 @@ mod tests {
         let my_path = _custom_path("sqlite_storage_type_create_works_for_custom_path");
         let path = Path::new(&my_path);
         if path.exists() {
-            fs::remove_file(path).unwrap();
+            fs::remove_dir_all(path).unwrap();
         }
         let storage_type = SQLiteStorageType::new();
         storage_type.create_storage("sqlite_storage_type_create_works_for_custom_path", Some(&config), None, &_metadata()).unwrap();
 
-        storage_type.delete_storage("sqlite_storage_type_create_works_for_custom_path", None, None).unwrap();
+        storage_type.delete_storage("sqlite_storage_type_create_works_for_custom_path", Some(&config), None).unwrap();
     }
 
     #[test]
@@ -878,7 +878,16 @@ mod tests {
     #[test]
     fn sqlite_storage_type_open_works_for_custom() {
         _cleanup("sqlite_storage_type_open_works_for_custom");
+
+        let my_path = _custom_path("sqlite_storage_type_open_works_for_custom");
+        let path = Path::new(&my_path);
+        if path.exists() && path.is_dir() {
+            fs::remove_dir_all(path).unwrap();
+        }
+
         _storage_custom("sqlite_storage_type_open_works_for_custom");
+
+        fs::remove_dir_all(path).unwrap();
     }
 
     #[test]
@@ -923,6 +932,9 @@ mod tests {
     fn sqlite_storage_set_get_works_for_custom() {
         _cleanup("sqlite_storage_set_get_works_for_custom");
 
+        let path = _custom_path("sqlite_storage_set_get_works_for_custom");
+        let path = Path::new(&path);
+
         let storage = _storage_custom("sqlite_storage_set_get_works_for_custom");
 
         storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
@@ -932,6 +944,8 @@ mod tests {
         assert_eq!(record.value.unwrap(), _value1());
         assert_eq!(record.type_, None);
         assert_eq!(_sort(record.tags.unwrap()), _sort(_tags()));
+
+        fs::remove_dir_all(path).unwrap();
     }
 
     #[test]
@@ -943,6 +957,7 @@ mod tests {
 
         let res = storage.add(&_type1(), &_id1(), &_value2(), &_tags());
         assert_kind!(IndyErrorKind::WalletItemAlreadyExists, res);
+
     }
 
     #[test]
