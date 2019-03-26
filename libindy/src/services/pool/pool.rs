@@ -815,7 +815,9 @@ mod tests {
 
         #[test]
         pub fn pool_wrapper_check_cache_works_for_no_pool_created() {
-            let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), POOL, 1, 0, 0);
+            let p: PoolSM<MockNetworker, MockRequestHandler> =
+                PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))),
+                            "pool_wrapper_check_cache_works_for_no_pool_created", 1, 0, 0);
             let p = p.handle_event(PoolEvent::CheckCache(1));
             assert_match!(PoolState::Terminated(_), p.state);
         }
