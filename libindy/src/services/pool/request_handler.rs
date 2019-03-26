@@ -769,7 +769,6 @@ pub mod tests {
     const SIMPLE_REPLY: &'static str = r#"{"result":{}}"#;
     const REJECT_REPLY: &'static str = r#"{"op":"REJECT", "result": {"reason": "reject"}}"#;
     const NACK_REPLY: &'static str = r#"{"op":"REQNACK", "result": {"reason": "reqnack"}}"#;
-    const POOL: &'static str = "pool1";
 
     #[derive(Debug)]
     pub struct MockRequestHandler {}
@@ -879,7 +878,7 @@ pub mod tests {
 
         let mut path = environment::pool_path(pool_name);
 
-        path.push(POOL);
+        path.push(pool_name);
         path.set_extension("txn");
 
         fs::create_dir_all(path.parent().unwrap()).unwrap();
