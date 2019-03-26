@@ -62,19 +62,15 @@ def calcCoverageRust(dir) {
         "TEST_POOL_IP=${POOL_IP}"
     ]) {
         sh '''
-            INDY_SDK_DIR=$(pwd)
-
-            cd $RUST_PROJECT_DIR
-            RUSTFLAGS="-L $INDY_SDK_DIR/libindy/target/debug/" cargo test --no-run
-            for i in $(find target/debug -maxdepth 1 -executable -type f | grep -v '\\.so\$')
+            RUSTFLAGS="-L libindy/target/debug/" cargo test --manifest-path=$RUST_PROJECT_DIR/Cargo.toml --no-run
+            for i in $(find $RUST_PROJECT_DIR/target/debug -maxdepth 1 -executable -type f | grep -v '\\.so\$')
             do
-                LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$INDY_SDK_DIR/libindy/target/debug/ \
+                LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(pwd)/libindy/target/debug/ \
                 RUST_TEST_THREADS=1 \
                 kcov \
                     --exclude-pattern=$CARGO_HOME,/usr/lib \
                     --verify \
-                    --merge \
-                    $INDY_SDK_DIR/cov \
+                    cov/ \
                     \$i \
                 || true
             done
