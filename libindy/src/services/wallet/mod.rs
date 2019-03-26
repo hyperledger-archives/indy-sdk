@@ -820,6 +820,8 @@ mod tests {
 
         let wallet_service = WalletService::new();
         _register_inmem_wallet(&wallet_service);
+
+        _cleanup("wallet_service_register_type_works");
     }
 
     #[test]
@@ -828,6 +830,8 @@ mod tests {
 
         let wallet_service = WalletService::new();
         wallet_service.create_wallet(&_config_default("wallet_service_create_wallet_works"), &RAW_CREDENTIAL, (&RAW_KDD, &RAW_MASTER_KEY)).unwrap();
+
+        _cleanup("wallet_service_create_wallet_works");
     }
 
     #[test]
@@ -844,6 +848,8 @@ mod tests {
 
         let wallet_service = WalletService::new();
         wallet_service.create_wallet(&_config_default("wallet_service_create_wallet_works_for_moderate_key_derivation"), &ARGON_MOD_CREDENTIAL, (&MODERATE_KDD, &MODERATE_MASTER_KEY)).unwrap();
+
+        _cleanup("wallet_service_create_wallet_works_for_interactive_key_derivation");
     }
 
     #[test]
@@ -887,6 +893,7 @@ mod tests {
 
         let wallet_service = WalletService::new();
         wallet_service.create_wallet(&_config("wallet_service_create_wallet_works_for_none_type"), &RAW_CREDENTIAL, (&RAW_KDD, &RAW_MASTER_KEY)).unwrap();
+        _cleanup("wallet_service_create_wallet_works_for_none_type");
     }
 
     #[test]
@@ -907,6 +914,7 @@ mod tests {
 
         let res = wallet_service.create_wallet(&_config("wallet_service_create_wallet_works_for_twice"), &RAW_CREDENTIAL, (&RAW_KDD, &RAW_MASTER_KEY));
         assert_kind!(IndyErrorKind::WalletAlreadyExists, res);
+        _cleanup("wallet_service_create_wallet_works_for_twice");
     }
     /*
         #[test]
@@ -927,6 +935,7 @@ mod tests {
         wallet_service.create_wallet(config, &RAW_CREDENTIAL, (&RAW_KDD, &RAW_MASTER_KEY)).unwrap();
         wallet_service.delete_wallet(config, &RAW_CREDENTIAL).unwrap();
         wallet_service.create_wallet(config, &RAW_CREDENTIAL, (&RAW_KDD, &RAW_MASTER_KEY)).unwrap();
+        _cleanup("wallet_service_delete_wallet_works");
     }
 
     #[test]
@@ -937,6 +946,7 @@ mod tests {
         wallet_service.create_wallet(config, &ARGON_INT_CREDENTIAL, (&INTERACTIVE_KDD, &INTERACTIVE_MASTER_KEY)).unwrap();
         wallet_service.delete_wallet(config, &ARGON_INT_CREDENTIAL).unwrap();
         wallet_service.create_wallet(config, &ARGON_INT_CREDENTIAL, (&INTERACTIVE_KDD, &INTERACTIVE_MASTER_KEY)).unwrap();
+        _cleanup("wallet_service_delete_wallet_works_for_interactive_key_derivation");
     }
 
     #[test]
@@ -947,6 +957,7 @@ mod tests {
         wallet_service.create_wallet(config, &ARGON_MOD_CREDENTIAL, (&MODERATE_KDD, &MODERATE_MASTER_KEY)).unwrap();
         wallet_service.delete_wallet(config, &ARGON_MOD_CREDENTIAL).unwrap();
         wallet_service.create_wallet(config, &ARGON_MOD_CREDENTIAL, (&MODERATE_KDD, &MODERATE_MASTER_KEY)).unwrap();
+        _cleanup("wallet_service_delete_wallet_works_for_moderate_key_derivation");
     }
 
     #[test]
@@ -972,6 +983,7 @@ mod tests {
 
         let res = wallet_service.delete_wallet(config, &RAW_CREDENTIAL);
         assert_eq!(IndyErrorKind::InvalidState, res.unwrap_err().kind());
+        _cleanup("wallet_service_delete_wallet_returns_error_if_wallet_opened");
     }
 
     #[test]
@@ -983,6 +995,7 @@ mod tests {
 
         let res = wallet_service.delete_wallet(config, &ARGON_INT_CREDENTIAL);
         assert_eq!(IndyErrorKind::WalletAccessFailed, res.unwrap_err().kind());
+        _cleanup("wallet_service_delete_wallet_returns_error_if_passed_different_value_for_interactive_method");
     }
 
     #[test]
@@ -1005,6 +1018,8 @@ mod tests {
 
         // cleanup
         wallet_service.close_wallet(handle).unwrap();
+
+        _cleanup("wallet_service_open_wallet_works");
     }
 
     #[test]
@@ -1017,6 +1032,8 @@ mod tests {
 
         // cleanup
         wallet_service.close_wallet(handle).unwrap();
+
+        _cleanup("wallet_service_open_wallet_works_for_interactive_key_derivation");
     }
 
     #[test]
@@ -1029,6 +1046,8 @@ mod tests {
 
         // cleanup
         wallet_service.close_wallet(handle).unwrap();
+
+        _cleanup("wallet_service_open_wallet_works_for_moderate_key_derivation");
     }
 
     #[test]
@@ -1049,6 +1068,7 @@ mod tests {
         wallet_service.open_wallet(config, &RAW_CREDENTIAL).unwrap();
         let res = wallet_service.open_wallet(config, &RAW_CREDENTIAL);
         assert_eq!(IndyErrorKind::WalletAlreadyOpened, res.unwrap_err().kind());
+        _cleanup("wallet_service_open_wallet_returns_appropriate_error_if_already_opened");
     }
 
     #[test]
@@ -1071,6 +1091,8 @@ mod tests {
 
         let res = wallet_service.open_wallet(&_config("wallet_service_open_wallet_returns_error_if_used_different_methods_for_creating_and_opening"), &ARGON_INT_CREDENTIAL);
         assert_kind!(IndyErrorKind::WalletAccessFailed, res);
+
+        _cleanup("wallet_service_open_wallet_returns_error_if_used_different_methods_for_creating_and_opening");
     }
 
     #[test]
@@ -1084,6 +1106,7 @@ mod tests {
 
         let wallet_handle = wallet_service.open_wallet(config, &RAW_CREDENTIAL).unwrap();
         wallet_service.close_wallet(wallet_handle).unwrap();
+        _cleanup("wallet_service_close_wallet_works");
     }
 
     #[test]
@@ -1113,6 +1136,8 @@ mod tests {
         assert_kind!(IndyErrorKind::InvalidWalletHandle, res);
 
         wallet_service.close_wallet(wallet_handle).unwrap();
+
+        _cleanup("wallet_service_close_wallet_returns_appropriate_error_if_wrong_handle");
     }
 
     #[test]
@@ -1125,6 +1150,8 @@ mod tests {
 
         wallet_service.add_record(wallet_handle, "type", "key1", "value1", &HashMap::new()).unwrap();
         wallet_service.get_record(wallet_handle, "type", "key1", "{}").unwrap();
+
+        _cleanup("wallet_service_add_record_works");
     }
 
     #[test]
@@ -1155,6 +1182,8 @@ mod tests {
         assert!(record.get_value().is_none());
         assert!(record.get_type().is_none());
         assert!(record.get_tags().is_none());
+
+        _cleanup("wallet_service_get_record_works_for_id_only");
     }
 
     #[test]
@@ -1190,6 +1219,8 @@ mod tests {
         assert_eq!("value1", record.get_value().unwrap());
         assert!(record.get_type().is_none());
         assert!(record.get_tags().is_none());
+
+        _cleanup("wallet_service_get_record_works_for_id_value");
     }
 
     #[test]
@@ -1226,6 +1257,7 @@ mod tests {
         assert_eq!("type", record.get_type().unwrap());
         assert_eq!("value1", record.get_value().unwrap());
         assert_eq!(&tags, record.get_tags().unwrap());
+        _cleanup("wallet_service_get_record_works_for_all_fields");
     }
 
     #[test]
@@ -1260,6 +1292,8 @@ mod tests {
         let wallet_handle = wallet_service.open_wallet(&_config("wallet_service_add_get_works_for_reopen"), &RAW_CREDENTIAL).unwrap();
         let record = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(false, true, false)).unwrap();
         assert_eq!("value1", record.get_value().unwrap());
+
+        _cleanup("wallet_service_add_get_works_for_reopen");
     }
 
     #[test]
@@ -1272,6 +1306,8 @@ mod tests {
 
         let res = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(false, true, false));
         assert_kind!(IndyErrorKind::WalletItemNotFound, res);
+
+        _cleanup("wallet_service_get_works_for_unknown");
     }
 
     #[test]
@@ -1311,6 +1347,8 @@ mod tests {
         wallet_service.update_record_value(wallet_handle, type_, name, new_value).unwrap();
         let record = wallet_service.get_record(wallet_handle, type_, name, &_fetch_options(false, true, false)).unwrap();
         assert_eq!(new_value, record.get_value().unwrap());
+
+        _cleanup("wallet_service_update");
     }
 
     #[test]
@@ -1359,6 +1397,8 @@ mod tests {
         wallet_service.delete_record(wallet_handle, type_, name).unwrap();
         let res = wallet_service.get_record(wallet_handle, type_, name, &_fetch_options(false, true, false));
         assert_kind!(IndyErrorKind::WalletItemNotFound, res);
+
+        _cleanup("wallet_service_delete_record");
     }
 
     #[test]
@@ -1410,6 +1450,8 @@ mod tests {
         let expected_tags: Tags = serde_json::from_str(r#"{"tag_name_1":"tag_value_1", "tag_name_2":"tag_value_2", "~tag_name_3":"tag_value_3"}"#).unwrap();
         let retrieved_tags = item.tags.unwrap();
         assert_eq!(expected_tags, retrieved_tags);
+
+        _cleanup("wallet_service_add_tags");
     }
 
     #[test]
@@ -1463,6 +1505,7 @@ mod tests {
         let item = wallet_service.get_record(wallet_handle, type_, name, &_fetch_options(true, true, true)).unwrap();
         let retrieved_tags = item.tags.unwrap();
         assert_eq!(new_tags, retrieved_tags);
+        _cleanup("wallet_service_update_tags");
     }
 
     #[test]
@@ -1518,6 +1561,7 @@ mod tests {
         let expected_tags: Tags = serde_json::from_str(r#"{"tag_name_2":"new_tag_value_2"}"#).unwrap();
         let retrieved_tags = item.tags.unwrap();
         assert_eq!(expected_tags, retrieved_tags);
+        _cleanup("wallet_service_delete_tags");
     }
 
 
@@ -1567,6 +1611,7 @@ mod tests {
         assert_eq!(HashMap::new(), record.get_tags().unwrap().clone());
 
         assert!(search.fetch_next_record().unwrap().is_none());
+        _cleanup("wallet_service_search_records_works");
     }
 
     #[test]
@@ -1625,6 +1670,7 @@ mod tests {
         let record = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(true, true, true)).unwrap();
         assert_eq!("type", record.get_type().unwrap());
         assert_eq!("value1", record.get_value().unwrap());
+        _cleanup("wallet_service_key_rotation");
     }
 
     #[test]
@@ -1657,6 +1703,7 @@ mod tests {
         let record = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(true, true, true)).unwrap();
         assert_eq!("type", record.get_type().unwrap());
         assert_eq!("value1", record.get_value().unwrap());
+        _cleanup("wallet_service_key_rotation_for_rekey_interactive_method");
     }
 
     #[test]
@@ -1689,6 +1736,7 @@ mod tests {
         let record = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(true, true, true)).unwrap();
         assert_eq!("type", record.get_type().unwrap());
         assert_eq!("value1", record.get_value().unwrap());
+        _cleanup("wallet_service_key_rotation_for_rekey_raw_method");
     }
 
     fn remove_exported_wallet(export_config: &ExportConfig) -> &Path {
@@ -1715,6 +1763,7 @@ mod tests {
 
         assert!(export_path.exists());
         remove_exported_wallet(&export_config);
+        _cleanup("wallet_service_export_wallet_when_empty");
     }
 
     #[test]
@@ -1734,6 +1783,7 @@ mod tests {
         wallet_service.export_wallet(wallet_handle, &export_config, 0, (&kdd, &master_key)).unwrap();
         assert!(export_path.exists());
         let _export_path = remove_exported_wallet(&export_config);
+        _cleanup("wallet_service_export_wallet_1_item");
     }
 
     #[test]
@@ -1753,6 +1803,7 @@ mod tests {
         wallet_service.export_wallet(wallet_handle, &export_config, 0, (&kdd, &master_key)).unwrap();
         assert!(export_path.exists());
         let _export_path = remove_exported_wallet(&export_config);
+        _cleanup("wallet_service_export_wallet_1_item_interactive_method");
     }
 
     #[test]
@@ -1772,6 +1823,7 @@ mod tests {
         wallet_service.export_wallet(wallet_handle, &export_config, 0, (&kdd, &master_key)).unwrap();
         assert!(&export_path.exists());
         let _export_path = remove_exported_wallet(&export_config);
+        _cleanup("wallet_service_export_wallet_1_item_raw_method");
     }
 
     #[test]
@@ -1794,6 +1846,7 @@ mod tests {
         let res = wallet_service.export_wallet(wallet_handle, &export_config, 0, (&kdd, &master_key));
         assert_eq!(IndyErrorKind::IOError, res.unwrap_err().kind());
         let _export_path = remove_exported_wallet(&export_config);
+        _cleanup("wallet_service_export_wallet_returns_error_if_file_exists");
     }
 
     #[test]
@@ -1810,6 +1863,7 @@ mod tests {
         let res = wallet_service.export_wallet(INVALID_WALLET_HANDLE, &export_config, 0, (&kdd, &master_key));
         assert_kind!(IndyErrorKind::InvalidWalletHandle, res);
         assert!(!export_path.exists());
+        _cleanup("wallet_service_export_wallet_returns_error_if_wrong_handle");
     }
 
     #[test]
@@ -1838,6 +1892,7 @@ mod tests {
         wallet_service.get_record(wallet_handle, "type", "key1", "{}").unwrap();
 
         let _export_path = remove_exported_wallet(&export_config);
+        _cleanup("wallet_service_export_import_wallet_1_item");
     }
 
     #[test]
@@ -1863,6 +1918,8 @@ mod tests {
         wallet_service.import_wallet(&_config("wallet_service_export_import_wallet_1_item_for_interactive_method"), &RAW_CREDENTIAL, &_export_config_interactive("wallet_service_export_import_wallet_1_item_for_interactive_method")).unwrap();
         let wallet_handle = wallet_service.open_wallet(&_config("wallet_service_export_import_wallet_1_item_for_interactive_method"), &RAW_CREDENTIAL).unwrap();
         wallet_service.get_record(wallet_handle, "type", "key1", "{}").unwrap();
+
+        _cleanup("wallet_service_export_import_wallet_1_item_for_interactive_method");
     }
 
     #[test]
@@ -1888,6 +1945,8 @@ mod tests {
         wallet_service.import_wallet(&_config("wallet_service_export_import_wallet_1_item_for_moderate_method"), &ARGON_MOD_CREDENTIAL, &export_config).unwrap();
         let wallet_handle = wallet_service.open_wallet(&_config("wallet_service_export_import_wallet_1_item_for_moderate_method"), &ARGON_MOD_CREDENTIAL).unwrap();
         wallet_service.get_record(wallet_handle, "type", "key1", "{}").unwrap();
+
+        _cleanup("wallet_service_export_import_wallet_1_item_for_moderate_method");
     }
 
     #[test]
@@ -1914,6 +1973,8 @@ mod tests {
         wallet_service.import_wallet(config, &ARGON_MOD_CREDENTIAL, &_export_config_moderate("wallet_service_export_import_wallet_1_item_for_export_interactive_import_as_raw")).unwrap();
         let wallet_handle = wallet_service.open_wallet(config, &ARGON_MOD_CREDENTIAL).unwrap();
         wallet_service.get_record(wallet_handle, "type", "key1", "{}").unwrap();
+
+        _cleanup("wallet_service_export_import_wallet_1_item_for_export_interactive_import_as_raw");
     }
 
     #[test]
@@ -1942,6 +2003,7 @@ mod tests {
         wallet_service.get_record(wallet_handle, "type", "key1", "{}").unwrap();
 
         let _export_path = remove_exported_wallet(&export_config);
+        _cleanup("wallet_service_export_import_wallet_1_item_for_export_raw_import_as_interactive");
     }
 
     #[test]
@@ -1966,6 +2028,7 @@ mod tests {
         wallet_service.open_wallet(config, &RAW_CREDENTIAL).unwrap();
 
         let _export_path = remove_exported_wallet(&export_config);
+        _cleanup("wallet_service_export_import_wallet_if_empty");
     }
 
     #[test]
@@ -1980,6 +2043,8 @@ mod tests {
 
         let res = wallet_service.open_wallet(config, &RAW_CREDENTIAL);
         assert_match!(Err(_), res);
+
+        _cleanup("wallet_service_export_import_returns_error_if_path_missing");
     }
 
     fn _fetch_options(type_: bool, value: bool, tags: bool) -> String {
