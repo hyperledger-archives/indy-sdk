@@ -1,10 +1,11 @@
 #!groovy
 
 
-pool_env = null
-
 POOL_NET_NAME = 'pool-network'
 POOL_IP='10.0.0.2'
+
+
+testing()
 
 def testing () {
     node('ubuntu') {
@@ -18,8 +19,9 @@ def testing () {
         }
 
         try {
+            def test_pool
             stage("Starting test pool") {
-                createPool()
+                test_pool = createPool()
             }
 
             stage("Collecting test coverage") {
@@ -38,26 +40,21 @@ def testing () {
                     //TODO add libvcx
                     //calcCoverageRust("vcx/libvcx")
 
-                    //cobertura coberturaReportFile: 'cov/kcov-merged/cobertura.xml'
+                    cobertura coberturaReportFile: 'cov/kcov-merged/cobertura.xml'
                 }
             }
         } finally {
             stage("Destroying test pool") {
-                destroyPool()
+                destroyPool(test_pool)
             }
         }
     }
 }
 
-testing()
-
 def getUserUid() {
     return sh(returnStdout: true, script: 'id -u').trim()
 }
 
-def dockerBuild(name, file = 'ci/ubuntu.dockerfile ci', customParams = '') {
-    return docker.build("$name-test", "--build-arg uid=${getUserUid()} ${customParams} -f $file")
-}
 
 def calcCoverageRust(dir) {
     withEnv([
@@ -76,6 +73,7 @@ def calcCoverageRust(dir) {
                 kcov \
                     --exclude-pattern=$CARGO_HOME,/usr/lib \
                     --verify \
+                    --merge \
                     $INDY_SDK_DIR/cov \
                     \$i \
                 || true
@@ -84,19 +82,26 @@ def calcCoverageRust(dir) {
     }
 }
 
+// -------------------------------
+// Docker utilities
+
+def dockerBuild(name, file = 'ci/ubuntu.dockerfile ci', customParams = '') {
+    return docker.build("$name-test", "--build-arg uid=${getUserUid()} ${customParams} -f $file")
+}
+
+// -------------------------------
+// Test pool set up and teardown
 
 def createPool() {
     sh "docker network create --subnet=10.0.0.0/8 ${POOL_NET_NAME}"
 
-    pool_env = dockerBuild('indy_pool', 'ci/indy-pool.dockerfile ci', '--build-arg pool_ip=10.0.0.2')
-    pool_env.run("--ip \"${POOL_IP}\" --network=${POOL_NET_NAME}")
+    def pool_image = dockerBuild('indy_pool', 'ci/indy-pool.dockerfile ci', '--build-arg pool_ip=10.0.0.2')
+    return pool_image.run("--ip \"${POOL_IP}\" --network=${POOL_NET_NAME}")
 }
 
-def destroyPool() {
+def destroyPool(pool_env) {
     if (pool_env != null) {
         pool_env.stop()
+        sh "docker network rm ${POOL_NET_NAME}"
     }
-    pool_env = null
-
-    sh "docker network rm ${POOL_NET_NAME}"
 }
