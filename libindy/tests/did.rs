@@ -87,7 +87,6 @@ mod high_cases {
             let received_verkey = did::key_for_did(pool_handle, wallet_handle, &did).unwrap();
             assert_eq!(verkey, received_verkey);
 
-            wallet::close_wallet(trustee_wallet_handle).unwrap();
             utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_key_for_did_works_for_get_key_from_ledger", &wallet_config);
         }
 
