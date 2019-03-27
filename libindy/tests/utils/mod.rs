@@ -85,7 +85,7 @@ pub fn tear_down_with_pool(pool_handle: i32, name: &str) {
 
 pub fn setup_with_wallet_and_pool(name: &str) -> (i32, i32, String) {
     let (wallet_handle, config) = setup_with_wallet(name);
-    let pool_handle = pool::create_and_open_pool_ledger(constants::POOL).unwrap();
+    let pool_handle = pool::create_and_open_pool_ledger(name).unwrap();
     (wallet_handle, pool_handle, config)
 }
 
