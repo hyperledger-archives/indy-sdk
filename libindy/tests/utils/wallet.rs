@@ -92,9 +92,9 @@ pub fn create_and_open_wallet(storage_type: Option<&str>) -> Result<(i32, String
     Ok((wallet_handle, config))
 }
 
-pub fn create_and_open_default_wallet() -> Result<(i32, String), IndyError> {
+pub fn create_and_open_default_wallet(wallet_name: &str) -> Result<(i32, String), IndyError> {
     let config = json!({
-            "id": format!("default-wallet_id-{}", sequence::get_next_id()),
+            "id": format!("default-wallet_id-{}-{}", wallet_name, sequence::get_next_id()),
             "storage_type": TYPE
         }).to_string();
 
