@@ -87,8 +87,8 @@ struct Verifier{
 impl Pool {
 
 
-    pub fn new() -> Pool {
-        Pool{ pool_handle : pool::create_and_open_pool_ledger(POOL).unwrap() }
+    pub fn new(pool_name: &str) -> Pool {
+        Pool{ pool_handle : pool::create_and_open_pool_ledger(pool_name).unwrap() }
     }
 
     pub fn close(self) {
@@ -525,7 +525,7 @@ impl Verifier{
 #[cfg(feature = "revocation_tests")]
 #[test]
 fn anoncreds_revocation_interaction_test_issuance_by_demand() {
-    anoncreds_revocation_interaction_test_one_prover(r#"{"max_cred_num":5, "issuance_type":"ISSUANCE_ON_DEMAND"}"#);
+    anoncreds_revocation_interaction_test_one_prover("anoncreds_revocation_interaction_test_issuance_by_demand", r#"{"max_cred_num":5, "issuance_type":"ISSUANCE_ON_DEMAND"}"#);
 }
 
 #[cfg(feature = "revocation_tests")]
@@ -533,15 +533,15 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand() {
 #[test]
 fn anoncreds_revocation_interaction_test_issuance_by_default()
 {
-    anoncreds_revocation_interaction_test_one_prover(r#"{"max_cred_num":5, "issuance_type":"ISSUANCE_BY_DEFAULT"}"#);
+    anoncreds_revocation_interaction_test_one_prover("anoncreds_revocation_interaction_test_issuance_by_default", r#"{"max_cred_num":5, "issuance_type":"ISSUANCE_BY_DEFAULT"}"#);
 }
 
 // the common function for two previous tests
-fn anoncreds_revocation_interaction_test_one_prover(revocation_registry_config: &str)
+fn anoncreds_revocation_interaction_test_one_prover(pool_name: &str, revocation_registry_config: &str)
 {
     utils::setup("anoncreds_revocation_interaction_test_one_prover");
 
-    let pool = Pool::new();
+    let pool = Pool::new(pool_name);
 
     let mut issuer = Issuer::new(&pool);
 
@@ -657,7 +657,7 @@ fn multi_steps_create_revocation_credential(pool : &Pool, issuer: &Issuer, prove
 fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_post_entry_three_times_proving_first() {
     utils::setup("anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_post_entry_three_times_proving_first");
 
-    let pool = Pool::new();
+    let pool = Pool::new("anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_post_entry_three_times_proving_first");
 
     let mut issuer = Issuer::new(&pool);
 
@@ -735,7 +735,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_po
 fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_post_common_entry_proving_all() {
     utils::setup("anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_post_common_entry_proving_all");
 
-    let pool = Pool::new();
+    let pool = Pool::new("anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_post_common_entry_proving_all");
 
     let mut issuer = Issuer::new(&pool);
 
