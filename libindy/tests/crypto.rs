@@ -438,11 +438,10 @@ mod high_cases {
             let msg = crypto::anon_decrypt(recipient_wallet_handle, &recipient_vk, &encrypted_msg).unwrap();
             assert_eq!(MESSAGE.as_bytes().to_vec(), msg);
 
-            wallet::close_wallet(recipient_wallet_handle).unwrap();
-            wallet::delete_wallet(&wallet_config, WALLET_CREDENTIALS).unwrap();
             wallet::close_wallet(sender_wallet_handle).unwrap();
+            wallet::delete_wallet(&wallet_config, WALLET_CREDENTIALS).unwrap();
+            wallet::close_wallet(recipient_wallet_handle).unwrap();
             wallet::delete_wallet(&recipient_wallet_config, WALLET_CREDENTIALS).unwrap();
-            utils::tear_down_with_wallet(sender_wallet_handle, "indy_crypto_anon_decrypt_works", &wallet_config);
         }
 
         #[test]
