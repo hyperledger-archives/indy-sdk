@@ -83,7 +83,7 @@ mod high_cases {
             wallet::close_wallet(trustee_wallet_handle).unwrap();
             wallet::delete_wallet(&wallet_config, WALLET_CREDENTIALS).unwrap();
 
-            let (wallet_handle, wallet_config) = wallet::create_and_open_default_wallet().unwrap();
+            let (wallet_handle, wallet_config) = wallet::create_and_open_default_wallet("indy_key_for_did_works_for_get_key_from_ledger_2").unwrap();
             let received_verkey = did::key_for_did(pool_handle, wallet_handle, &did).unwrap();
             assert_eq!(verkey, received_verkey);
 

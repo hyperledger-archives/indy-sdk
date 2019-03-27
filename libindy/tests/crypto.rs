@@ -337,7 +337,7 @@ mod high_cases {
         fn indy_crypto_auth_decrypt_works() {
             let (sender_wallet_handle, sender_vk, sender_wallet_config) = setup_with_key("indy_crypto_auth_decrypt_works");
 
-            let (recipient_wallet_handle, recipient_config) = wallet::create_and_open_default_wallet().unwrap();
+            let (recipient_wallet_handle, recipient_config) = wallet::create_and_open_default_wallet("indy_crypto_auth_decrypt_works").unwrap();
             let recipient_vk = crypto::create_key(recipient_wallet_handle, None).unwrap();
 
             let encrypted_msg = crypto::auth_crypt(sender_wallet_handle, &sender_vk, &recipient_vk, MESSAGE.as_bytes()).unwrap();
@@ -354,7 +354,7 @@ mod high_cases {
         #[test]
         fn indy_crypto_auth_decrypt_works_for_invalid_msg() {
             let (sender_wallet_handle, sender_wallet_config) = utils::setup_with_wallet("indy_crypto_auth_decrypt_works_for_invalid_msg");
-            let (recipient_wallet_handle, recipient_wallet_config) = wallet::create_and_open_default_wallet().unwrap();
+            let (recipient_wallet_handle, recipient_wallet_config) = wallet::create_and_open_default_wallet("indy_crypto_auth_decrypt_works_for_invalid_msg").unwrap();
 
             let (recipient_did, recipient_vk) = did::create_and_store_my_did(recipient_wallet_handle, Some(MY2_SEED)).unwrap();
             did::store_their_did_from_parts(sender_wallet_handle, &recipient_did, &recipient_vk).unwrap();
@@ -385,7 +385,7 @@ mod high_cases {
         #[test]
         fn indy_crypto_auth_decrypt_works_invalid_handle() {
             let (sender_wallet_handle, sender_vk, sender_wallet_config) = setup_with_key("indy_crypto_auth_decrypt_works_invalid_handle");
-            let (recipient_wallet_handle, recipient_wallet_config) = wallet::create_and_open_default_wallet().unwrap();
+            let (recipient_wallet_handle, recipient_wallet_config) = wallet::create_and_open_default_wallet("indy_crypto_auth_decrypt_works_invalid_handle").unwrap();
             let recipient_vk = crypto::create_key(recipient_wallet_handle, None).unwrap();
 
             let encrypted_msg = crypto::auth_crypt(sender_wallet_handle, &sender_vk, &recipient_vk, MESSAGE.as_bytes()).unwrap();
@@ -430,7 +430,7 @@ mod high_cases {
         #[test]
         fn indy_crypto_anon_decrypt_works() {
             let (sender_wallet_handle, _, wallet_config) = setup_with_key("indy_crypto_anon_decrypt_works");
-            let (recipient_wallet_handle, recipient_wallet_config) = wallet::create_and_open_default_wallet().unwrap();
+            let (recipient_wallet_handle, recipient_wallet_config) = wallet::create_and_open_default_wallet("indy_crypto_anon_decrypt_works").unwrap();
             let recipient_vk = crypto::create_key(recipient_wallet_handle, None).unwrap();
 
             let encrypted_msg = crypto::anon_crypt(&recipient_vk, MESSAGE.as_bytes()).unwrap();
@@ -599,7 +599,7 @@ mod high_cases {
         fn indy_unpack_message_authcrypt_works() {
             //Test setup
             let (wallet_handle_sender, sender_verkey, wallet_config_sender) = setup_with_key("indy_unpack_message_authcrypt_works");
-            let (wallet_handle_receiver, wallet_config_receiver) = wallet::create_and_open_default_wallet().unwrap();
+            let (wallet_handle_receiver, wallet_config_receiver) = wallet::create_and_open_default_wallet("indy_unpack_message_authcrypt_works").unwrap();
             let receiver_verkey = crypto::create_key(wallet_handle_receiver, None).unwrap();
             let rec_key_vec = vec![VERKEY_TRUSTEE, &receiver_verkey];
             let receiver_keys = serde_json::to_string(&rec_key_vec).unwrap();
@@ -625,7 +625,7 @@ mod high_cases {
         fn indy_unpack_message_authcrypt_fails_no_matching_key() {
             //Test Setup
             let (wallet_handle_sender, sender_verkey, wallet_config_sender) = setup_with_key("indy_unpack_message_authcrypt_fails_no_matching_key");
-            let (wallet_handle_receiver, wallet_config_receiver) = wallet::create_and_open_default_wallet().unwrap();
+            let (wallet_handle_receiver, wallet_config_receiver) = wallet::create_and_open_default_wallet("indy_unpack_message_authcrypt_fails_no_matching_key").unwrap();
             crypto::create_key(wallet_handle_receiver, None).unwrap();
             let rec_key_vec = vec![VERKEY_TRUSTEE];
             let receiver_keys = serde_json::to_string(&rec_key_vec).unwrap();
@@ -658,7 +658,7 @@ mod high_cases {
         #[test]
         fn indy_unpack_message_anoncrypt_works() {
             let (wallet_handle_sender, _, wallet_config_sender) = setup_with_key("indy_unpack_message_anoncrypt_works");
-            let (wallet_handle_receiver, wallet_config_receiver) = wallet::create_and_open_default_wallet().unwrap();
+            let (wallet_handle_receiver, wallet_config_receiver) = wallet::create_and_open_default_wallet("indy_unpack_message_anoncrypt_works").unwrap();
             let receiver_verkey = crypto::create_key(wallet_handle_receiver, None).unwrap();
             let rec_key_vec = vec![VERKEY_TRUSTEE, &receiver_verkey];
             let receiver_keys = serde_json::to_string(&rec_key_vec).unwrap();
@@ -680,7 +680,7 @@ mod high_cases {
         fn indy_unpack_message_anoncrypt_fails_no_matching_key() {
             //Test Setup
             let (wallet_handle_sender, _, wallet_config_sender) = setup_with_key("indy_unpack_message_anoncrypt_fails_no_matching_key");
-            let (wallet_handle_receiver, wallet_config_receiver) = wallet::create_and_open_default_wallet().unwrap();
+            let (wallet_handle_receiver, wallet_config_receiver) = wallet::create_and_open_default_wallet("indy_unpack_message_anoncrypt_fails_no_matching_key").unwrap();
             crypto::create_key(wallet_handle_receiver, None).unwrap();
             let rec_key_vec = vec![VERKEY_TRUSTEE];
             let receiver_keys = serde_json::to_string(&rec_key_vec).unwrap();
@@ -733,8 +733,8 @@ mod load {
 
         let mut agents = Vec::new();
         let mut os_rng = OsRng::new().unwrap();
-        for _ in 0..agent_cnt {
-            let (wallet, wallet_config) = wallet::create_and_open_default_wallet().unwrap();
+        for i in 0..agent_cnt {
+            let (wallet, wallet_config) = wallet::create_and_open_default_wallet(&format!("parallel_auth_encrypt-{}", i)).unwrap();
             let (_did, verkey) = did::create_and_store_my_did(wallet, None).unwrap();
             let mut data = vec![0u8; data_sz];
             os_rng.fill_bytes(&mut data.as_mut_slice());

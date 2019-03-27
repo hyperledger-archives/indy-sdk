@@ -311,7 +311,7 @@ mod high_cases {
             let path = wallet::export_wallet_path();
             let config_json = wallet::prepare_export_wallet_config(&path);
 
-            let (wallet_handle, wallet_config) = wallet::create_and_open_default_wallet().unwrap();
+            let (wallet_handle, wallet_config) = wallet::create_and_open_default_wallet("indy_import_wallet_works").unwrap();
 
             let (did, _) = did::create_my_did(wallet_handle, "{}").unwrap();
             did::set_did_metadata(wallet_handle, &did, METADATA).unwrap();

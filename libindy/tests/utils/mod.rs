@@ -59,7 +59,7 @@ pub fn tear_down(name: &str) {
 
 pub fn setup_with_wallet(name: &str) -> (i32, String) {
     setup(name);
-    wallet::create_and_open_default_wallet().unwrap()
+    wallet::create_and_open_default_wallet(name).unwrap()
 }
 
 pub fn setup_with_plugged_wallet(name: &str) -> (i32, String) {
@@ -75,7 +75,7 @@ pub fn tear_down_with_wallet(wallet_handle: i32, name: &str, wallet_config: &str
 
 pub fn setup_with_pool(name: &str) -> i32 {
     setup(name);
-    pool::create_and_open_pool_ledger(constants::POOL).unwrap()
+    pool::create_and_open_pool_ledger(name).unwrap()
 }
 
 pub fn tear_down_with_pool(pool_handle: i32, name: &str) {

@@ -23,6 +23,7 @@ extern crate rmp_serde;
 extern crate rust_base58;
 extern crate time;
 extern crate serde;
+extern crate core;
 
 #[macro_use]
 mod utils;
@@ -47,6 +48,7 @@ use utils::domain::anoncreds::revocation_registry::RevocationRegistry;
 use std::thread;
 
 use serde_json::Value;
+use core::borrow::Borrow;
 
 
 struct Pool{
@@ -159,7 +161,7 @@ impl Issuer {
 
     pub fn new(pool: &Pool) -> Issuer{
 
-        let (wallet_handle, _wallet_config) = wallet::create_and_open_default_wallet().unwrap();
+        let (wallet_handle, _wallet_config) = wallet::create_and_open_default_wallet(format!("wallet_for_pool_{}", pool.pool_handle).borrow()).unwrap();
         Issuer {
             // Issuer creates wallet, gets wallet handle
             issuer_wallet_handle: wallet_handle,
@@ -295,7 +297,7 @@ impl Prover
     pub fn new(master_secret_id : Option<&str>) -> Prover
     {
         // Prover creates wallet, gets wallet handle
-        let (prover_wallet_handle, _prover_wallet_config) = wallet::create_and_open_default_wallet().unwrap();
+        let (prover_wallet_handle, _prover_wallet_config) = wallet::create_and_open_default_wallet("interactions_prover").unwrap();
         // Prover create DID
         let (prover_did, prover_verkey) = did::create_my_did(prover_wallet_handle, "{}").unwrap();
         // Prover creates Master Secret
