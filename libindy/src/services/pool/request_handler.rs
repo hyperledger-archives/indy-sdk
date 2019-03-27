@@ -268,7 +268,7 @@ impl<T: Networker> RequestSM<T> {
                     }
                     RequestEvent::CustomSingleRequest(msg, req_id) => {
                         state.networker.borrow_mut().process_event(Some(NetworkerEvent::SendOneRequest(msg.clone(), req_id.clone(), timeout)));
-                        state.networker.borrow_mut().process_event(Some(NetworkerEvent::SendOneRequest(msg, req_id, timeout)));
+                        state.networker.borrow_mut().process_event(Some(NetworkerEvent::Resend(req_id, timeout)));
                         (RequestState::Single(state.into()), None)
                     }
                     RequestEvent::CustomFullRequest(msg, req_id, local_timeout, nodes_to_send) => {
