@@ -853,6 +853,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn wallet_service_create_wallet_works_for_comparision_time_of_different_key_types() {
         use std::time::Instant;
         _cleanup("wallet_service_create_wallet_works_for_comparision_time_of_different_key_types");
