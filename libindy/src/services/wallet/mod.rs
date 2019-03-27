@@ -854,22 +854,22 @@ mod tests {
 
     #[test]
     fn wallet_service_create_wallet_works_for_comparision_time_of_different_key_types() {
-        use std::time::SystemTime;
+        use std::time::Instant;
         _cleanup("wallet_service_create_wallet_works_for_comparision_time_of_different_key_types");
 
         let wallet_service = WalletService::new();
 
         let config = _config_default("wallet_service_create_wallet_works_for_comparision_time_of_different_key_types");
-        let time = SystemTime::now();
+        let time = Instant::now();
         wallet_service.create_wallet(&config, &ARGON_MOD_CREDENTIAL, (&MODERATE_KDD, &MODERATE_MASTER_KEY)).unwrap();
-        let time_diff_moderate_key = SystemTime::now().duration_since(time).unwrap();
+        let time_diff_moderate_key = time.elapsed();
         wallet_service.delete_wallet(&config, &ARGON_MOD_CREDENTIAL).unwrap();
 
         _cleanup("wallet_service_create_wallet_works_for_comparision_time_of_different_key_types");
 
-        let time = SystemTime::now();
+        let time = Instant::now();
         wallet_service.create_wallet(&config, &ARGON_INT_CREDENTIAL, (&INTERACTIVE_KDD, &INTERACTIVE_MASTER_KEY)).unwrap();
-        let time_diff_interactive_key = SystemTime::now().duration_since(time).unwrap();
+        let time_diff_interactive_key = time.elapsed();
         wallet_service.delete_wallet(&config, &ARGON_INT_CREDENTIAL).unwrap();
 
         assert!(time_diff_interactive_key < time_diff_moderate_key);
