@@ -230,7 +230,7 @@ pub fn post_entities() -> (&'static str, &'static str, &'static str) {
             let pool_name = "COMMON_ENTITIES_POOL";
             let pool_handle = pool::create_and_open_pool_ledger(pool_name).unwrap();
 
-            let (wallet_handle, wallet_config) = wallet::create_and_open_default_wallet().unwrap();
+            let (wallet_handle, wallet_config) = wallet::create_and_open_default_wallet(pool_name).unwrap();
 
             let (issuer_did, _) = did::create_store_and_publish_my_did_from_trustee(wallet_handle, pool_handle).unwrap();
 
