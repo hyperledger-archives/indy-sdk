@@ -473,8 +473,8 @@ fn anoncreds_demo_works() {
     let res = prover_close_wallet_receiver.recv_timeout(timeout::medium_timeout()).unwrap();
     assert_eq!(ErrorCode::from(res), ErrorCode::Success);
 
-    utils::tear_down_delete_wallet(&issuer_wallet_config);
-    utils::tear_down_delete_wallet(&prover_wallet_config);
+    utils::tear_down_delete_wallet_with_credentials(&issuer_wallet_config, &issuer_wallet_credentials);
+    utils::tear_down_delete_wallet_with_credentials(&prover_wallet_config, &prover_wallet_credentials);
     utils::tear_down("anoncreds_demo_works");
 }
 
