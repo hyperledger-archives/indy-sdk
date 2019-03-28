@@ -1932,7 +1932,6 @@ mod high_cases {
             let constraints = response.result["data"].as_object().unwrap();
             assert!(constraints.len() > 0);
 
-            utils::tear_down_delete_wallet(&wallet_config);
             utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_get_auth_rule_request_works_for_getting_all", &wallet_config);
         }
 
