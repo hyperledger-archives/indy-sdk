@@ -92,9 +92,9 @@ mod high_cases {
         fn create_pool_ledger_config_works_for_empty_genesis_txns() {
             utils::setup("create_pool_ledger_config_works_for_empty_genesis_txns");
 
-            let txn_file_path = pool::create_genesis_txn_file_for_test_pool("pool_create", Some(0), None);
+            let txn_file_path = pool::create_genesis_txn_file_for_test_pool("create_pool_ledger_config_works_for_empty_genesis_txns", Some(0), None);
             let pool_config = pool::pool_config_json(txn_file_path.as_path());
-            let res = pool::create_pool_ledger_config("pool_create", Some(pool_config.as_str()));
+            let res = pool::create_pool_ledger_config("create_pool_ledger_config_works_for_empty_genesis_txns", Some(pool_config.as_str()));
             assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             utils::tear_down("create_pool_ledger_config_works_for_empty_genesis_txns");
@@ -111,7 +111,7 @@ mod high_cases {
 
             pool::set_protocol_version(PROTOCOL_VERSION).unwrap();
 
-            let pool_name = "pool_open";
+            let pool_name = "open_pool_ledger_works";
             let txn_file_path = pool::create_genesis_txn_file_for_test_pool(pool_name, None, None);
             let pool_config = pool::pool_config_json(txn_file_path.as_path());
             pool::create_pool_ledger_config(pool_name, Some(pool_config.as_str())).unwrap();
@@ -145,7 +145,7 @@ mod high_cases {
         fn open_pool_ledger_works_for_twice() {
             utils::setup("open_pool_ledger_works_for_twice");
 
-            let pool_name = "pool_open_twice";
+            let pool_name = "open_pool_ledger_works_for_twice";
             pool::create_and_open_pool_ledger(pool_name).unwrap();
 
             let res = pool::open_pool_ledger(pool_name, None);
@@ -402,7 +402,7 @@ mod medium_cases {
 
             let txn_file_path = pool::create_genesis_txn_file_for_empty_lines("create_pool_ledger_config_works_for_empty_lines_in_genesis_txn_file", None);
             let pool_config = pool::pool_config_json(txn_file_path.as_path());
-            pool::create_pool_ledger_config("pool_create", Some(pool_config.as_str())).unwrap();
+            pool::create_pool_ledger_config("create_pool_ledger_config_works_for_empty_lines_in_genesis_txn_file", Some(pool_config.as_str())).unwrap();
 
             utils::tear_down("create_pool_ledger_config_works_for_empty_lines_in_genesis_txn_file");
         }
@@ -477,7 +477,7 @@ mod medium_cases {
         #[cfg(feature = "local_nodes_pool")]
         fn open_pool_ledger_works_for_invalid_config() {
             utils::setup("open_pool_ledger_works_for_invalid_config");
-            let name = "pool_open_invalid_confi";
+            let name = "open_pool_ledger_works_for_invalid_config";
             let config = r#"{"timeout": "true"}"#;
 
             pool::set_protocol_version(PROTOCOL_VERSION).unwrap();
