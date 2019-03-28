@@ -840,6 +840,8 @@ mod tests {
 
         let wallet_service = WalletService::new();
         wallet_service.create_wallet(&_config_default("wallet_service_create_wallet_works_for_interactive_key_derivation"), &ARGON_INT_CREDENTIAL, (&INTERACTIVE_KDD, &INTERACTIVE_MASTER_KEY)).unwrap();
+
+        _cleanup("wallet_service_create_wallet_works_for_interactive_key_derivation");
     }
 
     #[test]
@@ -849,7 +851,7 @@ mod tests {
         let wallet_service = WalletService::new();
         wallet_service.create_wallet(&_config_default("wallet_service_create_wallet_works_for_moderate_key_derivation"), &ARGON_MOD_CREDENTIAL, (&MODERATE_KDD, &MODERATE_MASTER_KEY)).unwrap();
 
-        _cleanup("wallet_service_create_wallet_works_for_interactive_key_derivation");
+        _cleanup("wallet_service_create_wallet_works_for_moderate_key_derivation");
     }
 
     #[test]
