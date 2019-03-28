@@ -35,6 +35,7 @@ use utils::constants::*;
 
 #[test]
 fn indy_set_logger_works() {
+    const DEFAULT_WALLET_CONFIG: &str = r#"{"id":"indy_set_logger_works","storage_type":"default"}"#;
     test::cleanup_storage("indy_set_logger_works");
 
     wallet::create_wallet(DEFAULT_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
@@ -51,6 +52,7 @@ fn indy_set_logger_works() {
 
 #[test]
 fn indy_set_default_logger_works() {
+    const DEFAULT_WALLET_CONFIG: &str = r#"{"id":"indy_set_default_logger_works","storage_type":"default"}"#;
     test::cleanup_storage("indy_set_default_logger_works");
 
     wallet::create_wallet(DEFAULT_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
