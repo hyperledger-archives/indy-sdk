@@ -8,7 +8,7 @@ In case of troubles running the how-to, please read the [trouble shooting](../tr
 
 ## Prerequisites
 
-Setup your workstation with an indy development virtual machine (VM). See [prerequisites](../../prerequisites.md).
+Setup your workstation with an indy development virtual machine (VM). See [prerequisites](../prerequisites.md).
 
 ## Steps
 
@@ -33,7 +33,7 @@ appropriate keys.
 We also need to create an *[identity wallet](https://docs.google.com/presentation/d/1X6F9QVG8M4PqQQLLL_5I6aQ5z7CCpYyYHBNKYMlsqXc/edit#slide=id.g32295399e3_0_73)*, so the SDK can store the DID and key
 material generated during the tutorial.
 
-![more info on wallets](../wallet-slide.png)
+![more info on wallets](wallet-slide.png)
 
 Copy the contents of the correspondent *step2* file below into your template file 
 instead of the `Step 2 code goes here` placeholder comment, and save it as `write_did.EXT`,
@@ -54,7 +54,7 @@ the correspondent *step3* file below into your `write_did` file instead of the `
 Study the changes.
 
 A few operations in indy [can only be done by identities (DIDs) with
-special roles](https://github.com/hyperledger/indy-node/blob/master/docs/auth_rules.md). For example, a DID that is a *steward* can add a node (the one
+special roles](https://github.com/hyperledger/indy-node/blob/master/docs/source/auth_rules.md). For example, a DID that is a *steward* can add a node (the one
 they own) to the validator pool, and can create DIDs with a *trust anchor*
 role. A trust anchor DID can add arbitrary DIDs to the ledger.
 
