@@ -104,7 +104,7 @@ the preceding write transaction are bundled, sent, and awaited.
 
 Run the completed demo and observe the whole sequence.
 
-[ [Python complete](python/write_did_and_query_verkey.py) | [Java complete](java/WriteDIDAndQueryVerkey.java) | [.NET complete](cs/WriteDIDAndQueryVerkey.cs) | [Node.js complete](nodejs/step5.js) | [Rust complete](rust/src/write-did-and-query-verkey.rs)]
+[ [Python complete](python/write_did_and_query_verkey.py) | [Java complete](java/WriteDIDAndQueryVerkey.java) | [.NET complete](cs/WriteDIDAndQueryVerkey.cs) | [Node.js complete](nodejs/writeDidAndQueryVerkey.js) | [Rust complete](rust/src/write-did-and-query-verkey.rs)]
 
 ## More experiments
 
