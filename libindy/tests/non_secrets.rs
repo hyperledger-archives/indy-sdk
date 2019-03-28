@@ -734,9 +734,9 @@ mod high_cases {
     mod search {
         use super::*;
 
-        fn setup(name: &str) -> i32{
-            init_non_secret_test_wallet(name);
-            wallet::open_wallet(SEARCH_COMMON_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap()
+        fn setup(name: &str, wallet_config: &str) -> i32{
+            init_non_secret_test_wallet(name, wallet_config);
+            wallet::open_wallet(wallet_config, WALLET_CREDENTIALS).unwrap()
         }
 
         fn tear_down(wallet_handle: i32, search_handle: i32){
@@ -756,7 +756,8 @@ mod high_cases {
 
             #[test]
             fn indy_wallet_search_for_empty_query() {
-                let wallet_handle = setup("indy_wallet_search_for_empty_query");
+                const SEARCH_WALLET_CONFIG: &str = r#"{"id":"indy_wallet_search_for_empty_query"}"#;
+                let wallet_handle = setup("indy_wallet_search_for_empty_query", SEARCH_WALLET_CONFIG);
 
                 let search_handle = open_wallet_search(wallet_handle, TYPE, QUERY_EMPTY, OPTIONS_FULL).unwrap();
 
@@ -773,7 +774,8 @@ mod high_cases {
 
             #[test]
             fn indy_wallet_search_for_eq_query() {
-                let wallet_handle = setup("indy_wallet_search_for_eq_query");
+                const SEARCH_WALLET_CONFIG: &str = r#"{"id":"indy_wallet_search_for_eq_query"}"#;
+                let wallet_handle = setup("indy_wallet_search_for_eq_query", SEARCH_WALLET_CONFIG);
 
                 let query_json = r#"{
                     "tagName1": "str1"
@@ -791,7 +793,8 @@ mod high_cases {
 
             #[test]
             fn indy_wallet_search_for_neq_query() {
-                let wallet_handle = setup("indy_wallet_search_for_neq_query");
+                const SEARCH_WALLET_CONFIG: &str = r#"{"id":"indy_wallet_search_for_neq_query"}"#;
+                let wallet_handle = setup("indy_wallet_search_for_neq_query", SEARCH_WALLET_CONFIG);
 
                 let query_json = r#"{
                     "tagName1": {"$neq": "str1"}
@@ -810,7 +813,8 @@ mod high_cases {
 
             #[test]
             fn indy_wallet_search_for_gt_query() {
-                let wallet_handle = setup("indy_wallet_search_for_gt_query");
+                const SEARCH_WALLET_CONFIG: &str = r#"{"id":"indy_wallet_search_for_gt_query"}"#;
+                let wallet_handle = setup("indy_wallet_search_for_gt_query", SEARCH_WALLET_CONFIG);
 
                 let query_json = r#"{
                     "~tagName3": {"$gt": "6"}
@@ -827,7 +831,8 @@ mod high_cases {
 
             #[test]
             fn indy_wallet_search_for_gte_query() {
-                let wallet_handle = setup("indy_wallet_search_for_gte_query");
+                const SEARCH_WALLET_CONFIG: &str = r#"{"id":"indy_wallet_search_for_gte_query"}"#;
+                let wallet_handle = setup("indy_wallet_search_for_gte_query", SEARCH_WALLET_CONFIG);
 
                 let query_json = r#"{
                     "~tagName3": {"$gte": "6"}
@@ -845,7 +850,8 @@ mod high_cases {
 
             #[test]
             fn indy_wallet_search_for_lt_query() {
-                let wallet_handle = setup("indy_wallet_search_for_lt_query");
+                const SEARCH_WALLET_CONFIG: &str = r#"{"id":"indy_wallet_search_for_lt_query"}"#;
+                let wallet_handle = setup("indy_wallet_search_for_lt_query", SEARCH_WALLET_CONFIG);
 
                 let query_json = r#"{
                     "~tagName3": {"$lt": "5"}
@@ -862,7 +868,8 @@ mod high_cases {
 
             #[test]
             fn indy_wallet_search_for_lte_query() {
-                let wallet_handle = setup("indy_wallet_search_for_lte_query");
+                const SEARCH_WALLET_CONFIG: &str = r#"{"id":"indy_wallet_search_for_lte_query"}"#;
+                let wallet_handle = setup("indy_wallet_search_for_lte_query", SEARCH_WALLET_CONFIG);
 
                 let query_json = r#"{
                     "~tagName3": {"$lte": "5"}
@@ -880,7 +887,8 @@ mod high_cases {
 
             #[test]
             fn indy_wallet_search_for_like_query() {
-                let wallet_handle = setup("indy_wallet_search_for_like_query");
+                const SEARCH_WALLET_CONFIG: &str = r#"{"id":"indy_wallet_search_for_lte_query"}"#;
+                let wallet_handle = setup("indy_wallet_search_for_lte_query", SEARCH_WALLET_CONFIG);
 
                 let query_json = r#"{
                     "~tagName2": {"$like": "%str3%"}
@@ -898,7 +906,8 @@ mod high_cases {
 
             #[test]
             fn indy_wallet_search_for_in_query() {
-                let wallet_handle = setup("indy_wallet_search_for_in_query");
+                const SEARCH_WALLET_CONFIG: &str = r#"{"id":"indy_wallet_search_for_in_query"}"#;
+                let wallet_handle = setup("indy_wallet_search_for_in_query", SEARCH_WALLET_CONFIG);
 
                 let query_json = r#"{
                     "tagName1": {"$in": ["str1", "str2"]}
@@ -917,7 +926,8 @@ mod high_cases {
 
             #[test]
             fn indy_wallet_search_for_and_query() {
-                let wallet_handle = setup("indy_wallet_search_for_and_query");
+                const SEARCH_WALLET_CONFIG: &str = r#"{"id":"indy_wallet_search_for_and_query"}"#;
+                let wallet_handle = setup("indy_wallet_search_for_and_query", SEARCH_WALLET_CONFIG);
 
                 let query_json = r#"{
                     "tagName1": "str1",
@@ -935,7 +945,8 @@ mod high_cases {
 
             #[test]
             fn indy_wallet_search_for_or_query() {
-                let wallet_handle = setup("indy_wallet_search_for_or_query");
+                const SEARCH_WALLET_CONFIG: &str = r#"{"id":"indy_wallet_search_for_or_query"}"#;
+                let wallet_handle = setup("indy_wallet_search_for_or_query", SEARCH_WALLET_CONFIG);
 
                 let query_json = r#"{
                     "$or": [
@@ -956,7 +967,8 @@ mod high_cases {
 
             #[test]
             fn indy_wallet_search_for_not_query() {
-                let wallet_handle = setup("indy_wallet_search_for_not_query");
+                const SEARCH_WALLET_CONFIG: &str = r#"{"id":"indy_wallet_search_for_not_query"}"#;
+                let wallet_handle = setup("indy_wallet_search_for_not_query", SEARCH_WALLET_CONFIG);
 
                 let query_json = r#"{
                     "$not": {"tagName1": "str1"}
@@ -975,7 +987,8 @@ mod high_cases {
 
             #[test]
             fn indy_wallet_search_for_mix_and_or_query() {
-                let wallet_handle = setup("indy_wallet_search_for_mix_and_or_query");
+                const SEARCH_WALLET_CONFIG: &str = r#"{"id":"indy_wallet_search_for_mix_and_or_query"}"#;
+                let wallet_handle = setup("indy_wallet_search_for_mix_and_or_query", SEARCH_WALLET_CONFIG);
 
                 let query_json = r#"{
                     "$and": [
@@ -1005,7 +1018,8 @@ mod high_cases {
 
             #[test]
             fn indy_wallet_search_for_no_records() {
-                let wallet_handle = setup("indy_wallet_search_for_no_records");
+                const SEARCH_WALLET_CONFIG: &str = r#"{"id":"indy_wallet_search_for_no_records"}"#;
+                let wallet_handle = setup("indy_wallet_search_for_no_records", SEARCH_WALLET_CONFIG);
 
                 let query_json = r#"{
                     "tagName1": "no_records"
@@ -1028,7 +1042,8 @@ mod high_cases {
 
             #[test]
             fn indy_wallet_search_for_default_options() {
-                let wallet_handle = setup("indy_wallet_search_for_default_options");
+                const SEARCH_WALLET_CONFIG: &str = r#"{"id":"indy_wallet_search_for_default_options"}"#;
+                let wallet_handle = setup("indy_wallet_search_for_default_options", SEARCH_WALLET_CONFIG);
 
                 let search_handle = open_wallet_search(wallet_handle, TYPE, QUERY_EMPTY, OPTIONS_EMPTY).unwrap();
 
@@ -1046,7 +1061,8 @@ mod high_cases {
 
             #[test]
             fn indy_wallet_search_for_retrieve_id_value() {
-                let wallet_handle = setup("indy_wallet_search_for_retrieve_id_value");
+                const SEARCH_WALLET_CONFIG: &str = r#"{"id":"indy_wallet_search_for_retrieve_id_value"}"#;
+                let wallet_handle = setup("indy_wallet_search_for_retrieve_id_value", SEARCH_WALLET_CONFIG);
 
                 let options = json!({
                     "retrieveRecords": true,
@@ -1072,7 +1088,8 @@ mod high_cases {
 
             #[test]
             fn indy_wallet_search_for_retrieve_id_value_tags() {
-                let wallet_handle = setup("indy_wallet_search_for_retrieve_id_value_tags");
+                const SEARCH_WALLET_CONFIG: &str = r#"{"id":"indy_wallet_search_for_retrieve_id_value_tags"}"#;
+                let wallet_handle = setup("indy_wallet_search_for_retrieve_id_value_tags", SEARCH_WALLET_CONFIG);
 
                 let options = json!({
                     "retrieveRecords": true,
@@ -1098,7 +1115,8 @@ mod high_cases {
 
             #[test]
             fn indy_wallet_search_for_retrieve_full_record() {
-                let wallet_handle = setup("indy_wallet_search_for_retrieve_full_record");
+                const SEARCH_WALLET_CONFIG: &str = r#"{"id":"indy_wallet_search_for_retrieve_full_record"}"#;
+                let wallet_handle = setup("indy_wallet_search_for_retrieve_full_record", SEARCH_WALLET_CONFIG);
 
                 let options = json!({
                     "retrieveRecords": true,
@@ -1123,7 +1141,8 @@ mod high_cases {
 
             #[test]
             fn indy_wallet_search_for_retrieve_total_count_only() {
-                let wallet_handle = setup("indy_wallet_search_for_retrieve_total_count_only");
+                const SEARCH_WALLET_CONFIG: &str = r#"{"id":"indy_wallet_search_for_retrieve_total_count_only"}"#;
+                let wallet_handle = setup("indy_wallet_search_for_retrieve_total_count_only", SEARCH_WALLET_CONFIG);
 
                 let options = json!({
                     "retrieveRecords": false,
@@ -1146,7 +1165,8 @@ mod high_cases {
 
             #[test]
             fn indy_wallet_search_for_retrieve_records_only() {
-                let wallet_handle = setup("indy_wallet_search_for_retrieve_records_only");
+                const SEARCH_WALLET_CONFIG: &str = r#"{"id":"indy_wallet_search_for_retrieve_records_only"}"#;
+                let wallet_handle = setup("indy_wallet_search_for_retrieve_records_only", SEARCH_WALLET_CONFIG);
 
                 let options = json!({
                     "retrieveRecords": true,
@@ -1170,7 +1190,8 @@ mod high_cases {
 
         #[test]
         fn indy_wallet_search_for_fetch_twice() {
-            let wallet_handle = setup("indy_wallet_search_for_fetch_twice");
+            const SEARCH_WALLET_CONFIG: &str = r#"{"id":"indy_wallet_search_for_fetch_twice"}"#;
+            let wallet_handle = setup("indy_wallet_search_for_fetch_twice", SEARCH_WALLET_CONFIG);
 
             let search_handle = open_wallet_search(wallet_handle, TYPE, QUERY_EMPTY, OPTIONS_FULL).unwrap();
 
@@ -1191,7 +1212,8 @@ mod high_cases {
 
         #[test]
         fn indy_wallet_search_for_no_records() {
-            let wallet_handle = setup("indy_wallet_search_for_no_records");
+            const SEARCH_WALLET_CONFIG: &str = r#"{"id":"indy_wallet_search_for_no_records"}"#;
+            let wallet_handle = setup("indy_wallet_search_for_no_records", SEARCH_WALLET_CONFIG);
 
             let search_handle = open_wallet_search(wallet_handle, TYPE_2, QUERY_EMPTY, OPTIONS_FULL).unwrap();
 
@@ -1206,7 +1228,8 @@ mod high_cases {
 
         #[test]
         fn indy_wallet_search_for_invalid_wallet_handle() {
-            let wallet_handle = setup("indy_wallet_search_for_invalid_wallet_handle");
+            const SEARCH_WALLET_CONFIG: &str = r#"{"id":"indy_wallet_search_for_invalid_wallet_handle"}"#;
+            let wallet_handle = setup("indy_wallet_search_for_invalid_wallet_handle", SEARCH_WALLET_CONFIG);
 
             let res = open_wallet_search(wallet_handle + 1, TYPE, QUERY_EMPTY, OPTIONS_EMPTY);
             assert_code!(ErrorCode::WalletInvalidHandle, res);
@@ -1216,7 +1239,8 @@ mod high_cases {
 
         #[test]
         fn indy_wallet_search_for_invalid_search_handle() {
-            let wallet_handle = setup("indy_wallet_search_for_invalid_search_handle");
+            const SEARCH_WALLET_CONFIG: &str = r#"{"id":"indy_wallet_search_for_invalid_search_handle"}"#;
+            let wallet_handle = setup("indy_wallet_search_for_invalid_search_handle", SEARCH_WALLET_CONFIG);
 
             let search_handle = open_wallet_search(wallet_handle, TYPE, QUERY_EMPTY, OPTIONS_EMPTY).unwrap();
 
@@ -1228,7 +1252,8 @@ mod high_cases {
 
         #[test]
         fn indy_wallet_search_for_invalid_type() {
-            let wallet_handle = setup("indy_wallet_search_for_invalid_type");
+            const SEARCH_WALLET_CONFIG: &str = r#"{"id":"indy_wallet_search_for_invalid_type"}"#;
+            let wallet_handle = setup("indy_wallet_search_for_invalid_type", SEARCH_WALLET_CONFIG);
 
             let res = open_wallet_search(wallet_handle, FORBIDDEN_TYPE, QUERY_EMPTY, OPTIONS_EMPTY);
             assert_code!(ErrorCode::WalletAccessFailed, res);
@@ -1241,7 +1266,8 @@ mod high_cases {
 
             #[test]
             fn indy_close_wallet_search_works() {
-                let wallet_handle = setup("indy_close_wallet_search_works");
+                const SEARCH_WALLET_CONFIG: &str = r#"{"id":"indy_close_wallet_search_works"}"#;
+                let wallet_handle = setup("indy_close_wallet_search_works", SEARCH_WALLET_CONFIG);
 
                 let search_handle = open_wallet_search(wallet_handle, TYPE, QUERY_EMPTY, OPTIONS_EMPTY).unwrap();
 
@@ -1251,7 +1277,8 @@ mod high_cases {
 
             #[test]
             fn indy_close_wallet_search_works_for_invalid_handle() {
-                let wallet_handle = setup("indy_close_wallet_search_works_for_invalid_handle");
+                const SEARCH_WALLET_CONFIG: &str = r#"{"id":"indy_close_wallet_search_works_for_invalid_handle"}"#;
+                let wallet_handle = setup("indy_close_wallet_search_works_for_invalid_handle", SEARCH_WALLET_CONFIG);
 
                 let search_handle = open_wallet_search(wallet_handle, TYPE, QUERY_EMPTY, OPTIONS_EMPTY).unwrap();
 
@@ -1264,7 +1291,8 @@ mod high_cases {
 
             #[test]
             fn close_wallet_search_works_for_twice() {
-                let wallet_handle = setup("close_wallet_search_works_for_twice");
+                const SEARCH_WALLET_CONFIG: &str = r#"{"id":"close_wallet_search_works_for_twice"}"#;
+                let wallet_handle = setup("close_wallet_search_works_for_twice", SEARCH_WALLET_CONFIG);
 
                 let search_handle = open_wallet_search(wallet_handle, TYPE, QUERY_EMPTY, OPTIONS_EMPTY).unwrap();
 

@@ -116,13 +116,13 @@ pub fn record_5() -> WalletRecord {
     WalletRecord { id: ID_5.to_string(), type_: Some(TYPE.to_string()), value: Some(VALUE_5.to_string()), tags: Some(tags_5()) }
 }
 
-pub fn init_non_secret_test_wallet(name: &str) {
+pub fn init_non_secret_test_wallet(name: &str, wallet_config: &str) {
 
     test::cleanup_storage(name);
 
     //1. Create and Open wallet
-    wallet::create_wallet(SEARCH_COMMON_WALLET_CONFIG, WALLET_CREDENTIALS).wait().unwrap();
-    let wallet_handle = wallet::open_wallet(SEARCH_COMMON_WALLET_CONFIG, WALLET_CREDENTIALS).wait().unwrap();
+    wallet::create_wallet(wallet_config, WALLET_CREDENTIALS).wait().unwrap();
+    let wallet_handle = wallet::open_wallet(wallet_config, WALLET_CREDENTIALS).wait().unwrap();
 
     let record_1 = record_1();
     add_wallet_record(wallet_handle,
@@ -169,6 +169,7 @@ pub fn populate_common_wallet_for_search() {
                 }
 
     COMMON_WALLET_INIT.call_once(|| {
-        init_non_secret_test_wallet("common_non_secret_wallet")
+        const SEARCH_WALLET_CONFIG: &str = r#"{"id":"common_non_secret_wallet"}"#;
+        init_non_secret_test_wallet("common_non_secret_wallet", SEARCH_WALLET_CONFIG)
     });
 }
