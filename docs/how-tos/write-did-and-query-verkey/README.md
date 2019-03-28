@@ -18,7 +18,7 @@ In your normal workstation operating system (not the VM), open a text editor of 
 choice and paste the *template* code of one of the available in the list bellow into 
 a new file and saved it. We will be modifying this code in later steps.
 
-[ [Python template](python/template.py) | [Java template](java/template.java) | [.NET template](cs/template.cs) | [Node.js template](nodejs/template.js) | [Rust template](rust/src/template.rs)]
+[ [Python template](python/template.py) | [Java template](java/template.java) | [.NET template](cs/Template.cs) | [Node.js template](nodejs/template.js) | [Rust template](rust/src/template.rs)]
 
 This is a very simple app framework into which you'll plug the code you'll be writing.
 
@@ -39,7 +39,7 @@ Copy the contents of the correspondent *step2* file below into your template fil
 instead of the `Step 2 code goes here` placeholder comment, and save it as `write_did.EXT`,
  replacing *EXT* with the proper file extension (e.g for python: `write_did.py`, for nodejs: `write_did.js`, and so on).
 
-[ [Python step2](python/step2.py) | [Java step2](java/step2.java) | [.NET step2](cs/step2.cs) | [Node.js step2](nodejs/step2.js) | [Rust step2](rust/src/step2.rs)]
+[ [Python step2](python/step2.py) | [Java step2](java/step2.java) | [.NET step2](../not-yet-written.md) | [Node.js step2](nodejs/step2.js) | [Rust step2](rust/src/step2.rs)]
 
 Study the changes. Scaffolding code like this is likely to appear in anything
 that uses indy.
@@ -49,7 +49,7 @@ that uses indy.
 Now we need to put some DIDs and keys in our identity wallet. Copy the contents of 
 the correspondent *step3* file below into your `write_did` file instead of the `Step 3 code goes here` placeholder comment.
 
-[ [Python step3](python/step3.py) | [Java step3](java/step3.java) | [.NET step3](cs/step3.cs) | [Node.js step3](nodejs/step3.js) | [Rust step3](rust/src/step3.rs)]
+[ [Python step3](python/step3.py) | [Java step3](java/step3.java) | [.NET step3](../not-yet-written.md) | [Node.js step3](nodejs/step3.js) | [Rust step3](rust/src/step3.rs)]
 
 Study the changes.
 
@@ -84,7 +84,7 @@ for our trust anchor identity to the ledger.
 Copy the contents of *step4* file below into your `write_did` file instead of 
 the `Step 4 code goes here` placeholder comment.
 
-[ [Python step4](python/step4.py) | [Java step4](java/step4.java) | [.NET step4](cs/step4.cs) | [Node.js step4](nodejs/step4.js) | [Rust step4](rust/src/step4.rs)]
+[ [Python step4](python/step4.py) | [Java step4](java/step4.java) | [.NET step4](../not-yet-written.md) | [Node.js step4](nodejs/step4.js) | [Rust step4](rust/src/step4.rs)]
 
 ### Step 5
 
@@ -93,7 +93,7 @@ Once we have an identity on the ledger, we can query it.
 Copy the contents of *step5* file below into `write_did` file instead of 
 the `Step 5 code goes here` placeholder comment.
 
-[ [Python step5](python/step5.py) | [Java step5](java/step5.java) | [.NET step5](cs/step5.cs) | [Node.js step5](nodejs/step5.js) | [Rust step5](rust/src/step5.rs)]
+[ [Python step5](python/step5.py) | [Java step5](java/step5.java) | [.NET step5](../not-yet-written.md) | [Node.js step5](nodejs/step5.js) | [Rust step5](rust/src/step5.rs)]
 
 Only a handful of lines of code matter to our goal here; the rest of
 this block is comments and boilerplate cleanup **(which you should not omit!)**.
