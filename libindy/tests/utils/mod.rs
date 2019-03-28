@@ -57,6 +57,10 @@ pub fn tear_down_delete_wallet(wallet_config: &str) {
     wallet::delete_wallet(wallet_config, WALLET_CREDENTIALS).unwrap();
 }
 
+pub fn tear_down_delete_wallet_with_credentials(wallet_config: &str, wallet_credentials: &str) {
+    wallet::delete_wallet(wallet_config, wallet_credentials).unwrap();
+}
+
 pub fn tear_down(name: &str) {
     test::cleanup_storage(name);
 }
