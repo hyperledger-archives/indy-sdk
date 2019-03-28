@@ -1521,7 +1521,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_catchup_reply_event_from_catchup_single_state_works() {
-            test::cleanup_indy_home("request_handler_process_catchup_reply_event_from_catchup_single_state_works");
+            test::cleanup_pool("request_handler_process_catchup_reply_event_from_catchup_single_state_works");
             _create_pool("request_handler_process_catchup_reply_event_from_catchup_single_state_works", None);
 
             let mut request_handler = _request_handler("request_handler_process_catchup_reply_event_from_catchup_single_state_works", 0, 1);
@@ -1545,7 +1545,7 @@ pub mod tests {
 
             request_handler.process_event(Some(RequestEvent::CatchupRep(cr, "Node1".to_string())));
             assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
-            test::cleanup_indy_home("request_handler_process_catchup_reply_event_from_catchup_single_state_works");
+            test::cleanup_pool("request_handler_process_catchup_reply_event_from_catchup_single_state_works");
         }
 
         #[test]

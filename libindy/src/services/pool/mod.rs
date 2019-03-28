@@ -417,6 +417,8 @@ mod tests {
             assert!(path.exists());
             ps.delete(pool_name).unwrap();
             assert!(!path.exists());
+
+            test::cleanup_storage("pool_service_delete_works");
         }
 
         #[test]
@@ -427,7 +429,7 @@ mod tests {
             let send_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR).unwrap();
             let recv_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR).unwrap();
             let ps = PoolService::new();
-            let pool_name = "pool_service_delete_works";
+            let pool_name = "pool_service_delete_works_for_opened";
             let path: path::PathBuf = environment::pool_path(pool_name);
             let pool_id = sequence::get_next_id();
 
@@ -443,6 +445,8 @@ mod tests {
             let res = ps.delete(pool_name);
             assert_eq!(IndyErrorKind::InvalidState, res.unwrap_err().kind());
             assert!(path.exists());
+
+            test::cleanup_storage("pool_service_delete_works_for_opened");
         }
 
         #[test]
@@ -585,11 +589,10 @@ mod tests {
         test::cleanup_storage("pool_drop_works_for_after_close");
 
         fn drop_test() {
-            test::cleanup_storage("drop_test");
             _set_protocol_version(TEST_PROTOCOL_VERSION);
             let ps = PoolService::new();
 
-            let pool_name = "pool_drop_works";
+            let pool_name = "pool_drop_works_for_after_close";
             let gen_txn = test::gen_txns()[0].clone();
 
             let zmq_ctx = zmq::Context::new();
@@ -616,7 +619,7 @@ mod tests {
         }
 
         drop_test();
-        test::cleanup_storage("drop_test");
+        test::cleanup_storage("pool_drop_works_for_after_close");
     }
 
     pub mod nodes_emulator {

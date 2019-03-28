@@ -272,6 +272,8 @@ mod tests {
         let merkle_tree = super::create("pool_worker_build_node_state_works_for_new_txns_format_and_1_protocol_version").unwrap();
         let res = super::build_node_state(&merkle_tree);
         assert_kind!(IndyErrorKind::PoolIncompatibleProtocolVersion, res);
+
+        test::cleanup_storage("pool_worker_build_node_state_works_for_new_txns_format_and_1_protocol_version");
     }
 
     #[test]
@@ -305,6 +307,8 @@ mod tests {
 
         let merkle_tree = super::create(pool_name).unwrap();
         let _node_state = super::build_node_state(&merkle_tree).unwrap();
+
+        test::cleanup_storage("pool_worker_works_for_deserialize_cache");
     }
 
     #[test]
@@ -321,6 +325,8 @@ mod tests {
 
         assert_eq!(merkle_tree.count(), 2, "test restored MT size");
         assert_eq!(merkle_tree.root_hash_hex(), "c715aef44aaacab8746c9a505ba106b5554fe6d29ec7f0a2abc9d7723fdea523", "test restored MT root hash");
+
+        test::cleanup_storage("pool_worker_restore_merkle_tree_works_from_genesis_txns");
     }
 
     #[test]
@@ -347,6 +353,8 @@ mod tests {
 
         assert_eq!(node_state["Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv"], node1);
         assert_eq!(node_state["8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb"], node2);
+
+        test::cleanup_storage("pool_worker_build_node_state_works_for_old_format");
     }
 
     #[test]
@@ -375,6 +383,8 @@ mod tests {
 
         assert_eq!(node_state["Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv"], node1);
         assert_eq!(node_state["8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb"], node2);
+
+        test::cleanup_storage("pool_worker_build_node_state_works_for_new_format");
     }
 
     #[test]
@@ -390,5 +400,7 @@ mod tests {
         let merkle_tree = super::create("pool_worker_build_node_state_works_for_old_txns_format_and_2_protocol_version").unwrap();
         let res = super::build_node_state(&merkle_tree);
         assert_kind!(IndyErrorKind::PoolIncompatibleProtocolVersion, res);
+
+        test::cleanup_storage("pool_worker_build_node_state_works_for_old_txns_format_and_2_protocol_version");
     }
 }

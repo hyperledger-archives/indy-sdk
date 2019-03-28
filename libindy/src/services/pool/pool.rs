@@ -763,19 +763,19 @@ mod tests {
 
         #[test]
         pub fn pool_new_works() {
-            let _p: Pool<MockNetworker, MockRequestHandler> = Pool::new("pool", 1, PoolOpenConfig::default());
+            let _p: Pool<MockNetworker, MockRequestHandler> = Pool::new("pool_new_works", 1, PoolOpenConfig::default());
         }
 
         #[test]
         pub fn pool_get_name_works() {
-            let name = "name";
+            let name = "pool_get_name_works";
             let p: Pool<MockNetworker, MockRequestHandler> = Pool::new(name, 1, PoolOpenConfig::default());
             assert_eq!(name, p.get_name());
         }
 
         #[test]
         pub fn pool_get_id_works() {
-            let name = "name";
+            let name = "pool_get_id_works";
             let id = 1;
             let p: Pool<MockNetworker, MockRequestHandler> = Pool::new(name, id, PoolOpenConfig::default());
             assert_eq!(id, p.get_id());
@@ -792,8 +792,6 @@ mod tests {
 
         use super::*;
 
-        const POOL: &'static str = "pool";
-
         #[test]
         pub fn pool_wrapper_new_initialization_works() {
             let _p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), "name", 1, 0, 0);
@@ -804,9 +802,9 @@ mod tests {
             test::cleanup_storage("pool_wrapper_check_cache_works");
 
             ProtocolVersion::set(2);
-            _write_genesis_txns();
+            _write_genesis_txns("pool_wrapper_check_cache_works");
 
-            let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), POOL, 1, 0, 0);
+            let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), "pool_wrapper_check_cache_works", 1, 0, 0);
             let p = p.handle_event(PoolEvent::CheckCache(1));
             assert_match!(PoolState::GettingCatchupTarget(_), p.state);
 
@@ -824,7 +822,7 @@ mod tests {
 
         #[test]
         pub fn pool_wrapper_terminated_close_works() {
-            let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), POOL, 1, 0, 0);
+            let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), "pool_wrapper_terminated_close_works", 1, 0, 0);
             let p = p.handle_event(PoolEvent::CheckCache(1));
             let p = p.handle_event(PoolEvent::Close(2));
             assert_match!(PoolState::Closed(_), p.state);
@@ -832,20 +830,22 @@ mod tests {
 
         #[test]
         pub fn pool_wrapper_terminated_refresh_works() {
-            let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), POOL, 1, 0, 0);
+            test::cleanup_pool("pool_wrapper_terminated_refresh_works");
+            let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), "pool_wrapper_terminated_refresh_works", 1, 0, 0);
             let p = p.handle_event(PoolEvent::CheckCache(1));
 
             ProtocolVersion::set(2);
-            _write_genesis_txns();
+            _write_genesis_txns("pool_wrapper_terminated_refresh_works");
 
             let p = p.handle_event(PoolEvent::Refresh(2));
             assert_match!(PoolState::GettingCatchupTarget(_), p.state);
+            test::cleanup_pool("pool_wrapper_terminated_refresh_works");
         }
 
         #[test]
         pub fn pool_wrapper_terminated_timeout_works() {
             let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM {
-                pool_name: POOL.to_string(),
+                pool_name: "pool_wrapper_terminated_timeout_works".to_string(),
                 id: 1,
                 state: PoolState::Terminated(TerminatedState {
                     networker: Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))),
@@ -868,7 +868,7 @@ mod tests {
 
         #[test]
         pub fn pool_wrapper_cloe_works_from_initialization() {
-            let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), POOL, 1, 0, 0);
+            let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), "pool_wrapper_cloe_works_from_initialization", 1, 0, 0);
             let p = p.handle_event(PoolEvent::Close(1));
             assert_match!(PoolState::Closed(_), p.state);
         }
@@ -878,9 +878,9 @@ mod tests {
             test::cleanup_storage("pool_wrapper_close_works_from_getting_catchup_target");
 
             ProtocolVersion::set(2);
-            _write_genesis_txns();
+            _write_genesis_txns("pool_wrapper_close_works_from_getting_catchup_target");
 
-            let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), POOL, 1, 0, 0);
+            let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), "pool_wrapper_close_works_from_getting_catchup_target", 1, 0, 0);
             let p = p.handle_event(PoolEvent::CheckCache(1));
             let p = p.handle_event(PoolEvent::Close(2));
             assert_match!(PoolState::Closed(_), p.state);
@@ -893,9 +893,9 @@ mod tests {
             test::cleanup_storage("pool_wrapper_catchup_target_not_found_works");
 
             ProtocolVersion::set(2);
-            _write_genesis_txns();
+            _write_genesis_txns("pool_wrapper_catchup_target_not_found_works");
 
-            let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), POOL, 1, 0, 0);
+            let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), "pool_wrapper_catchup_target_not_found_works", 1, 0, 0);
             let p = p.handle_event(PoolEvent::CheckCache(1));
             let p = p.handle_event(PoolEvent::CatchupTargetNotFound(err_msg(IndyErrorKind::PoolTimeout, "Pool timeout")));
             assert_match!(PoolState::Terminated(_), p.state);
@@ -908,9 +908,9 @@ mod tests {
             test::cleanup_storage("pool_wrapper_getting_catchup_target_synced_works");
 
             ProtocolVersion::set(2);
-            _write_genesis_txns();
+            _write_genesis_txns("pool_wrapper_getting_catchup_target_synced_works");
 
-            let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), POOL, 1, 0, 0);
+            let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), "pool_wrapper_getting_catchup_target_synced_works", 1, 0, 0);
             let p = p.handle_event(PoolEvent::CheckCache(1));
             let p = p.handle_event(PoolEvent::Synced(MerkleTree::from_vec(vec![]).unwrap()));
             assert_match!(PoolState::Active(_), p.state);
@@ -923,12 +923,12 @@ mod tests {
             test::cleanup_storage("pool_wrapper_getting_catchup_target_synced_works_for_node_state_error");
 
             ProtocolVersion::set(2);
-            _write_genesis_txns();
+            _write_genesis_txns("pool_wrapper_getting_catchup_target_synced_works_for_node_state_error");
 
-            let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), POOL, 1, 0, 0);
+            let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), "pool_wrapper_getting_catchup_target_synced_works_for_node_state_error", 1, 0, 0);
             let p = p.handle_event(PoolEvent::CheckCache(1));
             ProtocolVersion::set(1);
-            let p = p.handle_event(PoolEvent::Synced(merkle_tree_factory::create(POOL).unwrap()));
+            let p = p.handle_event(PoolEvent::Synced(merkle_tree_factory::create("pool_wrapper_getting_catchup_target_synced_works_for_node_state_error").unwrap()));
             assert_match!(PoolState::Terminated(_), p.state);
 
             test::cleanup_storage("pool_wrapper_getting_catchup_target_synced_works_for_node_state_error");
@@ -939,11 +939,11 @@ mod tests {
             test::cleanup_storage("pool_wrapper_getting_catchup_target_catchup_target_found_works");
 
             ProtocolVersion::set(2);
-            _write_genesis_txns();
+            _write_genesis_txns("pool_wrapper_getting_catchup_target_catchup_target_found_works");
 
-            let mt = merkle_tree_factory::create(POOL).unwrap();
+            let mt = merkle_tree_factory::create("pool_wrapper_getting_catchup_target_catchup_target_found_works").unwrap();
 
-            let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), POOL, 1, 0, 0);
+            let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), "pool_wrapper_getting_catchup_target_catchup_target_found_works", 1, 0, 0);
             let p = p.handle_event(PoolEvent::CheckCache(1));
             let p = p.handle_event(PoolEvent::CatchupTargetFound(mt.root_hash().to_vec(), mt.count, mt));
             assert_match!(PoolState::SyncCatchup(_), p.state);
@@ -956,11 +956,11 @@ mod tests {
             test::cleanup_storage("pool_wrapper_getting_catchup_target_catchup_target_found_works_for_node_state_error");
 
             ProtocolVersion::set(2);
-            _write_genesis_txns();
+            _write_genesis_txns("pool_wrapper_getting_catchup_target_catchup_target_found_works_for_node_state_error");
 
-            let mt = merkle_tree_factory::create(POOL).unwrap();
+            let mt = merkle_tree_factory::create("pool_wrapper_getting_catchup_target_catchup_target_found_works_for_node_state_error").unwrap();
 
-            let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), POOL, 1, 0, 0);
+            let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), "pool_wrapper_getting_catchup_target_catchup_target_found_works_for_node_state_error", 1, 0, 0);
             let p = p.handle_event(PoolEvent::CheckCache(1));
             ProtocolVersion::set(1);
             let p = p.handle_event(PoolEvent::CatchupTargetFound(mt.root_hash().to_vec(), mt.count, mt));
@@ -974,11 +974,11 @@ mod tests {
             test::cleanup_storage("pool_wrapper_sync_catchup_close_works");
 
             ProtocolVersion::set(2);
-            _write_genesis_txns();
+            _write_genesis_txns("pool_wrapper_sync_catchup_close_works");
 
-            let mt = merkle_tree_factory::create(POOL).unwrap();
+            let mt = merkle_tree_factory::create("pool_wrapper_sync_catchup_close_works").unwrap();
 
-            let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), POOL, 1, 0, 0);
+            let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), "pool_wrapper_sync_catchup_close_works", 1, 0, 0);
             let p = p.handle_event(PoolEvent::CheckCache(1));
             let p = p.handle_event(PoolEvent::CatchupTargetFound(mt.root_hash().to_vec(), mt.count, mt));
             let p = p.handle_event(PoolEvent::Close(2));
@@ -992,14 +992,14 @@ mod tests {
             test::cleanup_storage("pool_wrapper_sync_catchup_synced_works");
 
             ProtocolVersion::set(2);
-            _write_genesis_txns();
+            _write_genesis_txns("pool_wrapper_sync_catchup_synced_works");
 
-            let mt = merkle_tree_factory::create(POOL).unwrap();
+            let mt = merkle_tree_factory::create("pool_wrapper_sync_catchup_synced_works").unwrap();
 
-            let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), POOL, 1, 0, 0);
+            let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), "pool_wrapper_sync_catchup_synced_works", 1, 0, 0);
             let p = p.handle_event(PoolEvent::CheckCache(1));
             let p = p.handle_event(PoolEvent::CatchupTargetFound(mt.root_hash().to_vec(), mt.count, mt));
-            let p = p.handle_event(PoolEvent::Synced(merkle_tree_factory::create(POOL).unwrap()));
+            let p = p.handle_event(PoolEvent::Synced(merkle_tree_factory::create("pool_wrapper_sync_catchup_synced_works").unwrap()));
             assert_match!(PoolState::Active(_), p.state);
 
             test::cleanup_storage("pool_wrapper_sync_catchup_synced_works");
@@ -1007,21 +1007,21 @@ mod tests {
 
         #[test]
         pub fn pool_wrapper_sync_catchup_synced_works_for_node_state_error() {
-            test::cleanup_storage("pool_wrapper_sync_catchup_synced_works");
+            test::cleanup_storage("pool_wrapper_sync_catchup_synced_works_for_node_state_error");
 
             ProtocolVersion::set(2);
-            _write_genesis_txns();
+            _write_genesis_txns("pool_wrapper_sync_catchup_synced_works_for_node_state_error");
 
-            let mt = merkle_tree_factory::create(POOL).unwrap();
+            let mt = merkle_tree_factory::create("pool_wrapper_sync_catchup_synced_works_for_node_state_error").unwrap();
 
-            let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), POOL, 1, 0, 0);
+            let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), "pool_wrapper_sync_catchup_synced_works_for_node_state_error", 1, 0, 0);
             let p = p.handle_event(PoolEvent::CheckCache(1));
             let p = p.handle_event(PoolEvent::CatchupTargetFound(mt.root_hash().to_vec(), mt.count, mt));
             ProtocolVersion::set(1);
-            let p = p.handle_event(PoolEvent::Synced(merkle_tree_factory::create(POOL).unwrap()));
+            let p = p.handle_event(PoolEvent::Synced(merkle_tree_factory::create("pool_wrapper_sync_catchup_synced_works_for_node_state_error").unwrap()));
             assert_match!(PoolState::Terminated(_), p.state);
 
-            test::cleanup_storage("pool_wrapper_sync_catchup_synced_works");
+            test::cleanup_storage("pool_wrapper_sync_catchup_synced_works_for_node_state_error");
         }
 
         #[test]
@@ -1029,7 +1029,7 @@ mod tests {
             test::cleanup_storage("pool_wrapper_active_send_request_works");
 
             ProtocolVersion::set(2);
-            _write_genesis_txns();
+            _write_genesis_txns("pool_wrapper_active_send_request_works");
 
             let req = json!({
                 "reqId": 1,
@@ -1038,7 +1038,7 @@ mod tests {
                 }
             }).to_string();
 
-            let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), POOL, 1, 0, 0);
+            let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), "pool_wrapper_active_send_request_works", 1, 0, 0);
             let p = p.handle_event(PoolEvent::CheckCache(1));
             let p = p.handle_event(PoolEvent::Synced(MerkleTree::from_vec(vec![]).unwrap()));
             let p = p.handle_event(PoolEvent::SendRequest(3, req, None, None));
@@ -1059,7 +1059,7 @@ mod tests {
             test::cleanup_storage("pool_wrapper_active_send_request_works_for_no_req_id");
 
             ProtocolVersion::set(2);
-            _write_genesis_txns();
+            _write_genesis_txns("pool_wrapper_active_send_request_works_for_no_req_id");
 
             let req = json!({
                 "operation": {
@@ -1067,7 +1067,7 @@ mod tests {
                 }
             }).to_string();
 
-            let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), POOL, 1, 0, 0);
+            let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), "pool_wrapper_active_send_request_works_for_no_req_id", 1, 0, 0);
             let p = p.handle_event(PoolEvent::CheckCache(1));
             let p = p.handle_event(PoolEvent::Synced(MerkleTree::from_vec(vec![]).unwrap()));
             let p = p.handle_event(PoolEvent::SendRequest(3, req, None, None));
@@ -1087,7 +1087,7 @@ mod tests {
             test::cleanup_storage("pool_wrapper_active_node_reply_works");
 
             ProtocolVersion::set(2);
-            _write_genesis_txns();
+            _write_genesis_txns("pool_wrapper_active_node_reply_works");
 
             let req = json!({
                 "reqId": 1,
@@ -1110,7 +1110,7 @@ mod tests {
 
             let rep = serde_json::to_string(&rep).unwrap();
 
-            let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), POOL, 1, 0, 0);
+            let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), "pool_wrapper_active_node_reply_works", 1, 0, 0);
             let p = p.handle_event(PoolEvent::CheckCache(1));
             let p = p.handle_event(PoolEvent::Synced(MerkleTree::from_vec(vec![]).unwrap()));
             let p = p.handle_event(PoolEvent::SendRequest(3, req, None, None));
@@ -1131,7 +1131,7 @@ mod tests {
             test::cleanup_storage("pool_wrapper_sends_requests_to_two_nodes");
 
             ProtocolVersion::set(2);
-            _write_genesis_txns();
+            _write_genesis_txns("pool_wrapper_sends_requests_to_two_nodes");
 
             let req = json!({
                 "reqId": 1,
@@ -1140,7 +1140,7 @@ mod tests {
                 }
             }).to_string();
 
-            let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), POOL, 1, 0, 0);
+            let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), "pool_wrapper_sends_requests_to_two_nodes", 1, 0, 0);
             let p = p.handle_event(PoolEvent::CheckCache(1));
             let p = p.handle_event(PoolEvent::Synced(MerkleTree::from_vec(vec![]).unwrap()));
             let p = p.handle_event(PoolEvent::SendRequest(3, req, None, None));
@@ -1160,7 +1160,7 @@ mod tests {
             test::cleanup_storage("pool_wrapper_active_node_reply_works_for_no_request");
 
             ProtocolVersion::set(2);
-            _write_genesis_txns();
+            _write_genesis_txns("pool_wrapper_active_node_reply_works_for_no_request");
 
             let req = json!({
                 "reqId": 1,
@@ -1183,7 +1183,7 @@ mod tests {
 
             let rep = serde_json::to_string(&rep).unwrap();
 
-            let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), POOL, 1, 0, 0);
+            let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), "pool_wrapper_active_node_reply_works_for_no_request", 1, 0, 0);
             let p = p.handle_event(PoolEvent::CheckCache(1));
             let p = p.handle_event(PoolEvent::Synced(MerkleTree::from_vec(vec![]).unwrap()));
             let p = p.handle_event(PoolEvent::SendRequest(3, req, None, None));
@@ -1205,7 +1205,7 @@ mod tests {
             test::cleanup_storage("pool_wrapper_active_node_reply_works_for_invalid_reply");
 
             ProtocolVersion::set(2);
-            _write_genesis_txns();
+            _write_genesis_txns("pool_wrapper_active_node_reply_works_for_invalid_reply");
 
             let req = json!({
                 "reqId": 1,
@@ -1216,7 +1216,7 @@ mod tests {
 
             let rep = r#"{}"#;
 
-            let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), POOL, 1, 0, 0);
+            let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), "pool_wrapper_active_node_reply_works_for_invalid_reply", 1, 0, 0);
             let p = p.handle_event(PoolEvent::CheckCache(1));
             let p = p.handle_event(PoolEvent::Synced(MerkleTree::from_vec(vec![]).unwrap()));
             let p = p.handle_event(PoolEvent::SendRequest(3, req, None, None));
@@ -1232,12 +1232,12 @@ mod tests {
             test::cleanup_storage("pool_wrapper_active_node_reply_works_for_invalid_reply");
         }
 
-        fn _write_genesis_txns() {
+        fn _write_genesis_txns(pool_name: &str) {
             let txns = test::gen_txns().join("\n");
 
-            let mut path = environment::pool_path(POOL);
+            let mut path = environment::pool_path(pool_name);
             fs::create_dir_all(path.as_path()).unwrap();
-            path.push(POOL);
+            path.push(pool_name);
             path.set_extension("txn");
             let mut f = fs::File::create(path.as_path()).unwrap();
             f.write(txns.as_bytes()).unwrap();
