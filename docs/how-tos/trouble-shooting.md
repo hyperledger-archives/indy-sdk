@@ -2,7 +2,7 @@
 
 If one of the following possible errors happened to you, try to apply the solutions listed below.
 
-Note that the errors presented here are language agnostic and as a matter of illustration, the example is given in python, but the same logic can be applied for the other wrapper's languages.
+Note that the errors presented here are language agnostic and as a matter of illustration, the example is given in python, but similar logic can be applied for the other languages.
 
 1. Error `PoolLedgerConfigAlreadyExistsError`.   
 
