@@ -886,6 +886,7 @@ mod tests {
         _register_inmem_wallet(&wallet_service);
 
         wallet_service.create_wallet(&_config_inmem(), &RAW_CREDENTIAL, (&RAW_KDD, &RAW_MASTER_KEY)).unwrap();
+        _cleanup("wallet_service_create_works_for_plugged");
     }
 
     #[test]
