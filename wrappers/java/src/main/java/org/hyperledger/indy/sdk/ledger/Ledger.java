@@ -1265,4 +1265,116 @@ public class Ledger extends IndyJava.API {
 
 		return future;
 	}
+
+	/**
+	 * Builds a AUTH_RULE request. Request to change authentication rules for a ledger transaction.
+	 *
+	 * @param submitterDid DID of the submitter stored in secured Wallet.
+	 * @param txnType - ledger transaction alias or associated value.
+	 * @param action - type of an action.
+	 *     Can be either "ADD" (to add a new rule) or "EDIT" (to edit an existing one).
+	 * @param field - transaction field.
+	 * @param oldValue - old value of a field, which can be changed to a new_value (mandatory for EDIT action).
+	 * @param newValue - new value that can be used to fill the field.
+	 * @param constraint - set of constraints required for execution of an action in the following format:
+	 *     {
+	 *         constraint_id - [string] type of a constraint.
+	 *             Can be either "ROLE" to specify final constraint or  "AND"/"OR" to combine constraints.
+	 *         role - [string] role of a user which satisfy to constrain.
+	 *         sig_count - [u32] the number of signatures required to execution action.
+	 *         need_to_be_owner - [bool] if user must be an owner of transaction.
+	 *         metadata - [object] additional parameters of the constraint.
+	 *     }
+	 * can be combined by
+	 *     {
+	 *         'constraint_id': "AND" or "OR"
+	 *         'auth_constraints': [[constraint_1], [constraint_2]]
+	 *     }
+	 *
+	 * Default ledger auth rules: https://github.com/hyperledger/indy-node/blob/master/docs/source/auth_rules.md
+	 *
+	 * More about AUTH_RULE request: https://github.com/hyperledger/indy-node/blob/master/docs/source/requests.md#auth_rule
+	 *
+	 * @return A future resolving to a request result as json.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<String> buildAuthRuleRequest(
+			String submitterDid,
+			String txnType,
+			String action,
+			String field,
+			String oldValue,
+			String newValue,
+			String constraint) throws IndyException {
+
+		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
+		ParamGuard.notNullOrWhiteSpace(txnType, "txnType");
+		ParamGuard.notNullOrWhiteSpace(action, "action");
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int result = LibIndy.api.indy_build_auth_rule_request(
+				commandHandle,
+				submitterDid,
+				txnType,
+				action,
+				field,
+				oldValue,
+				newValue,
+				constraint,
+				buildRequestCb);
+
+		checkResult(future, result);
+
+		return future;
+	}
+
+	/**
+	 * Builds a GET_AUTH_RULE request. Request to get authentication rules for a ledger transaction.
+	 *
+	 * NOTE: Either none or all transaction related parameters must be specified (`oldValue` can be skipped for `ADD` action).
+	 *     * none - to get all authentication rules for all ledger transactions
+	 *     * all - to get authentication rules for specific action (`oldValue` can be skipped for `ADD` action)
+	 * 
+	 * @param submitterDid (Optional) DID of the read request sender.
+	 * @param txnType - (Optional) target ledger transaction alias or associated value.
+	 * @param action - (Optional) type of action for which authentication rules will be applied.
+	 *     Can be either "ADD" (to add new rule) or "EDIT" (to edit an existing one).
+	 * @param field - (Optional) transaction field for which authentication rule will be applied.
+	 * @param oldValue - (Optional) old value of field, which can be changed to a new_value (must be specified for EDIT action).
+	 * @param newValue - (Optional) new value that can be used to fill the field.
+	 *
+	 * @return A future resolving to a request result as json.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<String> buildGetAuthRuleRequest(
+			String submitterDid,
+			String txnType,
+			String action,
+			String field,
+			String oldValue,
+			String newValue) throws IndyException {
+
+		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
+		ParamGuard.notNullOrWhiteSpace(txnType, "txnType");
+		ParamGuard.notNullOrWhiteSpace(action, "action");
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int result = LibIndy.api.indy_build_get_auth_rule_request(
+				commandHandle,
+				submitterDid,
+				txnType,
+				action,
+				field,
+				oldValue,
+				newValue,
+				buildRequestCb);
+
+		checkResult(future, result);
+
+		return future;
+	}
 }

@@ -21,6 +21,7 @@
     - [Alice Gets a Transcript](#alice-gets-a-transcript)
     - [Apply for a Job](#apply-for-a-job)
     - [Apply for a Loan](#apply-for-a-loan)
+    - [Alice Quits her Job](#alice-quits-her-job)
     - [Explore the Code](#explore-the-code)
 ## What Indy and Libindy are and Why They Matter
 
@@ -64,11 +65,11 @@ The ledger is intended to store **Identity Records** that describe a **Ledger En
 
 In this tutorial we will use two types of DIDs. The first one is a **Verinym**. A **Verinym** is associated with the **Legal Identity** of the **Identity Owner**. For example, all parties should be able to verify that some DID is used by a Government to publish schemas for some document type. The second type is a **Pseudonym** - a **Blinded Identifier** used to maintain privacy in the context of an ongoing digital relationship (**Connection**). If the Pseudonym is used to maintain only one digital relationship we will call it a Pairwise-Unique Identifier. We will use Pairwise-Unique Identifiers to maintain secure connections between actors in this tutorial.
 
-The creation of a DID known to the Ledger is an **Identity Record** itself (NYM transaction). The NYM transaction can be used for creation of new DIDs that is known to that ledger, the setting and rotation of a verification key, and the setting and changing of roles. The most important fields of this transaction are `dest` (target DID), `role` (role of a user NYM record being created for) and the `verkey` (target verification key). See [Requests](https://github.com/hyperledger/indy-node/blob/master/docs/requests.md) to get more information about supported ledger transactions.
+The creation of a DID known to the Ledger is an **Identity Record** itself (NYM transaction). The NYM transaction can be used for creation of new DIDs that is known to that ledger, the setting and rotation of a verification key, and the setting and changing of roles. The most important fields of this transaction are `dest` (target DID), `role` (role of a user NYM record being created for) and the `verkey` (target verification key). See [Requests](https://github.com/hyperledger/indy-node/blob/master/docs/source/requests.md) to get more information about supported ledger transactions.
 
 Publishing with a DID verification key allows a person, organization or thing, to verify that someone owns this DID as that person, organization or thing is the only one who knows the corresponding signing key and any DID-related operations requiring signing with this key.
 
-Our ledger is public permissioned and anyone who wants to publish DIDs needs to get the role of **Trust Anchor** on the ledger. A **Trust Anchor** is a person or organization that the ledger already knows about, that is able to help bootstrap others. (It is *not* the same as what cybersecurity experts call a "trusted third party"; think of it more like a facilitator). See [Roles](https://github.com/hyperledger/indy-node/blob/master/docs/auth_rules.md) to get more information about roles.
+Our ledger is public permissioned and anyone who wants to publish DIDs needs to get the role of **Trust Anchor** on the ledger. A **Trust Anchor** is a person or organization that the ledger already knows about, that is able to help bootstrap others. (It is *not* the same as what cybersecurity experts call a "trusted third party"; think of it more like a facilitator). See [Roles](https://github.com/hyperledger/indy-node/blob/master/docs/source/auth_rules.md) to get more information about roles.
 
 **The first step towards being able to place transactions on the ledger involves getting the role of Trust Anchor on the ledger. Faber College, Acme Corp and Thrift Bank will need to get the role of Trust Anchor on the ledger so they can create Verinyms and Pairwise-Unique Identifiers to provide the service to Alice.**
 
@@ -246,7 +247,7 @@ By having independent pairwise relationships, you're reducing the ability for ot
 #### Getting Verinym
 
 It is important to understand that earlier created **Faber** DID is not, in and of itself, the same thing as self-sovereign identity. This DID must be used only for secure interaction with the **Steward**.
-After the connection is established **Faber** must create new DID record that he will use as Verinym in the Ledger.
+After the connection is established **Faber** must create a new DID record that he will use as Verinym in the Ledger.
 
 1. **Faber** creates a new DID in its wallet by calling ``did.create_and_store_my_did``.
     ```python        
@@ -415,8 +416,34 @@ The same way **Acme** creates and publishes a **Credential Definition** for the 
   await ledger.sign_and_submit_request(acme['pool'], acme['wallet'], acme['did'], cred_def_request)
 ```
 
-At this point we have a **Credential Definition** for the **Job-Certificate** Credential Schema published by **Acme** and a
- **Credential Definition** for the **Transcript** Credential Schema published by **Faber**.
+**Acme** anticipates revoking **Job-Certificate* credentials. It decides to create a revocation registry. One of Hyperledger Indy's revocation registry types uses cryptographic accumulators for publishing revoked credentials. For details about the inner working of those accumulators see [here](https://github.com/fabienpe/indy-sdk/blob/master/docs/concepts/revocation/cred-revocation.md)). The use of those accumulators requires the publication of "validity tails" outside of the Ledger. For the purpose of this demo, the validity tails are written in a file using a 'blob storage'. 
+
+```python
+    # Acme Agent
+    acme['tails_writer_config'] = json.dumps({'base_dir': "/tmp/indy_acme_tails", 'uri_pattern': ''})
+    tails_writer = await blob_storage.open_writer('default', acme['tails_writer_config'])
+```
+Once the validity tails are configured, **Acme** can create a new revocation registry for the given credential definition.
+
+```python
+    # Acme Agent
+    (acme['revoc_reg_id'], acme['revoc_reg_def'], acme['revoc_reg_entry']) = \
+        await anoncreds.issuer_create_and_store_revoc_reg(acme['wallet'], acme['did'], 'CL_ACCUM', 'TAG1',
+                                                          acme['job_certificate_cred_def_id'],
+                                                          json.dumps({'max_cred_num': 5,
+                                                                      'issuance_type': 'ISSUANCE_ON_DEMAND'}),
+                                                          tails_writer)
+
+    acme['revoc_reg_def_request'] = await ledger.build_revoc_reg_def_request(acme['did'], acme['revoc_reg_def'])
+    await ledger.sign_and_submit_request(acme['pool'], acme['wallet'], acme['did'], acme['revoc_reg_def_request'])
+
+    acme['revoc_reg_entry_request'] = \
+        await ledger.build_revoc_reg_entry_request(acme['did'], acme['revoc_reg_id'], 'CL_ACCUM',
+                                                   acme['revoc_reg_entry'])
+    await ledger.sign_and_submit_request(acme['pool'], acme['wallet'], acme['did'], acme['revoc_reg_entry_request'])
+```
+
+At this point we have a **Credential Definition** (supporting revocation) for the **Job-Certificate** Credential Schema published by **Acme** and a **Credential Definition** for the **Transcript** Credential Schema published by **Faber**.
 
 ## Alice Gets a Transcript
 
@@ -529,7 +556,7 @@ In this case, Acme Corp is requesting that Alice provide a **Job Application**.
 The Job Application requires a name, degree, status, SSN and also the satisfaction of the condition about the average mark or grades.
 
 In this case, **Job-Application** Proof Request looks like:
-```
+```python
   # Acme Agent
   acme['job_application_proof_request'] = json.dumps({
       'nonce': '1432422343242122312411212',
@@ -638,7 +665,7 @@ Now Alice has everything to create the Proof for **Acme Job-Application** Proof 
 ```
 
 When **Acme** inspects the received Proof he will see following structure:
-```
+```python
   # Acme Agent
   {
       'requested_proof': {
@@ -711,16 +738,49 @@ Alice goes through a familiar sequence of interactions.
       "salary": {"raw": "2400", "encoded": "2400"},
       "experience": {"raw": "10", "encoded": "10"}
   })
-  job_certificate_cred_json, _, _ = \
-      await anoncreds.issuer_create_credential(acme['wallet'], acme['job_certificate_cred_offer'],acme['job_certificate_cred_request'],
-                                               alice_job_certificate_cred_values_json, None, None)
+```
+
+One difference with the ussuance of the Transcript by Faber here is that a **Job-Certificate** can be revoked and the credential creation takes the ID of the revocation registry created earlier by **Acme** and a handle to the blob storage containing the validity tails:
+
+
+```python
+    # Acme Agent
+    acme['blob_storage_reader_cfg_handle'] = await blob_storage.open_reader('default', acme['tails_writer_config'])
+    acme['job_certificate_cred'], acme['job_certificate_cred_rev_id'], acme['alice_cert_rev_reg_delta'] = \
+        await anoncreds.issuer_create_credential(acme['wallet'], acme['job_certificate_cred_offer'],
+                                                 acme['job_certificate_cred_request'],
+                                                 acme['job_certificate_cred_values'],
+                                                 acme['revoc_reg_id'],
+                                                 acme['blob_storage_reader_cfg_handle'])
+```
+
+Furthermore **Acme** must publish a revocation registry entry on the Ledger so other parties can verify later the revocation state of the credential.
+
+```python
+    # Acme agent
+    acme['revoc_reg_entry_req'] = \
+        await ledger.build_revoc_reg_entry_request(acme['did'], acme['revoc_reg_id'], 'CL_ACCUM',
+                                                   acme['alice_cert_rev_reg_delta'])
+    await ledger.sign_and_submit_request(acme['pool'], acme['wallet'], acme['did'], acme['revoc_reg_entry_req'])
+``` 
+
+When **Alice** receives her **Job-Certificate** credential from **Acme**, she should request the revocation registry definition from the Ledger before storing the credential.
+
+```python
+    # Alice Agent
+    alice['acme_revoc_reg_des_req'] = \
+        await ledger.build_get_revoc_reg_def_request(alice['did_for_acme'],
+                                                     alice_job_certificate_cred['rev_reg_id'])
+    alice['acme_revoc_reg_des_resp'] = await ledger.submit_request(alice['pool'], alice['acme_revoc_reg_des_req'])
+    (alice['acme_revoc_reg_def_id'], alice['acme_revoc_reg_def_json']) = \
+        await ledger.parse_get_revoc_reg_def_response(alice['acme_revoc_reg_des_resp'])
 ```
 
 Now the **Job-Certificate** Credential has been issued and Alice now has it in her possession. Alice stores **Job-Certificate** Credential in her wallet.
 ```python
   # Alice Agent
   await anoncreds.prover_store_credential(alice['wallet'], None, alice['job_certificate_cred_request_metadata'],
-                                          alice['job_certificate_cred'], alice['acme_job_certificate_cred_def'], None)
+                                          alice['job_certificate_cred'], alice['acme_job_certificate_cred_def'], alice['acme_revoc_reg_def_json'])
 ```
 
 She can use it when she applies for her loan, in much the same way that she used her transcript when applying for a job.
@@ -755,9 +815,11 @@ Alice gets a **Loan-Application-Basic** Proof Request from Thrift Bank that look
               'p_value': 1,
               'restrictions': [{'cred_def_id': acme_job_certificate_cred_def_id}]
           }
-      }
+      },
+      'non_revoked': {'to': int(time.time())}
   })
 ```
+The last line indicates that the *Job-Certificate* provided should not be revoked by the application time. 
 
 Alice has only one credential that meets the proof requirements for this **Loan-Application-Basic** Proof Request.
 ```python
@@ -777,39 +839,45 @@ Alice has only one credential that meets the proof requirements for this **Loan-
   }
 ```
 
-For the **Loan-Application-Basic** Proof Request Alice divided attributes as follows:
+For the **Loan-Application-Basic** Proof Request Alice divided attributes as follows. She can get the validity time stamp for each attribute from the revocation states queried from the Ledger:
 ```python
   # Alice Agent
-  alice['apply_loan_requested_creds'] = json.dumps({
-      'self_attested_attributes': {},
-      'requested_attributes': {
-          'attr1_referent': {'cred_id': cred_for_attr1['referent'], 'revealed': True}
-      },
-      'requested_predicates': {
-          'predicate1_referent': {'cred_id': cred_for_predicate1['referent']},
-          'predicate2_referent': {'cred_id': cred_for_predicate2['referent']}
-      }
-  })
+  revoc_states_for_loan_app = json.loads(alice['revoc_states_for_loan_app'])
+        timestamp_for_attr1 = await get_timestamp_for_attribute(cred_for_attr1, revoc_states_for_loan_app)
+        timestamp_for_predicate1 = await get_timestamp_for_attribute(cred_for_predicate1, revoc_states_for_loan_app)
+        timestamp_for_predicate2 = await get_timestamp_for_attribute(cred_for_predicate2, revoc_states_for_loan_app)
+        alice['apply_loan_requested_creds'] = json.dumps({
+            'self_attested_attributes': {},
+            'requested_attributes': {
+                'attr1_referent': {'cred_id': cred_for_attr1['referent'], 'revealed': True, 'timestamp': timestamp_for_attr1}
+            },
+            'requested_predicates': {
+                'predicate1_referent': {'cred_id': cred_for_predicate1['referent'], 'timestamp': timestamp_for_predicate1},
+                'predicate2_referent': {'cred_id': cred_for_predicate2['referent'], 'timestamp': timestamp_for_predicate2}
+            }
+        })
 ```
 
 Alice creates the Proof for the **Loan-Application-Basic** Proof Request.
 ```python
   # Alice Agent
   alice['apply_loan_proof'] = \
-      await anoncreds.prover_create_proof(alice['wallet'], alice['apply_loan_proof_request'], alice['apply_loan_requested_creds'],
-                                          alice['master_secret_id'], alice['schemas'], alice['cred_defs'], alice['revoc_states'])
+            await anoncreds.prover_create_proof(alice['wallet'], alice['apply_loan_proof_request'],
+                                                alice['apply_loan_requested_creds'], alice['master_secret_id'],
+                                                alice['schemas_for_loan_app'], alice['cred_defs_for_loan_app'],
+                                                alice['revoc_states_for_loan_app'])
 ```
 
 Alice sends just the **Loan-Application-Basic** proof to the bank.
 This allows her to minimize the PII (personally identifiable information) that she has to share when all she's trying to do right now is prove basic eligibility.
 
 When **Thrift** inspects the received Proof he will see following structure:
-```
+```python
   # Thrift Agent
   {
       'requested_proof': {
-          'revealed_attributess': {
-              'attr1_referent': {'sub_proof_index': 0, 'raw':'Permanent', 'encoded':'2143135425425143112321314321'},
+          'revealed_attrs': {
+              'attr1_referent': {'sub_proof_index': 0, 'raw': 'Permanent', 'encoded':'2143135425425143112321314321'},
           },
           'self_attested_attrs': {},
           'unrevealed_attrs': {},
@@ -820,10 +888,10 @@ When **Thrift** inspects the received Proof he will see following structure:
       },
       'proof' : [] # Validity Proof that Thrift can check
       'identifiers' : [ # Identifiers of credentials were used for Proof building
-          'schema_id': job_certificate_schema_id,
-          'cred_def_id': acme_job_certificate_cred_def_id,
-          'revoc_reg_seq_no': None,
-          'timestamp': None
+          'schema_id': acme['job_certificate_schema_id'],
+          'cred_def_id': acme['job_certificate_cred_def_id'],
+          'rev_reg_id': acme['revoc_reg_id'],
+          'timestamp': 1550503925 # A integer timestamp
       ]
   }
 ```
@@ -831,8 +899,12 @@ When **Thrift** inspects the received Proof he will see following structure:
 **Thrift Bank** successfully verified the **Loan-Application-Basic** Proof from Alice.
 ```python
   # Thrift Agent
-  assert await anoncreds.verifier_verify_proof(thrift['apply_loan_proof_request'], thrift['alice_apply_loan_proof'],
-                                               thrift['schemas'], thrift['cred_defs'], thrift['revoc_defs'], thrift['revoc_regs'])
+  assert await anoncreds.verifier_verify_proof(thrift['apply_loan_proof_request'],
+                                                 thrift['alice_apply_loan_proof'],
+                                                 thrift['schemas_for_loan_app'],
+                                                 thrift['cred_defs_for_loan_app'],
+                                                 thrift['revoc_defs_for_loan_app'],
+                                                 thrift['revoc_regs_for_loan_app'])
 ```
 
 Thrift Bank sends the second Proof Request where Alice needs to share her personal information with the bank.
@@ -909,7 +981,7 @@ Alice creates the Proof for **Loan-Application-KYC** Proof Request.
 ```
 
 When **Thrift** inspects the received Proof he will see following structure:
-```
+```python
   # Thrift Agent
   {
       'requested_proof': {
@@ -926,13 +998,13 @@ When **Thrift** inspects the received Proof he will see following structure:
       'identifiers' : [ # Identifiers of credentials were used for Proof building
           {
             'schema_id': transcript_schema_id,
-            'cred_def_id': faber_transcript_cred_def_id,
+            'cred_def_id': faber['transcript_cred_def_id'],
             'rev_reg_id': None,
             'timestamp': None
           },
           {
             'schema_key': job_certificate_schema_id,
-            'cred_def_id': acme_job_certificate_cred_def_id,
+            'cred_def_id': acme['job_certificate_cred_def_id'],
             'rev_reg_id': None,
             'timestamp': None
           }
@@ -948,6 +1020,22 @@ When **Thrift** inspects the received Proof he will see following structure:
 ```
 
 Both of Alice's Proofs have been successfully verified and she got loan from **Thrift Bank**.
+
+## Alice Quits her Job
+
+Later, **Alice** decides to quit her job so **Acme** revokes the **Job-Certificate** credential:
+
+```python
+    # Acme Agent
+    await anoncreds.issuer_revoke_credential(acme['wallet'],
+                                             acme['blob_storage_reader_cfg_handle'],
+                                             acme['revoc_reg_id'],
+                                             acme['job_certificate_cred_rev_id'])
+```
+
+**Acme** then just needs to publish the revocation on the ledger calling `ledger.build_revoc_reg_entry_request` and `ledger.sign_and_submit_request`.
+
+If Alice tries to apply for a loan (**Loan-Application-Basic**) again, the proof verification will then fail.
 
 ## Explore the Code
 
