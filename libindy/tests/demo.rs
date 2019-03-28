@@ -473,6 +473,8 @@ fn anoncreds_demo_works() {
     let res = prover_close_wallet_receiver.recv_timeout(timeout::medium_timeout()).unwrap();
     assert_eq!(ErrorCode::from(res), ErrorCode::Success);
 
+    utils::tear_down_delete_wallet(&issuer_wallet_config);
+    utils::tear_down_delete_wallet(&prover_wallet_config);
     utils::tear_down("anoncreds_demo_works");
 }
 
@@ -483,7 +485,7 @@ fn ledger_demo_works() {
     let my_wallet_config = json!({"id": "my_wallet"}).to_string();
     let their_wallet_config = json!({"id": "their_wallet"}).to_string();
 
-    let pool_name = "pool_1";
+    let pool_name = "ledger_demo_works";
     let c_pool_name = CString::new(pool_name).unwrap();
 
     let (set_protocol_version_receiver, set_protocol_version_command_handle, set_protocol_version_callback) = callback::_closure_to_cb_ec();
