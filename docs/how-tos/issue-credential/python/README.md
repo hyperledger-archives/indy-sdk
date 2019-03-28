@@ -26,7 +26,7 @@ you'll be writing.
 
 ### Step 2
 
-This how-to builds on the work in ["Save Schema and Cred Def"](../save-schema-and-cred-def/python/README.md).
+This how-to builds on the work in ["Save Schema and Cred Def"](../../save-schema-and-cred-def/python/README.md).
 Rather than duplicate our explanation of those steps here, we will simply
 copy that code as our starting point.
 
