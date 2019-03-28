@@ -53,6 +53,10 @@ pub fn setup(name: &str) {
     logger::set_default_logger();
 }
 
+pub fn tear_down_delete_wallet(wallet_config: &str) {
+    wallet::delete_wallet(wallet_config, WALLET_CREDENTIALS).unwrap();
+}
+
 pub fn tear_down(name: &str) {
     test::cleanup_storage(name);
 }
