@@ -16,7 +16,9 @@ Setup your workstation with an indy development virtual machine (VM). See [prere
 
 In your normal workstation operating system (not the VM), open a text editor of your
 choice and paste the *template* code of one of the available in the list bellow into 
-a new file and saved it. We will be modifying this code in later steps.
+a new file and saved it as `write_did.EXT`, replacing *EXT* with the proper file 
+extension (e.g for python: `write_did.py`, for nodejs: `write_did.js`, and so on). 
+We will be modifying this code in later steps.
 
 [ [Python template](python/template.py) | [Java template](java/template.java) | [.NET template](cs/Template.cs) | [Node.js template](nodejs/template.js) | [Rust template](rust/src/template.rs)]
 
@@ -35,9 +37,8 @@ material generated during the tutorial.
 
 ![more info on wallets](wallet-slide.png)
 
-Copy the contents of the correspondent *step2* file below into your template file 
-instead of the `Step 2 code goes here` placeholder comment, and save it as `write_did.EXT`,
- replacing *EXT* with the proper file extension (e.g for python: `write_did.py`, for nodejs: `write_did.js`, and so on).
+Copy the contents of the correspondent *step2* file below into your `write_did` file 
+instead of the `Step 2 code goes here` placeholder comment, and save it.
 
 [ [Python step2](python/step2.py) | [Java step2](java/step2.java) | [.NET step2](../not-yet-written.md) | [Node.js step2](nodejs/step2.js) | [Rust step2](rust/src/step2.rs)]
 
