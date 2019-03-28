@@ -541,7 +541,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_default()
 // the common function for two previous tests
 fn anoncreds_revocation_interaction_test_one_prover(pool_name: &str, revocation_registry_config: &str)
 {
-    utils::setup("anoncreds_revocation_interaction_test_one_prover");
+    utils::setup(pool_name);
 
     let pool = Pool::new(pool_name);
 
@@ -631,7 +631,7 @@ fn anoncreds_revocation_interaction_test_one_prover(pool_name: &str, revocation_
 
     pool.close();
 
-    utils::tear_down("anoncreds_revocation_interaction_test_one_prover");
+    utils::tear_down(pool_name);
 }
 
 
