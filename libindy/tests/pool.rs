@@ -212,7 +212,7 @@ mod high_cases {
 
             pool::set_protocol_version(PROTOCOL_VERSION).unwrap();
 
-            let pool_name = "open_pool_ledger_works_corrupted_for_cached_txns";
+            let pool_name = "open_pool_ledger_works_for_corrupted_cached_txns";
             let txn_file_path = pool::create_genesis_txn_file_for_test_pool(pool_name, None, None);
             let pool_config = pool::pool_config_json(txn_file_path.as_path());
             pool::create_pool_ledger_config(pool_name, Some(pool_config.as_str())).unwrap();
