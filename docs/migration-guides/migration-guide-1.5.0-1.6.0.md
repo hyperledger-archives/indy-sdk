@@ -6,8 +6,8 @@ This document is written for developers using Libindy to provide necessary infor
 to simplify their transition to Libindy 1.6 from Libindy 1.5. If you are using older Libindy
 version you can check migration guides history:
 
-* [Libindy 1.3 to 1.4 migration](https://github.com/hyperledger/indy-sdk/blob/master/doc/migration-guide-1.3.0-1.4.0.md)
-* [Libindy 1.4 to 1.5 migration](https://github.com/hyperledger/indy-sdk/blob/master/doc/migration-guide-1.4.0-1.5.0.md)
+* [Libindy 1.3 to 1.4 migration](https://github.com/hyperledger/indy-sdk/blob/v1.4.0/doc/migration-guide.md)
+* [Libindy 1.4 to 1.5 migration](https://github.com/hyperledger/indy-sdk/blob/v1.5.0/doc/migration-guide-1.4.0-1.5.0.md)
 
 ## Table of contents
 

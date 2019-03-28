@@ -1,6 +1,12 @@
-indy-cli (1.8.1) unstable; urgency=medium
+indy-cli (1.8.2) unstable; urgency=medium
 
 [ Hyperledger ]
+
+## 1.8.2
+* Added new commands to work with ledger auth rules:
+    * `ledger auth-rule` to change an existing.
+    * `ledger get-auth-rule` to get either specific one or all.
+* Updated Cli wallet related commands to accept `storage_config` and `storage_credentials` as optional params.
 
 * 1.8.0
     * Updated error handling to show Libindy error message in some cases.
