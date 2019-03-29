@@ -23,7 +23,6 @@ extern crate rmp_serde;
 extern crate rust_base58;
 extern crate time;
 extern crate serde;
-extern crate indy;
 
 #[macro_use]
 mod utils;
@@ -31,6 +30,8 @@ mod utils;
 use self::indy::ErrorCode;
 use utils::payments;
 use utils::constants::*;
+
+use api::INVALID_WALLET_HANDLE;
 
 static EMPTY_OBJECT: &str = "{}";
 static EMPTY_ARRAY: &str = "[]";

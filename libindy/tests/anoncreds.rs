@@ -23,7 +23,6 @@ extern crate rmp_serde;
 extern crate rust_base58;
 extern crate time;
 extern crate serde;
-extern crate indy;
 
 #[macro_use]
 mod utils;
@@ -31,7 +30,7 @@ mod utils;
 use utils::{wallet, anoncreds, blob_storage};
 use utils::anoncreds::{COMMON_MASTER_SECRET, CREDENTIAL1_ID, CREDENTIAL2_ID, CREDENTIAL3_ID, ANONCREDS_WALLET_CONFIG};
 
-use indy::api::INVALID_WALLET_HANDLE;
+use api::INVALID_WALLET_HANDLE;
 
 use indy::ErrorCode;
 use utils::inmem_wallet::InmemWallet;

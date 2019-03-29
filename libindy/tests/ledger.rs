@@ -26,7 +26,6 @@ extern crate rust_base58;
 extern crate time;
 extern crate serde;
 extern crate sodiumoxide;
-extern crate indy;
 
 #[macro_use]
 mod utils;
@@ -50,6 +49,8 @@ use utils::domain::anoncreds::revocation_registry_delta::RevocationRegistryDelta
 
 use std::collections::HashMap;
 use std::thread;
+
+use api::INVALID_WALLET_HANDLE;
 
 mod high_cases {
     use super::*;

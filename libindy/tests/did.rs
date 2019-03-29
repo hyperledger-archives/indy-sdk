@@ -23,7 +23,6 @@ extern crate rmp_serde;
 extern crate rust_base58;
 extern crate time;
 extern crate serde;
-extern crate indy;
 
 #[macro_use]
 mod utils;
@@ -33,6 +32,8 @@ use utils::constants::*;
 use utils::types::ResponseType;
 
 use self::indy::ErrorCode;
+
+use api::INVALID_WALLET_HANDLE;
 
 #[cfg(feature = "local_nodes_pool")]
 use std::thread;

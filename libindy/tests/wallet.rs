@@ -23,7 +23,6 @@ extern crate rmp_serde;
 extern crate rust_base58;
 extern crate time;
 extern crate serde;
-extern crate indy;
 
 #[macro_use]
 mod utils;
@@ -33,6 +32,7 @@ use utils::{environment, wallet, test, did};
 use utils::constants::*;
 
 use self::indy::ErrorCode;
+use api::INVALID_WALLET_HANDLE;
 
 pub const CONFIG: &'static str = r#"{"freshness_time":1000}"#;
 
