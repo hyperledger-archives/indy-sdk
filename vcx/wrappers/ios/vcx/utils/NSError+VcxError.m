@@ -19,7 +19,10 @@ static NSString *const VcxErrorDomain = @"VcxErrorDomain";
         const char * error_json_p;
             vcx_get_current_error(&error_json_p);
 
-            NSString *errorDetailsJson = [NSString stringWithUTF8String:error_json_p];
+            NSString *errorDetailsJson = nil;
+            if (error_json_p) {
+                errorDetailsJson = [NSString stringWithUTF8String:error_json_p];
+            }
 
             NSError *error;
             NSDictionary *errorDetails = [NSJSONSerialization JSONObjectWithData:[NSData dataWithBytes:[errorDetailsJson UTF8String]
