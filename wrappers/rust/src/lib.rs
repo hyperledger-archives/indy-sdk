@@ -40,6 +40,7 @@ use std::ffi::CStr;
 pub type IndyHandle = i32;
 
 pub const INVALID_WALLET_HANDLE: i32 = 0;
+pub const INVALID_POOL_HANDLE: i32 = 0;
 
 use failure::{Backtrace, Fail};
 

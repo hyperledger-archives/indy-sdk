@@ -33,7 +33,7 @@ use utils::types::ResponseType;
 
 use self::indy::ErrorCode;
 
-use api::INVALID_WALLET_HANDLE;
+use api::{INVALID_WALLET_HANDLE, INVALID_POOL_HANDLE};
 
 #[cfg(feature = "local_nodes_pool")]
 use std::thread;
@@ -106,7 +106,7 @@ mod high_cases {
         fn indy_key_for_did_works_for_invalid_pool_handle() {
             let (wallet_handle, pool_handle, wallet_config) = utils::setup_with_wallet_and_pool("indy_key_for_did_works_for_invalid_pool_handle");
 
-            let res = did::key_for_did(pool_handle + 1, wallet_handle, DID_TRUSTEE);
+            let res = did::key_for_did(INVALID_POOL_HANDLE, wallet_handle, DID_TRUSTEE);
             assert_code!(ErrorCode::PoolLedgerInvalidPoolHandle, res);
 
             utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_key_for_did_works_for_invalid_pool_handle", &wallet_config);
@@ -299,7 +299,7 @@ mod high_cases {
         fn indy_get_endpoint_for_did_works_invalid_poll_handle() {
             let (wallet_handle, pool_handle, wallet_config) = utils::setup_with_wallet_and_pool("indy_get_endpoint_for_did_works_invalid_poll_handle");
 
-            let res = did::get_endpoint_for_did(wallet_handle, pool_handle + 1, DID);
+            let res = did::get_endpoint_for_did(wallet_handle, INVALID_POOL_HANDLE, DID);
             assert_code!(ErrorCode::PoolLedgerInvalidPoolHandle, res);
 
             utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_get_endpoint_for_did_works_invalid_poll_handle", &wallet_config);
