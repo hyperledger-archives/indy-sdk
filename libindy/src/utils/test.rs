@@ -3,12 +3,22 @@ use utils::environment;
 use std::fs;
 use std::path::PathBuf;
 
-fn cleanup_files(dir: &PathBuf, name: &str) {
+
+pub fn cleanup_file(path: &PathBuf) {
+    if path.exists() {
+        fs::remove_file(path).unwrap();
+    }
+}
+
+pub fn cleanup_files(dir: &PathBuf, name: &str) {
     let mut path = dir.clone();
     path.push(name);
-
     if path.exists() {
-        fs::remove_dir_all(path).unwrap()
+        if path.is_dir() {
+            fs::remove_dir_all(path).unwrap();
+        } else {
+            fs::remove_file(path).unwrap();
+        }
     }
 }
 
