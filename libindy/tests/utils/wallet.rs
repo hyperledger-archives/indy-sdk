@@ -136,8 +136,8 @@ pub fn import_wallet(config: &str, credentials: &str, import_config: &str) -> Re
     wallet::import_wallet(config, credentials, import_config).wait()
 }
 
-pub fn export_wallet_path() -> PathBuf {
-    environment::tmp_file_path("export_file")
+pub fn export_wallet_path(name: &str) -> PathBuf {
+    environment::tmp_file_path(name)
 }
 
 pub fn prepare_export_wallet_config(path: &Path) -> String {
