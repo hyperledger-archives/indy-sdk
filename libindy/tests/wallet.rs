@@ -23,6 +23,7 @@ extern crate rmp_serde;
 extern crate rust_base58;
 extern crate time;
 extern crate serde;
+extern crate indy;
 
 #[macro_use]
 mod utils;
@@ -613,7 +614,7 @@ mod medium_cases {
         fn indy_close_wallet_works_for_invalid_handle() {
             let (wallet_handle, wallet_config) = utils::setup_with_wallet("indy_close_wallet_works_for_invalid_handle");
 
-            let res = wallet::close_wallet(wallet_handle + 1);
+            let res = wallet::close_wallet(INVALID_WALLET_HANDLE);
             assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             utils::tear_down_with_wallet(wallet_handle, "indy_close_wallet_works_for_invalid_handle", &wallet_config);
@@ -670,7 +671,7 @@ mod medium_cases {
             let path = wallet::export_wallet_path("indy_export_wallet_returns_error_if_invalid_handle");
             let config_json = wallet::prepare_export_wallet_config(&path);
 
-            let res = wallet::export_wallet(wallet_handle + 1, &config_json);
+            let res = wallet::export_wallet(INVALID_WALLET_HANDLE, &config_json);
             assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             utils::tear_down_with_wallet(wallet_handle, "indy_export_wallet_returns_error_if_invalid_handle", &wallet_config);

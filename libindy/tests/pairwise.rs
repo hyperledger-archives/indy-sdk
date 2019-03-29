@@ -23,6 +23,7 @@ extern crate rmp_serde;
 extern crate rust_base58;
 extern crate time;
 extern crate serde;
+extern crate indy;
 
 #[macro_use]
 mod utils;
@@ -32,6 +33,7 @@ use utils::constants::*;
 
 use self::indy::ErrorCode;
 
+use api::IndyHandle;
 
 mod high_cases {
     use super::*;
@@ -91,7 +93,7 @@ mod high_cases {
 
             did::store_their_did_from_parts(wallet_handle, DID_TRUSTEE, VERKEY_TRUSTEE).unwrap();
 
-            let res = pairwise::create_pairwise(wallet_handle + 1, DID_TRUSTEE, &my_did, None);
+            let res = pairwise::create_pairwise(INVALID_WALLET_HANDLE, DID_TRUSTEE, &my_did, None);
             assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             utils::tear_down_with_wallet(wallet_handle, "indy_create_pairwise_works_for_invalid_wallet_handle", &wallet_config);
@@ -152,7 +154,7 @@ mod high_cases {
 
             pairwise::create_pairwise(wallet_handle, DID_TRUSTEE, &my_did, None).unwrap();
 
-            let res = pairwise::list_pairwise(wallet_handle + 1);
+            let res = pairwise::list_pairwise(INVALID_WALLET_HANDLE);
             assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             utils::tear_down_with_wallet(wallet_handle, "indy_list_pairwise_works_for_invalid_handle", &wallet_config);
@@ -192,7 +194,7 @@ mod high_cases {
 
             pairwise::create_pairwise(wallet_handle, DID_TRUSTEE, &my_did, None).unwrap();
 
-            let res = pairwise::pairwise_exists(wallet_handle + 1, DID_TRUSTEE);
+            let res = pairwise::pairwise_exists(INVALID_WALLET_HANDLE, DID_TRUSTEE);
             assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             utils::tear_down_with_wallet(wallet_handle, "indy_is_pairwise_exists_works_for_invalid_handle", &wallet_config);
@@ -234,7 +236,7 @@ mod high_cases {
 
             pairwise::create_pairwise(wallet_handle, DID_TRUSTEE, &my_did, None).unwrap();
 
-            let res = pairwise::get_pairwise(wallet_handle + 1, DID_TRUSTEE);
+            let res = pairwise::get_pairwise(INVALID_WALLET_HANDLE, DID_TRUSTEE);
             assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             utils::tear_down_with_wallet(wallet_handle, "indy_get_pairwise_works_for_invalid_handle", &wallet_config);
@@ -302,7 +304,7 @@ mod high_cases {
 
             pairwise::create_pairwise(wallet_handle, DID_TRUSTEE, &my_did, None).unwrap();
 
-            let res = pairwise::set_pairwise_metadata(wallet_handle + 1, DID_TRUSTEE, Some(METADATA));
+            let res = pairwise::set_pairwise_metadata(INVALID_WALLET_HANDLE, DID_TRUSTEE, Some(METADATA));
             assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             utils::tear_down_with_wallet(wallet_handle, "indy_set_pairwise_metadata_works_for_invalid_wallet_handle", &wallet_config);

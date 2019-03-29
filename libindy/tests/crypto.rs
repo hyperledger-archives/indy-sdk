@@ -35,6 +35,8 @@ use utils::constants::*;
 
 use self::indy::ErrorCode;
 
+use api::INVALID_WALLET_HANDLE;
+
 pub const ENCRYPTED_MESSAGE: &'static [u8; 45] = &[187, 227, 10, 29, 46, 178, 12, 179, 197, 69, 171, 70, 228, 204, 52, 22, 199, 54, 62, 13, 115, 5, 216, 66, 20, 131, 121, 29, 251, 224, 253, 201, 75, 73, 225, 237, 219, 133, 35, 217, 131, 135, 232, 129, 32];
 pub const SIGNATURE: &'static [u8; 64] = &[169, 215, 8, 225, 7, 107, 110, 9, 193, 162, 202, 214, 162, 66, 238, 211, 63, 209, 12, 196, 8, 211, 55, 27, 120, 94, 204, 147, 53, 104, 103, 61, 60, 249, 237, 127, 103, 46, 220, 223, 10, 95, 75, 53, 245, 210, 241, 151, 191, 41, 48, 30, 9, 16, 78, 252, 157, 206, 210, 145, 125, 133, 109, 11];
 
@@ -75,7 +77,7 @@ mod high_cases {
         fn indy_create_key_works_for_invalid_wallet_handle() {
             let (wallet_handle, wallet_config) = utils::setup_with_wallet("indy_create_key_works_for_invalid_wallet_handle");
 
-            let res = crypto::create_key(wallet_handle + 1, None);
+            let res = crypto::create_key(INVALID_WALLET_HANDLE, None);
             assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             utils::tear_down_with_wallet(wallet_handle, "indy_create_key_works_for_invalid_wallet_handle", &wallet_config);
@@ -114,7 +116,7 @@ mod high_cases {
         fn indy_set_key_metadata_works_for_invalid_handle() {
             let (wallet_handle, verkey, wallet_config) = setup_with_key("indy_set_key_metadata_works_for_invalid_handle");
 
-            let res = crypto::set_key_metadata(wallet_handle + 1, &verkey, METADATA);
+            let res = crypto::set_key_metadata(INVALID_WALLET_HANDLE, &verkey, METADATA);
             assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             utils::tear_down_with_wallet(wallet_handle, "indy_set_key_metadata_works_for_invalid_handle", &wallet_config);
@@ -184,7 +186,7 @@ mod high_cases {
 
             crypto::set_key_metadata(wallet_handle, &verkey, METADATA).unwrap();
 
-            let res = crypto::get_key_metadata(wallet_handle + 1, &verkey);
+            let res = crypto::get_key_metadata(INVALID_WALLET_HANDLE, &verkey);
             assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             utils::tear_down_with_wallet(wallet_handle, "indy_get_key_metadata_works_for_invalid_handle", &wallet_config);
@@ -220,7 +222,7 @@ mod high_cases {
         fn indy_crypto_sign_works_for_invalid_wallet_handle() {
             let (wallet_handle, verkey, wallet_config) = setup_with_key("indy_crypto_sign_works_for_invalid_wallet_handle");
 
-            let res = crypto::sign(wallet_handle + 1, &verkey, MESSAGE.as_bytes());
+            let res = crypto::sign(INVALID_WALLET_HANDLE, &verkey, MESSAGE.as_bytes());
             assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             utils::tear_down_with_wallet(wallet_handle, "indy_crypto_sign_works_for_invalid_wallet_handle", &wallet_config);
@@ -313,7 +315,7 @@ mod high_cases {
         fn indy_crypto_auth_crypt_works_for_invalid_wallet_handle() {
             let (wallet_handle, verkey, wallet_config) = setup_with_key("indy_crypto_auth_crypt_works_for_invalid_wallet_handle");
 
-            let res = crypto::auth_crypt(wallet_handle + 1, &verkey, VERKEY, MESSAGE.as_bytes());
+            let res = crypto::auth_crypt(INVALID_WALLET_HANDLE, &verkey, VERKEY, MESSAGE.as_bytes());
             assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             utils::tear_down_with_wallet(wallet_handle, "indy_crypto_auth_crypt_works_for_invalid_wallet_handle", &wallet_config);
@@ -472,7 +474,7 @@ mod high_cases {
 
             let encrypted_msg = crypto::anon_crypt(&verkey, MESSAGE.as_bytes()).unwrap();
 
-            let res = crypto::anon_decrypt(wallet_handle + 1, &verkey, &encrypted_msg);
+            let res = crypto::anon_decrypt(INVALID_WALLET_HANDLE, &verkey, &encrypted_msg);
             assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             utils::tear_down_with_wallet(wallet_handle, "indy_crypto_anon_decrypt_works_invalid_handle", &wallet_config);
@@ -520,7 +522,7 @@ mod high_cases {
             let rec_key_vec = vec![VERKEY_MY1, VERKEY_MY2, VERKEY_TRUSTEE];
             let receiver_keys = serde_json::to_string(&rec_key_vec).unwrap();
             let message = "Hello World".as_bytes();
-            let res = crypto::pack_message(wallet_handle + 1, message, &receiver_keys, Some(&verkey));
+            let res = crypto::pack_message(INVALID_WALLET_HANDLE, message, &receiver_keys, Some(&verkey));
             assert_code!(ErrorCode::WalletInvalidHandle, res);
             utils::tear_down_with_wallet(wallet_handle, "indy_pack_message_authcrypt_fails_bad_wallet_handle", &wallet_config);
         }

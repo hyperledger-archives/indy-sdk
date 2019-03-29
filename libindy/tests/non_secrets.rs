@@ -23,6 +23,7 @@ extern crate rmp_serde;
 extern crate rust_base58;
 extern crate time;
 extern crate serde;
+extern crate indy;
 
 #[macro_use]
 mod utils;
@@ -119,7 +120,7 @@ mod high_cases {
         fn indy_add_wallet_record_works_for_invalid_handle() {
             let (wallet_handle, wallet_config) = utils::setup_with_wallet("indy_add_wallet_record_works_for_invalid_handle");
 
-            let res = add_wallet_record(wallet_handle + 1, TYPE, ID, VALUE, None);
+            let res = add_wallet_record(INVALID_WALLET_HANDLE, TYPE, ID, VALUE, None);
             assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             utils::tear_down_with_wallet(wallet_handle, "indy_add_wallet_record_works_for_invalid_handle", &wallet_config);
@@ -197,7 +198,7 @@ mod high_cases {
 
             add_wallet_record(wallet_handle, TYPE, ID, VALUE, None).unwrap();
 
-            let res = update_wallet_record_value(wallet_handle + 1, TYPE, ID, VALUE_2);
+            let res = update_wallet_record_value(INVALID_WALLET_HANDLE, TYPE, ID, VALUE_2);
             assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             utils::tear_down_with_wallet(wallet_handle, "indy_update_record_value_works_for_invalid_wallet_handle", &wallet_config);
@@ -286,7 +287,7 @@ mod high_cases {
 
             add_wallet_record(wallet_handle, TYPE, ID, VALUE, None).unwrap();
 
-            let res = update_wallet_record_tags(wallet_handle + 1, TYPE, ID, TAGS);
+            let res = update_wallet_record_tags(INVALID_WALLET_HANDLE, TYPE, ID, TAGS);
             assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             utils::tear_down_with_wallet(wallet_handle, "indy_update_wallet_record_tags_works_for_invalid_wallet_handle", &wallet_config);
@@ -384,7 +385,7 @@ mod high_cases {
 
             add_wallet_record(wallet_handle, TYPE, ID, VALUE, None).unwrap();
 
-            let res = add_wallet_record_tags(wallet_handle + 1, TYPE, ID, TAGS);
+            let res = add_wallet_record_tags(INVALID_WALLET_HANDLE, TYPE, ID, TAGS);
             assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             utils::tear_down_with_wallet(wallet_handle, "indy_add_wallet_record_tags_works_for_not_invalid_handle", &wallet_config);
@@ -483,7 +484,7 @@ mod high_cases {
         fn indy_delete_wallet_record_tags_works_for_invalid_handle() {
             let (wallet_handle, wallet_config) = utils::setup_with_wallet("indy_delete_wallet_record_tags_works_for_invalid_handle");
 
-            let res = delete_wallet_record_tags(wallet_handle + 1, TYPE, ID, r#"["tagName1"]"#);
+            let res = delete_wallet_record_tags(INVALID_WALLET_HANDLE, TYPE, ID, r#"["tagName1"]"#);
             assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             utils::tear_down_with_wallet(wallet_handle, "indy_delete_wallet_record_tags_works_for_invalid_handle", &wallet_config);
@@ -551,7 +552,7 @@ mod high_cases {
 
             add_wallet_record(wallet_handle, TYPE, ID, VALUE, None).unwrap();
 
-            let res = delete_wallet_record(wallet_handle + 1, TYPE, ID);
+            let res = delete_wallet_record(INVALID_WALLET_HANDLE, TYPE, ID);
             assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             utils::tear_down_with_wallet(wallet_handle, "indy_delete_wallet_record_works_for_invalid_handle", &wallet_config);
@@ -1231,7 +1232,7 @@ mod high_cases {
             const SEARCH_WALLET_CONFIG: &str = r#"{"id":"indy_wallet_search_for_invalid_wallet_handle"}"#;
             let wallet_handle = setup("indy_wallet_search_for_invalid_wallet_handle", SEARCH_WALLET_CONFIG);
 
-            let res = open_wallet_search(wallet_handle + 1, TYPE, QUERY_EMPTY, OPTIONS_EMPTY);
+            let res = open_wallet_search(INVALID_WALLET_HANDLE, TYPE, QUERY_EMPTY, OPTIONS_EMPTY);
             assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             wallet::close_wallet(wallet_handle).unwrap();

@@ -26,6 +26,7 @@ extern crate rust_base58;
 extern crate time;
 extern crate serde;
 extern crate sodiumoxide;
+extern crate indy;
 
 #[macro_use]
 mod utils;
@@ -83,7 +84,7 @@ mod high_cases {
         fn indy_sign_and_submit_request_works_for_invalid_wallet_handle() {
             let (wallet_handle, pool_handle, trustee_did, wallet_config) = utils::setup_trustee("indy_sign_and_submit_request_works_for_invalid_wallet_handle");
 
-            let res = ledger::sign_and_submit_request(pool_handle, wallet_handle + 1, &trustee_did, REQUEST);
+            let res = ledger::sign_and_submit_request(pool_handle, INVALID_WALLET_HANDLE, &trustee_did, REQUEST);
             assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_sign_and_submit_request_works_for_invalid_wallet_handle", &wallet_config);
@@ -260,7 +261,7 @@ mod high_cases {
         fn indy_sign_request_works_for_invalid_handle() {
             let (wallet_handle, my_did, wallet_config) = utils::setup_did("indy_sign_request_works_for_invalid_handle");
 
-            let res = ledger::sign_request(wallet_handle + 1, &my_did, MESSAGE);
+            let res = ledger::sign_request(INVALID_WALLET_HANDLE, &my_did, MESSAGE);
             assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             utils::tear_down_with_wallet(wallet_handle, "indy_sign_request_works_for_invalid_handle", &wallet_config);

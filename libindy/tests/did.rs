@@ -23,6 +23,7 @@ extern crate rmp_serde;
 extern crate rust_base58;
 extern crate time;
 extern crate serde;
+extern crate indy;
 
 #[macro_use]
 mod utils;
@@ -114,7 +115,7 @@ mod high_cases {
         fn indy_key_for_did_works_for_invalid_wallet_handle() {
             let (wallet_handle, did, wallet_config) = utils::setup_did("indy_key_for_did_works_for_invalid_wallet_handle");
 
-            let res = did::key_for_did(-1, wallet_handle + 1, &did);
+            let res = did::key_for_did(-1, INVALID_WALLET_HANDLE, &did);
             assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             utils::tear_down_with_wallet(wallet_handle, "indy_key_for_did_works_for_invalid_wallet_handle", &wallet_config);
@@ -162,7 +163,7 @@ mod high_cases {
         fn indy_key_for_local_did_works_for_invalid_wallet_handle() {
             let (wallet_handle, did, wallet_config) = utils::setup_did("indy_key_for_local_did_works_for_invalid_wallet_handle");
 
-            let res = did::key_for_local_did(wallet_handle + 1, &did);
+            let res = did::key_for_local_did(INVALID_WALLET_HANDLE, &did);
             assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             utils::tear_down_with_wallet(wallet_handle, "indy_key_for_local_did_works_for_invalid_wallet_handle", &wallet_config);
@@ -226,7 +227,7 @@ mod high_cases {
         fn indy_set_endpoint_for_did_works_for_invalid_handle() {
             let (wallet_handle, wallet_config) = utils::setup_with_wallet("indy_set_endpoint_for_did_works_for_invalid_handle");
 
-            let res = did::set_endpoint_for_did(wallet_handle + 1, DID, ENDPOINT, VERKEY);
+            let res = did::set_endpoint_for_did(INVALID_WALLET_HANDLE, DID, ENDPOINT, VERKEY);
             assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             utils::tear_down_with_wallet(wallet_handle, "indy_set_endpoint_for_did_works_for_invalid_handle", &wallet_config);
@@ -309,7 +310,7 @@ mod high_cases {
 
             did::set_endpoint_for_did(wallet_handle, DID, ENDPOINT, VERKEY).unwrap();
 
-            let res = did::get_endpoint_for_did(wallet_handle + 1, -1, DID);
+            let res = did::get_endpoint_for_did(INVALID_WALLET_HANDLE, -1, DID);
             assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             utils::tear_down_with_wallet(wallet_handle, "indy_get_endpoint_for_did_works_invalid_wallet_handle", &wallet_config);
@@ -387,7 +388,7 @@ mod high_cases {
         fn indy_set_did_metadata_works_for_invalid_handle() {
             let (wallet_handle, did, wallet_config) = utils::setup_did("indy_set_did_metadata_works_for_invalid_handle");
 
-            let res = did::set_did_metadata(wallet_handle + 1, &did, METADATA);
+            let res = did::set_did_metadata(INVALID_WALLET_HANDLE, &did, METADATA);
             assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             utils::tear_down_with_wallet(wallet_handle, "indy_set_did_metadata_works_for_invalid_handle", &wallet_config);
@@ -461,7 +462,7 @@ mod high_cases {
 
             did::set_did_metadata(wallet_handle, &did, METADATA).unwrap();
 
-            let res = did::get_did_metadata(wallet_handle + 1, &did);
+            let res = did::get_did_metadata(INVALID_WALLET_HANDLE, &did);
             assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             utils::tear_down_with_wallet(wallet_handle, "indy_get_did_metadata_works_for_invalid_handle", &wallet_config);
@@ -591,7 +592,7 @@ mod high_cases {
         fn indy_create_my_did_works_for_invalid_wallet_handle() {
             let (wallet_handle, wallet_config) = utils::setup_with_wallet("indy_create_my_did_works_for_invalid_wallet_handle");
 
-            let res = did::create_my_did(wallet_handle + 1, "{}");
+            let res = did::create_my_did(INVALID_WALLET_HANDLE, "{}");
             assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             utils::tear_down_with_wallet(wallet_handle, "indy_create_my_did_works_for_invalid_wallet_handle", &wallet_config);
@@ -631,7 +632,7 @@ mod high_cases {
 
             let (my_did, _) = did::create_and_store_my_did(wallet_handle, None).unwrap();
 
-            let res = did::replace_keys_start(wallet_handle + 1, &my_did, "{}");
+            let res = did::replace_keys_start(INVALID_WALLET_HANDLE, &my_did, "{}");
             assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             utils::tear_down_with_wallet(wallet_handle, "indy_replace_keys_start_works_for_invalid_wallet_handle", &wallet_config);
@@ -693,7 +694,7 @@ mod high_cases {
         fn indy_replace_keys_apply_works_for_invalid_wallet_handle() {
             let (wallet_handle, wallet_config) = utils::setup_with_wallet("indy_replace_keys_apply_works_for_invalid_wallet_handle");
 
-            let res = did::replace_keys_apply(wallet_handle + 1, DID);
+            let res = did::replace_keys_apply(INVALID_WALLET_HANDLE, DID);
             assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             utils::tear_down_with_wallet(wallet_handle, "indy_replace_keys_apply_works_for_invalid_wallet_handle", &wallet_config);
@@ -748,7 +749,7 @@ mod high_cases {
             let (wallet_handle, wallet_config) = utils::setup_with_wallet("indy_store_their_did_works_for_invalid_wallet_handle");
 
             let identity_json = json!({"did": DID}).to_string();
-            let res = did::store_their_did(wallet_handle + 1, &identity_json);
+            let res = did::store_their_did(INVALID_WALLET_HANDLE, &identity_json);
             assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             utils::tear_down_with_wallet(wallet_handle, "indy_store_their_did_works_for_invalid_wallet_handle", &wallet_config);
