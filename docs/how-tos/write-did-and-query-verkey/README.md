@@ -120,9 +120,3 @@ how-to, which can be done in only one step one you complete this one.
 You could also try to create a new steward identity without a seed, or
 with a different seed, and see what kind of error you get. Only identities
 with a trustee role can create stewards.
-
-There is an additional example in `extra/add_nym` which builds and submits 
-nym request to the ledger.
-
-[ [Python extra](python/extra/add_nym.py) ]
-
