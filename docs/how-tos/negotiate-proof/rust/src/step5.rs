@@ -2,23 +2,23 @@ println!("20. Verifier is verifying proof from Prover");
 
 let rev_reg_defs_json = json!({}).to_string();
 let rev_regs_json = json!({}).to_string();
-let valid = Verifier::verify_proof(&proof_req_json.to_string(),
-&proof_json,
-&schemas_json,
-&credential_defs_json,
-&rev_reg_defs_json,
-&rev_regs_json
-).unwrap();
+let valid = anoncreds::verifier_verify_proof(&proof_req_json.to_string(),
+                                   &proof_json,
+                                   &schemas_json,
+                                   &credential_defs_json,
+                                   &rev_reg_defs_json,
+                                   &rev_regs_json
+).wait().unwrap();
 
 assert!(valid);
 
 // Clean UP
 println!("21. Close and delete two wallets");
-Wallet::close(prover_wallet_handle).unwrap();
-Wallet::delete(&prover_wallet_config, USEFUL_CREDENTIALS).unwrap();
-Wallet::close(wallet_handle).unwrap();
-Wallet::delete(&config, USEFUL_CREDENTIALS).unwrap();
+wallet::close_wallet(prover_wallet_handle).wait().unwrap();
+wallet::delete_wallet(&prover_wallet_config, USEFUL_CREDENTIALS).wait().unwrap();
+wallet::close_wallet(wallet_handle).wait().unwrap();
+wallet::delete_wallet(&config, USEFUL_CREDENTIALS).wait().unwrap();
 
 println!("22. Close pool and delete pool ledger config");
-Pool::close(pool_handle).unwrap();
-Pool::delete(&pool_name).unwrap();
+pool::close_pool_ledger(pool_handle).wait().unwrap();
+pool::delete_pool_ledger(&pool_name).wait().unwrap();
