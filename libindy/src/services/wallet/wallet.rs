@@ -234,6 +234,7 @@ mod tests {
     use services::wallet::storage::default::SQLiteStorageType;
     use services::wallet::language::*;
     use utils::test;
+    use core::borrow::BorrowMut;
 
     macro_rules! jsonstr {
         ($($x:tt)+) => {
@@ -254,23 +255,23 @@ mod tests {
     fn wallet_get_id_works() {
         _cleanup("wallet_get_id_works");
 
-        let wallet = _wallet("wallet_get_id_works");
+        let mut wallet = _wallet("wallet_get_id_works");
         assert_eq!(wallet.get_id(), "wallet_get_id_works");
-        _cleanup("wallet_get_id_works");
+        _cleanup_wallet(wallet.borrow_mut(), "wallet_get_id_works");
     }
 
     #[test]
     fn wallet_add_get_works() {
         _cleanup("wallet_add_get_works");
 
-        let wallet = _wallet("wallet_add_get_works");
+        let mut wallet = _wallet("wallet_add_get_works");
         wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
 
         let record = wallet.get(_type1(), _id1(), &_fetch_options(false, true, true)).unwrap();
         assert_eq!(record.id, _id1());
         assert_eq!(record.value.unwrap(), _value1());
         assert_eq!(record.tags.unwrap(), _tags());
-        _cleanup("wallet_add_get_works");
+        _cleanup_wallet(wallet.borrow_mut(), "wallet_add_get_works");
     }
 
     #[test]
@@ -281,44 +282,44 @@ mod tests {
         wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
         wallet.close().unwrap();
 
-        let wallet = _exists_wallet("wallet_add_get_works_for_reopen");
+        let mut wallet = _exists_wallet("wallet_add_get_works_for_reopen");
 
         let record = wallet.get(_type1(), _id1(), &_fetch_options(false, true, true)).unwrap();
         assert_eq!(record.id, _id1());
         assert_eq!(record.value.unwrap(), _value1());
         assert_eq!(record.tags.unwrap(), _tags());
-        _cleanup("wallet_add_get_works_for_reopen");
+        _cleanup_wallet(wallet.borrow_mut(), "wallet_add_get_works_for_reopen");
     }
 
     #[test]
     fn wallet_get_works_for_non_existing() {
         _cleanup("wallet_get_works_for_non_existing");
 
-        let wallet = _wallet("wallet_get_works_for_non_existing");
+        let mut wallet = _wallet("wallet_get_works_for_non_existing");
         wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
 
         let res = wallet.get(_type1(), _id2(), &_fetch_options(false, true, true));
         assert_kind!(IndyErrorKind::WalletItemNotFound, res);
-        _cleanup("wallet_get_works_for_non_existing");
+        _cleanup_wallet(wallet.borrow_mut(), "wallet_get_works_for_non_existing");
     }
 
     #[test]
     fn wallet_add_works_for_already_existing() {
         _cleanup("wallet_add_works_for_already_existing");
 
-        let wallet = _wallet("wallet_add_works_for_already_existing");
+        let mut wallet = _wallet("wallet_add_works_for_already_existing");
         wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
 
         let res = wallet.add(_type1(), _id1(), _value2(), &_tags());
         assert_kind!(IndyErrorKind::WalletItemAlreadyExists, res);
-        _cleanup("wallet_add_works_for_already_existing");
+        _cleanup_wallet(wallet.borrow_mut(), "wallet_add_works_for_already_existing");
     }
 
     #[test]
     fn wallet_update_works() {
         _cleanup("wallet_update_works");
 
-        let wallet = _wallet("wallet_update_works");
+        let mut wallet = _wallet("wallet_update_works");
         wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
 
         let record = wallet.get(_type1(), _id1(), &_fetch_options(false, true, true)).unwrap();
@@ -332,32 +333,31 @@ mod tests {
         assert_eq!(record.id, _id1());
         assert_eq!(record.value.unwrap(), _value2());
         assert_eq!(record.tags.unwrap(), _tags());
-        _cleanup("wallet_update_works");
+        _cleanup_wallet(wallet.borrow_mut(), "wallet_update_works");
     }
 
     #[test]
     fn wallet_update_works_for_non_existing_id() {
         _cleanup("wallet_update_works_for_non_existing_id");
 
-        let wallet = _wallet("wallet_update_works_for_non_existing_id");
+        let mut wallet = _wallet("wallet_update_works_for_non_existing_id");
         wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
 
         let res = wallet.update(_type1(), _id2(), _value2());
         assert_kind!(IndyErrorKind::WalletItemNotFound, res);
-        _cleanup("wallet_update_works_for_non_existing_id");
+        _cleanup_wallet(wallet.borrow_mut(), "wallet_update_works_for_non_existing_id");
     }
 
     #[test]
     fn wallet_update_works_for_non_existing_type() {
         _cleanup("wallet_update_works_for_non_existing_type");
 
-        let wallet = _wallet("wallet_update_works_for_non_existing_type");
+        let mut wallet = _wallet("wallet_update_works_for_non_existing_type");
         wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
 
         let res = wallet.update(_type2(), _id1(), _value2());
         assert_kind!(IndyErrorKind::WalletItemNotFound, res);
-        wallet.delete(_type1(), _id1()).unwrap();
-        _cleanup("wallet_update_works_for_non_existing_type");
+        _cleanup_wallet(wallet.borrow_mut(), "wallet_update_works_for_non_existing_type");
     }
 
     /**
@@ -372,7 +372,7 @@ mod tests {
             "tag_name_2": "tag_value_2",
          });
 
-        let wallet = _wallet("wallet_add_tags_works");
+        let mut wallet = _wallet("wallet_add_tags_works");
         wallet.add(_type1(), _id1(), _value1(), &tags).unwrap();
 
         let new_tags = jsonmap!({
@@ -390,7 +390,7 @@ mod tests {
          });
 
         assert_eq!(record.tags.unwrap(), expected_tags);
-        _cleanup("wallet_add_tags_works");
+        _cleanup_wallet(wallet.borrow_mut(), "wallet_add_tags_works");
     }
 
     #[test]
@@ -402,7 +402,7 @@ mod tests {
             "tag_name_2": "tag_value_2",
          });
 
-        let wallet = _wallet("wallet_update_tags_works");
+        let mut wallet = _wallet("wallet_update_tags_works");
         wallet.add(_type1(), _id1(), _value1(), &tags).unwrap();
 
         let new_tags = jsonmap!({
@@ -414,7 +414,7 @@ mod tests {
 
         let record = wallet.get(_type1(), _id1(), &_fetch_options(false, true, true)).unwrap();
         assert_eq!(record.tags.unwrap(), new_tags);
-        _cleanup("wallet_update_tags_works");
+        _cleanup_wallet(wallet.borrow_mut(), "wallet_update_tags_works");
     }
 
     #[test]
@@ -428,7 +428,7 @@ mod tests {
             "~tag_name_4": "~tag_value_4",
          });
 
-        let wallet = _wallet("wallet_delete_tags_works");
+        let mut wallet = _wallet("wallet_delete_tags_works");
         wallet.add(_type1(), _id1(), _value1(), &tags).unwrap();
 
         wallet.delete_tags(_type1(), _id1(), &vec!["tag_name_1", "~tag_name_3", "tag_name_5", "~tag_name_6"]).unwrap();
@@ -440,14 +440,14 @@ mod tests {
 
         let record = wallet.get(_type1(), _id1(), &_fetch_options(false, true, true)).unwrap();
         assert_eq!(record.tags.unwrap(), expected_tags);
-        _cleanup("wallet_delete_tags_works");
+        _cleanup_wallet(wallet.borrow_mut(), "wallet_delete_tags_works");
     }
 
     #[test]
     fn wallet_delete_works() {
         _cleanup("wallet_delete_works");
 
-        let wallet = _wallet("wallet_delete_works");
+        let mut wallet = _wallet("wallet_delete_works");
         wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
 
         let record = wallet.get(_type1(), _id1(), &_fetch_options(false, true, true)).unwrap();
@@ -459,31 +459,31 @@ mod tests {
 
         let res = wallet.get(_type1(), _id1(), &_fetch_options(false, true, true));
         assert_kind!(IndyErrorKind::WalletItemNotFound, res);
-        _cleanup("wallet_delete_works");
+        _cleanup_wallet(wallet.borrow_mut(), "wallet_delete_works");
     }
 
     #[test]
     fn wallet_delete_works_for_non_existing_id() {
         _cleanup("wallet_delete_works_for_non_existing_id");
 
-        let wallet = _wallet("wallet_delete_works_for_non_existing_id");
+        let mut wallet = _wallet("wallet_delete_works_for_non_existing_id");
         wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
 
         let res = wallet.delete(_type1(), _id2());
         assert_kind!(IndyErrorKind::WalletItemNotFound, res);
-        _cleanup("wallet_delete_works_for_non_existing_id");
+        _cleanup_wallet(wallet.borrow_mut(), "wallet_delete_works_for_non_existing_id");
     }
 
     #[test]
     fn wallet_delete_works_for_non_existing_type() {
         _cleanup("wallet_delete_works_for_non_existing_type");
 
-        let wallet = _wallet("wallet_delete_works_for_non_existing_type");
+        let mut wallet = _wallet("wallet_delete_works_for_non_existing_type");
         wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
 
         let res = wallet.delete(_type2(), _id1());
         assert_kind!(IndyErrorKind::WalletItemNotFound, res);
-        _cleanup("wallet_delete_works_for_non_existing_type");
+        _cleanup_wallet(wallet.borrow_mut(), "wallet_delete_works_for_non_existing_type");
     }
 
     #[test]
@@ -532,7 +532,7 @@ mod tests {
     fn wallet_search_works_for_empty_query() {
         _cleanup("wallet_search_works_for_empty_query");
 
-        let wallet = _wallet("wallet_search_works_for_empty_query");
+        let mut wallet = _wallet("wallet_search_works_for_empty_query");
         wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
         wallet.add(_type1(), _id2(), _value2(), &_tags()).unwrap();
 
@@ -558,14 +558,14 @@ mod tests {
 
         assert_eq!(_fetch_all(&mut iterator), expected_records);
         assert!(iterator.get_total_count().unwrap().is_none());
-        _cleanup("wallet_search_works_for_empty_query");
+        _cleanup_wallet(wallet.borrow_mut(), "wallet_search_works_for_empty_query");
     }
 
     #[test]
     fn wallet_search_works_for_empty_query_with_count() {
         _cleanup("wallet_search_works_for_empty_query_with_count");
 
-        let wallet = _wallet("wallet_search_works_for_empty_query_with_count");
+        let mut wallet = _wallet("wallet_search_works_for_empty_query_with_count");
         wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
         wallet.add(_type1(), _id2(), _value2(), &_tags()).unwrap();
 
@@ -592,15 +592,14 @@ mod tests {
         assert_eq!(_fetch_all(&mut iterator), expected_records);
         assert_eq!(iterator.get_total_count().unwrap().unwrap(), 2);
 
-        wallet.delete(_type1(), _id1()).unwrap();
-//        _cleanup("wallet_search_works_for_empty_query_with_count");
+        _cleanup_wallet(wallet.borrow_mut(), "wallet_search_works_for_empty_query_with_count");
     }
 
     #[test]
     fn wallet_search_works_for_empty_query_with_only_count() {
         _cleanup("wallet_search_works_for_empty_query_with_only_count");
 
-        let wallet = _wallet("wallet_search_works_for_empty_query_with_only_count");
+        let mut wallet = _wallet("wallet_search_works_for_empty_query_with_only_count");
         wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
         wallet.add(_type1(), _id2(), _value2(), &_tags()).unwrap();
 
@@ -611,14 +610,14 @@ mod tests {
 
         assert!(iterator.next().unwrap().is_none());
         assert_eq!(iterator.get_total_count().unwrap().unwrap(), 2);
-        _cleanup("wallet_search_works_for_empty_query_with_only_count");
+        _cleanup_wallet(wallet.borrow_mut(), "wallet_search_works_for_empty_query_with_only_count");
     }
 
     #[test]
     fn wallet_search_works_for_eq_encrypted() {
         _cleanup("wallet_search_works_for_eq_encrypted");
 
-        let wallet = _wallet("wallet_search_works_for_eq_encrypted");
+        let mut wallet = _wallet("wallet_search_works_for_eq_encrypted");
 
         let tags = jsonmap!({
             "tag_name_1": "tag_value_1",
@@ -675,14 +674,14 @@ mod tests {
         assert!(iterator.next().unwrap().is_none());
         assert!(iterator.get_total_count().unwrap().is_none());
 
-        _cleanup("wallet_search_works_for_eq_encrypted");
+        _cleanup_wallet(wallet.borrow_mut(), "wallet_search_works_for_eq_encrypted");
     }
 
     #[test]
     fn wallet_search_works_for_empty_tag_plain() {
         _cleanup("wallet_search_works_for_empty_tag_plain");
 
-        let wallet = _wallet("wallet_search_works_for_empty_tag_plain");
+        let mut wallet = _wallet("wallet_search_works_for_empty_tag_plain");
         wallet.add(_type1(), _id1(), _type1(), &_tags()).unwrap();
 
         let res = wallet.search(_type1(),
@@ -693,14 +692,14 @@ mod tests {
                                 Some(&_search_options(true, false, false, true, false)));
 
         assert_kind!(IndyErrorKind::WalletQueryError, res);
-        _cleanup("wallet_search_works_for_empty_tag_plain");
+        _cleanup_wallet(wallet.borrow_mut(), "wallet_search_works_for_empty_tag_plain");
     }
 
     #[test]
     fn wallet_search_works_for_empty_tag_encrypted() {
         _cleanup("wallet_search_works_for_empty_tag_encrypted");
 
-        let wallet = _wallet("wallet_search_works_for_empty_tag_encrypted");
+        let mut wallet = _wallet("wallet_search_works_for_empty_tag_encrypted");
         wallet.add(_type1(), _id1(), _type1(), &_tags()).unwrap();
 
         let res = wallet.search(_type1(),
@@ -711,14 +710,14 @@ mod tests {
                                 Some(&_search_options(true, false, false, true, false)));
 
         assert_kind!(IndyErrorKind::WalletQueryError, res);
-        _cleanup("wallet_search_works_for_empty_tag_encrypted");
+        _cleanup_wallet(wallet.borrow_mut(), "wallet_search_works_for_empty_tag_encrypted");
     }
 
     #[test]
     fn wallet_search_works_for_eq_plan() {
         _cleanup("wallet_search_works_for_eq_plan");
 
-        let wallet = _wallet("wallet_search_works_for_eq_plan");
+        let mut wallet = _wallet("wallet_search_works_for_eq_plan");
 
         let tags = jsonmap!({
             "~tag_name_1": "tag_value_1",
@@ -774,7 +773,7 @@ mod tests {
 
         assert!(iterator.next().unwrap().is_none());
         assert!(iterator.get_total_count().unwrap().is_none());
-        _cleanup("wallet_search_works_for_eq_plan");
+        _cleanup_wallet(wallet.borrow_mut(), "wallet_search_works_for_eq_plan");
     }
 
     // neq tests //
@@ -782,7 +781,7 @@ mod tests {
     fn wallet_search_works_for_neq_encrypted() {
         _cleanup("wallet_search_works_for_neq_encrypted");
 
-        let wallet = _wallet("wallet_search_works_for_neq_encrypted");
+        let mut wallet = _wallet("wallet_search_works_for_neq_encrypted");
 
         let tags = jsonmap!({
             "tag_name_1": "tag_value_1",
@@ -838,14 +837,14 @@ mod tests {
 
         assert!(iterator.next().unwrap().is_none());
         assert!(iterator.get_total_count().unwrap().is_none());
-        _cleanup("wallet_search_works_for_neq_encrypted");
+        _cleanup_wallet(wallet.borrow_mut(), "wallet_search_works_for_neq_encrypted");
     }
 
     #[test]
     fn wallet_search_works_for_neq_plain() {
         _cleanup("wallet_search_works_for_neq_plain");
 
-        let wallet = _wallet("wallet_search_works_for_neq_plain");
+        let mut wallet = _wallet("wallet_search_works_for_neq_plain");
 
         let tags = jsonmap!({
             "~tag_name_1": "tag_value_1",
@@ -901,14 +900,14 @@ mod tests {
 
         assert!(iterator.next().unwrap().is_none());
         assert!(iterator.get_total_count().unwrap().is_none());
-        _cleanup("wallet_search_works_for_neq_plain");
+        _cleanup_wallet(wallet.borrow_mut(), "wallet_search_works_for_neq_plain");
     }
 
     #[test]
     fn wallet_search_works_for_gt_plain() {
         _cleanup("wallet_search_works_for_gt_plain");
 
-        let wallet = _wallet("wallet_search_works_for_gt_plain");
+        let mut wallet = _wallet("wallet_search_works_for_gt_plain");
         wallet.add(_type1(), _id1(), _value1(), &jsonmap!({"~tag_name":"1"})).unwrap();
         wallet.add(_type1(), _id2(), _value2(), &jsonmap!({"~tag_name":"2"})).unwrap();
         wallet.add(_type1(), _id3(), _value3(), &jsonmap!({"~tag_name":"3"})).unwrap();
@@ -958,28 +957,28 @@ mod tests {
 
         assert!(iterator.next().unwrap().is_none());
         assert!(iterator.get_total_count().unwrap().is_none());
-        _cleanup("wallet_search_works_for_gt_plain");
+        _cleanup_wallet(wallet.borrow_mut(), "wallet_search_works_for_gt_plain");
     }
 
     #[test]
     fn wallet_search_works_for_gt_encrypted() {
         _cleanup("wallet_search_works_for_gt_encrypted");
 
-        let wallet = _wallet("wallet_search_works_for_gt_encrypted");
+        let mut wallet = _wallet("wallet_search_works_for_gt_encrypted");
 
         let res = wallet.search(_type1(),
                                 &jsonstr!({"tag_name": {"$gt": "1"}}),
                                 Some(&_search_options(true, false, false, true, false)));
 
         assert_kind!(IndyErrorKind::WalletQueryError, res);
-        _cleanup("wallet_search_works_for_gt_encrypted");
+        _cleanup_wallet(wallet.borrow_mut(), "wallet_search_works_for_gt_encrypted");
     }
 
     #[test]
     fn wallet_search_works_for_gte_plain() {
         _cleanup("wallet_search_works_for_gte_plain");
 
-        let wallet = _wallet("wallet_search_works_for_gte_plain");
+        let mut wallet = _wallet("wallet_search_works_for_gte_plain");
         wallet.add(_type1(), _id1(), _value1(), &jsonmap!({"~tag_name":"1"})).unwrap();
         wallet.add(_type1(), _id2(), _value2(), &jsonmap!({"~tag_name":"2"})).unwrap();
         wallet.add(_type1(), _id3(), _value3(), &jsonmap!({"~tag_name":"3"})).unwrap();
@@ -1029,28 +1028,28 @@ mod tests {
 
         assert!(iterator.next().unwrap().is_none());
         assert!(iterator.get_total_count().unwrap().is_none());
-        _cleanup("wallet_search_works_for_gte_plain");
+        _cleanup_wallet(wallet.borrow_mut(), "wallet_search_works_for_gte_plain");
     }
 
     #[test]
     fn wallet_search_works_for_gte_encrypted() {
         _cleanup("wallet_search_works_for_gte_encrypted");
 
-        let wallet = _wallet("wallet_search_works_for_gte_encrypted");
+        let mut wallet = _wallet("wallet_search_works_for_gte_encrypted");
 
         let res = wallet.search(_type1(),
                                 &jsonstr!({"tag_name": {"$gte": "1"}}),
                                 Some(&_search_options(true, false, false, true, false)));
 
         assert_kind!(IndyErrorKind::WalletQueryError, res);
-        _cleanup("wallet_search_works_for_gte_encrypted");
+        _cleanup_wallet(wallet.borrow_mut(), "wallet_search_works_for_gte_encrypted");
     }
 
     #[test]
     fn wallet_search_works_for_lt_plain() {
         _cleanup("wallet_search_works_for_lt_plain");
 
-        let wallet = _wallet("wallet_search_works_for_lt_plain");
+        let mut wallet = _wallet("wallet_search_works_for_lt_plain");
         wallet.add(_type1(), _id1(), _value1(), &jsonmap!({"~tag_name":"2"})).unwrap();
         wallet.add(_type1(), _id2(), _value2(), &jsonmap!({"~tag_name":"3"})).unwrap();
         wallet.add(_type1(), _id3(), _value3(), &jsonmap!({"~tag_name":"4"})).unwrap();
@@ -1099,28 +1098,28 @@ mod tests {
                                          Some(&_search_options(true, false, false, true, false))).unwrap();
 
         assert!(iterator.next().unwrap().is_none());
-        _cleanup("wallet_search_works_for_lt_plain");
+        _cleanup_wallet(wallet.borrow_mut(), "wallet_search_works_for_lt_plain");
     }
 
     #[test]
     fn wallet_search_works_for_lt_encrypted() {
         _cleanup("wallet_search_works_for_lt_encrypted");
 
-        let wallet = _wallet("wallet_search_works_for_lt_encrypted");
+        let mut wallet = _wallet("wallet_search_works_for_lt_encrypted");
 
         let res = wallet.search(_type1(),
                                 &jsonstr!({"tag_name": {"$lt": "4"}}),
                                 Some(&_search_options(true, false, false, true, false)));
 
         assert_kind!(IndyErrorKind::WalletQueryError, res);
-        _cleanup("wallet_search_works_for_lt_encrypted");
+        _cleanup_wallet(wallet.borrow_mut(), "wallet_search_works_for_lt_encrypted");
     }
 
     #[test]
     fn wallet_search_works_for_lte_plain() {
         _cleanup("wallet_search_works_for_lte_plain");
 
-        let wallet = _wallet("wallet_search_works_for_lte_plain");
+        let mut wallet = _wallet("wallet_search_works_for_lte_plain");
         wallet.add(_type1(), _id1(), _value1(), &jsonmap!({"~tag_name":"2"})).unwrap();
         wallet.add(_type1(), _id2(), _value2(), &jsonmap!({"~tag_name":"3"})).unwrap();
         wallet.add(_type1(), _id3(), _value3(), &jsonmap!({"~tag_name":"4"})).unwrap();
@@ -1170,28 +1169,28 @@ mod tests {
 
         assert!(iterator.next().unwrap().is_none());
         assert!(iterator.get_total_count().unwrap().is_none());
-        _cleanup("wallet_search_works_for_lte_plain");
+        _cleanup_wallet(wallet.borrow_mut(), "wallet_search_works_for_lte_plain");
     }
 
     #[test]
     fn wallet_search_works_for_lte_encrypted() {
         _cleanup("wallet_search_works_for_lte_encrypted");
 
-        let wallet = _wallet("wallet_search_works_for_lte_encrypted");
+        let mut wallet = _wallet("wallet_search_works_for_lte_encrypted");
 
         let res = wallet.search(_type1(),
                                 &jsonstr!({"tag_name": {"$lte": "3"}}),
                                 Some(&_search_options(true, false, false, true, false)));
 
         assert_kind!(IndyErrorKind::WalletQueryError, res);
-        _cleanup("wallet_search_works_for_lte_encrypted");
+        _cleanup_wallet(wallet.borrow_mut(), "wallet_search_works_for_lte_encrypted");
     }
 
     #[test]
     fn wallet_search_works_for_like_plain() {
         _cleanup("wallet_search_works_for_like_plain");
 
-        let wallet = _wallet("wallet_search_works_for_like_plain");
+        let mut wallet = _wallet("wallet_search_works_for_like_plain");
         wallet.add(_type1(), _id1(), _value1(), &jsonmap!({"~tag_name": "tag_value_1"})).unwrap();
         wallet.add(_type1(), _id2(), _value2(), &jsonmap!({"~tag_name": "tag_value_2"})).unwrap();
         wallet.add(_type1(), _id3(), _value3(), &jsonmap!({"~tag_name": "not_matching"})).unwrap();
@@ -1241,28 +1240,28 @@ mod tests {
 
         assert!(iterator.next().unwrap().is_none());
         assert!(iterator.get_total_count().unwrap().is_none());
-        _cleanup("wallet_search_works_for_like_plain");
+        _cleanup_wallet(wallet.borrow_mut(), "wallet_search_works_for_like_plain");
     }
 
     #[test]
     fn wallet_search_works_for_like_encrypted() {
         _cleanup("wallet_search_works_for_like_encrypted");
 
-        let wallet = _wallet("wallet_search_works_for_like_encrypted");
+        let mut wallet = _wallet("wallet_search_works_for_like_encrypted");
 
         let res = wallet.search(_type1(),
                                 &jsonstr!({"tag_name": {"$like": "1"}}),
                                 Some(&_search_options(true, false, false, true, false)));
 
         assert_kind!(IndyErrorKind::WalletQueryError, res);
-        _cleanup("wallet_search_works_for_like_encrypted");
+        _cleanup_wallet(wallet.borrow_mut(), "wallet_search_works_for_like_encrypted");
     }
 
     #[test]
     fn wallet_search_works_for_in_plain() {
         _cleanup("wallet_search_works_for_in_plain");
 
-        let wallet = _wallet("wallet_search_works_for_in_plain");
+        let mut wallet = _wallet("wallet_search_works_for_in_plain");
         wallet.add(_type1(), _id1(), _value1(), &jsonmap!({"~tag_name": "tag_value_1"})).unwrap();
         wallet.add(_type1(), _id2(), _value2(), &jsonmap!({"~tag_name": "tag_value_2"})).unwrap();
         wallet.add(_type1(), _id3(), _value3(), &jsonmap!({"~tag_name": "tag_value_3"})).unwrap();
@@ -1320,14 +1319,14 @@ mod tests {
 
         assert!(iterator.next().unwrap().is_none());
         assert!(iterator.get_total_count().unwrap().is_none());
-        _cleanup("wallet_search_works_for_in_plain");
+        _cleanup_wallet(wallet.borrow_mut(), "wallet_search_works_for_in_plain");
     }
 
     #[test]
     fn wallet_search_works_for_in_encrypted() {
         _cleanup("wallet_search_works_for_in_encrypted");
 
-        let wallet = _wallet("wallet_search_works_for_in_encrypted");
+        let mut wallet = _wallet("wallet_search_works_for_in_encrypted");
         wallet.add(_type1(), _id1(), _value1(), &jsonmap!({"tag_name": "tag_value_1"})).unwrap();
         wallet.add(_type1(), _id2(), _value2(), &jsonmap!({"tag_name": "tag_value_2"})).unwrap();
         wallet.add(_type1(), _id3(), _value3(), &jsonmap!({"tag_name": "tag_value_3"})).unwrap();
@@ -1385,7 +1384,7 @@ mod tests {
 
         assert!(iterator.next().unwrap().is_none());
         assert!(iterator.get_total_count().unwrap().is_none());
-        _cleanup("wallet_search_works_for_in_encrypted")
+        _cleanup_wallet(wallet.borrow_mut(), "wallet_search_works_for_in_encrypted")
     }
 
 
@@ -1393,7 +1392,7 @@ mod tests {
     fn wallet_search_works_for_and() {
         _cleanup("wallet_search_works_for_and");
 
-        let wallet = _wallet("wallet_search_works_for_and");
+        let mut wallet = _wallet("wallet_search_works_for_and");
 
         wallet.add(_type1(),
                    _id1(),
@@ -1521,14 +1520,14 @@ mod tests {
 
         assert!(iterator.next().unwrap().is_none());
         assert!(iterator.get_total_count().unwrap().is_none());
-        _cleanup("wallet_search_works_for_and");
+        _cleanup_wallet(wallet.borrow_mut(), "wallet_search_works_for_and");
     }
 
     #[test]
     fn wallet_search_works_for_or() {
         _cleanup("wallet_search_works_for_or");
 
-        let wallet = _wallet("wallet_search_works_for_or");
+        let mut wallet = _wallet("wallet_search_works_for_or");
 
         wallet.add(_type1(),
                    _id1(),
@@ -1664,14 +1663,14 @@ mod tests {
 
         assert!(iterator.next().unwrap().is_none());
         assert!(iterator.get_total_count().unwrap().is_none());
-        _cleanup("wallet_search_works_for_or");
+        _cleanup_wallet(wallet.borrow_mut(), "wallet_search_works_for_or");
     }
 
     #[test]
     fn wallet_search_works_for_not() {
         _cleanup("wallet_search_works_for_not");
 
-        let wallet = _wallet("wallet_search_works_for_not");
+        let mut wallet = _wallet("wallet_search_works_for_not");
 
         wallet.add(_type1(),
                    _id1(),
@@ -1760,14 +1759,14 @@ mod tests {
 
         assert!(iterator.next().unwrap().is_none());
         assert!(iterator.get_total_count().unwrap().is_none());
-        _cleanup("wallet_search_works_for_not");
+        _cleanup_wallet(wallet.borrow_mut(), "wallet_search_works_for_not");
     }
 
     #[test]
     fn wallet_search_works_for_nested() {
         _cleanup("wallet_search_works_for_nested");
 
-        let wallet = _wallet("wallet_search_works_for_nested");
+        let mut wallet = _wallet("wallet_search_works_for_nested");
         wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
 
         let query = jsonstr!({
@@ -1802,9 +1801,14 @@ mod tests {
 
         assert_eq!(_fetch_all(&mut iterator), expected_records);
         assert!(iterator.get_total_count().unwrap().is_none());
-        _cleanup("wallet_search_works_for_nested");
+        _cleanup_wallet(wallet.borrow_mut(), "wallet_search_works_for_nested");
     }
 
+    fn _cleanup_wallet(wallet: &mut Wallet, name: &str) {
+        wallet.close().unwrap();
+        _cleanup(name);
+    }
+    
     fn _cleanup(name: &str) {
         test::cleanup_storage(name);
     }
