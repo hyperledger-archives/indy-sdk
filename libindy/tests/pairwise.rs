@@ -32,7 +32,6 @@ use utils::constants::*;
 
 use self::indy::ErrorCode;
 use api::INVALID_WALLET_HANDLE;
-use api::IndyHandle;
 
 mod high_cases {
     use super::*;

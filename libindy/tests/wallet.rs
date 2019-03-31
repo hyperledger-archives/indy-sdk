@@ -33,8 +33,16 @@ use utils::constants::*;
 
 use self::indy::ErrorCode;
 use api::INVALID_WALLET_HANDLE;
+use std::path::PathBuf;
+use std::fs;
 
 pub const CONFIG: &'static str = r#"{"freshness_time":1000}"#;
+
+fn cleanup_file(path: &PathBuf) {
+    if path.exists() {
+        fs::remove_file(path).unwrap();
+    }
+}
 
 mod high_cases {
     use super::*;
@@ -296,7 +304,7 @@ mod high_cases {
             did::create_my_did(wallet_handle, "{}").unwrap();
             did::create_my_did(wallet_handle, "{}").unwrap();
 
-            test::cleanup_file(&path);
+            cleanup_file(&path);
             wallet::export_wallet(wallet_handle, &config_json).unwrap();
 
             assert!(path.exists());
@@ -324,7 +332,7 @@ mod high_cases {
 
             let did_with_meta = did::get_my_did_with_metadata(wallet_handle, &did).unwrap();
 
-            test::cleanup_file(&path);
+            cleanup_file(&path);
             wallet::export_wallet(wallet_handle, &config_json).unwrap();
 
             wallet::close_wallet(wallet_handle).unwrap();
@@ -338,7 +346,7 @@ mod high_cases {
 
             assert_eq!(did_with_meta, did_with_meta_after_import);
 
-            test::cleanup_file(&path);
+            cleanup_file(&path);
             utils::tear_down_with_wallet(wallet_handle, "indy_import_wallet_works", WALLET_CONFIG);
         }
     }
@@ -723,7 +731,7 @@ mod medium_cases {
 
             did::create_my_did(wallet_handle, "{}").unwrap();
 
-            test::cleanup_file(&path);
+            cleanup_file(&path);
             wallet::export_wallet(wallet_handle, &config_json).unwrap();
 
             wallet::close_wallet(wallet_handle).unwrap();
@@ -753,7 +761,7 @@ mod medium_cases {
 
             did::create_my_did(wallet_handle, "{}").unwrap();
 
-            test::cleanup_file(&path);
+            cleanup_file(&path);
             wallet::export_wallet(wallet_handle, &config_json).unwrap();
 
             let res = wallet::import_wallet(WALLET_CONFIG, WALLET_CREDENTIALS, &config_json);

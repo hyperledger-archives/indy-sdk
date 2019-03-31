@@ -4,12 +4,6 @@ use std::fs;
 use std::path::PathBuf;
 
 
-pub fn cleanup_file(path: &PathBuf) {
-    if path.exists() {
-        fs::remove_file(path).unwrap();
-    }
-}
-
 pub fn cleanup_files(dir: &PathBuf, name: &str) {
     let mut path = dir.clone();
     path.push(name);
