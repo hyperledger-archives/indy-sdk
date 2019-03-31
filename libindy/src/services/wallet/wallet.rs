@@ -593,7 +593,7 @@ mod tests {
         assert_eq!(iterator.get_total_count().unwrap().unwrap(), 2);
 
         wallet.delete(_type1(), _id1()).unwrap();
-        _cleanup("wallet_search_works_for_empty_query_with_count");
+//        _cleanup("wallet_search_works_for_empty_query_with_count");
     }
 
     #[test]
