@@ -745,6 +745,7 @@ mod medium_cases {
             let res = wallet::import_wallet(WALLET_CONFIG, WALLET_CREDENTIALS, &config_json);
             assert_code!(ErrorCode::CommonInvalidStructure, res);
 
+            cleanup_file(&path);
             utils::tear_down("indy_import_wallet_works_for_other_key");
         }
 
@@ -768,6 +769,8 @@ mod medium_cases {
             assert_code!(ErrorCode::WalletAlreadyExistsError, res);
 
             wallet::close_wallet(wallet_handle).unwrap();
+
+            cleanup_file(&path);
             utils::tear_down("indy_import_wallet_works_for_duplicate_name");
         }
     }

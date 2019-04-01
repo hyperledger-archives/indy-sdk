@@ -403,7 +403,7 @@ mod tests {
     }
 
     fn _cleanup_wallet(wallet: &mut Wallet, name: &str) {
-        wallet.close();
+        wallet.close().unwrap();
         test::cleanup_wallet(name);
     }
 

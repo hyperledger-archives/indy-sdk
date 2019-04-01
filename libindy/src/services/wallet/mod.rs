@@ -1923,6 +1923,7 @@ mod tests {
         let wallet_handle = wallet_service.open_wallet(&_config("wallet_service_export_import_wallet_1_item_for_interactive_method"), &RAW_CREDENTIAL).unwrap();
         wallet_service.get_record(wallet_handle, "type", "key1", "{}").unwrap();
 
+        fs::remove_file(export_path).unwrap();
         _cleanup("wallet_service_export_import_wallet_1_item_for_interactive_method");
     }
 
@@ -1950,6 +1951,7 @@ mod tests {
         let wallet_handle = wallet_service.open_wallet(&_config("wallet_service_export_import_wallet_1_item_for_moderate_method"), &ARGON_MOD_CREDENTIAL).unwrap();
         wallet_service.get_record(wallet_handle, "type", "key1", "{}").unwrap();
 
+        fs::remove_file(&export_path).unwrap();
         _cleanup("wallet_service_export_import_wallet_1_item_for_moderate_method");
     }
 
@@ -1978,6 +1980,7 @@ mod tests {
         let wallet_handle = wallet_service.open_wallet(config, &ARGON_MOD_CREDENTIAL).unwrap();
         wallet_service.get_record(wallet_handle, "type", "key1", "{}").unwrap();
 
+        fs::remove_file(&export_path).unwrap();
         _cleanup("wallet_service_export_import_wallet_1_item_for_export_interactive_import_as_raw");
     }
 
