@@ -201,6 +201,7 @@ mod tests {
     use utils::test;
 
     use super::*;
+    use core::borrow::BorrowMut;
 
     fn export(wallet: &Wallet, writer: &mut Write, passphrase: &str, version: u32, key_derivation_method: &KeyDerivationMethod) -> IndyResult<()> {
         if version != 0 {
@@ -218,17 +219,18 @@ mod tests {
         _cleanup("export_import_works_for_empty_wallet1");
         _cleanup("export_import_works_for_empty_wallet2");
 
+        let mut wallet1 = _wallet("export_import_works_for_empty_wallet1");
         let mut output: Vec<u8> = Vec::new();
-        export(&_wallet("export_import_works_for_empty_wallet1"), &mut output, _passphrase(), _version1(), &KeyDerivationMethod::ARGON2I_MOD).unwrap();
+        export(&wallet1, &mut output, _passphrase(), _version1(), &KeyDerivationMethod::ARGON2I_MOD).unwrap();
+        _cleanup_wallet(wallet1.borrow_mut(), "export_import_works_for_empty_wallet1");
 
-        let wallet = _wallet("export_import_works_for_empty_wallet2");
+        let mut wallet = _wallet("export_import_works_for_empty_wallet2");
         _assert_is_empty(&wallet);
 
         import(&wallet, &mut output.as_slice(), _passphrase()).unwrap();
         _assert_is_empty(&wallet);
 
-        _cleanup("export_import_works_for_empty_wallet1");
-        _cleanup("export_import_works_for_empty_wallet2");
+        _cleanup_wallet(wallet.borrow_mut(), "export_import_works_for_empty_wallet2");
     }
 
     #[test]
@@ -398,6 +400,11 @@ mod tests {
 
     fn _cleanup(name: &str) {
         test::cleanup_storage(name)
+    }
+
+    fn _cleanup_wallet(wallet: &mut Wallet, name: &str) {
+        wallet.close();
+        test::cleanup_wallet(name);
     }
 
     fn _wallet(id: &str) -> Wallet {
