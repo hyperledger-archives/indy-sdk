@@ -1806,7 +1806,7 @@ mod tests {
 
     fn _cleanup_wallet(wallet: &mut Wallet, name: &str) {
         wallet.close().unwrap();
-        _cleanup(name);
+        test::cleanup_wallet(name);
     }
     
     fn _cleanup(name: &str) {
