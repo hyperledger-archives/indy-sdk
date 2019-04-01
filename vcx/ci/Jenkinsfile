@@ -17,13 +17,13 @@ class Globals {
 
     static String rustVersion = "1.32.0"
 
-    static String libindyVersion = "1.8.1"
+    static String libindyVersion = "1.8.2"
 
-    static String libindyTag = "1032"
+    static String libindyTag = ""
 
-    static String libnullVersion = "1.8.1"
+    static String libnullVersion = "1.8.2"
 
-    static String nullpayTag = "1032"
+    static String nullpayTag = ""
 
     static String libsovtokenVersion = "0.9.6~-.1.126"
 
@@ -31,9 +31,9 @@ class Globals {
 
     static String iosSovtokenArtifact = "libsovtoken_0.9.6-201811211710-4901e95_all.zip"
 
-    static String indyBranch = 'master'
+    static String indyBranch = 'stable'
 
-    static String nullBranch = 'master'
+    static String nullBranch = 'stable'
 
     static String vcxVersion = null
 
