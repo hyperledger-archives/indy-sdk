@@ -1490,26 +1490,27 @@ mod tests {
      */
     #[test]
     fn wallet_service_update_tags() {
-        _cleanup("wallet_service_update_tags");
+        test::cleanup_wallet("wallet_service_update_tags");
+        {
+            let type_ = "type";
+            let name = "name";
+            let value = "value";
+            let tags = serde_json::from_str(r#"{"tag_name_1":"tag_value_1", "tag_name_2":"tag_value_2", "~tag_name_3":"tag_value_3"}"#).unwrap();
+            let wallet_service = WalletService::new();
 
-        let type_ = "type";
-        let name = "name";
-        let value = "value";
-        let tags = serde_json::from_str(r#"{"tag_name_1":"tag_value_1", "tag_name_2":"tag_value_2", "~tag_name_3":"tag_value_3"}"#).unwrap();
-        let wallet_service = WalletService::new();
+            wallet_service.create_wallet(&_config("wallet_service_update_tags"), &RAW_CREDENTIAL, (&RAW_KDD, &RAW_MASTER_KEY)).unwrap();
+            let wallet_handle = wallet_service.open_wallet(&_config("wallet_service_update_tags"), &RAW_CREDENTIAL).unwrap();
 
-        wallet_service.create_wallet(&_config("wallet_service_update_tags"), &RAW_CREDENTIAL, (&RAW_KDD, &RAW_MASTER_KEY)).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config("wallet_service_update_tags"), &RAW_CREDENTIAL).unwrap();
+            wallet_service.add_record(wallet_handle, type_, name, value, &tags).unwrap();
 
-        wallet_service.add_record(wallet_handle, type_, name, value, &tags).unwrap();
+            let new_tags = serde_json::from_str(r#"{"tag_name_1":"tag_value_1", "tag_name_2":"new_tag_value_2", "~tag_name_3":"new_tag_value_3"}"#).unwrap();
 
-        let new_tags = serde_json::from_str(r#"{"tag_name_1":"tag_value_1", "tag_name_2":"new_tag_value_2", "~tag_name_3":"new_tag_value_3"}"#).unwrap();
-
-        wallet_service.update_record_tags(wallet_handle, type_, name, &new_tags).unwrap();
-        let item = wallet_service.get_record(wallet_handle, type_, name, &_fetch_options(true, true, true)).unwrap();
-        let retrieved_tags = item.tags.unwrap();
-        assert_eq!(new_tags, retrieved_tags);
-        _cleanup("wallet_service_update_tags");
+            wallet_service.update_record_tags(wallet_handle, type_, name, &new_tags).unwrap();
+            let item = wallet_service.get_record(wallet_handle, type_, name, &_fetch_options(true, true, true)).unwrap();
+            let retrieved_tags = item.tags.unwrap();
+            assert_eq!(new_tags, retrieved_tags);
+        }
+        test::cleanup_wallet("wallet_service_update_tags");
     }
 
     #[test]
