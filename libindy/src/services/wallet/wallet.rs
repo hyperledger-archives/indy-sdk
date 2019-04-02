@@ -351,13 +351,17 @@ mod tests {
     #[test]
     fn wallet_update_works_for_non_existing_type() {
         _cleanup("wallet_update_works_for_non_existing_type");
+        {
+            let mut wallet = _wallet("wallet_update_works_for_non_existing_type");
 
-        let mut wallet = _wallet("wallet_update_works_for_non_existing_type");
-        wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
+            wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
 
-        let res = wallet.update(_type2(), _id1(), _value2());
-        assert_kind!(IndyErrorKind::WalletItemNotFound, res);
-        _cleanup_wallet(wallet.borrow_mut(), "wallet_update_works_for_non_existing_type");
+            let res = wallet.update(_type2(), _id1(), _value2());
+            assert_kind!(IndyErrorKind::WalletItemNotFound, res);
+
+            wallet.close().unwrap();
+        }
+        test::cleanup_wallet("wallet_update_works_for_non_existing_type");
     }
 
     /**

@@ -44,6 +44,8 @@ fn cleanup_file(path: &PathBuf) {
     }
 }
 
+use utils::test::cleanup_wallet;
+
 mod high_cases {
     use super::*;
 
@@ -570,6 +572,8 @@ mod medium_cases {
             wallet::close_wallet(wallet_handle_1).unwrap();
             wallet::close_wallet(wallet_handle_2).unwrap();
 
+            cleanup_wallet("indy_open_wallet_works_for_two_wallets1");
+            cleanup_wallet("indy_open_wallet_works_for_two_wallets2");
             utils::tear_down("indy_open_wallet_works_for_two_wallets");
         }
 
