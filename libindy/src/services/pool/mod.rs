@@ -92,13 +92,17 @@ impl PoolService {
             // and copying permissions can be problem for some cases
 
             let mut gt_fin = fs::File::open(&pool_config.genesis_txn)
-                .to_indy(IndyErrorKind::IOError, "Can't copy genesis txn file")?;
+                .to_indy(IndyErrorKind::IOError,
+                         format!("Can't open genesis txn file {:?}", &pool_config.genesis_txn))?;
 
             let mut gt_fout = fs::File::create(path.as_path())
-                .to_indy(IndyErrorKind::IOError, "Can't copy genesis txn file")?;
+                .to_indy(IndyErrorKind::IOError,
+                         format!("Can't create genesis txn file {:?}", path.as_path()))?;
 
             io::copy(&mut gt_fin, &mut gt_fout)
-                .to_indy(IndyErrorKind::IOError, "Can't copy genesis txn file")?;
+                .to_indy(IndyErrorKind::IOError,
+                         format!("Can't copy genesis txn file from {:?} to {:?}",
+                                 &pool_config.genesis_txn, path.as_path()))?;
         }
 
         path.pop();
