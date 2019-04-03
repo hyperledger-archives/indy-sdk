@@ -9,9 +9,8 @@ import com.sun.jna.Callback;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.util.*;
-import java9.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletableFuture;
 
 public class IssuerApi extends VcxJava.API {
 

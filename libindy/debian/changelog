@@ -1,6 +1,14 @@
-libindy (1.8.1) unstable; urgency=medium
+libindy (1.8.2) unstable; urgency=medium
 
 [ Hyperledger ]
+
+## 1.8.2
+ Added new functions to Libindy Ledger API:
+    * `indy_build_auth_rule_request` to change an existing ledger auth rule.
+    * `indy_build_get_auth_rule_request` to get either specific one or all ledger auth rules.
+* Removed Deprecation warnings from `indy_crypto_anon_crypt` and `indy_crypto_anon_decrypt` functions.
+* Restart catchup in case of outdated pool cache.
+* Bugfixes
 
 * 1.8.1
     * Bugfixes
