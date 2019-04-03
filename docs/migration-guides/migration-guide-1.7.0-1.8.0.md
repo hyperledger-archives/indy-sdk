@@ -6,10 +6,10 @@ This document is written for developers using Libindy to provide necessary infor
 to simplify their transition to Libindy 1.7 from Libindy 1.8. If you are using older Libindy
 version you can check migration guides history:
 
-* [Libindy 1.3 to 1.4 migration](https://github.com/hyperledger/indy-sdk/blob/master/doc/migration-guide-1.3.0-1.4.0.md)
-* [Libindy 1.4 to 1.5 migration](https://github.com/hyperledger/indy-sdk/blob/master/doc/migration-guide-1.4.0-1.5.0.md)
-* [Libindy 1.5 to 1.6 migration](https://github.com/hyperledger/indy-sdk/blob/master/doc/migration-guide-1.5.0-1.6.0.md)
-* [Libindy 1.6 to 1.7 migration](https://github.com/hyperledger/indy-sdk/blob/master/doc/migration-guide-1.6.0-1.7.0.md)
+* [Libindy 1.3 to 1.4 migration](https://github.com/hyperledger/indy-sdk/blob/v1.4.0/doc/migration-guide.md)
+* [Libindy 1.4 to 1.5 migration](https://github.com/hyperledger/indy-sdk/blob/v1.5.0/doc/migration-guide-1.4.0-1.5.0.md)
+* [Libindy 1.5 to 1.6 migration](https://github.com/hyperledger/indy-sdk/blob/v1.6.0/doc/migration-guide-1.5.0-1.6.0.md)
+* [Libindy 1.6 to 1.7 migration](https://github.com/hyperledger/indy-sdk/blob/v1.7.0/doc/migration-guide-1.6.0-1.7.0.md)
 
 ## Table of contents
 
@@ -217,3 +217,65 @@ indy_crypto_auth_decrypt(
 ### Ledger API
 * Added `NETWORK_MONITOR` to list of acceptable values for `role` parameter in `indy_build_nym_request` API function.
 * Implemented automatic filtering of outdated responses based on comparison of local time with latest transaction ordering time.
+
+## Libindy 1.8.1 to 1.8.2 migration Guide
+
+<table>
+  <tr>
+    <th>v1.8.1 - Ledger API</th>
+    <th>v1.8.2 - Ledger API</th>
+  </tr>  
+  <tr>
+    <th colspan="2">
+        <a https://github.com/hyperledger/indy-sdk/blob/v1.8.2/libindy/src/api/ledger.rs#L1838">
+            Builds a AUTH_RULE request to change authentication rules for a ledger transaction 
+        </a>
+    </th>
+  </tr>
+  <tr>
+    <td>
+      <b>NEW</b>
+    </td>
+    <td>
+      <pre>
+indy_build_auth_rule_request(command_handle: CommandHandle,
+                             submitter_did: *const c_char,
+                             txn_type: *const c_char,
+                             action: *const c_char,
+                             field: *const c_char,
+                             old_value: *const c_char,
+                             new_value: *const c_char,
+                             constraint: *const c_char,
+                             cb: fn(command_handle_: CommandHandle,
+                                    err: ErrorCode,
+                                    request_json: *const c_char))
+      </pre>
+    </td>
+  </tr>
+  <tr>
+    <th colspan="2">
+        <a https://github.com/hyperledger/indy-sdk/blob/v1.8.2/libindy/src/api/ledger.rs#L1927">
+            Builds a GET_AUTH_RULE request to get authentication rules for ledger
+        </a>
+    </th>
+  </tr>
+  <tr>
+    <td>
+      <b>NEW</b>
+    </td>
+    <td>
+      <pre>
+indy_build_get_auth_rule_request(command_handle: CommandHandle,
+                                 submitter_did: *const c_char,
+                                 txn_type: *const c_char,
+                                 action: *const c_char,
+                                 field: *const c_char,
+                                 old_value: *const c_char,
+                                 new_value: *const c_char,
+                                 cb: fn(command_handle_: CommandHandle,
+                                        err: ErrorCode,
+                                        request_json: *const c_char))
+      </pre>
+    </td>
+  </tr>
+</table>
