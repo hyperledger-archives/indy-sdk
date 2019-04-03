@@ -1,0 +1,43 @@
+#
+version: '3'
+
+networks:
+  storage-network:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        -
+          subnet: 10.0.0.0/24
+
+services:
+  postgres-wallet:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: postgres-wallet
+    container_name: postgres-wallet
+    command: bash
+    volumes:
+     - ../../../:/indy-sdk
+    tty: true
+    networks:
+      - storage-network
+
+  postgres-db:
+    image: postgres:11
+    container_name: postgres-db
+    environment:
+      # These are the variables names for the postgres docker container
+      #- POSTGRES_DB=wallet_psx
+      - POSTGRES_PASSWORD=mysecretpassword
+    ports: 
+      - "5432:5432"
+    expose:
+      - "5432"
+    networks:
+      - storage-network
+    tty: true
+    # no volume mounted so db data will get cleared out with container
+
+#docker run --name some-postgres -e POSTGRES_PASSWORD=mysecretpassword -d -p 5432:5432 postgres -c 'log_statement=all' -c 'logging_collector=on' -c 'log_destination=stderr'
