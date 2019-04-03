@@ -842,12 +842,12 @@ mod tests {
     #[test]
     fn sqlite_storage_get_storage_metadata_works() {
         _cleanup("sqlite_storage_get_storage_metadata_works");
+        {
+            let storage = _storage("sqlite_storage_get_storage_metadata_works");
+            let metadata = storage.get_storage_metadata().unwrap();
 
-        let storage = _storage("sqlite_storage_get_storage_metadata_works");
-        let metadata = storage.get_storage_metadata().unwrap();
-
-        assert_eq!(metadata, _metadata());
-
+            assert_eq!(metadata, _metadata());
+        }
         _cleanup("sqlite_storage_get_storage_metadata_works");
     }
 
@@ -910,448 +910,447 @@ mod tests {
     #[test]
     fn sqlite_storage_add_works_for_is_802() {
         _cleanup("sqlite_storage_add_works_for_is_802");
+        {
+            let storage = _storage("sqlite_storage_add_works_for_is_802");
 
-        let storage = _storage("sqlite_storage_add_works_for_is_802");
+            storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
 
-        storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
+            let res = storage.add(&_type1(), &_id1(), &_value1(), &_tags());
+            assert_kind!(IndyErrorKind::WalletItemAlreadyExists, res);
 
-        let res = storage.add(&_type1(), &_id1(), &_value1(), &_tags());
-        assert_kind!(IndyErrorKind::WalletItemAlreadyExists, res);
-
-        let res = storage.add(&_type1(), &_id1(), &_value1(), &_tags());
-        assert_kind!(IndyErrorKind::WalletItemAlreadyExists, res);
-
+            let res = storage.add(&_type1(), &_id1(), &_value1(), &_tags());
+            assert_kind!(IndyErrorKind::WalletItemAlreadyExists, res);
+        }
         _cleanup("sqlite_storage_add_works_for_is_802");
     }
 
     #[test]
     fn sqlite_storage_set_get_works() {
         _cleanup("sqlite_storage_set_get_works");
+        {
+            let storage = _storage("sqlite_storage_set_get_works");
 
-        let storage = _storage("sqlite_storage_set_get_works");
+            storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
+            let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
 
-        storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
-        let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
-
-        assert_eq!(record.value.unwrap(), _value1());
-        assert_eq!(_sort(record.tags.unwrap()), _sort(_tags()));
-
+            assert_eq!(record.value.unwrap(), _value1());
+            assert_eq!(_sort(record.tags.unwrap()), _sort(_tags()));
+        }
         _cleanup("sqlite_storage_set_get_works");
     }
 
     #[test]
     fn sqlite_storage_set_get_works_for_custom() {
         _cleanup("sqlite_storage_set_get_works_for_custom");
-
         let path = _custom_path("sqlite_storage_set_get_works_for_custom");
         let path = Path::new(&path);
+        {
+            let storage = _storage_custom("sqlite_storage_set_get_works_for_custom");
 
-        let storage = _storage_custom("sqlite_storage_set_get_works_for_custom");
+            storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
+            let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
 
-        storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
-        let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
-
-        assert_eq!(record.id, _id1());
-        assert_eq!(record.value.unwrap(), _value1());
-        assert_eq!(record.type_, None);
-        assert_eq!(_sort(record.tags.unwrap()), _sort(_tags()));
-
+            assert_eq!(record.id, _id1());
+            assert_eq!(record.value.unwrap(), _value1());
+            assert_eq!(record.type_, None);
+            assert_eq!(_sort(record.tags.unwrap()), _sort(_tags()));
+        }
         fs::remove_dir_all(path).unwrap();
     }
 
     #[test]
     fn sqlite_storage_set_get_works_for_twice() {
         _cleanup("sqlite_storage_set_get_works_for_twice");
+        {
+            let storage = _storage("sqlite_storage_set_get_works_for_twice");
+            storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
 
-        let storage = _storage("sqlite_storage_set_get_works_for_twice");
-        storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
-
-        let res = storage.add(&_type1(), &_id1(), &_value2(), &_tags());
-        assert_kind!(IndyErrorKind::WalletItemAlreadyExists, res);
-
+            let res = storage.add(&_type1(), &_id1(), &_value2(), &_tags());
+            assert_kind!(IndyErrorKind::WalletItemAlreadyExists, res);
+        }
         _cleanup("sqlite_storage_set_get_works_for_twice");
     }
 
     #[test]
     fn sqlite_storage_set_get_works_for_reopen() {
         _cleanup("sqlite_storage_set_get_works_for_reopen");
-
         {
-            _storage("sqlite_storage_set_get_works_for_reopen").add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
+            {
+                _storage("sqlite_storage_set_get_works_for_reopen").add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
+            }
+
+            let storage_type = SQLiteStorageType::new();
+            let storage = storage_type.open_storage("sqlite_storage_set_get_works_for_reopen", Some("{}"), Some("{}")).unwrap();
+            let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
+
+            assert_eq!(record.value.unwrap(), _value1());
+            assert_eq!(_sort(record.tags.unwrap()), _sort(_tags()));
         }
-
-        let storage_type = SQLiteStorageType::new();
-        let storage = storage_type.open_storage("sqlite_storage_set_get_works_for_reopen", Some("{}"), Some("{}")).unwrap();
-        let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
-
-        assert_eq!(record.value.unwrap(), _value1());
-        assert_eq!(_sort(record.tags.unwrap()), _sort(_tags()));
-
         _cleanup("sqlite_storage_set_get_works_for_reopen");
     }
 
     #[test]
     fn sqlite_storage_get_works_for_wrong_key() {
         _cleanup("sqlite_storage_get_works_for_wrong_key");
+        {
+            let storage = _storage("sqlite_storage_get_works_for_wrong_key");
+            storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
 
-        let storage = _storage("sqlite_storage_get_works_for_wrong_key");
-        storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
-
-        let res = storage.get(&_type1(), &_id2(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##);
-        assert_kind!(IndyErrorKind::WalletItemNotFound, res);
-
+            let res = storage.get(&_type1(), &_id2(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##);
+            assert_kind!(IndyErrorKind::WalletItemNotFound, res);
+        }
         _cleanup("sqlite_storage_get_works_for_wrong_key");
     }
 
     #[test]
     fn sqlite_storage_delete_works() {
         _cleanup("sqlite_storage_delete_works");
+        {
+            let storage = _storage("sqlite_storage_delete_works");
+            storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
 
-        let storage = _storage("sqlite_storage_delete_works");
-        storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
+            let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
+            assert_eq!(record.value.unwrap(), _value1());
+            assert_eq!(_sort(record.tags.unwrap()), _sort(_tags()));
 
-        let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
-        assert_eq!(record.value.unwrap(), _value1());
-        assert_eq!(_sort(record.tags.unwrap()), _sort(_tags()));
-
-        storage.delete(&_type1(), &_id1()).unwrap();
-        let res = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##);
-        assert_kind!(IndyErrorKind::WalletItemNotFound, res);
-
+            storage.delete(&_type1(), &_id1()).unwrap();
+            let res = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##);
+            assert_kind!(IndyErrorKind::WalletItemNotFound, res);
+        }
         _cleanup("sqlite_storage_delete_works");
     }
 
     #[test]
     fn sqlite_storage_delete_works_for_non_existing() {
         _cleanup("sqlite_storage_delete_works_for_non_existing");
+        {
+            let storage = _storage("sqlite_storage_delete_works_for_non_existing");
+            storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
 
-        let storage = _storage("sqlite_storage_delete_works_for_non_existing");
-        storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
-
-        let res = storage.delete(&_type1(), &_id2());
-        assert_kind!(IndyErrorKind::WalletItemNotFound, res);
-
+            let res = storage.delete(&_type1(), &_id2());
+            assert_kind!(IndyErrorKind::WalletItemNotFound, res);
+        }
         _cleanup("sqlite_storage_delete_works_for_non_existing");
     }
 
     #[test]
     fn sqlite_storage_delete_returns_error_item_not_found_if_no_such_type() {
         _cleanup("sqlite_storage_delete_returns_error_item_not_found_if_no_such_type");
+        {
+            let storage = _storage("sqlite_storage_delete_returns_error_item_not_found_if_no_such_type");
 
-        let storage = _storage("sqlite_storage_delete_returns_error_item_not_found_if_no_such_type");
-
-        storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
-        let res = storage.delete(&_type2(), &_id2());
-        assert_kind!(IndyErrorKind::WalletItemNotFound, res);
-
+            storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
+            let res = storage.delete(&_type2(), &_id2());
+            assert_kind!(IndyErrorKind::WalletItemNotFound, res);
+        }
         _cleanup("sqlite_storage_delete_returns_error_item_not_found_if_no_such_type");
     }
 
     #[test]
     fn sqlite_storage_get_all_works() {
         _cleanup("sqlite_storage_get_all_works");
+        {
+            let storage = _storage("sqlite_storage_get_all_works");
+            storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
+            storage.add(&_type2(), &_id2(), &_value2(), &_tags()).unwrap();
 
-        let storage = _storage("sqlite_storage_get_all_works");
-        storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
-        storage.add(&_type2(), &_id2(), &_value2(), &_tags()).unwrap();
+            let mut storage_iterator = storage.get_all().unwrap();
 
-        let mut storage_iterator = storage.get_all().unwrap();
+            let record = storage_iterator.next().unwrap().unwrap();
+            assert_eq!(record.type_.unwrap(), _type1());
+            assert_eq!(record.value.unwrap(), _value1());
+            assert_eq!(_sort(record.tags.unwrap()), _sort(_tags()));
 
-        let record = storage_iterator.next().unwrap().unwrap();
-        assert_eq!(record.type_.unwrap(), _type1());
-        assert_eq!(record.value.unwrap(), _value1());
-        assert_eq!(_sort(record.tags.unwrap()), _sort(_tags()));
+            let record = storage_iterator.next().unwrap().unwrap();
+            assert_eq!(record.type_.unwrap(), _type2());
+            assert_eq!(record.value.unwrap(), _value2());
+            assert_eq!(_sort(record.tags.unwrap()), _sort(_tags()));
 
-        let record = storage_iterator.next().unwrap().unwrap();
-        assert_eq!(record.type_.unwrap(), _type2());
-        assert_eq!(record.value.unwrap(), _value2());
-        assert_eq!(_sort(record.tags.unwrap()), _sort(_tags()));
-
-        let record = storage_iterator.next().unwrap();
-        assert!(record.is_none());
-
+            let record = storage_iterator.next().unwrap();
+            assert!(record.is_none());
+        }
         _cleanup("sqlite_storage_get_all_works");
     }
 
     #[test]
     fn sqlite_storage_get_all_works_for_empty() {
         _cleanup("sqlite_storage_get_all_works_for_empty");
+        {
+            let storage = _storage("sqlite_storage_get_all_works_for_empty");
+            let mut storage_iterator = storage.get_all().unwrap();
 
-        let storage = _storage("sqlite_storage_get_all_works_for_empty");
-        let mut storage_iterator = storage.get_all().unwrap();
-
-        let record = storage_iterator.next().unwrap();
-        assert!(record.is_none());
-
+            let record = storage_iterator.next().unwrap();
+            assert!(record.is_none());
+        }
         _cleanup("sqlite_storage_get_all_works_for_empty");
     }
 
     #[test]
     fn sqlite_storage_update_works() {
         _cleanup("sqlite_storage_update_works");
+        {
+            let storage = _storage("sqlite_storage_update_works");
 
-        let storage = _storage("sqlite_storage_update_works");
+            storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
+            let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
+            assert_eq!(record.value.unwrap(), _value1());
 
-        storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
-        let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
-        assert_eq!(record.value.unwrap(), _value1());
-
-        storage.update(&_type1(), &_id1(), &_value2()).unwrap();
-        let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
-        assert_eq!(record.value.unwrap(), _value2());
-
+            storage.update(&_type1(), &_id1(), &_value2()).unwrap();
+            let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
+            assert_eq!(record.value.unwrap(), _value2());
+        }
         _cleanup("sqlite_storage_update_works");
     }
 
     #[test]
     fn sqlite_storage_update_works_for_non_existing_id() {
         _cleanup("sqlite_storage_update_works_for_non_existing_id");
+        {
+            let storage = _storage("sqlite_storage_update_works_for_non_existing_id");
 
-        let storage = _storage("sqlite_storage_update_works_for_non_existing_id");
+            storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
+            let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
+            assert_eq!(record.value.unwrap(), _value1());
 
-        storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
-        let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
-        assert_eq!(record.value.unwrap(), _value1());
-
-        let res = storage.update(&_type1(), &_id2(), &_value2());
-        assert_kind!(IndyErrorKind::WalletItemNotFound, res);
-
+            let res = storage.update(&_type1(), &_id2(), &_value2());
+            assert_kind!(IndyErrorKind::WalletItemNotFound, res);
+        }
         _cleanup("sqlite_storage_update_works_for_non_existing_id");
     }
 
     #[test]
     fn sqlite_storage_update_works_for_non_existing_type() {
         _cleanup("sqlite_storage_update_works_for_non_existing_type");
+        {
+            let storage = _storage("sqlite_storage_update_works_for_non_existing_type");
 
-        let storage = _storage("sqlite_storage_update_works_for_non_existing_type");
+            storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
+            let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
+            assert_eq!(record.value.unwrap(), _value1());
 
-        storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
-        let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
-        assert_eq!(record.value.unwrap(), _value1());
-
-        let res = storage.update(&_type2(), &_id1(), &_value2());
-        assert_kind!(IndyErrorKind::WalletItemNotFound, res);
-
+            let res = storage.update(&_type2(), &_id1(), &_value2());
+            assert_kind!(IndyErrorKind::WalletItemNotFound, res);
+        }
         _cleanup("sqlite_storage_update_works_for_non_existing_type");
     }
 
     #[test]
     fn sqlite_storage_add_tags_works() {
         _cleanup("sqlite_storage_add_tags_works");
+        {
+            let storage = _storage("sqlite_storage_add_tags_works");
+            storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
 
-        let storage = _storage("sqlite_storage_add_tags_works");
-        storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
+            storage.add_tags(&_type1(), &_id1(), &_new_tags()).unwrap();
 
-        storage.add_tags(&_type1(), &_id1(), &_new_tags()).unwrap();
+            let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
+            assert_eq!(record.value.unwrap(), _value1());
 
-        let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
-        assert_eq!(record.value.unwrap(), _value1());
+            let expected_tags = {
+                let mut tags = _tags();
+                tags.extend(_new_tags());
+                _sort(tags)
+            };
 
-        let expected_tags = {
-            let mut tags = _tags();
-            tags.extend(_new_tags());
-            _sort(tags)
-        };
-
-        assert_eq!(_sort(record.tags.unwrap()), expected_tags);
-
+            assert_eq!(_sort(record.tags.unwrap()), expected_tags);
+        }
         _cleanup("sqlite_storage_add_tags_works");
     }
 
     #[test]
     fn sqlite_storage_add_tags_works_for_non_existing_id() {
         _cleanup("sqlite_storage_add_tags_works_for_non_existing_id");
+        {
+            let storage = _storage("sqlite_storage_add_tags_works_for_non_existing_id");
+            storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
 
-        let storage = _storage("sqlite_storage_add_tags_works_for_non_existing_id");
-        storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
-
-        let res = storage.add_tags(&_type1(), &_id2(), &_new_tags());
-        assert_kind!(IndyErrorKind::WalletItemNotFound, res);
-
+            let res = storage.add_tags(&_type1(), &_id2(), &_new_tags());
+            assert_kind!(IndyErrorKind::WalletItemNotFound, res);
+        }
         _cleanup("sqlite_storage_add_tags_works_for_non_existing_id");
     }
 
     #[test]
     fn sqlite_storage_add_tags_works_for_non_existing_type() {
         _cleanup("sqlite_storage_add_tags_works_for_non_existing_type");
+        {
+            let storage = _storage("sqlite_storage_add_tags_works_for_non_existing_type");
+            storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
 
-        let storage = _storage("sqlite_storage_add_tags_works_for_non_existing_type");
-        storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
-
-        let res = storage.add_tags(&_type2(), &_id1(), &_new_tags());
-        assert_kind!(IndyErrorKind::WalletItemNotFound, res);
-
+            let res = storage.add_tags(&_type2(), &_id1(), &_new_tags());
+            assert_kind!(IndyErrorKind::WalletItemNotFound, res);
+        }
         _cleanup("sqlite_storage_add_tags_works_for_non_existing_type");
     }
 
     #[test]
     fn sqlite_storage_add_tags_works_for_already_existing() {
         _cleanup("sqlite_storage_add_tags_works_for_already_existing");
+        {
+            let storage = _storage("sqlite_storage_add_tags_works_for_already_existing");
+            storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
 
-        let storage = _storage("sqlite_storage_add_tags_works_for_already_existing");
-        storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
+            let tags_with_existing = {
+                let mut tags = _tags();
+                tags.extend(_new_tags());
+                tags
+            };
 
-        let tags_with_existing = {
-            let mut tags = _tags();
-            tags.extend(_new_tags());
-            tags
-        };
+            storage.add_tags(&_type1(), &_id1(), &tags_with_existing).unwrap();
 
-        storage.add_tags(&_type1(), &_id1(), &tags_with_existing).unwrap();
+            let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
+            assert_eq!(record.value.unwrap(), _value1());
 
-        let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
-        assert_eq!(record.value.unwrap(), _value1());
+            let expected_tags = {
+                let mut tags = _tags();
+                tags.extend(_new_tags());
+                _sort(tags)
+            };
 
-        let expected_tags = {
-            let mut tags = _tags();
-            tags.extend(_new_tags());
-            _sort(tags)
-        };
-
-        assert_eq!(_sort(record.tags.unwrap()), expected_tags);
-
+            assert_eq!(_sort(record.tags.unwrap()), expected_tags);
+        }
         _cleanup("sqlite_storage_add_tags_works_for_already_existing");
     }
 
     #[test]
     fn sqlite_storage_update_tags_works() {
         _cleanup("sqlite_storage_update_tags_works");
+        {
+            let storage = _storage("sqlite_storage_update_tags_works");
+            storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
 
-        let storage = _storage("sqlite_storage_update_tags_works");
-        storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
+            storage.update_tags(&_type1(), &_id1(), &_new_tags()).unwrap();
 
-        storage.update_tags(&_type1(), &_id1(), &_new_tags()).unwrap();
-
-        let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
-        assert_eq!(record.value.unwrap(), _value1());
-        assert_eq!(_sort(record.tags.unwrap()), _sort(_new_tags()));
-
+            let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
+            assert_eq!(record.value.unwrap(), _value1());
+            assert_eq!(_sort(record.tags.unwrap()), _sort(_new_tags()));
+        }
         _cleanup("sqlite_storage_update_tags_works");
     }
 
     #[test]
     fn sqlite_storage_update_tags_works_for_non_existing_id() {
         _cleanup("sqlite_storage_update_tags_works_for_non_existing_id");
+        {
+            let storage = _storage("sqlite_storage_update_tags_works_for_non_existing_id");
+            storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
 
-        let storage = _storage("sqlite_storage_update_tags_works_for_non_existing_id");
-        storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
-
-        let res = storage.update_tags(&_type1(), &_id2(), &_new_tags());
-        assert_kind!(IndyErrorKind::WalletItemNotFound, res);
-
+            let res = storage.update_tags(&_type1(), &_id2(), &_new_tags());
+            assert_kind!(IndyErrorKind::WalletItemNotFound, res);
+        }
         _cleanup("sqlite_storage_update_tags_works_for_non_existing_id");
     }
 
     #[test]
     fn sqlite_storage_update_tags_works_for_non_existing_type() {
         _cleanup("sqlite_storage_update_tags_works_for_non_existing_type");
+        {
+            let storage = _storage("sqlite_storage_update_tags_works_for_non_existing_type");
+            storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
 
-        let storage = _storage("sqlite_storage_update_tags_works_for_non_existing_type");
-        storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
-
-        let res = storage.update_tags(&_type1(), &_id2(), &_new_tags());
-        assert_kind!(IndyErrorKind::WalletItemNotFound, res);
-
+            let res = storage.update_tags(&_type1(), &_id2(), &_new_tags());
+            assert_kind!(IndyErrorKind::WalletItemNotFound, res);
+        }
         _cleanup("sqlite_storage_update_tags_works_for_non_existing_type");
     }
 
     #[test]
     fn sqlite_storage_update_tags_works_for_already_existing() {
         _cleanup("sqlite_storage_update_tags_works_for_already_existing");
+        {
+            let storage = _storage("sqlite_storage_update_tags_works_for_already_existing");
+            storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
 
-        let storage = _storage("sqlite_storage_update_tags_works_for_already_existing");
-        storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
+            let tags_with_existing = {
+                let mut tags = _tags();
+                tags.extend(_new_tags());
+                tags
+            };
 
-        let tags_with_existing = {
-            let mut tags = _tags();
-            tags.extend(_new_tags());
-            tags
-        };
+            storage.update_tags(&_type1(), &_id1(), &tags_with_existing).unwrap();
 
-        storage.update_tags(&_type1(), &_id1(), &tags_with_existing).unwrap();
+            let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
+            assert_eq!(record.value.unwrap(), _value1());
 
-        let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
-        assert_eq!(record.value.unwrap(), _value1());
+            let expected_tags = {
+                let mut tags = _tags();
+                tags.extend(_new_tags());
+                _sort(tags)
+            };
 
-        let expected_tags = {
-            let mut tags = _tags();
-            tags.extend(_new_tags());
-            _sort(tags)
-        };
-
-        assert_eq!(_sort(record.tags.unwrap()), expected_tags);
-
+            assert_eq!(_sort(record.tags.unwrap()), expected_tags);
+        }
         _cleanup("sqlite_storage_update_tags_works_for_already_existing");
     }
 
     #[test]
     fn sqlite_storage_delete_tags_works() {
         _cleanup("sqlite_storage_delete_tags_works");
+        {
+            let storage = _storage("sqlite_storage_delete_tags_works");
 
-        let storage = _storage("sqlite_storage_delete_tags_works");
+            let tag_name1 = vec![0, 0, 0];
+            let tag_name2 = vec![1, 1, 1];
+            let tag_name3 = vec![2, 2, 2];
+            let tag1 = Tag::Encrypted(tag_name1.clone(), vec![0, 0, 0]);
+            let tag2 = Tag::PlainText(tag_name2.clone(), "tag_value_2".to_string());
+            let tag3 = Tag::Encrypted(tag_name3.clone(), vec![2, 2, 2]);
+            let tags = vec![tag1.clone(), tag2.clone(), tag3.clone()];
 
-        let tag_name1 = vec![0, 0, 0];
-        let tag_name2 = vec![1, 1, 1];
-        let tag_name3 = vec![2, 2, 2];
-        let tag1 = Tag::Encrypted(tag_name1.clone(), vec![0, 0, 0]);
-        let tag2 = Tag::PlainText(tag_name2.clone(), "tag_value_2".to_string());
-        let tag3 = Tag::Encrypted(tag_name3.clone(), vec![2, 2, 2]);
-        let tags = vec![tag1.clone(), tag2.clone(), tag3.clone()];
+            storage.add(&_type1(), &_id1(), &_value1(), &tags).unwrap();
 
-        storage.add(&_type1(), &_id1(), &_value1(), &tags).unwrap();
+            let tag_names = vec![TagName::OfEncrypted(tag_name1.clone()), TagName::OfPlain(tag_name2.clone())];
+            storage.delete_tags(&_type1(), &_id1(), &tag_names).unwrap();
 
-        let tag_names = vec![TagName::OfEncrypted(tag_name1.clone()), TagName::OfPlain(tag_name2.clone())];
-        storage.delete_tags(&_type1(), &_id1(), &tag_names).unwrap();
-
-        let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
-        assert_eq!(record.tags.unwrap(), vec![tag3]);
-
+            let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
+            assert_eq!(record.tags.unwrap(), vec![tag3]);
+        }
         _cleanup("sqlite_storage_delete_tags_works");
     }
 
     #[test]
     fn sqlite_storage_delete_tags_works_for_non_existing_type() {
         _cleanup("sqlite_storage_delete_tags_works_for_non_existing_type");
+        {
+            let storage = _storage("sqlite_storage_delete_tags_works_for_non_existing_type");
 
-        let storage = _storage("sqlite_storage_delete_tags_works_for_non_existing_type");
+            let tag_name1 = vec![0, 0, 0];
+            let tag_name2 = vec![1, 1, 1];
+            let tag_name3 = vec![2, 2, 2];
+            let tag1 = Tag::Encrypted(tag_name1.clone(), vec![0, 0, 0]);
+            let tag2 = Tag::PlainText(tag_name2.clone(), "tag_value_2".to_string());
+            let tag3 = Tag::Encrypted(tag_name3.clone(), vec![2, 2, 2]);
+            let tags = vec![tag1.clone(), tag2.clone(), tag3.clone()];
 
-        let tag_name1 = vec![0, 0, 0];
-        let tag_name2 = vec![1, 1, 1];
-        let tag_name3 = vec![2, 2, 2];
-        let tag1 = Tag::Encrypted(tag_name1.clone(), vec![0, 0, 0]);
-        let tag2 = Tag::PlainText(tag_name2.clone(), "tag_value_2".to_string());
-        let tag3 = Tag::Encrypted(tag_name3.clone(), vec![2, 2, 2]);
-        let tags = vec![tag1.clone(), tag2.clone(), tag3.clone()];
+            storage.add(&_type1(), &_id1(), &_value1(), &tags).unwrap();
 
-        storage.add(&_type1(), &_id1(), &_value1(), &tags).unwrap();
-
-        let tag_names = vec![TagName::OfEncrypted(tag_name1.clone()), TagName::OfPlain(tag_name2.clone())];
-        let res = storage.delete_tags(&_type2(), &_id1(), &tag_names);
-        assert_kind!(IndyErrorKind::WalletItemNotFound, res);
-
+            let tag_names = vec![TagName::OfEncrypted(tag_name1.clone()), TagName::OfPlain(tag_name2.clone())];
+            let res = storage.delete_tags(&_type2(), &_id1(), &tag_names);
+            assert_kind!(IndyErrorKind::WalletItemNotFound, res);
+        }
         _cleanup("sqlite_storage_delete_tags_works_for_non_existing_type");
     }
 
     #[test]
     fn sqlite_storage_delete_tags_works_for_non_existing_id() {
         _cleanup("sqlite_storage_delete_tags_works_for_non_existing_id");
+        {
+            let storage = _storage("sqlite_storage_delete_tags_works_for_non_existing_id");
 
-        let storage = _storage("sqlite_storage_delete_tags_works_for_non_existing_id");
+            let tag_name1 = vec![0, 0, 0];
+            let tag_name2 = vec![1, 1, 1];
+            let tag_name3 = vec![2, 2, 2];
+            let tag1 = Tag::Encrypted(tag_name1.clone(), vec![0, 0, 0]);
+            let tag2 = Tag::PlainText(tag_name2.clone(), "tag_value_2".to_string());
+            let tag3 = Tag::Encrypted(tag_name3.clone(), vec![2, 2, 2]);
+            let tags = vec![tag1.clone(), tag2.clone(), tag3.clone()];
 
-        let tag_name1 = vec![0, 0, 0];
-        let tag_name2 = vec![1, 1, 1];
-        let tag_name3 = vec![2, 2, 2];
-        let tag1 = Tag::Encrypted(tag_name1.clone(), vec![0, 0, 0]);
-        let tag2 = Tag::PlainText(tag_name2.clone(), "tag_value_2".to_string());
-        let tag3 = Tag::Encrypted(tag_name3.clone(), vec![2, 2, 2]);
-        let tags = vec![tag1.clone(), tag2.clone(), tag3.clone()];
+            storage.add(&_type1(), &_id1(), &_value1(), &tags).unwrap();
 
-        storage.add(&_type1(), &_id1(), &_value1(), &tags).unwrap();
-
-        let tag_names = vec![TagName::OfEncrypted(tag_name1.clone()), TagName::OfPlain(tag_name2.clone())];
-        let res = storage.delete_tags(&_type1(), &_id2(), &tag_names);
-        assert_kind!(IndyErrorKind::WalletItemNotFound, res);
-
+            let tag_names = vec![TagName::OfEncrypted(tag_name1.clone()), TagName::OfPlain(tag_name2.clone())];
+            let res = storage.delete_tags(&_type1(), &_id2(), &tag_names);
+            assert_kind!(IndyErrorKind::WalletItemNotFound, res);
+        }
         _cleanup("sqlite_storage_delete_tags_works_for_non_existing_id");
     }
 

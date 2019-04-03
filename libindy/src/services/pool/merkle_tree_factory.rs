@@ -279,35 +279,35 @@ mod tests {
     #[test]
     pub fn pool_worker_works_for_deserialize_cache() {
         test::cleanup_storage("pool_worker_works_for_deserialize_cache");
+        {
+            _set_protocol_version(TEST_PROTOCOL_VERSION);
 
-        _set_protocol_version(TEST_PROTOCOL_VERSION);
+            let node_txns = test::gen_txns();
 
-        let node_txns = test::gen_txns();
+            let txn1_json: serde_json::Value = serde_json::from_str(&node_txns[0]).unwrap();
+            let txn2_json: serde_json::Value = serde_json::from_str(&node_txns[1]).unwrap();
+            let txn3_json: serde_json::Value = serde_json::from_str(&node_txns[2]).unwrap();
+            let txn4_json: serde_json::Value = serde_json::from_str(&node_txns[3]).unwrap();
 
-        let txn1_json: serde_json::Value = serde_json::from_str(&node_txns[0]).unwrap();
-        let txn2_json: serde_json::Value = serde_json::from_str(&node_txns[1]).unwrap();
-        let txn3_json: serde_json::Value = serde_json::from_str(&node_txns[2]).unwrap();
-        let txn4_json: serde_json::Value = serde_json::from_str(&node_txns[3]).unwrap();
+            let pool_cache = vec![rmp_serde::to_vec_named(&txn1_json).unwrap(),
+                                  rmp_serde::to_vec_named(&txn2_json).unwrap(),
+                                  rmp_serde::to_vec_named(&txn3_json).unwrap(),
+                                  rmp_serde::to_vec_named(&txn4_json).unwrap()];
 
-        let pool_cache = vec![rmp_serde::to_vec_named(&txn1_json).unwrap(),
-                              rmp_serde::to_vec_named(&txn2_json).unwrap(),
-                              rmp_serde::to_vec_named(&txn3_json).unwrap(),
-                              rmp_serde::to_vec_named(&txn4_json).unwrap()];
+            let pool_name = "pool_worker_works_for_deserialize_cache";
+            let mut path = environment::pool_path(pool_name);
+            fs::create_dir_all(path.as_path()).unwrap();
+            path.push("stored");
+            path.set_extension("btxn");
+            let mut f = fs::File::create(path.as_path()).unwrap();
+            pool_cache.iter().for_each(|vec| {
+                f.write_u64::<LittleEndian>(vec.len() as u64).unwrap();
+                f.write_all(vec).unwrap();
+            });
 
-        let pool_name = "pool_worker_works_for_deserialize_cache";
-        let mut path = environment::pool_path(pool_name);
-        fs::create_dir_all(path.as_path()).unwrap();
-        path.push("stored");
-        path.set_extension("btxn");
-        let mut f = fs::File::create(path.as_path()).unwrap();
-        pool_cache.iter().for_each(|vec| {
-            f.write_u64::<LittleEndian>(vec.len() as u64).unwrap();
-            f.write_all(vec).unwrap();
-        });
-
-        let merkle_tree = super::create(pool_name).unwrap();
-        let _node_state = super::build_node_state(&merkle_tree).unwrap();
-
+            let merkle_tree = super::create(pool_name).unwrap();
+            let _node_state = super::build_node_state(&merkle_tree).unwrap();
+        }
         test::cleanup_storage("pool_worker_works_for_deserialize_cache");
     }
 
