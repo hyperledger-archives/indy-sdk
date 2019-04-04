@@ -943,7 +943,7 @@ impl WalletStorageType for PostgresStorageType {
 
     ///
     /// Initializes the wallets database and creates the necessary tables for all wallets
-    /// This only needs to be called once at the very beginning
+    /// This needs to be called once at the very beginning, I'm not entirely sure the best way to enforce it
     ///
     /// # Arguments
     ///
@@ -1178,6 +1178,7 @@ mod tests {
 
     use utils::test;
 
+    // HACK: we need init_storage() to be the first test run
     #[test]
     fn postgres_storage_type_init_works() {
         _cleanup();
@@ -1660,8 +1661,7 @@ mod tests {
 
     fn _wallet_config() -> String {
         let config = json!({
-            // TODO switch back to localhost
-            "url": "postgres-db:5432".to_owned()
+            "url": "localhost:5432".to_owned()
         }).to_string();
         config
     }

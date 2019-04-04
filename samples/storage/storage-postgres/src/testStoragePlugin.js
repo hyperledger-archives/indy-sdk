@@ -7,19 +7,19 @@ async function run() {
 
     console.log("testStoragePlugin.js -> started");
 
-    const result = storagePlugin.postgresstorage_init();
+    let result = storagePlugin.postgresstorage_init();
     console.log(result);
 
     console.log("Create wallet");
     
-    let stewardWalletConfig = {
-        'id': 'wallet_psx2',
+    let walletConfig = {
+        'id': 'wallet_psx',
         'storage_type': 'postgres_storage',
         'storage_config': {
             "url": "postgres-db:5432"
         }
     }
-    let stewardWalletCredentials = {
+    let walletCredentials = {
         'key': '1',
         'storage_credentials': {
             "account": "postgres",
@@ -30,8 +30,8 @@ async function run() {
     }
 
     try {
-        const result2 = await indy.createWallet(stewardWalletConfig, stewardWalletCredentials);
-        console.log(result2);
+        result = await indy.createWallet(walletConfig, walletCredentials);
+        console.log(result);
     } catch(e) {
         if(e.message !== "WalletAlreadyExistsError") {
             throw e;
@@ -42,17 +42,17 @@ async function run() {
 
     console.log('Opened wallet');
 
-    let stewardWallet = await indy.openWallet(stewardWalletConfig, stewardWalletCredentials);
+    let wallet = await indy.openWallet(walletConfig, walletCredentials);
 
-    console.log("Create and store in Wallet DID from seed");
+    console.log("Create and store in Wallet DID");
 
-    let [did, verkyey] = await indy.createAndStoreMyDid(stewardWallet, stewardDidInfo);
+    let [did, verkey] = await indy.createAndStoreMyDid(wallet, {});
 
     console.log(did);
 
-    // console.log("Close and Delete wallet");
-    // await indy.closeWallet(stewardWallet);
-    // await indy.deleteWallet(stewardWalletConfig, stewardWalletCredentials);
+    console.log("Close and Delete wallet");
+    await indy.closeWallet(wallet);
+    await indy.deleteWallet(walletConfig, walletCredentials);
 
     console.log("testStoragePlugin -> done")
 }
