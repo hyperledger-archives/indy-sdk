@@ -57,7 +57,7 @@ pub struct ForwardWithCD {
     pub msg: String,
     #[serde(default)]
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(rename = "$ciphertexts")]
+    #[serde(rename = "~cyphertexts")]
     pub ciphertexts: Option<String>
 }
 
@@ -70,6 +70,6 @@ pub struct JWEWithCD {
     pub tag: String,
     #[serde(default)]
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(rename = "$ciphertexts")]
+    #[serde(rename = "~cyphertexts")]
     pub ciphertexts: Option<String>
 }

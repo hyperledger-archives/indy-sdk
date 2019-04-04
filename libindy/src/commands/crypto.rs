@@ -26,6 +26,7 @@ use serde_json::Value;
 lazy_static! {
     static ref IDX_REGEX: Regex = Regex::new(r"^\$[0-9]+$").unwrap();
 }
+pub const CIPHERTEXT_ARRAY_JSON_KEY: &'static str = "~cyphertexts";
 
 
 pub enum CryptoCommand {
@@ -518,6 +519,13 @@ impl CryptoCommandExecutor {
         });
     }
 
+    /// For post processing of a packed message. Takes a packed message and appends (put at the end)
+    /// the `tag`, `iv` and `ciphertext` as an object in the `~cyphertexts` array and the value of
+    /// these 3 keys is changed to placeholder denoting the index of array where the actual values are
+    /// present. If `~cyphertexts` is not present as a key, it is created.
+    /// `post_pc_packed_msg` is idempotent, meaning repeatedly applying this method on packed messages will
+    /// lead to the same result. This is helpful in scenarios where `pack_msg` is applied in succession to a
+    /// message without any other transformation in between like `pack_msg( post_pc_packed_msg( pack_msg( msg ) ) )`
     pub fn post_pc_packed_msg(packed_msg: &[u8]) -> IndyResult<Vec<u8>> {
         let jwe_cd_struct: JWEWithCD = serde_json::from_slice(packed_msg).map_err(|err| {
             err_msg(IndyErrorKind::InvalidStructure, format!(
@@ -624,6 +632,8 @@ impl CryptoCommandExecutor {
         })
     }
 
+    /// Takes a message with key `~cyphertexts` present and returns a 2-tuple of the original message
+    /// without `~cyphertexts` and `~cyphertexts`.If`~cyphertexts` is not present an error is returned.
     pub fn remove_cts_from_msg(json_msg: &[u8]) -> IndyResult<(Vec<u8>, Vec<u8>)> {
         let mut json: Value = serde_json::from_slice(&json_msg).map_err(|err| {
             err_msg(IndyErrorKind::InvalidStructure, format!(
@@ -639,10 +649,8 @@ impl CryptoCommandExecutor {
             )))
         };
 
-        // TODO: "$ciphertexts" should be a constant
-        let special_key = "$ciphertexts";
-        if msg_obj.contains_key(special_key) {
-            let cts = msg_obj.remove(special_key).unwrap();
+        if msg_obj.contains_key(CIPHERTEXT_ARRAY_JSON_KEY) {
+            let cts = msg_obj.remove(CIPHERTEXT_ARRAY_JSON_KEY).unwrap();
 
             let new_msg = serde_json::to_vec(&msg_obj).map_err(|err| {
                 err_msg(IndyErrorKind::InvalidStructure, format!(
@@ -660,12 +668,14 @@ impl CryptoCommandExecutor {
             //Ok((new_msg, Some(cts_msg)))
         } else {
             return Err(err_msg(IndyErrorKind::InvalidStructure, format!(
-                "no $ciphertexts found"
+                "no {} found", CIPHERTEXT_ARRAY_JSON_KEY
             )));
             //Ok((json_msg, None))
         }
     }
 
+    /// Accepts a message and content of `~cyphertexts` and returns a message with `~cyphertexts` key
+    /// present. If `~cyphertexts` is already present, an error is returned.
     pub fn add_cts_to_msg(json_msg: &[u8], json_cts: &[u8]) -> IndyResult<Vec<u8>> {
         let mut json: Value = serde_json::from_slice(&json_msg).map_err(|err| {
             err_msg(IndyErrorKind::InvalidStructure, format!(
@@ -681,11 +691,9 @@ impl CryptoCommandExecutor {
             )))
         };
 
-        // TODO: "$ciphertexts" should be a constant
-        let special_key = "$ciphertexts";
-        if msg_obj.contains_key(special_key) {
+        if msg_obj.contains_key(CIPHERTEXT_ARRAY_JSON_KEY) {
             return Err(err_msg(IndyErrorKind::InvalidStructure, format!(
-                "Already contains $ciphertexts"
+                "Already contains {}", CIPHERTEXT_ARRAY_JSON_KEY
             )));
         } else {
             let json_cts: Value = serde_json::from_slice(&json_cts).map_err(|err| {
@@ -694,7 +702,7 @@ impl CryptoCommandExecutor {
                     err
                 ))
             })?;
-            msg_obj.insert(special_key.to_string(), json_cts);
+            msg_obj.insert(CIPHERTEXT_ARRAY_JSON_KEY.to_string(), json_cts);
         }
 
         serde_json::to_vec(&msg_obj).map_err(|err| {
@@ -704,7 +712,10 @@ impl CryptoCommandExecutor {
             ))
         })
     }
-
+    /// For pre-processing of a message before unpack. Takes a message which is the result of
+    /// `post_pc_packed_msg` and returns a message where the placeholders have been replaced with
+    /// original values which are elements of the last object of `~cyphertexts` and that last object
+    /// is removed from `~cyphertexts`.
     pub fn pre_pc_packed_msg(packed_msg: &[u8]) -> IndyResult<Vec<u8>> {
         let jwe_cd_struct: JWEWithCD = serde_json::from_slice(&packed_msg).map_err(|err| {
             err_msg(IndyErrorKind::InvalidStructure, format!(
@@ -966,14 +977,3 @@ impl CryptoCommandExecutor {
     }
 
 }
-
-/*
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn indy_crypto_post_pc_packed_msg_works() {
-
-    }
-}*/

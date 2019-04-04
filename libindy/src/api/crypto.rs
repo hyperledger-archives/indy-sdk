@@ -755,6 +755,34 @@ pub extern fn indy_unpack_message(
     res
 }
 
+/// For post processing of a packed message. Takes a packed message and appends (put at the end)
+/// the `tag`, `iv` and `ciphertext` as an object in the `~cyphertexts` array and the value of
+/// these 3 keys is changed to placeholder denoting the index of array where the actual values are
+/// present. If `~cyphertexts` is not present as a key, it is created. eg. for a packed message like this
+/// {
+///	    "protected": "<B.4 info>",
+///	    "iv": "<some IV>",
+///	    "tag": "<some tag>",
+///	    "ciphertext": ENC( m )
+///  }
+///
+/// `post_pc_packed_msg` will return
+/// {
+///    "protected": "<B.4 info>",
+///    "iv": "$0",
+///    "tag": "$0",
+///    "ciphertext": "$0",
+///    "~cyphertexts": [
+///        {
+///            "iv": "<some IV>",
+///            "tag": "<some tag>",
+///            "ciphertext": ENC( m ),
+///        }
+///    ]
+/// }
+/// `post_pc_packed_msg` is idempotent, meaning repeatedly applying this method on packed messages will
+/// lead to the same result. This is helpful in scenarios where `pack_msg` is applied in succession to a
+/// message without any other transformation in between like `pack_msg( post_pc_packed_msg( pack_msg( msg ) ) )`
 #[no_mangle]
 pub extern fn indy_post_pc_packed_msg(
     command_handle: CommandHandle,
@@ -823,6 +851,61 @@ pub extern fn indy_forward_msg_with_cd(
     res
 }
 
+/// For pre-processing of a message before unpack. Takes a message which is the result of
+/// `post_pc_packed_msg` and returns a message where the placeholders have been replaced with
+/// original values which are elements of the last object of `~cyphertexts` and that last object
+/// is removed from `~cyphertexts`. eg. `pre_pc_packed_msg` on
+///
+/// {
+///	"protected": "<B.3 info>",
+///	"iv": "$1",
+///	"tag": "$1",
+///	"ciphertext": "$1",
+///	"~cyphertexts": [
+///		{
+///			"iv": "<some IV>",
+///			"tag": "<some tag>",
+///			"ciphertext": ENC( m ),
+///		},
+///		{
+///			"iv": "<some IV_1>",
+///			"tag": "<some tag_1>",
+///			"ciphertext": ENC( {
+///				"@type" : "....forward",
+///			  	"to"   : "did:sov:1234abcd#4",
+///			  	"msg": {
+///					"protected": "<B.4 info>",
+///					"iv": "$0",
+///					"tag": "$0",
+///					"ciphertext": "$0"
+///				},
+///			} )
+///		}
+///	]
+///}
+/// will return
+/// {
+///	"protected": "<B.3 info>",
+///	"iv": "<some IV_1>",
+///	"tag": "<some tag_1>",
+///	"ciphertext": ENC( {
+///        "@type" : "....forward",
+///        "to"   : "did:sov:1234abcd#4",
+///        "msg": {
+///            "protected": "<B.4 info>",
+///            "iv": "$0",
+///            "tag": "$0",
+///            "ciphertext": "$0"
+///        },
+///    } )	,
+///	"~cyphertexts": [
+///		{
+///			"iv": "<some IV>",
+///			"tag": "<some tag>",
+///			"ciphertext": ENC( m ),
+///		}
+///	]
+///}
 #[no_mangle]
 pub extern fn indy_pre_pc_packed_msg(
     command_handle: CommandHandle,
@@ -854,6 +937,8 @@ pub extern fn indy_pre_pc_packed_msg(
     res
 }
 
+/// Takes a message with key `~cyphertexts` present and returns a 2-tuple of the original message
+/// without `~cyphertexts` and `~cyphertexts`.If`~cyphertexts` is not present an error is returned.
 #[no_mangle]
 pub extern fn indy_remove_cts_from_msg(
     command_handle: CommandHandle,
@@ -886,6 +971,8 @@ pub extern fn indy_remove_cts_from_msg(
     res
 }
 
+/// Accepts a message and content of `~cyphertexts` and returns a message with `~cyphertexts` key
+/// present. If `~cyphertexts` is already present, an error is returned.
 #[no_mangle]
 pub extern fn indy_add_cts_to_msg(
     command_handle: CommandHandle,
