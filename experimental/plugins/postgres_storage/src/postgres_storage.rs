@@ -2,8 +2,6 @@ extern crate owning_ref;
 extern crate sodiumoxide;
 extern crate r2d2;
 extern crate r2d2_postgres;
-// TODO remove log when done
-extern crate log;
 
 use postgres;
 use self::r2d2_postgres::{TlsMode, PostgresConnectionManager};
@@ -171,6 +169,7 @@ const _DELETE_WALLET: [&str; 4] = [
     "DELETE FROM items WHERE wallet_id = $1",
     "DELETE FROM metadata WHERE wallet_id = $1"
     ];
+// Drop wallet database is not actually called anywhere, not sure if we want to allow it
 const _DROP_WALLET_DATABASE: &str = "DROP DATABASE wallets";
 
 #[derive(Debug)]
