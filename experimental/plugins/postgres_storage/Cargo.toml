@@ -1,6 +1,6 @@
 [package]
 name = "storage-postgres"
-version = "1.6.0"
+version = "1.7.0"
 authors = [
   "Ian Costanzo <ian@anon-solutions.ca>"
 ]

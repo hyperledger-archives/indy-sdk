@@ -3,7 +3,7 @@ var ref = require('ref');
 var int = ref.types.int;
 
 var storagePlugin = ffi.Library(
-    '/indy-sdk/experimental/plugins/postgres_storage/target/release/libindystrgpostgres.so', 
+    '/indy-sdk/experimental/plugins/postgres_storage/target/debug/libindystrgpostgres.so', 
     {
         "postgresstorage_init": [int, []]
     }

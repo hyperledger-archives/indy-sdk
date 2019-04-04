@@ -1,43 +1,19 @@
 "use strict";
 
 const indy = require('indy-sdk');
-//const util = require('./util');
-const assert = require('assert');
 const storagePlugin = require('./storagePlugin');
 
 async function run() {
 
-    console.log("gettingStarted.js -> started");
-
-    // let poolName = 'pool1';
-    // console.log(`Open Pool Ledger: ${poolName}`);
-    // let poolGenesisTxnPath = await util.getPoolGenesisTxnPath(poolName);
-    // let poolConfig = {
-    //     "genesis_txn": poolGenesisTxnPath
-    // };
-    // try {
-    //     await indy.createPoolLedgerConfig(poolName, poolConfig);
-    // } catch(e) {
-    //     if(e.message !== "PoolLedgerConfigAlreadyExistsError") {
-    //         throw e;
-    //     }
-    // }
-
-    // await indy.setProtocolVersion(2)
-
-    // let poolHandle = await indy.openPoolLedger(poolName);
-
-    console.log("==============================");
-    console.log("=== Getting Trust Anchor credentials for Faber, Acme, Thrift and Government  ==");
-    console.log("------------------------------");
+    console.log("testStoragePlugin.js -> started");
 
     const result = storagePlugin.postgresstorage_init();
     console.log(result);
 
-    console.log("\"Sovrin Steward\" -> Create wallet");
+    console.log("Create wallet");
     
     let stewardWalletConfig = {
-        'id': 'wallet_psx',
+        'id': 'wallet_psx2',
         'storage_type': 'postgres_storage',
         'storage_config': {
             "url": "postgres-db:5432"
@@ -64,29 +40,21 @@ async function run() {
         }
     }
 
-    console.log('open');
+    console.log('Opened wallet');
 
     let stewardWallet = await indy.openWallet(stewardWalletConfig, stewardWalletCredentials);
 
-    console.log("\"Sovrin Steward\" -> Create and store in Wallet DID from seed");
-    let stewardDidInfo = {
-        'seed': '000000000000000000000000Steward1'
-    };
+    console.log("Create and store in Wallet DID from seed");
 
-    let [stewardDid, stewardKey] = await indy.createAndStoreMyDid(stewardWallet, stewardDidInfo);
+    let [did, verkyey] = await indy.createAndStoreMyDid(stewardWallet, stewardDidInfo);
 
-    console.log(stewardDid);
+    console.log(did);
 
-    console.log(" \"Sovrin Steward\" -> Close and Delete wallet");
-    await indy.closeWallet(stewardWallet);
-    await indy.deleteWallet(stewardWalletConfig, stewardWalletCredentials);
+    // console.log("Close and Delete wallet");
+    // await indy.closeWallet(stewardWallet);
+    // await indy.deleteWallet(stewardWalletConfig, stewardWalletCredentials);
 
-
-    // console.log("Close and Delete pool");
-    // await indy.closePoolLedger(poolHandle);
-    // await indy.deletePoolLedgerConfig(poolName);
-
-    console.log("Getting started -> done")
+    console.log("testStoragePlugin -> done")
 }
 
 if (require.main.filename == __filename) {
