@@ -1,7 +1,7 @@
 use super::DELIMITER;
 use super::super::ledger::request::ProtocolVersion;
 
-use indy_crypto::cl::{
+use ursa::cl::{
     CredentialPrimaryPublicKey,
     CredentialRevocationPublicKey,
     CredentialPrivateKey,

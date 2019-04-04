@@ -1,11 +1,11 @@
-extern crate indy_crypto;
+extern crate ursa;
 
 use errors::prelude::*;
 
 use domain::anoncreds::credential::AttributeValues;
 use domain::anoncreds::proof_request::{AttributeInfo, PredicateInfo};
 
-use self::indy_crypto::cl::{issuer, verifier, CredentialSchema, NonCredentialSchema, MasterSecret, CredentialValues, SubProofRequest};
+use self::ursa::cl::{issuer, verifier, CredentialSchema, NonCredentialSchema, MasterSecret, CredentialValues, SubProofRequest};
 
 
 use std::collections::{HashSet, HashMap};

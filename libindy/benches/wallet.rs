@@ -18,7 +18,7 @@ extern crate serde_json;
 
 extern crate byteorder;
 extern crate indy;
-extern crate indy_crypto;
+extern crate ursa;
 extern crate uuid;
 extern crate named_type;
 extern crate rmp_serde;

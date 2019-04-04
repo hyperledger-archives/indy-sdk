@@ -29,8 +29,8 @@ use services::pool::state_proof;
 use services::pool::types::CatchupRep;
 use services::pool::types::HashableValue;
 
-use super::indy_crypto::bls::Generator;
-use super::indy_crypto::bls::VerKey;
+use super::ursa::bls::Generator;
+use super::ursa::bls::VerKey;
 
 use self::rust_base58::FromBase58;
 use std::hash::{Hash, Hasher};

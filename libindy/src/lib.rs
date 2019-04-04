@@ -25,7 +25,7 @@ extern crate named_type;
 #[macro_use]
 extern crate named_type_derive;
 
-extern crate indy_crypto;
+extern crate ursa;
 extern crate libsqlite3_sys;
 extern crate rlp;
 extern crate time;

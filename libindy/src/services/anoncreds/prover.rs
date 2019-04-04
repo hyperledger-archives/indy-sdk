@@ -1,7 +1,7 @@
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 
-use indy_crypto::cl::{
+use ursa::cl::{
     BlindedCredentialSecrets,
     BlindedCredentialSecretsCorrectnessProof,
     CredentialPublicKey,
@@ -9,9 +9,9 @@ use indy_crypto::cl::{
     MasterSecret,
     SubProofRequest,
 };
-use indy_crypto::cl::issuer::Issuer as CryptoIssuer;
-use indy_crypto::cl::prover::Prover as CryptoProver;
-use indy_crypto::cl::verifier::Verifier as CryptoVerifier;
+use ursa::cl::issuer::Issuer as CryptoIssuer;
+use ursa::cl::prover::Prover as CryptoProver;
+use ursa::cl::verifier::Verifier as CryptoVerifier;
 
 use domain::anoncreds::credential::{AttributeValues, Credential};
 use domain::anoncreds::credential_definition::CredentialDefinitionV1 as CredentialDefinition;
@@ -858,7 +858,7 @@ mod tests {
 
         fn _proof_req() -> ProofRequest {
             ProofRequest {
-                nonce: indy_crypto::cl::new_nonce().unwrap(),
+                nonce: ursa::cl::new_nonce().unwrap(),
                 name: "Job-Application".to_string(),
                 version: "0.1".to_string(),
                 requested_attributes: hashmap!(

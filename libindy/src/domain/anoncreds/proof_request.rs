@@ -1,7 +1,7 @@
 use serde_json;
 use std::collections::HashMap;
 
-use indy_crypto::cl::Nonce;
+use ursa::cl::Nonce;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ProofRequest {

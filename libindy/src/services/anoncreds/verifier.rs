@@ -1,4 +1,4 @@
-extern crate indy_crypto;
+extern crate ursa;
 
 use std::collections::HashMap;
 
@@ -11,8 +11,8 @@ use domain::anoncreds::schema::SchemaV1;
 use errors::prelude::*;
 use services::anoncreds::helpers::*;
 
-use self::indy_crypto::cl::CredentialPublicKey;
-use self::indy_crypto::cl::verifier::Verifier as CryptoVerifier;
+use self::ursa::cl::CredentialPublicKey;
+use self::ursa::cl::verifier::Verifier as CryptoVerifier;
 
 pub struct Verifier {}
 

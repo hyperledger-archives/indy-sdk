@@ -4,7 +4,8 @@ extern crate zmq;
 use std::cell::RefCell;
 use std::collections::{BTreeMap, HashMap, HashSet};
 
-use rand::{Rng, thread_rng};
+use rand::thread_rng;
+use rand::prelude::SliceRandom;
 use time::Tm;
 
 use errors::prelude::*;
@@ -182,7 +183,8 @@ impl PoolConnection {
     fn new(mut nodes: Vec<RemoteNode>, active_timeout: i64, preordered_nodes: Vec<String>) -> Self {
         trace!("PoolConnection::new: from nodes {:?}", nodes);
 
-        thread_rng().shuffle(nodes.as_mut());
+        nodes.shuffle(&mut thread_rng());
+//        thread_rng().shuffle(nodes.as_mut());
 
         if !preordered_nodes.is_empty() {
             nodes.sort_by_key(|node: &RemoteNode| -> usize {
