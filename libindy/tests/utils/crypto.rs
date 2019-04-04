@@ -49,8 +49,8 @@ pub fn unpack_message(wallet_handle: i32, jwe: &[u8]) -> Result<Vec<u8>, IndyErr
     crypto::unpack_message(wallet_handle, jwe).wait()
 }
 
-pub fn post_pc_packed_msg(message: &[u8]) -> Result<Vec<u8>, IndyError> {
-    crypto::post_pc_packed_msg(message).wait()
+pub fn collapse_ciphertext(message: &[u8]) -> Result<Vec<u8>, IndyError> {
+    crypto::collapse_ciphertext(message).wait()
 }
 
 pub fn forward_msg_with_cd(typ: &str, to: &str, message: &[u8]) -> Result<Vec<u8>, IndyError> {
@@ -65,6 +65,6 @@ pub fn add_cts_to_msg(message: &[u8], cts: &[u8]) -> Result<Vec<u8>, IndyError> 
     crypto::add_cts_to_msg(message, cts).wait()
 }
 
-pub fn pre_pc_packed_msg(message: &[u8]) -> Result<Vec<u8>, IndyError> {
-    crypto::pre_pc_packed_msg(message).wait()
+pub fn expand_ciphertext(message: &[u8]) -> Result<Vec<u8>, IndyError> {
+    crypto::expand_ciphertext(message).wait()
 }

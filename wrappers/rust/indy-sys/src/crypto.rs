@@ -89,21 +89,21 @@ extern {
                                cb: Option<ResponseSliceCB>) -> Error;
 
     #[no_mangle]
-    pub fn indy_post_pc_packed_msg(command_handle: Handle,
-        message: BString,
-        message_len: u32,
-        cb: Option<ResponseSliceCB>) -> Error;
+    pub fn indy_collapse_ciphertext(command_handle: Handle,
+                                    message: BString,
+                                    message_len: u32,
+                                    cb: Option<ResponseSliceCB>) -> Error;
 
     #[no_mangle]
     pub fn indy_forward_msg_with_cd(command_handle: Handle,
-        typ: CString,
-        to: CString,
-        message: BString,
-        message_len: u32,
-        cb: Option<ResponseSliceCB>) -> Error;
+                                    typ: CString,
+                                    to: CString,
+                                    message: BString,
+                                    message_len: u32,
+                                    cb: Option<ResponseSliceCB>) -> Error;
 
     #[no_mangle]
-    pub fn indy_pre_pc_packed_msg(command_handle: Handle,
+    pub fn indy_expand_ciphertext(command_handle: Handle,
                                    message: BString,
                                    message_len: u32,
                                    cb: Option<ResponseSliceCB>) -> Error;

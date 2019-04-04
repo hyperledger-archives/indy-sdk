@@ -344,18 +344,18 @@ fn _unpack_message(command_handle: IndyHandle, wallet_handle: IndyHandle, jwe: &
     })
 }
 
-pub fn post_pc_packed_msg(message: &[u8]) -> Box<Future<Item=Vec<u8>, Error=IndyError>> {
+pub fn collapse_ciphertext(message: &[u8]) -> Box<Future<Item=Vec<u8>, Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
 
-    let err= _post_pc_packed_msg(command_handle, message, cb);
+    let err= _collapse_ciphertext(command_handle, message, cb);
 
     ResultHandler::slice(command_handle, err, receiver)
 }
 
-fn _post_pc_packed_msg(command_handle: IndyHandle, message: &[u8], cb: Option<ResponseSliceCB>) -> ErrorCode {
+fn _collapse_ciphertext(command_handle: IndyHandle, message: &[u8], cb: Option<ResponseSliceCB>) -> ErrorCode {
 
     ErrorCode::from(unsafe {
-        crypto::indy_post_pc_packed_msg(command_handle,
+        crypto::indy_collapse_ciphertext(command_handle,
                                   message.as_ptr() as *const u8,
                                   message.len() as u32,
                                   cb)
@@ -386,18 +386,18 @@ fn _forward_msg_with_cd(command_handle: IndyHandle, typ: &str, to: &str, message
 
 }
 
-pub fn pre_pc_packed_msg(message: &[u8]) -> Box<Future<Item=Vec<u8>, Error=IndyError>> {
+pub fn expand_ciphertext(message: &[u8]) -> Box<Future<Item=Vec<u8>, Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
 
-    let err= _pre_pc_packed_msg(command_handle, message, cb);
+    let err= _expand_ciphertext(command_handle, message, cb);
 
     ResultHandler::slice(command_handle, err, receiver)
 }
 
-fn _pre_pc_packed_msg(command_handle: IndyHandle, message: &[u8], cb: Option<ResponseSliceCB>) -> ErrorCode {
+fn _expand_ciphertext(command_handle: IndyHandle, message: &[u8], cb: Option<ResponseSliceCB>) -> ErrorCode {
 
     ErrorCode::from(unsafe {
-        crypto::indy_pre_pc_packed_msg(command_handle,
+        crypto::indy_expand_ciphertext(command_handle,
                                         message.as_ptr() as *const u8,
                                         message.len() as u32,
                                         cb)

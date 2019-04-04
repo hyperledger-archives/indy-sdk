@@ -184,7 +184,7 @@ impl CryptoCommandExecutor {
             CryptoCommand::PostPCPackedMessage(message, cb) => {
                 info!("PostPCPackedMessage command received");
                 // TODO: Don't take ownership of message but borrow it
-                cb(Self::post_pc_packed_msg(&message));
+                cb(Self::collapse_ciphertext(&message));
             }
             CryptoCommand::ForwardMessageWithCD(typ, to, message, cb) => {
                 info!("ForwardMessageWithCD command received");
@@ -194,7 +194,7 @@ impl CryptoCommandExecutor {
             CryptoCommand::PrePCPackedMessage(message, cb) => {
                 info!("PrePCPackedMessage command received");
                 // TODO: Don't take ownership of message but borrow it
-                cb(Self::pre_pc_packed_msg(&message));
+                cb(Self::expand_ciphertext(&message));
             }
             CryptoCommand::RemoveCtsFromMsg(message, cb) => {
                 info!("RemoveCtsFromMsg command received");
@@ -523,10 +523,10 @@ impl CryptoCommandExecutor {
     /// the `tag`, `iv` and `ciphertext` as an object in the `~cyphertexts` array and the value of
     /// these 3 keys is changed to placeholder denoting the index of array where the actual values are
     /// present. If `~cyphertexts` is not present as a key, it is created.
-    /// `post_pc_packed_msg` is idempotent, meaning repeatedly applying this method on packed messages will
+    /// `collapse_ciphertext` is idempotent, meaning repeatedly applying this method on packed messages will
     /// lead to the same result. This is helpful in scenarios where `pack_msg` is applied in succession to a
-    /// message without any other transformation in between like `pack_msg( post_pc_packed_msg( pack_msg( msg ) ) )`
-    pub fn post_pc_packed_msg(packed_msg: &[u8]) -> IndyResult<Vec<u8>> {
+    /// message without any other transformation in between like `pack_msg( collapse_ciphertext( pack_msg( msg ) ) )`
+    pub fn collapse_ciphertext(packed_msg: &[u8]) -> IndyResult<Vec<u8>> {
         let jwe_cd_struct: JWEWithCD = serde_json::from_slice(packed_msg).map_err(|err| {
             err_msg(IndyErrorKind::InvalidStructure, format!(
                 "Failed to deserialize JWE {}",
@@ -713,10 +713,10 @@ impl CryptoCommandExecutor {
         })
     }
     /// For pre-processing of a message before unpack. Takes a message which is the result of
-    /// `post_pc_packed_msg` and returns a message where the placeholders have been replaced with
+    /// `collapse_ciphertext` and returns a message where the placeholders have been replaced with
     /// original values which are elements of the last object of `~cyphertexts` and that last object
     /// is removed from `~cyphertexts`.
-    pub fn pre_pc_packed_msg(packed_msg: &[u8]) -> IndyResult<Vec<u8>> {
+    pub fn expand_ciphertext(packed_msg: &[u8]) -> IndyResult<Vec<u8>> {
         let jwe_cd_struct: JWEWithCD = serde_json::from_slice(&packed_msg).map_err(|err| {
             err_msg(IndyErrorKind::InvalidStructure, format!(
                 "Failed to deserialize message to JWEWithCD {}",

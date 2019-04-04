@@ -766,7 +766,7 @@ pub extern fn indy_unpack_message(
 ///	    "ciphertext": ENC( m )
 ///  }
 ///
-/// `post_pc_packed_msg` will return
+/// `collapse_ciphertext` will return
 /// {
 ///    "protected": "<B.4 info>",
 ///    "iv": "$0",
@@ -780,28 +780,28 @@ pub extern fn indy_unpack_message(
 ///        }
 ///    ]
 /// }
-/// `post_pc_packed_msg` is idempotent, meaning repeatedly applying this method on packed messages will
+/// `collapse_ciphertext` is idempotent, meaning repeatedly applying this method on packed messages will
 /// lead to the same result. This is helpful in scenarios where `pack_msg` is applied in succession to a
-/// message without any other transformation in between like `pack_msg( post_pc_packed_msg( pack_msg( msg ) ) )`
+/// message without any other transformation in between like `pack_msg( collapse_ciphertext( pack_msg( msg ) ) )`
 #[no_mangle]
-pub extern fn indy_post_pc_packed_msg(
+pub extern fn indy_collapse_ciphertext(
     command_handle: CommandHandle,
     message: *const u8,
     message_len: u32,
     cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, jwe_data: *const u8, jwe_len: u32)>,
 ) -> ErrorCode {
-    trace!("indy_post_pc_packed_msg: >>> message: {:?}, message_len {:?}", message, message_len);
+    trace!("indy_collapse_ciphertext: >>> message: {:?}, message_len {:?}", message, message_len);
 
     check_useful_c_byte_array!(message, message_len, ErrorCode::CommonInvalidParam2, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!("indy_post_pc_packed_msg: entities >>> message: {:?}, message_len {:?}", message, message_len);
+    trace!("indy_collapse_ciphertext: entities >>> message: {:?}, message_len {:?}", message, message_len);
 
     let result = CommandExecutor::instance().send(Command::Crypto(CryptoCommand::PostPCPackedMessage(
         message,
         Box::new(move |result| {
             let (err, jwe) = prepare_result_1!(result, Vec::new());
-            trace!("indy_post_pc_packed_msg: jwe: {:?}", jwe);
+            trace!("indy_collapse_ciphertext: jwe: {:?}", jwe);
             let (jwe_data, jwe_len) = ctypes::vec_to_pointer(&jwe);
             cb(command_handle, err, jwe_data, jwe_len)
         }),
@@ -809,7 +809,7 @@ pub extern fn indy_post_pc_packed_msg(
 
     let res = prepare_result!(result);
 
-    trace!("indy_post_pc_packed_msg: <<< res: {:?}", res);
+    trace!("indy_collapse_ciphertext: <<< res: {:?}", res);
 
     res
 }
@@ -838,7 +838,7 @@ pub extern fn indy_forward_msg_with_cd(
         message,
         Box::new(move |result| {
             let (err, jwe) = prepare_result_1!(result, Vec::new());
-            trace!("indy_post_pc_packed_msg: jwe: {:?}", jwe);
+            trace!("indy_collapse_ciphertext: jwe: {:?}", jwe);
             let (jwe_data, jwe_len) = ctypes::vec_to_pointer(&jwe);
             cb(command_handle, err, jwe_data, jwe_len)
         }),
@@ -852,9 +852,9 @@ pub extern fn indy_forward_msg_with_cd(
 }
 
 /// For pre-processing of a message before unpack. Takes a message which is the result of
-/// `post_pc_packed_msg` and returns a message where the placeholders have been replaced with
+/// `collapse_ciphertext` and returns a message where the placeholders have been replaced with
 /// original values which are elements of the last object of `~cyphertexts` and that last object
-/// is removed from `~cyphertexts`. eg. `pre_pc_packed_msg` on
+/// is removed from `~cyphertexts`. eg. `expand_ciphertext` on
 ///
 /// {
 ///	"protected": "<B.3 info>",
@@ -907,24 +907,24 @@ pub extern fn indy_forward_msg_with_cd(
 ///	]
 ///}
 #[no_mangle]
-pub extern fn indy_pre_pc_packed_msg(
+pub extern fn indy_expand_ciphertext(
     command_handle: CommandHandle,
     message: *const u8,
     message_len: u32,
     cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, jwe_data: *const u8, jwe_len: u32)>,
 ) -> ErrorCode {
-    trace!("indy_pre_pc_packed_msg: >>> message: {:?}, message_len {:?}", message, message_len);
+    trace!("indy_expand_ciphertext: >>> message: {:?}, message_len {:?}", message, message_len);
 
     check_useful_c_byte_array!(message, message_len, ErrorCode::CommonInvalidParam2, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!("indy_pre_pc_packed_msg: entities >>> message: {:?}, message_len {:?}", message, message_len);
+    trace!("indy_expand_ciphertext: entities >>> message: {:?}, message_len {:?}", message, message_len);
 
     let result = CommandExecutor::instance().send(Command::Crypto(CryptoCommand::PrePCPackedMessage(
         message,
         Box::new(move |result| {
             let (err, jwe) = prepare_result_1!(result, Vec::new());
-            trace!("indy_post_pc_packed_msg: jwe: {:?}", jwe);
+            trace!("indy_collapse_ciphertext: jwe: {:?}", jwe);
             let (jwe_data, jwe_len) = ctypes::vec_to_pointer(&jwe);
             cb(command_handle, err, jwe_data, jwe_len)
         }),
@@ -932,7 +932,7 @@ pub extern fn indy_pre_pc_packed_msg(
 
     let res = prepare_result!(result);
 
-    trace!("indy_pre_pc_packed_msg: <<< res: {:?}", res);
+    trace!("indy_expand_ciphertext: <<< res: {:?}", res);
 
     res
 }
@@ -966,7 +966,7 @@ pub extern fn indy_remove_cts_from_msg(
 
     let res = prepare_result!(result);
 
-    trace!("indy_post_pc_packed_msg: <<< res: {:?}", res);
+    trace!("indy_collapse_ciphertext: <<< res: {:?}", res);
 
     res
 }
@@ -1003,7 +1003,7 @@ pub extern fn indy_add_cts_to_msg(
 
     let res = prepare_result!(result);
 
-    trace!("indy_post_pc_packed_msg: <<< res: {:?}", res);
+    trace!("indy_collapse_ciphertext: <<< res: {:?}", res);
 
     res
 }

@@ -596,15 +596,15 @@ mod high_cases {
         }
 
         #[test]
-        fn indy_crypto_post_pc_packed_msg_works() {
+        fn indy_crypto_collapse_ciphertext_works() {
             let (wallet_handle, verkey) = setup_with_key();
             let verkey_1 = crypto::create_key(wallet_handle, None).unwrap();
             let receiver_key = serde_json::to_string(&vec![verkey_1]).unwrap();
             let res_1 = crypto::pack_message(wallet_handle, MESSAGE.as_bytes(), &receiver_key, Some(&verkey)).unwrap();
             let p1 = String::from_utf8(res_1.clone()).unwrap();
-            let res_2 = crypto::post_pc_packed_msg(&res_1).unwrap();
+            let res_2 = crypto::collapse_ciphertext(&res_1).unwrap();
             let p2 = String::from_utf8(res_2.clone()).unwrap();
-            let res_3 = crypto::post_pc_packed_msg(&res_2).unwrap();
+            let res_3 = crypto::collapse_ciphertext(&res_2).unwrap();
             let p3 = String::from_utf8(res_3.clone()).unwrap();
             println!("p1={}", &p1);
             println!("p2={}", &p2);
@@ -621,7 +621,7 @@ mod high_cases {
             let receiver_key = serde_json::to_string(&vec![verkey_1]).unwrap();
             let res_1 = crypto::pack_message(wallet_handle, MESSAGE.as_bytes(), &receiver_key, Some(&verkey)).unwrap();
             let p1 = String::from_utf8(res_1.clone()).unwrap();
-            let res_2 = crypto::post_pc_packed_msg(&res_1).unwrap();
+            let res_2 = crypto::collapse_ciphertext(&res_1).unwrap();
             let p2 = String::from_utf8(res_2.clone()).unwrap();
             let (res_3, res_4) = crypto::remove_cts_from_msg(&res_2).unwrap();
             let p3 = String::from_utf8(res_3.clone()).unwrap();
@@ -646,7 +646,7 @@ mod high_cases {
             let receiver_key = serde_json::to_string(&vec![verkey_1]).unwrap();
             let (typ, to) = (String::from("forward"), String::from("someone"));
             let res_1 = crypto::pack_message(wallet_handle, MESSAGE.as_bytes(), &receiver_key, Some(&verkey)).unwrap();
-            let res_2 = crypto::post_pc_packed_msg(&res_1).unwrap();
+            let res_2 = crypto::collapse_ciphertext(&res_1).unwrap();
             let res_3 = crypto::forward_msg_with_cd(&typ, &to, &res_2).unwrap();
             let p1 = String::from_utf8(res_1.clone()).unwrap();
             let p2 = String::from_utf8(res_2.clone()).unwrap();
@@ -685,7 +685,7 @@ mod high_cases {
                                           &receiver_key_B4, Some(&verkey_A1)).unwrap();
             println!("M1_len={}", &M1.len());
 
-            let M2 = crypto::post_pc_packed_msg(&M1).unwrap();
+            let M2 = crypto::collapse_ciphertext(&M1).unwrap();
 
             // A.1 creates forward message for B.4
             let M3 = crypto::forward_msg_with_cd(&typ, &to, &M2).unwrap();
@@ -704,7 +704,7 @@ mod high_cases {
             let p4 = String::from_utf8(M4.clone()).unwrap();
             //println!("p4={}", &p4);
 
-            let M5 = crypto::post_pc_packed_msg(&M4).unwrap();
+            let M5 = crypto::collapse_ciphertext(&M4).unwrap();
             println!("M5_len={}", &M5.len());
             let p5 = String::from_utf8(M5.clone()).unwrap();
             //println!("p5={}", &p5);
@@ -741,7 +741,7 @@ mod high_cases {
             let p9 = String::from_utf8(M9.clone()).unwrap();
             //println!("p9={}", &p9);
 
-            let M10 = crypto::pre_pc_packed_msg(&M9).unwrap();
+            let M10 = crypto::expand_ciphertext(&M9).unwrap();
             let p10 = String::from_utf8(M10.clone()).unwrap();
             //println!("p10={}", &p10);
 
@@ -761,7 +761,7 @@ mod high_cases {
             let p12 = String::from_utf8(M12.clone()).unwrap();
             //println!("p12={}", &p12);
 
-            let M13 = crypto::pre_pc_packed_msg(&M12).unwrap();
+            let M13 = crypto::expand_ciphertext(&M12).unwrap();
             let p13 = String::from_utf8(M13.clone()).unwrap();
             //println!("p13={}", &p13);
 
