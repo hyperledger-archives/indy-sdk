@@ -797,7 +797,7 @@ pub extern fn indy_collapse_ciphertext(
 
     trace!("indy_collapse_ciphertext: entities >>> message: {:?}, message_len {:?}", message, message_len);
 
-    let result = CommandExecutor::instance().send(Command::Crypto(CryptoCommand::PostPCPackedMessage(
+    let result = CommandExecutor::instance().send(Command::Crypto(CryptoCommand::CollapseCiphertext(
         message,
         Box::new(move |result| {
             let (err, jwe) = prepare_result_1!(result, Vec::new());
@@ -920,7 +920,7 @@ pub extern fn indy_expand_ciphertext(
 
     trace!("indy_expand_ciphertext: entities >>> message: {:?}, message_len {:?}", message, message_len);
 
-    let result = CommandExecutor::instance().send(Command::Crypto(CryptoCommand::PrePCPackedMessage(
+    let result = CommandExecutor::instance().send(Command::Crypto(CryptoCommand::ExpandCiphertext(
         message,
         Box::new(move |result| {
             let (err, jwe) = prepare_result_1!(result, Vec::new());

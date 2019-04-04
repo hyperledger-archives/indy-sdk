@@ -94,7 +94,7 @@ pub enum CryptoCommand {
         WalletHandle,
         Box<Fn(IndyResult<Vec<u8>>) + Send>,
     ),
-    PostPCPackedMessage(
+    CollapseCiphertext(
         Vec<u8>, // packed message
         Box<Fn(IndyResult<Vec<u8>>) + Send>,
     ),
@@ -104,7 +104,7 @@ pub enum CryptoCommand {
         Vec<u8>, // packed message
         Box<Fn(IndyResult<Vec<u8>>) + Send>,
     ),
-    PrePCPackedMessage(
+    ExpandCiphertext(
         Vec<u8>, // packed message
         Box<Fn(IndyResult<Vec<u8>>) + Send>,
     ),
@@ -181,7 +181,7 @@ impl CryptoCommandExecutor {
                 info!("UnpackMessage command received");
                 cb(self.unpack_msg(jwe_json, wallet_handle));
             }
-            CryptoCommand::PostPCPackedMessage(message, cb) => {
+            CryptoCommand::CollapseCiphertext(message, cb) => {
                 info!("PostPCPackedMessage command received");
                 // TODO: Don't take ownership of message but borrow it
                 cb(Self::collapse_ciphertext(&message));
@@ -191,7 +191,7 @@ impl CryptoCommandExecutor {
                 // TODO: Don't take ownership of message but borrow it
                 cb(Self::forward_msg_with_cd(&typ, &to, &message));
             }
-            CryptoCommand::PrePCPackedMessage(message, cb) => {
+            CryptoCommand::ExpandCiphertext(message, cb) => {
                 info!("PrePCPackedMessage command received");
                 // TODO: Don't take ownership of message but borrow it
                 cb(Self::expand_ciphertext(&message));
@@ -599,7 +599,8 @@ impl CryptoCommandExecutor {
         }
     }
 
-    // This can probably be removed and moved to test
+    /// Create a Forward message after detaching ciphertexts from a `JWEWithCD` message and
+    /// attaching ciphertexts to the Froward message
     pub fn forward_msg_with_cd(typ: &str, to: &str, packed_msg: &[u8]) -> IndyResult<Vec<u8>> {
         let mut jwe_cd_struct: JWEWithCD = serde_json::from_slice(packed_msg).map_err(|err| {
             err_msg(IndyErrorKind::InvalidStructure, format!(

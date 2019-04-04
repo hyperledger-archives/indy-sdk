@@ -478,32 +478,24 @@ mod high_cases {
         use super::*;
         use serde_json::Value;
 
-        #[derive(Clone, Serialize, Deserialize, Debug, PartialEq, PartialOrd)]
-        pub struct Forward1 {
-            #[serde(rename = "@type")]
-            msg_type: String,
-            #[serde(rename = "@fwd")]
-            fwd: String,
-            #[serde(rename = "@msg")]
-            msg: Vec<u8>,
-        }
-
-        #[derive(Clone, Serialize, Deserialize, Debug, PartialEq, PartialOrd)]
-        pub struct Forward2 {
-            #[serde(rename = "@type")]
-            msg_type: String,
-            #[serde(rename = "@fwd")]
-            fwd: String,
-            #[serde(rename = "@msg")]
-            msg: String,
-        }
-
         #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
         pub struct UnpackMessage {
             pub message: String,
             pub recipient_verkey: String,
             #[serde(skip_serializing_if = "Option::is_none")]
             pub sender_verkey: Option<String>
+        }
+
+        #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
+        pub struct JWEWithCD {
+            pub protected: String,
+            pub iv: String,
+            pub ciphertext: String,
+            pub tag: String,
+            #[serde(default)]
+            #[serde(skip_serializing_if = "Option::is_none")]
+            #[serde(rename = "~cyphertexts")]
+            pub ciphertexts: Option<String>
         }
 
         fn extract_forward_msg(msg: &[u8]) -> Vec<u8> {
@@ -518,6 +510,27 @@ mod high_cases {
             crypto::add_cts_to_msg(&M9_4, &cts3).unwrap()
         }
 
+        fn compare_json_strings_for_equality(json1: &str, json2: &str) -> bool {
+            let mut json1: Value = serde_json::from_str(&json1).unwrap();
+            let mut json2: Value = serde_json::from_str(&json2).unwrap();
+            let json1_obj = json1.as_object_mut().unwrap();
+            let json2_obj = json2.as_object_mut().unwrap();
+            
+            if json1_obj.len() != json2_obj.len() {
+                return false
+            }
+
+            for k in json1_obj.keys() {
+                if !json2_obj.contains_key(k) {
+                    return false
+                }
+                if json1_obj.get(k).unwrap() != json2_obj.get(k).unwrap() {
+                    return false
+                }
+            }
+            true
+        }
+
         #[test]
         fn indy_pack_message_authcrypt_works() {
             let (wallet_handle, verkey) = setup_with_key();
@@ -526,89 +539,18 @@ mod high_cases {
             let message = "Hello World".as_bytes();
             let res = crypto::pack_message(wallet_handle, message, &receiver_keys, Some(&verkey));
             assert!(res.is_ok());
-            let x = res.unwrap();
-            println!("x_len={:?}", x.len());
-            println!("x={:?}", &x);
             utils::tear_down_with_wallet(wallet_handle);
         }
 
         #[test]
-        fn indy_pack_message_authcrypt_repeated_works() {
-            let (wallet_handle, verkey) = setup_with_key();
-            let rec_key_vec = vec![VERKEY_MY1, VERKEY_MY2, VERKEY_TRUSTEE];
-            let receiver_keys_1 = serde_json::to_string(&rec_key_vec[..1]).unwrap();
-            let receiver_keys_2 = serde_json::to_string(&rec_key_vec[1..2]).unwrap();
-            let receiver_keys_3 = serde_json::to_string(&rec_key_vec[2..3]).unwrap();
-            let m0 = "Hello World".as_bytes().to_vec();
-            let mut m00 = vec![];
-            for _ in 0..10000 {
-                m00.extend_from_slice(&m0);
-            }
-            let message = &m00;
-            let res_1 = crypto::pack_message(wallet_handle, message, &receiver_keys_1, Some(&verkey));
-            assert!(res_1.is_ok());
-            let m2 = res_1.unwrap();
-            let res_2 = crypto::pack_message(wallet_handle, &m2, &receiver_keys_2, Some(&verkey));
-            assert!(res_2.is_ok());
-            let m3 = res_2.unwrap();
-            let res_3 = crypto::pack_message(wallet_handle, &m3, &receiver_keys_3, Some(&verkey));
-            assert!(res_3.is_ok());
-            let m4 = res_3.unwrap();
-            println!("message={}", message.len());
-            println!("m2={}", m2.len());
-            println!("m3={}", m3.len());
-            println!("m4={}", m4.len());
-            utils::tear_down_with_wallet(wallet_handle);
-        }
-
-        #[test]
-        fn indy_crypto_pack_fwd_works() {
-            let (wallet_handle, verkey) = setup_with_key();
-            let rec_key_vec = vec![VERKEY_MY1, VERKEY_MY2, VERKEY_TRUSTEE];
-            let receiver_keys_1 = serde_json::to_string(&rec_key_vec[..1]).unwrap();
-            let res_1 = crypto::pack_message(wallet_handle, MESSAGE.as_bytes(), &receiver_keys_1, Some(&verkey)).unwrap();
-            println!("res_1_len={:?}", res_1.len());
-            //println!("res_1={:?}", &res_1);
-            let y = serde_json::to_string(&res_1).unwrap();
-            println!("y_len={:?}", y.len());
-            //println!("y={:?}", &y);
-
-            let fwd1 = Forward1 {
-                msg_type: "f".to_string(),
-                fwd: "a".to_string(),
-                msg: res_1.clone()
-            };
-            let f1 = serde_json::to_string(&fwd1).unwrap();
-            //println!("f1_len={:?}", f1.len());
-            //println!("f1={:?}", &f1);
-
-            let fwd2 = Forward2 {
-                msg_type: "f".to_string(),
-                fwd: "a".to_string(),
-                msg: String::from_utf8(res_1).unwrap()
-            };
-            let f2 = serde_json::to_string(&fwd2).unwrap();
-            //println!("f2_len={:?}", f2.len());
-            //println!("f2={:?}", &f2);
-
-
-            utils::tear_down_with_wallet(wallet_handle);
-        }
-
-        #[test]
-        fn indy_crypto_collapse_ciphertext_works() {
+        fn indy_crypto_collapse_ciphertext_is_idempotent() {
+            // Apply `collapse_ciphertext` repeatedly on a message, only first application should have an effect.
             let (wallet_handle, verkey) = setup_with_key();
             let verkey_1 = crypto::create_key(wallet_handle, None).unwrap();
             let receiver_key = serde_json::to_string(&vec![verkey_1]).unwrap();
             let res_1 = crypto::pack_message(wallet_handle, MESSAGE.as_bytes(), &receiver_key, Some(&verkey)).unwrap();
-            let p1 = String::from_utf8(res_1.clone()).unwrap();
             let res_2 = crypto::collapse_ciphertext(&res_1).unwrap();
-            let p2 = String::from_utf8(res_2.clone()).unwrap();
             let res_3 = crypto::collapse_ciphertext(&res_2).unwrap();
-            let p3 = String::from_utf8(res_3.clone()).unwrap();
-            println!("p1={}", &p1);
-            println!("p2={}", &p2);
-            println!("p3={}", &p3);
             assert_eq!(res_2, res_3);
 
             utils::tear_down_with_wallet(wallet_handle);
@@ -623,39 +565,16 @@ mod high_cases {
             let p1 = String::from_utf8(res_1.clone()).unwrap();
             let res_2 = crypto::collapse_ciphertext(&res_1).unwrap();
             let p2 = String::from_utf8(res_2.clone()).unwrap();
+
             let (res_3, res_4) = crypto::remove_cts_from_msg(&res_2).unwrap();
-            let p3 = String::from_utf8(res_3.clone()).unwrap();
-            let p4 = String::from_utf8(res_4.clone()).unwrap();
-            //println!("p1={}", &p1);
-            println!("p2={}", &p2);
-            //println!("p3={}", &p3);
-            //println!("p4={}", &p4);
-            // Adding cts to a message already containing cts gives erros
+
+            // Adding cts to a message already containing cts gives error
             assert!(crypto::add_cts_to_msg(&res_2, &res_4).is_err());
+
+            // Adding cts to a message got by removing cts
             let res_5 = crypto::add_cts_to_msg(&res_3, &res_4).unwrap();
             let p5 = String::from_utf8(res_5.clone()).unwrap();
-            println!("p5={}", &p5);
-            // TODO: Need to compare JSON without considering order of keys
-            //assert_eq!(res_2, res_5)
-        }
-
-        #[test]
-        fn indy_crypto_forward_msg_with_cd_works() {
-            let (wallet_handle, verkey) = setup_with_key();
-            let verkey_1 = crypto::create_key(wallet_handle, None).unwrap();
-            let receiver_key = serde_json::to_string(&vec![verkey_1]).unwrap();
-            let (typ, to) = (String::from("forward"), String::from("someone"));
-            let res_1 = crypto::pack_message(wallet_handle, MESSAGE.as_bytes(), &receiver_key, Some(&verkey)).unwrap();
-            let res_2 = crypto::collapse_ciphertext(&res_1).unwrap();
-            let res_3 = crypto::forward_msg_with_cd(&typ, &to, &res_2).unwrap();
-            let p1 = String::from_utf8(res_1.clone()).unwrap();
-            let p2 = String::from_utf8(res_2.clone()).unwrap();
-            let p3 = String::from_utf8(res_3.clone()).unwrap();
-            println!("p1={}", &p1);
-            println!("p2={}", &p2);
-            println!("p3={}", &p3);
-
-            utils::tear_down_with_wallet(wallet_handle);
+            assert!(compare_json_strings_for_equality(&p2, &p5))
         }
 
         #[test]
@@ -675,7 +594,7 @@ mod high_cases {
                 large_message.push_str(&MESSAGE);
             }
 
-            println!("originla message len={}", &large_message.len());
+            println!("original message len={}", &large_message.len());
 
             let m = &large_message.as_bytes();
 
