@@ -612,6 +612,30 @@
                                   completion:(void (^)(NSError *error, NSString *requestJSON))completion;
 
 /**
+ Builds a GET_AUTH_RULE request. Request to get authentication rules for ledger transactions.
+
+ NOTE: Either none or all transaction related parameters must be specified (`old_value` can be skipped for `ADD` action).
+     * none - to get all authentication rules for all ledger transactions
+     * all - to get authentication rules for specific action (`old_value` can be skipped for `ADD` action)
+
+ @param submitterDid (Optional) DID of the submitter stored in secured Wallet.
+ @param txnType - (Optional) target ledger transaction alias or associated value.
+ @param action - (Optional) target action type. Can be either "ADD" or "EDIT".
+ @param field - (Optional) target transaction field.
+ @param oldValue - (Optional) old value of field, which can be changed to a new_value (must be specified for EDIT action).
+ @param newValue - (Optional) new value that can be used to fill the field.
+
+ @param completion Callback that takes command result as parameter. Returns request result as json.
+ */
++ (void)buildGetAuthRuleRequestWithSubmitterDid:(NSString *)submitterDid
+                                        txnType:(NSString *)txnType
+                                         action:(NSString *)action
+                                          field:(NSString *)field
+                                       oldValue:(NSString *)oldValue
+                                       newValue:(NSString *)newValue
+                                     completion:(void (^)(NSError *error, NSString *requestJSON))completion;
+
+/**
  Parse transaction response to fetch metadata.
  The important use case for this method is validation of Node's response freshens.
 
