@@ -5,7 +5,7 @@ import com.evernym.sdk.vcx.connection.ConnectionApi;
 import com.evernym.sdk.vcx.credential.CredentialApi;
 import com.evernym.sdk.vcx.credentialDef.CredentialDefApi;
 import com.jayway.jsonpath.JsonPath;
-import java9.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletableFuture;
 import org.awaitility.Awaitility;
 
 import java.util.concurrent.ExecutionException;
