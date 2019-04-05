@@ -657,9 +657,9 @@ fn multi_steps_create_revocation_credential(pool : &Pool, issuer: &Issuer, prove
 #[cfg(any(feature = "force_full_interaction_tests", not(target_os = "android")))]
 #[test]
 fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_post_entry_three_times_proving_first() {
-    utils::setup("anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_post_entry_three_times_proving_first");
+    utils::setup("anoncreds_4711");
 
-    let pool = Pool::new("anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_post_entry_three_times_proving_first");
+    let pool = Pool::new("anoncreds_4711");
 
     let mut issuer = Issuer::new(&pool);
 
@@ -728,7 +728,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_po
 
     pool.close();
 
-    utils::tear_down("anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_post_entry_three_times_proving_first");
+    utils::tear_down("anoncreds_4711");
 }
 
 #[cfg(feature = "revocation_tests")]
