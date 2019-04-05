@@ -515,7 +515,7 @@ mod high_cases {
             let mut json2: Value = serde_json::from_str(&json2).unwrap();
             let json1_obj = json1.as_object_mut().unwrap();
             let json2_obj = json2.as_object_mut().unwrap();
-            
+
             if json1_obj.len() != json2_obj.len() {
                 return false
             }

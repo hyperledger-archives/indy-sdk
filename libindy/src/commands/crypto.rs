@@ -19,7 +19,6 @@ use utils::crypto::base64;
 use utils::crypto::chacha20poly1305_ietf;
 use domain::crypto::combo_box::ComboBox;
 use api::WalletHandle;
-use std::mem::uninitialized;
 use serde_json::Value;
 
 
