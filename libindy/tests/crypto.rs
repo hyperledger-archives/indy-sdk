@@ -691,7 +691,8 @@ mod load {
 
     use super::*;
 
-    use self::rand::{Rng, OsRng};
+    use self::rand::RngCore;
+    use self::rand::rngs::OsRng;
 
     use std::cmp::max;
     use std::thread;
