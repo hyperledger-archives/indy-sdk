@@ -194,7 +194,7 @@ pub  extern fn indy_get_key_metadata(command_handle: CommandHandle,
 /// Wallet*
 /// Crypto*
 #[no_mangle]
-pub  extern fn ursa_sign(command_handle: CommandHandle,
+pub  extern fn indy_crypto_sign(command_handle: CommandHandle,
                                 wallet_handle: WalletHandle,
                                 signer_vk: *const c_char,
                                 message_raw: *const u8,
@@ -203,14 +203,14 @@ pub  extern fn ursa_sign(command_handle: CommandHandle,
                                                      err: ErrorCode,
                                                      signature_raw: *const u8,
                                                      signature_len: u32)>) -> ErrorCode {
-    trace!("ursa_sign: >>> wallet_handle: {:?}, signer_vk: {:?}, message_raw: {:?}, message_len: {:?}",
+    trace!("indy_crypto_sign: >>> wallet_handle: {:?}, signer_vk: {:?}, message_raw: {:?}, message_len: {:?}",
            wallet_handle, signer_vk, message_raw, message_len);
 
     check_useful_c_str!(signer_vk, ErrorCode::CommonInvalidParam3);
     check_useful_c_byte_array!(message_raw, message_len, ErrorCode::CommonInvalidParam4, ErrorCode::CommonInvalidParam5);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
-    trace!("ursa_sign: entities >>> wallet_handle: {:?}, signer_vk: {:?}, message_raw: {:?}, message_len: {:?}",
+    trace!("indy_crypto_sign: entities >>> wallet_handle: {:?}, signer_vk: {:?}, message_raw: {:?}, message_len: {:?}",
            wallet_handle, signer_vk, message_raw, message_len);
 
     let result = CommandExecutor::instance()
@@ -220,7 +220,7 @@ pub  extern fn ursa_sign(command_handle: CommandHandle,
             message_raw,
             Box::new(move |result| {
                 let (err, signature) = prepare_result_1!(result, Vec::new());
-                trace!("ursa_sign: signature: {:?}", signature);
+                trace!("indy_crypto_sign: signature: {:?}", signature);
                 let (signature_raw, signature_len) = ctypes::vec_to_pointer(&signature);
                 cb(command_handle, err, signature_raw, signature_len)
             })
@@ -228,7 +228,7 @@ pub  extern fn ursa_sign(command_handle: CommandHandle,
 
     let res = prepare_result!(result);
 
-    trace!("ursa_sign: <<< res: {:?}", res);
+    trace!("indy_crypto_sign: <<< res: {:?}", res);
 
     res
 }
@@ -256,7 +256,7 @@ pub  extern fn ursa_sign(command_handle: CommandHandle,
 /// Ledger*
 /// Crypto*
 #[no_mangle]
-pub  extern fn ursa_verify(command_handle: CommandHandle,
+pub  extern fn indy_crypto_verify(command_handle: CommandHandle,
                                   signer_vk: *const c_char,
                                   message_raw: *const u8,
                                   message_len: u32,
@@ -265,7 +265,7 @@ pub  extern fn ursa_verify(command_handle: CommandHandle,
                                   cb: Option<extern fn(command_handle_: CommandHandle,
                                                        err: ErrorCode,
                                                        valid: bool)>) -> ErrorCode {
-    trace!("ursa_verify: >>> signer_vk: {:?}, message_raw: {:?}, message_len: {:?}, signature_raw: {:?}, signature_len: {:?}",
+    trace!("indy_crypto_verify: >>> signer_vk: {:?}, message_raw: {:?}, message_len: {:?}, signature_raw: {:?}, signature_len: {:?}",
            signer_vk, message_raw, message_len, signature_raw, signature_len);
 
     check_useful_c_str!(signer_vk, ErrorCode::CommonInvalidParam2);
@@ -273,7 +273,7 @@ pub  extern fn ursa_verify(command_handle: CommandHandle,
     check_useful_c_byte_array!(signature_raw, signature_len, ErrorCode::CommonInvalidParam5, ErrorCode::CommonInvalidParam6);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
-    trace!("ursa_verify: entities >>> signer_vk: {:?}, message_raw: {:?}, message_len: {:?}, signature_raw: {:?}, signature_len: {:?}",
+    trace!("indy_crypto_verify: entities >>> signer_vk: {:?}, message_raw: {:?}, message_len: {:?}, signature_raw: {:?}, signature_len: {:?}",
            signer_vk, message_raw, message_len, signature_raw, signature_len);
 
     let result = CommandExecutor::instance()
@@ -283,14 +283,14 @@ pub  extern fn ursa_verify(command_handle: CommandHandle,
             signature_raw,
             Box::new(move |result| {
                 let (err, valid) = prepare_result_1!(result, false);
-                trace!("ursa_verify: valid: {:?}", valid);
+                trace!("indy_crypto_verify: valid: {:?}", valid);
                 cb(command_handle, err, valid)
             })
         )));
 
     let res = prepare_result!(result);
 
-    trace!("ursa_verify: <<< res: {:?}", res);
+    trace!("indy_crypto_verify: <<< res: {:?}", res);
 
     res
 }
@@ -325,7 +325,7 @@ pub  extern fn ursa_verify(command_handle: CommandHandle,
 /// Ledger*
 /// Crypto*
 #[no_mangle]
-pub  extern fn ursa_auth_crypt(command_handle: CommandHandle,
+pub  extern fn indy_crypto_auth_crypt(command_handle: CommandHandle,
                                       wallet_handle: WalletHandle,
                                       sender_vk: *const c_char,
                                       recipient_vk: *const c_char,
@@ -335,7 +335,7 @@ pub  extern fn ursa_auth_crypt(command_handle: CommandHandle,
                                                            err: ErrorCode,
                                                            encrypted_msg: *const u8,
                                                            encrypted_len: u32)>) -> ErrorCode {
-    trace!("ursa_auth_crypt: >>> wallet_handle: {:?}, sender_vk: {:?}, recipient_vk: {:?}, msg_data: {:?}, msg_len: {:?}",
+    trace!("indy_crypto_auth_crypt: >>> wallet_handle: {:?}, sender_vk: {:?}, recipient_vk: {:?}, msg_data: {:?}, msg_len: {:?}",
            wallet_handle, sender_vk, recipient_vk, msg_data, msg_len);
 
     check_useful_c_str!(sender_vk, ErrorCode::CommonInvalidParam3);
@@ -343,7 +343,7 @@ pub  extern fn ursa_auth_crypt(command_handle: CommandHandle,
     check_useful_c_byte_array!(msg_data, msg_len, ErrorCode::CommonInvalidParam5, ErrorCode::CommonInvalidParam6);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
-    trace!("ursa_auth_crypt: entities >>> wallet_handle: {:?}, sender_vk: {:?}, recipient_vk: {:?}, msg_data: {:?}, msg_len: {:?}",
+    trace!("indy_crypto_auth_crypt: entities >>> wallet_handle: {:?}, sender_vk: {:?}, recipient_vk: {:?}, msg_data: {:?}, msg_len: {:?}",
            wallet_handle, sender_vk, recipient_vk, msg_data, msg_len);
 
     let result = CommandExecutor::instance()
@@ -354,7 +354,7 @@ pub  extern fn ursa_auth_crypt(command_handle: CommandHandle,
             msg_data,
             Box::new(move |result| {
                 let (err, encrypted_msg) = prepare_result_1!(result, Vec::new());
-                trace!("ursa_auth_crypt: encrypted_msg: {:?}", encrypted_msg);
+                trace!("indy_crypto_auth_crypt: encrypted_msg: {:?}", encrypted_msg);
                 let (encrypted_msg_raw, encrypted_msg_len) = ctypes::vec_to_pointer(&encrypted_msg);
                 cb(command_handle, err, encrypted_msg_raw, encrypted_msg_len)
             })
@@ -362,7 +362,7 @@ pub  extern fn ursa_auth_crypt(command_handle: CommandHandle,
 
     let res = prepare_result!(result);
 
-    trace!("ursa_auth_crypt: <<< res: {:?}", res);
+    trace!("indy_crypto_auth_crypt: <<< res: {:?}", res);
 
     res
 }
@@ -395,7 +395,7 @@ pub  extern fn ursa_auth_crypt(command_handle: CommandHandle,
 /// Wallet*
 /// Crypto*
 #[no_mangle]
-pub  extern fn ursa_auth_decrypt(command_handle: CommandHandle,
+pub  extern fn indy_crypto_auth_decrypt(command_handle: CommandHandle,
                                         wallet_handle: WalletHandle,
                                         recipient_vk: *const c_char,
                                         encrypted_msg: *const u8,
@@ -405,14 +405,14 @@ pub  extern fn ursa_auth_decrypt(command_handle: CommandHandle,
                                                              sender_vk: *const c_char,
                                                              msg_data: *const u8,
                                                              msg_len: u32)>) -> ErrorCode {
-    trace!("ursa_auth_decrypt: >>> wallet_handle: {:?}, recipient_vk: {:?}, encrypted_msg: {:?}, encrypted_len: {:?}",
+    trace!("indy_crypto_auth_decrypt: >>> wallet_handle: {:?}, recipient_vk: {:?}, encrypted_msg: {:?}, encrypted_len: {:?}",
            wallet_handle, recipient_vk, encrypted_msg, encrypted_len);
 
     check_useful_c_str!(recipient_vk, ErrorCode::CommonInvalidParam3);
     check_useful_c_byte_array!(encrypted_msg, encrypted_len, ErrorCode::CommonInvalidParam4, ErrorCode::CommonInvalidParam5);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
-    trace!("ursa_auth_decrypt: entities >>> wallet_handle: {:?}, recipient_vk: {:?}, encrypted_msg: {:?}, encrypted_len: {:?}",
+    trace!("indy_crypto_auth_decrypt: entities >>> wallet_handle: {:?}, recipient_vk: {:?}, encrypted_msg: {:?}, encrypted_len: {:?}",
            wallet_handle, recipient_vk, encrypted_msg, encrypted_len);
 
     let result = CommandExecutor::instance()
@@ -422,7 +422,7 @@ pub  extern fn ursa_auth_decrypt(command_handle: CommandHandle,
             encrypted_msg,
             Box::new(move |result| {
                 let (err, sender_vk, msg) = prepare_result_2!(result, String::new(), Vec::new());
-                trace!("ursa_auth_decrypt: sender_vk: {:?}, msg: {:?}", sender_vk, msg);
+                trace!("indy_crypto_auth_decrypt: sender_vk: {:?}, msg: {:?}", sender_vk, msg);
                 let (msg_data, msg_len) = ctypes::vec_to_pointer(&msg);
                 let sender_vk = ctypes::string_to_cstring(sender_vk);
                 cb(command_handle, err, sender_vk.as_ptr(), msg_data, msg_len)
@@ -431,7 +431,7 @@ pub  extern fn ursa_auth_decrypt(command_handle: CommandHandle,
 
     let res = prepare_result!(result);
 
-    trace!("ursa_auth_decrypt: <<< res: {:?}", res);
+    trace!("indy_crypto_auth_decrypt: <<< res: {:?}", res);
 
     res
 }
@@ -463,7 +463,7 @@ pub  extern fn ursa_auth_decrypt(command_handle: CommandHandle,
 /// Ledger*
 /// Crypto*
 #[no_mangle]
-pub  extern fn ursa_anon_crypt(command_handle: CommandHandle,
+pub  extern fn indy_crypto_anon_crypt(command_handle: CommandHandle,
                                       recipient_vk: *const c_char,
                                       msg_data: *const u8,
                                       msg_len: u32,
@@ -471,13 +471,13 @@ pub  extern fn ursa_anon_crypt(command_handle: CommandHandle,
                                                            err: ErrorCode,
                                                            encrypted_msg: *const u8,
                                                            encrypted_len: u32)>) -> ErrorCode {
-    trace!("ursa_anon_crypt: >>> recipient_vk: {:?}, msg_data: {:?}, msg_len: {:?}", recipient_vk, msg_data, msg_len);
+    trace!("indy_crypto_anon_crypt: >>> recipient_vk: {:?}, msg_data: {:?}, msg_len: {:?}", recipient_vk, msg_data, msg_len);
 
     check_useful_c_str!(recipient_vk, ErrorCode::CommonInvalidParam2);
     check_useful_c_byte_array!(msg_data, msg_len, ErrorCode::CommonInvalidParam3, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
-    trace!("ursa_anon_crypt: entities >>> recipient_vk: {:?}, msg_data: {:?}, msg_len: {:?}", recipient_vk, msg_data, msg_len);
+    trace!("indy_crypto_anon_crypt: entities >>> recipient_vk: {:?}, msg_data: {:?}, msg_len: {:?}", recipient_vk, msg_data, msg_len);
 
     let result = CommandExecutor::instance()
         .send(Command::Crypto(CryptoCommand::AnonymousEncrypt(
@@ -485,7 +485,7 @@ pub  extern fn ursa_anon_crypt(command_handle: CommandHandle,
             msg_data,
             Box::new(move |result| {
                 let (err, encrypted_msg) = prepare_result_1!(result, Vec::new());
-                trace!("ursa_anon_crypt: encrypted_msg: {:?}", encrypted_msg);
+                trace!("indy_crypto_anon_crypt: encrypted_msg: {:?}", encrypted_msg);
                 let (encrypted_msg_raw, encrypted_msg_len) = ctypes::vec_to_pointer(&encrypted_msg);
                 cb(command_handle, err, encrypted_msg_raw, encrypted_msg_len)
             })
@@ -493,7 +493,7 @@ pub  extern fn ursa_anon_crypt(command_handle: CommandHandle,
 
     let res = prepare_result!(result);
 
-    trace!("ursa_anon_crypt: <<< res: {:?}", res);
+    trace!("indy_crypto_anon_crypt: <<< res: {:?}", res);
 
     res
 }
@@ -525,7 +525,7 @@ pub  extern fn ursa_anon_crypt(command_handle: CommandHandle,
 /// Wallet*
 /// Crypto*
 #[no_mangle]
-pub  extern fn ursa_anon_decrypt(command_handle: CommandHandle,
+pub  extern fn indy_crypto_anon_decrypt(command_handle: CommandHandle,
                                         wallet_handle: WalletHandle,
                                         recipient_vk: *const c_char,
                                         encrypted_msg: *const u8,
@@ -534,14 +534,14 @@ pub  extern fn ursa_anon_decrypt(command_handle: CommandHandle,
                                                              err: ErrorCode,
                                                              msg_data: *const u8,
                                                              msg_len: u32)>) -> ErrorCode {
-    trace!("ursa_anon_decrypt: >>> wallet_handle: {:?}, recipient_vk: {:?}, encrypted_msg: {:?}, encrypted_len: {:?}",
+    trace!("indy_crypto_anon_decrypt: >>> wallet_handle: {:?}, recipient_vk: {:?}, encrypted_msg: {:?}, encrypted_len: {:?}",
            wallet_handle, recipient_vk, encrypted_msg, encrypted_len);
 
     check_useful_c_str!(recipient_vk, ErrorCode::CommonInvalidParam3);
     check_useful_c_byte_array!(encrypted_msg, encrypted_len, ErrorCode::CommonInvalidParam4, ErrorCode::CommonInvalidParam5);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
-    trace!("ursa_anon_decrypt: entities >>> wallet_handle: {:?}, recipient_vk: {:?}, encrypted_msg: {:?}, encrypted_len: {:?}",
+    trace!("indy_crypto_anon_decrypt: entities >>> wallet_handle: {:?}, recipient_vk: {:?}, encrypted_msg: {:?}, encrypted_len: {:?}",
            wallet_handle, recipient_vk, encrypted_msg, encrypted_len);
 
     let result = CommandExecutor::instance()
@@ -551,7 +551,7 @@ pub  extern fn ursa_anon_decrypt(command_handle: CommandHandle,
             encrypted_msg,
             Box::new(move |result| {
                 let (err, msg) = prepare_result_1!(result, Vec::new());
-                trace!("ursa_anon_decrypt: msg: {:?}", msg);
+                trace!("indy_crypto_anon_decrypt: msg: {:?}", msg);
                 let (msg_data, msg_len) = ctypes::vec_to_pointer(&msg);
                 cb(command_handle, err, msg_data, msg_len)
             })
@@ -559,7 +559,7 @@ pub  extern fn ursa_anon_decrypt(command_handle: CommandHandle,
 
     let res = prepare_result!(result);
 
-    trace!("ursa_anon_decrypt: <<< res: {:?}", res);
+    trace!("indy_crypto_anon_decrypt: <<< res: {:?}", res);
 
     res
 }
