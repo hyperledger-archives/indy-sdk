@@ -21,6 +21,7 @@ Added `protocol_type` field to VCX provisioning config with indicates A2A messag
         * [Message Threading](https://github.com/hyperledger/indy-hipe/tree/master/text/0027-message-id-and-threading)
         * [Wire Message](https://github.com/hyperledger/indy-hipe/tree/master/text/0028-wire-message-format).
 * Set default freshness threshold to 600 seconds.
+* Send GET requests to two Nodes.
 * Bugfixes:
     * Restart catchup in case of outdated pool cache.
     * Fixed publishing of nodejs package for VCX wrapper.
