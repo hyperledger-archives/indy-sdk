@@ -3544,7 +3544,7 @@ mod medium_cases {
             }).to_string();
 
             let res = anoncreds::prover_get_credentials_for_proof_req(wallet_handle, &proof_req);
-            assert_code!(ErrorCode::CommonInvalidStructure, res);
+            assert_code!(ErrorCode::Success, res);
 
             wallet::close_wallet(wallet_handle).unwrap();
         }
