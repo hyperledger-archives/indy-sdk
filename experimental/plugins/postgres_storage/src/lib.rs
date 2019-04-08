@@ -140,16 +140,36 @@ pub struct PostgresWallet {}
 
 impl PostgresWallet {
 
+    /// This needs to be called once at the beginning to create the database
+    pub extern fn init(config: *const c_char, credentials: *const c_char) -> ErrorCode {
+        check_useful_c_str!(config, ErrorCode::CommonInvalidState);
+        check_useful_c_str!(credentials, ErrorCode::CommonInvalidState);
+
+        // create Postgres database, and create schema
+        let storage_type = ::postgres_storage::PostgresStorageType::new();
+        let res = storage_type.init_storage(Some(&config), Some(&credentials));
+
+        match res {
+            Ok(_) => ErrorCode::Success,
+            Err(err) => {
+                match err {
+                    WalletStorageError::AlreadyExists => ErrorCode::WalletAlreadyExistsError,
+                    _ => ErrorCode::WalletStorageError
+                }
+            }
+        }
+    }
+
     pub extern fn create(id: *const c_char,
                              config: *const c_char,
                              credentials: *const c_char,
                              metadata: *const c_char) -> ErrorCode {
-        check_useful_c_str!(id, ErrorCode::CommonInvalidState);
-        check_useful_c_str!(config, ErrorCode::CommonInvalidState);
-        check_useful_c_str!(credentials, ErrorCode::CommonInvalidState);
-        check_useful_c_str!(metadata, ErrorCode::CommonInvalidState);
+        check_useful_c_str!(id, ErrorCode::CommonInvalidParam1);
+        check_useful_c_str!(config, ErrorCode::CommonInvalidParam2);
+        check_useful_c_str!(credentials, ErrorCode::CommonInvalidParam3);
+        check_useful_c_str!(metadata, ErrorCode::CommonInvalidParam4);
 
-        // create Postgres database, create schema, and insert metadata
+        // insert metadata for wallet
         let storage_type = ::postgres_storage::PostgresStorageType::new();
         let res = storage_type.create_storage(&id, Some(&config), Some(&credentials), &metadata.as_bytes()[..]);
 
@@ -169,9 +189,9 @@ impl PostgresWallet {
                            config: *const c_char,
                            credentials: *const c_char,
                            handle: *mut i32) -> ErrorCode {
-        check_useful_c_str!(id, ErrorCode::CommonInvalidState);
-        check_useful_c_str!(config, ErrorCode::CommonInvalidState);
-        check_useful_c_str!(credentials, ErrorCode::CommonInvalidState);
+        check_useful_c_str!(id, ErrorCode::CommonInvalidParam1);
+        check_useful_c_str!(config, ErrorCode::CommonInvalidParam2);
+        check_useful_c_str!(credentials, ErrorCode::CommonInvalidParam3);
 
         // open wallet and return handle
         // PostgresStorageType::open_storage(), returns a PostgresStorage that goes into the handle
@@ -996,6 +1016,19 @@ mod tests {
     use std::{slice, ptr};
     use wql::storage::ENCRYPTED_KEY_LEN;
 
+    // We need init() to be the first test run in order to create the wallets database
+    #[test]
+    fn postgres_storage_type_init_works() {
+        _cleanup();
+
+        let config = _wallet_config();
+        let credentials = _wallet_credentials();
+
+        let err = PostgresWallet::init(config.as_ref().map_or(ptr::null(), |x| x.as_ptr()), 
+                                            credentials.as_ref().map_or(ptr::null(), |x| x.as_ptr()));
+        assert_eq!(err, ErrorCode::Success);
+    }
+
     #[test]
     fn postgres_wallet_crud_works() {
         _cleanup();
@@ -1529,7 +1562,7 @@ mod tests {
 
         _close_and_delete_wallet(handle);
     }
-/* TODO unit test for eallet search
+/* TODO unit test for wallet search
     #[test]
     fn postgres_wallet_search_records_works() {
         _cleanup();
