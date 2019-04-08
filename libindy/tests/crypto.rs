@@ -574,7 +574,7 @@ mod high_cases {
             // Adding cts to a message got by removing cts
             let res_5 = crypto::add_cts_to_msg(&res_3, &res_4).unwrap();
             let p5 = String::from_utf8(res_5.clone()).unwrap();
-            assert!(compare_json_strings_for_equality(&p2, &p5))
+            assert!(compare_json_strings_for_equality(&p2, &p5));
 
             utils::tear_down_with_wallet(wallet_handle);
         }
