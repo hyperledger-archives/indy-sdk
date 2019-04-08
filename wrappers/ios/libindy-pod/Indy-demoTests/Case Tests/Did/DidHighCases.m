@@ -432,4 +432,31 @@
     XCTAssertFalse([verkey isEqualToString:abbrVerkey], @"Keys are equal");
 }
 
+// MARK: - List DIDs
+
+- (void)testListDids {
+    // 1. Create did1
+    NSString *did1;
+    ret = [[DidUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
+                                                       myDidJson:@"{}"
+                                                        outMyDid:&did1
+                                                     outMyVerkey:nil];
+    XCTAssertEqual(ret.code, Success, @"DidUtils::createMyDidWithWalletHandle() failed");
+
+    // 2. Create did2
+    NSString *did2;
+    ret = [[DidUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
+                                                       myDidJson:@"{}"
+                                                        outMyDid:&did2
+                                                     outMyVerkey:nil];
+    XCTAssertEqual(ret.code, Success, @"DidUtils::createMyDidWithWalletHandle() failed");
+
+    // 3. List DIDs in wallet
+    NSString *metadata;
+    ret = [[DidUtils sharedInstance] listMyDidsWithMeta:walletHandle metadata:&metadata];
+    XCTAssertEqual(ret.code, Success, @"DidUtils::listMyDidsWithMeta() failed");
+    XCTAssertTrue([metadata containsString:did1], @"Metadata does not contain first DID");
+    XCTAssertTrue([metadata containsString:did2], @"Metadata does not contain second DID");
+}
+
 @end
