@@ -373,7 +373,22 @@ impl Prover {
                 let attribute_value = attribute_value.parse::<i32>()
                     .to_indy(IndyErrorKind::InvalidStructure, format!("Credential attribute value \"{:?}\" is invalid", attribute_value))?;
                 Ok(attribute_value >= predicate.p_value)
-            }
+            },
+            PredicateTypes::GT => {
+                 let attribute_value = attribute_value.parse::<i32>()
+                    .to_indy(IndyErrorKind::InvalidStructure, format!("Credential attribute value \"{:?}\" is invalid", attribute_value))?;
+                 Ok(attribute_value > predicate.p_value)
+             },
+             PredicateTypes::LE => {
+                 let attribute_value = attribute_value.parse::<i32>()
+                    .to_indy(IndyErrorKind::InvalidStructure, format!("Credential attribute value \"{:?}\" is invalid", attribute_value))?;
+                 Ok(attribute_value <= predicate.p_value)
+             },
+             PredicateTypes::LT => {
+                 let attribute_value = attribute_value.parse::<i32>()
+                    .to_indy(IndyErrorKind::InvalidStructure, format!("Credential attribute value \"{:?}\" is invalid", attribute_value))?;
+                 Ok(attribute_value < predicate.p_value)
+             }
         };
 
         trace!("attribute_satisfy_predicate <<< res: {:?}", res);
@@ -431,7 +446,9 @@ impl Prover {
         }
 
         for predicate in req_predicates_for_credential {
-            sub_proof_request_builder.add_predicate(&attr_common_view(&predicate.predicate_info.name), "GE", predicate.predicate_info.p_value)?;
+            let p_type = format!("{}", predicate.predicate_info.p_type);
+
+            sub_proof_request_builder.add_predicate(&attr_common_view(&predicate.predicate_info.name), &p_type, predicate.predicate_info.p_value)?;
         }
 
         let sub_proof_request = sub_proof_request_builder.finalize()?;

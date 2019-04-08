@@ -630,7 +630,7 @@ dependencies = [
  "sodiumoxide 0.0.16 (registry+https://github.com/rust-lang/crates.io-index)",
  "threadpool 1.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "time 0.1.42 (registry+https://github.com/rust-lang/crates.io-index)",
- "ursa 0.1.1-dev-1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ursa 0.1.1-dev-2 (registry+https://github.com/rust-lang/crates.io-index)",
  "uuid 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "zeroize 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "zmq 0.8.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1401,7 +1401,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "ursa"
-version = "0.1.1-dev-1"
+version = "0.1.1-dev-2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "amcl 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1728,7 +1728,7 @@ dependencies = [
 "checksum unicode-width 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)" = "882386231c45df4700b275c7ff55b6f3698780a650026380e72dabe76fa46526"
 "checksum unicode-xid 0.0.4 (registry+https://github.com/rust-lang/crates.io-index)" = "8c1f860d7d29cf02cb2f3f359fd35991af3d30bac52c57d265a3c461074cb4dc"
 "checksum unicode-xid 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "fc72304796d0818e357ead4e000d19c9c174ab23dc11093ac919054d20a6a7fc"
-"checksum ursa 0.1.1-dev-1 (registry+https://github.com/rust-lang/crates.io-index)" = "b7248034bf8506aee0c033349b20e22357f2fe17a1974254262b2e9fe8020f9d"
+"checksum ursa 0.1.1-dev-2 (registry+https://github.com/rust-lang/crates.io-index)" = "9411e4b82f27cc97f81a1eda27a5ceaf252147805309a0cfce07c42d2c5e6919"
 "checksum utf8-ranges 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)" = "796f7e48bef87609f7ade7e06495a87d5cd06c7866e6a5cbfceffc558a243737"
 "checksum uuid 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)" = "bcc7e3b898aa6f6c08e5295b6c89258d1331e9ac578cc992fb818759951bdc22"
 "checksum vcpkg 0.2.6 (registry+https://github.com/rust-lang/crates.io-index)" = "def296d3eb3b12371b2c7d0e83bfe1403e4db2d7a0bba324a12b21c4ee13143d"

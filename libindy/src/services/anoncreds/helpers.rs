@@ -69,7 +69,9 @@ pub fn build_sub_proof_request(attrs_for_credential: &Vec<AttributeInfo>,
     }
 
     for predicate in predicates_for_credential {
-        sub_proof_request_builder.add_predicate(&attr_common_view(&predicate.name), "GE", predicate.p_value)?;
+        let p_type = format!("{}", predicate.p_type);
+
+        sub_proof_request_builder.add_predicate(&attr_common_view(&predicate.name), &p_type, predicate.p_value)?;
     }
 
     let res = sub_proof_request_builder.finalize()?;

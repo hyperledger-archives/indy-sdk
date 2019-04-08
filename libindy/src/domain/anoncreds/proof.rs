@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use ursa::cl::Proof as CryptoProof;
+use ursa::cl::{Proof as CryptoProof};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Proof {
