@@ -22,19 +22,19 @@ extern crate serde_json;
 // ------------------------------------------
 // hyperledger crates
 // ------------------------------------------
-extern crate indy;                      // rust wrapper project
+extern crate indyrs as indy;                      // rust wrapper project
 
 use std::env;
 use std::fs;
 use std::io::Write;
 use std::path::PathBuf;
 
-use indy::did::Did;
-use indy::ledger::Ledger;
-use indy::pool::Pool;
-use indy::wallet::Wallet;
-use indy::anoncreds::Issuer;
-use indy::anoncreds::Prover;
+use indy::did;
+use indy::future::Future;
+use indy::ledger;
+use indy::pool;
+use indy::wallet;
+use indy::anoncreds;
 
 const PROTOCOL_VERSION: usize = 2;
 static USEFUL_CREDENTIALS: &'static str = r#"{"key": "12345678901234567890123456789012"}"#;
