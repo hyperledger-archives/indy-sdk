@@ -64,7 +64,7 @@ async def test_deserialize_with_invalid_data():
         data = {'version': "1.0", 'data':{'invalid': -99}}
         await Proof.deserialize(data)
     assert ErrorCode.InvalidJson == e.value.error_code
-    #assert 'Invalid JSON string' == e.value.error_msg
+    assert 'Invalid JSON string' == e.value.error_msg
 
 
 @pytest.mark.asyncio
