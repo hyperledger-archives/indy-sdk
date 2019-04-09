@@ -22,93 +22,93 @@ extern crate serde_json;
 // ------------------------------------------
 // hyperledger crates
 // ------------------------------------------
-extern crate indy;                      // rust wrapper project
+extern crate indyrs as indy;                      // rust wrapper project
 
 use std::env;
 use std::fs;
 use std::io::Write;
 use std::path::PathBuf;
 
-use indy::did::Did;
-use indy::anoncreds::Issuer;
-use indy::ledger::Ledger;
-use indy::pool::Pool;
-use indy::anoncreds::Prover;
-use indy::wallet::Wallet;
+use indy::did;
+use indy::future::Future;
+use indy::ledger;
+use indy::pool;
+use indy::wallet;
+use indy::anoncreds;
 
 const PROTOCOL_VERSION: usize = 2;
 static USEFUL_CREDENTIALS: &'static str = r#"{"key": "12345678901234567890123456789012"}"#;
 
 fn main() {
-    let wallet_name = "wallet";
-    let pool_name = "pool";
+    let wallet_name = "walletZZ";
+    let pool_name = "poolZZ";
 
-    indy::pool::Pool::set_protocol_version(PROTOCOL_VERSION).unwrap();
+    indy::pool::set_protocol_version(PROTOCOL_VERSION).wait().unwrap();
 
     println!("1. Creating a new local pool ledger configuration that can be used later to connect pool nodes");
     let pool_config_file = create_genesis_txn_file_for_pool(pool_name);
     let pool_config = json!({
         "genesis_txn" : &pool_config_file
     });
-    Pool::create_ledger_config(&pool_name, Some(&pool_config.to_string())).unwrap();
+    pool::create_pool_ledger_config(&pool_name, Some(&pool_config.to_string())).wait().unwrap();
 
     println!("2. Open pool ledger and get the pool handle from libindy");
-    let pool_handle: i32 = Pool::open_ledger(&pool_name, None).unwrap();
+    let pool_handle: i32 = pool::open_pool_ledger(&pool_name, None).wait().unwrap();
 
     println!("3. Creates a new wallet");
     let config = json!({ "id" : wallet_name.to_string() }).to_string();
-    Wallet::create(&config, USEFUL_CREDENTIALS).unwrap();
+    wallet::create_wallet(&config, USEFUL_CREDENTIALS).wait().unwrap();
 
     println!("4. Open wallet and get the wallet handle from libindy");
-    let wallet_handle: i32 = Wallet::open(&config, USEFUL_CREDENTIALS).unwrap();
+    let wallet_handle: i32 = wallet::open_wallet(&config, USEFUL_CREDENTIALS).wait().unwrap();
 
     println!("5. Generating and storing steward DID and Verkey");
     let first_json_seed = json!({
         "seed":"000000000000000000000000Steward1"
     }).to_string();
-    let (steward_did, _steward_verkey) = Did::new(wallet_handle, &first_json_seed).unwrap();
+    let (steward_did, _steward_verkey) = did::create_and_store_my_did(wallet_handle, &first_json_seed).wait().unwrap();
 
     println!("6. Generating and storing Trust Anchor DID and Verkey");
-    let (trustee_did, trustee_verkey) = Did::new(wallet_handle, &"{}".to_string()).unwrap();
+    let (trustee_did, trustee_verkey) = did::create_and_store_my_did(wallet_handle, &"{}".to_string()).wait().unwrap();
 
     println!("7. Build NYM request to add Trust Anchor to the ledger");
-    let build_nym_request: String = Ledger::build_nym_request(&steward_did, &trustee_did, Some(&trustee_verkey), None, Some("TRUST_ANCHOR")).unwrap();
+    let build_nym_request: String = ledger::build_nym_request(&steward_did, &trustee_did, Some(&trustee_verkey), None, Some("TRUST_ANCHOR")).wait().unwrap();
 
     println!("8. Sending the nym request to ledger");
-    let _build_nym_sign_submit_result: String = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &steward_did, &build_nym_request).unwrap();
+    let _build_nym_sign_submit_result: String = ledger::sign_and_submit_request(pool_handle, wallet_handle, &steward_did, &build_nym_request).wait().unwrap();
 
     println!("9. Create Schema and Build the SCHEMA request to add new schema to the ledger as a Steward");
     let name = "gvt";
     let version = "1.0";
     let attributes = r#"["age", "sex", "height", "name"]"#;
-    let (_schema_id, schema_json) = Issuer::create_schema(&steward_did, name, version, attributes).unwrap();
+    let (_schema_id, schema_json) = anoncreds::issuer_create_schema(&steward_did, name, version, attributes).wait().unwrap();
 
-    let build_schema_request: String = Ledger::build_schema_request(&steward_did, &schema_json).unwrap();
+    let build_schema_request: String = ledger::build_schema_request(&steward_did, &schema_json).wait().unwrap();
 
     println!("10. Sending the SCHEMA request to the ledger");
-    let _signed_schema_request_response = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &steward_did, &build_schema_request).unwrap();
+    let _signed_schema_request_response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &steward_did, &build_schema_request).wait().unwrap();
 
     println!("11. Creating and storing CREDENTIAL DEFINITION using anoncreds as Trust Anchor, for the given Schema");
     let config_json = r#"{ "support_revocation": false }"#;
     let tag = r#"TAG1"#;
-    let (cred_def_id, cred_def_json) = Issuer::create_and_store_credential_def(wallet_handle, &trustee_did, &schema_json, tag, None, config_json).unwrap();
+    let (cred_def_id, cred_def_json) = anoncreds::issuer_create_and_store_credential_def(wallet_handle, &trustee_did, &schema_json, tag, None, config_json).wait().unwrap();
 
     println!("12. Creating Prover wallet and opening it to get the handle");
     let prover_did = "VsKV7grR1BUE29mG2Fm2kX";
     let prover_wallet_name = "prover_wallet";
     let prover_wallet_config = json!({ "id" : prover_wallet_name.to_string() }).to_string();
-    Wallet::create(&prover_wallet_config, USEFUL_CREDENTIALS).unwrap();
-    let prover_wallet_handle: i32 = Wallet::open(&prover_wallet_config, USEFUL_CREDENTIALS).unwrap();
+    wallet::create_wallet(&prover_wallet_config, USEFUL_CREDENTIALS).wait().unwrap();
+    let prover_wallet_handle: i32 = wallet::open_wallet(&prover_wallet_config, USEFUL_CREDENTIALS).wait().unwrap();
 
     println!("13. Prover is creating Master Secret");
     let master_secret_name = "master_secret";
-    Prover::create_master_secret(prover_wallet_handle, Some(master_secret_name)).unwrap();
+    anoncreds::prover_create_master_secret(prover_wallet_handle, Some(master_secret_name)).wait().unwrap();
 
     println!("14. Issuer (Trust Anchor) is creating a Credential Offer for Prover");
-    let cred_offer_json = Issuer::create_credential_offer(wallet_handle, &cred_def_id).unwrap();
+    let cred_offer_json = anoncreds::issuer_create_credential_offer(wallet_handle, &cred_def_id).wait().unwrap();
 
     println!("15. Prover creates Credential Request");
-    let (cred_req_json, cred_req_metadata_json) = Prover::create_credential_req(prover_wallet_handle, prover_did, &cred_offer_json, &cred_def_json, &master_secret_name).unwrap();
+    let (cred_req_json, cred_req_metadata_json) = anoncreds::prover_create_credential_req(prover_wallet_handle, prover_did, &cred_offer_json, &cred_def_json, &master_secret_name).wait().unwrap();
 
     println!("16. Issuer (Trust Anchor) creates Credential for Credential Request");
 
@@ -122,23 +122,23 @@ fn main() {
     println!("cred_values_json = '{}'", &cred_values_json.to_string());
 
     let (cred_json, _cred_revoc_id, _revoc_reg_delta_json) =
-        Issuer::create_credential(wallet_handle, &cred_offer_json, &cred_req_json, &cred_values_json.to_string(), None, -1).unwrap();
+        anoncreds::issuer_create_credential(wallet_handle, &cred_offer_json, &cred_req_json, &cred_values_json.to_string(), None, -1).wait().unwrap();
 
     println!("17. Prover processes and stores Credential");
-    let out_cred_id = Prover::store_credential(prover_wallet_handle, None, &cred_req_metadata_json, &cred_json, &cred_def_json, None).unwrap();
+    let out_cred_id = anoncreds::prover_store_credential(prover_wallet_handle, None, &cred_req_metadata_json, &cred_json, &cred_def_json, None).wait().unwrap();
 
     println!("Stored Credential ID is {}", &out_cred_id);
 
     // Clean UP
     println!("17. Close and delete two wallets");
-    Wallet::close(prover_wallet_handle).unwrap();
-    Wallet::delete(&prover_wallet_config, USEFUL_CREDENTIALS).unwrap();
-    Wallet::close(wallet_handle).unwrap();
-    Wallet::delete(&config, USEFUL_CREDENTIALS).unwrap();
+    wallet::close_wallet(prover_wallet_handle).wait().unwrap();
+    wallet::delete_wallet(&prover_wallet_config, USEFUL_CREDENTIALS).wait().unwrap();
+    wallet::close_wallet(wallet_handle).wait().unwrap();
+    wallet::delete_wallet(&config, USEFUL_CREDENTIALS).wait().unwrap();
 
     println!("18. Close pool and delete pool ledger config");
-    Pool::close(pool_handle).unwrap();
-    Pool::delete(&pool_name).unwrap();
+    pool::close_pool_ledger(pool_handle).wait().unwrap();
+    pool::delete_pool_ledger(&pool_name).wait().unwrap();
 }
 
 fn create_genesis_txn_file_for_pool(pool_name: &str) -> String {
