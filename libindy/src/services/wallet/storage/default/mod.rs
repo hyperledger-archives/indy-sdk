@@ -650,7 +650,7 @@ impl WalletStorageType for SQLiteStorageType {
         let db_file_path = SQLiteStorageType::_db_path(id, config.as_ref());
 
         if !db_file_path.exists() {
-            return Err(err_msg(IndyErrorKind::WalletNotFound, "Wallet storage file isn't found"));
+            return Err(err_msg(IndyErrorKind::WalletNotFound, format!("Wallet storage file isn't found: {:?}", db_file_path)));
         }
 
         std::fs::remove_dir_all(db_file_path.parent().unwrap())?;
@@ -694,7 +694,7 @@ impl WalletStorageType for SQLiteStorageType {
         let db_path = SQLiteStorageType::_db_path(id, config.as_ref());
 
         if db_path.exists() {
-            return Err(err_msg(IndyErrorKind::WalletAlreadyExists, "Wallet database file already exists"));
+            return Err(err_msg(IndyErrorKind::WalletAlreadyExists, format!("Wallet database file already exists: {:?}", db_path)));
         }
 
         fs::DirBuilder::new()
