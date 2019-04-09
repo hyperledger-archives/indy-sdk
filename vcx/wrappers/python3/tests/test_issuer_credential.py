@@ -237,7 +237,7 @@ async def test_revoke_credential_success():
     with pytest.raises(VcxError) as e:
         await issuer_credential2.revoke_credential()
     assert ErrorCode.InvalidRevocationDetails == e.value.error_code
-
+    
     serialized['data']['cred_rev_id'] = '123'
     issuer_credential3 = await IssuerCredential.deserialize(serialized)
     with pytest.raises(VcxError) as e:
