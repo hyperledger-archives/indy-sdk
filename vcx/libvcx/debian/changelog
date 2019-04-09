@@ -1,6 +1,20 @@
-libvcx (0.2.2) unstable; urgency=medium
+libvcx (0.2.3) unstable; urgency=medium
 
 [ Hyperledger ]
+
+* 0.2.3
+* Updated Vcx to support community A2A protocol.
+Added `protocol_type` field to VCX provisioning config with indicates A2A message format will be used.
+    * `1.0` means the current protocol.
+    * `2.0` means community (IN PROGRESS) protocol which in the current state includes implementation of the following HIPEs:
+        * Message Types - https://github.com/hyperledger/indy-hipe/tree/master/text/0021-message-types
+        * Message Threading - https://github.com/hyperledger/indy-hipe/tree/master/text/0027-message-id-and-threading
+        * Wire Message - https://github.com/hyperledger/indy-hipe/tree/master/text/0028-wire-message-format.
+* Added function `vcx_get_current_error` to get additional information for last error occurred in Libvcx.
+* Bugfixes
+
+* 0.2.2
+    * Bugfixes
 
 * 0.2.1
     * Bugfixes

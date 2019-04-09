@@ -9,7 +9,7 @@ import com.sun.jna.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java9.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletableFuture;
 
 public class WalletApi extends VcxJava.API {
     private static final Logger logger = LoggerFactory.getLogger("WalletApi");

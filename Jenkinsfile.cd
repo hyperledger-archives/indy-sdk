@@ -1386,23 +1386,20 @@ def publishLibnullpayDebRCtoStable(testEnv) {
 
 def publishLibvcxDebRCtoStable(testEnv) {
     def libvcxVersion = getSrcVersion("vcx/libvcx")
-    def libindyVersion = getSrcVersion("libindy")
-    def rcFullVersion = "$libvcxVersion~$env.BUILD_NUMBER"
-
-    testEnv.inside {
-        unstash name: "libvcxDebs"
-        sh "fpm -s deb -t deb --version $rcFullVersion --no-auto-depends --depends 'libindy = $libindyVersion' -f -p vcx/libvcx/debs vcx/libvcx/debs/libvcx_\"$rcFullVersion\"_amd64.deb"
-        stash includes: "vcx/libvcx/debs/*", name: "libvcxDebs"
-    }
 
     publishDebRCtoStable(testEnv, "libvcx", "vcx/libvcx", libvcxVersion, "libvcxDebs", false)
 }
 
 def publishDebRCtoStable(testEnv, packageName, folder, version, stashName, moveDevArtifacts) {
     testEnv.inside {
-        rcFullVersion = "${version}~${env.BUILD_NUMBER}"
+        def rcFullVersion = "${version}~${env.BUILD_NUMBER}"
 
         unstash name: stashName
+
+        if (packageName != "libindy") {
+            def libindyVersion = getSrcVersion("libindy")
+            sh "fpm -s deb -t deb --version $rcFullVersion --no-auto-depends --depends 'libindy = $libindyVersion' -f -p $folder/debs $folder/debs/\"$packageName\"_\"$rcFullVersion\"_amd64.deb"
+        }
 
         sh "fakeroot deb-reversion -v $version $folder/debs/\"$packageName\"_\"$rcFullVersion\"_amd64.deb"
 
