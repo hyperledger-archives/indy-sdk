@@ -1085,7 +1085,7 @@ pub fn build_get_auth_rule_request(submitter_did: Option<&str>, txn_type: Option
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _build_get_auth_rule_request(command_handle: IndyHandle,
+fn _build_get_auth_rule_request(command_handle: CommandHandle,
                                 submitter_did: Option<&str>,
                                 txn_type: Option<&str>,
                                 action: Option<&str>,

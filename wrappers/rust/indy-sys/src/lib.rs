@@ -25,6 +25,7 @@ pub type WalletHandle = i32;
 //pub const INVALID_WALLET_HANDLE : WalletHandle = WalletHandle(0);
 
 //pub type Handle = i32;
+pub type IndyHandle = i32;
 pub type CommandHandle = i32;
 pub type PoolHandle = i32;
 pub type SearchHandle = i32;

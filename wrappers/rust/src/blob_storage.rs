@@ -8,9 +8,9 @@ use ffi::blob_storage;
 use ffi::ResponseI32CB;
 
 use utils::callbacks::{ClosureHandler, ResultHandler};
-use ffi::CommandHandle;
+use ffi::{IndyHandle, CommandHandle};
 
-pub fn open_reader(xtype: &str, config_json: &str) -> Box<Future<Item=CommandHandle, Error=IndyError>> {
+pub fn open_reader(xtype: &str, config_json: &str) -> Box<Future<Item=IndyHandle, Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_handle();
 
     let err = _open_reader(command_handle, xtype, config_json, cb);
