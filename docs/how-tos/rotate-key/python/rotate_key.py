@@ -15,16 +15,14 @@ using GET_NYM request, to make sure they are equal to the new Verkey, not the or
 added by Steward
 """
 
-
 import asyncio
 import json
 import pprint
 
 from indy import pool, ledger, wallet, did
-from indy.error import IndyError
+from indy.error import IndyError, ErrorCode
 
-from src.utils import get_pool_genesis_txn_path, PROTOCOL_VERSION
-
+from utils import get_pool_genesis_txn_path, PROTOCOL_VERSION
 
 pool_name = 'pool'
 genesis_file_path = get_pool_genesis_txn_path(pool_name)
@@ -32,15 +30,11 @@ genesis_file_path = get_pool_genesis_txn_path(pool_name)
 wallet_config = json.dumps({"id": "wallet"})
 wallet_credentials = json.dumps({"key": "wallet_key"})
 
-# Set protocol version to 2 to work with the current version of Indy Node
-PROTOCOL_VERSION = 2
-
 def print_log(value_color="", value_noncolor=""):
     """set the colors for text."""
     HEADER = '\033[92m'
     ENDC = '\033[0m'
     print(HEADER + value_color + ENDC + str(value_noncolor))
-
 
 async def rotate_key_on_the_ledger():
     try:
@@ -50,7 +44,11 @@ async def rotate_key_on_the_ledger():
         print_log('1. Creates a new local pool ledger configuration that is used '
                   'later when connecting to ledger.\n')
         pool_config = json.dumps({'genesis_txn': str(genesis_file_path)})
-        await pool.create_pool_ledger_config(config_name=pool_name, config=pool_config)
+        try:
+            await pool.create_pool_ledger_config(config_name=pool_name, config=pool_config)
+        except IndyError as ex:
+            if ex.error_code == ErrorCode.PoolLedgerConfigAlreadyExistsError:
+                pass
 
         # 2.
         print_log('\n2. Open pool ledger and get handle from libindy\n')
@@ -58,7 +56,11 @@ async def rotate_key_on_the_ledger():
 
         # 3.
         print_log('\n3. Creating new secure wallet with the given unique name\n')
-        await wallet.create_wallet(wallet_config, wallet_credentials)
+        try:
+            await wallet.create_wallet(wallet_config, wallet_credentials)
+        except IndyError as ex:
+            if ex.error_code == ErrorCode.WalletAlreadyExistsError:
+                pass
 
         # 4.
         print_log('\n4. Open wallet and get handle from libindy to use in methods that require wallet access\n')
