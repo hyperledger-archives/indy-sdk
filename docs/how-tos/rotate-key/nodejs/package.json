@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "description": "Demonstrates using NodeJs wrapper for LibIndy through changing the verkey that the ledger associates with a DID",
-  "main": "rotateKeyOnTheLedger.js",
+  "main": "rotateKey.js",
   "scripts": {
-    "start": "node rotateKeyOnTheLedger.js",
+    "start": "node rotateKey.js",
     "ledger:start": "cd ../../../../ && docker build -f ci/indy-pool.dockerfile -t indy_pool . && docker run --name indy_pool -itd -p 9701-9708:9701-9708 indy_pool",
     "ledger:stop": "docker stop indy_pool && docker rm indy_pool"
   },

@@ -13,21 +13,16 @@ After that, Proof is verified against the Proof Request
 import asyncio
 import json
 import pprint
-import sys
 
-sys.path.insert(0, '/home/vagrant/code/evernym/indy-sdk/wrappers/python')
+from indy import pool, ledger, wallet, did, anoncreds
+from indy.error import ErrorCode, IndyError
 
-from indy import pool, ledger, wallet, did, anoncreds, crypto
-from indy.error import IndyError
+from utils import open_wallet, get_pool_genesis_txn_path, PROTOCOL_VERSION
 
-
-seq_no = 1
 pool_name = 'pool'
-issuer_wallet_name = 'issuer_wallet'
-prover_wallet_name = 'prover_wallet'
-issuer_did = 'NcYxiDXkpYi6ov5FcYDi1e'
-prover_did = 'VsKV7grR1BUE29mG2Fm2kX'
-genesis_file_path = '/home/vagrant/code/evernym/indy-sdk/cli/docker_pool_transactions_genesis'
+issuer_wallet_config = json.dumps({"id": "issuer_wallet"})
+issuer_wallet_credentials = json.dumps({"key": "issuer_wallet_key"})
+genesis_file_path = get_pool_genesis_txn_path(pool_name)
 
 def print_log(value_color="", value_noncolor=""):
     """set the colors for text."""
@@ -35,9 +30,10 @@ def print_log(value_color="", value_noncolor=""):
     ENDC = '\033[0m'
     print(HEADER + value_color + ENDC + str(value_noncolor))
 
-
 async def proof_negotiation():
     try:
+        await pool.set_protocol_version(PROTOCOL_VERSION)
+
         # Step 2 code goes here.
 
         # Step 3 code goes here.
@@ -49,12 +45,10 @@ async def proof_negotiation():
     except IndyError as e:
         print('Error occurred: %s' % e)
 
-
 def main():
     loop = asyncio.get_event_loop()
     loop.run_until_complete(proof_negotiation())
     loop.close()
-
 
 if __name__ == '__main__':
     main()
