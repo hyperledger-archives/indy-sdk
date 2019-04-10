@@ -62,7 +62,7 @@ def calcCoverageRust(dir) {
         "TEST_POOL_IP=${POOL_IP}"
     ]) {
         sh '''
-            RUSTFLAGS="-L libindy/target/debug/" cargo test --manifest-path=$RUST_PROJECT_DIR/Cargo.toml --no-run
+            RUSTFLAGS="-L $(pwd)/libindy/target/debug/" cargo test --manifest-path=$RUST_PROJECT_DIR/Cargo.toml --no-run
             for i in $(find $RUST_PROJECT_DIR/target/debug -maxdepth 1 -executable -type f | grep -v '\\.so\$')
             do
                 LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(pwd)/libindy/target/debug/ \
