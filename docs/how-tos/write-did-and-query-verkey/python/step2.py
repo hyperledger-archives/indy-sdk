@@ -1,7 +1,7 @@
         # Tell SDK which pool you are going to use. You should have already started
         # this pool using docker compose or similar. Here, we are dumping the config
         # just for demonstration purposes.
-        pool_config = json.dumps({'genesis_txn': genesis_file_path})
+        pool_config = json.dumps({'genesis_txn': str(genesis_file_path)})
         print_log('\n1. Create new pool ledger configuration to connect to ledger.\n')
         await pool.create_pool_ledger_config(config_name=pool_name, config=pool_config)
 
