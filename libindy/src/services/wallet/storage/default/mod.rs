@@ -297,7 +297,7 @@ impl WalletStorage for SQLiteStorage {
 
         let item = match res {
             Ok(entity) => entity,
-            Err(rusqlite::Error::QueryReturnedNoRows) => return Err(err_msg(IndyErrorKind::WalletItemNotFound, "Walelt item not found")),
+            Err(rusqlite::Error::QueryReturnedNoRows) => return Err(err_msg(IndyErrorKind::WalletItemNotFound, "Wallet item not found")),
             Err(err) => return Err(IndyError::from(err))
         };
 
