@@ -53,3 +53,4 @@ WORKDIR /home/indy
 # Rust installation
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.31.0
 ENV PATH /home/indy/.cargo/bin:$PATH
+ENV CARGO_HOME /home/indy/.cargo
