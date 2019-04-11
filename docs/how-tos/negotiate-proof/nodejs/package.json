@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "description": "Demonstrates using NodeJS wrapper for LibIndy through creating and retrieving DIDs",
-  "main": "writeDidAndQueryVerkey.js",
+  "main": "negotiateProof.js",
   "scripts": {
-    "start": "node writeDidAndQueryVerkey.js",
+    "start": "node negotiateProof.js",
     "ledger:start": "cd ../../../../ && docker build -f ci/indy-pool.dockerfile -t indy_pool . && docker run --name indy_pool -itd -p 9701-9708:9701-9708 indy_pool",
     "ledger:stop": "docker stop indy_pool && docker rm indy_pool"
   },

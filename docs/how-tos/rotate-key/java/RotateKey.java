@@ -14,7 +14,7 @@ import static org.hyperledger.indy.sdk.ledger.Ledger.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-public class RotateKeyOnTheLedger {
+public class RotateKey {
 	static void demo() throws Exception {
 		String walletName = "myWallet";
 		String poolName = "pool";
