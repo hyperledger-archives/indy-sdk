@@ -2,6 +2,9 @@ import asyncio
 import time
 import re
 
+# Not used here, but will be required for the next steps
+from indy import crypto, did, wallet
+
 # Step 5 code goes here, replacing the prep() stub.
 async def prep(wallet_handle, my_vk, their_vk, msg):
     print('prepping %s' % msg)
