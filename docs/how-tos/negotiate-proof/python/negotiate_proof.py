@@ -1,3 +1,39 @@
+"""
+Example demonstrating Proof Verification.
+
+First Issuer creates Claim Definition for existing Schema.
+After that, it issues a Claim to Prover (as in issue_credential.py example)
+
+Once Prover has successfully stored its Claim, it uses Proof Request that he
+received, to get Claims which satisfy the Proof Request from his wallet.
+Prover uses the output to create Proof, using its Master Secret.
+After that, Proof is verified against the Proof Request
+"""
+
+import asyncio
+import json
+import pprint
+
+from indy import pool, ledger, wallet, did, anoncreds
+from indy.error import ErrorCode, IndyError
+
+from utils import open_wallet, get_pool_genesis_txn_path, PROTOCOL_VERSION
+
+pool_name = 'pool'
+issuer_wallet_config = json.dumps({"id": "issuer_wallet"})
+issuer_wallet_credentials = json.dumps({"key": "issuer_wallet_key"})
+genesis_file_path = get_pool_genesis_txn_path(pool_name)
+
+def print_log(value_color="", value_noncolor=""):
+    """set the colors for text."""
+    HEADER = '\033[92m'
+    ENDC = '\033[0m'
+    print(HEADER + value_color + ENDC + str(value_noncolor))
+
+async def proof_negotiation():
+    try:
+        await pool.set_protocol_version(PROTOCOL_VERSION)
+
         # 1.
         print_log('\n1. opening a new local pool ledger configuration that will be used '
                   'later when connecting to ledger.\n')
@@ -148,3 +184,119 @@
                                                 cred_req_metadata_json,
                                                 cred_json,
                                                 cred_def_json, None)
+
+        # 18.
+        print_log('\n18. Prover gets Credentials for Proof Request\n')
+        proof_request = {
+            'nonce': '123432421212',
+            'name': 'proof_req_1',
+            'version': '0.1',
+            'requested_attributes': {
+                'attr1_referent': {
+                    'name': 'name',
+                    "restrictions": {
+                        "issuer_did": trust_anchor_did,
+                        "schema_id": issuer_schema_id
+                    }
+                }
+            },
+            'requested_predicates': {
+                'predicate1_referent': {
+                    'name': 'age',
+                    'p_type': '>=',
+                    'p_value': 18,
+                    "restrictions": {
+                       "issuer_did": trust_anchor_did
+                    }
+                }
+            }
+        }
+        print_log('Proof Request: ')
+        pprint.pprint(proof_request)
+
+        # 19. 
+        print_log('\n19. Prover gets Credentials for attr1_referent anf predicate1_referent\n')
+        proof_req_json = json.dumps(proof_request)
+        prover_cred_search_handle = \
+            await anoncreds.prover_search_credentials_for_proof_req(prover_wallet_handle, proof_req_json, None)
+
+        creds_for_attr1 = await anoncreds.prover_fetch_credentials_for_proof_req(prover_cred_search_handle,
+                                                                                 'attr1_referent', 1)
+        prover_cred_for_attr1 = json.loads(creds_for_attr1)[0]['cred_info']
+        print_log('Prover credential for attr1_referent: ')
+        pprint.pprint(prover_cred_for_attr1)
+
+        creds_for_predicate1 = await anoncreds.prover_fetch_credentials_for_proof_req(prover_cred_search_handle,
+                                                                                      'predicate1_referent', 1)
+        prover_cred_for_predicate1 = json.loads(creds_for_predicate1)[0]['cred_info']
+        print_log('Prover credential for predicate1_referent: ')
+        pprint.pprint(prover_cred_for_predicate1)
+
+        await anoncreds.prover_close_credentials_search_for_proof_req(prover_cred_search_handle)
+        
+        # 20.
+        print_log('\n20. Prover creates Proof for Proof Request\n')
+        prover_requested_creds = json.dumps({
+            'self_attested_attributes': {},
+            'requested_attributes': {
+                'attr1_referent': {
+                    'cred_id': prover_cred_for_attr1['referent'],
+                    'revealed': True
+                }
+            },
+            'requested_predicates': {
+                'predicate1_referent': {
+                    'cred_id': prover_cred_for_predicate1['referent']
+                }
+            }
+        })
+        print_log('Requested Credentials for Proving: ')
+        pprint.pprint(json.loads(prover_requested_creds))
+
+        prover_schema_id = json.loads(cred_offer_json)['schema_id']
+        schemas_json = json.dumps({prover_schema_id: json.loads(issuer_schema_json)})
+        cred_defs_json = json.dumps({cred_def_id: json.loads(cred_def_json)})
+        proof_json = await anoncreds.prover_create_proof(prover_wallet_handle,
+                                                         proof_req_json,
+                                                         prover_requested_creds,
+                                                         link_secret_id,
+                                                         schemas_json,
+                                                         cred_defs_json,
+                                                         "{}")
+        proof = json.loads(proof_json)
+        assert 'Alex' == proof['requested_proof']['revealed_attrs']['attr1_referent']["raw"]
+
+        # 21.
+        print_log('\n21. Verifier is verifying proof from Prover\n')
+        assert await anoncreds.verifier_verify_proof(proof_req_json,
+                                                             proof_json,
+                                                             schemas_json,
+                                                             cred_defs_json,
+                                                             "{}", "{}")
+
+        # 22.
+        print_log('\n22. Closing both wallet_handles and pool\n')
+        await wallet.close_wallet(issuer_wallet_handle)
+        await wallet.close_wallet(prover_wallet_handle)
+        await pool.close_pool_ledger(pool_handle)
+
+        # 23.
+        print_log('\n23. Deleting created wallet_handles\n')
+        await wallet.delete_wallet(issuer_wallet_config, issuer_wallet_credentials)
+        await wallet.delete_wallet(prover_wallet_config, prover_wallet_credentials)
+
+        # 24.
+        print_log('\n24. Deleting pool ledger config\n')
+        await pool.delete_pool_ledger_config(pool_name)
+
+    except IndyError as e:
+        print('Error occurred: %s' % e)
+
+def main():
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(proof_negotiation())
+    loop.close()
+
+if __name__ == '__main__':
+    main()
+
