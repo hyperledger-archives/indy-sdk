@@ -18,8 +18,8 @@ def testing () {
             image = dockerBuild("indy-sdk-kcov", "ci/code_coverage.dockerfile ci/")
         }
 
+        def test_pool
         try {
-            def test_pool
             stage("Starting test pool") {
                 test_pool = createPool()
             }
