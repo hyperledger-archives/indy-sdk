@@ -694,7 +694,7 @@ impl WalletStorageType for SQLiteStorageType {
         let db_path = SQLiteStorageType::_db_path(id, config.as_ref());
 
         if db_path.exists() {
-            return Err(err_msg(IndyErrorKind::WalletAlreadyExists, format!("Wallet database file already exists: '{:?}'", db_path)));
+            return Err(err_msg(IndyErrorKind::WalletAlreadyExists, format!("Wallet database file already exists: {:?}", db_path)));
         }
 
         fs::DirBuilder::new()
