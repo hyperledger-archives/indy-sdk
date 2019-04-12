@@ -22,7 +22,7 @@ At a high level the architecture has been designed in an extensible way to suppo
 
 ### Wrapper Layer
 
-The wrapper layer is for wrapping the C-Callable APIs to allow functionality to be supported in many different programming languages. If you'd like to learn more about using the SDK wrappers there's [How-to guides](doc/how-tos), [samples](samples), and [reference agents](https://github.com/hyperledger/indy-agent) that can help. Here's some links to the different wrappers available.
+The wrapper layer is for wrapping the C-Callable APIs to allow functionality to be supported in many different programming languages. If you'd like to learn more about using the SDK wrappers there's [How-to guides](docs/how-tos), [samples](samples), and [reference agents](https://github.com/hyperledger/indy-agent) that can help. Here's some links to the different wrappers available.
 
 * [Python](wrappers/python/README.md)
 * [NodeJS](wrappers/nodejs/README.md)
@@ -68,4 +68,4 @@ This is the directory that contains additional utility functions that may be use
 
 ### Tests
 
-Given that one of the general principles of development within the core Indy team is to use [TDD](http://www.agiledata.org/essays/tdd.html) Within the tests directory, our medium level and high level integration tests of libindy live here. These are excellent places to look at usage of libindy as they make calls in the same way as you would in a wrapper. For more details around testing, checkout out this [doc](../../test-design.md).
+Given that one of the general principles of development within the core Indy team is to use [TDD](http://www.agiledata.org/essays/tdd.html) Within the tests directory, our medium level and high level integration tests of libindy live here. These are excellent places to look at usage of libindy as they make calls in the same way as you would in a wrapper. For more details around testing, checkout out this [doc](/docs/contributors/test-design.md).
