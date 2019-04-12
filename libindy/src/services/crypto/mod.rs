@@ -20,7 +20,7 @@ use self::hex::FromHex;
 
 mod ed25519;
 
-pub const DEFAULT_CRYPTO_TYPE: &'static str = "ed25519";
+pub const DEFAULT_CRYPTO_TYPE: &str = "ed25519";
 
 //TODO fix this crypto trait so it matches the functions below
 //TODO create a second crypto trait for additional functions

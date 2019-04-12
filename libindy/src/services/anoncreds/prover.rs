@@ -27,7 +27,7 @@ use domain::anoncreds::schema::SchemaV1;
 use errors::prelude::*;
 use services::anoncreds::helpers::*;
 
-const ATTRIBUTE_EXISTENCE_MARKER: &'static str = "1";
+const ATTRIBUTE_EXISTENCE_MARKER: &str = "1";
 
 pub struct Prover {}
 
