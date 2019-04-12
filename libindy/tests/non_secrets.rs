@@ -771,8 +771,8 @@ mod high_cases {
                                                            record_4(),
                                                            record_5()]);
 
-                cleanup_wallet("indy_wallet_search_for_empty_query");
                 tear_down(wallet_handle, search_handle);
+                cleanup_wallet("indy_wallet_search_for_empty_query");
             }
 
             #[test]
@@ -791,8 +791,8 @@ mod high_cases {
                 check_search_records(&search_records, vec![record_1(),
                                                            record_3()]);
 
-                cleanup_wallet("indy_wallet_search_for_eq_query");
                 tear_down(wallet_handle, search_handle);
+                cleanup_wallet("indy_wallet_search_for_eq_query");
             }
 
             #[test]
@@ -812,8 +812,8 @@ mod high_cases {
                                                            record_4(),
                                                            record_5()]);
 
-                cleanup_wallet("indy_wallet_search_for_neq_query");
                 tear_down(wallet_handle, search_handle);
+                cleanup_wallet("indy_wallet_search_for_neq_query");
             }
 
             #[test]
@@ -831,8 +831,8 @@ mod high_cases {
 
                 check_search_records(&search_records, vec![record_1()]);
 
-                cleanup_wallet("indy_wallet_search_for_gt_query");
                 tear_down(wallet_handle, search_handle);
+                cleanup_wallet("indy_wallet_search_for_gt_query");
             }
 
             #[test]
@@ -851,8 +851,8 @@ mod high_cases {
                 check_search_records(&search_records, vec![record_1(),
                                                            record_5()]);
 
-                cleanup_wallet("indy_wallet_search_for_gte_query");
                 tear_down(wallet_handle, search_handle);
+                cleanup_wallet("indy_wallet_search_for_gte_query");
             }
 
             #[test]
@@ -870,8 +870,8 @@ mod high_cases {
 
                 check_search_records(&search_records, vec![record_2()]);
 
-                cleanup_wallet("indy_wallet_search_for_lt_query");
                 tear_down(wallet_handle, search_handle);
+                cleanup_wallet("indy_wallet_search_for_lt_query");
             }
 
             #[test]
@@ -891,8 +891,8 @@ mod high_cases {
                 check_search_records(&search_records, vec![record_2(),
                                                            record_4()]);
 
-                cleanup_wallet("indy_wallet_search_for_lte_query");
                 tear_down(wallet_handle, search_handle);
+                cleanup_wallet("indy_wallet_search_for_lte_query");
             }
 
             #[test]
@@ -931,8 +931,8 @@ mod high_cases {
                                                            record_2(),
                                                            record_3()]);
 
-                cleanup_wallet("indy_wallet_search_for_in_query");
                 tear_down(wallet_handle, search_handle);
+                cleanup_wallet("indy_wallet_search_for_in_query");
             }
 
             #[test]
@@ -951,8 +951,8 @@ mod high_cases {
 
                 check_search_records(&search_records, vec![record_3()]);
 
-                cleanup_wallet("indy_wallet_search_for_and_query");
                 tear_down(wallet_handle, search_handle);
+                cleanup_wallet("indy_wallet_search_for_and_query");
             }
 
             #[test]
@@ -974,8 +974,8 @@ mod high_cases {
                 check_search_records(&search_records, vec![record_2(),
                                                            record_3()]);
 
-                cleanup_wallet("indy_wallet_search_for_or_query");
                 tear_down(wallet_handle, search_handle);
+                cleanup_wallet("indy_wallet_search_for_or_query");
             }
 
             #[test]
@@ -995,8 +995,8 @@ mod high_cases {
                                                            record_4(),
                                                            record_5()]);
 
-                cleanup_wallet("indy_wallet_search_for_not_query");
                 tear_down(wallet_handle, search_handle);
+                cleanup_wallet("indy_wallet_search_for_not_query");
             }
 
             #[test]
@@ -1027,8 +1027,8 @@ mod high_cases {
 
                 check_search_records(&search_records, vec![record_3()]);
 
-                cleanup_wallet("indy_wallet_search_for_mix_and_or_query");
                 tear_down(wallet_handle, search_handle);
+                cleanup_wallet("indy_wallet_search_for_mix_and_or_query");
             }
 
             #[test]
@@ -1048,8 +1048,8 @@ mod high_cases {
                 assert_eq!(0, search_records.total_count.unwrap());
                 assert!(search_records.records.is_none());
 
-                cleanup_wallet("indy_wallet_search_for_no_records");
                 tear_down(wallet_handle, search_handle);
+                cleanup_wallet("indy_wallet_search_for_no_records");
             }
         }
 
@@ -1072,8 +1072,8 @@ mod high_cases {
                     WalletRecord { id: ID_4.to_string(), type_: None, value: Some(VALUE_4.to_string()), tags: None },
                     WalletRecord { id: ID_5.to_string(), type_: None, value: Some(VALUE_5.to_string()), tags: None }]);
 
-                cleanup_wallet("indy_wallet_search_for_default_options");
                 tear_down(wallet_handle, search_handle);
+                cleanup_wallet("indy_wallet_search_for_default_options");
             }
 
             #[test]
@@ -1100,8 +1100,8 @@ mod high_cases {
                     WalletRecord { id: ID_4.to_string(), type_: None, value: Some(VALUE_4.to_string()), tags: None },
                     WalletRecord { id: ID_5.to_string(), type_: None, value: Some(VALUE_5.to_string()), tags: None }]);
 
-                cleanup_wallet("indy_wallet_search_for_retrieve_id_value");
                 tear_down(wallet_handle, search_handle);
+                cleanup_wallet("indy_wallet_search_for_retrieve_id_value");
             }
 
             #[test]
@@ -1128,8 +1128,8 @@ mod high_cases {
                     WalletRecord { id: ID_4.to_string(), type_: None, value: Some(VALUE_4.to_string()), tags: Some(tags_4()) },
                     WalletRecord { id: ID_5.to_string(), type_: None, value: Some(VALUE_5.to_string()), tags: Some(tags_5()) }]);
 
-                cleanup_wallet("indy_wallet_search_for_retrieve_id_value_tags");
                 tear_down(wallet_handle, search_handle);
+                cleanup_wallet("indy_wallet_search_for_retrieve_id_value_tags");
             }
 
             #[test]
@@ -1155,8 +1155,8 @@ mod high_cases {
                                                     record_4(),
                                                     record_5()]);
 
-                cleanup_wallet("indy_wallet_search_for_retrieve_full_record");
                 tear_down(wallet_handle, search_handle);
+                cleanup_wallet("indy_wallet_search_for_retrieve_full_record");
             }
 
             #[test]
@@ -1180,8 +1180,8 @@ mod high_cases {
                 assert_eq!(5, search_records.total_count.unwrap());
                 assert_eq!(None, search_records.records);
 
-                cleanup_wallet("indy_wallet_search_for_retrieve_total_count_only");
                 tear_down(wallet_handle, search_handle);
+                cleanup_wallet("indy_wallet_search_for_retrieve_total_count_only");
             }
 
             #[test]
@@ -1205,8 +1205,8 @@ mod high_cases {
                 assert!(search_records.total_count.is_none());
                 assert!(search_records.records.is_some());
 
-                cleanup_wallet("indy_wallet_search_for_retrieve_records_only");
                 tear_down(wallet_handle, search_handle);
+                cleanup_wallet("indy_wallet_search_for_retrieve_records_only");
             }
         }
 
@@ -1229,8 +1229,8 @@ mod high_cases {
             assert_eq!(5, search_records.total_count.unwrap());
             assert_eq!(2, search_records.records.unwrap().len());
 
-            cleanup_wallet("indy_wallet_search_for_fetch_twice");
             tear_down(wallet_handle, search_handle);
+            cleanup_wallet("indy_wallet_search_for_fetch_twice");
         }
 
         #[test]
@@ -1271,8 +1271,8 @@ mod high_cases {
             let res = fetch_wallet_search_next_records(wallet_handle, search_handle + 1, 5);
             assert_code!(ErrorCode::WalletInvalidHandle, res);
 
-            cleanup_wallet("indy_wallet_search_for_invalid_search_handle");
             tear_down(wallet_handle, search_handle);
+            cleanup_wallet("indy_wallet_search_for_invalid_search_handle");
         }
 
         #[test]
