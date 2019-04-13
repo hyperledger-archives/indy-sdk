@@ -4,7 +4,7 @@ use time;
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-pub const DEFAULT_LIBIDY_DID: &'static str = "LibindyDid111111111111";
+pub const DEFAULT_LIBIDY_DID: &str = "LibindyDid111111111111";
 
 pub struct ProtocolVersion {}
 
