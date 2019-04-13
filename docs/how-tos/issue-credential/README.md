@@ -20,7 +20,7 @@ a new file and saved it as `issue_credential.EXT`, replacing *EXT* with the prop
 extension (e.g for python: `issue_credential.py`, for nodejs: `issue_credential.js`, and so on). 
 We will be modifying this code in later steps.
 
-[ [Python template](python/template.py) | [Java template](java/README.md) | [Rust template](rust/src/template.rs)]
+[ [Python template](python/template.py) | [Java template](java/template.java) | [Rust template](rust/src/template.rs)]
 
 This is a very simple app framework into which you'll plug the code
 you'll be writing.
@@ -34,7 +34,7 @@ copy that code as our starting point.
 Copy the contents of the correspondent *step2* file below into your `issue_credential` file 
 instead of the `Step 2 code goes here` placeholder comment, and save it.
 
-[ [Python step2](python/step2.py) | [Java step2](java/step2.js) | [Rust step2](rust/src/step2.rs)]
+[ [Python step2](python/step2.py) | [Java step2](java/step2.java) | [Rust step2](rust/src/step2.rs)]
 
 ### Step 3
 
@@ -44,7 +44,7 @@ We need another one, now, that can be used to hold credentials once they're issu
 Copy the contents of the correspondent *step3* file below into your `issue_credential` 
 file instead of the `Step 3 code goes here` placeholder comment.
 
-[ [Python step3](python/step3.py) | [Java step3](java/step3.js) | [Rust step3](rust/src/step3.rs)]
+[ [Python step3](python/step3.py) | [Java step3](java/step3.java) | [Rust step3](rust/src/step3.rs)]
 
 Notice that this identity creates something called a *link secret* (formerly
 called a *master secret*; this older term is now deprecated).
@@ -86,13 +86,13 @@ are now deprecated. Eventually, all usage will show "credential."
 Copy the contents of *step4* file below into your `issue_credential` file instead of 
 the `Step 4 code goes here` placeholder comment and save it.
 
-[ [Python step4](python/step4.py) | [Java step4](java/step4.js) | [Rust step4](rust/src/step4.rs)]
+[ [Python step4](python/step4.py) | [Java step4](java/step4.java) | [Rust step4](rust/src/step4.rs)]
 
 ### Step 5
 
 Run the completed demo and observe the whole sequence.
 
-[ [Python complete](python/issue_credential.py) | [Java complete](java/IssueCredential.js) | [Rust complete](rust/src/issue-credential.rs)]
+[ [Python complete](python/issue_credential.py) | [Java complete](java/IssueCredential.java) | [Rust complete](rust/src/issue-credential.rs)]
 
 ## More experiments
 

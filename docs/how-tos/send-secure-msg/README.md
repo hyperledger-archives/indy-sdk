@@ -46,6 +46,8 @@ Open the correspondent `step3` file below in a text editor and copy
 its contents into `send_secure_msg` file created in the first step, replacing the stub of
 the `init()` function from your template. Save it and study the changes.
 
+[ [Python step3](python/step3.py) | [Rust step3](rust/src/step3.rs)]
+
 First `init()` asks the user for their name. It then invokes indy-sdk's
 `create_wallet()` function to make a wallet associated with a fictional
 pool (ledger). It records the wallet handle. Once the wallet has been
@@ -101,6 +103,8 @@ Press **CTRL+C** to kill the app.
 The final feature that our app needs is the ability to read encrypted data.
 Copy the contents of the correspondent `step6` file into your `send_secure_msg` file, replacing the stub of the `prep()` function on it. Then save and study the changes. 
 
+[ [Python step6](python/step6.py) | [Rust step6](rust/src/step6.rs)]
+
 The read function is very simple. It just copies the content of the
 `message.dat` file from disk into memory and then calls indy crypto's
 `auth_decrypt()` function on the byte array. The output is a tuple that
@@ -110,7 +114,9 @@ not.
 
 ### Step 7
 
-Now let's put this all together.
+Now let's put this all together. Try to run the completed demo and observe the whole sequence.
+
+[ [Python complete](python/send_secure_msg.py) | [Rust complete](rust/src/send-secure-msg.rs)]
 
 In your indy development VM, create two shells (command prompts). Both should have the location of your code as their current working directory. Run one instance of your `send_secure_msg` script in the first window, and another in the second window.
 
