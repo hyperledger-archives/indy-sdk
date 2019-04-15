@@ -3528,7 +3528,7 @@ mod medium_cases {
         }
 
         #[test]
-        fn prover_get_credentials_for_proof_req_works_for_invalid_predicate_type() {
+        fn prover_get_credentials_for_proof_req_works_for_lessthan_predicate_type() {
             anoncreds::init_common_wallet();
 
             let wallet_handle = wallet::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
