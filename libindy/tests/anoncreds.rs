@@ -993,12 +993,12 @@ mod high_cases {
                 let credentials_json = anoncreds::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
 
                 let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
-                assert_eq!(credentials.attrs.len(), 1);
-
                 let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
-                assert_eq!(credentials_for_attr_1.len(), 1);
 
                 wallet::close_wallet(wallet_handle).unwrap();
+
+                assert_eq!(credentials.attrs.len(), 1);
+                assert_eq!(credentials_for_attr_1.len(), 1);
             }
 
             #[test]
@@ -3522,13 +3522,14 @@ mod medium_cases {
             }).to_string();
 
             let res = anoncreds::prover_get_credentials_for_proof_req(wallet_handle, &proof_req);
-            assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             wallet::close_wallet(wallet_handle).unwrap();
+
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
 
         #[test]
-        fn prover_get_credentials_for_proof_req_works_for_lessthan_predicate_type() {
+        fn prover_get_credentials_for_proof_req_works_for_invalid_predicate_type() {
             anoncreds::init_common_wallet();
 
             let wallet_handle = wallet::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
@@ -3539,14 +3540,13 @@ mod medium_cases {
                "version":"0.1",
                "requested_attributes": json!({}),
                "requested_predicates": json!({
-                   "predicate1_referent": json!({ "name":"age", "p_type":"<=", "p_value":18 }),
+                   "predicate1_referent": json!({ "name":"age", "p_type":"!=", "p_value":18 }),
                }),
             }).to_string();
 
             let res = anoncreds::prover_get_credentials_for_proof_req(wallet_handle, &proof_req);
-            assert_code!(ErrorCode::Success, res);
-
             wallet::close_wallet(wallet_handle).unwrap();
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
     }
 
