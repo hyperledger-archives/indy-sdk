@@ -1226,7 +1226,7 @@ pub mod auth_rule_command {
                 .add_required_param("action", "Type of an action. One of: ADD, EDIT")
                 .add_required_param("field", "Transaction field")
                 .add_optional_param("old_value", "Old value of field, which can be changed to a new_value (mandatory for EDIT action)")
-                .add_required_param("new_value", "New value that can be used to fill the field")
+                .add_optional_param("new_value", "New value that can be used to fill the field")
                 .add_required_param("constraint", r#"Set of constraints required for execution of an action
          {
              constraint_id - type of a constraint. Can be either "ROLE" to specify final constraint or  "AND"/"OR" to combine constraints.
@@ -1257,7 +1257,7 @@ pub mod auth_rule_command {
         let action = get_str_param("action", params).map_err(error_err!())?;
         let field = get_str_param("field", params).map_err(error_err!())?;
         let old_value = get_opt_str_param("old_value", params).map_err(error_err!())?;
-        let new_value = get_str_param("new_value", params).map_err(error_err!())?;
+        let new_value = get_opt_str_param("new_value", params).map_err(error_err!())?;
         let constraint = get_str_param("constraint", params).map_err(error_err!())?;
 
         let request = Ledger::build_auth_rule_request(&submitter_did, txn_type, &action.to_uppercase(), field, old_value, new_value, constraint)
@@ -3663,7 +3663,7 @@ pub mod tests {
         }"#;
 
         #[test]
-        pub fn auth_rule_works() {
+        pub fn auth_rule_works_for_adding_new_trustee() {
             let ctx = setup_with_wallet_and_pool();
             use_trustee(&ctx);
             {
@@ -3672,7 +3672,24 @@ pub mod tests {
                 params.insert("txn_type", "NYM".to_string());
                 params.insert("action", "add".to_string());
                 params.insert("field", "role".to_string());
-                params.insert("new_value", "101".to_string());
+                params.insert("new_value", "0".to_string());
+                params.insert("constraint", ROLE_CONSTRAINT.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            tear_down_with_wallet_and_pool(&ctx);
+        }
+
+        #[test]
+        pub fn auth_rule_works_for_demoting_trustee() {
+            let ctx = setup_with_wallet_and_pool();
+            use_trustee(&ctx);
+            {
+                let cmd = auth_rule_command::new();
+                let mut params = CommandParams::new();
+                params.insert("txn_type", "NYM".to_string());
+                params.insert("action", "add".to_string());
+                params.insert("field", "role".to_string());
+                params.insert("old_value", "0".to_string());
                 params.insert("constraint", ROLE_CONSTRAINT.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }

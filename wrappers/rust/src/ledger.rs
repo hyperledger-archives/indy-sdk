@@ -1001,8 +1001,8 @@ fn _get_response_metadata(command_handle: IndyHandle, response: &str, cb: Option
 /// * `field`: type of an action for which authentication rules will be applied.
 ///     Can be either "ADD" (to add a new rule) or "EDIT" (to edit an existing one).
 /// * `action`: transaction field for which authentication rule will be applied.
-/// * `old_value`: old value of a field, which can be changed to a new_value (mandatory for EDIT action).
-/// * `new_value`: new value that can be used to fill the field.
+/// * `old_value`: (Optional) old value of a field, which can be changed to a new_value (mandatory for EDIT action).
+/// * `new_value`:(Optional) new value that can be used to fill the field.
 /// * `constraint`: set of constraints required for execution of an action in the following format:
 ///     {
 ///         constraint_id - <string> type of a constraint.
@@ -1021,7 +1021,7 @@ fn _get_response_metadata(command_handle: IndyHandle, response: &str, cb: Option
 /// # Returns
 /// Request result as json.
 pub fn build_auth_rule_request(submitter_did: &str, txn_type: &str, action: &str, field: &str,
-                               old_value: Option<&str>, new_value: &str, constraint: &str) -> Box<Future<Item=String, Error=IndyError>> {
+                               old_value: Option<&str>, new_value: Option<&str>, constraint: &str) -> Box<Future<Item=String, Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
     let err = _build_auth_rule_request(command_handle, submitter_did, txn_type, action, field, old_value, new_value, constraint, cb);
@@ -1035,17 +1035,17 @@ fn _build_auth_rule_request(command_handle: IndyHandle,
                             action: &str,
                             field: &str,
                             old_value: Option<&str>,
-                            new_value: &str,
+                            new_value: Option<&str>,
                             constraint: &str,
                             cb: Option<ResponseStringCB>) -> ErrorCode {
     let submitter_did = c_str!(submitter_did);
     let txn_type = c_str!(txn_type);
     let action = c_str!(action);
     let field = c_str!(field);
-    let new_value = c_str!(new_value);
     let constraint = c_str!(constraint);
 
     let old_value_str = opt_c_str!(old_value);
+    let new_value_str = opt_c_str!(new_value);
 
     ErrorCode::from(unsafe {
         ledger::indy_build_auth_rule_request(command_handle,
@@ -1054,7 +1054,7 @@ fn _build_auth_rule_request(command_handle: IndyHandle,
                                              action.as_ptr(),
                                              field.as_ptr(),
                                              opt_c_ptr!(old_value, old_value_str),
-                                             new_value.as_ptr(),
+                                             opt_c_ptr!(new_value, new_value_str),
                                              constraint.as_ptr(),
                                              cb)
     })
@@ -1067,11 +1067,11 @@ fn _build_auth_rule_request(command_handle: IndyHandle,
 ///     * all - to get authentication rules for specific action (`old_value` can be skipped for `ADD` action)
 ///
 /// # Arguments
-/// * `txn_type`: target ledger transaction alias or associated value.
-/// * `action`: target action type. Can be either "ADD" or "EDIT".
-/// * `field`: target transaction field.
-/// * `old_value`: old value of field, which can be changed to a new_value (must be specified for EDIT action).
-/// * `new_value`: new value that can be used to fill the field.
+/// * `txn_type`: (Optional) target ledger transaction alias or associated value.
+/// * `action`: (Optional) target action type. Can be either "ADD" or "EDIT".
+/// * `field`: (Optional) target transaction field.
+/// * `old_value`: (Optional) old value of field, which can be changed to a new_value (mandatory for EDIT action).
+/// * `new_value`: (Optional) new value that can be used to fill the field.
 ///
 /// # Returns
 /// Request result as json.
