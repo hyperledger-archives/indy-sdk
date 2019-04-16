@@ -1,6 +1,8 @@
 #ifndef __VCX_H
 #define __VCX_H
 
+#include <stdbool.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -16,7 +18,7 @@ typedef unsigned int vcx_proof_handle_t;
 typedef unsigned int vcx_command_handle_t;
 typedef unsigned int vcx_payment_handle_t;
 typedef unsigned int vcx_wallet_search_handle_t;
-typedef unsigned char vcx_bool_t;
+typedef unsigned bool vcx_bool_t;
 typedef unsigned int count_t;
 typedef unsigned long vcx_price_t;
 typedef unsigned int vcx_u32_t;
