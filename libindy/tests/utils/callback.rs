@@ -93,23 +93,23 @@ pub fn _closure_to_cb_ec_i32_usize() -> (Receiver<(ErrorCode, i32, usize)>, i32,
     (receiver, command_handle, Some(_callback))
 }
 
-pub fn _closure_to_cb_ec_bool() -> (Receiver<(ErrorCode, u8)>, i32,
+pub fn _closure_to_cb_ec_bool() -> (Receiver<(ErrorCode, bool)>, i32,
                                     Option<extern fn(command_handle: i32, err: ErrorCode,
-                                                     valid: u8)>) {
+                                                     valid: bool)>) {
     let (sender, receiver) = channel();
 
     lazy_static! {
-        static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode, u8) + Send>>> = Default::default();
+        static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode, bool) + Send>>> = Default::default();
     }
 
     let closure = Box::new(move |err, val| {
         sender.send((err, val)).unwrap();
     });
 
-    extern "C" fn _callback(command_handle: i32, err: ErrorCode, valid: u8) {
+    extern "C" fn _callback(command_handle: i32, err: ErrorCode, valid: bool) {
         let mut callbacks = CALLBACKS.lock().unwrap();
         let mut cb = callbacks.remove(&command_handle).unwrap();
-        cb(err, valid as u8)
+        cb(err, valid)
     }
 
     let mut callbacks = CALLBACKS.lock().unwrap();
