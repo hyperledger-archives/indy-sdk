@@ -1,5 +1,4 @@
 # How Tos
-* 
 
 This folder contains short tutorials demonstrating how to accomplish
 common tasks with the Indy SDK. For best results, proceed through the following in order:
