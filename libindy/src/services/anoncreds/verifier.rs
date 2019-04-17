@@ -159,7 +159,7 @@ impl Verifier {
             )
             .collect::<HashMap<String, usize>>();
 
-        let _predicate_indexes = full_proof.requested_proof.predicates
+        let predicate_indexes = full_proof.requested_proof.predicates
             .iter()
             .map(|(r, info)| (r.to_string(), info.sub_proof_index as usize))
             .collect::<HashMap<String, usize>>();
@@ -177,6 +177,17 @@ impl Verifier {
             )?;
 
             let filter = Verifier::_gather_filter_info(&referent, full_proof, &proof_attr_indexes, schemas, cred_defs)?;
+
+            if !Verifier::_process_operator(&info.name, &op, &filter)? { return Ok(false) }
+        }
+
+        for (referent, info) in proof_req.requested_predicates.iter() {
+
+            let op = parse_from_json(&prover_service
+                .build_query(&info.name, &referent, &info.restrictions, &None)?
+            )?;
+
+            let filter = Verifier::_gather_filter_info(&referent, full_proof, &predicate_indexes, schemas, cred_defs)?;
 
             if !Verifier::_process_operator(&info.name, &op, &filter)? { return Ok(false) }
         }

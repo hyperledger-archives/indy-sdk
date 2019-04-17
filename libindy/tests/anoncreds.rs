@@ -3167,6 +3167,37 @@ mod high_cases {
         }
 
         #[test]
+        fn verifier_verify_proof_fails_for_missing_predicate_restriction() {
+            let proof_req = json!({
+               "nonce":"123432421212",
+               "name":"proof_req_1",
+               "version":"0.1",
+               "requested_attributes": json!({}),
+               "requested_predicates": json!({
+                    "attr1_referent": json!({
+                    "name":"age", "p_type":">=", "p_value":18, "restrictions": json!({ "schema_id": "Not HERE" })})
+
+               }),
+            }).to_string();
+
+            let mut proof: Proof = serde_json::from_str(&anoncreds::proof_json()).unwrap();
+            proof.requested_proof.revealed_attrs.remove("attr1_referent").unwrap();
+            proof.requested_proof.predicates.insert(
+                "attr1_referent".to_string(),
+                serde_json::from_str(&json!({ "sub_proof_index": 0 }).to_string()).unwrap()
+            );
+
+
+            let valid = anoncreds::verifier_verify_proof(&proof_req,
+                                                         &serde_json::to_string(&proof).unwrap(),
+                                                         &anoncreds::schemas_for_proof(),
+                                                         &anoncreds::cred_defs_for_proof(),
+                                                         "{}",
+                                                         "{}").unwrap();
+            assert!(!valid);
+        }
+
+        #[test]
         fn verifier_verify_proof_fails_for_missing_schema_id() {
 
             let proof_req = json!({
@@ -4288,8 +4319,8 @@ mod demos {
                })
            }),
            "requested_predicates": json!({
-               "predicate1_referent": json!({ "name":"age", "p_type":">=", "p_value":18 }),
-               "predicate2_referent": json!({ "name":"period", "p_type":">=", "p_value":5 }),
+               "predicate1_referent": json!({ "name":"age", "p_type":">=", "p_value":18, "restrictions": json!({ "cred_def_id": gvt_cred_def_id })}),
+               "predicate2_referent": json!({ "name":"period", "p_type":">=", "p_value":5}),
            }),
         }).to_string();
 
