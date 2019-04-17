@@ -249,7 +249,7 @@ pub fn issuer_1_gvt_cred_def_id() -> String {
 }
 
 pub fn issuer_2_gvt_cred_def_id() -> String {
-    cred_def_id(ISSUER_DID_2, &gvt_schema_id_issuer2(), SIGNATURE_TYPE, TAG_1)
+    cred_def_id(ISSUER_DID_2, &gvt_schema_id(), SIGNATURE_TYPE, TAG_1)
 }
 
 pub fn issuer_1_xyz_cred_def_id() -> String {
@@ -420,6 +420,7 @@ pub fn issuer_1_gvt_cred_def_json() -> String {
        }).to_string()
 }
 
+// This uses gvt schema issued by ISSUER_2
 pub fn issuer_2_gvt_cred_def_json() -> String {
     json!({
         "id":"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW:3:CL:CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW:2:gvt:1.0:TAG_1",
@@ -502,6 +503,8 @@ pub fn proof_request_attr_and_predicate() -> String {
                })
            }),
            "requested_predicates": json!({
+                "predicate1_referent": json!({ "name":"age", "p_type":">=", "p_value":18 })
+
            }),
         }).to_string()
 }
@@ -720,7 +723,7 @@ pub fn schemas_for_proof_restrictions() -> String {
 
 pub fn cred_defs_for_proof_restrictions() -> String {
     json!({
-       issuer_2_gvt_cred_def_id(): serde_json::from_str::<CredentialDefinition>(&issuer_2_gvt_cred_def_json()).unwrap(),
+       cred_def_id(ISSUER_DID_2, &gvt_schema_id_issuer2(), SIGNATURE_TYPE, TAG_1): serde_json::from_str::<CredentialDefinition>(&issuer_2_gvt_cred_def_json()).unwrap(),
        issuer_1_gvt_cred_def_id(): serde_json::from_str::<CredentialDefinition>(&issuer_1_gvt_cred_def_json()).unwrap(),
        issuer_1_xyz_cred_def_id(): serde_json::from_str::<CredentialDefinition>(&issuer_1_xyz_cred_def_json()).unwrap(),
        issuer_1_xyz_tag2_cred_def_id(): serde_json::from_str::<CredentialDefinition>(&issuer_1_xyz_tag2_cred_def_json()).unwrap(),
