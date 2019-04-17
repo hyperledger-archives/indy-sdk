@@ -478,4 +478,22 @@
     return err;
 }
 
+- (NSError *)listMyDidsWithMeta:(IndyHandle)walletHandle
+                       metadata:(NSString **)metadata {
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+    __block NSString *outMetadata;
+
+    [IndyDid listMyDidsWithMeta:walletHandle completion:^(NSError *error, NSString *metadata) {
+        err = error;
+        outMetadata = metadata;
+        [completionExpectation fulfill];
+    }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
+
+    if (metadata) {*metadata = outMetadata;}
+    return err;
+}
+
 @end

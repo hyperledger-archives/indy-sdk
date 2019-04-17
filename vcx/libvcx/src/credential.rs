@@ -9,6 +9,7 @@ use messages;
 use messages::{GeneralMessage, RemoteMessageType, ObjectWithVersion};
 use messages::payload::{Payloads, PayloadKinds, Thread};
 use messages::get_message;
+use messages::get_message::MessagePayload;
 use connection;
 use settings;
 use utils::libindy::anoncreds::{libindy_prover_create_credential_req, libindy_prover_store_credential};
@@ -244,10 +245,10 @@ impl Credential {
         }
 
         let credential_offer = self.credential_offer.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidState))?;
-        let credential_offer_json = serde_json::to_string(credential_offer)
+        let credential_offer_json = serde_json::to_value(credential_offer)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidCredential, format!("Cannot deserialize CredentilOffer: {}", err)))?;
 
-        Ok(self.to_cred_offer_string(&credential_offer_json))
+        Ok(self.to_cred_offer_string(credential_offer_json))
     }
 
     fn get_credential_id(&self) -> String {
@@ -269,9 +270,9 @@ impl Credential {
         serde_json::Value::from(json).to_string()
     }
 
-    fn to_cred_offer_string(&self, cred_offer: &str) -> String {
+    fn to_cred_offer_string(&self, cred_offer: Value) -> String {
         let mut json = serde_json::Map::new();
-        json.insert("credential_offer".to_string(), Value::String(cred_offer.to_string()));
+        json.insert("credential_offer".to_string(), cred_offer);
         self.set_payment_info(&mut json);
         serde_json::Value::from(json).to_string()
     }
@@ -470,7 +471,7 @@ pub fn get_credential_offer_messages(connection_handle: u32) -> VcxResult<String
         .or(Err(VcxError::from(VcxErrorKind::InvalidMessages)))
 }
 
-fn _set_cred_offer_ref_message(payload: &Vec<i8>, my_vk: &str, msg_id: &str) -> VcxResult<Vec<Value>> {
+fn _set_cred_offer_ref_message(payload: &MessagePayload, my_vk: &str, msg_id: &str) -> VcxResult<Vec<Value>> {
     let (offer, thread) = Payloads::decrypt(my_vk, payload)?;
 
     let (mut offer, payment_info) = parse_json_offer(&offer)?;
@@ -724,5 +725,16 @@ pub mod tests {
         assert!(cred.send_request(1234).is_err());
         let new_balance = get_wallet_token_info().unwrap().get_balance();
         assert_eq!(new_balance, balance);
+    }
+
+    #[test]
+    fn test_get_cred_offer_returns_json_string_with_cred_offer_json_nested() {
+        init!("true");
+        let handle = from_string(::utils::constants::DEFAULT_SERIALIZED_CREDENTIAL).unwrap();
+        let offer_string = get_credential_offer(handle).unwrap();
+        let offer_value: serde_json::Value = serde_json::from_str(&offer_string).unwrap();
+
+        let offer_struct: CredentialOffer = serde_json::from_value(offer_value["credential_offer"].clone()).unwrap();
+
     }
 }

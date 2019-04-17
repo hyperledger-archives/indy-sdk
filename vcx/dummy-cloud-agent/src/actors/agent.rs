@@ -36,7 +36,7 @@ impl Agent {
         trace!("Agent::create >> {:?}, {:?}, {:?}, {:?}",
                owner_did, owner_verkey, forward_agent_detail, wallet_storage_config);
 
-        let wallet_id = rand::rand_string(10);
+        let wallet_id = format!("dummy_{}_{}", owner_did, rand::rand_string(10));
         let wallet_key = rand::rand_string(10);
 
         let wallet_config = json!({
@@ -223,10 +223,18 @@ impl Agent {
             })
             .and_then(|(sender_vk, mut msgs), slf, _| {
                 match msgs.pop() {
-                    Some(A2AMessage::Version1(A2AMessageV1::Forward(msg))) |
-                    Some(A2AMessage::Version2(A2AMessageV2::Forward(msg))) => {
+                    Some(A2AMessage::Version1(A2AMessageV1::Forward(msg))) => {
                         slf.router
                             .send(RouteA2AMsg(msg.fwd, msg.msg))
+                            .from_err()
+                            .and_then(|res| res)
+                            .into_actor(slf)
+                            .into_box()
+                    }
+                    Some(A2AMessage::Version2(A2AMessageV2::Forward(msg))) => {
+                        let msg_ = ftry_act!(slf, serde_json::to_vec(&msg.msg));
+                        slf.router
+                            .send(RouteA2AMsg(msg.fwd, msg_))
                             .from_err()
                             .and_then(|res| res)
                             .into_actor(slf)
@@ -751,7 +759,7 @@ mod tests {
                             status_code: MessageStatusCode::Created,
                             sender_did: EDGE_PAIRWISE_DID.to_string(),
                             type_: RemoteMessageType::CredOffer,
-                            payload: Some(to_i8(&PAYLOAD.to_vec())),
+                            payload: Some(MessageDetailPayload::V1(to_i8(&PAYLOAD.to_vec()))),
                             ref_msg_id: None,
                         }]
                     };

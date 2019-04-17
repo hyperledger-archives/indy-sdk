@@ -11,8 +11,8 @@ use indy_crypto::cl::{
 use std::collections::HashMap;
 use named_type::NamedType;
 
-pub const CL_SIGNATURE_TYPE: &'static str = "CL";
-pub const CRED_DEF_MARKER: &'static str = "3";
+pub const CL_SIGNATURE_TYPE: &str = "CL";
+pub const CRED_DEF_MARKER: &str = "3";
 
 #[derive(Deserialize, Debug, Serialize, PartialEq, Clone)]
 pub enum SignatureType {

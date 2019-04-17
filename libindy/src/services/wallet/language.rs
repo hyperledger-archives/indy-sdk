@@ -14,11 +14,11 @@ pub enum TagName {
 
 impl TagName {
     fn from(s: String) -> IndyResult<TagName> {
-        if s.is_empty() || s.starts_with("~") && s.len() == 1 {
+        if s.is_empty() || s.starts_with('~') && s.len() == 1 {
             return Err(err_msg(IndyErrorKind::WalletQueryError, "Tag name must not be empty"));
         }
 
-        if s.starts_with("~") {
+        if s.starts_with('~') {
             Ok(TagName::PlainTagName(s.into_bytes()[1..].to_vec()))
         } else {
             Ok(TagName::EncryptedTagName(s.into_bytes()))

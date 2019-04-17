@@ -14,6 +14,7 @@ package="$1"
 
 export PKG_CONFIG_ALLOW_CROSS=1
 export POD_FILE_NAME=${package}.tar.gz
+export LIBINDY_POD_VERSION=1.8.2
 
 if [ -z "${OPENSSL_DIR}" ]; then
     export OPENSSL_DIR=/usr/local/Cellar/openssl/1.0.2q
