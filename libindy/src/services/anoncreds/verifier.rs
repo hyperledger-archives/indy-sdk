@@ -1,6 +1,6 @@
 extern crate indy_crypto;
 
-use std::collections::{HashMap};
+use std::collections::HashMap;
 
 use domain::anoncreds::credential_definition::{CredentialDefinitionV1, CredentialDefinition};
 use domain::anoncreds::proof::{Proof, RequestedProof};
