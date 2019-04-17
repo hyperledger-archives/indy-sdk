@@ -116,6 +116,15 @@ impl VerifierCommandExecutor {
                                format!("Requested predicates {:?} do not correspond to received {:?}", requested_predicates, received_predicates)));
         }
 
+        if !self.anoncreds_service.verifier.verify_requested_restrictions(&self.anoncreds_service.prover,
+                                                                                     &proof_req,
+                                                                                     &proof,
+                                                                                     schemas,
+                                                                                     cred_defs)? {
+            warn!("Requested restrictions in Proof Request don't match Proof");
+            return Ok(false);
+        }
+
         let result = self.anoncreds_service.verifier.verify(&proof,
                                                             &proof_req,
                                                             schemas,

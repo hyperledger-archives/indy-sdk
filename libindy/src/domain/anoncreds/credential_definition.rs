@@ -76,6 +76,10 @@ impl CredentialDefinition {
             format!("{}{}{}{}{}{}{}{}{}", did, DELIMITER, CRED_DEF_MARKER, DELIMITER, signature_type, DELIMITER, schema_id, DELIMITER, tag)
         }
     }
+
+    pub fn issuer_did(cred_def_id: &str) -> Option<String> {
+        cred_def_id.split(":").collect::<Vec<&str>>().get(0).and_then(|s| Some(s.to_string()))
+    }
 }
 
 impl From<CredentialDefinition> for CredentialDefinitionV1 {

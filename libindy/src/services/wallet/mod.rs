@@ -28,7 +28,7 @@ mod storage;
 mod encryption;
 mod query_encryption;
 mod iterator;
-mod language;
+pub mod language;
 mod export_import;
 mod wallet;
 
