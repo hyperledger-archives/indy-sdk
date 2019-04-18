@@ -163,6 +163,9 @@ public class AnoncredsIntegrationTest {
 		String credentialId3 = "id3";
 		Anoncreds.proverStoreCredential(wallet, credentialId3, issuer2GvtCredReqMetadata, issuer2GvtCredential, issuer2gvtCredDef, null).get();
 
+		String credentialIdX = "idX";
+		Anoncreds.proverStoreCredential(wallet, credentialIdX, issuer2GvtCredReqMetadata, issuer2GvtCredential, issuer2gvtCredDef, null).get();
+
 		walletOpened = true;
 	}
 }

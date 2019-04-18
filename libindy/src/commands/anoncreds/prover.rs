@@ -55,6 +55,10 @@ pub enum ProverCommand {
         WalletHandle,
         String, // credential id
         Box<Fn(IndyResult<String>) + Send>),
+    DeleteCredential(
+        WalletHandle,
+        String, // credential id
+        Box<Fn(IndyResult<()>) + Send>),
     SearchCredentials(
         WalletHandle,
         Option<String>, // query json
@@ -177,6 +181,10 @@ impl ProverCommandExecutor {
             ProverCommand::GetCredential(wallet_handle, cred_id, cb) => {
                 info!(target: "prover_command_executor", "GetCredential command received");
                 cb(self.get_credential(wallet_handle, &cred_id));
+            }
+            ProverCommand::DeleteCredential(wallet_handle, cred_id, cb) => {
+                info!(target: "prover_command_executor", "DeleteCredential command received");
+                cb(self.delete_credential(wallet_handle, &cred_id));
             }
             ProverCommand::SearchCredentials(wallet_handle, query_json, cb) => {
                 info!(target: "prover_command_executor", "SearchCredentials command received");
@@ -318,6 +326,12 @@ impl ProverCommandExecutor {
         let out_cred_id = cred_id.map(String::from).unwrap_or(uuid::Uuid::new_v4().to_string());
 
         let cred_tags = self.anoncreds_service.prover.build_credential_tags(&credential);
+
+        let mut tag_names: Vec<String> = Vec::new();
+        for (k, _) in cred_tags.iter() {
+            tag_names.push(k.to_string());
+        }
+
         self.wallet_service.add_indy_object(wallet_handle, &out_cred_id, credential, &cred_tags)?;
 
         debug!("store_credential <<< out_cred_id: {:?}", out_cred_id);
@@ -548,6 +562,18 @@ impl ProverCommandExecutor {
         trace!("close_credentials_search_for_proof_req <<< res: {:?}", res);
 
         Ok(res)
+    }
+
+    fn delete_credential(&self,
+                        wallet_handle: WalletHandle,
+                        cred_id: &str) -> IndyResult<()> {
+        trace!("delete_credential >>> wallet_handle: {:?}, cred_id: {:?}", wallet_handle, cred_id);
+
+        if !self.wallet_service.record_exists::<Credential>(wallet_handle, cred_id)? {
+            return Err(err_msg(IndyErrorKind::WalletItemNotFound, format!("Credential {} not found", cred_id)));
+        }
+
+        self.wallet_service.delete_indy_record::<Credential>(wallet_handle, cred_id)
     }
 
     fn create_proof(&self,

@@ -65,7 +65,7 @@ fn _issuer_create_schema(command_handle: IndyHandle, issuer_did: &str, name: &st
 /// It is IMPORTANT for current version GET Schema from Ledger with correct seq_no to save compatibility with Ledger.
 ///
 /// # Arguments
-/// * `wallet_handle`: wallet handler (created by Wallet::open_wallet).
+/// * `wallet_handle`: wallet handle (created by Wallet::open_wallet).
 /// * `issuer_did`: a DID of the issuer signing cred_def transaction to the Ledger
 /// * `schema_json`: credential schema as a json
 /// * `tag`: allows to distinct between credential definitions for the same issuer and schema
@@ -116,7 +116,7 @@ fn _issuer_create_and_store_credential_def(command_handle: IndyHandle, wallet_ha
 /// This call requires access to pre-configured blob storage writer instance handle that will allow to write generated tails.
 ///
 /// # Arguments
-/// * `wallet_handle`: wallet handler (created by Wallet::open_wallet).
+/// * `wallet_handle`: wallet handle (created by Wallet::open_wallet).
 /// * `issuer_did`: a DID of the issuer signing transaction to the Ledger
 /// * `revoc_def_type`: revocation registry type (optional, default value depends on credential definition type). Supported types are:
 ///     - 'CL_ACCUM': Type-3 pairing based accumulator. Default for 'CL' credential definition type
@@ -161,7 +161,7 @@ fn _issuer_create_and_store_revoc_reg(command_handle: IndyHandle, wallet_handle:
 /// for authentication between protocol steps and integrity checking.
 ///
 /// # Arguments
-/// * `wallet_handle`: wallet handler (created by Wallet::open_wallet)
+/// * `wallet_handle`: wallet handle (created by Wallet::open_wallet)
 /// * `cred_def_id`: id of credential definition stored in the wallet
 ///
 /// # Returns
@@ -200,7 +200,7 @@ fn _issuer_create_credential_offer(command_handle: IndyHandle, wallet_handle: In
 /// Note that it is possible to accumulate deltas to reduce ledger load.
 ///
 /// # Arguments
-/// * `wallet_handle`: wallet handler (created by Wallet::open_wallet).
+/// * `wallet_handle`: wallet handle (created by Wallet::open_wallet).
 /// * `cred_offer_json`: a cred offer created by create_credential_offer
 /// * `cred_req_json`: a credential request created by store_credential
 /// * `cred_values_json`: a credential containing attribute values for each of requested attribute names.
@@ -253,7 +253,7 @@ fn _issuer_create_credential(command_handle: IndyHandle, wallet_handle: IndyHand
 /// Note that it is possible to accumulate deltas to reduce ledger load.
 ///
 /// # Arguments
-/// * `wallet_handle`: wallet handler (created by Wallet::open_wallet).
+/// * `wallet_handle`: wallet handle (created by Wallet::open_wallet).
 /// * `blob_storage_reader_cfg_handle`: configuration of blob storage reader handle that will allow to read revocation tails
 /// * `rev_reg_id: id of revocation` registry stored in wallet
 /// * `cred_revoc_id`: local id for revocation info
@@ -308,7 +308,7 @@ fn _issuer_merge_revocation_registry_deltas(command_handle: IndyHandle, rev_reg_
 /// The id must be unique.
 ///
 /// # Arguments
-/// * `wallet_handle`: wallet handler (created by Wallet::open_wallet).
+/// * `wallet_handle`: wallet handle (created by Wallet::open_wallet).
 /// * `master_secret_id`: (optional, if not present random one will be generated) new master id
 ///
 /// # Returns
@@ -332,7 +332,7 @@ fn _prover_create_master_secret(command_handle: IndyHandle, wallet_handle: IndyH
 /// Gets human readable credential by the given id.
 ///
 /// # Arguments
-/// * `wallet_handle`: wallet handler (created by Wallet::open_wallet).
+/// * `wallet_handle`: wallet handle (created by Wallet::open_wallet).
 /// * `cred_id`: Identifier by which requested credential is stored in the wallet
 ///
 /// # Returns
@@ -360,6 +360,27 @@ fn _prover_get_credential(command_handle: IndyHandle, wallet_handle: IndyHandle,
     })
 }
 
+/// Deletes credential by given id.
+///
+/// # Arguments
+/// * `wallet_handle`: wallet handle (created by Wallet::open_wallet).
+/// * `cred_id`: Identifier by which requested credential is stored in the wallet
+pub fn prover_delete_credential(wallet_handle: IndyHandle, cred_id: &str) -> Box<Future<Item=(), Error=IndyError>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
+
+    let err = _prover_delete_credential(command_handle, wallet_handle, cred_id, cb);
+
+    ResultHandler::str(command_handle, err, receiver)
+}
+
+fn _prover_delete_credential(command_handle: IndyHandle, wallet_handle: IndyHandle, cred_id: &str, cb: Option<ResponseEmptyCB>) -> ErrorCode {
+    let cred_id = c_str!(cred_id);
+
+    ErrorCode::from(unsafe {
+      anoncreds::indy_prover_delete_credential(command_handle, wallet_handle, cred_id.as_ptr(), cb)
+    })
+}
+
 /// Creates a credential request for the given credential offer.
 ///
 /// The method creates a blinded master secret for a master secret identified by a provided name.
@@ -367,7 +388,7 @@ fn _prover_get_credential(command_handle: IndyHandle, wallet_handle: IndyHandle,
 /// The blinded master secret is a part of the credential request.
 ///
 /// # Arguments
-/// * `wallet_handle`: wallet handler (created by open_wallet)
+/// * `wallet_handle`: wallet handle (created by open_wallet)
 /// * `prover_did`: a DID of the prover
 /// * `cred_offer_json`: credential offer as a json containing information about the issuer and a credential
 /// * `cred_def_json`: credential definition json related to <cred_def_id> in <cred_offer_json>
@@ -422,7 +443,7 @@ fn _prover_create_credential_req(command_handle: IndyHandle, wallet_handle: Indy
 ///     }
 ///
 /// # Arguments
-/// * `wallet_handle`: wallet handler (created by open_wallet).
+/// * `wallet_handle`: wallet handle (created by open_wallet).
 /// * `cred_id`: (optional, default is a random one) identifier by which credential will be stored in the wallet
 /// * `cred_req_metadata_json`: a credential request metadata created by create_credential_req
 /// * `cred_json`: credential json received from issuer
@@ -456,7 +477,7 @@ fn _prover_store_credential(command_handle: IndyHandle, wallet_handle: IndyHandl
 /// Credentials can be filtered by Issuer, credential_def and/or Schema.
 ///
 /// # Arguments
-/// * `wallet_handle`: wallet handler (created by open_wallet).
+/// * `wallet_handle`: wallet handle (created by open_wallet).
 /// * `filter_json`: filter for credentials {
 ///    "schema_id": string, (Optional)
 ///    "schema_issuer_did": string, (Optional)
@@ -499,7 +520,7 @@ fn _prover_get_credentials(command_handle: IndyHandle, wallet_handle: IndyHandle
 /// to fetch records by small batches (with fetch_credentials).
 ///
 /// # Arguments
-/// * `wallet_handle`: wallet handler (created by Wallet::open_wallet).
+/// * `wallet_handle`: wallet handle (created by Wallet::open_wallet).
 /// * `query_json`: Wql query filter for credentials searching based on tags.
 ///     where query: indy-sdk/doc/design/011-wallet-query-language/README.md
 ///
@@ -578,7 +599,7 @@ fn _prover_close_credentials_search(command_handle: IndyHandle, search_handle: I
 /// Use <search_credentials_for_proof_req> to fetch records by small batches.
 ///
 /// # Arguments
-/// * `wallet_handle`: wallet handler (created by Wallet::open_wallet).
+/// * `wallet_handle`: wallet handle (created by Wallet::open_wallet).
 /// * `proof_request_json`: proof request json
 ///     {
 ///         "name": string,
@@ -670,7 +691,7 @@ fn _prover_get_credentials_for_proof_req(command_handle: IndyHandle, wallet_hand
 /// to fetch records by small batches (with fetch_credentials_for_proof_req).
 ///
 /// # Arguments
-/// * `wallet_handle`: wallet handler (created by Wallet::open_wallet).
+/// * `wallet_handle`: wallet handle (created by Wallet::open_wallet).
 /// * `proof_request_json`: proof request json
 ///     {
 ///         "name": string,
@@ -819,7 +840,7 @@ fn _prover_close_credentials_search_for_proof_req(command_handle: IndyHandle, se
 /// The proof contains either proof or self-attested attribute value for each requested attribute.
 ///
 /// # Arguments
-/// * `wallet_handle`: wallet handler (created by Wallet::open_wallet).
+/// * `wallet_handle`: wallet handle (created by Wallet::open_wallet).
 /// * `proof_request_json`: proof request json
 ///     {
 ///         "name": string,
@@ -963,7 +984,7 @@ fn _prover_create_proof(command_handle: IndyHandle, wallet_handle: IndyHandle, p
 /// All required schemas, public keys and revocation registries must be provided.
 ///
 /// # Arguments
-/// * `wallet_handle`: wallet handler (created by Wallet::open_wallet).
+/// * `wallet_handle`: wallet handle (created by Wallet::open_wallet).
 /// * `proof_request_json`: proof request json
 ///     {
 ///         "name": string,

@@ -28,6 +28,11 @@ async def test_store_their_did_works_for_invalid_handle(wallet_handle, did_my):
 
 
 @pytest.mark.asyncio
+async def test_store_their_did_works_with_verkeys(wallet_handle, did_my1, verkey_my1, verkey_my2, did_my2):
+    await did.store_their_did(wallet_handle, json.dumps({"did": did_my1, "verkey": verkey_my1}))
+    await did.store_their_did(wallet_handle, json.dumps({"did": did_my1, "verkey": verkey_my2}))
+
+@pytest.mark.asyncio
 async def test_store_their_did_works_with_verkey(wallet_handle, did_my1, verkey_my1):
     await did.store_their_did(wallet_handle, json.dumps({"did": did_my1, "verkey": verkey_my1}))
 

@@ -95,6 +95,12 @@ extern {
                                       cb: Option<ResponseStringCB>) -> Error;
 
     #[no_mangle]
+    pub fn indy_prover_delete_credential(command_handle: Handle,
+                                         wallet_handle: Handle,
+                                         cred_id: CString,
+                                         cb: Option<ResponseEmptyCB>) -> Error;
+
+    #[no_mangle]
     pub fn indy_prover_get_credentials(command_handle: Handle,
                                        wallet_handle: Handle,
                                        filter_json: CString,
