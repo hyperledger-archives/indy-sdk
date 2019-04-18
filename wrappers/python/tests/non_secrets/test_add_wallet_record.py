@@ -15,7 +15,6 @@ async def test_add_wallet_record_works_for_different_ids(wallet_handle):
     await non_secrets.add_wallet_record(wallet_handle, type_, id1, value1, tags1)
     await non_secrets.add_wallet_record(wallet_handle, type_, id2, value1, tags1)
     await non_secrets.add_wallet_record(wallet_handle, type_, id3, value1, tags1)
-    await non_secrets.add_wallet_record(wallet_handle, type_, id1, value2, tags1)
 
 
 @pytest.mark.asyncio
