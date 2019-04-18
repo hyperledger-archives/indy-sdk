@@ -70,7 +70,6 @@ async def test_send_get_nym_request_works(pool_handle, identity_trustee1):
     get_nym_request = await ledger.build_get_nym_request(my_did, my_did)
 
     response = json.loads(await ledger.submit_request(pool_handle, get_nym_request))
-    print('NYM: {}'.format(response))
     assert response['result']['data'] is not None
 
 

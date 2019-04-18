@@ -19,8 +19,7 @@ async def test_import_wallet_works(wallet_handle, wallet_config, credentials, ex
     await wallet.close_wallet(wallet_handle)
     await wallet.delete_wallet(wallet_config, credentials)
 
-    # await wallet.import_wallet(wallet_config, credentials, export_config)
-    await wallet.import_wallet(wallet_config, '{"key":"1234"}', export_config)
+    await wallet.import_wallet(wallet_config, credentials, export_config)
     wallet_handle = await wallet.open_wallet(wallet_config, credentials)
 
     did_with_meta_after = await did.get_my_did_with_meta(wallet_handle, _did)

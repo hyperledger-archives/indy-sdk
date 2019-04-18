@@ -1,7 +1,6 @@
 import asyncio
 import json
 import logging
-import time
 from os import environ
 from pathlib import Path
 from shutil import rmtree
@@ -11,7 +10,7 @@ import pytest
 
 from indy import wallet, pool, did, ledger
 
-logging.basicConfig(level=logging.WARNING)
+logging.basicConfig(level=logging.DEBUG)
 
 
 @pytest.fixture(scope="session")
@@ -154,8 +153,7 @@ def credentials():
     logger = logging.getLogger(__name__)
     logger.debug("credentials: >>>")
 
-    # res = '{"key":"8dvfYSt5d1taSd6yJdpjq4emkwsPDDLYxkNFysFD2cZY", "key_derivation_method": "RAW"}'
-    res = '{"key":"8dvfYSt5d1taSd6yJdpjq4emkwsPDDLYxkNFysFD2cZY"}'
+    res = '{"key":"8dvfYSt5d1taSd6yJdpjq4emkwsPDDLYxkNFysFD2cZY", "key_derivation_method": "RAW"}'
 
     logger.debug("credentials: <<< res: %r", res)
     return res
@@ -467,36 +465,14 @@ async def identity_my1(wallet_handle, pool_handle, seed_my1, ):
     return my_did, my_verkey
 
 
-def ppjson(dumpit):
-    return json.dumps(json.loads(dumpit) if isinstance(dumpit, str) else dumpit, indent=4)
-
 @pytest.fixture
-async def identity_my(wallet_handle, pool_handle, identity_trustee1, seed_my1):
+async def identity_my(wallet_handle, pool_handle, identity_trustee1, seed_my1, ):
     (trustee_did, trustee_verkey) = identity_trustee1
 
     (my_did, my_verkey) = await did.create_and_store_my_did(wallet_handle, "{}")
 
-    for (role, verkey) in [('TRUST_ANCHOR', my_verkey), ('', None), (None, None), ('TRUST_ANCHOR', None)]:
-        print('\n\n------------------')
-        print('Trustee {} sending role {}, my_verkey {} for my_did {}'.format(trustee_did, role, verkey, my_did))
-        nym_request = await ledger.build_nym_request(trustee_did, my_did, verkey, None, role)
-        print('.. NYM_REQUEST {}'.format(ppjson(nym_request)))
-        response = json.loads(await ledger.sign_and_submit_request(
-            pool_handle,
-            wallet_handle,
-            trustee_did,
-            nym_request))
-        print('.. NYM response {}'.format(ppjson(response)))
-        assert response['op'] == 'REPLY'
-        print('.. sleeping 5 seconds')
-        time.sleep(5)
-
-        get_nym_request = await ledger.build_get_nym_request(trustee_did, my_did)
-        print('.. GET_NYM_REQUEST {}'.format(ppjson(get_nym_request)))
-        response = json.loads(await ledger.submit_request(pool_handle, get_nym_request))
-        print('.. GET_NYM response {}, data role: [{}]'.format(
-            ppjson(response),
-            json.loads(response['result']['data'])['role']))
+    nym_request = await ledger.build_nym_request(trustee_did, my_did, my_verkey, None, 'TRUSTEE')
+    await ledger.sign_and_submit_request(pool_handle, wallet_handle, trustee_did, nym_request)
 
     return my_did, my_verkey
 
