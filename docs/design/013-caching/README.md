@@ -56,7 +56,10 @@ pub extern fn indy_get_cred_def(command_handle: IndyHandle,
 /// id: identifier of schema.
 /// options_json:
 ///  {
-///    forceUpdate: (optional, false by default) Force update of record in cache from the ledger,
+///    noCache: (bool, optional, false by default) Skip usage of cache,
+///    noUpdate: (bool, optional, false by default) Use only cached data, do not try to update. 
+///    noStore: (bool, optional, false by default) Skip storing fresh data if updated,
+///    minFresh: (int, optional, -1 by default) Return cached data if not older than this many seconds. -1 means do not check age.
 ///  }
 /// cb: Callback that takes command result as parameter.
 #[no_mangle]
@@ -70,6 +73,47 @@ pub extern fn indy_get_schema(command_handle: IndyHandle,
                                                    err: ErrorCode,
                                                    schema_json: *const c_char)>) -> ErrorCode {
 }
+
+/// Purge credential definition cache.
+/// 
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// wallet_handle: wallet handle (created by open_wallet).
+/// id: identifier of schema.
+/// options_json:
+///  {
+///    minFresh: (int, optional, -1 by default) Purge cached data if older than this many seconds. -1 means purge all.
+///  }
+/// cb: Callback that takes command result as parameter.
+#[no_mangle]
+pub extern fn indy_purge_cred_def_cache(command_handle: IndyHandle,
+                                        wallet_handle: IndyHandle,
+                                        options_json: *const c_char,
+                                        cb: Option<extern fn(command_handle_: IndyHandle,
+                                                             err: ErrorCode)>) -> ErrorCode {
+
+}
+
+/// Purge schema cache.
+/// 
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// wallet_handle: wallet handle (created by open_wallet).
+/// id: identifier of schema.
+/// options_json:
+///  {
+///    maxAge: (int, mandatory) Purge cached data if older than this many seconds. -1 means purge all.
+///  }
+/// cb: Callback that takes command result as parameter.
+#[no_mangle]
+pub extern fn indy_purge_schema_cache(command_handle: IndyHandle,
+                                      wallet_handle: IndyHandle,
+                                      options_json: *const c_char,
+                                      cb: Option<extern fn(command_handle_: IndyHandle,
+                                                           err: ErrorCode)>) -> ErrorCode {
+
+}
+
 ```
 
 ## Storing of the data into wallet
@@ -80,34 +124,4 @@ This way data may be fetched very efficiently and also easy to be deleted when n
 
 ## Purging the cache
 
-Several methods may be implemented for purging the cached data:
-
-#### Purge all
-
-Advantages:
-* Very simple to implement.
-* Only one method would be needed (eg. `indy_purge_cache`).
-
-Disadvantages:
-* Low selectivity of purging
-
-#### Purge all of one type
-
-Advantages:
-* Very simple to implement.
-* Only one method per cache type is needed (eg. `indy_purge_cred_def_cache`).
-
-Disadvantages:
-* Low selectivity of purging
-
-#### LRU mechanism limited by size/number of cached data.
-
-Advantages:
-* Limited wallet data.
-* Only useful data is being kept, older not needed data is being purged automatically.
-
-Disadvantages:
-* Complex to implement.
-* Every fetching of data from cache would also introduce update of timestamp data (last used).
-
-Also some data can be locked-in to be always present (useful for out of internet scenario).
+Data may be purged if older than some number of seconds.
