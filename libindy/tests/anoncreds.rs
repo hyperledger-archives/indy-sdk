@@ -3140,17 +3140,13 @@ mod high_cases {
                    "nonce":"123432421212",
                    "name":"proof_req_1",
                    "version":"0.1",
-                   "requested_attributes": json!({
-                       "attr1_referent": json!({
+                   "requested_attributes": {
+                       "attr1_referent": {
                            "name":"name",
-                           "restrictions": json!({
-                               "issuer_did": json!({
-                                    "$in": vec!["NO DID"]
-                               })
-                           })
-                       })
-                   }),
-                   "requested_predicates": json!({}),
+                           "restrictions": { "issuer_did": { "$in": ["NO DID"] } }
+                       }
+                   },
+                   "requested_predicates": {},
                 }).to_string();
 
             let valid = anoncreds::verifier_verify_proof(&proof_req,
@@ -3168,12 +3164,12 @@ mod high_cases {
                "nonce":"123432421212",
                "name":"proof_req_1",
                "version":"0.1",
-               "requested_attributes": json!({}),
-               "requested_predicates": json!({
-                    "attr1_referent": json!({
-                    "name":"age", "p_type":">=", "p_value":18, "restrictions": json!({ "schema_id": "Not HERE" })})
+               "requested_attributes": {},
+               "requested_predicates": {
+                    "attr1_referent": {
+                    "name":"age", "p_type":">=", "p_value":18, "restrictions": { "schema_id": "Not HERE" }}
 
-               }),
+               },
             }).to_string();
 
             let mut proof: Proof = serde_json::from_str(&anoncreds::proof_json()).unwrap();
@@ -3200,13 +3196,13 @@ mod high_cases {
                    "nonce":"123432421212",
                    "name":"proof_req_1",
                    "version":"0.1",
-                   "requested_attributes": json!({
-                       "attr1_referent": json!({
+                   "requested_attributes": {
+                       "attr1_referent": {
                            "name":"name",
-                           "restrictions": json!({ "schema_id": "Not HERE" }),
-                       })
-                   }),
-                   "requested_predicates": json!({}),
+                           "restrictions": { "schema_id": "Not HERE" },
+                       }
+                   },
+                   "requested_predicates": {},
                 }).to_string();
 
             let valid = anoncreds::verifier_verify_proof(&proof_req,
@@ -3225,13 +3221,13 @@ mod high_cases {
                    "nonce":"123432421212",
                    "name":"proof_req_1",
                    "version":"0.1",
-                   "requested_attributes": json!({
-                       "attr1_referent": json!({
+                   "requested_attributes": {
+                       "attr1_referent": {
                            "name":"name",
-                           "restrictions": json!({ "schema_issuer_did": "Not HERE" }),
-                       })
-                   }),
-                   "requested_predicates": json!({}),
+                           "restrictions": { "schema_issuer_did": "Not HERE" },
+                       }
+                   },
+                   "requested_predicates": {},
                 }).to_string();
 
             let valid = anoncreds::verifier_verify_proof(&proof_req,
@@ -3250,13 +3246,13 @@ mod high_cases {
                    "nonce":"123432421212",
                    "name":"proof_req_1",
                    "version":"0.1",
-                   "requested_attributes": json!({
-                       "attr1_referent": json!({
+                   "requested_attributes": {
+                       "attr1_referent": {
                            "name":"name",
-                           "restrictions": json!({ "schema_name": "Not HERE" }),
-                       })
-                   }),
-                   "requested_predicates": json!({}),
+                           "restrictions": { "schema_name": "Not HERE" },
+                       }
+                   },
+                   "requested_predicates": {},
                 }).to_string();
 
             let valid = anoncreds::verifier_verify_proof(&proof_req,
@@ -3275,13 +3271,13 @@ mod high_cases {
                    "nonce":"123432421212",
                    "name":"proof_req_1",
                    "version":"0.1",
-                   "requested_attributes": json!({
-                       "attr1_referent": json!({
+                   "requested_attributes": {
+                       "attr1_referent": {
                            "name":"name",
-                           "restrictions": json!({ "schema_version": "Not HERE" }),
-                       })
-                   }),
-                   "requested_predicates": json!({}),
+                           "restrictions": { "schema_version": "Not HERE" },
+                       }
+                   },
+                   "requested_predicates": {},
                 }).to_string();
 
             let valid = anoncreds::verifier_verify_proof(&proof_req,
@@ -3300,13 +3296,13 @@ mod high_cases {
                    "nonce":"123432421212",
                    "name":"proof_req_1",
                    "version":"0.1",
-                   "requested_attributes": json!({
-                       "attr1_referent": json!({
+                   "requested_attributes": {
+                       "attr1_referent": {
                            "name":"name",
-                           "restrictions": json!({ "cred_def_id": "Not HERE" }),
-                       })
-                   }),
-                   "requested_predicates": json!({}),
+                           "restrictions": { "cred_def_id": "Not HERE" },
+                       }
+                   },
+                   "requested_predicates": {},
                 }).to_string();
 
             let valid = anoncreds::verifier_verify_proof(&proof_req,
@@ -3325,13 +3321,13 @@ mod high_cases {
                    "nonce":"123432421212",
                    "name":"proof_req_1",
                    "version":"0.1",
-                   "requested_attributes": json!({
-                       "attr1_referent": json!({
+                   "requested_attributes": {
+                       "attr1_referent": {
                            "name":"name",
-                           "restrictions": json!({ "UNKNOWN": "Not HERE" }),
-                       })
-                   }),
-                   "requested_predicates": json!({}),
+                           "restrictions": { "UNKNOWN": "Not HERE" },
+                       }
+                   },
+                   "requested_predicates": {},
                 }).to_string();
 
             let res = anoncreds::verifier_verify_proof(&proof_req,
@@ -3935,12 +3931,12 @@ mod medium_cases {
                 AttributeInfo {
                     name: "name".to_string(),
                     restrictions: Some(json!({
-                        "cred_def_id":json!({
-                                "$in":vec![
+                        "cred_def_id":{
+                                "$in":[
                                     "not here 1",
                                     "NcYxiDXkpYi6ov5FcYDi1e:3:CL:NcYxiDXkpYi6ov5FcYDi1e:2:xyz:1.0:TAG_1",
                                     "not here 3",
-                            ] })
+                            ] }
                     })),
                     non_revoked: None
                 }
@@ -3962,14 +3958,14 @@ mod medium_cases {
                 AttributeInfo {
                     name: "name".to_string(),
                     restrictions: Some(json!([
-                        json!({
+                        {
                             "cred_def_id":"Not Here",
                             "issuer_did":"Not Here"
-                        }),
-                        json!({
+                        },
+                        {
                             "cred_def_id":"Not Here 2",
                             "issuer_did":"Not Here 2"
-                        })
+                        }
                     ])),
                     non_revoked: None
                 }
@@ -3991,14 +3987,10 @@ mod medium_cases {
                 AttributeInfo {
                     name: "name".to_string(),
                     restrictions: Some(json!({
-                            "$or":json!([
-                                json!({
-                                    "schema_id":"not here"
-                                }),
-                                json!({
-                                    "cred_def_id":"not here"
-                                })
-                            ])
+                            "$or":[
+                                { "schema_id":"not here" },
+                                { "cred_def_id":"not here" }
+                            ]
                         })),
                     non_revoked: None
                 }
@@ -4020,14 +4012,10 @@ mod medium_cases {
                 AttributeInfo {
                     name: "name".to_string(),
                     restrictions: Some(json!({
-                            "$and":json!([
-                                json!({
-                                    "cred_def_id":"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW:3:CL:CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW:2:gvt:1.0:TAG_1"
-                                }),
-                                json!({
-                                    "cred_def_id":"Not Here"
-                                })
-                            ])
+                            "$and":[
+                                { "cred_def_id":"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW:3:CL:CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW:2:gvt:1.0:TAG_1" },
+                                { "cred_def_id":"Not Here" }
+                            ]
                         })),
                     non_revoked: None
                 }

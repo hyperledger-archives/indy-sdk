@@ -638,76 +638,70 @@ pub fn proof_request_restrictions() -> String {
     json!({
         "name":"proof_req_1",
         "nonce":"123432421212",
-        "requested_attributes":json!({
-            "attr1_referent":json!({
+        "requested_attributes":{
+            "attr1_referent":{
                 "name":"name",
-                "restrictions":json!({
-                    "cred_def_id":json!({
-                        "$in":vec![
+                "restrictions":{
+                    "cred_def_id":{
+                        "$in":[
                             "NcYxiDXkpYi6ov5FcYDi1e:3:CL:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0:TAG_1",
                             "NcYxiDXkpYi6ov5FcYDi1e:3:CL:NcYxiDXkpYi6ov5FcYDi1e:2:xyz:1.0:TAG_1"
                         ]
-                    })
-                })
-            }),
-            "attr2_referent":json!({
+                    }
+                }
+            },
+            "attr2_referent":{
                 "name":"age",
-                "restrictions":vec![
-                    json!({
+                "restrictions":[
+                    {
                         "cred_def_id":"NcYxiDXkpYi6ov5FcYDi1e:3:CL:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0:TAG_1",
                         "issuer_did":"NcYxiDXkpYi6ov5FcYDi1e"
-                    }),
-                    json!({
+                    },
+                    {
                         "cred_def_id":"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW:3:CL:CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW:2:gvt:1.0:TAG_1",
                         "issuer_did":"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"
-                    })
+                    }
                 ]
-            }),
-            "attr3_referent":json!({
+            },
+            "attr3_referent":{
                 "name":"status",
-                "restrictions":json!({
-                    "schema_id":"NcYxiDXkpYi6ov5FcYDi1e:2:xyz:1.0"
-                })
-            }),
-            "attr4_referent":json!({
+                "restrictions":{ "schema_id":"NcYxiDXkpYi6ov5FcYDi1e:2:xyz:1.0" }
+            },
+            "attr4_referent":{
                 "name":"sex",
-                "restrictions":json!({
-                    "$or":vec![
-                        json!({
-                            "schema_id":"NcYxiDXkpYi6ov5FcYDi1e:2:xyz:1.0"
-                        }),
-                        json!({
-                            "cred_def_id":"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW:3:CL:CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW:2:gvt:1.0:TAG_1"
-                        })
+                "restrictions":{
+                    "$or":[
+                        { "schema_id":"NcYxiDXkpYi6ov5FcYDi1e:2:xyz:1.0" },
+                        { "cred_def_id":"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW:3:CL:CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW:2:gvt:1.0:TAG_1" }
                     ]
-                })
-            }),
-            "attr5_referent":json!({
+                }
+            },
+            "attr5_referent":{
                 "name":"period",
-                "restrictions":json!({
-                    "$or":vec![
-                        json!({
+                "restrictions":{
+                    "$or":[
+                        {
                             "cred_def_id":"NcYxiDXkpYi6ov5FcYDi1e:3:CL:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0:TAG_1",
                             "issuer_did":"NcYxiDXkpYi6ov5FcYDi1e",
                             "schema_id":"NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0"
-                        }),
-                        json!({
+                        },
+                        {
                             "cred_def_id":"NcYxiDXkpYi6ov5FcYDi1e:3:CL:NcYxiDXkpYi6ov5FcYDi1e:2:xyzTAG_2:1.0:TAG_2",
                             "issuer_did":"NcYxiDXkpYi6ov5FcYDi1e",
                             "schema_id":"NcYxiDXkpYi6ov5FcYDi1e:2:xyzTAG_2:1.0"
-                        }),
-                        json!({
+                        },
+                        {
                             "cred_def_id":"NcYxiDXkpYi6ov5FcYDi1e:3:CL:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0:TAG_13",
                             "issuer_did":"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW3",
                             "schema_id":"NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.03"
-                        })
+                        }
                     ]
-                })
-            })
-        }),
-        "requested_predicates":json!({
+                }
+            }
+        },
+        "requested_predicates":{
 
-        }),
+        },
         "version":"0.1"
     }).to_string()
 }
