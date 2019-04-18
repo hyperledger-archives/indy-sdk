@@ -36,7 +36,7 @@ impl Agent {
         trace!("Agent::create >> {:?}, {:?}, {:?}, {:?}",
                owner_did, owner_verkey, forward_agent_detail, wallet_storage_config);
 
-        let wallet_id = rand::rand_string(10);
+        let wallet_id = format!("dummy_{}_{}", owner_did, rand::rand_string(10));
         let wallet_key = rand::rand_string(10);
 
         let wallet_config = json!({
@@ -223,10 +223,18 @@ impl Agent {
             })
             .and_then(|(sender_vk, mut msgs), slf, _| {
                 match msgs.pop() {
-                    Some(A2AMessage::Version1(A2AMessageV1::Forward(msg))) |
-                    Some(A2AMessage::Version2(A2AMessageV2::Forward(msg))) => {
+                    Some(A2AMessage::Version1(A2AMessageV1::Forward(msg))) => {
                         slf.router
                             .send(RouteA2AMsg(msg.fwd, msg.msg))
+                            .from_err()
+                            .and_then(|res| res)
+                            .into_actor(slf)
+                            .into_box()
+                    }
+                    Some(A2AMessage::Version2(A2AMessageV2::Forward(msg))) => {
+                        let msg_ = ftry_act!(slf, serde_json::to_vec(&msg.msg));
+                        slf.router
+                            .send(RouteA2AMsg(msg.fwd, msg_))
                             .from_err()
                             .and_then(|res| res)
                             .into_actor(slf)
@@ -262,6 +270,7 @@ impl Agent {
             A2AMessageV1::UpdateConfigs(msg) => self.handle_update_configs_v1(msg),
             A2AMessageV1::GetConfigs(msg) => self.handle_get_configs_v1(msg),
             A2AMessageV1::RemoveConfigs(msg) => self.handle_remove_configs_v1(msg),
+            A2AMessageV1::UpdateComMethod(msg) => self.handle_update_com_method_v1(msg),
             _ => err_act!(self, err_msg("Unsupported message"))
         }
             .and_then(move |msgs, slf, _|
@@ -547,6 +556,12 @@ impl Agent {
             .into_box()
     }
 
+    fn handle_update_com_method_v1(&mut self, _msg: UpdateComMethod) -> ResponseActFuture<Self, Vec<A2AMessage>, Error> {
+        trace!("UpdateComMethod: {:?}", _msg);
+        let messages = vec![A2AMessage::Version1(A2AMessageV1::ComMethodUpdated(ComMethodUpdated {id: "123".to_string()}))];
+        ok_act!(self,  messages)
+    }
+
     fn handle_update_configs_v1(&mut self, msg: UpdateConfigs) -> ResponseActFuture<Self, Vec<A2AMessage>, Error> {
         self.handle_update_configs(msg)
             .map(|_, _, _| {
@@ -744,7 +759,7 @@ mod tests {
                             status_code: MessageStatusCode::Created,
                             sender_did: EDGE_PAIRWISE_DID.to_string(),
                             type_: RemoteMessageType::CredOffer,
-                            payload: Some(to_i8(&PAYLOAD.to_vec())),
+                            payload: Some(MessageDetailPayload::V1(to_i8(&PAYLOAD.to_vec()))),
                             ref_msg_id: None,
                         }]
                     };

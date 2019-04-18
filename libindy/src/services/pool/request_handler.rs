@@ -267,7 +267,8 @@ impl<T: Networker> RequestSM<T> {
                         }
                     }
                     RequestEvent::CustomSingleRequest(msg, req_id) => {
-                        state.networker.borrow_mut().process_event(Some(NetworkerEvent::SendOneRequest(msg, req_id, timeout)));
+                        state.networker.borrow_mut().process_event(Some(NetworkerEvent::SendOneRequest(msg.clone(), req_id.clone(), timeout)));
+                        state.networker.borrow_mut().process_event(Some(NetworkerEvent::Resend(req_id, timeout)));
                         (RequestState::Single(state.into()), None)
                     }
                     RequestEvent::CustomFullRequest(msg, req_id, local_timeout, nodes_to_send) => {
@@ -391,7 +392,7 @@ impl<T: Networker> RequestSM<T> {
                             trace!("Last signed time: {}", last_write_time);
                             if cnt > f
                                 || _check_state_proof(&result, f, &generator, &nodes, &raw_msg)
-                                && (_get_freshness_threshold() == u64::MAX || _get_cur_time() as u64 <= _get_freshness_threshold() + last_write_time) {
+                                && _get_cur_time() as u64 <= _get_freshness_threshold() + last_write_time {
                                 state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
                                 _send_ok_replies(&cmd_ids, if cnt > f { &soonest } else { &raw_msg });
                                 (RequestState::finish(), None)
@@ -546,12 +547,20 @@ impl<T: Networker> RequestSM<T> {
                                               pool_name: &str) -> (RequestState<T>, Option<PoolEvent>) {
         let (finished, result) = RequestSM::_process_catchup_target(mt_root, sz, cons_proof,
                                                                     &node_alias, &mut state, f, nodes, pool_name);
-        if finished {
-            state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
-            (RequestState::finish(), result)
-        } else {
-            state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
-            (RequestState::CatchupConsensus(state), result)
+
+        match (finished, result) {
+            (true, result) => {
+                state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
+                (RequestState::finish(), result)
+            },
+            (false, Some(PoolEvent::CatchupRestart(merkle_tree))) => {
+                state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
+                (RequestState::CatchupConsensus(state), Some(PoolEvent::CatchupRestart(merkle_tree)))
+            },
+            (false, result) => {
+                state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
+                (RequestState::CatchupConsensus(state), result)
+            }
         }
     }
 
@@ -579,6 +588,7 @@ impl<T: Networker> RequestSM<T> {
                                               &pool_name) {
             Ok(CatchupProgress::InProgress) => (false, None),
             Ok(CatchupProgress::NotNeeded(merkle_tree)) => (true, Some(PoolEvent::Synced(merkle_tree))),
+            Ok(CatchupProgress::Restart(merkle_tree)) => (false, Some(PoolEvent::CatchupRestart(merkle_tree))),
             Ok(CatchupProgress::ShouldBeStarted(target_mt_root, target_mt_size, merkle_tree)) =>
                 (true, Some(PoolEvent::CatchupTargetFound(target_mt_root, target_mt_size, merkle_tree))),
             Err(err) => (true, Some(PoolEvent::CatchupTargetNotFound(err))),
@@ -1501,7 +1511,7 @@ pub mod tests {
             assert_match!(&RequestState::CatchupConsensus(_), &request_handler.request_wrapper.as_ref().unwrap().state);
 
             request_handler.process_event(Some(RequestEvent::LedgerStatus(LedgerStatus::default(), Some("n3".to_string()), Some(MerkleTree::default()))));
-            assert_match!(&RequestState::CatchupConsensus(_), &request_handler.request_wrapper.as_ref().unwrap().state);
+            assert_match!(&RequestState::Finish(_), &request_handler.request_wrapper.as_ref().unwrap().state);
             request_handler.process_event(Some(RequestEvent::LedgerStatus(LedgerStatus::default(), Some("n4".to_string()), Some(MerkleTree::default()))));
             assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
         }

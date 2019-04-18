@@ -305,6 +305,17 @@ impl<T: Networker, R: RequestHandler<T>> PoolSM<T, R> {
                         CommandExecutor::instance().send(Command::Pool(pc)).unwrap();
                         PoolState::Terminated(state.into())
                     }
+                    PoolEvent::CatchupRestart(merkle_tree) => {
+                        if let Ok((nodes, remotes)) = _get_nodes_and_remotes(&merkle_tree) {
+                            state.networker.borrow_mut().process_event(Some(NetworkerEvent::NodesStateUpdated(remotes)));
+                            state.request_handler = R::new(state.networker.clone(), _get_f(nodes.len()), &vec![], &nodes, None, &pool_name, timeout, extended_timeout);
+                            let ls = _ledger_status(&merkle_tree);
+                            state.request_handler.process_event(Some(RequestEvent::LedgerStatus(ls, None, Some(merkle_tree))));
+                            PoolState::GettingCatchupTarget(state)
+                        } else {
+                            PoolState::Terminated(state.into())
+                        }
+                    }
                     PoolEvent::CatchupTargetFound(target_mt_root, target_mt_size, merkle_tree) => {
                         if let Ok((nodes, remotes)) = _get_nodes_and_remotes(&merkle_tree) {
                             state.networker.borrow_mut().process_event(Some(NetworkerEvent::NodesStateUpdated(remotes)));
@@ -605,19 +616,22 @@ fn _get_request_handler_with_ledger_status_sent<T: Networker, R: RequestHandler<
     };
     networker.borrow_mut().process_event(Some(NetworkerEvent::NodesStateUpdated(remotes)));
     let mut request_handler = R::new(networker.clone(), _get_f(nodes.len()), &vec![], &nodes, None, pool_name, timeout, extended_timeout);
+    let ls = _ledger_status(&merkle);
+    request_handler.process_event(Some(RequestEvent::LedgerStatus(ls, None, Some(merkle))));
+    Ok(request_handler)
+}
+
+fn _ledger_status(merkle: &MerkleTree) -> LedgerStatus{
     let protocol_version = ProtocolVersion::get();
 
-    let ls = LedgerStatus {
+    LedgerStatus {
         txnSeqNo: merkle.count(),
         merkleRoot: merkle.root_hash().as_slice().to_base58(),
         ledgerId: 0,
         ppSeqNo: None,
         viewNo: None,
         protocolVersion: if protocol_version > 1 { Some(protocol_version) } else { None },
-    };
-
-    request_handler.process_event(Some(RequestEvent::LedgerStatus(ls, None, Some(merkle))));
-    Ok(request_handler)
+    }
 }
 
 fn _get_nodes_and_remotes(merkle: &MerkleTree) -> IndyResult<(HashMap<String, Option<VerKey>>, Vec<RemoteNode>)> {
@@ -1103,6 +1117,35 @@ mod tests {
             match p.state {
                 PoolState::Active(state) => {
                     assert_eq!(state.request_handlers.len(), 0);
+                }
+                _ => assert!(false)
+            };
+
+            test::cleanup_storage();
+        }
+
+        #[test]
+        pub fn pool_wrapper_sends_requests_to_two_nodes() {
+            test::cleanup_storage();
+
+            ProtocolVersion::set(2);
+            _write_genesis_txns();
+
+            let req = json!({
+                "reqId": 1,
+                "operation": {
+                    "type": "105"
+                }
+            }).to_string();
+
+            let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), POOL, 1, 0, 0);
+            let p = p.handle_event(PoolEvent::CheckCache(1));
+            let p = p.handle_event(PoolEvent::Synced(MerkleTree::from_vec(vec![]).unwrap()));
+            let p = p.handle_event(PoolEvent::SendRequest(3, req, None, None));
+            assert_match!(PoolState::Active(_), p.state);
+            match p.state {
+                PoolState::Active(state) => {
+                    assert_eq!(state.networker.borrow().events.len(), 2);
                 }
                 _ => assert!(false)
             };

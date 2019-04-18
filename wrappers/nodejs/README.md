@@ -543,7 +543,7 @@ to fetch records by small batches \(with proverFetchCredentialsForProofReq\).
         "<attr_referent>": <wql query>,
         "<predicate_referent>": <wql query>,
     }
-where wql query: indy-sdk/doc/design/011-wallet-query-language/README.md
+where wql query: indy-sdk/docs/design/011-wallet-query-language/README.md
 ````
 * __->__ `sh`: Handle (Number) - search\_handle: Search handle that can be used later to fetch records by small batches \(with proverFetchCredentialsForProofReq\)
 
@@ -652,7 +652,7 @@ The proof contains either proof or self-attested attribute value for each reques
         },
     }
 where
-where wql query: indy-sdk/doc/design/011-wallet-query-language/README.md
+where wql query: indy-sdk/docs/design/011-wallet-query-language/README.md
 ````
 * __->__ `proof`: Json - Proof json
 For each requested attribute either a proof \(with optionally revealed attribute value\) or
@@ -1748,6 +1748,63 @@ Parse a GET\_REVOC\_REG\_DELTA response to get Revocation Registry Delta in the 
 
 Errors: `Common*`
 
+#### buildAuthRuleRequest \( submitterDid, txnType, action, field, oldValue, newValue, constraint \) -&gt; request
+
+Builds a AUTH_RULE request. Request to change authentication rules for a ledger transaction.
+
+* `submitterDid`: String - \(Optional\) DID of the read request sender \(if not provided then default Libindy DID will be used\).
+* `txnType`: String - ledger transaction alias or associated value.
+* `action`: String - type of an action.
+    * "ADD" - to add a new rule
+    * "EDIT" - to edit an existing one
+* `field`: String - transaction field.
+* `oldValue`: String - \(Optional\) old value of a field, which can be changed to a new_value (mandatory for EDIT action).
+* `newValue`: String - new value that can be used to fill the field. 
+* `constraint`: String - set of constraints required for execution of an action in the following format:
+```
+ {
+     constraint_id - <string> type of a constraint.
+         Can be either "ROLE" to specify final constraint or  "AND"/"OR" to combine constraints.
+     role - <string> role of a user which satisfy to constrain.
+     sig_count - <u32> the number of signatures required to execution action.
+     need_to_be_owner - <bool> if user must be an owner of transaction.
+     metadata - <object> additional parameters of the constraint.
+ }
+can be combined by
+ {
+     'constraint_id': <"AND" or "OR">
+     'auth_constraints': [<constraint_1>, <constraint_2>]
+ }
+```
+
+Default ledger auth rules: https://github.com/hyperledger/indy-node/blob/master/docs/source/auth_rules.md
+
+More about AUTH_RULE request: https://github.com/hyperledger/indy-node/blob/master/docs/source/requests.md#auth_rule   
+
+* __->__ `request`: Json
+
+Errors: `Common*`
+
+
+#### buildGetAuthRuleRequest \( submitterDid, txnType, action, field, oldValue, newValue \) -&gt; request
+
+Builds a GET_AUTH_RULE request. Request to get authentication rules for a ledger transaction.
+
+NOTE: Either none or all transaction related parameters must be specified (`oldValue` can be skipped for `ADD` action).
+* none - to get all authentication rules for all ledger transactions
+* all - to get authentication rules for specific action (`oldValue` can be skipped for `ADD` action)
+
+* `submitterDid`: String - \(Optional\) DID of the read request sender \(if not provided then default Libindy DID will be used\).
+* `txnType`: String - target ledger transaction alias or associated value.
+* `action`: String - target action type. Can be either "ADD" or "EDIT".
+* `field`: String - target transaction field.
+* `oldValue`: String - \(Optional\) old value of field, which can be changed to a new_value (must be specified for EDIT action).
+* `newValue`: String - \(Optional\) new value that can be used to fill the field. 
+
+* __->__ `request`: Json
+
+Errors: `Common*`
+
 #### getResponseMetadata \( response \) -&gt; responseMetadata
 
 Parse transaction response to fetch metadata.
@@ -2660,9 +2717,9 @@ indy.capi.abbreviateVerkey(did, fullVerkey, function(err, verkey){
 
 Setup an Indy SDK environment, and start a local pool.
 
- * [ubuntu](https://github.com/hyperledger/indy-sdk/blob/master/doc/ubuntu-build.md)
- * [osx](https://github.com/hyperledger/indy-sdk/blob/master/doc/mac-build.md)
- * [windows](https://github.com/hyperledger/indy-sdk/blob/master/doc/windows-build.md)
+ * [ubuntu](https://github.com/hyperledger/indy-sdk/blob/master/docs/ubuntu-build.md)
+ * [osx](https://github.com/hyperledger/indy-sdk/blob/master/docs/mac-build.md)
+ * [windows](https://github.com/hyperledger/indy-sdk/blob/master/docs/windows-build.md)
 
 ```sh
 # You will need libindy in your system library path. (i.e. /usr/lib/libindy.so for linux)

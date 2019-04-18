@@ -12,12 +12,12 @@ def testing() {
     }
     stage('Testing') {
         parallel([
-            'ubuntu-test' : { ubuntuTesting() },
-            'android-test': { androidTesting() },
-            'macos-test'  : { macosTesting() },
-            'ios-test'    : { iosTesting() },
-            'redhat-test' : { rhelTesting() },
-            'windows-test': { windowsTesting() }
+                'ubuntu-test' : { ubuntuTesting() },
+                'android-test': { androidTesting() },
+                'macos-test'  : { macosTesting() },
+                'ios-test'    : { iosTesting() },
+                //  FIXME 'redhat-test' : { rhelTesting() }, https://jira.hyperledger.org/browse/IS-1212
+                'windows-test': { windowsTesting() }
         ])
     }
 }
@@ -523,7 +523,7 @@ def linuxVcxBuild(file, env_name, network_name) {
         testEnv.inside("--network=${network_name}") {
             sh '''
                 cd vcx/dummy-cloud-agent
-                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy=info cargo run sample-config.json &
+                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy=info cargo run config/sample-config.json &
             '''
 
             echo "${env_name} Libvcx Test: Run tests"
@@ -536,8 +536,8 @@ def linuxVcxBuild(file, env_name, network_name) {
         testEnv.inside("--network=${network_name}") {
             sh '''
                 cd vcx/dummy-cloud-agent
-                sed -i 's/\\("protocol_type": "\\)1.0/\\12.0/' sample-config.json
-                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy=info cargo run sample-config.json &
+                sed -i 's/\\("protocol_type": "\\)1.0/\\12.0/' config/sample-config.json
+                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy=info cargo run config/sample-config.json &
             '''
 
             echo "${env_name} Libvcx Test: Run tests"
@@ -791,7 +791,7 @@ def shell(command) {
 }
 
 def setupRust() {
-    shell("rustup default 1.31.0")
+    shell("rustup default 1.32.0")
 }
 
 def setupBrewPackages() {

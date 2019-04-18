@@ -7,7 +7,7 @@ use domain::status::{ConnectionStatus, MessageStatusCode};
 use domain::invite::{ForwardAgentDetail, InviteDetail, SenderDetail, AgentDetail};
 use domain::internal_message::InternalMessage;
 use domain::key_deligation_proof::KeyDlgProof;
-use domain::payload::{Payload, PayloadTypes, PayloadKinds};
+use domain::payload::{PayloadV1, PayloadV2, PayloadTypes, PayloadKinds, Thread};
 use domain::protocol_type::{ProtocolType, ProtocolTypes};
 use failure::{err_msg, Error, Fail};
 use futures::*;
@@ -241,7 +241,7 @@ impl AgentConnection {
                             A2AMessageV2::UpdateMessageStatus(msg) => slf.handle_update_message_status(msg),
                             _ => err_act!(slf, err_msg("Unsupported message"))
                         }
-                    },
+                    }
                     _ => err_act!(slf, err_msg("Unsupported message"))
                 }.map(|msgs, _, _| (msgs, sender_vk))
             })
@@ -349,7 +349,8 @@ impl AgentConnection {
                                                                 &sender_did,
                                                                 None,
                                                                 None,
-                                                                Some(map! { "phone_no".to_string() => msg_detail.phone_no.clone() }));
+                                                                Some(map! { "phone_no".to_string() => msg_detail.phone_no.clone() }),
+                                                                None);
 
                 (msg, msg_detail)
             })
@@ -367,13 +368,13 @@ impl AgentConnection {
 
         let send_msg = msg.send_msg;
         let reply_to_msg_id = msg.reply_to_msg_id.clone();
-        let msg_uid = msg.uid.clone();
+        let msg_uid = msg.id.clone();
         let sender_verkey = sender_verkey.to_string();
 
         future::ok(())
             .into_actor(self)
             .and_then(move |_, slf, _| {
-                slf.handle_create_connection_request_answer(msg.into(), reply_to_msg_id.clone(), msg_uid, sender_verkey)
+                slf.handle_create_connection_request_answer(msg.into(), reply_to_msg_id.clone(), Some(msg_uid), sender_verkey)
                     .map(|(msg_uid, a2a_msgs), _, _| (msg_uid, a2a_msgs, reply_to_msg_id))
             })
             .and_then(move |(msg_uid, a2a_msgs, reply_to_msg_id), slf, _| {
@@ -414,14 +415,22 @@ impl AgentConnection {
 
         let send_msg = msg.send_msg;
         let mtype = msg.mtype.clone();
-        let uid = msg.uid.clone();
+        let uid = msg.id.clone();
         let reply_to_msg_id = msg.reply_to_msg_id.clone();
         let sender_verkey = sender_verkey.to_string();
+
+        let msg_ = ftry_act!(self, {serde_json::to_vec(&msg.msg)});
+
+        let msg_detail = GeneralMessageDetail {
+            msg: msg_,
+            title: msg.title,
+            detail: msg.detail,
+        };
 
         future::ok(())
             .into_actor(self)
             .and_then(move |_, slf, _| {
-                slf.handle_create_general_message(mtype, msg.into(), reply_to_msg_id.clone(), uid, sender_verkey)
+                slf.handle_create_general_message(mtype, msg_detail, reply_to_msg_id.clone(), Some(uid), sender_verkey)
                     .map(|(msg_uid, a2a_msgs), _, _| (msg_uid, a2a_msgs, reply_to_msg_id))
             })
             .and_then(move |(msg_uid, a2a_msgs, reply_to_msg_id), slf, _| {
@@ -460,7 +469,8 @@ impl AgentConnection {
                                                          &sender_did,
                                                          None,
                                                          Some(msg_detail.msg),
-                                                         Some(map! {"detail".to_string() => msg_detail.detail, "title".to_string()=> msg_detail.title}));
+                                                         Some(map! {"detail".to_string() => msg_detail.detail, "title".to_string()=> msg_detail.title}),
+                                                         None);
 
         if let Some(msg_id) = reply_to_msg_id.as_ref() {
             self.answer_message(msg_id, &msg.uid, &MessageStatusCode::Accepted).unwrap();
@@ -468,7 +478,7 @@ impl AgentConnection {
 
         let message = match ProtocolType::get() {
             ProtocolTypes::V1 => A2AMessage::Version1(A2AMessageV1::MessageCreated(MessageCreated { uid: msg.uid.clone() })),
-            ProtocolTypes::V2 => A2AMessage::Version2(A2AMessageV2::SendRemoteMessageResponse(SendRemoteMessageResponse { uid: msg.uid.clone(), sent: true })),
+            ProtocolTypes::V2 => A2AMessage::Version2(A2AMessageV2::SendRemoteMessageResponse(SendRemoteMessageResponse { id: msg.uid.clone(), sent: true })),
         };
 
         ok_act!(self, (msg.uid, vec![message]))
@@ -516,7 +526,12 @@ impl AgentConnection {
                     type_: message._type.clone(),
                     payload: match exclude_payload.as_ref().map(String::as_str) {
                         Some("Y") => None,
-                        _ => message.payload.as_ref().map(|payload| to_i8(payload))
+                        _ => message.payload.as_ref().map(|payload| {
+                            match ProtocolType::get() {
+                                ProtocolTypes::V1 => MessageDetailPayload::V1(to_i8(payload)),
+                                ProtocolTypes::V2 => MessageDetailPayload::V2(serde_json::from_slice(&payload).unwrap()), // TODO: FIXME
+                            }
+                        })
                     },
                     ref_msg_id: message.ref_msg_id.clone(),
                 }
@@ -639,6 +654,7 @@ impl AgentConnection {
                                                                          &msg_detail.sender_detail.did,
                                                                          None,
                                                                          None,
+                                                                         None,
                                                                          None);
 
                 let sender_did = slf.user_pairwise_did.clone();
@@ -648,7 +664,8 @@ impl AgentConnection {
                                                                        &sender_did,
                                                                        Some(conn_req_msg.uid.as_str()),
                                                                        None,
-                                                                       None);
+                                                                       None,
+                                                                       msg_detail.thread.clone());
                 slf.state.agent_key_dlg_proof = Some(key_dlg_proof);
 
                 slf.state.remote_connection_detail = Some(RemoteConnectionDetail {
@@ -681,7 +698,7 @@ impl AgentConnection {
             .map(|uid, _, _| {
                 let message = match ProtocolType::get() {
                     ProtocolTypes::V1 => A2AMessage::Version1(A2AMessageV1::MessageCreated(MessageCreated { uid: uid.clone() })),
-                    ProtocolTypes::V2 => A2AMessage::Version2(A2AMessageV2::ConnectionRequestAnswerResponse(ConnectionRequestAnswerResponse { uid: uid.clone(), sent: true }))
+                    ProtocolTypes::V2 => A2AMessage::Version2(A2AMessageV2::ConnectionRequestAnswerResponse(ConnectionRequestAnswerResponse { id: uid.clone(), sent: true }))
                 };
                 (uid, vec![message])
             })
@@ -709,7 +726,8 @@ impl AgentConnection {
                                                                        &msg_detail.sender_detail.did,
                                                                        None,
                                                                        None,
-                                                                       None);
+                                                                       None,
+                                                                       msg_detail.thread.clone());
 
                 slf.state.remote_connection_detail = Some(RemoteConnectionDetail {
                     forward_agent_detail: msg_detail.sender_agency_detail.clone(),
@@ -744,7 +762,7 @@ impl AgentConnection {
             .map(|uid, _, _| {
                 let message = match ProtocolType::get() {
                     ProtocolTypes::V1 => A2AMessage::Version1(A2AMessageV1::MessageCreated(MessageCreated { uid: uid.clone() })),
-                    ProtocolTypes::V2 => A2AMessage::Version2(A2AMessageV2::ConnectionRequestAnswerResponse(ConnectionRequestAnswerResponse { uid: uid.clone(), sent: true }))
+                    ProtocolTypes::V2 => A2AMessage::Version2(A2AMessageV2::ConnectionRequestAnswerResponse(ConnectionRequestAnswerResponse { id: uid.clone(), sent: true }))
                 };
                 (uid, vec![message])
             })
@@ -758,7 +776,8 @@ impl AgentConnection {
                                          sender_did: &str,
                                          ref_msg_id: Option<&str>,
                                          payload: Option<Vec<u8>>,
-                                         sending_data: Option<HashMap<String, Option<String>>>) -> InternalMessage {
+                                         sending_data: Option<HashMap<String, Option<String>>>,
+                                         thread: Option<Thread>) -> InternalMessage {
         trace!("AgentConnection::create_and_store_internal_message >> {:?}, {:?}, {:?}, {:?}, {:?}, {:?}, {:?}",
                uid, mtype, status_code, sender_did, ref_msg_id, payload, sending_data);
 
@@ -768,7 +787,8 @@ impl AgentConnection {
                                        sender_did,
                                        ref_msg_id,
                                        payload,
-                                       sending_data);
+                                       sending_data,
+                                       thread);
         self.state.messages.insert(msg.uid.to_string(), msg.clone());
         msg
     }
@@ -803,15 +823,8 @@ impl AgentConnection {
 
         let msg_uid = msg_uid.to_string();
 
-        let msg = ftry_act!(self, self.build_payload_message(RemoteMessageType::ConnReqAnswer, &json!({"senderDetail": msg_detail.sender_detail})));
-
-        future::ok(())
+        self.build_payload_message(RemoteMessageType::ConnReqAnswer, &json!({"senderDetail": msg_detail.sender_detail}))
             .into_actor(self)
-            .and_then(move |_, slf, _|
-                crypto::auth_crypt(slf.wallet_handle, &slf.agent_pairwise_verkey, &slf.owner_verkey, &msg)
-                    .map_err(|err| err.context("Can't encode Answer Payload.").into())
-                    .into_actor(slf)
-            )
             .map(move |payload, slf, _|
                 slf.state.messages.get_mut(&msg_uid)
                     .map(|message| message.payload = Some(payload))
@@ -1136,19 +1149,45 @@ impl AgentConnection {
         Ok(message)
     }
 
-    fn build_payload_message<T>(&self, type_: RemoteMessageType, msg: &T) -> Result<Vec<u8>, Error> where T: ::serde::Serialize + ::std::fmt::Debug {
+    fn build_payload_message<T>(&self, type_: RemoteMessageType, msg: &T) -> ResponseFuture<Vec<u8>, Error> where T: ::serde::Serialize + ::std::fmt::Debug {
         trace!("AgentConnection::build_payload_message >> {:?}, {:?}",
                type_, msg);
 
-        let msg = rmp_serde::to_vec_named(&msg)?;
+        match ProtocolType::get() {
+            ProtocolTypes::V1 => {
+                let msg = ftry!(rmp_serde::to_vec_named(&msg));
+                ;
 
-        let payload_msg = Payload {
-            type_: PayloadTypes::build(PayloadKinds::from(type_)),
-            msg: to_i8(&msg)
-        };
+                let payload_msg = PayloadV1 {
+                    type_: PayloadTypes::build_v1(PayloadKinds::from(type_), "json"),
+                    msg: to_i8(&msg)
+                };
 
-        rmp_serde::to_vec_named(&payload_msg)
-            .map_err(|err| err.into())
+                let message = ftry!(rmp_serde::to_vec_named(&payload_msg));
+
+                crypto::auth_crypt(self.wallet_handle, &self.agent_pairwise_verkey, &self.owner_verkey, &message)
+                    .map_err(|err| err.context("Can't encode Answer Payload.").into())
+                    .into_box()
+            }
+            ProtocolTypes::V2 => {
+                let msg = ftry!(serde_json::to_string(&msg));
+                ;
+
+                let payload_msg = PayloadV2 {
+                    type_: PayloadTypes::build_v2(PayloadKinds::from(type_)),
+                    id: String::new(),
+                    msg,
+                    thread: Thread::new(),
+                };
+
+                let message = ftry!(serde_json::to_string(&payload_msg));
+                let receiver_keys = ftry!(serde_json::to_string(&vec![&self.owner_verkey]));
+
+                crypto::pack_message(self.wallet_handle, Some(&self.agent_pairwise_verkey), &receiver_keys, &message.as_bytes())
+                    .map_err(|err| err.context("Can't encode Answer Payload.").into())
+                    .into_box()
+            }
+        }
     }
 
     fn build_forward_message(&self, fwd: &str, message: Vec<u8>) -> Result<Vec<A2AMessage>, Error> {
@@ -1156,8 +1195,11 @@ impl AgentConnection {
                fwd, message);
 
         let message = match ProtocolType::get() {
-            ProtocolTypes::V1 => A2AMessage::Version1(A2AMessageV1::Forward(Forward { fwd: fwd.to_string(), msg: message })),
-            ProtocolTypes::V2 => A2AMessage::Version2(A2AMessageV2::Forward(Forward { fwd: fwd.to_string(), msg: message }))
+            ProtocolTypes::V1 => A2AMessage::Version1(A2AMessageV1::Forward(ForwardV1 { fwd: fwd.to_string(), msg: message })),
+            ProtocolTypes::V2 => A2AMessage::Version2(A2AMessageV2::Forward(ForwardV2 {
+                fwd: fwd.to_string(),
+                msg: serde_json::from_slice(message.as_slice())?
+            }))
         };
 
         Ok(vec![message])
@@ -1181,6 +1223,7 @@ impl AgentConnection {
             },
             status_code: msg.status_code.clone(),
             status_msg: msg.status_code.message().to_string(),
+            thread_id: msg_detail.thread_id.clone(),
         };
 
         match ProtocolType::get() {
@@ -1196,7 +1239,7 @@ impl AgentConnection {
             }
             ProtocolTypes::V2 => {
                 let message = ConnectionRequestResponse {
-                    uid: msg.uid.clone(),
+                    id: msg.uid.clone(),
                     invite_detail,
                     url_to_invite_detail: "".to_string(),
                     // format!("{}/agency/invite/{}?msg_uid{}", AGENCY_DOMAIN_URL_PREFIX, self.agent_pairwise_did, msg_uid)
@@ -1240,6 +1283,7 @@ impl AgentConnection {
                         sender_detail,
                         sender_agency_detail: self.forward_agent_detail.clone(),
                         answer_status_code: MessageStatusCode::Accepted,
+                        thread: None,
                     };
 
                     vec![A2AMessage::Version1(A2AMessageV1::CreateMessage(msg_create)),
@@ -1248,12 +1292,13 @@ impl AgentConnection {
                 ProtocolTypes::V2 => {
                     let msg = ConnectionRequestAnswer {
                         send_msg: false,
-                        uid: Some(message.uid.clone()),
+                        id: message.uid.clone(),
                         reply_to_msg_id: Some(reply_to.to_string()),
                         key_dlg_proof: None,
                         sender_detail,
                         sender_agency_detail: self.forward_agent_detail.clone(),
                         answer_status_code: MessageStatusCode::Accepted,
+                        thread: message.thread.clone().unwrap_or(Thread::new()),
                     };
                     vec![A2AMessage::Version2(A2AMessageV2::ConnectionRequestAnswer(msg))]
                 }
@@ -1290,10 +1335,10 @@ impl AgentConnection {
                 ProtocolTypes::V2 => {
                     let msg = SendRemoteMessage {
                         mtype: message._type,
+                        id: message.uid,
                         send_msg: false,
-                        uid: Some(message.uid),
                         reply_to_msg_id: reply_to.map(String::from),
-                        msg,
+                        msg: serde_json::from_slice(&msg)?,
                         title,
                         detail
                     };
@@ -1486,7 +1531,7 @@ mod tests {
                         status_code: MessageStatusCode::Created,
                         sender_did: EDGE_PAIRWISE_DID.to_string(),
                         type_: RemoteMessageType::CredOffer,
-                        payload: Some(to_i8(&PAYLOAD.to_vec())),
+                        payload: Some(MessageDetailPayload::V1(to_i8(&PAYLOAD.to_vec()))),
                         ref_msg_id: None,
                     };
                     assert_eq!(expected_message, messages[0]);

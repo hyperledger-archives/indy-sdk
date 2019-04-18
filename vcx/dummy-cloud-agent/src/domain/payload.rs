@@ -1,13 +1,33 @@
 use domain::message_type::{MessageTypeV2, MessageFamilies, MESSAGE_VERSION_V1, DID};
 use domain::a2a::RemoteMessageType;
 use domain::protocol_type::{ProtocolType, ProtocolTypes};
+use std::collections::HashMap;
 
 #[derive(Deserialize, Serialize, Debug)]
-pub struct Payload {
+#[serde(untagged)]
+pub enum Payloads {
+    PayloadV1(PayloadV1),
+    PayloadV2(PayloadV2),
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct PayloadV1 {
     #[serde(rename = "@type")]
-    pub type_: PayloadTypes,
+    pub type_: PayloadTypeV1,
     #[serde(rename = "@msg")]
     pub msg: Vec<i8>,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct PayloadV2 {
+    #[serde(rename = "@type")]
+    pub type_: PayloadTypeV2,
+    #[serde(rename = "@id")]
+    pub id: String,
+    #[serde(rename = "@msg")]
+    pub msg: String,
+    #[serde(rename = "~thread")]
+    pub thread: Thread,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -76,23 +96,20 @@ impl PayloadKinds {
 }
 
 impl PayloadTypes {
-    pub fn build(kind: PayloadKinds) -> PayloadTypes {
-        match ProtocolType::get() {
-            ProtocolTypes::V1 => {
-                PayloadTypes::PayloadTypeV1(PayloadTypeV1 {
-                    name: kind.name().to_string(),
-                    ver: MESSAGE_VERSION_V1.to_string(),
-                    fmt: "json".to_string(),
-                })
-            }
-            ProtocolTypes::V2 => {
-                PayloadTypes::PayloadTypeV2(PayloadTypeV2 {
-                    did: DID.to_string(),
-                    family: kind.family(),
-                    version: kind.family().version().to_string(),
-                    type_: kind.name().to_string(),
-                })
-            }
+    pub fn build_v1(kind: PayloadKinds, fmt: &str) -> PayloadTypeV1 {
+        PayloadTypeV1 {
+            name: kind.name().to_string(),
+            ver: MESSAGE_VERSION_V1.to_string(),
+            fmt: fmt.to_string(),
+        }
+    }
+
+    pub fn build_v2(kind: PayloadKinds) -> PayloadTypeV2 {
+        PayloadTypeV2 {
+            did: DID.to_string(),
+            family: kind.family(),
+            version: kind.family().version().to_string(),
+            type_: kind.name().to_string(),
         }
     }
 }
@@ -108,6 +125,25 @@ impl From<RemoteMessageType> for PayloadKinds {
             RemoteMessageType::ProofReq => PayloadKinds::ProofRequest,
             RemoteMessageType::Proof => PayloadKinds::Proof,
             RemoteMessageType::Other(other) => PayloadKinds::Other(other.to_string()),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct Thread {
+    pub thid: Option<String>,
+    pub pthid: Option<String>,
+    pub sender_order: u32,
+    pub received_orders: HashMap<String, u32>,
+}
+
+impl Thread {
+    pub fn new() -> Thread {
+        Thread {
+            thid: None,
+            pthid: None,
+            sender_order: 0,
+            received_orders: HashMap::new(),
         }
     }
 }

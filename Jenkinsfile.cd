@@ -41,7 +41,7 @@ def testing() {
     stage('Testing') {
         parallel([
                 'ubuntu-test' : { ubuntuTesting() },
-                'redhat-test' : { rhelTesting() },
+                //  FIXME 'redhat-test' : { rhelTesting() }, https://jira.hyperledger.org/browse/IS-1212
                 'android-test': { androidTesting() },
                 'windows-test': { windowsTesting() },
                 'ios-test'    : { iosTesting() }
@@ -402,7 +402,7 @@ def linuxVcxBuild(file, env_name, network_name, stashBuildResults) {
         testEnv.inside("--network=${network_name}") {
             sh '''
                 cd vcx/dummy-cloud-agent
-                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy=info cargo run sample-config.json &
+                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy=info cargo run config/sample-config.json &
             '''
 
             echo "${env_name} Libvcx Test: Run tests"
@@ -415,8 +415,8 @@ def linuxVcxBuild(file, env_name, network_name, stashBuildResults) {
         testEnv.inside("--network=${network_name}") {
             sh '''
                 cd vcx/dummy-cloud-agent
-                sed -i 's/\\("protocol_type": "\\)1.0/\\12.0/' sample-config.json
-                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy=info cargo run sample-config.json &
+                sed -i 's/\\("protocol_type": "\\)1.0/\\12.0/' config/sample-config.json
+                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy=info cargo run config/sample-config.json &
             '''
 
             echo "${env_name} Libvcx Test: Run vcx demo test for protocol version 2.0"
@@ -889,7 +889,7 @@ def ubuntuPublishing() {
                 libvcxDebPublishing(testEnv)
                 vcxJavaWrapperPublishing(testEnv, false)
                 pythonWrapperPublishing(testEnv, false, 'vcx/wrappers/python3', 'vcx/libvcx')
-                nodejsWrapperPublishing(testEnv, false,'vcx')
+                nodejsWrapperPublishing(testEnv, false, 'vcx')
             }
             finally {
                 echo 'Publish Ubuntu files: Cleanup'
@@ -1069,6 +1069,8 @@ def libindyDebPublishing(testEnv, version) {
 def libindyCliDebPublishing(testEnv, version) {
     echo 'Publish Indy Cli deb files to Apt'
 
+    setLibindyDependencyVersion("cli/debian/control")
+
     debPublishing(testEnv, "cli", "indy-cli", version, "IndyCliUbuntuBuildResult", "libindyCliDebs")
 }
 
@@ -1076,6 +1078,8 @@ def libnullpayDebPublishing(testEnv) {
     echo 'Publish Libnullpay deb files to Apt'
 
     def libnullpayVersion = getSrcVersion("libnullpay")
+
+    setLibindyDependencyVersion("libnullpay/debian/control")
 
     debPublishing(testEnv, "libnullpay", "libnullpay", libnullpayVersion, "LibnullpayUbuntuBuildResult", "libnullpayDebs")
 }
@@ -1085,11 +1089,16 @@ def libvcxDebPublishing(testEnv) {
 
     def libvcxVersion = getSrcVersion("vcx/libvcx")
 
-    def libindyVersion = getSrcVersion("libindy")
-    def replaceVersion = "$libindyVersion~$env.BUILD_NUMBER"
-    sh "sed -i -e \"s/^\\(Depends: .*libindy\\)\\(\\s*[,]\\{,1\\}.*\\)/\\1 (= $replaceVersion)\\2/\" vcx/libvcx/debian/control"
+    setLibindyDependencyVersion("vcx/libvcx/debian/control")
 
     debPublishing(testEnv, "vcx/libvcx", "libvcx", libvcxVersion, "LibvcxUbuntuBuildResult", "libvcxDebs")
+}
+
+def setLibindyDependencyVersion(file) {
+    def libindyVersion = getSrcVersion("libindy")
+    def replaceVersion = "$libindyVersion~$env.BUILD_NUMBER"
+
+    sh "sed -i -e \"s/^\\(Depends: .*libindy\\)\\(\\s*[,]\\{,1\\}.*\\)/\\1 (= $replaceVersion)\\2/\" $file"
 }
 
 def debPublishing(testEnv, directory, packageName, version, inStashName, outStashName) {
@@ -1140,22 +1149,23 @@ def nodejsWrapperPublishing(testEnv, isRelease, library) {
 
     def suffix = getSuffix(isRelease, "nodejs")
 
-    dir(paths[library]['dir']) {
-        testEnv.inside {
-            if (library == 'vcx') { // need addition step for VCX to create .js files
-                sh "npm run compile"
-            }
+    def directory = paths[library]['dir']
 
-            npmPublish(version, suffix)
+    testEnv.inside {
+        if (library == 'vcx') { // need addition step for VCX to create .js files
+            sh "cd $directory && npm i && npm run compile"
         }
+
+        npmPublish(version, suffix, directory)
     }
 }
 
-def npmPublish(version, suffix) {
+def npmPublish(version, suffix, directory) {
     withCredentials([file(credentialsId: 'npm_credentials', variable: 'credentialsFile')]) {
         sh 'cp $credentialsFile ~/.npmrc'
-        sh "npm version --no-git-tag-version --allow-same-version $version$suffix"
-        sh "npm publish"
+        sh "cd $directory && " +
+                "npm version --no-git-tag-version --allow-same-version $version$suffix &&" +
+                "npm publish"
     }
 }
 
@@ -1376,23 +1386,20 @@ def publishLibnullpayDebRCtoStable(testEnv) {
 
 def publishLibvcxDebRCtoStable(testEnv) {
     def libvcxVersion = getSrcVersion("vcx/libvcx")
-    def libindyVersion = getSrcVersion("libindy")
-    def rcFullVersion = "$libvcxVersion~$env.BUILD_NUMBER"
-
-    testEnv.inside {
-        unstash name: "libvcxDebs"
-        sh "fpm -s deb -t deb --version $rcFullVersion --no-auto-depends --depends 'libindy = $libindyVersion' -f -p vcx/libvcx/debs vcx/libvcx/debs/libvcx_\"$rcFullVersion\"_amd64.deb"
-        stash includes: "vcx/libvcx/debs/*", name: "libvcxDebs"
-    }
 
     publishDebRCtoStable(testEnv, "libvcx", "vcx/libvcx", libvcxVersion, "libvcxDebs", false)
 }
 
 def publishDebRCtoStable(testEnv, packageName, folder, version, stashName, moveDevArtifacts) {
     testEnv.inside {
-        rcFullVersion = "${version}~${env.BUILD_NUMBER}"
+        def rcFullVersion = "${version}~${env.BUILD_NUMBER}"
 
         unstash name: stashName
+
+        if (packageName != "libindy") {
+            def libindyVersion = getSrcVersion("libindy")
+            sh "fpm -s deb -t deb --version $rcFullVersion --no-auto-depends --depends 'libindy = $libindyVersion' -f -p $folder/debs $folder/debs/\"$packageName\"_\"$rcFullVersion\"_amd64.deb"
+        }
 
         sh "fakeroot deb-reversion -v $version $folder/debs/\"$packageName\"_\"$rcFullVersion\"_amd64.deb"
 
@@ -1428,7 +1435,7 @@ def shell(command) {
 }
 
 def setupRust() {
-    shell("rustup default 1.31.0")
+    shell("rustup default 1.32.0")
 }
 
 def androidPublishing() {

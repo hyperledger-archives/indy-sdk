@@ -31,6 +31,8 @@ Find the other Indy docs at https://hyperledger-indy.readthedocs.io
   build-guides/index.rst
   migration-guides/index.rst
   architecture/index.rst
+  zh/indy-walkthrough-zh.md
+  
 
 
 .. toctree::

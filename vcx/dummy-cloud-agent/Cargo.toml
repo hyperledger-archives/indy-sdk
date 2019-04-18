@@ -2,6 +2,7 @@
 name = "indy-dummy-agent"
 version = "0.1.0"
 authors = ["Vyacheslav Gudkov <vyacheslav.gudkov@dsr-company.com>"]
+exclude = ['config/*']
 
 [dependencies]
 actix = "0.7"

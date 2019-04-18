@@ -194,16 +194,11 @@ See section "Release channels" for more details.
 
 ### MacOS
 
-Pre-built libraries are not provided for MacOS. Please look [here](docs/build-guides/mac-build.md)
-for details on building from source for MacOS.
+Pre-built libraries are not provided for MacOS.
 
- **Note:** After building `libindy`, add the path containing the library the `LD_LIBRARY_PATH` and
-`DYLD_LIBRARY_PATH` environment variables. This is necessary for dynamically linking
-your application with `libindy`. The dynamic linker will first check for the library in
-`LD_LIBRARY_PATH` if the library in your application doesn't include directory names.
-If the library in your application does include any directory name, then dynamic
-linker will search for the library in `DYLD_LIBRARY_PATH` (not `LD_LIBRARY_PATH`)
-so we recommend you set both variables to be safe.
+Clone the repo and run `mac.build.sh` in the `libindy` folder.
+
+Please see [here](docs/build-guides/mac-build.md) for manual build steps.
 
 ### RHEL-based distributions (Amazon Linux 2017.03)
 Pre-built libraries are not provided for RHEL-based distributions. Please look [here](docs/build-guides/rhel-build.md)
@@ -320,6 +315,8 @@ to simplify their transition to API of Libindy 1.4.0.
 * [v1.3.0 → v1.4.0](docs/migration-guides/migration-guide-1.3.0-1.4.0.md)
 * [v1.4.0 → v1.5.0](docs/migration-guides/migration-guide-1.4.0-1.5.0.md)
 * [v1.5.0 → v1.6.x](docs/migration-guides/migration-guide-1.5.0-1.6.0.md)
+* [v1.6.0 → v1.7.x](docs/migration-guides/migration-guide-1.6.0-1.7.0.md)
+* [v1.7.0 → v1.8.x](docs/migration-guides/migration-guide-1.7.0-1.8.0.md)
 
 ## How to Contribute
 * We'd love your help; see these [instructions on how to contribute](http://bit.ly/2ugd0bq).
