@@ -326,12 +326,6 @@ impl ProverCommandExecutor {
         let out_cred_id = cred_id.map(String::from).unwrap_or(uuid::Uuid::new_v4().to_string());
 
         let cred_tags = self.anoncreds_service.prover.build_credential_tags(&credential);
-
-        let mut tag_names: Vec<String> = Vec::new();
-        for (k, _) in cred_tags.iter() {
-            tag_names.push(k.to_string());
-        }
-
         self.wallet_service.add_indy_object(wallet_handle, &out_cred_id, credential, &cred_tags)?;
 
         debug!("store_credential <<< out_cred_id: {:?}", out_cred_id);
