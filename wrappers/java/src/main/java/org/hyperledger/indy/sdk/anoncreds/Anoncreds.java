@@ -804,7 +804,7 @@ public class Anoncreds extends IndyJava.API {
 	 * @param credId Identifier by which requested credential is stored in the wallet
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
-	public static CompletableFuture<Void> proverGetCredential(
+	public static CompletableFuture<Void> proverDeleteCredential(
 			Wallet wallet,
 			String credId) throws IndyException {
 
