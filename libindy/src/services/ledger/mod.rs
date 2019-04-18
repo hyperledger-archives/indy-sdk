@@ -992,9 +992,9 @@ mod tests {
 
         fn _role_constraint() -> Constraint {
             Constraint::RoleConstraint(RoleConstraint {
-                sig_count: 0,
+                sig_count: Some(0),
                 metadata: None,
-                role: String::new(),
+                role: Some(String::new()),
                 need_to_be_owner: Some(false),
             })
         }

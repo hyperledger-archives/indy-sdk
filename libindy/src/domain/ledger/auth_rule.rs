@@ -22,8 +22,8 @@ pub enum Constraint {
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct RoleConstraint {
-    pub sig_count: u32,
-    pub role: String,
+    pub sig_count: Option<u32>,
+    pub role: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<Value>,
     #[serde(skip_serializing_if = "Option::is_none")]

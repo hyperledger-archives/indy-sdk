@@ -2137,13 +2137,13 @@ mod high_cases {
 
             ::std::thread::sleep(::std::time::Duration::from_secs(1));
 
-            let (actual_constraint, _) = _get_constraint(pool_handle, EDIT_AUTH_ACTION, constants::NYM, FIELD,  Some("0"),  Some("2"));
+            let (actual_constraint, _) = _get_constraint(pool_handle, EDIT_AUTH_ACTION, constants::NYM, FIELD, Some("0"), Some("2"));
 
             let expected_constraint: serde_json::Value = serde_json::from_str(ROLE_CONSTRAINT).unwrap();
 
             assert_eq!(expected_constraint, actual_constraint);
 
-            _change_constraint(pool_handle, wallet_handle, &trustee_did, EDIT_AUTH_ACTION, constants::NYM, FIELD,  Some("0"),  Some("2"), &default_constraint_json);
+            _change_constraint(pool_handle, wallet_handle, &trustee_did, EDIT_AUTH_ACTION, constants::NYM, FIELD, Some("0"), Some("2"), &default_constraint_json);
 
             utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
         }
@@ -2153,7 +2153,8 @@ mod high_cases {
                                 field: &str,
                                 old_value: Option<&str>,
                                 new_value: Option<&str>) -> String {
-            format!("{}--{}--{}--{}--{}", auth_action, auth_type, field, old_value.unwrap_or("*"), new_value.unwrap_or(""))// TODO: FIXME *
+            let default_old_value = if auth_action == "ADD" { "*" } else { "" };
+            format!("{}--{}--{}--{}--{}", auth_type, auth_action, field, old_value.unwrap_or(default_old_value), new_value.unwrap_or(""))
         }
 
         fn _change_constraint(pool_handle: i32, wallet_handle: i32, trustee_did: &str, action: &str, txn_type: &str, field: &str,
