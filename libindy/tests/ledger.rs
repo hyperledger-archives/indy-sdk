@@ -2179,7 +2179,6 @@ mod high_cases {
                                                                             old_value,
                                                                             new_value).unwrap();
             let response = ledger::submit_request(pool_handle, &get_auth_rule_request).unwrap();
-            println!("{}", response);
             let constraint_id = _build_constraint_id(action, txn_type, field, old_value, new_value);
 
             let constraint = _extract_constraint(&response, &constraint_id);

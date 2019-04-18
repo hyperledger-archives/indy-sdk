@@ -1077,16 +1077,6 @@ mod tests {
         }
 
         #[test]
-        fn build_auth_rule_request_works_for_edit_auth_action_missed_old_value() {
-            let ledger_service = LedgerService::new();
-
-            let res = ledger_service.build_auth_rule_request(IDENTIFIER, NYM, EDIT_AUTH_ACTION, FIELD,
-                                                             None, Some(NEW_VALUE),
-                                                             &_role_constraint_json());
-            assert_kind!(IndyErrorKind::InvalidStructure, res);
-        }
-
-        #[test]
         fn build_auth_rule_request_works_for_invalid_auth_type() {
             let ledger_service = LedgerService::new();
 
@@ -1105,7 +1095,25 @@ mod tests {
         }
 
         #[test]
-        fn build_get_auth_rule_request_works_for_all_fields() {
+        fn build_get_auth_rule_request_works_for_add_action() {
+            let ledger_service = LedgerService::new();
+
+            let expected_result = json!({
+                "type": GET_AUTH_RULE,
+                "auth_type": NYM,
+                "field": FIELD,
+                "new_value": NEW_VALUE,
+                "auth_action": AuthAction::ADD,
+            });
+
+            let request = ledger_service.build_get_auth_rule_request(Some(IDENTIFIER), Some(NYM),
+                                                                     Some(ADD_AUTH_ACTION), Some(FIELD),
+                                                                     None, Some(NEW_VALUE)).unwrap();
+            check_request(&request, expected_result);
+        }
+
+        #[test]
+        fn build_get_auth_rule_request_works_for_edit_action() {
             let ledger_service = LedgerService::new();
 
             let expected_result = json!({
@@ -1114,11 +1122,11 @@ mod tests {
                 "field": FIELD,
                 "old_value": OLD_VALUE,
                 "new_value": NEW_VALUE,
-                "auth_action": AuthAction::ADD,
+                "auth_action": AuthAction::EDIT,
             });
 
             let request = ledger_service.build_get_auth_rule_request(Some(IDENTIFIER), Some(NYM),
-                                                                     Some(ADD_AUTH_ACTION), Some(FIELD),
+                                                                     Some(EDIT_AUTH_ACTION), Some(FIELD),
                                                                      Some(OLD_VALUE), Some(NEW_VALUE)).unwrap();
             check_request(&request, expected_result);
         }
