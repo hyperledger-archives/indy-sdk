@@ -590,7 +590,7 @@ def windowsTesting() {
                                 bat "cargo test --release"
                             }
                         }
-                        stash includes: 'target/release/*.dll', name: 'LibindyWindowsBuildResult'
+                        stash includes: 'target/release/*.dll,target/release/*.dll.lib', name: 'LibindyWindowsBuildResult'
                     }
 
                     dir('libnullpay') {
