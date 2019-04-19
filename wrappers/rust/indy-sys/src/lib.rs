@@ -21,7 +21,7 @@ pub type Handle = i32;
 pub type Error = i32;
 
 pub type ResponseEmptyCB = extern fn(xcommand_handle: Handle, err: Error);
-pub type ResponseBoolCB = extern fn(xcommand_handle: Handle, err: Error, bool1: u8);
+pub type ResponseBoolCB = extern fn(xcommand_handle: Handle, err: Error, bool1: bool);
 pub type ResponseI32CB = extern fn(xcommand_handle: Handle, err: Error, handle: Handle);
 pub type ResponseI32UsizeCB = extern fn(xcommand_handle: Handle, err: Error, handle: Handle, total_count: usize);
 pub type ResponseStringCB = extern fn(xcommand_handle: Handle, err: Error, str1: CString);
