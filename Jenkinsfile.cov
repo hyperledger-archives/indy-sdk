@@ -30,9 +30,9 @@ def testing () {
                     sh 'cargo clean --manifest-path=libindy/Cargo.toml'
                     sh 'cargo clean --manifest-path=cli/Cargo.toml'
                     sh 'cargo clean --manifest-path=libnullpay/Cargo.toml'
-                    //sh 'cargo clean --manifest-path=vcx/libvcx/Cargo.toml'
+                    sh 'cargo clean --manifest-path=vcx/libvcx/Cargo.toml'
 
-                    sh 'cargo build --manifest-path=libindy/Cargo.toml' // create libindy.so
+                    sh 'RUSTFLAGS="-C link-dead-code" cargo build --manifest-path=libindy/Cargo.toml' // create libindy.so
 
                     calcCoverageRust("libindy")
                     calcCoverageRust("cli")
@@ -59,7 +59,8 @@ def getUserUid() {
 def calcCoverageRust(dir) {
     withEnv([
         "RUST_PROJECT_DIR=${dir}",
-        "TEST_POOL_IP=${POOL_IP}"
+        "TEST_POOL_IP=${POOL_IP}",
+        "RUSTFLAGS='-C link-dead-code'"
     ]) {
         sh '''
             RUSTFLAGS="-L $(pwd)/libindy/target/debug/" cargo test --manifest-path=$RUST_PROJECT_DIR/Cargo.toml --no-run
