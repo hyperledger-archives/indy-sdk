@@ -553,12 +553,12 @@ impl CryptoCommandExecutor {
             recipient_verkey: recipient.header.kid
         };
 
-        return serde_json::to_vec(&res).map_err(|err| {
+        serde_json::to_vec(&res).map_err(|err| {
             err_msg(IndyErrorKind::InvalidStructure, format!(
                 "Failed to serialize message {}",
                 err
             ))
-        });
+        })
     }
 
     fn _find_correct_recipient(&self, protected_struct: Protected, wallet_handle: WalletHandle) -> IndyResult<(Recipient, bool)>{
@@ -574,7 +574,7 @@ impl CryptoCommandExecutor {
                 return Ok((recipient.clone(), recipient.header.sender.is_some()))
             }
         }
-        return Err(IndyError::from(IndyErrorKind::WalletItemNotFound));
+        Err(IndyError::from(IndyErrorKind::WalletItemNotFound))
     }
 
     fn _unpack_cek_authcrypt(&self, recipient: Recipient, wallet_handle: WalletHandle) -> IndyResult<(Option<String>, chacha20poly1305_ietf::Key)> {
