@@ -391,8 +391,8 @@ impl WalletStorage for SQLiteStorage {
 
         match res {
             Ok(1) => Ok(()),
-            Ok(0) => return Err(err_msg(IndyErrorKind::WalletItemNotFound, "Item to update not found")),
-            Ok(_) => return Err(err_msg(IndyErrorKind::InvalidState, "More than one row update. Seems wallet structure is inconsistent")),
+            Ok(0) => Err(err_msg(IndyErrorKind::WalletItemNotFound, "Item to update not found")),
+            Ok(_) => Err(err_msg(IndyErrorKind::InvalidState, "More than one row update. Seems wallet structure is inconsistent")),
             Err(err) => Err(err.into()),
         }
     }
@@ -531,8 +531,8 @@ impl WalletStorage for SQLiteStorage {
 
         match res {
             Ok(entity) => Ok(entity),
-            Err(rusqlite::Error::QueryReturnedNoRows) => return Err(err_msg(IndyErrorKind::WalletItemNotFound, "Wallet item not found")),
-            Err(err) => return Err(IndyError::from(err))
+            Err(rusqlite::Error::QueryReturnedNoRows) => Err(err_msg(IndyErrorKind::WalletItemNotFound, "Wallet item not found")),
+            Err(err) => Err(IndyError::from(err))
         }
     }
 
