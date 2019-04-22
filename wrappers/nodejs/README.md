@@ -2263,23 +2263,6 @@ according to this payment method.
 payment\_method - used payment method
 
 
-#### buildSetTxnFeesReq \( wh, submitterDid, paymentMethod, fees \) -&gt; setTxnFees
-
-Builds Indy request for setting fees for transactions in the ledger
-
-* `wh`: Handle (Number) - wallet handle (created by openWallet)
-* `submitterDid`: String - \(Optional\) DID of request sender
-* `paymentMethod`: String - payment method to use
-fees\_json {
-txnType1: amount1,
-txnType2: amount2,
-.................
-txnTypeN: amountN,
-}
-* `fees`: Json
-* __->__ `setTxnFees`: Json - set\_txn\_fees\_json - Indy request for setting fees for transactions in the ledger
-
-
 #### buildGetTxnFeesReq \( wh, submitterDid, paymentMethod \) -&gt; getTxnFees
 
 Builds Indy get request for getting fees for transactions in the ledger

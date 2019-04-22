@@ -162,17 +162,6 @@ NSString *receipt = @"pay:null:0_PqVjwJC42sxCTJp";
     XCTAssertEqual(ret.code, PaymentUnknownMethodError);
 }
 
-// MARK: - Build Set Txn Fees Request
-
-- (void)testBuildSetTxnFeesRequestWorks {
-    ret = [[PaymentUtils sharedInstance] buildSetTxnFeesRequest:walletHandle
-                                                   submitterDid:[TestUtils trusteeDid]
-                                                  paymentMethod:paymentMethod
-                                                       feesJson:fees
-                                              setTxnFeesReqJson:nil];
-    XCTAssertEqual(ret.code, PaymentUnknownMethodError);
-}
-
 // MARK: - Build Get Txn Fees Request
 
 - (void)testBuildGetTxnFeesRequestWorks {

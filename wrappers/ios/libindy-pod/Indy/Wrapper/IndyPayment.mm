@@ -215,31 +215,6 @@
     }
 }
 
-+ (void)buildSetTxnFeesRequest:(IndyHandle)walletHandle
-                  submitterDid:(NSString *)submitterDid
-                 paymentMethod:(NSString *)paymentMethod
-                      feesJson:(NSString *)feesJson
-                    completion:(void (^)(NSError *error, NSString *setTxnFeesReqJson))completion {
-    indy_error_t ret;
-
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
-
-    ret = indy_build_set_txn_fees_req(handle,
-            walletHandle,
-            [submitterDid UTF8String],
-            [paymentMethod UTF8String],
-            [feesJson UTF8String],
-            IndyWrapperCommonStringCallback);
-
-    if (ret != Success) {
-        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
-
-        dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromIndyError:ret], nil);
-        });
-    }
-}
-
 + (void)buildGetTxnFeesRequest:(IndyHandle)walletHandle
                   submitterDid:(NSString *)submitterDid
                  paymentMethod:(NSString *)paymentMethod

@@ -713,12 +713,6 @@ indy.buildMintReq = function buildMintReq (wh, submitterDid, outputs, extra, cb)
   return cb.promise
 }
 
-indy.buildSetTxnFeesReq = function buildSetTxnFeesReq (wh, submitterDid, paymentMethod, fees, cb) {
-  cb = wrapIndyCallback(cb, fromJson)
-  capi.buildSetTxnFeesReq(wh, submitterDid, paymentMethod, toJson(fees), cb)
-  return cb.promise
-}
-
 indy.buildGetTxnFeesReq = function buildGetTxnFeesReq (wh, submitterDid, paymentMethod, cb) {
   cb = wrapIndyCallback(cb, fromJson)
   capi.buildGetTxnFeesReq(wh, submitterDid, paymentMethod, cb)

@@ -248,32 +248,6 @@
     return err;
 }
 
-- (NSError *)buildSetTxnFeesRequest:(IndyHandle)walletHandle
-                       submitterDid:(NSString *)submitterDid
-                      paymentMethod:(NSString *)paymentMethod
-                           feesJson:(NSString *)feesJson
-                  setTxnFeesReqJson:(NSString **)setTxnFeesReqJson {
-    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
-    __block NSError *err = nil;
-    __block NSString *outSources = nil;
-
-    [IndyPayment buildSetTxnFeesRequest:walletHandle
-                           submitterDid:submitterDid
-                          paymentMethod:paymentMethod
-                               feesJson:feesJson
-                             completion:^(NSError *error, NSString *sources) {
-                                 err = error;
-                                 outSources = sources;
-                                 [completionExpectation fulfill];
-                             }];
-
-    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
-
-    if (setTxnFeesReqJson) {*setTxnFeesReqJson = outSources;}
-
-    return err;
-}
-
 - (NSError *)buildGetTxnFeesRequest:(IndyHandle)walletHandle
                        submitterDid:(NSString *)submitterDid
                       paymentMethod:(NSString *)paymentMethod

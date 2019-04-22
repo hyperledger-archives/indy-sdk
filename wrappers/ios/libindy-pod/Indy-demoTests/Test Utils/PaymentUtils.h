@@ -62,13 +62,7 @@
                   mintReqJson:(NSString **)mintReqJson
                 paymentMethod:(NSString **)paymentMethod;
 
-// MARK: - Set Fees Request
-- (NSError *)buildSetTxnFeesRequest:(IndyHandle)walletHandle
-                       submitterDid:(NSString *)submitterDid
-                      paymentMethod:(NSString *)paymentMethod
-                           feesJson:(NSString *)feesJson
-                  setTxnFeesReqJson:(NSString **)setTxnFeesReqJson;
-
+// MARK: - Get Fees Request
 - (NSError *)buildGetTxnFeesRequest:(IndyHandle)walletHandle
                        submitterDid:(NSString *)submitterDid
                       paymentMethod:(NSString *)paymentMethod

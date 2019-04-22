@@ -204,27 +204,6 @@
               completion:(void (^)(NSError *error, NSString *mintReqJson, NSString *paymentMethod))completion;
 
 /**
- Builds Indy request for setting fees for transactions in the ledger
-
- @param requestJson Request data json.
- @param submitterDid (Optional) DID of request sender
- @param walletHandle Wallet handle (created by IndyWallet::openWalletWithName).
- @param paymentMethod
- @param feesJson {
-   txnType1: amount1,
-   txnType2: amount2,
-   .................
-   txnTypeN: amountN,
- }
- @param completion Callback that takes command result as parameter. Returns setTxnFeesRequest json.
- */
-+ (void)buildSetTxnFeesRequest:(IndyHandle)walletHandle
-                  submitterDid:(NSString *)submitterDid
-                 paymentMethod:(NSString *)paymentMethod
-                      feesJson:(NSString *)feesJson
-                    completion:(void (^)(NSError *error, NSString *setTxnFeesReqJson))completion;
-
-/**
  Builds Indy request for getting fees for transactions in the ledger
 
  @param requestJson Request data json.

@@ -422,53 +422,6 @@ async def build_mint_req(wallet_handle: int,
     return res
 
 
-async def build_set_txn_fees_req(wallet_handle: int,
-                                 submitter_did: str,
-                                 payment_method: str,
-                                 fees_json: str) -> str:
-    """
-    Builds Indy request for setting fees for transactions in the ledger
-
-    :param wallet_handle: wallet handle (created by open_wallet).
-    :param submitter_did : (Option) DID of request sender
-    :param payment_method: Payment method to use (for example, 'sov').
-    :param fees_json: {
-       txnType1: amount1,
-       txnType2: amount2,
-       .................
-       txnTypeN: amountN,
-     }
-    :return: set_txn_fees_json: Indy request for setting fees for transactions in the ledger
-    """
-
-    logger = logging.getLogger(__name__)
-    logger.debug("build_set_txn_fees_req: >>> wallet_handle: %r, submitter_did: %r, payment_method: %r, fees_json: %r",
-                 wallet_handle,
-                 submitter_did,
-                 payment_method,
-                 fees_json)
-
-    if not hasattr(build_set_txn_fees_req, "cb"):
-        logger.debug("build_set_txn_fees_req: Creating callback")
-        build_set_txn_fees_req.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
-
-    c_wallet_handle = c_int32(wallet_handle)
-    c_submitter_did = c_char_p(submitter_did.encode('utf-8')) if submitter_did is not None else None
-    c_payment_method = c_char_p(payment_method.encode('utf-8'))
-    c_fees_json = c_char_p(fees_json.encode('utf-8'))
-
-    set_txn_fees_json = await do_call('indy_build_set_txn_fees_req',
-                                      c_wallet_handle,
-                                      c_submitter_did,
-                                      c_payment_method,
-                                      c_fees_json,
-                                      build_set_txn_fees_req.cb)
-
-    res = set_txn_fees_json.decode()
-    logger.debug("build_set_txn_fees_req: <<< res: %r", res)
-    return res
-
-
 async def build_get_txn_fees_req(wallet_handle: int,
                                  submitter_did: str,
                                  payment_method: str) -> str:
@@ -478,7 +431,7 @@ async def build_get_txn_fees_req(wallet_handle: int,
     :param wallet_handle: wallet handle (created by open_wallet).
     :param submitter_did : (Option) DID of request sender
     :param payment_method: Payment method to use (for example, 'sov').
-    :return: set_txn_fees_json: Indy request for setting fees for transactions in the ledger
+    :return: get_txn_fees_json: Indy request for getting fees for transactions in the ledger
     """
 
     logger = logging.getLogger(__name__)

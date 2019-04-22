@@ -439,48 +439,6 @@ public class Payments extends IndyJava.API {
     }
 
     /**
-     * Builds Indy request for setting fees for transactions in the ledger
-     *
-     * @param wallet The wallet.
-     * @param submitterDid (Option) DID of request sender
-     * @param paymentMethod payment method to use
-     * @param feesJson {
-     *   txnType1: amount1,
-     *   txnType2: amount2,
-     *   .................
-     *   txnTypeN: amountN,
-     * }
-     * @return Indy request for setting fees for transactions in the ledger
-     * @throws IndyException Thrown if a call to the underlying SDK fails.
-     */
-    public static CompletableFuture<String> buildSetTxnFeesRequest(
-            Wallet wallet,
-            String submitterDid,
-            String paymentMethod,
-            String feesJson
-    ) throws IndyException {
-        ParamGuard.notNullOrWhiteSpace(paymentMethod, "paymentMethod");
-        ParamGuard.notNullOrWhiteSpace(feesJson, "feesJson");
-
-        CompletableFuture<String> future = new CompletableFuture<>();
-        int commandHandle = addFuture(future);
-
-        int walletHandle = wallet.getWalletHandle();
-
-        int result = LibIndy.api.indy_build_set_txn_fees_req(
-                commandHandle,
-                walletHandle,
-                submitterDid,
-                paymentMethod,
-                feesJson,
-                stringCompleteCb);
-
-        checkResult(future, result);
-
-        return future;
-    }
-
-    /**
      * Builds Indy get request for getting fees for transactions in the ledger
      *
      * @param wallet The wallet.

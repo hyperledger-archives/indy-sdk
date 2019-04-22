@@ -47,9 +47,6 @@ test('payments', async function (t) {
 
   var fees = { 'txnType1': 1, 'txnType2': 2 }
 
-  err = await t.throws(indy.buildSetTxnFeesReq(wh, trusteeDid, paymentMethod, fees))
-  t.is(err.indyName, 'PaymentUnknownMethodError')
-
   err = await t.throws(indy.buildGetTxnFeesReq(wh, trusteeDid, paymentMethod))
   t.is(err.indyName, 'PaymentUnknownMethodError')
 

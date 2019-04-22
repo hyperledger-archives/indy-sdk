@@ -2636,30 +2636,6 @@ NAN_METHOD(buildMintReq) {
   delete arg3;
 }
 
-void buildSetTxnFeesReq_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
-  IndyCallback* icb = IndyCallback::getCallback(handle);
-  if(icb != nullptr){
-    icb->cbString(xerr, arg0);
-  }
-}
-NAN_METHOD(buildSetTxnFeesReq) {
-  INDY_ASSERT_NARGS(buildSetTxnFeesReq, 5)
-  INDY_ASSERT_NUMBER(buildSetTxnFeesReq, 0, wh)
-  INDY_ASSERT_STRING(buildSetTxnFeesReq, 1, submitterDid)
-  INDY_ASSERT_STRING(buildSetTxnFeesReq, 2, paymentMethod)
-  INDY_ASSERT_STRING(buildSetTxnFeesReq, 3, fees)
-  INDY_ASSERT_FUNCTION(buildSetTxnFeesReq, 4)
-  indy_handle_t arg0 = argToInt32(info[0]);
-  const char* arg1 = argToCString(info[1]);
-  const char* arg2 = argToCString(info[2]);
-  const char* arg3 = argToCString(info[3]);
-  IndyCallback* icb = argToIndyCb(info[4]);
-  indyCalled(icb, indy_build_set_txn_fees_req(icb->handle, arg0, arg1, arg2, arg3, buildSetTxnFeesReq_cb));
-  delete arg1;
-  delete arg2;
-  delete arg3;
-}
-
 void buildGetTxnFeesReq_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
   IndyCallback* icb = IndyCallback::getCallback(handle);
   if(icb != nullptr){
@@ -3207,7 +3183,6 @@ NAN_MODULE_INIT(InitAll) {
   Nan::Export(target, "buildPaymentReq", buildPaymentReq);
   Nan::Export(target, "parsePaymentResponse", parsePaymentResponse);
   Nan::Export(target, "buildMintReq", buildMintReq);
-  Nan::Export(target, "buildSetTxnFeesReq", buildSetTxnFeesReq);
   Nan::Export(target, "buildGetTxnFeesReq", buildGetTxnFeesReq);
   Nan::Export(target, "parseGetTxnFeesResponse", parseGetTxnFeesResponse);
   Nan::Export(target, "buildVerifyPaymentReq", buildVerifyPaymentReq);

@@ -342,37 +342,6 @@ fn _build_mint_req(command_handle: IndyHandle, wallet_handle: IndyHandle, submit
     ErrorCode::from(unsafe { payments::indy_build_mint_req(command_handle, wallet_handle, opt_c_ptr!(submitter_did, submitter_did_str), outputs_json.as_ptr(), opt_c_ptr!(extra, extra_str), cb) })
 }
 
-/// Builds Indy request for setting fees for transactions in the ledger
-///
-/// # Arguments
-/// * `wallet_handle` - wallet handle
-/// * `submitter_did` - DID of request sender
-/// * `payment_method`
-/// * `fees_json` - {
-///   txnType1: amount1,
-///   txnType2: amount2,
-///   .................
-///   txnTypeN: amountN,
-/// }
-///
-/// # Returns
-/// * `set_txn_fees_json`  - Indy request for setting fees for transactions in the ledger
-pub fn build_set_txn_fees_req(wallet_handle: IndyHandle, submitter_did: Option<&str>, payment_method: &str, fees_json: &str) -> Box<Future<Item=String, Error=IndyError>> {
-    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
-
-    let err = _build_set_txn_fees_req(command_handle, wallet_handle, submitter_did, payment_method, fees_json, cb);
-
-    ResultHandler::str(command_handle, err, receiver)
-}
-
-fn _build_set_txn_fees_req(command_handle: IndyHandle, wallet_handle: IndyHandle, submitter_did: Option<&str>, payment_method: &str, fees_json: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
-    let submitter_did_str = opt_c_str!(submitter_did);
-    let payment_method = c_str!(payment_method);
-    let fees_json = c_str!(fees_json);
-
-    ErrorCode::from(unsafe { payments::indy_build_set_txn_fees_req(command_handle, wallet_handle, opt_c_ptr!(submitter_did, submitter_did_str), payment_method.as_ptr(), fees_json.as_ptr(), cb) })
-}
-
 /// Builds Indy get request for getting fees for transactions in the ledger
 ///
 /// # Arguments

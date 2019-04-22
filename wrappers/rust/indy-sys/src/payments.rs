@@ -15,7 +15,6 @@ extern {
                                         build_payment_req: Option<BuildPaymentReqCB>,
                                         parse_payment_response: Option<ParsePaymentResponseCB>,
                                         build_mint_req: Option<BuildMintReqCB>,
-                                        build_set_txn_fees_req: Option<BuildSetTxnFeesReqCB>,
                                         build_get_txn_fees_req: Option<BuildGetTxnFeesReqCB>,
                                         parse_get_txn_fees_response: Option<ParseGetTxnFeesResponseCB>,
                                         build_verify_payment_req: Option<BuildVerifyPaymentReqCB>,
@@ -85,14 +84,6 @@ extern {
                                outputs_json: CString,
                                extra: CString,
                                cb: Option<ResponseStringStringCB>) -> Error;
-
-    #[no_mangle]
-    pub fn indy_build_set_txn_fees_req(command_handle: Handle,
-                                       wallet_handle: Handle,
-                                       submitter_did: CString,
-                                       payment_method: CString,
-                                       fees_json: CString,
-                                       cb: Option<ResponseStringCB>) -> Error;
 
     #[no_mangle]
     pub fn indy_build_get_txn_fees_req(command_handle: Handle,
@@ -176,13 +167,6 @@ pub type BuildMintReqCB = extern fn(command_handle: Handle,
                                     cb: Option<extern fn(command_handle_: Handle,
                                                          err: Error,
                                                          mint_req_json: CString) -> Error>) -> Error;
-pub type BuildSetTxnFeesReqCB = extern fn(command_handle: Handle,
-                                          wallet_handle: Handle,
-                                          submitter_did: CString,
-                                          fees_json: CString,
-                                          cb: Option<extern fn(command_handle_: Handle,
-                                                               err: Error,
-                                                               set_txn_fees_json: CString) -> Error>) -> Error;
 pub type BuildGetTxnFeesReqCB = extern fn(command_handle: Handle,
                                           wallet_handle: Handle,
                                           submitter_did: CString,
