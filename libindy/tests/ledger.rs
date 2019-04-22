@@ -2052,13 +2052,15 @@ mod high_cases {
 
             ::std::thread::sleep(::std::time::Duration::from_secs(1));
 
-            let (actual_constraint, _) = _get_constraint(pool_handle, ADD_AUTH_ACTION, constants::NYM, FIELD, None, None);
+            let (actual_constraint, _) = _get_constraint(pool_handle, ADD_AUTH_ACTION,
+                                                         constants::NYM, FIELD, None, None);
 
             let expected_constraint: serde_json::Value = serde_json::from_str(ROLE_CONSTRAINT).unwrap();
 
             assert_eq!(expected_constraint, actual_constraint);
 
-            _change_constraint(pool_handle, wallet_handle, &trustee_did, ADD_AUTH_ACTION, constants::NYM, FIELD, None, None, &default_constraint_json);
+            _change_constraint(pool_handle, wallet_handle, &trustee_did, ADD_AUTH_ACTION, constants::NYM,
+                               FIELD, None, None, &default_constraint_json);
 
             utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
         }
@@ -2080,13 +2082,15 @@ mod high_cases {
 
             ::std::thread::sleep(::std::time::Duration::from_secs(1));
 
-            let (actual_constraint, _) = _get_constraint(pool_handle, EDIT_AUTH_ACTION, constants::NYM, FIELD, Some(VALUE), None);
+            let (actual_constraint, _) = _get_constraint(pool_handle, EDIT_AUTH_ACTION, constants::NYM,
+                                                         FIELD, Some(VALUE), None);
 
             let expected_constraint: serde_json::Value = serde_json::from_str(ROLE_CONSTRAINT).unwrap();
 
             assert_eq!(expected_constraint, actual_constraint);
 
-            _change_constraint(pool_handle, wallet_handle, &trustee_did, EDIT_AUTH_ACTION, constants::NYM, FIELD, Some(VALUE), None, &default_constraint_json);
+            _change_constraint(pool_handle, wallet_handle, &trustee_did, EDIT_AUTH_ACTION, constants::NYM,
+                               FIELD, Some(VALUE), None, &default_constraint_json);
 
             utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
         }
@@ -2108,13 +2112,15 @@ mod high_cases {
 
             ::std::thread::sleep(::std::time::Duration::from_secs(1));
 
-            let (actual_constraint, _) = _get_constraint(pool_handle, EDIT_AUTH_ACTION, constants::NYM, FIELD, None, Some(VALUE));
+            let (actual_constraint, _) = _get_constraint(pool_handle, EDIT_AUTH_ACTION, constants::NYM,
+                                                         FIELD, None, Some(VALUE));
 
             let expected_constraint: serde_json::Value = serde_json::from_str(ROLE_CONSTRAINT).unwrap();
 
             assert_eq!(expected_constraint, actual_constraint);
 
-            _change_constraint(pool_handle, wallet_handle, &trustee_did, EDIT_AUTH_ACTION, constants::NYM, FIELD, None, Some(VALUE), &default_constraint_json);
+            _change_constraint(pool_handle, wallet_handle, &trustee_did, EDIT_AUTH_ACTION, constants::NYM,
+                               FIELD, None, Some(VALUE), &default_constraint_json);
 
             utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
         }
@@ -2137,13 +2143,15 @@ mod high_cases {
 
             ::std::thread::sleep(::std::time::Duration::from_secs(1));
 
-            let (actual_constraint, _) = _get_constraint(pool_handle, EDIT_AUTH_ACTION, constants::NYM, FIELD, Some("0"), Some("2"));
+            let (actual_constraint, _) = _get_constraint(pool_handle, EDIT_AUTH_ACTION,
+                                                         constants::NYM, FIELD, Some("0"), Some("2"));
 
             let expected_constraint: serde_json::Value = serde_json::from_str(ROLE_CONSTRAINT).unwrap();
 
             assert_eq!(expected_constraint, actual_constraint);
 
-            _change_constraint(pool_handle, wallet_handle, &trustee_did, EDIT_AUTH_ACTION, constants::NYM, FIELD, Some("0"), Some("2"), &default_constraint_json);
+            _change_constraint(pool_handle, wallet_handle, &trustee_did, EDIT_AUTH_ACTION,
+                               constants::NYM, FIELD, Some("0"), Some("2"), &default_constraint_json);
 
             utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
         }
@@ -2663,7 +2671,8 @@ mod medium_cases {
         fn indy_send_node_request_works_for_wrong_role() {
             let (wallet_handle, pool_handle, did) = utils::setup_trustee();
 
-            let node_request = ledger::build_node_request(&did, &did, NODE_DATA).unwrap();
+            let key  = utils::crypto::create_key(wallet_handle, None).unwrap();
+            let node_request = ledger::build_node_request(&did, &key, NODE_DATA).unwrap();
             let response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &did, &node_request).unwrap();
             pool::check_response_type(&response, ResponseType::REJECT);
 
@@ -2675,7 +2684,8 @@ mod medium_cases {
         fn indy_submit_node_request_works_for_steward_already_has_node() {
             let (wallet_handle, pool_handle, did) = utils::setup_steward();
 
-            let node_request = ledger::build_node_request(&did, &did, NODE_DATA).unwrap();
+            let key  = utils::crypto::create_key(wallet_handle, None).unwrap();
+            let node_request = ledger::build_node_request(&did, &key, NODE_DATA).unwrap();
             let response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &did, &node_request).unwrap();
             pool::check_response_type(&response, ResponseType::REJECT);
 

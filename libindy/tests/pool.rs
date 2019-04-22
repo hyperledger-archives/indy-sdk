@@ -118,13 +118,6 @@ mod high_cases {
 
             pool::open_pool_ledger(pool_name, None).unwrap();
 
-            let pool_name = "pool_open_2";
-            let txn_file_path = pool::create_genesis_txn_file_for_test_pool(pool_name, None, None);
-            let pool_config = pool::pool_config_json(txn_file_path.as_path());
-            pool::create_pool_ledger_config(pool_name, Some(pool_config.as_str())).unwrap();
-
-            pool::open_pool_ledger(pool_name, None).unwrap();
-
             utils::tear_down();
         }
 
