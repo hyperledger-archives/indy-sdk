@@ -1274,8 +1274,8 @@ public class Ledger extends IndyJava.API {
 	 * @param action - type of an action.
 	 *     Can be either "ADD" (to add a new rule) or "EDIT" (to edit an existing one).
 	 * @param field - transaction field.
-	 * @param oldValue - old value of a field, which can be changed to a new_value (mandatory for EDIT action).
-	 * @param newValue - new value that can be used to fill the field.
+	 * @param oldValue - (Optional) old value of a field, which can be changed to a new_value (mandatory for EDIT action).
+	 * @param newValue - (Optional) new value that can be used to fill the field.
 	 * @param constraint - set of constraints required for execution of an action in the following format:
 	 *     {
 	 *         constraint_id - [string] type of a constraint.
@@ -1342,7 +1342,7 @@ public class Ledger extends IndyJava.API {
 	 * @param action - (Optional) type of action for which authentication rules will be applied.
 	 *     Can be either "ADD" (to add new rule) or "EDIT" (to edit an existing one).
 	 * @param field - (Optional) transaction field for which authentication rule will be applied.
-	 * @param oldValue - (Optional) old value of field, which can be changed to a new_value (must be specified for EDIT action).
+	 * @param oldValue - (Optional) old value of field, which can be changed to a new_value (mandatory for EDIT action).
 	 * @param newValue - (Optional) new value that can be used to fill the field.
 	 *
 	 * @return A future resolving to a request result as json.
