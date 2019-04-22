@@ -1759,7 +1759,7 @@ Builds a AUTH_RULE request. Request to change authentication rules for a ledger 
     * "EDIT" - to edit an existing one
 * `field`: String - transaction field.
 * `oldValue`: String - \(Optional\) old value of a field, which can be changed to a new_value (mandatory for EDIT action).
-* `newValue`: String - new value that can be used to fill the field. 
+* `newValue`: String - \(Optional\) new value that can be used to fill the field. 
 * `constraint`: String - set of constraints required for execution of an action in the following format:
 ```
  {
@@ -1798,7 +1798,7 @@ NOTE: Either none or all transaction related parameters must be specified (`oldV
 * `txnType`: String - target ledger transaction alias or associated value.
 * `action`: String - target action type. Can be either "ADD" or "EDIT".
 * `field`: String - target transaction field.
-* `oldValue`: String - \(Optional\) old value of field, which can be changed to a new_value (must be specified for EDIT action).
+* `oldValue`: String - \(Optional\) old value of field, which can be changed to a new_value (mandatory for EDIT action).
 * `newValue`: String - \(Optional\) new value that can be used to fill the field. 
 
 * __->__ `request`: Json
