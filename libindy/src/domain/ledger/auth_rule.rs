@@ -22,8 +22,8 @@ pub enum Constraint {
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct RoleConstraint {
-    pub sig_count: u32,
-    pub role: String,
+    pub sig_count: Option<u32>,
+    pub role: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<Value>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -36,59 +36,124 @@ pub struct CombinationConstraint {
 }
 
 #[derive(Serialize, PartialEq, Debug)]
-pub struct AuthRuleOperation {
+#[serde(untagged)]
+pub enum AuthRuleOperation {
+    Add(AddAuthRuleOperation),
+    Edit(EditAuthRuleOperation),
+}
+
+#[derive(Serialize, PartialEq, Debug)]
+pub struct AddAuthRuleOperation {
     #[serde(rename = "type")]
     pub _type: String,
     pub auth_type: String,
     pub field: String,
     pub auth_action: AuthAction,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    pub new_value: Option<String>,
+    pub constraint: Constraint,
+}
+
+#[derive(Serialize, PartialEq, Debug)]
+pub struct EditAuthRuleOperation {
+    #[serde(rename = "type")]
+    pub _type: String,
+    pub auth_type: String,
+    pub field: String,
+    pub auth_action: AuthAction,
     pub old_value: Option<String>,
-    pub new_value: String,
+    pub new_value: Option<String>,
     pub constraint: Constraint,
 }
 
 impl AuthRuleOperation {
     pub fn new(auth_type: String, field: String, auth_action: AuthAction,
-               old_value: Option<String>, new_value: String, constraint: Constraint) -> AuthRuleOperation {
-        AuthRuleOperation {
-            _type: AUTH_RULE.to_string(),
-            auth_type,
-            field,
-            auth_action,
-            old_value,
-            new_value,
-            constraint,
+               old_value: Option<String>, new_value: Option<String>, constraint: Constraint) -> AuthRuleOperation {
+        match auth_action {
+            AuthAction::ADD =>
+                AuthRuleOperation::Add(AddAuthRuleOperation {
+                    _type: AUTH_RULE.to_string(),
+                    auth_type,
+                    field,
+                    auth_action,
+                    new_value,
+                    constraint,
+                }),
+            AuthAction::EDIT =>
+                AuthRuleOperation::Edit(EditAuthRuleOperation {
+                    _type: AUTH_RULE.to_string(),
+                    auth_type,
+                    field,
+                    auth_action,
+                    old_value,
+                    new_value,
+                    constraint,
+                })
         }
     }
 }
 
 #[derive(Serialize, PartialEq, Debug)]
-pub struct GetAuthRuleOperation {
+#[serde(untagged)]
+pub enum GetAuthRuleOperation {
+    All(GetAllAuthRuleOperation),
+    Add(GetAddAuthRuleOperation),
+    Edit(GetEditAuthRuleOperation),
+}
+
+#[derive(Serialize, PartialEq, Debug)]
+pub struct GetAllAuthRuleOperation {
     #[serde(rename = "type")]
     pub _type: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub auth_type: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub field: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub auth_action: Option<AuthAction>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+}
+
+#[derive(Serialize, PartialEq, Debug)]
+pub struct GetAddAuthRuleOperation {
+    #[serde(rename = "type")]
+    pub _type: String,
+    pub auth_type: String,
+    pub field: String,
+    pub auth_action: AuthAction,
+    pub new_value: Option<String>,
+}
+
+#[derive(Serialize, PartialEq, Debug)]
+pub struct GetEditAuthRuleOperation {
+    #[serde(rename = "type")]
+    pub _type: String,
+    pub auth_type: String,
+    pub field: String,
+    pub auth_action: AuthAction,
     pub old_value: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub new_value: Option<String>
+    pub new_value: Option<String>,
 }
 
 impl GetAuthRuleOperation {
-    pub fn new(auth_type: Option<String>, field: Option<String>, auth_action: Option<AuthAction>,
-               old_value: Option<String>, new_value: Option<String>) -> GetAuthRuleOperation {
-        GetAuthRuleOperation {
+    pub fn get_all() -> GetAuthRuleOperation {
+        GetAuthRuleOperation::All(GetAllAuthRuleOperation {
             _type: GET_AUTH_RULE.to_string(),
-            auth_type,
-            field,
-            auth_action,
-            old_value,
-            new_value,
+        })
+    }
+
+    pub fn get_one(auth_type: String, field: String, auth_action: AuthAction,
+                   old_value: Option<String>, new_value: Option<String>) -> GetAuthRuleOperation {
+        match auth_action {
+            AuthAction::ADD =>
+                GetAuthRuleOperation::Add(GetAddAuthRuleOperation {
+                    _type: GET_AUTH_RULE.to_string(),
+                    auth_type,
+                    field,
+                    auth_action,
+                    new_value,
+                }),
+            AuthAction::EDIT =>
+                GetAuthRuleOperation::Edit(GetEditAuthRuleOperation {
+                    _type: GET_AUTH_RULE.to_string(),
+                    auth_type,
+                    field,
+                    auth_action,
+                    old_value,
+                    new_value,
+                })
         }
     }
 }
