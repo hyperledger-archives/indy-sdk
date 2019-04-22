@@ -606,7 +606,7 @@ pub mod tests {
     mod did_rotate_key {
         use super::*;
         #[cfg(feature = "nullpay_plugin")]
-        use commands::ledger::tests::{set_fees, create_address_and_mint_sources, get_source_input, FEES, OUTPUT};
+        use commands::ledger::tests::{create_address_and_mint_sources, get_source_input};
 
         fn ensure_nym_written(ctx: &CommandContext, did: &str, verkey: &str) {
             let wallet_handle = ensure_opened_wallet_handle(ctx).unwrap();
@@ -763,10 +763,9 @@ pub mod tests {
         #[test]
         #[cfg(feature = "nullpay_plugin")]
         pub fn rotate_works_for_set_fees() {
-            let ctx = setup();
+            let ctx = setup_with_wallet_and_pool_and_payment_plugin();
 
-            let wallet_handle = create_and_open_wallet(&ctx);
-            create_and_connect_pool(&ctx);
+            let (wallet_handle, _) = get_opened_wallet(&ctx).unwrap();
 
             new_did(&ctx, SEED_TRUSTEE);
             use_did(&ctx, DID_TRUSTEE);
@@ -774,11 +773,10 @@ pub mod tests {
             let (did, verkey) = Did::new(wallet_handle, "{}").unwrap();
 
             send_nym(&ctx, &did, &verkey, None);
-            set_fees(&ctx, FEES);
 
             use_did(&ctx, &did);
 
-            let payment_address_from = create_address_and_mint_sources(&ctx);
+            let payment_address_from = create_address_and_mint_sources(&ctx, 100);
             let input = get_source_input(&ctx, &payment_address_from);
 
             let did_info = get_did_info(&ctx, &did);
@@ -787,7 +785,7 @@ pub mod tests {
                 let cmd = rotate_key_command::new();
                 let mut params = CommandParams::new();
                 params.insert("fees_inputs", input);
-                params.insert("fees_outputs", OUTPUT.to_string());
+                params.insert("fees_outputs", format!("({},{})", payment_address_from, 90));
                 cmd.execute(&ctx, &params).unwrap();
             }
             let did_info = get_did_info(&ctx, &did);

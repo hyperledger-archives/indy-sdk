@@ -239,6 +239,7 @@ pub mod tests {
     }
 
     pub fn load_null_payment_plugin(ctx: &CommandContext) -> () {
+        ::std::env::set_var("ENABLE_FEES", "1");
         let lib = _load_lib(NULL_PAYMENT_PLUGIN).unwrap();
         unsafe {
             let init_func: libloading::Symbol<unsafe extern fn() -> ErrorCode> = lib.get(NULL_PAYMENT_PLUGIN_INIT_FUNCTION.as_bytes()).unwrap();

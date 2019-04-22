@@ -369,12 +369,6 @@ Prepare MINT transaction
 ledger mint-prepare outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>) [extra=<extra>]
 ```
 
-#### SET_FEES transaction
-Prepare SET_FEES transaction
-```
-ledger set-fees-prepare payment_method=<payment_method> fees=<txn-type-1>:<amount-1>,..,<txn-type-n>:<amount-n>
-```
-
 #### VERIFY_PAYMENT_RECEIPT transaction
 Prepare VERIFY_PAYMENT_RECEIPT transaction
 ```

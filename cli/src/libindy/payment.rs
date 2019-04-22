@@ -37,10 +37,6 @@ impl Payment {
         payments::build_mint_req(wallet_handle, submitter_did, outputs_json, extra).wait()
     }
 
-    pub fn build_set_txn_fees_req(wallet_handle: i32, submitter_did: Option<&str>, payment_method: &str, fees_json: &str) -> Result<String, IndyError> {
-        payments::build_set_txn_fees_req(wallet_handle, submitter_did, payment_method, fees_json).wait()
-    }
-
     pub fn build_get_txn_fees_req(wallet_handle: i32, submitter_did: Option<&str>, payment_method: &str) -> Result<String, IndyError> {
         payments::build_get_txn_fees_req(wallet_handle, submitter_did, payment_method).wait()
     }

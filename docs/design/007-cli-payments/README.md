@@ -100,28 +100,6 @@ Sending MINT process is the following:
 * All Stewards sign the request
 * The latest Steward calls ```ledger send-custom``` to send request signed by all Stewards
 
-### Prepare SET_FEES transaction
-
-Prepare SET_FEES transaction as json.
-
-```indy-cli
-indy> ledger set-fees-prepare payment_method=<payment_method> fees=<txn-type-1>:<amount-1>,...,<txn-type-n>:<amount-n>
-```
-
-Returns:
-
-* SET_FEES transaction json
-
-Sending SET_FEES process is the following:
-
-* Steward 1 calls ```ledger set-fees-prepare```
-* Signs it by calling ```ledger sign-multi```
-* Sends the request json to Steward 2 (now we have 1 signature)
-* Second Steward signs it by calling ```ledger sign-multi```
-* Sends the request json to Steward 3 (now we have 2 signature)
-* All Stewards sign the request
-* The latest Steward calls ```ledger send-custom``` to send request signed by all Stewards
-
 
 #### Send VERIFY_PAYMENT_RECEIPT request
 

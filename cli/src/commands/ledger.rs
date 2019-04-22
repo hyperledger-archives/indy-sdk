@@ -1065,7 +1065,7 @@ pub mod get_fees_command {
                         .iter()
                         .map(|(key, value)|
                             json!({
-                            "type": key,
+                            "type": get_txn_title(Some(&key)),
                             "amount": value
                         }))
                         .collect::<Vec<serde_json::Value>>();
@@ -1114,40 +1114,6 @@ pub mod mint_prepare_command {
                 println!("     {}", request);
             })
             .map_err(|err| handle_payment_error(err, None))?;
-
-        let res = Ok(());
-        trace!("execute << {:?}", res);
-        res
-    }
-}
-
-pub mod set_fees_prepare_command {
-    use super::*;
-
-    command!(CommandMetadata::build("set-fees-prepare", " Prepare SET_FEES transaction.")
-                .add_required_param("payment_method","Payment method to use")
-                .add_required_param("fees","The list of transactions fees")
-                .add_example("ledger set-fees-prepare payment_method=null fees=1:100,100:200")
-                .finalize()
-    );
-
-    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
-        trace!("execute >> ctx {:?} params {:?}", ctx, params);
-
-        let wallet_handle = ensure_opened_wallet_handle(ctx)?;
-        let submitter_did = get_active_did(&ctx);
-
-        let payment_method = get_str_param("payment_method", params).map_err(error_err!())?;
-        let fees = get_str_array_param("fees", params).map_err(error_err!())?;
-
-        let fees = parse_payment_fees(&fees).map_err(error_err!())?;
-
-        Payment::build_set_txn_fees_req(wallet_handle, submitter_did.as_ref().map(String::as_str), &payment_method, &fees)
-            .map(|request| {
-                println_succ!("SET_FEES transaction has been created:");
-                println!("     {}", request);
-            })
-            .map_err(|err| handle_payment_error(err, Some(payment_method)))?;
 
         let res = Ok(());
         trace!("execute << {:?}", res);
@@ -1281,7 +1247,7 @@ pub mod auth_rule_command {
             .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
 
         if let Some(result) = response.result.as_mut() {
-            result["txn"]["data"]["auth_type"] = get_txn_title(&result["txn"]["data"]["auth_type"]);
+            result["txn"]["data"]["auth_type"] = get_txn_title(result["txn"]["data"]["auth_type"].as_str());
             result["txn"]["data"]["constraint"] = serde_json::Value::String(::serde_json::to_string_pretty(&result["txn"]["data"]["constraint"]).unwrap());
         }
 
@@ -1351,7 +1317,7 @@ pub mod get_auth_rule_command {
             .iter()
             .map(|(constraint_id, constraint)| {
                 let parts: Vec<&str> = constraint_id.split("--").collect();
-                let auth_type = get_txn_title(&serde_json::Value::String(parts.get(0).cloned().unwrap_or("-").to_string()));
+                let auth_type = get_txn_title(parts.get(0).cloned());
                 let action = parts.get(1);
                 let field = parts.get(2);
                 let old_value = match action {
@@ -1470,30 +1436,6 @@ pub fn print_response_receipts(receipts: Option<Vec<serde_json::Value>>) -> Resu
     Ok(())
 }
 
-fn parse_payment_fees(fees: &Vec<&str>) -> Result<String, ()> {
-    let mut fees_map: HashMap<String, u64> = HashMap::new();
-
-    for fee in fees {
-        let parts = fee.split(":").collect::<Vec<&str>>();
-
-        let type_ = parts.get(0)
-            .ok_or(())
-            .map_err(|_| println_err!("Invalid format of Fees: Type not found"))?
-            .to_string();
-
-        let amount = parts.get(1)
-            .ok_or(())
-            .map_err(|_| println_err!("Invalid format of Fees: Amount not found"))
-            .and_then(|amount| amount.parse::<u64>()
-                .map_err(|_| println_err!("Invalid format of Fees: Amount must greater or equal zero")))?;
-
-        fees_map.insert(type_, amount);
-    }
-
-    serde_json::to_string(&fees_map)
-        .map_err(|_| println_err!("Wrong data has been received"))
-}
-
 fn print_transaction_response(mut result: serde_json::Value, title: &str,
                               data_sub_field: Option<&str>,
                               data_headers: &[(&str, &str)],
@@ -1583,8 +1525,8 @@ fn get_role_title(role: &serde_json::Value) -> serde_json::Value {
     }.to_string())
 }
 
-fn get_txn_title(role: &serde_json::Value) -> serde_json::Value {
-    serde_json::Value::String(match role.as_str() {
+fn get_txn_title(txn: Option<&str>) -> serde_json::Value {
+    serde_json::Value::String(match txn {
         Some("0") => "NODE",
         Some("1") => "NYM",
         Some("3") => "GET_TXN",
@@ -1656,6 +1598,11 @@ pub mod tests {
 
     pub const CRED_DEF_DATA: &'static str = r#"{"n":"1","s":"1","rms":"1","r":{"age":"1","name":"1"},"rctxt":"1","z":"1"}"#;
 
+
+    /*
+    There are the following FEES are set by default: {NYM: 10, ATTRIB: 5, SCHEMA: 200, CRED_DEF: 100}
+    */
+
     #[cfg(feature = "nullpay_plugin")]
     pub const UNKNOWN_PAYMENT_METHOD: &'static str = "UNKNOWN_PAYMENT_METHOD";
     #[cfg(feature = "nullpay_plugin")]
@@ -1673,11 +1620,17 @@ pub mod tests {
     #[cfg(feature = "nullpay_plugin")]
     pub const INVALID_OUTPUT: &'static str = "pay:null:CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW,100";
     #[cfg(feature = "nullpay_plugin")]
-    pub const FEES: &'static str = "1:1,100:1,101:1";
-    #[cfg(feature = "nullpay_plugin")]
     pub const EXTRA: &'static str = "extra";
     #[cfg(feature = "nullpay_plugin")]
-    pub const AMOUNT: i32 = 100;
+    pub const AMOUNT: u32 = 100;
+    #[cfg(feature = "nullpay_plugin")]
+    pub const NYM_FEE: u32 = 10;
+    #[cfg(feature = "nullpay_plugin")]
+    pub const ATTRIB_FEE: u32 = 5;
+    #[cfg(feature = "nullpay_plugin")]
+    pub const SCHEMA_FEE: u32 = 200;
+    #[cfg(feature = "nullpay_plugin")]
+    pub const CRED_DEF_FEE: u32 = 100;
 
     mod nym {
         use super::*;
@@ -1720,8 +1673,7 @@ pub mod tests {
         pub fn nym_works_for_set_fees() {
             let ctx = setup_with_wallet_and_pool_and_payment_plugin();
             use_trustee(&ctx);
-            set_fees(&ctx, FEES);
-            let payment_address_from = create_address_and_mint_sources(&ctx);
+            let payment_address_from = create_address_and_mint_sources(&ctx, NYM_FEE + 5);
             let input = get_source_input(&ctx, &payment_address_from);
 
             let (did, verkey) = create_new_did(&ctx);
@@ -1731,7 +1683,7 @@ pub mod tests {
                 params.insert("did", did.clone());
                 params.insert("verkey", verkey);
                 params.insert("fees_inputs", input);
-                params.insert("fees_outputs", OUTPUT.to_string());
+                params.insert("fees_outputs", format!("({},{})", payment_address_from, 5));
                 cmd.execute(&ctx, &params).unwrap();
             }
             _ensure_nym_added(&ctx, &did);
@@ -1743,9 +1695,8 @@ pub mod tests {
         pub fn nym_works_for_set_fees_with_input_amount_lower_fee() {
             let ctx = setup_with_wallet_and_pool_and_payment_plugin();
             use_trustee(&ctx);
-            let payment_address_from = create_address_and_mint_sources(&ctx);
+            let payment_address_from = create_address_and_mint_sources(&ctx, NYM_FEE - 1);
             let input = get_source_input(&ctx, &payment_address_from);
-            set_fees(&ctx, "1:101");
 
             let (did, verkey) = create_new_did(&ctx);
             {
@@ -1765,9 +1716,8 @@ pub mod tests {
         pub fn nym_works_for_set_fees_with_input_amount_lower_fee_plus_output() {
             let ctx = setup_with_wallet_and_pool_and_payment_plugin();
             use_trustee(&ctx);
-            let payment_address_from = create_address_and_mint_sources(&ctx);
+            let payment_address_from = create_address_and_mint_sources(&ctx, NYM_FEE);
             let input = get_source_input(&ctx, &payment_address_from);
-            set_fees(&ctx, "1:95");
 
             let (did, verkey) = create_new_did(&ctx);
             {
@@ -1776,7 +1726,7 @@ pub mod tests {
                 params.insert("did", did.clone());
                 params.insert("verkey", verkey);
                 params.insert("fees_inputs", input);
-                params.insert("fees_outputs", OUTPUT.to_string());
+                params.insert("fees_outputs", format!("({},{})", payment_address_from, 5));
                 cmd.execute(&ctx, &params).unwrap_err();
             }
             tear_down_with_wallet_and_pool(&ctx);
@@ -1960,8 +1910,7 @@ pub mod tests {
 
             let (did, _) = use_new_identity(&ctx);
             use_did(&ctx, DID_TRUSTEE);
-            set_fees(&ctx, FEES);
-            let payment_address_from = create_address_and_mint_sources(&ctx);
+            let payment_address_from = create_address_and_mint_sources(&ctx, ATTRIB_FEE + 5);
             let input = get_source_input(&ctx, &payment_address_from);
             use_did(&ctx, &did);
             {
@@ -1970,7 +1919,7 @@ pub mod tests {
                 params.insert("did", did.clone());
                 params.insert("raw", ATTRIB_RAW_DATA.to_string());
                 params.insert("fees_inputs", input);
-                params.insert("fees_outputs", OUTPUT.to_string());
+                params.insert("fees_outputs", format!("({},{})", payment_address_from, 5));
                 cmd.execute(&ctx, &params).unwrap();
             }
             _ensure_attrib_added(&ctx, &did, Some(ATTRIB_RAW_DATA), None, None);
@@ -1985,8 +1934,7 @@ pub mod tests {
             let (did, _) = use_new_identity(&ctx);
 
             use_did(&ctx, DID_TRUSTEE);
-            set_fees(&ctx, "ATTRIB:101");
-            let payment_address_from = create_address_and_mint_sources(&ctx);
+            let payment_address_from = create_address_and_mint_sources(&ctx, ATTRIB_FEE - 1);
             let input = get_source_input(&ctx, &payment_address_from);
             use_did(&ctx, &did);
             {
@@ -2179,8 +2127,7 @@ pub mod tests {
             let ctx = setup_with_wallet_and_pool_and_payment_plugin();
             let (did, _) = use_new_identity(&ctx);
 
-            set_fees(&ctx, FEES);
-            let payment_address_from = create_address_and_mint_sources(&ctx);
+            let payment_address_from = create_address_and_mint_sources(&ctx, SCHEMA_FEE + 5);
             let input = get_source_input(&ctx, &payment_address_from);
             {
                 let cmd = schema_command::new();
@@ -2189,7 +2136,7 @@ pub mod tests {
                 params.insert("version", "1.0".to_string());
                 params.insert("attr_names", "name,age".to_string());
                 params.insert("fees_inputs", input);
-                params.insert("fees_outputs", OUTPUT.to_string());
+                params.insert("fees_outputs", format!("({},{})", payment_address_from, 5));
                 cmd.execute(&ctx, &params).unwrap();
             }
             _ensure_schema_added(&ctx, &did);
@@ -2201,9 +2148,8 @@ pub mod tests {
         pub fn schema_works_for_set_fees_input_amount_lower_fee() {
             let ctx = setup_with_wallet_and_pool_and_payment_plugin();
             use_new_identity(&ctx);
-            set_fees(&ctx, "SCHEMA:101");
 
-            let payment_address_from = create_address_and_mint_sources(&ctx);
+            let payment_address_from = create_address_and_mint_sources(&ctx, SCHEMA_FEE - 1);
             let input = get_source_input(&ctx, &payment_address_from);
             {
                 let cmd = schema_command::new();
@@ -2433,8 +2379,7 @@ pub mod tests {
             let (did, _) = use_new_identity(&ctx);
             let schema_id = send_schema(&ctx, &did);
 
-            set_fees(&ctx, FEES);
-            let payment_address_from = create_address_and_mint_sources(&ctx);
+            let payment_address_from = create_address_and_mint_sources(&ctx, CRED_DEF_FEE + 5);
             let input = get_source_input(&ctx, &payment_address_from);
             {
                 let cmd = cred_def_command::new();
@@ -2444,7 +2389,7 @@ pub mod tests {
                 params.insert("tag", "TAG".to_string());
                 params.insert("primary", CRED_DEF_DATA.to_string());
                 params.insert("fees_inputs", input);
-                params.insert("fees_outputs", OUTPUT.to_string());
+                params.insert("fees_outputs", format!("({},{})", payment_address_from, 5));
                 cmd.execute(&ctx, &params).unwrap();
             }
             _ensure_cred_def_added(&ctx, &did, &schema_id);
@@ -2458,8 +2403,7 @@ pub mod tests {
             let (did, _) = use_new_identity(&ctx);
             let schema_id = send_schema(&ctx, &did);
 
-            set_fees(&ctx, "CRED_DEF:101");
-            let payment_address_from = create_address_and_mint_sources(&ctx);
+            let payment_address_from = create_address_and_mint_sources(&ctx, CRED_DEF_FEE - 1);
             let input = get_source_input(&ctx, &payment_address_from);
             {
                 let cmd = cred_def_command::new();
@@ -2882,7 +2826,7 @@ pub mod tests {
         pub fn get_payment_sources_works() {
             let ctx = setup_with_wallet_and_pool_and_payment_plugin();
             use_trustee(&ctx);
-            let payment_address = create_address_and_mint_sources(&ctx);
+            let payment_address = create_address_and_mint_sources(&ctx, AMOUNT);
             {
                 let cmd = get_payment_sources_command::new();
                 let mut params = CommandParams::new();
@@ -2940,23 +2884,11 @@ pub mod tests {
             {
                 let cmd = get_payment_sources_command::new();
                 let mut params = CommandParams::new();
-                params.insert("payment_address", INVALID_PAYMENT_ADDRESS.to_string());
+                params.insert("payment_address", PAYMENT_ADDRESS.to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
             }
             disconnect_and_delete_pool(&ctx);
             tear_down();
-        }
-
-        #[test]
-        pub fn get_payment_sources_works_for_no_active_did() {
-            let ctx = setup_with_wallet_and_pool_and_payment_plugin();
-            {
-                let cmd = get_payment_sources_command::new();
-                let mut params = CommandParams::new();
-                params.insert("payment_address", PAYMENT_ADDRESS.to_string());
-                cmd.execute(&ctx, &params).unwrap();
-            }
-            tear_down_with_wallet_and_pool(&ctx);
         }
 
         #[test]
@@ -2988,13 +2920,13 @@ pub mod tests {
         pub fn payment_works() {
             let ctx = setup_with_wallet_and_pool_and_payment_plugin();
             use_trustee(&ctx);
-            let payment_address_from = create_address_and_mint_sources(&ctx);
+            let payment_address_from = create_address_and_mint_sources(&ctx, AMOUNT);
             let input = get_source_input(&ctx, &payment_address_from);
             {
                 let cmd = payment_command::new();
                 let mut params = CommandParams::new();
                 params.insert("inputs", input);
-                params.insert("outputs", format!("({},{})", PAYMENT_ADDRESS, 10));
+                params.insert("outputs", format!("({},{})", PAYMENT_ADDRESS, AMOUNT));
                 cmd.execute(&ctx, &params).unwrap();
             }
             tear_down_with_wallet_and_pool(&ctx);
@@ -3004,13 +2936,13 @@ pub mod tests {
         pub fn payment_works_for_extra() {
             let ctx = setup_with_wallet_and_pool_and_payment_plugin();
             use_trustee(&ctx);
-            let payment_address_from = create_address_and_mint_sources(&ctx);
+            let payment_address_from = create_address_and_mint_sources(&ctx, AMOUNT);
             let input = get_source_input(&ctx, &payment_address_from);
             {
                 let cmd = payment_command::new();
                 let mut params = CommandParams::new();
                 params.insert("inputs", input);
-                params.insert("outputs", format!("({},{})", PAYMENT_ADDRESS, 10));
+                params.insert("outputs", format!("({},{})", PAYMENT_ADDRESS, AMOUNT));
                 params.insert("extra", EXTRA.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
@@ -3022,17 +2954,17 @@ pub mod tests {
             let ctx = setup_with_wallet_and_pool_and_payment_plugin();
             use_trustee(&ctx);
 
-            let payment_address_from_1 = create_address_and_mint_sources(&ctx);
+            let payment_address_from_1 = create_address_and_mint_sources(&ctx, AMOUNT);
             let input_1 = get_source_input(&ctx, &payment_address_from_1);
 
-            let payment_address_from_2 = create_address_and_mint_sources(&ctx);
+            let payment_address_from_2 = create_address_and_mint_sources(&ctx, AMOUNT);
             let input_2 = get_source_input(&ctx, &payment_address_from_2);
 
             {
                 let cmd = payment_command::new();
                 let mut params = CommandParams::new();
                 params.insert("inputs", format!("{},{}", input_1, input_2));
-                params.insert("outputs", format!("({},{})", PAYMENT_ADDRESS, 150));
+                params.insert("outputs", format!("({},{})", PAYMENT_ADDRESS, AMOUNT + AMOUNT));
                 cmd.execute(&ctx, &params).unwrap();
             }
             tear_down_with_wallet_and_pool(&ctx);
@@ -3043,7 +2975,7 @@ pub mod tests {
             let ctx = setup_with_wallet_and_pool_and_payment_plugin();
             use_trustee(&ctx);
 
-            let payment_address_from_1 = create_address_and_mint_sources(&ctx);
+            let payment_address_from_1 = create_address_and_mint_sources(&ctx, AMOUNT);
             let input_1 = get_source_input(&ctx, &payment_address_from_1);
 
             let payment_address_to = create_payment_address(&ctx);
@@ -3051,7 +2983,7 @@ pub mod tests {
                 let cmd = payment_command::new();
                 let mut params = CommandParams::new();
                 params.insert("inputs", format!("{}", input_1));
-                params.insert("outputs", format!("({},{}),({},{})", PAYMENT_ADDRESS, 10, payment_address_to, 20));
+                params.insert("outputs", format!("({},{}),({},{})", PAYMENT_ADDRESS, AMOUNT / 2, payment_address_to, AMOUNT / 2));
                 cmd.execute(&ctx, &params).unwrap();
             }
             tear_down_with_wallet_and_pool(&ctx);
@@ -3062,10 +2994,10 @@ pub mod tests {
             let ctx = setup_with_wallet_and_pool_and_payment_plugin();
             use_trustee(&ctx);
 
-            let payment_address_from_1 = create_address_and_mint_sources(&ctx);
+            let payment_address_from_1 = create_address_and_mint_sources(&ctx, AMOUNT);
             let input_1 = get_source_input(&ctx, &payment_address_from_1);
 
-            let payment_address_from_2 = create_address_and_mint_sources(&ctx);
+            let payment_address_from_2 = create_address_and_mint_sources(&ctx, AMOUNT);
             let input_2 = get_source_input(&ctx, &payment_address_from_2);
 
             let payment_address_to = create_payment_address(&ctx);
@@ -3073,7 +3005,7 @@ pub mod tests {
                 let cmd = payment_command::new();
                 let mut params = CommandParams::new();
                 params.insert("inputs", format!("{},{}", input_1, input_2));
-                params.insert("outputs", format!("({},{}),({},{})", PAYMENT_ADDRESS, 10, payment_address_to, 20));
+                params.insert("outputs", format!("({},{}),({},{})", PAYMENT_ADDRESS, AMOUNT + AMOUNT / 2, payment_address_to, AMOUNT / 2));
                 cmd.execute(&ctx, &params).unwrap();
             }
             tear_down_with_wallet_and_pool(&ctx);
@@ -3084,13 +3016,13 @@ pub mod tests {
             let ctx = setup_with_wallet_and_pool_and_payment_plugin();
             use_trustee(&ctx);
 
-            let payment_address_from = create_address_and_mint_sources(&ctx);
+            let payment_address_from = create_address_and_mint_sources(&ctx, AMOUNT);
             let input = get_source_input(&ctx, &payment_address_from);
             {
                 let cmd = payment_command::new();
                 let mut params = CommandParams::new();
                 params.insert("inputs", input);
-                params.insert("outputs", format!("({},{})", PAYMENT_ADDRESS, 1000));
+                params.insert("outputs", format!("({},{})", PAYMENT_ADDRESS, AMOUNT + AMOUNT));
                 cmd.execute(&ctx, &params).unwrap_err();
             }
             tear_down_with_wallet_and_pool(&ctx);
@@ -3104,7 +3036,7 @@ pub mod tests {
                 let cmd = payment_command::new();
                 let mut params = CommandParams::new();
                 params.insert("inputs", INPUT.to_string());
-                params.insert("outputs", format!("({},{})", PAYMENT_ADDRESS, 10));
+                params.insert("outputs", format!("({},{})", PAYMENT_ADDRESS, AMOUNT));
                 cmd.execute(&ctx, &params).unwrap_err();
             }
             tear_down_with_wallet_and_pool(&ctx);
@@ -3223,7 +3155,7 @@ pub mod tests {
                 let cmd = payment_command::new();
                 let mut params = CommandParams::new();
                 params.insert("inputs", "pay:null:-11_wD7gzzUlOnYRkb4".to_string());
-                params.insert("outputs", format!("({},{})", PAYMENT_ADDRESS, 10));
+                params.insert("outputs", format!("({},{})", PAYMENT_ADDRESS, AMOUNT));
                 cmd.execute(&ctx, &params).unwrap_err();
             }
             tear_down_with_wallet_and_pool(&ctx);
@@ -3234,7 +3166,7 @@ pub mod tests {
             let ctx = setup_with_wallet_and_pool_and_payment_plugin();
             use_trustee(&ctx);
 
-            let payment_address_from = create_address_and_mint_sources(&ctx);
+            let payment_address_from = create_address_and_mint_sources(&ctx, AMOUNT);
             let input = get_source_input(&ctx, &payment_address_from);
             {
                 let cmd = payment_command::new();
@@ -3253,20 +3185,6 @@ pub mod tests {
 
         #[test]
         pub fn get_fees_works() {
-            let ctx = setup_with_wallet_and_pool_and_payment_plugin();
-            use_trustee(&ctx);
-            set_fees(&ctx, FEES);
-            {
-                let cmd = get_fees_command::new();
-                let mut params = CommandParams::new();
-                params.insert("payment_method", NULL_PAYMENT_METHOD.to_string());
-                cmd.execute(&ctx, &params).unwrap();
-            }
-            tear_down_with_wallet_and_pool(&ctx);
-        }
-
-        #[test]
-        pub fn get_fees_works_for_no_fees() {
             let ctx = setup_with_wallet_and_pool_and_payment_plugin();
             use_trustee(&ctx);
             {
@@ -3470,97 +3388,6 @@ pub mod tests {
     }
 
     #[cfg(feature = "nullpay_plugin")]
-    mod set_fees_prepare {
-        use super::*;
-
-        #[test]
-        pub fn set_fees_prepare_works() {
-            let ctx = setup_with_wallet_and_pool_and_payment_plugin();
-            use_trustee(&ctx);
-            {
-                let cmd = set_fees_prepare_command::new();
-                let mut params = CommandParams::new();
-                params.insert("payment_method", NULL_PAYMENT_METHOD.to_string());
-                params.insert("fees", FEES.to_string());
-                cmd.execute(&ctx, &params).unwrap();
-            }
-            tear_down_with_wallet_and_pool(&ctx);
-        }
-
-        #[test]
-        pub fn set_fees_prepare_works_for_unknown_payment_method() {
-            let ctx = setup_with_wallet_and_pool_and_payment_plugin();
-            use_trustee(&ctx);
-            {
-                let cmd = set_fees_prepare_command::new();
-                let mut params = CommandParams::new();
-                params.insert("payment_method", UNKNOWN_PAYMENT_METHOD.to_string());
-                params.insert("fees", FEES.to_string());
-                cmd.execute(&ctx, &params).unwrap_err();
-            }
-            tear_down_with_wallet_and_pool(&ctx);
-        }
-
-        #[test]
-        pub fn set_fees_prepare_works_for_invalid_fees_format() {
-            let ctx = setup_with_wallet_and_pool_and_payment_plugin();
-            use_trustee(&ctx);
-            {
-                let cmd = set_fees_prepare_command::new();
-                let mut params = CommandParams::new();
-                params.insert("payment_method", NULL_PAYMENT_METHOD.to_string());
-                params.insert("fees", "1,100".to_string());
-                cmd.execute(&ctx, &params).unwrap_err();
-            }
-            tear_down_with_wallet_and_pool(&ctx);
-        }
-
-        #[test]
-        pub fn set_fees_prepare_works_for_empty_fees() {
-            let ctx = setup_with_wallet_and_pool_and_payment_plugin();
-            use_trustee(&ctx);
-            {
-                let cmd = set_fees_prepare_command::new();
-                let mut params = CommandParams::new();
-                params.insert("payment_method", NULL_PAYMENT_METHOD.to_string());
-                params.insert("fees", "".to_string());
-                cmd.execute(&ctx, &params).unwrap_err();
-            }
-            tear_down_with_wallet_and_pool(&ctx);
-        }
-
-        #[test]
-        pub fn set_fees_prepare_works_for_no_active_wallet() {
-            let ctx = setup();
-            pool::tests::create_and_connect_pool(&ctx);
-            common::tests::load_null_payment_plugin(&ctx);
-            {
-                let cmd = set_fees_prepare_command::new();
-                let mut params = CommandParams::new();
-                params.insert("payment_method", NULL_PAYMENT_METHOD.to_string());
-                params.insert("fees", FEES.to_string());
-                cmd.execute(&ctx, &params).unwrap_err();
-            }
-            disconnect_and_delete_pool(&ctx);
-            tear_down();
-        }
-
-        #[test]
-        pub fn set_fees_prepare_works_for_negative_amount() {
-            let ctx = setup_with_wallet_and_pool_and_payment_plugin();
-            use_trustee(&ctx);
-            {
-                let cmd = set_fees_prepare_command::new();
-                let mut params = CommandParams::new();
-                params.insert("payment_method", NULL_PAYMENT_METHOD.to_string());
-                params.insert("fees", "1:-1,101:-1".to_string());
-                cmd.execute(&ctx, &params).unwrap_err();
-            }
-            tear_down_with_wallet_and_pool(&ctx);
-        }
-    }
-
-    #[cfg(feature = "nullpay_plugin")]
     mod verify_payment_receipts {
         use super::*;
 
@@ -3569,7 +3396,7 @@ pub mod tests {
             let ctx = setup_with_wallet_and_pool_and_payment_plugin();
             use_trustee(&ctx);
 
-            let payment_address_from = create_address_and_mint_sources(&ctx);
+            let payment_address_from = create_address_and_mint_sources(&ctx, AMOUNT);
             let input = get_source_input(&ctx, &payment_address_from);
             {
                 let cmd = verify_payment_receipt_command::new();
@@ -3585,7 +3412,7 @@ pub mod tests {
             let ctx = setup_with_wallet_and_pool_and_payment_plugin();
             use_trustee(&ctx);
 
-            let payment_address_from = create_address_and_mint_sources(&ctx);
+            let payment_address_from = create_address_and_mint_sources(&ctx, AMOUNT);
             let input = get_source_input(&ctx, &payment_address_from);
 
             // to reset active did
@@ -3819,7 +3646,7 @@ pub mod tests {
     }
 
     #[cfg(feature = "nullpay_plugin")]
-    pub fn create_address_and_mint_sources(ctx: &CommandContext) -> String {
+    pub fn create_address_and_mint_sources(ctx: &CommandContext, tokens: u32) -> String {
         let (wallet_handle, _) = get_opened_wallet(ctx).unwrap();
         let submitter_did = ensure_active_did(&ctx).unwrap();
 
@@ -3827,7 +3654,7 @@ pub mod tests {
 
         Payment::build_mint_req(wallet_handle,
                                 Some(&submitter_did),
-                                &parse_payment_outputs(&vec![format!("{},{}", payment_address, AMOUNT)]).unwrap(),
+                                &parse_payment_outputs(&vec![format!("{},{}", payment_address, tokens)]).unwrap(),
                                 None).unwrap();
         payment_address
     }
@@ -3846,17 +3673,6 @@ pub mod tests {
         let sources = serde_json::from_str::<serde_json::Value>(&sources_json).unwrap();
         let source: &serde_json::Value = &sources.as_array().unwrap()[0];
         source["source"].as_str().unwrap().to_string()
-    }
-
-    #[cfg(feature = "nullpay_plugin")]
-    pub fn set_fees(ctx: &CommandContext, fees: &str) {
-        {
-            let cmd = set_fees_prepare_command::new();
-            let mut params = CommandParams::new();
-            params.insert("payment_method", NULL_PAYMENT_METHOD.to_string());
-            params.insert("fees", fees.to_string());
-            cmd.execute(&ctx, &params).unwrap();
-        }
     }
 
     fn _ensure_nym_added(ctx: &CommandContext, did: &str) {
