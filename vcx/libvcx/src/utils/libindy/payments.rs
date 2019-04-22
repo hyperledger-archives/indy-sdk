@@ -7,7 +7,7 @@ use std::collections::HashMap;
 
 use utils::libindy::wallet::get_wallet_handle;
 use utils::libindy::ledger::{libindy_submit_request, libindy_sign_and_submit_request, libindy_sign_request};
-use utils::libindy::error_codes::{map_rust_indy_sdk_error};
+use utils::libindy::error_codes::map_rust_indy_sdk_error;
 use utils::constants::{SUBMIT_SCHEMA_RESPONSE, TRANSFER_TXN_TYPE};
 use settings;
 use error::prelude::*;
@@ -200,6 +200,8 @@ pub fn get_ledger_fees() -> VcxResult<String> {
 
     if settings::test_indy_mode_enabled() { return Ok(DEFAULT_FEES.to_string()); }
 
+    if let Some(fees) = settings::get_custom_fees() {return Ok(fees.to_string());}
+
     let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
 
     let txn = payments::build_get_txn_fees_req(get_wallet_handle(), Some(&did), settings::get_payment_method().as_str())
@@ -366,17 +368,11 @@ pub fn outputs(remainder: u64, refund_address: &str, payee_address: Option<Strin
 }
 
 // This is used for testing purposes only!!!
-pub fn mint_tokens_and_set_fees(number_of_addresses: Option<u32>, tokens_per_address: Option<u64>, fees: Option<String>, seed: Option<String>) -> VcxResult<()> {
-    trace!("mint_tokens_and_set_fees >>> number_of_addresses: {:?}, tokens_per_address: {:?}, fees: {:?}, seed: {:?}",
-           number_of_addresses, tokens_per_address, fees, seed);
+pub fn mint_tokens(number_of_addresses: Option<u32>, tokens_per_address: Option<u64>, seed: Option<String>) -> VcxResult<()> {
+    trace!("mint_tokens >>> number_of_addresses: {:?}, tokens_per_address: {:?}, seed: {:?}",
+           number_of_addresses, tokens_per_address, seed);
 
     let did_1 = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
-
-    let fees = if fees.is_some() {
-        fees.as_ref().map(String::as_str)
-    } else {
-        None
-    };
 
     let (did_2, _) = add_new_trustee_did();
     let (did_3, _) = add_new_trustee_did();
@@ -409,19 +405,6 @@ pub fn mint_tokens_and_set_fees(number_of_addresses: Option<u32>, tokens_per_add
         };
     }
 
-    if fees.is_some() {
-        let txn = payments::build_set_txn_fees_req(get_wallet_handle() as i32, Some(&did_1), settings::get_payment_method().as_str(), fees.unwrap())
-            .wait()
-            .map_err(map_rust_indy_sdk_error)?;
-
-        let sign1 = ::utils::libindy::ledger::multisign_request(&did_1, &txn).unwrap();
-        let sign2 = ::utils::libindy::ledger::multisign_request(&did_2, &sign1).unwrap();
-        let sign3 = ::utils::libindy::ledger::multisign_request(&did_3, &sign2).unwrap();
-        let sign4 = ::utils::libindy::ledger::multisign_request(&did_4, &sign3).unwrap();
-
-        ::utils::libindy::ledger::libindy_submit_request(&sign4).unwrap();
-    }
-
     Ok(())
 }
 
@@ -441,7 +424,7 @@ pub mod tests {
     use super::*;
 
     pub fn token_setup(number_of_addresses: Option<u32>, tokens_per_address: Option<u64>) {
-        mint_tokens_and_set_fees(number_of_addresses, tokens_per_address, Some(DEFAULT_FEES.to_string()), None).unwrap();
+        mint_tokens(number_of_addresses, tokens_per_address, None).unwrap();
     }
 
     fn get_my_balance() -> u64 {
@@ -537,8 +520,8 @@ pub mod tests {
     fn test_get_ledger_fees_real() {
         init!("ledger");
         let fees = get_ledger_fees().unwrap();
-        assert!(fees.contains(r#""101":2"#));
-        assert!(fees.contains(r#""1":0"#));
+        let fees: HashMap<String, u32> = ::serde_json::from_str(&fees).unwrap();
+        assert!(fees.len() > 0);
     }
 
     #[test]
@@ -633,16 +616,17 @@ pub mod tests {
         let end_wallet = get_wallet_token_info().unwrap();
 
         let payment = payment.unwrap();
-        assert_eq!(payment.amount, 2);
+        assert_eq!(payment.amount, 200);
         assert_eq!(payment.outputs.len(), 1);
-        assert_eq!(start_wallet.balance - 2, end_wallet.balance);
+        assert_eq!(start_wallet.balance - 200, end_wallet.balance);
     }
 
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_pay_for_txn_fails_with_insufficient_tokens_in_wallet() {
         init!("ledger");
-        mint_tokens_and_set_fees(Some(0), Some(0), Some(r#"{"101":50000000001}"#.to_string()), None).unwrap();
+        mint_tokens(Some(0), Some(0), None).unwrap();
+        settings::set_custom_fees(r#"{"101":50000000001}"#);
 
         let (_, schema_json) = ::utils::libindy::anoncreds::tests::create_schema(::utils::constants::DEFAULT_SCHEMA_ATTRS);
         let create_schema_req = ::utils::libindy::anoncreds::tests::create_schema_req(&schema_json);
@@ -650,6 +634,8 @@ pub mod tests {
         let rc = pay_for_txn(&create_schema_req, "101");
 
         assert!(rc.is_err());
+
+        settings::clear_custom_fees();
     }
 
     #[cfg(feature = "pool_tests")]
@@ -664,7 +650,7 @@ pub mod tests {
         let result_from_paying = pay_a_payee(price, payment_address);
         assert!(result_from_paying.is_ok());
         assert_eq!(get_my_balance(), 0);
-        mint_tokens_and_set_fees(None, None, None, None).unwrap();
+        mint_tokens(None, None, None).unwrap();
         assert_eq!(get_my_balance(), 50000000000);
 
         let price = get_my_balance() - 5;
@@ -702,8 +688,8 @@ pub mod tests {
 
         let initial_wallet_balance = 100000000000;
         let transfer_fee = 5;
-        let ledger_fees = json!({"10001": transfer_fee}).to_string();
-        mint_tokens_and_set_fees(None, None, Some(ledger_fees), None).unwrap();
+        mint_tokens(None, None, None).unwrap();
+        settings::set_custom_fees(r#"{"10001": 5}"#);
         assert_eq!(get_my_balance(), initial_wallet_balance);
         assert_eq!(get_txn_price(TRANSFER_TXN_TYPE).unwrap(), transfer_fee);
 
@@ -720,6 +706,8 @@ pub mod tests {
         assert!(price > 0);
         let result_from_paying = pay_a_payee(price, payment_address);
         assert_eq!(result_from_paying.err().unwrap().kind(), VcxErrorKind::InsufficientTokenAmount);
+
+        settings::clear_custom_fees();
     }
 
     #[cfg(feature = "pool_tests")]
@@ -729,14 +717,14 @@ pub mod tests {
 
         let (_, schema_json) = ::utils::libindy::anoncreds::tests::create_schema(::utils::constants::DEFAULT_SCHEMA_ATTRS);
         let req = ::utils::libindy::anoncreds::tests::create_schema_req(&schema_json);
-        let (remainder, inputs, refund_address) = inputs(2).unwrap();
+        let (remainder, inputs, refund_address) = inputs(200).unwrap();
         let output = outputs(remainder, &refund_address, None, None).unwrap();
         let start_wallet = get_wallet_token_info().unwrap();
 
         _submit_fees_request(&req, &inputs, &output).unwrap();
 
         let end_wallet = get_wallet_token_info().unwrap();
-        assert_eq!(start_wallet.balance - 2, end_wallet.balance);
+        assert_eq!(start_wallet.balance - 200, end_wallet.balance);
 
         let rc = _submit_fees_request(&req, &inputs, &output);
     }
@@ -748,7 +736,7 @@ pub mod tests {
         let (_, schema_json) = ::utils::libindy::anoncreds::tests::create_schema(::utils::constants::DEFAULT_SCHEMA_ATTRS);
         let req = ::utils::libindy::anoncreds::tests::create_schema_req(&schema_json);
 
-        let cost = 45;
+        let cost = 450;
         let start_wallet = get_wallet_token_info().unwrap();
         let remaining_balance = start_wallet.balance - cost;
         let (remainder, inputs, refund_address) = inputs(cost).unwrap();
@@ -797,11 +785,12 @@ pub mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_zero_fees() {
-        init!("ledger");
-        mint_tokens_and_set_fees(Some(0), Some(0), Some("{\"101\":0, \"102\":0}".to_string()), None).unwrap();
+        mint_tokens(Some(0), Some(0), None).unwrap();
+        settings::set_custom_fees("{\"101\":0, \"102\":0}");
         let fees = get_ledger_fees().unwrap();
         println!("fees: {}", fees);
         ::utils::libindy::anoncreds::tests::create_and_write_test_schema(::utils::constants::DEFAULT_SCHEMA_ATTRS);
+        settings::clear_custom_fees();
     }
 
     #[cfg(feature = "pool_tests")]

@@ -133,6 +133,7 @@ pub mod tests {
         settings::set_config_value(settings::CONFIG_PAYMENT_METHOD, settings::DEFAULT_PAYMENT_METHOD);
 
         INIT_PLUGIN.call_once(|| {
+            ::std::env::set_var("ENABLE_FEES", "1");
             if let Ok(lib) = _load_lib(library) {
                 unsafe {
                     if let Ok(init_func) = lib.get(initializer.as_bytes()) {

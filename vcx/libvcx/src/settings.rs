@@ -171,6 +171,20 @@ pub fn test_indy_mode_enabled() -> bool {
     }
 }
 
+pub static mut CUSTOM_FEES: Option<&'static str> = None;
+
+pub fn set_custom_fees(fees: &'static str) {
+    unsafe { CUSTOM_FEES = Some(fees) }
+}
+
+pub fn get_custom_fees() -> Option<&'static str> {
+    unsafe { CUSTOM_FEES.clone() }
+}
+
+pub fn clear_custom_fees() {
+    unsafe { CUSTOM_FEES = None }
+}
+
 pub fn get_threadpool_size() -> usize {
     let size = match get_config_value(CONFIG_THREADPOOL_SIZE) {
         Ok(x) => x.parse::<usize>().unwrap_or(DEFAULT_THREADPOOL_SIZE),

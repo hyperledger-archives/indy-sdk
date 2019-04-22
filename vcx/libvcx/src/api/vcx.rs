@@ -243,7 +243,7 @@ pub extern fn vcx_update_institution_info(name: *const c_char, logo_url: *const 
 }
 
 #[no_mangle]
-pub extern fn vcx_mint_tokens(seed: *const c_char, fees: *const c_char) {
+pub extern fn vcx_mint_tokens(seed: *const c_char) {
     info!("vcx_mint_tokens >>>");
 
     // TODO: CHEC
@@ -256,17 +256,9 @@ pub extern fn vcx_mint_tokens(seed: *const c_char, fees: *const c_char) {
         None
     };
 
-    let fees = if !fees.is_null() {
-        match CStringUtils::c_str_to_string(fees) {
-            Ok(opt_val) => opt_val.map(String::from),
-            Err(_) => return ()
-        }
-    } else {
-        None
-    };
-    trace!("vcx_mint_tokens(seed: {:?}, fees: {:?})", seed, fees);
+    trace!("vcx_mint_tokens(seed: {:?})", seed);
 
-    ::utils::libindy::payments::mint_tokens_and_set_fees(None, None, fees, seed).unwrap_or_default();
+    ::utils::libindy::payments::mint_tokens(None, None, seed).unwrap_or_default();
 }
 
 /// Get details for last occurred error.

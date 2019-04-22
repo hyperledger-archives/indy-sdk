@@ -251,19 +251,21 @@ pub mod tests {
     #[test]
     fn test_create_schema_no_fees_with_pool() {
         init!("ledger");
-        ::utils::libindy::payments::mint_tokens_and_set_fees(Some(0), Some(0), Some(r#"{"101":0, "102":0}"#.to_string()), None).unwrap();
+
+        ::utils::libindy::payments::mint_tokens(Some(0), Some(0), None).unwrap();
+        settings::set_custom_fees(r#"{"101":0, "102":0}"#);
 
         let handle = create_schema_real();
         assert!(handle > 0);
         let schema_id = get_schema_id(handle).unwrap();
+        settings::clear_custom_fees();
     }
 
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_create_duplicate_fails_no_fees() {
-        use settings;
         init!("ledger");
-        ::utils::libindy::payments::mint_tokens_and_set_fees(Some(0), Some(0), Some(r#"{"101":0, "102":0}"#.to_string()), None).unwrap();
+        settings::set_custom_fees(r#"{"101":0, "102":0}"#);
 
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
 
@@ -273,9 +275,12 @@ pub mod tests {
                                              rand::thread_rng().gen::<u32>().to_string());
         let rc = create_new_schema("id", did.clone(), schema_name.clone(), schema_version.clone(), data.clone());
         assert!(rc.is_ok());
+
         let rc = create_new_schema("id", did.clone(), schema_name.clone(), schema_version.clone(), data.clone());
 
-        assert_eq!(rc.unwrap_err().kind(), VcxErrorKind::DuplicationSchema)
+        assert_eq!(rc.unwrap_err().kind(), VcxErrorKind::DuplicationSchema);
+
+        settings::clear_custom_fees();
     }
 
     #[test]
