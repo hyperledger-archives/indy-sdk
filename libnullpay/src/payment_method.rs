@@ -11,7 +11,6 @@ use utils::json_helper::parse_operation_from_request;
 use utils::cstring;
 
 use serde_json::{from_str, to_string};
-use std::collections::HashMap;
 use libc::c_char;
 
 use std::thread;
@@ -59,7 +58,7 @@ pub mod add_request_fees {
 
         trace!("TXN: {}", txn_type);
 
-        let fee = match config_ledger::get_fee(txn_type) {
+        let fee = match config_ledger::get_fee(txn_type.as_str()) {
             Some(fee) => fee,
             None => {
                 trace!("No fees found for request");
@@ -276,31 +275,6 @@ pub mod build_mint_req {
                                           }
 
                                           trace!("libnullpay::build_mint_req::handle >>");
-                                          _process_callback(cmd_handle, ec, res, cb);
-                                      }),
-        )
-    }
-}
-
-pub mod build_set_txn_fees_req {
-    use super::*;
-
-    pub extern fn handle(cmd_handle: i32, _wallet_handle: i32, submitter_did: *const c_char, fees_json: *const c_char, cb: Option<IndyPaymentCallback>) -> ErrorCode {
-        check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidState);
-        check_useful_c_str!(fees_json, ErrorCode::CommonInvalidState);
-        trace!("libnullpay::build_set_txn_fees_req::handle << fees_json: {}, submitter_did: {:?}", fees_json, submitter_did);
-
-        parse_json!(fees_json, HashMap<String, u64>, ErrorCode::CommonInvalidStructure);
-
-        ledger::build_get_txn_request(submitter_did.as_ref().map(String::as_str),
-                                      None,
-                                      1,
-                                      Box::new(move |ec, res| {
-                                          if ec == ErrorCode::Success {
-                                              fees_json.clone().into_iter().for_each(|(key, value)| config_ledger::set_fees(key, value));
-                                          }
-
-                                          trace!("libnullpay::build_set_txn_fees_req::handle >>");
                                           _process_callback(cmd_handle, ec, res, cb);
                                       }),
         )

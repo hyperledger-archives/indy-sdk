@@ -23,3 +23,8 @@ sudo apt-get install -y libnullpay
 ### Logs
 Null Payment plugin doesn't the ability to set or configure own logger. 
 It inheritances Libindy logger implementation during plugin initialization.
+
+### Usage
+There are no fees are set for any transaction by default. Set environment variable `ENABLE_FEES=1`
+before the library initialization to set default fees:
+`{NYM: 10, ATTRIB: 5, SCHEMA: 200, CRED_DEF: 100, REV_REG_DEF: 20, REV_REG_DELTA: 20}`

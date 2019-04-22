@@ -34,15 +34,3 @@ pub fn get_sources_with_balance(payment_addresses: Vec<String>, wallet_handle: i
         (addr.to_string(), serde_json::from_str::<Vec<SourceInfo>>(resp_sources.as_str()).unwrap())
     }).collect()
 }
-
-pub fn set_request_fees(wallet_handle: i32, pool_handle: i32, submitter_did: &str, payment_method: &str, fees: &str) {
-    let req = payments::build_set_txn_fees_req(wallet_handle, submitter_did, payment_method, fees).unwrap();
-    ledger::submit_request(pool_handle, req.as_str()).unwrap();
-}
-
-pub fn get_request_fees(wallet_handle: i32, pool_handle: i32, submitter_did: &str, payment_method: &str) -> HashMap<String, i32> {
-    let req = payments::build_get_txn_fees_req(wallet_handle, submitter_did, payment_method).unwrap();
-    let resp = ledger::submit_request(pool_handle, req.as_str()).unwrap();
-    let resp = payments::parse_get_payment_sources_response(payment_method, resp.as_str()).unwrap();
-    serde_json::from_str::<HashMap<String, i32>>(resp.as_str()).unwrap()
-}

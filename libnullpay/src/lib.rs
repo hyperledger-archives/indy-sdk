@@ -20,6 +20,7 @@ mod payment_method;
 mod services;
 
 use std::ffi::CString;
+use std::env;
 
 #[no_mangle]
 pub extern fn nullpay_init() -> ErrorCode {
@@ -29,7 +30,7 @@ pub extern fn nullpay_init() -> ErrorCode {
 
     let payment_method_name = CString::new(payment_method::PAYMENT_METHOD_NAME).unwrap();
 
-    libindy::payments::register_payment_method(
+    let err = libindy::payments::register_payment_method(
         payment_method_name.as_ptr(),
         payment_method::create_payment_address::handle,
         payment_method::add_request_fees::handle,
@@ -39,12 +40,15 @@ pub extern fn nullpay_init() -> ErrorCode {
         payment_method::build_payment_req::handle,
         payment_method::parse_payment_response::handle,
         payment_method::build_mint_req::handle,
-        payment_method::build_set_txn_fees_req::handle,
         payment_method::build_get_txn_fees_req::handle,
         payment_method::parse_get_txn_fees_response::handle,
         payment_method::build_verify_payment_req::handle,
         payment_method::parse_verify_payment_response::handle,
-    )
+    );
+
+    services::config_ledger::set_fees(env::var("ENABLE_FEES").unwrap_or(String::from("0")));
+
+    err
 }
 
 #[derive(Debug, PartialEq, Copy, Clone)]

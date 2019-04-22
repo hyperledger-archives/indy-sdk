@@ -54,12 +54,6 @@ pub type BuildMintReqCB = extern fn(command_handle: i32,
                                     extra: *const c_char,
                                     cb: Option<IndyPaymentCallback>) -> ErrorCode;
 
-pub type BuildSetTxnFeesReqCB = extern fn(command_handle: i32,
-                                          wallet_handle: i32,
-                                          submitter_did: *const c_char,
-                                          fees_json: *const c_char,
-                                          cb: Option<IndyPaymentCallback>) -> ErrorCode;
-
 pub type BuildGetTxnFeesReqCB = extern fn(command_handle: i32,
                                           wallet_handle: i32,
                                           submitter_did: *const c_char,
@@ -93,7 +87,6 @@ pub fn register_payment_method(
     build_payment_req: BuildPaymentReqCB,
     parse_payment_response: ParsePaymentResponseCB,
     build_mint_req: BuildMintReqCB,
-    build_set_txn_fees_req: BuildSetTxnFeesReqCB,
     build_get_txn_fees_req: BuildGetTxnFeesReqCB,
     parse_get_txn_fees_response: ParseGetTxnFeesResponseCB,
     build_verify_payment_req: BuildVerifyPaymentReqCB,
@@ -119,7 +112,6 @@ pub fn register_payment_method(
             Some(build_payment_req),
             Some(parse_payment_response),
             Some(build_mint_req),
-            Some(build_set_txn_fees_req),
             Some(build_get_txn_fees_req),
             Some(parse_get_txn_fees_response),
             Some(build_verify_payment_req),
@@ -156,7 +148,6 @@ extern {
         build_payment_req: Option<BuildPaymentReqCB>,
         parse_payment_response: Option<ParsePaymentResponseCB>,
         build_mint_req: Option<BuildMintReqCB>,
-        build_set_txn_fees_req: Option<BuildSetTxnFeesReqCB>,
         build_get_txn_fees_req: Option<BuildGetTxnFeesReqCB>,
         parse_get_txn_fees_response: Option<ParseGetTxnFeesResponseCB>,
         build_verify_payment_req: Option<BuildVerifyPaymentReqCB>,

@@ -1,5 +1,6 @@
 #[macro_use]
 extern crate serde_derive;
+#[macro_use]
 extern crate serde_json;
 extern crate serde;
 extern crate nullpay;
@@ -30,8 +31,9 @@ static PAYMENT_METHOD_NAME: &str = "null";
 static POOL_NAME: &str = "pool_1";
 static SUBMITTER_DID: &str = "Th7MpTaRZVRYnPiabds81Y";
 static TRUSTEE_SEED: &str = "000000000000000000000000Trustee1";
-static FEES: &str = r#"{"NYM":1, "SCHEMA":2}"#;
 static EXTRA: &str = "extra_1";
+
+// There are the following FEES are set by default: {NYM: 10, ATTRIB: 5, SCHEMA: 200, CRED_DEF: 100, REV_REG_DEF: 20, REV_REG_DELTA: 20}
 
 mod high_cases {
     use super::*;
@@ -241,21 +243,18 @@ mod high_cases {
             //4. Get created Sources
             let sources = payments_utils::get_sources_with_balance(addresses.clone(), wallet_handle, pool_handle, my_did.as_str());
 
-            //5. Set transaction fees
-            payments_utils::set_request_fees(wallet_handle, pool_handle, my_did.as_str(), PAYMENT_METHOD_NAME, FEES);
-
-            //6. Create inputs and outputs
+            //5. Create inputs and outputs
             let addr_1 = addresses.get(0).unwrap();
             let sources_1: Vec<String> = sources.get(addr_1.as_str()).unwrap().into_iter().map(|info| info.source.clone()).collect();
             let inputs = serde_json::to_string(&sources_1).unwrap();
 
             let outputs = vec![Output {
                 recipient: addresses.get(1).unwrap().to_string(),
-                amount: 19
+                amount: 10
             }];
             let outputs = serde_json::to_string(&outputs).unwrap();
 
-            //7. Add fees to request, send it and parse response
+            //6. Add fees to request, send it and parse response
             let (nym_req_with_fees, _) = payments::add_request_fees(wallet_handle, my_did.as_str(), nym_req.as_str(), inputs.as_str(), outputs.as_str(), None).unwrap();
 
             let nym_response = ledger::sign_and_submit_request(pool_handle, wallet_handle, trustee_did.as_str(), nym_req_with_fees.as_str()).unwrap();
@@ -266,7 +265,7 @@ mod high_cases {
 
             assert_eq!(created_receipts.len(), 1);
             let new_source = created_receipts.get(0).unwrap();
-            assert_eq!(new_source.amount, 19);
+            assert_eq!(new_source.amount, 10);
 
             let sources_map = payments_utils::get_sources_with_balance(addresses.clone(), wallet_handle, pool_handle, SUBMITTER_DID);
             let source_1 = sources_map.get(addresses.get(0).unwrap()).unwrap();
@@ -275,7 +274,7 @@ mod high_cases {
             assert_eq!(source_2.len(), 2);
             let amounts: Vec<i32> = source_2.into_iter().map(|info| info.amount).collect();
             assert!(amounts.contains(&30));
-            assert!(amounts.contains(&19));
+            assert!(amounts.contains(&10));
 
             pool::close(pool_handle).unwrap();
             wallet::close_wallet(wallet_handle).unwrap();
@@ -304,21 +303,18 @@ mod high_cases {
             //4. Get created Sources
             let sources = payments_utils::get_sources_with_balance(addresses.clone(), wallet_handle, pool_handle, my_did.as_str());
 
-            //5. Set transaction fees
-            payments_utils::set_request_fees(wallet_handle, pool_handle, my_did.as_str(), PAYMENT_METHOD_NAME, FEES);
-
-            //6. Create inputs and outputs
+            //5. Create inputs and outputs
             let addr_1 = addresses.get(0).unwrap();
             let sources_1: Vec<String> = sources.get(addr_1.as_str()).unwrap().into_iter().map(|info| info.source.clone()).collect();
             let inputs = serde_json::to_string(&sources_1).unwrap();
 
             let outputs = vec![Output {
                 recipient: addresses.get(1).unwrap().to_string(),
-                amount: 19
+                amount: 10
             }];
             let outputs = serde_json::to_string(&outputs).unwrap();
 
-            //7. Add fees to request, send it and parse response
+            //6. Add fees to request, send it and parse response
             let (nym_req_with_fees, _) = payments::add_request_fees(wallet_handle, my_did.as_str(), nym_req.as_str(), inputs.as_str(), outputs.as_str(), Some(EXTRA)).unwrap();
 
             let nym_response = ledger::sign_and_submit_request(pool_handle, wallet_handle, trustee_did.as_str(), nym_req_with_fees.as_str()).unwrap();
@@ -329,7 +325,7 @@ mod high_cases {
 
             assert_eq!(created_receipts.len(), 1);
             let new_source = created_receipts.get(0).unwrap();
-            assert_eq!(new_source.amount, 19);
+            assert_eq!(new_source.amount, 10);
             assert_eq!(new_source.extra.clone().unwrap(), EXTRA.to_string());
 
             pool::close(pool_handle).unwrap();
@@ -353,8 +349,6 @@ mod high_cases {
             let mint: Vec<(String, i32)> = addresses.clone().into_iter().enumerate().map(|(i, addr)| (addr, i as i32)).collect();
             payments_utils::mint_sources(mint, None, wallet_handle, pool_handle, my_did.as_str());
 
-            payments_utils::set_request_fees(wallet_handle, pool_handle, SUBMITTER_DID, PAYMENT_METHOD_NAME, r#"{"1": 10, "101": 10}"#);
-
             let sources = payments_utils::get_sources_with_balance(addresses.clone(), wallet_handle, pool_handle, SUBMITTER_DID);
 
             let addr_1 = addresses.get(0).unwrap();
@@ -363,7 +357,7 @@ mod high_cases {
 
             let outputs = vec![Output {
                 recipient: addresses.get(1).unwrap().to_string(),
-                amount: 19,
+                amount: 10,
             }, Output {
                 recipient: addresses.get(0).unwrap().to_string(),
                 amount: 1,
@@ -399,8 +393,6 @@ mod high_cases {
             let mint: Vec<(String, i32)> = addresses.clone().into_iter().enumerate().map(|(i, addr)| (addr, ((i+3)*10) as i32)).collect();
             payments_utils::mint_sources(mint, None, wallet_handle, pool_handle, my_did.as_str());
 
-            payments_utils::set_request_fees(wallet_handle, pool_handle, SUBMITTER_DID, PAYMENT_METHOD_NAME, r#"{"1": 10, "101": 10}"#);
-
             let sources = payments_utils::get_sources_with_balance(addresses.clone(), wallet_handle, pool_handle, SUBMITTER_DID);
 
             let addr_1 = addresses.get(0).unwrap();
@@ -409,7 +401,7 @@ mod high_cases {
 
             let outputs = vec![Output {
                 recipient: addresses.get(1).unwrap().to_string(),
-                amount: 19,
+                amount: 10,
             }, Output {
                 recipient: addresses.get(0).unwrap().to_string(),
                 amount: 1,
@@ -455,21 +447,18 @@ mod high_cases {
             //5. Get created sources
             let sources = payments_utils::get_sources_with_balance(addresses_1.clone(), wallet_handle_1, pool_handle, my_did.as_str());
 
-            //6. Set transaction fees
-            payments_utils::set_request_fees(wallet_handle_1, pool_handle, my_did.as_str(), PAYMENT_METHOD_NAME, FEES);
-
-            //7. Create inputs and outputs
+            //6. Create inputs and outputs
             let addr_1 = addresses_1.get(0).unwrap();
             let sources_1: Vec<String> = sources.get(addr_1.as_str()).unwrap().into_iter().map(|info| info.source.clone()).collect();
             let inputs = serde_json::to_string(&sources_1).unwrap();
 
             let outputs = vec![Output {
                 recipient: addresses_1.get(1).unwrap().to_string(),
-                amount: 19,
+                amount: 10,
             }];
             let outputs = serde_json::to_string(&outputs).unwrap();
 
-            //8. Add fees to request by using other wallet
+            //7. Add fees to request by using other wallet
             let res = payments::add_request_fees(wallet_handle_2, my_did.as_str(), nym_req.as_str(), inputs.as_str(), outputs.as_str(), None);
             assert_eq!(res.unwrap_err().error_code, ErrorCode::CommonInvalidState);
 
@@ -731,45 +720,25 @@ mod high_cases {
         use super::*;
 
         #[test]
-        pub fn set_request_fees_works() {
-            test_utils::setup();
-            plugin::init_plugin();
-            let wallet_handle = wallet::create_and_open_wallet().unwrap();
-            let pool_handle = pool::create_and_open_pool_ledger(POOL_NAME).unwrap();
-
-            let fees_req = payments::build_set_txn_fees_req(wallet_handle, SUBMITTER_DID, PAYMENT_METHOD_NAME, FEES).unwrap();
-            ledger::submit_request(pool_handle, fees_req.as_str()).unwrap();
-
-            let fees_stored = payments_utils::get_request_fees(wallet_handle, pool_handle, SUBMITTER_DID, PAYMENT_METHOD_NAME);
-
-            let fee_1 = fees_stored.get("1").unwrap();
-            assert_eq!(fee_1, &1);
-            let fee_2 = fees_stored.get("101").unwrap();
-            assert_eq!(fee_2, &2);
-
-            pool::close(pool_handle).unwrap();
-            wallet::close_wallet(wallet_handle).unwrap();
-            test_utils::tear_down();
-        }
-
-        #[test]
         pub fn get_request_fees_works() {
             test_utils::setup();
             plugin::init_plugin();
             let wallet_handle = wallet::create_and_open_wallet().unwrap();
             let pool_handle = pool::create_and_open_pool_ledger(POOL_NAME).unwrap();
 
-            payments_utils::set_request_fees(wallet_handle, pool_handle, SUBMITTER_DID, PAYMENT_METHOD_NAME, FEES);
-
             let req = payments::build_get_txn_fees_req(wallet_handle, SUBMITTER_DID, PAYMENT_METHOD_NAME).unwrap();
             let resp = ledger::submit_request(pool_handle, req.as_str()).unwrap();
             let resp = payments::parse_get_txn_fees_response(PAYMENT_METHOD_NAME, resp.as_str()).unwrap();
-            let map = serde_json::from_str::<HashMap<String, i32>>(resp.as_str()).unwrap();
+            let fess: serde_json::Value = serde_json::from_str(resp.as_str()).unwrap();
 
-            let fee_1 = map.get("1").unwrap();
-            assert_eq!(fee_1, &1);
-            let fee_2 = map.get("101").unwrap();
-            assert_eq!(fee_2, &2);
+            let expected_fees = json!({
+                "1": 10,
+                "100": 5,
+                "101": 200,
+                "102": 100
+            });
+
+            assert_eq!(expected_fees, fess);
 
             pool::close(pool_handle).unwrap();
             wallet::close_wallet(wallet_handle).unwrap();
@@ -879,8 +848,6 @@ mod medium_cases {
             let mint: Vec<(String, i32)> = addresses.clone().into_iter().enumerate().map(|(i, addr)| (addr, i as i32)).collect();
             payments_utils::mint_sources(mint, None, wallet_handle, pool_handle, SUBMITTER_DID);
 
-            payments_utils::set_request_fees(wallet_handle, pool_handle, SUBMITTER_DID, PAYMENT_METHOD_NAME, FEES);
-
             let sources = payments_utils::get_sources_with_balance(addresses.clone(), wallet_handle, pool_handle, SUBMITTER_DID);
 
             let addr_1 = addresses.get(0).unwrap();
@@ -919,8 +886,6 @@ mod medium_cases {
             let mint: Vec<(String, i32)> = addresses.clone().into_iter().enumerate().map(|(i, addr)| (addr, i as i32)).collect();
             payments_utils::mint_sources(mint, None, wallet_handle, pool_handle, SUBMITTER_DID);
 
-            payments_utils::set_request_fees(wallet_handle, pool_handle, SUBMITTER_DID, PAYMENT_METHOD_NAME, FEES);
-
             let sources = payments_utils::get_sources_with_balance(addresses.clone(), wallet_handle, pool_handle, SUBMITTER_DID);
 
             let addr_1 = addresses.get(0).unwrap();
@@ -942,25 +907,6 @@ mod medium_cases {
             //IMPORTANT: check that source cache stays the same
             let sources_after = payments_utils::get_sources_with_balance(addresses.clone(), wallet_handle, pool_handle, SUBMITTER_DID);
             assert_eq!(sources, sources_after);
-
-            pool::close(pool_handle).unwrap();
-            wallet::close_wallet(wallet_handle).unwrap();
-            test_utils::tear_down();
-        }
-    }
-
-    mod fees {
-        use super::*;
-
-        #[test]
-        pub fn build_set_txn_fees_works_for_invalid_json() {
-            test_utils::setup();
-            plugin::init_plugin();
-            let wallet_handle = wallet::create_and_open_wallet().unwrap();
-            let pool_handle = pool::create_and_open_pool_ledger(POOL_NAME).unwrap();
-
-            let err = payments::build_set_txn_fees_req(wallet_handle, SUBMITTER_DID, PAYMENT_METHOD_NAME, "{1}").unwrap_err();
-            assert_eq!(err.error_code, ErrorCode::CommonInvalidStructure);
 
             pool::close(pool_handle).unwrap();
             wallet::close_wallet(wallet_handle).unwrap();

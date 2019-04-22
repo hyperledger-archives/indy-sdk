@@ -8,6 +8,7 @@ lazy_static! {
 
 pub fn init_plugin() {
     CREATE_PAYMENT_METHOD_INIT.call_once(|| {
+        ::std::env::set_var("ENABLE_FEES", "1");
         nullpay::nullpay_init();
     });
 }
