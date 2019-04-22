@@ -15,32 +15,32 @@ impl MerkleTree {
             val &= val - 1;
             ret += 1;
         }
-        return ret;
+        ret
     }
 
     pub fn find_hash<'a>(from: &'a Tree, required_hash: &Vec<u8>) -> Option<&'a Tree> {
         match from {
             &Tree::Empty { .. } => {
                 assert!(false);
-                return None;
+                None
             }
             &Tree::Node { ref left, ref right, ref hash, .. } => {
                 if hash == required_hash {
-                    return Some(from);
+                    Some(from)
                 } else {
                     let right = MerkleTree::find_hash(right, required_hash);
                     match right {
                         Some(r) => {
-                            return Some(r);
+                            Some(r)
                         }
                         None => {
                             let left = MerkleTree::find_hash(left, required_hash);
                             match left {
                                 Some(r) => {
-                                    return Some(r);
+                                    Some(r)
                                 }
                                 None => {
-                                    return None;
+                                    None
                                 }
                             }
                         }
@@ -49,9 +49,9 @@ impl MerkleTree {
             }
             &Tree::Leaf { ref hash, .. } => {
                 if hash == required_hash {
-                    return Some(from);
+                    Some(from)
                 } else {
-                    return None;
+                    None
                 }
             }
         }
@@ -123,7 +123,7 @@ impl MerkleTree {
             return Ok(false);
         }
 
-        return Ok(true);
+        Ok(true)
     }
 
     pub fn append(&mut self, node: TreeLeafData) -> IndyResult<()> {

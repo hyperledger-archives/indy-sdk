@@ -165,7 +165,7 @@ impl PoolService {
 
         self.pending_pools.try_borrow_mut()?
             .insert(new_pool.get_id(), ZMQPool::new(new_pool, send_cmd_sock));
-        return Ok(pool_handle);
+        Ok(pool_handle)
     }
 
     pub fn add_open_pool(&self, pool_id: i32) -> IndyResult<i32> {

@@ -88,18 +88,18 @@ impl rlp::Decodable for Node {
             RlpPrototype::List(Node::PAIR_SIZE) => {
                 let path: Vec<u8> = rlp.at(0)?.as_val()?;
                 if path[0] & Node::IS_LEAF_MASK == Node::IS_LEAF_MASK {
-                    return Ok(Node::Leaf(Leaf {
+                    Ok(Node::Leaf(Leaf {
                         path: rlp.at(0)?.as_val()?,
                         value: rlp.at(1)?.as_val()?,
-                    }));
+                    }))
                 } else if path[0] & Node::IS_LEAF_MASK == 0x00 {
-                    return Ok(Node::Extension(Extension {
+                    Ok(Node::Extension(Extension {
                         path: rlp.at(0)?.as_val()?,
                         next: Box::new(rlp.at(1)?.as_val()?),
-                    }));
+                    }))
                 } else {
                     error!("RLP for path in Patricia Merkle Trie contains incorrect flags byte {}", path[0]);
-                    return Err(RlpDecoderError::Custom("Path contains incorrect flags byte"));
+                    Err(RlpDecoderError::Custom("Path contains incorrect flags byte"))
                 }
             }
             RlpPrototype::List(Node::FULL_SIZE) => {
@@ -119,17 +119,17 @@ impl rlp::Decodable for Node {
                 if !rlp.at(Node::RADIX)?.is_empty() {
                     value = Some(rlp.at(Node::RADIX)?.as_val()?)
                 }
-                return Ok(Node::Full(FullNode {
+                Ok(Node::Full(FullNode {
                     nodes: nodes,
                     value: value,
-                }));
+                }))
             }
             RlpPrototype::Data(Node::HASH_SIZE) => {
-                return Ok(Node::Hash(rlp.as_val()?));
+                Ok(Node::Hash(rlp.as_val()?))
             }
             _ => {
                 error!("Unexpected data while parsing Patricia Merkle Trie: {:?}: {:?}", rlp.prototype(), rlp);
-                return Err(RlpDecoderError::Custom("Unexpected data"));
+                Err(RlpDecoderError::Custom("Unexpected data"))
             }
         }
     }
@@ -164,9 +164,9 @@ impl Node {
                     }
                 }
 
-                return Err(err_msg(IndyErrorKind::InvalidStructure, "Unexpected data format of value in Patricia Merkle Trie"));
+                Err(err_msg(IndyErrorKind::InvalidStructure, "Unexpected data format of value in Patricia Merkle Trie"))
             }
-            None => return Ok(None)
+            None => Ok(None)
         }
     }
     fn _get_value<'a, 'b>(&'a self, db: &'a TrieDB, path: &'b [u8]) -> IndyResult<Option<&'a Vec<u8>>> {
@@ -179,7 +179,7 @@ impl Node {
                 if let Some(ref next) = node.nodes[path[0] as usize] {
                     return next._get_value(db, &path[1..]);
                 }
-                return Ok(None);
+                Ok(None)
             }
             &Node::Hash(ref hash) => {
                 let hash = NodeHash::from_slice(hash.as_slice());
@@ -199,9 +199,9 @@ impl Node {
                 trace!("Node::_get_value in Leaf searched path {:?}, stored path {:?}", String::from_utf8(path.to_vec()), String::from_utf8(pair_path.clone()));
 
                 if pair_path == path {
-                    return Ok(Some(&pair.value));
+                    Ok(Some(&pair.value))
                 } else {
-                    return Ok(None);
+                    Ok(None)
                 }
             }
             &Node::Extension(ref pair) => {
@@ -212,9 +212,9 @@ impl Node {
                 }
 
                 if path.starts_with(&pair_path) {
-                    return pair.next._get_value(db, &path[pair_path.len()..]);
+                    pair.next._get_value(db, &path[pair_path.len()..])
                 } else {
-                    return Ok(None);
+                    Ok(None)
                 }
             }
         }
@@ -228,7 +228,7 @@ impl Node {
             nibble_path.push(s & 0x0F);
         }
 
-        return nibble_path;
+        nibble_path
     }
 
     fn parse_path(path: &[u8]) -> (bool, Vec<u8>) {
@@ -238,6 +238,6 @@ impl Node {
         if is_odd {
             nibbles.insert(0, path[0] & 0x0F);
         }
-        return (is_leaf, nibbles);
+        (is_leaf, nibbles)
     }
 }
