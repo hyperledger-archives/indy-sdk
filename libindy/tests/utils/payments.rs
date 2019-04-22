@@ -88,7 +88,6 @@ pub mod mock_method {
                                                        Some(build_payment_req::handle),
                                                        Some(parse_payment_response::handle),
                                                        Some(build_mint_req::handle),
-                                                       Some(build_set_txn_fees_req::handle),
                                                        Some(build_get_txn_fees_req::handle),
                                                        Some(parse_get_txn_fees_response::handle),
                                                        Some(build_verify_payment_req::handle),
@@ -133,10 +132,6 @@ pub mod mock_method {
         mocked_handler!(_wallet_handle: i32, _submitter_did: *const c_char, _outputs_json: *const c_char, _extra: *const c_char);
     }
 
-    pub mod build_set_txn_fees_req {
-        mocked_handler!(_wallet_handle: i32, _submitter_did: *const c_char, _fees_json: *const c_char);
-    }
-
     pub mod build_get_txn_fees_req {
         mocked_handler!(_wallet_handle: i32, _submitter_did: *const c_char);
     }
@@ -163,7 +158,6 @@ pub fn register_payment_method(payment_method_name: &str,
                                build_payment_req: Option<payments_sys::BuildPaymentReqCB>,
                                parse_payment_response: Option<payments_sys::ParsePaymentResponseCB>,
                                build_mint_req: Option<payments_sys::BuildMintReqCB>,
-                               build_set_txn_fees_req: Option<payments_sys::BuildSetTxnFeesReqCB>,
                                build_get_txn_fees_req: Option<payments_sys::BuildGetTxnFeesReqCB>,
                                parse_get_txn_fees_response: Option<payments_sys::ParseGetTxnFeesResponseCB>,
                                build_verify_payment_req: Option<payments_sys::BuildVerifyPaymentReqCB>,
@@ -184,7 +178,6 @@ pub fn register_payment_method(payment_method_name: &str,
                                                build_payment_req,
                                                parse_payment_response,
                                                build_mint_req,
-                                               build_set_txn_fees_req,
                                                build_get_txn_fees_req,
                                                parse_get_txn_fees_response,
                                                build_verify_payment_req,
@@ -230,10 +223,6 @@ pub fn parse_payment_response(payment_method: &str, resp_json: &str) -> Result<S
 
 pub fn build_mint_req(wallet_handle: i32, submitter_did: Option<&str>, outputs_json: &str, extra: Option<&str>) -> Result<(String, String), IndyError> {
     payments::build_mint_req(wallet_handle, submitter_did, outputs_json, extra).wait()
-}
-
-pub fn build_set_txn_fees_req(wallet_handle: i32, submitter_did: Option<&str>, payment_method: &str, fees_json: &str) -> Result<String, IndyError> {
-    payments::build_set_txn_fees_req(wallet_handle, submitter_did, payment_method, fees_json).wait()
 }
 
 pub fn build_get_txn_fees_req(wallet_handle: i32, submitter_did: Option<&str>, payment_method: &str) -> Result<String, IndyError> {

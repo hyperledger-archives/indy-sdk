@@ -25,7 +25,6 @@ pub struct PaymentsMethod {
     build_payment_req: BuildPaymentReqCB,
     parse_payment_response: ParsePaymentResponseCB,
     build_mint_req: BuildMintReqCB,
-    build_set_txn_fees_req: BuildSetTxnFeesReqCB,
     build_get_txn_fees_req: BuildGetTxnFeesReqCB,
     parse_get_txn_fees_response: ParseGetTxnFeesResponseCB,
     build_verify_payment_req: BuildVerifyPaymentReqCB,
@@ -43,7 +42,6 @@ impl PaymentsMethodCBs {
                build_payment_req: BuildPaymentReqCB,
                parse_payment_response: ParsePaymentResponseCB,
                build_mint_req: BuildMintReqCB,
-               build_set_txn_fees_req: BuildSetTxnFeesReqCB,
                build_get_txn_fees_req: BuildGetTxnFeesReqCB,
                parse_get_txn_fees_response: ParseGetTxnFeesResponseCB,
                build_verify_payment_req: BuildVerifyPaymentReqCB,
@@ -57,7 +55,6 @@ impl PaymentsMethodCBs {
             build_payment_req,
             parse_payment_response,
             build_mint_req,
-            build_set_txn_fees_req,
             build_get_txn_fees_req,
             parse_get_txn_fees_response,
             build_verify_payment_req,
@@ -223,25 +220,6 @@ impl PaymentsService {
 
         let res = err.into();
         trace!("build_mint_req <<< result: {:?}", res);
-        res
-    }
-
-    pub fn build_set_txn_fees_req(&self, cmd_handle: i32, type_: &str, wallet_handle: WalletHandle, submitter_did: Option<&str>, fees: &str) -> IndyResult<()> {
-        trace!("build_set_txn_fees_req >>> type_: {:?}, wallet_handle: {:?}, submitter_did: {:?}, fees: {:?}", type_, wallet_handle, submitter_did, fees);
-        let build_set_txn_fees_req: BuildSetTxnFeesReqCB = self.methods.borrow().get(type_)
-            .ok_or(err_msg(IndyErrorKind::UnknownPaymentMethodType, format!("Unknown payment method {}", type_)))?.build_set_txn_fees_req;
-
-        let submitter_did = submitter_did.map(ctypes::str_to_cstring);
-        let fees = CString::new(fees)?;
-
-        let err = build_set_txn_fees_req(cmd_handle,
-                                         wallet_handle,
-                                         submitter_did.as_ref().map(|s| s.as_ptr()).unwrap_or(null()),
-                                         fees.as_ptr(),
-                                         cbs::build_set_txn_fees_req_cb(cmd_handle));
-
-        let res = err.into();
-        trace!("build_set_txn_fees_req <<< result: {:?}", res);
         res
     }
 
@@ -484,12 +462,6 @@ mod cbs {
                                                                   err: ErrorCode,
                                                                   c_str: *const c_char) -> ErrorCode> {
         send_ack(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::BuildMintReqAck(cmd_handle, result)))
-    }
-
-    pub fn build_set_txn_fees_req_cb(cmd_handle: i32) -> Option<extern fn(command_handle: i32,
-                                                                          err: ErrorCode,
-                                                                          c_str: *const c_char) -> ErrorCode> {
-        send_ack(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::BuildSetTxnFeesReqAck(cmd_handle, result)))
     }
 
     pub fn build_get_txn_fees_req(cmd_handle: i32) -> Option<extern fn(command_handle: i32,

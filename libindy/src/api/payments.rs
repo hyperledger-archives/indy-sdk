@@ -211,29 +211,6 @@ pub type BuildMintReqCB = extern fn(command_handle: CommandHandle,
                                                          err: ErrorCode,
                                                          mint_req_json: *const c_char) -> ErrorCode>) -> ErrorCode;
 
-/// Builds Indy request for setting fees for transactions in the ledger
-///
-/// # Params
-/// command_handle: command handle to map callback to context
-/// wallet_handle: wallet handle
-/// submitter_did: (Optional) DID of request sender
-/// fees_json {
-///   txnType1: amount1,
-///   txnType2: amount2,
-///   .................
-///   txnTypeN: amountN,
-/// }
-///
-/// # Return
-/// set_txn_fees_json - Indy request for setting fees for transactions in the ledger
-pub type BuildSetTxnFeesReqCB = extern fn(command_handle: CommandHandle,
-                                          wallet_handle: WalletHandle,
-                                          submitter_did: *const c_char,
-                                          fees_json: *const c_char,
-                                          cb: Option<extern fn(command_handle_: CommandHandle,
-                                                               err: ErrorCode,
-                                                               set_txn_fees_json: *const c_char) -> ErrorCode>) -> ErrorCode;
-
 /// Builds Indy get request for getting fees for transactions in the ledger
 ///
 /// # Params
@@ -324,7 +301,6 @@ pub type ParseVerifyPaymentResponseCB = extern fn(command_handle: CommandHandle,
 /// build_payment_req: "build_payment_req" operation handler
 /// parse_payment_response: "parse_payment_response" operation handler
 /// build_mint_req: "build_mint_req" operation handler
-/// build_set_txn_fees_req: "build_set_txn_fees_req" operation handler
 /// build_get_txn_fees_req: "build_get_txn_fees_req" operation handler
 /// parse_get_txn_fees_response: "parse_get_txn_fees_response" operation handler
 /// build_verify_payment_req: "build_verify_payment_req" operation handler
@@ -343,7 +319,6 @@ pub extern fn indy_register_payment_method(command_handle: CommandHandle,
                                            build_payment_req: Option<BuildPaymentReqCB>,
                                            parse_payment_response: Option<ParsePaymentResponseCB>,
                                            build_mint_req: Option<BuildMintReqCB>,
-                                           build_set_txn_fees_req: Option<BuildSetTxnFeesReqCB>,
                                            build_get_txn_fees_req: Option<BuildGetTxnFeesReqCB>,
                                            parse_get_txn_fees_response: Option<ParseGetTxnFeesResponseCB>,
                                            build_verify_payment_req: Option<BuildVerifyPaymentReqCB>,
@@ -361,12 +336,11 @@ pub extern fn indy_register_payment_method(command_handle: CommandHandle,
     check_useful_c_callback!(build_payment_req, ErrorCode::CommonInvalidParam8);
     check_useful_c_callback!(parse_payment_response, ErrorCode::CommonInvalidParam9);
     check_useful_c_callback!(build_mint_req, ErrorCode::CommonInvalidParam10);
-    check_useful_c_callback!(build_set_txn_fees_req, ErrorCode::CommonInvalidParam11);
-    check_useful_c_callback!(build_get_txn_fees_req, ErrorCode::CommonInvalidParam12);
-    check_useful_c_callback!(parse_get_txn_fees_response, ErrorCode::CommonInvalidParam13);
-    check_useful_c_callback!(build_verify_payment_req, ErrorCode::CommonInvalidParam14);
-    check_useful_c_callback!(parse_verify_payment_response, ErrorCode::CommonInvalidParam15);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam16);
+    check_useful_c_callback!(build_get_txn_fees_req, ErrorCode::CommonInvalidParam11);
+    check_useful_c_callback!(parse_get_txn_fees_response, ErrorCode::CommonInvalidParam12);
+    check_useful_c_callback!(build_verify_payment_req, ErrorCode::CommonInvalidParam13);
+    check_useful_c_callback!(parse_verify_payment_response, ErrorCode::CommonInvalidParam14);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam15);
 
     trace!("indy_register_payment_method: entities >>> payment_method: {:?}", payment_method);
 
@@ -379,7 +353,6 @@ pub extern fn indy_register_payment_method(command_handle: CommandHandle,
         build_payment_req,
         parse_payment_response,
         build_mint_req,
-        build_set_txn_fees_req,
         build_get_txn_fees_req,
         parse_get_txn_fees_response,
         build_verify_payment_req,
@@ -907,61 +880,6 @@ pub extern fn indy_build_mint_req(command_handle: CommandHandle,
     let res = prepare_result!(result);
 
     trace!("indy_build_mint_req: <<< res: {:?}", res);
-
-    res
-}
-
-/// Builds Indy request for setting fees for transactions in the ledger
-///
-/// # Params
-/// command_handle: Command handle to map callback to caller context.
-/// wallet_handle: wallet handle
-/// submitter_did: (Optional) DID of request sender
-/// payment_method: payment method to use
-/// fees_json {
-///   txnType1: amount1,
-///   txnType2: amount2,
-///   .................
-///   txnTypeN: amountN,
-/// }
-/// # Return
-/// set_txn_fees_json - Indy request for setting fees for transactions in the ledger
-#[no_mangle]
-pub extern fn indy_build_set_txn_fees_req(command_handle: CommandHandle,
-                                          wallet_handle: WalletHandle,
-                                          submitter_did: *const c_char,
-                                          payment_method: *const c_char,
-                                          fees_json: *const c_char,
-                                          cb: Option<extern fn(command_handle_: CommandHandle,
-                                                               err: ErrorCode,
-                                                               set_txn_fees_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_build_set_txn_fees_req: >>> wallet_handle: {:?}, submitter_did: {:?}, payment_method: {:?}, fees_json: {:?}", wallet_handle, submitter_did, payment_method, fees_json);
-    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
-    check_useful_c_str!(payment_method, ErrorCode::CommonInvalidParam4);
-    check_useful_c_str!(fees_json, ErrorCode::CommonInvalidParam5);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
-
-    trace!("indy_build_set_txn_fees_req: entitites >>> wallet_handle: {:?}, submitter_did: {:?}, payment_method: {:?}, fees_json: {:?}", wallet_handle, submitter_did, payment_method, fees_json);
-
-    let result =
-        CommandExecutor::instance().send(
-            Command::Payments(
-                PaymentsCommand::BuildSetTxnFeesReq(
-                    wallet_handle,
-                    submitter_did,
-                    payment_method,
-                    fees_json,
-                    Box::new(move |result| {
-                        let (err, set_txn_fees_json) = prepare_result_1!(result, String::new());
-                        trace!("indy_build_set_txn_fees_req: set_txn_fees_json: {:?}", set_txn_fees_json);
-                        let set_txn_fees_json = ctypes::string_to_cstring(set_txn_fees_json);
-                        cb(command_handle, err, set_txn_fees_json.as_ptr());
-                    }))
-            ));
-
-    let res = prepare_result!(result);
-
-    trace!("indy_build_set_txn_fees_req: <<< res: {:?}", res);
 
     res
 }

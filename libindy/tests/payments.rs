@@ -45,7 +45,6 @@ static INCOMPATIBLE_INPUTS: &str = r#"["pay:PAYMENT_METHOD_1:1", "pay:PAYMENT_ME
 static INCOMPATIBLE_OUTPUTS: &str = r#"[{"recipient": "pay:PAYMENT_METHOD_1:1", "amount":1}, {"recipient": "pay:PAYMENT_METHOD_2:1", "amount":1}]"#;
 static EQUAL_INPUTS: &str = r#"["pay:null1:1", "pay:null1:1", "pay:null1:2"]"#;
 static EQUAL_OUTPUTS: &str = r#"[{"paymentAddress": "pay:null:1", "amount":1}, {"paymentAddress": "pay:null:1", "amount":2}, {"paymentAddress": "pay:null:2", "amount":2, "extra":"2"}]"#;
-static CORRECT_FEES: &str = r#"{"txnType1":1, "txnType2":2}"#;
 static PAYMENT_RESPONSE: &str = r#"{"reqId":1, "sources":[{"input": "pay:null:1", "amount":1}, {"input": "pay:null:2", "amount":2}]}"#;
 static GET_TXN_FEES_RESPONSE: &str = r#"{"reqId":1, fees:{"txnType1":1, "txnType2":2}}"#;
 static TEST_RES_STRING: &str = "test";
@@ -77,7 +76,6 @@ mod high_cases {
                                                          Some(payments::mock_method::build_payment_req::handle),
                                                          Some(payments::mock_method::parse_payment_response::handle),
                                                          Some(payments::mock_method::build_mint_req::handle),
-                                                         Some(payments::mock_method::build_set_txn_fees_req::handle),
                                                          Some(payments::mock_method::build_get_txn_fees_req::handle),
                                                          Some(payments::mock_method::parse_get_txn_fees_response::handle),
                                                          Some(payments::mock_method::build_verify_payment_req::handle),
@@ -412,44 +410,6 @@ mod high_cases {
         }
     }
 
-    mod set_txn_fees_request {
-        use super::*;
-
-        #[test]
-        fn build_set_txn_fees_request_works() {
-            let wallet_handle = setup();
-
-            payments::mock_method::build_set_txn_fees_req::inject_mock(ErrorCode::Success, TEST_RES_STRING);
-
-            let req = payments::build_set_txn_fees_req(wallet_handle,
-                                                       Some(IDENTIFIER),
-                                                       PAYMENT_METHOD_NAME,
-                                                       CORRECT_FEES,
-            ).unwrap();
-
-            assert_eq!(req, TEST_RES_STRING.to_string());
-
-            utils::tear_down_with_wallet(wallet_handle);
-        }
-
-        #[test]
-        fn build_set_txn_fees_request_works_for_empty_submitter_did() {
-            let wallet_handle = setup();
-
-            payments::mock_method::build_set_txn_fees_req::inject_mock(ErrorCode::Success, TEST_RES_STRING);
-
-            let req = payments::build_set_txn_fees_req(wallet_handle,
-                                                       None,
-                                                       PAYMENT_METHOD_NAME,
-                                                       CORRECT_FEES,
-            ).unwrap();
-
-            assert_eq!(req, TEST_RES_STRING.to_string());
-
-            utils::tear_down_with_wallet(wallet_handle);
-        }
-    }
-
     mod get_txn_fees_request {
         use super::*;
 
@@ -565,7 +525,6 @@ mod medium_cases {
             utils::setup();
 
             let err = payments::register_payment_method(PAYMENT_METHOD_NAME,
-                                                        None,
                                                         None,
                                                         None,
                                                         None,
@@ -1357,85 +1316,6 @@ mod medium_cases {
                                                Some(IDENTIFIER),
                                                CORRECT_OUTPUTS,
                                                None,
-            );
-
-            assert_code!(ErrorCode::WalletAccessFailed, err);
-
-            utils::tear_down_with_wallet(wallet_handle);
-        }
-    }
-
-    mod set_txn_fees_request {
-        use super::*;
-
-        #[test]
-        fn build_set_txn_fees_request_works_for_unknown_payment_method() {
-            let wallet_handle = setup();
-
-            let res = payments::build_set_txn_fees_req(wallet_handle,
-                                                       Some(IDENTIFIER),
-                                                       WRONG_PAYMENT_METHOD_NAME,
-                                                       CORRECT_FEES);
-
-            assert_code!(ErrorCode::UnknownPaymentMethod, res);
-
-            utils::tear_down_with_wallet(wallet_handle);
-        }
-
-        #[test]
-        fn build_set_txn_fees_request_works_for_invalid_wallet_handle() {
-            let wallet_handle = setup();
-            let invalid_wallet_handle = wallet_handle + 1;
-
-            let res = payments::build_set_txn_fees_req(invalid_wallet_handle,
-                                                       Some(IDENTIFIER),
-                                                       PAYMENT_METHOD_NAME,
-                                                       CORRECT_FEES);
-
-            assert_code!(ErrorCode::WalletInvalidHandle, res);
-
-            utils::tear_down_with_wallet(wallet_handle);
-        }
-
-        #[test]
-        fn build_set_txn_fees_request_works_for_invalid_submitter_did() {
-            let wallet_handle = setup();
-
-            let res = payments::build_set_txn_fees_req(wallet_handle,
-                                                       Some(INVALID_IDENTIFIER),
-                                                       PAYMENT_METHOD_NAME,
-                                                       CORRECT_FEES);
-
-            assert_code!(ErrorCode::CommonInvalidStructure, res);
-
-            utils::tear_down_with_wallet(wallet_handle);
-        }
-
-        #[test]
-        fn build_set_txn_fees_request_works_for_invalid_fees_format() {
-            let wallet_handle = setup();
-            let fees = r#"[txnType1:1, txnType2:2]"#;
-
-            let res = payments::build_set_txn_fees_req(wallet_handle,
-                                                       Some(IDENTIFIER),
-                                                       PAYMENT_METHOD_NAME,
-                                                       fees);
-
-            assert_code!(ErrorCode::CommonInvalidStructure, res);
-
-            utils::tear_down_with_wallet(wallet_handle);
-        }
-
-        #[test]
-        fn build_set_txn_fees_request_works_for_generic_error() {
-            let wallet_handle = setup();
-
-            payments::mock_method::build_set_txn_fees_req::inject_mock(ErrorCode::WalletAccessFailed, "");
-
-            let err = payments::build_set_txn_fees_req(wallet_handle,
-                                                       Some(IDENTIFIER),
-                                                       PAYMENT_METHOD_NAME,
-                                                       CORRECT_FEES,
             );
 
             assert_code!(ErrorCode::WalletAccessFailed, err);

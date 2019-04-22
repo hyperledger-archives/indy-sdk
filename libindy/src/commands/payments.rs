@@ -88,15 +88,6 @@ pub enum PaymentsCommand {
     BuildMintReqAck(
         i32,
         IndyResult<String>),
-    BuildSetTxnFeesReq(
-        WalletHandle,
-        Option<String>, //submitter did
-        String, //method
-        String, //fees
-        Box<Fn(IndyResult<String>) + Send>),
-    BuildSetTxnFeesReqAck(
-        i32,
-        IndyResult<String>),
     BuildGetTxnFeesReq(
         WalletHandle,
         Option<String>, //submitter did
@@ -219,14 +210,6 @@ impl PaymentsCommandExecutor {
             PaymentsCommand::BuildMintReqAck(cmd_handle, result) => {
                 info!(target: "payments_command_executor", "BuildMintReqAck command received");
                 self.build_mint_req_ack(cmd_handle, result);
-            }
-            PaymentsCommand::BuildSetTxnFeesReq(wallet_handle, submitter_did, type_, fees, cb) => {
-                info!(target: "payments_command_executor", "BuildSetTxnFeesReq command received");
-                self.build_set_txn_fees_req(wallet_handle, submitter_did.as_ref().map(String::as_str), &type_, &fees, cb);
-            }
-            PaymentsCommand::BuildSetTxnFeesReqAck(cmd_handle, result) => {
-                info!(target: "payments_command_executor", "BuildSetTxnFeesReqAck command received");
-                self.build_set_txn_fees_req_ack(cmd_handle, result);
             }
             PaymentsCommand::BuildGetTxnFeesReq(wallet_handle, submitter_did, type_, cb) => {
                 info!(target: "payments_command_executor", "BuildGetTxnFeesReq command received");
@@ -514,35 +497,6 @@ impl PaymentsCommandExecutor {
         trace!("build_mint_req_ack >>> result: {:?}", result);
         self._common_ack_payments(cmd_handle, result, "BuildMintReqAck");
         trace!("build_mint_req_ack <<<");
-    }
-
-    fn build_set_txn_fees_req(&self, wallet_handle: WalletHandle, submitter_did: Option<&str>, type_: &str, fees: &str, cb: Box<Fn(IndyResult<String>) + Send>) {
-        trace!("build_set_txn_fees_req >>> wallet_handle: {:?}, submitter_did: {:?}, type_: {:?}, fees: {:?}", wallet_handle, submitter_did, type_, fees);
-        if let Some(did) = submitter_did {
-            match self.crypto_service.validate_did(did).map_err(map_err_err!()) {
-                Err(err) => return cb(Err(IndyError::from(err))),
-                _ => ()
-            }
-        }
-        match self.wallet_service.check(wallet_handle).map_err(map_err_err!()) {
-            Err(err) => return cb(Err(IndyError::from(err))),
-            _ => (),
-        };
-
-        match serde_json::from_str::<HashMap<String, i64>>(fees) {
-            Err(err) => {
-                error!("Cannot deserialize Fees: {:?}", err);
-                cb(Err(err.to_indy(IndyErrorKind::InvalidStructure, "Cannot deserialize Fees")))
-            }
-            _ => self._process_method(cb, &|i| self.payments_service.build_set_txn_fees_req(i, type_, wallet_handle, submitter_did, fees)),
-        };
-        trace!("build_set_txn_fees_req <<<");
-    }
-
-    fn build_set_txn_fees_req_ack(&self, cmd_handle: i32, result: IndyResult<String>) {
-        trace!("build_set_txn_fees_req_ack >>> result: {:?}", result);
-        self._common_ack_payments(cmd_handle, result, "BuildSetTxnFeesReq");
-        trace!("build_set_txn_fees_req_ack <<<");
     }
 
     fn build_get_txn_fees_req(&self, wallet_handle: WalletHandle, submitter_did: Option<&str>, type_: &str, cb: Box<Fn(IndyResult<String>) + Send>) {

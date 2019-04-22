@@ -273,33 +273,6 @@ extern "C" {
                                                                  const char*   payment_method)
                                             );
 
-    /// Builds Indy request for setting fees for transactions in the ledger
-    ///
-    /// # Params
-    /// command_handle: Command handle to map callback to caller context.
-    /// wallet_handle: wallet handle
-    /// submitter_did: (Optional) DID of request sender
-    /// payment_method: payment method to use
-    /// fees_json {
-    ///   txnType1: amount1,
-    ///   txnType2: amount2,
-    ///   .................
-    ///   txnTypeN: amountN,
-    /// }
-    /// # Return
-    /// set_txn_fees_json - Indy request for setting fees for transactions in the ledger
-
-    extern indy_error_t indy_build_set_txn_fees_req(indy_handle_t command_handle,
-                                                    indy_handle_t wallet_handle,
-                                                    const char *  submitter_did,
-                                                    const char *  payment_method,
-                                                    const char *  fees_json,
-
-                                                    void           (*cb)(indy_handle_t command_handle_,
-                                                                         indy_error_t  err,
-                                                                         const char*   set_txn_fees_json)
-                                                    );
-
     /// Builds Indy get request for getting fees for transactions in the ledger
     ///
     /// # Params
