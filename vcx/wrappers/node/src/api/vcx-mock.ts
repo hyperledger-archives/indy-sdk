@@ -18,6 +18,6 @@ export class VCXMock {
   }
 
   public static mintTokens (): void {
-    rustAPI().vcx_mint_tokens(null, null)
+    rustAPI().vcx_mint_tokens(null)
   }
 }

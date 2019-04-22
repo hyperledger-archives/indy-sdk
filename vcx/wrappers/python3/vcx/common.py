@@ -92,7 +92,7 @@ def shutdown(delete_wallet: bool):
 
 def mint_tokens():
     name = 'vcx_mint_tokens'
-    do_call_sync(name, None, None)
+    do_call_sync(name, None)
 
 
 def create_cb(cb_type: CFUNCTYPE, transform_fn=None):
