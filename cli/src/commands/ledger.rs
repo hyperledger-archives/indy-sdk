@@ -90,7 +90,8 @@ pub mod nym_command {
                                                      None,
                                                      &mut vec![("dest", "Did"),
                                                                ("verkey", "Verkey"),
-                                                               ("role", "Role")]))?;
+                                                               ("role", "Role")],
+                                                     true))?;
 
         let receipts = parse_response_with_fees(&response_json, payment_method)?;
 
@@ -143,7 +144,8 @@ pub mod get_nym_command {
                                                      &[("identifier", "Identifier"),
                                                          ("dest", "Dest"),
                                                          ("verkey", "Verkey"),
-                                                         ("role", "Role")]));
+                                                         ("role", "Role")],
+                                                     true));
         trace!("execute << {:?}", res);
         res
     }
@@ -204,7 +206,8 @@ pub mod attrib_command {
             .map(|result| print_transaction_response(result,
                                                      "Attrib request has been sent to Ledger.",
                                                      None,
-                                                     &[attribute]))?;
+                                                     &[attribute],
+                                                     true))?;
 
         let receipts = parse_response_with_fees(&response_json, payment_method)?;
 
@@ -259,7 +262,8 @@ pub mod get_attrib_command {
             .map(|result| print_transaction_response(result,
                                                      "Following ATTRIB has been received.",
                                                      None,
-                                                     &[("data", "Data")]));
+                                                     &[("data", "Data")],
+                                                     true));
         trace!("execute << {:?}", res);
         res
     }
@@ -323,7 +327,8 @@ pub mod schema_command {
                                                      Some("data"),
                                                      &[("name", "Name"),
                                                          ("version", "Version"),
-                                                         ("attr_names", "Attributes")]))?;
+                                                         ("attr_names", "Attributes")],
+                                                     true))?;
 
         let receipts = parse_response_with_fees(&response_json, payment_method)?;
 
@@ -450,7 +455,8 @@ pub mod get_schema_command {
                                                      Some("data"),
                                                      &[("name", "Name"),
                                                          ("version", "Version"),
-                                                         ("attr_names", "Attributes")]));
+                                                         ("attr_names", "Attributes")],
+                                                     true));
         trace!("execute << {:?}", res);
         res
     }
@@ -524,7 +530,8 @@ pub mod cred_def_command {
                                                      "NodeConfig request has been sent to Ledger.",
                                                      Some("data"),
                                                      &[("primary", "Primary Key"),
-                                                         ("revocation", "Revocation Key")]))?;
+                                                         ("revocation", "Revocation Key")],
+                                                     true))?;
 
         let receipts = parse_response_with_fees(&response_json, payment_method)?;
 
@@ -578,7 +585,8 @@ pub mod get_cred_def_command {
                                                      "Following Credential Definition has been received.",
                                                      Some("data"),
                                                      &[("primary", "Primary Key"),
-                                                         ("revocation", "Revocation Key")]));
+                                                         ("revocation", "Revocation Key")],
+                                                     true));
         trace!("execute << {:?}", res);
         res
     }
@@ -652,7 +660,8 @@ pub mod node_command {
                                                          ("client_port", "Client Port"),
                                                          ("services", "Services"),
                                                          ("blskey", "Blskey"),
-                                                         ("blskey_pop", "Blskey Proof of Possession")]));
+                                                         ("blskey_pop", "Blskey Proof of Possession")],
+                                                     true));
         trace!("execute << {:?}", res);
         res
     }
@@ -691,7 +700,8 @@ pub mod pool_config_command {
                                                      "NodeConfig request has been sent to Ledger.",
                                                      None,
                                                      &[("writes", "Writes"),
-                                                         ("force", "Force Apply")]));
+                                                         ("force", "Force Apply")],
+                                                     true));
         trace!("execute << {:?}", res);
         res
     }
@@ -854,7 +864,8 @@ pub mod pool_upgrade_command {
                                                          ("justification", "Justification"),
                                                          ("reinstall", "Reinstall"),
                                                          ("force", "Force Apply"),
-                                                         ("package", "Package Name")]));
+                                                         ("package", "Package Name")],
+                                                     true));
         if let Some(h) = hash {
             println_succ!("Hash:");
             println!("{}", h);
@@ -1226,7 +1237,7 @@ pub mod auth_rule_command {
                 .add_required_param("action", "Type of an action. One of: ADD, EDIT")
                 .add_required_param("field", "Transaction field")
                 .add_optional_param("old_value", "Old value of field, which can be changed to a new_value (mandatory for EDIT action)")
-                .add_required_param("new_value", "New value that can be used to fill the field")
+                .add_optional_param("new_value", "New value that can be used to fill the field")
                 .add_required_param("constraint", r#"Set of constraints required for execution of an action
          {
              constraint_id - type of a constraint. Can be either "ROLE" to specify final constraint or  "AND"/"OR" to combine constraints.
@@ -1257,7 +1268,7 @@ pub mod auth_rule_command {
         let action = get_str_param("action", params).map_err(error_err!())?;
         let field = get_str_param("field", params).map_err(error_err!())?;
         let old_value = get_opt_str_param("old_value", params).map_err(error_err!())?;
-        let new_value = get_str_param("new_value", params).map_err(error_err!())?;
+        let new_value = get_opt_str_param("new_value", params).map_err(error_err!())?;
         let constraint = get_str_param("constraint", params).map_err(error_err!())?;
 
         let request = Ledger::build_auth_rule_request(&submitter_did, txn_type, &action.to_uppercase(), field, old_value, new_value, constraint)
@@ -1283,7 +1294,8 @@ pub mod auth_rule_command {
                                                                ("field", "Field"),
                                                                ("old_value", "Old Value"),
                                                                ("new_value", "New Value"),
-                                                               ("constraint", "Constraint")]))?;
+                                                               ("constraint", "Constraint")],
+                                                     false))?;
 
         trace!("execute << {:?}", res);
         Ok(res)
@@ -1339,13 +1351,21 @@ pub mod get_auth_rule_command {
             .iter()
             .map(|(constraint_id, constraint)| {
                 let parts: Vec<&str> = constraint_id.split("--").collect();
+                let auth_type = get_txn_title(&serde_json::Value::String(parts.get(0).cloned().unwrap_or("-").to_string()));
+                let action = parts.get(1);
+                let field = parts.get(2);
+                let old_value = match action {
+                    Some(act) if *act == "ADD" => None,
+                    _ => parts.get(3),
+                };
+                let new_value = parts.get(4);
 
                 json!({
-                    "auth_type": get_txn_title(&serde_json::Value::String(parts.get(1).cloned().unwrap_or("-").to_string())),
-                    "auth_action": parts.get(0),
-                    "field": parts.get(2),
-                    "old_value": parts.get(3),
-                    "new_value": parts.get(4),
+                    "auth_type": auth_type,
+                    "auth_action": action,
+                    "field": field,
+                    "old_value": old_value,
+                    "new_value": new_value,
                     "constraint": ::serde_json::to_string_pretty(&constraint).unwrap(),
                 })
             })
@@ -1476,7 +1496,8 @@ fn parse_payment_fees(fees: &Vec<&str>) -> Result<String, ()> {
 
 fn print_transaction_response(mut result: serde_json::Value, title: &str,
                               data_sub_field: Option<&str>,
-                              data_headers: &[(&str, &str)]) {
+                              data_headers: &[(&str, &str)],
+                              skip_empty: bool) {
     println_succ!("{}", title);
 
     let (metadata_headers, metadata, data) = match result["ver"].clone().as_str() {
@@ -1490,7 +1511,9 @@ fn print_transaction_response(mut result: serde_json::Value, title: &str,
 
     let data = if data_sub_field.is_some() { &data[data_sub_field.unwrap()] } else { &data };
     let mut data_headers = data_headers.to_vec();
-    data_headers.retain(|&(ref key, _)| !data[key].is_null());
+    if skip_empty {
+        data_headers.retain(|&(ref key, _)| !data[key].is_null());
+    }
 
     println_succ!("Data:");
     print_table(data, &data_headers);
@@ -3663,16 +3686,33 @@ pub mod tests {
         }"#;
 
         #[test]
-        pub fn auth_rule_works() {
+        pub fn auth_rule_works_for_adding_new_trustee() {
             let ctx = setup_with_wallet_and_pool();
             use_trustee(&ctx);
             {
                 let cmd = auth_rule_command::new();
                 let mut params = CommandParams::new();
                 params.insert("txn_type", "NYM".to_string());
-                params.insert("action", "add".to_string());
+                params.insert("action", "ADD".to_string());
                 params.insert("field", "role".to_string());
-                params.insert("new_value", "101".to_string());
+                params.insert("new_value", "0".to_string());
+                params.insert("constraint", ROLE_CONSTRAINT.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            tear_down_with_wallet_and_pool(&ctx);
+        }
+
+        #[test]
+        pub fn auth_rule_works_for_demoting_trustee() {
+            let ctx = setup_with_wallet_and_pool();
+            use_trustee(&ctx);
+            {
+                let cmd = auth_rule_command::new();
+                let mut params = CommandParams::new();
+                params.insert("txn_type", "NYM".to_string());
+                params.insert("action", "EDIT".to_string());
+                params.insert("field", "role".to_string());
+                params.insert("old_value", "0".to_string());
                 params.insert("constraint", ROLE_CONSTRAINT.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }

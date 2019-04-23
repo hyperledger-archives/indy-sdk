@@ -205,7 +205,7 @@ pub fn build_auth_rule_request(submitter_did: &str,
                                action: &str,
                                field: &str,
                                old_value: Option<&str>,
-                               new_value: &str,
+                               new_value: Option<&str>,
                                constraint: &str, ) -> Result<String, IndyError> {
     ledger::build_auth_rule_request(submitter_did, txn_type, action, field, old_value, new_value, constraint).wait()
 }
