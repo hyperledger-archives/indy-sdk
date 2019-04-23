@@ -28,7 +28,7 @@ extern crate serde;
 mod utils;
 
 use utils::{wallet, anoncreds};
-use utils::anoncreds::{COMMON_MASTER_SECRET, CREDENTIAL1_ID, ANONCREDS_WALLET_CONFIG};
+use utils::anoncreds::{COMMON_MASTER_SECRET, CREDENTIAL1_ID, CREDENTIAL3_ID, ANONCREDS_WALLET_CONFIG};
 
 use indy::ErrorCode;
 use utils::constants::*;
@@ -3693,6 +3693,34 @@ mod medium_cases {
                                                        "{}",
                                                        "{}");
             assert_code!(ErrorCode::CommonInvalidStructure, res);
+        }
+    }
+
+    //NOTE: This test is destructive to the common wallet, removing a credential used in other tests: it goes last
+    mod prover_delete_credential {
+        use super::*;
+
+        #[test]
+        fn prover_delete_credential_works() {
+            anoncreds::init_common_wallet();
+
+            let wallet_handle = wallet::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+            anoncreds::prover_delete_credential(wallet_handle, CREDENTIAL3_ID).unwrap();
+
+            wallet::close_wallet(wallet_handle).unwrap();
+        }
+
+        #[test]
+        fn prover_delete_credential_works_for_not_found() {
+            anoncreds::init_common_wallet();
+
+            let wallet_handle = wallet::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+            let res = anoncreds::prover_delete_credential(wallet_handle, "other_cred_id");
+            assert_code!(ErrorCode::WalletItemNotFound, res);
+
+            wallet::close_wallet(wallet_handle).unwrap();
         }
     }
 }
