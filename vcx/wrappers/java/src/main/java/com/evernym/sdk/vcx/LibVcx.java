@@ -486,8 +486,23 @@ public abstract class LibVcx {
         int vcx_set_logger(Pointer context, Callback enabled, Callback log, Callback flush);
         int vcx_set_default_logger(String log_level);
 
-		int indy_crypto_anon_crypt(int command_handle, String their_vk, byte[] message_raw, int message_len, Callback cb);
-		int indy_crypto_anon_decrypt(int command_handle, int wallet_handle, String my_vk, byte[] encrypted_msg_raw, int encrypted_msg_len, Callback cb);
+        /**
+         * Evernym extensions
+         */
+
+        int indy_crypto_anon_crypt(int command_handle, String their_vk, byte[] message_raw, int message_len, Callback cb);
+        int indy_crypto_anon_decrypt(int command_handle, int wallet_handle, String my_vk, byte[] encrypted_msg_raw, int encrypted_msg_len, Callback cb);
+
+        /** Get wallet handle in use by libvcx */
+        int vcx_wallet_get_handle();
+        /** Get pool handle in use by libvcx */
+        int vcx_pool_get_handle();
+        /** Set pool handle */
+        int vcx_pool_set_handle(int handle);
+        /** Set wallet handle */
+        int vcx_wallet_set_handle(int handle);
+        /** Verity specific vcx_init, requires that wallet and pool handles are already set via vcx_wallet/pool_set_handle */
+        int vcx_init_post_indy(String config);
     }
 
     /*

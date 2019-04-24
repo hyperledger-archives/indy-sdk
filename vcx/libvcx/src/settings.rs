@@ -119,7 +119,7 @@ pub fn validate_config(config: &HashMap<String, String>) -> VcxResult<u32> {
     trace!("validate_config >>> config: {:?}", config);
 
     //Mandatory parameters
-    if config.get(CONFIG_WALLET_KEY).is_none() {
+    if ::utils::libindy::wallet::get_wallet_handle() == 0 && config.get(CONFIG_WALLET_KEY).is_none() {
         return Err(VcxError::from(VcxErrorKind::MissingWalletKey));
     }
 
@@ -487,6 +487,7 @@ pub mod tests {
         let valid_did = DEFAULT_DID;
         let valid_ver = DEFAULT_VERKEY;
 
+        ::utils::libindy::wallet::set_wallet_handle(0);
         let mut config: HashMap<String, String> = HashMap::new();
         assert_eq!(validate_config(&config).unwrap_err().kind(), VcxErrorKind::MissingWalletKey);
 
