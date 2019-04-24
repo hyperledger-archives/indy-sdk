@@ -1268,7 +1268,7 @@ async def build_auth_rule_request(submitter_did: str,
                                   action: str,
                                   field: str,
                                   old_value: Optional[str],
-                                  new_value: str,
+                                  new_value: Optional[str],
                                   constraint: str) -> str:
     """
     Builds a AUTH_RULE request. Request to change authentication rules for a ledger transaction.
@@ -1278,8 +1278,8 @@ async def build_auth_rule_request(submitter_did: str,
     :param action: type of an action.
        Can be either "ADD" (to add a new rule) or "EDIT" (to edit an existing one).
     :param field: transaction field.
-    :param old_value: old value of a field, which can be changed to a new_value (mandatory for EDIT action).
-    :param new_value: new value that can be used to fill the field.
+    :param old_value: (Optional) old value of a field, which can be changed to a new_value (mandatory for EDIT action).
+    :param new_value: (Optional) new value that can be used to fill the field.
     :param constraint: set of constraints required for execution of an action in the following format:
         {
             constraint_id - <string> type of a constraint.
@@ -1322,7 +1322,7 @@ async def build_auth_rule_request(submitter_did: str,
     c_action = c_char_p(action.encode('utf-8'))
     c_field = c_char_p(field.encode('utf-8'))
     c_old_value = c_char_p(old_value.encode('utf-8')) if old_value is not None else None
-    c_new_value = c_char_p(new_value.encode('utf-8'))
+    c_new_value = c_char_p(new_value.encode('utf-8')) if new_value is not None else None
     c_constraint = c_char_p(constraint.encode('utf-8'))
 
     request_json = await do_call('indy_build_auth_rule_request',
@@ -1357,8 +1357,8 @@ async def build_get_auth_rule_request(submitter_did: Optional[str],
     :param txn_type: target ledger transaction alias or associated value.
     :param action: target action type. Can be either "ADD" or "EDIT".
     :param field: target transaction field.
-    :param old_value: old value of field, which can be changed to a new_value (must be specified for EDIT action).
-    :param new_value: new value that can be used to fill the field.
+    :param old_value: (Optional) old value of field, which can be changed to a new_value (must be specified for EDIT action).
+    :param new_value: (Optional) new value that can be used to fill the field.
 
     :return: Request result as json.
     """

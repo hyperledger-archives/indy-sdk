@@ -632,7 +632,7 @@ mod test_build_auth_rule_request {
                                                                  &ADD_AUTH_ACTION,
                                                                  FIELD,
                                                                  None,
-                                                                 NEW_VALUE,
+                                                                 Some(NEW_VALUE),
                                                                  ROLE_CONSTRAINT).wait().unwrap();
     }
 
