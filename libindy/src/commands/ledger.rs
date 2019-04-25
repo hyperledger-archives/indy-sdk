@@ -191,7 +191,7 @@ pub enum LedgerCommand {
         String, // auth action
         String, // field
         Option<String>, // old value
-        String, // new value
+        Option<String>, // new value
         String, // constraint
         Box<Fn(IndyResult<String>) + Send>),
     BuildGetAuthRuleRequest(
@@ -381,7 +381,7 @@ impl LedgerCommandExecutor {
             }
             LedgerCommand::BuildAuthRuleRequest(submitter_did, txn_type, action, field, old_value, new_value, constraint, cb) => {
                 info!(target: "ledger_command_executor", "BuildAuthRuleRequest command received");
-                cb(self.build_auth_rule_request(&submitter_did, &txn_type, &action, &field, old_value.as_ref().map(String::as_str), &new_value, &constraint));
+                cb(self.build_auth_rule_request(&submitter_did, &txn_type, &action, &field, old_value.as_ref().map(String::as_str), new_value.as_ref().map(String::as_str), &constraint));
             }
             LedgerCommand::BuildGetAuthRuleRequest(submitter_did, txn_type, action, field, old_value, new_value, cb) => {
                 info!(target: "ledger_command_executor", "BuildGetAuthRuleRequest command received");
@@ -927,7 +927,7 @@ impl LedgerCommandExecutor {
                                action: &str,
                                field: &str,
                                old_value: Option<&str>,
-                               new_value: &str,
+                               new_value: Option<&str>,
                                constraint: &str) -> IndyResult<String> {
         debug!("build_auth_rule_request >>> submitter_did: {:?}, txn_type: {:?}, action: {:?}, field: {:?}, \
             old_value: {:?}, new_value: {:?}, constraint: {:?}", submitter_did, txn_type, action, field, old_value, new_value, constraint);

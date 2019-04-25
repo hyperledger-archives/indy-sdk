@@ -963,8 +963,8 @@ extern "C" {
     /// action: type of an action.
     ///     Can be either "ADD" (to add a new rule) or "EDIT" (to edit an existing one).
     /// field: transaction field.
-    /// old_value: old value of a field, which can be changed to a new_value (mandatory for EDIT action).
-    /// new_value: new value that can be used to fill the field.
+    /// old_value: (Optional) old value of a field, which can be changed to a new_value (mandatory for EDIT action).
+    /// new_value: (Optional) new value that can be used to fill the field.
     /// constraint: set of constraints required for execution of an action in the following format
     ///     {
     ///         constraint_id - <string> type of a constraint.
@@ -1013,7 +1013,7 @@ extern "C" {
     /// txn_type: (Optional) target ledger transaction alias or associated value.
     /// action: (Optional) target action type. Can be either "ADD" or "EDIT".
     /// field: (Optional) target transaction field.
-    /// old_value: (Optional) old value of field, which can be changed to a new_value (must be specified for EDIT action).
+    /// old_value: (Optional) old value of field, which can be changed to a new_value (mandatory for EDIT action).
     /// new_value: (Optional) new value that can be used to fill the field.
     ///
     /// cb: Callback that takes command result as parameter.

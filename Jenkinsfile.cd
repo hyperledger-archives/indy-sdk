@@ -402,7 +402,7 @@ def linuxVcxBuild(file, env_name, network_name, stashBuildResults) {
         testEnv.inside("--network=${network_name}") {
             sh '''
                 cd vcx/dummy-cloud-agent
-                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy=info cargo run sample-config.json &
+                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy=info cargo run config/sample-config.json &
             '''
 
             echo "${env_name} Libvcx Test: Run tests"
@@ -415,8 +415,8 @@ def linuxVcxBuild(file, env_name, network_name, stashBuildResults) {
         testEnv.inside("--network=${network_name}") {
             sh '''
                 cd vcx/dummy-cloud-agent
-                sed -i 's/\\("protocol_type": "\\)1.0/\\12.0/' sample-config.json
-                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy=info cargo run sample-config.json &
+                sed -i 's/\\("protocol_type": "\\)1.0/\\12.0/' config/sample-config.json
+                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy=info cargo run config/sample-config.json &
             '''
 
             echo "${env_name} Libvcx Test: Run vcx demo test for protocol version 2.0"
@@ -590,7 +590,7 @@ def windowsTesting() {
                                 bat "cargo test --release"
                             }
                         }
-                        stash includes: 'target/release/*.dll', name: 'LibindyWindowsBuildResult'
+                        stash includes: 'target/release/*.dll,target/release/*.dll.lib', name: 'LibindyWindowsBuildResult'
                     }
 
                     dir('libnullpay') {
@@ -612,7 +612,7 @@ def windowsTesting() {
                             }
                         }
 
-                        stash includes: 'target/release/*.dll', name: 'LibnullpayWindowsBuildResult'
+                        stash includes: 'target/release/*.dll,target/release/*.dll.lib', name: 'LibnullpayWindowsBuildResult'
                     }
 
                     bat "PowerShell.exe \"Copy-Item $WORKSPACE/libnullpay/target/release/nullpay.dll -Destination $WORKSPACE/cli\""
@@ -672,7 +672,7 @@ def windowsTesting() {
                             }
                         }
 
-                        stash includes: 'target/release/*.dll', name: 'LibvcxWindowsBuildResult'
+                        stash includes: 'target/release/*.dll,target/release/*.dll.lib', name: 'LibvcxWindowsBuildResult'
                     }
 
                     //TODO wrappers testing
@@ -1386,23 +1386,20 @@ def publishLibnullpayDebRCtoStable(testEnv) {
 
 def publishLibvcxDebRCtoStable(testEnv) {
     def libvcxVersion = getSrcVersion("vcx/libvcx")
-    def libindyVersion = getSrcVersion("libindy")
-    def rcFullVersion = "$libvcxVersion~$env.BUILD_NUMBER"
-
-    testEnv.inside {
-        unstash name: "libvcxDebs"
-        sh "fpm -s deb -t deb --version $rcFullVersion --no-auto-depends --depends 'libindy = $libindyVersion' -f -p vcx/libvcx/debs vcx/libvcx/debs/libvcx_\"$rcFullVersion\"_amd64.deb"
-        stash includes: "vcx/libvcx/debs/*", name: "libvcxDebs"
-    }
 
     publishDebRCtoStable(testEnv, "libvcx", "vcx/libvcx", libvcxVersion, "libvcxDebs", false)
 }
 
 def publishDebRCtoStable(testEnv, packageName, folder, version, stashName, moveDevArtifacts) {
     testEnv.inside {
-        rcFullVersion = "${version}~${env.BUILD_NUMBER}"
+        def rcFullVersion = "${version}~${env.BUILD_NUMBER}"
 
         unstash name: stashName
+
+        if (packageName != "libindy") {
+            def libindyVersion = getSrcVersion("libindy")
+            sh "fpm -s deb -t deb --version $rcFullVersion --no-auto-depends --depends 'libindy = $libindyVersion' -f -p $folder/debs $folder/debs/\"$packageName\"_\"$rcFullVersion\"_amd64.deb"
+        }
 
         sh "fakeroot deb-reversion -v $version $folder/debs/\"$packageName\"_\"$rcFullVersion\"_amd64.deb"
 
