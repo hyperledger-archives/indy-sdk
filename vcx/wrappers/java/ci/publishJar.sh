@@ -8,8 +8,8 @@ cp -v settings.xml ${JAR_FOLDER}
 pushd ${JAR_FOLDER}
 
     mvn -e deploy:deploy-file \
-        -Durl="https://repo.evernym.com/artifactory/libindy-maven-local" \
-        -DrepositoryId="artifactory-evernym" \
+        -Durl="https://evernym.mycloudrepo.io/repositories/libvcx-java" \
+        -DrepositoryId="io.cloudrepo" \
         -Dversion=${JAR_VERSION} \
         -Dname="vcx" \
         -Dfile="com.evernym-vcx-${JAR_VERSION}.jar" \

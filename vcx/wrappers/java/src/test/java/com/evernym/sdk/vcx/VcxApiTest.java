@@ -46,4 +46,41 @@ public class VcxApiTest {
         String errorCMessage = VcxApi.vcxErrorCMessage(1001);
         assert (errorCMessage.equals("Unknown Error"));
     }
+
+    /** Evernym extensions */
+    @Test
+    @DisplayName("get wallet handle")
+    void vcxGetWalletHandle() {
+        int Handle = VcxApi.vcxGetWalletHandle();
+        assert (Handle == 1);
+    }
+
+    @Test
+    @DisplayName("get pool handle")
+    void vcxGetPoolHandle() {
+        int Handle = VcxApi.vcxGetPoolHandle();
+        assert (Handle == 0);
+    }
+
+    @Test
+    @DisplayName("set pool handle")
+    void vcxSetPoolHandle() {
+        int Handle = VcxApi.vcxSetPoolHandle(1);
+        assert (Handle == 1);
+    }
+
+    @Test
+    @DisplayName("set pool handle")
+    void vcxSetWalletHandle() {
+        int Handle = VcxApi.vcxSetWalletHandle(1);
+        assert (Handle == 1);
+    }
+
+    @Test
+    @DisplayName("init with pool/wallet already set")
+    void vcxInitPostIndy() {
+        int error = VcxApi.vcxInitPostIndy("ENABLE_TEST_MODE");;
+        assert (error == 0);
+    }
+
 }

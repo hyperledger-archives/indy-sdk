@@ -232,4 +232,34 @@ public class VcxApi extends VcxJava.API {
         return future;
     }
 
+    /** Evernym extensions */
+    public static int vcxGetWalletHandle() {
+        logger.debug("vcxGetWalletHandle() called");
+        int handle = LibVcx.api.vcx_wallet_get_handle();
+        return handle;
+    }
+
+    public static int vcxGetPoolHandle() {
+        logger.debug("vcxGetPoolHandle() called");
+        int handle = LibVcx.api.vcx_pool_get_handle();
+        return handle;
+    }
+
+    public static int vcxSetPoolHandle(int handle) {
+        logger.debug("vcxSetPoolHandle() called");
+        handle = LibVcx.api.vcx_pool_set_handle(handle);
+        return handle;
+    }
+
+    public static int vcxSetWalletHandle(int handle) {
+        logger.debug("vcxSetWalletHandle() called");
+        handle = LibVcx.api.vcx_wallet_set_handle(handle);
+        return handle;
+    }
+
+    public static int vcxInitPostIndy(String config) {
+        logger.debug("vcxInitPostIndy() called");
+        int error = LibVcx.api.vcx_init_post_indy(config);
+        return error;
+    }
 }

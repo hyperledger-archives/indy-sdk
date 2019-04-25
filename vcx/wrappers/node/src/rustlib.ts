@@ -35,6 +35,9 @@ export const FFI_LOG_FN = 'pointer'
 export const FFI_POINTER = 'pointer'
 export const FFI_VOID_POINTER = 'void *'
 
+// Evernym extensions
+export const FFI_INDY_NUMBER = 'int32'
+
 // Rust Lib Native Types
 export type rust_did = string
 export type rust_error_code = number
@@ -54,6 +57,13 @@ export interface IFFIEntryPoint {
   vcx_version: () => string,
   vcx_messages_download: (commandId: number, status: string, uids: string, pairwiseDids: string, cb: any) => number,
   vcx_messages_update_status: (commandId: number, status: string, msgIds: string, cb: any) => number,
+
+  // Evernym extensions
+  vcx_wallet_get_handle: () => number,
+  vcx_pool_get_handle: () => number,
+  vcx_pack_message: (commandId: number, walletHandle: number, message: number, messageLen: number, keys: string,
+                     sender: string, cb: any) => number,
+  vcx_unpack_message: (commandId: number, walletHandle: number, jweData: number, jweLen: number, cb: any) => number,
 
   // wallet
   vcx_wallet_get_token_info: (commandId: number, payment: number | undefined | null, cb: any) => number,
@@ -192,6 +202,14 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
   vcx_messages_download: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_STRING_DATA, FFI_STRING_DATA,
     FFI_STRING_DATA, FFI_CALLBACK_PTR]],
   vcx_messages_update_status: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_STRING_DATA, FFI_STRING_DATA,
+    FFI_CALLBACK_PTR]],
+
+  // Evernym extensions
+  vcx_wallet_get_handle: [FFI_INDY_NUMBER, []],
+  vcx_pool_get_handle: [FFI_INDY_NUMBER, []],
+  vcx_pack_message: [FFI_INDY_NUMBER, [FFI_INDY_NUMBER, FFI_INDY_NUMBER, FFI_UNSIGNED_INT, FFI_UNSIGNED_INT,
+    FFI_STRING, FFI_STRING, FFI_CALLBACK_PTR]],
+  vcx_unpack_message: [FFI_INDY_NUMBER, [FFI_INDY_NUMBER, FFI_INDY_NUMBER, FFI_UNSIGNED_INT, FFI_UNSIGNED_INT,
     FFI_CALLBACK_PTR]],
 
   // wallet

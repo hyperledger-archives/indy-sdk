@@ -394,17 +394,6 @@ impl From<ConnectionRequest> for ConnectionRequestMessageDetail {
     }
 }
 
-impl From<ConnectionRequest> for ConnectionRequestMessageDetail {
-    fn from(con_req: ConnectionRequest) -> Self {
-        ConnectionRequestMessageDetail {
-            key_dlg_proof: con_req.key_dlg_proof,
-            target_name: con_req.target_name,
-            phone_no: con_req.phone_no,
-            use_public_did: Some(con_req.include_public_did),
-        }
-    }
-}
-
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ConnectionRequestMessageDetailResp {
     #[serde(rename = "inviteDetail")]
@@ -435,17 +424,6 @@ impl From<ConnectionRequestAnswer> for ConnectionRequestAnswerMessageDetail {
             sender_agency_detail: con_req_answer.sender_agency_detail,
             answer_status_code: con_req_answer.answer_status_code,
             thread: Some(con_req_answer.thread),
-        }
-    }
-}
-
-impl From<ConnectionRequestAnswer> for ConnectionRequestAnswerMessageDetail {
-    fn from(con_req_answer: ConnectionRequestAnswer) -> Self {
-        ConnectionRequestAnswerMessageDetail {
-            key_dlg_proof: con_req_answer.key_dlg_proof,
-            sender_detail: con_req_answer.sender_detail,
-            sender_agency_detail: con_req_answer.sender_agency_detail,
-            answer_status_code: con_req_answer.answer_status_code,
         }
     }
 }
