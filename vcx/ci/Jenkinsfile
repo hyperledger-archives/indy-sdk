@@ -236,10 +236,12 @@ def mainUbuntu() {
                             sh "vcx/ci/scripts/publish.sh \"${KRAKEN_CREDENTIALS}\" \"python3-vcx-wrapper*.tar.gz\" https://kraken.corp.evernym.com/repo/python/upload"
                         }
                     }
-                   withCredentials([file(credentialsId: 'cloudrepo-artifactory-settings-libvcx', variable: 'settingsFile')]) {
-                        sh 'cp $settingsFile .'
-                        sh "chmod +x vcx/wrappers/java/ci/publishJar.sh"
-                        sh 'vcx/wrappers/java/ci/publishJar.sh'
+                    withCredentials([file(credentialsId: 'cloudrepo-artifactory-settings-libvcx', variable: 'settingsFile')]) {
+                        java.inside() {
+                            sh 'cp $settingsFile .'
+                            sh "chmod +x vcx/wrappers/java/ci/publishJar.sh"
+                            sh 'vcx/wrappers/java/ci/publishJar.sh'
+                        }
                     }
                 }
             }
