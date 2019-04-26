@@ -2242,6 +2242,147 @@ mod high_cases {
             utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
         }
     }
+
+    mod author_agreement {
+        use super::*;
+
+        const TEXT: &str = "indy agreement";
+        const VERSION: &str = "1.0.0";
+        const HASH: &str = "83d907821df1c87db829e96569a11f6fc2e7880acba5e43d07ab786959e13bd3";
+
+        #[test]
+        fn indy_build_txn_author_agreement_request() {
+            let expected_result = json!({
+                "type": constants::TXN_AUTHR_AGRMT,
+                "text": TEXT,
+                "version": VERSION
+            });
+
+            let request = ledger::build_txn_author_agreement_request(DID_TRUSTEE,
+                                                                     TEXT,
+                                                                     VERSION).unwrap();
+            check_request(&request, expected_result);
+        }
+
+        #[test]
+        fn indy_build_get_txn_author_agreement_request() {
+            let expected_result = json!({
+                "type": constants::GET_TXN_AUTHR_AGRMT,
+            });
+
+            let request = ledger::build_get_txn_author_agreement_request(None, None).unwrap();
+            check_request(&request, expected_result);
+        }
+
+        #[test]
+        fn indy_build_get_txn_author_agreement_request_for_hash() {
+            let expected_result = json!({
+                "type": constants::GET_TXN_AUTHR_AGRMT,
+                "hash": HASH,
+            });
+
+            let data = json!({
+                "hash": HASH
+            }).to_string();
+
+            let request = ledger::build_get_txn_author_agreement_request(None, Some(&data)).unwrap();
+            check_request(&request, expected_result);
+        }
+
+        #[test]
+        fn indy_build_get_txn_author_agreement_request_for_version() {
+            let expected_result = json!({
+                "type": constants::GET_TXN_AUTHR_AGRMT,
+                "version": VERSION,
+            });
+
+            let data = json!({
+                "version": VERSION
+            }).to_string();
+
+            let request = ledger::build_get_txn_author_agreement_request(None, Some(&data)).unwrap();
+            check_request(&request, expected_result);
+        }
+
+        #[test]
+        fn indy_build_get_txn_author_agreement_request_for_timestamp() {
+            let timestamp = time::get_time().sec as u64;
+            let expected_result = json!({
+                "type": constants::GET_TXN_AUTHR_AGRMT,
+                "timestamp": timestamp,
+            });
+
+            let data = json!({
+                "timestamp": timestamp
+            }).to_string();
+
+            let request = ledger::build_get_txn_author_agreement_request(None, Some(&data)).unwrap();
+            check_request(&request, expected_result);
+        }
+    }
+
+    mod acceptance_mechanism {
+        use super::*;
+
+        #[test]
+        fn indy_build_acceptance_mechanism_request() {
+            let aml = json!({
+                "acceptance mechanism label 1": "some acceptance mechanism description 1"
+            });
+
+            let expected_result = json!({
+                "type": constants::TXN_AUTHR_AGRMT_AML,
+                "aml": aml.clone()
+            });
+
+            let request = ledger::build_acceptance_mechanism_request(DID_TRUSTEE,
+                                                                     &aml.to_string(),
+                                                                     None).unwrap();
+            check_request(&request, expected_result);
+        }
+
+        #[test]
+        fn indy_build_acceptance_mechanism_request_with_context() {
+            let aml = json!({
+                "acceptance mechanism label 1": "some acceptance mechanism description 1"
+            });
+            let context = "Some aml context";
+
+            let expected_result = json!({
+                "type": constants::TXN_AUTHR_AGRMT_AML,
+                "aml": aml.clone(),
+                "amlContext": context,
+            });
+
+            let request = ledger::build_acceptance_mechanism_request(DID_TRUSTEE,
+                                                                     &aml.to_string(),
+                                                                     Some(context)).unwrap();
+            check_request(&request, expected_result);
+        }
+
+        #[test]
+        fn indy_build_get_acceptance_mechanism_request() {
+            let expected_result = json!({
+                "type": constants::GET_TXN_AUTHR_AGRMT_AML,
+            });
+
+            let request = ledger::build_get_acceptance_mechanism_request(None, None).unwrap();
+            check_request(&request, expected_result);
+        }
+
+        #[test]
+        fn indy_build_get_acceptance_mechanism_request_for_timestamp() {
+            let timestamp = time::get_time().sec as i64;
+
+            let expected_result = json!({
+                "type": constants::GET_TXN_AUTHR_AGRMT_AML,
+                "timestamp": timestamp
+            });
+
+            let request = ledger::build_get_acceptance_mechanism_request(None, Some(timestamp)).unwrap();
+            check_request(&request, expected_result);
+        }
+    }
 }
 
 mod medium_cases {
@@ -2671,7 +2812,7 @@ mod medium_cases {
         fn indy_send_node_request_works_for_wrong_role() {
             let (wallet_handle, pool_handle, did) = utils::setup_trustee();
 
-            let key  = utils::crypto::create_key(wallet_handle, None).unwrap();
+            let key = utils::crypto::create_key(wallet_handle, None).unwrap();
             let node_request = ledger::build_node_request(&did, &key, NODE_DATA).unwrap();
             let response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &did, &node_request).unwrap();
             pool::check_response_type(&response, ResponseType::REJECT);
@@ -2684,7 +2825,7 @@ mod medium_cases {
         fn indy_submit_node_request_works_for_steward_already_has_node() {
             let (wallet_handle, pool_handle, did) = utils::setup_steward();
 
-            let key  = utils::crypto::create_key(wallet_handle, None).unwrap();
+            let key = utils::crypto::create_key(wallet_handle, None).unwrap();
             let node_request = ledger::build_node_request(&did, &key, NODE_DATA).unwrap();
             let response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &did, &node_request).unwrap();
             pool::check_response_type(&response, ResponseType::REJECT);

@@ -8,6 +8,7 @@ use domain::anoncreds::credential_definition::CredentialDefinition;
 use domain::anoncreds::schema::Schema;
 use domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinition;
 use domain::anoncreds::revocation_registry_delta::RevocationRegistryDelta;
+use domain::ledger::author_agreement::{GetTxnAuthorAgreementData, AcceptanceMechanisms};
 use domain::ledger::node::NodeOperationData;
 use utils::ctypes;
 
@@ -1992,6 +1993,227 @@ pub extern fn indy_build_get_auth_rule_request(command_handle: CommandHandle,
     let res = prepare_result!(result);
 
     trace!("indy_build_get_auth_rule_request: <<< res: {:?}", res);
+
+    res
+}
+
+/// Builds a TXN_AUTHR_AGRMT request. Request to add a new version of Transaction Author Agreement to the ledger.
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// submitter_did: DID of the request sender.
+/// text: a content of the TTA.
+/// version: a version of the TTA (unique UTF-8 string).
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Request result as json.
+///
+/// #Errors
+/// Common*
+#[no_mangle]
+pub extern fn indy_build_txn_author_agreement_request(command_handle: CommandHandle,
+                                                      submitter_did: *const c_char,
+                                                      text: *const c_char,
+                                                      version: *const c_char,
+                                                      cb: Option<extern fn(command_handle_: CommandHandle,
+                                                                           err: ErrorCode,
+                                                                           request_json: *const c_char)>) -> ErrorCode {
+    trace!("indy_build_txn_author_agreement_request: >>> submitter_did: {:?}, text: {:?}, version: {:?}", submitter_did, text, version);
+
+    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
+    check_useful_c_str!(text, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(version, ErrorCode::CommonInvalidParam4);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
+
+    trace!("indy_build_txn_author_agreement_request: entities >>> submitter_did: {:?}, text: {:?}, version: {:?}", submitter_did, text, version);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Ledger(
+            LedgerCommand::BuildTxnAuthorAgreementRequest(
+                submitter_did,
+                text,
+                version,
+                Box::new(move |result| {
+                    let (err, request_json) = prepare_result_1!(result, String::new());
+                    trace!("indy_build_txn_author_agreement_request: request_json: {:?}", request_json);
+                    let request_json = ctypes::string_to_cstring(request_json);
+                    cb(command_handle, err, request_json.as_ptr())
+                })
+            )));
+
+    let res = prepare_result!(result);
+
+    trace!("indy_build_txn_author_agreement_request: <<< res: {:?}", res);
+
+    res
+}
+
+/// Builds a GET_TXN_AUTHR_AGRMT request. Request to get a specific Transaction Author Agreement from the ledger.
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// submitter_did: (Optional) DID of the request sender.
+/// data: (Optional) specifies a condition for getting specific TAA.
+/// Contains 3 mutually exclusive optional fields:
+/// {
+///     hash: Optional<str> - hash of requested TAA,
+///     version: Optional<str> - version of requested TAA.
+///     timestamp: Optional<i64> - ledger will return TAA valid at requested timestamp.
+/// }
+/// Null data or empty JSON are acceptable here. In this case, ledger will return the latest version of TAA.
+///
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Request result as json.
+///
+/// #Errors
+/// Common*
+#[no_mangle]
+pub extern fn indy_build_get_txn_author_agreement_request(command_handle: CommandHandle,
+                                                          submitter_did: *const c_char,
+                                                          data: *const c_char,
+                                                          cb: Option<extern fn(command_handle_: CommandHandle,
+                                                                               err: ErrorCode,
+                                                                               request_json: *const c_char)>) -> ErrorCode {
+    trace!("indy_build_get_txn_author_agreement_request: >>> submitter_did: {:?}, data: {:?}?", submitter_did, data);
+
+    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
+    check_useful_opt_json!(data, ErrorCode::CommonInvalidParam3, GetTxnAuthorAgreementData);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    trace!("indy_build_get_txn_author_agreement_request: entities >>> submitter_did: {:?}, data: {:?}", submitter_did, data);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Ledger(
+            LedgerCommand::BuildGetTxnAuthorAgreementRequest(
+                submitter_did,
+                data,
+                Box::new(move |result| {
+                    let (err, request_json) = prepare_result_1!(result, String::new());
+                    trace!("indy_build_get_txn_author_agreement_request: request_json: {:?}", request_json);
+                    let request_json = ctypes::string_to_cstring(request_json);
+                    cb(command_handle, err, request_json.as_ptr())
+                })
+            )));
+
+    let res = prepare_result!(result);
+
+    trace!("indy_build_get_txn_author_agreement_request: <<< res: {:?}", res);
+
+    res
+}
+
+/// Builds a SET_TXN_AUTHR_AGRMT_AML request. Request to add a new acceptance mechanism for transaction author agreement.
+/// Acceptance Mechanism is a description of the ways how the user may accept a transaction author agreement.
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// submitter_did: DID of the request sender.
+/// aml: a set of new acceptance mechanisms:
+/// {
+///     “<acceptance mechanism label 1>”: { acceptance mechanism description 1},
+///     “<acceptance mechanism label 2>”: { acceptance mechanism description 2},
+///     ...
+/// }
+/// aml_context: (Optional) common context information about acceptance mechanisms (may be a URL to external resource).
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Request result as json.
+///
+/// #Errors
+/// Common*
+#[no_mangle]
+pub extern fn indy_build_acceptance_mechanism_request(command_handle: CommandHandle,
+                                                      submitter_did: *const c_char,
+                                                      aml: *const c_char,
+                                                      aml_context: *const c_char,
+                                                      cb: Option<extern fn(command_handle_: CommandHandle,
+                                                                           err: ErrorCode,
+                                                                           request_json: *const c_char)>) -> ErrorCode {
+    trace!("indy_build_acceptance_mechanism_request: >>> submitter_did: {:?}, aml: {:?}", submitter_did, aml);
+
+    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
+    check_useful_json!(aml, ErrorCode::CommonInvalidParam3, AcceptanceMechanisms);
+    check_useful_opt_c_str!(aml_context, ErrorCode::CommonInvalidParam4);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
+
+    //break early and error out if no acceptance mechanisms
+    if aml.is_empty() {
+        return ErrorCode::CommonInvalidParam4;
+    }
+
+    trace!("indy_build_acceptance_mechanism_request: entities >>> submitter_did: {:?}, aml: {:?}, aml_context: {:?}", submitter_did, aml, aml_context);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Ledger(
+            LedgerCommand::BuildAcceptanceMechanismRequest(
+                submitter_did,
+                aml,
+                aml_context,
+                Box::new(move |result| {
+                    let (err, request_json) = prepare_result_1!(result, String::new());
+                    trace!("indy_build_acceptance_mechanism_request: request_json: {:?}", request_json);
+                    let request_json = ctypes::string_to_cstring(request_json);
+                    cb(command_handle, err, request_json.as_ptr())
+                })
+            )));
+
+    let res = prepare_result!(result);
+
+    trace!("indy_build_acceptance_mechanism_request: <<< res: {:?}", res);
+
+    res
+}
+
+/// Builds a GET_TXN_AUTHR_AGRMT_AML request. Request to get acceptance mechanisms from the ledger
+/// valid for specified time or the latest one.
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// submitter_did: (Optional) DID of the request sender.
+/// timestamp: Optional<i64> - time to get an active acceptance mechanisms. Pass -1 to get the latest one.
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Request result as json.
+///
+/// #Errors
+/// Common*
+#[no_mangle]
+pub extern fn indy_build_get_acceptance_mechanism_request(command_handle: CommandHandle,
+                                                          submitter_did: *const c_char,
+                                                          timestamp: i64,
+                                                          cb: Option<extern fn(command_handle_: CommandHandle,
+                                                                               err: ErrorCode,
+                                                                               request_json: *const c_char)>) -> ErrorCode {
+    trace!("indy_build_get_acceptance_mechanism_request: >>> submitter_did: {:?}, timestamp: {:?}", submitter_did, timestamp);
+
+    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    let timestamp = if timestamp != -1 { Some(timestamp) } else { None };
+
+    trace!("indy_build_get_acceptance_mechanism_request: entities >>> submitter_did: {:?}, timestamp: {:?}", submitter_did, timestamp);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Ledger(
+            LedgerCommand::BuildGetAcceptanceMechanismRequest(
+                submitter_did,
+                timestamp,
+                Box::new(move |result| {
+                    let (err, request_json) = prepare_result_1!(result, String::new());
+                    trace!("indy_build_get_acceptance_mechanism_request: request_json: {:?}", request_json);
+                    let request_json = ctypes::string_to_cstring(request_json);
+                    cb(command_handle, err, request_json.as_ptr())
+                })
+            )));
+
+    let res = prepare_result!(result);
+
+    trace!("indy_build_get_acceptance_mechanism_request: <<< res: {:?}", res);
 
     res
 }
