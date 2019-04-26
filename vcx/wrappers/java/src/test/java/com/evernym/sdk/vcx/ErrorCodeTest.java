@@ -2,7 +2,7 @@ package com.evernym.sdk.vcx;
 
 
 import com.evernym.sdk.vcx.connection.ConnectionApi;
-import java9.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletableFuture;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 

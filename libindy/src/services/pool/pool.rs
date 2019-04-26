@@ -1125,6 +1125,35 @@ mod tests {
         }
 
         #[test]
+        pub fn pool_wrapper_sends_requests_to_two_nodes() {
+            test::cleanup_storage();
+
+            ProtocolVersion::set(2);
+            _write_genesis_txns();
+
+            let req = json!({
+                "reqId": 1,
+                "operation": {
+                    "type": "105"
+                }
+            }).to_string();
+
+            let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), POOL, 1, 0, 0);
+            let p = p.handle_event(PoolEvent::CheckCache(1));
+            let p = p.handle_event(PoolEvent::Synced(MerkleTree::from_vec(vec![]).unwrap()));
+            let p = p.handle_event(PoolEvent::SendRequest(3, req, None, None));
+            assert_match!(PoolState::Active(_), p.state);
+            match p.state {
+                PoolState::Active(state) => {
+                    assert_eq!(state.networker.borrow().events.len(), 2);
+                }
+                _ => assert!(false)
+            };
+
+            test::cleanup_storage();
+        }
+
+        #[test]
         pub fn pool_wrapper_active_node_reply_works_for_no_request() {
             test::cleanup_storage();
 

@@ -6,7 +6,7 @@ use errors::prelude::*;
 use services::ledger::merkletree::merkletree::MerkleTree;
 use services::pool::{PoolService, types::*};
 
-pub const REQUESTS_FOR_STATE_PROOFS: [&'static str; 7] = [
+pub const REQUESTS_FOR_STATE_PROOFS: [&str; 8] = [
     constants::GET_NYM,
     constants::GET_SCHEMA,
     constants::GET_CRED_DEF,
@@ -14,9 +14,10 @@ pub const REQUESTS_FOR_STATE_PROOFS: [&'static str; 7] = [
     constants::GET_REVOC_REG,
     constants::GET_REVOC_REG_DEF,
     constants::GET_REVOC_REG_DELTA,
+    constants::GET_AUTH_RULE,
 ];
 
-const REQUEST_FOR_FULL: [&'static str; 2] = [
+const REQUEST_FOR_FULL: [&str; 2] = [
     constants::POOL_RESTART,
     constants::GET_VALIDATOR_INFO,
 ];

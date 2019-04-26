@@ -543,7 +543,7 @@ to fetch records by small batches \(with proverFetchCredentialsForProofReq\).
         "<attr_referent>": <wql query>,
         "<predicate_referent>": <wql query>,
     }
-where wql query: indy-sdk/doc/design/011-wallet-query-language/README.md
+where wql query: indy-sdk/docs/design/011-wallet-query-language/README.md
 ````
 * __->__ `sh`: Handle (Number) - search\_handle: Search handle that can be used later to fetch records by small batches \(with proverFetchCredentialsForProofReq\)
 
@@ -652,7 +652,7 @@ The proof contains either proof or self-attested attribute value for each reques
         },
     }
 where
-where wql query: indy-sdk/doc/design/011-wallet-query-language/README.md
+where wql query: indy-sdk/docs/design/011-wallet-query-language/README.md
 ````
 * __->__ `proof`: Json - Proof json
 For each requested attribute either a proof \(with optionally revealed attribute value\) or
@@ -1759,7 +1759,7 @@ Builds a AUTH_RULE request. Request to change authentication rules for a ledger 
     * "EDIT" - to edit an existing one
 * `field`: String - transaction field.
 * `oldValue`: String - \(Optional\) old value of a field, which can be changed to a new_value (mandatory for EDIT action).
-* `newValue`: String - new value that can be used to fill the field. 
+* `newValue`: String - \(Optional\) new value that can be used to fill the field. 
 * `constraint`: String - set of constraints required for execution of an action in the following format:
 ```
  {
@@ -1798,7 +1798,7 @@ NOTE: Either none or all transaction related parameters must be specified (`oldV
 * `txnType`: String - target ledger transaction alias or associated value.
 * `action`: String - target action type. Can be either "ADD" or "EDIT".
 * `field`: String - target transaction field.
-* `oldValue`: String - \(Optional\) old value of field, which can be changed to a new_value (must be specified for EDIT action).
+* `oldValue`: String - \(Optional\) old value of field, which can be changed to a new_value (mandatory for EDIT action).
 * `newValue`: String - \(Optional\) new value that can be used to fill the field. 
 
 * __->__ `request`: Json
@@ -2717,9 +2717,9 @@ indy.capi.abbreviateVerkey(did, fullVerkey, function(err, verkey){
 
 Setup an Indy SDK environment, and start a local pool.
 
- * [ubuntu](https://github.com/hyperledger/indy-sdk/blob/master/doc/ubuntu-build.md)
- * [osx](https://github.com/hyperledger/indy-sdk/blob/master/doc/mac-build.md)
- * [windows](https://github.com/hyperledger/indy-sdk/blob/master/doc/windows-build.md)
+ * [ubuntu](https://github.com/hyperledger/indy-sdk/blob/master/docs/ubuntu-build.md)
+ * [osx](https://github.com/hyperledger/indy-sdk/blob/master/docs/mac-build.md)
+ * [windows](https://github.com/hyperledger/indy-sdk/blob/master/docs/windows-build.md)
 
 ```sh
 # You will need libindy in your system library path. (i.e. /usr/lib/libindy.so for linux)

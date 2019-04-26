@@ -89,7 +89,7 @@ pub(super) fn encrypt_tag_names(tag_names: &[&str], tag_name_key: &chacha20poly1
     tag_names
         .iter()
         .map(|tag_name|
-            if tag_name.starts_with("~") {
+            if tag_name.starts_with('~') {
                 TagName::OfPlain(encrypt_as_searchable(
                     &tag_name.as_bytes()[1..], tag_name_key, tags_hmac_key))
             } else {
@@ -105,7 +105,7 @@ pub(super) fn encrypt_tags(tags: &HashMap<String, String>,
     tags
         .iter()
         .map(|(tag_name, tag_value)|
-            if tag_name.starts_with("~") {
+            if tag_name.starts_with('~') {
                 // '~' character on start is skipped.
                 Tag::PlainText(
                     encrypt_as_searchable(&tag_name.as_bytes()[1..], tag_name_key, tags_hmac_key),
