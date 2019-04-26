@@ -1041,23 +1041,25 @@ mod tests {
 
         let wallet_service = WalletService::new();
 
-        let config_1 = Config{
-            id: String::from("wallet_1"),
+        let config_1 = Config {
+            id: String::from("same_id"),
             storage_type: None,
             storage_config: None,
         };
 
         wallet_service.create_wallet(&config_1, &RAW_CREDENTIAL, (&RAW_KDD, &RAW_MASTER_KEY)).unwrap();
-        let handle_1 = wallet_service.open_wallet(&config_1,&RAW_CREDENTIAL).unwrap();
-
-        let config_2 = Config{
-            id: String::from("wallet_2"),
+        let handle_1 = wallet_service.open_wallet(&config_1, &RAW_CREDENTIAL).unwrap();
+        
+        let config_2 = Config {
+            id: String::from("same_id"),
             storage_type: None,
-            storage_config: None,
+            storage_config: Some(json!({
+                "path": _custom_path()
+            })),
         };
 
         wallet_service.create_wallet(&config_2, &RAW_CREDENTIAL, (&RAW_KDD, &RAW_MASTER_KEY)).unwrap();
-        let handle_2 = wallet_service.open_wallet(&config_2,&RAW_CREDENTIAL).unwrap();
+        let handle_2 = wallet_service.open_wallet(&config_2, &RAW_CREDENTIAL).unwrap();
 
         // cleanup
         wallet_service.close_wallet(handle_1).unwrap();
@@ -2231,5 +2233,11 @@ mod tests {
                 InmemWallet::free_search,
             )
             .unwrap();
+    }
+
+    fn _custom_path() -> String {
+        let mut path = environment::tmp_path();
+        path.push("custom_wallet_path");
+        path.to_str().unwrap().to_owned()
     }
 }
