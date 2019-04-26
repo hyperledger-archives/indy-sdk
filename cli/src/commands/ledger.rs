@@ -21,6 +21,7 @@ use self::chrono::prelude::*;
 pub const DELIMITER: &'static str = ":";
 pub const SCHEMA_MARKER: &'static str = "2";
 pub const CRED_DEF_MARKER: &'static str = "3";
+pub const SEND_REQUEST: bool = true;
 
 pub fn build_schema_id(did: &str, name: &str, version: &str) -> String {
     format!("{}{}{}{}{}{}{}", did, DELIMITER, SCHEMA_MARKER, DELIMITER, name, DELIMITER, version)
@@ -36,6 +37,38 @@ pub mod group {
     command_group!(CommandGroupMetadata::new("ledger", "Ledger management commands"));
 }
 
+macro_rules! send_write_request {
+    ($send:expr, $request:expr, $pool_handle:expr, $pool_name:expr, $wallet_handle:expr, $wallet_name:expr, $submitter_did:expr) => {
+        if $send {
+            let response_json = Ledger::sign_and_submit_request($pool_handle, $wallet_handle, $submitter_did, $request)
+                .map_err(|err| handle_indy_error(err, Some($submitter_did), Some($pool_name), Some($wallet_name)))?;
+
+            let response = serde_json::from_str::<Response<serde_json::Value>>(&response_json)
+                .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
+
+            (response_json, response)
+        } else {
+            println_succ!("Transaction has been created:");
+            println!("     {}", $request);
+            return Ok(());
+        }
+    }
+}
+
+macro_rules! send_read_request {
+    ($request:expr, $pool_handle:expr) => {
+        {
+            let response_json = Ledger::submit_request($pool_handle, $request)
+                .map_err(|err| handle_indy_error(err, None, None, None))?;
+
+            let response = serde_json::from_str::<Response<serde_json::Value>>(&response_json)
+                .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
+
+            (response_json, response)
+        }
+    }
+}
+
 pub mod nym_command {
     use super::*;
 
@@ -46,10 +79,12 @@ pub mod nym_command {
                 .add_optional_param("fees_inputs","The list of source inputs")
                 .add_optional_param("fees_outputs","The list of outputs in the following format: (recipient, amount)")
                 .add_optional_param("extra","Optional information for fees payment operation")
+                .add_optional_param("send","Send the request to the Ledger (True by default). Command prints created request if false was passed.")
                 .add_example("ledger nym did=VsKV7grR1BUE29mG2Fm2kX")
                 .add_example("ledger nym did=VsKV7grR1BUE29mG2Fm2kX verkey=GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa")
                 .add_example("ledger nym did=VsKV7grR1BUE29mG2Fm2kX role=TRUSTEE")
                 .add_example("ledger nym did=VsKV7grR1BUE29mG2Fm2kX role=")
+                .add_example("ledger nym did=VsKV7grR1BUE29mG2Fm2kX send=false")
                 .add_example("ledger nym did=VsKV7grR1BUE29mG2Fm2kX fees_inputs=pay:null:111_rBuQo2A1sc9jrJg fees_outputs=(pay:null:FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4,100)")
                 .finalize()
     );
@@ -67,17 +102,15 @@ pub mod nym_command {
         let fees_inputs = get_opt_str_array_param("fees_inputs", params).map_err(error_err!())?;
         let fees_outputs = get_opt_str_tuple_array_param("fees_outputs", params).map_err(error_err!())?;
         let extra = get_opt_str_param("extra", params).map_err(error_err!())?;
+        let send = get_opt_bool_param("send", params).map_err(error_err!())?.unwrap_or(SEND_REQUEST);
 
         let mut request = Ledger::build_nym_request(&submitter_did, target_did, verkey, None, role)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
 
         let payment_method = set_request_fees(&mut request, wallet_handle, Some(&submitter_did), &fees_inputs, &fees_outputs, extra)?;
 
-        let response_json = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request)
-            .map_err(|err| handle_indy_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name)))?;
-
-        let mut response: Response<serde_json::Value> = serde_json::from_str::<Response<serde_json::Value>>(&response_json)
-            .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
+        let (response_json, mut response): (String, Response<serde_json::Value>) =
+            send_write_request!(send, &request, pool_handle, &pool_name, wallet_handle, &wallet_name, &submitter_did);
 
         if let Some(result) = response.result.as_mut() {
             result["txn"]["data"]["role"] = get_role_title(&result["txn"]["data"]["role"]);
@@ -119,12 +152,10 @@ pub mod get_nym_command {
 
         let target_did = get_str_param("did", params).map_err(error_err!())?;
 
-        let response = Ledger::build_get_nym_request(submitter_did.as_ref().map(String::as_str), target_did)
-            .and_then(|request| Ledger::submit_request(pool_handle, &request))
+        let request = Ledger::build_get_nym_request(submitter_did.as_ref().map(String::as_str), target_did)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
 
-        let mut response = serde_json::from_str::<Response<serde_json::Value>>(&response)
-            .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
+        let (_, mut response) = send_read_request!(&request, pool_handle);
 
         if let Some(result) = response.result.as_mut() {
             let data = serde_json::from_str::<serde_json::Value>(&result["data"].as_str().unwrap_or(""));
@@ -162,9 +193,11 @@ pub mod attrib_command {
                 .add_optional_param("fees_inputs","The list of source inputs")
                 .add_optional_param("fees_outputs","The list of outputs in the following format: (recipient, amount)")
                 .add_optional_param("extra","Optional information for fees payment operation")
+                .add_optional_param("send","Send the request to the Ledger (True by default). Command prints created request if false was passed.")
                 .add_example(r#"ledger attrib did=VsKV7grR1BUE29mG2Fm2kX raw={"endpoint":{"ha":"127.0.0.1:5555"}}"#)
                 .add_example(r#"ledger attrib did=VsKV7grR1BUE29mG2Fm2kX hash=83d907821df1c87db829e96569a11f6fc2e7880acba5e43d07ab786959e13bd3"#)
                 .add_example(r#"ledger attrib did=VsKV7grR1BUE29mG2Fm2kX enc=aa3f41f619aa7e5e6b6d0d"#)
+                .add_example(r#"ledger attrib did=VsKV7grR1BUE29mG2Fm2kX raw={"endpoint":{"ha":"127.0.0.1:5555"}} send=false"#)
                 .add_example(r#"ledger attrib did=VsKV7grR1BUE29mG2Fm2kX enc=aa3f41f619aa7e5e6b6d0d fees_inputs=pay:null:111_rBuQo2A1sc9jrJg fees_outputs=(pay:null:FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4,100)"#)
                 .finalize()
     );
@@ -183,17 +216,15 @@ pub mod attrib_command {
         let fees_inputs = get_opt_str_array_param("fees_inputs", params).map_err(error_err!())?;
         let fees_outputs = get_opt_str_tuple_array_param("fees_outputs", params).map_err(error_err!())?;
         let extra = get_opt_str_param("extra", params).map_err(error_err!())?;
+        let send = get_opt_bool_param("send", params).map_err(error_err!())?.unwrap_or(SEND_REQUEST);
 
         let mut request = Ledger::build_attrib_request(&submitter_did, target_did, hash, raw, enc)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
 
         let payment_method = set_request_fees(&mut request, wallet_handle, Some(&submitter_did), &fees_inputs, &fees_outputs, extra)?;
 
-        let response_json = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request)
-            .map_err(|err| handle_indy_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name)))?;
-
-        let response = serde_json::from_str::<Response<serde_json::Value>>(&response_json)
-            .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
+        let (response_json, response): (String, Response<serde_json::Value>) =
+            send_write_request!(send, &request, pool_handle, &pool_name, wallet_handle, &wallet_name, &submitter_did);
 
         let attribute =
             if raw.is_some() {
@@ -243,12 +274,10 @@ pub mod get_attrib_command {
         let hash = get_opt_str_param("hash", params).map_err(error_err!())?;
         let enc = get_opt_str_param("enc", params).map_err(error_err!())?;
 
-        let response = Ledger::build_get_attrib_request(submitter_did.as_ref().map(String::as_str), target_did, raw, hash, enc)
-            .and_then(|request| Ledger::submit_request(pool_handle, &request))
+        let request = Ledger::build_get_attrib_request(submitter_did.as_ref().map(String::as_str), target_did, raw, hash, enc)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
 
-        let mut response = serde_json::from_str::<Response<serde_json::Value>>(&response)
-            .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
+        let (_, mut response) = send_read_request!(&request, pool_handle);
 
         if let Some(result) = response.result.as_mut() {
             let data = result["data"].as_str().map(|data| serde_json::Value::String(data.to_string()));
@@ -279,7 +308,9 @@ pub mod schema_command {
                 .add_optional_param("fees_inputs","The list of source inputs")
                 .add_optional_param("fees_outputs","The list of outputs in the following format: (recipient, amount)")
                 .add_optional_param("extra","Optional information for fees payment operation")
+                .add_optional_param("send","Send the request to the Ledger (True by default). Command prints created request if false was passed.")
                 .add_example("ledger schema name=gvt version=1.0 attr_names=name,age")
+                .add_example("ledger schema name=gvt version=1.0 attr_names=name,age send=false")
                 .add_example("ledger schema name=gvt version=1.0 attr_names=name,age fees_inputs=pay:null:111_rBuQo2A1sc9jrJg fees_outputs=(pay:null:FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4,100)")
                 .finalize()
     );
@@ -297,6 +328,7 @@ pub mod schema_command {
         let fees_inputs = get_opt_str_array_param("fees_inputs", params).map_err(error_err!())?;
         let fees_outputs = get_opt_str_tuple_array_param("fees_outputs", params).map_err(error_err!())?;
         let extra = get_opt_str_param("extra", params).map_err(error_err!())?;
+        let send = get_opt_bool_param("send", params).map_err(error_err!())?.unwrap_or(SEND_REQUEST);
 
         let id = build_schema_id(&submitter_did, name, version);
 
@@ -315,11 +347,8 @@ pub mod schema_command {
 
         let payment_method = set_request_fees(&mut request, wallet_handle, Some(&submitter_did), &fees_inputs, &fees_outputs, extra)?;
 
-        let response_json = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request)
-            .map_err(|err| handle_indy_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name)))?;
-
-        let response = serde_json::from_str::<Response<serde_json::Value>>(&response_json)
-            .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
+        let (response_json, response): (String, Response<serde_json::Value>) =
+            send_write_request!(send, &request, pool_handle, &pool_name, wallet_handle, &wallet_name, &submitter_did);
 
         handle_transaction_response(response)
             .map(|result| print_transaction_response(result,
@@ -436,12 +465,10 @@ pub mod get_schema_command {
 
         let id = build_schema_id(target_did, name, version);
 
-        let response = Ledger::build_get_schema_request(submitter_did.as_ref().map(String::as_str), &id)
-            .and_then(|request| Ledger::submit_request(pool_handle, &request))
+        let request = Ledger::build_get_schema_request(submitter_did.as_ref().map(String::as_str), &id)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
 
-        let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
-            .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
+        let (_, response) = send_read_request!(&request, pool_handle);
 
         if let Some(result) = response.result.as_ref() {
             if !result["seqNo"].is_i64() {
@@ -474,6 +501,7 @@ pub mod cred_def_command {
                 .add_optional_param("fees_inputs","The list of source inputs")
                 .add_optional_param("fees_outputs","The list of outputs in the following format: (recipient, amount)")
                 .add_optional_param("extra","Optional information for fees payment operation")
+                .add_optional_param("send","Send the request to the Ledger (True by default). Command prints created request if false was passed.")
                 .add_example(r#"ledger cred-def schema_id=1 signature_type=CL tag=1 primary={"n":"1","s":"2","rms":"3","r":{"age":"4","name":"5"},"rctxt":"6","z":"7"}"#)
                 .finalize()
     );
@@ -493,6 +521,7 @@ pub mod cred_def_command {
         let fees_inputs = get_opt_str_array_param("fees_inputs", params).map_err(error_err!())?;
         let fees_outputs = get_opt_str_tuple_array_param("fees_outputs", params).map_err(error_err!())?;
         let extra = get_opt_str_param("extra", params).map_err(error_err!())?;
+        let send = get_opt_bool_param("send", params).map_err(error_err!())?.unwrap_or(SEND_REQUEST);
 
         let id = build_cred_def_id(&submitter_did, schema_id, signature_type, tag);
 
@@ -519,11 +548,8 @@ pub mod cred_def_command {
 
         let payment_method = set_request_fees(&mut request, wallet_handle, Some(&submitter_did), &fees_inputs, &fees_outputs, extra)?;
 
-        let response_json = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request)
-            .map_err(|err| handle_indy_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name)))?;
-
-        let response = serde_json::from_str::<Response<serde_json::Value>>(&response_json)
-            .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
+        let (response_json, response): (String, Response<serde_json::Value>) =
+            send_write_request!(send, &request, pool_handle, &pool_name, wallet_handle, &wallet_name, &submitter_did);
 
         handle_transaction_response(response)
             .map(|result| print_transaction_response(result,
@@ -567,12 +593,10 @@ pub mod get_cred_def_command {
 
         let id = build_cred_def_id(&origin, schema_id, signature_type, tag);
 
-        let response = Ledger::build_get_cred_def_request(submitter_did.as_ref().map(String::as_str), &id)
-            .and_then(|request| Ledger::submit_request(pool_handle, &request))
+        let request = Ledger::build_get_cred_def_request(submitter_did.as_ref().map(String::as_str), &id)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
 
-        let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
-            .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
+        let (_, response) = send_read_request!(&request, pool_handle);
 
         if let Some(result) = response.result.as_ref() {
             if !result["seqNo"].is_i64() {
@@ -642,12 +666,11 @@ pub mod node_command {
             JSONValue::from(json).to_string()
         };
 
-        let response = Ledger::build_node_request(&submitter_did, target_did, &node_data)
-            .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request))
+        let request = Ledger::build_node_request(&submitter_did, target_did, &node_data)
             .map_err(|err| handle_indy_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name)))?;
 
-        let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
-            .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
+        let (_, response): (String, Response<serde_json::Value>) =
+            send_write_request!(true, &request, pool_handle, &pool_name, wallet_handle, &wallet_name, &submitter_did);
 
         let res = handle_transaction_response(response)
             .map(|result| print_transaction_response(result,
@@ -688,12 +711,11 @@ pub mod pool_config_command {
         let writes = get_bool_param("writes", params).map_err(error_err!())?;
         let force = get_opt_bool_param("force", params).map_err(error_err!())?.unwrap_or(false);
 
-        let response = Ledger::indy_build_pool_config_request(&submitter_did, writes, force)
-            .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request))
+        let request = Ledger::indy_build_pool_config_request(&submitter_did, writes, force)
             .map_err(|err| handle_indy_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name)))?;
 
-        let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
-            .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
+        let (_, response): (String, Response<serde_json::Value>) =
+            send_write_request!(true, &request, pool_handle, &pool_name, wallet_handle, &wallet_name, &submitter_did);
 
         let res = handle_transaction_response(response)
             .map(|result| print_transaction_response(result,
@@ -832,13 +854,12 @@ pub mod pool_upgrade_command {
         let force = get_opt_bool_param("force", params).map_err(error_err!())?.unwrap_or(false);
         let package = get_opt_str_param("package", params).map_err(error_err!())?;
 
-        let response = Ledger::indy_build_pool_upgrade_request(&submitter_did, name, version, action, sha256,
+        let request = Ledger::indy_build_pool_upgrade_request(&submitter_did, name, version, action, sha256,
                                                                timeout, schedule, justification, reinstall, force, package)
-            .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request))
             .map_err(|err| handle_indy_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name)))?;
 
-        let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
-            .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
+        let (_, response): (String, Response<serde_json::Value>) =
+            send_write_request!(true, &request, pool_handle, &pool_name, wallet_handle, &wallet_name, &submitter_did);
 
         let mut schedule = None;
         let mut hash = None;
@@ -1252,6 +1273,7 @@ pub mod auth_rule_command {
              auth_constraints: [<constraint_1>, <constraint_2>]
          }
                 "#)
+                .add_optional_param("send","Send the request to the Ledger (True by default). Command prints created request if false was passed.")
                 .add_example(r#"ledger auth-rule txn_type=NYM action=ADD field=role new_value=101 constraint="{"sig_count":1,"role":"0","constraint_id":"ROLE","need_to_be_owner":false}""#)
                 .add_example(r#"ledger auth-rule txn_type=NYM action=EDIT field=role old_value=101 new_value=0 constraint="{"sig_count":1,"role":"0","constraint_id":"ROLE","need_to_be_owner":false}""#)
                 .finalize()
@@ -1270,15 +1292,13 @@ pub mod auth_rule_command {
         let old_value = get_opt_str_param("old_value", params).map_err(error_err!())?;
         let new_value = get_opt_str_param("new_value", params).map_err(error_err!())?;
         let constraint = get_str_param("constraint", params).map_err(error_err!())?;
+        let send = get_opt_bool_param("send", params).map_err(error_err!())?.unwrap_or(SEND_REQUEST);
 
         let request = Ledger::build_auth_rule_request(&submitter_did, txn_type, &action.to_uppercase(), field, old_value, new_value, constraint)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
 
-        let response_json = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request)
-            .map_err(|err| handle_indy_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name)))?;
-
-        let mut response: Response<serde_json::Value> = serde_json::from_str::<Response<serde_json::Value>>(&response_json)
-            .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
+        let (_, mut response): (String, Response<serde_json::Value>) =
+            send_write_request!(send, &request, pool_handle, &pool_name, wallet_handle, &wallet_name, &submitter_did);
 
         if let Some(result) = response.result.as_mut() {
             result["txn"]["data"]["auth_type"] = get_txn_title(&result["txn"]["data"]["auth_type"]);
@@ -1694,7 +1714,7 @@ pub mod tests {
                 params.insert("verkey", verkey);
                 cmd.execute(&ctx, &params).unwrap();
             }
-            _ensure_nym_added(&ctx, &did);
+            assert!(_ensure_nym_added(&ctx, &did).is_ok());
             tear_down_with_wallet_and_pool(&ctx);
         }
 
@@ -1711,7 +1731,7 @@ pub mod tests {
                 params.insert("role", "TRUSTEE".to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            _ensure_nym_added(&ctx, &did);
+            assert!(_ensure_nym_added(&ctx, &did).is_ok());
             tear_down_with_wallet_and_pool(&ctx);
         }
 
@@ -1734,7 +1754,7 @@ pub mod tests {
                 params.insert("fees_outputs", OUTPUT.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            _ensure_nym_added(&ctx, &did);
+            assert!(_ensure_nym_added(&ctx, &did).is_ok());
             tear_down_with_wallet_and_pool(&ctx);
         }
 
@@ -1861,6 +1881,23 @@ pub mod tests {
             }
             tear_down_with_wallet_and_pool(&ctx);
         }
+
+        #[test]
+        pub fn nym_works_without_sending() {
+            let ctx = setup_with_wallet_and_pool();
+            use_trustee(&ctx);
+            let (did, verkey) = create_new_did(&ctx);
+            {
+                let cmd = nym_command::new();
+                let mut params = CommandParams::new();
+                params.insert("did", did.clone());
+                params.insert("verkey", verkey);
+                params.insert("send", "false".to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            assert!(_ensure_nym_added(&ctx, &did).is_err());
+            tear_down_with_wallet_and_pool(&ctx);
+        }
     }
 
     mod get_nym {
@@ -1919,7 +1956,7 @@ pub mod tests {
                 params.insert("raw", ATTRIB_RAW_DATA.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            _ensure_attrib_added(&ctx, &did, Some(ATTRIB_RAW_DATA), None, None);
+            assert!(_ensure_attrib_added(&ctx, &did, Some(ATTRIB_RAW_DATA), None, None).is_ok());
             tear_down_with_wallet_and_pool(&ctx);
         }
 
@@ -1934,7 +1971,7 @@ pub mod tests {
                 params.insert("hash", ATTRIB_HASH_DATA.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            _ensure_attrib_added(&ctx, &did, None, Some(ATTRIB_HASH_DATA), None);
+            assert!(_ensure_attrib_added(&ctx, &did, None, Some(ATTRIB_HASH_DATA), None).is_ok());
             tear_down_with_wallet_and_pool(&ctx);
         }
 
@@ -1949,7 +1986,7 @@ pub mod tests {
                 params.insert("enc", ATTRIB_ENC_DATA.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            _ensure_attrib_added(&ctx, &did, None, None, Some(ATTRIB_ENC_DATA));
+            assert!(_ensure_attrib_added(&ctx, &did, None, None, Some(ATTRIB_ENC_DATA)).is_ok());
             tear_down_with_wallet_and_pool(&ctx);
         }
 
@@ -1973,7 +2010,7 @@ pub mod tests {
                 params.insert("fees_outputs", OUTPUT.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            _ensure_attrib_added(&ctx, &did, Some(ATTRIB_RAW_DATA), None, None);
+            assert!(_ensure_attrib_added(&ctx, &did, Some(ATTRIB_RAW_DATA), None, None).is_ok());
             tear_down_with_wallet_and_pool(&ctx);
         }
 
@@ -2055,6 +2092,22 @@ pub mod tests {
             }
             tear_down_with_wallet_and_pool(&ctx);
         }
+
+        #[test]
+        pub fn attrib_works_for_raw_value_without_sending() {
+            let ctx = setup_with_wallet_and_pool();
+            let (did, _) = use_new_identity(&ctx);
+            {
+                let cmd = attrib_command::new();
+                let mut params = CommandParams::new();
+                params.insert("did", did.clone());
+                params.insert("raw", ATTRIB_RAW_DATA.to_string());
+                params.insert("send", "false".to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            assert!(_ensure_attrib_added(&ctx, &did, Some(ATTRIB_RAW_DATA), None, None).is_err());
+            tear_down_with_wallet_and_pool(&ctx);
+        }
     }
 
     mod get_attrib {
@@ -2071,7 +2124,7 @@ pub mod tests {
                 params.insert("raw", ATTRIB_RAW_DATA.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            _ensure_attrib_added(&ctx, &did, Some(ATTRIB_RAW_DATA), None, None);
+            assert!(_ensure_attrib_added(&ctx, &did, Some(ATTRIB_RAW_DATA), None, None).is_ok());
             {
                 let cmd = get_attrib_command::new();
                 let mut params = CommandParams::new();
@@ -2093,7 +2146,7 @@ pub mod tests {
                 params.insert("hash", ATTRIB_HASH_DATA.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            _ensure_attrib_added(&ctx, &did, None, Some(ATTRIB_HASH_DATA), None);
+            assert!(_ensure_attrib_added(&ctx, &did, None, Some(ATTRIB_HASH_DATA), None).is_ok());
             {
                 let cmd = get_attrib_command::new();
                 let mut params = CommandParams::new();
@@ -2115,7 +2168,7 @@ pub mod tests {
                 params.insert("enc", ATTRIB_ENC_DATA.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            _ensure_attrib_added(&ctx, &did, None, None, Some(ATTRIB_ENC_DATA));
+            assert!(_ensure_attrib_added(&ctx, &did, None, None, Some(ATTRIB_ENC_DATA)).is_ok());
             {
                 let cmd = get_attrib_command::new();
                 let mut params = CommandParams::new();
@@ -2137,7 +2190,7 @@ pub mod tests {
                 params.insert("raw", ATTRIB_RAW_DATA.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            _ensure_attrib_added(&ctx, &did, Some(ATTRIB_RAW_DATA), None, None);
+            assert!(_ensure_attrib_added(&ctx, &did, Some(ATTRIB_RAW_DATA), None, None).is_ok());
 
             // to reset active did
             close_wallet(&ctx);
@@ -2169,7 +2222,7 @@ pub mod tests {
                 params.insert("attr_names", "name,age".to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            _ensure_schema_added(&ctx, &did);
+            assert!(_ensure_schema_added(&ctx, &did).is_ok());
             tear_down_with_wallet_and_pool(&ctx);
         }
 
@@ -2192,7 +2245,7 @@ pub mod tests {
                 params.insert("fees_outputs", OUTPUT.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            _ensure_schema_added(&ctx, &did);
+            assert!(_ensure_schema_added(&ctx, &did).is_ok());
             tear_down_with_wallet_and_pool(&ctx);
         }
 
@@ -2257,6 +2310,23 @@ pub mod tests {
                 params.insert("attr_names", "name,age".to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
             }
+            tear_down_with_wallet_and_pool(&ctx);
+        }
+
+        #[test]
+        pub fn schema_works_without_sending() {
+            let ctx = setup_with_wallet_and_pool();
+            let (did, _) = use_new_identity(&ctx);
+            {
+                let cmd = schema_command::new();
+                let mut params = CommandParams::new();
+                params.insert("name", "gvt".to_string());
+                params.insert("version", "1.0".to_string());
+                params.insert("attr_names", "name,age".to_string());
+                params.insert("send", "false".to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            assert!(_ensure_schema_added(&ctx, &did).is_err());
             tear_down_with_wallet_and_pool(&ctx);
         }
     }
@@ -2332,7 +2402,7 @@ pub mod tests {
                 params.insert("attr_names", "name,age".to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            _ensure_schema_added(&ctx, &did);
+            assert!(_ensure_schema_added(&ctx, &did).is_ok());
             {
                 let cmd = get_schema_command::new();
                 let mut params = CommandParams::new();
@@ -2387,7 +2457,7 @@ pub mod tests {
                 params.insert("attr_names", "name,age".to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            _ensure_schema_added(&ctx, &did);
+            assert!(_ensure_schema_added(&ctx, &did).is_ok());
 
             // to reset active did
             close_wallet(&ctx);
@@ -2422,7 +2492,7 @@ pub mod tests {
                 params.insert("primary", CRED_DEF_DATA.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            _ensure_cred_def_added(&ctx, &did, &schema_id);
+            assert!(_ensure_cred_def_added(&ctx, &did, &schema_id).is_ok());
             tear_down_with_wallet_and_pool(&ctx);
         }
 
@@ -2447,7 +2517,7 @@ pub mod tests {
                 params.insert("fees_outputs", OUTPUT.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            _ensure_cred_def_added(&ctx, &did, &schema_id);
+            assert!(_ensure_cred_def_added(&ctx, &did, &schema_id).is_ok());
             tear_down_with_wallet_and_pool(&ctx);
         }
 
@@ -2518,6 +2588,25 @@ pub mod tests {
             }
             tear_down_with_wallet_and_pool(&ctx);
         }
+
+        #[test]
+        pub fn cred_def_works_without_sending() {
+            let ctx = setup_with_wallet_and_pool();
+            let (did, _) = use_new_identity(&ctx);
+            let schema_id = send_schema(&ctx, &did);
+            {
+                let cmd = cred_def_command::new();
+                let mut params = CommandParams::new();
+                params.insert("schema_id", schema_id.clone());
+                params.insert("signature_type", "CL".to_string());
+                params.insert("tag", "TAG".to_string());
+                params.insert("primary", CRED_DEF_DATA.to_string());
+                params.insert("send", "false".to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            assert!(_ensure_cred_def_added(&ctx, &did, &schema_id).is_err());
+            tear_down_with_wallet_and_pool(&ctx);
+        }
     }
 
     mod get_cred_def {
@@ -2537,7 +2626,7 @@ pub mod tests {
                 params.insert("primary", CRED_DEF_DATA.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            _ensure_cred_def_added(&ctx, &did, &schema_id);
+            assert!(_ensure_cred_def_added(&ctx, &did, &schema_id).is_ok());
             {
                 let cmd = get_cred_def_command::new();
                 let mut params = CommandParams::new();
@@ -2580,7 +2669,7 @@ pub mod tests {
                 params.insert("primary", CRED_DEF_DATA.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            _ensure_cred_def_added(&ctx, &did, &schema_id);
+            assert!(_ensure_cred_def_added(&ctx, &did, &schema_id).is_ok());
 
             // to reset active did
             close_wallet(&ctx);
@@ -3776,6 +3865,24 @@ pub mod tests {
 
             tear_down_with_wallet_and_pool(&ctx);
         }
+
+        #[test]
+        pub fn auth_rule_without_sending() {
+            let ctx = setup_with_wallet_and_pool();
+            use_trustee(&ctx);
+            {
+                let cmd = auth_rule_command::new();
+                let mut params = CommandParams::new();
+                params.insert("txn_type", "NYM".to_string());
+                params.insert("action", "ADD".to_string());
+                params.insert("field", "role".to_string());
+                params.insert("new_value", "0".to_string());
+                params.insert("constraint", ROLE_CONSTRAINT.to_string());
+                params.insert("send", "false".to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            tear_down_with_wallet_and_pool(&ctx);
+        }
     }
 
     fn create_new_did(ctx: &CommandContext) -> (String, String) {
@@ -3859,15 +3966,15 @@ pub mod tests {
         }
     }
 
-    fn _ensure_nym_added(ctx: &CommandContext, did: &str) {
+    fn _ensure_nym_added(ctx: &CommandContext, did: &str) -> Result<(), ()> {
         let request = Ledger::build_get_nym_request(None, did).unwrap();
         submit_retry(ctx, &request, |response| {
             serde_json::from_str::<Response<ReplyResult<String>>>(&response)
                 .and_then(|response| serde_json::from_str::<serde_json::Value>(&response.result.unwrap().data))
-        }).unwrap();
+        })
     }
 
-    fn _ensure_attrib_added(ctx: &CommandContext, did: &str, raw: Option<&str>, hash: Option<&str>, enc: Option<&str>) {
+    fn _ensure_attrib_added(ctx: &CommandContext, did: &str, raw: Option<&str>, hash: Option<&str>, enc: Option<&str>) -> Result<(), ()> {
         let attr = if raw.is_some() { Some("endpoint") } else { None };
         let request = Ledger::build_get_attrib_request(None, did, attr, hash, enc).unwrap();
         submit_retry(ctx, &request, |response| {
@@ -3877,24 +3984,24 @@ pub mod tests {
                     let expected_value = if raw.is_some() { raw.unwrap() } else if hash.is_some() { hash.unwrap() } else { enc.unwrap() };
                     if response.result.is_some() && expected_value == response.result.unwrap().data { Ok(()) } else { Err(()) }
                 })
-        }).unwrap();
+        })
     }
 
-    fn _ensure_schema_added(ctx: &CommandContext, did: &str) {
+    fn _ensure_schema_added(ctx: &CommandContext, did: &str) -> Result<(), ()> {
         let id = build_schema_id(did, "gvt", "1.0");
         let request = Ledger::build_get_schema_request(None, &id).unwrap();
         submit_retry(ctx, &request, |response| {
             let schema: serde_json::Value = serde_json::from_str(&response).unwrap();
             schema["result"]["seqNo"].as_i64().ok_or(())
-        }).unwrap();
+        })
     }
 
-    fn _ensure_cred_def_added(ctx: &CommandContext, did: &str, schema_id: &str) {
+    fn _ensure_cred_def_added(ctx: &CommandContext, did: &str, schema_id: &str) -> Result<(), ()> {
         let id = build_cred_def_id(did, schema_id, "CL", "TAG");
         let request = Ledger::build_get_cred_def_request(None, &id).unwrap();
         submit_retry(ctx, &request, |response| {
             let cred_def: serde_json::Value = serde_json::from_str(&response).unwrap();
             cred_def["result"]["seqNo"].as_i64().ok_or(())
-        }).unwrap();
+        })
     }
 }

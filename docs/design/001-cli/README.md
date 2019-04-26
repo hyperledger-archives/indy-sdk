@@ -253,7 +253,7 @@ indy> ledger <subcommand>
 #### NYM transaction
 Send NYM transaction
 ```
-ledger nym did=<did-value> [verkey=<verkey-value>] [role=<role-value>] [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>]
+ledger nym did=<did-value> [verkey=<verkey-value>] [role=<role-value>] [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>] [send=<true or false>]
 ```
 
 #### GET_NYM transaction
@@ -265,7 +265,7 @@ ledger get-nym did=<did-value>
 #### ATTRIB transaction
 Send ATTRIB transaction
 ```
-ledger attrib did=<did-value> [hash=<hash-value>] [raw=<raw-value>] [enc=<enc-value>]  [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>]
+ledger attrib did=<did-value> [hash=<hash-value>] [raw=<raw-value>] [enc=<enc-value>]  [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>] [send=<true or false>]
 ```
 
 #### GET_ATTRIB transaction
@@ -277,7 +277,7 @@ ledger get-attrib did=<did-value> [raw=<raw-value>] [hash=<hash-value>] [enc=<en
 #### SCHEMA transaction
 Send SCHEMA transaction
 ```
-ledger schema name=<name-value> version=<version-value> attr_names=<attr_names-value>  [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>]
+ledger schema name=<name-value> version=<version-value> attr_names=<attr_names-value>  [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>] [send=<true or false>]
 ```
 
 #### GET_SCHEMA transaction
@@ -288,7 +288,7 @@ ledger get-schema did=<did-value> name=<name-value> version=<version-value>
 #### CRED_DEF transaction
 Send CRED_DEF transaction
 ```
-ledger cred-def schema_id=<schema_id-value> signature_type=<signature_type-value> [tag=<tag>] primary=<primary-value> [revocation=<revocation-value>]  [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>]
+ledger cred-def schema_id=<schema_id-value> signature_type=<signature_type-value> [tag=<tag>] primary=<primary-value> [revocation=<revocation-value>]  [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>] [send=<true or false>]
 ```
 
 #### GET_CRED_DEF transaction
@@ -336,7 +336,7 @@ ledger custom [txn=]<txn-json-value> [sign=<true|false>]
 #### AUTH_RULE transaction
 Send AUTH_RULE transaction
 ```
-ledger auth-rule txn_type=<txn type> action=<add or edit> field=<txn field> [old_value=<value>] [new_value=<new_value>] constraint=<{constraint json}>
+ledger auth-rule txn_type=<txn type> action=<add or edit> field=<txn field> [old_value=<value>] [new_value=<new_value>] constraint=<{constraint json}> [send=<true or false>]
 ```
 
 #### GET_AUTH_RULE transaction
