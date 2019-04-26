@@ -27,13 +27,13 @@ cd $current_dir
 
 
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
-        sudo cp ../../../libvcx/target/debug/libvcx.so /usr/lib/libvcx.so
-        sudo cp ../../../../libindy/target/debug/libindy.so /usr/lib/libindy.so
-        sudo cp ../../../../libnullpay/target/debug/libnullpay.so /usr/lib/libnullpay.so
+        sudo cp ../../../libvcx/target/debug/libvcx.so ./lib/libvcx.so
+        sudo cp ../../../../libindy/target/debug/libindy.so ./lib/libindy.so
+        sudo cp ../../../../libnullpay/target/debug/libnullpay.so ./lib/libnullpay.so
 
 elif [[ "$OSTYPE" == "darwin"* ]]; then
         # Mac OSX
-        cp ../../../libvcx/target/debug/libvcx.dylib /usr/local/lib/libvcx.dylib
-        cp ../../../../libindy/target/debug/libindy.dylib /usr/local/lib/libindy.dylib
-        cp ../../../../libnullpay/target/debug/libnullpay.dylib /usr/local/lib/libnullpay.dylib
+        cp ../../../libvcx/target/debug/libvcx.dylib ./lib/libvcx.dylib
+        cp ../../../../libindy/target/debug/libindy.dylib ./lib/libindy.dylib
+        cp ../../../../libnullpay/target/debug/libnullpay.dylib ./lib/libnullpay.dylib
 fi
