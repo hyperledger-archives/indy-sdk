@@ -505,7 +505,7 @@ mod high_cases {
             let receiver_keys = "[]";
             let message = "Hello World".as_bytes();
             let res = crypto::pack_message(wallet_handle, message, &receiver_keys, Some(&verkey));
-            assert_code!(ErrorCode::CommonInvalidStructure, res);
+            assert_code!(ErrorCode::CommonInvalidParam4, res);
             utils::tear_down_with_wallet(wallet_handle);
         }
 
@@ -564,7 +564,7 @@ mod high_cases {
             let receiver_keys = "[]";
             let message = "Hello World".as_bytes();
             let res = crypto::pack_message(wallet_handle, message, &receiver_keys, None);
-            assert_code!(ErrorCode::CommonInvalidStructure, res);
+            assert_code!(ErrorCode::CommonInvalidParam4, res);
             utils::tear_down_with_wallet(wallet_handle);
         }
 
