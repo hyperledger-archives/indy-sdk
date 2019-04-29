@@ -173,6 +173,30 @@ test('ledger', async function (t) {
   res = await indy.submitRequest(pool.handle, req)
   t.deepEqual(res['result']['data']['1--ADD--role--*--101'], constraint)
 
+  // author agreement
+  var req = await indy.buildTxnAuthorAgreementRequest(trusteeDid, 'indy agreement', '1.0.0')
+  t.deepEqual(req['operation'], { 'type': '122', 'text': 'indy agreement', 'version': '1.0.0' })
+
+  req = await indy.buildGetTxnAuthorAgreementRequest(null, {'version': '1.0.0'})
+  t.deepEqual(req['operation'], { 'type': '123', 'version': '1.0.0' })
+
+  // acceptance mechanism
+  var aml = {'acceptance mechanism label 1': 'some acceptance mechanism description 1'}
+  req = await indy.buildAcceptanceMechanismRequest(trusteeDid, aml, null)
+  t.deepEqual(req['operation'], { 'type': '124', 'aml': aml })
+
+  req = await indy.buildGetAcceptanceMechanismRequest(null, 123456789)
+  t.deepEqual(req['operation'], { 'type': '125', 'timestamp': 123456789 })
+
+  // author agreement meta
+  req = await indy.appendTxnAuthorAgreementMetaToRequest(req, 'indy agreement', '1.0.0', null, 'acceptance mechanism label 1', 123456789)
+  var expectedMeta = {
+    'acceptanceMechanismType': 'acceptance mechanism label 1',
+    'hash': '7213b9aabf8677edf6b17d20a9fbfaddb059ea4cb122d163bdf658ea67196120',
+    'timeOfAcceptance': 123456789
+  }
+  t.deepEqual(req['txnAuthrAgrmtMeta'], expectedMeta)
+
   // set back
   req = await indy.buildAuthRuleRequest(trusteeDid, 'NYM', 'ADD', 'role', null, '101', defaultConstraint)
   res = await indy.signAndSubmitRequest(pool.handle, wh, trusteeDid, req)
