@@ -13,7 +13,6 @@ use services::anoncreds::helpers::*;
 
 use self::indy_crypto::cl::CredentialPublicKey;
 use self::indy_crypto::cl::verifier::Verifier as CryptoVerifier;
-use services::anoncreds::prover::Prover;
 use services::wallet::language::{parse_from_json, Operator};
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
@@ -141,7 +140,6 @@ impl Verifier {
     }
 
     pub fn verify_requested_restrictions(&self,
-                                         prover_service: &Prover,
                                          proof_req: &ProofRequest,
                                          full_proof: &Proof,
                                          schemas: &HashMap<String, SchemaV1>,
@@ -172,8 +170,8 @@ impl Verifier {
 
         for (referent, info) in requested_attrs {
 
-            let op = parse_from_json(&prover_service
-                .build_query(&info.name, &referent, &info.restrictions, &None)?
+            let op = parse_from_json(
+                &build_wql_query(&info.name, &referent, &info.restrictions, &None)?
             )?;
 
             let filter = Verifier::_gather_filter_info(&referent, full_proof, &proof_attr_indexes, schemas, cred_defs)?;
@@ -183,8 +181,8 @@ impl Verifier {
 
         for (referent, info) in proof_req.requested_predicates.iter() {
 
-            let op = parse_from_json(&prover_service
-                .build_query(&info.name, &referent, &info.restrictions, &None)?
+            let op = parse_from_json(
+                &build_wql_query(&info.name, &referent, &info.restrictions, &None)?
             )?;
 
             let filter = Verifier::_gather_filter_info(&referent, full_proof, &predicate_indexes, schemas, cred_defs)?;
