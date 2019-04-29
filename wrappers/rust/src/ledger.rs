@@ -1157,7 +1157,7 @@ fn _build_txn_author_agreement_request(command_handle: IndyHandle,
 /// {
 ///     hash: Optional<str> - hash of requested TAA,
 ///     version: Optional<str> - version of requested TAA.
-///     timestamp: Optional<i64> - ledger will return TAA valid at requested timestamp.
+///     timestamp: Optional<u64> - ledger will return TAA valid at requested timestamp.
 /// }
 /// Null data or empty JSON are acceptable here. In this case, ledger will return the latest version of TAA.
 ///
