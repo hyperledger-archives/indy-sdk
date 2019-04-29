@@ -72,7 +72,7 @@ pub enum CryptoCommand {
     ),
     PackMessage(
         Vec<u8>, // plaintext message
-        String,  // list of receiver's keys
+        Vec<String>,  // list of receiver's keys
         Option<String>,  // senders verkey
         WalletHandle,
         Box<Fn(IndyResult<Vec<u8>>) + Send>,
@@ -140,7 +140,7 @@ impl CryptoCommandExecutor {
             }
             CryptoCommand::PackMessage(message, receivers, sender_vk, wallet_handle, cb) => {
                 info!("PackMessage command received");
-                cb(self.pack_msg(message, &receivers, sender_vk, wallet_handle));
+                cb(self.pack_msg(message, receivers, sender_vk, wallet_handle));
             }
             CryptoCommand::UnpackMessage(jwe_json, wallet_handle, cb) => {
                 info!("UnpackMessage command received");
@@ -361,24 +361,14 @@ impl CryptoCommandExecutor {
     pub fn pack_msg(
         &self,
         message: Vec<u8>,
-        receivers: &str,
+        receiver_list: Vec<String>,
         sender_vk: Option<String>,
         wallet_handle: WalletHandle,
     ) -> IndyResult<Vec<u8>> {
 
-        //parse receivers to structs
-        let receiver_list: Vec<String> = serde_json::from_str(receivers).map_err(|err| {
-            err_msg(IndyErrorKind::InvalidStructure, format!(
-                "Failed to deserialize receiver list of keys {}",
-                err
-            ))
-        })?;
-
         //break early and error out if no receivers keys are provided
         if receiver_list.is_empty() {
-            return Err(err_msg(IndyErrorKind::InvalidStructure, format!(
-                "No receiver keys found"
-            )));
+            return Err(err_msg(IndyErrorKind::InvalidStructure, "No receiver keys found".to_string()));
         }
 
         //generate content encryption key that will encrypt `message`
