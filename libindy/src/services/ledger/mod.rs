@@ -646,7 +646,7 @@ impl LedgerService {
         Ok(request)
     }
 
-    pub fn build_get_acceptance_mechanism_request(&self, identifier: Option<&str>, timestamp: Option<i64>) -> IndyResult<String> {
+    pub fn build_get_acceptance_mechanism_request(&self, identifier: Option<&str>, timestamp: Option<u64>) -> IndyResult<String> {
         info!("build_get_acceptance_mechanism_request >>> identifier: {:?}, timestamp {:?}", identifier, timestamp);
 
         let operation = GetAcceptanceMechanismOperation::new(timestamp);
@@ -1286,7 +1286,7 @@ mod tests {
 
         fn _aml() -> AcceptanceMechanisms{
             let mut aml: AcceptanceMechanisms = AcceptanceMechanisms::new();
-            aml.insert(LABEL, json!({"text": "This is description for acceptance mechanism"}));
+            aml.insert(LABEL.to_string(), json!({"text": "This is description for acceptance mechanism"}));
             aml
         }
 
@@ -1306,9 +1306,6 @@ mod tests {
         #[test]
         fn build_acceptance_mechanism_request_with_context() {
             let ledger_service = LedgerService::new();
-
-            let mut aml: AcceptanceMechanisms = AcceptanceMechanisms::new();
-            aml.insert(LABEL, json!({"text": "This is description for acceptance mechanism"}));
 
             let expected_result = json!({
                 "type": TXN_AUTHR_AGRMT_AML,
@@ -1334,7 +1331,7 @@ mod tests {
 
         #[test]
         fn build_get_acceptance_mechanism_request_for_timestamp() {
-            let timestamp = ::time::get_time().sec as i64;
+            let timestamp = ::time::get_time().sec as u64;
 
             let ledger_service = LedgerService::new();
 

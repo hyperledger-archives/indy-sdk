@@ -39,6 +39,8 @@ extern crate derivative;
 extern crate sodiumoxide;
 extern crate core;
 
+extern crate hex;
+
 // Note that to use macroses from util inside of other modules it must be loaded first!
 #[macro_use]
 mod utils;

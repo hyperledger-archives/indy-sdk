@@ -1999,6 +1999,8 @@ pub extern fn indy_build_get_auth_rule_request(command_handle: CommandHandle,
 
 /// Builds a TXN_AUTHR_AGRMT request. Request to add a new version of Transaction Author Agreement to the ledger.
 ///
+/// EXPERIMENTAL
+///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
 /// submitter_did: DID of the request sender.
@@ -2051,6 +2053,8 @@ pub extern fn indy_build_txn_author_agreement_request(command_handle: CommandHan
 
 /// Builds a GET_TXN_AUTHR_AGRMT request. Request to get a specific Transaction Author Agreement from the ledger.
 ///
+/// EXPERIMENTAL
+///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
 /// submitter_did: (Optional) DID of the request sender.
@@ -2059,7 +2063,7 @@ pub extern fn indy_build_txn_author_agreement_request(command_handle: CommandHan
 /// {
 ///     hash: Optional<str> - hash of requested TAA,
 ///     version: Optional<str> - version of requested TAA.
-///     timestamp: Optional<i64> - ledger will return TAA valid at requested timestamp.
+///     timestamp: Optional<u64> - ledger will return TAA valid at requested timestamp.
 /// }
 /// Null data or empty JSON are acceptable here. In this case, ledger will return the latest version of TAA.
 ///
@@ -2107,6 +2111,8 @@ pub extern fn indy_build_get_txn_author_agreement_request(command_handle: Comman
 
 /// Builds a SET_TXN_AUTHR_AGRMT_AML request. Request to add a new acceptance mechanism for transaction author agreement.
 /// Acceptance Mechanism is a description of the ways how the user may accept a transaction author agreement.
+///
+/// EXPERIMENTAL
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
@@ -2171,6 +2177,8 @@ pub extern fn indy_build_acceptance_mechanism_request(command_handle: CommandHan
 /// Builds a GET_TXN_AUTHR_AGRMT_AML request. Request to get acceptance mechanisms from the ledger
 /// valid for specified time or the latest one.
 ///
+/// EXPERIMENTAL
+///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
 /// submitter_did: (Optional) DID of the request sender.
@@ -2194,7 +2202,7 @@ pub extern fn indy_build_get_acceptance_mechanism_request(command_handle: Comman
     check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    let timestamp = if timestamp != -1 { Some(timestamp) } else { None };
+    let timestamp = if timestamp != -1 { Some(timestamp as u64) } else { None };
 
     trace!("indy_build_get_acceptance_mechanism_request: entities >>> submitter_did: {:?}, timestamp: {:?}", submitter_did, timestamp);
 
@@ -2214,6 +2222,81 @@ pub extern fn indy_build_get_acceptance_mechanism_request(command_handle: Comman
     let res = prepare_result!(result);
 
     trace!("indy_build_get_acceptance_mechanism_request: <<< res: {:?}", res);
+
+    res
+}
+
+/// Append transaction author agreement metadata to a request.
+/// This function should be called before signing and sending a request
+/// if there is any transaction author agreement set on the Ledger.
+///
+/// EXPERIMENTAL
+///
+/// This function may calculate hash by itself or consume it as a parameter.
+/// If all text, version and hash parameters are specified, a check integrity of them will be done.
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// request_json: original request data json.
+/// text and version - (optional) raw data about TAA from ledger.
+///     These parameters should be passed together.
+///     These parameters are required if hash parameter is omitted.
+/// hash - (optional) hash on text and version. This parameter is required if text and version parameters are omitted.
+/// acc_mech_type - mechanism how user has accepted the TAA
+/// time_of_acceptance - UTC timestamp when user has accepted the TAA
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Updated request result as json.
+///
+/// #Errors
+/// Common*
+#[no_mangle]
+pub extern fn indy_append_txn_author_agreement_meta_to_request(command_handle: CommandHandle,
+                                                               request_json: *const c_char,
+                                                               text: *const c_char,
+                                                               version: *const c_char,
+                                                               hash: *const c_char,
+                                                               acc_mech_type: *const c_char,
+                                                               time_of_acceptance: u64,
+                                                               cb: Option<extern fn(command_handle_: CommandHandle,
+                                                                                    err: ErrorCode,
+                                                                                    request_with_meta_json: *const c_char)>) -> ErrorCode{
+    trace!("indy_append_txn_author_agreement_meta_to_request: >>> request_json: {:?}, text: {:?}, version: {:?}, hash: {:?}, \
+        acc_mech_type: {:?}, time_of_acceptance: {:?}",
+           request_json, text, version, hash, acc_mech_type, time_of_acceptance);
+
+    check_useful_c_str!(request_json, ErrorCode::CommonInvalidParam2);
+    check_useful_opt_c_str!(text, ErrorCode::CommonInvalidParam3);
+    check_useful_opt_c_str!(version, ErrorCode::CommonInvalidParam4);
+    check_useful_opt_c_str!(hash, ErrorCode::CommonInvalidParam5);
+    check_useful_c_str!(acc_mech_type, ErrorCode::CommonInvalidParam6);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam8);
+
+    trace!("indy_append_txn_author_agreement_meta_to_request: entities >>> request_json: {:?}, text: {:?}, version: {:?}, hash: {:?}, \
+        acc_mech_type: {:?}, time_of_acceptance: {:?}",
+           request_json, text, version, hash, acc_mech_type, time_of_acceptance);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Ledger(
+            LedgerCommand::AppendTxnAuthorAgreementMetaToRequest(
+                request_json,
+                text,
+                version,
+                hash,
+                acc_mech_type,
+                time_of_acceptance,
+                Box::new(move |result| {
+                    let (err, request_json) = prepare_result_1!(result, String::new());
+                    trace!("indy_append_txn_author_agreement_meta_to_request: request_json: {:?}", request_json);
+                    let request_json = ctypes::string_to_cstring(request_json);
+                    cb(command_handle, err, request_json.as_ptr())
+                })
+            )));
+
+    let res = prepare_result!(result);
+
+    trace!("indy_append_txn_author_agreement_meta_to_request: <<< res: {:?}", res);
 
     res
 }
