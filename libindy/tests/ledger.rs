@@ -2383,6 +2383,141 @@ mod high_cases {
             check_request(&request, expected_result);
         }
     }
+
+    mod author_agreement_meta {
+        use super::*;
+
+        const TEXT: &str = "some agreement text";
+        const VERSION: &str = "1.0.0";
+        const HASH: &str = "050e52a57837fff904d3d059c8a123e3a04177042bf467db2b2c27abd8045d5e";
+        const ACCEPTANCE_MECH_TYPE: &str = "acceptance type 1";
+        const TIME_OF_ACCEPTANCE: u64 = 123456789;
+
+        fn _check_request_meta(request: &str){
+            let request: serde_json::Value = serde_json::from_str(&request).unwrap();
+
+            let expected_meta = json!({
+                "acceptanceMechanismType": ACCEPTANCE_MECH_TYPE,
+                "hash": HASH,
+                "timeOfAcceptance": TIME_OF_ACCEPTANCE
+            });
+
+            assert_eq!(request["txnAuthrAgrmtMeta"], expected_meta);
+        }
+
+        #[test]
+        fn indy_append_txn_author_agreement_meta_to_request_works_for_text_version() {
+            utils::setup();
+
+            let request = ledger::append_txn_author_agreement_meta_to_request(REQUEST,
+                                                                              Some(TEXT),
+                                                                              Some(VERSION),
+                                                                              None,
+                                                                              ACCEPTANCE_MECH_TYPE,
+                                                                              TIME_OF_ACCEPTANCE).unwrap();
+            _check_request_meta(&request);
+
+            utils::tear_down();
+        }
+
+        #[test]
+        fn indy_append_txn_author_agreement_meta_to_request_works_for_hash() {
+            utils::setup();
+
+            let request = ledger::append_txn_author_agreement_meta_to_request(REQUEST,
+                                                                              None,
+                                                                              None,
+                                                                              Some(HASH),
+                                                                              ACCEPTANCE_MECH_TYPE,
+                                                                              TIME_OF_ACCEPTANCE).unwrap();
+            _check_request_meta(&request);
+
+            utils::tear_down();
+        }
+
+        #[test]
+        fn indy_append_txn_author_agreement_meta_to_request_works_for_text_version_and_hash() {
+            utils::setup();
+
+            let request = ledger::append_txn_author_agreement_meta_to_request(REQUEST,
+                                                                              Some(TEXT),
+                                                                              Some(VERSION),
+                                                                              Some(HASH),
+                                                                              ACCEPTANCE_MECH_TYPE,
+                                                                              TIME_OF_ACCEPTANCE).unwrap();
+            _check_request_meta(&request);
+
+            utils::tear_down();
+        }
+
+        #[test]
+        fn indy_append_txn_author_agreement_meta_to_request_works_for_text_version_not_correspond_to_hash() {
+            utils::setup();
+
+            let res = ledger::append_txn_author_agreement_meta_to_request(REQUEST,
+                                                                          Some("other text"),
+                                                                          Some("0.0.1"),
+                                                                          Some(HASH),
+                                                                          ACCEPTANCE_MECH_TYPE,
+                                                                          TIME_OF_ACCEPTANCE);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
+
+            utils::tear_down();
+        }
+
+        #[test]
+        fn indy_append_txn_author_agreement_meta_to_request_works_for_invalid_request() {
+            utils::setup();
+
+            let res = ledger::append_txn_author_agreement_meta_to_request("Invalid request string",
+                                                                          None,
+                                                                          None,
+                                                                          Some(HASH),
+                                                                          ACCEPTANCE_MECH_TYPE,
+                                                                          TIME_OF_ACCEPTANCE);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
+
+            utils::tear_down();
+        }
+
+        #[test]
+        fn indy_append_txn_author_agreement_meta_to_request_works_for_missed_text_version_hash() {
+            utils::setup();
+
+            let res = ledger::append_txn_author_agreement_meta_to_request(REQUEST,
+                                                                          None,
+                                                                          None,
+                                                                          None,
+                                                                          ACCEPTANCE_MECH_TYPE,
+                                                                          TIME_OF_ACCEPTANCE);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
+
+            utils::tear_down();
+        }
+
+        #[test]
+        fn indy_append_txn_author_agreement_meta_to_request_works_for_partial_combination_of_text_version() {
+            utils::setup();
+
+            let res = ledger::append_txn_author_agreement_meta_to_request(REQUEST,
+                                                                          Some(TEXT),
+                                                                          None,
+                                                                          None,
+                                                                          ACCEPTANCE_MECH_TYPE,
+                                                                          TIME_OF_ACCEPTANCE);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
+
+            let res = ledger::append_txn_author_agreement_meta_to_request(REQUEST,
+                                                                          None,
+                                                                          Some(VERSION),
+                                                                          None,
+                                                                          ACCEPTANCE_MECH_TYPE,
+                                                                          TIME_OF_ACCEPTANCE);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
+
+            utils::tear_down();
+        }
+    }
 }
 
 mod medium_cases {

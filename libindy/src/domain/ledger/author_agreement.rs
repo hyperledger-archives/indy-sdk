@@ -24,7 +24,7 @@ impl TxnAuthorAgreementOperation {
 pub struct GetTxnAuthorAgreementData {
     pub hash: Option<String>,
     pub version: Option<String>,
-    pub timestamp: Option<i64>,
+    pub timestamp: Option<u64>,
 }
 
 #[derive(Serialize, PartialEq, Debug)]
@@ -36,7 +36,7 @@ pub struct GetTxnAuthorAgreementOperation {
     #[serde(skip_serializing_if = "Option::is_none")]
     version: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    timestamp: Option<i64>,
+    timestamp: Option<u64>,
 }
 
 impl GetTxnAuthorAgreementOperation {
@@ -77,11 +77,11 @@ pub struct GetAcceptanceMechanismOperation {
     #[serde(rename = "type")]
     _type: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    timestamp: Option<i64>,
+    timestamp: Option<u64>,
 }
 
 impl GetAcceptanceMechanismOperation {
-    pub fn new(timestamp: Option<i64>) -> GetAcceptanceMechanismOperation {
+    pub fn new(timestamp: Option<u64>) -> GetAcceptanceMechanismOperation {
         GetAcceptanceMechanismOperation {
             _type: GET_TXN_AUTHR_AGRMT_AML.to_string(),
             timestamp,
