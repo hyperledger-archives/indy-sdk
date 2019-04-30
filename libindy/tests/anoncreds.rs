@@ -3178,8 +3178,8 @@ mod high_cases {
                                                          &anoncreds::schemas_for_proof(),
                                                          &anoncreds::cred_defs_for_proof(),
                                                          "{}",
-                                                         "{}").unwrap();
-            assert!(!valid);
+                                                         "{}");
+            assert_code!(ErrorCode::AnoncredsProofRejected , valid);
         }
 
         #[test]
@@ -3209,8 +3209,8 @@ mod high_cases {
                                                          &anoncreds::schemas_for_proof(),
                                                          &anoncreds::cred_defs_for_proof(),
                                                          "{}",
-                                                         "{}").unwrap();
-            assert!(!valid);
+                                                         "{}");
+            assert_code!(ErrorCode::AnoncredsProofRejected , valid);
         }
 
         #[test]
@@ -3259,8 +3259,8 @@ mod high_cases {
                                                          &anoncreds::schemas_for_proof(),
                                                          &anoncreds::cred_defs_for_proof(),
                                                          "{}",
-                                                         "{}").unwrap();
-            assert!(!valid);
+                                                         "{}");
+            assert_code!(ErrorCode::AnoncredsProofRejected , valid);
         }
 
         #[test]
@@ -3309,8 +3309,8 @@ mod high_cases {
                                                          &anoncreds::schemas_for_proof(),
                                                          &anoncreds::cred_defs_for_proof(),
                                                          "{}",
-                                                         "{}").unwrap();
-            assert!(!valid);
+                                                         "{}");
+            assert_code!(ErrorCode::AnoncredsProofRejected , valid);
         }
 
         #[test]
@@ -3359,8 +3359,8 @@ mod high_cases {
                                                          &anoncreds::schemas_for_proof(),
                                                          &anoncreds::cred_defs_for_proof(),
                                                          "{}",
-                                                         "{}").unwrap();
-            assert!(!valid);
+                                                         "{}");
+            assert_code!(ErrorCode::AnoncredsProofRejected , valid);
         }
 
         #[test]
@@ -3409,8 +3409,8 @@ mod high_cases {
                                                          &anoncreds::schemas_for_proof(),
                                                          &anoncreds::cred_defs_for_proof(),
                                                          "{}",
-                                                         "{}").unwrap();
-            assert!(!valid);
+                                                         "{}");
+            assert_code!(ErrorCode::AnoncredsProofRejected , valid);
         }
 
         #[test]
@@ -3459,8 +3459,8 @@ mod high_cases {
                                                          &anoncreds::schemas_for_proof(),
                                                          &anoncreds::cred_defs_for_proof(),
                                                          "{}",
-                                                         "{}").unwrap();
-            assert!(!valid);
+                                                         "{}");
+            assert_code!(ErrorCode::AnoncredsProofRejected , valid);
         }
 
         #[test]
@@ -3487,7 +3487,6 @@ mod high_cases {
                                                        "{}");
             assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
-
     }
 }
 
@@ -4090,13 +4089,13 @@ mod medium_cases {
                     non_revoked: None
                 }
             );
-            let valid = anoncreds::verifier_verify_proof(&serde_json::to_string(&proof_req).unwrap(),
+            let res = anoncreds::verifier_verify_proof(&serde_json::to_string(&proof_req).unwrap(),
                                                          &anoncreds::proof_json_restrictions(),
                                                          &anoncreds::schemas_for_proof_restrictions(),
                                                          &anoncreds::cred_defs_for_proof_restrictions(),
                                                          "{}",
-                                                         "{}").unwrap();
-            assert!(valid);
+                                                         "{}");
+            assert!(res.is_ok());
         }
 
         #[test]
@@ -4122,8 +4121,8 @@ mod medium_cases {
                                                          &anoncreds::schemas_for_proof_restrictions(),
                                                          &anoncreds::cred_defs_for_proof_restrictions(),
                                                          "{}",
-                                                         "{}").unwrap();
-            assert!(!valid);
+                                                         "{}");
+            assert_code!(ErrorCode::AnoncredsProofRejected , valid);
         }
 
         #[test]
@@ -4180,8 +4179,8 @@ mod medium_cases {
                                                          &anoncreds::schemas_for_proof_restrictions(),
                                                          &anoncreds::cred_defs_for_proof_restrictions(),
                                                          "{}",
-                                                         "{}").unwrap();
-            assert!(!valid);
+                                                         "{}");
+            assert_code!(ErrorCode::AnoncredsProofRejected , valid);
         }
 
         #[test]
@@ -4230,8 +4229,8 @@ mod medium_cases {
                                                          &anoncreds::schemas_for_proof_restrictions(),
                                                          &anoncreds::cred_defs_for_proof_restrictions(),
                                                          "{}",
-                                                         "{}").unwrap();
-            assert!(!valid);
+                                                         "{}");
+            assert_code!(ErrorCode::AnoncredsProofRejected , valid);
         }
 
         #[test]
@@ -4280,8 +4279,8 @@ mod medium_cases {
                                                          &anoncreds::schemas_for_proof_restrictions(),
                                                          &anoncreds::cred_defs_for_proof_restrictions(),
                                                          "{}",
-                                                         "{}").unwrap();
-            assert!(!valid);
+                                                         "{}");
+            assert_code!(ErrorCode::AnoncredsProofRejected , valid);
         }
     }
 }

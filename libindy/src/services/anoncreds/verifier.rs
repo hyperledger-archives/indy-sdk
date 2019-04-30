@@ -1,9 +1,9 @@
 extern crate indy_crypto;
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use domain::anoncreds::credential_definition::{CredentialDefinitionV1, CredentialDefinition};
-use domain::anoncreds::proof::{Proof, RequestedProof};
+use domain::anoncreds::proof::{Proof, RequestedProof, Identifier};
 use domain::anoncreds::proof_request::{AttributeInfo, PredicateInfo, ProofRequest};
 use domain::anoncreds::revocation_registry::RevocationRegistryV1;
 use domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinitionV1;
@@ -41,6 +41,33 @@ impl Verifier {
                   rev_regs: &HashMap<String, HashMap<u64, RevocationRegistryV1>>) -> IndyResult<bool> {
         trace!("verify >>> full_proof: {:?}, proof_req: {:?}, schemas: {:?}, cred_defs: {:?}, rev_reg_defs: {:?} rev_regs: {:?}",
                full_proof, proof_req, schemas, cred_defs, rev_reg_defs, rev_regs);
+
+        let received_revealed_attrs: HashMap<String, Identifier> = Verifier::_received_revealed_attrs(&full_proof)?;
+        let received_unrevealed_attrs: HashMap<String, Identifier> = Verifier::_received_unrevealed_attrs(&full_proof)?;
+        let received_predicates: HashMap<String, Identifier> = Verifier::_received_predicates(&full_proof)?;
+        let received_self_attested_attrs: HashSet<String> =
+            full_proof.requested_proof.self_attested_attrs
+                .keys()
+                .cloned()
+                .into_iter()
+                .collect::<HashSet<String>>();
+
+        Verifier::_compare_attr_from_proof_and_request(proof_req,
+                                                       &received_revealed_attrs,
+                                                       &received_unrevealed_attrs,
+                                                       &received_self_attested_attrs,
+                                                       &received_predicates)?;
+
+        if !Verifier::_verify_requested_restrictions(&proof_req,
+                                                     schemas,
+                                                     cred_defs,
+                                                     &received_revealed_attrs,
+                                                     &received_unrevealed_attrs,
+                                                     &received_predicates,
+                                                     &received_self_attested_attrs)? {
+            return Err(err_msg(IndyErrorKind::ProofRejected,
+                               "Requested restrictions in Proof Request don't match Proof"))
+        }
 
         let mut proof_verifier = CryptoVerifier::new_proof_verifier()?;
         let non_credential_schema = build_non_credential_schema()?;
@@ -139,32 +166,116 @@ impl Verifier {
         Ok(predicates_for_credential)
     }
 
-    pub fn verify_requested_restrictions(&self,
-                                         proof_req: &ProofRequest,
-                                         full_proof: &Proof,
-                                         schemas: &HashMap<String, SchemaV1>,
-                                         cred_defs: &HashMap<String, CredentialDefinitionV1>) -> IndyResult<bool> {
-        let proof_attr_indexes = full_proof.requested_proof.unrevealed_attrs
-            .iter()
-            .map(|(r, info)| (r.to_string(), info.sub_proof_index as usize))
-            .collect::<HashMap<String, usize>>()
-            .into_iter()
-            .chain(
-                full_proof.requested_proof.revealed_attrs
-                    .iter()
-                    .map(|(r, info)| (r.to_string(), info.sub_proof_index as usize))
-                    .collect::<HashMap<String, usize>>()
-            )
-            .collect::<HashMap<String, usize>>();
+    fn _compare_attr_from_proof_and_request(proof_req: &ProofRequest,
+                                            received_revealed_attrs: &HashMap<String, Identifier>,
+                                            received_unrevealed_attrs: &HashMap<String, Identifier>,
+                                            received_self_attested_attrs: &HashSet<String>,
+                                            received_predicates: &HashMap<String, Identifier>) -> IndyResult<()> {
+        let requested_attrs: HashSet<String> =
+            proof_req.requested_attributes
+                .keys()
+                .cloned()
+                .into_iter()
+                .collect::<HashSet<String>>();
 
-        let predicate_indexes = full_proof.requested_proof.predicates
-            .iter()
-            .map(|(r, info)| (r.to_string(), info.sub_proof_index as usize))
-            .collect::<HashMap<String, usize>>();
+        let received_attrs = received_revealed_attrs
+            .into_iter()
+            .chain(received_unrevealed_attrs)
+            .map(|(r, id)| (r.to_string(), id.clone()))
+            .collect::<HashMap<String, Identifier>>()
+            .keys()
+            .cloned()
+            .into_iter()
+            .collect::<HashSet<String>>()
+            .union(received_self_attested_attrs)
+            .cloned()
+            .collect::<HashSet<String>>();
+
+        if requested_attrs != received_attrs {
+            return Err(err_msg(IndyErrorKind::InvalidStructure,
+                               format!("Requested attributes {:?} do not correspond to received {:?}", requested_attrs, received_attrs)));
+        }
+
+        let requested_predicates: HashSet<String> =
+            proof_req.requested_predicates
+                .keys()
+                .cloned()
+                .into_iter()
+                .collect::<HashSet<String>>();
+
+        let received_predicates: HashSet<String> = received_predicates
+            .keys()
+            .cloned()
+            .into_iter()
+            .collect::<HashSet<String>>();
+
+        if requested_predicates != received_predicates {
+            return Err(err_msg(IndyErrorKind::InvalidStructure,
+                               format!("Requested predicates {:?} do not correspond to received {:?}", requested_predicates, received_predicates)));
+        }
+        Ok(())
+    }
+
+    fn _received_revealed_attrs(proof: &Proof) -> IndyResult<HashMap<String, Identifier>> {
+       let mut revealed_identifiers: HashMap<String, Identifier> = HashMap::new();
+       for (referent, info) in proof.requested_proof.revealed_attrs.iter() {
+           revealed_identifiers.insert(
+               referent.to_string(),
+               Verifier::_proof_identifier(proof, info.sub_proof_index)?
+           );
+       }
+        Ok(revealed_identifiers)
+    }
+
+    fn _received_unrevealed_attrs(proof: &Proof) -> IndyResult<HashMap<String, Identifier>> {
+        let mut unrevealed_identifiers: HashMap<String, Identifier> = HashMap::new();
+        for (referent, info) in proof.requested_proof.unrevealed_attrs.iter() {
+            unrevealed_identifiers.insert(
+                referent.to_string(),
+                Verifier::_proof_identifier(proof, info.sub_proof_index)?
+            );
+        }
+        Ok(unrevealed_identifiers)
+    }
+
+    fn _received_predicates(proof: &Proof) -> IndyResult<HashMap<String, Identifier>> {
+        let mut predicate_identifiers: HashMap<String, Identifier> = HashMap::new();
+        for (referent, info) in proof.requested_proof.predicates.iter() {
+            predicate_identifiers.insert(
+                referent.to_string(),
+                Verifier::_proof_identifier(proof, info.sub_proof_index)?
+            );
+        }
+        Ok(predicate_identifiers)
+    }
+
+    fn _proof_identifier(proof: &Proof, index: i32) -> IndyResult<Identifier> {
+        proof.identifiers
+            .get(index as usize)
+            .cloned()
+            .ok_or(err_msg(
+                IndyErrorKind::InvalidStructure,
+                format!("Identifier not found for index: {}", index)
+            ))
+    }
+
+    fn _verify_requested_restrictions(proof_req: &ProofRequest,
+                                      schemas: &HashMap<String, SchemaV1>,
+                                      cred_defs: &HashMap<String, CredentialDefinitionV1>,
+                                      received_revealed_identifiers: &HashMap<String, Identifier>,
+                                      received_unrevealed_identifiers: &HashMap<String, Identifier>,
+                                      received_predicates: &HashMap<String, Identifier>,
+                                      self_attested_attrs: &HashSet<String>) -> IndyResult<bool> {
+
+        let proof_attr_identifiers = received_revealed_identifiers
+            .into_iter()
+            .chain(received_unrevealed_identifiers)
+            .map(|(r, id)| (r.to_string(), id.clone()))
+            .collect::<HashMap<String, Identifier>>();
 
         let requested_attrs: HashMap<String, AttributeInfo> = proof_req.requested_attributes
             .iter()
-            .filter(|&(referent, info)| !Verifier::_self_attested(&referent, &info, &full_proof) )
+            .filter(|&(referent, info)| !Verifier::_self_attested(&referent, &info, self_attested_attrs) )
             .map(|(referent, info)| (referent.to_string(), info.clone()))
             .collect();
 
@@ -174,7 +285,7 @@ impl Verifier {
                 &build_wql_query(&info.name, &referent, &info.restrictions, &None)?
             )?;
 
-            let filter = Verifier::_gather_filter_info(&referent, full_proof, &proof_attr_indexes, schemas, cred_defs)?;
+            let filter = Verifier::_gather_filter_info(&referent, &proof_attr_identifiers, schemas, cred_defs)?;
 
             if !Verifier::_process_operator(&info.name, &op, &filter)? { return Ok(false) }
         }
@@ -185,7 +296,7 @@ impl Verifier {
                 &build_wql_query(&info.name, &referent, &info.restrictions, &None)?
             )?;
 
-            let filter = Verifier::_gather_filter_info(&referent, full_proof, &predicate_indexes, schemas, cred_defs)?;
+            let filter = Verifier::_gather_filter_info(&referent, received_predicates, schemas, cred_defs)?;
 
             if !Verifier::_process_operator(&info.name, &op, &filter)? { return Ok(false) }
         }
@@ -193,30 +304,22 @@ impl Verifier {
         Ok(true)
     }
 
-    fn _self_attested(referent: &str, info: &AttributeInfo, full_proof: &Proof) -> bool {
+    fn _self_attested(referent: &str, info: &AttributeInfo, self_attested_attrs: &HashSet<String>) -> bool {
         match info.restrictions.as_ref() {
             Some(&serde_json::Value::Array(ref array)) if array.is_empty() =>
-                full_proof.requested_proof.self_attested_attrs.contains_key(referent),
-            None => full_proof.requested_proof.self_attested_attrs.contains_key(referent),
+                self_attested_attrs.contains(referent),
+            None => self_attested_attrs.contains(referent),
             Some(_) => false
         }
     }
 
     fn _gather_filter_info(referent: &str,
-                           full_proof: &Proof,
-                           indexes: &HashMap<String, usize>,
+                           identifiers: &HashMap<String, Identifier>,
                            schemas: &HashMap<String, SchemaV1>,
                            cred_defs: &HashMap<String, CredentialDefinitionV1>) -> IndyResult<Filter> {
 
-        let index = indexes
+        let identifier = identifiers
             .get(referent)
-            .ok_or(err_msg(
-                IndyErrorKind::InvalidState,
-                format!("Referent '{}' not found for Proof attribute", referent))
-            )?;
-
-        let identifier = full_proof.identifiers
-            .get(index.clone())
             .ok_or(err_msg(
                 IndyErrorKind::InvalidState,
                 format!("Identifier not found for referent: {}", referent))
