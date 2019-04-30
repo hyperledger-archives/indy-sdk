@@ -166,43 +166,37 @@ impl Verifier {
                                             received_unrevealed_attrs: &HashMap<String, Identifier>,
                                             received_self_attested_attrs: &HashSet<String>,
                                             received_predicates: &HashMap<String, Identifier>) -> IndyResult<()> {
-        let requested_attrs: HashSet<String> =
-            proof_req.requested_attributes
-                .keys()
-                .cloned()
-                .into_iter()
-                .collect::<HashSet<String>>();
-
-        let received_attrs = received_revealed_attrs
-            .into_iter()
-            .chain(received_unrevealed_attrs)
-            .map(|(r, id)| (r.to_string(), id.clone()))
-            .collect::<HashMap<String, Identifier>>()
+        let requested_attrs: HashSet<String> = proof_req.requested_attributes
             .keys()
             .cloned()
             .into_iter()
+            .collect();
+
+        let received_attrs: HashSet<String> = received_revealed_attrs
+            .into_iter()
+            .chain(received_unrevealed_attrs)
+            .map(|(r, _)| r.to_string())
             .collect::<HashSet<String>>()
-            .union(received_self_attested_attrs)
+            .union(&received_self_attested_attrs)
             .cloned()
-            .collect::<HashSet<String>>();
+            .collect();
 
         if requested_attrs != received_attrs {
             return Err(err_msg(IndyErrorKind::InvalidStructure,
                                format!("Requested attributes {:?} do not correspond to received {:?}", requested_attrs, received_attrs)));
         }
 
-        let requested_predicates: HashSet<String> =
-            proof_req.requested_predicates
-                .keys()
-                .cloned()
-                .into_iter()
-                .collect::<HashSet<String>>();
+        let requested_predicates: HashSet<String> = proof_req.requested_predicates
+            .keys()
+            .cloned()
+            .into_iter()
+            .collect();
 
         let received_predicates: HashSet<String> = received_predicates
             .keys()
             .cloned()
             .into_iter()
-            .collect::<HashSet<String>>();
+            .collect();
 
         if requested_predicates != received_predicates {
             return Err(err_msg(IndyErrorKind::InvalidStructure,
@@ -216,7 +210,7 @@ impl Verifier {
        for (referent, info) in proof.requested_proof.revealed_attrs.iter() {
            revealed_identifiers.insert(
                referent.to_string(),
-               Verifier::_proof_identifier(proof, info.sub_proof_index)?
+               Verifier::_get_proof_identifier(proof, info.sub_proof_index)?
            );
        }
         Ok(revealed_identifiers)
@@ -227,7 +221,7 @@ impl Verifier {
         for (referent, info) in proof.requested_proof.unrevealed_attrs.iter() {
             unrevealed_identifiers.insert(
                 referent.to_string(),
-                Verifier::_proof_identifier(proof, info.sub_proof_index)?
+                Verifier::_get_proof_identifier(proof, info.sub_proof_index)?
             );
         }
         Ok(unrevealed_identifiers)
@@ -238,7 +232,7 @@ impl Verifier {
         for (referent, info) in proof.requested_proof.predicates.iter() {
             predicate_identifiers.insert(
                 referent.to_string(),
-                Verifier::_proof_identifier(proof, info.sub_proof_index)?
+                Verifier::_get_proof_identifier(proof, info.sub_proof_index)?
             );
         }
         Ok(predicate_identifiers)
@@ -249,10 +243,10 @@ impl Verifier {
             .keys()
             .cloned()
             .into_iter()
-            .collect::<HashSet<String>>()
+            .collect()
     }
 
-    fn _proof_identifier(proof: &Proof, index: i32) -> IndyResult<Identifier> {
+    fn _get_proof_identifier(proof: &Proof, index: i32) -> IndyResult<Identifier> {
         proof.identifiers
             .get(index as usize)
             .cloned()
@@ -274,11 +268,11 @@ impl Verifier {
             .into_iter()
             .chain(received_unrevealed_attrs)
             .map(|(r, id)| (r.to_string(), id.clone()))
-            .collect::<HashMap<String, Identifier>>();
+            .collect();
 
         let requested_attrs: HashMap<String, AttributeInfo> = proof_req.requested_attributes
             .iter()
-            .filter(|&(referent, info)| !Verifier::_self_attested(&referent, &info, self_attested_attrs) )
+            .filter(|&(referent, info)| !Verifier::_is_self_attested(&referent, &info, self_attested_attrs) )
             .map(|(referent, info)| (referent.to_string(), info.clone()))
             .collect();
 
@@ -307,7 +301,7 @@ impl Verifier {
         Ok(true)
     }
 
-    fn _self_attested(referent: &str, info: &AttributeInfo, self_attested_attrs: &HashSet<String>) -> bool {
+    fn _is_self_attested(referent: &str, info: &AttributeInfo, self_attested_attrs: &HashSet<String>) -> bool {
         match info.restrictions.as_ref() {
             Some(&serde_json::Value::Array(ref array)) if array.is_empty() =>
                 self_attested_attrs.contains(referent),
