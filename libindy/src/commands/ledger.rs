@@ -24,6 +24,7 @@ use services::wallet::{RecordOptions, WalletService};
 use utils::crypto::base58;
 use utils::crypto::signature_serializer::serialize_signature;
 use api::WalletHandle;
+use commands::{Command, CommandExecutor};
 
 pub enum LedgerCommand {
     SignAndSubmitRequest(
@@ -202,6 +203,26 @@ pub enum LedgerCommand {
         Option<String>, // old value
         Option<String>, // new value
         Box<Fn(IndyResult<String>) + Send>),
+    GetSchema(
+        i32,
+        Option<String>,
+        String,
+        Box<Fn(IndyResult<(String, String)>) + Send>,
+    ),
+    GetSchemaContinue(
+        IndyResult<String>,
+        i32,
+    ),
+    GetCredDef(
+        i32,
+        Option<String>,
+        String,
+        Box<Fn(IndyResult<(String, String)>) + Send>,
+    ),
+    GetCredDefContinue(
+        IndyResult<String>,
+        i32,
+    ),
 }
 
 pub struct LedgerCommandExecutor {
@@ -211,6 +232,7 @@ pub struct LedgerCommandExecutor {
     ledger_service: Rc<LedgerService>,
 
     send_callbacks: RefCell<HashMap<i32, Box<Fn(IndyResult<String>)>>>,
+    pending_callbacks: RefCell<HashMap<i32, Box<Fn(IndyResult<(String, String)>)>>>,
 }
 
 impl LedgerCommandExecutor {
@@ -224,6 +246,7 @@ impl LedgerCommandExecutor {
             wallet_service,
             ledger_service,
             send_callbacks: RefCell::new(HashMap::new()),
+            pending_callbacks: RefCell::new(HashMap::new()),
         }
     }
 
@@ -391,6 +414,22 @@ impl LedgerCommandExecutor {
                                                     field.as_ref().map(String::as_str),
                                                     old_value.as_ref().map(String::as_str),
                                                     new_value.as_ref().map(String::as_str)));
+            }
+            LedgerCommand::GetSchema(pool_handle, submitter_did, id, cb) => {
+                info!(target: "ledger_command_executor", "GetSchema command received");
+                self.get_schema(pool_handle, submitter_did.as_ref().map(String::as_str), &id, cb);
+            }
+            LedgerCommand::GetSchemaContinue(pool_response, cb_id) => {
+                info!(target: "ledger_command_executor", "GetSchemaContinue command received");
+                self._get_schema_continue(pool_response, cb_id);
+            }
+            LedgerCommand::GetCredDef(pool_handle, submitter_did, id, cb) => {
+                info!(target: "ledger_command_executor", "GetCredDef command received");
+                self.get_cred_def(pool_handle, submitter_did.as_ref().map(String::as_str), &id, cb);
+            }
+            LedgerCommand::GetCredDefContinue(pool_response, cb_id) => {
+                info!(target: "ledger_command_executor", "GetCredDefContinue command received");
+                self._get_cred_def_continue(pool_response, cb_id);
             }
         };
     }
@@ -965,6 +1004,56 @@ impl LedgerCommandExecutor {
             Some(did) => Ok(self.crypto_service.validate_did(did)?),
             None => Ok(())
         }
+    }
+
+    fn get_schema(&self, pool_handle: i32, submitter_did: Option<&str>, id: &str, cb: Box<Fn(IndyResult<(String, String)>) + Send>) {
+
+        let request_json = try_cb!(self.build_get_schema_request(submitter_did, id), cb);
+
+        let cb_id = ::utils::sequence::get_next_id();
+        self.pending_callbacks.borrow_mut().insert(cb_id, cb);
+
+        self.submit_request(pool_handle, &request_json, Box::new(move |response| {
+            CommandExecutor::instance().send(
+                Command::Ledger(
+                    LedgerCommand::GetSchemaContinue(
+                        response,
+                        cb_id
+                    )
+                )
+            ).unwrap();
+        }));
+    }
+
+    fn _get_schema_continue(&self, pool_response: IndyResult<String>, cb_id: i32) {
+        let cb = self.pending_callbacks.borrow_mut().remove(&cb_id).expect("FIXME INVALID STATE");
+        let pool_response = try_cb!(pool_response, cb);
+        cb(self.parse_get_schema_response(&pool_response));
+    }
+
+    fn get_cred_def(&self, pool_handle: i32, submitter_did: Option<&str>, id: &str, cb: Box<Fn(IndyResult<(String, String)>) + Send>) {
+
+        let request_json = try_cb!(self.build_get_cred_def_request(submitter_did, id), cb);
+
+        let cb_id = ::utils::sequence::get_next_id();
+        self.pending_callbacks.borrow_mut().insert(cb_id, cb);
+
+        self.submit_request(pool_handle, &request_json, Box::new(move |response| {
+            CommandExecutor::instance().send(
+                Command::Ledger(
+                    LedgerCommand::GetCredDefContinue(
+                        response,
+                        cb_id
+                    )
+                )
+            ).unwrap();
+        }));
+    }
+
+    fn _get_cred_def_continue(&self, pool_response: IndyResult<String>, cb_id: i32) {
+        let cb = self.pending_callbacks.borrow_mut().remove(&cb_id).expect("FIXME INVALID STATE");
+        let pool_response = try_cb!(pool_response, cb);
+        cb(self.parse_get_cred_def_response(&pool_response));
     }
 }
 

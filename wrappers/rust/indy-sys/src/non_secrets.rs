@@ -79,5 +79,35 @@ extern {
     pub fn indy_close_wallet_search(command_handle: Handle,
                                     wallet_search_handle: Handle,
                                     cb: Option<ResponseEmptyCB>) -> Error;
+
+    #[no_mangle]
+    pub fn indy_get_schema(command_handle: Handle,
+                           pool_handle: Handle,
+                           wallet_handle: Handle,
+                           submitter_did: CString,
+                           id: CString,
+                           options_json: CString,
+                           cb: Option<ResponseStringCB>) -> Error;
+
+    #[no_mangle]
+    pub fn indy_get_cred_def(command_handle: Handle,
+                             pool_handle: Handle,
+                             wallet_handle: Handle,
+                             submitter_did: CString,
+                             id: CString,
+                             options_json: CString,
+                             cb: Option<ResponseStringCB>) -> Error;
+
+    #[no_mangle]
+    pub fn indy_purge_schema_cache(command_handle: Handle,
+                                   wallet_handle: Handle,
+                                   options_json: CString,
+                                   cb: Option<ResponseEmptyCB>) -> Error;
+
+    #[no_mangle]
+    pub fn indy_purge_cred_def_cache(command_handle: Handle,
+                                     wallet_handle: Handle,
+                                     options_json: CString,
+                                     cb: Option<ResponseEmptyCB>) -> Error;
 }
 
