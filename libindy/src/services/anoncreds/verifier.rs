@@ -45,12 +45,7 @@ impl Verifier {
         let received_revealed_attrs: HashMap<String, Identifier> = Verifier::_received_revealed_attrs(&full_proof)?;
         let received_unrevealed_attrs: HashMap<String, Identifier> = Verifier::_received_unrevealed_attrs(&full_proof)?;
         let received_predicates: HashMap<String, Identifier> = Verifier::_received_predicates(&full_proof)?;
-        let received_self_attested_attrs: HashSet<String> =
-            full_proof.requested_proof.self_attested_attrs
-                .keys()
-                .cloned()
-                .into_iter()
-                .collect::<HashSet<String>>();
+        let received_self_attested_attrs: HashSet<String> = Verifier::_received_self_attested_attrs(&full_proof);
 
         Verifier::_compare_attr_from_proof_and_request(proof_req,
                                                        &received_revealed_attrs,
@@ -249,6 +244,14 @@ impl Verifier {
         Ok(predicate_identifiers)
     }
 
+    fn _received_self_attested_attrs(proof: &Proof) -> HashSet<String> {
+        proof.requested_proof.self_attested_attrs
+            .keys()
+            .cloned()
+            .into_iter()
+            .collect::<HashSet<String>>()
+    }
+
     fn _proof_identifier(proof: &Proof, index: i32) -> IndyResult<Identifier> {
         proof.identifiers
             .get(index as usize)
@@ -262,14 +265,14 @@ impl Verifier {
     fn _verify_requested_restrictions(proof_req: &ProofRequest,
                                       schemas: &HashMap<String, SchemaV1>,
                                       cred_defs: &HashMap<String, CredentialDefinitionV1>,
-                                      received_revealed_identifiers: &HashMap<String, Identifier>,
-                                      received_unrevealed_identifiers: &HashMap<String, Identifier>,
+                                      received_revealed_attrs: &HashMap<String, Identifier>,
+                                      received_unrevealed_attrs: &HashMap<String, Identifier>,
                                       received_predicates: &HashMap<String, Identifier>,
                                       self_attested_attrs: &HashSet<String>) -> IndyResult<bool> {
 
-        let proof_attr_identifiers = received_revealed_identifiers
+        let proof_attr_identifiers: HashMap<String, Identifier> = received_revealed_attrs
             .into_iter()
-            .chain(received_unrevealed_identifiers)
+            .chain(received_unrevealed_attrs)
             .map(|(r, id)| (r.to_string(), id.clone()))
             .collect::<HashMap<String, Identifier>>();
 
