@@ -4,6 +4,7 @@ package com.evernym.sdk.vcx;
 import com.evernym.sdk.vcx.connection.ConnectionApi;
 import com.evernym.sdk.vcx.connection.InvalidConnectionHandleException;
 import com.evernym.sdk.vcx.vcx.VcxApi;
+import com.evernym.sdk.vcx.utils.UtilsApi;
 import java.util.concurrent.CompletableFuture;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Assertions;
@@ -165,6 +166,11 @@ class ConnectionApiTest {
         Awaitility.await().until(futureGetState::isDone);
         int connectionState = futureGetState.get();
         assert(connectionState == 2);
+        UtilsApi.vcxMockSetAgencyResponse(9);
+        CompletableFuture<Integer> futureUpdateState= ConnectionApi.vcxConnectionUpdateState(connectionHandle);
+        Awaitility.await().until(futureUpdateState::isDone);
+        int updateStateResult = futureUpdateState.get();
+        assert(updateStateResult== 4 );
     }
 
     @Test

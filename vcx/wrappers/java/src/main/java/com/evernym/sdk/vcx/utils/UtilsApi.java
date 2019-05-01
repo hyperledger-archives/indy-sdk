@@ -158,4 +158,8 @@ public class UtilsApi extends VcxJava.API {
         return future;
     }
 
+    public static void vcxMockSetAgencyResponse(int messageIndex) {
+        logger.debug("vcxMockSetAgencyResponse() called");
+        LibVcx.api.vcx_set_next_agency_response(messageIndex);
+    }
 }
