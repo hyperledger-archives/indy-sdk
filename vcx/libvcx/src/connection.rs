@@ -730,6 +730,9 @@ pub mod tests {
         assert!(!get_pw_verkey(handle).unwrap().is_empty());
         assert_eq!(get_state(handle), VcxStateType::VcxStateInitialized as u32);
         connect(handle, Some("{}".to_string())).unwrap();
+        ::utils::httpclient::set_next_u8_response(GET_MESSAGES_INVITE_ACCEPTED_RESPONSE.to_vec());
+        update_state(handle).unwrap();
+        assert_eq!(get_state(handle), VcxStateType::VcxStateAccepted as u32);
         assert_eq!(delete_connection(handle).unwrap(), 0);
         // This errors b/c we release handle in delete connection
         assert!(release(handle).is_err());

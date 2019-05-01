@@ -199,6 +199,7 @@ pub extern fn vcx_set_next_agency_response(message_index: u32) {
         6 => CREDENTIAL_REQ_RESPONSE.to_vec(),
         7 => PROOF_RESPONSE.to_vec(),
         8 => CREDENTIAL_RESPONSE.to_vec(),
+        9 => GET_MESSAGES_INVITE_ACCEPTED_RESPONSE.to_vec(),
         _ => Vec::new(),
     };
 
