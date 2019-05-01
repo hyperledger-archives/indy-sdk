@@ -128,8 +128,9 @@ describe('Connection:', () => {
 
     it(`returns ${StateType.OfferSent}: connected`, async () => {
       const connection = await connectionCreateConnect()
+      VCXMock.setVcxMock(VCXMockMessage.AcceptInvite)
       await connection.updateState()
-      assert.equal(await connection.getState(), StateType.OfferSent)
+      assert.equal(await connection.getState(), StateType.Accepted)
     })
 
     it(`returns ${StateType.Accepted}: mocked accepted`, async () => {
