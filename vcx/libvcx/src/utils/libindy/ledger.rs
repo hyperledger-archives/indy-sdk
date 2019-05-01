@@ -84,6 +84,43 @@ pub fn libindy_build_create_credential_def_txn(submitter_did: &str,
         .map_err(map_rust_indy_sdk_error)
 }
 
+pub fn libindy_get_txn_author_agreement() -> VcxResult<String> {
+    trace!("get_ledger_fees >>>");
+
+    if settings::test_indy_mode_enabled() { return Ok(r#"{"text":"Defaule indy agreement", "version":"1.0.0"}"#.to_string()); }
+
+    let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
+
+    let request = ledger::build_get_txn_author_agreement_request(Some(&did), None)
+        .wait()
+        .map_err(map_rust_indy_sdk_error)?;
+
+    let response = libindy_submit_request(&request)?;
+
+    let response = serde_json::from_str::<serde_json::Value>(&response)
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidLedgerResponse, format!("{:?}", err)))?;
+
+    let data = response["result"]["data"].as_object()
+        .map_or(json!({}), |data|json!(data));
+
+    Ok(data.to_string())
+}
+
+pub fn append_txn_author_agreement_to_request(request_json: &str) -> VcxResult<String> {
+    if let Some(author_agreement) = ::utils::author_agreement::get_txn_author_agreement().unwrap() {
+        ledger::append_txn_author_agreement_meta_to_request(request_json,
+                                                            author_agreement.text.as_ref().map(String::as_str),
+                                                            author_agreement.version.as_ref().map(String::as_str),
+                                                            author_agreement.hash.as_ref().map(String::as_str),
+                                                            &author_agreement.acceptance_mechanism_type,
+                                                            author_agreement.time_of_acceptance)
+            .wait()
+            .map_err(map_rust_indy_sdk_error)
+    } else {
+        Ok(request_json.to_string())
+    }
+}
+
 pub fn parse_response(response: &str) -> VcxResult<Response> {
     serde_json::from_str::<Response>(response)
         .to_vcx(VcxErrorKind::InvalidJson, "Cannot deserialize transaction response")
