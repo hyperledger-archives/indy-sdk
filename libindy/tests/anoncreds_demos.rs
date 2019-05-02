@@ -2256,4 +2256,49 @@ mod demos {
 
         utils::tear_down();
     }
+
+    #[test]
+    fn anoncreds_works_for_credential_deletion() {
+        utils::setup();
+
+        //1. Create Issuer wallet, gets wallet handle
+        let issuer_wallet_handle = wallet::create_and_open_default_wallet().unwrap();
+
+        //2. Create Prover wallet, gets wallet handle
+        let prover_wallet_handle = wallet::create_and_open_default_wallet().unwrap();
+
+        //3. Issuer creates Schema and Credential Definition
+        let (_schema_id, _schema_json, cred_def_id, cred_def_json) = anoncreds::multi_steps_issuer_preparation(issuer_wallet_handle,
+                                                                                                               ISSUER_DID,
+                                                                                                               GVT_SCHEMA_NAME,
+                                                                                                               GVT_SCHEMA_ATTRIBUTES);
+
+        //4. Prover creates Master Secret
+        anoncreds::prover_create_master_secret(prover_wallet_handle, COMMON_MASTER_SECRET).unwrap();
+
+        //5. Issuance credential for Prover
+        anoncreds::multi_steps_create_credential(COMMON_MASTER_SECRET,
+                                                 prover_wallet_handle,
+                                                 issuer_wallet_handle,
+                                                 CREDENTIAL1_ID,
+                                                 &anoncreds::gvt_credential_values_json(),
+                                                 &cred_def_id,
+                                                 &cred_def_json);
+
+        //6. Prover gets credential by identifier
+        let mut cred = anoncreds::prover_get_credential(prover_wallet_handle, CREDENTIAL1_ID);
+        assert!(cred.is_ok());
+
+        //7. Prover deletes credential
+        anoncreds::prover_delete_credential(prover_wallet_handle, CREDENTIAL1_ID).unwrap();
+
+        //8. Prover cannot get deleted credential by identifier
+        cred = anoncreds::prover_get_credential(prover_wallet_handle, CREDENTIAL1_ID);
+        assert!(cred.is_err());
+
+        wallet::close_wallet(issuer_wallet_handle).unwrap();
+        wallet::close_wallet(prover_wallet_handle).unwrap();
+
+        utils::tear_down();
+    }
 }
