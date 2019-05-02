@@ -9,6 +9,8 @@ use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::error::Error;
 
+use linefeed::{Reader, ReadResult};
+
 #[derive(Debug)]
 pub struct ParamMetadata {
     name: &'static str,
@@ -843,6 +845,27 @@ impl CommandExecutorGroupBuilder {
             grouped_commands: self.grouped_commands,
         }
     }
+}
+
+// TODO: think about better place
+pub fn wait_for_user_reply() -> bool {
+    let mut reader = Reader::new("User Reply Reader").unwrap();
+
+    while let Ok(ReadResult::Input(line)) = reader.read_line() {
+        let line = line.trim();
+        if line.is_empty() {
+            continue;
+        }
+
+        if line == "y" || line == "yes" {
+            return true;
+        } else if line == "n" || line == "no" {
+            return false;
+        } else {
+            continue
+        }
+    }
+    return false;
 }
 
 #[cfg(test)]
