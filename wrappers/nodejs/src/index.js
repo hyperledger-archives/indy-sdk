@@ -619,6 +619,30 @@ indy.closeWalletSearch = function closeWalletSearch (walletSearchHandle, cb) {
   return cb.promise
 }
 
+indy.getSchema = function getSchema(poolHandle, wh, submitterDid, id, options, cb) {
+    cb = wrapIndyCallback(cb)
+    capi.getSchema(poolHandle, wh, submitterDid, id, toJson(options), cb)
+    return cb.promise
+}
+
+indy.getCredDef = function getCredDef(poolHandle, wh, submitterDid, id, options, cb) {
+    cb = wrapIndyCallback(cb)
+    capi.getCredDef(poolHandle, wh, submitterDid, id, toJson(options), cb)
+    return cb.promise
+}
+
+indy.purgeSchemaCache = function purgeSchemaCache(wh, options, cb) {
+    cb = wrapIndyCallback(cb)
+    capi.purgeSchemaCache(wh, toJson(options), cb)
+    return cb.promise
+}
+
+indy.purgeCredDefCache = function purgeCredDefCache(wh, options, cb) {
+    cb = wrapIndyCallback(cb)
+    capi.purgeCredDefCache(wh, toJson(options), cb)
+    return cb.promise
+}
+
 indy.isPairwiseExists = function isPairwiseExists (wh, theirDid, cb) {
   cb = wrapIndyCallback(cb)
   capi.isPairwiseExists(wh, theirDid, cb)

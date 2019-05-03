@@ -20,6 +20,7 @@ Native bindings for [Hyperledger Indy](https://www.hyperledger.org/projects/hype
   * [pool](#pool)
   * [wallet](#wallet)
   * [logger](#logger)
+  * [cache](#cache)
   * [mod](#mod)
 - [Advanced](#advanced)
 - [Contributing](#contributing)
@@ -2672,6 +2673,108 @@ indy.setLogger(function (level, target, message, modulePath, file, line) {
 Errors: `Common*`
 
 NOTE: This is a synchronous function (does not return a promise) but may call `logFn` asynchronously many times.
+
+### cache
+
+#### getSchema \( poolHandle, wh, submitterDid, id, options \) -&gt; schema
+
+Get schema json data for specified schema id.
+If data is present inside of cache, cached data is returned.
+Otherwise data is fetched from the ledger and stored inside of cache for future use.
+
+* `poolHandle`:
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
+* `submitterDid`: String - DID of the read request sender.
+* `id`: String - Schema ID in ledger
+* `options`: Json
+```
+ {
+    noCache: (bool, optional, false by default) Skip usage of cache,
+    noUpdate: (bool, optional, false by default) Use only cached data, do not try to update.
+    noStore: (bool, optional, false by default) Skip storing fresh data if updated,
+    minFresh: (int, optional, -1 by default) Return cached data if not older than this many seconds. -1 means do not check age.
+ }
+
+```
+__->__ schema: Json
+```
+{
+    id: identifier of schema
+    attrNames: array of attribute name strings
+    name: Schema's name string
+    version: Schema's version string
+    ver: Version of the Schema json
+}
+```
+
+Errors: `Common*`, `Wallet*`, `Ledger*`
+
+#### getCredDef \( poolHandle, wh, submitterDid, id, options \) -&gt; credDef
+
+Get credential definition json data for specified credential definition id.
+If data is present inside of cache, cached data is returned.
+Otherwise data is fetched from the ledger and stored inside of cache for future use.
+
+* `poolHandle`:
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
+* `submitterDid`: String - DID of the read request sender.
+* `id`: String - Credential Definition ID in ledger.
+* `options`: Json
+```
+ {
+    noCache: (bool, optional, false by default) Skip usage of cache,
+    noUpdate: (bool, optional, false by default) Use only cached data, do not try to update.
+    noStore: (bool, optional, false by default) Skip storing fresh data if updated,
+    minFresh: (int, optional, -1 by default) Return cached data if not older than this many seconds. -1 means do not check age.
+ }
+
+```
+__->__ credDef: Json
+```
+{
+    id: string - identifier of credential definition
+    schemaId: string - identifier of stored in ledger schema
+    type: string - type of the credential definition. CL is the only supported type now.
+    tag: string - allows to distinct between credential definitions for the same issuer and schema
+    value: Dictionary with Credential Definition's data: {
+        primary: primary credential public key,
+        Optional<revocation>: revocation credential public key
+    },
+    ver: Version of the Credential Definition json
+}
+```
+
+Errors: `Common*`, `Wallet*`, `Ledger*`
+
+#### purgeSchemaCache \( wh, options \) -&gt; void
+
+Purge schema cache.
+
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
+* `options`: Json
+```
+ {
+   maxAge: (int, optional, -1 by default) Purge cached data if older than this many seconds. -1 means purge all.
+ }
+```
+* __->__ void
+
+Errors: `Common*`, `Wallet*`
+
+#### purgeCredDefCache \( wh, options \) -&gt; void
+
+Purge credential definition cache.
+
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
+* `options`: Json
+```
+ {
+   maxAge: (int, optional, -1 by default) Purge cached data if older than this many seconds. -1 means purge all.
+ }
+```
+* __->__ void
+
+Errors: `Common*`, `Wallet*`
 
 ### mod
 
