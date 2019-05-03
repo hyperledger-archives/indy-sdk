@@ -576,7 +576,7 @@ async def purge_schema_cache(wallet_handle: int, options_json: str) -> None:
     :param wallet_handle: wallet handle (used for cache)
     :param options_json:
     {
-        maxAge: (int, mandatory) Purge cached data if older than this many seconds. -1 means purge all.
+        maxAge: (int, optional, -1 by default) Purge cached data if older than this many seconds. -1 means purge all.
     }
     :return: None
     """
@@ -609,7 +609,7 @@ async def purge_cred_def_cache(wallet_handle: int, options_json: str) -> None:
     :param wallet_handle: wallet handle (used for cache)
     :param options_json:
     {
-        maxAge: (int, mandatory) Purge cached data if older than this many seconds. -1 means purge all.
+        maxAge: (int, optional, -1 by default) Purge cached data if older than this many seconds. -1 means purge all.
     }
     :return: None
     """

@@ -68,7 +68,7 @@ public class Cache extends IndyJava.API {
 	 * @param wallet      The wallet.
 	 * @param optionsJson The record tags used for search and storing meta information as json:
 	 *                    {
-	 *                        "maxAge": -1, // (int, mandatory) Purge cached data if older than this many seconds. -1 means purge all.
+	 *                        "maxAge": -1, // (int, optional, -1 by default) Purge cached data if older than this many seconds. -1 means purge all.
 	 *                    }
 	 * @return A future that resolves no value.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
@@ -102,7 +102,7 @@ public class Cache extends IndyJava.API {
 	 * @param wallet      The wallet.
 	 * @param optionsJson The record tags used for search and storing meta information as json:
 	 *                    {
-	 *                        "maxAge": -1, // (int, mandatory) Purge cached data if older than this many seconds. -1 means purge all.
+	 *                        "maxAge": -1, // (int, optional, -1 by default) Purge cached data if older than this many seconds. -1 means purge all.
 	 *                    }
 	 * @return A future that resolves no value.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.

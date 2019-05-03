@@ -9,7 +9,7 @@ use utils::callbacks::{ClosureHandler, ResultHandler};
 use ffi::{non_secrets};
 use ffi::{ResponseEmptyCB, ResponseStringCB};
 
-/// Gets schema json data for specified schema id.
+/// Get schema json data for specified schema id.
 /// If data is present inside of cache, cached data is returned.
 /// Otherwise data is fetched from the ledger and stored inside of cache for future use.
 ///
@@ -64,7 +64,7 @@ pub fn _get_schema(command_handle: IndyHandle,
     )
 }
 
-/// Gets credential definition json data for specified credential definition id.
+/// Get credential definition json data for specified credential definition id.
 /// If data is present inside of cache, cached data is returned.
 /// Otherwise data is fetched from the ledger and stored inside of cache for future use.
 ///
@@ -125,12 +125,12 @@ pub fn _get_cred_def(command_handle: IndyHandle,
 
 /// Purge schema cache.
 ///
-/// #Params
-/// wallet_handle: wallet handle (created by open_wallet).
-/// id: identifier of schema.
-/// options_json:
+/// # Arguments
+/// * `wallet_handle` - wallet handle (created by open_wallet).
+/// * `id` - identifier of schema.
+/// * `options_json` -
 ///  {
-///    maxAge: (int, mandatory) Purge cached data if older than this many seconds. -1 means purge all.
+///    maxAge: (int, optional, -1 by default) Purge cached data if older than this many seconds. -1 means purge all.
 ///  }
 pub fn purge_schema_cache(wallet_handle: IndyHandle, options_json: &str) -> Box<Future<Item=(), Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
@@ -148,12 +148,12 @@ fn _purge_schema_cache(command_handle: IndyHandle, wallet_handle: IndyHandle, op
 
 /// Purge credential definition cache.
 ///
-/// #Params
-/// wallet_handle: wallet handle (created by open_wallet).
-/// id: identifier of schema.
-/// options_json:
+/// # Arguments
+/// * `wallet_handle` - wallet handle (created by open_wallet).
+/// * `id` - identifier of credential definition.
+/// * `options_json` -
 ///  {
-///    maxAge: (int, mandatory) Purge cached data if older than this many seconds. -1 means purge all.
+///    maxAge: (int, optional, -1 by default) Purge cached data if older than this many seconds. -1 means purge all.
 ///  }
 pub fn purge_cred_def_cache(wallet_handle: IndyHandle, options_json: &str) -> Box<Future<Item=(), Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
