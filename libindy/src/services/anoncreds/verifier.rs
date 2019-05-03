@@ -53,16 +53,13 @@ impl Verifier {
                                                        &received_self_attested_attrs,
                                                        &received_predicates)?;
 
-        if !Verifier::_verify_requested_restrictions(&proof_req,
-                                                     schemas,
-                                                     cred_defs,
-                                                     &received_revealed_attrs,
-                                                     &received_unrevealed_attrs,
-                                                     &received_predicates,
-                                                     &received_self_attested_attrs)? {
-            return Err(err_msg(IndyErrorKind::ProofRejected,
-                               "Requested restrictions in Proof Request don't match Proof"))
-        }
+        Verifier::_verify_requested_restrictions(&proof_req,
+                                                 schemas,
+                                                 cred_defs,
+                                                 &received_revealed_attrs,
+                                                 &received_unrevealed_attrs,
+                                                 &received_predicates,
+                                                 &received_self_attested_attrs)?;
 
         let mut proof_verifier = CryptoVerifier::new_proof_verifier()?;
         let non_credential_schema = build_non_credential_schema()?;
@@ -169,11 +166,10 @@ impl Verifier {
         let requested_attrs: HashSet<String> = proof_req.requested_attributes
             .keys()
             .cloned()
-            .into_iter()
             .collect();
 
         let received_attrs: HashSet<String> = received_revealed_attrs
-            .into_iter()
+            .iter()
             .chain(received_unrevealed_attrs)
             .map(|(r, _)| r.to_string())
             .collect::<HashSet<String>>()
@@ -186,16 +182,12 @@ impl Verifier {
                                format!("Requested attributes {:?} do not correspond to received {:?}", requested_attrs, received_attrs)));
         }
 
-        let requested_predicates: HashSet<String> = proof_req.requested_predicates
+        let requested_predicates: HashSet<&String> = proof_req.requested_predicates
             .keys()
-            .cloned()
-            .into_iter()
             .collect();
 
-        let received_predicates: HashSet<String> = received_predicates
+        let received_predicates: HashSet<&String> = received_predicates
             .keys()
-            .cloned()
-            .into_iter()
             .collect();
 
         if requested_predicates != received_predicates {
@@ -206,13 +198,13 @@ impl Verifier {
     }
 
     fn _received_revealed_attrs(proof: &Proof) -> IndyResult<HashMap<String, Identifier>> {
-       let mut revealed_identifiers: HashMap<String, Identifier> = HashMap::new();
-       for (referent, info) in proof.requested_proof.revealed_attrs.iter() {
-           revealed_identifiers.insert(
-               referent.to_string(),
-               Verifier::_get_proof_identifier(proof, info.sub_proof_index)?
-           );
-       }
+        let mut revealed_identifiers: HashMap<String, Identifier> = HashMap::new();
+        for (referent, info) in proof.requested_proof.revealed_attrs.iter() {
+            revealed_identifiers.insert(
+                referent.to_string(),
+                Verifier::_get_proof_identifier(proof, info.sub_proof_index)?
+            );
+        }
         Ok(revealed_identifiers)
     }
 
@@ -242,7 +234,6 @@ impl Verifier {
         proof.requested_proof.self_attested_attrs
             .keys()
             .cloned()
-            .into_iter()
             .collect()
     }
 
@@ -262,8 +253,7 @@ impl Verifier {
                                       received_revealed_attrs: &HashMap<String, Identifier>,
                                       received_unrevealed_attrs: &HashMap<String, Identifier>,
                                       received_predicates: &HashMap<String, Identifier>,
-                                      self_attested_attrs: &HashSet<String>) -> IndyResult<bool> {
-
+                                      self_attested_attrs: &HashSet<String>) -> IndyResult<()> {
         let proof_attr_identifiers: HashMap<String, Identifier> = received_revealed_attrs
             .into_iter()
             .chain(received_unrevealed_attrs)
@@ -272,33 +262,33 @@ impl Verifier {
 
         let requested_attrs: HashMap<String, AttributeInfo> = proof_req.requested_attributes
             .iter()
-            .filter(|&(referent, info)| !Verifier::_is_self_attested(&referent, &info, self_attested_attrs) )
+            .filter(|&(referent, info)| !Verifier::_is_self_attested(&referent, &info, self_attested_attrs))
             .map(|(referent, info)| (referent.to_string(), info.clone()))
             .collect();
 
         for (referent, info) in requested_attrs {
-
             let op = parse_from_json(
                 &build_wql_query(&info.name, &referent, &info.restrictions, &None)?
             )?;
 
             let filter = Verifier::_gather_filter_info(&referent, &proof_attr_identifiers, schemas, cred_defs)?;
 
-            if !Verifier::_process_operator(&info.name, &op, &filter)? { return Ok(false) }
+            Verifier::_process_operator(&info.name, &op, &filter)
+                .map_err(|err| err.extend(format!("Requested restriction validation failed for \"{}\" attribute", &info.name)))?;
         }
 
         for (referent, info) in proof_req.requested_predicates.iter() {
-
             let op = parse_from_json(
                 &build_wql_query(&info.name, &referent, &info.restrictions, &None)?
             )?;
 
             let filter = Verifier::_gather_filter_info(&referent, received_predicates, schemas, cred_defs)?;
 
-            if !Verifier::_process_operator(&info.name, &op, &filter)? { return Ok(false) }
+            Verifier::_process_operator(&info.name, &op, &filter)
+                .map_err(|err| err.extend(format!("Requested restriction validation failed for \"{}\" predicate", &info.name)))?;
         }
 
-        Ok(true)
+        Ok(())
     }
 
     fn _is_self_attested(referent: &str, info: &AttributeInfo, self_attested_attrs: &HashSet<String>) -> bool {
@@ -314,7 +304,6 @@ impl Verifier {
                            identifiers: &HashMap<String, Identifier>,
                            schemas: &HashMap<String, SchemaV1>,
                            cred_defs: &HashMap<String, CredentialDefinitionV1>) -> IndyResult<Filter> {
-
         let identifier = identifiers
             .get(referent)
             .ok_or(err_msg(
@@ -360,59 +349,87 @@ impl Verifier {
 
     fn _process_operator(attr: &str,
                          restriction_op: &Operator,
-                         filter: &Filter) -> IndyResult<bool> {
-        let found = match restriction_op {
-            Operator::Eq(ref tag_name, ref tag_value) =>
-                Verifier::_process_filter(&tag_name.from_utf8()?, &tag_value.value(), filter)?,
-            Operator::Neq(ref tag_name, ref tag_value) =>
-                !Verifier::_process_filter(&tag_name.from_utf8()?, &tag_value.value(), filter)?,
-            Operator::In(ref tag_name, ref tag_values) =>
-                tag_values
+                         filter: &Filter) -> IndyResult<()> {
+        match restriction_op {
+            Operator::Eq(ref tag_name, ref tag_value) => {
+                let tag_name = tag_name.from_utf8()?;
+                Verifier::_process_filter(&tag_name, &tag_value.value(), filter)
+                    .map_err(|err| err.extend(format!("$eq operator validation failed for tag: \"{}\", value: \"{}\"", tag_name, tag_value.value())))
+            }
+            Operator::Neq(ref tag_name, ref tag_value) => {
+                let tag_name = tag_name.from_utf8()?;
+                if Verifier::_process_filter(&tag_name, &tag_value.value(), filter).is_err() {
+                    Ok(())
+                } else {
+                    Err(IndyError::from_msg(IndyErrorKind::ProofRejected,
+                                            format!("$neq operator validation failed for tag: \"{}\", value: \"{}\". Condition was passed.", tag_name, tag_value.value())))
+                }
+            }
+            Operator::In(ref tag_name, ref tag_values) => {
+                let tag_name = tag_name.from_utf8()?;
+                let res = tag_values
                     .iter()
-                    .map(|val|
-                        Verifier::_process_filter(&tag_name.from_utf8()?, &val.value(), filter))
-                    .collect::<IndyResult<Vec<bool>>>()?
-                    .contains(&true),
-            Operator::And(ref operators) =>
+                    .any(|val| Verifier::_process_filter(&tag_name, &val.value(), filter).is_ok());
+                if res {
+                    Ok(())
+                } else {
+                    Err(IndyError::from_msg(IndyErrorKind::ProofRejected,
+                                            format!("$in operator validation failed for tag: \"{}\", values \"{:?}\".", tag_name, tag_values)))
+                }
+            }
+            Operator::And(ref operators) => {
                 operators
                     .iter()
                     .map(|op| Verifier::_process_operator(attr, op, filter))
-                    .collect::<IndyResult<Vec<bool>>>()?
+                    .collect::<IndyResult<Vec<()>>>()
+                    .map(|_|())
+                    .map_err(|err| err.extend("$and operator validation failed."))
+            }
+            Operator::Or(ref operators) => {
+                let res = operators
                     .iter()
-                    .all(|a| a == &true),
-            Operator::Or(ref operators) =>
-                operators
-                    .iter()
-                    .map(|op| Verifier::_process_operator(attr, op, filter))
-                    .collect::<IndyResult<Vec<bool>>>()?
-                    .contains(&true),
+                    .any(|op| Verifier::_process_operator(attr, op, filter).is_ok());
+                if res {
+                    Ok(())
+                } else {
+                    Err(IndyError::from_msg(IndyErrorKind::ProofRejected, "$or operator validation failed. All conditions were failed."))
+                }
+            }
             Operator::Not(ref operator) => {
-                !Verifier::_process_operator(attr, &*operator, filter)?
-            },
-            _ => false
-        };
-        Ok(found)
+                if Verifier::_process_operator(attr, &*operator, filter).is_err() {
+                    Ok(())
+                } else {
+                    Err(IndyError::from_msg(IndyErrorKind::ProofRejected, "$not operator validation failed. All conditions were passed."))
+                }
+            }
+            _ => Err(IndyError::from_msg(IndyErrorKind::ProofRejected, "unsupported operator"))
+        }
     }
 
     fn _process_filter(tag: &str,
                        tag_value: &str,
-                       filter: &Filter) -> IndyResult<bool> {
+                       filter: &Filter) -> IndyResult<()> {
+        match tag {
+            tag_ @ "schema_id" => Verifier::_precess_filed(tag_, &filter.schema_id, tag_value),
+            tag_ @ "schema_issuer_did" => Verifier::_precess_filed(tag_, &filter.schema_issuer_did, tag_value),
+            tag_ @ "schema_name" => Verifier::_precess_filed(tag_, &filter.schema_name, tag_value),
+            tag_ @ "schema_version" => Verifier::_precess_filed(tag_, &filter.schema_version, tag_value),
+            tag_ @ "cred_def_id" => Verifier::_precess_filed(tag_, &filter.cred_def_id, tag_value),
+            tag_ @ "issuer_did" => Verifier::_precess_filed(tag_, &filter.issuer_did, tag_value),
+            x if Verifier::_is_attr_operator(x) => Ok(()),
+            _ => Err(err_msg(IndyErrorKind::InvalidStructure, "Unknown Filter Type"))
+        }
+    }
 
-        let found = match tag {
-            "schema_id" => &filter.schema_id == tag_value,
-            "schema_issuer_did" => &filter.schema_issuer_did == tag_value,
-            "schema_name" => &filter.schema_name == tag_value,
-            "schema_version" => &filter.schema_version == tag_value,
-            "cred_def_id" => &filter.cred_def_id == tag_value,
-            "issuer_did" => &filter.issuer_did == tag_value,
-            x if Verifier::_is_attr_operator(x) => true,
-            _ => return Err(err_msg(IndyErrorKind::InvalidStructure, "Unknown Filter Type"))
-        };
-        Ok(found)
+    fn _precess_filed(filed: &str, filter_value: &str, tag_value: &str) -> IndyResult<()> {
+        if filter_value == tag_value {
+            Ok(())
+        } else {
+            Err(IndyError::from_msg(IndyErrorKind::ProofRejected, format!("\"{}\" values are different: expected: \"{}\", actual: \"{}\"", filed, tag_value, filter_value)))
+        }
     }
 
     fn _is_attr_operator(key: &str) -> bool { key.starts_with("attr::") && key.ends_with("::marker") }
-
 }
 
 #[cfg(test)]
@@ -463,13 +480,13 @@ mod tests {
         let filter = filter();
 
         let mut op = Operator::Eq(schema_id_tag(), unencrypted_target(SCHEMA_ID.to_string()));
-        assert_eq!(true, Verifier::_process_operator("zip", &op, &filter).unwrap());
+        Verifier::_process_operator("zip", &op, &filter).unwrap();
 
         op = Operator::And(vec![
             Operator::Eq(attr_tag(), unencrypted_target("1".to_string())),
             Operator::Eq(schema_id_tag(), unencrypted_target(SCHEMA_ID.to_string())),
         ]);
-        assert_eq!(true, Verifier::_process_operator("zip", &op, &filter).unwrap());
+        Verifier::_process_operator("zip", &op, &filter).unwrap();
 
         op = Operator::And(vec![
             Operator::Eq(bad_attr_tag(), unencrypted_target("1".to_string())),
@@ -478,17 +495,17 @@ mod tests {
         assert!(Verifier::_process_operator("zip", &op, &filter).is_err());
 
         op = Operator::Eq(schema_id_tag(), unencrypted_target("NOT HERE".to_string()));
-        assert_eq!(false, Verifier::_process_operator("zip", &op, &filter).unwrap());
+        assert!(Verifier::_process_operator("zip", &op, &filter).is_err());
     }
 
     #[test]
     fn test_process_op_ne() {
         let filter = filter();
         let mut op = Operator::Neq(schema_id_tag(), unencrypted_target(SCHEMA_ID.to_string()));
-        assert_eq!(false, Verifier::_process_operator("zip", &op, &filter).unwrap());
+        assert!(Verifier::_process_operator("zip", &op, &filter).is_err());
 
         op = Operator::Neq(schema_id_tag(), unencrypted_target("NOT HERE".to_string()));
-        assert_eq!(true, Verifier::_process_operator("zip", &op, &filter).unwrap());
+        Verifier::_process_operator("zip", &op, &filter).unwrap()
     }
 
     #[test]
@@ -497,11 +514,11 @@ mod tests {
         let mut cred_def_ids = vec![unencrypted_target("Not Here".to_string())];
 
         let mut op = Operator::In(cred_def_id_tag(), cred_def_ids.clone());
-        assert_eq!(false, Verifier::_process_operator("zip", &op, &filter).unwrap());
+        assert!(Verifier::_process_operator("zip", &op, &filter).is_err());
 
         cred_def_ids.push(unencrypted_target(CRED_DEF_ID.to_string()));
         op = Operator::In(cred_def_id_tag(), cred_def_ids.clone());
-        assert_eq!(true, Verifier::_process_operator("zip", &op, &filter).unwrap());
+        Verifier::_process_operator("zip", &op, &filter).unwrap()
     }
 
     #[test]
@@ -511,13 +528,13 @@ mod tests {
             Operator::Eq(schema_id_tag(), unencrypted_target("Not Here".to_string())),
             Operator::Eq(cred_def_id_tag(), unencrypted_target("Not Here".to_string()))
         ]);
-        assert_eq!(false, Verifier::_process_operator("zip", &op, &filter).unwrap());
+        assert!(Verifier::_process_operator("zip", &op, &filter).is_err());
 
         op = Operator::Or(vec![
             Operator::Eq(schema_id_tag(), unencrypted_target(SCHEMA_ID.to_string())),
             Operator::Eq(cred_def_id_tag(), unencrypted_target("Not Here".to_string()))
         ]);
-        assert_eq!(true, Verifier::_process_operator("zip", &op, &filter).unwrap());
+        Verifier::_process_operator("zip", &op, &filter).unwrap()
     }
 
     #[test]
@@ -527,19 +544,19 @@ mod tests {
             Operator::Eq(schema_id_tag(), unencrypted_target("Not Here".to_string())),
             Operator::Eq(cred_def_id_tag(), unencrypted_target("Not Here".to_string()))
         ]);
-        assert_eq!(false, Verifier::_process_operator("zip", &op, &filter).unwrap());
+        assert!(Verifier::_process_operator("zip", &op, &filter).is_err());
 
         op = Operator::And(vec![
             Operator::Eq(schema_id_tag(), unencrypted_target(SCHEMA_ID.to_string())),
             Operator::Eq(cred_def_id_tag(), unencrypted_target("Not Here".to_string()))
         ]);
-        assert_eq!(false, Verifier::_process_operator("zip", &op, &filter).unwrap());
+        assert!(Verifier::_process_operator("zip", &op, &filter).is_err());
 
         op = Operator::And(vec![
             Operator::Eq(schema_id_tag(), unencrypted_target(SCHEMA_ID.to_string())),
             Operator::Eq(cred_def_id_tag(), unencrypted_target(CRED_DEF_ID.to_string()))
         ]);
-        assert_eq!(true, Verifier::_process_operator("zip", &op, &filter).unwrap());
+        Verifier::_process_operator("zip", &op, &filter).unwrap()
     }
 
     #[test]
@@ -549,13 +566,13 @@ mod tests {
             Operator::Eq(schema_id_tag(), unencrypted_target(SCHEMA_ID.to_string())),
             Operator::Eq(cred_def_id_tag(), unencrypted_target(CRED_DEF_ID.to_string()))
         ])));
-        assert_eq!(false, Verifier::_process_operator("zip", &op, &filter).unwrap());
+        assert!(Verifier::_process_operator("zip", &op, &filter).is_err());
 
         op = Operator::Not(Box::new(Operator::And(vec![
             Operator::Eq(schema_id_tag(), unencrypted_target("Not Here".to_string())),
             Operator::Eq(cred_def_id_tag(), unencrypted_target("Not Here".to_string()))
         ])));
-        assert_eq!(true, Verifier::_process_operator("zip", &op, &filter).unwrap());
+        Verifier::_process_operator("zip", &op, &filter).unwrap()
     }
 
     #[test]
@@ -575,7 +592,7 @@ mod tests {
                 Operator::Eq(issuer_did_tag(), unencrypted_target("Not Here".to_string()))
             ]),
         ]);
-        assert_eq!(false, Verifier::_process_operator("zip", &op, &filter).unwrap());
+        assert!(Verifier::_process_operator("zip", &op, &filter).is_err());
 
         op = Operator::Or(vec![
             Operator::And(vec![
@@ -591,7 +608,7 @@ mod tests {
                 Operator::Eq(issuer_did_tag(), unencrypted_target("Not Here".to_string()))
             ]),
         ]);
-        assert_eq!(false, Verifier::_process_operator("zip", &op, &filter).unwrap());
+        assert!(Verifier::_process_operator("zip", &op, &filter).is_err());
 
         op = Operator::Or(vec![
             Operator::And(vec![
@@ -607,7 +624,7 @@ mod tests {
                 Operator::Eq(issuer_did_tag(), unencrypted_target("Not Here".to_string()))
             ]),
         ]);
-        assert_eq!(true, Verifier::_process_operator("zip", &op, &filter).unwrap());
+        Verifier::_process_operator("zip", &op, &filter).unwrap()
     }
 
     #[test]
@@ -631,7 +648,7 @@ mod tests {
                 Operator::Eq(issuer_did_tag(), unencrypted_target(ISSUER_DID.to_string()))
             ]),
         ]);
-        assert_eq!(false, Verifier::_process_operator("zip", &op, &filter).unwrap());
+        assert!(Verifier::_process_operator("zip", &op, &filter).is_err());
 
         op = Operator::And(vec![
             Operator::And(vec![
@@ -652,7 +669,7 @@ mod tests {
             ]),
             Operator::Not(Box::new(Operator::Eq(schema_version_tag(), unencrypted_target("NOT HERE".to_string()))))
         ]);
-        assert_eq!(true, Verifier::_process_operator("zip", &op, &filter).unwrap());
+        Verifier::_process_operator("zip", &op, &filter).unwrap();
 
         op = Operator::And(vec![
             Operator::And(vec![
@@ -673,6 +690,6 @@ mod tests {
             ]),
             Operator::Not(Box::new(Operator::Eq(schema_version_tag(), unencrypted_target(SCHEMA_VERSION.to_string()))))
         ]);
-        assert_eq!(false, Verifier::_process_operator("zip", &op, &filter).unwrap());
+        assert!(Verifier::_process_operator("zip", &op, &filter).is_err());
     }
 }
