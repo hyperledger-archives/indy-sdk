@@ -297,10 +297,9 @@ pub extern fn vcx_get_ledger_author_agreement(command_handle: u32,
 /// time_of_acceptance - UTC timestamp when user has accepted the TAA
 ///
 /// #Returns
-/// Success
+/// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_set_active_txn_author_agreement_meta(command_handle: u32,
-                                                       text: *const c_char,
+pub extern fn vcx_set_active_txn_author_agreement_meta(text: *const c_char,
                                                        version: *const c_char,
                                                        hash: *const c_char,
                                                        acc_mech_type: *const c_char,
@@ -312,8 +311,8 @@ pub extern fn vcx_set_active_txn_author_agreement_meta(command_handle: u32,
     check_useful_opt_c_str!(hash, VcxErrorKind::InvalidOption);
     check_useful_c_str!(acc_mech_type, VcxErrorKind::InvalidOption);
 
-    trace!("vcx_set_active_txn_author_agreement_meta(command_handle: {}, text: {:?}, version: {:?}, hash: {:?}, acc_mech_type: {:?}, time_of_acceptance: {:?})",
-           command_handle, text, version, hash, acc_mech_type, time_of_acceptance);
+    trace!("vcx_set_active_txn_author_agreement_meta(text: {:?}, version: {:?}, hash: {:?}, acc_mech_type: {:?}, time_of_acceptance: {:?})",
+           text, version, hash, acc_mech_type, time_of_acceptance);
 
     match ::utils::author_agreement::set_txn_author_agreement(text, version, hash, acc_mech_type, time_of_acceptance) {
         Ok(x) => error::SUCCESS.code_num,

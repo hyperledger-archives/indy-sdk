@@ -85,9 +85,9 @@ pub fn libindy_build_create_credential_def_txn(submitter_did: &str,
 }
 
 pub fn libindy_get_txn_author_agreement() -> VcxResult<String> {
-    trace!("get_ledger_fees >>>");
+    trace!("libindy_get_txn_author_agreement >>>");
 
-    if settings::test_indy_mode_enabled() { return Ok(r#"{"text":"Defaule indy agreement", "version":"1.0.0"}"#.to_string()); }
+    if settings::test_indy_mode_enabled() { return Ok(r#"{"text":"Default indy agreement", "version":"1.0.0"}"#.to_string()); }
 
     let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
 
