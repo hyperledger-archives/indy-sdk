@@ -68,7 +68,7 @@ def test_update_institution_info(cleanup):
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_vcx_get_ledger_author_agreement():
     agreement = await vcx_get_ledger_author_agreement()
-    assert agreement == '{"text":"Default indy agreement", "version":"1.0.0"}'
+    assert agreement == '{"text":"Default indy agreement", "version":"1.0.0", "aml": {"acceptance mechanism label1": "description"}}'
 
 
 def test_set_active_txn_author_agreement_meta():

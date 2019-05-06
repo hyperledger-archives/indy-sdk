@@ -22,7 +22,7 @@ public class VcxUtilsTest {
     @DisplayName("get ledger author agreement")
     void vcxGetLedgerAuthorAgreement() throws VcxException, ExecutionException, InterruptedException {
         String agreement = TestHelper.getResultFromFuture(UtilsApi.getLedgerAuthorAgreement());
-        assert (agreement.equals("{\"text\":\"Default indy agreement\", \"version\":\"1.0.0\"}"));
+        assert (agreement.equals("{\"text\":\"Default indy agreement\", \"version\":\"1.0.0\", \"aml\": {\"acceptance mechanism label1\": \"description\"}}"));
     }
 
     @Test

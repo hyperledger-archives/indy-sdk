@@ -124,7 +124,7 @@ describe('utils:', () => {
   describe('getLedgerAuthorAgreement:', () => {
     it('success', async () => {
       const agreement = await getLedgerAuthorAgreement()
-      assert.equal(agreement, '{"text":"Default indy agreement", "version":"1.0.0"}')
+      assert.equal(agreement, '{"text":"Default indy agreement", "version":"1.0.0", "aml": {"acceptance mechanism label1": "description"}}')
     })
   })
 

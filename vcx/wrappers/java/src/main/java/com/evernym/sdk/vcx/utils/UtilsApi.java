@@ -159,7 +159,7 @@ public class UtilsApi extends VcxJava.API {
     }
 
     public static CompletableFuture<String> getLedgerAuthorAgreement() throws VcxException {
-        logger.debug("getLedgerFees() called");
+        logger.debug("getLedgerAuthorAgreement() called");
         CompletableFuture<String> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 

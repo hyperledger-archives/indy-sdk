@@ -242,7 +242,7 @@ pub extern fn vcx_update_institution_info(name: *const c_char, logo_url: *const 
     error::SUCCESS.code_num
 }
 
-/// Retrieve author agreement set on the Ledger
+/// Retrieve author agreement and acceptance mechanisms set on the Ledger
 ///
 /// #params
 ///
@@ -910,5 +910,46 @@ mod tests {
         let config = CString::new("{}").unwrap();
         ::api::utils::vcx_agent_provision_async(0, config.as_ptr(), Some(cb));
         ::std::thread::sleep(::std::time::Duration::from_secs(1));
+    }
+
+    #[test]
+    fn test_vcx_set_active_txn_author_agreement_meta() {
+        init!("true");
+        assert!(&settings::get_config_value(::settings::CONFIG_TXN_AUTHOR_AGREEMENT).is_err());
+
+        let text = "text";
+        let version = "1.0.0";
+        let acc_mech_type = "type 1";
+        let time_of_acceptance = 123456789;
+
+        assert_eq!(error::SUCCESS.code_num, vcx_set_active_txn_author_agreement_meta(CString::new(text.to_string()).unwrap().into_raw(),
+                                                                                     CString::new(version.to_string()).unwrap().into_raw(),
+                                                                                     ::std::ptr::null(),
+                                                                                     CString::new(acc_mech_type.to_string()).unwrap().into_raw(),
+                                                                                     time_of_acceptance));
+
+        let expected = json!({
+            "text": text,
+            "version": version,
+            "acceptanceMechanismType": acc_mech_type,
+            "timeOfAcceptance": time_of_acceptance,
+        });
+
+        let auth_agreement = settings::get_config_value(::settings::CONFIG_TXN_AUTHOR_AGREEMENT).unwrap();
+        let auth_agreement = ::serde_json::from_str::<::serde_json::Value>(&auth_agreement).unwrap();
+
+        assert_eq!(expected, auth_agreement);
+
+        ::settings::set_defaults();
+    }
+
+    #[test]
+    fn test_vcx_get_ledger_author_agreement() {
+        init!("true");
+        let cb = return_types_u32::Return_U32_STR::new().unwrap();
+        assert_eq!(vcx_get_ledger_author_agreement(cb.command_handle,
+                                             Some(cb.get_callback())), error::SUCCESS.code_num);
+        let agreement = cb.receive(Some(Duration::from_secs(2))).unwrap();
+        assert_eq!(::utils::constants::DEFAULT_AUTHOR_AGREEMENT, agreement.unwrap());
     }
 }

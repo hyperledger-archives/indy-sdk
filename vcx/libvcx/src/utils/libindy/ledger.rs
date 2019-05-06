@@ -87,23 +87,36 @@ pub fn libindy_build_create_credential_def_txn(submitter_did: &str,
 pub fn libindy_get_txn_author_agreement() -> VcxResult<String> {
     trace!("libindy_get_txn_author_agreement >>>");
 
-    if settings::test_indy_mode_enabled() { return Ok(r#"{"text":"Default indy agreement", "version":"1.0.0"}"#.to_string()); }
+    if settings::test_indy_mode_enabled() { return Ok(::utils::constants::DEFAULT_AUTHOR_AGREEMENT.to_string()); }
 
     let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
 
-    let request = ledger::build_get_txn_author_agreement_request(Some(&did), None)
+    let get_author_agreement_request = ledger::build_get_txn_author_agreement_request(Some(&did), None)
         .wait()
         .map_err(map_rust_indy_sdk_error)?;
 
-    let response = libindy_submit_request(&request)?;
+    let get_author_agreement_response = libindy_submit_request(&get_author_agreement_request)?;
 
-    let response = serde_json::from_str::<serde_json::Value>(&response)
+    let get_author_agreement_response = serde_json::from_str::<serde_json::Value>(&get_author_agreement_response)
         .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidLedgerResponse, format!("{:?}", err)))?;
 
-    let data = response["result"]["data"].as_object()
-        .map_or(json!({}), |data|json!(data));
+    let mut author_agreement_data = get_author_agreement_response["result"]["data"].as_object()
+        .map_or(json!({}), |data| json!(data));
 
-    Ok(data.to_string())
+    let get_acceptance_mechanism_request = ledger::build_get_acceptance_mechanism_request(Some(&did), None)
+        .wait()
+        .map_err(map_rust_indy_sdk_error)?;
+
+    let get_acceptance_mechanism_response = libindy_submit_request(&get_acceptance_mechanism_request)?;
+
+    let get_acceptance_mechanism_response = serde_json::from_str::<serde_json::Value>(&get_acceptance_mechanism_response)
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidLedgerResponse, format!("{:?}", err)))?;
+
+    if let Some(aml) = get_acceptance_mechanism_response["result"]["data"]["aml"].as_object() {
+        author_agreement_data["aml"] = json!(aml);
+    }
+
+    Ok(author_agreement_data.to_string())
 }
 
 pub fn append_txn_author_agreement_to_request(request_json: &str) -> VcxResult<String> {
