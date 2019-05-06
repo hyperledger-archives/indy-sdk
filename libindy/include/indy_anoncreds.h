@@ -139,13 +139,13 @@ extern "C" {
                                                                           const char*   out_cred_id)
                                                      );
 
-    extern fn indy_prover_delete_credential(indy_handle_t command_handle,
-                                            indy_handle_t wallet_handle,
-                                            const char *  cred_id,
+    extern indy_error_t indy_prover_delete_credential(indy_handle_t command_handle,
+                                                      indy_handle_t wallet_handle,
+                                                      const char *  cred_id,
 
-                                            void          (*cb)(indy_handle_t command_handle_,
-                                                          indy_error_t        err)
-                                            );
+                                                      void          (*cb)(indy_handle_t command_handle_,
+                                                                          indy_error_t        err)
+                                                      );
 
     extern indy_error_t indy_prover_get_credentials(indy_handle_t command_handle,
                                                     indy_handle_t wallet_handle,
