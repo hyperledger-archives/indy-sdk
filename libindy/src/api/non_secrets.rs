@@ -694,7 +694,7 @@ pub extern fn indy_purge_cred_def_cache(command_handle: CommandHandle,
 /// id: identifier of schema.
 /// options_json:
 ///  {
-///    maxAge: (int, mandatory) Purge cached data if older than this many seconds. -1 means purge all.
+///    maxAge: (int, optional, -1 by default) Purge cached data if older than this many seconds. -1 means purge all.
 ///  }
 /// cb: Callback that takes command result as parameter.
 #[no_mangle]
