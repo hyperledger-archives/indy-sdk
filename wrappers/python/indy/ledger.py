@@ -1562,12 +1562,12 @@ async def build_get_acceptance_mechanism_request(submitter_did: Optional[str],
     return res
 
 
-async def append_txn_author_agreement_meta_to_request(request_json: str,
-                                                      text: Optional[str],
-                                                      version: Optional[str],
-                                                      hash: Optional[str],
-                                                      acc_mech_type: str,
-                                                      time_of_acceptance: int) -> str:
+async def append_txn_author_agreement_acceptance_to_request(request_json: str,
+                                                            text: Optional[str],
+                                                            version: Optional[str],
+                                                            hash: Optional[str],
+                                                            acc_mech_type: str,
+                                                            time_of_acceptance: int) -> str:
     """
     Append transaction author agreement metadata to a request.
     This function should be called before signing and sending a request
@@ -1590,7 +1590,7 @@ async def append_txn_author_agreement_meta_to_request(request_json: str,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("append_txn_author_agreement_meta_to_request: >>> request_json: %r, text: %r, version: %r, hash: %r, "
+    logger.debug("append_txn_author_agreement_acceptance_to_request: >>> request_json: %r, text: %r, version: %r, hash: %r, "
                  "acc_mech_type: %r, time_of_acceptance: %r",
                  request_json,
                  text,
@@ -1599,9 +1599,9 @@ async def append_txn_author_agreement_meta_to_request(request_json: str,
                  acc_mech_type,
                  time_of_acceptance)
 
-    if not hasattr(append_txn_author_agreement_meta_to_request, "cb"):
-        logger.debug("append_txn_author_agreement_meta_to_request: Creating callback")
-        append_txn_author_agreement_meta_to_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+    if not hasattr(append_txn_author_agreement_acceptance_to_request, "cb"):
+        logger.debug("append_txn_author_agreement_acceptance_to_request: Creating callback")
+        append_txn_author_agreement_acceptance_to_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
 
     c_request_json = c_char_p(request_json.encode('utf-8'))
     c_text = c_char_p(text.encode('utf-8')) if text is not None else None
@@ -1609,15 +1609,15 @@ async def append_txn_author_agreement_meta_to_request(request_json: str,
     c_hash = c_char_p(hash.encode('utf-8')) if hash is not None else None
     c_acc_mech_type = c_char_p(acc_mech_type.encode('utf-8'))
 
-    request_json = await do_call('indy_append_txn_author_agreement_meta_to_request',
+    request_json = await do_call('indy_append_txn_author_agreement_acceptance_to_request',
                                  c_request_json,
                                  c_text,
                                  c_version,
                                  c_hash,
                                  c_acc_mech_type,
                                  c_uint64(time_of_acceptance),
-                                 append_txn_author_agreement_meta_to_request.cb)
+                                 append_txn_author_agreement_acceptance_to_request.cb)
 
     res = request_json.decode()
-    logger.debug("append_txn_author_agreement_meta_to_request: <<< res: %r", res)
+    logger.debug("append_txn_author_agreement_acceptance_to_request: <<< res: %r", res)
     return res

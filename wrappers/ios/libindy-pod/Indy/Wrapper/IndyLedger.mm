@@ -884,7 +884,7 @@
 
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
 
-    ret = indy_append_txn_author_agreement_meta_to_request(handle,
+    ret = indy_append_txn_author_agreement_acceptance_to_request(handle,
             [requestJson UTF8String],
             [text UTF8String],
             [version UTF8String],

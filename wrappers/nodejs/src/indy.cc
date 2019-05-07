@@ -2206,7 +2206,7 @@ NAN_METHOD(appendTxnAuthorAgreementMetaToRequest) {
   const char* arg4 = argToCString(info[4]);
   long long arg5 = argToUInt32(info[5]);
   IndyCallback* icb = argToIndyCb(info[6]);
-  indyCalled(icb, indy_append_txn_author_agreement_meta_to_request(icb->handle, arg0, arg1, arg2, arg3, arg4, arg5, appendTxnAuthorAgreementMetaToRequest_cb));
+  indyCalled(icb, indy_append_txn_author_agreement_acceptance_to_request(icb->handle, arg0, arg1, arg2, arg3, arg4, arg5, appendTxnAuthorAgreementMetaToRequest_cb));
   delete arg0;
   delete arg1;
   delete arg2;

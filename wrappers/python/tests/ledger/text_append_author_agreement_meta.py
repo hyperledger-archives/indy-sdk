@@ -33,20 +33,20 @@ def _check_request_meta(request: str):
 
 @pytest.mark.asyncio
 async def test_append_txn_author_agreement_meta_to_request_works_for_text_version():
-    request = await ledger.append_txn_author_agreement_meta_to_request(REQUEST, TEXT, VERSION, None,
-                                                                       ACCEPTANCE_MECH_TYPE, TIME_OF_ACCEPTANCE)
+    request = await ledger.append_txn_author_agreement_acceptance_to_request(REQUEST, TEXT, VERSION, None,
+                                                                             ACCEPTANCE_MECH_TYPE, TIME_OF_ACCEPTANCE)
     _check_request_meta(request)
 
 
 @pytest.mark.asyncio
 async def test_append_txn_author_agreement_meta_to_request_works_for_hash():
-    request = await ledger.append_txn_author_agreement_meta_to_request(REQUEST, None, None, HASH,
-                                                                       ACCEPTANCE_MECH_TYPE, TIME_OF_ACCEPTANCE)
+    request = await ledger.append_txn_author_agreement_acceptance_to_request(REQUEST, None, None, HASH,
+                                                                             ACCEPTANCE_MECH_TYPE, TIME_OF_ACCEPTANCE)
     _check_request_meta(request)
 
 
 @pytest.mark.asyncio
 async def test_append_txn_author_agreement_meta_to_request_works_for_text_version_and_hash():
-    request = await ledger.append_txn_author_agreement_meta_to_request(REQUEST, TEXT, VERSION, HASH,
-                                                                       ACCEPTANCE_MECH_TYPE, TIME_OF_ACCEPTANCE)
+    request = await ledger.append_txn_author_agreement_acceptance_to_request(REQUEST, TEXT, VERSION, HASH,
+                                                                             ACCEPTANCE_MECH_TYPE, TIME_OF_ACCEPTANCE)
     _check_request_meta(request)

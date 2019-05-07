@@ -1557,7 +1557,7 @@ public class Ledger extends IndyJava.API {
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
-		int result = LibIndy.api.indy_append_txn_author_agreement_meta_to_request(
+		int result = LibIndy.api.indy_append_txn_author_agreement_acceptance_to_request(
 				commandHandle,
 				requestJson,
 				text,
