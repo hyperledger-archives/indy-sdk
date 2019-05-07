@@ -2182,7 +2182,7 @@ pub extern fn indy_build_acceptance_mechanism_request(command_handle: CommandHan
 /// #Params
 /// command_handle: command handle to map callback to caller context.
 /// submitter_did: (Optional) DID of the request sender.
-/// timestamp: Optional<i64> - time to get an active acceptance mechanisms. Pass -1 to get the latest one.
+/// timestamp: i64 - time to get an active acceptance mechanisms. Pass -1 to get the latest one.
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns

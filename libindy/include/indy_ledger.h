@@ -1074,7 +1074,7 @@ extern "C" {
     /// {
     ///     hash: Optional<str> - hash of requested TAA,
     ///     version: Optional<str> - version of requested TAA.
-    ///     timestamp: Optional<i64> - ledger will return TAA valid at requested timestamp.
+    ///     timestamp: Optional<u64> - ledger will return TAA valid at requested timestamp.
     /// }
     /// Null data or empty JSON are acceptable here. In this case, ledger will return the latest version of TAA.
     ///
@@ -1134,7 +1134,7 @@ extern "C" {
     /// #Params
     /// command_handle: command handle to map callback to caller context.
     /// submitter_did: (Optional) DID of the request sender.
-    /// timestamp: Optional<i64> - time to get an active acceptance mechanisms. Pass -1 to get the latest one.
+    /// timestamp: i64 - time to get an active acceptance mechanisms. Pass -1 to get the latest one.
     /// cb: Callback that takes command result as parameter.
     ///
     /// #Returns

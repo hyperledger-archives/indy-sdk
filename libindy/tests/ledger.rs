@@ -2390,7 +2390,7 @@ mod high_cases {
         const TEXT: &str = "some agreement text";
         const VERSION: &str = "1.0.0";
         const HASH: &str = "050e52a57837fff904d3d059c8a123e3a04177042bf467db2b2c27abd8045d5e";
-        const ACCEPTANCE_MECH_TYPE: &str = "acceptancee type 1";
+        const ACCEPTANCE_MECH_TYPE: &str = "acceptance type 1";
         const TIME_OF_ACCEPTANCE: u64 = 123456789;
 
         fn _check_request_meta(request: &str){
