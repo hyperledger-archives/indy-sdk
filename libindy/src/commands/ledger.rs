@@ -1104,10 +1104,10 @@ impl LedgerCommandExecutor {
             }
         };
 
-        request.txn_authr_agrmt_meta = Some(TxnAuthrAgrmtMeta{
-            acceptance_mechanism_type: acc_mech_type.to_string(),
-            hash,
-            time_of_acceptance,
+        request.taa_acceptance = Some(TxnAuthrAgrmtMeta{
+            mechanism: acc_mech_type.to_string(),
+            taa_digest: hash,
+            time: time_of_acceptance,
         });
 
         let res: String = serde_json::to_string(&request)

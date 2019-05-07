@@ -2397,16 +2397,16 @@ mod high_cases {
             let request: serde_json::Value = serde_json::from_str(&request).unwrap();
 
             let expected_meta = json!({
-                "acceptanceMechanismType": ACCEPTANCE_MECH_TYPE,
-                "hash": HASH,
-                "timeOfAcceptance": TIME_OF_ACCEPTANCE
+                "mechanism": ACCEPTANCE_MECH_TYPE,
+                "taaDigest": HASH,
+                "time": TIME_OF_ACCEPTANCE
             });
 
-            assert_eq!(request["txnAuthrAgrmtMeta"], expected_meta);
+            assert_eq!(request["taaAcceptance"], expected_meta);
         }
 
         #[test]
-        fn indy_append_txn_author_agreement_meta_to_request_works_for_text_version() {
+        fn indy_append_txn_author_agreement_acceptance_to_request_works_for_text_version() {
             utils::setup();
 
             let request = ledger::append_txn_author_agreement_meta_to_request(REQUEST,
@@ -2421,7 +2421,7 @@ mod high_cases {
         }
 
         #[test]
-        fn indy_append_txn_author_agreement_meta_to_request_works_for_hash() {
+        fn indy_append_txn_author_agreement_acceptance_to_request_works_for_hash() {
             utils::setup();
 
             let request = ledger::append_txn_author_agreement_meta_to_request(REQUEST,
@@ -2436,7 +2436,7 @@ mod high_cases {
         }
 
         #[test]
-        fn indy_append_txn_author_agreement_meta_to_request_works_for_text_version_and_hash() {
+        fn indy_append_txn_author_agreement_acceptance_to_request_works_for_text_version_and_hash() {
             utils::setup();
 
             let request = ledger::append_txn_author_agreement_meta_to_request(REQUEST,
@@ -2451,7 +2451,7 @@ mod high_cases {
         }
 
         #[test]
-        fn indy_append_txn_author_agreement_meta_to_request_works_for_text_version_not_correspond_to_hash() {
+        fn indy_append_txn_author_agreement_acceptance_to_request_works_for_text_version_not_correspond_to_hash() {
             utils::setup();
 
             let res = ledger::append_txn_author_agreement_meta_to_request(REQUEST,
@@ -2466,7 +2466,7 @@ mod high_cases {
         }
 
         #[test]
-        fn indy_append_txn_author_agreement_meta_to_request_works_for_invalid_request() {
+        fn indy_append_txn_author_agreement_acceptance_to_request_works_for_invalid_request() {
             utils::setup();
 
             let res = ledger::append_txn_author_agreement_meta_to_request("Invalid request string",
@@ -2481,7 +2481,7 @@ mod high_cases {
         }
 
         #[test]
-        fn indy_append_txn_author_agreement_meta_to_request_works_for_missed_text_version_hash() {
+        fn indy_append_txn_author_agreement_acceptance_to_request_works_for_missed_text_version_hash() {
             utils::setup();
 
             let res = ledger::append_txn_author_agreement_meta_to_request(REQUEST,
@@ -2496,7 +2496,7 @@ mod high_cases {
         }
 
         #[test]
-        fn indy_append_txn_author_agreement_meta_to_request_works_for_partial_combination_of_text_version() {
+        fn indy_append_txn_author_agreement_acceptance_to_request_works_for_partial_combination_of_text_version() {
             utils::setup();
 
             let res = ledger::append_txn_author_agreement_meta_to_request(REQUEST,

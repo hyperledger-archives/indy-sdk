@@ -2252,17 +2252,17 @@ pub extern fn indy_build_get_acceptance_mechanism_request(command_handle: Comman
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_append_txn_author_agreement_meta_to_request(command_handle: CommandHandle,
-                                                               request_json: *const c_char,
-                                                               text: *const c_char,
-                                                               version: *const c_char,
-                                                               hash: *const c_char,
-                                                               acc_mech_type: *const c_char,
-                                                               time_of_acceptance: u64,
-                                                               cb: Option<extern fn(command_handle_: CommandHandle,
-                                                                                    err: ErrorCode,
-                                                                                    request_with_meta_json: *const c_char)>) -> ErrorCode{
-    trace!("indy_append_txn_author_agreement_meta_to_request: >>> request_json: {:?}, text: {:?}, version: {:?}, hash: {:?}, \
+pub extern fn indy_append_txn_author_agreement_acceptance_to_request(command_handle: CommandHandle,
+                                                                     request_json: *const c_char,
+                                                                     text: *const c_char,
+                                                                     version: *const c_char,
+                                                                     hash: *const c_char,
+                                                                     acc_mech_type: *const c_char,
+                                                                     time_of_acceptance: u64,
+                                                                     cb: Option<extern fn(command_handle_: CommandHandle,
+                                                                                          err: ErrorCode,
+                                                                                          request_with_meta_json: *const c_char)>) -> ErrorCode{
+    trace!("indy_append_txn_author_agreement_acceptance_to_request: >>> request_json: {:?}, text: {:?}, version: {:?}, hash: {:?}, \
         acc_mech_type: {:?}, time_of_acceptance: {:?}",
            request_json, text, version, hash, acc_mech_type, time_of_acceptance);
 
@@ -2273,7 +2273,7 @@ pub extern fn indy_append_txn_author_agreement_meta_to_request(command_handle: C
     check_useful_c_str!(acc_mech_type, ErrorCode::CommonInvalidParam6);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam8);
 
-    trace!("indy_append_txn_author_agreement_meta_to_request: entities >>> request_json: {:?}, text: {:?}, version: {:?}, hash: {:?}, \
+    trace!("indy_append_txn_author_agreement_acceptance_to_request: entities >>> request_json: {:?}, text: {:?}, version: {:?}, hash: {:?}, \
         acc_mech_type: {:?}, time_of_acceptance: {:?}",
            request_json, text, version, hash, acc_mech_type, time_of_acceptance);
 
@@ -2288,7 +2288,7 @@ pub extern fn indy_append_txn_author_agreement_meta_to_request(command_handle: C
                 time_of_acceptance,
                 Box::new(move |result| {
                     let (err, request_json) = prepare_result_1!(result, String::new());
-                    trace!("indy_append_txn_author_agreement_meta_to_request: request_json: {:?}", request_json);
+                    trace!("indy_append_txn_author_agreement_acceptance_to_request: request_json: {:?}", request_json);
                     let request_json = ctypes::string_to_cstring(request_json);
                     cb(command_handle, err, request_json.as_ptr())
                 })
@@ -2296,7 +2296,7 @@ pub extern fn indy_append_txn_author_agreement_meta_to_request(command_handle: C
 
     let res = prepare_result!(result);
 
-    trace!("indy_append_txn_author_agreement_meta_to_request: <<< res: {:?}", res);
+    trace!("indy_append_txn_author_agreement_acceptance_to_request: <<< res: {:?}", res);
 
     res
 }
