@@ -19,6 +19,10 @@ pub const GET_REVOC_REG_DELTA: &str = "117";
 pub const GET_VALIDATOR_INFO: &str = "119";
 pub const AUTH_RULE: &str = "120";
 pub const GET_AUTH_RULE: &str = "121";
+pub const TXN_AUTHR_AGRMT: &str = "122";
+pub const GET_TXN_AUTHR_AGRMT: &str = "123";
+pub const TXN_AUTHR_AGRMT_AML: &str = "124";
+pub const GET_TXN_AUTHR_AGRMT_AML: &str = "125";
 pub const GET_DDO: &str = "120";//TODO change number
 
 pub const REQUESTS: [&str; 21] = [NODE, NYM, GET_TXN, ATTRIB, SCHEMA, CRED_DEF, GET_ATTR, GET_NYM, GET_SCHEMA,

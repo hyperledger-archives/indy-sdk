@@ -13,6 +13,8 @@ use domain::anoncreds::schema::{Schema, SchemaV1};
 use domain::crypto::did::Did;
 use domain::crypto::key::Key;
 use domain::ledger::node::NodeOperationData;
+use domain::ledger::author_agreement::{GetTxnAuthorAgreementData, AcceptanceMechanisms};
+use domain::ledger::request::{Request, TxnAuthrAgrmtMeta};
 use errors::prelude::*;
 use services::crypto::CryptoService;
 use services::ledger::LedgerService;
@@ -23,7 +25,9 @@ use services::pool::{
 use services::wallet::{RecordOptions, WalletService};
 use utils::crypto::base58;
 use utils::crypto::signature_serializer::serialize_signature;
+use utils::crypto::hash::hash as openssl_hash;
 use api::WalletHandle;
+use hex::{ToHex, FromHex};
 
 pub enum LedgerCommand {
     SignAndSubmitRequest(
@@ -201,6 +205,32 @@ pub enum LedgerCommand {
         Option<String>, // field
         Option<String>, // old value
         Option<String>, // new value
+        Box<Fn(IndyResult<String>) + Send>),
+    BuildTxnAuthorAgreementRequest(
+        String, // submitter did
+        String, // text
+        String, // version
+        Box<Fn(IndyResult<String>) + Send>),
+    BuildGetTxnAuthorAgreementRequest(
+        Option<String>, // submitter did
+        Option<GetTxnAuthorAgreementData>, // data
+        Box<Fn(IndyResult<String>) + Send>),
+    BuildAcceptanceMechanismRequest(
+        String, // submitter did
+        AcceptanceMechanisms, // aml
+        Option<String>, // aml context
+        Box<Fn(IndyResult<String>) + Send>),
+    BuildGetAcceptanceMechanismRequest(
+        Option<String>, // submitter did
+        Option<u64>, // timestamp
+        Box<Fn(IndyResult<String>) + Send>),
+    AppendTxnAuthorAgreementMetaToRequest(
+        String, // request json
+        Option<String>, // text
+        Option<String>, // version
+        Option<String>, // hash
+        String, // acceptance mechanism type
+        u64, // time of acceptance
         Box<Fn(IndyResult<String>) + Send>),
 }
 
@@ -392,6 +422,31 @@ impl LedgerCommandExecutor {
                                                     old_value.as_ref().map(String::as_str),
                                                     new_value.as_ref().map(String::as_str)));
             }
+            LedgerCommand::BuildTxnAuthorAgreementRequest(submitter_did, text, version, cb) => {
+                info!(target: "ledger_command_executor", "BuildTxnAuthorAgreementRequest command received");
+                cb(self.build_txn_author_agreement_request(&submitter_did, &text, &version));
+            }
+            LedgerCommand::BuildGetTxnAuthorAgreementRequest(submitter_did, data, cb) => {
+                info!(target: "ledger_command_executor", "BuildGetTxnAuthorAgreementRequest command received");
+                cb(self.build_get_txn_author_agreement_request(submitter_did.as_ref().map(String::as_str), data.as_ref()));
+            }
+            LedgerCommand::BuildAcceptanceMechanismRequest(submitter_did, aml, aml_context, cb) => {
+                info!(target: "ledger_command_executor", "BuildAcceptanceMechanismRequest command received");
+                cb(self.build_acceptance_mechanism_request(&submitter_did, aml, aml_context.as_ref().map(String::as_str)));
+            }
+            LedgerCommand::BuildGetAcceptanceMechanismRequest(submitter_did, timestamp, cb) => {
+                info!(target: "ledger_command_executor", "BuildGetAcceptanceMechanismRequest command received");
+                cb(self.build_get_acceptance_mechanism_request(submitter_did.as_ref().map(String::as_str), timestamp));
+            }
+            LedgerCommand::AppendTxnAuthorAgreementMetaToRequest(request_json, text, version, hash, acc_mech_type, time_of_acceptance, cb) => {
+                info!(target: "ledger_command_executor", "AppendTxnAuthorAgreementMetaToRequest command received");
+                cb(self.append_txn_author_agreement_meta_to_request(&request_json,
+                                                                    text.as_ref().map(String::as_str),
+                                                                    version.as_ref().map(String::as_str),
+                                                                    hash.as_ref().map(String::as_str),
+                                                                    &acc_mech_type,
+                                                                    time_of_acceptance));
+            }
         };
     }
 
@@ -518,7 +573,6 @@ impl LedgerCommandExecutor {
 
         Ok(res)
     }
-
     fn build_get_ddo_request(&self,
                              submitter_did: Option<&str>,
                              target_did: &str) -> IndyResult<String> {
@@ -958,6 +1012,129 @@ impl LedgerCommandExecutor {
         debug!("build_get_auth_rule_request <<< res: {:?}", res);
 
         Ok(res)
+    }
+
+    fn build_txn_author_agreement_request(&self,
+                                          submitter_did: &str,
+                                          text: &str,
+                                          version: &str) -> IndyResult<String> {
+        debug!("build_txn_author_agreement_request >>> submitter_did: {:?}, text: {:?}, version: {:?}", submitter_did, text, version);
+
+        self.crypto_service.validate_did(submitter_did)?;
+
+        let res = self.ledger_service.build_txn_author_agreement_request(submitter_did, text, version)?;
+
+        debug!("build_txn_author_agreement_request <<< res: {:?}", res);
+
+        Ok(res)
+    }
+
+    fn build_get_txn_author_agreement_request(&self,
+                                              submitter_did: Option<&str>,
+                                              data: Option<&GetTxnAuthorAgreementData>) -> IndyResult<String> {
+        debug!("build_get_txn_author_agreement_request >>> submitter_did: {:?}, data: {:?}", submitter_did, data);
+
+        self.validate_opt_did(submitter_did)?;
+
+        let res = self.ledger_service.build_get_txn_author_agreement_request(submitter_did, data)?;
+
+        debug!("build_get_txn_author_agreement_request <<< res: {:?}", res);
+
+        Ok(res)
+    }
+
+    fn build_acceptance_mechanism_request(&self,
+                                          submitter_did: &str,
+                                          aml: AcceptanceMechanisms,
+                                          aml_context: Option<&str>) -> IndyResult<String> {
+        debug!("build_acceptance_mechanism_request >>> submitter_did: {:?}, aml: {:?}, aml_context: {:?}", submitter_did, aml, aml_context);
+
+        self.crypto_service.validate_did(submitter_did)?;
+
+        let res = self.ledger_service.build_acceptance_mechanism_request(submitter_did, aml, aml_context)?;
+
+        debug!("build_acceptance_mechanism_request <<< res: {:?}", res);
+
+        Ok(res)
+    }
+
+    fn build_get_acceptance_mechanism_request(&self,
+                                              submitter_did: Option<&str>,
+                                              timestamp: Option<u64>) -> IndyResult<String> {
+        debug!("build_get_acceptance_mechanism_request >>> submitter_did: {:?},timestamp: {:?}", submitter_did, timestamp);
+
+        self.validate_opt_did(submitter_did)?;
+
+        let res = self.ledger_service.build_get_acceptance_mechanism_request(submitter_did, timestamp)?;
+
+        debug!("build_get_acceptance_mechanism_request <<< res: {:?}", res);
+
+        Ok(res)
+    }
+
+    fn append_txn_author_agreement_meta_to_request(&self,
+                                                   request_json: &str,
+                                                   text: Option<&str>,
+                                                   version: Option<&str>,
+                                                   hash: Option<&str>,
+                                                   acc_mech_type: &str,
+                                                   time_of_acceptance: u64) -> IndyResult<String> {
+        debug!("append_txn_author_agreement_meta_to_request >>> request_json: {:?}, text: {:?}, version: {:?}, hash: {:?}, acc_mech_type: {:?}, time_of_acceptance: {:?}",
+               request_json, text, version, hash, acc_mech_type, time_of_acceptance);
+
+        let mut request: Request<serde_json::Value> = serde_json::from_str(request_json)
+            .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Cannot deserialize request: {:?}", err)))?;
+
+        let hash = match (text, version, hash) {
+            (None, None, None) => {
+                return Err(err_msg(IndyErrorKind::InvalidStructure, "Invalid combination of params: Either combination `text` + `version` or `hash` must be passed."));
+            }
+            (None, None, Some(hash_)) => {
+                hash_.to_string()
+            }
+            (Some(_), None, _) | (None, Some(_), _) => {
+                return Err(err_msg(IndyErrorKind::InvalidStructure, "Invalid combination of params: `text` and `version` should be passed or skipped together."));
+            }
+            (Some(text_), Some(version_), None) => {
+                self._calculate_hash(text_, version_)?.to_hex()
+            }
+            (Some(text_), Some(version_), Some(hash_)) => {
+                self._compare_hash(text_, version_, hash_)?;
+                hash_.to_string()
+            }
+        };
+
+        request.taa_acceptance = Some(TxnAuthrAgrmtMeta{
+            mechanism: acc_mech_type.to_string(),
+            taa_digest: hash,
+            time: time_of_acceptance,
+        });
+
+        let res: String = serde_json::to_string(&request)
+            .to_indy(IndyErrorKind::InvalidState, "Can't serialize request after adding author agreement meta")?;
+
+        debug!("append_txn_author_agreement_meta_to_request <<< res: {:?}", res);
+
+        Ok(res)
+    }
+
+    fn _calculate_hash(&self, text: &str, version: &str) -> IndyResult<Vec<u8>> {
+        let content: String = version.to_string() + text;
+        openssl_hash(content.as_bytes())
+    }
+
+    fn _compare_hash(&self, text: &str, version: &str, hash: &str) -> IndyResult<()> {
+        let calculated_hash = self._calculate_hash(text, version)?;
+
+        let passed_hash = Vec::from_hex(hash)
+            .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Cannot decode `hash`: {:?}", err)))?;
+
+        if calculated_hash != passed_hash {
+            return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure,
+                                           format!("Calculated hash of concatenation `version` and `text` doesn't equal to passed `hash` value. \n\
+                                           Calculated hash value: {:?}, \n Passed hash value: {:?}", calculated_hash, passed_hash)));
+        }
+        Ok(())
     }
 
     fn validate_opt_did(&self, did: Option<&str>) -> IndyResult<()> {
