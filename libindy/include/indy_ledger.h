@@ -1176,18 +1176,18 @@ extern "C" {
     ///
     /// #Errors
     /// Common*
-    extern indy_error_t indy_append_txn_author_agreement_meta_to_request(indy_handle_t command_handle,
-                                                                         const char *  request_json,
-                                                                         const char *  text,
-                                                                         const char *  version,
-                                                                         const char *  hash,
-                                                                         const char *  acc_mech_type,
-                                                                         indy_u64_t    time_of_acceptance,
+    extern indy_error_t indy_append_txn_author_agreement_acceptance_to_request(indy_handle_t command_handle,
+                                                                               const char *  request_json,
+                                                                               const char *  text,
+                                                                               const char *  version,
+                                                                               const char *  hash,
+                                                                               const char *  acc_mech_type,
+                                                                               indy_u64_t    time_of_acceptance,
 
-                                                                         void           (*cb)(indy_handle_t command_handle_,
-                                                                                              indy_error_t  err,
-                                                                                              const char*   request_with_meta_json)
-                                                                        );
+                                                                               void           (*cb)(indy_handle_t command_handle_,
+                                                                                                    indy_error_t  err,
+                                                                                                    const char*   request_with_meta_json)
+                                                                               );
 
 #ifdef __cplusplus
 }

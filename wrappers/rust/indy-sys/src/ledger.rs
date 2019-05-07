@@ -270,14 +270,14 @@ extern {
                                                        cb: Option<ResponseStringCB>) -> Error;
 
     #[no_mangle]
-    pub fn indy_append_txn_author_agreement_meta_to_request(command_handle: Handle,
-                                                            request_json: CString,
-                                                            text: CString,
-                                                            version: CString,
-                                                            hash: CString,
-                                                            acc_mech_type: CString,
-                                                            time_of_acceptance: u64,
-                                                            cb: Option<ResponseStringCB>) -> Error;
+    pub fn indy_append_txn_author_agreement_acceptance_to_request(command_handle: Handle,
+                                                                  request_json: CString,
+                                                                  text: CString,
+                                                                  version: CString,
+                                                                  hash: CString,
+                                                                  acc_mech_type: CString,
+                                                                  time_of_acceptance: u64,
+                                                                  cb: Option<ResponseStringCB>) -> Error;
 }
 
 pub type CustomTransactionParser = extern fn(reply_from_node: CString, parsed_sp: *mut CString) -> Error;
