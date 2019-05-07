@@ -16,7 +16,7 @@ async def test_build_acceptance_mechanism_request():
     expected_response = {
         "identifier": identifier,
         "operation": {
-            "type": "124",
+            "type": "5",
             "aml": aml,
         }
     }
@@ -33,7 +33,7 @@ async def test_build_acceptance_mechanism_request_with_context():
     expected_response = {
         "identifier": identifier,
         "operation": {
-            "type": "124",
+            "type": "5",
             "aml": aml,
             "amlContext": aml_context,
         }
@@ -47,7 +47,7 @@ async def test_build_acceptance_mechanism_request_with_context():
 async def test_build_get_acceptance_mechanism_request():
     expected_response = {
         "operation": {
-            "type": "125"
+            "type": "7"
         }
     }
 
@@ -63,7 +63,7 @@ async def test_build_get_acceptance_mechanism_request_for_timestamp():
     expected_response = {
         "identifier": identifier,
         "operation": {
-            "type": "125",
+            "type": "7",
             "timestamp": timestamp,
         }
     }

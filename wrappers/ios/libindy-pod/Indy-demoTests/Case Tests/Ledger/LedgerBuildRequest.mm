@@ -710,7 +710,7 @@
 
 - (void)testBuildTxnAuthorAgreementRequestWorks {
     NSDictionary *expectedResult = @{
-            @"type": @"122",
+            @"type": @"4",
             @"text": @"indy agreement",
             @"version": @"1.0.0",
     };
@@ -729,7 +729,7 @@
 
 - (void)testBuildGetTxnAuthorAgreementRequestWorks {
     NSDictionary *expectedResult = @{
-            @"type": @"123",
+            @"type": @"6",
             @"version": @"1.0.0",
     };
 
@@ -756,7 +756,7 @@
     };
 
     NSDictionary *expectedResult = @{
-            @"type": @"124",
+            @"type": @"5",
             @"aml": aml,
             @"amlContext": @"some context",
     };
@@ -775,7 +775,7 @@
 
 - (void)testBuildGetAcceptanceMechanismRequestWorks {
     NSDictionary *expectedResult = @{
-            @"type": @"125",
+            @"type": @"7",
             @"timestamp": @(123456789),
     };
 
