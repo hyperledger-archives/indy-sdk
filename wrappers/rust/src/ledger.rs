@@ -1305,13 +1305,13 @@ fn _append_txn_author_agreement_meta_to_request(command_handle: IndyHandle,
     let acc_mech_type = c_str!(acc_mech_type);
 
     ErrorCode::from(unsafe {
-        ledger::indy_append_txn_author_agreement_meta_to_request(command_handle,
-                                                                 request_json.as_ptr(),
-                                                                 opt_c_ptr!(text, text_str),
-                                                                 opt_c_ptr!(version, version_str),
-                                                                 opt_c_ptr!(hash, hash_str),
-                                                                 acc_mech_type.as_ptr(),
-                                                                 time_of_acceptance,
-                                                                 cb)
+        ledger::indy_append_txn_author_agreement_acceptance_to_request(command_handle,
+                                                                       request_json.as_ptr(),
+                                                                       opt_c_ptr!(text, text_str),
+                                                                       opt_c_ptr!(version, version_str),
+                                                                       opt_c_ptr!(hash, hash_str),
+                                                                       acc_mech_type.as_ptr(),
+                                                                       time_of_acceptance,
+                                                                       cb)
     })
 }

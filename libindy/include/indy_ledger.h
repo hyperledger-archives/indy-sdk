@@ -1074,7 +1074,7 @@ extern "C" {
     /// {
     ///     hash: Optional<str> - hash of requested TAA,
     ///     version: Optional<str> - version of requested TAA.
-    ///     timestamp: Optional<i64> - ledger will return TAA valid at requested timestamp.
+    ///     timestamp: Optional<u64> - ledger will return TAA valid at requested timestamp.
     /// }
     /// Null data or empty JSON are acceptable here. In this case, ledger will return the latest version of TAA.
     ///
@@ -1134,7 +1134,7 @@ extern "C" {
     /// #Params
     /// command_handle: command handle to map callback to caller context.
     /// submitter_did: (Optional) DID of the request sender.
-    /// timestamp: Optional<i64> - time to get an active acceptance mechanisms. Pass -1 to get the latest one.
+    /// timestamp: i64 - time to get an active acceptance mechanisms. Pass -1 to get the latest one.
     /// cb: Callback that takes command result as parameter.
     ///
     /// #Returns
@@ -1176,18 +1176,18 @@ extern "C" {
     ///
     /// #Errors
     /// Common*
-    extern indy_error_t indy_append_txn_author_agreement_meta_to_request(indy_handle_t command_handle,
-                                                                         const char *  request_json,
-                                                                         const char *  text,
-                                                                         const char *  version,
-                                                                         const char *  hash,
-                                                                         const char *  acc_mech_type,
-                                                                         indy_u64_t    time_of_acceptance,
+    extern indy_error_t indy_append_txn_author_agreement_acceptance_to_request(indy_handle_t command_handle,
+                                                                               const char *  request_json,
+                                                                               const char *  text,
+                                                                               const char *  version,
+                                                                               const char *  hash,
+                                                                               const char *  acc_mech_type,
+                                                                               indy_u64_t    time_of_acceptance,
 
-                                                                         void           (*cb)(indy_handle_t command_handle_,
-                                                                                              indy_error_t  err,
-                                                                                              const char*   request_with_meta_json)
-                                                                        );
+                                                                               void           (*cb)(indy_handle_t command_handle_,
+                                                                                                    indy_error_t  err,
+                                                                                                    const char*   request_with_meta_json)
+                                                                               );
 
 #ifdef __cplusplus
 }
