@@ -29,11 +29,11 @@ public class AppendAuthorAgreementMetaToRequestTest extends IndyIntegrationTest 
 
 	private void checkRequestMeta(String request) {
 		JSONObject expectedMeta = new JSONObject()
-				.put("acceptanceMechanismType", acceptanceMechanismType)
-				.put("hash", hash)
-				.put("timeOfAcceptance", timeOfAcceptance);
+				.put("mechanism", acceptanceMechanismType)
+				.put("taaDigest", hash)
+				.put("time", timeOfAcceptance);
 
-		JSONObject actualRequest = new JSONObject(request).getJSONObject("txnAuthrAgrmtMeta");
+		JSONObject actualRequest = new JSONObject(request).getJSONObject("taaAcceptance");
 		assertTrue(JsonObjectSimilar.similar(actualRequest, expectedMeta));
 	}
 

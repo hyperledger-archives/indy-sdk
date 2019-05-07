@@ -22,13 +22,13 @@ REQUEST = json.dumps({
 
 def _check_request_meta(request: str):
     expected_meta = {
-        "acceptanceMechanismType": ACCEPTANCE_MECH_TYPE,
-        "hash": HASH,
-        "timeOfAcceptance": TIME_OF_ACCEPTANCE
+        "mechanism": ACCEPTANCE_MECH_TYPE,
+        "taaDigest": HASH,
+        "time": TIME_OF_ACCEPTANCE
     }
 
     request = json.loads(request)
-    assert request['txnAuthrAgrmtMeta'] == expected_meta
+    assert request['taaAcceptance'] == expected_meta
 
 
 @pytest.mark.asyncio

@@ -191,11 +191,11 @@ test('ledger', async function (t) {
   // author agreement meta
   req = await indy.appendTxnAuthorAgreementMetaToRequest(req, 'indy agreement', '1.0.0', null, 'acceptance mechanism label 1', 123456789)
   var expectedMeta = {
-    'acceptanceMechanismType': 'acceptance mechanism label 1',
-    'hash': '7213b9aabf8677edf6b17d20a9fbfaddb059ea4cb122d163bdf658ea67196120',
-    'timeOfAcceptance': 123456789
+    'mechanism': 'acceptance mechanism label 1',
+    'taaDigest': '7213b9aabf8677edf6b17d20a9fbfaddb059ea4cb122d163bdf658ea67196120',
+    'time': 123456789
   }
-  t.deepEqual(req['txnAuthrAgrmtMeta'], expectedMeta)
+  t.deepEqual(req['taaAcceptance'], expectedMeta)
 
   // set back
   req = await indy.buildAuthRuleRequest(trusteeDid, 'NYM', 'ADD', 'role', null, '101', defaultConstraint)

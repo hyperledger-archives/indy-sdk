@@ -813,14 +813,14 @@
                                                                    outRequest:&requestJson];
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildTxnAuthorAgreementRequestWithSubmitterDid() failed!");
     NSDictionary *expectedMeta = @{
-            @"acceptanceMechanismType": @"acceptance type 1",
-            @"hash": @"050e52a57837fff904d3d059c8a123e3a04177042bf467db2b2c27abd8045d5e",
-            @"timeOfAcceptance": @(123456789),
+            @"mechanism": @"acceptance type 1",
+            @"taaDigest": @"050e52a57837fff904d3d059c8a123e3a04177042bf467db2b2c27abd8045d5e",
+            @"time": @(123456789),
     };
 
     request = [NSDictionary fromString:requestJson];
 
-    XCTAssertTrue([expectedMeta isEqualToDictionary:request[@"txnAuthrAgrmtMeta"]], @"Wrong Result Json!");
+    XCTAssertTrue([expectedMeta isEqualToDictionary:request[@"taaAcceptance"]], @"Wrong Result Json!");
 }
 
 @end
