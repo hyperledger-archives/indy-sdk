@@ -219,6 +219,37 @@ pub fn build_get_auth_rule_request(submitter_did: Option<&str>,
     ledger::build_get_auth_rule_request(submitter_did, auth_type, auth_action, field, old_value, new_value).wait()
 }
 
+pub fn build_txn_author_agreement_request(submitter_did: &str,
+                                          text: &str,
+                                          version: &str) -> Result<String, IndyError> {
+    ledger::build_txn_author_agreement_request(submitter_did, text, version).wait()
+}
+
+pub fn build_get_txn_author_agreement_request(submitter_did: Option<&str>,
+                                              data: Option<&str>, ) -> Result<String, IndyError> {
+    ledger::build_get_txn_author_agreement_request(submitter_did, data).wait()
+}
+
+pub fn build_acceptance_mechanism_request(submitter_did: &str,
+                                          aml: &str,
+                                          aml_context: Option<&str>) -> Result<String, IndyError> {
+    ledger::build_acceptance_mechanism_request(submitter_did, aml, aml_context).wait()
+}
+
+pub fn build_get_acceptance_mechanism_request(submitter_did: Option<&str>,
+                                              timestamp: Option<i64>, ) -> Result<String, IndyError> {
+    ledger::build_get_acceptance_mechanism_request(submitter_did, timestamp).wait()
+}
+
+pub fn append_txn_author_agreement_meta_to_request(request_json: &str,
+                                                   text: Option<&str>,
+                                                   version: Option<&str>,
+                                                   hash: Option<&str>,
+                                                   acc_mech_type: &str,
+                                                   time_of_acceptance: u64) -> Result<String, IndyError> {
+    ledger::append_txn_author_agreement_meta_to_request(request_json, text, version, hash, acc_mech_type, time_of_acceptance).wait()
+}
+
 pub fn post_entities() -> (&'static str, &'static str, &'static str) {
     lazy_static! {
                     static ref COMMON_ENTITIES_INIT: Once = ONCE_INIT;
