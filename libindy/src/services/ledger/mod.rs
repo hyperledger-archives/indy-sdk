@@ -1306,7 +1306,7 @@ mod tests {
         #[test]
         fn build_acceptance_mechanism_request_with_context() {
             let ledger_service = LedgerService::new();
-            
+
             let expected_result = json!({
                 "type": TXN_AUTHR_AGRMT_AML,
                 "aml":  _aml(),
