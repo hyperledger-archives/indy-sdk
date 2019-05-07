@@ -757,7 +757,7 @@
 
     NSDictionary *expectedResult = @{
             @"type": @"124",
-            @"amp": aml,
+            @"aml": aml,
             @"amlContext": @"some context",
     };
 
