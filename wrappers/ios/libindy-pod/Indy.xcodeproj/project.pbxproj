@@ -282,7 +282,7 @@
 					3E08C01A1EB3336A000A73BA = {
 						CreatedOnToolsVersion = 8.3.2;
 						DevelopmentTeam = MZ3U758J7T;
-						LastSwiftMigration = 0830;
+						LastSwiftMigration = 1020;
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -523,7 +523,7 @@
 				SWIFT_OBJC_BRIDGING_HEADER = "";
 				SWIFT_OBJC_INTERFACE_HEADER_NAME = "$(PROJECT_NAME)-Swift.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-				SWIFT_VERSION = 4.2;
+				SWIFT_VERSION = 5.0;
 				USER_HEADER_SEARCH_PATHS = "$(BUILT_PRODUCTS_DIR)/$(PRODUCT_NAME).framework/Headers $(CONTENTS_FOLDER_PATH)/Headers";
 			};
 			name = Debug;
@@ -570,7 +570,7 @@
 				SKIP_INSTALL = NO;
 				SWIFT_OBJC_BRIDGING_HEADER = "";
 				SWIFT_OBJC_INTERFACE_HEADER_NAME = "$(PROJECT_NAME)-Swift.h";
-				SWIFT_VERSION = 4.2;
+				SWIFT_VERSION = 5.0;
 				USER_HEADER_SEARCH_PATHS = "$(BUILT_PRODUCTS_DIR)/$(PRODUCT_NAME).framework/Headers";
 			};
 			name = Release;
