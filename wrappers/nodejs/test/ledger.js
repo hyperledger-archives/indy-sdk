@@ -174,14 +174,14 @@ test('ledger', async function (t) {
   t.deepEqual(res['result']['data']['1--ADD--role--*--101'], constraint)
 
   // author agreement
-  var req = await indy.buildTxnAuthorAgreementRequest(trusteeDid, 'indy agreement', '1.0.0')
+  req = await indy.buildTxnAuthorAgreementRequest(trusteeDid, 'indy agreement', '1.0.0')
   t.deepEqual(req['operation'], { 'type': '122', 'text': 'indy agreement', 'version': '1.0.0' })
 
-  req = await indy.buildGetTxnAuthorAgreementRequest(null, {'version': '1.0.0'})
+  req = await indy.buildGetTxnAuthorAgreementRequest(null, { 'version': '1.0.0' })
   t.deepEqual(req['operation'], { 'type': '123', 'version': '1.0.0' })
 
   // acceptance mechanism
-  var aml = {'acceptance mechanism label 1': 'some acceptance mechanism description 1'}
+  var aml = { 'acceptance mechanism label 1': 'some acceptance mechanism description 1' }
   req = await indy.buildAcceptanceMechanismRequest(trusteeDid, aml, null)
   t.deepEqual(req['operation'], { 'type': '124', 'aml': aml })
 
