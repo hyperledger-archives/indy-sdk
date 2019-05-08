@@ -296,11 +296,11 @@ public class ConnectionApi extends VcxJava.API {
         }
     };
 
-    public static CompletableFuture<String> connectionSendMessage(int connectionHandle, String message, String messageType, String messageTitle) throws VcxException {
-        logger.debug("connectionSendMessage() called with: connectionHandle = [" + connectionHandle + "], message = [" + message + "], messageType = [" + messageType + "], messageTitle = [" + messageTitle + "]");
+    public static CompletableFuture<String> connectionSendMessage(int connectionHandle, String message, String sendMessageOptions) throws VcxException {
+        logger.debug("connectionSendMessage() called with: connectionHandle = [" + connectionHandle + "], message = [" + message + "], sendMessageOptions = [" + sendMessageOptions + "]");
         CompletableFuture<String> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
-        int result = LibVcx.api.vcx_connection_send_message(commandHandle, connectionHandle, message, messageType, messageTitle, vcxConnectionSendMessageCB);
+        int result = LibVcx.api.vcx_connection_send_message(commandHandle, connectionHandle, message, sendMessageOptions, vcxConnectionSendMessageCB);
         checkResult(result);
         return future;
     }

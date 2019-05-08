@@ -166,9 +166,13 @@ vcx_error_t vcx_connection_delete_connection(vcx_command_handle_t command_handle
 ///
 /// msg: actual message to send
 ///
-/// msg_type: type of message to send
+/// send_message_options: config options json string that contains following options
+///     {
+///         msg_type: String, // type of message to send
+///         msg_title: String, // message title (user notification)
+///         ref_msg_id: Option<String>, // If responding to a message, id of the message
+///     }
 ///
-/// msg_title: message title (user notification)
 ///
 /// cb: Callback that provides array of matching messages retrieved
 ///
@@ -178,8 +182,7 @@ vcx_error_t vcx_connection_delete_connection(vcx_command_handle_t command_handle
 vcx_error_t vcx_connection_send_message(vcx_command_handle_t command_handle,
                                         vcx_connection_handle_t connection_handle,
                                         const char *msg,
-                                        const char *msg_type,
-                                        const char *msg_title,
+                                        const char *send_message_options,
                                         void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err, const char *msg_id));
     
 /// Generate a signature for the specified data

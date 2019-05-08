@@ -27,23 +27,23 @@ public abstract class LibVcx {
         public int vcx_shutdown(boolean delete);
         public int vcx_reset();
 
-    /**
-     * Sovtoken & nullpay
-     */
+        /**
+         * Sovtoken & nullpay
+         */
 //        public int sovtoken_init();
         public int nullpay_init();
 
-    /**
-     * Helper API for testing purposes.
-     */
+        /**
+         * Helper API for testing purposes.
+         */
         public void vcx_set_next_agency_response(int msg);
         public void vcx_get_current_error(PointerByReference error);
 
-    /**
-     * Schema object
-     *
-     * For creating, validating and committing a schema to the sovrin ledger.
-     */
+        /**
+         * Schema object
+         *
+         * For creating, validating and committing a schema to the sovrin ledger.
+         */
 
         /**
          * Creates a schema from a json string. Populates a handle to the new schema.
@@ -78,12 +78,12 @@ public abstract class LibVcx {
 
 
 
-    /**
-     * connection object
-     *
-     * For creating a connection with an identity owner for interactions such as exchanging
-     * claims and proofs.
-     */
+        /**
+         * connection object
+         *
+         * For creating a connection with an identity owner for interactions such as exchanging
+         * claims and proofs.
+         */
 
         /**
          * Creates a connection object to a specific identity owner. Populates a handle to the new connection.
@@ -136,73 +136,76 @@ public abstract class LibVcx {
         public int vcx_connection_delete_connection(int command_handle, int connection_handle, Callback cb);
 
         /** Send a message to the specified connection
-        ///
-        /// #params
-        ///
-        /// command_handle: command handle to map callback to user context.
-        ///
-        /// connection_handle: connection to receive the message
-        ///
-        /// msg: actual message to send
-        ///
-        /// msg_type: type of message to send
-        ///
-        /// msg_title: message title (user notification)
-        ///
-        /// cb: Callback that provides array of matching messages retrieved
-        ///
-        /// #Returns
-        /// Error code as a u32
+         ///
+         /// #params
+         ///
+         /// command_handle: command handle to map callback to user context.
+         ///
+         /// connection_handle: connection to receive the message
+         ///
+         /// msg: actual message to send
+         ///
+         /// send_message_options: config options json string that contains following options
+         ///     {
+         ///         msg_type: String, // type of message to send
+         ///         msg_title: String, // message title (user notification)
+         ///         ref_msg_id: Option<String>, // If responding to a message, id of the message
+         ///     }
+         ///
+         /// cb: Callback that provides array of matching messages retrieved
+         ///
+         /// #Returns
+         /// Error code as a u32
          */
-        public int vcx_connection_send_message(int command_handle, int connection_handle, String msg, String msg_type, String msg_title, Callback cb);
+        public int vcx_connection_send_message(int command_handle, int connection_handle, String msg, String send_message_options, Callback cb);
 
         /** Generate a signature for the specified data
-        ///
-        /// #params
-        ///
-        /// command_handle: command handle to map callback to user context.
-        ///
-        /// connection_handle: connection to receive the message
-        ///
-        /// data_raw: raw data buffer for signature
-        ///
-        /// data:len: length of data buffer
-        ///
-        /// cb: Callback that provides the generated signature
-        ///
-        /// #Returns
-        /// Error code as a u32
+         ///
+         /// #params
+         ///
+         /// command_handle: command handle to map callback to user context.
+         ///
+         /// connection_handle: connection to receive the message
+         ///
+         /// data_raw: raw data buffer for signature
+         ///
+         /// data:len: length of data buffer
+         ///
+         /// cb: Callback that provides the generated signature
+         ///
+         /// #Returns
+         /// Error code as a u32
          */
         public int vcx_connection_sign_data(int command_handle, int connection_handle, byte[] data_raw, int data_len, Callback cb);
 
         /** Verify the signature is valid for the specified data
-        ///
-        /// #params
-        ///
-        /// command_handle: command handle to map callback to user context.
-        ///
-        /// connection_handle: connection to receive the message
-        ///
-        /// data_raw: raw data buffer for signature
-        ///
-        /// data_len: length of data buffer
-        ///
-        /// signature_raw: raw data buffer for signature
-        ///
-        /// signature_len: length of data buffer
-        ///
-        /// cb: Callback that specifies whether the signature was valid or not
-        ///
-        /// #Returns
-        /// Error code as a u32
+         ///
+         /// #params
+         ///
+         /// command_handle: command handle to map callback to user context.
+         ///
+         /// connection_handle: connection to receive the message
+         ///
+         /// data_raw: raw data buffer for signature
+         ///
+         /// data_len: length of data buffer
+         ///
+         /// signature_raw: raw data buffer for signature
+         ///
+         /// signature_len: length of data buffer
+         ///
+         /// cb: Callback that specifies whether the signature was valid or not
+         ///
+         /// #Returns
+         /// Error code as a u32
          */
         public int vcx_connection_verify_signature(int command_handle, int connection_handle, byte[] data_raw, int data_len, byte[] signature_raw, int signature_len, Callback cb);
 
-    /**
-     * credential issuer object
-     *
-     * Used for offering and managing a credential with an identity owner.
-     */
+        /**
+         * credential issuer object
+         *
+         * Used for offering and managing a credential with an identity owner.
+         */
 
         /** Creates a credential object from the specified credentialdef handle. Populates a handle the new credential. */
         public int vcx_issuer_create_credential(int command_handle, String source_id, String cred_def_id, String issuer_did, String credential_data, String credential_name, long price, Callback cb);
@@ -238,11 +241,11 @@ public abstract class LibVcx {
         public int vcx_issuer_accept_credential(int credential_handle);
 
 
-    /**
-     * proof object
-     *
-     * Used for requesting and managing a proof request with an identity owner.
-     */
+        /**
+         * proof object
+         *
+         * Used for requesting and managing a proof request with an identity owner.
+         */
 
         /**
          * Creates a proof object.  Populates a handle to the new proof.
@@ -289,11 +292,11 @@ public abstract class LibVcx {
          */
         public int vcx_proof_release(int proof_handle);
 
-    /**
-     * disclosed_proof object
-     *
-     * Used for sending a disclosed_proof to an identity owner.
-     */
+        /**
+         * disclosed_proof object
+         *
+         * Used for sending a disclosed_proof to an identity owner.
+         */
 
         /**
          * Creates a disclosed_proof object.  Populates a handle to the new disclosed_proof.
