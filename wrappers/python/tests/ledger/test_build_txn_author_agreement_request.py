@@ -13,7 +13,7 @@ async def test_build_txn_author_agreement_request():
     expected_response = {
         "identifier": identifier,
         "operation": {
-            "type": "122",
+            "type": "4",
             "text": text,
             "version": version
         }
@@ -27,7 +27,7 @@ async def test_build_txn_author_agreement_request():
 async def test_build_get_txn_author_agreement_request():
     expected_response = {
         "operation": {
-            "type": "123",
+            "type": "6",
         }
     }
 
@@ -43,7 +43,7 @@ async def test_build_get_txn_author_agreement_request_for_hash():
 
     expected_response = {
         "operation": {
-            "type": "123",
+            "type": "6",
             "hash": data['hash'],
         }
     }

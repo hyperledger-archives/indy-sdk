@@ -175,18 +175,18 @@ test('ledger', async function (t) {
 
   // author agreement
   req = await indy.buildTxnAuthorAgreementRequest(trusteeDid, 'indy agreement', '1.0.0')
-  t.deepEqual(req['operation'], { 'type': '122', 'text': 'indy agreement', 'version': '1.0.0' })
+  t.deepEqual(req['operation'], { 'type': '4', 'text': 'indy agreement', 'version': '1.0.0' })
 
   req = await indy.buildGetTxnAuthorAgreementRequest(null, { 'version': '1.0.0' })
-  t.deepEqual(req['operation'], { 'type': '123', 'version': '1.0.0' })
+  t.deepEqual(req['operation'], { 'type': '6', 'version': '1.0.0' })
 
   // acceptance mechanism
   var aml = { 'acceptance mechanism label 1': 'some acceptance mechanism description 1' }
   req = await indy.buildAcceptanceMechanismRequest(trusteeDid, aml, null)
-  t.deepEqual(req['operation'], { 'type': '124', 'aml': aml })
+  t.deepEqual(req['operation'], { 'type': '5', 'aml': aml })
 
   req = await indy.buildGetAcceptanceMechanismRequest(null, 123456789)
-  t.deepEqual(req['operation'], { 'type': '125', 'timestamp': 123456789 })
+  t.deepEqual(req['operation'], { 'type': '7', 'timestamp': 123456789 })
 
   // author agreement meta
   req = await indy.appendTxnAuthorAgreementMetaToRequest(req, 'indy agreement', '1.0.0', null, 'acceptance mechanism label 1', 123456789)
