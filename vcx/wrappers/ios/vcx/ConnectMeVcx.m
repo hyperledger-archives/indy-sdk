@@ -446,19 +446,16 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
 
 - (void)connectionSendMessage:(VcxHandle)connectionHandle
                   withMessage:(NSString *)message
-                     withType:(NSString *)type
-                    withTitle:(NSString *)title
+       withSendMessageOptions:(NSString *)sendMessageOptions
                withCompletion:(void (^)(NSError *error, NSString *msg_id))completion
 {
     vcx_command_handle_t handle= [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
     const char *message_ctype = [message cStringUsingEncoding:NSUTF8StringEncoding];
-    const char *title_ctype = [title cStringUsingEncoding:NSUTF8StringEncoding];
-    const char *type_ctype = [type cStringUsingEncoding:NSUTF8StringEncoding];
+    const char *sendMessageOptions_ctype = [sendMessageOptions cStringUsingEncoding:NSUTF8StringEncoding];
     vcx_error_t ret = vcx_connection_send_message(handle,
                                                   connectionHandle,
                                                   message_ctype,
-                                                  type_ctype,
-                                                  title_ctype,
+                                                  sendMessageOptions_ctype,
                                                   VcxWrapperCommonStringCallback);
     if (ret != 0)
     {
