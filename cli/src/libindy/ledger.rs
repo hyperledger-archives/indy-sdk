@@ -104,7 +104,6 @@ impl Ledger {
 
     pub fn build_get_txn_author_agreement_request(submitter_did: Option<&str>,
                                                   data: Option<&str>, ) -> Result<String, IndyError> {
-//        Ok(r#"{"result":{"txnTime":1556609886,"data":{"text":"This is Sovrin transaction agreement. Whether article spirits new her covered hastily sitting her. Money witty books nor son add. Chicken age had evening believe but proceed pretend mrs. At missed advice my it no sister. Miss told ham dull knew see she spot near can. Spirit her entire her called. Breakfast procuring nay end happiness allowance assurance frankness. Met simplicity nor difficulty unreserved who. Entreaties mr conviction dissimilar me astonished estimating cultivated. On no applauded exquisite my additions. Pronounce add boy estimable nay suspected. You sudden nay elinor thirty esteem temper. Quiet leave shy you gay off asked large style. ","version":"1.0.0"},"identifier":"VRNNw8MFq4YptzuiFf4Ne1","dest":"VRNNw8MFq4YptzuiFf4Ne1","seqNo":17,"type":"105","reqId":1556609886644963840},"op":"REPLY"}"#.to_string())
         ledger::build_get_txn_author_agreement_request(submitter_did, data).wait()
     }
 

@@ -100,6 +100,7 @@ pub mod connect_command {
                     match Pool::close(handle) {
                         Ok(()) => {
                             set_connected_pool(ctx, None);
+                            set_transaction_author_info(ctx, None);
                             Ok(println_succ!("Pool \"{}\" has been disconnected", name))
                         }
                         Err(err) => Err(handle_indy_error(err, None, None, Some(name.as_ref())))
@@ -314,7 +315,7 @@ pub fn set_transaction_author_agreement(ctx: &CommandContext, pool_handle: i32, 
             let read_agreement = wait_for_user_reply();
 
             if !read_agreement {
-                println_warn!("Transaction author agreement has not been Accepted.");
+                println_warn!("Transaction author agreement has NOT been Accepted.");
                 println!("Use `pool show-taa` command if you will need to accept a Pool agreement.");
                 println!();
                 return Ok(Some(()));
@@ -329,7 +330,7 @@ pub fn set_transaction_author_agreement(ctx: &CommandContext, pool_handle: i32, 
         let accept_agreement = wait_for_user_reply();
 
         if !accept_agreement {
-            println_warn!("Transaction author agreement HAS NOT been Accepted.");
+            println_warn!("Transaction author agreement has NOT been Accepted.");
             println!("Use `pool show-taa` command if you will need to accept a Pool agreement.");
             println!();
             return Ok(Some(()));
