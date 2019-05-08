@@ -88,7 +88,7 @@ export interface IFFIEntryPoint {
   vcx_connection_update_state: (commandId: number, handle: number, cb: any) => number,
   vcx_connection_get_state: (commandId: number, handle: number, cb: any) => number,
   vcx_connection_invite_details: (commandId: number, handle: number, abbreviated: boolean, cb: any) => number,
-  vcx_connection_send_message: (commandId: number, handle: number, msg: string, type: string, title: string, cb: any) =>
+  vcx_connection_send_message: (commandId: number, handle: number, msg: string, sendMsgOptions: string, cb: any) =>
     number,
   vcx_connection_sign_data: (commandId: number, handle: number, data: number, dataLength: number, cb: any) => number
   vcx_connection_verify_signature: (commandId: number, handle: number, data: number, dataLength: number,
@@ -235,7 +235,7 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
   vcx_connection_invite_details: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_BOOL,
     FFI_CALLBACK_PTR]],
   vcx_connection_send_message: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_STRING_DATA,
-    FFI_STRING_DATA, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
+    FFI_STRING_DATA, FFI_CALLBACK_PTR]],
   vcx_connection_sign_data: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_UNSIGNED_INT,
     FFI_UNSIGNED_INT, FFI_CALLBACK_PTR]],
   vcx_connection_verify_signature: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_UNSIGNED_INT,

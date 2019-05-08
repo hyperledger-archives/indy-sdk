@@ -233,7 +233,7 @@ impl IssuerCredential {
             .edge_agent_payload(&self.issued_vk, &self.remote_vk, &data, PayloadKinds::Cred, self.thread.clone())?
             .agent_did(&self.agent_did)?
             .agent_vk(&self.agent_vk)?
-            .ref_msg_id(cred_req_msg_id)?
+            .ref_msg_id(Some(cred_req_msg_id.to_string()))?
             .send_secure()
             .map_err(|err| err.extend("could not send credential offer"))?;
 
