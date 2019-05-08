@@ -1059,6 +1059,9 @@ mod tests {
         assert_eq!(proof.proof_state, ProofStateType::ProofValidated);
     }
 
+    // Todo: when changes for proof restrictions validation in libindy are released,
+    // update vcx dependency of libindy and delete #[ignore]
+    #[ignore]
     #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
