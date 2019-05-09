@@ -1,4 +1,4 @@
-extern crate indy_crypto;
+extern crate ursa;
 
 use std::collections::HashMap;
 
