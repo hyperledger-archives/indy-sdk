@@ -20,7 +20,7 @@ public class AcceptanceMechanismRequestTest extends IndyIntegrationTest {
 				.put("identifier", DID)
 				.put("operation",
 						new JSONObject()
-								.put("type", "124")
+								.put("type", "5")
 								.put("aml", aml)
 								.put("amlContext", amlContext)
 				);
@@ -39,7 +39,7 @@ public class AcceptanceMechanismRequestTest extends IndyIntegrationTest {
 		JSONObject expectedResult = new JSONObject()
 				.put("operation",
 						new JSONObject()
-								.put("type", "125")
+								.put("type", "7")
 								.put("timestamp", timestamp)
 				);
 

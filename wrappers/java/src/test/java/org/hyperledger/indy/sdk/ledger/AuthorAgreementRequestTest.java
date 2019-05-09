@@ -16,7 +16,7 @@ public class AuthorAgreementRequestTest extends IndyIntegrationTest {
 				.put("identifier", DID)
 				.put("operation",
 						new JSONObject()
-								.put("type", "122")
+								.put("type", "4")
 								.put("text", TEXT)
 								.put("version", VERSION)
 				);
@@ -33,7 +33,7 @@ public class AuthorAgreementRequestTest extends IndyIntegrationTest {
 		JSONObject expectedResult = new JSONObject()
 				.put("operation",
 						new JSONObject()
-								.put("type", "123")
+								.put("type", "6")
 				);
 
 		String request = Ledger.buildGetTxnAuthorAgreementRequest(null, null).get();
@@ -51,7 +51,7 @@ public class AuthorAgreementRequestTest extends IndyIntegrationTest {
 		JSONObject expectedResult = new JSONObject()
 				.put("operation",
 						new JSONObject()
-								.put("type", "123")
+								.put("type", "6")
 								.put("version", VERSION)
 				);
 
