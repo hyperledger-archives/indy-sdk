@@ -1059,9 +1059,6 @@ mod tests {
         assert_eq!(proof.proof_state, ProofStateType::ProofValidated);
     }
 
-    // Todo: when changes for proof restrictions validation in libindy are released,
-    // update vcx dependency of libindy and delete #[ignore]
-    #[ignore]
     #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
@@ -1097,8 +1094,19 @@ mod tests {
 
         let rc = proof.proof_validation();
 
-        assert!(rc.is_ok());
+        // proof validation should fail because restriction
+        rc.unwrap_err(); //FIXME check error code also
         assert_eq!(proof.proof_state, ProofStateType::ProofInvalid);
+
+        // remove restriction, now validation should pass
+        proof.proof_state = ProofStateType::ProofUndefined;
+        proof.proof_request.as_mut().unwrap()
+            .proof_request_data.requested_attributes
+            .get_mut("address1_1").unwrap().restrictions = None;
+        let rc = proof.proof_validation();
+
+        rc.unwrap();
+        assert_eq!(proof.proof_state, ProofStateType::ProofValidated);
     }
 
 }
