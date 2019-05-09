@@ -1,11 +1,11 @@
-extern crate indy_crypto;
+extern crate ursa;
 
 use errors::prelude::*;
 
 use domain::anoncreds::credential::AttributeValues;
 use domain::anoncreds::proof_request::{AttributeInfo, PredicateInfo, ProofRequestExtraQuery};
 use services::anoncreds::prover::Prover;
-use self::indy_crypto::cl::{issuer, verifier, CredentialSchema, NonCredentialSchema, MasterSecret, CredentialValues, SubProofRequest};
+use self::ursa::cl::{issuer, verifier, CredentialSchema, NonCredentialSchema, MasterSecret, CredentialValues, SubProofRequest};
 
 
 use std::collections::{HashSet, HashMap};
@@ -69,7 +69,9 @@ pub fn build_sub_proof_request(attrs_for_credential: &Vec<AttributeInfo>,
     }
 
     for predicate in predicates_for_credential {
-        sub_proof_request_builder.add_predicate(&attr_common_view(&predicate.name), "GE", predicate.p_value)?;
+        let p_type = format!("{}", predicate.p_type);
+
+        sub_proof_request_builder.add_predicate(&attr_common_view(&predicate.name), &p_type, predicate.p_value)?;
     }
 
     let res = sub_proof_request_builder.finalize()?;

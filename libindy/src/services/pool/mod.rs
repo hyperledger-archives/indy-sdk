@@ -1,7 +1,7 @@
 extern crate byteorder;
 extern crate digest;
 extern crate hex;
-extern crate indy_crypto;
+extern crate ursa;
 extern crate rand;
 extern crate rmp_serde;
 extern crate rust_base58;
@@ -627,7 +627,7 @@ mod tests {
 
         use super::*;
 
-        use self::indy_crypto::bls::{Generator, SignKey, VerKey};
+        use self::ursa::bls::{Generator, SignKey, VerKey};
 
         pub static POLL_TIMEOUT: i64 = 1_000; /* in ms */
 
