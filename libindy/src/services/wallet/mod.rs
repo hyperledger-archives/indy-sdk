@@ -28,7 +28,8 @@ mod storage;
 mod encryption;
 mod query_encryption;
 mod iterator;
-mod language;
+// TODO: Remove query language out of wallet module
+pub mod language;
 mod export_import;
 mod wallet;
 

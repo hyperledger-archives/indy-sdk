@@ -92,6 +92,7 @@ fn build_executor() -> CommandExecutor {
         .add_command(pool::list_command::new())
         .add_command(pool::disconnect_command::new())
         .add_command(pool::delete_command::new())
+        .add_command(pool::show_taa_command::new())
         .finalize_group()
         .add_group(wallet::group::new())
         .add_command(wallet::create_command::new())

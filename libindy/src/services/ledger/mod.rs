@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use indy_crypto::cl::RevocationRegistryDelta as CryproRevocationRegistryDelta;
+use ursa::cl::RevocationRegistryDelta as CryproRevocationRegistryDelta;
 use serde::de::DeserializeOwned;
 use serde_json;
 use serde_json::Value;

@@ -29,9 +29,9 @@ impl ProtocolVersion {
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct TxnAuthrAgrmtMeta {
-    pub acceptance_mechanism_type: String,
-    pub hash: String,
-    pub time_of_acceptance: u64
+    pub mechanism: String,
+    pub taa_digest: String,
+    pub time: u64
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
@@ -44,7 +44,7 @@ pub struct Request<T: serde::Serialize> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub signature: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub txn_authr_agrmt_meta: Option<TxnAuthrAgrmtMeta>
+    pub taa_acceptance: Option<TxnAuthrAgrmtMeta>
 }
 
 impl<T: serde::Serialize> Request<T> {
@@ -55,7 +55,7 @@ impl<T: serde::Serialize> Request<T> {
             operation,
             protocol_version: Some(protocol_version),
             signature: None,
-            txn_authr_agrmt_meta: None,
+            taa_acceptance: None,
         }
     }
 

@@ -823,7 +823,8 @@ mod tests {
 
     use super::*;
 
-    use self::rand::{Rng, thread_rng};
+    use self::rand::{thread_rng, Rng};
+    use rand::distributions::{Alphanumeric, Standard};
 
     impl PartialEq for StorageRecord {
         fn eq(&self, other: &StorageRecord) -> bool {
@@ -874,11 +875,11 @@ mod tests {
     }
 
     fn _random_vector(len: usize) -> Vec<u8> {
-        thread_rng().gen_iter().take(len).collect()
+        thread_rng().sample_iter(&Standard).take(len).collect()
     }
 
     fn _random_string(len: usize) -> String {
-        thread_rng().gen_ascii_chars().take(len).collect()
+        thread_rng().sample_iter(&Alphanumeric).take(len).collect()
     }
 
     lazy_static!(
