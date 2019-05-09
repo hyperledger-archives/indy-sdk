@@ -110,6 +110,8 @@ pub mod nym_command {
         let mut request = Ledger::build_nym_request(&submitter_did, target_did, verkey, None, role)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
 
+        set_author_agreement(ctx, &mut request)?;
+
         let payment_method = set_request_fees(&mut request, wallet_handle, Some(&submitter_did), &fees_inputs, &fees_outputs, extra)?;
 
         let (response_json, mut response): (String, Response<serde_json::Value>) =
@@ -225,6 +227,8 @@ pub mod attrib_command {
 
         let mut request = Ledger::build_attrib_request(&submitter_did, target_did, hash, raw, enc)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
+
+        set_author_agreement(ctx, &mut request)?;
 
         let payment_method = set_request_fees(&mut request, wallet_handle, Some(&submitter_did), &fees_inputs, &fees_outputs, extra)?;
 
@@ -351,6 +355,8 @@ pub mod schema_command {
 
         let mut request = Ledger::build_schema_request(&submitter_did, &schema_data)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
+
+        set_author_agreement(ctx, &mut request)?;
 
         let payment_method = set_request_fees(&mut request, wallet_handle, Some(&submitter_did), &fees_inputs, &fees_outputs, extra)?;
 
@@ -556,6 +562,8 @@ pub mod cred_def_command {
         let mut request = Ledger::build_cred_def_request(&submitter_did, &cred_def_data)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
 
+        set_author_agreement(ctx, &mut request)?;
+
         let payment_method = set_request_fees(&mut request, wallet_handle, Some(&submitter_did), &fees_inputs, &fees_outputs, extra)?;
 
         let (response_json, response): (String, Response<serde_json::Value>) =
@@ -680,8 +688,10 @@ pub mod node_command {
             JSONValue::from(json).to_string()
         };
 
-        let request = Ledger::build_node_request(&submitter_did, target_did, &node_data)
-            .map_err(|err| handle_indy_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name)))?;
+        let mut request = Ledger::build_node_request(&submitter_did, target_did, &node_data)
+            .map_err(|err| handle_indy_error(err, None, None, None))?;
+
+        set_author_agreement(ctx, &mut request)?;
 
         let (_, response): (String, Response<serde_json::Value>) =
             send_write_request!(ctx, send, &request, pool_handle, &pool_name, wallet_handle, &wallet_name, &submitter_did);
@@ -727,8 +737,10 @@ pub mod pool_config_command {
         let force = get_opt_bool_param("force", params).map_err(error_err!())?.unwrap_or(false);
         let send = get_opt_bool_param("send", params).map_err(error_err!())?.unwrap_or(SEND_REQUEST);
 
-        let request = Ledger::indy_build_pool_config_request(&submitter_did, writes, force)
-            .map_err(|err| handle_indy_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name)))?;
+        let mut request = Ledger::indy_build_pool_config_request(&submitter_did, writes, force)
+            .map_err(|err| handle_indy_error(err, None, None, None))?;
+
+        set_author_agreement(ctx, &mut request)?;
 
         let (_, response): (String, Response<serde_json::Value>) =
             send_write_request!(ctx, send, &request, pool_handle, &pool_name, wallet_handle, &wallet_name, &submitter_did);
@@ -872,9 +884,11 @@ pub mod pool_upgrade_command {
         let package = get_opt_str_param("package", params).map_err(error_err!())?;
         let send = get_opt_bool_param("send", params).map_err(error_err!())?.unwrap_or(SEND_REQUEST);
 
-        let request = Ledger::indy_build_pool_upgrade_request(&submitter_did, name, version, action, sha256,
-                                                              timeout, schedule, justification, reinstall, force, package)
-            .map_err(|err| handle_indy_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name)))?;
+        let mut request = Ledger::indy_build_pool_upgrade_request(&submitter_did, name, version, action, sha256,
+                                                                  timeout, schedule, justification, reinstall, force, package)
+            .map_err(|err| handle_indy_error(err, None, None, None))?;
+
+        set_author_agreement(ctx, &mut request)?;
 
         let (_, response): (String, Response<serde_json::Value>) =
             send_write_request!(ctx, send, &request, pool_handle, &pool_name, wallet_handle, &wallet_name, &submitter_did);
@@ -1366,8 +1380,10 @@ pub mod auth_rule_command {
         let constraint = get_str_param("constraint", params).map_err(error_err!())?;
         let send = get_opt_bool_param("send", params).map_err(error_err!())?.unwrap_or(SEND_REQUEST);
 
-        let request = Ledger::build_auth_rule_request(&submitter_did, txn_type, &action.to_uppercase(), field, old_value, new_value, constraint)
+        let mut request = Ledger::build_auth_rule_request(&submitter_did, txn_type, &action.to_uppercase(), field, old_value, new_value, constraint)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
+
+        set_author_agreement(ctx, &mut request)?;
 
         let (_, mut response): (String, Response<serde_json::Value>) =
             send_write_request!(ctx, send, &request, pool_handle, &pool_name, wallet_handle, &wallet_name, &submitter_did);
@@ -1565,6 +1581,14 @@ fn _write_file(file: &str, content: &str) -> Result<(), std::io::Error> {
 
     file
         .write_all(content.as_bytes())
+}
+
+pub fn set_author_agreement(ctx: &CommandContext, request: &mut String) -> Result<(), ()> {
+    if let Some((text, version, acc_mech_type, time_of_acceptance)) = get_transaction_author_info(&ctx) {
+        *request = Ledger::append_txn_author_agreement_meta_to_request(&request, Some(&text), Some(&version), None, &acc_mech_type, time_of_acceptance)
+            .map_err(|err| handle_indy_error(err, None, None, None))?;
+    };
+    Ok(())
 }
 
 pub fn set_request_fees(request: &mut String, wallet_handle: i32, submitter_did: Option<&str>, fees_inputs: &Option<Vec<&str>>, fees_outputs: &Option<Vec<String>>, extra: Option<&str>) -> Result<Option<String>, ()> {
@@ -1794,6 +1818,23 @@ fn get_txn_title(role: &serde_json::Value) -> serde_json::Value {
 
 fn timestamp_to_datetime(_time: i64) -> String {
     NaiveDateTime::from_timestamp(_time, 0).to_string()
+}
+
+pub fn get_active_transaction_author_agreement(_pool_handle: i32) -> Result<Option<(String, String)>, ()> {
+    let response = Ledger::build_get_txn_author_agreement_request(None, None)
+        .and_then(|request| Ledger::submit_request(_pool_handle, &request))
+        .map_err(|err| handle_indy_error(err, None, None, None))?;
+
+    let response = serde_json::from_str::<serde_json::Value>(&response)
+        .map_err(|err| println_err!("Invalid transaction response: {:?}", err))?;
+
+    let text = response["result"]["data"]["text"].as_str();
+    let version = response["result"]["data"]["version"].as_str();
+
+    match (text, version) {
+        (Some(text), Some(version)) => Ok(Some((text.to_string(), version.to_string()))),
+        _ => Ok(None)
+    }
 }
 
 #[derive(Deserialize, Eq, PartialEq, Debug)]

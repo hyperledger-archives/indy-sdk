@@ -150,6 +150,7 @@ pub struct CommandContext {
     sub_prompts: RefCell<BTreeMap<usize, String>>,
     is_exit: RefCell<bool>,
     int_values: RefCell<HashMap<&'static str, i32>>,
+    uint_values: RefCell<HashMap<&'static str, u64>>,
     string_values: RefCell<HashMap<&'static str, String>>,
     plugins: RefCell<HashMap<String, libloading::Library>>,
 }
@@ -161,6 +162,7 @@ impl CommandContext {
             sub_prompts: RefCell::new(BTreeMap::new()),
             is_exit: RefCell::new(false),
             int_values: RefCell::new(HashMap::new()),
+            uint_values: RefCell::new(HashMap::new()),
             string_values: RefCell::new(HashMap::new()),
             plugins: RefCell::new(HashMap::new()),
         }
@@ -209,6 +211,18 @@ impl CommandContext {
 
     pub fn get_int_value(&self, key: &'static str) -> Option<i32> {
         self.int_values.borrow().get(key).map(i32::to_owned)
+    }
+
+    pub fn set_uint_value(&self, key: &'static str, value: Option<u64>) {
+        if let Some(value) = value {
+            self.uint_values.borrow_mut().insert(key, value);
+        } else {
+            self.uint_values.borrow_mut().remove(key);
+        }
+    }
+
+    pub fn get_uint_value(&self, key: &'static str) -> Option<u64> {
+        self.uint_values.borrow().get(key).cloned()
     }
 
     pub fn set_string_value(&self, key: &'static str, value: Option<String>) {

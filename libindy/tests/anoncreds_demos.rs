@@ -314,7 +314,7 @@ mod demos {
                })
            }),
            "requested_predicates": json!({
-               "predicate1_referent": json!({ "name":"age", "p_type":">=", "p_value":18 }),
+               "predicate1_referent": json!({ "name":"age", "p_type":">=", "p_value":18, "restrictions": json!({ "cred_def_id": gvt_cred_def_id })}),
                "predicate2_referent": json!({ "name":"period", "p_type":">=", "p_value":5 }),
            }),
         }).to_string();
