@@ -647,6 +647,75 @@ public class Anoncreds extends IndyJava.API {
 		return future;
 	}
 
+    /**
+     * Set credential attribute tag policy for input credential definition id.
+     * Specify null to clear policy, resetting to default (tag all attributes).
+     * Set retroactive to force all existing credentials in wallet on input credential definition id into compliance,
+     * rewriting their tags accordingly.
+     *
+     * @param wallet            A Wallet.
+     * @param credDefId         Credential definition identifier
+     * @param tagAttrsJson      List json with attributes to tag: null for default (all), empty to tag no attributes
+     * @param retroactive       Whether to rewrite tags on existing credentials to comply with specified policy
+     * @throws IndyException    Thrown if an error occurs when calling the underlying SDK.
+     */
+	public static CompletableFuture<Void> proverSetCredentialAttrTagPolicy(
+            Wallet wallet,
+            String credDefId,
+            String tagAttrsJson,
+            boolean retroactive) throws IndyException {
+
+		ParamGuard.notNull(wallet, "wallet");
+		ParamGuard.notNullOrWhiteSpace(credDefId, "credDefId");
+
+		CompletableFuture<Void> future = new CompletableFuture<Void>();
+		int commandHandle = addFuture(future);
+
+		int walletHandle = wallet.getWalletHandle();
+
+		int result = LibIndy.api.indy_prover_set_credential_attr_tag_policy(
+				commandHandle,
+				walletHandle,
+				credDefId,
+				tagAttrsJson,
+                retroactive);
+
+		checkResult(future, result);
+
+		return future;
+	}
+
+    /**
+     * Get current attribute tag policy for input credential definition id, as a JSON list
+     * of attribute names (null for default policy tagging all attributes).
+     *
+     * @param wallet            A Wallet.
+     * @param credDefId         Credential definition identifier
+     * @return A future that resolves to a JSON null or list of taggable attributes
+     * @throws IndyException    Thrown if an error occurs when calling the underlying SDK.
+     */
+	public static CompletableFuture<String> proverGetCredentialAttrTagPolicy(
+            Wallet wallet,
+            String credDefId) throws IndyException {
+
+		ParamGuard.notNull(wallet, "wallet");
+		ParamGuard.notNullOrWhiteSpace(credDefId, "credDefId");
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int walletHandle = wallet.getWalletHandle();
+
+		int result = LibIndy.api.indy_prover_get_credential_attr_tag_policy(
+				commandHandle,
+				walletHandle,
+				credDefId);
+
+		checkResult(future, result);
+
+		return future;
+	}
+
 	/**
 	 * Check credential provided by Issuer for the given credential request,
 	 * updates the credential by a master secret and stores in a secure wallet.
@@ -659,7 +728,7 @@ public class Anoncreds extends IndyJava.API {
 	 *         "schema_version": "credential schema version",
 	 *         "issuer_did": "credential issuer did",
 	 *         "cred_def_id": "credential definition id",
-	 *         // for every attribute in credValuesJson
+	 *         // for every attribute in credValuesJson, as credential attribute tag policy filters
 	 *         "attr::{attribute name}::marker": "1",
 	 *         "attr::{attribute name}::value": "attribute raw value",
 	 *     }

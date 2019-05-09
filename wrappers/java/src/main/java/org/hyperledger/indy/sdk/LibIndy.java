@@ -120,6 +120,8 @@ public abstract class LibIndy {
 		public int indy_issuer_merge_revocation_registry_deltas(int command_handle, String rev_reg_delta_json, String other_rev_reg_delta_json, Callback cb);
 		public int indy_prover_create_master_secret(int command_handle, int wallet_handle, String master_secret_id, Callback cb);
 		public int indy_prover_create_credential_req(int command_handle, int wallet_handle, String prover_did, String cred_offer_json, String cred_def_json, String master_secret_id, Callback cb);
+		public int indy_prover_set_credential_attr_tag_policy(int command_handle, int wallet_handle, String cred_def_id, String tag_attrs_json, boolean retroactive, String Callback cb);
+		public int indy_prover_get_credential_attr_tag_policy(int command_handle, int wallet_handle, String cred_def_id, String Callback cb);
 		public int indy_prover_store_credential(int command_handle, int wallet_handle, String cred_id, String cred_req_metadata_json, String cred_json, String cred_def_json, String rev_reg_def_json, Callback cb);
 		public int indy_prover_get_credentials(int command_handle, int wallet_handle, String filter_json, Callback cb);
 		public int indy_prover_get_credential(int command_handle, int wallet_handle, String cred_id, Callback cb);

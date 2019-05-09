@@ -79,6 +79,20 @@ extern {
                                              cb: Option<ResponseStringStringCB>) -> Error;
 
     #[no_mangle]
+    pub fn indy_prover_set_credential_attr_tag_policy(command_handle: Handle,
+                                                      wallet_handle: Handle,
+                                                      cred_def_id: CString,
+                                                      taggable_json: CString,
+                                                      retroactive: bool,
+                                                      cb: Option<ResponseEmptyCB>) -> Error;
+
+    #[no_mangle]
+    pub fn indy_prover_get_credential_attr_tag_policy(command_handle: Handle,
+                                                      wallet_handle: Handle,
+                                                      cred_def_id: CString,
+                                                      cb: Option<ResponseStringCB>) -> Error;
+
+    #[no_mangle]
     pub fn indy_prover_store_credential(command_handle: Handle,
                                         wallet_handle: Handle,
                                         cred_id: CString,

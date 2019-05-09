@@ -126,6 +126,25 @@ extern "C" {
                                                                                const char*   cred_req_metadata_json)
                                                           );
 
+    extern indy_error_t indy_prover_set_credential_attr_tag_policy(indy_handle_t command_handle,
+                                                                   indy_handle_t wallet_handle,
+                                                                   const char *  cred_def_id,
+                                                                   const char *  tag_attrs_json,
+                                                                   indy_bool_t   retroactive,
+
+                                                                   void          (*cb)(indy_handle_t command_handle_,
+                                                                                       indy_error_t  err)
+                                                                   );
+
+    extern indy_error_t indy_prover_get_credential_attr_tag_policy(indy_handle_t command_handle,
+                                                                   indy_handle_t wallet_handle,
+                                                                   const char *  cred_def_id,
+
+                                                                   void          (*cb)(indy_handle_t command_handle_,
+                                                                                       indy_error_t  err,
+                                                                                       const char*   catpol_json)
+                                                                   );
+
     extern indy_error_t indy_prover_store_credential(indy_handle_t command_handle,
                                                      indy_handle_t wallet_handle,
                                                      const char *  cred_id,
