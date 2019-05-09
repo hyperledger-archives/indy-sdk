@@ -3,8 +3,8 @@ extern crate indy_crypto;
 use errors::prelude::*;
 
 use domain::anoncreds::credential::AttributeValues;
-use domain::anoncreds::proof_request::{AttributeInfo, PredicateInfo};
-
+use domain::anoncreds::proof_request::{AttributeInfo, PredicateInfo, ProofRequestExtraQuery};
+use services::anoncreds::prover::Prover;
 use self::indy_crypto::cl::{issuer, verifier, CredentialSchema, NonCredentialSchema, MasterSecret, CredentialValues, SubProofRequest};
 
 
@@ -88,4 +88,15 @@ pub fn parse_cred_rev_id(cred_rev_id: &str) -> IndyResult<u32> {
     trace!("parse_cred_rev_id <<< res: {:?}", res);
 
     Ok(res)
+}
+
+pub fn build_wql_query(name: &str,
+                       referent: &str,
+                       restrictions: &Option<serde_json::Value>,
+                       extra_query: &Option<&ProofRequestExtraQuery>) -> IndyResult<String> {
+
+    trace!("build_wql_query >>> name: {:?}, referent: {:?}, restrictions: {:?}, extra_query: {:?}",
+           name, referent, restrictions, extra_query);
+
+    Prover::new().build_query(name, referent, restrictions, extra_query)
 }
