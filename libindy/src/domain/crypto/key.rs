@@ -1,4 +1,4 @@
-extern crate indy_crypto;
+extern crate ursa;
 extern crate zeroize;
 
 use self::zeroize::Zeroize;

@@ -1,6 +1,6 @@
 use super::constants::{REVOC_REG_ENTRY, GET_REVOC_REG, GET_REVOC_REG_DELTA};
 
-use indy_crypto::cl::{RevocationRegistry, RevocationRegistryDelta};
+use ursa::cl::{RevocationRegistry, RevocationRegistryDelta};
 
 use super::response::{GetReplyResultV1, ReplyType};
 use super::super::anoncreds::revocation_registry::RevocationRegistryV1;

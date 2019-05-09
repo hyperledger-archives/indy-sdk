@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::collections::HashSet;
 
-use indy_crypto::cl::{
+use ursa::cl::{
     CredentialKeyCorrectnessProof,
     CredentialPrivateKey,
     CredentialPublicKey,
@@ -14,7 +14,7 @@ use indy_crypto::cl::{
     RevocationTailsGenerator,
     SignatureCorrectnessProof,
 };
-use indy_crypto::cl::issuer::Issuer as CryptoIssuer;
+use ursa::cl::issuer::Issuer as CryptoIssuer;
 
 use domain::anoncreds::credential::AttributeValues;
 use domain::anoncreds::credential_definition::{CredentialDefinitionData, CredentialDefinitionV1 as CredentialDefinition};
@@ -43,7 +43,7 @@ impl Issuer {
             CryptoIssuer::new_credential_def(&credential_schema, &non_credential_schema, support_revocation)?;
 
         let credential_definition_value = CredentialDefinitionData {
-            primary: credential_public_key.get_primary_key()?.clone()?,
+            primary: credential_public_key.get_primary_key()?.try_clone()?,
             revocation: credential_public_key.get_revocation_key()?.clone(),
         };
 
