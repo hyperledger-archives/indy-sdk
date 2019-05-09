@@ -16,7 +16,7 @@ extern crate serde_json;
 extern crate byteorder;
 extern crate indyrs as indy;
 extern crate indyrs as api;
-extern crate indy_crypto;
+extern crate ursa;
 extern crate uuid;
 extern crate named_type;
 extern crate rmp_serde;
@@ -995,12 +995,12 @@ mod high_cases {
                 let credentials_json = anoncreds::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
 
                 let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
-                assert_eq!(credentials.attrs.len(), 1);
-
                 let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
-                assert_eq!(credentials_for_attr_1.len(), 1);
 
                 wallet::close_wallet(wallet_handle).unwrap();
+
+                assert_eq!(credentials.attrs.len(), 1);
+                assert_eq!(credentials_for_attr_1.len(), 1);
             }
 
             #[test]
@@ -3894,9 +3894,10 @@ mod medium_cases {
             }).to_string();
 
             let res = anoncreds::prover_get_credentials_for_proof_req(wallet_handle, &proof_req);
-            assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             wallet::close_wallet(wallet_handle).unwrap();
+
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
 
         #[test]
@@ -3911,14 +3912,13 @@ mod medium_cases {
                "version":"0.1",
                "requested_attributes": json!({}),
                "requested_predicates": json!({
-                   "predicate1_referent": json!({ "name":"age", "p_type":"<=", "p_value":18 }),
+                   "predicate1_referent": json!({ "name":"age", "p_type":"!=", "p_value":18 }),
                }),
             }).to_string();
 
             let res = anoncreds::prover_get_credentials_for_proof_req(wallet_handle, &proof_req);
-            assert_code!(ErrorCode::CommonInvalidStructure, res);
-
             wallet::close_wallet(wallet_handle).unwrap();
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
     }
 

@@ -25,7 +25,7 @@ use services::pool::rust_base58::{FromBase58, ToBase58};
 use services::pool::types::{LedgerStatus, RemoteNode};
 use utils::crypto::ed25519_sign;
 
-use super::indy_crypto::bls::VerKey;
+use super::ursa::bls::VerKey;
 use super::zmq;
 
 struct PoolSM<T: Networker, R: RequestHandler<T>> {

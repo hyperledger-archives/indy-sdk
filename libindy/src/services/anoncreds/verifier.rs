@@ -1,4 +1,4 @@
-extern crate indy_crypto;
+extern crate ursa;
 
 use std::collections::{HashMap, HashSet};
 
@@ -11,8 +11,8 @@ use domain::anoncreds::schema::{SchemaV1, Schema};
 use errors::prelude::*;
 use services::anoncreds::helpers::*;
 
-use self::indy_crypto::cl::CredentialPublicKey;
-use self::indy_crypto::cl::verifier::Verifier as CryptoVerifier;
+use self::ursa::cl::CredentialPublicKey;
+use self::ursa::cl::verifier::Verifier as CryptoVerifier;
 use services::wallet::language::{parse_from_json, Operator};
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
