@@ -184,7 +184,6 @@ impl PoolConnection {
         trace!("PoolConnection::new: from nodes {:?}", nodes);
 
         nodes.shuffle(&mut thread_rng());
-//        thread_rng().shuffle(nodes.as_mut());
 
         if !preordered_nodes.is_empty() {
             nodes.sort_by_key(|node: &RemoteNode| -> usize {

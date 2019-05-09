@@ -195,7 +195,7 @@ mod high_cases {
         use super::*;
 
         #[test]
-        fn ursa_sign_works() {
+        fn indy_crypto_sign_works() {
             let wallet_handle = utils::setup_with_wallet();
 
             let my_vk = crypto::create_key(wallet_handle, Some(MY1_SEED)).unwrap();
@@ -207,7 +207,7 @@ mod high_cases {
         }
 
         #[test]
-        fn ursa_sign_works_for_unknown_signer() {
+        fn indy_crypto_sign_works_for_unknown_signer() {
             let wallet_handle = utils::setup_with_wallet();
 
             let res = crypto::sign(wallet_handle, VERKEY, MESSAGE.as_bytes());
@@ -217,7 +217,7 @@ mod high_cases {
         }
 
         #[test]
-        fn ursa_sign_works_for_invalid_wallet_handle() {
+        fn indy_crypto_sign_works_for_invalid_wallet_handle() {
             let (wallet_handle, verkey) = setup_with_key();
 
             let res = crypto::sign(wallet_handle + 1, &verkey, MESSAGE.as_bytes());
@@ -231,20 +231,20 @@ mod high_cases {
         use super::*;
 
         #[test]
-        fn ursa_verify_works() {
+        fn indy_crypto_verify_works() {
             let valid = crypto::verify(&VERKEY_MY1, MESSAGE.as_bytes(), SIGNATURE).unwrap();
             assert!(valid);
         }
 
         #[test]
-        fn ursa_verify_works_for_verkey_with_correct_crypto_type() {
+        fn indy_crypto_verify_works_for_verkey_with_correct_crypto_type() {
             let verkey = VERKEY_MY1.to_owned() + ":ed25519";
             let valid = crypto::verify(&verkey, MESSAGE.as_bytes(), SIGNATURE).unwrap();
             assert!(valid);
         }
 
         #[test]
-        fn ursa_verify_works_for_verkey_with_invalid_crypto_type() {
+        fn indy_crypto_verify_works_for_verkey_with_invalid_crypto_type() {
             let verkey = VERKEY_MY1.to_owned() + ":unknown_crypto";
             let res = crypto::verify(&verkey, MESSAGE.as_bytes(), SIGNATURE);
             assert_code!(ErrorCode::UnknownCryptoTypeError, res);
@@ -252,13 +252,13 @@ mod high_cases {
 
 
         #[test]
-        fn ursa_verify_works_for_other_signer() {
+        fn indy_crypto_verify_works_for_other_signer() {
             let valid = crypto::verify(&VERKEY_MY2, MESSAGE.as_bytes(), SIGNATURE).unwrap();
             assert!(!valid);
         }
 
         #[test]
-        fn ursa_verify_works_for_invalid_signature_len() {
+        fn indy_crypto_verify_works_for_invalid_signature_len() {
             let signature: Vec<u8> = vec![20, 191, 100, 213, 101, 12, 197, 198, 203, 49, 89, 220, 205, 192, 224, 221, 97, 77, 220, 190];
             let res = crypto::verify(&VERKEY_MY1, MESSAGE.as_bytes(), &signature);
             assert_code!(ErrorCode::CommonInvalidStructure, res);
@@ -269,7 +269,7 @@ mod high_cases {
         use super::*;
 
         #[test]
-        fn ursa_auth_crypt_works_for_created_key() {
+        fn indy_crypto_auth_crypt_works_for_created_key() {
             let (wallet_handle, verkey) = setup_with_key();
 
             crypto::auth_crypt(wallet_handle, &verkey, VERKEY_MY2, MESSAGE.as_bytes()).unwrap();
@@ -278,7 +278,7 @@ mod high_cases {
         }
 
         #[test]
-        fn ursa_auth_crypt_works_for_created_did() {
+        fn indy_crypto_auth_crypt_works_for_created_did() {
             let sender_wallet_handle = utils::setup_with_wallet();
 
             let (_, verkey) = did::create_and_store_my_did(sender_wallet_handle, Some(MY1_SEED)).unwrap();
@@ -289,7 +289,7 @@ mod high_cases {
         }
 
         #[test]
-        fn ursa_auth_crypt_works_for_created_did_as_cid() {
+        fn indy_crypto_auth_crypt_works_for_created_did_as_cid() {
             let sender_wallet_handle = utils::setup_with_wallet();
 
             let (_, verkey) = did::create_my_did(sender_wallet_handle, &json!({ "seed": MY1_SEED, "cid": true }).to_string()).unwrap();
@@ -300,7 +300,7 @@ mod high_cases {
         }
 
         #[test]
-        fn ursa_auth_crypt_works_for_unknown_sender_verkey() {
+        fn indy_crypto_auth_crypt_works_for_unknown_sender_verkey() {
             let wallet_handle = utils::setup_with_wallet();
 
             let res = crypto::auth_crypt(wallet_handle, VERKEY_MY2, VERKEY, MESSAGE.as_bytes());
@@ -310,7 +310,7 @@ mod high_cases {
         }
 
         #[test]
-        fn ursa_auth_crypt_works_for_invalid_wallet_handle() {
+        fn indy_crypto_auth_crypt_works_for_invalid_wallet_handle() {
             let (wallet_handle, verkey) = setup_with_key();
 
             let res = crypto::auth_crypt(wallet_handle + 1, &verkey, VERKEY, MESSAGE.as_bytes());
@@ -320,7 +320,7 @@ mod high_cases {
         }
 
         #[test]
-        fn ursa_auth_crypt_works_for_invalid_recipient_vk() {
+        fn indy_crypto_auth_crypt_works_for_invalid_recipient_vk() {
             let (wallet_handle, verkey) = setup_with_key();
 
             let res = crypto::auth_crypt(wallet_handle, &verkey, INVALID_BASE58_VERKEY, MESSAGE.as_bytes());
@@ -334,7 +334,7 @@ mod high_cases {
         use super::*;
 
         #[test]
-        fn ursa_auth_decrypt_works() {
+        fn indy_crypto_auth_decrypt_works() {
             let (sender_wallet_handle, sender_vk) = setup_with_key();
 
             let recipient_wallet_handle = wallet::create_and_open_default_wallet().unwrap();
@@ -351,7 +351,7 @@ mod high_cases {
         }
 
         #[test]
-        fn ursa_auth_decrypt_works_for_invalid_msg() {
+        fn indy_crypto_auth_decrypt_works_for_invalid_msg() {
             let sender_wallet_handle = utils::setup_with_wallet();
             let recipient_wallet_handle = wallet::create_and_open_default_wallet().unwrap();
 
@@ -368,7 +368,7 @@ mod high_cases {
         }
 
         #[test]
-        fn ursa_auth_decrypt_works_for_unknown_recipient_vk() {
+        fn indy_crypto_auth_decrypt_works_for_unknown_recipient_vk() {
             let (wallet_handle, sender_vk) = setup_with_key();
 
             let encrypted_msg = crypto::auth_crypt(wallet_handle, &sender_vk, &VERKEY_TRUSTEE, MESSAGE.as_bytes()).unwrap();
@@ -380,7 +380,7 @@ mod high_cases {
         }
 
         #[test]
-        fn ursa_auth_decrypt_works_invalid_handle() {
+        fn indy_crypto_auth_decrypt_works_invalid_handle() {
             let (sender_wallet_handle, sender_vk) = setup_with_key();
             let recipient_wallet_handle = wallet::create_and_open_default_wallet().unwrap();
             let recipient_vk = crypto::create_key(recipient_wallet_handle, None).unwrap();
@@ -425,7 +425,7 @@ mod high_cases {
         use super::*;
 
         #[test]
-        fn ursa_anon_decrypt_works() {
+        fn indy_crypto_anon_decrypt_works() {
             let (sender_wallet_handle, _) = setup_with_key();
             let recipient_wallet_handle = wallet::create_and_open_default_wallet().unwrap();
             let recipient_vk = crypto::create_key(recipient_wallet_handle, None).unwrap();
@@ -440,7 +440,7 @@ mod high_cases {
         }
 
         #[test]
-        fn ursa_anon_decrypt_works_for_invalid_msg() {
+        fn indy_crypto_anon_decrypt_works_for_invalid_msg() {
             let (wallet_handle, verkey) = setup_with_key();
 
             let res = crypto::anon_decrypt(wallet_handle, &verkey, &"unencrypted message".as_bytes());
@@ -450,7 +450,7 @@ mod high_cases {
         }
 
         #[test]
-        fn ursa_anon_decrypt_works_for_unknown_verkey() {
+        fn indy_crypto_anon_decrypt_works_for_unknown_verkey() {
             let wallet_handle = utils::setup_with_wallet();
 
             let encrypted_msg = crypto::anon_crypt(&VERKEY_TRUSTEE, MESSAGE.as_bytes()).unwrap();
@@ -462,7 +462,7 @@ mod high_cases {
         }
 
         #[test]
-        fn ursa_anon_decrypt_works_invalid_handle() {
+        fn indy_crypto_anon_decrypt_works_invalid_handle() {
             let (wallet_handle, verkey) = setup_with_key();
 
             let encrypted_msg = crypto::anon_crypt(&verkey, MESSAGE.as_bytes()).unwrap();
