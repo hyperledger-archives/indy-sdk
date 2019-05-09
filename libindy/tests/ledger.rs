@@ -17,7 +17,7 @@ extern crate byteorder;
 extern crate hex;
 extern crate indyrs as indy;
 extern crate indyrs as api;
-extern crate indy_crypto;
+extern crate ursa;
 extern crate uuid;
 extern crate named_type;
 extern crate openssl;
@@ -285,6 +285,26 @@ mod high_cases {
 
             assert_eq!(signatures[DID_TRUSTEE], r#"65hzs4nsdQsTUqLCLy2qisbKLfwYKZSWoyh1C6CU59p5pfG3EHQXGAsjW4Qw4QdwkrvjSgQuyv8qyABcXRBznFKW"#);
             assert_eq!(signatures[DID_MY1], r#"49aXkbrtTE3e522AefE76J51WzUiakw3ZbxxWzf44cv7RS21n8mMr4vJzi4TymuqDupzCz7wEtuGz6rA94Y73kKR"#);
+
+            utils::tear_down_with_wallet(wallet_handle);
+        }
+
+        #[test]
+        fn indy_multi_sign_request_works_for_start_from_single_signature() {
+            let wallet_handle = utils::setup_with_wallet();
+
+            let (did, _) = did::create_and_store_my_did(wallet_handle, Some(TRUSTEE_SEED)).unwrap();
+            let (did2, _) = did::create_and_store_my_did(wallet_handle, Some(MY1_SEED)).unwrap();
+
+            let message = ledger::sign_request(wallet_handle, &did, REQUEST_FROM_TRUSTEE).unwrap();
+            let message = ledger::multi_sign_request(wallet_handle, &did2, &message).unwrap();
+
+            let msg: serde_json::Value = serde_json::from_str(&message).unwrap();
+            let signatures = msg["signatures"].as_object().unwrap();
+
+            assert!(!msg.as_object().unwrap().contains_key("signature"));
+            assert_eq!(signatures[DID_TRUSTEE], r#"3YnLxoUd4utFLzeXUkeGefAqAdHUD7rBprpSx2CJeH7gRYnyjkgJi7tCnFgUiMo62k6M2AyUDtJrkUSgHfcq3vua"#);
+            assert_eq!(signatures[DID_MY1], r#"4EyvSFPoeQCJLziGVqjuMxrbuoWjAWUGPd6LdxeZuG9w3Bcbt7cSvhjrv8SX5e8mGf8jrf3K6xd9kEhXsQLqUg45"#);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
