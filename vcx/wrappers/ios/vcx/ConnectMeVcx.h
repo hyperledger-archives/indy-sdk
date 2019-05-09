@@ -104,8 +104,7 @@ extern void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_h
 
 - (void)connectionSendMessage:(VcxHandle)connectionHandle
                   withMessage:(NSString *)message
-                     withType:(NSString *)type
-                    withTitle:(NSString *)title
+       withSendMessageOptions:(NSString *)sendMessageOptions
                withCompletion:(void (^)(NSError *error, NSString *msg_id))completion;
 
 - (void)connectionSignData:(VcxHandle)connectionHandle
