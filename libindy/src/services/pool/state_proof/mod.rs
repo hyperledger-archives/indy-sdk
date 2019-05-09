@@ -1,6 +1,6 @@
 extern crate digest;
 extern crate hex;
-extern crate indy_crypto;
+extern crate ursa;
 extern crate rlp;
 extern crate rmp_serde;
 extern crate rust_base58;
@@ -25,7 +25,7 @@ use super::types::*;
 use self::digest::FixedOutput;
 use self::digest::Input;
 use self::hex::ToHex;
-use self::indy_crypto::bls::{Bls, Generator, MultiSignature, VerKey};
+use self::ursa::bls::{Bls, Generator, MultiSignature, VerKey};
 use self::node::{Node, TrieDB};
 use self::rlp::{
     encode as rlp_encode,

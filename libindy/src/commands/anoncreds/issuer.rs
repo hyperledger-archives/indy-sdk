@@ -2,12 +2,12 @@ use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
-use indy_crypto::cl::{
+use ursa::cl::{
     new_nonce,
     RevocationRegistryDelta as CryptoRevocationRegistryDelta,
     Witness,
 };
-use indy_crypto::cl::{CredentialKeyCorrectnessProof, CredentialPrivateKey};
+use ursa::cl::{CredentialKeyCorrectnessProof, CredentialPrivateKey};
 
 use commands::{Command, CommandExecutor};
 use commands::anoncreds::AnoncredsCommand;
@@ -345,8 +345,8 @@ impl IssuerCommandExecutor {
                                                         tag: &str,
                                                         signature_type: SignatureType,
                                                         res: (::domain::anoncreds::credential_definition::CredentialDefinitionData,
-                                                              indy_crypto::cl::CredentialPrivateKey,
-                                                              indy_crypto::cl::CredentialKeyCorrectnessProof)) -> IndyResult<(String, String)> {
+                                                              ursa::cl::CredentialPrivateKey,
+                                                              ursa::cl::CredentialKeyCorrectnessProof)) -> IndyResult<(String, String)> {
         let (credential_definition_value, cred_priv_key, cred_key_correctness_proof) = res;
 
         let cred_def =

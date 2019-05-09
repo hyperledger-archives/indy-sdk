@@ -1,4 +1,4 @@
-use indy_crypto::cl::{CredentialKeyCorrectnessProof, Nonce};
+use ursa::cl::{CredentialKeyCorrectnessProof, Nonce};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct CredentialOffer {
