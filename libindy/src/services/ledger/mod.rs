@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use indy_crypto::cl::RevocationRegistryDelta as CryproRevocationRegistryDelta;
+use ursa::cl::RevocationRegistryDelta as CryproRevocationRegistryDelta;
 use serde::de::DeserializeOwned;
 use serde_json;
 use serde_json::Value;
@@ -26,6 +26,7 @@ use domain::ledger::schema::{GetSchemaOperation, GetSchemaOperationData, GetSche
 use domain::ledger::txn::{GetTxnOperation, LedgerType};
 use domain::ledger::validator_info::GetValidatorInfoOperation;
 use domain::ledger::auth_rule::*;
+use domain::ledger::author_agreement::*;
 use errors::prelude::*;
 
 pub mod merkletree;
@@ -549,32 +550,22 @@ impl LedgerService {
         Ok(res)
     }
 
-    fn _parse_auth_action(&self, action: &str, old_value: Option<&str>) -> IndyResult<AuthAction> {
-        let action = serde_json::from_str::<AuthAction>(&format!("\"{}\"", action))
-            .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Cannot parse auth action: {}", err)))?;
-
-        if action == AuthAction::EDIT && old_value.is_none() {
-            return Err(err_msg(IndyErrorKind::InvalidStructure, "`old_value` must be specified for EDIT auth action"));
-        }
-
-        Ok(action)
-    }
-
     pub fn build_auth_rule_request(&self, submitter_did: &str, txn_type: &str, action: &str, field: &str,
-                                   old_value: Option<&str>, new_value: &str, constraint: &str) -> IndyResult<String> {
+                                   old_value: Option<&str>, new_value: Option<&str>, constraint: &str) -> IndyResult<String> {
         info!("build_auth_rule_request >>> submitter_did: {:?}, txn_type: {:?}, action: {:?}, field: {:?}, \
             old_value: {:?}, new_value: {:?}, constraint: {:?}", submitter_did, txn_type, action, field, old_value, new_value, constraint);
 
         let txn_type = txn_name_to_code(&txn_type)
             .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("Unsupported `txn_type`: {}", txn_type)))?;
 
-        let action = self._parse_auth_action(action, old_value)?;
+        let action = serde_json::from_str::<AuthAction>(&format!("\"{}\"", action))
+            .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Cannot parse auth action: {}", err)))?;
 
         let constraint = serde_json::from_str::<Constraint>(constraint)
             .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Can not deserialize Constraint: {}", err)))?;
 
         let operation = AuthRuleOperation::new(txn_type.to_string(), field.to_string(), action,
-                                               old_value.map(String::from), new_value.to_string(), constraint);
+                                               old_value.map(String::from), new_value.map(String::from), constraint);
 
         let request = Request::build_request(Some(submitter_did), operation)
             .to_indy(IndyErrorKind::InvalidState, "AUTH_RULE request json is invalid")?;
@@ -589,33 +580,81 @@ impl LedgerService {
         info!("build_get_auth_rule_request >>> submitter_did: {:?}, auth_type: {:?}, auth_action: {:?}, field: {:?}, \
             old_value: {:?}, new_value: {:?}", submitter_did, auth_type, auth_action, field, old_value, new_value);
 
-        if !(auth_type.is_some() && auth_action.is_some() && field.is_some() && new_value.is_some() ||
-            auth_type.is_none() && auth_action.is_none() && field.is_none() && new_value.is_none()) {
-            return Err(err_msg(IndyErrorKind::InvalidStructure, "Either none or all transaction related parameters must be specified (`old_value` can be skipped for `ADD` action)"));
-        }
+        let operation = match (auth_type, auth_action, field) {
+            (None, None, None) => GetAuthRuleOperation::get_all(),
+            (Some(auth_type), Some(auth_action), Some(field)) => {
+                let type_ = txn_name_to_code(&auth_type)
+                    .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("Unsupported `auth_type`: {}", auth_type)))?;
 
-        let auth_type = match auth_type {
-            Some(type_) => Some(
-                txn_name_to_code(&type_)
-                    .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("Unsupported `auth_type`: {}", type_)))?),
-            None => None
+                let action = serde_json::from_str::<AuthAction>(&format!("\"{}\"", auth_action))
+                    .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Cannot parse auth action: {}", err)))?;
+
+                GetAuthRuleOperation::get_one(type_.to_string(),
+                                              field.to_string(),
+                                              action,
+                                              old_value.map(String::from),
+                                              new_value.map(String::from))
+            }
+            _ => return Err(err_msg(IndyErrorKind::InvalidStructure, "Either none or all transaction related parameters must be specified."))
         };
-
-        let auth_action = match auth_action {
-            Some(action) => Some(self._parse_auth_action(action, old_value)?),
-            None => None
-        };
-
-        let operation = GetAuthRuleOperation::new(auth_type.map(String::from),
-                                                  field.map(String::from),
-                                                  auth_action,
-                                                  old_value.map(String::from),
-                                                  new_value.map(String::from));
 
         let request = Request::build_request(submitter_did, operation)
             .to_indy(IndyErrorKind::InvalidState, "GET_AUTH_RULE request json is invalid")?;
 
         info!("build_get_auth_rule_request <<< request: {:?}", request);
+
+        Ok(request)
+    }
+
+    pub fn build_txn_author_agreement_request(&self, identifier: &str, text: &str, version: &str) -> IndyResult<String> {
+        info!("build_txn_author_agreement_request >>> identifier: {:?}, text {:?}, version {:?}", identifier, text, version);
+
+        let operation = TxnAuthorAgreementOperation::new(text.to_string(),
+                                                         version.to_string());
+
+        let request = Request::build_request(Some(identifier), operation)
+            .to_indy(IndyErrorKind::InvalidState, "TXN_AUTHR_AGRMT request json is invalid")?;
+
+        info!("build_txn_author_agreement_request <<< request: {:?}", request);
+
+        Ok(request)
+    }
+
+    pub fn build_get_txn_author_agreement_request(&self, identifier: Option<&str>, data: Option<&GetTxnAuthorAgreementData>) -> IndyResult<String> {
+        info!("build_get_txn_author_agreement_request >>> identifier: {:?}, data {:?}", identifier, data);
+
+        let operation = GetTxnAuthorAgreementOperation::new(data);
+
+        let request = Request::build_request(identifier, operation)
+            .to_indy(IndyErrorKind::InvalidState, "GET_TXN_AUTHR_AGRMT request json is invalid")?;
+
+        info!("build_get_txn_author_agreement_request <<< request: {:?}", request);
+
+        Ok(request)
+    }
+
+    pub fn build_acceptance_mechanism_request(&self, identifier: &str, aml: AcceptanceMechanisms, aml_context: Option<&str>) -> IndyResult<String> {
+        info!("build_acceptance_mechanism_request >>> identifier: {:?}, aml {:?}, aml_context {:?}", identifier, aml, aml_context);
+
+        let operation = SetAcceptanceMechanismOperation::new(aml, aml_context.map(String::from));
+
+        let request = Request::build_request(Some(identifier), operation)
+            .to_indy(IndyErrorKind::InvalidState, "TXN_AUTHR_AGRMT_AML request json is invalid")?;
+
+        info!("build_acceptance_mechanism_request <<< request: {:?}", request);
+
+        Ok(request)
+    }
+
+    pub fn build_get_acceptance_mechanism_request(&self, identifier: Option<&str>, timestamp: Option<u64>) -> IndyResult<String> {
+        info!("build_get_acceptance_mechanism_request >>> identifier: {:?}, timestamp {:?}", identifier, timestamp);
+
+        let operation = GetAcceptanceMechanismOperation::new(timestamp);
+
+        let request = Request::build_request(identifier, operation)
+            .to_indy(IndyErrorKind::InvalidState, "GET_TXN_AUTHR_AGRMT_AML request json is invalid")?;
+
+        info!("build_get_acceptance_mechanism_request <<< request: {:?}", request);
 
         Ok(request)
     }
@@ -1007,9 +1046,9 @@ mod tests {
 
         fn _role_constraint() -> Constraint {
             Constraint::RoleConstraint(RoleConstraint {
-                sig_count: 0,
+                sig_count: Some(0),
                 metadata: None,
-                role: String::new(),
+                role: Some(String::new()),
                 need_to_be_owner: Some(false),
             })
         }
@@ -1032,7 +1071,7 @@ mod tests {
             });
 
             let request = ledger_service.build_auth_rule_request(IDENTIFIER, NYM, ADD_AUTH_ACTION, FIELD,
-                                                                 None, NEW_VALUE,
+                                                                 None, Some(NEW_VALUE),
                                                                  &_role_constraint_json()).unwrap();
             check_request(&request, expected_result);
         }
@@ -1065,7 +1104,7 @@ mod tests {
             });
 
             let request = ledger_service.build_auth_rule_request(IDENTIFIER, NYM, ADD_AUTH_ACTION, FIELD,
-                                                                 None, NEW_VALUE,
+                                                                 None, Some(NEW_VALUE),
                                                                  &constraint_json).unwrap();
 
             check_request(&request, expected_result);
@@ -1086,19 +1125,9 @@ mod tests {
             });
 
             let request = ledger_service.build_auth_rule_request(IDENTIFIER, NYM, EDIT_AUTH_ACTION, FIELD,
-                                                                 Some(OLD_VALUE), NEW_VALUE,
+                                                                 Some(OLD_VALUE), Some(NEW_VALUE),
                                                                  &_role_constraint_json()).unwrap();
             check_request(&request, expected_result);
-        }
-
-        #[test]
-        fn build_auth_rule_request_works_for_edit_auth_action_missed_old_value() {
-            let ledger_service = LedgerService::new();
-
-            let res = ledger_service.build_auth_rule_request(IDENTIFIER, NYM, EDIT_AUTH_ACTION, FIELD,
-                                                             None, NEW_VALUE,
-                                                             &_role_constraint_json());
-            assert_kind!(IndyErrorKind::InvalidStructure, res);
         }
 
         #[test]
@@ -1106,7 +1135,7 @@ mod tests {
             let ledger_service = LedgerService::new();
 
             let res = ledger_service.build_auth_rule_request(IDENTIFIER, "WRONG", ADD_AUTH_ACTION, FIELD,
-                                                             None, NEW_VALUE,
+                                                             None, Some(NEW_VALUE),
                                                              &_role_constraint_json());
             assert_kind!(IndyErrorKind::InvalidStructure, res);
         }
@@ -1115,12 +1144,30 @@ mod tests {
         fn build_auth_rule_request_works_for_invalid_auth_action() {
             let ledger_service = LedgerService::new();
 
-            let res = ledger_service.build_auth_rule_request(IDENTIFIER, NYM, "WRONG", FIELD, None, NEW_VALUE, &_role_constraint_json());
+            let res = ledger_service.build_auth_rule_request(IDENTIFIER, NYM, "WRONG", FIELD, None, Some(NEW_VALUE), &_role_constraint_json());
             assert_kind!(IndyErrorKind::InvalidStructure, res);
         }
 
         #[test]
-        fn build_get_auth_rule_request_works_for_all_fields() {
+        fn build_get_auth_rule_request_works_for_add_action() {
+            let ledger_service = LedgerService::new();
+
+            let expected_result = json!({
+                "type": GET_AUTH_RULE,
+                "auth_type": NYM,
+                "field": FIELD,
+                "new_value": NEW_VALUE,
+                "auth_action": AuthAction::ADD,
+            });
+
+            let request = ledger_service.build_get_auth_rule_request(Some(IDENTIFIER), Some(NYM),
+                                                                     Some(ADD_AUTH_ACTION), Some(FIELD),
+                                                                     None, Some(NEW_VALUE)).unwrap();
+            check_request(&request, expected_result);
+        }
+
+        #[test]
+        fn build_get_auth_rule_request_works_for_edit_action() {
             let ledger_service = LedgerService::new();
 
             let expected_result = json!({
@@ -1129,11 +1176,11 @@ mod tests {
                 "field": FIELD,
                 "old_value": OLD_VALUE,
                 "new_value": NEW_VALUE,
-                "auth_action": AuthAction::ADD,
+                "auth_action": AuthAction::EDIT,
             });
 
             let request = ledger_service.build_get_auth_rule_request(Some(IDENTIFIER), Some(NYM),
-                                                                     Some(ADD_AUTH_ACTION), Some(FIELD),
+                                                                     Some(EDIT_AUTH_ACTION), Some(FIELD),
                                                                      Some(OLD_VALUE), Some(NEW_VALUE)).unwrap();
             check_request(&request, expected_result);
         }
@@ -1176,6 +1223,125 @@ mod tests {
 
             let res = ledger_service.build_get_auth_rule_request(Some(IDENTIFIER), Some("WRONG"), None, None, None, None);
             assert_kind!(IndyErrorKind::InvalidStructure, res);
+        }
+    }
+
+    mod author_agreement {
+        use super::*;
+
+        const TEXT: &str = "indy agreement";
+        const VERSION: &str = "1.0.0";
+
+        #[test]
+        fn build_txn_author_agreement_request() {
+            let ledger_service = LedgerService::new();
+
+            let expected_result = json!({
+                "type": TXN_AUTHR_AGRMT,
+                "text": TEXT,
+                "version": VERSION
+            });
+
+            let request = ledger_service.build_txn_author_agreement_request(IDENTIFIER, TEXT, VERSION).unwrap();
+            check_request(&request, expected_result);
+        }
+
+        #[test]
+        fn build_get_txn_author_agreement_request_works() {
+            let ledger_service = LedgerService::new();
+
+            let expected_result = json!({
+                "type": GET_TXN_AUTHR_AGRMT
+            });
+
+            let request = ledger_service.build_get_txn_author_agreement_request(Some(IDENTIFIER), None).unwrap();
+            check_request(&request, expected_result);
+        }
+
+        #[test]
+        fn build_get_txn_author_agreement_request_for_specific_version() {
+            let ledger_service = LedgerService::new();
+
+            let expected_result = json!({
+                "type": GET_TXN_AUTHR_AGRMT,
+                "version": VERSION
+            });
+
+            let data = GetTxnAuthorAgreementData {
+                hash: None,
+                version: Some(VERSION.to_string()),
+                timestamp: None,
+            };
+
+            let request = ledger_service.build_get_txn_author_agreement_request(Some(IDENTIFIER), Some(&data)).unwrap();
+            check_request(&request, expected_result);
+        }
+    }
+
+    mod acceptance_mechanism {
+        use super::*;
+
+        const LABEL: &str = "label";
+        const CONTEXT: &str = "some context";
+
+        fn _aml() -> AcceptanceMechanisms{
+            let mut aml: AcceptanceMechanisms = AcceptanceMechanisms::new();
+            aml.insert(LABEL.to_string(), json!({"text": "This is description for acceptance mechanism"}));
+            aml
+        }
+
+        #[test]
+        fn build_acceptance_mechanism_request() {
+            let ledger_service = LedgerService::new();
+
+            let expected_result = json!({
+                "type": TXN_AUTHR_AGRMT_AML,
+                "aml":  _aml(),
+            });
+
+            let request = ledger_service.build_acceptance_mechanism_request(IDENTIFIER,  _aml(), None).unwrap();
+            check_request(&request, expected_result);
+        }
+
+        #[test]
+        fn build_acceptance_mechanism_request_with_context() {
+            let ledger_service = LedgerService::new();
+
+            let expected_result = json!({
+                "type": TXN_AUTHR_AGRMT_AML,
+                "aml":  _aml(),
+                "amlContext": CONTEXT.to_string(),
+            });
+
+            let request = ledger_service.build_acceptance_mechanism_request(IDENTIFIER,  _aml(), Some(CONTEXT)).unwrap();
+            check_request(&request, expected_result);
+        }
+
+        #[test]
+        fn build_get_acceptance_mechanism_request() {
+            let ledger_service = LedgerService::new();
+
+            let expected_result = json!({
+                "type": GET_TXN_AUTHR_AGRMT_AML,
+            });
+
+            let request = ledger_service.build_get_acceptance_mechanism_request(None, None).unwrap();
+            check_request(&request, expected_result);
+        }
+
+        #[test]
+        fn build_get_acceptance_mechanism_request_for_timestamp() {
+            let timestamp = ::time::get_time().sec as u64;
+
+            let ledger_service = LedgerService::new();
+
+            let expected_result = json!({
+                "type": GET_TXN_AUTHR_AGRMT_AML,
+                "timestamp": timestamp,
+            });
+
+            let request = ledger_service.build_get_acceptance_mechanism_request(None, Some(timestamp)).unwrap();
+            check_request(&request, expected_result);
         }
     }
 

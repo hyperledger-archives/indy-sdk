@@ -279,3 +279,10 @@ indy_build_get_auth_rule_request(command_handle: CommandHandle,
     </td>
   </tr>
 </table>
+
+## Libindy 1.8.2 to 1.8.3 migration Guide
+
+Updated behavior of `indy_build_auth_rule_request` and `indy_build_get_auth_rule_request` API functions:
+*  `new_value` can be empty string for `ADD` action.
+*  `new_value` can be null for `EDIT` action.
+*  `old_value` is skipped during transaction serialization for `ADD` action. 

@@ -1,7 +1,7 @@
 use serde_json;
 use std::collections::HashMap;
-
-use indy_crypto::cl::Nonce;
+use std::fmt;
+use ursa::cl::Nonce;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ProofRequest {
@@ -38,9 +38,26 @@ pub struct PredicateInfo {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub enum PredicateTypes{
+pub enum PredicateTypes {
     #[serde(rename = ">=")]
-    GE
+    GE,
+    #[serde(rename = "<=")]
+    LE,
+    #[serde(rename = ">")]
+    GT,
+    #[serde(rename = "<")]
+    LT
+}
+
+impl fmt::Display for PredicateTypes {
+     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+         match *self {
+             PredicateTypes::GE => write!(f, "GE"),
+             PredicateTypes::GT => write!(f, "GT"),
+             PredicateTypes::LE => write!(f, "LE"),
+             PredicateTypes::LT => write!(f, "LT")
+         }
+     }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
