@@ -84,6 +84,56 @@ pub fn libindy_build_create_credential_def_txn(submitter_did: &str,
         .map_err(map_rust_indy_sdk_error)
 }
 
+pub fn libindy_get_txn_author_agreement() -> VcxResult<String> {
+    trace!("libindy_get_txn_author_agreement >>>");
+
+    if settings::test_indy_mode_enabled() { return Ok(::utils::constants::DEFAULT_AUTHOR_AGREEMENT.to_string()); }
+
+    let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
+
+    let get_author_agreement_request = ledger::build_get_txn_author_agreement_request(Some(&did), None)
+        .wait()
+        .map_err(map_rust_indy_sdk_error)?;
+
+    let get_author_agreement_response = libindy_submit_request(&get_author_agreement_request)?;
+
+    let get_author_agreement_response = serde_json::from_str::<serde_json::Value>(&get_author_agreement_response)
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidLedgerResponse, format!("{:?}", err)))?;
+
+    let mut author_agreement_data = get_author_agreement_response["result"]["data"].as_object()
+        .map_or(json!({}), |data| json!(data));
+
+    let get_acceptance_mechanism_request = ledger::build_get_acceptance_mechanism_request(Some(&did), None)
+        .wait()
+        .map_err(map_rust_indy_sdk_error)?;
+
+    let get_acceptance_mechanism_response = libindy_submit_request(&get_acceptance_mechanism_request)?;
+
+    let get_acceptance_mechanism_response = serde_json::from_str::<serde_json::Value>(&get_acceptance_mechanism_response)
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidLedgerResponse, format!("{:?}", err)))?;
+
+    if let Some(aml) = get_acceptance_mechanism_response["result"]["data"]["aml"].as_object() {
+        author_agreement_data["aml"] = json!(aml);
+    }
+
+    Ok(author_agreement_data.to_string())
+}
+
+pub fn append_txn_author_agreement_to_request(request_json: &str) -> VcxResult<String> {
+    if let Some(author_agreement) = ::utils::author_agreement::get_txn_author_agreement().unwrap() {
+        ledger::append_txn_author_agreement_acceptance_to_request(request_json,
+                                                                  author_agreement.text.as_ref().map(String::as_str),
+                                                                  author_agreement.version.as_ref().map(String::as_str),
+                                                                  author_agreement.taa_digest.as_ref().map(String::as_str),
+                                                                  &author_agreement.acceptance_mechanism_type,
+                                                                  author_agreement.time_of_acceptance)
+            .wait()
+            .map_err(map_rust_indy_sdk_error)
+    } else {
+        Ok(request_json.to_string())
+    }
+}
+
 pub fn parse_response(response: &str) -> VcxResult<Response> {
     serde_json::from_str::<Response>(response)
         .to_vcx(VcxErrorKind::InvalidJson, "Cannot deserialize transaction response")
