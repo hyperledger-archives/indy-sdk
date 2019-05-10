@@ -154,7 +154,7 @@ impl Credential {
                 .agent_did(local_agent_did)?
                 .agent_vk(local_agent_vk)?
                 .edge_agent_payload(&local_my_vk, &local_their_vk, &cred_req_json, PayloadKinds::CredReq, self.thread.clone())?
-                .ref_msg_id(&offer_msg_id)?
+                .ref_msg_id(Some(offer_msg_id.to_string()))?
                 .send_secure()
                 .map_err(|err| err.extend(format!("{} could not send proof", self.source_id)))?;
 
