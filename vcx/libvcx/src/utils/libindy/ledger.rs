@@ -124,7 +124,7 @@ pub fn append_txn_author_agreement_to_request(request_json: &str) -> VcxResult<S
         ledger::append_txn_author_agreement_acceptance_to_request(request_json,
                                                                   author_agreement.text.as_ref().map(String::as_str),
                                                                   author_agreement.version.as_ref().map(String::as_str),
-                                                                  author_agreement.hash.as_ref().map(String::as_str),
+                                                                  author_agreement.taa_digest.as_ref().map(String::as_str),
                                                                   &author_agreement.acceptance_mechanism_type,
                                                                   author_agreement.time_of_acceptance)
             .wait()
