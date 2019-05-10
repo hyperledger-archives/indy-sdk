@@ -1,4 +1,4 @@
-use indy_crypto::cl::{Witness, RevocationRegistry};
+use ursa::cl::{Witness, RevocationRegistry};
 
 use named_type::NamedType;
 

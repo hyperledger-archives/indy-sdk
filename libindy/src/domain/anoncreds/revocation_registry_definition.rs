@@ -1,4 +1,4 @@
-use indy_crypto::cl::{RevocationKeyPublic, RevocationKeyPrivate};
+use ursa::cl::{RevocationKeyPublic, RevocationKeyPrivate};
 
 use super::DELIMITER;
 
