@@ -2404,7 +2404,7 @@ mod high_cases {
         }
     }
 
-    mod author_agreement_meta {
+    mod author_agreement_acceptance {
         use super::*;
 
         const TEXT: &str = "some agreement text";
@@ -2429,12 +2429,12 @@ mod high_cases {
         fn indy_append_txn_author_agreement_acceptance_to_request_works_for_text_version() {
             utils::setup();
 
-            let request = ledger::append_txn_author_agreement_meta_to_request(REQUEST,
-                                                                              Some(TEXT),
-                                                                              Some(VERSION),
-                                                                              None,
-                                                                              ACCEPTANCE_MECH_TYPE,
-                                                                              TIME_OF_ACCEPTANCE).unwrap();
+            let request = ledger::append_txn_author_agreement_acceptance_to_request(REQUEST,
+                                                                                    Some(TEXT),
+                                                                                    Some(VERSION),
+                                                                                    None,
+                                                                                    ACCEPTANCE_MECH_TYPE,
+                                                                                    TIME_OF_ACCEPTANCE).unwrap();
             _check_request_meta(&request);
 
             utils::tear_down();
@@ -2444,12 +2444,12 @@ mod high_cases {
         fn indy_append_txn_author_agreement_acceptance_to_request_works_for_hash() {
             utils::setup();
 
-            let request = ledger::append_txn_author_agreement_meta_to_request(REQUEST,
-                                                                              None,
-                                                                              None,
-                                                                              Some(HASH),
-                                                                              ACCEPTANCE_MECH_TYPE,
-                                                                              TIME_OF_ACCEPTANCE).unwrap();
+            let request = ledger::append_txn_author_agreement_acceptance_to_request(REQUEST,
+                                                                                    None,
+                                                                                    None,
+                                                                                    Some(HASH),
+                                                                                    ACCEPTANCE_MECH_TYPE,
+                                                                                    TIME_OF_ACCEPTANCE).unwrap();
             _check_request_meta(&request);
 
             utils::tear_down();
@@ -2459,12 +2459,12 @@ mod high_cases {
         fn indy_append_txn_author_agreement_acceptance_to_request_works_for_text_version_and_hash() {
             utils::setup();
 
-            let request = ledger::append_txn_author_agreement_meta_to_request(REQUEST,
-                                                                              Some(TEXT),
-                                                                              Some(VERSION),
-                                                                              Some(HASH),
-                                                                              ACCEPTANCE_MECH_TYPE,
-                                                                              TIME_OF_ACCEPTANCE).unwrap();
+            let request = ledger::append_txn_author_agreement_acceptance_to_request(REQUEST,
+                                                                                    Some(TEXT),
+                                                                                    Some(VERSION),
+                                                                                    Some(HASH),
+                                                                                    ACCEPTANCE_MECH_TYPE,
+                                                                                    TIME_OF_ACCEPTANCE).unwrap();
             _check_request_meta(&request);
 
             utils::tear_down();
@@ -2474,12 +2474,12 @@ mod high_cases {
         fn indy_append_txn_author_agreement_acceptance_to_request_works_for_text_version_not_correspond_to_hash() {
             utils::setup();
 
-            let res = ledger::append_txn_author_agreement_meta_to_request(REQUEST,
-                                                                          Some("other text"),
-                                                                          Some("0.0.1"),
-                                                                          Some(HASH),
-                                                                          ACCEPTANCE_MECH_TYPE,
-                                                                          TIME_OF_ACCEPTANCE);
+            let res = ledger::append_txn_author_agreement_acceptance_to_request(REQUEST,
+                                                                                Some("other text"),
+                                                                                Some("0.0.1"),
+                                                                                Some(HASH),
+                                                                                ACCEPTANCE_MECH_TYPE,
+                                                                                TIME_OF_ACCEPTANCE);
             assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             utils::tear_down();
@@ -2489,12 +2489,12 @@ mod high_cases {
         fn indy_append_txn_author_agreement_acceptance_to_request_works_for_invalid_request() {
             utils::setup();
 
-            let res = ledger::append_txn_author_agreement_meta_to_request("Invalid request string",
-                                                                          None,
-                                                                          None,
-                                                                          Some(HASH),
-                                                                          ACCEPTANCE_MECH_TYPE,
-                                                                          TIME_OF_ACCEPTANCE);
+            let res = ledger::append_txn_author_agreement_acceptance_to_request("Invalid request string",
+                                                                                None,
+                                                                                None,
+                                                                                Some(HASH),
+                                                                                ACCEPTANCE_MECH_TYPE,
+                                                                                TIME_OF_ACCEPTANCE);
             assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             utils::tear_down();
@@ -2504,12 +2504,12 @@ mod high_cases {
         fn indy_append_txn_author_agreement_acceptance_to_request_works_for_missed_text_version_hash() {
             utils::setup();
 
-            let res = ledger::append_txn_author_agreement_meta_to_request(REQUEST,
-                                                                          None,
-                                                                          None,
-                                                                          None,
-                                                                          ACCEPTANCE_MECH_TYPE,
-                                                                          TIME_OF_ACCEPTANCE);
+            let res = ledger::append_txn_author_agreement_acceptance_to_request(REQUEST,
+                                                                                None,
+                                                                                None,
+                                                                                None,
+                                                                                ACCEPTANCE_MECH_TYPE,
+                                                                                TIME_OF_ACCEPTANCE);
             assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             utils::tear_down();
@@ -2519,20 +2519,20 @@ mod high_cases {
         fn indy_append_txn_author_agreement_acceptance_to_request_works_for_partial_combination_of_text_version() {
             utils::setup();
 
-            let res = ledger::append_txn_author_agreement_meta_to_request(REQUEST,
-                                                                          Some(TEXT),
-                                                                          None,
-                                                                          None,
-                                                                          ACCEPTANCE_MECH_TYPE,
-                                                                          TIME_OF_ACCEPTANCE);
+            let res = ledger::append_txn_author_agreement_acceptance_to_request(REQUEST,
+                                                                                Some(TEXT),
+                                                                                None,
+                                                                                None,
+                                                                                ACCEPTANCE_MECH_TYPE,
+                                                                                TIME_OF_ACCEPTANCE);
             assert_code!(ErrorCode::CommonInvalidStructure, res);
 
-            let res = ledger::append_txn_author_agreement_meta_to_request(REQUEST,
-                                                                          None,
-                                                                          Some(VERSION),
-                                                                          None,
-                                                                          ACCEPTANCE_MECH_TYPE,
-                                                                          TIME_OF_ACCEPTANCE);
+            let res = ledger::append_txn_author_agreement_acceptance_to_request(REQUEST,
+                                                                                None,
+                                                                                Some(VERSION),
+                                                                                None,
+                                                                                ACCEPTANCE_MECH_TYPE,
+                                                                                TIME_OF_ACCEPTANCE);
             assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             utils::tear_down();

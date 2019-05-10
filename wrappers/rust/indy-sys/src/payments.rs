@@ -79,6 +79,16 @@ extern {
                                        cb: Option<ResponseStringCB>) -> Error;
 
     #[no_mangle]
+    pub fn indy_prepare_payment_extra_with_acceptance_data(command_handle: Handle,
+                                                           extra_json: CString,
+                                                           text: CString,
+                                                           version: CString,
+                                                           hash: CString,
+                                                           acc_mech_type: CString,
+                                                           time_of_acceptance: u64,
+                                                           cb: Option<ResponseStringCB>) -> Error;
+
+    #[no_mangle]
     pub fn indy_build_mint_req(command_handle: Handle,
                                wallet_handle: Handle,
                                submitter_did: CString,

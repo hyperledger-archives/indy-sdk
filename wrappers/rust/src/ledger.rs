@@ -1259,59 +1259,59 @@ fn _build_get_acceptance_mechanism_request(command_handle: IndyHandle,
     })
 }
 
-/// Append transaction author agreement metadata to a request.
+/// Append transaction author agreement acceptance data to a request.
 /// This function should be called before signing and sending a request
 /// if there is any transaction author agreement set on the Ledger.
 ///
-/// This function may calculate hash by itself or consume it as a parameter.
-/// If all text, version and hash parameters are specified, a check integrity of them will be done.
+/// This function may calculate digest by itself or consume it as a parameter.
+/// If all text, version and taa_digest parameters are specified, a check integrity of them will be done.
 ///
 /// # Arguments
 /// * `request_json`: original request data json.
 /// * `text` and `version`: (optional) raw data about TAA from ledger.
 ///     These parameters should be passed together.
-///     These parameters are required if hash parameter is omitted.
-/// * `hash`: (optional) hash on text and version. This parameter is required if text and version parameters are omitted.
-/// * `acc_mech_type`: mechanism how user has accepted the TAA
-/// * `time_of_acceptance`: UTC timestamp when user has accepted the TAA
+///     These parameters are required if taa_digest parameter is omitted.
+/// * `taa_digest`: (optional) digest on text and version. This parameter is required if text and version parameters are omitted.
+/// * `mechanism`: mechanism how user has accepted the TAA
+/// * `time`: UTC timestamp when user has accepted the TAA
 ///
 /// # Returns
 /// Updated request result as json.
-pub fn append_txn_author_agreement_meta_to_request(request_json: &str,
-                                                   text: Option<&str>,
-                                                   version: Option<&str>,
-                                                   hash: Option<&str>,
-                                                   acc_mech_type: &str,
-                                                   time_of_acceptance: u64) -> Box<Future<Item=String, Error=IndyError>> {
+pub fn append_txn_author_agreement_acceptance_to_request(request_json: &str,
+                                                         text: Option<&str>,
+                                                         version: Option<&str>,
+                                                         taa_digest: Option<&str>,
+                                                         mechanism: &str,
+                                                         time: u64) -> Box<Future<Item=String, Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
-    let err = _append_txn_author_agreement_meta_to_request(command_handle, request_json, text, version, hash, acc_mech_type, time_of_acceptance, cb);
+    let err = _append_txn_author_agreement_acceptance_to_request(command_handle, request_json, text, version, taa_digest, mechanism, time, cb);
 
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _append_txn_author_agreement_meta_to_request(command_handle: IndyHandle,
-                                                request_json: &str,
-                                                text: Option<&str>,
-                                                version: Option<&str>,
-                                                hash: Option<&str>,
-                                                acc_mech_type: &str,
-                                                time_of_acceptance: u64,
-                                                cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _append_txn_author_agreement_acceptance_to_request(command_handle: IndyHandle,
+                                                      request_json: &str,
+                                                      text: Option<&str>,
+                                                      version: Option<&str>,
+                                                      taa_digest: Option<&str>,
+                                                      mechanism: &str,
+                                                      time: u64,
+                                                      cb: Option<ResponseStringCB>) -> ErrorCode {
     let request_json = c_str!(request_json);
     let text_str = opt_c_str!(text);
     let version_str = opt_c_str!(version);
-    let hash_str = opt_c_str!(hash);
-    let acc_mech_type = c_str!(acc_mech_type);
+    let taa_digest_str = opt_c_str!(taa_digest);
+    let mechanism = c_str!(mechanism);
 
     ErrorCode::from(unsafe {
         ledger::indy_append_txn_author_agreement_acceptance_to_request(command_handle,
                                                                        request_json.as_ptr(),
                                                                        opt_c_ptr!(text, text_str),
                                                                        opt_c_ptr!(version, version_str),
-                                                                       opt_c_ptr!(hash, hash_str),
-                                                                       acc_mech_type.as_ptr(),
-                                                                       time_of_acceptance,
+                                                                       opt_c_ptr!(taa_digest, taa_digest_str),
+                                                                       mechanism.as_ptr(),
+                                                                       time,
                                                                        cb)
     })
 }

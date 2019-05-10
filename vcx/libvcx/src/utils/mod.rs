@@ -31,6 +31,7 @@ pub mod json;
 pub mod libindy;
 pub mod threadpool;
 pub mod uuid;
+pub mod author_agreement;
 
 use std::sync::atomic::{AtomicUsize, ATOMIC_USIZE_INIT, Ordering};
 use std::path::PathBuf;

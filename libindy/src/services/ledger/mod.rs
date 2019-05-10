@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use hex::{ToHex, FromHex};
 use ursa::cl::RevocationRegistryDelta as CryproRevocationRegistryDelta;
 use serde::de::DeserializeOwned;
 use serde_json;
@@ -18,7 +19,7 @@ use domain::ledger::ddo::GetDdoOperation;
 use domain::ledger::node::{NodeOperation, NodeOperationData};
 use domain::ledger::nym::GetNymOperation;
 use domain::ledger::pool::{PoolConfigOperation, PoolRestartOperation, PoolUpgradeOperation};
-use domain::ledger::request::Request;
+use domain::ledger::request::{TxnAuthrAgrmtAcceptanceData, Request};
 use domain::ledger::response::{Message, Reply, ReplyType};
 use domain::ledger::rev_reg::{GetRevocRegDeltaReplyResult, GetRevocRegReplyResult, GetRevRegDeltaOperation, GetRevRegOperation, RevRegEntryOperation};
 use domain::ledger::rev_reg_def::{GetRevocRegDefReplyResult, GetRevRegDefOperation, RevRegDefOperation};
@@ -28,6 +29,7 @@ use domain::ledger::validator_info::GetValidatorInfoOperation;
 use domain::ledger::auth_rule::*;
 use domain::ledger::author_agreement::*;
 use errors::prelude::*;
+use utils::crypto::hash::hash as openssl_hash;
 
 pub mod merkletree;
 
@@ -694,6 +696,58 @@ impl LedgerService {
 
         trace!("validate_action <<< res {:?}", res);
         res
+    }
+
+    pub fn prepare_acceptance_data(&self, text: Option<&str>, version: Option<&str>, hash: Option<&str>, mechanism: &str, time: u64) -> IndyResult<TxnAuthrAgrmtAcceptanceData> {
+        trace!("prepare_acceptance_data >>");
+
+        let taa_digest = match (text, version, hash) {
+            (None, None, None) => {
+                return Err(err_msg(IndyErrorKind::InvalidStructure, "Invalid combination of params: Either combination `text` + `version` or `taa_digest` must be passed."));
+            }
+            (None, None, Some(hash_)) => {
+                hash_.to_string()
+            }
+            (Some(_), None, _) | (None, Some(_), _) => {
+                return Err(err_msg(IndyErrorKind::InvalidStructure, "Invalid combination of params: `text` and `version` should be passed or skipped together."));
+            }
+            (Some(text_), Some(version_), None) => {
+                self._calculate_hash(text_, version_)?.to_hex()
+            }
+            (Some(text_), Some(version_), Some(hash_)) => {
+                self._compare_hash(text_, version_, hash_)?;
+                hash_.to_string()
+            }
+        };
+
+        let acceptance_data = TxnAuthrAgrmtAcceptanceData {
+            mechanism: mechanism.to_string(),
+            taa_digest,
+            time,
+        };
+
+        trace!("prepare_acceptance_data << {:?}", acceptance_data);
+
+        Ok(acceptance_data)
+    }
+
+    fn _calculate_hash(&self, text: &str, version: &str) -> IndyResult<Vec<u8>> {
+        let content: String = version.to_string() + text;
+        openssl_hash(content.as_bytes())
+    }
+
+    fn _compare_hash(&self, text: &str, version: &str, hash: &str) -> IndyResult<()> {
+        let calculated_hash = self._calculate_hash(text, version)?;
+
+        let passed_hash = Vec::from_hex(hash)
+            .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Cannot decode `hash`: {:?}", err)))?;
+
+        if calculated_hash != passed_hash {
+            return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure,
+                                           format!("Calculated hash of concatenation `version` and `text` doesn't equal to passed `hash` value. \n\
+                                           Calculated hash value: {:?}, \n Passed hash value: {:?}", calculated_hash, passed_hash)));
+        }
+        Ok(())
     }
 }
 

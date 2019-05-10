@@ -1522,37 +1522,37 @@ public class Ledger extends IndyJava.API {
 	}
 
 	/**
-	 * Append transaction author agreement metadata to a request.
+	 * Append transaction author agreement acceptance data to a request.
 	 * This function should be called before signing and sending a request
 	 * if there is any transaction author agreement set on the Ledger.
 	 *
 	 * EXPERIMENTAL
 	 *
-	 * This function may calculate hash by itself or consume it as a parameter.
-	 * If all text, version and hash parameters are specified, a check integrity of them will be done.
+	 * This function may calculate digest by itself or consume it as a parameter.
+	 * If all text, version and taaDigest parameters are specified, a check integrity of them will be done.
 	 *
 	 * @param requestJson original request data json.
 	 * @param text - (Optional) raw data about TAA from ledger.
 	 * @param version - (Optional) raw version about TAA from ledger.
 	 *     `text` and `version` parameters should be passed together.
-	 *     `text` and `version` parameters are required if hash parameter is omitted.
-	 * @param hash - (Optional) hash on text and version. This parameter is required if text and version parameters are omitted.
-	 * @param accMechType - mechanism how user has accepted the TAA
-	 * @param timeOfAcceptance - UTC timestamp when user has accepted the TAA
+	 *     `text` and `version` parameters are required if taaDigest parameter is omitted.
+	 * @param taaDigest - (Optional) digest on text and version. This parameter is required if text and version parameters are omitted.
+	 * @param mechanism - mechanism how user has accepted the TAA
+	 * @param time - UTC timestamp when user has accepted the TAA
 	 *
 	 * @return A future resolving to an updated request result as json.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
-	public static CompletableFuture<String> appendTxnAuthorAgreementMetaToRequest(
+	public static CompletableFuture<String> appendTxnAuthorAgreementAcceptanceToRequest(
 			String requestJson,
 			String text,
 			String version,
-			String hash,
-			String accMechType,
-			long timeOfAcceptance) throws IndyException {
+			String taaDigest,
+			String mechanism,
+			long time) throws IndyException {
 
 		ParamGuard.notNull(requestJson, "requestJson");
-		ParamGuard.notNull(accMechType, "accMechType");
+		ParamGuard.notNull(mechanism, "mechanism");
 
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
@@ -1562,9 +1562,9 @@ public class Ledger extends IndyJava.API {
 				requestJson,
 				text,
 				version,
-				hash,
-				accMechType,
-				timeOfAcceptance,
+				taaDigest,
+				mechanism,
+				time,
 				buildRequestCb);
 
 		checkResult(future, result);

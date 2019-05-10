@@ -7,7 +7,7 @@ import pytest
 TEXT = 'some agreement text'
 VERSION = '1.0.0'
 ACCEPTANCE_MECH_TYPE = 'acceptance type 1'
-HASH = '050e52a57837fff904d3d059c8a123e3a04177042bf467db2b2c27abd8045d5e'
+TAA_DIGEST = '050e52a57837fff904d3d059c8a123e3a04177042bf467db2b2c27abd8045d5e'
 TIME_OF_ACCEPTANCE = 123456789
 REQUEST = json.dumps({
     "reqId": 1496822211362017764,
@@ -20,10 +20,10 @@ REQUEST = json.dumps({
 })
 
 
-def _check_request_meta(request: str):
+def _check_request_acceptance_data(request: str):
     expected_meta = {
         "mechanism": ACCEPTANCE_MECH_TYPE,
-        "taaDigest": HASH,
+        "taaDigest": TAA_DIGEST,
         "time": TIME_OF_ACCEPTANCE
     }
 
@@ -32,21 +32,21 @@ def _check_request_meta(request: str):
 
 
 @pytest.mark.asyncio
-async def test_append_txn_author_agreement_meta_to_request_works_for_text_version():
+async def test_append_txn_author_agreement_acceptance_to_request_works_for_text_version():
     request = await ledger.append_txn_author_agreement_acceptance_to_request(REQUEST, TEXT, VERSION, None,
                                                                              ACCEPTANCE_MECH_TYPE, TIME_OF_ACCEPTANCE)
-    _check_request_meta(request)
+    _check_request_acceptance_data(request)
 
 
 @pytest.mark.asyncio
-async def test_append_txn_author_agreement_meta_to_request_works_for_hash():
-    request = await ledger.append_txn_author_agreement_acceptance_to_request(REQUEST, None, None, HASH,
+async def test_append_txn_author_agreement_acceptance_to_request_works_for_hash():
+    request = await ledger.append_txn_author_agreement_acceptance_to_request(REQUEST, None, None, TAA_DIGEST,
                                                                              ACCEPTANCE_MECH_TYPE, TIME_OF_ACCEPTANCE)
-    _check_request_meta(request)
+    _check_request_acceptance_data(request)
 
 
 @pytest.mark.asyncio
-async def test_append_txn_author_agreement_meta_to_request_works_for_text_version_and_hash():
-    request = await ledger.append_txn_author_agreement_acceptance_to_request(REQUEST, TEXT, VERSION, HASH,
+async def test_append_txn_author_agreement_acceptance_to_request_works_for_text_version_and_hash():
+    request = await ledger.append_txn_author_agreement_acceptance_to_request(REQUEST, TEXT, VERSION, TAA_DIGEST,
                                                                              ACCEPTANCE_MECH_TYPE, TIME_OF_ACCEPTANCE)
-    _check_request_meta(request)
+    _check_request_acceptance_data(request)
