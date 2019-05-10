@@ -233,11 +233,11 @@
  If data is present inside of cache, cached data is returned.
  Otherwise data is fetched from the ledger and stored inside of cache for future use.
 
- @param poolHandle: pool handle (created by open_pool_ledger).
- @param walletHandle: wallet handle (created by open_wallet).
- @param submitterDid: DID of the submitter stored in secured Wallet.
- @param id: identifier of schema.
- @param optionsJson:
+ @param poolHandle pool handle (created by open_pool_ledger).
+ @param walletHandle wallet handle (created by open_wallet).
+ @param submitterDid DID of the submitter stored in secured Wallet.
+ @param id identifier of schema.
+ @param optionsJson
   {
     noCache: (bool, optional, false by default) Skip usage of cache,
     noUpdate: (bool, optional, false by default) Use only cached data, do not try to update.

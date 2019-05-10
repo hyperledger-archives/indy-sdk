@@ -236,7 +236,7 @@
 
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
 
-    ret = indy_purge_cred_def_cache(handle,
+    ret = indy_get_cred_def(handle,
             poolHandle,
             walletHandle,
             [submitterDid UTF8String],
@@ -256,7 +256,7 @@
 
     ret = indy_purge_schema_cache(handle,
             walletHandle,
-            optionsJson,
+            [optionsJson UTF8String],
             IndyWrapperCommonCallback);
 
     [[IndyCallbacks sharedInstance] complete:completion forHandle:handle ifError:ret];
@@ -272,7 +272,7 @@
 
     ret = indy_purge_cred_def_cache(handle,
             walletHandle,
-            optionsJson,
+            [optionsJson UTF8String],
             IndyWrapperCommonCallback);
 
     [[IndyCallbacks sharedInstance] complete:completion forHandle:handle ifError:ret];
