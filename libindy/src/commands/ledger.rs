@@ -543,6 +543,11 @@ impl LedgerCommandExecutor {
                             request.insert("signatures".to_string(), Value::Object(serde_json::Map::new()));
                         }
                         request["signatures"].as_object_mut().unwrap().insert(submitter_did.to_string(), Value::String(base58::encode(&signature)));
+
+                        if let (Some(identifier), Some(signature)) = (request.get("identifier").and_then(Value::as_str).map(str::to_owned),
+                                                                      request.remove("signature")) {
+                            request["signatures"].as_object_mut().unwrap().insert(identifier, signature);
+                        }
                     });
             }
         }

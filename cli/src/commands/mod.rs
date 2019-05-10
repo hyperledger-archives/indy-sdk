@@ -240,6 +240,22 @@ pub fn set_connected_pool(ctx: &CommandContext, value: Option<(i32, String)>) {
     ctx.set_sub_prompt(1, value.map(|value| format!("pool({})", value.1)));
 }
 
+
+pub fn set_transaction(ctx: &CommandContext, request: Option<String>) {
+    ctx.set_string_value("LEDGER_TRANSACTION", request.clone());
+}
+
+pub fn get_transaction(ctx: &CommandContext) -> Option<String> {
+    ctx.get_string_value("LEDGER_TRANSACTION")
+}
+
+pub fn ensure_set_transaction(ctx: &CommandContext) -> Result<String, ()> {
+    match ctx.get_string_value("LEDGER_TRANSACTION") {
+        Some(transaction) => Ok(transaction),
+        None => Err(println_err!("There is no transaction stored into context"))
+    }
+}
+
 pub fn set_transaction_author_info(ctx: &CommandContext, value: Option<(String, String, u64)>) {
     ctx.set_string_value("AGREEMENT_TEXT", value.as_ref().map(|value| value.0.to_owned()));
     ctx.set_string_value("AGREEMENT_VERSION", value.as_ref().map(|value| value.1.to_owned()));

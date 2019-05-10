@@ -36,6 +36,7 @@ pub const VERKEY_TRUSTEE: &'static str = "GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4c
 pub const METADATA: &'static str = "some_metadata";
 pub const MESSAGE: &'static str = r#"{"reqId":1496822211362017764}"#;
 pub const REQUEST: &'static str = r#"{"reqId":1496822211362017764,"identifier":"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL","operation":{"type":"1","dest":"VsKV7grR1BUE29mG2Fm2kX","verkey":"GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa"}}"#;
+pub const REQUEST_FROM_TRUSTEE: &'static str = r#"{"reqId":1496822211362017764,"identifier":"V4SGRU86Z58d6TV7PBUe6f","operation":{"type":"1","dest":"VsKV7grR1BUE29mG2Fm2kX","verkey":"GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa"}}"#;
 pub const GET_SCHEMA_DATA: &'static str = r#"{"name":"name","version":"1.0"}"#;
 pub const ATTRIB_RAW_DATA: &'static str = r#"{"endpoint":{"ha":"127.0.0.1:5555"}}"#;
 pub const ATTRIB_HASH_DATA: &'static str = r#"83d907821df1c87db829e96569a11f6fc2e7880acba5e43d07ab786959e13bd3"#;
