@@ -175,3 +175,4 @@ pub fn rev_def_json() -> String {
         }
     }).to_string()
 }
+pub static DEFAULT_AUTHOR_AGREEMENT: &str = r#"{"text":"Default indy agreement", "version":"1.0.0", "aml": {"acceptance mechanism label1": "description"}}"#;

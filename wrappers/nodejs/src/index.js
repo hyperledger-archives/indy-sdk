@@ -577,9 +577,9 @@ indy.buildGetAcceptanceMechanismRequest = function buildGetAcceptanceMechanismRe
   return cb.promise
 }
 
-indy.appendTxnAuthorAgreementMetaToRequest = function appendTxnAuthorAgreementMetaToRequest (request, text, version, hash, accMechType, timeOfAcceptance, cb) {
+indy.appendTxnAuthorAgreementAcceptanceToRequest = function appendTxnAuthorAgreementAcceptanceToRequest (request, text, version, taaDigest, accMechType, timeOfAcceptance, cb) {
   cb = wrapIndyCallback(cb, fromJson)
-  capi.appendTxnAuthorAgreementMetaToRequest(toJson(request), text, version, hash, accMechType, timeOfAcceptance, cb)
+  capi.appendTxnAuthorAgreementAcceptanceToRequest(toJson(request), text, version, taaDigest, accMechType, timeOfAcceptance, cb)
   return cb.promise
 }
 
