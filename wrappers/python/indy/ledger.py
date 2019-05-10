@@ -1565,26 +1565,26 @@ async def build_get_acceptance_mechanism_request(submitter_did: Optional[str],
 async def append_txn_author_agreement_acceptance_to_request(request_json: str,
                                                             text: Optional[str],
                                                             version: Optional[str],
-                                                            hash: Optional[str],
-                                                            acc_mech_type: str,
-                                                            time_of_acceptance: int) -> str:
+                                                            taa_digest: Optional[str],
+                                                            mechanism: str,
+                                                            time: int) -> str:
     """
-    Append transaction author agreement metadata to a request.
+    Append transaction author agreement acceptance data to a request.
     This function should be called before signing and sending a request
     if there is any transaction author agreement set on the Ledger.
 
     EXPERIMENTAL
 
     This function may calculate hash by itself or consume it as a parameter.
-    If all text, version and hash parameters are specified, a check integrity of them will be done.
+    If all text, version and taa_digest parameters are specified, a check integrity of them will be done.
 
     :param request_json: original request data json.
     :param text and version: (Optional) raw data about TAA from ledger.
                These parameters should be passed together.
-               These parameters are required if hash parameter is omitted.
-    :param hash: (Optional) hash on text and version. This parameter is required if text and version parameters are omitted.
-    :param acc_mech_type: mechanism how user has accepted the TAA
-    :param time_of_acceptance: UTC timestamp when user has accepted the TAA
+               These parameters are required if taa_digest parameter is omitted.
+    :param taa_digest: (Optional) hash on text and version. This parameter is required if text and version parameters are omitted.
+    :param mechanism: mechanism how user has accepted the TAA
+    :param time: UTC timestamp when user has accepted the TAA
 
     :return: Updated request result as json.
     """
@@ -1595,9 +1595,9 @@ async def append_txn_author_agreement_acceptance_to_request(request_json: str,
                  request_json,
                  text,
                  version,
-                 hash,
-                 acc_mech_type,
-                 time_of_acceptance)
+                 taa_digest,
+                 mechanism,
+                 time)
 
     if not hasattr(append_txn_author_agreement_acceptance_to_request, "cb"):
         logger.debug("append_txn_author_agreement_acceptance_to_request: Creating callback")
@@ -1606,16 +1606,16 @@ async def append_txn_author_agreement_acceptance_to_request(request_json: str,
     c_request_json = c_char_p(request_json.encode('utf-8'))
     c_text = c_char_p(text.encode('utf-8')) if text is not None else None
     c_version = c_char_p(version.encode('utf-8')) if version is not None else None
-    c_hash = c_char_p(hash.encode('utf-8')) if hash is not None else None
-    c_acc_mech_type = c_char_p(acc_mech_type.encode('utf-8'))
+    c_taa_digest = c_char_p(taa_digest.encode('utf-8')) if taa_digest is not None else None
+    c_mechanism = c_char_p(mechanism.encode('utf-8'))
 
     request_json = await do_call('indy_append_txn_author_agreement_acceptance_to_request',
                                  c_request_json,
                                  c_text,
                                  c_version,
-                                 c_hash,
-                                 c_acc_mech_type,
-                                 c_uint64(time_of_acceptance),
+                                 c_taa_digest,
+                                 c_mechanism,
+                                 c_uint64(time),
                                  append_txn_author_agreement_acceptance_to_request.cb)
 
     res = request_json.decode()
