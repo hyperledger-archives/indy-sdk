@@ -453,9 +453,12 @@ pub extern fn vcx_connection_invite_details(command_handle: u32,
 ///
 /// msg: actual message to send
 ///
-/// msg_type: type of message to send
-///
-/// msg_title: message title (user notification)
+/// send_msg_options:
+///     {
+///         msg_type: String, // type of message to send
+///         msg_title: String, // message title (user notification)
+///         ref_msg_id: Option<String>, // If responding to a message, id of the message
+///     }
 ///
 /// cb: Callback that provides array of matching messages retrieved
 ///
@@ -466,21 +469,19 @@ pub extern fn vcx_connection_invite_details(command_handle: u32,
 pub extern fn vcx_connection_send_message(command_handle: u32,
                                connection_handle: u32,
                                msg: *const c_char,
-                               msg_type: *const c_char,
-                               msg_title: *const c_char,
+                               send_msg_options: *const c_char,
                                cb: Option<extern fn(xcommand_handle: u32, err: u32, msg_id: *const c_char)>) -> u32 {
     info!("vcx_message_send >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
     check_useful_c_str!(msg, VcxErrorKind::InvalidOption);
-    check_useful_c_str!(msg_type, VcxErrorKind::InvalidOption);
-    check_useful_c_str!(msg_title, VcxErrorKind::InvalidOption);
+    check_useful_c_str!(send_msg_options, VcxErrorKind::InvalidOption);
 
-    trace!("vcx_message_send(command_handle: {}, connection_handle: {}, msg: {}, msg_type: {}, msg_title: {})",
-          command_handle, connection_handle, msg, msg_type, msg_title);
+    trace!("vcx_message_send(command_handle: {}, connection_handle: {}, msg: {}, send_msg_options: {})",
+           command_handle, connection_handle, msg, send_msg_options);
 
     spawn(move|| {
-        match ::messages::send_message::send_generic_message(connection_handle, &msg, &msg_type, &msg_title) {
+        match ::messages::send_message::send_generic_message(connection_handle, &msg, &send_msg_options) {
             Ok(x) => {
                 trace!("vcx_connection_send_message_cb(command_handle: {}, rc: {}, msg_id: {})",
                     command_handle, error::SUCCESS.message, x);
@@ -813,12 +814,11 @@ mod tests {
         init!("true");
 
         let msg = CString::new("MESSAGE").unwrap().into_raw();
-        let msg_type = CString::new("TYPE").unwrap().into_raw();
-        let msg_title = CString::new("TITLE").unwrap().into_raw();
+        let send_msg_options = CString::new(json!({"msg_type":"type", "msg_title": "title", "ref_msg_id":null}).to_string()).unwrap().into_raw();
         let connection_handle = ::connection::tests::build_test_connection();
         ::connection::set_state(connection_handle, VcxStateType::VcxStateAccepted).unwrap();
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
-        assert_eq!(vcx_connection_send_message(cb.command_handle, connection_handle, msg, msg_type, msg_title, Some(cb.get_callback())), error::SUCCESS.code_num);
+        assert_eq!(vcx_connection_send_message(cb.command_handle, connection_handle, msg, send_msg_options, Some(cb.get_callback())), error::SUCCESS.code_num);
         cb.receive(Some(Duration::from_secs(10))).unwrap();
     }
 

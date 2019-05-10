@@ -422,7 +422,7 @@ impl DisclosedProof {
             .agent_vk(local_agent_vk)?
             .edge_agent_payload(&local_my_vk, &local_their_vk, &proof, PayloadKinds::Proof, self.thread.clone())
             .map_err(|err| VcxError::from_msg(VcxErrorKind::GeneralConnectionError, format!("Cannot encrypt payload: {}", err)))?
-            .ref_msg_id(ref_msg_uid)?
+            .ref_msg_id(Some(ref_msg_uid.to_string()))?
             .send_secure()
             .map_err(|err| err.extend("Could not send proof"))?;
 
