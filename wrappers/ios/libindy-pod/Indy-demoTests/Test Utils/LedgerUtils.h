@@ -218,13 +218,13 @@
                                                      outRequest:(NSString **)resultJson;
 
 // MARK: - Author Metadata
-- (NSError *)appendTxnAuthorAgreementMetaToRequest:(NSString *)requestJson
-                                              text:(NSString *)text
-                                           version:(NSString *)version
-                                              hash:(NSString *)hash
-                                       accMechType:(NSString *)accMechType
-                                  timeOfAcceptance:(NSNumber *)timeOfAcceptance
-                                        outRequest:(NSString **)resultJson;
+- (NSError *)appendTxnAuthorAgreementAcceptanceToRequest:(NSString *)requestJson
+                                                    text:(NSString *)text
+                                                 version:(NSString *)version
+                                               taaDigest:(NSString *)taaDigest
+                                             accMechType:(NSString *)accMechType
+                                        timeOfAcceptance:(NSNumber *)timeOfAcceptance
+                                              outRequest:(NSString **)resultJson;
 
 // MARK: - Response Metadata
 - (NSError *)getResponseMetadata:(NSString *)response

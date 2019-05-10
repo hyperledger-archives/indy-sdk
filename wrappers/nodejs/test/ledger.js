@@ -188,8 +188,8 @@ test('ledger', async function (t) {
   req = await indy.buildGetAcceptanceMechanismRequest(null, 123456789)
   t.deepEqual(req['operation'], { 'type': '7', 'timestamp': 123456789 })
 
-  // author agreement meta
-  req = await indy.appendTxnAuthorAgreementMetaToRequest(req, 'indy agreement', '1.0.0', null, 'acceptance mechanism label 1', 123456789)
+  // author agreement acceptance data
+  req = await indy.appendTxnAuthorAgreementAcceptanceToRequest(req, 'indy agreement', '1.0.0', null, 'acceptance mechanism label 1', 123456789)
   var expectedMeta = {
     'mechanism': 'acceptance mechanism label 1',
     'taaDigest': '7213b9aabf8677edf6b17d20a9fbfaddb059ea4cb122d163bdf658ea67196120',

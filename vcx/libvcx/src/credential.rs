@@ -84,7 +84,7 @@ impl Credential {
         let (cred_def_id, cred_def_json) = anoncreds::get_cred_def_json(&credential_offer.cred_def_id)?;
 
         /*
-                debug!("storing credential offer: {}", credential_offer);
+                debug!("storing credential offer: {}", secret!(&credential_offer));
                 libindy_prover_store_credential_offer(wallet_h, &credential_offer).map_err(|ec| CredentialError::CommonError(ec))?;
         */
 
@@ -337,7 +337,7 @@ fn handle_err(err: VcxError) -> VcxError {
 }
 
 pub fn credential_create_with_offer(source_id: &str, offer: &str) -> VcxResult<u32> {
-    trace!("credential_create_with_offer >>> source_id: {}, offer: {}", source_id, offer);
+    trace!("credential_create_with_offer >>> source_id: {}, offer: {}", source_id, secret!(&offer));
 
     let mut new_credential = _credential_create(source_id);
 

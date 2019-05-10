@@ -741,32 +741,32 @@
                                                 completion:(void (^)(NSError *error, NSString *responseMetadata))completion;
 
 /**
- Append transaction author agreement metadata to a request.
+ Append transaction author agreement acceptance data to a request.
  This function should be called before signing and sending a request
  if there is any transaction author agreement set on the Ledger.
 
  EXPERIMENTAL
 
  This function may calculate hash by itself or consume it as a parameter.
- If all text, version and hash parameters are specified, a check integrity of them will be done.
+ If all text, version and taaDigest parameters are specified, a check integrity of them will be done.
 
  @param requestJson original request data json.
  @param text (Optional) raw data about TAA from ledger.
  @param version (Optional) version of TAA from ledger.
      text and version should be passed together.
-     text and version are required if hash parameter is omitted.
- @param hash (Optional) hash on text and version. This parameter is required if text and version parameters are omitted.
+     text and version are required if taaDigest parameter is omitted.
+ @param taaDigest (Optional) hash on text and version. This parameter is required if text and version parameters are omitted.
  @param accMechType mechanism how user has accepted the TAA
  @param timeOfAcceptance UTC timestamp when user has accepted the TAA
 
  Returns Updated request result as json.
  */
-+ (void)appendTxnAuthorAgreementMetaToRequest:(NSString *)requestJson
-                                         text:(NSString *)text
-                                      version:(NSString *)version
-                                         hash:(NSString *)hash
-                                  accMechType:(NSString *)accMechType
-                             timeOfAcceptance:(NSNumber *)timeOfAcceptance
-                                   completion:(void (^)(NSError *error, NSString *responseMetadata))completion;
++ (void)appendTxnAuthorAgreementAcceptanceToRequest:(NSString *)requestJson
+                                               text:(NSString *)text
+                                            version:(NSString *)version
+                                          taaDigest:(NSString *)taaDigest
+                                        accMechType:(NSString *)accMechType
+                                   timeOfAcceptance:(NSNumber *)timeOfAcceptance
+                                         completion:(void (^)(NSError *error, NSString *responseMetadata))completion;
 
 @end

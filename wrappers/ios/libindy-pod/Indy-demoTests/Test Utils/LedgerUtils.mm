@@ -901,28 +901,28 @@
     return err;
 }
 
-- (NSError *)appendTxnAuthorAgreementMetaToRequest:(NSString *)requestJson
-                                              text:(NSString *)text
-                                           version:(NSString *)version
-                                              hash:(NSString *)hash
-                                       accMechType:(NSString *)accMechType
-                                  timeOfAcceptance:(NSNumber *)timeOfAcceptance
-                                        outRequest:(NSString **)resultJson {
+- (NSError *)appendTxnAuthorAgreementAcceptanceToRequest:(NSString *)requestJson
+                                                    text:(NSString *)text
+                                                 version:(NSString *)version
+                                               taaDigest:(NSString *)taaDigest
+                                             accMechType:(NSString *)accMechType
+                                        timeOfAcceptance:(NSNumber *)timeOfAcceptance
+                                              outRequest:(NSString **)resultJson {
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
     __block NSError *err = nil;
     __block NSString *outJson = nil;
 
-    [IndyLedger appendTxnAuthorAgreementMetaToRequest:requestJson
-                                                 text:text
-                                              version:version
-                                                 hash:hash
-                                          accMechType:accMechType
-                                     timeOfAcceptance:timeOfAcceptance
-                                           completion:^(NSError *error, NSString *json) {
-                                               err = error;
-                                               outJson = json;
-                                               [completionExpectation fulfill];
-                                           }];
+    [IndyLedger appendTxnAuthorAgreementAcceptanceToRequest:requestJson
+                                                       text:text
+                                                    version:version
+                                                  taaDigest:taaDigest
+                                                accMechType:accMechType
+                                           timeOfAcceptance:timeOfAcceptance
+                                                 completion:^(NSError *error, NSString *json) {
+                                                     err = error;
+                                                     outJson = json;
+                                                     [completionExpectation fulfill];
+                                                 }];
 
     [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
 
