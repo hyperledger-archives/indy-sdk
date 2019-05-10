@@ -107,17 +107,17 @@ impl Ledger {
         ledger::build_get_txn_author_agreement_request(submitter_did, data).wait()
     }
 
-    pub fn append_txn_author_agreement_meta_to_request(request_json: &str,
-                                                       text: Option<&str>,
-                                                       version: Option<&str>,
-                                                       hash: Option<&str>,
-                                                       acc_mech_type: &str,
-                                                       time_of_acceptance: u64) -> Result<String, IndyError> {
-        ledger::append_txn_author_agreement_meta_to_request(request_json,
-                                                            text,
-                                                            version,
-                                                            hash,
-                                                            acc_mech_type,
-                                                            time_of_acceptance).wait()
+    pub fn append_txn_author_agreement_acceptance_to_request(request_json: &str,
+                                                             text: Option<&str>,
+                                                             version: Option<&str>,
+                                                             hash: Option<&str>,
+                                                             acc_mech_type: &str,
+                                                             time_of_acceptance: u64) -> Result<String, IndyError> {
+        ledger::append_txn_author_agreement_acceptance_to_request(request_json,
+                                                                  text,
+                                                                  version,
+                                                                  hash,
+                                                                  acc_mech_type,
+                                                                  time_of_acceptance).wait()
     }
 }

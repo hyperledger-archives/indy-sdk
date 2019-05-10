@@ -873,13 +873,13 @@
     }
 }
 
-+ (void)appendTxnAuthorAgreementMetaToRequest:(NSString *)requestJson
-                                         text:(NSString *)text
-                                      version:(NSString *)version
-                                         hash:(NSString *)hash
-                                  accMechType:(NSString *)accMechType
-                             timeOfAcceptance:(NSNumber *)timeOfAcceptance
-                                   completion:(void (^)(NSError *error, NSString *responseMetadata))completion {
++ (void)appendTxnAuthorAgreementAcceptanceToRequest:(NSString *)requestJson
+                                               text:(NSString *)text
+                                            version:(NSString *)version
+                                          taaDigest:(NSString *)taaDigest
+                                        accMechType:(NSString *)accMechType
+                                   timeOfAcceptance:(NSNumber *)timeOfAcceptance
+                                         completion:(void (^)(NSError *error, NSString *responseMetadata))completion {
     indy_error_t ret;
 
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
@@ -888,7 +888,7 @@
             [requestJson UTF8String],
             [text UTF8String],
             [version UTF8String],
-            [hash UTF8String],
+            [taaDigest UTF8String],
             [accMechType UTF8String],
             [timeOfAcceptance unsignedLongLongValue],
             IndyWrapperCommonStringCallback);

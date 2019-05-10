@@ -121,12 +121,12 @@ pub fn libindy_get_txn_author_agreement() -> VcxResult<String> {
 
 pub fn append_txn_author_agreement_to_request(request_json: &str) -> VcxResult<String> {
     if let Some(author_agreement) = ::utils::author_agreement::get_txn_author_agreement().unwrap() {
-        ledger::append_txn_author_agreement_meta_to_request(request_json,
-                                                            author_agreement.text.as_ref().map(String::as_str),
-                                                            author_agreement.version.as_ref().map(String::as_str),
-                                                            author_agreement.hash.as_ref().map(String::as_str),
-                                                            &author_agreement.acceptance_mechanism_type,
-                                                            author_agreement.time_of_acceptance)
+        ledger::append_txn_author_agreement_acceptance_to_request(request_json,
+                                                                  author_agreement.text.as_ref().map(String::as_str),
+                                                                  author_agreement.version.as_ref().map(String::as_str),
+                                                                  author_agreement.hash.as_ref().map(String::as_str),
+                                                                  &author_agreement.acceptance_mechanism_type,
+                                                                  author_agreement.time_of_acceptance)
             .wait()
             .map_err(map_rust_indy_sdk_error)
     } else {
