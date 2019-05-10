@@ -19,12 +19,12 @@ impl MerkleTree {
     }
 
     pub fn find_hash<'a>(from: &'a Tree, required_hash: &Vec<u8>) -> Option<&'a Tree> {
-        match from {
-            &Tree::Empty { .. } => {
+        match *from {
+            Tree::Empty { .. } => {
                 assert!(false);
                 None
             }
-            &Tree::Node { ref left, ref right, ref hash, .. } => {
+            Tree::Node { ref left, ref right, ref hash, .. } => {
                 if hash == required_hash {
                     Some(from)
                 } else {
@@ -47,7 +47,7 @@ impl MerkleTree {
                     }
                 }
             }
-            &Tree::Leaf { ref hash, .. } => {
+            Tree::Leaf { ref hash, .. } => {
                 if hash == required_hash {
                     Some(from)
                 } else {
