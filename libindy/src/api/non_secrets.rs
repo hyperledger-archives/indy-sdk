@@ -647,7 +647,6 @@ pub extern fn indy_get_schema(command_handle: CommandHandle,
 /// #Params
 /// command_handle: command handle to map callback to caller context.
 /// wallet_handle: wallet handle (created by open_wallet).
-/// id: identifier of schema.
 /// options_json:
 ///  {
 ///    minFresh: (int, optional, -1 by default) Purge cached data if older than this many seconds. -1 means purge all.
@@ -691,7 +690,6 @@ pub extern fn indy_purge_cred_def_cache(command_handle: CommandHandle,
 /// #Params
 /// command_handle: command handle to map callback to caller context.
 /// wallet_handle: wallet handle (created by open_wallet).
-/// id: identifier of schema.
 /// options_json:
 ///  {
 ///    maxAge: (int, optional, -1 by default) Purge cached data if older than this many seconds. -1 means purge all.

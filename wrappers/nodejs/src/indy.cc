@@ -2501,7 +2501,7 @@ NAN_METHOD(getCredDef) {
   const char* arg3 = argToCString(info[3]);
   const char* arg4 = argToCString(info[4]);
   IndyCallback* icb = argToIndyCb(info[5]);
-  indyCalled(icb, indy_get_schema(icb->handle, arg0, arg1, arg2, arg3, arg4, getCredDef_cb));
+  indyCalled(icb, indy_get_cred_def(icb->handle, arg0, arg1, arg2, arg3, arg4, getCredDef_cb));
 }
 
 void purgeSchemaCache_cb(indy_handle_t handle, indy_error_t xerr) {
