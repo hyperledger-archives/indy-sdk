@@ -308,7 +308,7 @@ fn _tags_from_json(json: &str) -> IndyResult<Vec<Tag>> {
     let mut tags = Vec::new();
 
     for (k, v) in string_tags {
-        if k.chars().next() == Some('~') {
+        if k.starts_with('~') {
             let mut key = k;
             key.remove(0);
             tags.push(
