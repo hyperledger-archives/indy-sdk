@@ -10,6 +10,18 @@ pub mod version_constants;
 #[macro_use]
 pub mod devsetup;
 
+#[cfg(debug_assertions)]
+#[macro_export]
+macro_rules! secret {
+    ($val:expr) => {{ $val }};
+}
+
+#[cfg(not(debug_assertions))]
+#[macro_export]
+macro_rules! secret {
+    ($val:expr) => {{ "_" }};
+}
+
 pub mod error;
 pub mod httpclient;
 pub mod constants;

@@ -339,7 +339,7 @@ impl DisclosedProof {
     }
 
     fn generate_proof(&mut self, credentials: &str, self_attested_attrs: &str) -> VcxResult<u32> {
-        trace!("DisclosedProof::generate_proof >>> credentials: {}, self_attested_attrs: {}", credentials, self_attested_attrs);
+        trace!("DisclosedProof::generate_proof >>> credentials: {}, self_attested_attrs: {}", secret!(&credentials), secret!(&self_attested_attrs));
 
         debug!("generating proof {}", self.source_id);
         if settings::test_indy_mode_enabled() { return Ok(error::SUCCESS.code_num); }
@@ -441,7 +441,7 @@ impl DisclosedProof {
             .map_err(|err| err.extend("Cannot serialize DisclosedProof"))
     }
     fn from_str(data: &str) -> VcxResult<DisclosedProof> {
-        trace!("DisclosedProof::from_str >>> data: {}", data);
+        trace!("DisclosedProof::from_str >>> data: {}", secret!(&data));
         ObjectWithVersion::deserialize(data)
             .map(|obj: ObjectWithVersion<DisclosedProof>| obj.data)
             .map_err(|err| err.extend("Cannot deserialize DisclosedProof"))

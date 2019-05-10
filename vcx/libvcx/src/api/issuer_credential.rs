@@ -76,7 +76,7 @@ pub extern fn vcx_issuer_create_credential(command_handle: u32,
            source_id,
            cred_def_handle,
            issuer_did,
-           credential_data,
+           secret!(&credential_data),
            credential_name);
 
     spawn(move || {
