@@ -14,7 +14,7 @@ use domain::crypto::did::Did;
 use domain::crypto::key::Key;
 use domain::ledger::node::NodeOperationData;
 use domain::ledger::author_agreement::{GetTxnAuthorAgreementData, AcceptanceMechanisms};
-use domain::ledger::request::{Request, TxnAuthrAgrmtAcceptanceData};
+use domain::ledger::request::Request;
 use errors::prelude::*;
 use services::crypto::CryptoService;
 use services::ledger::LedgerService;
@@ -25,9 +25,7 @@ use services::pool::{
 use services::wallet::{RecordOptions, WalletService};
 use utils::crypto::base58;
 use utils::crypto::signature_serializer::serialize_signature;
-use utils::crypto::hash::hash as openssl_hash;
 use api::WalletHandle;
-use hex::{ToHex, FromHex};
 
 pub enum LedgerCommand {
     SignAndSubmitRequest(
@@ -1081,39 +1079,16 @@ impl LedgerCommandExecutor {
                                                          request_json: &str,
                                                          text: Option<&str>,
                                                          version: Option<&str>,
-                                                         hash: Option<&str>,
+                                                         taa_digest: Option<&str>,
                                                          acc_mech_type: &str,
-                                                         time_of_acceptance: u64) -> IndyResult<String> {
-        debug!("append_txn_author_agreement_acceptance_to_request >>> request_json: {:?}, text: {:?}, version: {:?}, hash: {:?}, acc_mech_type: {:?}, time_of_acceptance: {:?}",
-               request_json, text, version, hash, acc_mech_type, time_of_acceptance);
+                                                         time: u64) -> IndyResult<String> {
+        debug!("append_txn_author_agreement_acceptance_to_request >>> request_json: {:?}, text: {:?}, version: {:?}, taa_digest: {:?}, acc_mech_type: {:?}, time: {:?}",
+               request_json, text, version, taa_digest, acc_mech_type, time);
 
         let mut request: Request<serde_json::Value> = serde_json::from_str(request_json)
             .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Cannot deserialize request: {:?}", err)))?;
 
-        let hash = match (text, version, hash) {
-            (None, None, None) => {
-                return Err(err_msg(IndyErrorKind::InvalidStructure, "Invalid combination of params: Either combination `text` + `version` or `hash` must be passed."));
-            }
-            (None, None, Some(hash_)) => {
-                hash_.to_string()
-            }
-            (Some(_), None, _) | (None, Some(_), _) => {
-                return Err(err_msg(IndyErrorKind::InvalidStructure, "Invalid combination of params: `text` and `version` should be passed or skipped together."));
-            }
-            (Some(text_), Some(version_), None) => {
-                self._calculate_hash(text_, version_)?.to_hex()
-            }
-            (Some(text_), Some(version_), Some(hash_)) => {
-                self._compare_hash(text_, version_, hash_)?;
-                hash_.to_string()
-            }
-        };
-
-        request.taa_acceptance = Some(TxnAuthrAgrmtAcceptanceData {
-            mechanism: acc_mech_type.to_string(),
-            taa_digest: hash,
-            time: time_of_acceptance,
-        });
+        request.taa_acceptance = Some(self.ledger_service.prepare_acceptance_data(text, version, taa_digest, acc_mech_type, time)?);
 
         let res: String = serde_json::to_string(&request)
             .to_indy(IndyErrorKind::InvalidState, "Can't serialize request after adding author agreement acceptance data")?;
@@ -1121,25 +1096,6 @@ impl LedgerCommandExecutor {
         debug!("append_txn_author_agreement_acceptance_to_request <<< res: {:?}", res);
 
         Ok(res)
-    }
-
-    fn _calculate_hash(&self, text: &str, version: &str) -> IndyResult<Vec<u8>> {
-        let content: String = version.to_string() + text;
-        openssl_hash(content.as_bytes())
-    }
-
-    fn _compare_hash(&self, text: &str, version: &str, hash: &str) -> IndyResult<()> {
-        let calculated_hash = self._calculate_hash(text, version)?;
-
-        let passed_hash = Vec::from_hex(hash)
-            .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Cannot decode `hash`: {:?}", err)))?;
-
-        if calculated_hash != passed_hash {
-            return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure,
-                                           format!("Calculated hash of concatenation `version` and `text` doesn't equal to passed `hash` value. \n\
-                                           Calculated hash value: {:?}, \n Passed hash value: {:?}", calculated_hash, passed_hash)));
-        }
-        Ok(())
     }
 
     fn validate_opt_did(&self, did: Option<&str>) -> IndyResult<()> {
