@@ -297,14 +297,17 @@ pub fn pay_a_payee(price: u64, address: &str) -> VcxResult<(PaymentTxn, String)>
 
     let extra = match ::utils::author_agreement::get_txn_author_agreement()? {
         Some(meta) => {
-            Some(json!({
-                "txnAuthrAgrmtMeta": meta
-            }).to_string())
+            Some(payments::prepare_extra_with_acceptance_data(None,
+                                                              meta.text.as_ref().map(String::as_str),
+                                                              meta.version.as_ref().map(String::as_str),
+                                                              meta.taa_digest.as_ref().map(String::as_str),
+                                                              &meta.acceptance_mechanism_type,
+                                                              meta.time_of_acceptance)
+                .wait()
+                .map_err(map_rust_indy_sdk_error)?)
         }
         None => None
     };
-
-    let author_agreement_meta = ::utils::author_agreement::get_txn_author_agreement()?;
 
     let (request, payment_method) =
         payments::build_payment_req(get_wallet_handle(), Some(&my_did), &inputs_json, &outputs_json, extra.as_ref().map(String::as_str))
