@@ -14,7 +14,7 @@ use domain::crypto::did::Did;
 use domain::crypto::key::Key;
 use domain::ledger::node::NodeOperationData;
 use domain::ledger::author_agreement::{GetTxnAuthorAgreementData, AcceptanceMechanisms};
-use domain::ledger::request::{Request, TxnAuthrAgrmtMeta};
+use domain::ledger::request::{Request, TxnAuthrAgrmtAcceptanceData};
 use errors::prelude::*;
 use services::crypto::CryptoService;
 use services::ledger::LedgerService;
@@ -224,7 +224,7 @@ pub enum LedgerCommand {
         Option<String>, // submitter did
         Option<u64>, // timestamp
         Box<Fn(IndyResult<String>) + Send>),
-    AppendTxnAuthorAgreementMetaToRequest(
+    AppendTxnAuthorAgreementAcceptanceToRequest(
         String, // request json
         Option<String>, // text
         Option<String>, // version
@@ -438,14 +438,14 @@ impl LedgerCommandExecutor {
                 info!(target: "ledger_command_executor", "BuildGetAcceptanceMechanismRequest command received");
                 cb(self.build_get_acceptance_mechanism_request(submitter_did.as_ref().map(String::as_str), timestamp));
             }
-            LedgerCommand::AppendTxnAuthorAgreementMetaToRequest(request_json, text, version, hash, acc_mech_type, time_of_acceptance, cb) => {
-                info!(target: "ledger_command_executor", "AppendTxnAuthorAgreementMetaToRequest command received");
-                cb(self.append_txn_author_agreement_meta_to_request(&request_json,
-                                                                    text.as_ref().map(String::as_str),
-                                                                    version.as_ref().map(String::as_str),
-                                                                    hash.as_ref().map(String::as_str),
-                                                                    &acc_mech_type,
-                                                                    time_of_acceptance));
+            LedgerCommand::AppendTxnAuthorAgreementAcceptanceToRequest(request_json, text, version, hash, acc_mech_type, time_of_acceptance, cb) => {
+                info!(target: "ledger_command_executor", "AppendTxnAuthorAgreementAcceptanceToRequest command received");
+                cb(self.append_txn_author_agreement_acceptance_to_request(&request_json,
+                                                                          text.as_ref().map(String::as_str),
+                                                                          version.as_ref().map(String::as_str),
+                                                                          hash.as_ref().map(String::as_str),
+                                                                          &acc_mech_type,
+                                                                          time_of_acceptance));
             }
         };
     }
@@ -1077,14 +1077,14 @@ impl LedgerCommandExecutor {
         Ok(res)
     }
 
-    fn append_txn_author_agreement_meta_to_request(&self,
-                                                   request_json: &str,
-                                                   text: Option<&str>,
-                                                   version: Option<&str>,
-                                                   hash: Option<&str>,
-                                                   acc_mech_type: &str,
-                                                   time_of_acceptance: u64) -> IndyResult<String> {
-        debug!("append_txn_author_agreement_meta_to_request >>> request_json: {:?}, text: {:?}, version: {:?}, hash: {:?}, acc_mech_type: {:?}, time_of_acceptance: {:?}",
+    fn append_txn_author_agreement_acceptance_to_request(&self,
+                                                         request_json: &str,
+                                                         text: Option<&str>,
+                                                         version: Option<&str>,
+                                                         hash: Option<&str>,
+                                                         acc_mech_type: &str,
+                                                         time_of_acceptance: u64) -> IndyResult<String> {
+        debug!("append_txn_author_agreement_acceptance_to_request >>> request_json: {:?}, text: {:?}, version: {:?}, hash: {:?}, acc_mech_type: {:?}, time_of_acceptance: {:?}",
                request_json, text, version, hash, acc_mech_type, time_of_acceptance);
 
         let mut request: Request<serde_json::Value> = serde_json::from_str(request_json)
@@ -1109,16 +1109,16 @@ impl LedgerCommandExecutor {
             }
         };
 
-        request.taa_acceptance = Some(TxnAuthrAgrmtMeta{
+        request.taa_acceptance = Some(TxnAuthrAgrmtAcceptanceData {
             mechanism: acc_mech_type.to_string(),
             taa_digest: hash,
             time: time_of_acceptance,
         });
 
         let res: String = serde_json::to_string(&request)
-            .to_indy(IndyErrorKind::InvalidState, "Can't serialize request after adding author agreement meta")?;
+            .to_indy(IndyErrorKind::InvalidState, "Can't serialize request after adding author agreement acceptance data")?;
 
-        debug!("append_txn_author_agreement_meta_to_request <<< res: {:?}", res);
+        debug!("append_txn_author_agreement_acceptance_to_request <<< res: {:?}", res);
 
         Ok(res)
     }

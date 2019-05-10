@@ -9,7 +9,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 
-public class AppendAuthorAgreementMetaToRequestTest extends IndyIntegrationTest {
+public class AppendAuthorAgreementAcceptanceToRequestTest extends IndyIntegrationTest {
 
 
 	private String text = "some agreement text";
@@ -27,31 +27,31 @@ public class AppendAuthorAgreementMetaToRequestTest extends IndyIntegrationTest 
 			"    } \n" +
 			"}";
 
-	private void checkRequestMeta(String request) {
-		JSONObject expectedMeta = new JSONObject()
+	private void checkRequestAcceptance(String request) {
+		JSONObject expectedAcceptance = new JSONObject()
 				.put("mechanism", acceptanceMechanismType)
 				.put("taaDigest", hash)
 				.put("time", timeOfAcceptance);
 
 		JSONObject actualRequest = new JSONObject(request).getJSONObject("taaAcceptance");
-		assertTrue(JsonObjectSimilar.similar(actualRequest, expectedMeta));
+		assertTrue(JsonObjectSimilar.similar(actualRequest, expectedAcceptance));
 	}
 
 	@Test
-	public void testAppendAuthorAgreementMetaToRequestForTextVersion() throws Exception {
-		String requestWithMeta = Ledger.appendTxnAuthorAgreementMetaToRequest(request, text, version, null, acceptanceMechanismType, timeOfAcceptance).get();
-		checkRequestMeta(requestWithMeta);
+	public void testAppendAuthorAgreementAcceptanceToRequestForTextVersion() throws Exception {
+		String requestWithAcceptance = Ledger.appendTxnAuthorAgreementAcceptanceToRequest(request, text, version, null, acceptanceMechanismType, timeOfAcceptance).get();
+		checkRequestAcceptance(requestWithAcceptance);
 	}
 
 	@Test
-	public void testAppendAuthorAgreementMetaToRequestForHash() throws Exception {
-		String requestWithMeta = Ledger.appendTxnAuthorAgreementMetaToRequest(request, null, null, hash, acceptanceMechanismType, timeOfAcceptance).get();
-		checkRequestMeta(requestWithMeta);
+	public void testAppendAuthorAgreementAcceptanceToRequestForHash() throws Exception {
+		String requestWithAcceptance = Ledger.appendTxnAuthorAgreementAcceptanceToRequest(request, null, null, hash, acceptanceMechanismType, timeOfAcceptance).get();
+		checkRequestAcceptance(requestWithAcceptance);
 	}
 
 	@Test
-	public void testAppendAuthorAgreementMetaToRequestForTextVersionHash() throws Exception {
-		String requestWithMeta = Ledger.appendTxnAuthorAgreementMetaToRequest(request, text, version, hash, acceptanceMechanismType, timeOfAcceptance).get();
-		checkRequestMeta(requestWithMeta);
+	public void testAppendAuthorAgreementAcceptanceToRequestForTextVersionHash() throws Exception {
+		String requestWithAcceptance = Ledger.appendTxnAuthorAgreementAcceptanceToRequest(request, text, version, hash, acceptanceMechanismType, timeOfAcceptance).get();
+		checkRequestAcceptance(requestWithAcceptance);
 	}
 }

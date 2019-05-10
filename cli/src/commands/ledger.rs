@@ -1585,7 +1585,7 @@ fn _write_file(file: &str, content: &str) -> Result<(), std::io::Error> {
 
 pub fn set_author_agreement(ctx: &CommandContext, request: &mut String) -> Result<(), ()> {
     if let Some((text, version, acc_mech_type, time_of_acceptance)) = get_transaction_author_info(&ctx) {
-        *request = Ledger::append_txn_author_agreement_meta_to_request(&request, Some(&text), Some(&version), None, &acc_mech_type, time_of_acceptance)
+        *request = Ledger::append_txn_author_agreement_acceptance_to_request(&request, Some(&text), Some(&version), None, &acc_mech_type, time_of_acceptance)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
     };
     Ok(())
