@@ -101,7 +101,7 @@ impl MerkleTree {
         for i in rh {
             ret.push_str(&format!("{:02x}", i));
         }
-        return ret;
+        ret
     }
 
     /// Returns the height of Merkle tree

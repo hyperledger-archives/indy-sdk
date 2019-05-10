@@ -19,7 +19,7 @@ extern crate serde_json;
 extern crate byteorder;
 extern crate indyrs as indy;
 extern crate indyrs as api;
-extern crate indy_crypto;
+extern crate ursa;
 extern crate uuid;
 extern crate named_type;
 extern crate rmp_serde;
@@ -505,7 +505,7 @@ mod high_cases {
             let receiver_keys = "[]";
             let message = "Hello World".as_bytes();
             let res = crypto::pack_message(wallet_handle, message, &receiver_keys, Some(&verkey));
-            assert_code!(ErrorCode::CommonInvalidStructure, res);
+            assert_code!(ErrorCode::CommonInvalidParam4, res);
             utils::tear_down_with_wallet(wallet_handle);
         }
 
@@ -564,7 +564,7 @@ mod high_cases {
             let receiver_keys = "[]";
             let message = "Hello World".as_bytes();
             let res = crypto::pack_message(wallet_handle, message, &receiver_keys, None);
-            assert_code!(ErrorCode::CommonInvalidStructure, res);
+            assert_code!(ErrorCode::CommonInvalidParam4, res);
             utils::tear_down_with_wallet(wallet_handle);
         }
 
@@ -691,7 +691,8 @@ mod load {
 
     use super::*;
 
-    use self::rand::{Rng, OsRng};
+    use self::rand::RngCore;
+    use self::rand::rngs::OsRng;
 
     use std::cmp::max;
     use std::thread;

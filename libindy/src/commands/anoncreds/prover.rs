@@ -2,7 +2,7 @@ use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
-use indy_crypto::cl::{new_nonce, RevocationRegistry, Witness};
+use ursa::cl::{new_nonce, RevocationRegistry, Witness};
 
 use domain::anoncreds::credential::{Credential, CredentialInfo};
 use domain::anoncreds::credential_definition::{cred_defs_map_to_cred_defs_v1_map, CredentialDefinition, CredentialDefinitionV1};
@@ -287,7 +287,7 @@ impl ProverCommandExecutor {
 
         let credential_request_metadata = CredentialRequestMetadata {
             master_secret_blinding_data: ms_blinding_data,
-            nonce: credential_request.nonce.clone()?,
+            nonce: credential_request.nonce.try_clone()?,
             master_secret_name: master_secret_id.to_string()
         };
 

@@ -83,7 +83,7 @@ pub extern fn indy_issuer_create_schema(command_handle: CommandHandle,
                     attrs,
                     Box::new(move |result| {
                         let (err, id, schema_json) = prepare_result_2!(result, String::new(), String::new());
-                        trace!("indy_crypto_cl_credential_public_key_to_json: id: {:?}, schema_json: {:?}", id, schema_json);
+                        trace!("ursa_cl_credential_public_key_to_json: id: {:?}, schema_json: {:?}", id, schema_json);
                         let id = ctypes::string_to_cstring(id);
                         let schema_json = ctypes::string_to_cstring(schema_json);
                         cb(command_handle, err, id.as_ptr(), schema_json.as_ptr())

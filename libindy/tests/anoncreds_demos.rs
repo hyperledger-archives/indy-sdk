@@ -16,7 +16,7 @@ extern crate serde_json;
 extern crate byteorder;
 extern crate indyrs as indy;
 extern crate indyrs as api;
-extern crate indy_crypto;
+extern crate ursa;
 extern crate uuid;
 extern crate named_type;
 extern crate rmp_serde;
@@ -314,7 +314,7 @@ mod demos {
                })
            }),
            "requested_predicates": json!({
-               "predicate1_referent": json!({ "name":"age", "p_type":">=", "p_value":18 }),
+               "predicate1_referent": json!({ "name":"age", "p_type":">=", "p_value":18, "restrictions": json!({ "cred_def_id": gvt_cred_def_id })}),
                "predicate2_referent": json!({ "name":"period", "p_type":">=", "p_value":5 }),
            }),
         }).to_string();
