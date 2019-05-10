@@ -5,8 +5,8 @@ use indy::{anoncreds, blob_storage, ledger};
 use time;
 
 use settings;
-use utils::constants::{ LIBINDY_CRED_OFFER, REQUESTED_ATTRIBUTES, PROOF_REQUESTED_PREDICATES, ATTRS, REV_STATE_JSON};
-use utils::libindy::{ error_codes::map_rust_indy_sdk_error, mock_libindy_rc, wallet::get_wallet_handle };
+use utils::constants::{LIBINDY_CRED_OFFER, REQUESTED_ATTRIBUTES, PROOF_REQUESTED_PREDICATES, ATTRS, REV_STATE_JSON};
+use utils::libindy::{error_codes::map_rust_indy_sdk_error, mock_libindy_rc, wallet::get_wallet_handle};
 use utils::libindy::payments::{pay_for_txn, PaymentTxn};
 use utils::libindy::ledger::*;
 use utils::constants::{SCHEMA_ID, SCHEMA_JSON, SCHEMA_TXN_TYPE, CRED_DEF_ID, CRED_DEF_JSON, CRED_DEF_TXN_TYPE, REV_REG_DEF_TXN_TYPE, REV_REG_DELTA_TXN_TYPE, REVOC_REG_TYPE, rev_def_json, REV_REG_ID, REV_REG_DELTA_JSON, REV_REG_JSON};
@@ -150,14 +150,14 @@ pub fn libindy_prover_get_credentials_for_proof_req(proof_req: &str) -> VcxResul
 
     // since the search_credentials_for_proof request validates that the proof_req is properly structured, this get()
     // fn should never fail, unless libindy changes their formats.
-    let requested_attributes:Option<Map<String,Value>> = proof_request_json.get(REQUESTED_ATTRIBUTES)
+    let requested_attributes: Option<Map<String, Value>> = proof_request_json.get(REQUESTED_ATTRIBUTES)
         .and_then(|v| {
             serde_json::from_value(v.clone()).map_err(|_| {
                 error!("Invalid Json Parsing of Requested Attributes Retrieved From Libindy. Did Libindy change its structure?");
             }).ok()
         });
-    
-    let requested_predicates:Option<Map<String,Value>> = proof_request_json.get(PROOF_REQUESTED_PREDICATES).and_then(|v| {
+
+    let requested_predicates: Option<Map<String, Value>> = proof_request_json.get(PROOF_REQUESTED_PREDICATES).and_then(|v| {
         serde_json::from_value(v.clone()).map_err(|_| {
             error!("Invalid Json Parsing of Requested Predicates Retrieved From Libindy. Did Libindy change its structure?");
         }).ok()
@@ -180,9 +180,9 @@ pub fn libindy_prover_get_credentials_for_proof_req(proof_req: &str) -> VcxResul
         let search_handle = anoncreds::prover_search_credentials_for_proof_req(wallet_handle, proof_req, None)
             .wait()
             .map_err(|ec| {
-            error!("Opening Indy Search for Credentials Failed");
-            map_rust_indy_sdk_error(ec)
-        })?;
+                error!("Opening Indy Search for Credentials Failed");
+                map_rust_indy_sdk_error(ec)
+            })?;
         let creds: String = fetch_credentials(search_handle, fetch_attrs)?;
 
         // should an error on closing a search handle throw an error, or just a warning?
@@ -347,7 +347,9 @@ pub fn create_schema(name: &str, version: &str, data: &str) -> VcxResult<(String
 
     let (id, create_schema) = libindy_issuer_create_schema(&submitter_did, name, version, data)?;
 
-    let request = libindy_build_schema_request(&submitter_did, &create_schema)?;
+    let mut request = libindy_build_schema_request(&submitter_did, &create_schema)?;
+
+    request = append_txn_author_agreement_to_request(&request)?;
 
     let (payment, response) = pay_for_txn(&request, SCHEMA_TXN_TYPE)?;
 
@@ -385,7 +387,9 @@ pub fn create_cred_def(issuer_did: &str,
                                                                       sig_type,
                                                                       &config_json)?;
 
-    let cred_def_req = libindy_build_create_credential_def_txn(issuer_did, &cred_def_json)?;
+    let mut cred_def_req = libindy_build_create_credential_def_txn(issuer_did, &cred_def_json)?;
+
+    cred_def_req = append_txn_author_agreement_to_request(&cred_def_req)?;
 
     let (payment, response) = pay_for_txn(&cred_def_req, CRED_DEF_TXN_TYPE)?;
 
@@ -412,7 +416,9 @@ pub fn create_rev_reg_def(issuer_did: &str, cred_def_id: &str, tails_file: &str,
                                            tails_file,
                                            max_creds)?;
 
-    let rev_reg_def_req = libindy_build_revoc_reg_def_request(issuer_did, &rev_reg_def_json)?;
+    let mut rev_reg_def_req = libindy_build_revoc_reg_def_request(issuer_did, &rev_reg_def_json)?;
+
+    rev_reg_def_req = append_txn_author_agreement_to_request(&rev_reg_def_req)?;
 
     let (payment, _) = pay_for_txn(&rev_reg_def_req, REV_REG_DEF_TXN_TYPE)?;
 
@@ -431,7 +437,10 @@ pub fn get_rev_reg_def_json(rev_reg_id: &str) -> VcxResult<(String, String)> {
 
 pub fn post_rev_reg_delta(issuer_did: &str, rev_reg_id: &str, rev_reg_entry_json: &str)
                           -> VcxResult<(Option<PaymentTxn>, String)> {
-    let request = libindy_build_revoc_reg_entry_request(issuer_did, rev_reg_id, REVOC_REG_TYPE, rev_reg_entry_json)?;
+    let mut request = libindy_build_revoc_reg_entry_request(issuer_did, rev_reg_id, REVOC_REG_TYPE, rev_reg_entry_json)?;
+
+    request = append_txn_author_agreement_to_request(&request)?;
+
     pay_for_txn(&request, REV_REG_DELTA_TXN_TYPE)
 }
 
@@ -510,7 +519,9 @@ pub mod tests {
 
     pub fn create_schema_req(schema_json: &str) -> String {
         let institution_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
-        ::utils::libindy::ledger::libindy_build_schema_request(&institution_did, schema_json).unwrap()
+        let request = ::utils::libindy::ledger::libindy_build_schema_request(&institution_did, schema_json).unwrap();
+        append_txn_author_agreement_to_request(&request).unwrap()
+
     }
 
     pub fn write_schema(request: &str) {

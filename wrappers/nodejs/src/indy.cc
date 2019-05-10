@@ -2184,21 +2184,21 @@ NAN_METHOD(buildGetAcceptanceMechanismRequest) {
   delete arg0;
 }
 
-void appendTxnAuthorAgreementMetaToRequest_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
+void appendTxnAuthorAgreementAcceptanceToRequest_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
   IndyCallback* icb = IndyCallback::getCallback(handle);
   if(icb != nullptr){
     icb->cbString(xerr, arg0);
   }
 }
-NAN_METHOD(appendTxnAuthorAgreementMetaToRequest) {
-  INDY_ASSERT_NARGS(appendTxnAuthorAgreementMetaToRequest, 7)
-  INDY_ASSERT_STRING(appendTxnAuthorAgreementMetaToRequest, 0, requestJson)
-  INDY_ASSERT_STRING(appendTxnAuthorAgreementMetaToRequest, 1, text)
-  INDY_ASSERT_STRING(appendTxnAuthorAgreementMetaToRequest, 2, version)
-  INDY_ASSERT_STRING(appendTxnAuthorAgreementMetaToRequest, 3, hash)
-  INDY_ASSERT_STRING(appendTxnAuthorAgreementMetaToRequest, 4, accMechType)
-  INDY_ASSERT_NUMBER(appendTxnAuthorAgreementMetaToRequest, 5, timeOfAcceptance)
-  INDY_ASSERT_FUNCTION(appendTxnAuthorAgreementMetaToRequest, 6)
+NAN_METHOD(appendTxnAuthorAgreementAcceptanceToRequest) {
+  INDY_ASSERT_NARGS(appendTxnAuthorAgreementAcceptanceToRequest, 7)
+  INDY_ASSERT_STRING(appendTxnAuthorAgreementAcceptanceToRequest, 0, requestJson)
+  INDY_ASSERT_STRING(appendTxnAuthorAgreementAcceptanceToRequest, 1, text)
+  INDY_ASSERT_STRING(appendTxnAuthorAgreementAcceptanceToRequest, 2, version)
+  INDY_ASSERT_STRING(appendTxnAuthorAgreementAcceptanceToRequest, 3, taaDigest)
+  INDY_ASSERT_STRING(appendTxnAuthorAgreementAcceptanceToRequest, 4, accMechType)
+  INDY_ASSERT_NUMBER(appendTxnAuthorAgreementAcceptanceToRequest, 5, timeOfAcceptance)
+  INDY_ASSERT_FUNCTION(appendTxnAuthorAgreementAcceptanceToRequest, 6)
   const char* arg0 = argToCString(info[0]);
   const char* arg1 = argToCString(info[1]);
   const char* arg2 = argToCString(info[2]);
@@ -2206,7 +2206,7 @@ NAN_METHOD(appendTxnAuthorAgreementMetaToRequest) {
   const char* arg4 = argToCString(info[4]);
   long long arg5 = argToUInt32(info[5]);
   IndyCallback* icb = argToIndyCb(info[6]);
-  indyCalled(icb, indy_append_txn_author_agreement_acceptance_to_request(icb->handle, arg0, arg1, arg2, arg3, arg4, arg5, appendTxnAuthorAgreementMetaToRequest_cb));
+  indyCalled(icb, indy_append_txn_author_agreement_acceptance_to_request(icb->handle, arg0, arg1, arg2, arg3, arg4, arg5, appendTxnAuthorAgreementAcceptanceToRequest_cb));
   delete arg0;
   delete arg1;
   delete arg2;
@@ -3297,7 +3297,7 @@ NAN_MODULE_INIT(InitAll) {
   Nan::Export(target, "buildGetTxnAuthorAgreementRequest", buildGetTxnAuthorAgreementRequest);
   Nan::Export(target, "buildAcceptanceMechanismRequest", buildAcceptanceMechanismRequest);
   Nan::Export(target, "buildGetAcceptanceMechanismRequest", buildGetAcceptanceMechanismRequest);
-  Nan::Export(target, "appendTxnAuthorAgreementMetaToRequest", appendTxnAuthorAgreementMetaToRequest);
+  Nan::Export(target, "appendTxnAuthorAgreementAcceptanceToRequest", appendTxnAuthorAgreementAcceptanceToRequest);
   Nan::Export(target, "getResponseMetadata", getResponseMetadata);
   Nan::Export(target, "addWalletRecord", addWalletRecord);
   Nan::Export(target, "updateWalletRecordValue", updateWalletRecordValue);
