@@ -15,16 +15,16 @@
       libncursesw5-dev
    ```
    
-1. `libindy` requires the modern `1.0.14` version of `libsodium` but Ubuntu 16.04 does not support installation it's from `apt` repository.
+1. `libindy` requires the modern `1.0.17` version of `libsodium` but Ubuntu 16.04 does not support installation it's from `apt` repository.
  Because of this, it requires to build and install `libsodium` from source:
  ```
 cd /tmp && \
-   curl https://download.libsodium.org/libsodium/releases/old/libsodium-1.0.14.tar.gz | tar -xz && \
-    cd /tmp/libsodium-1.0.14 && \
-    ./configure --disable-shared && \
+   curl https://download.libsodium.org/libsodium/releases/libsodium-1.0.17.tar.gz | tar -xz && \
+    cd /tmp/libsodium-1.0.17 && \
+    ./configure && \
     make && \
     make install && \
-    rm -rf /tmp/libsodium-1.0.14
+    rm -rf /tmp/libsodium-1.0.17
 ```
 
 1. Build `libindy`

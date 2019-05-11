@@ -42,12 +42,12 @@ dnf install -y \
 For Amazon Linux 2017.03 or other distributions without `libsodium` available in system repositories:
 ```
 cd /tmp
-curl https://download.libsodium.org/libsodium/releases/old/libsodium-1.0.14.tar.gz | tar -xz
-cd /tmp/libsodium-1.0.14
+curl https://download.libsodium.org/libsodium/releases/libsodium-1.0.17.tar.gz | tar -xz
+cd /tmp/libsodium-1.0.17
 ./configure
 make
 make install
-rm -rf /tmp/libsodium-1.0.14
+rm -rf /tmp/libsodium-1.0.17
 
 export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/local/lib/pkgconfig
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
