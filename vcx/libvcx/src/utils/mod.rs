@@ -38,7 +38,7 @@ use std::path::PathBuf;
 use std::env;
 
 lazy_static! {
-    static ref COMMAND_HANDLE_COUNTER: AtomicUsize = AtomicUsize::new(0);
+    static ref COMMAND_HANDLE_COUNTER: AtomicUsize = AtomicUsize::new(1);
 }
 // allows all threads to atomically get a unique command handle
 pub fn generate_command_handle() -> i32 {

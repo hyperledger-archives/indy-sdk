@@ -30,7 +30,7 @@ macro_rules! check_useful_c_str {
 }
 
 lazy_static! {
-    static ref COMMAND_HANDLE_COUNTER: AtomicUsize = AtomicUsize::new(0);
+    static ref COMMAND_HANDLE_COUNTER: AtomicUsize = AtomicUsize::new(1);
 }
 
 #[allow(unused_assignments)]

@@ -25,7 +25,7 @@ pub fn mock_libindy_rc() -> u32 { NEXT_LIBINDY_RC.lock().unwrap().pop().unwrap_o
 
 pub fn set_libindy_rc(rc: u32) {NEXT_LIBINDY_RC.lock().unwrap().push(rc as i32);}
 
-static COMMAND_HANDLE_COUNTER: AtomicUsize = AtomicUsize::new(0);
+static COMMAND_HANDLE_COUNTER: AtomicUsize = AtomicUsize::new(1);
 
 pub fn next_i32_command_handle() -> i32 {
     (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32
