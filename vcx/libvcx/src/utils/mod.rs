@@ -33,12 +33,12 @@ pub mod threadpool;
 pub mod uuid;
 pub mod author_agreement;
 
-use std::sync::atomic::{AtomicUsize, ATOMIC_USIZE_INIT, Ordering};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::path::PathBuf;
 use std::env;
 
 lazy_static! {
-    static ref COMMAND_HANDLE_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
+    static ref COMMAND_HANDLE_COUNTER: AtomicUsize = AtomicUsize::new(0);
 }
 // allows all threads to atomically get a unique command handle
 pub fn generate_command_handle() -> i32 {
