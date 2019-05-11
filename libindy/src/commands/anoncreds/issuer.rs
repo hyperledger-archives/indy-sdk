@@ -528,7 +528,7 @@ impl IssuerCommandExecutor {
 
                 let mut rev_reg_info = self._wallet_get_rev_reg_info(wallet_handle, &r_reg_id)?;
 
-                rev_reg_info.curr_id = 1 + rev_reg_info.curr_id;
+                rev_reg_info.curr_id += 1;
 
                 if rev_reg_info.curr_id > rev_reg_def.value.max_cred_num {
                     return Err(err_msg(IndyErrorKind::RevocationRegistryFull, "RevocationRegistryAccumulator is full"));
