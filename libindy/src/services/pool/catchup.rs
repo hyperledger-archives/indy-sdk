@@ -132,9 +132,9 @@ fn _try_to_catch_up(ledger_status: &(String, usize, Option<Vec<String>>), merkle
             .map_err(|err| Context::new(err))
             .to_indy(IndyErrorKind::InvalidStructure, "Can't parse target MerkleTree hash from nodes responses")?; // FIXME: review kind
 
-        match hashes {
-            &None => (),
-            &Some(ref hashes) => check_cons_proofs(merkle_tree, hashes, &target_mt_root, target_mt_size)?,
+        match *hashes {
+            None => (),
+            Some(ref hashes) => check_cons_proofs(merkle_tree, hashes, &target_mt_root, target_mt_size)?,
         };
 
         Ok(CatchupProgress::ShouldBeStarted(target_mt_root, target_mt_size, merkle_tree.clone()))

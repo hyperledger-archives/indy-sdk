@@ -16,7 +16,7 @@ extern crate serde_json;
 extern crate byteorder;
 extern crate indyrs as indy;
 extern crate indyrs as api;
-extern crate indy_crypto;
+extern crate ursa;
 extern crate uuid;
 extern crate named_type;
 extern crate rmp_serde;
@@ -542,6 +542,37 @@ mod medium_cases {
 
             wallet::close_wallet(wallet_handle_1).unwrap();
             wallet::close_wallet(wallet_handle_2).unwrap();
+
+            utils::tear_down();
+        }
+
+        #[test]
+        fn indy_open_wallet_works_for_two_wallets_with_same_ids_but_different_paths() {
+            utils::setup();
+
+            let wallet_config_1 = json!({
+                "id": "indy_open_wallet_works_for_two_wallets_with_same_ids_but_different_paths",
+            }).to_string();
+
+            let wallet_config_2 = json!({
+                "id": "indy_open_wallet_works_for_two_wallets_with_same_ids_but_different_paths",
+                "storage_type": "default",
+                "storage_config": {
+                    "path": _custom_path(),
+                }
+            }).to_string();
+
+            wallet::create_wallet(&wallet_config_1, WALLET_CREDENTIALS).unwrap();
+            wallet::create_wallet(&wallet_config_2, WALLET_CREDENTIALS).unwrap();
+
+            let wallet_handle_1 = wallet::open_wallet(&wallet_config_1, WALLET_CREDENTIALS).unwrap();
+            let wallet_handle_2 = wallet::open_wallet(&wallet_config_2, WALLET_CREDENTIALS).unwrap();
+
+            wallet::close_wallet(wallet_handle_1).unwrap();
+            wallet::close_wallet(wallet_handle_2).unwrap();
+
+            wallet::delete_wallet(&wallet_config_1, WALLET_CREDENTIALS).unwrap();
+            wallet::delete_wallet(&wallet_config_2, WALLET_CREDENTIALS).unwrap();
 
             utils::tear_down();
         }

@@ -298,6 +298,8 @@ pub mod rotate_key_command {
             let mut request = Ledger::build_nym_request(&did, &did, Some(&new_verkey), None, None)
                 .map_err(|err| handle_indy_error(err, Some(&did), Some(&pool_name), Some(&wallet_name)))?;
 
+            ledger::set_author_agreement(ctx, &mut request)?;
+
             let payment_method = set_request_fees(&mut request, wallet_handle, Some(&did), &fees_inputs, &fees_outputs, extra)?;
 
             let response_json = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &did, &request)

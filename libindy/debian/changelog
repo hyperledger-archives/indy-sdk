@@ -1,6 +1,13 @@
-libindy (1.8.2) unstable; urgency=medium
+libindy (1.8.3) unstable; urgency=medium
 
 [ Hyperledger ]
+
+
+## 1.8.3
+* Bugfixes:
+    *  Fixed behavior of `auth_rule` and `get_auth_rule` request builders.
+    * Fixed `boolean` datatype representation for FFI.
+    * others minor bugfixes
 
 ## 1.8.2
  Added new functions to Libindy Ledger API:
