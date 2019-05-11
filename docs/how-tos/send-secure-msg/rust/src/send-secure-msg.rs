@@ -1,13 +1,6 @@
 /*
-Example demonstrating Proof Verification.
+Example demonstrating Sending a Secure Message.
 
-First Issuer creates Claim Definition for existing Schema.
-After that, it issues a Claim to Prover (as in issue_credential.py example)
-
-Once Prover has successfully stored its Claim, it uses Proof Request that he
-received, to get Claims which satisfy the Proof Request from his wallet.
-Prover uses the output to create Proof, using its Master Secret.
-After that, Proof is verified against the Proof Request
 */
 
 // ------------------------------------------
@@ -20,7 +13,7 @@ extern crate serde_json;
 // ------------------------------------------
 // hyperledger crates
 // ------------------------------------------
-extern crate indy;                      // rust wrapper project
+extern crate indyrs as indy;                      // rust wrapper project
 
 use std::io::Write;
 use std::io;
@@ -28,9 +21,10 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::str;
 
-use indy::did::Did;
-use indy::wallet::Wallet;
-use indy::crypto::Crypto;
+use indy::did;
+use indy::future::Future;
+use indy::wallet;
+use indy::crypto;
 
 static USEFUL_CREDENTIALS: &'static str = r#"{"key": "12345678901234567890123456789012"}"#;
 static FILE: &'static str = "message.txt";
@@ -64,10 +58,10 @@ fn init() -> (i32, String, String) {
     io::stdin().read_line(&mut cmd).unwrap();
 
     let config = json!({ "id" : format!("{}-wallet", cmd) }).to_string();
-    Wallet::create(&config, USEFUL_CREDENTIALS).unwrap();
-    let wallet_handle: i32 = Wallet::open(&config, USEFUL_CREDENTIALS).unwrap();
+    wallet::create_wallet(&config, USEFUL_CREDENTIALS).wait().unwrap();
+    let wallet_handle: i32 = wallet::open_wallet(&config, USEFUL_CREDENTIALS).wait().unwrap();
 
-    let (did, verkey) = Did::new(wallet_handle, "{}").unwrap();
+    let (did, verkey) = did::create_and_store_my_did(wallet_handle, "{}").wait().unwrap();
     println!("My DID and Verkey: {} {}", did, verkey);
 
     println!("Other party's DID and Verkey? ");
@@ -85,7 +79,7 @@ fn prep(wallet_handle: i32, sender_vk: &str, receipt_vk: &str) {
     let mut message = String::new();
     io::stdin().read_line(&mut message).unwrap();
 
-    let encrypted_msg = Crypto::auth_crypt(wallet_handle, &sender_vk, &receipt_vk, message.trim().as_bytes()).unwrap();
+    let encrypted_msg = crypto::auth_crypt(wallet_handle, &sender_vk, &receipt_vk, message.trim().as_bytes()).wait().unwrap();
     file.write_all(&encrypted_msg).unwrap();
 }
 
@@ -95,7 +89,7 @@ fn read(wallet_handle: i32, receipt_vk: &str) {
     let mut contents = Vec::new();
     file.read_to_end(&mut contents).unwrap();
 
-    let (sender, decrypted_msg) = Crypto::auth_decrypt(wallet_handle, &receipt_vk, &contents).unwrap();
+    let (sender, decrypted_msg) = crypto::auth_decrypt(wallet_handle, &receipt_vk, &contents).wait().unwrap();
     println!("Sender Verkey: {:?}", sender);
     println!("Decrypted message: {:?}", str::from_utf8(&decrypted_msg).unwrap());
 }
