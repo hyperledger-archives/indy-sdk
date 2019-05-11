@@ -163,14 +163,14 @@ pub enum RequestEvent {
 
 impl RequestEvent {
     pub fn get_req_id(&self) -> String {
-        match self {
-            &RequestEvent::CustomSingleRequest(_, ref id) => id.to_string(),
-            &RequestEvent::CustomConsensusRequest(_, ref id) => id.to_string(),
-            &RequestEvent::CustomFullRequest(_, ref id, _, _) => id.to_string(),
-            &RequestEvent::Reply(_, _, _, ref id) => id.to_string(),
-            &RequestEvent::ReqACK(_, _, _, ref id) => id.to_string(),
-            &RequestEvent::ReqNACK(_, _, _, ref id) => id.to_string(),
-            &RequestEvent::Reject(_, _, _, ref id) => id.to_string(),
+        match *self {
+            RequestEvent::CustomSingleRequest(_, ref id) => id.to_string(),
+            RequestEvent::CustomConsensusRequest(_, ref id) => id.to_string(),
+            RequestEvent::CustomFullRequest(_, ref id, _, _) => id.to_string(),
+            RequestEvent::Reply(_, _, _, ref id) => id.to_string(),
+            RequestEvent::ReqACK(_, _, _, ref id) => id.to_string(),
+            RequestEvent::ReqNACK(_, _, _, ref id) => id.to_string(),
+            RequestEvent::Reject(_, _, _, ref id) => id.to_string(),
             _ => "".to_string()
         }
     }

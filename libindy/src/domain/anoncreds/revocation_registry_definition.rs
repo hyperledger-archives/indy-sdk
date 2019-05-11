@@ -35,8 +35,8 @@ pub enum RegistryType {
 
 impl RegistryType {
     pub fn to_str(&self) -> &'static str {
-        match self {
-            &RegistryType::CL_ACCUM => CL_ACCUM
+        match *self {
+            RegistryType::CL_ACCUM => CL_ACCUM
         }
     }
 }

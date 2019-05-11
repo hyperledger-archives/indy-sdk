@@ -373,8 +373,8 @@ fn _verify_proof_signature(signature: &str,
 
     for (name, verkey) in nodes {
         if participants.contains(&name.as_str()) {
-            match verkey {
-                &Some(ref blskey) => ver_keys.push(blskey),
+            match *verkey {
+                Some(ref blskey) => ver_keys.push(blskey),
                 _ => return Err(err_msg(IndyErrorKind::InvalidState, format!("Blskey not found for node: {:?}", name)))
             };
         }
