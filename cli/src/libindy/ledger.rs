@@ -86,7 +86,7 @@ impl Ledger {
                                    action: &str,
                                    field: &str,
                                    old_value: Option<&str>,
-                                   new_value: &str,
+                                   new_value: Option<&str>,
                                    constraint: &str, ) -> Result<String, IndyError> {
         ledger::build_auth_rule_request(submitter_did, txn_type, action, field,
                                         old_value, new_value, constraint).wait()
@@ -100,5 +100,24 @@ impl Ledger {
                                        new_value: Option<&str>, ) -> Result<String, IndyError> {
         ledger::build_get_auth_rule_request(submitter_did, auth_type, auth_action, field,
                                             old_value, new_value).wait()
+    }
+
+    pub fn build_get_txn_author_agreement_request(submitter_did: Option<&str>,
+                                                  data: Option<&str>, ) -> Result<String, IndyError> {
+        ledger::build_get_txn_author_agreement_request(submitter_did, data).wait()
+    }
+
+    pub fn append_txn_author_agreement_acceptance_to_request(request_json: &str,
+                                                             text: Option<&str>,
+                                                             version: Option<&str>,
+                                                             hash: Option<&str>,
+                                                             acc_mech_type: &str,
+                                                             time_of_acceptance: u64) -> Result<String, IndyError> {
+        ledger::append_txn_author_agreement_acceptance_to_request(request_json,
+                                                                  text,
+                                                                  version,
+                                                                  hash,
+                                                                  acc_mech_type,
+                                                                  time_of_acceptance).wait()
     }
 }

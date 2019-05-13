@@ -98,7 +98,7 @@ impl ClosureHandler {
            CALLBACKS_STR_SLICE,
            (rust_str!(str), rust_slice!(data, len).to_owned()));
 
-    cb_ec!(cb_ec_bool(b: u8)->bool, CALLBACKS_BOOL, b > 0);
+    cb_ec!(cb_ec_bool(b: bool)->bool, CALLBACKS_BOOL, b);
 }
 
 macro_rules! result_handler {

@@ -41,9 +41,9 @@ pub type TailsWriterHandle = i32;
 pub type Error = i32;
 
 pub type ResponseEmptyCB = extern fn(xcommand_handle: CommandHandle, err: Error);
-pub type ResponseBoolCB = extern fn(xcommand_handle: CommandHandle, err: Error, bool1: u8);
-pub type ResponseI32CB = extern fn(xcommand_handle: CommandHandle, err: Error, handle: i32);
-pub type ResponseI32UsizeCB = extern fn(xcommand_handle: CommandHandle, err: Error, handle: i32, total_count: usize);
+pub type ResponseBoolCB = extern fn(xcommand_handle: CommandHandle, err: Error, bool1: bool);
+pub type ResponseI32CB = extern fn(xcommand_handle: CommandHandle, err: Error, handle: IndyHandle);
+pub type ResponseI32UsizeCB = extern fn(xcommand_handle: CommandHandle, err: Error, handle: IndyHandle, total_count: usize);
 pub type ResponseStringCB = extern fn(xcommand_handle: CommandHandle, err: Error, str1: CString);
 pub type ResponseStringStringCB = extern fn(xcommand_handle: CommandHandle, err: Error, str1: CString, str2: CString);
 pub type ResponseStringStringStringCB = extern fn(xcommand_handle: CommandHandle, err: Error, str1: CString, str2: CString, str3: CString);

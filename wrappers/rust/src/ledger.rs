@@ -1002,8 +1002,8 @@ fn _get_response_metadata(command_handle: CommandHandle, response: &str, cb: Opt
 /// * `field`: type of an action for which authentication rules will be applied.
 ///     Can be either "ADD" (to add a new rule) or "EDIT" (to edit an existing one).
 /// * `action`: transaction field for which authentication rule will be applied.
-/// * `old_value`: old value of a field, which can be changed to a new_value (mandatory for EDIT action).
-/// * `new_value`: new value that can be used to fill the field.
+/// * `old_value`: (Optional) old value of a field, which can be changed to a new_value (mandatory for EDIT action).
+/// * `new_value`:(Optional) new value that can be used to fill the field.
 /// * `constraint`: set of constraints required for execution of an action in the following format:
 ///     {
 ///         constraint_id - <string> type of a constraint.
@@ -1022,7 +1022,7 @@ fn _get_response_metadata(command_handle: CommandHandle, response: &str, cb: Opt
 /// # Returns
 /// Request result as json.
 pub fn build_auth_rule_request(submitter_did: &str, txn_type: &str, action: &str, field: &str,
-                               old_value: Option<&str>, new_value: &str, constraint: &str) -> Box<Future<Item=String, Error=IndyError>> {
+                               old_value: Option<&str>, new_value: Option<&str>, constraint: &str) -> Box<Future<Item=String, Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
     let err = _build_auth_rule_request(command_handle, submitter_did, txn_type, action, field, old_value, new_value, constraint, cb);
@@ -1036,17 +1036,17 @@ fn _build_auth_rule_request(command_handle: CommandHandle,
                             action: &str,
                             field: &str,
                             old_value: Option<&str>,
-                            new_value: &str,
+                            new_value: Option<&str>,
                             constraint: &str,
                             cb: Option<ResponseStringCB>) -> ErrorCode {
     let submitter_did = c_str!(submitter_did);
     let txn_type = c_str!(txn_type);
     let action = c_str!(action);
     let field = c_str!(field);
-    let new_value = c_str!(new_value);
     let constraint = c_str!(constraint);
 
     let old_value_str = opt_c_str!(old_value);
+    let new_value_str = opt_c_str!(new_value);
 
     ErrorCode::from(unsafe {
         ledger::indy_build_auth_rule_request(command_handle,
@@ -1055,7 +1055,7 @@ fn _build_auth_rule_request(command_handle: CommandHandle,
                                              action.as_ptr(),
                                              field.as_ptr(),
                                              opt_c_ptr!(old_value, old_value_str),
-                                             new_value.as_ptr(),
+                                             opt_c_ptr!(new_value, new_value_str),
                                              constraint.as_ptr(),
                                              cb)
     })
@@ -1068,11 +1068,11 @@ fn _build_auth_rule_request(command_handle: CommandHandle,
 ///     * all - to get authentication rules for specific action (`old_value` can be skipped for `ADD` action)
 ///
 /// # Arguments
-/// * `txn_type`: target ledger transaction alias or associated value.
-/// * `action`: target action type. Can be either "ADD" or "EDIT".
-/// * `field`: target transaction field.
-/// * `old_value`: old value of field, which can be changed to a new_value (must be specified for EDIT action).
-/// * `new_value`: new value that can be used to fill the field.
+/// * `txn_type`: (Optional) target ledger transaction alias or associated value.
+/// * `action`: (Optional) target action type. Can be either "ADD" or "EDIT".
+/// * `field`: (Optional) target transaction field.
+/// * `old_value`: (Optional) old value of field, which can be changed to a new_value (mandatory for EDIT action).
+/// * `new_value`: (Optional) new value that can be used to fill the field.
 ///
 /// # Returns
 /// Request result as json.
@@ -1111,5 +1111,208 @@ fn _build_get_auth_rule_request(command_handle: CommandHandle,
                                                  opt_c_ptr!(old_value, old_value_str),
                                                  opt_c_ptr!(new_value, new_value_str),
                                                  cb)
+    })
+}
+
+/// Builds a TXN_AUTHR_AGRMT request. Request to add a new version of Transaction Author Agreement to the ledger.
+///
+/// # Arguments
+/// * `submitter_did`: DID of the request sender.
+/// * `text`: a content of the TTA.
+/// * `version`: a version of the TTA (unique UTF-8 string).
+///
+/// # Returns
+/// Request result as json.
+pub fn build_txn_author_agreement_request(submitter_did: &str, text: &str, version: &str) -> Box<Future<Item=String, Error=IndyError>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+
+    let err = _build_txn_author_agreement_request(command_handle, submitter_did, text, version, cb);
+
+    ResultHandler::str(command_handle, err, receiver)
+}
+
+fn _build_txn_author_agreement_request(command_handle: IndyHandle,
+                                       submitter_did: &str,
+                                       text: &str,
+                                       version: &str,
+                                       cb: Option<ResponseStringCB>) -> ErrorCode {
+    let submitter_did = c_str!(submitter_did);
+    let text = c_str!(text);
+    let version = c_str!(version);
+
+    ErrorCode::from(unsafe {
+        ledger::indy_build_txn_author_agreement_request(command_handle,
+                                                        submitter_did.as_ptr(),
+                                                        text.as_ptr(),
+                                                        version.as_ptr(),
+                                                        cb)
+    })
+}
+
+/// Builds a GET_TXN_AUTHR_AGRMT request. Request to get a specific Transaction Author Agreement from the ledger.
+///
+/// # Arguments
+/// * `submitter_did`: (Optional) DID of the request sender.
+/// * `data`: (Optional) specifies a condition for getting specific TAA.
+/// Contains 3 mutually exclusive optional fields:
+/// {
+///     hash: Optional<str> - hash of requested TAA,
+///     version: Optional<str> - version of requested TAA.
+///     timestamp: Optional<u64> - ledger will return TAA valid at requested timestamp.
+/// }
+/// Null data or empty JSON are acceptable here. In this case, ledger will return the latest version of TAA.
+///
+/// # Returns
+/// Request result as json.
+pub fn build_get_txn_author_agreement_request(submitter_did: Option<&str>, data: Option<&str>) -> Box<Future<Item=String, Error=IndyError>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+
+    let err = _build_get_txn_author_agreement_request(command_handle, submitter_did, data, cb);
+
+    ResultHandler::str(command_handle, err, receiver)
+}
+
+fn _build_get_txn_author_agreement_request(command_handle: IndyHandle,
+                                           submitter_did: Option<&str>,
+                                           data: Option<&str>,
+                                           cb: Option<ResponseStringCB>) -> ErrorCode {
+    let submitter_did_str = opt_c_str!(submitter_did);
+    let data_str = opt_c_str!(data);
+
+    ErrorCode::from(unsafe {
+        ledger::indy_build_get_txn_author_agreement_request(command_handle,
+                                                            opt_c_ptr!(submitter_did, submitter_did_str),
+                                                            opt_c_ptr!(data, data_str),
+                                                            cb)
+    })
+}
+
+/// Builds a SET_TXN_AUTHR_AGRMT_AML request. Request to add a new acceptance mechanism for transaction author agreement.
+/// Acceptance Mechanism is a description of the ways how the user may accept a transaction author agreement.
+///
+/// # Arguments
+/// * `submitter_did`: DID of the request sender.
+/// * `aml`: a set of new acceptance mechanisms:
+/// {
+///     “<acceptance mechanism label 1>”: { acceptance mechanism description 1},
+///     “<acceptance mechanism label 2>”: { acceptance mechanism description 2},
+///     ...
+/// }
+/// * `aml_context`: (Optional) common context information about acceptance mechanisms (may be a URL to external resource).
+///
+/// # Returns
+/// Request result as json.
+pub fn build_acceptance_mechanism_request(submitter_did: &str, aml: &str, aml_context: Option<&str>) -> Box<Future<Item=String, Error=IndyError>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+
+    let err = _build_acceptance_mechanism_request(command_handle, submitter_did, aml, aml_context, cb);
+
+    ResultHandler::str(command_handle, err, receiver)
+}
+
+fn _build_acceptance_mechanism_request(command_handle: IndyHandle,
+                                       submitter_did: &str,
+                                       aml: &str,
+                                       aml_context: Option<&str>,
+                                       cb: Option<ResponseStringCB>) -> ErrorCode {
+    let submitter_did = c_str!(submitter_did);
+    let aml = c_str!(aml);
+    let aml_context_str = opt_c_str!(aml_context);
+
+    ErrorCode::from(unsafe {
+        ledger::indy_build_acceptance_mechanism_request(command_handle,
+                                                        submitter_did.as_ptr(),
+                                                        aml.as_ptr(),
+                                                        opt_c_ptr!(aml_context, aml_context_str),
+                                                        cb)
+    })
+}
+
+/// Builds a GET_TXN_AUTHR_AGRMT_AML request. Request to get acceptance mechanisms from the ledger
+/// valid for specified time or the latest one.
+///
+/// # Arguments
+/// * `submitter_did`: (Optional) DID of the request sender.
+/// * `timestamp`: (Optional) time to get an active acceptance mechanisms.
+///
+/// # Returns
+/// Request result as json.
+pub fn build_get_acceptance_mechanism_request(submitter_did: Option<&str>, timestamp: Option<i64>) -> Box<Future<Item=String, Error=IndyError>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+
+    let err = _build_get_acceptance_mechanism_request(command_handle, submitter_did, timestamp, cb);
+
+    ResultHandler::str(command_handle, err, receiver)
+}
+
+fn _build_get_acceptance_mechanism_request(command_handle: IndyHandle,
+                                           submitter_did: Option<&str>,
+                                           timestamp: Option<i64>,
+                                           cb: Option<ResponseStringCB>) -> ErrorCode {
+    let submitter_did_str = opt_c_str!(submitter_did);
+    let timestamp = timestamp.unwrap_or(-1);
+
+    ErrorCode::from(unsafe {
+        ledger::indy_build_get_acceptance_mechanism_request(command_handle,
+                                                            opt_c_ptr!(submitter_did, submitter_did_str),
+                                                            timestamp,
+                                                            cb)
+    })
+}
+
+/// Append transaction author agreement acceptance data to a request.
+/// This function should be called before signing and sending a request
+/// if there is any transaction author agreement set on the Ledger.
+///
+/// This function may calculate digest by itself or consume it as a parameter.
+/// If all text, version and taa_digest parameters are specified, a check integrity of them will be done.
+///
+/// # Arguments
+/// * `request_json`: original request data json.
+/// * `text` and `version`: (optional) raw data about TAA from ledger.
+///     These parameters should be passed together.
+///     These parameters are required if taa_digest parameter is omitted.
+/// * `taa_digest`: (optional) digest on text and version. This parameter is required if text and version parameters are omitted.
+/// * `mechanism`: mechanism how user has accepted the TAA
+/// * `time`: UTC timestamp when user has accepted the TAA
+///
+/// # Returns
+/// Updated request result as json.
+pub fn append_txn_author_agreement_acceptance_to_request(request_json: &str,
+                                                         text: Option<&str>,
+                                                         version: Option<&str>,
+                                                         taa_digest: Option<&str>,
+                                                         mechanism: &str,
+                                                         time: u64) -> Box<Future<Item=String, Error=IndyError>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+
+    let err = _append_txn_author_agreement_acceptance_to_request(command_handle, request_json, text, version, taa_digest, mechanism, time, cb);
+
+    ResultHandler::str(command_handle, err, receiver)
+}
+
+fn _append_txn_author_agreement_acceptance_to_request(command_handle: IndyHandle,
+                                                      request_json: &str,
+                                                      text: Option<&str>,
+                                                      version: Option<&str>,
+                                                      taa_digest: Option<&str>,
+                                                      mechanism: &str,
+                                                      time: u64,
+                                                      cb: Option<ResponseStringCB>) -> ErrorCode {
+    let request_json = c_str!(request_json);
+    let text_str = opt_c_str!(text);
+    let version_str = opt_c_str!(version);
+    let taa_digest_str = opt_c_str!(taa_digest);
+    let mechanism = c_str!(mechanism);
+
+    ErrorCode::from(unsafe {
+        ledger::indy_append_txn_author_agreement_acceptance_to_request(command_handle,
+                                                                       request_json.as_ptr(),
+                                                                       opt_c_ptr!(text, text_str),
+                                                                       opt_c_ptr!(version, version_str),
+                                                                       opt_c_ptr!(taa_digest, taa_digest_str),
+                                                                       mechanism.as_ptr(),
+                                                                       time,
+                                                                       cb)
     })
 }

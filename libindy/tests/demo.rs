@@ -17,7 +17,7 @@ extern crate byteorder;
 extern crate indyrs as indy;
 extern crate indyrs as api;
 extern crate indy_sys;
-extern crate indy_crypto;
+extern crate ursa;
 extern crate uuid;
 extern crate named_type;
 extern crate rmp_serde;
@@ -455,7 +455,7 @@ fn anoncreds_demo_works() {
     assert_eq!(ErrorCode::Success, ErrorCode::from(err));
     let (err, valid) = verifier_verify_proof_receiver.recv_timeout(timeout::long_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, ErrorCode::from(err));
-    assert_eq!(valid, true as u8); // TODO: FIXME
+    assert!(valid);
 
     // Issuer Closes Wallet
     let res = unsafe {
@@ -837,7 +837,7 @@ fn crypto_demo_works() {
 
     assert_eq!(ErrorCode::Success, ErrorCode::from(err));
     let (err, valid) = verify_receiver.recv_timeout(timeout::long_timeout()).unwrap();
-    assert_eq!(valid, true as u8);
+    assert!(valid);
     assert_eq!(ErrorCode::Success, ErrorCode::from(err));
 
     // 6. Close Wallet

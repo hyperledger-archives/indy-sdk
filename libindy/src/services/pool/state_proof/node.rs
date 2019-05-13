@@ -49,24 +49,24 @@ pub struct Extension {
 
 impl rlp::Encodable for Node {
     fn rlp_append(&self, s: &mut RlpStream) {
-        match self {
-            &Node::Hash(ref hash) => {
+        match *self {
+            Node::Hash(ref hash) => {
                 s.append_internal(&hash.as_slice());
             }
-            &Node::Leaf(ref pair) => {
+            Node::Leaf(ref pair) => {
                 s.begin_list(Node::PAIR_SIZE);
                 s.append(&pair.path);
                 s.append(&pair.value);
             }
-            &Node::Extension(ref ext) => {
+            Node::Extension(ref ext) => {
                 s.begin_list(Node::PAIR_SIZE);
                 s.append(&ext.path);
                 s.append(ext.next.as_ref());
             }
-            &Node::Full(ref node) => {
+            Node::Full(ref node) => {
                 s.begin_list(Node::FULL_SIZE);
                 for node in &node.nodes {
-                    if let &Some(ref node) = node {
+                    if let Some(ref node) = *node {
                         s.append(node.as_ref());
                     } else {
                         s.append_empty_data();
@@ -88,18 +88,18 @@ impl rlp::Decodable for Node {
             RlpPrototype::List(Node::PAIR_SIZE) => {
                 let path: Vec<u8> = rlp.at(0)?.as_val()?;
                 if path[0] & Node::IS_LEAF_MASK == Node::IS_LEAF_MASK {
-                    return Ok(Node::Leaf(Leaf {
+                    Ok(Node::Leaf(Leaf {
                         path: rlp.at(0)?.as_val()?,
                         value: rlp.at(1)?.as_val()?,
-                    }));
+                    }))
                 } else if path[0] & Node::IS_LEAF_MASK == 0x00 {
-                    return Ok(Node::Extension(Extension {
+                    Ok(Node::Extension(Extension {
                         path: rlp.at(0)?.as_val()?,
                         next: Box::new(rlp.at(1)?.as_val()?),
-                    }));
+                    }))
                 } else {
                     error!("RLP for path in Patricia Merkle Trie contains incorrect flags byte {}", path[0]);
-                    return Err(RlpDecoderError::Custom("Path contains incorrect flags byte"));
+                    Err(RlpDecoderError::Custom("Path contains incorrect flags byte"))
                 }
             }
             RlpPrototype::List(Node::FULL_SIZE) => {
@@ -119,17 +119,17 @@ impl rlp::Decodable for Node {
                 if !rlp.at(Node::RADIX)?.is_empty() {
                     value = Some(rlp.at(Node::RADIX)?.as_val()?)
                 }
-                return Ok(Node::Full(FullNode {
+                Ok(Node::Full(FullNode {
                     nodes: nodes,
                     value: value,
-                }));
+                }))
             }
             RlpPrototype::Data(Node::HASH_SIZE) => {
-                return Ok(Node::Hash(rlp.as_val()?));
+                Ok(Node::Hash(rlp.as_val()?))
             }
             _ => {
                 error!("Unexpected data while parsing Patricia Merkle Trie: {:?}: {:?}", rlp.prototype(), rlp);
-                return Err(RlpDecoderError::Custom("Unexpected data"));
+                Err(RlpDecoderError::Custom("Unexpected data"))
             }
         }
     }
@@ -159,29 +159,29 @@ impl Node {
                 let mut vec: Vec<Vec<u8>> = UntrustedRlp::new(v.as_slice()).as_list().unwrap_or_default(); //default will cause error below
 
                 if let Some(val) = vec.pop() {
-                    if vec.len() == 0 {
+                    if vec.is_empty() {
                         return Ok(Some(val));
                     }
                 }
 
-                return Err(err_msg(IndyErrorKind::InvalidStructure, "Unexpected data format of value in Patricia Merkle Trie"));
+                Err(err_msg(IndyErrorKind::InvalidStructure, "Unexpected data format of value in Patricia Merkle Trie"))
             }
-            None => return Ok(None)
+            None => Ok(None)
         }
     }
     fn _get_value<'a, 'b>(&'a self, db: &'a TrieDB, path: &'b [u8]) -> IndyResult<Option<&'a Vec<u8>>> {
         trace!("Check proof, cur node: {:?}", self);
-        match self {
-            &Node::Full(ref node) => {
+        match *self {
+            Node::Full(ref node) => {
                 if path.is_empty() {
                     return Ok(node.value.as_ref());
                 }
                 if let Some(ref next) = node.nodes[path[0] as usize] {
                     return next._get_value(db, &path[1..]);
                 }
-                return Ok(None);
+                Ok(None)
             }
-            &Node::Hash(ref hash) => {
+            Node::Hash(ref hash) => {
                 let hash = NodeHash::from_slice(hash.as_slice());
                 if let Some(ref next) = db.get(hash) {
                     return next._get_value(db, path);
@@ -189,7 +189,7 @@ impl Node {
                     return Err(err_msg(IndyErrorKind::InvalidStructure, "Incomplete key-value DB for Patricia Merkle Trie to get value by the key"));
                 }
             }
-            &Node::Leaf(ref pair) => {
+            Node::Leaf(ref pair) => {
                 let (is_leaf, pair_path) = Node::parse_path(pair.path.as_slice());
 
                 if !is_leaf {
@@ -199,12 +199,12 @@ impl Node {
                 trace!("Node::_get_value in Leaf searched path {:?}, stored path {:?}", String::from_utf8(path.to_vec()), String::from_utf8(pair_path.clone()));
 
                 if pair_path == path {
-                    return Ok(Some(&pair.value));
+                    Ok(Some(&pair.value))
                 } else {
-                    return Ok(None);
+                    Ok(None)
                 }
             }
-            &Node::Extension(ref pair) => {
+            Node::Extension(ref pair) => {
                 let (is_leaf, pair_path) = Node::parse_path(pair.path.as_slice());
 
                 if is_leaf {
@@ -212,9 +212,9 @@ impl Node {
                 }
 
                 if path.starts_with(&pair_path) {
-                    return pair.next._get_value(db, &path[pair_path.len()..]);
+                    pair.next._get_value(db, &path[pair_path.len()..])
                 } else {
-                    return Ok(None);
+                    Ok(None)
                 }
             }
         }
@@ -228,7 +228,7 @@ impl Node {
             nibble_path.push(s & 0x0F);
         }
 
-        return nibble_path;
+        nibble_path
     }
 
     fn parse_path(path: &[u8]) -> (bool, Vec<u8>) {
@@ -238,6 +238,6 @@ impl Node {
         if is_odd {
             nibbles.insert(0, path[0] & 0x0F);
         }
-        return (is_leaf, nibbles);
+        (is_leaf, nibbles)
     }
 }

@@ -6,7 +6,7 @@ use errors::prelude::*;
 use services::ledger::merkletree::merkletree::MerkleTree;
 use services::pool::{PoolService, types::*};
 
-pub const REQUESTS_FOR_STATE_PROOFS: [&str; 7] = [
+pub const REQUESTS_FOR_STATE_PROOFS: [&str; 8] = [
     constants::GET_NYM,
     constants::GET_SCHEMA,
     constants::GET_CRED_DEF,
@@ -14,6 +14,7 @@ pub const REQUESTS_FOR_STATE_PROOFS: [&str; 7] = [
     constants::GET_REVOC_REG,
     constants::GET_REVOC_REG_DEF,
     constants::GET_REVOC_REG_DELTA,
+    constants::GET_AUTH_RULE,
 ];
 
 const REQUEST_FOR_FULL: [&str; 2] = [
@@ -162,14 +163,14 @@ pub enum RequestEvent {
 
 impl RequestEvent {
     pub fn get_req_id(&self) -> String {
-        match self {
-            &RequestEvent::CustomSingleRequest(_, ref id) => id.to_string(),
-            &RequestEvent::CustomConsensusRequest(_, ref id) => id.to_string(),
-            &RequestEvent::CustomFullRequest(_, ref id, _, _) => id.to_string(),
-            &RequestEvent::Reply(_, _, _, ref id) => id.to_string(),
-            &RequestEvent::ReqACK(_, _, _, ref id) => id.to_string(),
-            &RequestEvent::ReqNACK(_, _, _, ref id) => id.to_string(),
-            &RequestEvent::Reject(_, _, _, ref id) => id.to_string(),
+        match *self {
+            RequestEvent::CustomSingleRequest(_, ref id) => id.to_string(),
+            RequestEvent::CustomConsensusRequest(_, ref id) => id.to_string(),
+            RequestEvent::CustomFullRequest(_, ref id, _, _) => id.to_string(),
+            RequestEvent::Reply(_, _, _, ref id) => id.to_string(),
+            RequestEvent::ReqACK(_, _, _, ref id) => id.to_string(),
+            RequestEvent::ReqNACK(_, _, _, ref id) => id.to_string(),
+            RequestEvent::Reject(_, _, _, ref id) => id.to_string(),
             _ => "".to_string()
         }
     }

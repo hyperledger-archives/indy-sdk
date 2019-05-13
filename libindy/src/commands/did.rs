@@ -417,7 +417,7 @@ impl DidCommandExecutor {
 
         match endpoint {
             Ok(endpoint) => cb(Ok((endpoint.ha, endpoint.verkey))),
-            Err(ref err) if err.kind() == IndyErrorKind::WalletItemNotFound => return self._fetch_attrib_from_ledger(wallet_handle,
+            Err(ref err) if err.kind() == IndyErrorKind::WalletItemNotFound => self._fetch_attrib_from_ledger(wallet_handle,
                                                                                                                  pool_handle,
                                                                                                                  &did,
                                                                                                                  DidCommand::GetEndpointForDid(
@@ -425,7 +425,7 @@ impl DidCommandExecutor {
                                                                                                                      pool_handle,
                                                                                                                      did.clone(),
                                                                                                                      cb)),
-             Err(err) => return cb(Err(err)),
+             Err(err) => cb(Err(err)),
         };
     }
 
@@ -579,22 +579,22 @@ impl DidCommandExecutor {
     fn _call_error_cb(&self, command: DidCommand, err: IndyError) {
         match command {
             DidCommand::CreateAndStoreMyDid(_, _, cb) => {
-                return cb(Err(err));
+                cb(Err(err));
             }
             DidCommand::ReplaceKeysStart(_, _, _, cb) => {
-                return cb(Err(err));
+                cb(Err(err));
             }
             DidCommand::ReplaceKeysApply(_, _, cb) => {
-                return cb(Err(err));
+                cb(Err(err));
             }
             DidCommand::StoreTheirDid(_, _, cb) => {
-                return cb(Err(err));
+                cb(Err(err));
             }
             DidCommand::KeyForDid(_, _, _, cb) => {
-                return cb(Err(err));
+                cb(Err(err));
             }
             DidCommand::GetEndpointForDid(_, _, _, cb) => {
-                return cb(Err(err));
+                cb(Err(err));
             }
             _ => {}
         }

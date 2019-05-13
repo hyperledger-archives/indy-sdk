@@ -4,7 +4,8 @@ extern crate zmq;
 use std::cell::RefCell;
 use std::collections::{BTreeMap, HashMap, HashSet};
 
-use rand::{Rng, thread_rng};
+use rand::thread_rng;
+use rand::prelude::SliceRandom;
 use time::Tm;
 
 use errors::prelude::*;
@@ -50,7 +51,7 @@ impl Networker for ZMQNetworker {
         let mut cnt = 0;
         self.pool_connections.iter().map(|(_, pc)| {
             let ocnt = cnt;
-            cnt = cnt + pc.sockets.iter().filter(|s| s.is_some()).count();
+            cnt += pc.sockets.iter().filter(|s| s.is_some()).count();
             pc.fetch_events(&poll_items[ocnt..cnt])
         }).flat_map(|v| v.into_iter()).collect()
     }
@@ -182,7 +183,7 @@ impl PoolConnection {
     fn new(mut nodes: Vec<RemoteNode>, active_timeout: i64, preordered_nodes: Vec<String>) -> Self {
         trace!("PoolConnection::new: from nodes {:?}", nodes);
 
-        thread_rng().shuffle(nodes.as_mut());
+        nodes.shuffle(&mut thread_rng());
 
         if !preordered_nodes.is_empty() {
             nodes.sort_by_key(|node: &RemoteNode| -> usize {
@@ -272,7 +273,7 @@ impl PoolConnection {
             }
             Some(NetworkerEvent::Resend(req_id, timeout)) => {
                 let resend = if let Some(&mut (ref mut cnt, ref req)) = self.resend.borrow_mut().get_mut(&req_id) {
-                    *cnt = *cnt + 1;
+                    *cnt += 1;
                     //TODO: FIXME: We can collect consensus just walking through if we are not collecting node aliases on the upper layer.
                     Some((*cnt % self.nodes.len(), req.clone()))
                 } else {

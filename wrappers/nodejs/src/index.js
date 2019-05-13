@@ -553,6 +553,36 @@ indy.buildGetAuthRuleRequest = function buildGetAuthRuleRequest (submitterDid, t
   return cb.promise
 }
 
+indy.buildTxnAuthorAgreementRequest = function buildTxnAuthorAgreementRequest (submitterDid, text, version, cb) {
+  cb = wrapIndyCallback(cb, fromJson)
+  capi.buildTxnAuthorAgreementRequest(submitterDid, text, version, cb)
+  return cb.promise
+}
+
+indy.buildGetTxnAuthorAgreementRequest = function buildGetTxnAuthorAgreementRequest (submitterDid, data, cb) {
+  cb = wrapIndyCallback(cb, fromJson)
+  capi.buildGetTxnAuthorAgreementRequest(submitterDid, toJson(data), cb)
+  return cb.promise
+}
+
+indy.buildAcceptanceMechanismRequest = function buildAcceptanceMechanismRequest (submitterDid, aml, amlContext, cb) {
+  cb = wrapIndyCallback(cb, fromJson)
+  capi.buildAcceptanceMechanismRequest(submitterDid, toJson(aml), amlContext, cb)
+  return cb.promise
+}
+
+indy.buildGetAcceptanceMechanismRequest = function buildGetAcceptanceMechanismRequest (submitterDid, timestamp, cb) {
+  cb = wrapIndyCallback(cb, fromJson)
+  capi.buildGetAcceptanceMechanismRequest(submitterDid, timestamp == null ? -1 : timestamp, cb)
+  return cb.promise
+}
+
+indy.appendTxnAuthorAgreementAcceptanceToRequest = function appendTxnAuthorAgreementAcceptanceToRequest (request, text, version, taaDigest, accMechType, timeOfAcceptance, cb) {
+  cb = wrapIndyCallback(cb, fromJson)
+  capi.appendTxnAuthorAgreementAcceptanceToRequest(toJson(request), text, version, taaDigest, accMechType, timeOfAcceptance, cb)
+  return cb.promise
+}
+
 indy.getResponseMetadata = function getResponseMetadata (response, cb) {
   cb = wrapIndyCallback(cb, fromJson)
   capi.getResponseMetadata(toJson(response), cb)

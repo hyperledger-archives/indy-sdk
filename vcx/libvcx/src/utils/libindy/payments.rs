@@ -6,8 +6,8 @@ use std::fmt;
 use std::collections::HashMap;
 
 use utils::libindy::wallet::get_wallet_handle;
-use utils::libindy::ledger::{libindy_submit_request, libindy_sign_and_submit_request, libindy_sign_request};
-use utils::libindy::error_codes::{map_rust_indy_sdk_error};
+use utils::libindy::ledger::{libindy_submit_request, libindy_sign_and_submit_request, libindy_sign_request, append_txn_author_agreement_to_request};
+use utils::libindy::error_codes::map_rust_indy_sdk_error;
 use utils::constants::{SUBMIT_SCHEMA_RESPONSE, TRANSFER_TXN_TYPE};
 use settings;
 use error::prelude::*;
@@ -295,8 +295,22 @@ pub fn pay_a_payee(price: u64, address: &str) -> VcxResult<(PaymentTxn, String)>
 
     let (inputs_json, outputs_json) = _serialize_inputs_and_outputs(&input, &outputs)?;
 
+    let extra = match ::utils::author_agreement::get_txn_author_agreement()? {
+        Some(meta) => {
+            Some(payments::prepare_extra_with_acceptance_data(None,
+                                                              meta.text.as_ref().map(String::as_str),
+                                                              meta.version.as_ref().map(String::as_str),
+                                                              meta.taa_digest.as_ref().map(String::as_str),
+                                                              &meta.acceptance_mechanism_type,
+                                                              meta.time_of_acceptance)
+                .wait()
+                .map_err(map_rust_indy_sdk_error)?)
+        }
+        None => None
+    };
+
     let (request, payment_method) =
-        payments::build_payment_req(get_wallet_handle(), Some(&my_did), &inputs_json, &outputs_json, None)
+        payments::build_payment_req(get_wallet_handle(), Some(&my_did), &inputs_json, &outputs_json, extra.as_ref().map(String::as_str))
             .wait()
             .map_err(map_rust_indy_sdk_error)?;
 
@@ -431,7 +445,10 @@ fn add_new_trustee_did() -> (String, String) {
     let institution_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
 
     let (did, verkey) = ::utils::libindy::signus::create_and_store_my_did(None).unwrap();
-    let req_nym = ledger::build_nym_request(&institution_did, &did, Some(&verkey), None, Some("TRUSTEE")).wait().unwrap();
+    let mut req_nym = ledger::build_nym_request(&institution_did, &did, Some(&verkey), None, Some("TRUSTEE")).wait().unwrap();
+
+    req_nym = append_txn_author_agreement_to_request(&req_nym).unwrap();
+
     ::utils::libindy::ledger::libindy_sign_and_submit_request(&institution_did, &req_nym).unwrap();
     (did, verkey)
 }

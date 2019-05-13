@@ -1,6 +1,10 @@
 pub const NODE: &str = "0";
 pub const NYM: &str = "1";
 pub const GET_TXN: &str = "3";
+pub const TXN_AUTHR_AGRMT: &str = "4";  // TODO Use nonabbreviated names as in updated design
+pub const TXN_AUTHR_AGRMT_AML: &str = "5";
+pub const GET_TXN_AUTHR_AGRMT: &str = "6";
+pub const GET_TXN_AUTHR_AGRMT_AML: &str = "7";
 pub const ATTRIB: &str = "100";
 pub const SCHEMA: &str = "101";
 pub const CRED_DEF: &str = "102";

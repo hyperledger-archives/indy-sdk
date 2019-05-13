@@ -17,7 +17,7 @@ extern crate byteorder;
 extern crate hex;
 extern crate indyrs as indy;
 extern crate indyrs as api;
-extern crate indy_crypto;
+extern crate ursa;
 extern crate uuid;
 extern crate named_type;
 extern crate openssl;
@@ -285,6 +285,26 @@ mod high_cases {
 
             assert_eq!(signatures[DID_TRUSTEE], r#"65hzs4nsdQsTUqLCLy2qisbKLfwYKZSWoyh1C6CU59p5pfG3EHQXGAsjW4Qw4QdwkrvjSgQuyv8qyABcXRBznFKW"#);
             assert_eq!(signatures[DID_MY1], r#"49aXkbrtTE3e522AefE76J51WzUiakw3ZbxxWzf44cv7RS21n8mMr4vJzi4TymuqDupzCz7wEtuGz6rA94Y73kKR"#);
+
+            utils::tear_down_with_wallet(wallet_handle);
+        }
+
+        #[test]
+        fn indy_multi_sign_request_works_for_start_from_single_signature() {
+            let wallet_handle = utils::setup_with_wallet();
+
+            let (did, _) = did::create_and_store_my_did(wallet_handle, Some(TRUSTEE_SEED)).unwrap();
+            let (did2, _) = did::create_and_store_my_did(wallet_handle, Some(MY1_SEED)).unwrap();
+
+            let message = ledger::sign_request(wallet_handle, &did, REQUEST_FROM_TRUSTEE).unwrap();
+            let message = ledger::multi_sign_request(wallet_handle, &did2, &message).unwrap();
+
+            let msg: serde_json::Value = serde_json::from_str(&message).unwrap();
+            let signatures = msg["signatures"].as_object().unwrap();
+
+            assert!(!msg.as_object().unwrap().contains_key("signature"));
+            assert_eq!(signatures[DID_TRUSTEE], r#"3YnLxoUd4utFLzeXUkeGefAqAdHUD7rBprpSx2CJeH7gRYnyjkgJi7tCnFgUiMo62k6M2AyUDtJrkUSgHfcq3vua"#);
+            assert_eq!(signatures[DID_MY1], r#"4EyvSFPoeQCJLziGVqjuMxrbuoWjAWUGPd6LdxeZuG9w3Bcbt7cSvhjrv8SX5e8mGf8jrf3K6xd9kEhXsQLqUg45"#);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -1675,7 +1695,7 @@ mod high_cases {
         const ADD_AUTH_ACTION: &str = "ADD";
         const EDIT_AUTH_ACTION: &str = "EDIT";
         const FIELD: &str = "role";
-        const OLD_VALUE: &str = "0";
+        const VALUE: &str = "0";
         const NEW_VALUE: &str = "101";
         const ROLE_CONSTRAINT: &str = r#"{
             "sig_count": 1,
@@ -1686,13 +1706,14 @@ mod high_cases {
         }"#;
 
         #[test]
-        fn indy_build_auth_rule_request_works_for_add_action() {
+        fn indy_build_auth_rule_requests_works_for_adding_new_trustee() {
+            // write
             let expected_result = json!({
                 "type": constants::AUTH_RULE,
                 "auth_type": constants::NYM,
-                "field": FIELD,
-                "new_value": NEW_VALUE,
                 "auth_action": ADD_AUTH_ACTION,
+                "field": FIELD,
+                "new_value": VALUE,
                 "constraint": json!({
                     "sig_count": 1,
                     "metadata": {},
@@ -1707,20 +1728,83 @@ mod high_cases {
                                                           &ADD_AUTH_ACTION,
                                                           FIELD,
                                                           None,
-                                                          NEW_VALUE,
+                                                          Some(VALUE),
                                                           ROLE_CONSTRAINT).unwrap();
+            check_request(&request, expected_result);
+
+            // read
+            let expected_result = json!({
+                "type": constants::GET_AUTH_RULE,
+                "auth_type": constants::NYM,
+                "auth_action": ADD_AUTH_ACTION,
+                "field": FIELD,
+                "new_value": VALUE,
+            });
+
+            let request = ledger::build_get_auth_rule_request(None,
+                                                              Some(constants::NYM),
+                                                              Some(ADD_AUTH_ACTION),
+                                                              Some(FIELD),
+                                                              None,
+                                                              Some(VALUE)).unwrap();
             check_request(&request, expected_result);
         }
 
         #[test]
-        fn indy_build_auth_rule_request_works_for_edit_action() {
+        fn indy_build_auth_rule_requests_works_for_adding_new_identity_owner() {
+            // write
             let expected_result = json!({
                 "type": constants::AUTH_RULE,
                 "auth_type": constants::NYM,
+                "auth_action": ADD_AUTH_ACTION,
                 "field": FIELD,
-                "old_value": OLD_VALUE,
-                "new_value": NEW_VALUE,
+                "new_value": serde_json::Value::Null,
+                "constraint": json!({
+                    "sig_count": 1,
+                    "metadata": {},
+                    "role": "0",
+                    "constraint_id": "ROLE",
+                    "need_to_be_owner": false
+                }),
+            });
+
+            let request = ledger::build_auth_rule_request(DID_TRUSTEE,
+                                                          constants::NYM,
+                                                          &ADD_AUTH_ACTION,
+                                                          FIELD,
+                                                          None,
+                                                          None,
+                                                          ROLE_CONSTRAINT).unwrap();
+            check_request(&request, expected_result);
+
+            // read
+            let expected_result = json!({
+                "type": constants::GET_AUTH_RULE,
+                "auth_type": constants::NYM,
+                "auth_action": ADD_AUTH_ACTION,
+                "field": FIELD,
+                "new_value": serde_json::Value::Null,
+            });
+
+            let request = ledger::build_get_auth_rule_request(None,
+                                                              Some(constants::NYM),
+                                                              Some(ADD_AUTH_ACTION),
+                                                              Some(FIELD),
+                                                              None,
+                                                              None).unwrap();
+            check_request(&request, expected_result);
+        }
+
+        #[test]
+        fn indy_build_auth_rule_requests_works_for_demote_trustee() {
+            // write
+            let expected_result = json!({
+                "type": constants::AUTH_RULE,
+                "auth_type": constants::NYM,
                 "auth_action": EDIT_AUTH_ACTION,
+                "field": FIELD,
+                "old_value": VALUE,
+                "new_value": serde_json::Value::Null,
                 "constraint": json!({
                     "sig_count": 1,
                     "metadata": {},
@@ -1734,9 +1818,121 @@ mod high_cases {
                                                           constants::NYM,
                                                           &EDIT_AUTH_ACTION,
                                                           FIELD,
-                                                          Some(OLD_VALUE),
-                                                          NEW_VALUE,
+                                                          Some(VALUE),
+                                                          None,
                                                           ROLE_CONSTRAINT).unwrap();
+            check_request(&request, expected_result);
+
+            // read
+            let expected_result = json!({
+                "type": constants::GET_AUTH_RULE,
+                "auth_type": constants::NYM,
+                "auth_action": EDIT_AUTH_ACTION,
+                "field": FIELD,
+                "old_value": VALUE,
+                "new_value": serde_json::Value::Null,
+            });
+
+            let request = ledger::build_get_auth_rule_request(None,
+                                                              Some(constants::NYM),
+                                                              Some(EDIT_AUTH_ACTION),
+                                                              Some(FIELD),
+                                                              Some(VALUE),
+                                                              None).unwrap();
+            check_request(&request, expected_result);
+        }
+
+        #[test]
+        fn indy_build_auth_rule_requests_works_for_promote_role_to_trustee() {
+            // write
+            let expected_result = json!({
+                "type": constants::AUTH_RULE,
+                "auth_type": constants::NYM,
+                "auth_action": EDIT_AUTH_ACTION,
+                "field": FIELD,
+                "old_value": serde_json::Value::Null,
+                "new_value": VALUE,
+                "constraint": json!({
+                    "sig_count": 1,
+                    "metadata": {},
+                    "role": "0",
+                    "constraint_id": "ROLE",
+                    "need_to_be_owner": false
+                }),
+            });
+
+            let request = ledger::build_auth_rule_request(DID_TRUSTEE,
+                                                          constants::NYM,
+                                                          &EDIT_AUTH_ACTION,
+                                                          FIELD,
+                                                          None,
+                                                          Some(VALUE),
+                                                          ROLE_CONSTRAINT).unwrap();
+            check_request(&request, expected_result);
+
+            // read
+            let expected_result = json!({
+                "type": constants::GET_AUTH_RULE,
+                "auth_type": constants::NYM,
+                "auth_action": EDIT_AUTH_ACTION,
+                "field": FIELD,
+                "old_value": serde_json::Value::Null,
+                "new_value": VALUE,
+            });
+
+            let request = ledger::build_get_auth_rule_request(None,
+                                                              Some(constants::NYM),
+                                                              Some(EDIT_AUTH_ACTION),
+                                                              Some(FIELD),
+                                                              None,
+                                                              Some(VALUE)).unwrap();
+            check_request(&request, expected_result);
+        }
+
+        #[test]
+        fn indy_build_auth_rule_requests_works_for_change_trustee_to_steward() {
+            // write
+            let expected_result = json!({
+                "type": constants::AUTH_RULE,
+                "auth_type": constants::NYM,
+                "auth_action": EDIT_AUTH_ACTION,
+                "field": FIELD,
+                "old_value": "0",
+                "new_value": "2",
+                "constraint": json!({
+                    "sig_count": 1,
+                    "metadata": {},
+                    "role": "0",
+                    "constraint_id": "ROLE",
+                    "need_to_be_owner": false
+                }),
+            });
+
+            let request = ledger::build_auth_rule_request(DID_TRUSTEE,
+                                                          constants::NYM,
+                                                          &EDIT_AUTH_ACTION,
+                                                          FIELD,
+                                                          Some("0"),
+                                                          Some("2"),
+                                                          ROLE_CONSTRAINT).unwrap();
+            check_request(&request, expected_result);
+
+            // read
+            let expected_result = json!({
+                "type": constants::GET_AUTH_RULE,
+                "auth_type": constants::NYM,
+                "auth_action": EDIT_AUTH_ACTION,
+                "field": FIELD,
+                "old_value": "0",
+                "new_value": "2",
+            });
+
+            let request = ledger::build_get_auth_rule_request(None,
+                                                              Some(constants::NYM),
+                                                              Some(EDIT_AUTH_ACTION),
+                                                              Some(FIELD),
+                                                              Some("0"),
+                                                              Some("2")).unwrap();
             check_request(&request, expected_result);
         }
 
@@ -1786,7 +1982,7 @@ mod high_cases {
                                                           &ADD_AUTH_ACTION,
                                                           FIELD,
                                                           None,
-                                                          NEW_VALUE,
+                                                          Some(NEW_VALUE),
                                                           constraint).unwrap();
             check_request(&request, expected_result);
         }
@@ -1798,33 +1994,13 @@ mod high_cases {
                                                       &ADD_AUTH_ACTION,
                                                       FIELD,
                                                       None,
-                                                      NEW_VALUE,
+                                                      Some(NEW_VALUE),
                                                       r#"{"field":"value"}"#);
             assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
 
         #[test]
-        fn indy_build_get_auth_rule_request_works_for_all_fields() {
-            let expected_result = json!({
-                "type": constants::GET_AUTH_RULE,
-                "auth_type": constants::NYM,
-                "field": FIELD,
-                "old_value": OLD_VALUE,
-                "new_value": NEW_VALUE,
-                "auth_action": ADD_AUTH_ACTION,
-            });
-
-            let request = ledger::build_get_auth_rule_request(Some(DID_TRUSTEE),
-                                                              Some(constants::NYM),
-                                                              Some(ADD_AUTH_ACTION),
-                                                              Some(FIELD),
-                                                              Some(OLD_VALUE),
-                                                              Some(NEW_VALUE)).unwrap();
-            check_request(&request, expected_result);
-        }
-
-        #[test]
-        fn indy_build_get_auth_rule_request_works_for_all_fields_are_skipped() {
+        fn indy_build_get_auth_rule_request_works_for_get_all() {
             let expected_result = json!({
                 "type": constants::GET_AUTH_RULE,
             });
@@ -1851,24 +2027,151 @@ mod high_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
-        fn indy_auth_rule_requests_work() {
+        fn indy_auth_rule_requests_works_for_adding_new_trustee() {
             let (wallet_handle, pool_handle, trustee_did) = utils::setup_trustee();
 
-            let constraint_id = _build_constraint_id(ADD_AUTH_ACTION, constants::NYM, FIELD, None, NEW_VALUE);
+            let (_, default_constraint_json) = _get_constraint(pool_handle, ADD_AUTH_ACTION,
+                                                               constants::NYM, FIELD,
+                                                               None, Some(VALUE));
 
-            let default_constraint = _get_constraint(pool_handle, &constraint_id);
-
-            _change_constraint(pool_handle, wallet_handle, &trustee_did, ROLE_CONSTRAINT);
+            _change_constraint(pool_handle, wallet_handle, &trustee_did, ADD_AUTH_ACTION,
+                               constants::NYM, FIELD,
+                               None, Some(VALUE), ROLE_CONSTRAINT);
 
             ::std::thread::sleep(::std::time::Duration::from_secs(1));
 
-            let actual_constraint = _get_constraint(pool_handle, &constraint_id);
+            let (actual_constraint, _) = _get_constraint(pool_handle, ADD_AUTH_ACTION,
+                                                         constants::NYM, FIELD,
+                                                         None, Some(VALUE));
 
             let expected_constraint: serde_json::Value = serde_json::from_str(ROLE_CONSTRAINT).unwrap();
 
             assert_eq!(expected_constraint, actual_constraint);
 
-            _change_constraint(pool_handle, wallet_handle, &trustee_did, &serde_json::to_string(&default_constraint).unwrap());
+            _change_constraint(pool_handle, wallet_handle, &trustee_did, ADD_AUTH_ACTION,
+                               constants::NYM, FIELD,
+                               None, Some(VALUE), &default_constraint_json);
+
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_auth_rule_requests_works_for_adding_new_identity_owner() {
+            let (wallet_handle, pool_handle, trustee_did) = utils::setup_trustee();
+
+            let (_, default_constraint_json) = _get_constraint(pool_handle,
+                                                               &ADD_AUTH_ACTION,
+                                                               constants::NYM,
+                                                               FIELD,
+                                                               None,
+                                                               None);
+
+            _change_constraint(pool_handle, wallet_handle, &trustee_did, ADD_AUTH_ACTION,
+                               constants::NYM, FIELD, None, None, ROLE_CONSTRAINT);
+
+            ::std::thread::sleep(::std::time::Duration::from_secs(1));
+
+            let (actual_constraint, _) = _get_constraint(pool_handle, ADD_AUTH_ACTION,
+                                                         constants::NYM, FIELD, None, None);
+
+            let expected_constraint: serde_json::Value = serde_json::from_str(ROLE_CONSTRAINT).unwrap();
+
+            assert_eq!(expected_constraint, actual_constraint);
+
+            _change_constraint(pool_handle, wallet_handle, &trustee_did, ADD_AUTH_ACTION, constants::NYM,
+                               FIELD, None, None, &default_constraint_json);
+
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_auth_rule_requests_works_for_demote_trustee() {
+            let (wallet_handle, pool_handle, trustee_did) = utils::setup_trustee();
+
+            let (_, default_constraint_json) = _get_constraint(pool_handle,
+                                                               &EDIT_AUTH_ACTION,
+                                                               constants::NYM,
+                                                               FIELD,
+                                                               Some(VALUE),
+                                                               None);
+
+            _change_constraint(pool_handle, wallet_handle, &trustee_did, EDIT_AUTH_ACTION,
+                               constants::NYM, FIELD, Some(VALUE), None, ROLE_CONSTRAINT);
+
+            ::std::thread::sleep(::std::time::Duration::from_secs(1));
+
+            let (actual_constraint, _) = _get_constraint(pool_handle, EDIT_AUTH_ACTION, constants::NYM,
+                                                         FIELD, Some(VALUE), None);
+
+            let expected_constraint: serde_json::Value = serde_json::from_str(ROLE_CONSTRAINT).unwrap();
+
+            assert_eq!(expected_constraint, actual_constraint);
+
+            _change_constraint(pool_handle, wallet_handle, &trustee_did, EDIT_AUTH_ACTION, constants::NYM,
+                               FIELD, Some(VALUE), None, &default_constraint_json);
+
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_auth_rule_requests_works_for_promote_role_to_trustee() {
+            let (wallet_handle, pool_handle, trustee_did) = utils::setup_trustee();
+
+            let (_, default_constraint_json) = _get_constraint(pool_handle,
+                                                               &EDIT_AUTH_ACTION,
+                                                               constants::NYM,
+                                                               FIELD,
+                                                               None,
+                                                               Some(VALUE));
+
+            _change_constraint(pool_handle, wallet_handle, &trustee_did, EDIT_AUTH_ACTION,
+                               constants::NYM, FIELD, None, Some(VALUE), ROLE_CONSTRAINT);
+
+            ::std::thread::sleep(::std::time::Duration::from_secs(1));
+
+            let (actual_constraint, _) = _get_constraint(pool_handle, EDIT_AUTH_ACTION, constants::NYM,
+                                                         FIELD, None, Some(VALUE));
+
+            let expected_constraint: serde_json::Value = serde_json::from_str(ROLE_CONSTRAINT).unwrap();
+
+            assert_eq!(expected_constraint, actual_constraint);
+
+            _change_constraint(pool_handle, wallet_handle, &trustee_did, EDIT_AUTH_ACTION, constants::NYM,
+                               FIELD, None, Some(VALUE), &default_constraint_json);
+
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_auth_rule_requests_works_for_change_trustee_to_steward() {
+            let (wallet_handle, pool_handle, trustee_did) = utils::setup_trustee();
+
+            let (_, default_constraint_json) = _get_constraint(pool_handle,
+                                                               &EDIT_AUTH_ACTION,
+                                                               constants::NYM,
+                                                               FIELD,
+                                                               Some("0"),
+                                                               Some("2"));
+
+            _change_constraint(pool_handle, wallet_handle, &trustee_did, EDIT_AUTH_ACTION,
+                               constants::NYM, FIELD, Some("0"),
+                               Some("2"), ROLE_CONSTRAINT);
+
+            ::std::thread::sleep(::std::time::Duration::from_secs(1));
+
+            let (actual_constraint, _) = _get_constraint(pool_handle, EDIT_AUTH_ACTION,
+                                                         constants::NYM, FIELD, Some("0"), Some("2"));
+
+            let expected_constraint: serde_json::Value = serde_json::from_str(ROLE_CONSTRAINT).unwrap();
+
+            assert_eq!(expected_constraint, actual_constraint);
+
+            _change_constraint(pool_handle, wallet_handle, &trustee_did, EDIT_AUTH_ACTION,
+                               constants::NYM, FIELD, Some("0"), Some("2"), &default_constraint_json);
 
             utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
         }
@@ -1877,32 +2180,38 @@ mod high_cases {
                                 auth_type: &str,
                                 field: &str,
                                 old_value: Option<&str>,
-                                new_value: &str) -> String {
-            format!("{}--{}--{}--{}--{}", auth_action, auth_type, field, old_value.unwrap_or("*"), new_value)
+                                new_value: Option<&str>) -> String {
+            let default_old_value = if auth_action == "ADD" { "*" } else { "" };
+            format!("{}--{}--{}--{}--{}", auth_type, auth_action, field, old_value.unwrap_or(default_old_value), new_value.unwrap_or(""))
         }
 
-        fn _change_constraint(pool_handle: i32, wallet_handle: i32, trustee_did: &str, constraint: &str) {
+        fn _change_constraint(pool_handle: i32, wallet_handle: i32, trustee_did: &str, action: &str, txn_type: &str, field: &str,
+                              old_value: Option<&str>, new_value: Option<&str>, constraint: &str) {
             let auth_rule_request = ledger::build_auth_rule_request(&trustee_did,
-                                                                    constants::NYM,
-                                                                    &ADD_AUTH_ACTION,
-                                                                    FIELD,
-                                                                    None,
-                                                                    NEW_VALUE,
+                                                                    txn_type,
+                                                                    &action,
+                                                                    field,
+                                                                    old_value,
+                                                                    new_value,
                                                                     constraint).unwrap();
             let response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &auth_rule_request).unwrap();
             pool::check_response_type(&response, ResponseType::REPLY);
         }
 
-        fn _get_constraint(pool_handle: i32, constraint_id: &str) -> serde_json::Value {
+        fn _get_constraint(pool_handle: i32, action: &str, txn_type: &str, field: &str,
+                           old_value: Option<&str>, new_value: Option<&str>) -> (serde_json::Value, String) {
             let get_auth_rule_request = ledger::build_get_auth_rule_request(None,
-                                                                            Some(constants::NYM),
-                                                                            Some(ADD_AUTH_ACTION),
-                                                                            Some(FIELD),
-                                                                            None,
-                                                                            Some(NEW_VALUE)).unwrap();
+                                                                            Some(txn_type),
+                                                                            Some(action),
+                                                                            Some(field),
+                                                                            old_value,
+                                                                            new_value).unwrap();
             let response = ledger::submit_request(pool_handle, &get_auth_rule_request).unwrap();
+            let constraint_id = _build_constraint_id(action, txn_type, field, old_value, new_value);
 
-            _extract_constraint(&response, constraint_id)
+            let constraint = _extract_constraint(&response, &constraint_id);
+            let constraint_json = serde_json::to_string(&constraint).unwrap();
+            (constraint, constraint_json)
         }
 
         fn _extract_constraint(response: &str, constraint_id: &str) -> serde_json::Value {
@@ -1951,6 +2260,282 @@ mod high_cases {
             pool::check_response_type(&response, ResponseType::REQNACK);
 
             utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
+        }
+    }
+
+    mod author_agreement {
+        use super::*;
+
+        const TEXT: &str = "indy agreement";
+        const VERSION: &str = "1.0.0";
+        const HASH: &str = "83d907821df1c87db829e96569a11f6fc2e7880acba5e43d07ab786959e13bd3";
+
+        #[test]
+        fn indy_build_txn_author_agreement_request() {
+            let expected_result = json!({
+                "type": constants::TXN_AUTHR_AGRMT,
+                "text": TEXT,
+                "version": VERSION
+            });
+
+            let request = ledger::build_txn_author_agreement_request(DID_TRUSTEE,
+                                                                     TEXT,
+                                                                     VERSION).unwrap();
+            check_request(&request, expected_result);
+        }
+
+        #[test]
+        fn indy_build_get_txn_author_agreement_request() {
+            let expected_result = json!({
+                "type": constants::GET_TXN_AUTHR_AGRMT,
+            });
+
+            let request = ledger::build_get_txn_author_agreement_request(None, None).unwrap();
+            check_request(&request, expected_result);
+        }
+
+        #[test]
+        fn indy_build_get_txn_author_agreement_request_for_hash() {
+            let expected_result = json!({
+                "type": constants::GET_TXN_AUTHR_AGRMT,
+                "hash": HASH,
+            });
+
+            let data = json!({
+                "hash": HASH
+            }).to_string();
+
+            let request = ledger::build_get_txn_author_agreement_request(None, Some(&data)).unwrap();
+            check_request(&request, expected_result);
+        }
+
+        #[test]
+        fn indy_build_get_txn_author_agreement_request_for_version() {
+            let expected_result = json!({
+                "type": constants::GET_TXN_AUTHR_AGRMT,
+                "version": VERSION,
+            });
+
+            let data = json!({
+                "version": VERSION
+            }).to_string();
+
+            let request = ledger::build_get_txn_author_agreement_request(None, Some(&data)).unwrap();
+            check_request(&request, expected_result);
+        }
+
+        #[test]
+        fn indy_build_get_txn_author_agreement_request_for_timestamp() {
+            let timestamp = time::get_time().sec as u64;
+            let expected_result = json!({
+                "type": constants::GET_TXN_AUTHR_AGRMT,
+                "timestamp": timestamp,
+            });
+
+            let data = json!({
+                "timestamp": timestamp
+            }).to_string();
+
+            let request = ledger::build_get_txn_author_agreement_request(None, Some(&data)).unwrap();
+            check_request(&request, expected_result);
+        }
+    }
+
+    mod acceptance_mechanism {
+        use super::*;
+
+        #[test]
+        fn indy_build_acceptance_mechanism_request() {
+            let aml = json!({
+                "acceptance mechanism label 1": "some acceptance mechanism description 1"
+            });
+
+            let expected_result = json!({
+                "type": constants::TXN_AUTHR_AGRMT_AML,
+                "aml": aml.clone()
+            });
+
+            let request = ledger::build_acceptance_mechanism_request(DID_TRUSTEE,
+                                                                     &aml.to_string(),
+                                                                     None).unwrap();
+            check_request(&request, expected_result);
+        }
+
+        #[test]
+        fn indy_build_acceptance_mechanism_request_with_context() {
+            let aml = json!({
+                "acceptance mechanism label 1": "some acceptance mechanism description 1"
+            });
+            let context = "Some aml context";
+
+            let expected_result = json!({
+                "type": constants::TXN_AUTHR_AGRMT_AML,
+                "aml": aml.clone(),
+                "amlContext": context,
+            });
+
+            let request = ledger::build_acceptance_mechanism_request(DID_TRUSTEE,
+                                                                     &aml.to_string(),
+                                                                     Some(context)).unwrap();
+            check_request(&request, expected_result);
+        }
+
+        #[test]
+        fn indy_build_get_acceptance_mechanism_request() {
+            let expected_result = json!({
+                "type": constants::GET_TXN_AUTHR_AGRMT_AML,
+            });
+
+            let request = ledger::build_get_acceptance_mechanism_request(None, None).unwrap();
+            check_request(&request, expected_result);
+        }
+
+        #[test]
+        fn indy_build_get_acceptance_mechanism_request_for_timestamp() {
+            let timestamp = time::get_time().sec as i64;
+
+            let expected_result = json!({
+                "type": constants::GET_TXN_AUTHR_AGRMT_AML,
+                "timestamp": timestamp
+            });
+
+            let request = ledger::build_get_acceptance_mechanism_request(None, Some(timestamp)).unwrap();
+            check_request(&request, expected_result);
+        }
+    }
+
+    mod author_agreement_acceptance {
+        use super::*;
+
+        const TEXT: &str = "some agreement text";
+        const VERSION: &str = "1.0.0";
+        const HASH: &str = "050e52a57837fff904d3d059c8a123e3a04177042bf467db2b2c27abd8045d5e";
+        const ACCEPTANCE_MECH_TYPE: &str = "acceptance type 1";
+        const TIME_OF_ACCEPTANCE: u64 = 123456789;
+
+        fn _check_request_meta(request: &str){
+            let request: serde_json::Value = serde_json::from_str(&request).unwrap();
+
+            let expected_meta = json!({
+                "mechanism": ACCEPTANCE_MECH_TYPE,
+                "taaDigest": HASH,
+                "time": TIME_OF_ACCEPTANCE
+            });
+
+            assert_eq!(request["taaAcceptance"], expected_meta);
+        }
+
+        #[test]
+        fn indy_append_txn_author_agreement_acceptance_to_request_works_for_text_version() {
+            utils::setup();
+
+            let request = ledger::append_txn_author_agreement_acceptance_to_request(REQUEST,
+                                                                                    Some(TEXT),
+                                                                                    Some(VERSION),
+                                                                                    None,
+                                                                                    ACCEPTANCE_MECH_TYPE,
+                                                                                    TIME_OF_ACCEPTANCE).unwrap();
+            _check_request_meta(&request);
+
+            utils::tear_down();
+        }
+
+        #[test]
+        fn indy_append_txn_author_agreement_acceptance_to_request_works_for_hash() {
+            utils::setup();
+
+            let request = ledger::append_txn_author_agreement_acceptance_to_request(REQUEST,
+                                                                                    None,
+                                                                                    None,
+                                                                                    Some(HASH),
+                                                                                    ACCEPTANCE_MECH_TYPE,
+                                                                                    TIME_OF_ACCEPTANCE).unwrap();
+            _check_request_meta(&request);
+
+            utils::tear_down();
+        }
+
+        #[test]
+        fn indy_append_txn_author_agreement_acceptance_to_request_works_for_text_version_and_hash() {
+            utils::setup();
+
+            let request = ledger::append_txn_author_agreement_acceptance_to_request(REQUEST,
+                                                                                    Some(TEXT),
+                                                                                    Some(VERSION),
+                                                                                    Some(HASH),
+                                                                                    ACCEPTANCE_MECH_TYPE,
+                                                                                    TIME_OF_ACCEPTANCE).unwrap();
+            _check_request_meta(&request);
+
+            utils::tear_down();
+        }
+
+        #[test]
+        fn indy_append_txn_author_agreement_acceptance_to_request_works_for_text_version_not_correspond_to_hash() {
+            utils::setup();
+
+            let res = ledger::append_txn_author_agreement_acceptance_to_request(REQUEST,
+                                                                                Some("other text"),
+                                                                                Some("0.0.1"),
+                                                                                Some(HASH),
+                                                                                ACCEPTANCE_MECH_TYPE,
+                                                                                TIME_OF_ACCEPTANCE);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
+
+            utils::tear_down();
+        }
+
+        #[test]
+        fn indy_append_txn_author_agreement_acceptance_to_request_works_for_invalid_request() {
+            utils::setup();
+
+            let res = ledger::append_txn_author_agreement_acceptance_to_request("Invalid request string",
+                                                                                None,
+                                                                                None,
+                                                                                Some(HASH),
+                                                                                ACCEPTANCE_MECH_TYPE,
+                                                                                TIME_OF_ACCEPTANCE);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
+
+            utils::tear_down();
+        }
+
+        #[test]
+        fn indy_append_txn_author_agreement_acceptance_to_request_works_for_missed_text_version_hash() {
+            utils::setup();
+
+            let res = ledger::append_txn_author_agreement_acceptance_to_request(REQUEST,
+                                                                                None,
+                                                                                None,
+                                                                                None,
+                                                                                ACCEPTANCE_MECH_TYPE,
+                                                                                TIME_OF_ACCEPTANCE);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
+
+            utils::tear_down();
+        }
+
+        #[test]
+        fn indy_append_txn_author_agreement_acceptance_to_request_works_for_partial_combination_of_text_version() {
+            utils::setup();
+
+            let res = ledger::append_txn_author_agreement_acceptance_to_request(REQUEST,
+                                                                                Some(TEXT),
+                                                                                None,
+                                                                                None,
+                                                                                ACCEPTANCE_MECH_TYPE,
+                                                                                TIME_OF_ACCEPTANCE);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
+
+            let res = ledger::append_txn_author_agreement_acceptance_to_request(REQUEST,
+                                                                                None,
+                                                                                Some(VERSION),
+                                                                                None,
+                                                                                ACCEPTANCE_MECH_TYPE,
+                                                                                TIME_OF_ACCEPTANCE);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
+
+            utils::tear_down();
         }
     }
 }
@@ -2382,7 +2967,8 @@ mod medium_cases {
         fn indy_send_node_request_works_for_wrong_role() {
             let (wallet_handle, pool_handle, did) = utils::setup_trustee();
 
-            let node_request = ledger::build_node_request(&did, &did, NODE_DATA).unwrap();
+            let key = utils::crypto::create_key(wallet_handle, None).unwrap();
+            let node_request = ledger::build_node_request(&did, &key, NODE_DATA).unwrap();
             let response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &did, &node_request).unwrap();
             pool::check_response_type(&response, ResponseType::REJECT);
 
@@ -2394,7 +2980,8 @@ mod medium_cases {
         fn indy_submit_node_request_works_for_steward_already_has_node() {
             let (wallet_handle, pool_handle, did) = utils::setup_steward();
 
-            let node_request = ledger::build_node_request(&did, &did, NODE_DATA).unwrap();
+            let key = utils::crypto::create_key(wallet_handle, None).unwrap();
+            let node_request = ledger::build_node_request(&did, &key, NODE_DATA).unwrap();
             let response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &did, &node_request).unwrap();
             pool::check_response_type(&response, ResponseType::REJECT);
 

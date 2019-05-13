@@ -108,9 +108,9 @@ fn _if_consensus_reachable(nodes_votes: &HashMap<(String, usize, Option<Vec<Stri
 fn _try_to_restart_catch_up(pool_name: &str, err: IndyError) -> IndyResult<CatchupProgress> {
     if merkle_tree_factory::drop_cache(pool_name).is_ok() {
         let merkle_tree = merkle_tree_factory::create(pool_name)?;
-        return Ok(CatchupProgress::Restart(merkle_tree));
+        Ok(CatchupProgress::Restart(merkle_tree))
     } else {
-        return Err(err);
+        Err(err)
     }
 }
 
@@ -121,10 +121,10 @@ fn _try_to_catch_up(ledger_status: &(String, usize, Option<Vec<String>>), merkle
 
     if target_mt_size == cur_mt_size {
         if cur_mt_hash.eq(target_mt_root) {
-            return Ok(CatchupProgress::NotNeeded(merkle_tree.clone()));
+            Ok(CatchupProgress::NotNeeded(merkle_tree.clone()))
         } else {
-            return Err(err_msg(IndyErrorKind::InvalidState,
-                               "Ledger merkle tree is not acceptable for current tree."));
+            Err(err_msg(IndyErrorKind::InvalidState,
+                               "Ledger merkle tree is not acceptable for current tree."))
         }
     } else if target_mt_size > cur_mt_size {
         let target_mt_root = target_mt_root
@@ -132,14 +132,14 @@ fn _try_to_catch_up(ledger_status: &(String, usize, Option<Vec<String>>), merkle
             .map_err(|err| Context::new(err))
             .to_indy(IndyErrorKind::InvalidStructure, "Can't parse target MerkleTree hash from nodes responses")?; // FIXME: review kind
 
-        match hashes {
-            &None => (),
-            &Some(ref hashes) => check_cons_proofs(merkle_tree, hashes, &target_mt_root, target_mt_size)?,
+        match *hashes {
+            None => (),
+            Some(ref hashes) => check_cons_proofs(merkle_tree, hashes, &target_mt_root, target_mt_size)?,
         };
 
-        return Ok(CatchupProgress::ShouldBeStarted(target_mt_root, target_mt_size, merkle_tree.clone()));
+        Ok(CatchupProgress::ShouldBeStarted(target_mt_root, target_mt_size, merkle_tree.clone()))
     } else {
-        return Err(err_msg(IndyErrorKind::InvalidState, "Local merkle tree greater than mt from ledger"));
+        Err(err_msg(IndyErrorKind::InvalidState, "Local merkle tree greater than mt from ledger"))
     }
 }
 

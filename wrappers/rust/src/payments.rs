@@ -311,6 +311,61 @@ fn _parse_payment_response(command_handle: CommandHandle, payment_method: &str, 
 
 }
 
+/// Append payment extra JSON with TAA acceptance data
+///
+/// This function may calculate digest by itself or consume it as a parameter.
+/// If all text, version and taa_digest parameters are specified, a check integrity of them will be done.
+///
+/// # Arguments
+/// * `extra_json`: original extra json.
+/// * `text` and `version`: (optional) raw data about TAA from ledger.
+///     These parameters should be passed together.
+///     These parameters are required if taa_digest parameter is omitted.
+/// * `taa_digest`: (optional) digest on text and version. This parameter is required if text and version parameters are omitted.
+/// * `mechanism`: mechanism how user has accepted the TAA
+/// * `time`: UTC timestamp when user has accepted the TAA
+///
+/// # Returns
+/// Updated extra result as json.
+pub fn prepare_extra_with_acceptance_data(extra_json: Option<&str>,
+                                          text: Option<&str>,
+                                          version: Option<&str>,
+                                          taa_digest: Option<&str>,
+                                          mechanism: &str,
+                                          time: u64) -> Box<Future<Item=String, Error=IndyError>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+
+    let err = _prepare_extra_with_acceptance_data(command_handle, extra_json, text, version, taa_digest, mechanism, time, cb);
+
+    ResultHandler::str(command_handle, err, receiver)
+}
+
+fn _prepare_extra_with_acceptance_data(command_handle: IndyHandle,
+                                       extra_json: Option<&str>,
+                                       text: Option<&str>,
+                                       version: Option<&str>,
+                                       taa_digest: Option<&str>,
+                                       mechanism: &str,
+                                       time: u64,
+                                       cb: Option<ResponseStringCB>) -> ErrorCode {
+    let extra_str = opt_c_str!(extra_json);
+    let text_str = opt_c_str!(text);
+    let version_str = opt_c_str!(version);
+    let taa_digest_str = opt_c_str!(taa_digest);
+    let mechanism = c_str!(mechanism);
+
+    ErrorCode::from(unsafe {
+        payments::indy_prepare_payment_extra_with_acceptance_data(command_handle,
+                                                                  opt_c_ptr!(extra_json, extra_str),
+                                                                  opt_c_ptr!(text, text_str),
+                                                                  opt_c_ptr!(version, version_str),
+                                                                  opt_c_ptr!(taa_digest, taa_digest_str),
+                                                                  mechanism.as_ptr(),
+                                                                  time,
+                                                                  cb)
+    })
+}
+
 /// Builds Indy request for doing tokens minting
 /// according to this payment method.
 ///
