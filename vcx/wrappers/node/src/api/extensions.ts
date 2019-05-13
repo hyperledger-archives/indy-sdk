@@ -25,7 +25,7 @@ export interface IUnpackMessageData {
   data: Buffer,
 }
 
-export class Connection {
+export class Extensions {
   public getWalletHandle (): number {
     return rustAPI().vcx_wallet_get_handle()
   }
