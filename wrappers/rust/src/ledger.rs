@@ -1131,7 +1131,7 @@ pub fn build_txn_author_agreement_request(submitter_did: &str, text: &str, versi
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _build_txn_author_agreement_request(command_handle: IndyHandle,
+fn _build_txn_author_agreement_request(command_handle: CommandHandle,
                                        submitter_did: &str,
                                        text: &str,
                                        version: &str,
@@ -1172,7 +1172,7 @@ pub fn build_get_txn_author_agreement_request(submitter_did: Option<&str>, data:
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _build_get_txn_author_agreement_request(command_handle: IndyHandle,
+fn _build_get_txn_author_agreement_request(command_handle: CommandHandle,
                                            submitter_did: Option<&str>,
                                            data: Option<&str>,
                                            cb: Option<ResponseStringCB>) -> ErrorCode {
@@ -1210,7 +1210,7 @@ pub fn build_acceptance_mechanism_request(submitter_did: &str, aml: &str, aml_co
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _build_acceptance_mechanism_request(command_handle: IndyHandle,
+fn _build_acceptance_mechanism_request(command_handle: CommandHandle,
                                        submitter_did: &str,
                                        aml: &str,
                                        aml_context: Option<&str>,
@@ -1245,7 +1245,7 @@ pub fn build_get_acceptance_mechanism_request(submitter_did: Option<&str>, times
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _build_get_acceptance_mechanism_request(command_handle: IndyHandle,
+fn _build_get_acceptance_mechanism_request(command_handle: CommandHandle,
                                            submitter_did: Option<&str>,
                                            timestamp: Option<i64>,
                                            cb: Option<ResponseStringCB>) -> ErrorCode {
@@ -1291,7 +1291,7 @@ pub fn append_txn_author_agreement_acceptance_to_request(request_json: &str,
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _append_txn_author_agreement_acceptance_to_request(command_handle: IndyHandle,
+fn _append_txn_author_agreement_acceptance_to_request(command_handle: CommandHandle,
                                                       request_json: &str,
                                                       text: Option<&str>,
                                                       version: Option<&str>,

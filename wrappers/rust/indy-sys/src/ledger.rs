@@ -244,33 +244,33 @@ extern {
                                             cb: Option<ResponseStringCB>) -> Error;
 
     #[no_mangle]
-    pub fn indy_build_txn_author_agreement_request(command_handle: Handle,
+    pub fn indy_build_txn_author_agreement_request(command_handle: CommandHandle,
                                                    submitter_did: CString,
                                                    text: CString,
                                                    version: CString,
                                                    cb: Option<ResponseStringCB>) -> Error;
 
     #[no_mangle]
-    pub fn indy_build_get_txn_author_agreement_request(command_handle: Handle,
+    pub fn indy_build_get_txn_author_agreement_request(command_handle: CommandHandle,
                                                        submitter_did: CString,
                                                        data: CString,
                                                        cb: Option<ResponseStringCB>) -> Error;
 
     #[no_mangle]
-    pub fn indy_build_acceptance_mechanism_request(command_handle: Handle,
+    pub fn indy_build_acceptance_mechanism_request(command_handle: CommandHandle,
                                                    submitter_did: CString,
                                                    aml: CString,
                                                    aml_context: CString,
                                                    cb: Option<ResponseStringCB>) -> Error;
 
     #[no_mangle]
-    pub fn indy_build_get_acceptance_mechanism_request(command_handle: Handle,
+    pub fn indy_build_get_acceptance_mechanism_request(command_handle: CommandHandle,
                                                        submitter_did: CString,
                                                        timestamp: i64,
                                                        cb: Option<ResponseStringCB>) -> Error;
 
     #[no_mangle]
-    pub fn indy_append_txn_author_agreement_acceptance_to_request(command_handle: Handle,
+    pub fn indy_append_txn_author_agreement_acceptance_to_request(command_handle: CommandHandle,
                                                                   request_json: CString,
                                                                   text: CString,
                                                                   version: CString,

@@ -340,7 +340,7 @@ pub fn prepare_extra_with_acceptance_data(extra_json: Option<&str>,
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _prepare_extra_with_acceptance_data(command_handle: IndyHandle,
+fn _prepare_extra_with_acceptance_data(command_handle: CommandHandle,
                                        extra_json: Option<&str>,
                                        text: Option<&str>,
                                        version: Option<&str>,
