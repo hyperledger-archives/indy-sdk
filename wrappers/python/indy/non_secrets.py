@@ -547,9 +547,9 @@ async def get_cred_def(pool_handle: int, wallet_handle: int, submitter_did: str,
                  id,
                  options_json)
 
-    if not hasattr(get_schema, "cb"):
+    if not hasattr(get_cred_def, "cb"):
         logger.debug("get_cred_def: Creating callback")
-        get_schema.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+        get_cred_def.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
 
     c_pool_handle = c_int32(pool_handle)
     c_wallet_handle = c_int32(wallet_handle)
@@ -563,11 +563,12 @@ async def get_cred_def(pool_handle: int, wallet_handle: int, submitter_did: str,
                                   c_submitter_did,
                                   c_id,
                                   c_options_json,
-                                  get_schema.cb)
+                                  get_cred_def.cb)
     res = cred_def_json.decode()
 
     logger.debug("get_cred_def: <<< res: %r", res)
     return res
+
 
 async def purge_schema_cache(wallet_handle: int, options_json: str) -> None:
     """
@@ -629,7 +630,7 @@ async def purge_cred_def_cache(wallet_handle: int, options_json: str) -> None:
     res = await do_call('indy_purge_cred_def_cache',
                         c_wallet_handle,
                         c_options_json,
-                        purge_schema_cache.cb)
+                        purge_cred_def_cache.cb)
 
     logger.debug("purge_cred_def_cache: <<< res: %r", res)
     return res
