@@ -650,13 +650,17 @@ indy.closeWalletSearch = function closeWalletSearch (walletSearchHandle, cb) {
 }
 
 indy.getSchema = function getSchema (poolHandle, wh, submitterDid, id, options, cb) {
-  cb = wrapIndyCallback(cb)
+  cb = wrapIndyCallback(cb, function (data) {
+    return fromJson(data)
+  })
   capi.getSchema(poolHandle, wh, submitterDid, id, toJson(options), cb)
   return cb.promise
 }
 
 indy.getCredDef = function getCredDef (poolHandle, wh, submitterDid, id, options, cb) {
-  cb = wrapIndyCallback(cb)
+  cb = wrapIndyCallback(cb, function (data) {
+    return fromJson(data)
+  })
   capi.getCredDef(poolHandle, wh, submitterDid, id, toJson(options), cb)
   return cb.promise
 }

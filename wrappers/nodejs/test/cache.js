@@ -9,9 +9,15 @@ test('cache', async function (t) {
   var walletCredentials = { 'key': 'key' }
   await indy.createWallet(walletConfig, walletCredentials)
   var wh = await indy.openWallet(walletConfig, walletCredentials)
-  var [myDid] = await indy.createAndStoreMyDid(wh, { })
+  var [trusteeDid] = await indy.createAndStoreMyDid(wh, { seed: '000000000000000000000000Trustee1' })
+  var [myDid, myVerkey] = await indy.createAndStoreMyDid(wh, { })
   var schemaName = 'schema-' + cuid()
   var [schemaId, schema] = await indy.issuerCreateSchema(myDid, schemaName, '1.0', ['name', 'age'])
+
+  // Nym
+  var nreq = await indy.buildNymRequest(trusteeDid, myDid, myVerkey, null, 'TRUSTEE')
+  var nres = await indy.signAndSubmitRequest(pool.handle, wh, trusteeDid, nreq)
+  t.is(nres.result.txn.data.verkey, myVerkey)
 
   var defaultGetCacheOptions = {
     'noCache': false,
@@ -31,6 +37,7 @@ test('cache', async function (t) {
 
   var schemaRes = await indy.getSchema(pool.handle, wh, myDid, schemaId, defaultGetCacheOptions)
   t.is(schemaRes.name, schema.name)
+  schema = schemaRes
 
   await indy.purgeSchemaCache(wh, defaultPurgeCacheOptions)
 
