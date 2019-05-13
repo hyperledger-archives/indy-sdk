@@ -2343,6 +2343,27 @@ Parses response for Indy request for payment txn.
   }]
 ````
 
+#### preparePaymentExtraWithAcceptanceData \( extraJson, text, version, taaDigest, accMechType, timeOfAcceptance \) -&gt; request
+
+Append payment extra JSON with TAA acceptance data
+
+EXPERIMENTAL
+
+This function may calculate hash by itself or consume it as a parameter.
+If all text, version and taaDigest parameters are specified, a check integrity of them will be done.
+
+* `extraJson`: Json - \(Optional\) original extra json.
+* `text`: String - \(Optional\) raw data about TAA from ledger.
+* `version`: String - \(Optional\) raw data about TAA from ledger.
+     * `text` and `version` parameters should be passed together.
+     * `text` and `version` parameters are required if taaDigest parameter is omitted.
+* `taaDigest`: String - \(Optional\) hash on text and version. This parameter is required if text and version parameters are omitted.
+* `accMechType`: String - mechanism how user has accepted the TAA.
+* `timeOfAcceptance`: Timestamp (Number) - UTC timestamp when user has accepted the TAA.
+
+* __->__ `request`: Json
+
+Errors: `Common*`
 
 #### buildMintReq \( wh, submitterDid, outputs, extra \) -&gt; \[ mintReq, paymentMethod \]
 
