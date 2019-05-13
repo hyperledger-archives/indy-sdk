@@ -165,7 +165,7 @@ impl IssuerCredential {
         let payload = serde_json::to_string(&payload)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize payload: {}", err)))?;
 
-        debug!("credential offer data: {}", payload);
+        debug!("credential offer data: {}", secret!(&payload));
 
         let response =
             messages::send_message()
@@ -216,7 +216,7 @@ impl IssuerCredential {
                 .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidCredential, format!("Cannot serialize credential: {}", err)))?
         };
 
-        debug!("credential data: {}", data);
+        debug!("credential data: {}", secret!(&data));
 
         let cred_req_msg_id = self.credential_request
             .as_ref()
@@ -521,7 +521,7 @@ pub fn issuer_credential_create(cred_def_handle: u32,
                                 credential_data: String,
                                 price: u64) -> VcxResult<u32> {
     trace!("issuer_credential_create >>> cred_def_handle: {}, source_id: {}, issuer_did: {}, credential_name: {}, credential_data: {}, price: {}",
-           cred_def_handle, source_id, issuer_did, credential_name, credential_data, price);
+           cred_def_handle, source_id, issuer_did, credential_name, secret!(&credential_data), price);
 
     let cred_def_id = ::credential_def::get_cred_def_id(cred_def_handle)?;
     let rev_reg_id = ::credential_def::get_rev_reg_id(cred_def_handle)?;

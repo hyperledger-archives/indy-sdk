@@ -29,7 +29,7 @@ impl Schema {
     }
 
     pub fn issuer_did(schema_id: &str) -> Option<String> {
-        schema_id.split(":").collect::<Vec<&str>>().get(0).and_then(|s| Some(s.to_string()))
+        schema_id.split(':').collect::<Vec<&str>>().get(0).and_then(|s| Some(s.to_string()))
     }
 }
 

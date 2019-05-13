@@ -5,11 +5,11 @@ fn init() -> (i32, String, String) {
     io::stdin().read_line(&mut cmd).unwrap();
 
     let config = json!({ "id" : format!("{}-wallet", cmd) }).to_string();
-    Wallet::create(&config, USEFUL_CREDENTIALS).unwrap();
-    let wallet_handle: i32 = Wallet::open(&config, USEFUL_CREDENTIALS).unwrap();
+    wallet::create_wallet(&config, USEFUL_CREDENTIALS).wait().unwrap();
+    let wallet_handle: i32 = wallet::open_wallet(&config, USEFUL_CREDENTIALS).wait().unwrap();
 
-    let (did, verkey) = Did::new(wallet_handle, "{}").unwrap();
-    println!("DID and Verkey: {} {}", did, verkey);
+    let (did, verkey) = did::create_and_store_my_did(wallet_handle, "{}").wait().unwrap();
+    println!("My DID and Verkey: {} {}", did, verkey);
 
     println!("Other party's DID and Verkey? ");
     let mut other = String::new();
