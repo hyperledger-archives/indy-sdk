@@ -1,4 +1,4 @@
-use {ErrorCode, IndyHandle, IndyError};
+use {ErrorCode, IndyError};
 
 use std::ffi::CString;
 use std::ptr::null;
@@ -11,6 +11,7 @@ use ffi::{ResponseStringCB,
           ResponseStringStringU64CB};
 
 use utils::callbacks::{ClosureHandler, ResultHandler};
+use ffi::{WalletHandle, CommandHandle, PoolHandle};
 
 /// Signs and submits request message to validator pool.
 ///
@@ -26,7 +27,7 @@ use utils::callbacks::{ClosureHandler, ResultHandler};
 ///
 /// # Returns
 /// Request result as json.
-pub fn sign_and_submit_request(pool_handle: IndyHandle, wallet_handle: IndyHandle, submitter_did: &str, request_json: &str) -> Box<Future<Item=String, Error=IndyError>> {
+pub fn sign_and_submit_request(pool_handle: PoolHandle, wallet_handle: WalletHandle, submitter_did: &str, request_json: &str) -> Box<Future<Item=String, Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
     let err = _sign_and_submit_request(command_handle, pool_handle, wallet_handle, submitter_did, request_json, cb);
@@ -34,7 +35,7 @@ pub fn sign_and_submit_request(pool_handle: IndyHandle, wallet_handle: IndyHandl
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _sign_and_submit_request(command_handle: IndyHandle, pool_handle: IndyHandle, wallet_handle: IndyHandle, submitter_did: &str, request_json: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _sign_and_submit_request(command_handle: CommandHandle, pool_handle: PoolHandle, wallet_handle: WalletHandle, submitter_did: &str, request_json: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
     let submitter_did = c_str!(submitter_did);
     let request_json = c_str!(request_json);
 
@@ -58,7 +59,7 @@ fn _sign_and_submit_request(command_handle: IndyHandle, pool_handle: IndyHandle,
 ///
 /// # Returns
 /// Request result as json.
-pub fn submit_request(pool_handle: IndyHandle, request_json: &str) -> Box<Future<Item=String, Error=IndyError>> {
+pub fn submit_request(pool_handle: PoolHandle, request_json: &str) -> Box<Future<Item=String, Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
     let err = _submit_request(command_handle, pool_handle, request_json, cb);
@@ -66,13 +67,13 @@ pub fn submit_request(pool_handle: IndyHandle, request_json: &str) -> Box<Future
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _submit_request(command_handle: IndyHandle, pool_handle: IndyHandle, request_json: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _submit_request(command_handle: CommandHandle, pool_handle: PoolHandle, request_json: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
     let request_json = c_str!(request_json);
 
     ErrorCode::from(unsafe { ledger::indy_submit_request(command_handle, pool_handle, request_json.as_ptr(), cb) })
 }
 
-pub fn submit_action(pool_handle: IndyHandle, request_json: &str, nodes: Option<&str>, wait_timeout: Option<i32>) -> Box<Future<Item=String, Error=IndyError>> {
+pub fn submit_action(pool_handle: PoolHandle, request_json: &str, nodes: Option<&str>, wait_timeout: Option<i32>) -> Box<Future<Item=String, Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
     let err = _submit_action(command_handle, pool_handle, request_json, nodes, wait_timeout, cb);
@@ -80,7 +81,7 @@ pub fn submit_action(pool_handle: IndyHandle, request_json: &str, nodes: Option<
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _submit_action(command_handle: IndyHandle, pool_handle: IndyHandle, request_json: &str, nodes: Option<&str>, wait_timeout: Option<i32>, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _submit_action(command_handle: CommandHandle, pool_handle: PoolHandle, request_json: &str, nodes: Option<&str>, wait_timeout: Option<i32>, cb: Option<ResponseStringCB>) -> ErrorCode {
     let request_json = c_str!(request_json);
     let nodes_str = opt_c_str!(nodes);
 
@@ -101,7 +102,7 @@ fn _submit_action(command_handle: IndyHandle, pool_handle: IndyHandle, request_j
 ///
 /// # Returns
 /// Signed request json.
-pub fn sign_request(wallet_handle: IndyHandle, submitter_did: &str, request_json: &str) -> Box<Future<Item=String, Error=IndyError>> {
+pub fn sign_request(wallet_handle: WalletHandle, submitter_did: &str, request_json: &str) -> Box<Future<Item=String, Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
     let err = _sign_request(command_handle, wallet_handle, submitter_did, request_json, cb);
@@ -109,7 +110,7 @@ pub fn sign_request(wallet_handle: IndyHandle, submitter_did: &str, request_json
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _sign_request(command_handle: IndyHandle, wallet_handle: IndyHandle, submitter_did: &str, request_json: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _sign_request(command_handle: CommandHandle, wallet_handle: WalletHandle, submitter_did: &str, request_json: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
     let submitter_did = c_str!(submitter_did);
     let request_json = c_str!(request_json);
 
@@ -128,7 +129,7 @@ fn _sign_request(command_handle: IndyHandle, wallet_handle: IndyHandle, submitte
 ///
 /// # Returns
 /// Signed request json.
-pub fn multi_sign_request(wallet_handle: IndyHandle, submitter_did: &str, request_json: &str) -> Box<Future<Item=String, Error=IndyError>> {
+pub fn multi_sign_request(wallet_handle: WalletHandle, submitter_did: &str, request_json: &str) -> Box<Future<Item=String, Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
     let err = _multi_sign_request(command_handle, wallet_handle, submitter_did, request_json, cb);
@@ -136,7 +137,7 @@ pub fn multi_sign_request(wallet_handle: IndyHandle, submitter_did: &str, reques
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _multi_sign_request(command_handle: IndyHandle, wallet_handle: IndyHandle, submitter_did: &str, request_json: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _multi_sign_request(command_handle: CommandHandle, wallet_handle: WalletHandle, submitter_did: &str, request_json: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
     let submitter_did = c_str!(submitter_did);
     let request_json = c_str!(request_json);
 
@@ -159,7 +160,7 @@ pub fn build_get_ddo_request(submitter_did: Option<&str>, target_did: &str) -> B
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _build_get_ddo_request(command_handle: IndyHandle, submitter_did: Option<&str>, target_did: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _build_get_ddo_request(command_handle: CommandHandle, submitter_did: Option<&str>, target_did: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
     let submitter_did_str = opt_c_str!(submitter_did);
     let target_did = c_str!(target_did);
 
@@ -191,7 +192,7 @@ pub fn build_nym_request(submitter_did: &str, target_did: &str, verkey: Option<&
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _build_nym_request(command_handle: IndyHandle,
+fn _build_nym_request(command_handle: CommandHandle,
                       submitter_did: &str,
                       target_did: &str,
                       verkey: Option<&str>,
@@ -232,7 +233,7 @@ pub fn build_get_nym_request(submitter_did: Option<&str>, target_did: &str) -> B
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _build_get_nym_request(command_handle: IndyHandle, submitter_did: Option<&str>, target_did: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _build_get_nym_request(command_handle: CommandHandle, submitter_did: Option<&str>, target_did: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
     let submitter_did_str = opt_c_str!(submitter_did);
     let target_did = c_str!(target_did);
 
@@ -259,7 +260,7 @@ pub fn build_get_txn_request(submitter_did: Option<&str>, ledger_type: Option<&s
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _build_get_txn_request(command_handle: IndyHandle, submitter_did: Option<&str>, ledger_type: Option<&str>, seq_no: i32, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _build_get_txn_request(command_handle: CommandHandle, submitter_did: Option<&str>, ledger_type: Option<&str>, seq_no: i32, cb: Option<ResponseStringCB>) -> ErrorCode {
     let submitter_did_str = opt_c_str!(submitter_did);
     let ledger_type_str = opt_c_str!(ledger_type);
 
@@ -285,7 +286,7 @@ pub fn build_attrib_request(submitter_did: &str, target_did: &str, hash: Option<
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _build_attrib_request(command_handle: IndyHandle, submitter_did: &str, target_did: &str, hash: Option<&str>, raw: Option<&str>, enc: Option<&str>, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _build_attrib_request(command_handle: CommandHandle, submitter_did: &str, target_did: &str, hash: Option<&str>, raw: Option<&str>, enc: Option<&str>, cb: Option<ResponseStringCB>) -> ErrorCode {
     let submitter_did = c_str!(submitter_did);
     let target_did = c_str!(target_did);
 
@@ -323,7 +324,7 @@ pub fn build_get_attrib_request(submitter_did: Option<&str>, target_did: &str, r
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _build_get_attrib_request(command_handle: IndyHandle, submitter_did: Option<&str>, target_did: &str, raw: Option<&str>, hash: Option<&str>, enc: Option<&str>, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _build_get_attrib_request(command_handle: CommandHandle, submitter_did: Option<&str>, target_did: &str, raw: Option<&str>, hash: Option<&str>, enc: Option<&str>, cb: Option<ResponseStringCB>) -> ErrorCode {
     let submitter_did_str = opt_c_str!(submitter_did);
     let target_did = c_str!(target_did);
 
@@ -365,7 +366,7 @@ pub fn build_schema_request(submitter_did: &str, data: &str) -> Box<Future<Item=
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _build_schema_request(command_handle: IndyHandle, submitter_did: &str, data: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _build_schema_request(command_handle: CommandHandle, submitter_did: &str, data: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
     let submitter_did = c_str!(submitter_did);
     let data = c_str!(data);
 
@@ -388,7 +389,7 @@ pub fn build_get_schema_request(submitter_did: Option<&str>, id: &str) -> Box<Fu
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _build_get_schema_request(command_handle: IndyHandle, submitter_did: Option<&str>, id: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _build_get_schema_request(command_handle: CommandHandle, submitter_did: Option<&str>, id: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
     let submitter_did_str = opt_c_str!(submitter_did);
     let id = c_str!(id);
 
@@ -417,7 +418,7 @@ pub fn parse_get_schema_response(get_schema_response: &str) -> Box<Future<Item=(
     ResultHandler::str_str(command_handle, err, receiver)
 }
 
-fn _parse_get_schema_response(command_handle: IndyHandle, get_schema_response: &str, cb: Option<ResponseStringStringCB>) -> ErrorCode {
+fn _parse_get_schema_response(command_handle: CommandHandle, get_schema_response: &str, cb: Option<ResponseStringStringCB>) -> ErrorCode {
     let get_schema_response = c_str!(get_schema_response);
 
     ErrorCode::from(unsafe { ledger::indy_parse_get_schema_response(command_handle, get_schema_response.as_ptr(), cb) })
@@ -451,7 +452,7 @@ pub fn build_cred_def_request(submitter_did: &str, data: &str) -> Box<Future<Ite
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _build_cred_def_request(command_handle: IndyHandle, submitter_did: &str, data: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _build_cred_def_request(command_handle: CommandHandle, submitter_did: &str, data: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
     let submitter_did = c_str!(submitter_did);
     let data = c_str!(data);
 
@@ -475,7 +476,7 @@ pub fn build_get_cred_def_request(submitter_did: Option<&str>, id: &str) -> Box<
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _build_get_cred_def_request(command_handle: IndyHandle, submitter_did: Option<&str>, id: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _build_get_cred_def_request(command_handle: CommandHandle, submitter_did: Option<&str>, id: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
     let submitter_did_str = opt_c_str!(submitter_did);
     let id = c_str!(id);
 
@@ -508,7 +509,7 @@ pub fn parse_get_cred_def_response(get_cred_def_response: &str) -> Box<Future<It
     ResultHandler::str_str(command_handle, err, receiver)
 }
 
-fn _parse_get_cred_def_response(command_handle: IndyHandle, get_cred_def_response: &str, cb: Option<ResponseStringStringCB>) -> ErrorCode {
+fn _parse_get_cred_def_response(command_handle: CommandHandle, get_cred_def_response: &str, cb: Option<ResponseStringStringCB>) -> ErrorCode {
     let get_cred_def_response = c_str!(get_cred_def_response);
 
     ErrorCode::from(unsafe { ledger::indy_parse_get_cred_def_response(command_handle, get_cred_def_response.as_ptr(), cb) })
@@ -539,7 +540,7 @@ pub fn build_node_request(submitter_did: &str, target_did: &str, data: &str) -> 
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _build_node_request(command_handle: IndyHandle, submitter_did: &str, target_did: &str, data: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _build_node_request(command_handle: CommandHandle, submitter_did: &str, target_did: &str, data: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
     let submitter_did = c_str!(submitter_did);
     let target_did = c_str!(target_did);
     let data = c_str!(data);
@@ -562,7 +563,7 @@ pub fn build_get_validator_info_request(submitter_did: &str) -> Box<Future<Item=
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _build_get_validator_info_request(command_handle: IndyHandle, submitter_did: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _build_get_validator_info_request(command_handle: CommandHandle, submitter_did: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
     let submitter_did = c_str!(submitter_did);
 
     ErrorCode::from(unsafe {
@@ -589,7 +590,7 @@ pub fn build_pool_config_request(submitter_did: &str, writes: bool, force: bool)
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _build_pool_config_request(command_handle: IndyHandle, submitter_did: &str, writes: bool, force: bool, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _build_pool_config_request(command_handle: CommandHandle, submitter_did: &str, writes: bool, force: bool, cb: Option<ResponseStringCB>) -> ErrorCode {
     let submitter_did = c_str!(submitter_did);
 
     ErrorCode::from(unsafe { ledger::indy_build_pool_config_request(command_handle, submitter_did.as_ptr(), writes, force, cb) })
@@ -612,7 +613,7 @@ pub fn build_pool_restart_request(submitter_did: &str, action: &str, datetime: O
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _build_pool_restart_request(command_handle: IndyHandle, submitter_did: &str, action: &str, datetime: Option<&str>, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _build_pool_restart_request(command_handle: CommandHandle, submitter_did: &str, action: &str, datetime: Option<&str>, cb: Option<ResponseStringCB>) -> ErrorCode {
     let submitter_did = c_str!(submitter_did);
     let action = c_str!(action);
     let datetime_str = opt_c_str!(datetime);
@@ -663,7 +664,7 @@ pub fn build_pool_upgrade_request(submitter_did: &str,
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _build_pool_upgrade_request(command_handle: IndyHandle,
+fn _build_pool_upgrade_request(command_handle: CommandHandle,
                                submitter_did: &str,
                                name: &str,
                                version: &str,
@@ -735,7 +736,7 @@ pub fn build_revoc_reg_def_request(submitter_did: &str, data: &str) -> Box<Futur
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _build_revoc_reg_def_request(command_handle: IndyHandle, submitter_did: &str, data: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _build_revoc_reg_def_request(command_handle: CommandHandle, submitter_did: &str, data: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
     let submitter_did = c_str!(submitter_did);
     let data = c_str!(data);
 
@@ -759,7 +760,7 @@ pub fn build_get_revoc_reg_def_request(submitter_did: Option<&str>, id: &str) ->
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _build_get_revoc_reg_def_request(command_handle: IndyHandle, submitter_did: Option<&str>, id: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _build_get_revoc_reg_def_request(command_handle: CommandHandle, submitter_did: Option<&str>, id: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
     let submitter_did_str = opt_c_str!(submitter_did);
     let id = c_str!(id);
 
@@ -796,7 +797,7 @@ pub fn parse_get_revoc_reg_def_response(get_revoc_reg_def_response: &str) -> Box
     ResultHandler::str_str(command_handle, err, receiver)
 }
 
-fn _parse_get_revoc_reg_def_response(command_handle: IndyHandle, get_revoc_reg_def_response: &str, cb: Option<ResponseStringStringCB>) -> ErrorCode {
+fn _parse_get_revoc_reg_def_response(command_handle: CommandHandle, get_revoc_reg_def_response: &str, cb: Option<ResponseStringStringCB>) -> ErrorCode {
     let get_revoc_reg_def_response = c_str!(get_revoc_reg_def_response);
 
     ErrorCode::from(unsafe { ledger::indy_parse_get_revoc_reg_def_response(command_handle, get_revoc_reg_def_response.as_ptr(), cb) })
@@ -832,7 +833,7 @@ pub fn build_revoc_reg_entry_request(submitter_did: &str, revoc_reg_def_id: &str
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _build_revoc_reg_entry_request(command_handle: IndyHandle, submitter_did: &str, revoc_reg_def_id: &str, rev_def_type: &str, value: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _build_revoc_reg_entry_request(command_handle: CommandHandle, submitter_did: &str, revoc_reg_def_id: &str, rev_def_type: &str, value: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
     let submitter_did = c_str!(submitter_did);
     let revoc_reg_def_id = c_str!(revoc_reg_def_id);
     let rev_def_type = c_str!(rev_def_type);
@@ -859,7 +860,7 @@ pub fn build_get_revoc_reg_request(submitter_did: Option<&str>, revoc_reg_def_id
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _build_get_revoc_reg_request(command_handle: IndyHandle, submitter_did: Option<&str>, revoc_reg_def_id: &str, timestamp: i64, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _build_get_revoc_reg_request(command_handle: CommandHandle, submitter_did: Option<&str>, revoc_reg_def_id: &str, timestamp: i64, cb: Option<ResponseStringCB>) -> ErrorCode {
     let submitter_did_str = opt_c_str!(submitter_did);
     let revoc_reg_def_id = c_str!(revoc_reg_def_id);
 
@@ -887,7 +888,7 @@ pub fn parse_get_revoc_reg_response(get_revoc_reg_response: &str) -> Box<Future<
     ResultHandler::str_str_u64(command_handle, err, receiver)
 }
 
-fn _parse_get_revoc_reg_response(command_handle: IndyHandle, get_revoc_reg_response: &str, cb: Option<ResponseStringStringU64CB>) -> ErrorCode {
+fn _parse_get_revoc_reg_response(command_handle: CommandHandle, get_revoc_reg_response: &str, cb: Option<ResponseStringStringU64CB>) -> ErrorCode {
     let get_revoc_reg_response = c_str!(get_revoc_reg_response);
 
     ErrorCode::from(unsafe { ledger::indy_parse_get_revoc_reg_response(command_handle, get_revoc_reg_response.as_ptr(), cb) })
@@ -913,7 +914,7 @@ pub fn build_get_revoc_reg_delta_request(submitter_did: Option<&str>, revoc_reg_
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _build_get_revoc_reg_delta_request(command_handle: IndyHandle, submitter_did: Option<&str>, revoc_reg_def_id: &str, from: i64, to: i64, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _build_get_revoc_reg_delta_request(command_handle: CommandHandle, submitter_did: Option<&str>, revoc_reg_def_id: &str, from: i64, to: i64, cb: Option<ResponseStringCB>) -> ErrorCode {
     let submitter_did_str = opt_c_str!(submitter_did);
     let revoc_reg_def_id = c_str!(revoc_reg_def_id);
 
@@ -944,7 +945,7 @@ pub fn parse_get_revoc_reg_delta_response(get_revoc_reg_delta_response: &str) ->
     ResultHandler::str_str_u64(command_handle, err, receiver)
 }
 
-fn _parse_get_revoc_reg_delta_response(command_handle: IndyHandle, get_revoc_reg_delta_response: &str, cb: Option<ResponseStringStringU64CB>) -> ErrorCode {
+fn _parse_get_revoc_reg_delta_response(command_handle: CommandHandle, get_revoc_reg_delta_response: &str, cb: Option<ResponseStringStringU64CB>) -> ErrorCode {
     let get_revoc_reg_delta_response = c_str!(get_revoc_reg_delta_response);
 
     ErrorCode::from(unsafe { ledger::indy_parse_get_revoc_reg_delta_response(command_handle, get_revoc_reg_delta_response.as_ptr(), cb) })
@@ -988,7 +989,7 @@ pub fn get_response_metadata(response: &str) -> Box<Future<Item=String, Error=In
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _get_response_metadata(command_handle: IndyHandle, response: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _get_response_metadata(command_handle: CommandHandle, response: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
     let response = c_str!(response);
 
     ErrorCode::from(unsafe { ledger::indy_get_response_metadata(command_handle, response.as_ptr(), cb) })
@@ -1029,7 +1030,7 @@ pub fn build_auth_rule_request(submitter_did: &str, txn_type: &str, action: &str
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _build_auth_rule_request(command_handle: IndyHandle,
+fn _build_auth_rule_request(command_handle: CommandHandle,
                             submitter_did: &str,
                             txn_type: &str,
                             action: &str,
@@ -1084,7 +1085,7 @@ pub fn build_get_auth_rule_request(submitter_did: Option<&str>, txn_type: Option
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _build_get_auth_rule_request(command_handle: IndyHandle,
+fn _build_get_auth_rule_request(command_handle: CommandHandle,
                                 submitter_did: Option<&str>,
                                 txn_type: Option<&str>,
                                 action: Option<&str>,
@@ -1130,7 +1131,7 @@ pub fn build_txn_author_agreement_request(submitter_did: &str, text: &str, versi
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _build_txn_author_agreement_request(command_handle: IndyHandle,
+fn _build_txn_author_agreement_request(command_handle: CommandHandle,
                                        submitter_did: &str,
                                        text: &str,
                                        version: &str,
@@ -1171,7 +1172,7 @@ pub fn build_get_txn_author_agreement_request(submitter_did: Option<&str>, data:
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _build_get_txn_author_agreement_request(command_handle: IndyHandle,
+fn _build_get_txn_author_agreement_request(command_handle: CommandHandle,
                                            submitter_did: Option<&str>,
                                            data: Option<&str>,
                                            cb: Option<ResponseStringCB>) -> ErrorCode {
@@ -1209,7 +1210,7 @@ pub fn build_acceptance_mechanism_request(submitter_did: &str, aml: &str, aml_co
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _build_acceptance_mechanism_request(command_handle: IndyHandle,
+fn _build_acceptance_mechanism_request(command_handle: CommandHandle,
                                        submitter_did: &str,
                                        aml: &str,
                                        aml_context: Option<&str>,
@@ -1244,7 +1245,7 @@ pub fn build_get_acceptance_mechanism_request(submitter_did: Option<&str>, times
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _build_get_acceptance_mechanism_request(command_handle: IndyHandle,
+fn _build_get_acceptance_mechanism_request(command_handle: CommandHandle,
                                            submitter_did: Option<&str>,
                                            timestamp: Option<i64>,
                                            cb: Option<ResponseStringCB>) -> ErrorCode {
@@ -1290,7 +1291,7 @@ pub fn append_txn_author_agreement_acceptance_to_request(request_json: &str,
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _append_txn_author_agreement_acceptance_to_request(command_handle: IndyHandle,
+fn _append_txn_author_agreement_acceptance_to_request(command_handle: CommandHandle,
                                                       request_json: &str,
                                                       text: Option<&str>,
                                                       version: Option<&str>,
