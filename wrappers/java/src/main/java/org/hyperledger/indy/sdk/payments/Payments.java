@@ -396,6 +396,54 @@ public class Payments extends IndyJava.API {
     }
 
     /**
+     * Append payment extra JSON with TAA acceptance data
+     *
+     * EXPERIMENTAL
+     *
+     * This function may calculate digest by itself or consume it as a parameter.
+     * If all text, version and taa_digest parameters are specified, a check integrity of them will be done.
+     *
+     * @param extraJson - (Optional) original extra json.
+     * @param text - (Optional) raw data about TAA from ledger.
+     * @param version - (Optional) raw version about TAA from ledger.
+     *     `text` and `version` parameters should be passed together.
+     *     `text` and `version` parameters are required if taaDigest parameter is omitted.
+     * @param taaDigest - (Optional) digest on text and version. This parameter is required if text and version parameters are omitted.
+     * @param mechanism - mechanism how user has accepted the TAA
+     * @param time - UTC timestamp when user has accepted the TAA
+     *
+     * @return A future resolving to an updated extra result as json.
+     * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+     */
+    public static CompletableFuture<String> preparePaymentExtraWithAcceptanceData(
+            String extraJson,
+            String text,
+            String version,
+            String taaDigest,
+            String mechanism,
+            long time) throws IndyException {
+
+        ParamGuard.notNull(mechanism, "mechanism");
+
+        CompletableFuture<String> future = new CompletableFuture<String>();
+        int commandHandle = addFuture(future);
+
+        int result = LibIndy.api.indy_prepare_payment_extra_with_acceptance_data(
+                commandHandle,
+                extraJson,
+                text,
+                version,
+                taaDigest,
+                mechanism,
+                time,
+                stringCompleteCb);
+
+        checkResult(future, result);
+
+        return future;
+    }
+
+    /**
      * Builds Indy request for doing minting
      * according to this payment method.
      *
