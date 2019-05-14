@@ -181,6 +181,33 @@
                   completion:(void (^)(NSError *error, NSString *receiptsJson))completion;
 
 /**
+ Append payment extra JSON with TAA acceptance data
+
+ EXPERIMENTAL
+
+ This function may calculate hash by itself or consume it as a parameter.
+ If all text, version and taaDigest parameters are specified, a check integrity of them will be done.
+
+ @param extraJson original extra json.
+ @param text (Optional) raw data about TAA from ledger.
+ @param version (Optional) version of TAA from ledger.
+     text and version should be passed together.
+     text and version are required if taaDigest parameter is omitted.
+ @param taaDigest (Optional) hash on text and version. This parameter is required if text and version parameters are omitted.
+ @param accMechType mechanism how user has accepted the TAA
+ @param timeOfAcceptance UTC timestamp when user has accepted the TAA
+
+ Returns Updated request result as json.
+ */
++ (void)preparePaymentExtraWithAcceptanceData:(NSString *)extraJson
+                                         text:(NSString *)text
+                                      version:(NSString *)version
+                                    taaDigest:(NSString *)taaDigest
+                                  accMechType:(NSString *)accMechType
+                             timeOfAcceptance:(NSNumber *)timeOfAcceptance
+                                   completion:(void (^)(NSError *error, NSString *extraWithAcceptance))completion;
+
+/**
  Builds Indy request for doing minting according to this payment method.
 
  @param requestJson Request data json.

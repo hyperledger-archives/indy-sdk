@@ -190,6 +190,35 @@
     }
 }
 
++ (void)preparePaymentExtraWithAcceptanceData:(NSString *)extraJson
+                                         text:(NSString *)text
+                                      version:(NSString *)version
+                                    taaDigest:(NSString *)taaDigest
+                                  accMechType:(NSString *)accMechType
+                             timeOfAcceptance:(NSNumber *)timeOfAcceptance
+                                   completion:(void (^)(NSError *error, NSString *extraWithAcceptance))completion {
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = indy_prepare_payment_extra_with_acceptance_data(handle,
+            [extraJson UTF8String],
+            [text UTF8String],
+            [version UTF8String],
+            [taaDigest UTF8String],
+            [accMechType UTF8String],
+            [timeOfAcceptance unsignedLongLongValue],
+            IndyWrapperCommonStringCallback);
+
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret], nil);
+        });
+    }
+}
+
 + (void)buildMintRequest:(IndyHandle)walletHandle
             submitterDid:(NSString *)submitterDid
              outputsJson:(NSString *)outputsJson
