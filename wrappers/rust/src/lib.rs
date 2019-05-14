@@ -37,10 +37,7 @@ use std::fmt;
 use std::ptr;
 use std::ffi::CStr;
 
-pub type IndyHandle = i32;
-
 use failure::{Backtrace, Fail};
-
 
 /// Set libindy runtime configuration. Can be optionally called to change current params.
 ///
