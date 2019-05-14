@@ -1,5 +1,5 @@
 extern crate digest;
-extern crate indy_crypto;
+extern crate ursa;
 extern crate sha2;
 
 use std::cell::RefCell;

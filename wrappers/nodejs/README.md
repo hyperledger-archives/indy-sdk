@@ -1760,7 +1760,7 @@ Builds a AUTH_RULE request. Request to change authentication rules for a ledger 
 * `field`: String - transaction field.
 * `oldValue`: String - \(Optional\) old value of a field, which can be changed to a new_value (mandatory for EDIT action).
 * `newValue`: String - \(Optional\) new value that can be used to fill the field. 
-* `constraint`: String - set of constraints required for execution of an action in the following format:
+* `constraint`: Json - set of constraints required for execution of an action in the following format:
 ```
  {
      constraint_id - <string> type of a constraint.
@@ -1800,6 +1800,106 @@ NOTE: Either none or all transaction related parameters must be specified (`oldV
 * `field`: String - target transaction field.
 * `oldValue`: String - \(Optional\) old value of field, which can be changed to a new_value (mandatory for EDIT action).
 * `newValue`: String - \(Optional\) new value that can be used to fill the field. 
+
+* __->__ `request`: Json
+
+Errors: `Common*`
+
+#### buildTxnAuthorAgreementRequest \( submitterDid, text, version \) -&gt; request
+
+Builds a TXN_AUTHR_AGRMT request. 
+Request to add a new version of Transaction Author Agreement to the ledger.
+
+EXPERIMENTAL
+
+* `submitterDid`: String - DID of the request sender.
+* `text`: String - a content of the TTA.
+* `version`: String - a version of the TTA (unique UTF-8 string).
+
+* __->__ `request`: Json
+
+Errors: `Common*`
+
+
+#### buildGetTxnAuthorAgreementRequest \( submitterDid, data \) -&gt; request
+
+Builds a GET_TXN_AUTHR_AGRMT request. 
+Request to get a specific Transaction Author Agreement from the ledger.
+
+EXPERIMENTAL
+
+* `submitterDid`: String - \(Optional\) DID of the read request sender \(if not provided then default Libindy DID will be used\).
+* `data`: Json - \(Optional\) specifies a condition for getting specific TAA.
+Contains 3 mutually exclusive optional fields:
+```
+{
+   hash: Optional<str> - hash of requested TAA,
+   version: Optional<str> - version of requested TAA.
+   timestamp: Optional<u64> - ledger will return TAA valid at requested timestamp.
+}
+```
+Null data or empty JSON are acceptable here. In this case, ledger will return the latest version of TAA.
+
+* __->__ `request`: Json
+
+Errors: `Common*`
+
+#### buildAcceptanceMechanismRequest \( submitterDid, aml, amlContext \) -&gt; request
+
+Builds a SET_TXN_AUTHR_AGRMT_AML request. 
+Request to add a new acceptance mechanism for transaction author agreement.
+Acceptance Mechanism is a description of the ways how the user may accept a transaction author agreement.
+
+EXPERIMENTAL
+
+* `submitterDid`: String - DID of the request sender.
+* `aml`: Json - a set of new acceptance mechanisms:
+```
+{
+  “<acceptance mechanism label 1>”: { acceptance mechanism description 1},
+  “<acceptance mechanism label 2>”: { acceptance mechanism description 2},
+  ...
+}
+```
+* `amlContext`: String - \(Optional\) common context information about acceptance mechanisms (may be a URL to external resource).
+
+* __->__ `request`: Json
+
+Errors: `Common*`
+
+#### buildGetAcceptanceMechanismRequest \( submitterDid, timestamp \) -&gt; request
+
+Builds a GET_TXN_AUTHR_AGRMT_AML request. 
+Request to get acceptance mechanisms from the ledger valid for specified time or the latest one.
+
+EXPERIMENTAL
+
+* `submitterDid`: String - \(Optional\) DID of the read request sender \(if not provided then default Libindy DID will be used\).
+* `timestamp`: Timestamp (Number) - \(Optional\) time to get an active acceptance mechanisms. The latest one will be returned for null.
+
+* __->__ `request`: Json
+
+Errors: `Common*`
+
+#### appendTxnAuthorAgreementAcceptanceToRequest \( requestJson, text, version, taaDigest, accMechType, timeOfAcceptance \) -&gt; request
+
+Append transaction author agreement acceptance data to a request.
+This function should be called before signing and sending a request
+if there is any transaction author agreement set on the Ledger.
+
+EXPERIMENTAL
+
+This function may calculate hash by itself or consume it as a parameter.
+If all text, version and taaDigest parameters are specified, a check integrity of them will be done.
+
+* `requestJson`: Json - original request data json.
+* `text`: String - \(Optional\) raw data about TAA from ledger.
+* `version`: String - \(Optional\) raw data about TAA from ledger.
+     * `text` and `version` parameters should be passed together.
+     * `text` and `version` parameters are required if taaDigest parameter is omitted.
+* `taaDigest`: String - \(Optional\) hash on text and version. This parameter is required if text and version parameters are omitted.
+* `accMechType`: String - mechanism how user has accepted the TAA.
+* `timeOfAcceptance`: Timestamp (Number) - UTC timestamp when user has accepted the TAA.
 
 * __->__ `request`: Json
 
@@ -2243,6 +2343,27 @@ Parses response for Indy request for payment txn.
   }]
 ````
 
+#### preparePaymentExtraWithAcceptanceData \( extraJson, text, version, taaDigest, accMechType, timeOfAcceptance \) -&gt; request
+
+Append payment extra JSON with TAA acceptance data
+
+EXPERIMENTAL
+
+This function may calculate hash by itself or consume it as a parameter.
+If all text, version and taaDigest parameters are specified, a check integrity of them will be done.
+
+* `extraJson`: Json - \(Optional\) original extra json.
+* `text`: String - \(Optional\) raw data about TAA from ledger.
+* `version`: String - \(Optional\) raw data about TAA from ledger.
+     * `text` and `version` parameters should be passed together.
+     * `text` and `version` parameters are required if taaDigest parameter is omitted.
+* `taaDigest`: String - \(Optional\) hash on text and version. This parameter is required if text and version parameters are omitted.
+* `accMechType`: String - mechanism how user has accepted the TAA.
+* `timeOfAcceptance`: Timestamp (Number) - UTC timestamp when user has accepted the TAA.
+
+* __->__ `request`: Json
+
+Errors: `Common*`
 
 #### buildMintReq \( wh, submitterDid, outputs, extra \) -&gt; \[ mintReq, paymentMethod \]
 

@@ -651,9 +651,23 @@ pub extern fn indy_pack_message(
     trace!("indy_pack_message: entities >>> wallet_handle: {:?}, message: {:?}, message_len {:?},\
             receiver_keys: {:?}, sender: {:?}", wallet_handle, message, message_len, receiver_keys, sender);
 
+    //parse json array of keys
+    let receiver_list = match serde_json::from_str::<Vec<String>>(&receiver_keys) {
+        Ok(x) => x,
+        Err(_) => {
+            return ErrorCode::CommonInvalidParam4;
+        },
+    };
+
+    //break early and error out if no receivers keys are provided
+    if receiver_list.is_empty() {
+        return ErrorCode::CommonInvalidParam4;
+    }
+
+
     let result = CommandExecutor::instance().send(Command::Crypto(CryptoCommand::PackMessage(
         message,
-        receiver_keys,
+        receiver_list,
         sender,
         wallet_handle,
         Box::new(move |result| {
