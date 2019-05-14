@@ -763,6 +763,12 @@ indy.parsePaymentResponse = function parsePaymentResponse (paymentMethod, resp, 
   return cb.promise
 }
 
+indy.preparePaymentExtraWithAcceptanceData = function preparePaymentExtraWithAcceptanceData (extra, text, version, taaDigest, accMechType, timeOfAcceptance, cb) {
+  cb = wrapIndyCallback(cb, fromJson)
+  capi.preparePaymentExtraWithAcceptanceData(toJson(extra), text, version, taaDigest, accMechType, timeOfAcceptance, cb)
+  return cb.promise
+}
+
 indy.buildMintReq = function buildMintReq (wh, submitterDid, outputs, extra, cb) {
   cb = wrapIndyCallback(cb, function (data) {
     return [fromJson(data[0]), data[1]]
