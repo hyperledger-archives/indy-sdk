@@ -423,8 +423,8 @@ pub fn mint_tokens_and_set_fees(number_of_addresses: Option<u32>, tokens_per_add
         };
     }
 
-    if fees.is_some() {
-        let txn = payments::build_set_txn_fees_req(get_wallet_handle() as i32, Some(&did_1), settings::get_payment_method().as_str(), fees.unwrap())
+    if let Some(fees_) = fees {
+        let txn = payments::build_set_txn_fees_req(get_wallet_handle() as i32, Some(&did_1), settings::get_payment_method().as_str(), fees_)
             .wait()
             .map_err(map_rust_indy_sdk_error)?;
 
@@ -434,6 +434,14 @@ pub fn mint_tokens_and_set_fees(number_of_addresses: Option<u32>, tokens_per_add
         let sign4 = ::utils::libindy::ledger::multisign_request(&did_4, &sign3).unwrap();
 
         ::utils::libindy::ledger::libindy_submit_request(&sign4).unwrap();
+
+        let txn_fees: HashMap<String, String> =
+            ::serde_json::from_str::<HashMap<String, u64>>(fees_).unwrap()
+                .iter_mut()
+                .map(|(k, _v)| (k.to_string(), k.to_string()))
+                .collect();
+
+        auth_rule_fee::set_auth_rules_fee(&did_1, &json!(txn_fees).to_string());
     }
 
     Ok(())
@@ -451,6 +459,115 @@ fn add_new_trustee_did() -> (String, String) {
 
     ::utils::libindy::ledger::libindy_sign_and_submit_request(&institution_did, &req_nym).unwrap();
     (did, verkey)
+}
+
+mod auth_rule_fee {
+    use std::sync::{Once, ONCE_INIT};
+    use std::sync::Mutex;
+    use std::collections::HashMap;
+    use std::collections::hash_map::Entry;
+
+    use indy::future::Future;
+
+    lazy_static! {
+        static ref AUTH_RULES: Mutex<HashMap<String, Vec<AuthRule>>> = Default::default();
+    }
+
+    #[derive(Debug)]
+    struct AuthRule {
+        action: String,
+        txn_type: String,
+        field: String,
+        old_value: Option<String>,
+        new_value: Option<String>,
+        constraint: ::serde_json::Value
+    }
+
+    // Helper to set fee alias for auth rules
+    pub fn set_auth_rules_fee(submitter_did: &str, rules_fee: &str) {
+        get_ledger_default_auth_rules();
+
+        let auth_rules = AUTH_RULES.lock().unwrap();
+
+        let fees: HashMap<String, String> = ::serde_json::from_str(rules_fee).unwrap();
+
+        for (txn_, fee_alias) in fees {
+            let rules = auth_rules.get(&txn_).unwrap();
+
+            for auth_rule in rules {
+                let mut constraint = auth_rule.constraint.clone();
+                set_constraint_fee(&mut constraint, &fee_alias);
+                send_auth_rule(submitter_did, auth_rule, &constraint);
+            }
+        }
+    }
+
+    fn send_auth_rule(submitter_did: &str, auth_rule: &AuthRule, constraint: &serde_json::Value) {
+        let auth_rule_request = ::indy::ledger::build_auth_rule_request(submitter_did,
+                                                                        &auth_rule.txn_type,
+                                                                        &auth_rule.action,
+                                                                        &auth_rule.field,
+                                                                        auth_rule.old_value.as_ref().map(String::as_str),
+                                                                        auth_rule.new_value.as_ref().map(String::as_str),
+                                                                        &constraint.to_string(),
+        ).wait().unwrap();
+        let auth_rule_response = ::utils::libindy::ledger::libindy_sign_and_submit_request( submitter_did, &auth_rule_request).unwrap();
+        let response: serde_json::Value = ::serde_json::from_str(&auth_rule_response).unwrap();
+        assert_eq!(response["op"].as_str().unwrap(), "REPLY");
+    }
+
+    fn get_ledger_default_auth_rules() {
+        lazy_static! {
+            static ref GET_DEFAULT_AUTH_CONSTRAINTS: Once = ONCE_INIT;
+
+        }
+
+        GET_DEFAULT_AUTH_CONSTRAINTS.call_once(|| {
+            let get_auth_rule_request = ::indy::ledger::build_get_auth_rule_request(None, None, None, None, None, None).wait().unwrap();
+            let get_auth_rule_response = ::utils::libindy::ledger::libindy_submit_request(&get_auth_rule_request).unwrap();
+            let mut get_auth_rule_response: serde_json::Value = ::serde_json::from_str(&get_auth_rule_response).unwrap();
+
+            let constraints = get_auth_rule_response["result"]["data"].as_object_mut().unwrap();
+
+            for (constraint_id, constraint) in constraints.iter_mut() {
+                let parts: Vec<&str> = constraint_id.split("--").collect();
+
+                let txn_type = parts[0].to_string();
+                let action = parts[1].to_string();
+                let field = parts[2].to_string();
+                let old_value = if action == "ADD" { None } else { Some(parts[3].to_string()) };
+                let new_value = if parts[4] == "" { None } else { Some(parts[4].to_string()) };
+
+                let mut map = AUTH_RULES.lock().unwrap();
+
+                let rule = AuthRule { action, txn_type: txn_type.clone(), field, old_value, new_value, constraint: constraint.clone() };
+
+                match map.entry(txn_type) {
+                    Entry::Occupied(rules) => {
+                        let &mut ref mut rules = rules.into_mut();
+                        rules.push(rule);
+                    }
+                    Entry::Vacant(rules) => {
+                        rules.insert(vec![rule]);
+                    }
+                };
+            }
+        })
+    }
+
+    fn set_constraint_fee(constraint: &mut serde_json::Value, fee_alias: &str) {
+        match constraint["constraint_id"].as_str().unwrap() {
+            "ROLE" => {
+                constraint["metadata"]["fees"] = json!(fee_alias);
+            }
+            "OR" | "AND" => {
+                for mut constraint in constraint["auth_constraints"].as_array_mut().unwrap() {
+                    set_constraint_fee(&mut constraint, fee_alias)
+                }
+            }
+            _ => { panic!() }
+        }
+    }
 }
 
 #[cfg(test)]
