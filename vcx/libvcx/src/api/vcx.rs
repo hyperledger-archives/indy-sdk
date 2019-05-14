@@ -882,6 +882,8 @@ mod tests {
 
     #[test]
     fn get_current_error_works_for_no_error() {
+        ::error::reset_current_error();
+
         let mut error_json_p: *const c_char = ptr::null();
 
         vcx_get_current_error(&mut error_json_p);
