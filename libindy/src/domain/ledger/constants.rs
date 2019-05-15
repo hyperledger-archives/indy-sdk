@@ -63,6 +63,6 @@ pub fn txn_name_to_code(txn: &str) -> Option<&str> {
         "GET_VALIDATOR_INFO" => Some(GET_VALIDATOR_INFO),
         "AUTH_RULE" => Some(AUTH_RULE),
         "GET_DDO" => Some(GET_DDO),
-        _ => None
+        val => Some(val)
     }
 }
