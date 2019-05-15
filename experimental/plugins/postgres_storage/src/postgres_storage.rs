@@ -1092,7 +1092,7 @@ impl WalletStorageType for PostgresStorageType {
             Ok(manager) => manager,
             Err(_) => return Err(WalletStorageError::NotFound)
         };
-        let pool = match r2d2::Pool::builder().min_idle(Some(0)).max_size(2).idle_timeout(Some(Duration::new(5, 0))).build(manager) {
+        let pool = match r2d2::Pool::builder().min_idle(Some(0)).max_size(5).idle_timeout(Some(Duration::new(5, 0))).build(manager) {
             Ok(pool) => pool,
             Err(_) => return Err(WalletStorageError::NotFound)
         };
