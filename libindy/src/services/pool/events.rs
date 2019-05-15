@@ -6,8 +6,10 @@ use errors::prelude::*;
 use services::ledger::merkletree::merkletree::MerkleTree;
 use services::pool::{PoolService, types::*};
 
-pub const REQUESTS_FOR_STATE_PROOFS: [&str; 8] = [
+pub const REQUESTS_FOR_STATE_PROOFS: [&str; 10] = [
     constants::GET_NYM,
+    constants::GET_TXN_AUTHR_AGRMT,
+    constants::GET_TXN_AUTHR_AGRMT_AML,
     constants::GET_SCHEMA,
     constants::GET_CRED_DEF,
     constants::GET_ATTR,

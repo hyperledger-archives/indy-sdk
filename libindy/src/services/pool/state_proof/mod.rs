@@ -19,6 +19,7 @@ use api::ErrorCode;
 use domain::ledger::{constants, request::ProtocolVersion};
 use errors::prelude::*;
 use services::pool::events::REQUESTS_FOR_STATE_PROOFS;
+use utils::crypto::hash::hash as openssl_hash;
 
 use super::PoolService;
 use super::types::*;
@@ -214,6 +215,23 @@ pub fn parse_key_from_request_for_builtin_sp(json_msg: &SJsonValue) -> Option<Ve
             }
         }
         */
+        constants::GET_TXN_AUTHR_AGRMT => {
+            match (json_msg["version"].as_str(), json_msg["digest"].as_str(), json_msg["timestamp"].as_str()) {
+                (None, None, None) => ":taa:latest".to_owned(),
+                (None, None, Some(_ts)) => {
+                    // TODO validation should check freshness on receiving entities for some moment in the history
+                    // So key should be ":taa:latest" but validation should check freshness appropriately
+                    debug!("parse_key_from_request_for_builtin_sp: <<< GET_TXN_AUTHR_AGRMT Trying to request TAA for timestamp, skip StateProof logic");
+                    return None;
+                },
+                (None, Some(digest), None) => format!(":taa:d:{}", digest),
+                (Some(version), None, None) => format!(":taa:v:{}", version),
+                _ => {
+                    error!("parse_key_from_request_for_builtin_sp: <<< GET_TXN_AUTHR_AGRMT Unexpected combination of request parameters, skip StateProof logic");
+                    return None;
+                }
+            }
+        }
         _ => {
             trace!("TransactionHandler::parse_reply_for_builtin_sp: <<< Unsupported transaction");
             return None;
@@ -232,7 +250,7 @@ pub fn parse_key_from_request_for_builtin_sp(json_msg: &SJsonValue) -> Option<Ve
                 return None;
             }
         }
-        constants::GET_REVOC_REG | constants::GET_REVOC_REG_DELTA => {
+        constants::GET_REVOC_REG | constants::GET_REVOC_REG_DELTA | constants::GET_TXN_AUTHR_AGRMT | constants::GET_TXN_AUTHR_AGRMT_AML => {
             Vec::new()
         }
         constants::GET_REVOC_REG_DEF => {
@@ -311,7 +329,7 @@ fn _parse_reply_for_builtin_sp(json_msg: &SJsonValue, type_: &str, key: &[u8]) -
 
     trace!("TransactionHandler::parse_reply_for_builtin_sp: data: {:?}, parsed_data: {:?}", data, parsed_data);
 
-    let value: Option<String> = match _parse_reply_for_proof_value(json_msg, data, parsed_data, type_) {
+    let value: Option<String> = match _parse_reply_for_proof_value(json_msg, data, parsed_data, type_, key) {
         Ok(value) => value,
         Err(err_str) => {
             debug!("TransactionHandler::parse_reply_for_builtin_sp: <<< {}", err_str);
@@ -418,7 +436,7 @@ fn _verify_proof_signature(signature: &str,
     Ok(res)
 }
 
-fn _parse_reply_for_proof_value(json_msg: &SJsonValue, data: Option<String>, parsed_data: SJsonValue, xtype: &str) -> Result<Option<String>, String> {
+fn _parse_reply_for_proof_value(json_msg: &SJsonValue, data: Option<String>, parsed_data: SJsonValue, xtype: &str, sp_key: &[u8]) -> Result<Option<String>, String> {
     if let Some(data) = data {
         let mut value = json!({});
 
@@ -426,7 +444,7 @@ fn _parse_reply_for_proof_value(json_msg: &SJsonValue, data: Option<String>, par
         if xtype.eq(constants::GET_NYM) {
             value["seqNo"] = seq_no;
             value["txnTime"] = time;
-        } else {
+        } else if xtype.ne(constants::GET_TXN_AUTHR_AGRMT) || _is_full_taa_state_value_expected(sp_key) {
             value["lsn"] = seq_no;
             value["lut"] = time;
         }
@@ -464,6 +482,19 @@ fn _parse_reply_for_proof_value(json_msg: &SJsonValue, data: Option<String>, par
             constants::GET_REVOC_REG_DELTA => {
                 value["val"] = parsed_data["value"]["accum_to"].clone(); // TODO check accum_from also
             }
+            constants::GET_TXN_AUTHR_AGRMT => {
+                if _is_full_taa_state_value_expected(sp_key) {
+                    value["val"] = parsed_data;
+                } else {
+                    value = SJsonValue::String(_calculate_taa_digest(parsed_data["text"].as_str().unwrap_or(""),
+                                                                     parsed_data["version"].as_str().unwrap_or(""))
+                        .map_err(|err| format!("Can't calculate expected TAA digest to verify StateProof on the request ({})", err))?
+                        .to_hex());
+                }
+            }
+            constants::GET_TXN_AUTHR_AGRMT_AML => {
+                return Err("GET_TXN_AUTHOR_AGREEMENT_AML request isn't supported yet".to_string()); //TODO
+            }
             _ => {
                 return Err("Unknown transaction".to_string());
             }
@@ -473,6 +504,15 @@ fn _parse_reply_for_proof_value(json_msg: &SJsonValue, data: Option<String>, par
     } else {
         Ok(None)
     }
+}
+
+fn _calculate_taa_digest(text: &str, version: &str) -> IndyResult<Vec<u8>> {
+    let content: String = version.to_string() + text;
+    openssl_hash(content.as_bytes())
+}
+
+fn _is_full_taa_state_value_expected(expected_state_key: &[u8]) -> bool {
+    expected_state_key.starts_with(":taa:d:".as_bytes())
 }
 
 #[cfg(test)]
