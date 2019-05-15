@@ -504,7 +504,13 @@ fn _parse_reply_for_proof_value(json_msg: &SJsonValue, data: Option<String>, par
             }
         }
 
-        Ok(Some(value.to_string()))
+        let value_str = if let Some(value) = value.as_str() {
+            value.to_owned()
+        } else {
+            value.to_string()
+        };
+
+        Ok(Some(value_str))
     } else {
         Ok(None)
     }
