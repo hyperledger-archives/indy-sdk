@@ -232,6 +232,13 @@ pub fn parse_key_from_request_for_builtin_sp(json_msg: &SJsonValue) -> Option<Ve
                 }
             }
         }
+        constants::GET_TXN_AUTHR_AGRMT_AML => {
+            if let Some(version) = json_msg["version"].as_str() {
+                format!("3:v:{}", version)
+            } else {
+                "3:latest".to_owned()
+            }
+        }
         _ => {
             trace!("TransactionHandler::parse_reply_for_builtin_sp: <<< Unsupported transaction");
             return None;
@@ -462,7 +469,7 @@ fn _parse_reply_for_proof_value(json_msg: &SJsonValue, data: Option<String>, par
                 hasher.process(data.as_bytes());
                 value["val"] = SJsonValue::String(hasher.fixed_result().to_hex());
             }
-            constants::GET_CRED_DEF | constants::GET_REVOC_REG_DEF | constants::GET_REVOC_REG => {
+            constants::GET_CRED_DEF | constants::GET_REVOC_REG_DEF | constants::GET_REVOC_REG | constants::GET_TXN_AUTHR_AGRMT_AML => {
                 value["val"] = parsed_data;
             }
             constants::GET_SCHEMA => {
@@ -491,9 +498,6 @@ fn _parse_reply_for_proof_value(json_msg: &SJsonValue, data: Option<String>, par
                         .map_err(|err| format!("Can't calculate expected TAA digest to verify StateProof on the request ({})", err))?
                         .to_hex());
                 }
-            }
-            constants::GET_TXN_AUTHR_AGRMT_AML => {
-                return Err("GET_TXN_AUTHOR_AGREEMENT_AML request isn't supported yet".to_string()); //TODO
             }
             _ => {
                 return Err("Unknown transaction".to_string());
