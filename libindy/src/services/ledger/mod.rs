@@ -1191,16 +1191,6 @@ mod tests {
         }
 
         #[test]
-        fn build_auth_rule_request_works_for_invalid_auth_type() {
-            let ledger_service = LedgerService::new();
-
-            let res = ledger_service.build_auth_rule_request(IDENTIFIER, "WRONG", ADD_AUTH_ACTION, FIELD,
-                                                             None, Some(NEW_VALUE),
-                                                             &_role_constraint_json());
-            assert_kind!(IndyErrorKind::InvalidStructure, res);
-        }
-
-        #[test]
         fn build_auth_rule_request_works_for_invalid_auth_action() {
             let ledger_service = LedgerService::new();
 
