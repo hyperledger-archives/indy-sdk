@@ -1198,14 +1198,15 @@ fn _build_get_txn_author_agreement_request(command_handle: CommandHandle,
 ///     “<acceptance mechanism label 2>”: { acceptance mechanism description 2},
 ///     ...
 /// }
+/// * `version`: a version of new acceptance mechanisms. (Note: unique on the Ledger).
 /// * `aml_context`: (Optional) common context information about acceptance mechanisms (may be a URL to external resource).
 ///
 /// # Returns
 /// Request result as json.
-pub fn build_acceptance_mechanism_request(submitter_did: &str, aml: &str, aml_context: Option<&str>) -> Box<Future<Item=String, Error=IndyError>> {
+pub fn build_acceptance_mechanism_request(submitter_did: &str, aml: &str, version: &str, aml_context: Option<&str>) -> Box<Future<Item=String, Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
-    let err = _build_acceptance_mechanism_request(command_handle, submitter_did, aml, aml_context, cb);
+    let err = _build_acceptance_mechanism_request(command_handle, submitter_did, aml, version, aml_context, cb);
 
     ResultHandler::str(command_handle, err, receiver)
 }
@@ -1213,16 +1214,19 @@ pub fn build_acceptance_mechanism_request(submitter_did: &str, aml: &str, aml_co
 fn _build_acceptance_mechanism_request(command_handle: CommandHandle,
                                        submitter_did: &str,
                                        aml: &str,
+                                       version: &str,
                                        aml_context: Option<&str>,
                                        cb: Option<ResponseStringCB>) -> ErrorCode {
     let submitter_did = c_str!(submitter_did);
     let aml = c_str!(aml);
+    let version = c_str!(version);
     let aml_context_str = opt_c_str!(aml_context);
 
     ErrorCode::from(unsafe {
         ledger::indy_build_acceptance_mechanism_request(command_handle,
                                                         submitter_did.as_ptr(),
                                                         aml.as_ptr(),
+                                                        version.as_ptr(),
                                                         opt_c_ptr!(aml_context, aml_context_str),
                                                         cb)
     })
@@ -1234,13 +1238,16 @@ fn _build_acceptance_mechanism_request(command_handle: CommandHandle,
 /// # Arguments
 /// * `submitter_did`: (Optional) DID of the request sender.
 /// * `timestamp`: (Optional) time to get an active acceptance mechanisms.
+/// * `version`: (Optional) version of acceptance mechanisms.
+///
+/// NOTE: timestamp and version cannot be specified together.
 ///
 /// # Returns
 /// Request result as json.
-pub fn build_get_acceptance_mechanism_request(submitter_did: Option<&str>, timestamp: Option<i64>) -> Box<Future<Item=String, Error=IndyError>> {
+pub fn build_get_acceptance_mechanism_request(submitter_did: Option<&str>, timestamp: Option<i64>, version: Option<&str>) -> Box<Future<Item=String, Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
-    let err = _build_get_acceptance_mechanism_request(command_handle, submitter_did, timestamp, cb);
+    let err = _build_get_acceptance_mechanism_request(command_handle, submitter_did, timestamp, version, cb);
 
     ResultHandler::str(command_handle, err, receiver)
 }
@@ -1248,14 +1255,17 @@ pub fn build_get_acceptance_mechanism_request(submitter_did: Option<&str>, times
 fn _build_get_acceptance_mechanism_request(command_handle: CommandHandle,
                                            submitter_did: Option<&str>,
                                            timestamp: Option<i64>,
+                                           version: Option<&str>,
                                            cb: Option<ResponseStringCB>) -> ErrorCode {
     let submitter_did_str = opt_c_str!(submitter_did);
     let timestamp = timestamp.unwrap_or(-1);
+    let version_str = opt_c_str!(version);
 
     ErrorCode::from(unsafe {
         ledger::indy_build_get_acceptance_mechanism_request(command_handle,
                                                             opt_c_ptr!(submitter_did, submitter_did_str),
                                                             timestamp,
+                                                            opt_c_ptr!(version, version_str),
                                                             cb)
     })
 }
