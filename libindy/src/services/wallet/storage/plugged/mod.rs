@@ -155,7 +155,7 @@ impl StorageIterator for PluggedStorageIterator {
                 return Err(err.into());
             }
 
-            let mut value = unsafe { slice::from_raw_parts(value_bytes, value_bytes_len) };
+            let value = unsafe { slice::from_raw_parts(value_bytes, value_bytes_len) };
             Some(EncryptedValue::from_bytes(value)?)
         } else { None };
 
@@ -380,7 +380,7 @@ impl WalletStorage for PluggedStorage {
                 return Err(err.into());
             }
 
-            let mut value = unsafe { slice::from_raw_parts(value_bytes, value_bytes_len) };
+            let value = unsafe { slice::from_raw_parts(value_bytes, value_bytes_len) };
             Some(EncryptedValue::from_bytes(value)?)
         } else { None };
 

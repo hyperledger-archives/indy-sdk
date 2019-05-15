@@ -2723,6 +2723,38 @@ NAN_METHOD(parsePaymentResponse) {
   delete arg1;
 }
 
+
+
+void preparePaymentExtraWithAcceptanceData_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbString(xerr, arg0);
+  }
+}
+NAN_METHOD(preparePaymentExtraWithAcceptanceData) {
+  INDY_ASSERT_NARGS(preparePaymentExtraWithAcceptanceData, 7)
+  INDY_ASSERT_STRING(preparePaymentExtraWithAcceptanceData, 0, extraJson)
+  INDY_ASSERT_STRING(preparePaymentExtraWithAcceptanceData, 1, text)
+  INDY_ASSERT_STRING(preparePaymentExtraWithAcceptanceData, 2, version)
+  INDY_ASSERT_STRING(preparePaymentExtraWithAcceptanceData, 3, taaDigest)
+  INDY_ASSERT_STRING(preparePaymentExtraWithAcceptanceData, 4, accMechType)
+  INDY_ASSERT_NUMBER(preparePaymentExtraWithAcceptanceData, 5, timeOfAcceptance)
+  INDY_ASSERT_FUNCTION(preparePaymentExtraWithAcceptanceData, 6)
+  const char* arg0 = argToCString(info[0]);
+  const char* arg1 = argToCString(info[1]);
+  const char* arg2 = argToCString(info[2]);
+  const char* arg3 = argToCString(info[3]);
+  const char* arg4 = argToCString(info[4]);
+  long long arg5 = argToUInt32(info[5]);
+  IndyCallback* icb = argToIndyCb(info[6]);
+  indyCalled(icb, indy_prepare_payment_extra_with_acceptance_data(icb->handle, arg0, arg1, arg2, arg3, arg4, arg5, preparePaymentExtraWithAcceptanceData_cb));
+  delete arg0;
+  delete arg1;
+  delete arg2;
+  delete arg3;
+  delete arg4;
+}
+
 void buildMintReq_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0, const char* arg1) {
   IndyCallback* icb = IndyCallback::getCallback(handle);
   if(icb != nullptr){
@@ -3322,6 +3354,7 @@ NAN_MODULE_INIT(InitAll) {
   Nan::Export(target, "parseGetPaymentSourcesResponse", parseGetPaymentSourcesResponse);
   Nan::Export(target, "buildPaymentReq", buildPaymentReq);
   Nan::Export(target, "parsePaymentResponse", parsePaymentResponse);
+  Nan::Export(target, "preparePaymentExtraWithAcceptanceData", preparePaymentExtraWithAcceptanceData);
   Nan::Export(target, "buildMintReq", buildMintReq);
   Nan::Export(target, "buildSetTxnFeesReq", buildSetTxnFeesReq);
   Nan::Export(target, "buildGetTxnFeesReq", buildGetTxnFeesReq);
