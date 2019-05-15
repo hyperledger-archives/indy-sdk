@@ -2000,6 +2000,54 @@ mod high_cases {
         }
 
         #[test]
+        fn indy_build_auth_rule_requests_works_for_any_type() {
+            let txn_type = "1000000000001";
+
+            // write
+            let expected_result = json!({
+                "type": constants::AUTH_RULE,
+                "auth_type": txn_type,
+                "auth_action": ADD_AUTH_ACTION,
+                "field": FIELD,
+                "new_value": serde_json::Value::Null,
+                "constraint": json!({
+                    "sig_count": 1,
+                    "metadata": {},
+                    "role": "0",
+                    "constraint_id": "ROLE",
+                    "need_to_be_owner": false
+                }),
+            });
+
+            let request = ledger::build_auth_rule_request(DID_TRUSTEE,
+                                                          txn_type,
+                                                          &ADD_AUTH_ACTION,
+                                                          FIELD,
+                                                          None,
+                                                          None,
+                                                          ROLE_CONSTRAINT).unwrap();
+            check_request(&request, expected_result);
+
+            // read
+            let expected_result = json!({
+                "type": constants::GET_AUTH_RULE,
+                "auth_type": txn_type,
+                "auth_action": ADD_AUTH_ACTION,
+                "field": FIELD,
+                "new_value": serde_json::Value::Null,
+            });
+
+            let request = ledger::build_get_auth_rule_request(None,
+                                                              Some(txn_type),
+                                                              Some(ADD_AUTH_ACTION),
+                                                              Some(FIELD),
+                                                              None,
+                                                              None).unwrap();
+            check_request(&request, expected_result);
+        }
+
+
+        #[test]
         fn indy_build_get_auth_rule_request_works_for_get_all() {
             let expected_result = json!({
                 "type": constants::GET_AUTH_RULE,
