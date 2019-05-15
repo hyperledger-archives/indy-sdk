@@ -74,8 +74,8 @@ public abstract class LibIndy {
 		public int indy_build_get_auth_rule_request(int command_handle, String submitter_did, String txn_type, String action, String field, String old_value, String new_value, Callback cb);
 		public int indy_build_txn_author_agreement_request(int command_handle, String submitter_did, String text, String version, Callback cb);
 		public int indy_build_get_txn_author_agreement_request(int command_handle, String submitter_did, String data, Callback cb);
-		public int indy_build_acceptance_mechanism_request(int command_handle, String submitter_did, String aml, String aml_context, Callback cb);
-		public int indy_build_get_acceptance_mechanism_request(int command_handle, String submitter_did, int timestamp, Callback cb);
+		public int indy_build_acceptance_mechanism_request(int command_handle, String submitter_did, String aml, String version, String aml_context, Callback cb);
+		public int indy_build_get_acceptance_mechanism_request(int command_handle, String submitter_did, int timestamp, String version, Callback cb);
 		public int indy_append_txn_author_agreement_acceptance_to_request(int command_handle, String request_json, String text, String version, String hash, String acc_mech_type, long time_of_acceptance, Callback cb);
 
 		// did.rs
