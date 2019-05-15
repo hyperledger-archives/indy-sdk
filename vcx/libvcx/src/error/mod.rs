@@ -400,6 +400,12 @@ thread_local! {
     pub static CURRENT_ERROR_C_JSON: RefCell<Option<CString>> = RefCell::new(None);
 }
 
+pub fn reset_current_error() {
+    CURRENT_ERROR_C_JSON.with(|error| {
+        error.replace(None);
+    })
+}
+
 pub fn set_current_error(err: &VcxError) {
     CURRENT_ERROR_C_JSON.with(|error| {
         let error_json = json!({

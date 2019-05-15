@@ -1,7 +1,7 @@
-use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 lazy_static! {
-    static ref IDS_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT; //TODO use AtomicI32
+    static ref IDS_COUNTER: AtomicUsize = AtomicUsize::new(1);
 }
 
 pub fn get_next_id() -> i32 {

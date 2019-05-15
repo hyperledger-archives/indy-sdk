@@ -1,4 +1,4 @@
-extern crate indy_crypto;
+extern crate ursa;
 extern crate threadpool;
 
 use std::env;
@@ -112,7 +112,7 @@ impl CommandExecutor {
                 let pairwise_command_executor = PairwiseCommandExecutor::new(wallet_service.clone());
                 let blob_storage_command_executor = BlobStorageCommandExecutor::new(blob_storage_service.clone());
                 let non_secret_command_executor = NonSecretsCommandExecutor::new(wallet_service.clone());
-                let payments_command_executor = PaymentsCommandExecutor::new(payments_service.clone(), wallet_service.clone(), crypto_service.clone());
+                let payments_command_executor = PaymentsCommandExecutor::new(payments_service.clone(), wallet_service.clone(), crypto_service.clone(), ledger_service.clone());
 
                 loop {
                     match receiver.recv() {

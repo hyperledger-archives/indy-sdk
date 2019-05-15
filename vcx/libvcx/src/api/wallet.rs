@@ -151,7 +151,7 @@ pub extern fn vcx_wallet_add_record(command_handle: u32,
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
 
     trace!("vcx_wallet_add_record(command_handle: {}, type_: {}, id: {}, value: {}, tags_json: {})",
-          command_handle, type_, id, value, tags_json);
+          command_handle, secret!(&type_), secret!(&id), secret!(&value), secret!(&tags_json));
 
     spawn(move|| {
         match wallet::add_record(&type_, &id, &value, Some(&tags_json)) {
@@ -207,7 +207,7 @@ pub extern fn vcx_wallet_update_record_value(command_handle: u32,
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
 
     trace!("vcx_wallet_update_record_value(command_handle: {}, type_: {}, id: {}, value: {})",
-          command_handle, type_, id, value);
+          command_handle, secret!(&type_), secret!(&id), secret!(&value));
 
     spawn(move|| {
         match wallet::update_record_value(&type_, &id, &value) {
@@ -263,7 +263,7 @@ pub extern fn vcx_wallet_update_record_tags(command_handle: u32,
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
 
     trace!("vcx_wallet_update_record_tags(command_handle: {}, type_: {}, id: {}, tags: {})",
-           command_handle, type_, id, tags);
+           command_handle, secret!(&type_), secret!(&id), secret!(&tags));
 
     spawn(move|| {
         cb(command_handle, error::SUCCESS.code_num);
@@ -306,7 +306,7 @@ pub extern fn vcx_wallet_add_record_tags(command_handle: u32,
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
 
     trace!("vcx_wallet_add_record_tags(command_handle: {}, type_: {}, id: {}, tags: {})",
-           command_handle, type_, id, tags);
+           command_handle, secret!(&type_), secret!(&id), secret!(&tags));
 
     spawn(move|| {
         cb(command_handle, error::SUCCESS.code_num);
@@ -348,7 +348,7 @@ pub extern fn vcx_wallet_delete_record_tags(command_handle: u32,
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
 
     trace!("vcx_wallet_delete_record_tags(command_handle: {}, type_: {}, id: {}, tags: {})",
-           command_handle, type_, id, tags);
+           command_handle, secret!(&type_), secret!(&id), secret!(&tags));
 
     spawn(move|| {
         cb(command_handle, error::SUCCESS.code_num);
@@ -389,7 +389,7 @@ pub extern fn vcx_wallet_get_record(command_handle: u32,
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
 
     trace!("vcx_wallet_get_record(command_handle: {}, type_: {}, id: {}, options: {})",
-          command_handle, type_, id, options_json);
+          command_handle, secret!(&type_), secret!(&id), options_json);
 
     spawn(move|| {
         match wallet::get_record(&type_, &id, &options_json) {
@@ -445,7 +445,7 @@ pub extern fn vcx_wallet_delete_record(command_handle: u32,
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
 
     trace!("vcx_wallet_delete_record(command_handle: {}, type_: {}, id: {})",
-          command_handle, type_, id);
+          command_handle, secret!(&type_), secret!(&id));
 
     spawn(move|| {
         match wallet::delete_record(&type_, &id) {
