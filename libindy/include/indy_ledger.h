@@ -1108,6 +1108,7 @@ extern "C" {
     ///     “<acceptance mechanism label 2>”: { acceptance mechanism description 2},
     ///     ...
     /// }
+    /// version: a version of new acceptance mechanisms. (Note: unique on the Ledger)
     /// aml_context: (Optional) common context information about acceptance mechanisms (may be a URL to external resource).
     /// cb: Callback that takes command result as parameter.
     ///
@@ -1119,6 +1120,7 @@ extern "C" {
     extern indy_error_t indy_build_acceptance_mechanism_request(indy_handle_t command_handle,
                                                                 const char *  submitter_did,
                                                                 const char *  aml,
+                                                                const char *  version,
                                                                 const char *  aml_context,
 
                                                                 void           (*cb)(indy_handle_t command_handle_,
@@ -1135,7 +1137,10 @@ extern "C" {
     /// command_handle: command handle to map callback to caller context.
     /// submitter_did: (Optional) DID of the request sender.
     /// timestamp: i64 - time to get an active acceptance mechanisms. Pass -1 to get the latest one.
+    /// version: (Optional) version of acceptance mechanisms.
     /// cb: Callback that takes command result as parameter.
+    ///
+    /// NOTE: timestamp and version cannot be specified together.
     ///
     /// #Returns
     /// Request result as json.
@@ -1145,6 +1150,7 @@ extern "C" {
     extern indy_error_t indy_build_get_acceptance_mechanism_request(indy_handle_t command_handle,
                                                                     const char *  submitter_did,
                                                                     indy_i64_t  timestamp,
+                                                                    const char *  version,
 
                                                                     void           (*cb)(indy_handle_t command_handle_,
                                                                                          indy_error_t  err,
