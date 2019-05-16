@@ -1482,6 +1482,7 @@ async def build_get_txn_author_agreement_request(submitter_did: Optional[str],
 
 async def build_acceptance_mechanism_request(submitter_did: str,
                                              aml: str,
+                                             version: str,
                                              aml_context: Optional[str]) -> str:
     """
     Builds a SET_TXN_AUTHR_AGRMT_AML request. Request to add a new acceptance mechanism for transaction author agreement.
@@ -1496,15 +1497,17 @@ async def build_acceptance_mechanism_request(submitter_did: str,
         “<acceptance mechanism label 2>”: { acceptance mechanism description 2},
         ...
     }
+    :param version: a version of new acceptance mechanisms. (Note: unique on the Ledger)
     :param aml_context: (Optional) common context information about acceptance mechanisms (may be a URL to external resource).
 
     :return: Request result as json.
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("build_acceptance_mechanism_request: >>> submitter_did: %r, aml: %r, aml_context: %r",
+    logger.debug("build_acceptance_mechanism_request: >>> submitter_did: %r, aml: %r, version: %r, aml_context: %r",
                  submitter_did,
                  aml,
+                 version,
                  aml_context)
 
     if not hasattr(build_acceptance_mechanism_request, "cb"):
@@ -1513,11 +1516,13 @@ async def build_acceptance_mechanism_request(submitter_did: str,
 
     c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
     c_aml = c_char_p(aml.encode('utf-8'))
+    c_version = c_char_p(version.encode('utf-8'))
     c_aml_context = c_char_p(aml_context.encode('utf-8')) if aml_context is not None else None
 
     request_json = await do_call('indy_build_acceptance_mechanism_request',
                                  c_submitter_did,
                                  c_aml,
+                                 c_version,
                                  c_aml_context,
                                  build_acceptance_mechanism_request.cb)
 
@@ -1527,7 +1532,8 @@ async def build_acceptance_mechanism_request(submitter_did: str,
 
 
 async def build_get_acceptance_mechanism_request(submitter_did: Optional[str],
-                                                 timestamp: Optional[int]) -> str:
+                                                 timestamp: Optional[int],
+                                                 version: Optional[str]) -> str:
     """
     Builds a GET_TXN_AUTHR_AGRMT_AML request. Request to get acceptance mechanisms from the ledger
     valid for specified time or the latest one.
@@ -1536,14 +1542,18 @@ async def build_get_acceptance_mechanism_request(submitter_did: Optional[str],
 
     :param submitter_did: (Optional) DID of read request sender.
     :param timestamp: (Optional) time to get an active acceptance mechanisms. The latest one will be returned for the empty timestamp.
+    :param version: (Optional) version of acceptance mechanisms.
+
+    NOTE: timestamp and version cannot be specified together.
 
     :return: Request result as json.
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("build_get_acceptance_mechanism_request: >>> submitter_did: %r, timestamp: %r",
+    logger.debug("build_get_acceptance_mechanism_request: >>> submitter_did: %r, timestamp: %r, version: %r",
                  submitter_did,
-                 timestamp)
+                 timestamp,
+                 version)
 
     if not hasattr(build_get_acceptance_mechanism_request, "cb"):
         logger.debug("build_get_acceptance_mechanism_request: Creating callback")
@@ -1551,10 +1561,12 @@ async def build_get_acceptance_mechanism_request(submitter_did: Optional[str],
 
     c_submitter_did = c_char_p(submitter_did.encode('utf-8')) if submitter_did is not None else None
     c_timestamp = c_int64(timestamp) if timestamp is not None else c_int(-1)
+    c_version = c_char_p(version.encode('utf-8')) if version is not None else None
 
     request_json = await do_call('indy_build_get_acceptance_mechanism_request',
                                  c_submitter_did,
                                  c_timestamp,
+                                 c_version,
                                  build_get_acceptance_mechanism_request.cb)
 
     res = request_json.decode()
@@ -1590,14 +1602,15 @@ async def append_txn_author_agreement_acceptance_to_request(request_json: str,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("append_txn_author_agreement_acceptance_to_request: >>> request_json: %r, text: %r, version: %r, hash: %r, "
-                 "acc_mech_type: %r, time_of_acceptance: %r",
-                 request_json,
-                 text,
-                 version,
-                 taa_digest,
-                 mechanism,
-                 time)
+    logger.debug(
+        "append_txn_author_agreement_acceptance_to_request: >>> request_json: %r, text: %r, version: %r, hash: %r, "
+        "acc_mech_type: %r, time_of_acceptance: %r",
+        request_json,
+        text,
+        version,
+        taa_digest,
+        mechanism,
+        time)
 
     if not hasattr(append_txn_author_agreement_acceptance_to_request, "cb"):
         logger.debug("append_txn_author_agreement_acceptance_to_request: Creating callback")
