@@ -58,15 +58,17 @@ pub struct SetAcceptanceMechanismOperation {
     #[serde(rename = "type")]
     _type: String,
     aml: AcceptanceMechanisms,
+    version: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     aml_context: Option<String>,
 }
 
 impl SetAcceptanceMechanismOperation {
-    pub fn new(aml: AcceptanceMechanisms, aml_context: Option<String>) -> SetAcceptanceMechanismOperation {
+    pub fn new(aml: AcceptanceMechanisms, version: String, aml_context: Option<String>) -> SetAcceptanceMechanismOperation {
         SetAcceptanceMechanismOperation {
             _type: TXN_AUTHR_AGRMT_AML.to_string(),
             aml,
+            version,
             aml_context
         }
     }
@@ -78,13 +80,16 @@ pub struct GetAcceptanceMechanismOperation {
     _type: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     timestamp: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    version: Option<String>,
 }
 
 impl GetAcceptanceMechanismOperation {
-    pub fn new(timestamp: Option<u64>) -> GetAcceptanceMechanismOperation {
+    pub fn new(timestamp: Option<u64>, version: Option<String>) -> GetAcceptanceMechanismOperation {
         GetAcceptanceMechanismOperation {
             _type: GET_TXN_AUTHR_AGRMT_AML.to_string(),
             timestamp,
+            version,
         }
     }
 }

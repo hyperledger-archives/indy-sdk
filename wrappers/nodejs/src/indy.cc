@@ -2151,19 +2151,22 @@ void buildAcceptanceMechanismRequest_cb(indy_handle_t handle, indy_error_t xerr,
   }
 }
 NAN_METHOD(buildAcceptanceMechanismRequest) {
-  INDY_ASSERT_NARGS(buildAcceptanceMechanismRequest, 4)
+  INDY_ASSERT_NARGS(buildAcceptanceMechanismRequest, 5)
   INDY_ASSERT_STRING(buildAcceptanceMechanismRequest, 0, submitterDid)
   INDY_ASSERT_STRING(buildAcceptanceMechanismRequest, 1, aml)
-  INDY_ASSERT_STRING(buildAcceptanceMechanismRequest, 2, amlContext)
-  INDY_ASSERT_FUNCTION(buildAcceptanceMechanismRequest, 3)
+  INDY_ASSERT_STRING(buildAcceptanceMechanismRequest, 2, version)
+  INDY_ASSERT_STRING(buildAcceptanceMechanismRequest, 3, amlContext)
+  INDY_ASSERT_FUNCTION(buildAcceptanceMechanismRequest, 4)
   const char* arg0 = argToCString(info[0]);
   const char* arg1 = argToCString(info[1]);
   const char* arg2 = argToCString(info[2]);
-  IndyCallback* icb = argToIndyCb(info[3]);
-  indyCalled(icb, indy_build_acceptance_mechanism_request(icb->handle, arg0, arg1, arg2, buildAcceptanceMechanismRequest_cb));
+  const char* arg3 = argToCString(info[3]);
+  IndyCallback* icb = argToIndyCb(info[4]);
+  indyCalled(icb, indy_build_acceptance_mechanism_request(icb->handle, arg0, arg1, arg2, arg3, buildAcceptanceMechanismRequest_cb));
   delete arg0;
   delete arg1;
   delete arg2;
+  delete arg3;
 }
 
 void buildGetAcceptanceMechanismRequest_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
@@ -2173,15 +2176,18 @@ void buildGetAcceptanceMechanismRequest_cb(indy_handle_t handle, indy_error_t xe
   }
 }
 NAN_METHOD(buildGetAcceptanceMechanismRequest) {
-  INDY_ASSERT_NARGS(buildGetAcceptanceMechanismRequest, 3)
+  INDY_ASSERT_NARGS(buildGetAcceptanceMechanismRequest, 4)
   INDY_ASSERT_STRING(buildGetAcceptanceMechanismRequest, 0, submitterDid)
   INDY_ASSERT_NUMBER(buildGetAcceptanceMechanismRequest, 1, timestamp)
-  INDY_ASSERT_FUNCTION(buildGetAcceptanceMechanismRequest, 2)
+  INDY_ASSERT_STRING(buildGetAcceptanceMechanismRequest, 2, version)
+  INDY_ASSERT_FUNCTION(buildGetAcceptanceMechanismRequest, 3)
   const char* arg0 = argToCString(info[0]);
   indy_i64_t arg1 = argToInt32(info[1]);
-  IndyCallback* icb = argToIndyCb(info[2]);
-  indyCalled(icb, indy_build_get_acceptance_mechanism_request(icb->handle, arg0, arg1, buildGetAcceptanceMechanismRequest_cb));
+  const char* arg2 = argToCString(info[2]);
+  IndyCallback* icb = argToIndyCb(info[3]);
+  indyCalled(icb, indy_build_get_acceptance_mechanism_request(icb->handle, arg0, arg1, arg2, buildGetAcceptanceMechanismRequest_cb));
   delete arg0;
+  delete arg2;
 }
 
 void appendTxnAuthorAgreementAcceptanceToRequest_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {

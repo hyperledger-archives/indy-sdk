@@ -565,15 +565,15 @@ indy.buildGetTxnAuthorAgreementRequest = function buildGetTxnAuthorAgreementRequ
   return cb.promise
 }
 
-indy.buildAcceptanceMechanismRequest = function buildAcceptanceMechanismRequest (submitterDid, aml, amlContext, cb) {
+indy.buildAcceptanceMechanismRequest = function buildAcceptanceMechanismRequest (submitterDid, aml, version, amlContext, cb) {
   cb = wrapIndyCallback(cb, fromJson)
-  capi.buildAcceptanceMechanismRequest(submitterDid, toJson(aml), amlContext, cb)
+  capi.buildAcceptanceMechanismRequest(submitterDid, toJson(aml), version, amlContext, cb)
   return cb.promise
 }
 
-indy.buildGetAcceptanceMechanismRequest = function buildGetAcceptanceMechanismRequest (submitterDid, timestamp, cb) {
+indy.buildGetAcceptanceMechanismRequest = function buildGetAcceptanceMechanismRequest (submitterDid, timestamp, version, cb) {
   cb = wrapIndyCallback(cb, fromJson)
-  capi.buildGetAcceptanceMechanismRequest(submitterDid, timestamp == null ? -1 : timestamp, cb)
+  capi.buildGetAcceptanceMechanismRequest(submitterDid, timestamp == null ? -1 : timestamp, version, cb)
   return cb.promise
 }
 
