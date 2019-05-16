@@ -9,13 +9,20 @@ export const VcxStatus = StructType({
   status: 'int'
 })
 
+interface IUintTypes {
+  [key: string]: string
+}
+const UINTS_TYPES: IUintTypes = { x86: 'uint32', x64: 'uint64' }
+const ARCHITECTURE: string = process.env.LIBVCX_FFI_ARCHITECTURE || 'x86'
+const FFI_UINT: string = UINTS_TYPES[ARCHITECTURE]
+
 // FFI Type Strings
 export const FFI_ERROR_CODE = 'int'
 export const FFI_BOOL = 'bool'
 export const FFI_CONNECTION_HANDLE = 'uint32'
 export const FFI_UNSIGNED_INT = 'uint32'
 export const FFI_UNSIGNED_LONG = 'uint64'
-export const FFI_UNSIGNED_INT_PTR = ref.refType('uint32')
+export const FFI_UNSIGNED_INT_PTR = FFI_UINT
 export const FFI_STRING = 'string'
 export const FFI_CONFIG_PATH = FFI_STRING
 export const FFI_STRING_DATA = 'string'
@@ -243,10 +250,10 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
     FFI_CALLBACK_PTR]],
   vcx_connection_send_message: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_STRING_DATA,
     FFI_STRING_DATA, FFI_CALLBACK_PTR]],
-  vcx_connection_sign_data: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_UNSIGNED_INT,
+  vcx_connection_sign_data: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_UNSIGNED_INT_PTR,
     FFI_UNSIGNED_INT, FFI_CALLBACK_PTR]],
-  vcx_connection_verify_signature: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_UNSIGNED_INT,
-    FFI_UNSIGNED_INT, FFI_UNSIGNED_INT, FFI_UNSIGNED_INT, FFI_CALLBACK_PTR]],
+  vcx_connection_verify_signature: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_UNSIGNED_INT_PTR,
+    FFI_UNSIGNED_INT, FFI_UNSIGNED_INT_PTR, FFI_UNSIGNED_INT, FFI_CALLBACK_PTR]],
 
   // issuer
   vcx_issuer_credential_deserialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
