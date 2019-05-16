@@ -2316,7 +2316,7 @@ mod high_cases {
 
         const TEXT: &str = "indy agreement";
         const VERSION: &str = "1.0.0";
-        const HASH: &str = "83d907821df1c87db829e96569a11f6fc2e7880acba5e43d07ab786959e13bd3";
+        const TAA_DIGEST: &str = "83d907821df1c87db829e96569a11f6fc2e7880acba5e43d07ab786959e13bd3";
 
         #[test]
         fn indy_build_txn_author_agreement_request() {
@@ -2343,14 +2343,14 @@ mod high_cases {
         }
 
         #[test]
-        fn indy_build_get_txn_author_agreement_request_for_hash() {
+        fn indy_build_get_txn_author_agreement_request_for_digest() {
             let expected_result = json!({
                 "type": constants::GET_TXN_AUTHR_AGRMT,
-                "hash": HASH,
+                "digest": TAA_DIGEST,
             });
 
             let data = json!({
-                "hash": HASH
+                "digest": TAA_DIGEST
             }).to_string();
 
             let request = ledger::build_get_txn_author_agreement_request(None, Some(&data)).unwrap();
@@ -2392,6 +2392,8 @@ mod high_cases {
     mod acceptance_mechanism {
         use super::*;
 
+        const VERSION: &str = "1.0.0";
+
         #[test]
         fn indy_build_acceptance_mechanism_request() {
             let aml = json!({
@@ -2400,11 +2402,13 @@ mod high_cases {
 
             let expected_result = json!({
                 "type": constants::TXN_AUTHR_AGRMT_AML,
-                "aml": aml.clone()
+                "aml": aml.clone(),
+                "version": VERSION
             });
 
             let request = ledger::build_acceptance_mechanism_request(DID_TRUSTEE,
                                                                      &aml.to_string(),
+                                                                     VERSION,
                                                                      None).unwrap();
             check_request(&request, expected_result);
         }
@@ -2419,11 +2423,13 @@ mod high_cases {
             let expected_result = json!({
                 "type": constants::TXN_AUTHR_AGRMT_AML,
                 "aml": aml.clone(),
+                "version": VERSION,
                 "amlContext": context,
             });
 
             let request = ledger::build_acceptance_mechanism_request(DID_TRUSTEE,
                                                                      &aml.to_string(),
+                                                                     VERSION,
                                                                      Some(context)).unwrap();
             check_request(&request, expected_result);
         }
@@ -2434,7 +2440,7 @@ mod high_cases {
                 "type": constants::GET_TXN_AUTHR_AGRMT_AML,
             });
 
-            let request = ledger::build_get_acceptance_mechanism_request(None, None).unwrap();
+            let request = ledger::build_get_acceptance_mechanism_request(None, None, None).unwrap();
             check_request(&request, expected_result);
         }
 
@@ -2447,8 +2453,25 @@ mod high_cases {
                 "timestamp": timestamp
             });
 
-            let request = ledger::build_get_acceptance_mechanism_request(None, Some(timestamp)).unwrap();
+            let request = ledger::build_get_acceptance_mechanism_request(None, Some(timestamp), None).unwrap();
             check_request(&request, expected_result);
+        }
+
+        #[test]
+        fn indy_build_get_acceptance_mechanism_request_for_version() {
+            let expected_result = json!({
+                "type": constants::GET_TXN_AUTHR_AGRMT_AML,
+                "version": VERSION,
+            });
+
+            let request = ledger::build_get_acceptance_mechanism_request(None, None, Some(VERSION)).unwrap();
+            check_request(&request, expected_result);
+        }
+
+        #[test]
+        fn indy_build_get_acceptance_mechanism_request_for_timestamp_and_version() {
+            let res = ledger::build_get_acceptance_mechanism_request(None, Some(123456789), Some(VERSION));
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
     }
 
