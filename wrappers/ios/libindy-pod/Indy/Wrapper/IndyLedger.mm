@@ -831,6 +831,7 @@
 
 + (void)buildAcceptanceMechanismRequestWithSubmitterDid:(NSString *)submitterDid
                                                     aml:(NSString *)aml
+                                                version:(NSString *)version
                                              amlContext:(NSString *)amlContext
                                              completion:(void (^)(NSError *error, NSString *responseMetadata))completion {
     indy_error_t ret;
@@ -840,6 +841,7 @@
     ret = indy_build_acceptance_mechanism_request(handle,
             [submitterDid UTF8String],
             [aml UTF8String],
+            [version UTF8String],
             [amlContext UTF8String],
             IndyWrapperCommonStringCallback);
 
@@ -854,6 +856,7 @@
 
 + (void)buildGetAcceptanceMechanismRequestWithSubmitterDid:(NSString *)submitterDid
                                                  timestamp:(NSNumber *)timestamp
+                                                   version:(NSString *)version
                                                 completion:(void (^)(NSError *error, NSString *responseMetadata))completion {
     indy_error_t ret;
 
@@ -862,6 +865,7 @@
     ret = indy_build_get_acceptance_mechanism_request(handle,
             [submitterDid UTF8String],
             timestamp ? [timestamp longLongValue] : -1,
+            [version UTF8String],
             IndyWrapperCommonStringCallback);
 
     if (ret != Success) {
