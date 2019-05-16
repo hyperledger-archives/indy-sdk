@@ -1318,7 +1318,7 @@ mod tests {
             });
 
             let data = GetTxnAuthorAgreementData {
-                hash: None,
+                digest: None,
                 version: Some(VERSION.to_string()),
                 timestamp: None,
             };

@@ -22,7 +22,7 @@ impl TxnAuthorAgreementOperation {
 
 #[derive(Deserialize, PartialEq, Debug)]
 pub struct GetTxnAuthorAgreementData {
-    pub hash: Option<String>,
+    pub digest: Option<String>,
     pub version: Option<String>,
     pub timestamp: Option<u64>,
 }
@@ -32,7 +32,7 @@ pub struct GetTxnAuthorAgreementOperation {
     #[serde(rename = "type")]
     _type: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    hash: Option<String>,
+    digest: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     version: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -43,7 +43,7 @@ impl GetTxnAuthorAgreementOperation {
     pub fn new(data: Option<&GetTxnAuthorAgreementData>) -> GetTxnAuthorAgreementOperation {
         GetTxnAuthorAgreementOperation {
             _type: GET_TXN_AUTHR_AGRMT.to_string(),
-            hash: data.as_ref().and_then(|d| d.hash.clone()),
+            digest: data.as_ref().and_then(|d| d.digest.clone()),
             version: data.as_ref().and_then(|d| d.version.clone()),
             timestamp: data.as_ref().and_then(|d| d.timestamp.clone()),
         }
