@@ -13,8 +13,9 @@ use serde_json::Value as JSONValue;
 use serde_json::Map as JSONMap;
 
 use std::collections::{HashMap, BTreeMap};
-use std::io::Write;
+
 use utils::table::{print_table, print_list_table};
+use utils::file::{read_file, write_file};
 
 use self::regex::Regex;
 use self::chrono::prelude::*;
@@ -1515,7 +1516,7 @@ pub mod save_transaction_command {
             return Ok(println!("The transaction has not been saved."));
         }
 
-        _write_file(file, &transaction)
+        write_file(file, &transaction)
             .map_err(|err| println_err!("Cannot store transaction into the file: {:?}", err))?;
 
         println_succ!("The transaction has been saved.");
@@ -1548,7 +1549,8 @@ pub mod load_transaction_command {
 
         let file = get_str_param("file", params).map_err(error_err!())?;
 
-        let transaction = ::commands::common::read_file(file)?;
+        let transaction = read_file(file)
+            .map_err(|err| println_err!("{}", err))?;
 
         serde_json::from_str::<Request>(&transaction)
             .map_err(|err| println_err!("File contains invalid transaction: {:?}", err))?;
@@ -1562,25 +1564,6 @@ pub mod load_transaction_command {
         trace!("execute << {:?}", res);
         res
     }
-}
-
-fn _write_file(file: &str, content: &str) -> Result<(), std::io::Error> {
-    let path = ::std::path::PathBuf::from(&file);
-
-    if let Some(parent_path) = path.parent() {
-        ::std::fs::DirBuilder::new()
-            .recursive(true)
-            .create(parent_path).unwrap();
-    }
-
-    let mut file =
-        ::std::fs::OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .open(file).unwrap();
-
-    file
-        .write_all(content.as_bytes())
 }
 
 pub fn set_author_agreement(ctx: &CommandContext, request: &mut String) -> Result<(), ()> {
@@ -4112,7 +4095,7 @@ pub mod tests {
             let ctx = setup();
 
             let (_, path_str) = _path();
-            _write_file(&path_str, TRANSACTION).unwrap();
+            write_file(&path_str, TRANSACTION).unwrap();
 
             {
                 let cmd = load_transaction_command::new();
@@ -4134,7 +4117,7 @@ pub mod tests {
             let ctx = setup();
 
             let (_, path_str) = _path();
-            _write_file(&path_str, "some invalid transaction").unwrap();
+            write_file(&path_str, "some invalid transaction").unwrap();
 
             {
                 let cmd = load_transaction_command::new();
