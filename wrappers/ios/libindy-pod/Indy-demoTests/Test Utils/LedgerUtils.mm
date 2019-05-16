@@ -857,6 +857,7 @@
 
 - (NSError *)buildAcceptanceMechanismRequestWithSubmitterDid:(NSString *)submitterDid
                                                          aml:(NSString *)aml
+                                                     version:(NSString *)version
                                                   amlContext:(NSString *)amlContext
                                                   outRequest:(NSString **)resultJson {
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
@@ -865,6 +866,7 @@
 
     [IndyLedger buildAcceptanceMechanismRequestWithSubmitterDid:submitterDid
                                                             aml:aml
+                                                        version:version
                                                      amlContext:amlContext
                                                      completion:^(NSError *error, NSString *json) {
                                                          err = error;
@@ -881,6 +883,7 @@
 
 - (NSError *)buildGetAcceptanceMechanismRequestWithSubmitterDid:(NSString *)submitterDid
                                                       timestamp:(NSNumber *)timestamp
+                                                        version:(NSString *)version
                                                      outRequest:(NSString **)resultJson {
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
     __block NSError *err = nil;
@@ -888,6 +891,7 @@
 
     [IndyLedger buildGetAcceptanceMechanismRequestWithSubmitterDid:submitterDid
                                                          timestamp:timestamp
+                                                           version:version
                                                         completion:^(NSError *error, NSString *json) {
                                                             err = error;
                                                             outJson = json;

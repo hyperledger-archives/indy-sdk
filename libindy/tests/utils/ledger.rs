@@ -232,13 +232,15 @@ pub fn build_get_txn_author_agreement_request(submitter_did: Option<&str>,
 
 pub fn build_acceptance_mechanism_request(submitter_did: &str,
                                           aml: &str,
+                                          version: &str,
                                           aml_context: Option<&str>) -> Result<String, IndyError> {
-    ledger::build_acceptance_mechanism_request(submitter_did, aml, aml_context).wait()
+    ledger::build_acceptance_mechanism_request(submitter_did, aml, version, aml_context).wait()
 }
 
 pub fn build_get_acceptance_mechanism_request(submitter_did: Option<&str>,
-                                              timestamp: Option<i64>, ) -> Result<String, IndyError> {
-    ledger::build_get_acceptance_mechanism_request(submitter_did, timestamp).wait()
+                                              timestamp: Option<i64>,
+                                              version: Option<&str>) -> Result<String, IndyError> {
+    ledger::build_get_acceptance_mechanism_request(submitter_did, timestamp, version).wait()
 }
 
 pub fn append_txn_author_agreement_acceptance_to_request(request_json: &str,

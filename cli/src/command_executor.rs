@@ -753,7 +753,7 @@ impl CommandExecutor {
 
         for (pos, ch) in s.char_indices() {
             if ch.is_whitespace() && !is_whitespace_escape {
-                return (&s[..pos], s[pos..].trim_left());
+                return (&s[..pos], s[pos..].trim_start());
             }
 
             if !is_quote_escape && ch == '"' {

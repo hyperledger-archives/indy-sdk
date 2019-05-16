@@ -1463,19 +1463,22 @@ public class Ledger extends IndyJava.API {
 	 *     “<acceptance mechanism label 2>”: { acceptance mechanism description 2},
 	 *     ...
 	 * }
+	 * @param version - a version of new acceptance mechanisms. (Note: unique on the Ledger).
 	 * @param amlContext - (Optional) common context information about acceptance mechanisms (may be a URL to external resource).
-	 *               
+	 *
 	 * @return A future resolving to a request result as json.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
 	public static CompletableFuture<String> buildAcceptanceMechanismRequest(
 			String submitterDid,
 			String aml,
+			String version,
 			String amlContext) throws IndyException {
 
 		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
 		ParamGuard.notNull(aml, "aml");
-		
+		ParamGuard.notNull(version, "version");
+
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
@@ -1483,6 +1486,7 @@ public class Ledger extends IndyJava.API {
 				commandHandle,
 				submitterDid,
 				aml,
+				version,
 				amlContext,
 				buildRequestCb);
 
@@ -1499,13 +1503,17 @@ public class Ledger extends IndyJava.API {
 	 *
 	 * @param submitterDid (Optional) DID of the request sender.
 	 * @param timestamp - time to get an active acceptance mechanisms. Pass -1 to get the latest one.
-	 *               
+	 * @param version - (Optional) version of acceptance mechanisms.
+	 *
+	 * NOTE: timestamp and version cannot be specified together.
+	 *
 	 * @return A future resolving to a request result as json.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
 	public static CompletableFuture<String> buildGetAcceptanceMechanismRequest(
 			String submitterDid,
-			int timestamp) throws IndyException {
+			int timestamp,
+			String version) throws IndyException {
 		
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
@@ -1514,6 +1522,7 @@ public class Ledger extends IndyJava.API {
 				commandHandle,
 				submitterDid,
 				timestamp,
+				version,
 				buildRequestCb);
 
 		checkResult(future, result);

@@ -635,10 +635,12 @@ impl LedgerService {
         Ok(request)
     }
 
-    pub fn build_acceptance_mechanism_request(&self, identifier: &str, aml: AcceptanceMechanisms, aml_context: Option<&str>) -> IndyResult<String> {
-        info!("build_acceptance_mechanism_request >>> identifier: {:?}, aml {:?}, aml_context {:?}", identifier, aml, aml_context);
+    pub fn build_acceptance_mechanism_request(&self, identifier: &str, aml: AcceptanceMechanisms, version: &str, aml_context: Option<&str>) -> IndyResult<String> {
+        info!("build_acceptance_mechanism_request >>> identifier: {:?}, aml {:?}, version {:?}, aml_context {:?}", identifier, aml, version, aml_context);
 
-        let operation = SetAcceptanceMechanismOperation::new(aml, aml_context.map(String::from));
+        let operation = SetAcceptanceMechanismOperation::new(aml,
+                                                             version.to_string(),
+                                                             aml_context.map(String::from));
 
         let request = Request::build_request(Some(identifier), operation)
             .to_indy(IndyErrorKind::InvalidState, "TXN_AUTHR_AGRMT_AML request json is invalid")?;
@@ -648,10 +650,14 @@ impl LedgerService {
         Ok(request)
     }
 
-    pub fn build_get_acceptance_mechanism_request(&self, identifier: Option<&str>, timestamp: Option<u64>) -> IndyResult<String> {
-        info!("build_get_acceptance_mechanism_request >>> identifier: {:?}, timestamp {:?}", identifier, timestamp);
+    pub fn build_get_acceptance_mechanism_request(&self, identifier: Option<&str>, timestamp: Option<u64>, version: Option<&str>) -> IndyResult<String> {
+        info!("build_get_acceptance_mechanism_request >>> identifier: {:?}, timestamp {:?}, version {:?}", identifier, timestamp, version);
 
-        let operation = GetAcceptanceMechanismOperation::new(timestamp);
+        if timestamp.is_some() && version.is_some() {
+            return Err(err_msg(IndyErrorKind::InvalidStructure, "timestamp and version cannot be specified together."));
+        }
+
+        let operation = GetAcceptanceMechanismOperation::new(timestamp, version.map(String::from));
 
         let request = Request::build_request(identifier, operation)
             .to_indy(IndyErrorKind::InvalidState, "GET_TXN_AUTHR_AGRMT_AML request json is invalid")?;
@@ -1185,16 +1191,6 @@ mod tests {
         }
 
         #[test]
-        fn build_auth_rule_request_works_for_invalid_auth_type() {
-            let ledger_service = LedgerService::new();
-
-            let res = ledger_service.build_auth_rule_request(IDENTIFIER, "WRONG", ADD_AUTH_ACTION, FIELD,
-                                                             None, Some(NEW_VALUE),
-                                                             &_role_constraint_json());
-            assert_kind!(IndyErrorKind::InvalidStructure, res);
-        }
-
-        #[test]
         fn build_auth_rule_request_works_for_invalid_auth_action() {
             let ledger_service = LedgerService::new();
 
@@ -1322,7 +1318,7 @@ mod tests {
             });
 
             let data = GetTxnAuthorAgreementData {
-                hash: None,
+                digest: None,
                 version: Some(VERSION.to_string()),
                 timestamp: None,
             };
@@ -1336,9 +1332,11 @@ mod tests {
         use super::*;
 
         const LABEL: &str = "label";
+        const VERSION: &str = "1.0.0";
         const CONTEXT: &str = "some context";
+        const TIMESTAMP: u64 = 123456789;
 
-        fn _aml() -> AcceptanceMechanisms{
+        fn _aml() -> AcceptanceMechanisms {
             let mut aml: AcceptanceMechanisms = AcceptanceMechanisms::new();
             aml.insert(LABEL.to_string(), json!({"text": "This is description for acceptance mechanism"}));
             aml
@@ -1351,9 +1349,10 @@ mod tests {
             let expected_result = json!({
                 "type": TXN_AUTHR_AGRMT_AML,
                 "aml":  _aml(),
+                "version":  VERSION,
             });
 
-            let request = ledger_service.build_acceptance_mechanism_request(IDENTIFIER,  _aml(), None).unwrap();
+            let request = ledger_service.build_acceptance_mechanism_request(IDENTIFIER, _aml(), VERSION, None).unwrap();
             check_request(&request, expected_result);
         }
 
@@ -1364,10 +1363,11 @@ mod tests {
             let expected_result = json!({
                 "type": TXN_AUTHR_AGRMT_AML,
                 "aml":  _aml(),
+                "version":  VERSION,
                 "amlContext": CONTEXT.to_string(),
             });
 
-            let request = ledger_service.build_acceptance_mechanism_request(IDENTIFIER,  _aml(), Some(CONTEXT)).unwrap();
+            let request = ledger_service.build_acceptance_mechanism_request(IDENTIFIER, _aml(), VERSION, Some(CONTEXT)).unwrap();
             check_request(&request, expected_result);
         }
 
@@ -1379,23 +1379,42 @@ mod tests {
                 "type": GET_TXN_AUTHR_AGRMT_AML,
             });
 
-            let request = ledger_service.build_get_acceptance_mechanism_request(None, None).unwrap();
+            let request = ledger_service.build_get_acceptance_mechanism_request(None, None, None).unwrap();
             check_request(&request, expected_result);
         }
 
         #[test]
         fn build_get_acceptance_mechanism_request_for_timestamp() {
-            let timestamp = ::time::get_time().sec as u64;
-
             let ledger_service = LedgerService::new();
 
             let expected_result = json!({
                 "type": GET_TXN_AUTHR_AGRMT_AML,
-                "timestamp": timestamp,
+                "timestamp": TIMESTAMP,
             });
 
-            let request = ledger_service.build_get_acceptance_mechanism_request(None, Some(timestamp)).unwrap();
+            let request = ledger_service.build_get_acceptance_mechanism_request(None, Some(TIMESTAMP), None).unwrap();
             check_request(&request, expected_result);
+        }
+
+        #[test]
+        fn build_get_acceptance_mechanism_request_for_version() {
+            let ledger_service = LedgerService::new();
+
+            let expected_result = json!({
+                "type": GET_TXN_AUTHR_AGRMT_AML,
+                "version": VERSION,
+            });
+
+            let request = ledger_service.build_get_acceptance_mechanism_request(None, None, Some(VERSION)).unwrap();
+            check_request(&request, expected_result);
+        }
+
+        #[test]
+        fn build_get_acceptance_mechanism_request_for_timestamp_and_version() {
+            let ledger_service = LedgerService::new();
+
+            let res = ledger_service.build_get_acceptance_mechanism_request(None, Some(TIMESTAMP), Some(VERSION));
+            assert_kind!(IndyErrorKind::InvalidStructure, res);
         }
     }
 
