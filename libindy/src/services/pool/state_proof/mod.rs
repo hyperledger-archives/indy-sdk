@@ -216,7 +216,7 @@ pub fn parse_key_from_request_for_builtin_sp(json_msg: &SJsonValue) -> Option<Ve
         }
         */
         constants::GET_TXN_AUTHR_AGRMT => {
-            match (json_msg["version"].as_str(), json_msg["digest"].as_str(), json_msg["timestamp"].as_str()) {
+            match (json_msg["version"].as_str(), json_msg["digest"].as_str(), json_msg["timestamp"].as_u64()) {
                 (None, None, None) => "2:latest".to_owned(),
                 (None, None, Some(_ts)) => {
                     // TODO validation should check freshness on receiving entities for some moment in the history
