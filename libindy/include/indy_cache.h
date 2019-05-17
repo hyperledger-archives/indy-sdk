@@ -58,7 +58,10 @@ extern "C" {
     /// id: identifier of credential definition.
     /// options_json:
     ///  {
-    ///    forceUpdate: (optional, false by default) Force update of record in cache from the ledger,
+    ///    noCache: (bool, optional, false by default) Skip usage of cache,
+    ///    noUpdate: (bool, optional, false by default) Use only cached data, do not try to update.
+    ///    noStore: (bool, optional, false by default) Skip storing fresh data if updated,
+    ///    minFresh: (int, optional, -1 by default) Return cached data if not older than this many seconds. -1 means do not check age.
     ///  }
     ///
     /// #Returns
