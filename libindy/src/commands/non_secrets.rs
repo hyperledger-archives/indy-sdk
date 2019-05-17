@@ -391,11 +391,16 @@ impl NonSecretsCommandExecutor {
         } else {Ok(None)};
         let cache = try_cb!(cache, cb);
 
-        if cache.is_some() {
-            let cache = cache.unwrap();
+        if let Some(cache) = cache {
             let min_fresh = options.min_fresh.unwrap_or(-1);
             if min_fresh >= 0 {
-                let ts = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs() as i32;
+                let ts = match SystemTime::now().duration_since(UNIX_EPOCH) {
+                    Ok(ts) => ts.as_secs() as i32,
+                    Err(err) => {
+                        error!("Cannot get time: {:?}", err);
+                        return cb(Err(IndyError::from_msg(IndyErrorKind::InvalidState, format!("Cannot get time: {:?}", err))))
+                    }
+                };
                 if ts - min_fresh <= cache.get_tags().unwrap_or(&Tags::new()).get("timestamp").unwrap_or(&"-1".to_string()).parse().unwrap_or(-1) {
                     return cb(Ok(cache.get_value().unwrap_or("").to_string()))
                 }
@@ -442,7 +447,13 @@ impl NonSecretsCommandExecutor {
 
         if !options.no_store.unwrap_or(false) {
             let mut tags = Tags::new();
-            let ts = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs() as i32;
+            let ts = match SystemTime::now().duration_since(UNIX_EPOCH) {
+                    Ok(ts) => ts.as_secs() as i32,
+                    Err(err) => {
+                        warn!("Cannot get time: {:?}", err);
+                        0
+                    }
+            };
             tags.insert("timestamp".to_string(), ts.to_string());
             let _ = self.wallet_service.delete_record(wallet_handle, SCHEMA_CACHE, &schema_id);
             let _ = self.wallet_service.add_record(wallet_handle, SCHEMA_CACHE, &schema_id, &schema_json, &tags);
@@ -476,11 +487,16 @@ impl NonSecretsCommandExecutor {
         } else {Ok(None)};
         let cache = try_cb!(cache, cb);
 
-        if cache.is_some() {
-            let cache = cache.unwrap();
+        if let Some(cache) = cache {
             let min_fresh = options.min_fresh.unwrap_or(-1);
             if min_fresh >= 0 {
-                let ts = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs() as i32;
+                let ts = match SystemTime::now().duration_since(UNIX_EPOCH) {
+                    Ok(ts) => ts.as_secs() as i32,
+                    Err(err) => {
+                        error!("Cannot get time: {:?}", err);
+                        return cb(Err(IndyError::from_msg(IndyErrorKind::InvalidState, format!("Cannot get time: {:?}", err))))
+                    }
+                };
                 if ts - min_fresh <= cache.get_tags().unwrap_or(&Tags::new()).get("timestamp").unwrap_or(&"-1".to_string()).parse().unwrap_or(-1) {
                     return cb(Ok(cache.get_value().unwrap_or("").to_string()))
                 }
@@ -527,7 +543,13 @@ impl NonSecretsCommandExecutor {
 
         if !options.no_store.unwrap_or(false) {
             let mut tags = Tags::new();
-            let ts = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs() as i32;
+            let ts = match SystemTime::now().duration_since(UNIX_EPOCH) {
+                    Ok(ts) => ts.as_secs() as i32,
+                    Err(err) => {
+                        warn!("Cannot get time: {:?}", err);
+                        0
+                    }
+            };
             tags.insert("timestamp".to_string(), ts.to_string());
             let _ = self.wallet_service.delete_record(wallet_handle, CRED_DEF_CACHE, &cred_def_id);
             let _ = self.wallet_service.add_record(wallet_handle, CRED_DEF_CACHE, &cred_def_id, &cred_def_json, &tags);
@@ -546,7 +568,13 @@ impl NonSecretsCommandExecutor {
 
         let max_age = options.max_age.unwrap_or(-1);
         let query_json = if max_age >= 0 {
-            let ts = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs() as i32;
+            let ts = match SystemTime::now().duration_since(UNIX_EPOCH) {
+                Ok(ts) => ts.as_secs() as i32,
+                Err(err) => {
+                    error!("Cannot get time: {:?}", err);
+                    return Err(IndyError::from_msg(IndyErrorKind::InvalidState, format!("Cannot get time: {:?}", err)))
+                }
+            };
             json!({"timestamp": {"$lt": ts - max_age}}).to_string()
         } else {
             "{}".to_string()
@@ -586,7 +614,13 @@ impl NonSecretsCommandExecutor {
 
         let max_age = options.max_age.unwrap_or(-1);
         let query_json = if max_age >= 0 {
-            let ts = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs() as i32;
+            let ts = match SystemTime::now().duration_since(UNIX_EPOCH) {
+                Ok(ts) => ts.as_secs() as i32,
+                Err(err) => {
+                    error!("Cannot get time: {:?}", err);
+                    return Err(IndyError::from_msg(IndyErrorKind::InvalidState, format!("Cannot get time: {:?}", err)))
+                }
+            };
             json!({"timestamp": {"$lt": ts - max_age}}).to_string()
         } else {
             "{}".to_string()
