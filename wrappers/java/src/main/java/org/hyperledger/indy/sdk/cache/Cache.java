@@ -1,4 +1,4 @@
-package org.hyperledger.indy.sdk.non_secrets;
+package org.hyperledger.indy.sdk.cache;
 
 import com.sun.jna.Callback;
 import org.hyperledger.indy.sdk.IndyException;
@@ -11,7 +11,7 @@ import org.hyperledger.indy.sdk.wallet.Wallet;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * non_secrets.rs API
+ * cache.rs API
  */
 
 /**

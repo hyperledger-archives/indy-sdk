@@ -1,4 +1,4 @@
-package org.hyperledger.indy.sdk.non_secrets;
+package org.hyperledger.indy.sdk.cache;
 
 import org.hyperledger.indy.sdk.InvalidStructureException;
 import org.hyperledger.indy.sdk.utils.PoolUtils;
