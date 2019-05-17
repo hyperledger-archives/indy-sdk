@@ -1,7 +1,8 @@
 import json
 import pytest
+import time
 
-from indy import ledger, anoncreds, cache
+from indy import ledger, anoncreds, cache, IndyError
 
 
 @pytest.mark.asyncio
@@ -20,7 +21,18 @@ async def test_get_cred_def_works(pool_handle, wallet_handle, identity_my):
     schema_request = await ledger.build_schema_request(my_did, schema_json)
     await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did, schema_request)
 
-    schema_json = await cache.get_schema(pool_handle, wallet_handle, my_did, schema_id, json.dumps(options_json))
+    # retry if previous request is not applied
+    for _ in range(3):
+        try:
+            schema_json = await cache.get_schema(pool_handle, wallet_handle, my_did, schema_id, json.dumps(options_json))
+        except IndyError as err:
+            if e.error_code == ErrorCode.LedgerNotFound:
+                logger = logging.getLogger(__name__)
+                logger.warning(e)
+                logger.warning(response)
+                time.sleep(5)
+            else:
+                raise err
 
     (cred_def_id, cred_def_json) = \
         await anoncreds.issuer_create_and_store_credential_def(wallet_handle, my_did, schema_json, "TAG", "CL",
@@ -29,4 +41,15 @@ async def test_get_cred_def_works(pool_handle, wallet_handle, identity_my):
     cred_def_request = await ledger.build_cred_def_request(my_did, cred_def_json)
     await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did, cred_def_request)
 
-    await cache.get_cred_def(pool_handle, wallet_handle, my_did, cred_def_id, json.dumps(options_json))
+    # retry if previous request is not applied
+    for _ in range(3):
+        try:
+            await cache.get_cred_def(pool_handle, wallet_handle, my_did, cred_def_id, json.dumps(options_json))
+        except IndyError as err:
+            if e.error_code == ErrorCode.LedgerNotFound:
+                logger = logging.getLogger(__name__)
+                logger.warning(e)
+                logger.warning(response)
+                time.sleep(5)
+            else:
+                raise err

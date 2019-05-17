@@ -21,4 +21,15 @@ async def test_get_schema_works(pool_handle, wallet_handle, identity_my):
         "minFresh": -1,
     }
 
-    await cache.get_schema(pool_handle, wallet_handle, my_did, schema_id, json.dumps(options_json))
+    # retry if previous request is not applied
+    for _ in range(3):
+        try:
+            await cache.get_schema(pool_handle, wallet_handle, my_did, schema_id, json.dumps(options_json))
+        except IndyError as err:
+            if e.error_code == ErrorCode.LedgerNotFound:
+                logger = logging.getLogger(__name__)
+                logger.warning(e)
+                logger.warning(response)
+                time.sleep(5)
+            else:
+                raise err
