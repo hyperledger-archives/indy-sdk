@@ -370,6 +370,9 @@ pub mod auth_rule {
 
     pub fn get_action_fee_alias(action: (&str, &str, &str, Option<&str>, &str)) -> VcxResult<Option<String>> {
         let (txn_type, action, field, old_value, new_value) = action;
+
+        if settings::test_indy_mode_enabled() { return Ok(Some(txn_type.to_string())); }
+
         let constraint = _get_action_constraint(txn_type, action, field, old_value, Some(new_value))?;
         _extract_fee_alias_from_constraint(&constraint, None)
     }
