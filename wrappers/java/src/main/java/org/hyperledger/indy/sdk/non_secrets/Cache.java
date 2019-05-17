@@ -65,6 +65,8 @@ public class Cache extends IndyJava.API {
 	/**
 	 * Purge schema cache.
 	 *
+	 * EXPERIMENTAL
+	 *
 	 * @param wallet      The wallet.
 	 * @param optionsJson The record tags used for search and storing meta information as json:
 	 *                    {
@@ -98,6 +100,8 @@ public class Cache extends IndyJava.API {
 
 	/**
 	 * Purge credential definition cache.
+	 *
+	 * EXPERIMENTAL
 	 *
 	 * @param wallet      The wallet.
 	 * @param optionsJson The record tags used for search and storing meta information as json:
@@ -134,6 +138,8 @@ public class Cache extends IndyJava.API {
 	 * Gets schema json data for specified schema id.
 	 * If data is present inside of cache, cached data is returned.
 	 * Otherwise data is fetched from the ledger and stored inside of cache for future use.
+	 *
+	 * EXPERIMENTAL
 	 *
 	 * @param pool           The pool.
 	 * @param wallet         The wallet.
@@ -193,6 +199,8 @@ public class Cache extends IndyJava.API {
 	 * Gets credential definition json data for specified credential definition id.
 	 * If data is present inside of cache, cached data is returned.
 	 * Otherwise data is fetched from the ledger and stored inside of cache for future use.
+	 *
+	 * EXPERIMENTAL
 	 *
 	 * @param pool           The pool.
 	 * @param wallet         The wallet.

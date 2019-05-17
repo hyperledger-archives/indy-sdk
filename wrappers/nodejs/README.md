@@ -2807,6 +2807,8 @@ Get schema json data for specified schema id.
 If data is present inside of cache, cached data is returned.
 Otherwise data is fetched from the ledger and stored inside of cache for future use.
 
+EXPERIMENTAL
+
 * `poolHandle`:
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `submitterDid`: String - DID of the read request sender.
@@ -2835,6 +2837,8 @@ __->__ schema: Json
 Errors: `Common*`, `Wallet*`, `Ledger*`
 
 #### getCredDef \( poolHandle, wh, submitterDid, id, options \) -&gt; credDef
+
+EXPERIMENTAL
 
 Get credential definition json data for specified credential definition id.
 If data is present inside of cache, cached data is returned.
@@ -2875,6 +2879,8 @@ Errors: `Common*`, `Wallet*`, `Ledger*`
 
 Purge schema cache.
 
+EXPERIMENTAL
+
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `options`: Json
 ```
@@ -2889,6 +2895,8 @@ Errors: `Common*`, `Wallet*`
 #### purgeCredDefCache \( wh, options \) -&gt; void
 
 Purge credential definition cache.
+
+EXPERIMENTAL
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `options`: Json

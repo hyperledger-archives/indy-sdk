@@ -458,6 +458,8 @@ async def get_schema(pool_handle: int, wallet_handle: int, submitter_did: str, i
     If data is present inside of cache, cached data is returned.
     Otherwise data is fetched from the ledger and stored inside of cache for future use.
 
+    EXPERIMENTAL
+
     :param pool_handle: pool handle (created by open_pool_ledger).
     :param wallet_handle: wallet handle (created by open_wallet).
     :param submitter_did: DID of the submitter stored in secured Wallet.
@@ -514,6 +516,8 @@ async def get_cred_def(pool_handle: int, wallet_handle: int, submitter_did: str,
     Gets credential definition json data for specified credential definition id.
     If data is present inside of cache, cached data is returned.
     Otherwise data is fetched from the ledger and stored inside of cache for future use.
+
+    EXPERIMENTAL
 
     :param pool_handle: pool handle (created by open_pool_ledger).
     :param wallet_handle: wallet handle (created by open_wallet).
@@ -574,6 +578,8 @@ async def purge_schema_cache(wallet_handle: int, options_json: str) -> None:
     """
     Purge schema cache.
 
+    EXPERIMENTAL
+
     :param wallet_handle: wallet handle (used for cache)
     :param options_json:
     {
@@ -606,6 +612,8 @@ async def purge_schema_cache(wallet_handle: int, options_json: str) -> None:
 async def purge_cred_def_cache(wallet_handle: int, options_json: str) -> None:
     """
     Purge credential definition cache.
+
+    EXPERIMENTAL
 
     :param wallet_handle: wallet handle (used for cache)
     :param options_json:

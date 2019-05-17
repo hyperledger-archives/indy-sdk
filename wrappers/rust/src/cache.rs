@@ -14,6 +14,8 @@ use ffi::{WalletHandle, CommandHandle, PoolHandle};
 /// If data is present inside of cache, cached data is returned.
 /// Otherwise data is fetched from the ledger and stored inside of cache for future use.
 ///
+/// EXPERIMENTAL
+///
 /// # Arguments
 /// * `pool_handle` - pool handle (created by open_pool_ledger).
 /// * `wallet_handle` - wallet handle (created by open_wallet).
@@ -68,6 +70,8 @@ pub fn _get_schema(command_handle: CommandHandle,
 /// Get credential definition json data for specified credential definition id.
 /// If data is present inside of cache, cached data is returned.
 /// Otherwise data is fetched from the ledger and stored inside of cache for future use.
+///
+/// EXPERIMENTAL
 ///
 /// # Arguments
 /// * `pool_handle` - pool handle (created by open_pool_ledger).
@@ -126,6 +130,8 @@ pub fn _get_cred_def(command_handle: CommandHandle,
 
 /// Purge schema cache.
 ///
+/// EXPERIMENTAL
+///
 /// # Arguments
 /// * `wallet_handle` - wallet handle (created by open_wallet).
 /// * `id` - identifier of schema.
@@ -148,6 +154,8 @@ fn _purge_schema_cache(command_handle: CommandHandle, wallet_handle: WalletHandl
 }
 
 /// Purge credential definition cache.
+///
+/// EXPERIMENTAL
 ///
 /// # Arguments
 /// * `wallet_handle` - wallet handle (created by open_wallet).

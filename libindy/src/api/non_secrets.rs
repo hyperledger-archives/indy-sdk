@@ -527,6 +527,8 @@ pub  extern fn indy_close_wallet_search(command_handle: CommandHandle,
 /// If data is present inside of cache, cached data is returned.
 /// Otherwise data is fetched from the ledger and stored inside of cache for future use.
 ///
+/// EXPERIMENTAL
+///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
 /// pool_handle: pool handle (created by open_pool_ledger).
@@ -584,6 +586,8 @@ pub extern fn indy_get_cred_def(command_handle: CommandHandle,
 /// Gets schema json data for specified schema id.
 /// If data is present inside of cache, cached data is returned.
 /// Otherwise data is fetched from the ledger and stored inside of cache for future use.
+///
+/// EXPERIMENTAL
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
@@ -644,6 +648,8 @@ pub extern fn indy_get_schema(command_handle: CommandHandle,
 
 /// Purge credential definition cache.
 ///
+/// EXPERIMENTAL
+///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
 /// wallet_handle: wallet handle (created by open_wallet).
@@ -686,6 +692,8 @@ pub extern fn indy_purge_cred_def_cache(command_handle: CommandHandle,
 }
 
 /// Purge schema cache.
+///
+/// EXPERIMENTAL
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.

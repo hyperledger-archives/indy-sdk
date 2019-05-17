@@ -197,6 +197,8 @@
  Fetch next records for wallet search.
 
  Not if there are no records this call returns WalletNoRecords error.
+
+ EXPERIMENTAL
  
  @param searchHandle wallet search handle (created by openSearchInWallet)
  @param walletHandle wallet handle returned by IndyWallet::openWalletWithName.
@@ -232,6 +234,8 @@
  Gets schema json data for specified schema id.
  If data is present inside of cache, cached data is returned.
  Otherwise data is fetched from the ledger and stored inside of cache for future use.
+
+ EXPERIMENTAL
 
  @param poolHandle pool handle (created by open_pool_ledger).
  @param walletHandle wallet handle (created by open_wallet).
@@ -301,6 +305,8 @@
 /**
  Purge schema cache
 
+ EXPERIMENTAL
+
  @param walletHandle wallet handle (created by open_wallet).
  @param optionsJson
   {
@@ -315,6 +321,8 @@
 
 /**
  Purge credential definition cache
+
+ EXPERIMENTAL
 
  @param walletHandle wallet handle (created by open_wallet).
  @param optionsJson
