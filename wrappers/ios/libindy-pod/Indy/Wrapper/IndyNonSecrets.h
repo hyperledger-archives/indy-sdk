@@ -198,8 +198,6 @@
 
  Not if there are no records this call returns WalletNoRecords error.
 
- EXPERIMENTAL
- 
  @param searchHandle wallet search handle (created by openSearchInWallet)
  @param walletHandle wallet handle returned by IndyWallet::openWalletWithName.
  @param count Count of records to fetch

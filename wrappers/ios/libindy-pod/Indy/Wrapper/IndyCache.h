@@ -49,6 +49,8 @@
  If data is present inside of cache, cached data is returned.
  Otherwise data is fetched from the ledger and stored inside of cache for future use.
 
+ EXPERIMENTAL
+
  @param poolHandle pool handle (created by open_pool_ledger).
  @param walletHandle wallet handle (created by open_wallet).
  @param submitterDid DID of the submitter stored in secured Wallet.
