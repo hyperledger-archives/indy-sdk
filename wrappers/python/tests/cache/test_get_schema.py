@@ -1,7 +1,7 @@
 import json
 import pytest
 
-from indy import ledger, anoncreds, non_secrets
+from indy import ledger, anoncreds, cache
 
 
 @pytest.mark.asyncio
@@ -21,4 +21,4 @@ async def test_get_schema_works(pool_handle, wallet_handle, identity_my):
         "minFresh": -1,
     }
 
-    await non_secrets.get_schema(pool_handle, wallet_handle, my_did, schema_id, json.dumps(options_json))
+    await cache.get_schema(pool_handle, wallet_handle, my_did, schema_id, json.dumps(options_json))
