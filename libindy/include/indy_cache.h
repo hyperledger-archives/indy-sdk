@@ -1,5 +1,5 @@
-#ifndef __indy__non_secrets__included__
-#define __indy__non_secrets__included__
+#ifndef __indy__cache__included__
+#define __indy__cache__included__
 
 #ifdef __cplusplus
 extern "C" {
