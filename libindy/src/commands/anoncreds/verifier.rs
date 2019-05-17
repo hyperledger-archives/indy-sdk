@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap};
 use std::rc::Rc;
 
 use domain::anoncreds::credential_definition::{cred_defs_map_to_cred_defs_v1_map, CredentialDefinition, CredentialDefinitionV1};
@@ -55,66 +55,6 @@ impl VerifierCommandExecutor {
         debug!("verify_proof >>> proof_req: {:?}, proof: {:?}, schemas: {:?}, cred_defs: {:?},  \
                rev_reg_defs: {:?}, rev_regs: {:?}",
                proof_req, proof, schemas, cred_defs, rev_reg_defs, rev_regs);
-
-        let requested_attrs: HashSet<String> =
-            proof_req.requested_attributes
-                .keys()
-                .cloned()
-                .into_iter()
-                .collect::<HashSet<String>>();
-
-        let received_revealed_attrs: HashSet<String> =
-            proof.requested_proof.revealed_attrs
-                .keys()
-                .cloned()
-                .into_iter()
-                .collect::<HashSet<String>>();
-
-        let received_unrevealed_attrs: HashSet<String> =
-            proof.requested_proof.unrevealed_attrs
-                .keys()
-                .cloned()
-                .into_iter()
-                .collect::<HashSet<String>>();
-
-        let received_self_attested_attrs: HashSet<String> =
-            proof.requested_proof.self_attested_attrs
-                .keys()
-                .cloned()
-                .into_iter()
-                .collect::<HashSet<String>>();
-
-        let received_attrs = received_revealed_attrs
-            .union(&received_unrevealed_attrs)
-            .cloned()
-            .collect::<HashSet<String>>()
-            .union(&received_self_attested_attrs)
-            .cloned()
-            .collect::<HashSet<String>>();
-
-        if requested_attrs != received_attrs {
-            return Err(err_msg(IndyErrorKind::InvalidStructure,
-                               format!("Requested attributes {:?} do not correspond to received {:?}", requested_attrs, received_attrs)));
-        }
-
-        let requested_predicates: HashSet<String> =
-            proof_req.requested_predicates
-                .keys()
-                .cloned()
-                .into_iter()
-                .collect::<HashSet<String>>();
-
-        let received_predicates: HashSet<String> =
-            proof.requested_proof.predicates
-                .keys()
-                .cloned()
-                .into_iter()
-                .collect::<HashSet<String>>();
-
-        if requested_predicates != received_predicates {
-            return Err(err_msg(IndyErrorKind::InvalidStructure,
-                               format!("Requested predicates {:?} do not correspond to received {:?}", requested_predicates, received_predicates)));
-        }
 
         let result = self.anoncreds_service.verifier.verify(&proof,
                                                             &proof_req,

@@ -49,24 +49,24 @@ pub struct Extension {
 
 impl rlp::Encodable for Node {
     fn rlp_append(&self, s: &mut RlpStream) {
-        match self {
-            &Node::Hash(ref hash) => {
+        match *self {
+            Node::Hash(ref hash) => {
                 s.append_internal(&hash.as_slice());
             }
-            &Node::Leaf(ref pair) => {
+            Node::Leaf(ref pair) => {
                 s.begin_list(Node::PAIR_SIZE);
                 s.append(&pair.path);
                 s.append(&pair.value);
             }
-            &Node::Extension(ref ext) => {
+            Node::Extension(ref ext) => {
                 s.begin_list(Node::PAIR_SIZE);
                 s.append(&ext.path);
                 s.append(ext.next.as_ref());
             }
-            &Node::Full(ref node) => {
+            Node::Full(ref node) => {
                 s.begin_list(Node::FULL_SIZE);
                 for node in &node.nodes {
-                    if let &Some(ref node) = node {
+                    if let Some(ref node) = *node {
                         s.append(node.as_ref());
                     } else {
                         s.append_empty_data();
@@ -159,7 +159,7 @@ impl Node {
                 let mut vec: Vec<Vec<u8>> = UntrustedRlp::new(v.as_slice()).as_list().unwrap_or_default(); //default will cause error below
 
                 if let Some(val) = vec.pop() {
-                    if vec.len() == 0 {
+                    if vec.is_empty() {
                         return Ok(Some(val));
                     }
                 }
@@ -171,8 +171,8 @@ impl Node {
     }
     fn _get_value<'a, 'b>(&'a self, db: &'a TrieDB, path: &'b [u8]) -> IndyResult<Option<&'a Vec<u8>>> {
         trace!("Check proof, cur node: {:?}", self);
-        match self {
-            &Node::Full(ref node) => {
+        match *self {
+            Node::Full(ref node) => {
                 if path.is_empty() {
                     return Ok(node.value.as_ref());
                 }
@@ -181,7 +181,7 @@ impl Node {
                 }
                 Ok(None)
             }
-            &Node::Hash(ref hash) => {
+            Node::Hash(ref hash) => {
                 let hash = NodeHash::from_slice(hash.as_slice());
                 if let Some(ref next) = db.get(hash) {
                     return next._get_value(db, path);
@@ -189,7 +189,7 @@ impl Node {
                     return Err(err_msg(IndyErrorKind::InvalidStructure, "Incomplete key-value DB for Patricia Merkle Trie to get value by the key"));
                 }
             }
-            &Node::Leaf(ref pair) => {
+            Node::Leaf(ref pair) => {
                 let (is_leaf, pair_path) = Node::parse_path(pair.path.as_slice());
 
                 if !is_leaf {
@@ -204,7 +204,7 @@ impl Node {
                     Ok(None)
                 }
             }
-            &Node::Extension(ref pair) => {
+            Node::Extension(ref pair) => {
                 let (is_leaf, pair_path) = Node::parse_path(pair.path.as_slice());
 
                 if is_leaf {

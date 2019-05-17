@@ -372,6 +372,66 @@ async def parse_payment_response(payment_method: str,
     return res
 
 
+async def prepare_payment_extra_with_acceptance_data(extra_json: Optional[str],
+                                                     text: Optional[str],
+                                                     version: Optional[str],
+                                                     taa_digest: Optional[str],
+                                                     mechanism: str,
+                                                     time: int) -> str:
+    """
+    Append payment extra JSON with TAA acceptance data
+   
+    EXPERIMENTAL
+   
+    This function may calculate digest by itself or consume it as a parameter.
+    If all text, version and taa_digest parameters are specified, a check integrity of them will be done.
+
+    :param extra_json: (Optional) original extra json.
+    :param text and version: (Optional) raw data about TAA from ledger.
+               These parameters should be passed together.
+               These parameters are required if taa_digest parameter is omitted.
+    :param taa_digest: (Optional) hash on text and version. This parameter is required if text and version parameters are omitted.
+    :param mechanism: mechanism how user has accepted the TAA
+    :param time: UTC timestamp when user has accepted the TAA
+
+    :return: Updated request result as json.
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug(
+        "prepare_payment_extra_with_acceptance_data: >>> extra_json: %r, text: %r, version: %r, hash: %r, "
+        "acc_mech_type: %r, time_of_acceptance: %r",
+        extra_json,
+        text,
+        version,
+        taa_digest,
+        mechanism,
+        time)
+
+    if not hasattr(prepare_payment_extra_with_acceptance_data, "cb"):
+        logger.debug("prepare_payment_extra_with_acceptance_data: Creating callback")
+        prepare_payment_extra_with_acceptance_data.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_extra_json = c_char_p(extra_json.encode('utf-8')) if extra_json is not None else None
+    c_text = c_char_p(text.encode('utf-8')) if text is not None else None
+    c_version = c_char_p(version.encode('utf-8')) if version is not None else None
+    c_taa_digest = c_char_p(taa_digest.encode('utf-8')) if taa_digest is not None else None
+    c_mechanism = c_char_p(mechanism.encode('utf-8'))
+
+    request_json = await do_call('indy_prepare_payment_extra_with_acceptance_data',
+                                 c_extra_json,
+                                 c_text,
+                                 c_version,
+                                 c_taa_digest,
+                                 c_mechanism,
+                                 c_uint64(time),
+                                 prepare_payment_extra_with_acceptance_data.cb)
+
+    res = request_json.decode()
+    logger.debug("prepare_payment_extra_with_acceptance_data: <<< res: %r", res)
+    return res
+
+
 async def build_mint_req(wallet_handle: int,
                          submitter_did: str,
                          outputs_json: str,

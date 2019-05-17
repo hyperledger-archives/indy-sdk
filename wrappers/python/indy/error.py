@@ -74,10 +74,10 @@ class ErrorCode(IntEnum):
     # Trying to open wallet that was opened already
     WalletAlreadyOpenedError = 206,
 
-    # Input provided to wallet operations is considered not valid
+    # Attempt to open encrypted wallet with invalid credentials
     WalletAccessFailed = 207,
 
-    # Attempt to open encrypted wallet with invalid credentials
+    # Input provided to wallet operations is considered not valid
     WalletInputError = 208,
 
     # Decoding of wallet data during input/output failed

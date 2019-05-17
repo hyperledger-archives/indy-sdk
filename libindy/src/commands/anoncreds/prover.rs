@@ -2,7 +2,7 @@ use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
-use indy_crypto::cl::{new_nonce, RevocationRegistry, Witness};
+use ursa::cl::{new_nonce, RevocationRegistry, Witness};
 
 use domain::anoncreds::credential::{Credential, CredentialInfo};
 use domain::anoncreds::credential_definition::{cred_defs_map_to_cred_defs_v1_map, CredentialDefinition, CredentialDefinitionV1};
@@ -279,7 +279,7 @@ impl ProverCommandExecutor {
 
         let credential_request_metadata = CredentialRequestMetadata {
             master_secret_blinding_data: ms_blinding_data,
-            nonce: credential_request.nonce.clone()?,
+            nonce: credential_request.nonce.try_clone()?,
             master_secret_name: master_secret_id.to_string()
         };
 
@@ -484,7 +484,7 @@ impl ProverCommandExecutor {
                                                                        &attr_id,
                                                                        &requested_attr.restrictions,
                                                                        &extra_query)?;
-            let mut credentials_search =
+            let credentials_search =
                 self.wallet_service.search_indy_records::<Credential>(wallet_handle, &query_json, &SearchOptions::id_value())?;
 
             let interval = self.anoncreds_service.prover.get_non_revoc_interval(&proof_request.non_revoked, &requested_attr.non_revoked);
@@ -499,7 +499,7 @@ impl ProverCommandExecutor {
                                                                        &predicate_id,
                                                                        &requested_predicate.restrictions,
                                                                        &extra_query)?;
-            let mut credentials_search =
+            let credentials_search =
                 self.wallet_service.search_indy_records::<Credential>(wallet_handle, &query_json, &SearchOptions::id_value())?;
 
             let interval = self.anoncreds_service.prover.get_non_revoc_interval(&proof_request.non_revoked, &requested_predicate.non_revoked);

@@ -1,6 +1,9 @@
+import json
 from ctypes import *
 import logging
-from vcx.common import do_call, create_cb
+from typing import Optional
+
+from vcx.common import do_call, create_cb, do_call_sync
 
 
 async def vcx_agent_provision(config: str) -> None:
@@ -137,3 +140,39 @@ async def vcx_messages_update_status(msg_json: str):
 
     logger.debug("vcx_messages_update_status completed")
     return result
+
+
+async def vcx_get_ledger_author_agreement():
+    """
+    Retrieve author agreement set on the Ledger
+    :return:
+    """
+    logger = logging.getLogger(__name__)
+
+    if not hasattr(vcx_get_ledger_author_agreement, "cb"):
+        logger.debug("vcx_get_ledger_author_agreement: Creating callback")
+        vcx_get_ledger_author_agreement.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
+    result = await do_call('vcx_get_ledger_author_agreement',
+                           vcx_get_ledger_author_agreement.cb)
+
+    logger.debug("vcx_get_ledger_author_agreement completed")
+    return result.decode()
+
+
+def vcx_set_active_txn_author_agreement_meta(text: Optional[str],
+                                             version: Optional[str],
+                                             hash: Optional[str],
+                                             acc_mech_type: str,
+                                             time_of_acceptance: int) -> None:
+    logger = logging.getLogger(__name__)
+
+    name = 'vcx_set_active_txn_author_agreement_meta'
+
+    c_text = c_char_p(json.dumps(text).encode('utf-8')) if text else None
+    c_version = c_char_p(json.dumps(version).encode('utf-8')) if version else None
+    c_hash = c_char_p(json.dumps(hash).encode('utf-8')) if hash else None
+    c_acc_mech_type = c_char_p(acc_mech_type.encode('utf-8'))
+    c_time_of_acceptance = c_uint64(time_of_acceptance)
+
+    do_call_sync(name, c_text, c_version, c_hash, c_acc_mech_type, c_time_of_acceptance)
+    logger.debug("set_active_txn_author_agreement_meta completed")
