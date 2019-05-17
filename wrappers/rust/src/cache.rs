@@ -6,7 +6,7 @@ use std::ffi::CString;
 
 use utils::callbacks::{ClosureHandler, ResultHandler};
 
-use ffi::{non_secrets};
+use ffi::cache;
 use ffi::{ResponseEmptyCB, ResponseStringCB};
 use ffi::{WalletHandle, CommandHandle, PoolHandle};
 
@@ -62,7 +62,7 @@ pub fn _get_schema(command_handle: CommandHandle,
 
     ErrorCode::from(
         unsafe {
-            non_secrets::indy_get_schema(command_handle, pool_handle, wallet_handle, submitter_did.as_ptr(), id.as_ptr(), options_json.as_ptr(), cb)
+            cache::indy_get_schema(command_handle, pool_handle, wallet_handle, submitter_did.as_ptr(), id.as_ptr(), options_json.as_ptr(), cb)
         }
     )
 }
@@ -123,7 +123,7 @@ pub fn _get_cred_def(command_handle: CommandHandle,
 
     ErrorCode::from(
         unsafe {
-            non_secrets::indy_get_cred_def(command_handle, pool_handle, wallet_handle, submitter_did.as_ptr(), id.as_ptr(), options_json.as_ptr(), cb)
+            cache::indy_get_cred_def(command_handle, pool_handle, wallet_handle, submitter_did.as_ptr(), id.as_ptr(), options_json.as_ptr(), cb)
         }
     )
 }
@@ -150,7 +150,7 @@ pub fn purge_schema_cache(wallet_handle: WalletHandle, options_json: &str) -> Bo
 fn _purge_schema_cache(command_handle: CommandHandle, wallet_handle: WalletHandle, options_json: &str, cb: Option<ResponseEmptyCB>) -> ErrorCode {
     let options_json = c_str!(options_json);
 
-    ErrorCode::from(unsafe { non_secrets::indy_purge_schema_cache(command_handle, wallet_handle, options_json.as_ptr(), cb) })
+    ErrorCode::from(unsafe { cache::indy_purge_schema_cache(command_handle, wallet_handle, options_json.as_ptr(), cb) })
 }
 
 /// Purge credential definition cache.
@@ -175,5 +175,5 @@ pub fn purge_cred_def_cache(wallet_handle: WalletHandle, options_json: &str) -> 
 fn _purge_cred_def_cache(command_handle: CommandHandle, wallet_handle: WalletHandle, options_json: &str, cb: Option<ResponseEmptyCB>) -> ErrorCode {
     let options_json = c_str!(options_json);
 
-    ErrorCode::from(unsafe { non_secrets::indy_purge_cred_def_cache(command_handle, wallet_handle, options_json.as_ptr(), cb) })
+    ErrorCode::from(unsafe { cache::indy_purge_cred_def_cache(command_handle, wallet_handle, options_json.as_ptr(), cb) })
 }
