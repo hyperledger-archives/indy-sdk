@@ -1391,6 +1391,15 @@ def publishingRCtoStable() {
 
                 echo 'Moving iOS RC artifacts to Stable: libnullpay'
                 publishLibnullpayIOSFilesRCtoStable(libnullpayVersion)
+
+                echo 'Moving MacOS RC artifacts to Stable: libindy'
+                publishLibindyMacOSFilesRCtoStable(libindyVersion)
+
+                echo 'Moving MacOS RC artifacts to Stable: libnullpay'
+                publishLibnullpayMacOSFilesRCtoStable(libnullpayVersion)
+
+                echo 'Moving MacOS RC artifacts to Stable: libvcx'
+                publishLibvcxMacOSFilesRCtoStable(libvcxVersion)
             } finally {
                 echo 'Moving RC artifacts to Stable: Cleanup'
                 step([$class: 'WsCleanup'])
@@ -1455,6 +1464,33 @@ def publishLibnullpayIOSFilesRCtoStable(version) {
 
     src = "/var/repository/repos/ios/libnullpay/rc/libnullpay-core/$rcFullVersion/"
     target = "/var/repository/repos/ios/libnullpay/stable/libnullpay-core/$version/"
+
+    copyFilesFromRcToStable(src, target)
+}
+
+def publishLibindyMacOSFilesRCtoStable(version) {
+    rcFullVersion = fullVersion(version)
+
+    src = "/var/repository/repos/macos/libindy/rc/$rcFullVersion/"
+    target = "/var/repository/repos/macos/libindy/stable/$version/"
+
+    copyFilesFromRcToStable(src, target)
+}
+
+def publishLibnullpayMacOSFilesRCtoStable(version) {
+    rcFullVersion = fullVersion(version)
+
+    src = "/var/repository/repos/macos/libnullpay/rc/$rcFullVersion/"
+    target = "/var/repository/repos/macos/libnullpay/stable/$version/"
+
+    copyFilesFromRcToStable(src, target)
+}
+
+def publishLibvcxMacOSFilesRCtoStable(version) {
+    rcFullVersion = fullVersion(version)
+
+    src = "/var/repository/repos/macos/libvcx/rc/$rcFullVersion/"
+    target = "/var/repository/repos/macos/libvcx/stable/$version/"
 
     copyFilesFromRcToStable(src, target)
 }
