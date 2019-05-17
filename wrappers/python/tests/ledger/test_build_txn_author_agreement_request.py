@@ -38,13 +38,13 @@ async def test_build_get_txn_author_agreement_request():
 @pytest.mark.asyncio
 async def test_build_get_txn_author_agreement_request_for_hash():
     data = {
-        'hash': '83d907821df1c87db829e96569a11f6fc2e7880acba5e43d07ab786959e13bd3'
+        'digest': '83d907821df1c87db829e96569a11f6fc2e7880acba5e43d07ab786959e13bd3'
     }
 
     expected_response = {
         "operation": {
             "type": "6",
-            "hash": data['hash'],
+            "digest": data['digest'],
         }
     }
 

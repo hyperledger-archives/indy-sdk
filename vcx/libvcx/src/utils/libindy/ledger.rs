@@ -103,7 +103,7 @@ pub fn libindy_get_txn_author_agreement() -> VcxResult<String> {
     let mut author_agreement_data = get_author_agreement_response["result"]["data"].as_object()
         .map_or(json!({}), |data| json!(data));
 
-    let get_acceptance_mechanism_request = ledger::build_get_acceptance_mechanism_request(Some(&did), None)
+    let get_acceptance_mechanism_request = ledger::build_get_acceptance_mechanism_request(Some(&did), None, None)
         .wait()
         .map_err(map_rust_indy_sdk_error)?;
 

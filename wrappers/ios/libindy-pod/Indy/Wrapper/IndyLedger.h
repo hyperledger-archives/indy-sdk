@@ -716,12 +716,14 @@
      “<acceptance mechanism label 2>”: { acceptance mechanism description 2},
      ...
  }
+ @param version a version of new acceptance mechanisms. (Note: unique on the Ledger).
  @param amlContext (Optional) common context information about acceptance mechanisms (may be a URL to external resource).
 
  Returns Request result as json.
  */
 + (void)buildAcceptanceMechanismRequestWithSubmitterDid:(NSString *)submitterDid
                                                     aml:(NSString *)aml
+                                                version:(NSString *)version
                                              amlContext:(NSString *)amlContext
                                              completion:(void (^)(NSError *error, NSString *responseMetadata))completion;
 
@@ -733,11 +735,15 @@
 
  @param submitterDid (Optional) DID of the request sender.
  @param timestamp time to get an active acceptance mechanisms. The latest one will be returned for nil.
+ @param version (Optional) version of acceptance mechanisms.
+
+ NOTE: timestamp and version cannot be specified together.
 
  Returns Request result as json.
  */
 + (void)buildGetAcceptanceMechanismRequestWithSubmitterDid:(NSString *)submitterDid
                                                  timestamp:(NSNumber *)timestamp
+                                                   version:(NSString *)version
                                                 completion:(void (^)(NSError *error, NSString *responseMetadata))completion;
 
 /**

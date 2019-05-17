@@ -1844,7 +1844,7 @@ Null data or empty JSON are acceptable here. In this case, ledger will return th
 
 Errors: `Common*`
 
-#### buildAcceptanceMechanismRequest \( submitterDid, aml, amlContext \) -&gt; request
+#### buildAcceptanceMechanismRequest \( submitterDid, aml, version, amlContext \) -&gt; request
 
 Builds a SET_TXN_AUTHR_AGRMT_AML request. 
 Request to add a new acceptance mechanism for transaction author agreement.
@@ -1861,6 +1861,7 @@ EXPERIMENTAL
   ...
 }
 ```
+* `version`: String - a version of new acceptance mechanisms. (Note: unique on the Ledger).
 * `amlContext`: String - \(Optional\) common context information about acceptance mechanisms (may be a URL to external resource).
 
 * __->__ `request`: Json
@@ -1876,6 +1877,9 @@ EXPERIMENTAL
 
 * `submitterDid`: String - \(Optional\) DID of the read request sender \(if not provided then default Libindy DID will be used\).
 * `timestamp`: Timestamp (Number) - \(Optional\) time to get an active acceptance mechanisms. The latest one will be returned for null.
+* `version`: Timestamp (String) - \(Optional\) version of acceptance mechanisms.
+
+NOTE: timestamp and version cannot be specified together.
 
 * __->__ `request`: Json
 

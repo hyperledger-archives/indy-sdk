@@ -483,7 +483,7 @@ impl WalletService {
         let metadata = storage.get_storage_metadata()?;
 
         let res = {
-            let mut wallet = Wallet::new(WalletService::_get_wallet_id(&config), storage, Rc::new(keys));
+            let wallet = Wallet::new(WalletService::_get_wallet_id(&config), storage, Rc::new(keys));
 
             finish_import(&wallet, reader, import_key, nonce, chunk_size, header_bytes)
         };

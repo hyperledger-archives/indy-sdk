@@ -182,10 +182,10 @@ test('ledger', async function (t) {
 
   // acceptance mechanism
   var aml = { 'acceptance mechanism label 1': 'some acceptance mechanism description 1' }
-  req = await indy.buildAcceptanceMechanismRequest(trusteeDid, aml, null)
-  t.deepEqual(req['operation'], { 'type': '5', 'aml': aml })
+  req = await indy.buildAcceptanceMechanismRequest(trusteeDid, aml, '1.0.0', null)
+  t.deepEqual(req['operation'], { 'type': '5', 'aml': aml, 'version': '1.0.0' })
 
-  req = await indy.buildGetAcceptanceMechanismRequest(null, 123456789)
+  req = await indy.buildGetAcceptanceMechanismRequest(null, 123456789, null)
   t.deepEqual(req['operation'], { 'type': '7', 'timestamp': 123456789 })
 
   // author agreement acceptance data
