@@ -44,7 +44,8 @@ def testing() {
                 //  FIXME 'redhat-test' : { rhelTesting() }, https://jira.hyperledger.org/browse/IS-1212
                 'android-test': { androidTesting() },
                 'windows-test': { windowsTesting() },
-                'ios-test'    : { iosTesting() }
+                'ios-test'    : { iosTesting() },
+                'macos-test'  : { macosTesting() }
         ])
     }
 }
@@ -58,6 +59,7 @@ def publishing() {
                 'windows-files': { windowsPublishing() },
                 'android-files': { androidPublishing() },
                 'ios-files'    : { iosPublishing() },
+                'macos-files': { macOsPublishing() },
         ])
 
         if (publishedVersions['windows-files'] != publishedVersions['ubuntu-files']) { // FIXME check rhel too, IS-307
@@ -674,9 +676,6 @@ def windowsTesting() {
 
                         stash includes: 'target/release/*.dll,target/release/*.dll.lib', name: 'LibvcxWindowsBuildResult'
                     }
-
-                    //TODO wrappers testing
-
                 } finally {
                     try {
                         bat "docker -H $INDY_SDK_SERVER_IP stop indy_pool"
@@ -827,6 +826,58 @@ def buildIOSPod(packageName, targets) {
 def rhelTesting() {
     stage('RedHat Test') {
         linuxTesting("ci/amazon.dockerfile ci", "RedHat", "pool_network", false)
+    }
+}
+
+def macosTesting() {
+    node('macos') {
+        stage('MacOS Test') {
+            try {
+                echo "MacOS Test: Checkout scm"
+                checkout scm
+
+                setupRust()
+                setupBrewPackages()
+
+                macosModuleBuilding('libindy') // TODO: testing
+
+                stash includes: 'libindy/target/release/libindy.dylib', name: 'LibindyMacosBuildResult'
+
+                sh "cp libindy/target/release/libindy.dylib libnullpay"
+                sh "cp libindy/target/release/libindy.dylib vcx/libvcx"
+
+                macosModuleBuilding('libnullpay') // TODO: testing
+
+                stash includes: 'libnullpay/target/release/libnullpay.dylib', name: 'LibnullpayMacosBuildResult'
+
+                sh "cp libnullpay/target/release/libnullpay.dylib vcx/libvcx"
+
+                macosModuleBuilding('vcx/libvcx')
+
+                stash includes: 'vcx/libvcx/target/release/libvcx.dylib', name: 'LibvcxMacosBuildResult'
+
+                macosModuleTesting('vcx/libvcx')
+
+                //TODO wrappers testing
+            } finally {
+                step([$class: 'WsCleanup'])
+            }
+        }
+    }
+}
+
+def macosModuleBuilding(library) {
+    dir(library) {
+        echo "MacOS ${library} Testing: Build"
+        sh "LIBRARY_PATH=./ cargo build --release --features fatal_warnings"
+        sh "LIBRARY_PATH=./ cargo test --release --no-run"
+    }
+}
+
+def macosModuleTesting(library) {
+    dir(library) {
+        echo "MacOS ${library} Testing: Run Tests"
+        sh "LIBRARY_PATH=./ RUST_TEST_THREADS=1 cargo test --release"
     }
 }
 
@@ -1040,6 +1091,54 @@ def publishIOSAtrifacts(testEnv, packageName, stashName, version, targetName) {
             if (targetName != null) {
                 sh "ssh -v -oStrictHostKeyChecking=no -i $sovrin_repo_key repo@$SOVRIN_REPO_HOST mv $target/$version/${packageName}.tar.gz $target/$version/$targetName"
             }
+        }
+    }
+}
+
+def macOsPublishing() {
+    node('ubuntu') {
+        stage('Publish Libindy MacOS Files') {
+            try {
+                echo 'Publish iOS files: Checkout scm'
+                checkout scm
+
+                def libindyVersion = getSrcVersion("libindy")
+                version = "$libindyVersion-$env.BUILD_NUMBER"
+
+                echo 'Publish MacOS files: Build docker image'
+                testEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
+
+                echo 'Publish Libindy MacOS Library'
+                publishMacOsArtifact(testEnv, "libindy", "libindy", "LibindyMacosBuildResult", version)
+
+                echo 'Publish Libnullpay MacOS Library'
+                publishMacOsArtifact(testEnv, "libnullpay", "libnullpay", "LibnullpayMacosBuildResult", version)
+
+                def libvcxVersion = getSrcVersion("vcx/libvcx")
+                libvcxVersion = "$libvcxVersion-$env.BUILD_NUMBER"
+
+                echo 'Publish Libvcx MacOS Library'
+                publishMacOsArtifact(testEnv, "libvcx", "vcx/libvcx", "LibvcxMacosBuildResult", libvcxVersion)
+            }
+            finally {
+                echo 'Publish iOS files: Cleanup'
+                step([$class: 'WsCleanup'])
+            }
+        }
+    }
+}
+
+def publishMacOsArtifact(testEnv, packageName, packagePath, stashName, version) {
+    testEnv.inside {
+        unstash name: stashName
+
+        packagePath = "${packagePath}/target/release"
+
+        withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'sovrin_repo_key')]) {
+            target = "/var/repository/repos/macos/$packageName/$env.BRANCH_NAME/$version"
+
+            sh "ssh -v -oStrictHostKeyChecking=no -i '$sovrin_repo_key' repo@$SOVRIN_REPO_HOST mkdir -p $target"
+            sh "scp -r -oStrictHostKeyChecking=no -i $sovrin_repo_key $packagePath/*.dylib repo@$SOVRIN_REPO_HOST:$target"
         }
     }
 }
