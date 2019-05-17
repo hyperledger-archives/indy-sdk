@@ -2333,6 +2333,20 @@ mod high_cases {
         }
 
         #[test]
+        fn indy_build_txn_author_agreement_request_works_for_empty() {
+            let expected_result = json!({
+                "type": constants::TXN_AUTHR_AGRMT,
+                "text": "",
+                "version": VERSION
+            });
+
+            let request = ledger::build_txn_author_agreement_request(DID_TRUSTEE,
+                                                                     "",
+                                                                     VERSION).unwrap();
+            check_request(&request, expected_result);
+        }
+
+        #[test]
         fn indy_build_get_txn_author_agreement_request() {
             let expected_result = json!({
                 "type": constants::GET_TXN_AUTHR_AGRMT,
