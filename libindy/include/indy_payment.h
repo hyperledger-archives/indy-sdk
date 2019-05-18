@@ -243,6 +243,43 @@ extern "C" {
                                                                          const char*   receipts_json)
                                                     );
 
+    /// Append payment extra JSON with TAA acceptance data
+    ///
+    /// EXPERIMENTAL
+    ///
+    /// This function may calculate digest by itself or consume it as a parameter.
+    /// If all text, version and taa_digest parameters are specified, a check integrity of them will be done.
+    ///
+    /// #Params
+    /// command_handle: command handle to map callback to caller context.
+    /// extra_json: (optional) original extra json.
+    /// text and version - (optional) raw data about TAA from ledger.
+    ///     These parameters should be passed together.
+    ///     These parameters are required if taa_digest parameter is omitted.
+    /// taa_digest - (optional) digest on text and version. This parameter is required if text and version parameters are omitted.
+    /// mechanism - mechanism how user has accepted the TAA
+    /// time - UTC timestamp when user has accepted the TAA
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// Updated request result as json.
+    ///
+    /// #Errors
+    /// Common*
+
+    extern indy_error_t indy_prepare_payment_extra_with_acceptance_data(indy_handle_t command_handle,
+                                                                        const char *  extra_json,
+                                                                        const char *  text,
+                                                                        const char *  version,
+                                                                        const char *  taa_digest,
+                                                                        const char *  mechanism,
+                                                                        indy_u64_t  time,
+
+                                                                        void           (*cb)(indy_handle_t command_handle_,
+                                                                                             indy_error_t  err,
+                                                                                             const char*   extra_with_acceptance)
+                                                                        );
+
     /// Builds Indy request for doing minting
     /// according to this payment method.
     ///

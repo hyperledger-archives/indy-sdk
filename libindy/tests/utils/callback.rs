@@ -6,13 +6,13 @@ use self::indy_sys::Error as ErrorCode;
 use self::libc::c_char;
 use std::ffi::CStr;
 use std::collections::HashMap;
-use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Mutex;
 use std::slice;
 use std::sync::mpsc::{channel, Receiver};
 
 lazy_static! {
-    static ref COMMAND_HANDLE_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
+    static ref COMMAND_HANDLE_COUNTER: AtomicUsize = AtomicUsize::new(1);
 }
 
 pub fn _closure_to_cb_ec() -> (Receiver<ErrorCode>, i32,

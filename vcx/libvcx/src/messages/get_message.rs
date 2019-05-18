@@ -466,7 +466,7 @@ mod tests {
                                                                              1).unwrap();
         ::issuer_credential::send_credential_offer(credential_offer, alice).unwrap();
         thread::sleep(Duration::from_millis(2000));
-        let hello_uid = ::messages::send_message::send_generic_message(alice, "hello", "hello", "hello").unwrap();
+        let hello_uid = ::messages::send_message::send_generic_message(alice, "hello", &json!({"msg_type":"hello", "msg_title": "hello", "ref_msg_id": null}).to_string()).unwrap();
         // AS CONSUMER GET MESSAGES
         ::utils::devsetup::tests::set_consumer();
         let all_messages = download_messages(None, None, None).unwrap();

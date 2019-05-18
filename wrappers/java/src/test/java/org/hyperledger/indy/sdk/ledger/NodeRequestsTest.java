@@ -85,7 +85,7 @@ public class NodeRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet
 		DidResults.CreateAndStoreMyDidResult didResult = Did.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
 		String did = didResult.getDid();
 
-		String nodeRequest = Ledger.buildNodeRequest(did, did, data).get();
+		String nodeRequest = Ledger.buildNodeRequest(did, dest, data).get();
 		String response = Ledger.signAndSubmitRequest(pool, wallet, did, nodeRequest).get();
 		checkResponseType(response,"REJECT" );
 	}

@@ -2,6 +2,7 @@ package org.hyperledger.indy.sdk.crypto;
 
 import org.hyperledger.indy.sdk.IndyIntegrationTest;
 import org.hyperledger.indy.sdk.IndyIntegrationTestWithSingleWallet;
+import org.hyperledger.indy.sdk.InvalidParameterException;
 import org.hyperledger.indy.sdk.InvalidStructureException;
 import org.hyperledger.indy.sdk.wallet.WalletItemNotFoundException;
 import org.json.JSONObject;
@@ -54,7 +55,7 @@ public class PackUnpackMessageTest extends IndyIntegrationTestWithSingleWallet {
 		JSONArray receivers = new JSONArray();
 
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(InvalidStructureException.class));
+		thrown.expectCause(isA(InvalidParameterException.class));
 
 		Crypto.packMessage(wallet, receivers.toString(), null, message.getBytes()).get();
 

@@ -54,6 +54,14 @@
                     paymentMethod:(NSString *)paymentMethod
                      receiptsJson:(NSString **)receiptsJson;
 
+- (NSError *)preparePaymentExtraWithAcceptanceData:(NSString *)extraJson
+                                              text:(NSString *)text
+                                           version:(NSString *)version
+                                         taaDigest:(NSString *)taaDigest
+                                       accMechType:(NSString *)accMechType
+                                  timeOfAcceptance:(NSNumber *)timeOfAcceptance
+                               extraWithAcceptance:(NSString **)extraWithAcceptance;
+
 // MARK: - Mint request
 - (NSError *)buildMintRequest:(IndyHandle)walletHandle
                  submitterDid:(NSString *)submitterDid
