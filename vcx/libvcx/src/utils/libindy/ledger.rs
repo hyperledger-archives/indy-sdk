@@ -184,7 +184,7 @@ pub mod auth_rule {
         // This is to change the json key to adhear to the functionality on ledger
         #[serde(rename = "type")]
         pub txn_type: String,
-        pub data: HashMap<String, Constraint>,
+        pub data: HashMap<String, Option<Constraint>>,
     }
 
     /**
@@ -274,8 +274,10 @@ pub mod auth_rule {
             if let Some(rules) = auth_rules.get(&txn_) {
                 for auth_rule in rules {
                     let mut constraint = auth_rule.constraint.clone();
+                    //                    if !constraint.as_object().map(::serde_json::Map::is_empty).unwrap_or(true) {
                     _set_fee_to_constraint(&mut constraint, &fee_alias);
                     responses.push(_send_auth_rule(submitter_did, auth_rule, &constraint)?);
+                    //                    }
                 }
             }
         }
@@ -340,17 +342,19 @@ pub mod auth_rule {
 
                 let mut map = AUTH_RULES.lock().unwrap();
 
-                let rule = AuthRule { action, txn_type: txn_type.clone(), field, old_value, new_value, constraint: constraint.clone() };
+                if let Some(constraint) = constraint {
+                    let rule = AuthRule { action, txn_type: txn_type.clone(), field, old_value, new_value, constraint: constraint.clone() };
 
-                match map.entry(txn_type) {
-                    Entry::Occupied(rules) => {
-                        let &mut ref mut rules = rules.into_mut();
-                        rules.push(rule);
-                    }
-                    Entry::Vacant(rules) => {
-                        rules.insert(vec![rule]);
-                    }
-                };
+                    match map.entry(txn_type) {
+                        Entry::Occupied(rules) => {
+                            let &mut ref mut rules = rules.into_mut();
+                            rules.push(rule);
+                        }
+                        Entry::Vacant(rules) => {
+                            rules.insert(vec![rule]);
+                        }
+                    };
+                }
             }
         })
     }
@@ -374,11 +378,15 @@ pub mod auth_rule {
         if settings::test_indy_mode_enabled() { return Ok(Some(txn_type.to_string())); }
 
         let constraint = _get_action_constraint(txn_type, action, field, old_value, Some(new_value))?;
-        _extract_fee_alias_from_constraint(&constraint, None)
+
+        match _get_action_constraint(txn_type, action, field, old_value, Some(new_value))? {
+            Some(constraint) => _extract_fee_alias_from_constraint(&constraint, None),
+            None => Ok(None)
+        }
     }
 
     fn _get_action_constraint(txn_type: &str, action: &str, field: &str,
-                              old_value: Option<&str>, new_value: Option<&str>) -> VcxResult<Constraint> {
+                              old_value: Option<&str>, new_value: Option<&str>) -> VcxResult<Option<Constraint>> {
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
 
         let request = libindy_build_get_auth_rule_request(Some(&did), Some(txn_type), Some(action), Some(field), old_value, new_value)?;
