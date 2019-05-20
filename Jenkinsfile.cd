@@ -841,20 +841,20 @@ def macosTesting() {
 
                 macosModuleBuilding('libindy') // TODO: testing
 
-                stash includes: 'libindy/target/release/libindy.dylib', name: 'LibindyMacosBuildResult'
+                stash includes: 'libindy/target/release/libindy.dylib,libindy/target/release/libindy.a', name: 'LibindyMacosBuildResult'
 
                 sh "cp libindy/target/release/libindy.dylib libnullpay"
                 sh "cp libindy/target/release/libindy.dylib vcx/libvcx"
 
                 macosModuleBuilding('libnullpay') // TODO: testing
 
-                stash includes: 'libnullpay/target/release/libnullpay.dylib', name: 'LibnullpayMacosBuildResult'
+                stash includes: 'libnullpay/target/release/libnullpay.dylib,libnullpay/target/release/libnullpay.a', name: 'LibnullpayMacosBuildResult'
 
                 sh "cp libnullpay/target/release/libnullpay.dylib vcx/libvcx"
 
                 macosModuleBuilding('vcx/libvcx')
 
-                stash includes: 'vcx/libvcx/target/release/libvcx.dylib', name: 'LibvcxMacosBuildResult'
+                stash includes: 'vcx/libvcx/target/release/libvcx.dylib,vcx/libvcx/target/release/libvcx.a', name: 'LibvcxMacosBuildResult'
 
                 macosModuleTesting('vcx/libvcx')
 
@@ -1128,17 +1128,18 @@ def macOsPublishing() {
     }
 }
 
-def publishMacOsArtifact(testEnv, packageName, packagePath, stashName, version) {
+def publishMacOsArtifact(testEnv, packageName, packagePath, stashName, packageVersion) {
     testEnv.inside {
+        sh 'chmod -R 777 ci'
+
         unstash name: stashName
 
-        packagePath = "${packagePath}/target/release"
-
-        withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'sovrin_repo_key')]) {
-            target = "/var/repository/repos/macos/$packageName/$env.BRANCH_NAME/$version"
-
-            sh "ssh -v -oStrictHostKeyChecking=no -i '$sovrin_repo_key' repo@$SOVRIN_REPO_HOST mkdir -p $target"
-            sh "scp -r -oStrictHostKeyChecking=no -i $sovrin_repo_key $packagePath/*.dylib repo@$SOVRIN_REPO_HOST:$target"
+        withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'repo_key')]) {
+            withEnv([
+                    "SOVRIN_REPO_HOST=$SOVRIN_REPO_HOST",
+            ]) {
+                sh "ci/macos-zip-and-upload.sh $packagePath $packageName $packageVersion '${repo_key}' $env.BRANCH_NAME $env.BUILD_NUMBER"
+            }
         }
     }
 }
