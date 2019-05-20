@@ -166,7 +166,7 @@ impl CommandContext {
             uint_values: RefCell::new(HashMap::new()),
             string_values: RefCell::new(HashMap::new()),
             plugins: RefCell::new(HashMap::new()),
-            taa_acceptance_mechanism: RefCell::new("Click Agreement".to_owned()),
+            taa_acceptance_mechanism: RefCell::new(String::new()),
         }
     }
 
