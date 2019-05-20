@@ -44,7 +44,15 @@ Add pod to target:
    OPENSSL_DIR - path to installed openssl library
       
    LIBINDY_POD_VERSION - version of libindy-core pod to be built
-1. Run the script. Validate the output that all goes well.
+1. Run the script Validate the output that all goes well. 
+   
+   Parameters:
+   * package - target package to build.
+        * libindy
+        * libnullpay
+   * targets - target architectures.
+        * one of aarch64-apple-ios armv7-apple-ios armv7s-apple-ios i386-apple-ios x86_64-apple-ios
+        * leave empty to build for all architectures.
 1. Go to `Specs/libindy` dir.
 1. Create directory with name defined in LIBINDY_POD_VERSION:
    
