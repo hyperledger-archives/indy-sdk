@@ -2024,7 +2024,7 @@ pub extern fn indy_build_txn_author_agreement_request(command_handle: CommandHan
     trace!("indy_build_txn_author_agreement_request: >>> submitter_did: {:?}, text: {:?}, version: {:?}", submitter_did, text, version);
 
     check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(text, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str_empty_accepted!(text, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(version, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 

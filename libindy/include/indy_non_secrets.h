@@ -257,9 +257,9 @@ extern "C" {
                                                                       indy_error_t  err)
                                                 );
 
+
 #ifdef __cplusplus
 }
 #endif
 
 #endif
-

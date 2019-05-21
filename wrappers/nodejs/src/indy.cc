@@ -2462,6 +2462,90 @@ NAN_METHOD(closeWalletSearch) {
   indyCalled(icb, indy_close_wallet_search(icb->handle, arg0, closeWalletSearch_cb));
 }
 
+void getSchema_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbString(xerr, arg0);
+  }
+}
+
+NAN_METHOD(getSchema) {
+  INDY_ASSERT_NARGS(getSchema, 6)
+  INDY_ASSERT_NUMBER(getSchema, 0, poolHandle)
+  INDY_ASSERT_NUMBER(getSchema, 1, wh)
+  INDY_ASSERT_STRING(getSchema, 2, submitterDid)
+  INDY_ASSERT_STRING(getSchema, 3, id)
+  INDY_ASSERT_STRING(getSchema, 4, options)
+  INDY_ASSERT_FUNCTION(getSchema, 5)
+  indy_handle_t arg0 = argToInt32(info[0]);
+  indy_handle_t arg1 = argToInt32(info[1]);
+  const char* arg2 = argToCString(info[2]);
+  const char* arg3 = argToCString(info[3]);
+  const char* arg4 = argToCString(info[4]);
+  IndyCallback* icb = argToIndyCb(info[5]);
+  indyCalled(icb, indy_get_schema(icb->handle, arg0, arg1, arg2, arg3, arg4, getSchema_cb));
+}
+
+void getCredDef_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbString(xerr, arg0);
+  }
+}
+
+NAN_METHOD(getCredDef) {
+  INDY_ASSERT_NARGS(getCredDef, 6)
+  INDY_ASSERT_NUMBER(getCredDef, 0, poolHandle)
+  INDY_ASSERT_NUMBER(getCredDef, 1, wh)
+  INDY_ASSERT_STRING(getCredDef, 2, submitterDid)
+  INDY_ASSERT_STRING(getCredDef, 3, id)
+  INDY_ASSERT_STRING(getCredDef, 4, options)
+  INDY_ASSERT_FUNCTION(getCredDef, 5)
+  indy_handle_t arg0 = argToInt32(info[0]);
+  indy_handle_t arg1 = argToInt32(info[1]);
+  const char* arg2 = argToCString(info[2]);
+  const char* arg3 = argToCString(info[3]);
+  const char* arg4 = argToCString(info[4]);
+  IndyCallback* icb = argToIndyCb(info[5]);
+  indyCalled(icb, indy_get_cred_def(icb->handle, arg0, arg1, arg2, arg3, arg4, getCredDef_cb));
+}
+
+void purgeSchemaCache_cb(indy_handle_t handle, indy_error_t xerr) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbNone(xerr);
+  }
+}
+
+NAN_METHOD(purgeSchemaCache) {
+  INDY_ASSERT_NARGS(purgeSchemaCache, 3)
+  INDY_ASSERT_NUMBER(purgeSchemaCache, 0, wh)
+  INDY_ASSERT_STRING(purgeSchemaCache, 1, options)
+  INDY_ASSERT_FUNCTION(purgeSchemaCache, 2)
+  indy_handle_t arg0 = argToInt32(info[0]);
+  const char* arg1 = argToCString(info[1]);
+  IndyCallback* icb = argToIndyCb(info[2]);
+  indyCalled(icb, indy_purge_schema_cache(icb->handle, arg0, arg1, purgeSchemaCache_cb));
+}
+
+void purgeCredDefCache_cb(indy_handle_t handle, indy_error_t xerr) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbNone(xerr);
+  }
+}
+
+NAN_METHOD(purgeCredDefCache) {
+  INDY_ASSERT_NARGS(purgeCredDefCache, 3)
+  INDY_ASSERT_NUMBER(purgeCredDefCache, 0, wh)
+  INDY_ASSERT_STRING(purgeCredDefCache, 1, options)
+  INDY_ASSERT_FUNCTION(purgeCredDefCache, 2)
+  indy_handle_t arg0 = argToInt32(info[0]);
+  const char* arg1 = argToCString(info[1]);
+  IndyCallback* icb = argToIndyCb(info[2]);
+  indyCalled(icb, indy_purge_cred_def_cache(icb->handle, arg0, arg1, purgeCredDefCache_cb));
+}
+
 void isPairwiseExists_cb(indy_handle_t handle, indy_error_t xerr, indy_bool_t arg0) {
   IndyCallback* icb = IndyCallback::getCallback(handle);
   if(icb != nullptr){
@@ -3347,6 +3431,10 @@ NAN_MODULE_INIT(InitAll) {
   Nan::Export(target, "openWalletSearch", openWalletSearch);
   Nan::Export(target, "fetchWalletSearchNextRecords", fetchWalletSearchNextRecords);
   Nan::Export(target, "closeWalletSearch", closeWalletSearch);
+  Nan::Export(target, "getSchema", getSchema);
+  Nan::Export(target, "getCredDef", getCredDef);
+  Nan::Export(target, "purgeSchemaCache", purgeSchemaCache);
+  Nan::Export(target, "purgeCredDefCache", purgeCredDefCache);
   Nan::Export(target, "isPairwiseExists", isPairwiseExists);
   Nan::Export(target, "createPairwise", createPairwise);
   Nan::Export(target, "listPairwise", listPairwise);

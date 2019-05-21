@@ -407,7 +407,7 @@ pub fn reset_current_error() {
 }
 
 pub fn set_current_error(err: &VcxError) {
-    CURRENT_ERROR_C_JSON.with(|error| {
+    CURRENT_ERROR_C_JSON.try_with(|error| {
         let error_json = json!({
             "error": err.kind().to_string(),
             "message": err.to_string(),
@@ -415,15 +415,17 @@ pub fn set_current_error(err: &VcxError) {
             "backtrace": err.backtrace().map(|bt| bt.to_string())
         }).to_string();
         error.replace(Some(CStringUtils::string_to_cstring(error_json)));
-    });
+    })
+        .map_err(|err| error!("Thread local variable access failed with: {:?}", err)).ok();
 }
 
 pub fn get_current_error_c_json() -> *const c_char {
     let mut value = ptr::null();
 
-    CURRENT_ERROR_C_JSON.with(|err|
+    CURRENT_ERROR_C_JSON.try_with(|err|
         err.borrow().as_ref().map(|err| value = err.as_ptr())
-    );
+    )
+        .map_err(|err| error!("Thread local variable access failed with: {:?}", err)).ok();
 
     value
 }
