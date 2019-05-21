@@ -577,6 +577,19 @@ impl LedgerService {
         Ok(request)
     }
 
+    pub fn build_auth_rules_request(&self, submitter_did: &str, data: AuthRulesData) -> IndyResult<String> {
+        info!("build_auth_rules_request >>> submitter_did: {:?}, data: {:?}", submitter_did, data);
+
+        let operation = AuthRulesOperation::new(data);
+
+        let request = Request::build_request(Some(submitter_did), operation)
+            .to_indy(IndyErrorKind::InvalidState, "AUTH_RULES request json is invalid")?;
+
+        info!("build_auth_rules_request <<< request: {:?}", request);
+
+        Ok(request)
+    }
+
     pub fn build_get_auth_rule_request(&self, submitter_did: Option<&str>, auth_type: Option<&str>, auth_action: Option<&str>,
                                        field: Option<&str>, old_value: Option<&str>, new_value: Option<&str>) -> IndyResult<String> {
         info!("build_get_auth_rule_request >>> submitter_did: {:?}, auth_type: {:?}, auth_action: {:?}, field: {:?}, \
@@ -1273,6 +1286,35 @@ mod tests {
 
             let res = ledger_service.build_get_auth_rule_request(Some(IDENTIFIER), Some("WRONG"), None, None, None, None);
             assert_kind!(IndyErrorKind::InvalidStructure, res);
+        }
+
+        #[test]
+        fn build_auth_rules_request_works() {
+            let ledger_service = LedgerService::new();
+
+            let mut data = AuthRulesData::new();
+            data.push(AuthRuleData::Add(AddAuthRuleData {
+                auth_type: NYM.to_string(),
+                field: FIELD.to_string(),
+                new_value: Some(NEW_VALUE.to_string()),
+                constraint: _role_constraint(),
+            }));
+
+            data.push(AuthRuleData::Edit(EditAuthRuleData {
+                auth_type: NYM.to_string(),
+                field: FIELD.to_string(),
+                old_value: Some(OLD_VALUE.to_string()),
+                new_value: Some(NEW_VALUE.to_string()),
+                constraint: _role_constraint(),
+            }));
+
+            let expected_result = json!({
+                "type": AUTH_RULES,
+                "data": data.clone(),
+            });
+
+            let request = ledger_service.build_auth_rules_request(IDENTIFIER, data).unwrap();
+            check_request(&request, expected_result);
         }
     }
 

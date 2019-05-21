@@ -1,6 +1,6 @@
 use serde_json::Value;
 
-use super::constants::{AUTH_RULE, GET_AUTH_RULE};
+use super::constants::{AUTH_RULE, AUTH_RULES, GET_AUTH_RULE};
 
 #[allow(non_camel_case_types)]
 #[derive(Deserialize, Debug, Serialize, PartialEq)]
@@ -9,7 +9,7 @@ pub enum AuthAction {
     EDIT
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 #[serde(tag = "constraint_id")]
 pub enum Constraint {
     #[serde(rename = "OR")]
@@ -20,7 +20,7 @@ pub enum Constraint {
     RoleConstraint(RoleConstraint),
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct RoleConstraint {
     pub sig_count: Option<u32>,
     pub role: Option<String>,
@@ -30,7 +30,7 @@ pub struct RoleConstraint {
     pub need_to_be_owner: Option<bool>,
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct CombinationConstraint {
     pub auth_constraints: Vec<Constraint>
 }
@@ -155,5 +155,46 @@ impl GetAuthRuleOperation {
                     new_value,
                 })
         }
+    }
+}
+
+pub type AuthRulesData = Vec<AuthRuleData>;
+
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+#[serde(tag = "auth_action")]
+pub enum AuthRuleData {
+    #[serde(rename = "ADD")]
+    Add(AddAuthRuleData),
+    #[serde(rename = "EDIT")]
+    Edit(EditAuthRuleData),
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+pub struct AddAuthRuleData {
+    pub auth_type: String,
+    pub field: String,
+    pub new_value: Option<String>,
+    pub constraint: Constraint,
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+pub struct EditAuthRuleData {
+    pub auth_type: String,
+    pub field: String,
+    pub old_value: Option<String>,
+    pub new_value: Option<String>,
+    pub constraint: Constraint,
+}
+
+#[derive(Serialize, PartialEq, Debug)]
+pub struct AuthRulesOperation {
+    #[serde(rename = "type")]
+    pub _type: String,
+    pub data: AuthRulesData
+}
+
+impl AuthRulesOperation {
+    pub fn new(data: AuthRulesData) -> AuthRulesOperation {
+        AuthRulesOperation { _type: AUTH_RULES.to_string(), data }
     }
 }
