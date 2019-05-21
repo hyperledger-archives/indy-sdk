@@ -184,7 +184,7 @@ pub mod auth_rule {
         // This is to change the json key to adhear to the functionality on ledger
         #[serde(rename = "type")]
         pub txn_type: String,
-        pub data: HashMap<String, Constraint>,
+        pub data: HashMap<String, Option<Constraint>>,
     }
 
     /**
@@ -340,17 +340,19 @@ pub mod auth_rule {
 
                 let mut map = AUTH_RULES.lock().unwrap();
 
-                let rule = AuthRule { action, txn_type: txn_type.clone(), field, old_value, new_value, constraint: constraint.clone() };
+                if let Some(constraint_) = constraint {
+                    let rule = AuthRule { action, txn_type: txn_type.clone(), field, old_value, new_value, constraint: constraint_.clone() };
 
-                match map.entry(txn_type) {
-                    Entry::Occupied(rules) => {
-                        let &mut ref mut rules = rules.into_mut();
-                        rules.push(rule);
-                    }
-                    Entry::Vacant(rules) => {
-                        rules.insert(vec![rule]);
-                    }
-                };
+                    match map.entry(txn_type) {
+                        Entry::Occupied(rules) => {
+                            let &mut ref mut rules = rules.into_mut();
+                            rules.push(rule);
+                        }
+                        Entry::Vacant(rules) => {
+                            rules.insert(vec![rule]);
+                        }
+                    };
+                }
             }
         })
     }
@@ -390,7 +392,7 @@ pub mod auth_rule {
 
         let constraint_id = _build_constraint_id(txn_type, action, field, old_value, new_value);
 
-        response.result.data.remove(&constraint_id)
+        response.result.data.remove(&constraint_id).and_then(|constraint_| constraint_)
             .ok_or(VcxError::from_msg(VcxErrorKind::InvalidLedgerResponse, format!("Auth Rule not found for id: {}", constraint_id)))
     }
 
