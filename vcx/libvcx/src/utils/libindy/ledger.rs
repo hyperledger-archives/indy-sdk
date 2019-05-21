@@ -1,6 +1,7 @@
 use serde_json;
 use futures::Future;
 use indy::ledger;
+use indy::cache;
 
 use settings;
 use utils::libindy::pool::get_pool_handle;
@@ -441,6 +442,25 @@ pub mod auth_rule {
 pub fn parse_response(response: &str) -> VcxResult<Response> {
     serde_json::from_str::<Response>(response)
         .to_vcx(VcxErrorKind::InvalidJson, "Cannot deserialize transaction response")
+}
+
+pub fn libindy_get_schema(submitter_did: &str, schema_id: &str) -> VcxResult<String> {
+    let pool_handle = get_pool_handle()?;
+    let wallet_handle = get_wallet_handle();
+
+    cache::get_schema(pool_handle, wallet_handle, submitter_did, schema_id, "{}")
+        .wait()
+        .map_err(map_rust_indy_sdk_error)
+}
+
+pub fn libindy_get_cred_def(cred_def_id: &str) -> VcxResult<String> {
+    let pool_handle = get_pool_handle()?;
+    let wallet_handle = get_wallet_handle();
+    let submitter_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
+
+    cache::get_cred_def(pool_handle, wallet_handle, &submitter_did, cred_def_id, "{}")
+        .wait()
+        .map_err(map_rust_indy_sdk_error)
 }
 
 #[serde(tag = "op")]
