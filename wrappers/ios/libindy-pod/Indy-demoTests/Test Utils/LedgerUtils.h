@@ -189,6 +189,10 @@
                                        constraint:(NSString *)constraint
                                        outRequest:(NSString **)resultJson;
 
+- (NSError *)buildAuthRulesRequestWithSubmitterDid:(NSString *)submitterDid
+                                              data:(NSString *)data
+                                        outRequest:(NSString **)resultJson;
+
 - (NSError *)buildGetAuthRuleRequestWithSubmitterDid:(NSString *)submitterDid
                                              txnType:(NSString *)txnType
                                               action:(NSString *)action
