@@ -192,18 +192,15 @@ pub mod auth_rule {
        Enum of the constraint type within the GAT_AUTH_RULE result data
         # parameters
        ROLE - The final constraint
-       AND - Combine multiple constraints all of them must be met
-       OR - Combine multiple constraints any of them must be met
+       Combination - Combine multiple constraints all of them must be met
+       Empty - action is forbidden
    */
     #[derive(Serialize, Deserialize, Debug, Clone)]
-    #[serde(tag = "constraint_id")]
+    #[serde(untagged)]
     pub enum Constraint {
-        #[serde(rename = "OR")]
-        OrConstraint(CombinationConstraint),
-        #[serde(rename = "AND")]
-        AndConstraint(CombinationConstraint),
-        #[serde(rename = "ROLE")]
+        CombinationConstraint(CombinationConstraint),
         RoleConstraint(RoleConstraint),
+        EmptyConstraint(EmptyConstraint),
     }
 
     /**
@@ -216,6 +213,7 @@ pub mod auth_rule {
    */
     #[derive(Serialize, Deserialize, Debug, Clone)]
     pub struct RoleConstraint {
+        pub constraint_id: String,
         pub sig_count: Option<u32>,
         pub role: Option<String>,
         #[serde(skip_serializing_if = "Option::is_none")]
@@ -223,6 +221,13 @@ pub mod auth_rule {
         #[serde(skip_serializing_if = "Option::is_none")]
         pub need_to_be_owner: Option<bool>,
     }
+
+    /**
+       The empty constraint means that action is forbidden
+   */
+    #[derive(Serialize, Deserialize, Debug, Clone)]
+    #[serde(deny_unknown_fields)]
+    pub struct EmptyConstraint {}
 
     /**
        The constraint metadata
@@ -241,6 +246,7 @@ pub mod auth_rule {
    */
     #[derive(Serialize, Deserialize, Debug, Clone)]
     pub struct CombinationConstraint {
+        pub constraint_id: String,
         pub auth_constraints: Vec<Constraint>
     }
 
@@ -276,7 +282,13 @@ pub mod auth_rule {
                 for auth_rule in rules {
                     let mut constraint = auth_rule.constraint.clone();
                     _set_fee_to_constraint(&mut constraint, &fee_alias);
-                    responses.push(_send_auth_rule(submitter_did, auth_rule, &constraint)?);
+
+                    match constraint {
+                        Constraint::EmptyConstraint(_) => {}
+                        mut constraint @ _ => {
+                            responses.push(_send_auth_rule(submitter_did, auth_rule, &constraint)?);
+                        }
+                    }
                 }
             }
         }
@@ -361,11 +373,12 @@ pub mod auth_rule {
             Constraint::RoleConstraint(constraint) => {
                 constraint.metadata.as_mut().map(|meta| meta.fees = Some(fee_alias.to_string()));
             }
-            Constraint::AndConstraint(constraint) | Constraint::OrConstraint(constraint) => {
+            Constraint::CombinationConstraint(constraint) => {
                 for mut constraint in constraint.auth_constraints.iter_mut() {
                     _set_fee_to_constraint(&mut constraint, fee_alias)
                 }
             }
+            Constraint::EmptyConstraint(_) => {}
         }
     }
 
@@ -400,7 +413,7 @@ pub mod auth_rule {
             Constraint::RoleConstraint(constraint) => {
                 constraint.metadata.as_ref().and_then(|metadata| metadata.fees.clone())
             }
-            Constraint::AndConstraint(constraint) | Constraint::OrConstraint(constraint) => {
+            Constraint::CombinationConstraint(constraint) => {
                 let fees: HashSet<Option<String>> = constraint.auth_constraints
                     .iter()
                     .map(|constraint| _extract_fee_alias_from_constraint(constraint, cur_fee.clone()))
@@ -411,6 +424,7 @@ pub mod auth_rule {
 
                 fees.into_iter().next().unwrap()
             }
+            Constraint::EmptyConstraint(_) => None
         };
 
         match (cur_fee, fee) {

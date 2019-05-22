@@ -9,19 +9,32 @@ pub enum AuthAction {
     EDIT
 }
 
+/**
+   Enum of the constraint type within the GAT_AUTH_RULE result data
+    # parameters
+   ROLE - The final constraint
+   Combination - Combine multiple constraints all of them must be met
+   Empty - action is forbidden
+*/
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
-#[serde(tag = "constraint_id")]
+#[serde(untagged)]
 pub enum Constraint {
-    #[serde(rename = "OR")]
-    OrConstraint(CombinationConstraint),
-    #[serde(rename = "AND")]
-    AndConstraint(CombinationConstraint),
-    #[serde(rename = "ROLE")]
+    CombinationConstraint(CombinationConstraint),
     RoleConstraint(RoleConstraint),
+    EmptyConstraint(EmptyConstraint),
 }
 
+/**
+   The final constraint
+    # parameters
+   sig_count - The number of signatures required to execution action
+   role - The role which the user must have to execute the action.
+   metadata -  An additional parameters of the constraint (contains transaction FEE cost).
+   need_to_be_owner - The flag specifying if a user must be an owner of the transaction.
+*/
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct RoleConstraint {
+    pub constraint_id: String,
     pub sig_count: Option<u32>,
     pub role: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -30,9 +43,23 @@ pub struct RoleConstraint {
     pub need_to_be_owner: Option<bool>,
 }
 
+/**
+   Combine multiple constraints
+    # parameters
+   auth_constraints - The type of the combination
+*/
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct CombinationConstraint {
+    pub constraint_id: String,
     pub auth_constraints: Vec<Constraint>
+}
+
+/**
+   The empty constraint means that action is forbidden
+*/
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct EmptyConstraint {
 }
 
 #[derive(Serialize, PartialEq, Debug)]
