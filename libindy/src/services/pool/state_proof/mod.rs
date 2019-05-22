@@ -238,7 +238,7 @@ pub fn parse_key_from_request_for_builtin_sp(json_msg: &SJsonValue) -> Option<Ve
                     // So key should be "2:latest" but validation should check freshness appropriately
                     debug!("parse_key_from_request_for_builtin_sp: <<< GET_TXN_AUTHR_AGRMT Trying to request TAA for timestamp, skip StateProof logic");
                     return None;
-                },
+                }
                 (None, Some(digest), None) => format!("2:d:{}", digest),
                 (Some(version), None, None) => format!("2:v:{}", version),
                 _ => {
@@ -463,12 +463,18 @@ fn _parse_reply_for_proof_value(json_msg: &SJsonValue, data: Option<String>, par
         let mut value = json!({});
 
         let (seq_no, time) = (json_msg["seqNo"].clone(), json_msg["txnTime"].clone());
-        if xtype.eq(constants::GET_NYM) {
-            value["seqNo"] = seq_no;
-            value["txnTime"] = time;
-        } else if xtype == constants::GET_AUTH_RULE {} else if xtype.ne(constants::GET_TXN_AUTHR_AGRMT) || _is_full_taa_state_value_expected(sp_key) {
-            value["lsn"] = seq_no;
-            value["lut"] = time;
+
+        match xtype {
+            constants::GET_NYM => {
+                value["seqNo"] = seq_no;
+                value["txnTime"] = time;
+            }
+            constants::GET_AUTH_RULE => {}
+            xtype if xtype.ne(constants::GET_TXN_AUTHR_AGRMT) || _is_full_taa_state_value_expected(sp_key) => {
+                value["lsn"] = seq_no;
+                value["lut"] = time;
+            }
+            _ => {}
         }
 
         match xtype {

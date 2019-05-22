@@ -1,6 +1,7 @@
 use serde_json;
 use futures::Future;
 use indy::ledger;
+use indy::cache;
 
 use settings;
 use utils::libindy::pool::get_pool_handle;
@@ -184,7 +185,7 @@ pub mod auth_rule {
         // This is to change the json key to adhear to the functionality on ledger
         #[serde(rename = "type")]
         pub txn_type: String,
-        pub data: HashMap<String, Option<Constraint>>,
+        pub data: HashMap<String, Constraint>,
     }
 
     /**
@@ -274,10 +275,8 @@ pub mod auth_rule {
             if let Some(rules) = auth_rules.get(&txn_) {
                 for auth_rule in rules {
                     let mut constraint = auth_rule.constraint.clone();
-                    //                    if !constraint.as_object().map(::serde_json::Map::is_empty).unwrap_or(true) {
                     _set_fee_to_constraint(&mut constraint, &fee_alias);
                     responses.push(_send_auth_rule(submitter_did, auth_rule, &constraint)?);
-                    //                    }
                 }
             }
         }
@@ -342,19 +341,17 @@ pub mod auth_rule {
 
                 let mut map = AUTH_RULES.lock().unwrap();
 
-                if let Some(constraint) = constraint {
-                    let rule = AuthRule { action, txn_type: txn_type.clone(), field, old_value, new_value, constraint: constraint.clone() };
+                let rule = AuthRule { action, txn_type: txn_type.clone(), field, old_value, new_value, constraint: constraint.clone() };
 
-                    match map.entry(txn_type) {
-                        Entry::Occupied(rules) => {
-                            let &mut ref mut rules = rules.into_mut();
-                            rules.push(rule);
-                        }
-                        Entry::Vacant(rules) => {
-                            rules.insert(vec![rule]);
-                        }
-                    };
-                }
+                match map.entry(txn_type) {
+                    Entry::Occupied(rules) => {
+                        let &mut ref mut rules = rules.into_mut();
+                        rules.push(rule);
+                    }
+                    Entry::Vacant(rules) => {
+                        rules.insert(vec![rule]);
+                    }
+                };
             }
         })
     }
@@ -378,15 +375,11 @@ pub mod auth_rule {
         if settings::test_indy_mode_enabled() { return Ok(Some(txn_type.to_string())); }
 
         let constraint = _get_action_constraint(txn_type, action, field, old_value, Some(new_value))?;
-
-        match _get_action_constraint(txn_type, action, field, old_value, Some(new_value))? {
-            Some(constraint) => _extract_fee_alias_from_constraint(&constraint, None),
-            None => Ok(None)
-        }
+        _extract_fee_alias_from_constraint(&constraint, None)
     }
 
     fn _get_action_constraint(txn_type: &str, action: &str, field: &str,
-                              old_value: Option<&str>, new_value: Option<&str>) -> VcxResult<Option<Constraint>> {
+                              old_value: Option<&str>, new_value: Option<&str>) -> VcxResult<Constraint> {
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
 
         let request = libindy_build_get_auth_rule_request(Some(&did), Some(txn_type), Some(action), Some(field), old_value, new_value)?;
@@ -447,6 +440,25 @@ pub mod auth_rule {
 pub fn parse_response(response: &str) -> VcxResult<Response> {
     serde_json::from_str::<Response>(response)
         .to_vcx(VcxErrorKind::InvalidJson, "Cannot deserialize transaction response")
+}
+
+pub fn libindy_get_schema(submitter_did: &str, schema_id: &str) -> VcxResult<String> {
+    let pool_handle = get_pool_handle()?;
+    let wallet_handle = get_wallet_handle();
+
+    cache::get_schema(pool_handle, wallet_handle, submitter_did, schema_id, "{}")
+        .wait()
+        .map_err(map_rust_indy_sdk_error)
+}
+
+pub fn libindy_get_cred_def(cred_def_id: &str) -> VcxResult<String> {
+    let pool_handle = get_pool_handle()?;
+    let wallet_handle = get_wallet_handle();
+    let submitter_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
+
+    cache::get_cred_def(pool_handle, wallet_handle, &submitter_did, cred_def_id, "{}")
+        .wait()
+        .map_err(map_rust_indy_sdk_error)
 }
 
 #[serde(tag = "op")]
