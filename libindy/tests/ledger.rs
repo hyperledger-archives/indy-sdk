@@ -330,6 +330,23 @@ mod high_cases {
 
             utils::tear_down_with_wallet(wallet_handle);
         }
+
+        #[test]
+        fn indy_multi_sign_request_works_for_twice_use_same_did() {
+            let wallet_handle = utils::setup_with_wallet();
+
+            let (did, _) = did::create_and_store_my_did(wallet_handle, Some(MY1_SEED)).unwrap();
+
+            let message = ledger::multi_sign_request(wallet_handle, &did, REQUEST).unwrap();
+            let message = ledger::multi_sign_request(wallet_handle, &did, &message).unwrap();
+            let msg: serde_json::Value = serde_json::from_str(&message).unwrap();
+            let signatures = msg["signatures"].as_object().unwrap();
+
+            assert_eq!(1, signatures.len());
+            assert_eq!(signatures[DID_MY1], r#"49aXkbrtTE3e522AefE76J51WzUiakw3ZbxxWzf44cv7RS21n8mMr4vJzi4TymuqDupzCz7wEtuGz6rA94Y73kKR"#);
+
+            utils::tear_down_with_wallet(wallet_handle);
+        }
     }
 
 
