@@ -232,13 +232,7 @@ pub fn parse_key_from_request_for_builtin_sp(json_msg: &SJsonValue) -> Option<Ve
         */
         constants::GET_TXN_AUTHR_AGRMT => {
             match (json_msg["version"].as_str(), json_msg["digest"].as_str(), json_msg["timestamp"].as_u64()) {
-                (None, None, None) => "2:latest".to_owned(),
-                (None, None, Some(_ts)) => {
-                    // TODO validation should check freshness on receiving entities for some moment in the history
-                    // So key should be "2:latest" but validation should check freshness appropriately
-                    debug!("parse_key_from_request_for_builtin_sp: <<< GET_TXN_AUTHR_AGRMT Trying to request TAA for timestamp, skip StateProof logic");
-                    return None;
-                }
+                (None, None, _ts) => "2:latest".to_owned(),
                 (None, Some(digest), None) => format!("2:d:{}", digest),
                 (Some(version), None, None) => format!("2:v:{}", version),
                 _ => {
