@@ -2265,15 +2265,6 @@ mod high_cases {
             utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
         }
 
-        fn _build_constraint_id(auth_action: &str,
-                                auth_type: &str,
-                                field: &str,
-                                old_value: Option<&str>,
-                                new_value: Option<&str>) -> String {
-            let default_old_value = if auth_action == "ADD" { "*" } else { "" };
-            format!("{}--{}--{}--{}--{}", auth_type, auth_action, field, old_value.unwrap_or(default_old_value), new_value.unwrap_or(""))
-        }
-
         fn _change_constraint(pool_handle: i32, wallet_handle: i32, trustee_did: &str, action: &str, txn_type: &str, field: &str,
                               old_value: Option<&str>, new_value: Option<&str>, constraint: &str) {
             let auth_rule_request = ledger::build_auth_rule_request(&trustee_did,
@@ -2296,19 +2287,13 @@ mod high_cases {
                                                                             old_value,
                                                                             new_value).unwrap();
             let response = ledger::submit_request(pool_handle, &get_auth_rule_request).unwrap();
-            let constraint_id = _build_constraint_id(action, txn_type, field, old_value, new_value);
+            let mut response: Reply<serde_json::Value> = serde_json::from_str(&response).unwrap();
+            let constraints = response.result["data"].as_array_mut().unwrap();
+            assert_eq!(constraints.len(), 1);
 
-            let constraint = _extract_constraint(&response, &constraint_id);
+            let constraint = constraints.pop().unwrap();
             let constraint_json = serde_json::to_string(&constraint).unwrap();
             (constraint, constraint_json)
-        }
-
-        fn _extract_constraint(response: &str, constraint_id: &str) -> serde_json::Value {
-            let response: Reply<serde_json::Value> = serde_json::from_str(response).unwrap();
-            let constraints = response.result["data"].as_object().unwrap();
-            assert_eq!(constraints.len(), 1);
-            assert!(constraints.contains_key(constraint_id));
-            constraints[constraint_id].clone()
         }
 
         #[test]

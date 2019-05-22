@@ -142,6 +142,12 @@ pub fn libindy_build_auth_rule_request(submitter_did: &str, txn_type: &str, acti
         .map_err(map_rust_indy_sdk_error)
 }
 
+pub fn libindy_build_auth_rules_request(submitter_did: &str, data: &str) -> VcxResult<String> {
+    ledger::build_auth_rules_request(submitter_did, data)
+        .wait()
+        .map_err(map_rust_indy_sdk_error)
+}
+
 pub fn libindy_build_get_auth_rule_request(submitter_did: Option<&str>, txn_type: Option<&str>, action: Option<&str>, field: Option<&str>,
                                            old_value: Option<&str>, new_value: Option<&str>) -> VcxResult<String> {
     ledger::build_get_auth_rule_request(submitter_did, txn_type, action, field, old_value, new_value)
@@ -152,7 +158,6 @@ pub fn libindy_build_get_auth_rule_request(submitter_did: Option<&str>, txn_type
 pub mod auth_rule {
     use super::*;
     use std::collections::{HashMap, HashSet};
-    use std::collections::hash_map::Entry;
     use std::sync::{Once, ONCE_INIT};
     use std::sync::Mutex;
 
@@ -185,7 +190,7 @@ pub mod auth_rule {
         // This is to change the json key to adhear to the functionality on ledger
         #[serde(rename = "type")]
         pub txn_type: String,
-        pub data: HashMap<String, Constraint>,
+        pub data: Vec<AuthRule>,
     }
 
     /**
@@ -246,14 +251,14 @@ pub mod auth_rule {
 
     /* Map contains default Auth Rules set on the Ledger*/
     lazy_static! {
-        static ref AUTH_RULES: Mutex<HashMap<String, Vec<AuthRule>>> = Default::default();
+        static ref AUTH_RULES: Mutex<Vec<AuthRule>> = Default::default();
     }
 
     /* Helper structure to store auth rule set on the Ledger */
-    #[derive(Debug)]
-    struct AuthRule {
-        action: String,
-        txn_type: String,
+    #[derive(Serialize, Deserialize, Debug, Clone)]
+    pub struct AuthRule {
+        auth_action: String,
+        auth_type: String,
         field: String,
         old_value: Option<String>,
         new_value: Option<String>,
@@ -269,44 +274,28 @@ pub mod auth_rule {
         let fees: HashMap<String, String> = ::serde_json::from_str(rules_fee)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize fees: {:?}", err)))?;
 
-        let mut responses: Vec<Box<Future<Item=String, Error=::indy::IndyError>>> = Vec::new();
+        let mut auth_rules: Vec<AuthRule> = auth_rules.clone();
 
-        for (txn_, fee_alias) in fees {
-            if let Some(rules) = auth_rules.get(&txn_) {
-                for auth_rule in rules {
-                    let mut constraint = auth_rule.constraint.clone();
-                    _set_fee_to_constraint(&mut constraint, &fee_alias);
-                    responses.push(_send_auth_rule(submitter_did, auth_rule, &constraint)?);
+        auth_rules
+            .iter_mut()
+            .for_each(|auth_rule| {
+                if let Some(fee_alias) = fees.get(&auth_rule.auth_type) {
+                    _set_fee_to_constraint(&mut auth_rule.constraint, &fee_alias);
                 }
-            }
-        }
+            });
 
-        responses
-            .into_iter()
-            .map(|response| _check_auth_rule_responses(response))
-            .collect::<VcxResult<Vec<()>>>()?;
-
-        Ok(())
+        _send_auth_rules(submitter_did, &auth_rules)
     }
 
-    fn _send_auth_rule(submitter_did: &str, auth_rule: &AuthRule, constraint: &Constraint) -> VcxResult<Box<Future<Item=String, Error=::indy::IndyError>>> {
-        let constraint_json = ::serde_json::to_string(&constraint)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidLedgerResponse, format!("{:?}", err)))?;
+    fn _send_auth_rules(submitter_did: &str, data: &Vec<AuthRule>) -> VcxResult<()> {
+        let data = serde_json::to_string(&data)
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize auth rules: {:?}", err)))?;
 
-        let auth_rule_request = libindy_build_auth_rule_request(submitter_did,
-                                                                &auth_rule.txn_type,
-                                                                &auth_rule.action,
-                                                                &auth_rule.field,
-                                                                auth_rule.old_value.as_ref().map(String::as_str),
-                                                                auth_rule.new_value.as_ref().map(String::as_str),
-                                                                &constraint_json)?;
+        let auth_rules_request = libindy_build_auth_rules_request(submitter_did, &data)?;
 
-        let response = ledger::sign_and_submit_request(get_pool_handle()?, get_wallet_handle(), submitter_did, &auth_rule_request);
-        Ok(response)
-    }
-
-    fn _check_auth_rule_responses(response: Box<Future<Item=String, Error=::indy::IndyError>>) -> VcxResult<()> {
-        let response = response.wait().map_err(map_rust_indy_sdk_error)?;
+        let response = ledger::sign_and_submit_request(get_pool_handle()?, get_wallet_handle(), submitter_did, &auth_rules_request)
+            .wait()
+            .map_err(map_rust_indy_sdk_error)?;
 
         let response: serde_json::Value = ::serde_json::from_str(&response)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidLedgerResponse, format!("{:?}", err)))?;
@@ -327,32 +316,12 @@ pub mod auth_rule {
             let get_auth_rule_request = ::indy::ledger::build_get_auth_rule_request(None, None, None, None, None, None).wait().unwrap();
             let get_auth_rule_response = ::utils::libindy::ledger::libindy_submit_request(&get_auth_rule_request).unwrap();
 
-            let mut response: super::auth_rule::GetAuthRuleResponse = ::serde_json::from_str(&get_auth_rule_response)
-                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidLedgerResponse, format!("{:?}", err))).unwrap();
+            let response: GetAuthRuleResponse = ::serde_json::from_str(&get_auth_rule_response)
+                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidLedgerResponse, err)).unwrap();
 
-            for (constraint_id, constraint) in response.result.data.iter_mut() {
-                let parts: Vec<&str> = constraint_id.split("--").collect();
+            let mut auth_rules = AUTH_RULES.lock().unwrap();
 
-                let txn_type = parts[0].to_string();
-                let action = parts[1].to_string();
-                let field = parts[2].to_string();
-                let old_value = if action == "ADD" { None } else { Some(parts[3].to_string()) };
-                let new_value = if parts[4] == "" { None } else { Some(parts[4].to_string()) };
-
-                let mut map = AUTH_RULES.lock().unwrap();
-
-                let rule = AuthRule { action, txn_type: txn_type.clone(), field, old_value, new_value, constraint: constraint.clone() };
-
-                match map.entry(txn_type) {
-                    Entry::Occupied(rules) => {
-                        let &mut ref mut rules = rules.into_mut();
-                        rules.push(rule);
-                    }
-                    Entry::Vacant(rules) => {
-                        rules.insert(vec![rule]);
-                    }
-                };
-            }
+            *auth_rules = response.result.data;
         })
     }
 
@@ -387,12 +356,14 @@ pub mod auth_rule {
         let response = libindy_submit_request(&request)?;
 
         let mut response: GetAuthRuleResponse = ::serde_json::from_str(&response)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidLedgerResponse, format!("{:?}", err)))?;
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidLedgerResponse, err))?;
 
-        let constraint_id = _build_constraint_id(txn_type, action, field, old_value, new_value);
+        let auth_rule = response.result.data.pop()
+            .ok_or(VcxError::from_msg(VcxErrorKind::InvalidLedgerResponse,
+                                      format!("Auth Rule not found for action: auth_type: {:?}, auth_action: {:?}, field: {:?}, old_value: {:?}, new_value: {:?}",
+                                              txn_type, action, field, old_value, new_value)))?;
 
-        response.result.data.remove(&constraint_id)
-            .ok_or(VcxError::from_msg(VcxErrorKind::InvalidLedgerResponse, format!("Auth Rule not found for id: {}", constraint_id)))
+        Ok(auth_rule.constraint)
     }
 
     fn _extract_fee_alias_from_constraint(constraint: &Constraint, cur_fee: Option<String>) -> VcxResult<Option<String>> {
@@ -425,15 +396,6 @@ pub mod auth_rule {
                 }
             }
         }
-    }
-
-    fn _build_constraint_id(auth_type: &str,
-                            auth_action: &str,
-                            field: &str,
-                            old_value: Option<&str>,
-                            new_value: Option<&str>) -> String {
-        let default_old_value = if auth_action == "ADD" { "*" } else { "" };
-        format!("{}--{}--{}--{}--{}", auth_type, auth_action, field, old_value.unwrap_or(default_old_value), new_value.unwrap_or(""))
     }
 }
 
