@@ -22,9 +22,7 @@ pub enum CatchupProgress {
 }
 
 pub fn build_catchup_req(merkle: &MerkleTree, target_mt_size: usize) -> IndyResult<Option<(String, String)>> {
-    let txns_cnt = target_mt_size - merkle.count();
-
-    if txns_cnt <= 0 {
+    if merkle.count() >= target_mt_size  {
         warn!("No transactions to catch up!");
         return Ok(None);
     }
