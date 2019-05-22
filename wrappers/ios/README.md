@@ -27,7 +27,7 @@ Add pod to target:
    ```
    brew install libsodium
    brew install zeromq
-   brew openssl 1.0.2q (can be any fresh version)
+   brew install openssl (1.0.2q can be any fresh version)
    ```
 1. Setup environment variables:
    
