@@ -28,7 +28,7 @@ impl ProtocolVersion {
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 #[serde(rename_all = "camelCase")]
-pub struct TxnAuthrAgrmtMeta {
+pub struct TxnAuthrAgrmtAcceptanceData {
     pub mechanism: String,
     pub taa_digest: String,
     pub time: u64
@@ -44,7 +44,7 @@ pub struct Request<T: serde::Serialize> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub signature: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub taa_acceptance: Option<TxnAuthrAgrmtMeta>
+    pub taa_acceptance: Option<TxnAuthrAgrmtAcceptanceData>
 }
 
 impl<T: serde::Serialize> Request<T> {

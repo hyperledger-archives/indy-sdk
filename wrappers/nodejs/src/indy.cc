@@ -2151,19 +2151,22 @@ void buildAcceptanceMechanismRequest_cb(indy_handle_t handle, indy_error_t xerr,
   }
 }
 NAN_METHOD(buildAcceptanceMechanismRequest) {
-  INDY_ASSERT_NARGS(buildAcceptanceMechanismRequest, 4)
+  INDY_ASSERT_NARGS(buildAcceptanceMechanismRequest, 5)
   INDY_ASSERT_STRING(buildAcceptanceMechanismRequest, 0, submitterDid)
   INDY_ASSERT_STRING(buildAcceptanceMechanismRequest, 1, aml)
-  INDY_ASSERT_STRING(buildAcceptanceMechanismRequest, 2, amlContext)
-  INDY_ASSERT_FUNCTION(buildAcceptanceMechanismRequest, 3)
+  INDY_ASSERT_STRING(buildAcceptanceMechanismRequest, 2, version)
+  INDY_ASSERT_STRING(buildAcceptanceMechanismRequest, 3, amlContext)
+  INDY_ASSERT_FUNCTION(buildAcceptanceMechanismRequest, 4)
   const char* arg0 = argToCString(info[0]);
   const char* arg1 = argToCString(info[1]);
   const char* arg2 = argToCString(info[2]);
-  IndyCallback* icb = argToIndyCb(info[3]);
-  indyCalled(icb, indy_build_acceptance_mechanism_request(icb->handle, arg0, arg1, arg2, buildAcceptanceMechanismRequest_cb));
+  const char* arg3 = argToCString(info[3]);
+  IndyCallback* icb = argToIndyCb(info[4]);
+  indyCalled(icb, indy_build_acceptance_mechanism_request(icb->handle, arg0, arg1, arg2, arg3, buildAcceptanceMechanismRequest_cb));
   delete arg0;
   delete arg1;
   delete arg2;
+  delete arg3;
 }
 
 void buildGetAcceptanceMechanismRequest_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
@@ -2173,32 +2176,35 @@ void buildGetAcceptanceMechanismRequest_cb(indy_handle_t handle, indy_error_t xe
   }
 }
 NAN_METHOD(buildGetAcceptanceMechanismRequest) {
-  INDY_ASSERT_NARGS(buildGetAcceptanceMechanismRequest, 3)
+  INDY_ASSERT_NARGS(buildGetAcceptanceMechanismRequest, 4)
   INDY_ASSERT_STRING(buildGetAcceptanceMechanismRequest, 0, submitterDid)
   INDY_ASSERT_NUMBER(buildGetAcceptanceMechanismRequest, 1, timestamp)
-  INDY_ASSERT_FUNCTION(buildGetAcceptanceMechanismRequest, 2)
+  INDY_ASSERT_STRING(buildGetAcceptanceMechanismRequest, 2, version)
+  INDY_ASSERT_FUNCTION(buildGetAcceptanceMechanismRequest, 3)
   const char* arg0 = argToCString(info[0]);
   indy_i64_t arg1 = argToInt32(info[1]);
-  IndyCallback* icb = argToIndyCb(info[2]);
-  indyCalled(icb, indy_build_get_acceptance_mechanism_request(icb->handle, arg0, arg1, buildGetAcceptanceMechanismRequest_cb));
+  const char* arg2 = argToCString(info[2]);
+  IndyCallback* icb = argToIndyCb(info[3]);
+  indyCalled(icb, indy_build_get_acceptance_mechanism_request(icb->handle, arg0, arg1, arg2, buildGetAcceptanceMechanismRequest_cb));
   delete arg0;
+  delete arg2;
 }
 
-void appendTxnAuthorAgreementMetaToRequest_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
+void appendTxnAuthorAgreementAcceptanceToRequest_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
   IndyCallback* icb = IndyCallback::getCallback(handle);
   if(icb != nullptr){
     icb->cbString(xerr, arg0);
   }
 }
-NAN_METHOD(appendTxnAuthorAgreementMetaToRequest) {
-  INDY_ASSERT_NARGS(appendTxnAuthorAgreementMetaToRequest, 7)
-  INDY_ASSERT_STRING(appendTxnAuthorAgreementMetaToRequest, 0, requestJson)
-  INDY_ASSERT_STRING(appendTxnAuthorAgreementMetaToRequest, 1, text)
-  INDY_ASSERT_STRING(appendTxnAuthorAgreementMetaToRequest, 2, version)
-  INDY_ASSERT_STRING(appendTxnAuthorAgreementMetaToRequest, 3, hash)
-  INDY_ASSERT_STRING(appendTxnAuthorAgreementMetaToRequest, 4, accMechType)
-  INDY_ASSERT_NUMBER(appendTxnAuthorAgreementMetaToRequest, 5, timeOfAcceptance)
-  INDY_ASSERT_FUNCTION(appendTxnAuthorAgreementMetaToRequest, 6)
+NAN_METHOD(appendTxnAuthorAgreementAcceptanceToRequest) {
+  INDY_ASSERT_NARGS(appendTxnAuthorAgreementAcceptanceToRequest, 7)
+  INDY_ASSERT_STRING(appendTxnAuthorAgreementAcceptanceToRequest, 0, requestJson)
+  INDY_ASSERT_STRING(appendTxnAuthorAgreementAcceptanceToRequest, 1, text)
+  INDY_ASSERT_STRING(appendTxnAuthorAgreementAcceptanceToRequest, 2, version)
+  INDY_ASSERT_STRING(appendTxnAuthorAgreementAcceptanceToRequest, 3, taaDigest)
+  INDY_ASSERT_STRING(appendTxnAuthorAgreementAcceptanceToRequest, 4, accMechType)
+  INDY_ASSERT_NUMBER(appendTxnAuthorAgreementAcceptanceToRequest, 5, timeOfAcceptance)
+  INDY_ASSERT_FUNCTION(appendTxnAuthorAgreementAcceptanceToRequest, 6)
   const char* arg0 = argToCString(info[0]);
   const char* arg1 = argToCString(info[1]);
   const char* arg2 = argToCString(info[2]);
@@ -2206,7 +2212,7 @@ NAN_METHOD(appendTxnAuthorAgreementMetaToRequest) {
   const char* arg4 = argToCString(info[4]);
   long long arg5 = argToUInt32(info[5]);
   IndyCallback* icb = argToIndyCb(info[6]);
-  indyCalled(icb, indy_append_txn_author_agreement_acceptance_to_request(icb->handle, arg0, arg1, arg2, arg3, arg4, arg5, appendTxnAuthorAgreementMetaToRequest_cb));
+  indyCalled(icb, indy_append_txn_author_agreement_acceptance_to_request(icb->handle, arg0, arg1, arg2, arg3, arg4, arg5, appendTxnAuthorAgreementAcceptanceToRequest_cb));
   delete arg0;
   delete arg1;
   delete arg2;
@@ -2454,6 +2460,90 @@ NAN_METHOD(closeWalletSearch) {
   indy_handle_t arg0 = argToInt32(info[0]);
   IndyCallback* icb = argToIndyCb(info[1]);
   indyCalled(icb, indy_close_wallet_search(icb->handle, arg0, closeWalletSearch_cb));
+}
+
+void getSchema_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbString(xerr, arg0);
+  }
+}
+
+NAN_METHOD(getSchema) {
+  INDY_ASSERT_NARGS(getSchema, 6)
+  INDY_ASSERT_NUMBER(getSchema, 0, poolHandle)
+  INDY_ASSERT_NUMBER(getSchema, 1, wh)
+  INDY_ASSERT_STRING(getSchema, 2, submitterDid)
+  INDY_ASSERT_STRING(getSchema, 3, id)
+  INDY_ASSERT_STRING(getSchema, 4, options)
+  INDY_ASSERT_FUNCTION(getSchema, 5)
+  indy_handle_t arg0 = argToInt32(info[0]);
+  indy_handle_t arg1 = argToInt32(info[1]);
+  const char* arg2 = argToCString(info[2]);
+  const char* arg3 = argToCString(info[3]);
+  const char* arg4 = argToCString(info[4]);
+  IndyCallback* icb = argToIndyCb(info[5]);
+  indyCalled(icb, indy_get_schema(icb->handle, arg0, arg1, arg2, arg3, arg4, getSchema_cb));
+}
+
+void getCredDef_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbString(xerr, arg0);
+  }
+}
+
+NAN_METHOD(getCredDef) {
+  INDY_ASSERT_NARGS(getCredDef, 6)
+  INDY_ASSERT_NUMBER(getCredDef, 0, poolHandle)
+  INDY_ASSERT_NUMBER(getCredDef, 1, wh)
+  INDY_ASSERT_STRING(getCredDef, 2, submitterDid)
+  INDY_ASSERT_STRING(getCredDef, 3, id)
+  INDY_ASSERT_STRING(getCredDef, 4, options)
+  INDY_ASSERT_FUNCTION(getCredDef, 5)
+  indy_handle_t arg0 = argToInt32(info[0]);
+  indy_handle_t arg1 = argToInt32(info[1]);
+  const char* arg2 = argToCString(info[2]);
+  const char* arg3 = argToCString(info[3]);
+  const char* arg4 = argToCString(info[4]);
+  IndyCallback* icb = argToIndyCb(info[5]);
+  indyCalled(icb, indy_get_cred_def(icb->handle, arg0, arg1, arg2, arg3, arg4, getCredDef_cb));
+}
+
+void purgeSchemaCache_cb(indy_handle_t handle, indy_error_t xerr) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbNone(xerr);
+  }
+}
+
+NAN_METHOD(purgeSchemaCache) {
+  INDY_ASSERT_NARGS(purgeSchemaCache, 3)
+  INDY_ASSERT_NUMBER(purgeSchemaCache, 0, wh)
+  INDY_ASSERT_STRING(purgeSchemaCache, 1, options)
+  INDY_ASSERT_FUNCTION(purgeSchemaCache, 2)
+  indy_handle_t arg0 = argToInt32(info[0]);
+  const char* arg1 = argToCString(info[1]);
+  IndyCallback* icb = argToIndyCb(info[2]);
+  indyCalled(icb, indy_purge_schema_cache(icb->handle, arg0, arg1, purgeSchemaCache_cb));
+}
+
+void purgeCredDefCache_cb(indy_handle_t handle, indy_error_t xerr) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbNone(xerr);
+  }
+}
+
+NAN_METHOD(purgeCredDefCache) {
+  INDY_ASSERT_NARGS(purgeCredDefCache, 3)
+  INDY_ASSERT_NUMBER(purgeCredDefCache, 0, wh)
+  INDY_ASSERT_STRING(purgeCredDefCache, 1, options)
+  INDY_ASSERT_FUNCTION(purgeCredDefCache, 2)
+  indy_handle_t arg0 = argToInt32(info[0]);
+  const char* arg1 = argToCString(info[1]);
+  IndyCallback* icb = argToIndyCb(info[2]);
+  indyCalled(icb, indy_purge_cred_def_cache(icb->handle, arg0, arg1, purgeCredDefCache_cb));
 }
 
 void isPairwiseExists_cb(indy_handle_t handle, indy_error_t xerr, indy_bool_t arg0) {
@@ -2721,6 +2811,38 @@ NAN_METHOD(parsePaymentResponse) {
   indyCalled(icb, indy_parse_payment_response(icb->handle, arg0, arg1, parsePaymentResponse_cb));
   delete arg0;
   delete arg1;
+}
+
+
+
+void preparePaymentExtraWithAcceptanceData_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbString(xerr, arg0);
+  }
+}
+NAN_METHOD(preparePaymentExtraWithAcceptanceData) {
+  INDY_ASSERT_NARGS(preparePaymentExtraWithAcceptanceData, 7)
+  INDY_ASSERT_STRING(preparePaymentExtraWithAcceptanceData, 0, extraJson)
+  INDY_ASSERT_STRING(preparePaymentExtraWithAcceptanceData, 1, text)
+  INDY_ASSERT_STRING(preparePaymentExtraWithAcceptanceData, 2, version)
+  INDY_ASSERT_STRING(preparePaymentExtraWithAcceptanceData, 3, taaDigest)
+  INDY_ASSERT_STRING(preparePaymentExtraWithAcceptanceData, 4, accMechType)
+  INDY_ASSERT_NUMBER(preparePaymentExtraWithAcceptanceData, 5, timeOfAcceptance)
+  INDY_ASSERT_FUNCTION(preparePaymentExtraWithAcceptanceData, 6)
+  const char* arg0 = argToCString(info[0]);
+  const char* arg1 = argToCString(info[1]);
+  const char* arg2 = argToCString(info[2]);
+  const char* arg3 = argToCString(info[3]);
+  const char* arg4 = argToCString(info[4]);
+  long long arg5 = argToUInt32(info[5]);
+  IndyCallback* icb = argToIndyCb(info[6]);
+  indyCalled(icb, indy_prepare_payment_extra_with_acceptance_data(icb->handle, arg0, arg1, arg2, arg3, arg4, arg5, preparePaymentExtraWithAcceptanceData_cb));
+  delete arg0;
+  delete arg1;
+  delete arg2;
+  delete arg3;
+  delete arg4;
 }
 
 void buildMintReq_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0, const char* arg1) {
@@ -3297,7 +3419,7 @@ NAN_MODULE_INIT(InitAll) {
   Nan::Export(target, "buildGetTxnAuthorAgreementRequest", buildGetTxnAuthorAgreementRequest);
   Nan::Export(target, "buildAcceptanceMechanismRequest", buildAcceptanceMechanismRequest);
   Nan::Export(target, "buildGetAcceptanceMechanismRequest", buildGetAcceptanceMechanismRequest);
-  Nan::Export(target, "appendTxnAuthorAgreementMetaToRequest", appendTxnAuthorAgreementMetaToRequest);
+  Nan::Export(target, "appendTxnAuthorAgreementAcceptanceToRequest", appendTxnAuthorAgreementAcceptanceToRequest);
   Nan::Export(target, "getResponseMetadata", getResponseMetadata);
   Nan::Export(target, "addWalletRecord", addWalletRecord);
   Nan::Export(target, "updateWalletRecordValue", updateWalletRecordValue);
@@ -3309,6 +3431,10 @@ NAN_MODULE_INIT(InitAll) {
   Nan::Export(target, "openWalletSearch", openWalletSearch);
   Nan::Export(target, "fetchWalletSearchNextRecords", fetchWalletSearchNextRecords);
   Nan::Export(target, "closeWalletSearch", closeWalletSearch);
+  Nan::Export(target, "getSchema", getSchema);
+  Nan::Export(target, "getCredDef", getCredDef);
+  Nan::Export(target, "purgeSchemaCache", purgeSchemaCache);
+  Nan::Export(target, "purgeCredDefCache", purgeCredDefCache);
   Nan::Export(target, "isPairwiseExists", isPairwiseExists);
   Nan::Export(target, "createPairwise", createPairwise);
   Nan::Export(target, "listPairwise", listPairwise);
@@ -3322,6 +3448,7 @@ NAN_MODULE_INIT(InitAll) {
   Nan::Export(target, "parseGetPaymentSourcesResponse", parseGetPaymentSourcesResponse);
   Nan::Export(target, "buildPaymentReq", buildPaymentReq);
   Nan::Export(target, "parsePaymentResponse", parsePaymentResponse);
+  Nan::Export(target, "preparePaymentExtraWithAcceptanceData", preparePaymentExtraWithAcceptanceData);
   Nan::Export(target, "buildMintReq", buildMintReq);
   Nan::Export(target, "buildSetTxnFeesReq", buildSetTxnFeesReq);
   Nan::Export(target, "buildGetTxnFeesReq", buildGetTxnFeesReq);

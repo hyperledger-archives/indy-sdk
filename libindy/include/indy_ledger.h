@@ -1108,6 +1108,7 @@ extern "C" {
     ///     “<acceptance mechanism label 2>”: { acceptance mechanism description 2},
     ///     ...
     /// }
+    /// version: a version of new acceptance mechanisms. (Note: unique on the Ledger)
     /// aml_context: (Optional) common context information about acceptance mechanisms (may be a URL to external resource).
     /// cb: Callback that takes command result as parameter.
     ///
@@ -1119,6 +1120,7 @@ extern "C" {
     extern indy_error_t indy_build_acceptance_mechanism_request(indy_handle_t command_handle,
                                                                 const char *  submitter_did,
                                                                 const char *  aml,
+                                                                const char *  version,
                                                                 const char *  aml_context,
 
                                                                 void           (*cb)(indy_handle_t command_handle_,
@@ -1135,7 +1137,10 @@ extern "C" {
     /// command_handle: command handle to map callback to caller context.
     /// submitter_did: (Optional) DID of the request sender.
     /// timestamp: i64 - time to get an active acceptance mechanisms. Pass -1 to get the latest one.
+    /// version: (Optional) version of acceptance mechanisms.
     /// cb: Callback that takes command result as parameter.
+    ///
+    /// NOTE: timestamp and version cannot be specified together.
     ///
     /// #Returns
     /// Request result as json.
@@ -1145,30 +1150,31 @@ extern "C" {
     extern indy_error_t indy_build_get_acceptance_mechanism_request(indy_handle_t command_handle,
                                                                     const char *  submitter_did,
                                                                     indy_i64_t  timestamp,
+                                                                    const char *  version,
 
                                                                     void           (*cb)(indy_handle_t command_handle_,
                                                                                          indy_error_t  err,
                                                                                          const char*   request_json)
                                                                    );
 
-    /// Append transaction author agreement metadata to a request.
+    /// Append transaction author agreement acceptance data to a request.
     /// This function should be called before signing and sending a request
     /// if there is any transaction author agreement set on the Ledger.
     ///
     /// EXPERIMENTAL
     ///
     /// This function may calculate hash by itself or consume it as a parameter.
-    /// If all text, version and hash parameters are specified, a check integrity of them will be done.
+    /// If all text, version and taa_digest parameters are specified, a check integrity of them will be done.
     ///
     /// #Params
     /// command_handle: command handle to map callback to caller context.
     /// request_json: original request data json.
     /// text and version - (optional) raw data about TAA from ledger.
     ///     These parameters should be passed together.
-    ///     These parameters are required if hash parameter is omitted.
-    /// hash - (optional) hash on text and version. This parameter is required if text and version parameters are omitted.
-    /// acc_mech_type - mechanism how user has accepted the TAA
-    /// time_of_acceptance - UTC timestamp when user has accepted the TAA
+    ///     These parameters are required if taa_digest parameter is omitted.
+    /// taa_digest - (optional) hash on text and version. This parameter is required if text and version parameters are omitted.
+    /// mechanism - mechanism how user has accepted the TAA
+    /// time - UTC timestamp when user has accepted the TAA
     /// cb: Callback that takes command result as parameter.
     ///
     /// #Returns
@@ -1180,9 +1186,9 @@ extern "C" {
                                                                                const char *  request_json,
                                                                                const char *  text,
                                                                                const char *  version,
-                                                                               const char *  hash,
-                                                                               const char *  acc_mech_type,
-                                                                               indy_u64_t    time_of_acceptance,
+                                                                               const char *  taa_digest,
+                                                                               const char *  mechanism,
+                                                                               indy_u64_t    time,
 
                                                                                void           (*cb)(indy_handle_t command_handle_,
                                                                                                     indy_error_t  err,

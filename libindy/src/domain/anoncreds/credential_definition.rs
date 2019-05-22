@@ -21,8 +21,8 @@ pub enum SignatureType {
 
 impl SignatureType {
     pub fn to_str(&self) -> &'static str {
-        match self {
-            &SignatureType::CL => CL_SIGNATURE_TYPE
+        match *self {
+            SignatureType::CL => CL_SIGNATURE_TYPE
         }
     }
 }

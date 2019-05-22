@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use hex::{ToHex, FromHex};
 use ursa::cl::RevocationRegistryDelta as CryproRevocationRegistryDelta;
 use serde::de::DeserializeOwned;
 use serde_json;
@@ -18,7 +19,7 @@ use domain::ledger::ddo::GetDdoOperation;
 use domain::ledger::node::{NodeOperation, NodeOperationData};
 use domain::ledger::nym::GetNymOperation;
 use domain::ledger::pool::{PoolConfigOperation, PoolRestartOperation, PoolUpgradeOperation};
-use domain::ledger::request::Request;
+use domain::ledger::request::{TxnAuthrAgrmtAcceptanceData, Request};
 use domain::ledger::response::{Message, Reply, ReplyType};
 use domain::ledger::rev_reg::{GetRevocRegDeltaReplyResult, GetRevocRegReplyResult, GetRevRegDeltaOperation, GetRevRegOperation, RevRegEntryOperation};
 use domain::ledger::rev_reg_def::{GetRevocRegDefReplyResult, GetRevRegDefOperation, RevRegDefOperation};
@@ -28,6 +29,7 @@ use domain::ledger::validator_info::GetValidatorInfoOperation;
 use domain::ledger::auth_rule::*;
 use domain::ledger::author_agreement::*;
 use errors::prelude::*;
+use utils::crypto::hash::hash as openssl_hash;
 
 pub mod merkletree;
 
@@ -633,10 +635,12 @@ impl LedgerService {
         Ok(request)
     }
 
-    pub fn build_acceptance_mechanism_request(&self, identifier: &str, aml: AcceptanceMechanisms, aml_context: Option<&str>) -> IndyResult<String> {
-        info!("build_acceptance_mechanism_request >>> identifier: {:?}, aml {:?}, aml_context {:?}", identifier, aml, aml_context);
+    pub fn build_acceptance_mechanism_request(&self, identifier: &str, aml: AcceptanceMechanisms, version: &str, aml_context: Option<&str>) -> IndyResult<String> {
+        info!("build_acceptance_mechanism_request >>> identifier: {:?}, aml {:?}, version {:?}, aml_context {:?}", identifier, aml, version, aml_context);
 
-        let operation = SetAcceptanceMechanismOperation::new(aml, aml_context.map(String::from));
+        let operation = SetAcceptanceMechanismOperation::new(aml,
+                                                             version.to_string(),
+                                                             aml_context.map(String::from));
 
         let request = Request::build_request(Some(identifier), operation)
             .to_indy(IndyErrorKind::InvalidState, "TXN_AUTHR_AGRMT_AML request json is invalid")?;
@@ -646,10 +650,14 @@ impl LedgerService {
         Ok(request)
     }
 
-    pub fn build_get_acceptance_mechanism_request(&self, identifier: Option<&str>, timestamp: Option<u64>) -> IndyResult<String> {
-        info!("build_get_acceptance_mechanism_request >>> identifier: {:?}, timestamp {:?}", identifier, timestamp);
+    pub fn build_get_acceptance_mechanism_request(&self, identifier: Option<&str>, timestamp: Option<u64>, version: Option<&str>) -> IndyResult<String> {
+        info!("build_get_acceptance_mechanism_request >>> identifier: {:?}, timestamp {:?}, version {:?}", identifier, timestamp, version);
 
-        let operation = GetAcceptanceMechanismOperation::new(timestamp);
+        if timestamp.is_some() && version.is_some() {
+            return Err(err_msg(IndyErrorKind::InvalidStructure, "timestamp and version cannot be specified together."));
+        }
+
+        let operation = GetAcceptanceMechanismOperation::new(timestamp, version.map(String::from));
 
         let request = Request::build_request(identifier, operation)
             .to_indy(IndyErrorKind::InvalidState, "GET_TXN_AUTHR_AGRMT_AML request json is invalid")?;
@@ -694,6 +702,58 @@ impl LedgerService {
 
         trace!("validate_action <<< res {:?}", res);
         res
+    }
+
+    pub fn prepare_acceptance_data(&self, text: Option<&str>, version: Option<&str>, hash: Option<&str>, mechanism: &str, time: u64) -> IndyResult<TxnAuthrAgrmtAcceptanceData> {
+        trace!("prepare_acceptance_data >>");
+
+        let taa_digest = match (text, version, hash) {
+            (None, None, None) => {
+                return Err(err_msg(IndyErrorKind::InvalidStructure, "Invalid combination of params: Either combination `text` + `version` or `taa_digest` must be passed."));
+            }
+            (None, None, Some(hash_)) => {
+                hash_.to_string()
+            }
+            (Some(_), None, _) | (None, Some(_), _) => {
+                return Err(err_msg(IndyErrorKind::InvalidStructure, "Invalid combination of params: `text` and `version` should be passed or skipped together."));
+            }
+            (Some(text_), Some(version_), None) => {
+                self._calculate_hash(text_, version_)?.to_hex()
+            }
+            (Some(text_), Some(version_), Some(hash_)) => {
+                self._compare_hash(text_, version_, hash_)?;
+                hash_.to_string()
+            }
+        };
+
+        let acceptance_data = TxnAuthrAgrmtAcceptanceData {
+            mechanism: mechanism.to_string(),
+            taa_digest,
+            time,
+        };
+
+        trace!("prepare_acceptance_data << {:?}", acceptance_data);
+
+        Ok(acceptance_data)
+    }
+
+    fn _calculate_hash(&self, text: &str, version: &str) -> IndyResult<Vec<u8>> {
+        let content: String = version.to_string() + text;
+        openssl_hash(content.as_bytes())
+    }
+
+    fn _compare_hash(&self, text: &str, version: &str, hash: &str) -> IndyResult<()> {
+        let calculated_hash = self._calculate_hash(text, version)?;
+
+        let passed_hash = Vec::from_hex(hash)
+            .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Cannot decode `hash`: {:?}", err)))?;
+
+        if calculated_hash != passed_hash {
+            return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure,
+                                           format!("Calculated hash of concatenation `version` and `text` doesn't equal to passed `hash` value. \n\
+                                           Calculated hash value: {:?}, \n Passed hash value: {:?}", calculated_hash, passed_hash)));
+        }
+        Ok(())
     }
 }
 
@@ -1046,6 +1106,7 @@ mod tests {
 
         fn _role_constraint() -> Constraint {
             Constraint::RoleConstraint(RoleConstraint {
+                constraint_id: "ROLE".to_string(),
                 sig_count: Some(0),
                 metadata: None,
                 role: Some(String::new()),
@@ -1080,17 +1141,19 @@ mod tests {
         fn build_auth_rule_request_works_for_combination_constraints() {
             let ledger_service = LedgerService::new();
 
-            let constraint = Constraint::AndConstraint(
+            let constraint = Constraint::CombinationConstraint(
                 CombinationConstraint {
+                    constraint_id: "AND".to_string(),
                     auth_constraints: vec![
                         _role_constraint(),
-                        Constraint::OrConstraint(
+                        Constraint::CombinationConstraint(
                             CombinationConstraint {
+                                constraint_id: "OR".to_string(),
                                 auth_constraints: vec![
-                                    _role_constraint(), _role_constraint(), ]
+                                    _role_constraint(), _role_constraint(), ],
                             }
                         )
-                    ]
+                    ],
                 });
             let constraint_json = serde_json::to_string(&constraint).unwrap();
 
@@ -1128,16 +1191,6 @@ mod tests {
                                                                  Some(OLD_VALUE), Some(NEW_VALUE),
                                                                  &_role_constraint_json()).unwrap();
             check_request(&request, expected_result);
-        }
-
-        #[test]
-        fn build_auth_rule_request_works_for_invalid_auth_type() {
-            let ledger_service = LedgerService::new();
-
-            let res = ledger_service.build_auth_rule_request(IDENTIFIER, "WRONG", ADD_AUTH_ACTION, FIELD,
-                                                             None, Some(NEW_VALUE),
-                                                             &_role_constraint_json());
-            assert_kind!(IndyErrorKind::InvalidStructure, res);
         }
 
         #[test]
@@ -1268,7 +1321,7 @@ mod tests {
             });
 
             let data = GetTxnAuthorAgreementData {
-                hash: None,
+                digest: None,
                 version: Some(VERSION.to_string()),
                 timestamp: None,
             };
@@ -1282,9 +1335,11 @@ mod tests {
         use super::*;
 
         const LABEL: &str = "label";
+        const VERSION: &str = "1.0.0";
         const CONTEXT: &str = "some context";
+        const TIMESTAMP: u64 = 123456789;
 
-        fn _aml() -> AcceptanceMechanisms{
+        fn _aml() -> AcceptanceMechanisms {
             let mut aml: AcceptanceMechanisms = AcceptanceMechanisms::new();
             aml.insert(LABEL.to_string(), json!({"text": "This is description for acceptance mechanism"}));
             aml
@@ -1297,9 +1352,10 @@ mod tests {
             let expected_result = json!({
                 "type": TXN_AUTHR_AGRMT_AML,
                 "aml":  _aml(),
+                "version":  VERSION,
             });
 
-            let request = ledger_service.build_acceptance_mechanism_request(IDENTIFIER,  _aml(), None).unwrap();
+            let request = ledger_service.build_acceptance_mechanism_request(IDENTIFIER, _aml(), VERSION, None).unwrap();
             check_request(&request, expected_result);
         }
 
@@ -1310,10 +1366,11 @@ mod tests {
             let expected_result = json!({
                 "type": TXN_AUTHR_AGRMT_AML,
                 "aml":  _aml(),
+                "version":  VERSION,
                 "amlContext": CONTEXT.to_string(),
             });
 
-            let request = ledger_service.build_acceptance_mechanism_request(IDENTIFIER,  _aml(), Some(CONTEXT)).unwrap();
+            let request = ledger_service.build_acceptance_mechanism_request(IDENTIFIER, _aml(), VERSION, Some(CONTEXT)).unwrap();
             check_request(&request, expected_result);
         }
 
@@ -1325,23 +1382,42 @@ mod tests {
                 "type": GET_TXN_AUTHR_AGRMT_AML,
             });
 
-            let request = ledger_service.build_get_acceptance_mechanism_request(None, None).unwrap();
+            let request = ledger_service.build_get_acceptance_mechanism_request(None, None, None).unwrap();
             check_request(&request, expected_result);
         }
 
         #[test]
         fn build_get_acceptance_mechanism_request_for_timestamp() {
-            let timestamp = ::time::get_time().sec as u64;
-
             let ledger_service = LedgerService::new();
 
             let expected_result = json!({
                 "type": GET_TXN_AUTHR_AGRMT_AML,
-                "timestamp": timestamp,
+                "timestamp": TIMESTAMP,
             });
 
-            let request = ledger_service.build_get_acceptance_mechanism_request(None, Some(timestamp)).unwrap();
+            let request = ledger_service.build_get_acceptance_mechanism_request(None, Some(TIMESTAMP), None).unwrap();
             check_request(&request, expected_result);
+        }
+
+        #[test]
+        fn build_get_acceptance_mechanism_request_for_version() {
+            let ledger_service = LedgerService::new();
+
+            let expected_result = json!({
+                "type": GET_TXN_AUTHR_AGRMT_AML,
+                "version": VERSION,
+            });
+
+            let request = ledger_service.build_get_acceptance_mechanism_request(None, None, Some(VERSION)).unwrap();
+            check_request(&request, expected_result);
+        }
+
+        #[test]
+        fn build_get_acceptance_mechanism_request_for_timestamp_and_version() {
+            let ledger_service = LedgerService::new();
+
+            let res = ledger_service.build_get_acceptance_mechanism_request(None, Some(TIMESTAMP), Some(VERSION));
+            assert_kind!(IndyErrorKind::InvalidStructure, res);
         }
     }
 

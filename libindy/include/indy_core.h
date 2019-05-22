@@ -15,5 +15,6 @@
 #include "indy_blob_storage.h"
 #include "indy_non_secrets.h"
 #include "indy_logger.h"
+#include "indy_cache.h"
 
 #endif

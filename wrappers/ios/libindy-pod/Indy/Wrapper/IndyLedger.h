@@ -716,12 +716,14 @@
      “<acceptance mechanism label 2>”: { acceptance mechanism description 2},
      ...
  }
+ @param version a version of new acceptance mechanisms. (Note: unique on the Ledger).
  @param amlContext (Optional) common context information about acceptance mechanisms (may be a URL to external resource).
 
  Returns Request result as json.
  */
 + (void)buildAcceptanceMechanismRequestWithSubmitterDid:(NSString *)submitterDid
                                                     aml:(NSString *)aml
+                                                version:(NSString *)version
                                              amlContext:(NSString *)amlContext
                                              completion:(void (^)(NSError *error, NSString *responseMetadata))completion;
 
@@ -733,40 +735,44 @@
 
  @param submitterDid (Optional) DID of the request sender.
  @param timestamp time to get an active acceptance mechanisms. The latest one will be returned for nil.
+ @param version (Optional) version of acceptance mechanisms.
+
+ NOTE: timestamp and version cannot be specified together.
 
  Returns Request result as json.
  */
 + (void)buildGetAcceptanceMechanismRequestWithSubmitterDid:(NSString *)submitterDid
                                                  timestamp:(NSNumber *)timestamp
+                                                   version:(NSString *)version
                                                 completion:(void (^)(NSError *error, NSString *responseMetadata))completion;
 
 /**
- Append transaction author agreement metadata to a request.
+ Append transaction author agreement acceptance data to a request.
  This function should be called before signing and sending a request
  if there is any transaction author agreement set on the Ledger.
 
  EXPERIMENTAL
 
  This function may calculate hash by itself or consume it as a parameter.
- If all text, version and hash parameters are specified, a check integrity of them will be done.
+ If all text, version and taaDigest parameters are specified, a check integrity of them will be done.
 
  @param requestJson original request data json.
  @param text (Optional) raw data about TAA from ledger.
  @param version (Optional) version of TAA from ledger.
      text and version should be passed together.
-     text and version are required if hash parameter is omitted.
- @param hash (Optional) hash on text and version. This parameter is required if text and version parameters are omitted.
+     text and version are required if taaDigest parameter is omitted.
+ @param taaDigest (Optional) hash on text and version. This parameter is required if text and version parameters are omitted.
  @param accMechType mechanism how user has accepted the TAA
  @param timeOfAcceptance UTC timestamp when user has accepted the TAA
 
  Returns Updated request result as json.
  */
-+ (void)appendTxnAuthorAgreementMetaToRequest:(NSString *)requestJson
-                                         text:(NSString *)text
-                                      version:(NSString *)version
-                                         hash:(NSString *)hash
-                                  accMechType:(NSString *)accMechType
-                             timeOfAcceptance:(NSNumber *)timeOfAcceptance
-                                   completion:(void (^)(NSError *error, NSString *responseMetadata))completion;
++ (void)appendTxnAuthorAgreementAcceptanceToRequest:(NSString *)requestJson
+                                               text:(NSString *)text
+                                            version:(NSString *)version
+                                          taaDigest:(NSString *)taaDigest
+                                        accMechType:(NSString *)accMechType
+                                   timeOfAcceptance:(NSNumber *)timeOfAcceptance
+                                         completion:(void (^)(NSError *error, NSString *responseMetadata))completion;
 
 @end

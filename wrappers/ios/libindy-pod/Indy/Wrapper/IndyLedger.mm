@@ -831,6 +831,7 @@
 
 + (void)buildAcceptanceMechanismRequestWithSubmitterDid:(NSString *)submitterDid
                                                     aml:(NSString *)aml
+                                                version:(NSString *)version
                                              amlContext:(NSString *)amlContext
                                              completion:(void (^)(NSError *error, NSString *responseMetadata))completion {
     indy_error_t ret;
@@ -840,6 +841,7 @@
     ret = indy_build_acceptance_mechanism_request(handle,
             [submitterDid UTF8String],
             [aml UTF8String],
+            [version UTF8String],
             [amlContext UTF8String],
             IndyWrapperCommonStringCallback);
 
@@ -854,6 +856,7 @@
 
 + (void)buildGetAcceptanceMechanismRequestWithSubmitterDid:(NSString *)submitterDid
                                                  timestamp:(NSNumber *)timestamp
+                                                   version:(NSString *)version
                                                 completion:(void (^)(NSError *error, NSString *responseMetadata))completion {
     indy_error_t ret;
 
@@ -862,6 +865,7 @@
     ret = indy_build_get_acceptance_mechanism_request(handle,
             [submitterDid UTF8String],
             timestamp ? [timestamp longLongValue] : -1,
+            [version UTF8String],
             IndyWrapperCommonStringCallback);
 
     if (ret != Success) {
@@ -873,13 +877,13 @@
     }
 }
 
-+ (void)appendTxnAuthorAgreementMetaToRequest:(NSString *)requestJson
-                                         text:(NSString *)text
-                                      version:(NSString *)version
-                                         hash:(NSString *)hash
-                                  accMechType:(NSString *)accMechType
-                             timeOfAcceptance:(NSNumber *)timeOfAcceptance
-                                   completion:(void (^)(NSError *error, NSString *responseMetadata))completion {
++ (void)appendTxnAuthorAgreementAcceptanceToRequest:(NSString *)requestJson
+                                               text:(NSString *)text
+                                            version:(NSString *)version
+                                          taaDigest:(NSString *)taaDigest
+                                        accMechType:(NSString *)accMechType
+                                   timeOfAcceptance:(NSNumber *)timeOfAcceptance
+                                         completion:(void (^)(NSError *error, NSString *responseMetadata))completion {
     indy_error_t ret;
 
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
@@ -888,7 +892,7 @@
             [requestJson UTF8String],
             [text UTF8String],
             [version UTF8String],
-            [hash UTF8String],
+            [taaDigest UTF8String],
             [accMechType UTF8String],
             [timeOfAcceptance unsignedLongLongValue],
             IndyWrapperCommonStringCallback);

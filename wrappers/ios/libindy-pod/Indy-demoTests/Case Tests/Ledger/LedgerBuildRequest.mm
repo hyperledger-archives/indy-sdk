@@ -754,17 +754,21 @@
     NSDictionary *aml = @{
             @"acceptance mechanism label 1": @"description",
     };
+    NSString *version = @"1.0.0";
+    NSString *context = @"some context";
 
     NSDictionary *expectedResult = @{
             @"type": @"5",
             @"aml": aml,
-            @"amlContext": @"some context",
+            @"version": version,
+            @"amlContext": context,
     };
 
     NSString *requestJson;
     ret = [[LedgerUtils sharedInstance] buildAcceptanceMechanismRequestWithSubmitterDid:[TestUtils trusteeDid]
                                                                                     aml:[NSDictionary toString:aml]
-                                                                             amlContext:@"some context"
+                                                                                version:version
+                                                                             amlContext:context
                                                                              outRequest:&requestJson];
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildTxnAuthorAgreementRequestWithSubmitterDid() failed!");
 
@@ -773,7 +777,7 @@
     XCTAssertTrue([expectedResult isEqualToDictionary:request[@"operation"]], @"Wrong Result Json!");
 }
 
-- (void)testBuildGetAcceptanceMechanismRequestWorks {
+- (void)testBuildGetAcceptanceMechanismRequestWorksForTimestamp {
     NSDictionary *expectedResult = @{
             @"type": @"7",
             @"timestamp": @(123456789),
@@ -782,6 +786,7 @@
     NSString *requestJson;
     ret = [[LedgerUtils sharedInstance] buildGetAcceptanceMechanismRequestWithSubmitterDid:[TestUtils trusteeDid]
                                                                                  timestamp:@(123456789)
+                                                                                   version:nil
                                                                                 outRequest:&requestJson];
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildTxnAuthorAgreementRequestWithSubmitterDid() failed!");
 
@@ -790,9 +795,29 @@
     XCTAssertTrue([expectedResult isEqualToDictionary:request[@"operation"]], @"Wrong Result Json!");
 }
 
-// MARK: Author Agreement Metadata
+- (void)testBuildGetAcceptanceMechanismRequestWorksForVersion {
+    NSString *version = @"1.0.0";
 
-- (void)testAppendTxnAuthorAgreementMetaToRequestWorks {
+    NSDictionary *expectedResult = @{
+            @"type": @"7",
+            @"version": version,
+    };
+
+    NSString *requestJson;
+    ret = [[LedgerUtils sharedInstance] buildGetAcceptanceMechanismRequestWithSubmitterDid:[TestUtils trusteeDid]
+                                                                                 timestamp:nil
+                                                                                   version:version
+                                                                                outRequest:&requestJson];
+    XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildTxnAuthorAgreementRequestWithSubmitterDid() failed!");
+
+    NSDictionary *request = [NSDictionary fromString:requestJson];
+
+    XCTAssertTrue([expectedResult isEqualToDictionary:request[@"operation"]], @"Wrong Result Json!");
+}
+
+// MARK: Author Agreement Acceptance Data
+
+- (void)testAppendTxnAuthorAgreementAcceptanceToRequestWorks {
     NSDictionary *request = @{
             @"reqId": @(1496822211362017764),
             @"identifier": @"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL",
@@ -804,13 +829,13 @@
     };
 
     NSString *requestJson;
-    ret = [[LedgerUtils sharedInstance] appendTxnAuthorAgreementMetaToRequest:[NSDictionary toString:request]
-                                                                         text:@"some agreement text"
-                                                                      version:@"1.0.0"
-                                                                         hash:@"050e52a57837fff904d3d059c8a123e3a04177042bf467db2b2c27abd8045d5e"
-                                                                  accMechType:@"acceptance type 1"
-                                                             timeOfAcceptance:@(123456789)
-                                                                   outRequest:&requestJson];
+    ret = [[LedgerUtils sharedInstance] appendTxnAuthorAgreementAcceptanceToRequest:[NSDictionary toString:request]
+                                                                               text:@"some agreement text"
+                                                                            version:@"1.0.0"
+                                                                          taaDigest:@"050e52a57837fff904d3d059c8a123e3a04177042bf467db2b2c27abd8045d5e"
+                                                                        accMechType:@"acceptance type 1"
+                                                                   timeOfAcceptance:@(123456789)
+                                                                         outRequest:&requestJson];
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildTxnAuthorAgreementRequestWithSubmitterDid() failed!");
     NSDictionary *expectedMeta = @{
             @"mechanism": @"acceptance type 1",

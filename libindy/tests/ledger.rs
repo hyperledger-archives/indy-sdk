@@ -26,6 +26,7 @@ extern crate rust_base58;
 extern crate time;
 extern crate serde;
 extern crate sodiumoxide;
+extern crate rand;
 
 #[macro_use]
 mod utils;
@@ -38,6 +39,7 @@ use utils::constants::*;
 
 use openssl::hash::{MessageDigest, Hasher};
 use sodiumoxide::crypto::secretbox;
+use self::rand::distributions::Alphanumeric;
 
 use utils::domain::ledger::constants;
 use utils::domain::ledger::request::DEFAULT_LIBIDY_DID;
@@ -2000,6 +2002,54 @@ mod high_cases {
         }
 
         #[test]
+        fn indy_build_auth_rule_requests_works_for_any_type() {
+            let txn_type = "1000000000001";
+
+            // write
+            let expected_result = json!({
+                "type": constants::AUTH_RULE,
+                "auth_type": txn_type,
+                "auth_action": ADD_AUTH_ACTION,
+                "field": FIELD,
+                "new_value": serde_json::Value::Null,
+                "constraint": json!({
+                    "sig_count": 1,
+                    "metadata": {},
+                    "role": "0",
+                    "constraint_id": "ROLE",
+                    "need_to_be_owner": false
+                }),
+            });
+
+            let request = ledger::build_auth_rule_request(DID_TRUSTEE,
+                                                          txn_type,
+                                                          &ADD_AUTH_ACTION,
+                                                          FIELD,
+                                                          None,
+                                                          None,
+                                                          ROLE_CONSTRAINT).unwrap();
+            check_request(&request, expected_result);
+
+            // read
+            let expected_result = json!({
+                "type": constants::GET_AUTH_RULE,
+                "auth_type": txn_type,
+                "auth_action": ADD_AUTH_ACTION,
+                "field": FIELD,
+                "new_value": serde_json::Value::Null,
+            });
+
+            let request = ledger::build_get_auth_rule_request(None,
+                                                              Some(txn_type),
+                                                              Some(ADD_AUTH_ACTION),
+                                                              Some(FIELD),
+                                                              None,
+                                                              None).unwrap();
+            check_request(&request, expected_result);
+        }
+
+
+        #[test]
         fn indy_build_get_auth_rule_request_works_for_get_all() {
             let expected_result = json!({
                 "type": constants::GET_AUTH_RULE,
@@ -2268,7 +2318,7 @@ mod high_cases {
 
         const TEXT: &str = "indy agreement";
         const VERSION: &str = "1.0.0";
-        const HASH: &str = "83d907821df1c87db829e96569a11f6fc2e7880acba5e43d07ab786959e13bd3";
+        const TAA_DIGEST: &str = "83d907821df1c87db829e96569a11f6fc2e7880acba5e43d07ab786959e13bd3";
 
         #[test]
         fn indy_build_txn_author_agreement_request() {
@@ -2285,6 +2335,20 @@ mod high_cases {
         }
 
         #[test]
+        fn indy_build_txn_author_agreement_request_works_for_empty() {
+            let expected_result = json!({
+                "type": constants::TXN_AUTHR_AGRMT,
+                "text": "",
+                "version": VERSION
+            });
+
+            let request = ledger::build_txn_author_agreement_request(DID_TRUSTEE,
+                                                                     "",
+                                                                     VERSION).unwrap();
+            check_request(&request, expected_result);
+        }
+
+        #[test]
         fn indy_build_get_txn_author_agreement_request() {
             let expected_result = json!({
                 "type": constants::GET_TXN_AUTHR_AGRMT,
@@ -2295,14 +2359,14 @@ mod high_cases {
         }
 
         #[test]
-        fn indy_build_get_txn_author_agreement_request_for_hash() {
+        fn indy_build_get_txn_author_agreement_request_for_digest() {
             let expected_result = json!({
                 "type": constants::GET_TXN_AUTHR_AGRMT,
-                "hash": HASH,
+                "digest": TAA_DIGEST,
             });
 
             let data = json!({
-                "hash": HASH
+                "digest": TAA_DIGEST
             }).to_string();
 
             let request = ledger::build_get_txn_author_agreement_request(None, Some(&data)).unwrap();
@@ -2344,6 +2408,8 @@ mod high_cases {
     mod acceptance_mechanism {
         use super::*;
 
+        const VERSION: &str = "1.0.0";
+
         #[test]
         fn indy_build_acceptance_mechanism_request() {
             let aml = json!({
@@ -2352,11 +2418,13 @@ mod high_cases {
 
             let expected_result = json!({
                 "type": constants::TXN_AUTHR_AGRMT_AML,
-                "aml": aml.clone()
+                "aml": aml.clone(),
+                "version": VERSION
             });
 
             let request = ledger::build_acceptance_mechanism_request(DID_TRUSTEE,
                                                                      &aml.to_string(),
+                                                                     VERSION,
                                                                      None).unwrap();
             check_request(&request, expected_result);
         }
@@ -2371,11 +2439,13 @@ mod high_cases {
             let expected_result = json!({
                 "type": constants::TXN_AUTHR_AGRMT_AML,
                 "aml": aml.clone(),
+                "version": VERSION,
                 "amlContext": context,
             });
 
             let request = ledger::build_acceptance_mechanism_request(DID_TRUSTEE,
                                                                      &aml.to_string(),
+                                                                     VERSION,
                                                                      Some(context)).unwrap();
             check_request(&request, expected_result);
         }
@@ -2386,7 +2456,7 @@ mod high_cases {
                 "type": constants::GET_TXN_AUTHR_AGRMT_AML,
             });
 
-            let request = ledger::build_get_acceptance_mechanism_request(None, None).unwrap();
+            let request = ledger::build_get_acceptance_mechanism_request(None, None, None).unwrap();
             check_request(&request, expected_result);
         }
 
@@ -2399,13 +2469,31 @@ mod high_cases {
                 "timestamp": timestamp
             });
 
-            let request = ledger::build_get_acceptance_mechanism_request(None, Some(timestamp)).unwrap();
+            let request = ledger::build_get_acceptance_mechanism_request(None, Some(timestamp), None).unwrap();
             check_request(&request, expected_result);
+        }
+
+        #[test]
+        fn indy_build_get_acceptance_mechanism_request_for_version() {
+            let expected_result = json!({
+                "type": constants::GET_TXN_AUTHR_AGRMT_AML,
+                "version": VERSION,
+            });
+
+            let request = ledger::build_get_acceptance_mechanism_request(None, None, Some(VERSION)).unwrap();
+            check_request(&request, expected_result);
+        }
+
+        #[test]
+        fn indy_build_get_acceptance_mechanism_request_for_timestamp_and_version() {
+            let res = ledger::build_get_acceptance_mechanism_request(None, Some(123456789), Some(VERSION));
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
     }
 
-    mod author_agreement_meta {
+    mod author_agreement_acceptance {
         use super::*;
+        use rand::Rng;
 
         const TEXT: &str = "some agreement text";
         const VERSION: &str = "1.0.0";
@@ -2413,7 +2501,7 @@ mod high_cases {
         const ACCEPTANCE_MECH_TYPE: &str = "acceptance type 1";
         const TIME_OF_ACCEPTANCE: u64 = 123456789;
 
-        fn _check_request_meta(request: &str){
+        fn _check_request_meta(request: &str) {
             let request: serde_json::Value = serde_json::from_str(&request).unwrap();
 
             let expected_meta = json!({
@@ -2429,12 +2517,12 @@ mod high_cases {
         fn indy_append_txn_author_agreement_acceptance_to_request_works_for_text_version() {
             utils::setup();
 
-            let request = ledger::append_txn_author_agreement_meta_to_request(REQUEST,
-                                                                              Some(TEXT),
-                                                                              Some(VERSION),
-                                                                              None,
-                                                                              ACCEPTANCE_MECH_TYPE,
-                                                                              TIME_OF_ACCEPTANCE).unwrap();
+            let request = ledger::append_txn_author_agreement_acceptance_to_request(REQUEST,
+                                                                                    Some(TEXT),
+                                                                                    Some(VERSION),
+                                                                                    None,
+                                                                                    ACCEPTANCE_MECH_TYPE,
+                                                                                    TIME_OF_ACCEPTANCE).unwrap();
             _check_request_meta(&request);
 
             utils::tear_down();
@@ -2444,12 +2532,12 @@ mod high_cases {
         fn indy_append_txn_author_agreement_acceptance_to_request_works_for_hash() {
             utils::setup();
 
-            let request = ledger::append_txn_author_agreement_meta_to_request(REQUEST,
-                                                                              None,
-                                                                              None,
-                                                                              Some(HASH),
-                                                                              ACCEPTANCE_MECH_TYPE,
-                                                                              TIME_OF_ACCEPTANCE).unwrap();
+            let request = ledger::append_txn_author_agreement_acceptance_to_request(REQUEST,
+                                                                                    None,
+                                                                                    None,
+                                                                                    Some(HASH),
+                                                                                    ACCEPTANCE_MECH_TYPE,
+                                                                                    TIME_OF_ACCEPTANCE).unwrap();
             _check_request_meta(&request);
 
             utils::tear_down();
@@ -2459,12 +2547,12 @@ mod high_cases {
         fn indy_append_txn_author_agreement_acceptance_to_request_works_for_text_version_and_hash() {
             utils::setup();
 
-            let request = ledger::append_txn_author_agreement_meta_to_request(REQUEST,
-                                                                              Some(TEXT),
-                                                                              Some(VERSION),
-                                                                              Some(HASH),
-                                                                              ACCEPTANCE_MECH_TYPE,
-                                                                              TIME_OF_ACCEPTANCE).unwrap();
+            let request = ledger::append_txn_author_agreement_acceptance_to_request(REQUEST,
+                                                                                    Some(TEXT),
+                                                                                    Some(VERSION),
+                                                                                    Some(HASH),
+                                                                                    ACCEPTANCE_MECH_TYPE,
+                                                                                    TIME_OF_ACCEPTANCE).unwrap();
             _check_request_meta(&request);
 
             utils::tear_down();
@@ -2474,12 +2562,12 @@ mod high_cases {
         fn indy_append_txn_author_agreement_acceptance_to_request_works_for_text_version_not_correspond_to_hash() {
             utils::setup();
 
-            let res = ledger::append_txn_author_agreement_meta_to_request(REQUEST,
-                                                                          Some("other text"),
-                                                                          Some("0.0.1"),
-                                                                          Some(HASH),
-                                                                          ACCEPTANCE_MECH_TYPE,
-                                                                          TIME_OF_ACCEPTANCE);
+            let res = ledger::append_txn_author_agreement_acceptance_to_request(REQUEST,
+                                                                                Some("other text"),
+                                                                                Some("0.0.1"),
+                                                                                Some(HASH),
+                                                                                ACCEPTANCE_MECH_TYPE,
+                                                                                TIME_OF_ACCEPTANCE);
             assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             utils::tear_down();
@@ -2489,12 +2577,12 @@ mod high_cases {
         fn indy_append_txn_author_agreement_acceptance_to_request_works_for_invalid_request() {
             utils::setup();
 
-            let res = ledger::append_txn_author_agreement_meta_to_request("Invalid request string",
-                                                                          None,
-                                                                          None,
-                                                                          Some(HASH),
-                                                                          ACCEPTANCE_MECH_TYPE,
-                                                                          TIME_OF_ACCEPTANCE);
+            let res = ledger::append_txn_author_agreement_acceptance_to_request("Invalid request string",
+                                                                                None,
+                                                                                None,
+                                                                                Some(HASH),
+                                                                                ACCEPTANCE_MECH_TYPE,
+                                                                                TIME_OF_ACCEPTANCE);
             assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             utils::tear_down();
@@ -2504,12 +2592,12 @@ mod high_cases {
         fn indy_append_txn_author_agreement_acceptance_to_request_works_for_missed_text_version_hash() {
             utils::setup();
 
-            let res = ledger::append_txn_author_agreement_meta_to_request(REQUEST,
-                                                                          None,
-                                                                          None,
-                                                                          None,
-                                                                          ACCEPTANCE_MECH_TYPE,
-                                                                          TIME_OF_ACCEPTANCE);
+            let res = ledger::append_txn_author_agreement_acceptance_to_request(REQUEST,
+                                                                                None,
+                                                                                None,
+                                                                                None,
+                                                                                ACCEPTANCE_MECH_TYPE,
+                                                                                TIME_OF_ACCEPTANCE);
             assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             utils::tear_down();
@@ -2519,23 +2607,283 @@ mod high_cases {
         fn indy_append_txn_author_agreement_acceptance_to_request_works_for_partial_combination_of_text_version() {
             utils::setup();
 
-            let res = ledger::append_txn_author_agreement_meta_to_request(REQUEST,
-                                                                          Some(TEXT),
-                                                                          None,
-                                                                          None,
-                                                                          ACCEPTANCE_MECH_TYPE,
-                                                                          TIME_OF_ACCEPTANCE);
+            let res = ledger::append_txn_author_agreement_acceptance_to_request(REQUEST,
+                                                                                Some(TEXT),
+                                                                                None,
+                                                                                None,
+                                                                                ACCEPTANCE_MECH_TYPE,
+                                                                                TIME_OF_ACCEPTANCE);
             assert_code!(ErrorCode::CommonInvalidStructure, res);
 
-            let res = ledger::append_txn_author_agreement_meta_to_request(REQUEST,
-                                                                          None,
-                                                                          Some(VERSION),
-                                                                          None,
-                                                                          ACCEPTANCE_MECH_TYPE,
-                                                                          TIME_OF_ACCEPTANCE);
+            let res = ledger::append_txn_author_agreement_acceptance_to_request(REQUEST,
+                                                                                None,
+                                                                                Some(VERSION),
+                                                                                None,
+                                                                                ACCEPTANCE_MECH_TYPE,
+                                                                                TIME_OF_ACCEPTANCE);
             assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             utils::tear_down();
+        }
+
+        fn _rand_string() -> String {
+            rand::thread_rng()
+                .sample_iter(&Alphanumeric)
+                .take(30)
+                .collect()
+        }
+
+        fn _rand_version() -> String {
+            let version: u32 = rand::thread_rng().gen();
+            version.to_string()
+        }
+
+        fn _gen_aml_data() -> (String, String, String, String) {
+            let aml_label = _rand_string();
+            let aml = json!({
+                aml_label.clone(): _rand_string()
+            }).to_string();
+            let version: String = _rand_version();
+            let aml_context: String = _rand_string();
+            (aml, aml_label, version, aml_context)
+        }
+
+        fn _gen_taa_data() -> (String, String) {
+            let text: String = _rand_string();
+            let version: String = _rand_version();
+            (text, version)
+        }
+
+        fn _send_taa(pool_handle: i32, wallet_handle: i32, trustee_did: &str, taa_text: &str, taa_version: &str) {
+            let request = ledger::build_txn_author_agreement_request(&trustee_did, &taa_text, &taa_version).unwrap();
+            let response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &request).unwrap();
+            pool::check_response_type(&response, ResponseType::REPLY);
+        }
+
+        fn _set_taa(pool_handle: i32, wallet_handle: i32, trustee_did: &str) -> (String, String) {
+            let (taa_text, taa_version) = _gen_taa_data();
+            _send_taa(pool_handle, wallet_handle, trustee_did, &taa_text, &taa_version);
+            (taa_text, taa_version)
+        }
+
+        fn _reset_taa(pool_handle: i32, wallet_handle: i32, trustee_did: &str) {
+            let taa_version = _rand_version();
+            _send_taa(pool_handle, wallet_handle, trustee_did, "", &taa_version);
+        }
+
+        fn _set_aml(pool_handle: i32, wallet_handle: i32, trustee_did: &str) -> (String, String, String, String) {
+            let (aml, aml_label, aml_version, aml_context) = _gen_aml_data();
+            let request = ledger::build_acceptance_mechanism_request(trustee_did, &aml, &aml_version, Some(&aml_context)).unwrap();
+            let response = ledger::sign_and_submit_request(pool_handle, wallet_handle, trustee_did, &request).unwrap();
+            pool::check_response_type(&response, ResponseType::REPLY);
+            (aml, aml_label, aml_version, aml_context)
+        }
+
+        #[test]
+        fn indy_txn_author_agreement_requests_works() {
+            let (wallet_handle, pool_handle, trustee_did) = utils::setup_trustee();
+
+            _set_aml(pool_handle, wallet_handle, &trustee_did);
+
+            let (taa_text, taa_version) = _gen_taa_data();
+
+            {
+                let request = ledger::build_txn_author_agreement_request(&trustee_did, &taa_text, &taa_version).unwrap();
+                let response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &request).unwrap();
+                pool::check_response_type(&response, ResponseType::REPLY);
+            }
+
+            {
+                let request = ledger::build_get_txn_author_agreement_request(Some(&trustee_did), None).unwrap();
+                let response = ledger::submit_request(pool_handle, &request).unwrap();
+                pool::check_response_type(&response, ResponseType::REPLY);
+
+                let response: serde_json::Value = serde_json::from_str(&response).unwrap();
+                let expected_data = json!({"text": taa_text, "version": taa_version});
+                assert_eq!(response["result"]["data"], expected_data);
+            }
+
+            _reset_taa(pool_handle, wallet_handle, &trustee_did);
+
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
+        }
+
+        #[test]
+        fn indy_acceptance_mechanism_requests_works() {
+            let (wallet_handle, pool_handle, trustee_did) = utils::setup_trustee();
+
+            let (aml, _, aml_version, aml_context) = _gen_aml_data();
+
+            {
+                let request = ledger::build_acceptance_mechanism_request(&trustee_did, &aml, &aml_version, Some(&aml_context)).unwrap();
+                let response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &request).unwrap();
+                pool::check_response_type(&response, ResponseType::REPLY);
+            }
+
+            //            {
+            //                let request = ledger::build_get_acceptance_mechanism_request(Some(&trustee_did), None, None).unwrap();
+            //                let response = ledger::submit_request(pool_handle, &request).unwrap();
+            //                pool::check_response_type(&response, ResponseType::REPLY);
+            //
+            //                let response: serde_json::Value = serde_json::from_str(&response).unwrap();
+            //                let expected_data = json!({"aml": aml, "version": aml_version, "amlContext": aml_context});
+            //                assert_eq!(response["result"]["data"], expected_data);
+            //            }
+
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
+        }
+
+        #[test]
+        fn indy_author_agreement_works() {
+            let (wallet_handle, pool_handle, trustee_did) = utils::setup_trustee();
+
+            let (_, aml_label, _, _) = _set_aml(pool_handle, wallet_handle, &trustee_did);
+            let (taa_text, taa_version) = _set_taa(pool_handle, wallet_handle, &trustee_did);
+
+            let (did_, verkey_) = did::create_and_store_my_did(wallet_handle, None).unwrap();
+
+            {
+                let nym_req = ledger::build_nym_request(&trustee_did, &did_, Some(&verkey_), None, None).unwrap();
+                let nym_resp = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_req).unwrap();
+                pool::check_response_type(&nym_resp, ResponseType::REJECT);
+            }
+
+            {
+                let nym_req = ledger::build_nym_request(&trustee_did, &did_, Some(&verkey_), None, None).unwrap();
+                let nym_req = ledger::append_txn_author_agreement_acceptance_to_request(&nym_req,
+                                                                                        Some(&taa_text), Some(&taa_version),
+                                                                                        None, &aml_label,
+                                                                                        time::get_time().sec as u64).unwrap();
+
+                let nym_resp = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_req).unwrap();
+                pool::check_response_type(&nym_resp, ResponseType::REPLY);
+            }
+
+            {
+                let get_nym_req = ledger::build_get_nym_request(Some(&trustee_did), &did_).unwrap();
+                let get_nym_resp = ledger::submit_request(pool_handle, &get_nym_req).unwrap();
+                pool::check_response_type(&get_nym_resp, ResponseType::REPLY);
+            }
+
+            _reset_taa(pool_handle, wallet_handle, &trustee_did);
+
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
+        }
+
+        #[test]
+        fn indy_reset_author_agreement_works() {
+            let (wallet_handle, pool_handle, trustee_did) = utils::setup_trustee();
+
+            _set_aml(pool_handle, wallet_handle, &trustee_did);
+            _set_taa(pool_handle, wallet_handle, &trustee_did);
+
+            let (did_, verkey_) = did::create_and_store_my_did(wallet_handle, None).unwrap();
+
+            let nym_req = ledger::build_nym_request(&trustee_did, &did_, Some(&verkey_), None, None).unwrap();
+
+            let nym_resp = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_req).unwrap();
+            pool::check_response_type(&nym_resp, ResponseType::REJECT);
+
+            _reset_taa(pool_handle, wallet_handle, &trustee_did);
+
+            let nym_req = ledger::build_nym_request(&trustee_did, &did_, Some(&verkey_), None, None).unwrap();
+            let nym_resp = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_req).unwrap();
+            pool::check_response_type(&nym_resp, ResponseType::REPLY);
+
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
+        }
+
+        #[test]
+        fn indy_author_agreement_works_for_using_invalid_taa() {
+            let (wallet_handle, pool_handle, trustee_did) = utils::setup_trustee();
+
+            let (_, aml_label, _, _) = _set_aml(pool_handle, wallet_handle, &trustee_did);
+            _set_taa(pool_handle, wallet_handle, &trustee_did);
+
+            let (did_, verkey_) = did::create_and_store_my_did(wallet_handle, None).unwrap();
+
+            {
+                let nym_req = ledger::build_nym_request(&trustee_did, &did_, Some(&verkey_), None, None).unwrap();
+
+                let nym_req = ledger::append_txn_author_agreement_acceptance_to_request(&nym_req,
+                                                                                        Some("INVALID TAA TEXT"),
+                                                                                        Some(&VERSION),
+                                                                                        None, &aml_label,
+                                                                                        time::get_time().sec as u64).unwrap();
+
+                let nym_resp = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_req).unwrap();
+                pool::check_response_type(&nym_resp, ResponseType::REJECT);
+            }
+
+            _reset_taa(pool_handle, wallet_handle, &trustee_did);
+
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
+        }
+
+        #[test]
+        fn indy_author_agreement_works_for_using_invalid_aml() {
+            let (wallet_handle, pool_handle, trustee_did) = utils::setup_trustee();
+
+            _set_aml(pool_handle, wallet_handle, &trustee_did);
+            let (taa_text, taa_version) = _set_taa(pool_handle, wallet_handle, &trustee_did);
+
+            let (did_, verkey_) = did::create_and_store_my_did(wallet_handle, None).unwrap();
+
+            {
+                let nym_req = ledger::build_nym_request(&trustee_did, &did_, Some(&verkey_), None, None).unwrap();
+                let nym_req = ledger::append_txn_author_agreement_acceptance_to_request(&nym_req,
+                                                                                        Some(&taa_text),
+                                                                                        Some(&taa_version),
+                                                                                        None,
+                                                                                        "INVALID AML LABEL",
+                                                                                        time::get_time().sec as u64).unwrap();
+
+                let nym_resp = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_req).unwrap();
+                pool::check_response_type(&nym_resp, ResponseType::REJECT);
+            }
+
+            _reset_taa(pool_handle, wallet_handle, &trustee_did);
+
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
+        }
+
+        #[test]
+        fn indy_author_agreement_works_for_using_not_last_taa() {
+            let (wallet_handle, pool_handle, trustee_did) = utils::setup_trustee();
+
+            let (_, aml_label, _, _) = _set_aml(pool_handle, wallet_handle, &trustee_did);
+            let (taa_text, taa_version) = _set_taa(pool_handle, wallet_handle, &trustee_did);
+            let (taa_text_2, taa_version_2) = _set_taa(pool_handle, wallet_handle, &trustee_did);
+
+            let (did_, verkey_) = did::create_and_store_my_did(wallet_handle, None).unwrap();
+
+            let nym_req = ledger::build_nym_request(&trustee_did, &did_, Some(&verkey_), None, None).unwrap();
+
+            {
+                let nym_req = ledger::append_txn_author_agreement_acceptance_to_request(&nym_req,
+                                                                                        Some(&taa_text), Some(&taa_version),
+                                                                                        None, &aml_label,
+                                                                                        time::get_time().sec as u64).unwrap();
+
+                let nym_resp = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_req).unwrap();
+                pool::check_response_type(&nym_resp, ResponseType::REJECT);
+            }
+
+            let nym_req = ledger::build_nym_request(&trustee_did, &did_, Some(&verkey_), None, None).unwrap();
+
+            {
+                let nym_req = ledger::append_txn_author_agreement_acceptance_to_request(&nym_req,
+                                                                                        Some(&taa_text_2), Some(&taa_version_2),
+                                                                                        None, &aml_label,
+                                                                                        time::get_time().sec as u64).unwrap();
+
+                let nym_resp = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_req).unwrap();
+                pool::check_response_type(&nym_resp, ResponseType::REPLY);
+            }
+
+            _reset_taa(pool_handle, wallet_handle, &trustee_did);
+
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
         }
     }
 }

@@ -20,6 +20,7 @@ Native bindings for [Hyperledger Indy](https://www.hyperledger.org/projects/hype
   * [pool](#pool)
   * [wallet](#wallet)
   * [logger](#logger)
+  * [cache](#cache)
   * [mod](#mod)
 - [Advanced](#advanced)
 - [Contributing](#contributing)
@@ -1844,7 +1845,7 @@ Null data or empty JSON are acceptable here. In this case, ledger will return th
 
 Errors: `Common*`
 
-#### buildAcceptanceMechanismRequest \( submitterDid, aml, amlContext \) -&gt; request
+#### buildAcceptanceMechanismRequest \( submitterDid, aml, version, amlContext \) -&gt; request
 
 Builds a SET_TXN_AUTHR_AGRMT_AML request. 
 Request to add a new acceptance mechanism for transaction author agreement.
@@ -1861,6 +1862,7 @@ EXPERIMENTAL
   ...
 }
 ```
+* `version`: String - a version of new acceptance mechanisms. (Note: unique on the Ledger).
 * `amlContext`: String - \(Optional\) common context information about acceptance mechanisms (may be a URL to external resource).
 
 * __->__ `request`: Json
@@ -1876,28 +1878,31 @@ EXPERIMENTAL
 
 * `submitterDid`: String - \(Optional\) DID of the read request sender \(if not provided then default Libindy DID will be used\).
 * `timestamp`: Timestamp (Number) - \(Optional\) time to get an active acceptance mechanisms. The latest one will be returned for null.
+* `version`: Timestamp (String) - \(Optional\) version of acceptance mechanisms.
+
+NOTE: timestamp and version cannot be specified together.
 
 * __->__ `request`: Json
 
 Errors: `Common*`
 
-#### appendTxnAuthorAgreementMetaToRequest \( requestJson, text, version, hash, accMechType, timeOfAcceptance \) -&gt; request
+#### appendTxnAuthorAgreementAcceptanceToRequest \( requestJson, text, version, taaDigest, accMechType, timeOfAcceptance \) -&gt; request
 
-Append transaction author agreement metadata to a request.
+Append transaction author agreement acceptance data to a request.
 This function should be called before signing and sending a request
 if there is any transaction author agreement set on the Ledger.
 
 EXPERIMENTAL
 
 This function may calculate hash by itself or consume it as a parameter.
-If all text, version and hash parameters are specified, a check integrity of them will be done.
+If all text, version and taaDigest parameters are specified, a check integrity of them will be done.
 
 * `requestJson`: Json - original request data json.
 * `text`: String - \(Optional\) raw data about TAA from ledger.
 * `version`: String - \(Optional\) raw data about TAA from ledger.
      * `text` and `version` parameters should be passed together.
-     * `text` and `version` parameters are required if hash parameter is omitted.
-* `hash`: String - \(Optional\) hash on text and version. This parameter is required if text and version parameters are omitted.
+     * `text` and `version` parameters are required if taaDigest parameter is omitted.
+* `taaDigest`: String - \(Optional\) hash on text and version. This parameter is required if text and version parameters are omitted.
 * `accMechType`: String - mechanism how user has accepted the TAA.
 * `timeOfAcceptance`: Timestamp (Number) - UTC timestamp when user has accepted the TAA.
 
@@ -2343,6 +2348,27 @@ Parses response for Indy request for payment txn.
   }]
 ````
 
+#### preparePaymentExtraWithAcceptanceData \( extraJson, text, version, taaDigest, accMechType, timeOfAcceptance \) -&gt; request
+
+Append payment extra JSON with TAA acceptance data
+
+EXPERIMENTAL
+
+This function may calculate hash by itself or consume it as a parameter.
+If all text, version and taaDigest parameters are specified, a check integrity of them will be done.
+
+* `extraJson`: Json - \(Optional\) original extra json.
+* `text`: String - \(Optional\) raw data about TAA from ledger.
+* `version`: String - \(Optional\) raw data about TAA from ledger.
+     * `text` and `version` parameters should be passed together.
+     * `text` and `version` parameters are required if taaDigest parameter is omitted.
+* `taaDigest`: String - \(Optional\) hash on text and version. This parameter is required if text and version parameters are omitted.
+* `accMechType`: String - mechanism how user has accepted the TAA.
+* `timeOfAcceptance`: Timestamp (Number) - UTC timestamp when user has accepted the TAA.
+
+* __->__ `request`: Json
+
+Errors: `Common*`
 
 #### buildMintReq \( wh, submitterDid, outputs, extra \) -&gt; \[ mintReq, paymentMethod \]
 
@@ -2772,6 +2798,116 @@ indy.setLogger(function (level, target, message, modulePath, file, line) {
 Errors: `Common*`
 
 NOTE: This is a synchronous function (does not return a promise) but may call `logFn` asynchronously many times.
+
+### cache
+
+#### getSchema \( poolHandle, wh, submitterDid, id, options \) -&gt; schema
+
+Get schema json data for specified schema id.
+If data is present inside of cache, cached data is returned.
+Otherwise data is fetched from the ledger and stored inside of cache for future use.
+
+EXPERIMENTAL
+
+* `poolHandle`:
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
+* `submitterDid`: String - DID of the read request sender.
+* `id`: String - Schema ID in ledger
+* `options`: Json
+```
+ {
+    noCache: (bool, optional, false by default) Skip usage of cache,
+    noUpdate: (bool, optional, false by default) Use only cached data, do not try to update.
+    noStore: (bool, optional, false by default) Skip storing fresh data if updated,
+    minFresh: (int, optional, -1 by default) Return cached data if not older than this many seconds. -1 means do not check age.
+ }
+
+```
+__->__ schema: Json
+```
+{
+    id: identifier of schema
+    attrNames: array of attribute name strings
+    name: Schema's name string
+    version: Schema's version string
+    ver: Version of the Schema json
+}
+```
+
+Errors: `Common*`, `Wallet*`, `Ledger*`
+
+#### getCredDef \( poolHandle, wh, submitterDid, id, options \) -&gt; credDef
+
+EXPERIMENTAL
+
+Get credential definition json data for specified credential definition id.
+If data is present inside of cache, cached data is returned.
+Otherwise data is fetched from the ledger and stored inside of cache for future use.
+
+* `poolHandle`:
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
+* `submitterDid`: String - DID of the read request sender.
+* `id`: String - Credential Definition ID in ledger.
+* `options`: Json
+```
+ {
+    noCache: (bool, optional, false by default) Skip usage of cache,
+    noUpdate: (bool, optional, false by default) Use only cached data, do not try to update.
+    noStore: (bool, optional, false by default) Skip storing fresh data if updated,
+    minFresh: (int, optional, -1 by default) Return cached data if not older than this many seconds. -1 means do not check age.
+ }
+
+```
+__->__ credDef: Json
+```
+{
+    id: string - identifier of credential definition
+    schemaId: string - identifier of stored in ledger schema
+    type: string - type of the credential definition. CL is the only supported type now.
+    tag: string - allows to distinct between credential definitions for the same issuer and schema
+    value: Dictionary with Credential Definition's data: {
+        primary: primary credential public key,
+        Optional<revocation>: revocation credential public key
+    },
+    ver: Version of the Credential Definition json
+}
+```
+
+Errors: `Common*`, `Wallet*`, `Ledger*`
+
+#### purgeSchemaCache \( wh, options \) -&gt; void
+
+Purge schema cache.
+
+EXPERIMENTAL
+
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
+* `options`: Json
+```
+ {
+   maxAge: (int, optional, -1 by default) Purge cached data if older than this many seconds. -1 means purge all.
+ }
+```
+* __->__ void
+
+Errors: `Common*`, `Wallet*`
+
+#### purgeCredDefCache \( wh, options \) -&gt; void
+
+Purge credential definition cache.
+
+EXPERIMENTAL
+
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
+* `options`: Json
+```
+ {
+   maxAge: (int, optional, -1 by default) Purge cached data if older than this many seconds. -1 means purge all.
+ }
+```
+* __->__ void
+
+Errors: `Common*`, `Wallet*`
 
 ### mod
 
