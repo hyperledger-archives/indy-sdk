@@ -191,6 +191,21 @@ pub fn parse_key_from_request_for_builtin_sp(json_msg: &SJsonValue) -> Option<Ve
                 return None;
             }
         }
+        constants::GET_AUTH_RULE => {
+            if let (Some(auth_type), Some(auth_action), Some(field),
+                new_value, old_value) = (json_msg["auth_type"].as_str(),
+                                         json_msg["auth_action"].as_str(),
+                                         json_msg["field"].as_str(),
+                                         json_msg["new_value"].as_str(),
+                                         json_msg["old_value"].as_str()) {
+                trace!("TransactionHandler::parse_reply_for_builtin_sp: GET_AUTH_RULE auth_type {:?}", auth_type);
+                let default_old_value = if auth_action == "ADD" { "*" } else { "" };
+                format!("1:{}--{}--{}--{}--{}", auth_type, auth_action, field, old_value.unwrap_or(default_old_value), new_value.unwrap_or(""))
+            } else {
+                trace!("TransactionHandler::parse_reply_for_builtin_sp: <<< GET_AUTH_RULE No key suffix");
+                return None;
+            }
+        }
         constants::GET_REVOC_REG_DELTA if json_msg["from"].is_null() => {
             //{MARKER}:{REVOC_REG_DEF_ID} MARKER = 5
             if let Some(revoc_reg_def_id) = json_msg["revocRegDefId"].as_str() {
@@ -251,7 +266,7 @@ pub fn parse_key_from_request_for_builtin_sp(json_msg: &SJsonValue) -> Option<Ve
                 return None;
             }
         }
-        constants::GET_REVOC_REG | constants::GET_REVOC_REG_DELTA | constants::GET_TXN_AUTHR_AGRMT | constants::GET_TXN_AUTHR_AGRMT_AML => {
+        constants::GET_REVOC_REG | constants::GET_REVOC_REG_DELTA | constants::GET_TXN_AUTHR_AGRMT | constants::GET_TXN_AUTHR_AGRMT_AML | constants::GET_AUTH_RULE => {
             Vec::new()
         }
         constants::GET_REVOC_REG_DEF => {
@@ -442,12 +457,18 @@ fn _parse_reply_for_proof_value(json_msg: &SJsonValue, data: Option<String>, par
         let mut value = json!({});
 
         let (seq_no, time) = (json_msg["seqNo"].clone(), json_msg["txnTime"].clone());
-        if xtype.eq(constants::GET_NYM) {
-            value["seqNo"] = seq_no;
-            value["txnTime"] = time;
-        } else if xtype.ne(constants::GET_TXN_AUTHR_AGRMT) || _is_full_taa_state_value_expected(sp_key) {
-            value["lsn"] = seq_no;
-            value["lut"] = time;
+
+        match xtype {
+            constants::GET_NYM => {
+                value["seqNo"] = seq_no;
+                value["txnTime"] = time;
+            }
+            constants::GET_AUTH_RULE => {}
+            xtype if xtype.ne(constants::GET_TXN_AUTHR_AGRMT) || _is_full_taa_state_value_expected(sp_key) => {
+                value["lsn"] = seq_no;
+                value["lut"] = time;
+            }
+            _ => {}
         }
 
         match xtype {
@@ -465,6 +486,12 @@ fn _parse_reply_for_proof_value(json_msg: &SJsonValue, data: Option<String>, par
             }
             constants::GET_CRED_DEF | constants::GET_REVOC_REG_DEF | constants::GET_REVOC_REG | constants::GET_TXN_AUTHR_AGRMT_AML => {
                 value["val"] = parsed_data;
+            }
+            constants::GET_AUTH_RULE => {
+                match parsed_data.as_object().and_then(|data| data.values().next()) {
+                    Some(ref x) => value = x.clone().clone(),
+                    None => return Ok(None)
+                };
             }
             constants::GET_SCHEMA => {
                 if let Some(map) = parsed_data.as_object() {
