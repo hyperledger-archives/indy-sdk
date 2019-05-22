@@ -1,8 +1,11 @@
 import json
+
+import logging
 import pytest
 import time
 
 from indy import ledger, anoncreds, cache, IndyError
+from indy.error import ErrorCode
 
 
 @pytest.mark.asyncio
@@ -26,10 +29,9 @@ async def test_get_cred_def_works(pool_handle, wallet_handle, identity_my):
         try:
             schema_json = await cache.get_schema(pool_handle, wallet_handle, my_did, schema_id, json.dumps(options_json))
         except IndyError as err:
-            if e.error_code == ErrorCode.LedgerNotFound:
+            if err.error_code == ErrorCode.LedgerNotFound:
                 logger = logging.getLogger(__name__)
-                logger.warning(e)
-                logger.warning(response)
+                logger.warning(err)
                 time.sleep(5)
             else:
                 raise err
@@ -46,10 +48,9 @@ async def test_get_cred_def_works(pool_handle, wallet_handle, identity_my):
         try:
             await cache.get_cred_def(pool_handle, wallet_handle, my_did, cred_def_id, json.dumps(options_json))
         except IndyError as err:
-            if e.error_code == ErrorCode.LedgerNotFound:
+            if err.error_code == ErrorCode.LedgerNotFound:
                 logger = logging.getLogger(__name__)
-                logger.warning(e)
-                logger.warning(response)
+                logger.warning(err)
                 time.sleep(5)
             else:
                 raise err
