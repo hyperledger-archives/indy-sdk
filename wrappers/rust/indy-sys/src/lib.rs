@@ -11,6 +11,7 @@ pub mod payments;
 pub mod pool;
 pub mod wallet;
 pub mod logger;
+pub mod cache;
 
 use self::libc::{c_void, c_char};
 

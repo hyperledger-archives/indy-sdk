@@ -9,7 +9,7 @@ use utils::constants::{LIBINDY_CRED_OFFER, REQUESTED_ATTRIBUTES, PROOF_REQUESTED
 use utils::libindy::{error_codes::map_rust_indy_sdk_error, mock_libindy_rc, wallet::get_wallet_handle};
 use utils::libindy::payments::{pay_for_txn, PaymentTxn};
 use utils::libindy::ledger::*;
-use utils::constants::{SCHEMA_ID, SCHEMA_JSON, SCHEMA_TXN_TYPE, CRED_DEF_ID, CRED_DEF_JSON, CRED_DEF_TXN_TYPE, REV_REG_DEF_TXN_TYPE, REV_REG_DELTA_TXN_TYPE, REVOC_REG_TYPE, rev_def_json, REV_REG_ID, REV_REG_DELTA_JSON, REV_REG_JSON};
+use utils::constants::{SCHEMA_ID, SCHEMA_JSON, CREATE_SCHEMA_ACTION, CRED_DEF_ID, CRED_DEF_JSON, CREATE_CRED_DEF_ACTION, CREATE_REV_REG_DEF_ACTION, CREATE_REV_REG_DELTA_ACTION, REVOC_REG_TYPE, rev_def_json, REV_REG_ID, REV_REG_DELTA_JSON, REV_REG_JSON};
 use error::prelude::*;
 
 const BLOB_STORAGE_TYPE: &str = "default";
@@ -351,7 +351,7 @@ pub fn create_schema(name: &str, version: &str, data: &str) -> VcxResult<(String
 
     request = append_txn_author_agreement_to_request(&request)?;
 
-    let (payment, response) = pay_for_txn(&request, SCHEMA_TXN_TYPE)?;
+    let (payment, response) = pay_for_txn(&request, CREATE_SCHEMA_ACTION)?;
 
     _check_schema_response(&response)?;
 
@@ -363,9 +363,9 @@ pub fn get_schema_json(schema_id: &str) -> VcxResult<(String, String)> {
 
     let submitter_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
 
-    libindy_build_get_schema_request(&submitter_did, schema_id)
-        .and_then(|req| libindy_submit_request(&req))
-        .and_then(|response| libindy_parse_get_schema_response(&response))
+    let schema_json = libindy_get_schema(&submitter_did, schema_id)?;
+
+    Ok((schema_id.to_string(), schema_json))
 }
 
 pub fn create_cred_def(issuer_did: &str,
@@ -391,7 +391,7 @@ pub fn create_cred_def(issuer_did: &str,
 
     cred_def_req = append_txn_author_agreement_to_request(&cred_def_req)?;
 
-    let (payment, response) = pay_for_txn(&cred_def_req, CRED_DEF_TXN_TYPE)?;
+    let (payment, response) = pay_for_txn(&cred_def_req, CREATE_CRED_DEF_ACTION)?;
 
     Ok((id, payment))
 }
@@ -399,9 +399,9 @@ pub fn create_cred_def(issuer_did: &str,
 pub fn get_cred_def_json(cred_def_id: &str) -> VcxResult<(String, String)> {
     if settings::test_indy_mode_enabled() { return Ok((CRED_DEF_ID.to_string(), CRED_DEF_JSON.to_string())); }
 
-    libindy_build_get_credential_def_txn(cred_def_id)
-        .and_then(|req| libindy_submit_request(&req))
-        .and_then(|response| libindy_parse_get_cred_def_response(&response))
+    let cred_def_json = libindy_get_cred_def(cred_def_id)?;
+
+    Ok((cred_def_id.to_string(), cred_def_json))
 }
 
 pub fn create_rev_reg_def(issuer_did: &str, cred_def_id: &str, tails_file: &str, max_creds: u32)
@@ -420,7 +420,7 @@ pub fn create_rev_reg_def(issuer_did: &str, cred_def_id: &str, tails_file: &str,
 
     rev_reg_def_req = append_txn_author_agreement_to_request(&rev_reg_def_req)?;
 
-    let (payment, _) = pay_for_txn(&rev_reg_def_req, REV_REG_DEF_TXN_TYPE)?;
+    let (payment, _) = pay_for_txn(&rev_reg_def_req, CREATE_REV_REG_DEF_ACTION)?;
 
     Ok((rev_reg_id, rev_reg_def_json, rev_reg_entry_json, payment))
 }
@@ -441,7 +441,7 @@ pub fn post_rev_reg_delta(issuer_did: &str, rev_reg_id: &str, rev_reg_entry_json
 
     request = append_txn_author_agreement_to_request(&request)?;
 
-    pay_for_txn(&request, REV_REG_DELTA_TXN_TYPE)
+    pay_for_txn(&request, CREATE_REV_REG_DELTA_ACTION)
 }
 
 pub fn get_rev_reg_delta_json(rev_reg_id: &str, from: Option<u64>, to: Option<u64>)
@@ -525,7 +525,7 @@ pub mod tests {
     }
 
     pub fn write_schema(request: &str) {
-        let (payment_info, response) = ::utils::libindy::payments::pay_for_txn(&request, SCHEMA_TXN_TYPE).unwrap();
+        let (payment_info, response) = ::utils::libindy::payments::pay_for_txn(&request, CREATE_SCHEMA_ACTION).unwrap();
     }
 
     pub fn create_and_write_test_schema(attr_list: &str) -> (String, String) {

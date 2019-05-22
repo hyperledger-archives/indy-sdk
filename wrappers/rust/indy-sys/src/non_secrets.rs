@@ -80,4 +80,3 @@ extern {
                                     wallet_search_handle: SearchHandle,
                                     cb: Option<ResponseEmptyCB>) -> Error;
 }
-
