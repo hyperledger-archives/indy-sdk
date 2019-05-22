@@ -369,7 +369,7 @@ public class Ledger extends IndyJava.API {
 	 *                     null (common USER)
 	 *                     TRUSTEE
 	 *                     STEWARD
-	 *                     TRUST_ANCHOR
+	 *                     ENDORSER
 	 *                     NETWORK_MONITOR
 	 *                     empty string to reset role
 	 * @return A future resolving to a request result as json.

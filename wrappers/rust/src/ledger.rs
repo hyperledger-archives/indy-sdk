@@ -178,7 +178,7 @@ fn _build_get_ddo_request(command_handle: CommandHandle, submitter_did: Option<&
 ///                             null (common USER)
 ///                             TRUSTEE
 ///                             STEWARD
-///                             TRUST_ANCHOR
+///                             ENDORSER
 ///                             NETWORK_MONITOR
 ///                             empty string to reset role
 ///

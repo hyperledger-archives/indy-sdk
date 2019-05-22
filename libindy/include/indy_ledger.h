@@ -202,7 +202,7 @@ extern "C" {
     ///                             null (common USER)
     ///                             TRUSTEE
     ///                             STEWARD
-    ///                             TRUST_ANCHOR
+    ///                             ENDORSER
     ///                             empty string to reset role
     /// cb: Callback that takes command result as parameter.
     ///
