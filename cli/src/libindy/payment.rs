@@ -60,4 +60,9 @@ impl Payment {
     pub fn parse_verify_payment_response(payment_method: &str, resp_json: &str) -> Result<String, IndyError> {
         payments::parse_verify_payment_response(payment_method, resp_json).wait()
     }
+
+    pub fn prepare_payment_extra_with_acceptance_data(extra_json: Option<&str>, text: Option<&str>, version: Option<&str>,
+                                                      taa_digest: Option<&str>, mechanism: &str, time: u64) -> Result<String, IndyError> {
+        payments::prepare_extra_with_acceptance_data(extra_json, text, version, taa_digest, mechanism, time).wait()
+    }
 }

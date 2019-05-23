@@ -303,6 +303,25 @@ pub mod delete_command {
     }
 }
 
+pub fn accept_transaction_author_agreement(ctx: &CommandContext, text: &str, version: &str) {
+    println!("Would you like to accept it? (y/n)");
+
+    let accept_agreement = wait_for_user_reply();
+
+    if !accept_agreement {
+        println_warn!("Transaction author agreement has NOT been Accepted.");
+        println!("Use `pool show-taa` command if you will need to accept a Pool agreement.");
+        println!();
+        return;
+    }
+
+    println_succ!("Transaction Author Agreement has been accepted.");
+
+    let time_of_acceptance = Utc::now().timestamp() as u64;
+
+    set_transaction_author_info(ctx, Some((text.to_string(), version.to_string(), time_of_acceptance)));
+}
+
 pub fn set_transaction_author_agreement(ctx: &CommandContext, pool_handle: i32, ask_for_showing: bool) -> Result<Option<()>, ()> {
     if let Some((text, version)) = ledger::get_active_transaction_author_agreement(pool_handle)? {
         if ask_for_showing {
@@ -325,22 +344,8 @@ pub fn set_transaction_author_agreement(ctx: &CommandContext, pool_handle: i32, 
         println!("Transaction Author Agreement");
         println!("Version: {:?}", version);
         println!("Content: \n {:?}", text);
-        println!("Would you like to accept it? (y/n)");
 
-        let accept_agreement = wait_for_user_reply();
-
-        if !accept_agreement {
-            println_warn!("Transaction author agreement has NOT been Accepted.");
-            println!("Use `pool show-taa` command if you will need to accept a Pool agreement.");
-            println!();
-            return Ok(Some(()));
-        }
-
-        println_succ!("Transaction Author Agreement has been accepted.");
-
-        let time_of_acceptance = Utc::now().timestamp() as u64;
-
-        set_transaction_author_info(ctx, Some((text, version, time_of_acceptance)));
+        accept_transaction_author_agreement(ctx, &text, &version);
 
         Ok(Some(()))
     } else {
