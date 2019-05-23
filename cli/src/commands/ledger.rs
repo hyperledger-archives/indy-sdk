@@ -1073,7 +1073,7 @@ pub mod payment_command {
         let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
         let (wallet_handle, _) = ensure_opened_wallet(&ctx)?;
         let submitter_did = get_active_did(&ctx);
-        let extra = get_opt_str_param("extra", params).map_err(error_err!())?;
+        let mut extra = get_opt_str_param("extra", params).map_err(error_err!())?.map(String::from);
         let send = get_opt_bool_param("send", params).map_err(error_err!())?.unwrap_or(SEND_REQUEST);
 
         let inputs = get_str_array_param("inputs", params).map_err(error_err!())?;
@@ -1082,10 +1082,13 @@ pub mod payment_command {
         let inputs = parse_payment_inputs(&inputs).map_err(error_err!())?;
         let outputs = parse_payment_outputs(&outputs).map_err(error_err!())?;
 
-        let (mut request, payment_method) = Payment::build_payment_req(wallet_handle, submitter_did.as_ref().map(String::as_str), &inputs, &outputs, extra)
-            .map_err(|err| handle_payment_error(err, None))?;
+        if let Some((text, version, acc_mech_type, time_of_acceptance)) = get_transaction_author_info(&ctx) {
+            extra = Some(Payment::prepare_payment_extra_with_acceptance_data(extra.as_ref().map(String::as_str), Some(&text), Some(&version), None, &acc_mech_type, time_of_acceptance)
+                .map_err(|err| handle_payment_error(err, None))?);
+        }
 
-        set_author_agreement(ctx, &mut request)?;
+        let (request, payment_method) = Payment::build_payment_req(wallet_handle, submitter_did.as_ref().map(String::as_str), &inputs, &outputs, extra.as_ref().map(String::as_str))
+            .map_err(|err| handle_payment_error(err, None))?;
 
         let (response, _) = send_read_request!(&ctx, send, &request, pool_handle, &pool_name, submitter_did.as_ref().map(String::as_str));
 
@@ -1623,7 +1626,7 @@ pub mod taa_command {
 
         handle_transaction_response(response)
             .map(|result| {
-                if text.is_empty(){
+                if text.is_empty() {
                     set_transaction_author_info(ctx, None);
                     println_succ!("Transaction Author Agreement has been reset.");
                 } else {
