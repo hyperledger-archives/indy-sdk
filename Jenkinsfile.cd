@@ -1102,22 +1102,19 @@ def macOsPublishing() {
                 echo 'Publish iOS files: Checkout scm'
                 checkout scm
 
-                def libindyVersion = getSrcVersion("libindy")
-                version = "$libindyVersion-$env.BUILD_NUMBER"
-
                 echo 'Publish MacOS files: Build docker image'
+                def libindyVersion = getSrcVersion("libindy")
                 testEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
 
                 echo 'Publish Libindy MacOS Library'
-                publishMacOsArtifact(testEnv, "libindy", "libindy", "LibindyMacosBuildResult", version)
+                publishMacOsArtifact(testEnv, "libindy", "libindy", "LibindyMacosBuildResult", libindyVersion)
 
                 echo 'Publish Libnullpay MacOS Library'
-                publishMacOsArtifact(testEnv, "libnullpay", "libnullpay", "LibnullpayMacosBuildResult", version)
-
-                def libvcxVersion = getSrcVersion("vcx/libvcx")
-                libvcxVersion = "$libvcxVersion-$env.BUILD_NUMBER"
+                def libnullpayVersion = getSrcVersion("libnullpay")
+                publishMacOsArtifact(testEnv, "libnullpay", "libnullpay", "LibnullpayMacosBuildResult", libnullpayVersion)
 
                 echo 'Publish Libvcx MacOS Library'
+                def libvcxVersion = getSrcVersion("vcx/libvcx")
                 publishMacOsArtifact(testEnv, "libvcx", "vcx/libvcx", "LibvcxMacosBuildResult", libvcxVersion)
             }
             finally {
