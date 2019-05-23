@@ -159,6 +159,10 @@ public abstract class LibIndy {
 		public int indy_open_wallet_search(int command_handle, int wallet_handle, String type, String query_json, String options_json, Callback cb);
 		public int indy_fetch_wallet_search_next_records(int command_handle, int wallet_handle, int wallet_search_handle, int count, Callback cb);
 		public int indy_close_wallet_search(int command_handle, int wallet_search_handle, Callback cb);
+		public int indy_get_schema(int command_handle, int pool_handle, int wallet_handle, String submitter_did, String id, String options_json, Callback cb);
+		public int indy_get_cred_def(int command_handle, int pool_handle, int wallet_handle, String submitter_did, String id, String options_json, Callback cb);
+		public int indy_purge_schema_cache(int command_handle, int wallet_handle, String options_json, Callback cb);
+		public int indy_purge_cred_def_cache(int command_handle, int wallet_handle, String options_json, Callback cb);
 
 		// payments.rs
 		int indy_create_payment_address(int command_handle, int wallet_handle, String payment_method, String config, Callback cb);

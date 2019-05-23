@@ -153,6 +153,7 @@ pub struct CommandContext {
     uint_values: RefCell<HashMap<&'static str, u64>>,
     string_values: RefCell<HashMap<&'static str, String>>,
     plugins: RefCell<HashMap<String, libloading::Library>>,
+    taa_acceptance_mechanism: RefCell<String>,
 }
 
 impl CommandContext {
@@ -165,6 +166,7 @@ impl CommandContext {
             uint_values: RefCell::new(HashMap::new()),
             string_values: RefCell::new(HashMap::new()),
             plugins: RefCell::new(HashMap::new()),
+            taa_acceptance_mechanism: RefCell::new(String::new()),
         }
     }
 
@@ -240,6 +242,14 @@ impl CommandContext {
     pub fn add_plugin(&self, plugin_name: &str, plugin: libloading::Library) {
         //TODO check already exists. Also check libindy
         self.plugins.borrow_mut().insert(plugin_name.to_string(), plugin);
+    }
+
+    pub fn set_taa_acceptance_mechanism(&self, taa_acceptance_mechanism: &str) {
+        *self.taa_acceptance_mechanism.borrow_mut() = taa_acceptance_mechanism.to_string();
+    }
+
+    pub fn get_taa_acceptance_mechanism(&self) -> String {
+        self.taa_acceptance_mechanism.borrow().to_string()
     }
 }
 
@@ -783,7 +793,6 @@ impl CommandExecutor {
 
         (first_word, second_word, if params.is_empty() { None } else { Some(params) })
     }
-
 
     fn _trim_quotes(s: &str) -> &str {
         if s.len() > 1 && s.starts_with("\"") && s.ends_with("\"") {

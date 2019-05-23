@@ -259,17 +259,16 @@ pub fn ensure_set_transaction(ctx: &CommandContext) -> Result<String, ()> {
 pub fn set_transaction_author_info(ctx: &CommandContext, value: Option<(String, String, u64)>) {
     ctx.set_string_value("AGREEMENT_TEXT", value.as_ref().map(|value| value.0.to_owned()));
     ctx.set_string_value("AGREEMENT_VERSION", value.as_ref().map(|value| value.1.to_owned()));
-    ctx.set_string_value("AGREEMENT_ACCEPTANCE_MECHANISM_TYPE", value.as_ref().map(|_| "Click Agreement".to_owned()));
     ctx.set_uint_value("AGREEMENT_TIME_OF_ACCEPTANCE", value.as_ref().map(|value| value.2));
 }
 
 pub fn get_transaction_author_info(ctx: &CommandContext) -> Option<(String, String, String, u64)> {
     let text = ctx.get_string_value("AGREEMENT_TEXT");
     let version = ctx.get_string_value("AGREEMENT_VERSION");
-    let acc_mech_type = ctx.get_string_value("AGREEMENT_ACCEPTANCE_MECHANISM_TYPE");
+    let acc_mech_type = ctx.get_taa_acceptance_mechanism();
     let time_of_acceptance = ctx.get_uint_value("AGREEMENT_TIME_OF_ACCEPTANCE");
 
-    if let (Some(text), Some(version), Some(acc_mech_type), Some(time_of_acceptance)) = (text, version, acc_mech_type, time_of_acceptance) {
+    if let (Some(text), Some(version),Some(time_of_acceptance)) = (text, version, time_of_acceptance) {
         Some((text, version, acc_mech_type, time_of_acceptance))
     } else {
         None
