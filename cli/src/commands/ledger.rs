@@ -1411,6 +1411,18 @@ pub mod auth_rule_command {
 pub mod get_auth_rule_command {
     use super::*;
 
+    pub type AuthRulesData = Vec<AuthRuleData>;
+
+    #[derive(Deserialize, Debug)]
+    pub struct AuthRuleData {
+        pub auth_type: String,
+        pub auth_action: String,
+        pub field: String,
+        pub old_value: Option<String>,
+        pub new_value: Option<String>,
+        pub constraint: serde_json::Value,
+    }
+
     command!(CommandMetadata::build("get-auth-rule", r#"Send GET_AUTH_RULE request to get authentication rules for ledger transactions.
         Note: Either none or all parameters must be specified (`old_value` can be skipped for `ADD` action)."#)
                 .add_required_param("txn_type", "Ledger transaction alias or associated value.")
@@ -1445,23 +1457,17 @@ pub mod get_auth_rule_command {
 
         let result = handle_transaction_response(response)?;
 
-        let rules = match result["data"].as_object() {
-            Some(r) => r,
-            None => return Err(println_err!("Invalid data has been received"))
-        };
+        let rules: AuthRulesData = serde_json::from_value(result["data"].clone())
+            .map_err(|_| println_err!("Wrong data has been received"))?;
 
         let constraints = rules
-            .iter()
-            .map(|(constraint_id, constraint)| {
-                let parts: Vec<&str> = constraint_id.split("--").collect();
-                let auth_type = get_txn_title(&serde_json::Value::String(parts.get(0).cloned().unwrap_or("-").to_string()));
-                let action = parts.get(1);
-                let field = parts.get(2);
-                let old_value = match action {
-                    Some(act) if *act == "ADD" => None,
-                    _ => parts.get(3),
-                };
-                let new_value = parts.get(4);
+            .into_iter()
+            .map(|rule| {
+                let auth_type = get_txn_title(&serde_json::Value::String(rule.auth_type.clone()));
+                let action = rule.auth_action;
+                let field = rule.field;
+                let old_value = if action == "ADD" { None } else { rule.old_value };
+                let new_value = rule.new_value;
 
                 json!({
                     "auth_type": auth_type,
@@ -1469,7 +1475,7 @@ pub mod get_auth_rule_command {
                     "field": field,
                     "old_value": old_value,
                     "new_value": new_value,
-                    "constraint": ::serde_json::to_string_pretty(&constraint).unwrap(),
+                    "constraint": ::serde_json::to_string_pretty(&rule.constraint).unwrap(),
                 })
             })
             .collect::<Vec<serde_json::Value>>();
