@@ -2247,10 +2247,11 @@ mod high_cases {
                                                                             new_value).unwrap();
             let response = ledger::submit_request(pool_handle, &get_auth_rule_request).unwrap();
             let mut response: Reply<serde_json::Value> = serde_json::from_str(&response).unwrap();
-            let constraints = response.result["data"].as_array_mut().unwrap();
-            assert_eq!(constraints.len(), 1);
+            let auth_rules = response.result["data"].as_array_mut().unwrap();
+            assert_eq!(auth_rules.len(), 1);
 
-            let constraint = constraints.pop().unwrap();
+            let constraint = auth_rules.pop().unwrap();
+            let constraint = constraint["constraint"].clone();
             let constraint_json = serde_json::to_string(&constraint).unwrap();
             (constraint, constraint_json)
         }
@@ -2271,7 +2272,7 @@ mod high_cases {
 
             let response: Reply<serde_json::Value> = serde_json::from_str(&response).unwrap();
 
-            let constraints = response.result["data"].as_object().unwrap();
+            let constraints = response.result["data"].as_array().unwrap();
             assert!(constraints.len() > 0);
 
             utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
