@@ -107,7 +107,8 @@
                                  null (common USER)
                                  TRUSTEE
                                  STEWARD
-                                 ENDORSER
+                                 TRUST_ANCHOR
+                                 ENDORSER - equal to TRUST_ANCHOR that will be removed soon
                                  NETWORK_MONITOR
                                  empty string to reset role
  @param completion Callback that takes command result as parameter. Returns request result as json.

@@ -67,7 +67,7 @@ impl LedgerService {
                 operation["role"] = Value::String(match r {
                     "STEWARD" => STEWARD,
                     "TRUSTEE" => TRUSTEE,
-                    "ENDORSER" => ENDORSER,
+                    "TRUST_ANCHOR" | "ENDORSER" => ENDORSER,
                     "NETWORK_MONITOR" => NETWORK_MONITOR,
                     role @ _ => return Err(err_msg(IndyErrorKind::InvalidStructure, format!("Invalid role: {}", role)))
                 }.to_string())

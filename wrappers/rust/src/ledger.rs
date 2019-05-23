@@ -178,7 +178,8 @@ fn _build_get_ddo_request(command_handle: CommandHandle, submitter_did: Option<&
 ///                             null (common USER)
 ///                             TRUSTEE
 ///                             STEWARD
-///                             ENDORSER
+///                             TRUST_ANCHOR
+///                             ENDORSER - equal to TRUST_ANCHOR that will be removed soon
 ///                             NETWORK_MONITOR
 ///                             empty string to reset role
 ///

@@ -202,7 +202,8 @@ extern "C" {
     ///                             null (common USER)
     ///                             TRUSTEE
     ///                             STEWARD
-    ///                             ENDORSER
+    ///                             TRUST_ANCHOR
+    ///                             ENDORSER - equal to TRUST_ANCHOR that will be removed soon
     ///                             empty string to reset role
     /// cb: Callback that takes command result as parameter.
     ///
