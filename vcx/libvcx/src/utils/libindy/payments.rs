@@ -6,9 +6,9 @@ use std::fmt;
 use std::collections::HashMap;
 
 use utils::libindy::wallet::get_wallet_handle;
-use utils::libindy::ledger::{libindy_submit_request, libindy_sign_and_submit_request, libindy_sign_request, append_txn_author_agreement_to_request};
+use utils::libindy::ledger::{libindy_submit_request, libindy_sign_and_submit_request, libindy_sign_request, append_txn_author_agreement_to_request, auth_rule};
 use utils::libindy::error_codes::map_rust_indy_sdk_error;
-use utils::constants::{SUBMIT_SCHEMA_RESPONSE, TRANSFER_TXN_TYPE};
+use utils::constants::{SUBMIT_SCHEMA_RESPONSE, CREATE_TRANSFER_ACTION};
 use settings;
 use error::prelude::*;
 
@@ -213,15 +213,15 @@ pub fn get_ledger_fees() -> VcxResult<String> {
         .map_err(map_rust_indy_sdk_error)
 }
 
-pub fn pay_for_txn(req: &str, txn_type: &str) -> VcxResult<(Option<PaymentTxn>, String)> {
-    debug!("pay_for_txn(req: {}, txn_type: {})", req, txn_type);
+pub fn pay_for_txn(req: &str, txn_action: (&str, &str, &str, Option<&str>, &str)) -> VcxResult<(Option<PaymentTxn>, String)> {
+    debug!("pay_for_txn(req: {}, txn_action: {:?})", req, txn_action);
     if settings::test_indy_mode_enabled() {
         let inputs = vec!["pay:null:9UFgyjuJxi1i1HD".to_string()];
         let outputs = serde_json::from_str::<Vec<::utils::libindy::payments::Output>>(r#"[{"amount":1,"extra":null,"recipient":"pay:null:xkIsxem0YNtHrRO"}]"#).unwrap();
         return Ok((Some(PaymentTxn::from_parts(inputs, outputs, 1, false)), SUBMIT_SCHEMA_RESPONSE.to_string()));
     }
 
-    let txn_price = get_txn_price(txn_type)?;
+    let txn_price = get_txn_price(txn_action)?;
     if txn_price == 0 {
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
         let txn_response = libindy_sign_and_submit_request(&did, req)?;
@@ -275,7 +275,7 @@ pub fn pay_a_payee(price: u64, address: &str) -> VcxResult<(PaymentTxn, String)>
     trace!("pay_a_payee >>> price: {}, address {}", price, address);
     debug!("sending {} tokens to address {}", price, address);
 
-    let ledger_cost = get_txn_price(TRANSFER_TXN_TYPE)?;
+    let ledger_cost = get_txn_price(CREATE_TRANSFER_ACTION)?;
     let (remainder, input, refund_address) = inputs(price + ledger_cost)?;
     let outputs = outputs(remainder, &refund_address, Some(address.to_string()), Some(price))?;
 
@@ -319,13 +319,19 @@ pub fn pay_a_payee(price: u64, address: &str) -> VcxResult<(PaymentTxn, String)>
     Ok((payment, result))
 }
 
-fn get_txn_price(txn_type: &str) -> VcxResult<u64> {
+fn get_txn_price(txn_action: (&str, &str, &str, Option<&str>, &str)) -> VcxResult<u64> {
+    let action_fee_alias = auth_rule::get_action_fee_alias(txn_action).ok();
+    let alias = match action_fee_alias.and_then(|alias| alias) {
+        Some(alias_) => alias_,
+        None => return Ok(0)
+    };
+
     let ledger_fees = get_ledger_fees()?;
 
     let fees: HashMap<String, u64> = serde_json::from_str(&ledger_fees)
         .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize fees: {}", err)))?;
 
-    match fees.get(txn_type) {
+    match fees.get(&alias) {
         Some(x) => Ok(*x),
         None => Ok(0),
     }
@@ -423,8 +429,8 @@ pub fn mint_tokens_and_set_fees(number_of_addresses: Option<u32>, tokens_per_add
         };
     }
 
-    if fees.is_some() {
-        let txn = payments::build_set_txn_fees_req(get_wallet_handle() as i32, Some(&did_1), settings::get_payment_method().as_str(), fees.unwrap())
+    if let Some(fees_) = fees {
+        let txn = payments::build_set_txn_fees_req(get_wallet_handle() as i32, Some(&did_1), settings::get_payment_method().as_str(), fees_)
             .wait()
             .map_err(map_rust_indy_sdk_error)?;
 
@@ -434,6 +440,14 @@ pub fn mint_tokens_and_set_fees(number_of_addresses: Option<u32>, tokens_per_add
         let sign4 = ::utils::libindy::ledger::multisign_request(&did_4, &sign3).unwrap();
 
         ::utils::libindy::ledger::libindy_submit_request(&sign4).unwrap();
+
+        let txn_fees: HashMap<String, String> =
+            ::serde_json::from_str::<HashMap<String, u64>>(fees_).unwrap()
+                .iter_mut()
+                .map(|(k, _v)| (k.to_string(), k.to_string()))
+                .collect();
+
+        auth_rule::set_actions_fee_aliases(&did_1, &json!(txn_fees).to_string()).unwrap();
     }
 
     Ok(())
@@ -622,9 +636,11 @@ pub mod tests {
     #[test]
     fn test_get_txn_cost() {
         init!("true");
-        assert_eq!(get_txn_price("101").unwrap(), 2);
-        assert_eq!(get_txn_price("102").unwrap(), 42);
-        assert_eq!(get_txn_price("Unknown txn type").unwrap(), 0);
+        assert_eq!(get_txn_price(::utils::constants::CREATE_SCHEMA_ACTION).unwrap(), 2);
+        assert_eq!(get_txn_price(::utils::constants::CREATE_CRED_DEF_ACTION).unwrap(), 42);
+
+        let unknown_action = ("unknown txn", "ADD", "*", None, "*");
+        assert_eq!(get_txn_price(unknown_action).unwrap(), 0);
     }
 
     #[test]
@@ -633,7 +649,7 @@ pub mod tests {
 
         // Schema
         let create_schema_req = ::utils::constants::SCHEMA_CREATE_JSON.to_string();
-        let (payment, response) = pay_for_txn(&create_schema_req, "101").unwrap();
+        let (payment, response) = pay_for_txn(&create_schema_req, ::utils::constants::CREATE_SCHEMA_ACTION).unwrap();
         assert_eq!(response, SUBMIT_SCHEMA_RESPONSE.to_string());
     }
 
@@ -645,7 +661,7 @@ pub mod tests {
         let create_schema_req = ::utils::libindy::anoncreds::tests::create_schema_req(&schema_json);
         let start_wallet = get_wallet_token_info().unwrap();
 
-        let (payment, response) = pay_for_txn(&create_schema_req, "101").unwrap();
+        let (payment, response) = pay_for_txn(&create_schema_req, ::utils::constants::CREATE_SCHEMA_ACTION).unwrap();
 
         let end_wallet = get_wallet_token_info().unwrap();
 
@@ -664,7 +680,7 @@ pub mod tests {
         let (_, schema_json) = ::utils::libindy::anoncreds::tests::create_schema(::utils::constants::DEFAULT_SCHEMA_ATTRS);
         let create_schema_req = ::utils::libindy::anoncreds::tests::create_schema_req(&schema_json);
 
-        let rc = pay_for_txn(&create_schema_req, "101");
+        let rc = pay_for_txn(&create_schema_req, ::utils::constants::CREATE_SCHEMA_ACTION);
 
         assert!(rc.is_err());
     }
@@ -710,6 +726,7 @@ pub mod tests {
     }
 
     #[cfg(feature = "pool_tests")]
+    #[ignore] // FIXME: there are no auth rules for XFER transaction on the ledger.
     #[test]
     fn test_fees_transferring_tokens() {
         init!("ledger");
@@ -722,7 +739,7 @@ pub mod tests {
         let ledger_fees = json!({"10001": transfer_fee}).to_string();
         mint_tokens_and_set_fees(None, None, Some(ledger_fees), None).unwrap();
         assert_eq!(get_my_balance(), initial_wallet_balance);
-        assert_eq!(get_txn_price(TRANSFER_TXN_TYPE).unwrap(), transfer_fee);
+        assert_eq!(get_txn_price(CREATE_TRANSFER_ACTION).unwrap(), transfer_fee);
 
         // Transfer everything besides 50. Remaining balance will be 50 - ledger fees
         let balance_after_transfer = 50;
