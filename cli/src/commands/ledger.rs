@@ -13,8 +13,9 @@ use serde_json::Value as JSONValue;
 use serde_json::Map as JSONMap;
 
 use std::collections::{HashMap, BTreeMap};
-use std::io::Write;
+
 use utils::table::{print_table, print_list_table};
+use utils::file::{read_file, write_file};
 
 use self::regex::Regex;
 use self::chrono::prelude::*;
@@ -940,6 +941,7 @@ pub mod custom_command {
                 .add_optional_param("sign", "Is signature required")
                 .add_example(r#"ledger custom {"reqId":1,"identifier":"V4SGRU86Z58d6TV7PBUe6f","operation":{"type":"105","dest":"V4SGRU86Z58d6TV7PBUe6f"},"protocolVersion":2}"#)
                 .add_example(r#"ledger custom {"reqId":2,"identifier":"V4SGRU86Z58d6TV7PBUe6f","operation":{"type":"1","dest":"VsKV7grR1BUE29mG2Fm2kX"},"protocolVersion":2} sign=true"#)
+                .add_example(r#"ledger custom context"#)
                 .finalize()
     );
 
@@ -1413,6 +1415,18 @@ pub mod auth_rule_command {
 pub mod get_auth_rule_command {
     use super::*;
 
+    pub type AuthRulesData = Vec<AuthRuleData>;
+
+    #[derive(Deserialize, Debug)]
+    pub struct AuthRuleData {
+        pub auth_type: String,
+        pub auth_action: String,
+        pub field: String,
+        pub old_value: Option<String>,
+        pub new_value: Option<String>,
+        pub constraint: serde_json::Value,
+    }
+
     command!(CommandMetadata::build("get-auth-rule", r#"Send GET_AUTH_RULE request to get authentication rules for ledger transactions.
         Note: Either none or all parameters must be specified (`old_value` can be skipped for `ADD` action)."#)
                 .add_required_param("txn_type", "Ledger transaction alias or associated value.")
@@ -1447,23 +1461,17 @@ pub mod get_auth_rule_command {
 
         let result = handle_transaction_response(response)?;
 
-        let rules = match result["data"].as_object() {
-            Some(r) => r,
-            None => return Err(println_err!("Invalid data has been received"))
-        };
+        let rules: AuthRulesData = serde_json::from_value(result["data"].clone())
+            .map_err(|_| println_err!("Wrong data has been received"))?;
 
         let constraints = rules
-            .iter()
-            .map(|(constraint_id, constraint)| {
-                let parts: Vec<&str> = constraint_id.split("--").collect();
-                let auth_type = get_txn_title(&serde_json::Value::String(parts.get(0).cloned().unwrap_or("-").to_string()));
-                let action = parts.get(1);
-                let field = parts.get(2);
-                let old_value = match action {
-                    Some(act) if *act == "ADD" => None,
-                    _ => parts.get(3),
-                };
-                let new_value = parts.get(4);
+            .into_iter()
+            .map(|rule| {
+                let auth_type = get_txn_title(&serde_json::Value::String(rule.auth_type.clone()));
+                let action = rule.auth_action;
+                let field = rule.field;
+                let old_value = if action == "ADD" { None } else { rule.old_value };
+                let new_value = rule.new_value;
 
                 json!({
                     "auth_type": auth_type,
@@ -1471,7 +1479,7 @@ pub mod get_auth_rule_command {
                     "field": field,
                     "old_value": old_value,
                     "new_value": new_value,
-                    "constraint": ::serde_json::to_string_pretty(&constraint).unwrap(),
+                    "constraint": ::serde_json::to_string_pretty(&rule.constraint).unwrap(),
                 })
             })
             .collect::<Vec<serde_json::Value>>();
@@ -1515,7 +1523,7 @@ pub mod save_transaction_command {
             return Ok(println!("The transaction has not been saved."));
         }
 
-        _write_file(file, &transaction)
+        write_file(file, &transaction)
             .map_err(|err| println_err!("Cannot store transaction into the file: {:?}", err))?;
 
         println_succ!("The transaction has been saved.");
@@ -1548,7 +1556,8 @@ pub mod load_transaction_command {
 
         let file = get_str_param("file", params).map_err(error_err!())?;
 
-        let transaction = ::commands::common::read_file(file)?;
+        let transaction = read_file(file)
+            .map_err(|err| println_err!("{}", err))?;
 
         serde_json::from_str::<Request>(&transaction)
             .map_err(|err| println_err!("File contains invalid transaction: {:?}", err))?;
@@ -1562,25 +1571,6 @@ pub mod load_transaction_command {
         trace!("execute << {:?}", res);
         res
     }
-}
-
-fn _write_file(file: &str, content: &str) -> Result<(), std::io::Error> {
-    let path = ::std::path::PathBuf::from(&file);
-
-    if let Some(parent_path) = path.parent() {
-        ::std::fs::DirBuilder::new()
-            .recursive(true)
-            .create(parent_path).unwrap();
-    }
-
-    let mut file =
-        ::std::fs::OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .open(file).unwrap();
-
-    file
-        .write_all(content.as_bytes())
 }
 
 pub fn set_author_agreement(ctx: &CommandContext, request: &mut String) -> Result<(), ()> {
@@ -4112,7 +4102,7 @@ pub mod tests {
             let ctx = setup();
 
             let (_, path_str) = _path();
-            _write_file(&path_str, TRANSACTION).unwrap();
+            write_file(&path_str, TRANSACTION).unwrap();
 
             {
                 let cmd = load_transaction_command::new();
@@ -4134,7 +4124,7 @@ pub mod tests {
             let ctx = setup();
 
             let (_, path_str) = _path();
-            _write_file(&path_str, "some invalid transaction").unwrap();
+            write_file(&path_str, "some invalid transaction").unwrap();
 
             {
                 let cmd = load_transaction_command::new();
