@@ -399,6 +399,18 @@ Read transaction from a file and store it into CLI context.
 ledger load-transaction file=<path to file>
 ```
 
+#### TXN_AUTHR_AGRMT transaction.
+Request to add a new version of Transaction Author Agreement to the ledger.
+```
+ledger ledger txn-author-agreement [text=<agreement content>] [file=<file with agreement>] version=<version> [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>] [send=<true or false>]
+```
+
+#### SET_TXN_AUTHR_AGRMT_AML transaction.
+Request to add new acceptance mechanisms for transaction author agreement.
+```
+ledger txn-acceptance-mechanisms [aml=<acceptance mechanisms>] [file=<file with acceptance mechanisms>] version=<version> [context=<some context>] [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>] [send=<true or false>]
+```
+
 ### Payment Address commands
 ```
 indy> payment-address <subcommand>
