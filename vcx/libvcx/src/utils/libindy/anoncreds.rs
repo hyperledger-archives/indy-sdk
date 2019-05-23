@@ -363,9 +363,9 @@ pub fn get_schema_json(schema_id: &str) -> VcxResult<(String, String)> {
 
     let submitter_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
 
-    libindy_build_get_schema_request(&submitter_did, schema_id)
-        .and_then(|req| libindy_submit_request(&req))
-        .and_then(|response| libindy_parse_get_schema_response(&response))
+    let schema_json = libindy_get_schema(&submitter_did, schema_id)?;
+
+    Ok((schema_id.to_string(), schema_json))
 }
 
 pub fn create_cred_def(issuer_did: &str,
@@ -399,9 +399,9 @@ pub fn create_cred_def(issuer_did: &str,
 pub fn get_cred_def_json(cred_def_id: &str) -> VcxResult<(String, String)> {
     if settings::test_indy_mode_enabled() { return Ok((CRED_DEF_ID.to_string(), CRED_DEF_JSON.to_string())); }
 
-    libindy_build_get_credential_def_txn(cred_def_id)
-        .and_then(|req| libindy_submit_request(&req))
-        .and_then(|response| libindy_parse_get_cred_def_response(&response))
+    let cred_def_json = libindy_get_cred_def(cred_def_id)?;
+
+    Ok((cred_def_id.to_string(), cred_def_json))
 }
 
 pub fn create_rev_reg_def(issuer_did: &str, cred_def_id: &str, tails_file: &str, max_creds: u32)
