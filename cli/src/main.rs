@@ -173,6 +173,8 @@ fn build_executor() -> CommandExecutor {
         .add_command(ledger::get_auth_rule_command::new())
         .add_command(ledger::save_transaction_command::new())
         .add_command(ledger::load_transaction_command::new())
+        .add_command(ledger::taa_command::new())
+        .add_command(ledger::aml_command::new())
         .finalize_group()
         .add_group(payment_address::group::new())
         .add_command(payment_address::create_command::new())
@@ -253,7 +255,7 @@ fn _print_help() {
     println_acc!("\tUse config file for CLI initialization. A config file can contain the following fields:");
     println_acc!("\t\tplugins - a list of plugins to load in Libindy (is equal to usage of \"--plugins\" option).");
     println_acc!("\t\tloggerConfig - path to a logger config file (is equal to usage of \"--logger-config\" option).");
-    println_acc!("\t\ttaaAcceptanceMechanism - transaction author agreement acceptance mechanism to use for sending write transactions to the Ledger (\"Click Agreement\" is used by default).");
+    println_acc!("\t\ttaaAcceptanceMechanism - transaction author agreement acceptance mechanism to use for sending write transactions to the Ledger.");
     println_acc!("\tUsage: indy-cli --config <path-to-config-json-file>");
     println!();
 }

@@ -2109,7 +2109,7 @@ pub extern fn indy_build_get_txn_author_agreement_request(command_handle: Comman
     res
 }
 
-/// Builds a SET_TXN_AUTHR_AGRMT_AML request. Request to add a new acceptance mechanism for transaction author agreement.
+/// Builds a SET_TXN_AUTHR_AGRMT_AML request. Request to add new acceptance mechanisms for transaction author agreement.
 /// Acceptance Mechanism is a description of the ways how the user may accept a transaction author agreement.
 ///
 /// EXPERIMENTAL
