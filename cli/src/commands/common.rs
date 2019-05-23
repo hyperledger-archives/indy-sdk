@@ -6,9 +6,7 @@ use command_executor::{Command, CommandContext, CommandParams, CommandMetadata, 
 use commands::get_str_param;
 
 use utils::logger;
-
-use std::io::Read;
-use std::fs::File;
+use utils::file::read_file;
 
 pub mod about_command {
     use super::*;
@@ -49,7 +47,8 @@ pub mod show_command {
 
         let file = get_str_param("file", params).map_err(error_err!())?;
 
-        let content = read_file(file)?;
+        let content = read_file(file)
+            .map_err(|err| println_err!("{}", err))?;
 
         println!("{}", content);
         let res = Ok(());
@@ -57,22 +56,6 @@ pub mod show_command {
         trace!("execute << {:?}", res);
         res
     }
-}
-
-pub fn read_file(file: &str) -> Result<String, ()>{
-    let mut file = File::open(file)
-        .map_err(error_err!())
-        .map_err(map_println_err!("Can't read the file"))?;
-
-    let content = {
-        let mut s = String::new();
-        file.read_to_string(&mut s)
-            .map_err(error_err!())
-            .map_err(|err| println_err!("Can't read the file: {}", err))?;
-        s
-    };
-
-    Ok(content)
 }
 
 pub mod prompt_command {
