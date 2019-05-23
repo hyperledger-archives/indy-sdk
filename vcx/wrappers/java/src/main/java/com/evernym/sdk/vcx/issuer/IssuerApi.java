@@ -76,7 +76,7 @@ public class IssuerApi extends VcxJava.API {
                                                                        int connectionHandle) throws VcxException {
         ParamGuard.notNull(credentialOffer, "credentialOffer");
         ParamGuard.notNull(connectionHandle, "connectionHandle");
-        logger.debug("issuerSendcredentialOffer() called with: credentialOffer = [" + credentialOffer + "], connectionHandle = [" + connectionHandle + "]");
+        logger.debug("issuerSendcredentialOffer() called with: credentialOffer = [****], connectionHandle = [" + connectionHandle + "]");
         CompletableFuture<Integer> future = new CompletableFuture<>();
         int issue = addFuture(future);
 
@@ -160,7 +160,7 @@ public class IssuerApi extends VcxJava.API {
     private static Callback issuerCredentialSerializeCB = new Callback() {
         @SuppressWarnings({"unused", "unchecked"})
         public void callback(int commandHandle, int err, String serializedData) {
-            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], serializedData = [" + serializedData + "]");
+            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], serializedData = [****]");
             CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(commandHandle);
             if (!checkCallback(future, err)) return;
             // TODO complete with exception if we find error
@@ -208,7 +208,7 @@ public class IssuerApi extends VcxJava.API {
 
     public static CompletableFuture<Integer> issuerCredentialDeserialize(String serializedData) throws VcxException {
         ParamGuard.notNull(serializedData, "serializedData");
-        logger.debug("issuerCredentialDeserialize() called with: serializedData = [" + serializedData + "]");
+        logger.debug("issuerCredentialDeserialize() called with: serializedData = [****]");
         CompletableFuture<Integer> future = new CompletableFuture<>();
         int issue = addFuture(future);
 
@@ -231,7 +231,7 @@ public class IssuerApi extends VcxJava.API {
         ParamGuard.notNull(credentialHandle, "credentialHandle");
         ParamGuard.notNull(state, "state");
         ParamGuard.notNullOrWhiteSpace(msg, "msg");
-        logger.debug("issuerTerminateCredential() called with: credentialHandle = [" + credentialHandle + "], state = [" + state + "], msg = [" + msg + "]");
+        logger.debug("issuerTerminateCredential() called with: credentialHandle = [" + credentialHandle + "], state = [" + state + "], msg = [****]");
         CompletableFuture<Integer> future = new CompletableFuture<>();
         int issue = addFuture(future);
 
@@ -264,7 +264,7 @@ public class IssuerApi extends VcxJava.API {
 
         ParamGuard.notNull(credentialHandle, "credentialHandle");
         ParamGuard.notNull(credentialRequest, "credentialRequest");
-        logger.debug("issuercredentialRequest() called with: credentialHandle = [" + credentialHandle + "], credentialRequest = [" + credentialRequest + "]");
+        logger.debug("issuercredentialRequest() called with: credentialHandle = [" + credentialHandle + "], credentialRequest = [****]");
         CompletableFuture<Integer> future = new CompletableFuture<>();
 
         int result = LibVcx.api.vcx_issuer_get_credential_request(
