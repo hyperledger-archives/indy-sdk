@@ -296,9 +296,54 @@ pub struct PostgresConfig {
     url: String,
     // TODO add additional configuration options
     tls: Option<String>,                // default off
-    max_connections: Option<String>,    // default 2
-    min_idle_tim: Option<String>,       // default 0
-    connection_timeout: Option<String>, // default 5
+    max_connections: Option<u32>,    // default 5
+    min_idle_time: Option<u32>,      // default 0
+    connection_timeout: Option<u64>, // default 5
+}
+
+impl PostgresConfig {
+    fn tls(&self) -> postgres::TlsMode {
+        match &self.tls {
+            Some(tls) => match tls.as_ref() {
+                "None" => postgres::TlsMode::None,
+                // TODO add tls support for connecting to postgres db
+                //"Prefer" => postgres::TlsMode::Prefer(&postgres::Connection),
+                //"Require" => postgres::TlsMode::Require(&postgres::Connection),
+                _ => postgres::TlsMode::None
+            },
+            None => postgres::TlsMode::None
+        }
+    }
+    fn r2d2_tls(&self) -> TlsMode {
+        match &self.tls {
+            Some(tls) => match tls.as_ref() {
+                "None" => TlsMode::None,
+                // TODO add tls support for connecting to postgres db
+                //"Prefer" => TlsMode::Prefer(&postgres::Connection),
+                //"Require" => TlsMode::Require(&postgres::Connection),
+                _ => TlsMode::None
+            },
+            None => TlsMode::None
+        }
+    }
+    fn max_connections(&self) -> u32 {
+        match &self.max_connections {
+            Some(conn) => *conn,
+            None => 5
+        }
+    }
+    fn min_idle_time(&self) -> u32 {
+        match &self.min_idle_time {
+            Some(idle) => *idle,
+            None => 0
+        }
+    }
+    fn connection_timeout(&self) -> u64 {
+        match &self.connection_timeout {
+            Some(timeout) => *timeout,
+            None => 5
+        }
+    }
 }
 
 #[derive(Deserialize, Debug)]
@@ -907,7 +952,7 @@ impl WalletStorageType for PostgresStorageType {
         let url_base = PostgresStorageType::_admin_postgres_url(&config, &credentials);
         let url = PostgresStorageType::_postgres_url(id, &config, &credentials);
 
-        match postgres::Connection::connect(&url[..], postgres::TlsMode::None) {
+        match postgres::Connection::connect(&url[..], config.tls()) {
             Ok(conn) => {
                 for sql in &_DROP_SCHEMA {
                     match conn.execute(sql, &[]) {
@@ -921,7 +966,7 @@ impl WalletStorageType for PostgresStorageType {
             Err(_) => return Err(WalletStorageError::NotFound)
         };
 
-        let conn = postgres::Connection::connect(url_base, postgres::TlsMode::None)?;
+        let conn = postgres::Connection::connect(url_base, config.tls())?;
         let drop_db_sql = str::replace(_DROP_WALLET_DATABASE, "$1", id);
         let ret = match conn.execute(&drop_db_sql, &[]) {
             Ok(_) => Ok(()),
@@ -986,7 +1031,7 @@ impl WalletStorageType for PostgresStorageType {
         let url_base = PostgresStorageType::_admin_postgres_url(&config, &credentials);
         let url = PostgresStorageType::_postgres_url(id, &config, &credentials);
 
-        let conn = postgres::Connection::connect(&url_base[..], postgres::TlsMode::None)?;
+        let conn = postgres::Connection::connect(&url_base[..], config.tls())?;
 
         let create_db_sql = str::replace(_CREATE_WALLET_DATABASE, "$1", id);
         let mut schema_result = match conn.execute(&create_db_sql, &[]) {
@@ -997,7 +1042,7 @@ impl WalletStorageType for PostgresStorageType {
         };
         conn.finish()?;
 
-        let conn = match postgres::Connection::connect(&url[..], postgres::TlsMode::None) {
+        let conn = match postgres::Connection::connect(&url[..], config.tls()) {
             Ok(conn) => conn,
             Err(error) => {
                 return Err(WalletStorageError::IOError(format!("Error occurred while connecting to wallet schema: {}", error)));
@@ -1083,16 +1128,16 @@ impl WalletStorageType for PostgresStorageType {
         let url = PostgresStorageType::_postgres_url(id, &config, &credentials);
 
         // don't need a connection, but connect just to verify we can
-        let _conn = match postgres::Connection::connect(&url[..], postgres::TlsMode::None) {
+        let _conn = match postgres::Connection::connect(&url[..], config.tls()) {
             Ok(conn) => conn,
             Err(_) => return Err(WalletStorageError::NotFound)
         };
 
-        let manager = match PostgresConnectionManager::new(&url[..], TlsMode::None) {
+        let manager = match PostgresConnectionManager::new(&url[..], config.r2d2_tls()) {
             Ok(manager) => manager,
             Err(_) => return Err(WalletStorageError::NotFound)
         };
-        let pool = match r2d2::Pool::builder().min_idle(Some(0)).max_size(2).idle_timeout(Some(Duration::new(5, 0))).build(manager) {
+        let pool = match r2d2::Pool::builder().min_idle(Some(config.min_idle_time())).max_size(config.max_connections()).idle_timeout(Some(Duration::new(config.connection_timeout(), 0))).build(manager) {
             Ok(pool) => pool,
             Err(_) => return Err(WalletStorageError::NotFound)
         };
@@ -1177,6 +1222,15 @@ mod tests {
 
         let res = storage_type.open_storage("unknown", Some(&_wallet_config()[..]), Some(&_wallet_credentials()[..]));
         assert_match!(Err(WalletStorageError::NotFound), res);
+    }
+
+    #[test]
+    fn postgres_storage_add_works_with_config() {
+        _cleanup();
+
+        let storage = _storage_db_pool();
+
+        storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
     }
 
     #[test]
@@ -1583,9 +1637,27 @@ mod tests {
         res
     }
 
+    fn _storage_db_pool() -> Box<WalletStorage> {
+        let storage_type = PostgresStorageType::new();
+        storage_type.create_storage(_wallet_id(), Some(&_wallet_config_db_pool()[..]), Some(&_wallet_credentials()[..]), &_metadata()).unwrap();
+        let res = storage_type.open_storage(_wallet_id(), Some(&_wallet_config_db_pool()[..]), Some(&_wallet_credentials()[..])).unwrap();
+        res
+    }
+
     fn _wallet_config() -> String {
         let config = json!({
             "url": "localhost:5432".to_owned()
+        }).to_string();
+        config
+    }
+
+    fn _wallet_config_db_pool() -> String {
+        let config = json!({
+            "url": "localhost:5432".to_owned(),
+            "tls": "None",
+            "max_connections": 4,
+            "min_idle_time": 0,
+            "connection_timeout": 10
         }).to_string();
         config
     }

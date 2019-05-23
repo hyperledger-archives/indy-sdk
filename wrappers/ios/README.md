@@ -27,7 +27,7 @@ Add pod to target:
    ```
    brew install libsodium
    brew install zeromq
-   brew install cmake
+   brew install openssl (1.0.2q can be any fresh version)
    ```
 1. Setup environment variables:
    
@@ -35,30 +35,35 @@ Add pod to target:
    export PKG_CONFIG_ALLOW_CROSS=1
    export CARGO_INCREMENTAL=1
    ```
-1. Edit script build-libindy-core-ios.sh: set the following variables to fit your environment:
+1. Edit script ci/ios-build.sh: set the following variables to fit your environment:
    
    ```
    export OPENSSL_DIR=/usr/local/Cellar/openssl/1.0.2q
-   export EVERNYM_REPO_KEY=~/Documents/EvernymRepo
    export LIBINDY_POD_VERSION=0.0.1
    ```
    OPENSSL_DIR - path to installed openssl library
-   
-   EVERNYM_REPO_KEY - path to file with private key to be authorized on deb server
-   
+      
    LIBINDY_POD_VERSION - version of libindy-core pod to be built
-1. Run the script. Validate the output that all goes well.
-1. Go to `Podspec` dir.
+1. Run the script Validate the output that all goes well. 
+   
+   Parameters:
+   * package - target package to build.
+        * libindy
+        * libnullpay
+   * targets - target architectures.
+        * one of aarch64-apple-ios armv7-apple-ios armv7s-apple-ios i386-apple-ios x86_64-apple-ios
+        * leave empty to build for all architectures.
+1. Go to `Specs/libindy` dir.
 1. Create directory with name defined in LIBINDY_POD_VERSION:
    
    ```
    mkdir LIBINDY_POD_VERSION
    ```
-1. Copy libindy-core.podspec.json to that new directory from some previous version.
+1. Copy libindy.podspec.json to that new directory from some previous version.
 1. Edit this json -> change version field to LIBINDY_POD_VERSION.
 1. Add new directory and file inside to git repository.
 1. Commit to master branch.
-1. for all projects which using libindy-core do not forget to make:
+1. for all projects which using libindy do not forget to make:
 
    ```
    pod repo update
@@ -69,7 +74,7 @@ Add pod to target:
 ## Wrapper Cocoapod
 
 # Creation 
-Run Archive process for `Indy` target. Custom post-action shell script `universal_framework.h` will be triggered and you get universal framework. Then put it to folder: `libindy-objc/Indy.framework` and upload to repo.
+Run Archive process for `Indy` target. Custom post-action shell script `universal_framework.sh` will be triggered and you get universal framework. Then put it to folder: `libindy-objc/Indy.framework` and upload to repo.
 
 # Usage
 
@@ -87,7 +92,7 @@ For 0.1.1 and 0.1.2 versions:
 All wrapper types and classes have prefix `Indy`.
 
 #### Troubleshooting
-* Enable Logging - Use environment variable `RUST_LOG={info|debug|trace}` to output logs of Libindy.
+* Enable Logging - Use `setLogger` to pass a callback that will be used by Libindy to log a record.
 * [IS-1058](https://jira.hyperledger.org/browse/IS-1058) 
     * OpenSSL cp: file.tgz: No such file or directory - 
     ```
