@@ -137,6 +137,7 @@ struct SingleState<T: Networker> {
     timeout_nodes: HashSet<String>,
     networker: Rc<RefCell<T>>,
     sp_key: Option<Vec<u8>>,
+    timestamp: Option<u64>,
 }
 
 struct FullState<T: Networker> {
@@ -147,14 +148,15 @@ struct FullState<T: Networker> {
 
 struct FinishState {}
 
-impl<T: Networker> From<(StartState<T>, Option<Vec<u8>>)> for SingleState<T> {
-    fn from((state, sp_key): (StartState<T>, Option<Vec<u8>>)) -> Self {
+impl<T: Networker> From<(StartState<T>, Option<Vec<u8>>, Option<u64>)> for SingleState<T> {
+    fn from((state, sp_key, timestamp): (StartState<T>, Option<Vec<u8>>, Option<u64>)) -> Self {
         SingleState {
             denied_nodes: HashSet::new(),
             replies: HashMap::new(),
             timeout_nodes: HashSet::new(),
             networker: state.networker.clone(),
             sp_key,
+            timestamp,
         }
     }
 }
@@ -268,10 +270,10 @@ impl<T: Networker> RequestSM<T> {
                             }
                         }
                     }
-                    RequestEvent::CustomSingleRequest(msg, req_id, sp_key) => {
+                    RequestEvent::CustomSingleRequest(msg, req_id, sp_key, timestamp) => {
                         state.networker.borrow_mut().process_event(Some(NetworkerEvent::SendOneRequest(msg.clone(), req_id.clone(), timeout)));
                         state.networker.borrow_mut().process_event(Some(NetworkerEvent::Resend(req_id, timeout)));
-                        (RequestState::Single((state, sp_key).into()), None)
+                        (RequestState::Single((state, sp_key, timestamp).into()), None)
                     }
                     RequestEvent::CustomFullRequest(msg, req_id, local_timeout, nodes_to_send) => {
                         let timeout = local_timeout.map(|to| to as i64).unwrap_or(extended_timeout);
@@ -391,10 +393,14 @@ impl<T: Networker> RequestSM<T> {
                                 )
                             };
 
+                            let time_for_freshness_check = state.timestamp.unwrap_or(_get_cur_time());
+
                             trace!("Last signed time: {}", last_write_time);
+                            trace!("Time for freshness check: {}", time_for_freshness_check);
+
                             if cnt > f
                                 || _check_state_proof(&result, f, &generator, &nodes, &raw_msg, state.sp_key.as_ref().map(Vec::as_slice))
-                                && _get_cur_time() as u64 <= _get_freshness_threshold() + last_write_time {
+                                && time_for_freshness_check <= _get_freshness_threshold() + last_write_time {
                                 state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
                                 _send_ok_replies(&cmd_ids, if cnt > f { &soonest } else { &raw_msg });
                                 (RequestState::finish(), None)
@@ -929,7 +935,7 @@ pub mod tests {
         #[test]
         fn request_handler_process_custom_single_req_event_from_start_works() {
             let mut request_handler = _request_handler(0, 1);
-            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None)));
+            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None, None)));
             assert_match!(RequestState::Single(_), request_handler.request_wrapper.unwrap().state);
         }
 
@@ -1163,7 +1169,7 @@ pub mod tests {
         #[test]
         fn request_handler_process_reply_event_from_single_state_works_for_consensus_reached() {
             let mut request_handler = _request_handler(1, 2);
-            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None)));
+            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None, None)));
             request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), "{}".to_string(), NODE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), "{}".to_string(), NODE_2.to_string(), REQ_ID.to_string())));
             assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
@@ -1191,7 +1197,7 @@ pub mod tests {
             set_freshness_threshold(600);
             add_state_proof_parser();
             let mut request_handler = _request_handler(1, 2);
-            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None)));
+            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None, None)));
             request_handler.process_event(Some(
                 RequestEvent::Reply(Reply::default(), correct_state_proof_reply(_get_cur_time() - 300), NODE.to_string(), REQ_ID.to_string()))
             );
@@ -1203,7 +1209,7 @@ pub mod tests {
             set_freshness_threshold(600);
             add_state_proof_parser();
             let mut request_handler = _request_handler(1, 2);
-            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None)));
+            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None, None)));
             request_handler.process_event(
                 Some(RequestEvent::Reply(Reply::default(), correct_state_proof_reply(_get_cur_time() + 300), NODE.to_string(), REQ_ID.to_string()))
             );
@@ -1234,7 +1240,7 @@ pub mod tests {
             set_freshness_threshold(600);
             add_state_proof_parser();
             let mut request_handler = _request_handler(2, 4);
-            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None)));
+            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None, None)));
             //
             request_handler.process_event(Some(RequestEvent::Reply(
                 Reply::default(),
@@ -1255,6 +1261,31 @@ pub mod tests {
             assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
         }
 
+        #[test]
+        fn request_handler_process_reply_event_from_single_state_works_for_state_proof_from_past() {
+            set_freshness_threshold(300);
+            add_state_proof_parser();
+
+            let mut request_handler = _request_handler(2, 4);
+            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None, Some(_get_cur_time() - 400))));
+
+            {
+                request_handler.process_event(
+                    Some(RequestEvent::Reply(Reply::default(), correct_state_proof_reply(_get_cur_time() - 800), NODE.to_string(), REQ_ID.to_string()))
+                );
+
+                let request_handler_ref = request_handler.request_wrapper.as_ref().unwrap();
+                assert_match!(RequestState::Single(_), request_handler_ref.state);
+            }
+
+            {
+                request_handler.process_event(
+                    Some(RequestEvent::Reply(Reply::default(), correct_state_proof_reply(_get_cur_time() - 400), NODE.to_string(), REQ_ID.to_string()))
+                );
+                assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
+            }
+        }
+
 
         #[test]
         fn request_handler_process_reply_event_from_single_state_works_for_freshness_filtering_from_env_variable() {
@@ -1263,7 +1294,7 @@ pub mod tests {
             add_state_proof_parser();
 
             let mut request_handler = _request_handler(2, 4);
-            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None)));
+            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None, None)));
             //
             request_handler.process_event(Some(RequestEvent::Reply(
                 Reply::default(),
@@ -1288,7 +1319,7 @@ pub mod tests {
         #[test]
         fn request_handler_process_reply_event_from_single_state_works_for_not_completed() {
             let mut request_handler = _request_handler(1, 2);
-            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None)));
+            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None, None)));
             request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), "{}".to_string(), NODE.to_string(), REQ_ID.to_string())));
             assert_match!(RequestState::Single(_), request_handler.request_wrapper.unwrap().state);
         }
@@ -1296,7 +1327,7 @@ pub mod tests {
         #[test]
         fn request_handler_process_reply_event_from_single_state_works_for_cannot_be_completed() {
             let mut request_handler = _request_handler(1, 1);
-            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None)));
+            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None, None)));
             request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), "{}".to_string(), NODE.to_string(), REQ_ID.to_string())));
             assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
         }
@@ -1304,7 +1335,7 @@ pub mod tests {
         #[test]
         fn request_handler_process_reply_event_from_single_state_works_for_invalid_message() {
             let mut request_handler = _request_handler(1, 2);
-            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None)));
+            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None, None)));
             request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), "".to_string(), NODE.to_string(), REQ_ID.to_string())));
             assert_match!(RequestState::Single(_), request_handler.request_wrapper.unwrap().state);
         }
@@ -1312,7 +1343,7 @@ pub mod tests {
         #[test]
         fn request_handler_process_reqack_event_from_single_state_works() {
             let mut request_handler = _request_handler(1, 1);
-            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None)));
+            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None, None)));
             request_handler.process_event(Some(RequestEvent::ReqACK(Response::default(), "{}".to_string(), NODE.to_string(), REQ_ID.to_string())));
             assert_match!(RequestState::Single(_), request_handler.request_wrapper.unwrap().state);
         }
@@ -1320,7 +1351,7 @@ pub mod tests {
         #[test]
         fn request_handler_process_reqnack_event_from_single_state_works_for_completed() {
             let mut request_handler = _request_handler(1, 2);
-            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None)));
+            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None, None)));
             request_handler.process_event(Some(RequestEvent::ReqNACK(Response::default(), "{}".to_string(), NODE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::ReqNACK(Response::default(), "{}".to_string(), NODE_2.to_string(), REQ_ID.to_string())));
             assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
@@ -1329,7 +1360,7 @@ pub mod tests {
         #[test]
         fn request_handler_process_reqnack_event_from_single_state_works_for_not_completed() {
             let mut request_handler = _request_handler(1, 3);
-            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None)));
+            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None, None)));
             request_handler.process_event(Some(RequestEvent::ReqNACK(Response::default(), "{}".to_string(), NODE.to_string(), REQ_ID.to_string())));
             assert_match!(RequestState::Single(_), request_handler.request_wrapper.unwrap().state);
         }
@@ -1337,7 +1368,7 @@ pub mod tests {
         #[test]
         fn request_handler_process_reject_event_from_single_state_works_for_completed() {
             let mut request_handler = _request_handler(1, 2);
-            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None)));
+            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None, None)));
             request_handler.process_event(Some(RequestEvent::Reject(Response::default(), "{}".to_string(), NODE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Reject(Response::default(), "{}".to_string(), NODE_2.to_string(), REQ_ID.to_string())));
             assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
@@ -1346,7 +1377,7 @@ pub mod tests {
         #[test]
         fn request_handler_process_reject_event_from_single_state_works_for_not_completed() {
             let mut request_handler = _request_handler(1, 3);
-            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None)));
+            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None, None)));
             request_handler.process_event(Some(RequestEvent::Reject(Response::default(), "{}".to_string(), NODE.to_string(), REQ_ID.to_string())));
             assert_match!(RequestState::Single(_), request_handler.request_wrapper.unwrap().state);
         }
@@ -1354,7 +1385,7 @@ pub mod tests {
         #[test]
         fn request_handler_process_timeout_event_from_single_state_works() {
             let mut request_handler = _request_handler(1, 2);
-            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None)));
+            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None, None)));
             request_handler.process_event(Some(RequestEvent::Timeout(REQ_ID.to_string(), NODE.to_string())));
             assert_match!(RequestState::Single(_), request_handler.request_wrapper.unwrap().state);
         }
@@ -1362,7 +1393,7 @@ pub mod tests {
         #[test]
         fn request_handler_process_timeout_event_from_single_state_works_for_cannot_be_completed() {
             let mut request_handler = _request_handler(1, 1);
-            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None)));
+            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None, None)));
             request_handler.process_event(Some(RequestEvent::Timeout(REQ_ID.to_string(), NODE.to_string())));
             assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
         }
@@ -1370,7 +1401,7 @@ pub mod tests {
         #[test]
         fn request_handler_process_terminate_event_from_single_state_works() {
             let mut request_handler = _request_handler(1, 2);
-            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None)));
+            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None, None)));
             request_handler.process_event(Some(RequestEvent::Terminate));
             assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
         }
@@ -1378,7 +1409,7 @@ pub mod tests {
         #[test]
         fn request_handler_process_other_event_from_single_state_works() {
             let mut request_handler = _request_handler(1, 2);
-            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None)));
+            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None, None)));
             request_handler.process_event(Some(RequestEvent::Pong));
             assert_match!(RequestState::Single(_), request_handler.request_wrapper.unwrap().state);
         }
@@ -1390,7 +1421,7 @@ pub mod tests {
             // some nodes accept, some reject and some nack.  the end result is consensus should not be reached
             let mut request_handler = _request_handler(1, 4);
 
-            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None)));
+            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None, None)));
             request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), SIMPLE_REPLY.to_string(), NODE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Reject(Response::default(), REJECT_REPLY.to_string(), NODE_2.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::ReqNACK(Response::default(), NACK_REPLY.to_string(), NODE_3.to_string(), REQ_ID.to_string())));
@@ -1415,7 +1446,7 @@ pub mod tests {
             // some nodes accept, some reject and some nack.  the end result is consensus should not be reached
             let mut request_handler = _request_handler(1, 4);
 
-            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None)));
+            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None, None)));
             request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), SIMPLE_REPLY.to_string(), NODE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Reject(Response::default(), "".to_string(), NODE_2.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::ReqNACK(Response::default(), "".to_string(), NODE_3.to_string(), REQ_ID.to_string())));
