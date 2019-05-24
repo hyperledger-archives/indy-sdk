@@ -16,12 +16,12 @@ test('blob_storage', async function (t) {
   t.is(typeof rh, 'number')
   t.truthy(rh >= 0)
 
-  var error = await t.throws(indy.openBlobStorageWriter('foo', config))
+  var error = await t.throwsAsync(indy.openBlobStorageWriter('foo', config))
   t.is(error.indyName, 'CommonInvalidStructure')
 
-  error = await t.throws(indy.openBlobStorageWriter('default', null))
+  error = await t.throwsAsync(indy.openBlobStorageWriter('default', null))
   t.is(error.indyName, 'CommonInvalidParam3')
 
-  error = await t.throws(indy.openBlobStorageReader('foo', config))
+  error = await t.throwsAsync(indy.openBlobStorageReader('foo', config))
   t.is(error.indyName, 'CommonInvalidStructure')
 })
