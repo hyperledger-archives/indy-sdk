@@ -1,4 +1,4 @@
-use indy_crypto::cl::MasterSecret as CryptoMasterSecret;
+use ursa::cl::MasterSecret as CryptoMasterSecret;
 
 use named_type::NamedType;
 

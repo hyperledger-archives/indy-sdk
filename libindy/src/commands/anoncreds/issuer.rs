@@ -2,12 +2,12 @@ use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
-use indy_crypto::cl::{
+use ursa::cl::{
     new_nonce,
     RevocationRegistryDelta as CryptoRevocationRegistryDelta,
     Witness,
 };
-use indy_crypto::cl::{CredentialKeyCorrectnessProof, CredentialPrivateKey};
+use ursa::cl::{CredentialKeyCorrectnessProof, CredentialPrivateKey};
 
 use commands::{Command, CommandExecutor};
 use commands::anoncreds::AnoncredsCommand;
@@ -345,8 +345,8 @@ impl IssuerCommandExecutor {
                                                         tag: &str,
                                                         signature_type: SignatureType,
                                                         res: (::domain::anoncreds::credential_definition::CredentialDefinitionData,
-                                                              indy_crypto::cl::CredentialPrivateKey,
-                                                              indy_crypto::cl::CredentialKeyCorrectnessProof)) -> IndyResult<(String, String)> {
+                                                              ursa::cl::CredentialPrivateKey,
+                                                              ursa::cl::CredentialKeyCorrectnessProof)) -> IndyResult<(String, String)> {
         let (credential_definition_value, cred_priv_key, cred_key_correctness_proof) = res;
 
         let cred_def =
@@ -528,7 +528,7 @@ impl IssuerCommandExecutor {
 
                 let mut rev_reg_info = self._wallet_get_rev_reg_info(wallet_handle, &r_reg_id)?;
 
-                rev_reg_info.curr_id = 1 + rev_reg_info.curr_id;
+                rev_reg_info.curr_id += 1;
 
                 if rev_reg_info.curr_id > rev_reg_def.value.max_cred_num {
                     return Err(err_msg(IndyErrorKind::RevocationRegistryFull, "RevocationRegistryAccumulator is full"));

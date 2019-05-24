@@ -8,7 +8,7 @@ use std::ptr;
 
 
 use failure::{Backtrace, Context, Fail};
-use indy_crypto::errors::{IndyCryptoError, IndyCryptoErrorKind};
+use ursa::errors::{UrsaCryptoError, UrsaCryptoErrorKind};
 use log;
 use libc::c_char;
 
@@ -216,19 +216,19 @@ impl From<log::SetLoggerError> for IndyError {
     }
 }
 
-impl From<IndyCryptoError> for IndyError {
-    fn from(err: IndyCryptoError) -> Self {
-        let message = format!("IndyCryptoError: {}", Fail::iter_causes(&err).map(|e| e.to_string()).collect::<String>());
+impl From<UrsaCryptoError> for IndyError {
+    fn from(err: UrsaCryptoError) -> Self {
+        let message = format!("UrsaCryptoError: {}", Fail::iter_causes(&err).map(|e| e.to_string()).collect::<String>());
 
         match err.kind() {
-            IndyCryptoErrorKind::InvalidState => IndyError::from_msg(IndyErrorKind::InvalidState, message),
-            IndyCryptoErrorKind::InvalidStructure => IndyError::from_msg(IndyErrorKind::InvalidStructure, message),
-            IndyCryptoErrorKind::IOError => IndyError::from_msg(IndyErrorKind::IOError, message),
-            IndyCryptoErrorKind::InvalidRevocationAccumulatorIndex => IndyError::from_msg(IndyErrorKind::InvalidUserRevocId, message),
-            IndyCryptoErrorKind::RevocationAccumulatorIsFull => IndyError::from_msg(IndyErrorKind::RevocationRegistryFull, message),
-            IndyCryptoErrorKind::ProofRejected => IndyError::from_msg(IndyErrorKind::ProofRejected, message),
-            IndyCryptoErrorKind::CredentialRevoked => IndyError::from_msg(IndyErrorKind::CredentialRevoked, message),
-            IndyCryptoErrorKind::InvalidParam(_) => IndyError::from_msg(IndyErrorKind::InvalidStructure, message),
+            UrsaCryptoErrorKind::InvalidState => IndyError::from_msg(IndyErrorKind::InvalidState, message),
+            UrsaCryptoErrorKind::InvalidStructure => IndyError::from_msg(IndyErrorKind::InvalidStructure, message),
+            UrsaCryptoErrorKind::IOError => IndyError::from_msg(IndyErrorKind::IOError, message),
+            UrsaCryptoErrorKind::InvalidRevocationAccumulatorIndex => IndyError::from_msg(IndyErrorKind::InvalidUserRevocId, message),
+            UrsaCryptoErrorKind::RevocationAccumulatorIsFull => IndyError::from_msg(IndyErrorKind::RevocationRegistryFull, message),
+            UrsaCryptoErrorKind::ProofRejected => IndyError::from_msg(IndyErrorKind::ProofRejected, message),
+            UrsaCryptoErrorKind::CredentialRevoked => IndyError::from_msg(IndyErrorKind::CredentialRevoked, message),
+            UrsaCryptoErrorKind::InvalidParam(_) => IndyError::from_msg(IndyErrorKind::InvalidStructure, message),
         }
     }
 }
@@ -447,21 +447,23 @@ thread_local! {
 }
 
 pub fn set_current_error(err: &IndyError) {
-    CURRENT_ERROR_C_JSON.with(|error| {
+    CURRENT_ERROR_C_JSON.try_with(|error| {
         let error_json = json!({
             "message": err.to_string(),
             "backtrace": err.backtrace().map(|bt| bt.to_string())
         }).to_string();
         error.replace(Some(ctypes::string_to_cstring(error_json)));
-    });
+    })
+        .map_err(|err| error!("Thread local variable access failed with: {:?}", err)).ok();
 }
 
 pub fn get_current_error_c_json() -> *const c_char {
     let mut value = ptr::null();
 
-    CURRENT_ERROR_C_JSON.with(|err|
+    CURRENT_ERROR_C_JSON.try_with(|err|
         err.borrow().as_ref().map(|err| value = err.as_ptr())
-    );
+    )
+        .map_err(|err| error!("Thread local variable access failed with: {:?}", err)).ok();
 
     value
 }

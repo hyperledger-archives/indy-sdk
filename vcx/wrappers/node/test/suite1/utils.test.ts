@@ -10,7 +10,9 @@ import {
   updateAgentInfo,
   updateInstitutionConfigs,
   updateMessages,
-  VCXCode
+  VCXCode,
+  setActiveTxnAuthorAgreementMeta,
+  getLedgerAuthorAgreement
 } from 'src'
 import { errorMessage } from '../../src/utils/error-message'
 describe('utils:', () => {
@@ -110,6 +112,19 @@ describe('utils:', () => {
         }
       }
       assert.equal(errorMessage(max + 1), errorMessage(1001))
+    })
+  })
+
+  describe('setActiveTxnAuthorAgreementMeta:', () => {
+    it('success', async () => {
+      setActiveTxnAuthorAgreementMeta('indy agreement', '1.0.0', undefined, 'acceptance type 1', 123456789)
+    })
+  })
+
+  describe('getLedgerAuthorAgreement:', () => {
+    it('success', async () => {
+      const agreement = await getLedgerAuthorAgreement()
+      assert.equal(agreement, '{"text":"Default indy agreement", "version":"1.0.0", "aml": {"acceptance mechanism label1": "description"}}')
     })
   })
 

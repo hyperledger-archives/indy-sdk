@@ -11,7 +11,7 @@ test('crypto', async function (t) {
   var wh = await indy.openWallet(walletConfig, walletCredentials)
 
   // Create Key
-  var error = await t.throws(indy.createKey(-1, {}))
+  var error = await t.throwsAsync(indy.createKey(-1, {}))
   t.is(error.indyName, 'WalletInvalidHandle')
 
   var verkey = await indy.createKey(wh, {})

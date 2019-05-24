@@ -2,7 +2,7 @@ use utils::types::{Output, ReceiptInfo, SourceInfo, ReceiptVerificationInfo, Sho
 use utils::source::{from_source, to_source};
 
 use std::collections::HashMap;
-use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Mutex;
 
 lazy_static! {
@@ -10,7 +10,7 @@ lazy_static! {
 }
 
 lazy_static! {
-    static ref IDS_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
+    static ref IDS_COUNTER: AtomicUsize = AtomicUsize::new(1);
 }
 
 fn _next_seq_no() -> i32 {

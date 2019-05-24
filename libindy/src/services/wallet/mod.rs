@@ -28,7 +28,8 @@ mod storage;
 mod encryption;
 mod query_encryption;
 mod iterator;
-mod language;
+// TODO: Remove query language out of wallet module
+pub mod language;
 mod export_import;
 mod wallet;
 
@@ -144,8 +145,8 @@ impl WalletService {
     pub fn delete_wallet_prepare(&self, config: &Config, credentials: &Credentials) -> IndyResult<(Metadata, KeyDerivationData)> {
         trace!("delete_wallet >>> config: {:?}, credentials: {:?}", config, secret!(credentials));
 
-        if self.wallets.borrow_mut().values().any(|ref wallet| wallet.get_id() == config.id) {
-            Err(err_msg(IndyErrorKind::InvalidState, format!("Wallet has to be closed before deleting: {:?}", config.id)))?
+        if self.wallets.borrow_mut().values().any(|ref wallet| wallet.get_id() == WalletService::_get_wallet_id(config)) {
+            Err(err_msg(IndyErrorKind::InvalidState, format!("Wallet has to be closed before deleting: {:?}", WalletService::_get_wallet_id(config))))?
         }
 
         // check credentials and close connection before deleting wallet
@@ -191,7 +192,7 @@ impl WalletService {
         let rekey_data: Option<KeyDerivationData> = credentials.rekey.as_ref().map(|ref rekey|
             KeyDerivationData::from_passphrase_with_new_salt(rekey, &credentials.rekey_derivation_method));
 
-        self.pending_for_open.borrow_mut().insert(wallet_handle, (config.id.clone(), storage, metadata, rekey_data.clone()));
+        self.pending_for_open.borrow_mut().insert(wallet_handle, (WalletService::_get_wallet_id(config), storage, metadata, rekey_data.clone()));
 
         Ok((wallet_handle, key_derivation_data, rekey_data))
     }
@@ -482,7 +483,7 @@ impl WalletService {
         let metadata = storage.get_storage_metadata()?;
 
         let res = {
-            let mut wallet = Wallet::new(config.id.clone(), storage, Rc::new(keys));
+            let wallet = Wallet::new(WalletService::_get_wallet_id(&config), storage, Rc::new(keys));
 
             finish_import(&wallet, reader, import_key, nonce, chunk_size, header_bytes)
         };
@@ -522,11 +523,18 @@ impl WalletService {
         if config.id.is_empty() {
             Err(err_msg(IndyErrorKind::InvalidStructure, "Wallet id is empty"))?
         }
-        if self.wallets.borrow_mut().values().any(|ref wallet| wallet.get_id() == config.id) {
-            Err(err_msg(IndyErrorKind::WalletAlreadyOpened, format!("Wallet {} already opened", config.id)))?
+
+        if self.wallets.borrow_mut().values().any(|ref wallet| wallet.get_id() == WalletService::_get_wallet_id(config)) {
+            Err(err_msg(IndyErrorKind::WalletAlreadyOpened, format!("Wallet {} already opened", WalletService::_get_wallet_id(config))))?
         }
 
         Ok(())
+    }
+
+    fn _get_wallet_id(config: &Config) -> String {
+        let wallet_path = config.storage_config.as_ref().and_then(|storage_config| storage_config["path"].as_str()).unwrap_or("");
+        let wallet_id = format!("{}{}", config.id, wallet_path);
+        wallet_id
     }
 
     fn _open_storage(&self, config: &Config, credentials: &Credentials) -> IndyResult<Box<WalletStorage>> {
@@ -757,7 +765,7 @@ mod tests {
             let rekey_data: Option<KeyDerivationData> = credentials.rekey.as_ref().map(|ref rekey|
                 KeyDerivationData::from_passphrase_with_new_salt(rekey, &credentials.rekey_derivation_method));
 
-            self.pending_for_open.borrow_mut().insert(wallet_handle, (config.id.clone(), storage, metadata, rekey_data.clone()));
+            self.pending_for_open.borrow_mut().insert(wallet_handle, (WalletService::_get_wallet_id(config), storage, metadata, rekey_data.clone()));
 
             let key = key_derivation_data.calc_master_key()?;
 
@@ -797,8 +805,8 @@ mod tests {
         }
 
         fn delete_wallet(&self, config: &Config, credentials: &Credentials) -> IndyResult<()> {
-            if self.wallets.borrow_mut().values().any(|ref wallet| wallet.get_id() == config.id) {
-                return Err(err_msg(IndyErrorKind::InvalidState, format!("Wallet has to be closed before deleting: {:?}", config.id)))?;
+            if self.wallets.borrow_mut().values().any(|ref wallet| wallet.get_id() == WalletService::_get_wallet_id(config)) {
+                return Err(err_msg(IndyErrorKind::InvalidState, format!("Wallet has to be closed before deleting: {:?}", WalletService::_get_wallet_id(config))))?;
             }
 
             let (_, metadata, key_derivation_data) = self._open_storage_and_fetch_metadata(config, credentials)?;
@@ -1026,6 +1034,40 @@ mod tests {
 
         // cleanup
         wallet_service.close_wallet(handle).unwrap();
+    }
+
+    #[test]
+    fn wallet_service_open_wallet_works_for_two_wallets_with_same_ids_but_different_paths() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+
+        let config_1 = Config {
+            id: String::from("same_id"),
+            storage_type: None,
+            storage_config: None,
+        };
+
+        wallet_service.create_wallet(&config_1, &RAW_CREDENTIAL, (&RAW_KDD, &RAW_MASTER_KEY)).unwrap();
+        let handle_1 = wallet_service.open_wallet(&config_1, &RAW_CREDENTIAL).unwrap();
+        
+        let config_2 = Config {
+            id: String::from("same_id"),
+            storage_type: None,
+            storage_config: Some(json!({
+                "path": _custom_path()
+            })),
+        };
+
+        wallet_service.create_wallet(&config_2, &RAW_CREDENTIAL, (&RAW_KDD, &RAW_MASTER_KEY)).unwrap();
+        let handle_2 = wallet_service.open_wallet(&config_2, &RAW_CREDENTIAL).unwrap();
+
+        // cleanup
+        wallet_service.close_wallet(handle_1).unwrap();
+        wallet_service.close_wallet(handle_2).unwrap();
+
+        wallet_service.delete_wallet(&config_1, &RAW_CREDENTIAL).unwrap();
+        wallet_service.delete_wallet(&config_2, &RAW_CREDENTIAL).unwrap();
     }
 
     #[test]
@@ -2192,5 +2234,11 @@ mod tests {
                 InmemWallet::free_search,
             )
             .unwrap();
+    }
+
+    fn _custom_path() -> String {
+        let mut path = environment::tmp_path();
+        path.push("custom_wallet_path");
+        path.to_str().unwrap().to_owned()
     }
 }
