@@ -145,13 +145,13 @@ fn like_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Ve
 
 fn in_to_sql<'a>(name: &'a TagName, values: &'a Vec<TargetValue>, arguments: &mut Vec<&'a ToSql>) -> IndyResult<String> {
     let mut in_string = String::new();
-    match name {
-        &TagName::PlainTagName(ref queried_name) => {
+    match *name {
+        TagName::PlainTagName(ref queried_name) => {
             in_string.push_str("(i.id in (SELECT item_id FROM tags_plaintext WHERE name = ? AND value IN (");
             arguments.push(queried_name);
 
             for (index, value) in values.iter().enumerate() {
-                if let &TargetValue::Unencrypted(ref target) = value {
+                if let TargetValue::Unencrypted(ref target) = *value {
                     in_string.push_str("?");
                     arguments.push(target);
                     if index < values.len() - 1 {
@@ -164,13 +164,13 @@ fn in_to_sql<'a>(name: &'a TagName, values: &'a Vec<TargetValue>, arguments: &mu
 
             Ok(in_string + ")))")
         },
-        &TagName::EncryptedTagName(ref queried_name) => {
+        TagName::EncryptedTagName(ref queried_name) => {
             in_string.push_str("(i.id in (SELECT item_id FROM tags_encrypted WHERE name = ? AND value IN (");
             arguments.push(queried_name);
             let index_before_last = values.len() - 2;
 
             for (index, value) in values.iter().enumerate() {
-                if let &TargetValue::Encrypted(ref target) = value {
+                if let TargetValue::Encrypted(ref target) = *value {
                     in_string.push_str("?");
                     arguments.push(target);
                     if index <= index_before_last {
@@ -205,7 +205,7 @@ fn not_to_sql<'a>(suboperator: &'a Operator, arguments: &mut Vec<&'a ToSql>) -> 
 
 fn join_operators<'a>(operators: &'a [Operator], join_str: &str, arguments: &mut Vec<&'a ToSql>) -> IndyResult<String> {
     let mut s = String::new();
-    if operators.len() > 0 {
+    if !operators.is_empty() {
         s.push('(');
         for (index, operator) in operators.iter().enumerate() {
             let operator_string = operator_to_sql(operator, arguments)?;

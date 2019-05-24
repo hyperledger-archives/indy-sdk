@@ -1,4 +1,4 @@
-use indy_crypto::cl::{
+use ursa::cl::{
     CredentialSignature,
     RevocationRegistry,
     SignatureCorrectnessProof,

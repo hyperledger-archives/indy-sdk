@@ -1,11 +1,12 @@
+// PART 3
 println!("13. Reading new Verkey from wallet");
-let trustee_verkey_from_wallet = Did::get_ver_key_local(wallet_handle, &trustee_did).unwrap();
+let trustee_verkey_from_wallet = did::key_for_local_did(wallet_handle, &trustee_did).wait().unwrap();
 
 println!("14. Building GET_NYM request to get Trust Anchor from Verkey");
-let refresh_build_nym_request: String = Ledger::build_get_nym_request(None, &trustee_did).unwrap();
+let refresh_build_nym_request: String = ledger::build_get_nym_request(None, &trustee_did).wait().unwrap();
 
 println!("15. Sending GET_NYM request to ledger");
-let refresh_build_nym_response: String = Ledger::submit_request(pool_handle, &refresh_build_nym_request).unwrap();
+let refresh_build_nym_response: String = ledger::submit_request(pool_handle, &refresh_build_nym_request).wait().unwrap();
 
 println!("16. Comparing Trust Anchor verkeys");
 let refresh_json: Value = serde_json::from_str(&refresh_build_nym_response).unwrap();
@@ -19,10 +20,10 @@ assert_eq!(trustee_verkey_from_wallet, trustee_verkey_from_ledger, "Verkey's did
 
 // CLEAN UP
 println!("17. Close and delete wallet");
-Wallet::close(wallet_handle).unwrap();
-Wallet::delete(&config, USEFUL_CREDENTIALS).unwrap();
+wallet::close_wallet(wallet_handle).wait().unwrap();
+wallet::delete_wallet(&config, USEFUL_CREDENTIALS).wait().unwrap();
 
 // Close pool
 println!("    Close pool and delete pool ledger config");
-Pool::close(pool_handle).unwrap();
-Pool::delete(&pool_name).unwrap();
+pool::close_pool_ledger(pool_handle).wait().unwrap();
+pool::delete_pool_ledger(&pool_name).wait().unwrap();

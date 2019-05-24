@@ -1,7 +1,7 @@
 use super::DELIMITER;
 use super::super::ledger::request::ProtocolVersion;
 
-use indy_crypto::cl::{
+use ursa::cl::{
     CredentialPrimaryPublicKey,
     CredentialRevocationPublicKey,
     CredentialPrivateKey,
@@ -21,8 +21,8 @@ pub enum SignatureType {
 
 impl SignatureType {
     pub fn to_str(&self) -> &'static str {
-        match self {
-            &SignatureType::CL => CL_SIGNATURE_TYPE
+        match *self {
+            SignatureType::CL => CL_SIGNATURE_TYPE
         }
     }
 }
@@ -75,6 +75,10 @@ impl CredentialDefinition {
         } else {
             format!("{}{}{}{}{}{}{}{}{}", did, DELIMITER, CRED_DEF_MARKER, DELIMITER, signature_type, DELIMITER, schema_id, DELIMITER, tag)
         }
+    }
+
+    pub fn issuer_did(cred_def_id: &str) -> Option<String> {
+        cred_def_id.split(":").collect::<Vec<&str>>().get(0).and_then(|s| Some(s.to_string()))
     }
 }
 
