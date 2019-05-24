@@ -330,8 +330,19 @@ fn _parse_reply_for_builtin_sp(json_msg: &SJsonValue, type_: &str, key: &[u8]) -
 
     let mut state_proofs = vec![];
 
+    match _parse_reply_for_sp(json_msg, data.as_ref().map(String::as_str), &parsed_data, type_, key) {
+        Ok(state_proof) => {
+            trace!("TransactionHandler::_parse_reply_for_sp: proof: {:?}", state_proof);
+            state_proofs.push(state_proof)
+        }
+        Err(err) => {
+            trace!("TransactionHandler::_parse_reply_for_sp: <<<  {:?}", err);
+            return None;
+        }
+    }
+
     if REQUESTS_FOR_MULTI_STATE_PROOFS.contains(&type_) {
-        match _parse_reply_for_multi_sp(json_msg, data.clone(), parsed_data.clone(), type_, key) {
+        match _parse_reply_for_multi_sp(json_msg, data.as_ref().map(String::as_str), &parsed_data, type_, key) {
             Ok(Some(state_proof)) => {
                 trace!("TransactionHandler::_parse_reply_for_multi_sp: proof: {:?}", state_proof);
                 state_proofs.push(state_proof);
@@ -346,21 +357,10 @@ fn _parse_reply_for_builtin_sp(json_msg: &SJsonValue, type_: &str, key: &[u8]) -
         }
     }
 
-    match _parse_reply_for_sp(json_msg, data, parsed_data, type_, key) {
-        Ok(state_proof) => {
-            trace!("TransactionHandler::_parse_reply_for_sp: proof: {:?}", state_proof);
-            state_proofs.push(state_proof)
-        }
-        Err(err) => {
-            trace!("TransactionHandler::_parse_reply_for_sp: <<<  {:?}", err);
-            return None;
-        }
-    }
-
     Some(state_proofs)
 }
 
-fn _parse_reply_for_sp(json_msg: &SJsonValue, data: Option<String>, parsed_data: SJsonValue, xtype: &str, sp_key: &[u8]) -> Result<ParsedSP, String> {
+fn _parse_reply_for_sp(json_msg: &SJsonValue, data: Option<&str>, parsed_data: &SJsonValue, xtype: &str, sp_key: &[u8]) -> Result<ParsedSP, String> {
     trace!("TransactionHandler::_parse_reply_for_sp: data: {:?}, parsed_data: {:?}", data, parsed_data);
 
     let proof = if let Some(proof) = json_msg["state_proof"]["proof_nodes"].as_str() {
@@ -396,7 +396,7 @@ fn _parse_reply_for_sp(json_msg: &SJsonValue, data: Option<String>, parsed_data:
     })
 }
 
-fn _parse_reply_for_multi_sp(json_msg: &SJsonValue, data: Option<String>, parsed_data: SJsonValue, xtype: &str, sp_key: &[u8]) -> Result<Option<ParsedSP>, String> {
+fn _parse_reply_for_multi_sp(json_msg: &SJsonValue, data: Option<&str>, parsed_data: &SJsonValue, xtype: &str, sp_key: &[u8]) -> Result<Option<ParsedSP>, String> {
     trace!("TransactionHandler::_parse_reply_for_multi_sp: data: {:?}, parsed_data: {:?}", data, parsed_data);
 
     let (proof_nodes, root_hash, multi_signature, value) = match xtype {
@@ -535,7 +535,7 @@ fn _verify_proof_signature(signature: &str,
     Ok(res)
 }
 
-fn _parse_reply_for_proof_value(json_msg: &SJsonValue, data: Option<String>, parsed_data: SJsonValue, xtype: &str, sp_key: &[u8]) -> Result<Option<String>, String> {
+fn _parse_reply_for_proof_value(json_msg: &SJsonValue, data: Option<&str>, parsed_data: &SJsonValue, xtype: &str, sp_key: &[u8]) -> Result<Option<String>, String> {
     if let Some(data) = data {
         let mut value = json!({});
 
@@ -568,7 +568,7 @@ fn _parse_reply_for_proof_value(json_msg: &SJsonValue, data: Option<String>, par
                 value["val"] = SJsonValue::String(hasher.fixed_result().to_hex());
             }
             constants::GET_CRED_DEF | constants::GET_REVOC_REG_DEF | constants::GET_REVOC_REG | constants::GET_TXN_AUTHR_AGRMT_AML => {
-                value["val"] = parsed_data;
+                value["val"] = parsed_data.clone();
             }
             constants::GET_AUTH_RULE => {
                 match parsed_data.as_object().and_then(|data| data.values().next()) {
@@ -595,7 +595,7 @@ fn _parse_reply_for_proof_value(json_msg: &SJsonValue, data: Option<String>, par
             }
             constants::GET_TXN_AUTHR_AGRMT => {
                 if _is_full_taa_state_value_expected(sp_key) {
-                    value["val"] = parsed_data;
+                    value["val"] = parsed_data.clone();
                 } else {
                     value = SJsonValue::String(_calculate_taa_digest(parsed_data["text"].as_str().unwrap_or(""),
                                                                      parsed_data["version"].as_str().unwrap_or(""))
