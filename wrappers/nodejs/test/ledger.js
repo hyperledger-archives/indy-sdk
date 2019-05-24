@@ -154,7 +154,7 @@ test('ledger', async function (t) {
   // Auth Rule
   req = await indy.buildGetAuthRuleRequest(trusteeDid, 'NYM', 'ADD', 'role', null, '101')
   res = await indy.submitRequest(pool.handle, req)
-  var defaultConstraint = res['result']['data']['1--ADD--role--*--101']
+  var defaultConstraint = res['result']['data'][0]['constraint']
 
   var constraint = {
     'sig_count': 1,
@@ -171,6 +171,8 @@ test('ledger', async function (t) {
 
   req = await indy.buildGetAuthRuleRequest(trusteeDid, 'NYM', 'ADD', 'role', null, '101')
   res = await indy.submitRequest(pool.handle, req)
+  t.deepEqual(res['result']['data'][0]['constraint'], constraint)
+
   var expectedAuthRule = {
     'auth_type': 'NYM',
     'auth_action': 'ADD',
@@ -178,7 +180,6 @@ test('ledger', async function (t) {
     'new_value': '101',
     'constraint': constraint
   }
-  //  t.deepEqual(expectedAuthRule, res['result']['data'][0])
 
   var authRulesData = [expectedAuthRule]
   req = await indy.buildAuthRulesRequest(trusteeDid, authRulesData)

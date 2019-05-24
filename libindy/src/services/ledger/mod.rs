@@ -14,7 +14,7 @@ use domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefini
 use domain::anoncreds::revocation_registry_delta::{RevocationRegistryDelta, RevocationRegistryDeltaV1};
 use domain::anoncreds::schema::{Schema, SchemaV1, MAX_ATTRIBUTES_COUNT};
 use domain::ledger::attrib::{AttribOperation, GetAttribOperation};
-use domain::ledger::constants::{GET_VALIDATOR_INFO, NYM, POOL_RESTART, ROLE_REMOVE, STEWARD, TRUST_ANCHOR, TRUSTEE, NETWORK_MONITOR, txn_name_to_code};
+use domain::ledger::constants::{GET_VALIDATOR_INFO, NYM, POOL_RESTART, ROLE_REMOVE, STEWARD, ENDORSER, TRUSTEE, NETWORK_MONITOR, txn_name_to_code};
 use domain::ledger::cred_def::{CredDefOperation, GetCredDefOperation, GetCredDefReplyResult};
 use domain::ledger::ddo::GetDdoOperation;
 use domain::ledger::node::{NodeOperation, NodeOperationData};
@@ -72,7 +72,7 @@ impl LedgerService {
                 operation["role"] = Value::String(match r {
                     "STEWARD" => STEWARD,
                     "TRUSTEE" => TRUSTEE,
-                    "TRUST_ANCHOR" => TRUST_ANCHOR,
+                    "TRUST_ANCHOR" | "ENDORSER" => ENDORSER,
                     "NETWORK_MONITOR" => NETWORK_MONITOR,
                     role @ _ => return Err(err_msg(IndyErrorKind::InvalidStructure, format!("Invalid role: {}", role)))
                 }.to_string())
@@ -893,6 +893,7 @@ mod tests {
 
         fn _role_constraint() -> Constraint {
             Constraint::RoleConstraint(RoleConstraint {
+                constraint_id: "ROLE".to_string(),
                 sig_count: Some(0),
                 metadata: None,
                 role: Some(String::new()),
@@ -927,17 +928,19 @@ mod tests {
         fn build_auth_rule_request_works_for_combination_constraints() {
             let ledger_service = LedgerService::new();
 
-            let constraint = Constraint::AndConstraint(
+            let constraint = Constraint::CombinationConstraint(
                 CombinationConstraint {
+                    constraint_id: "AND".to_string(),
                     auth_constraints: vec![
                         _role_constraint(),
-                        Constraint::OrConstraint(
+                        Constraint::CombinationConstraint(
                             CombinationConstraint {
+                                constraint_id: "OR".to_string(),
                                 auth_constraints: vec![
-                                    _role_constraint(), _role_constraint(), ]
+                                    _role_constraint(), _role_constraint(), ],
                             }
                         )
-                    ]
+                    ],
                 });
             let constraint_json = serde_json::to_string(&constraint).unwrap();
 
