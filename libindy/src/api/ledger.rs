@@ -364,6 +364,7 @@ pub extern fn indy_build_get_ddo_request(command_handle: CommandHandle,
 ///                             TRUSTEE
 ///                             STEWARD
 ///                             TRUST_ANCHOR
+///                             ENDORSER - equal to TRUST_ANCHOR that will be removed soon
 ///                             NETWORK_MONITOR
 ///                             empty string to reset role
 /// cb: Callback that takes command result as parameter.
