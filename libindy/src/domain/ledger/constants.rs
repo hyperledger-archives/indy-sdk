@@ -32,7 +32,7 @@ pub const REQUESTS: [&str; 25] = [NODE, NYM, GET_TXN, ATTRIB, SCHEMA, CRED_DEF, 
 
 pub const TRUSTEE: &str = "0";
 pub const STEWARD: &str = "2";
-pub const TRUST_ANCHOR: &str = "101";
+pub const ENDORSER: &str = "101";
 pub const NETWORK_MONITOR: &str = "201";
 pub const ROLE_REMOVE: &str = "";
 

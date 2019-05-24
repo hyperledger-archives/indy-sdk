@@ -320,18 +320,19 @@ pub fn pay_a_payee(price: u64, address: &str) -> VcxResult<(PaymentTxn, String)>
 }
 
 fn get_txn_price(txn_action: (&str, &str, &str, Option<&str>, &str)) -> VcxResult<u64> {
-    let action_fee_alias = auth_rule::get_action_fee_alias(txn_action).ok();
-    let alias = match action_fee_alias.and_then(|alias| alias) {
-        Some(alias_) => alias_,
-        None => return Ok(0)
-    };
+//    TODO: uncomment to get fee alias when pool will be correct work with GET_AUTH_RULE
+//    let action_fee_alias = auth_rule::get_action_fee_alias(txn_action).ok();
+//    let alias = match action_fee_alias.and_then(|alias| alias) {
+//        Some(alias_) => alias_,
+//        None => return Ok(0)
+//    };
 
     let ledger_fees = get_ledger_fees()?;
 
     let fees: HashMap<String, u64> = serde_json::from_str(&ledger_fees)
         .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize fees: {}", err)))?;
 
-    match fees.get(&alias) {
+    match fees.get(txn_action.0) { // use alias instead
         Some(x) => Ok(*x),
         None => Ok(0),
     }
