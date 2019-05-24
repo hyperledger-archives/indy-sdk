@@ -8,6 +8,7 @@ use services::wallet::{RecordOptions, SearchOptions, WalletRecord, WalletSearch,
 use utils::sequence;
 use api::WalletHandle;
 
+
 pub enum NonSecretsCommand {
     AddRecord(WalletHandle,
               String, // type
@@ -54,19 +55,19 @@ pub enum NonSecretsCommand {
                            usize, // count
                            Box<Fn(IndyResult<String>) + Send>),
     CloseSearch(i32, // wallet search handle
-                Box<Fn(IndyResult<()>) + Send>)
+                Box<Fn(IndyResult<()>) + Send>),
 }
 
 pub struct NonSecretsCommandExecutor {
     wallet_service: Rc<WalletService>,
-    searches: RefCell<HashMap<i32, Box<WalletSearch>>>
+    searches: RefCell<HashMap<i32, Box<WalletSearch>>>,
 }
 
 impl NonSecretsCommandExecutor {
     pub fn new(wallet_service: Rc<WalletService>) -> NonSecretsCommandExecutor {
         NonSecretsCommandExecutor {
             wallet_service,
-            searches: RefCell::new(HashMap::new())
+            searches: RefCell::new(HashMap::new()),
         }
     }
 

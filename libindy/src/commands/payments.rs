@@ -8,6 +8,7 @@ use serde_json;
 
 use errors::prelude::*;
 use services::crypto::CryptoService;
+use services::ledger::LedgerService;
 use services::payments::{PaymentsMethodCBs, PaymentsService};
 use services::wallet::{RecordOptions, WalletService};
 use api::WalletHandle;
@@ -79,6 +80,14 @@ pub enum PaymentsCommand {
     ParsePaymentResponseAck(
         i32,
         IndyResult<String>),
+    AppendTxnAuthorAgreementAcceptanceToExtra(
+        Option<String>, // extra json
+        Option<String>, // text
+        Option<String>, // version
+        Option<String>, // hash
+        String, // acceptance mechanism type
+        u64, // time of acceptance
+        Box<Fn(IndyResult<String>) + Send>),
     BuildMintReq(
         WalletHandle,
         Option<String>, //submitter did
@@ -133,15 +142,17 @@ pub struct PaymentsCommandExecutor {
     payments_service: Rc<PaymentsService>,
     wallet_service: Rc<WalletService>,
     crypto_service: Rc<CryptoService>,
+    ledger_service: Rc<LedgerService>,
     pending_callbacks: RefCell<HashMap<i32, Box<Fn(IndyResult<String>) + Send>>>,
 }
 
 impl PaymentsCommandExecutor {
-    pub fn new(payments_service: Rc<PaymentsService>, wallet_service: Rc<WalletService>, crypto_service: Rc<CryptoService>) -> PaymentsCommandExecutor {
+    pub fn new(payments_service: Rc<PaymentsService>, wallet_service: Rc<WalletService>, crypto_service: Rc<CryptoService>, ledger_service: Rc<LedgerService>) -> PaymentsCommandExecutor {
         PaymentsCommandExecutor {
             payments_service,
             wallet_service,
             crypto_service,
+            ledger_service,
             pending_callbacks: RefCell::new(HashMap::new()),
         }
     }
@@ -211,6 +222,15 @@ impl PaymentsCommandExecutor {
             PaymentsCommand::ParsePaymentResponseAck(cmd_handle, result) => {
                 info!(target: "payments_command_executor", "ParsePaymentResponseAck command received");
                 self.parse_payment_response_ack(cmd_handle, result);
+            }
+            PaymentsCommand::AppendTxnAuthorAgreementAcceptanceToExtra(extra, text, version, taa_digest, mechanism, time, cb) => {
+                info!(target: "payments_command_executor", "AppendTxnAuthorAgreementAcceptanceToExtra command received");
+                cb(self.append_txn_author_agreement_acceptance_to_extra(extra.as_ref().map(String::as_str),
+                                                                        text.as_ref().map(String::as_str),
+                                                                        version.as_ref().map(String::as_str),
+                                                                        taa_digest.as_ref().map(String::as_str),
+                                                                        &mechanism,
+                                                                        time));
             }
             PaymentsCommand::BuildMintReq(wallet_handle, submitter_did, outputs, extra, cb) => {
                 info!(target: "payments_command_executor", "BuildMintReq command received");
@@ -462,6 +482,31 @@ impl PaymentsCommandExecutor {
             }
         }
         trace!("build_payment_req <<<");
+    }
+
+    fn append_txn_author_agreement_acceptance_to_extra(&self,
+                                                       extra: Option<&str>,
+                                                       text: Option<&str>,
+                                                       version: Option<&str>,
+                                                       taa_digest: Option<&str>,
+                                                       mechanism: &str,
+                                                       time: u64) -> IndyResult<String> {
+        debug!("append_txn_author_agreement_acceptance_to_extra >>> extra: {:?}, text: {:?}, version: {:?}, taa_digest: {:?}, mechanism: {:?}, time: {:?}",
+               extra, text, version, taa_digest, mechanism, time);
+
+        let mut extra: serde_json::Value = serde_json::from_str(extra.unwrap_or("{}"))
+            .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Cannot deserialize extra: {:?}", err)))?;
+
+        let acceptance_data = self.ledger_service.prepare_acceptance_data(text, version, taa_digest, mechanism, time)?;
+
+        extra["taaAcceptance"] = serde_json::to_value(acceptance_data)
+            .to_indy(IndyErrorKind::InvalidState, "Can't serialize author agreement acceptance data")?;
+
+        let res: String = extra.to_string();
+
+        debug!("append_txn_author_agreement_acceptance_to_extra <<< res: {:?}", res);
+
+        Ok(res)
     }
 
     fn build_payment_req_ack(&self, cmd_handle: i32, result: IndyResult<String>) {

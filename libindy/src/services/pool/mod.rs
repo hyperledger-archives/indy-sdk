@@ -1,7 +1,7 @@
 extern crate byteorder;
 extern crate digest;
 extern crate hex;
-extern crate indy_crypto;
+extern crate ursa;
 extern crate rand;
 extern crate rmp_serde;
 extern crate rust_base58;
@@ -165,7 +165,7 @@ impl PoolService {
 
         self.pending_pools.try_borrow_mut()?
             .insert(new_pool.get_id(), ZMQPool::new(new_pool, send_cmd_sock));
-        return Ok(pool_handle);
+        Ok(pool_handle)
     }
 
     pub fn add_open_pool(&self, pool_id: i32) -> IndyResult<i32> {
@@ -627,7 +627,7 @@ mod tests {
 
         use super::*;
 
-        use self::indy_crypto::bls::{Generator, SignKey, VerKey};
+        use self::ursa::bls::{Generator, SignKey, VerKey};
 
         pub static POLL_TIMEOUT: i64 = 1_000; /* in ms */
 

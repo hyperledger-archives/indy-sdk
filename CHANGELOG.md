@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.8.3 - 2019-04-30
+* Bugfixes:
+    * Fixed behavior of `auth_rule` and `get_auth_rule` request builders. 
+    * Extended windows packages to contain *.dll.lib file.
+    * Fixed `boolean` datatype representation for FFI.
+    * others minor bugfixes
+
 ## 1.8.2 - 2019-03-26
 * Added new functions to Libindy Ledger API:
     * `indy_build_auth_rule_request` to change an existing ledger auth rule.

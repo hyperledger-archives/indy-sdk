@@ -42,6 +42,14 @@ test('payments', async function (t) {
   err = await t.throws(indy.parsePaymentResponse(paymentMethod, {}))
   t.is(err.indyName, 'PaymentUnknownMethodError')
 
+  var extra = await indy.preparePaymentExtraWithAcceptanceData(null, 'indy agreement', '1.0.0', null, 'acceptance mechanism label 1', 123456789)
+  var expectedExtra = {
+    'mechanism': 'acceptance mechanism label 1',
+    'taaDigest': '7213b9aabf8677edf6b17d20a9fbfaddb059ea4cb122d163bdf658ea67196120',
+    'time': 123456789
+  }
+  t.deepEqual(extra['taaAcceptance'], expectedExtra)
+
   err = await t.throws(indy.buildMintReq(wh, trusteeDid, outputs, null))
   t.is(err.indyName, 'PaymentUnknownMethodError')
 

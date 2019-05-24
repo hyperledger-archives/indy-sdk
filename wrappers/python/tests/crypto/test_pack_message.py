@@ -47,7 +47,7 @@ async def test_pack_message_invalid_receiver_verkey(wallet_handle, verkey_my2, i
     receiver_verkeys = verkey_my2
     with pytest.raises(IndyError) as e:
         await crypto.pack_message(wallet_handle, pack_message, receiver_verkeys, sender_verkey)
-    assert ErrorCode.CommonInvalidStructure == e.value.error_code
+    assert ErrorCode.CommonInvalidParam4 == e.value.error_code
 
 
 @pytest.mark.asyncio
