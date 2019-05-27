@@ -43,8 +43,8 @@ transaction author that he accepts the following reality.
 The ledger is public and immutable and by writing data to the ledger the user will not be able
 to exercise the right to be forgotten, so no personal data should be published to the ledger. 
 
-So the set of new function were added to Libindy API to support work with `Transaction Author Agreement` concept introduced on the Ledger.
-This guarantees that every write transaction author agree that the information they submit to the ledger meets the requirements outlined by ledger governance.
+So the set of new function were added to Libindy API to support work with `Transaction Author Agreement` concept [introduced on the Ledger](https://github.com/hyperledger/indy-node/blob/master/design/txn_author_agreement.md).
+This guarantees that every write transaction author agree that the information they submit to the ledger meets the requirements outlined by ledger governance.   
    
 #### Changes
 
@@ -207,6 +207,19 @@ indy_prepare_payment_extra_with_acceptance_data(
       </td>
     </tr>
 </table>
+
+#### Sample
+```
+acc_mech_request = indy_build_acceptance_mechanism_request(...)
+indy_sign_and_submit_request(..., acc_mech_request)
+
+txn_author_agrmnt_request = indy_build_txn_author_agreement_request(...)
+indy_sign_and_submit_request(..., txn_author_agrmnt_request)
+
+nym_request = indy_build_nym_request(...)
+nym_req_with_taa_acceptance = indy_append_txn_author_agreement_acceptance_to_request(nym_request, ...)
+indy_sign_and_submit_request(..., nym_req_with_taa_acceptance)
+```
 
 ### Cache API
 
