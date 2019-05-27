@@ -332,8 +332,11 @@ async def test_prover_credential_attr_tag_policy(wallet_handle, prepopulated_wal
 
     # RESTORE wallet state: delete credentials created in this test
     for i in range(3):
-        for j in range(4):
+        for j in range(5):
             await anoncreds.prover_delete_credential(wallet_handle, 'cred-{}.{}'.format(i, j))
+
+    credentials = json.loads(await anoncreds.prover_get_credentials(wallet_handle, "{}"))
+    assert len(credentials) == 3
 
 
 # noinspection PyUnusedLocal
@@ -416,3 +419,6 @@ async def test_prover_credential_attr_tag_policy_works_for_non_canonical_attr(wa
 
     # Restore wallet state: delete credentials created in this test
     await anoncreds.prover_delete_credential(wallet_handle, 'cred-eve')
+
+    credentials = json.loads(await anoncreds.prover_get_credentials(wallet_handle, "{}"))
+    assert len(credentials) == 3
