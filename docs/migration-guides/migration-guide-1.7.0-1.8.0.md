@@ -3,7 +3,7 @@
 # Libindy 1.7 to 1.8 migration Guide
 
 This document is written for developers using Libindy to provide necessary information and
-to simplify their transition to Libindy 1.7 from Libindy 1.8. If you are using older Libindy
+to simplify their transition to Libindy 1.8 from Libindy 1.7. If you are using older Libindy
 version you can check migration guides history:
 
 * [Libindy 1.3 to 1.4 migration](https://github.com/hyperledger/indy-sdk/blob/v1.4.0/doc/migration-guide.md)
