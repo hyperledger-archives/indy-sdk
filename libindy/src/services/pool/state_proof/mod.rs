@@ -396,11 +396,11 @@ fn _parse_reply_for_sp(json_msg: &SJsonValue, data: Option<&str>, parsed_data: &
     })
 }
 
-fn _parse_reply_for_multi_sp(json_msg: &SJsonValue, data: Option<&str>, parsed_data: &SJsonValue, xtype: &str, sp_key: &[u8]) -> Result<Option<ParsedSP>, String> {
+fn _parse_reply_for_multi_sp(_json_msg: &SJsonValue, data: Option<&str>, parsed_data: &SJsonValue, xtype: &str, sp_key: &[u8]) -> Result<Option<ParsedSP>, String> {
     trace!("TransactionHandler::_parse_reply_for_multi_sp: data: {:?}, parsed_data: {:?}", data, parsed_data);
 
     let (proof_nodes, root_hash, multi_signature, value) = match xtype {
-        constants::GET_REVOC_REG_DELTA if !json_msg["from"].is_null() => {
+        constants::GET_REVOC_REG_DELTA if _if_rev_delta_multi_state_proof_expected(sp_key) => {
             let proof = if let Some(proof) = parsed_data["stateProofFrom"]["proof_nodes"].as_str() {
                 trace!("TransactionHandler::_parse_reply_for_multi_sp: proof: {:?}", proof);
                 proof
@@ -627,6 +627,10 @@ fn _calculate_taa_digest(text: &str, version: &str) -> IndyResult<Vec<u8>> {
 
 fn _is_full_taa_state_value_expected(expected_state_key: &[u8]) -> bool {
     expected_state_key.starts_with("2:d:".as_bytes())
+}
+
+fn _if_rev_delta_multi_state_proof_expected(sp_key: &[u8]) -> bool {
+    sp_key.starts_with("\x06:".as_bytes()) || sp_key.starts_with("6:".as_bytes())
 }
 
 #[cfg(test)]
