@@ -504,7 +504,7 @@ async def prover_create_credential_req(wallet_handle: int,
                                        cred_def_json: str,
                                        master_secret_id: str) -> (str, str):
     """
-    Creates a clam request for the given credential offer.
+    Creates a credential request for the given credential offer.
 
     The method creates a blinded master secret for a master secret identified by a provided name.
     The master secret identified by the name must be already stored in the secure wallet (see prover_create_master_secret)
