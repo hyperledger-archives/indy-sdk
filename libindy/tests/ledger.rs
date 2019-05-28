@@ -2414,7 +2414,7 @@ mod high_cases {
         const VERSION: &str = "1.0.0";
 
         #[test]
-        fn indy_build_acceptance_mechanism_request() {
+        fn indy_build_acceptance_mechanisms_request() {
             let aml = json!({
                 "acceptance mechanism label 1": "some acceptance mechanism description 1"
             });
@@ -2425,7 +2425,7 @@ mod high_cases {
                 "version": VERSION
             });
 
-            let request = ledger::build_acceptance_mechanism_request(DID_TRUSTEE,
+            let request = ledger::build_acceptance_mechanisms_request(DID_TRUSTEE,
                                                                      &aml.to_string(),
                                                                      VERSION,
                                                                      None).unwrap();
@@ -2433,7 +2433,7 @@ mod high_cases {
         }
 
         #[test]
-        fn indy_build_acceptance_mechanism_request_with_context() {
+        fn indy_build_acceptance_mechanisms_request_with_context() {
             let aml = json!({
                 "acceptance mechanism label 1": "some acceptance mechanism description 1"
             });
@@ -2446,7 +2446,7 @@ mod high_cases {
                 "amlContext": context,
             });
 
-            let request = ledger::build_acceptance_mechanism_request(DID_TRUSTEE,
+            let request = ledger::build_acceptance_mechanisms_request(DID_TRUSTEE,
                                                                      &aml.to_string(),
                                                                      VERSION,
                                                                      Some(context)).unwrap();
@@ -2454,17 +2454,17 @@ mod high_cases {
         }
 
         #[test]
-        fn indy_build_get_acceptance_mechanism_request() {
+        fn indy_build_get_acceptance_mechanisms_request() {
             let expected_result = json!({
                 "type": constants::GET_TXN_AUTHR_AGRMT_AML,
             });
 
-            let request = ledger::build_get_acceptance_mechanism_request(None, None, None).unwrap();
+            let request = ledger::build_get_acceptance_mechanisms_request(None, None, None).unwrap();
             check_request(&request, expected_result);
         }
 
         #[test]
-        fn indy_build_get_acceptance_mechanism_request_for_timestamp() {
+        fn indy_build_get_acceptance_mechanisms_request_for_timestamp() {
             let timestamp = time::get_time().sec as i64;
 
             let expected_result = json!({
@@ -2472,24 +2472,24 @@ mod high_cases {
                 "timestamp": timestamp
             });
 
-            let request = ledger::build_get_acceptance_mechanism_request(None, Some(timestamp), None).unwrap();
+            let request = ledger::build_get_acceptance_mechanisms_request(None, Some(timestamp), None).unwrap();
             check_request(&request, expected_result);
         }
 
         #[test]
-        fn indy_build_get_acceptance_mechanism_request_for_version() {
+        fn indy_build_get_acceptance_mechanisms_request_for_version() {
             let expected_result = json!({
                 "type": constants::GET_TXN_AUTHR_AGRMT_AML,
                 "version": VERSION,
             });
 
-            let request = ledger::build_get_acceptance_mechanism_request(None, None, Some(VERSION)).unwrap();
+            let request = ledger::build_get_acceptance_mechanisms_request(None, None, Some(VERSION)).unwrap();
             check_request(&request, expected_result);
         }
 
         #[test]
-        fn indy_build_get_acceptance_mechanism_request_for_timestamp_and_version() {
-            let res = ledger::build_get_acceptance_mechanism_request(None, Some(123456789), Some(VERSION));
+        fn indy_build_get_acceptance_mechanisms_request_for_timestamp_and_version() {
+            let res = ledger::build_get_acceptance_mechanisms_request(None, Some(123456789), Some(VERSION));
             assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
     }
@@ -2676,7 +2676,7 @@ mod high_cases {
 
         fn _set_aml(pool_handle: i32, wallet_handle: i32, trustee_did: &str) -> (String, String, String, String) {
             let (aml, aml_label, aml_version, aml_context) = _gen_aml_data();
-            let request = ledger::build_acceptance_mechanism_request(trustee_did, &aml, &aml_version, Some(&aml_context)).unwrap();
+            let request = ledger::build_acceptance_mechanisms_request(trustee_did, &aml, &aml_version, Some(&aml_context)).unwrap();
             let response = ledger::sign_and_submit_request(pool_handle, wallet_handle, trustee_did, &request).unwrap();
             pool::check_response_type(&response, ResponseType::REPLY);
             (aml, aml_label, aml_version, aml_context)
@@ -2718,13 +2718,13 @@ mod high_cases {
             let (aml, _, aml_version, aml_context) = _gen_aml_data();
 
             {
-                let request = ledger::build_acceptance_mechanism_request(&trustee_did, &aml, &aml_version, Some(&aml_context)).unwrap();
+                let request = ledger::build_acceptance_mechanisms_request(&trustee_did, &aml, &aml_version, Some(&aml_context)).unwrap();
                 let response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &request).unwrap();
                 pool::check_response_type(&response, ResponseType::REPLY);
             }
 
             //            {
-            //                let request = ledger::build_get_acceptance_mechanism_request(Some(&trustee_did), None, None).unwrap();
+            //                let request = ledger::build_get_acceptance_mechanisms_request(Some(&trustee_did), None, None).unwrap();
             //                let response = ledger::submit_request(pool_handle, &request).unwrap();
             //                pool::check_response_type(&response, ResponseType::REPLY);
             //

@@ -765,12 +765,12 @@
     };
 
     NSString *requestJson;
-    ret = [[LedgerUtils sharedInstance] buildAcceptanceMechanismRequestWithSubmitterDid:[TestUtils trusteeDid]
-                                                                                    aml:[NSDictionary toString:aml]
-                                                                                version:version
-                                                                             amlContext:context
-                                                                             outRequest:&requestJson];
-    XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildTxnAuthorAgreementRequestWithSubmitterDid() failed!");
+    ret = [[LedgerUtils sharedInstance] buildAcceptanceMechanismsRequestWithSubmitterDid:[TestUtils trusteeDid]
+                                                                                     aml:[NSDictionary toString:aml]
+                                                                                 version:version
+                                                                              amlContext:context
+                                                                              outRequest:&requestJson];
+    XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildAcceptanceMechanismsRequestWithSubmitterDid() failed!");
 
     NSDictionary *request = [NSDictionary fromString:requestJson];
 
@@ -784,11 +784,11 @@
     };
 
     NSString *requestJson;
-    ret = [[LedgerUtils sharedInstance] buildGetAcceptanceMechanismRequestWithSubmitterDid:[TestUtils trusteeDid]
-                                                                                 timestamp:@(123456789)
-                                                                                   version:nil
-                                                                                outRequest:&requestJson];
-    XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildTxnAuthorAgreementRequestWithSubmitterDid() failed!");
+    ret = [[LedgerUtils sharedInstance] buildGetAcceptanceMechanismsRequestWithSubmitterDid:[TestUtils trusteeDid]
+                                                                                  timestamp:@(123456789)
+                                                                                    version:nil
+                                                                                 outRequest:&requestJson];
+    XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildGetAcceptanceMechanismsRequestWithSubmitterDid() failed!");
 
     NSDictionary *request = [NSDictionary fromString:requestJson];
 

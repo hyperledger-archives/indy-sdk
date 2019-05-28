@@ -2185,7 +2185,7 @@ NAN_METHOD(buildGetAcceptanceMechanismRequest) {
   indy_i64_t arg1 = argToInt32(info[1]);
   const char* arg2 = argToCString(info[2]);
   IndyCallback* icb = argToIndyCb(info[3]);
-  indyCalled(icb, indy_build_get_acceptance_mechanism_request(icb->handle, arg0, arg1, arg2, buildGetAcceptanceMechanismRequest_cb));
+  indyCalled(icb, indy_build_get_acceptance_mechanisms_request(icb->handle, arg0, arg1, arg2, buildGetAcceptanceMechanismsRequest_cb));
   delete arg0;
   delete arg2;
 }
