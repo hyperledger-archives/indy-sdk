@@ -1845,7 +1845,7 @@ Null data or empty JSON are acceptable here. In this case, ledger will return th
 
 Errors: `Common*`
 
-#### buildAcceptanceMechanismRequest \( submitterDid, aml, version, amlContext \) -&gt; request
+#### buildAcceptanceMechanismsRequest \( submitterDid, aml, version, amlContext \) -&gt; request
 
 Builds a SET_TXN_AUTHR_AGRMT_AML request. 
 Request to add a new list of acceptance mechanisms for transaction author agreement.
