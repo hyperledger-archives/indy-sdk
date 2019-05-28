@@ -8,6 +8,8 @@ do
     arch_folder=${arch}
     if [ "${arch}" = "armv7" ]; then
         arch_folder="armeabi-v7a"
+    elif [ "${arch}" = "arm64" ]; then
+        arch_folder="arm64-v8a"
     fi
     mkdir -p ${ANDROID_JNI_LIB}/${arch_folder}
     cp -v runtime_android_build/libvcx_${arch}/libvcx.so ${ANDROID_JNI_LIB}/${arch_folder}/libvcx.so
