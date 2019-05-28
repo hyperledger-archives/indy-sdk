@@ -6,8 +6,8 @@
    to the ledger meets the requirements outlined by ledger governance.
     * `indy_build_txn_author_agreement_request` to add a new version of Transaction Author Agreement to the ledger.
     * `indy_build_get_txn_author_agreement_request` to get a Transaction Author Agreement from the ledger.
-    * `indy_build_acceptance_mechanism_request` to add new acceptance mechanisms for transaction author agreement.
-    * `indy_build_get_acceptance_mechanism_request` to get acceptance mechanisms from the ledger.
+    * `indy_build_acceptance_mechanisms_request` to add new acceptance mechanisms for transaction author agreement.
+    * `indy_build_get_acceptance_mechanisms_request` to get acceptance mechanisms from the ledger.
     * `indy_append_txn_author_agreement_acceptance_to_request` to append transaction author agreement acceptance data to a request.
     * `indy_append_txn_author_agreement_acceptance_to_request` to append transaction author agreement acceptance data to a request.
     * `indy_prepare_payment_extra_with_acceptance_data` to prepare payment extra JSON with TAA acceptance data.
@@ -28,7 +28,7 @@
     
 ## 1.8.3 - 2019-04-30
 * Bugfixes:
-    * Fix State Proof verification for some types of GET requests to the ledger
+    * Fixed behavior of `auth_rule` and `get_auth_rule` request builders
     * Extended windows packages to contain *.dll.lib file.
     * Fixed `boolean` datatype representation for FFI.
     * others minor bugfixes

@@ -113,7 +113,7 @@ indy_build_get_txn_author_agreement_request(
       </td>
       <td>
       <pre>
-indy_build_acceptance_mechanism_request(
+indy_build_acceptance_mechanisms_request(
                         submitter_did: *const c_char,
                         aml: *const c_char,
                         version: *const c_char,
@@ -137,7 +137,7 @@ indy_build_acceptance_mechanism_request(
       </td>
       <td>
       <pre>
-indy_build_get_acceptance_mechanism_request(
+indy_build_get_acceptance_mechanisms_request(
                         submitter_did: *const c_char,
                         timestamp: i64,
                         version: *const c_char,
@@ -210,7 +210,7 @@ indy_prepare_payment_extra_with_acceptance_data(
 
 #### Sample
 ```
-acc_mech_request = indy_build_acceptance_mechanism_request(...)
+acc_mech_request = indy_build_acceptance_mechanisms_request(...)
 indy_sign_and_submit_request(..., acc_mech_request)
 
 txn_author_agrmnt_request = indy_build_txn_author_agreement_request(...)
