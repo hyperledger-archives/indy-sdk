@@ -370,6 +370,7 @@ public class Ledger extends IndyJava.API {
 	 *                     TRUSTEE
 	 *                     STEWARD
 	 *                     TRUST_ANCHOR
+	 *                     ENDORSER - equal to TRUST_ANCHOR that will be removed soon
 	 *                     NETWORK_MONITOR
 	 *                     empty string to reset role
 	 * @return A future resolving to a request result as json.
@@ -1451,7 +1452,7 @@ public class Ledger extends IndyJava.API {
 	}
 
 	/**
-	 * Builds a SET_TXN_AUTHR_AGRMT_AML request. Request to add a new acceptance mechanism for transaction author agreement.
+	 * Builds a SET_TXN_AUTHR_AGRMT_AML request. Request to add a new list of acceptance mechanisms for transaction author agreement.
 	 * Acceptance Mechanism is a description of the ways how the user may accept a transaction author agreement.
 	 *
 	 * EXPERIMENTAL
@@ -1469,7 +1470,7 @@ public class Ledger extends IndyJava.API {
 	 * @return A future resolving to a request result as json.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
-	public static CompletableFuture<String> buildAcceptanceMechanismRequest(
+	public static CompletableFuture<String> buildAcceptanceMechanismsRequest(
 			String submitterDid,
 			String aml,
 			String version,
@@ -1482,7 +1483,7 @@ public class Ledger extends IndyJava.API {
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
-		int result = LibIndy.api.indy_build_acceptance_mechanism_request(
+		int result = LibIndy.api.indy_build_acceptance_mechanisms_request(
 				commandHandle,
 				submitterDid,
 				aml,
@@ -1496,7 +1497,7 @@ public class Ledger extends IndyJava.API {
 	}
 
 	/**
-	 * Builds a GET_TXN_AUTHR_AGRMT_AML request. Request to get acceptance mechanisms from the ledger
+	 * Builds a GET_TXN_AUTHR_AGRMT_AML request. Request to get a list of  acceptance mechanisms from the ledger
 	 * valid for specified time or the latest one.
 	 *
 	 * EXPERIMENTAL
@@ -1510,7 +1511,7 @@ public class Ledger extends IndyJava.API {
 	 * @return A future resolving to a request result as json.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
-	public static CompletableFuture<String> buildGetAcceptanceMechanismRequest(
+	public static CompletableFuture<String> buildGetAcceptanceMechanismsRequest(
 			String submitterDid,
 			int timestamp,
 			String version) throws IndyException {
@@ -1518,7 +1519,7 @@ public class Ledger extends IndyJava.API {
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
-		int result = LibIndy.api.indy_build_get_acceptance_mechanism_request(
+		int result = LibIndy.api.indy_build_get_acceptance_mechanisms_request(
 				commandHandle,
 				submitterDid,
 				timestamp,

@@ -208,16 +208,16 @@
                                                     outRequest:(NSString **)resultJson;
 
 // MARK: - Acceptance mechanism
-- (NSError *)buildAcceptanceMechanismRequestWithSubmitterDid:(NSString *)submitterDid
-                                                         aml:(NSString *)aml
-                                                     version:(NSString *)version
-                                                  amlContext:(NSString *)amlContext
-                                                  outRequest:(NSString **)resultJson;
+- (NSError *)buildAcceptanceMechanismsRequestWithSubmitterDid:(NSString *)submitterDid
+                                                          aml:(NSString *)aml
+                                                      version:(NSString *)version
+                                                   amlContext:(NSString *)amlContext
+                                                   outRequest:(NSString **)resultJson;
 
-- (NSError *)buildGetAcceptanceMechanismRequestWithSubmitterDid:(NSString *)submitterDid
-                                                      timestamp:(NSNumber *)timestamp
-                                                        version:(NSString *)version
-                                                     outRequest:(NSString **)resultJson;
+- (NSError *)buildGetAcceptanceMechanismsRequestWithSubmitterDid:(NSString *)submitterDid
+                                                       timestamp:(NSNumber *)timestamp
+                                                         version:(NSString *)version
+                                                      outRequest:(NSString **)resultJson;
 
 // MARK: - Author Metadata
 - (NSError *)appendTxnAuthorAgreementAcceptanceToRequest:(NSString *)requestJson

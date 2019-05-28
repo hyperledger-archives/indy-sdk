@@ -91,7 +91,11 @@ pub fn prover_store_credential(wallet_handle: i32, cred_id: &str, cred_req_metad
     anoncreds::prover_store_credential(wallet_handle, Some(cred_id), cred_req_metadata_json, cred_json, cred_def_json, rev_reg_def_json).wait()
 }
 
-//TODO mark as depricated and use only in target tests
+pub fn prover_delete_credential(wallet_handle: i32, cred_id: &str) -> Result<(), IndyError> {
+    anoncreds::prover_delete_credential(wallet_handle, cred_id).wait()
+}
+
+//TODO mark as deprecated and use only in target tests
 pub fn prover_get_credentials(wallet_handle: i32, filter_json: &str) -> Result<String, IndyError> {
     anoncreds::prover_get_credentials(wallet_handle, Some(filter_json)).wait()
 }
@@ -112,7 +116,7 @@ pub fn prover_close_credentials_search(search_handle: i32) -> Result<(), IndyErr
     anoncreds::prover_close_credentials_search(search_handle).wait()
 }
 
-//TODO mark as depricated and use only in target tests
+//TODO mark as deprecated and use only in target tests
 pub fn prover_get_credentials_for_proof_req(wallet_handle: i32, proof_request_json: &str) -> Result<String, IndyError> {
     anoncreds::prover_get_credentials_for_proof_req(wallet_handle, proof_request_json).wait()
 }
@@ -762,8 +766,7 @@ pub fn tails_writer_config() -> String {
 pub fn init_common_wallet() -> (&'static str, &'static str, &'static str, &'static str) {
     lazy_static! {
                     static ref COMMON_WALLET_INIT: Once = ONCE_INIT;
-
-                }
+                 }
 
     unsafe {
         COMMON_WALLET_INIT.call_once(|| {
