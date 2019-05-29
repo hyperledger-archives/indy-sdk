@@ -96,7 +96,7 @@ pub fn delete_wallet(wallet_name: &str, wallet_type: Option<&str>, storage_confi
 }
 
 pub fn add_record(xtype: &str, id: &str, value: &str, tags: Option<&str>) -> VcxResult<()> {
-    trace!("add_record >>> xtype: {}, id: {}, value: {}, tags: {:?}", xtype, id, value, tags);
+    trace!("add_record >>> xtype: {}, id: {}, value: {}, tags: {:?}", secret!(&xtype), secret!(&id), secret!(&value), secret!(&tags));
 
     if settings::test_indy_mode_enabled() { return Ok(()); }
 
@@ -107,7 +107,7 @@ pub fn add_record(xtype: &str, id: &str, value: &str, tags: Option<&str>) -> Vcx
 
 
 pub fn get_record(xtype: &str, id: &str, options: &str) -> VcxResult<String> {
-    trace!("get_record >>> xtype: {}, id: {}, options: {}", xtype, id, options);
+    trace!("get_record >>> xtype: {}, id: {}, options: {}", secret!(&xtype), secret!(&id), options);
 
     if settings::test_indy_mode_enabled() {
         return Ok(r#"{"id":"123","type":"record type","value":"record value","tags":null}"#.to_string());
@@ -119,7 +119,7 @@ pub fn get_record(xtype: &str, id: &str, options: &str) -> VcxResult<String> {
 }
 
 pub fn delete_record(xtype: &str, id: &str) -> VcxResult<()> {
-    trace!("delete_record >>> xtype: {}, id: {}", xtype, id);
+    trace!("delete_record >>> xtype: {}, id: {}", secret!(&xtype), secret!(&id));
 
     if settings::test_indy_mode_enabled() { return Ok(()); }
 
@@ -130,7 +130,7 @@ pub fn delete_record(xtype: &str, id: &str) -> VcxResult<()> {
 
 
 pub fn update_record_value(xtype: &str, id: &str, value: &str) -> VcxResult<()> {
-    trace!("update_record_value >>> xtype: {}, id: {}, value: {}", xtype, id, value);
+    trace!("update_record_value >>> xtype: {}, id: {}, value: {}", secret!(&xtype), secret!(&id), secret!(&value));
 
     if settings::test_indy_mode_enabled() { return Ok(()); }
 

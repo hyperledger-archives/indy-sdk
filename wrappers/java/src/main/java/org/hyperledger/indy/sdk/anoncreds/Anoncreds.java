@@ -798,6 +798,36 @@ public class Anoncreds extends IndyJava.API {
 	}
 
 	/**
+	 * Deletes credential by given id.
+	 *
+	 * @param wallet A wallet.
+	 * @param credId Identifier by which requested credential is stored in the wallet
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<Void> proverDeleteCredential(
+			Wallet wallet,
+			String credId) throws IndyException {
+
+		ParamGuard.notNull(wallet, "wallet");
+		ParamGuard.notNullOrWhiteSpace(credId, "credId");
+
+		CompletableFuture<Void> future = new CompletableFuture<Void>();
+		int commandHandle = addFuture(future);
+
+		int walletHandle = wallet.getWalletHandle();
+
+		int result = LibIndy.api.indy_prover_delete_credential(
+				commandHandle,
+				walletHandle,
+				credId,
+				stringCb);
+
+		checkResult(future, result);
+
+		return future;
+	}
+
+	/**
 	 * Gets human readable credentials matching the given proof request.
 	 *
 	 * NOTE: This method is deprecated because immediately returns all fetched credentials.

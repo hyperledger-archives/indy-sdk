@@ -16,7 +16,7 @@ extern crate serde_json;
 extern crate byteorder;
 extern crate indyrs as indy;
 extern crate indyrs as api;
-extern crate indy_crypto;
+extern crate ursa;
 extern crate uuid;
 extern crate named_type;
 extern crate rmp_serde;
@@ -351,6 +351,103 @@ mod high_cases {
             assert_eq!(res_plugin, TEST_RES_STRING);
 
             utils::tear_down_with_wallet(wallet_handle);
+        }
+    }
+
+    mod author_agreement_acceptance_for_extra {
+        use super::*;
+
+        const TEXT: &str = "some agreement text";
+        const VERSION: &str = "1.0.0";
+        const HASH: &str = "050e52a57837fff904d3d059c8a123e3a04177042bf467db2b2c27abd8045d5e";
+        const ACCEPTANCE_MECH_TYPE: &str = "acceptance type 1";
+        const TIME_OF_ACCEPTANCE: u64 = 123456789;
+
+        fn _check_request_meta(extra: &str) {
+            let extra: serde_json::Value = serde_json::from_str(&extra).unwrap();
+
+            let expected_acceptance = json!({
+                "mechanism": ACCEPTANCE_MECH_TYPE,
+                "taaDigest": HASH,
+                "time": TIME_OF_ACCEPTANCE
+            });
+
+            assert_eq!(extra["taaAcceptance"], expected_acceptance);
+        }
+
+        #[test]
+        fn indy_prepare_payment_extra_with_acceptance_data_works_for_text_version() {
+            utils::setup();
+
+            let extra = payments::prepare_extra_with_acceptance_data(None,
+                                                                     Some(TEXT),
+                                                                     Some(VERSION),
+                                                                     None,
+                                                                     ACCEPTANCE_MECH_TYPE,
+                                                                     TIME_OF_ACCEPTANCE).unwrap();
+            _check_request_meta(&extra);
+
+            utils::tear_down();
+        }
+
+        #[test]
+        fn indy_prepare_payment_extra_with_acceptance_data_works_for_hash() {
+            utils::setup();
+
+            let extra = payments::prepare_extra_with_acceptance_data(None,
+                                                                     None,
+                                                                     None,
+                                                                     Some(HASH),
+                                                                     ACCEPTANCE_MECH_TYPE,
+                                                                     TIME_OF_ACCEPTANCE).unwrap();
+            _check_request_meta(&extra);
+
+            utils::tear_down();
+        }
+
+        #[test]
+        fn indy_prepare_payment_extra_with_acceptance_data_works_for_text_version_and_hash() {
+            utils::setup();
+
+            let extra = payments::prepare_extra_with_acceptance_data(None,
+                                                                     Some(TEXT),
+                                                                     Some(VERSION),
+                                                                     Some(HASH),
+                                                                     ACCEPTANCE_MECH_TYPE,
+                                                                     TIME_OF_ACCEPTANCE).unwrap();
+            _check_request_meta(&extra);
+
+            utils::tear_down();
+        }
+
+        #[test]
+        fn indy_prepare_payment_extra_with_acceptance_data_works_for_text_version_not_correspond_to_hash() {
+            utils::setup();
+
+            let res = payments::prepare_extra_with_acceptance_data(None,
+                                                                   Some("other text"),
+                                                                   Some("0.0.1"),
+                                                                   Some(HASH),
+                                                                   ACCEPTANCE_MECH_TYPE,
+                                                                   TIME_OF_ACCEPTANCE);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
+
+            utils::tear_down();
+        }
+
+        #[test]
+        fn indy_prepare_payment_extra_with_acceptance_data_works_for_invalid_request() {
+            utils::setup();
+
+            let res = payments::prepare_extra_with_acceptance_data(Some("Invalid extra string"),
+                                                                   None,
+                                                                   None,
+                                                                   Some(HASH),
+                                                                   ACCEPTANCE_MECH_TYPE,
+                                                                   TIME_OF_ACCEPTANCE);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
+
+            utils::tear_down();
         }
     }
 

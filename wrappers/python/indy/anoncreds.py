@@ -74,7 +74,7 @@ async def issuer_create_and_store_credential_def(wallet_handle: int,
 
     It is IMPORTANT for current version GET Schema from Ledger with correct seq_no to save compatibility with Ledger.
 
-    :param wallet_handle: wallet handler (created by open_wallet).
+    :param wallet_handle: wallet handle (created by open_wallet).
     :param issuer_did: a DID of the issuer signing cred_def transaction to the Ledger
     :param schema_json: credential schema as a json
     :param tag: allows to distinct between credential definitions for the same issuer and schema
@@ -149,7 +149,7 @@ async def issuer_create_and_store_revoc_reg(wallet_handle: int,
     revocation registry and intended to be distributed out of leger (REVOC_REG_DEF transaction will still contain uri and hash of tails).
     This call requires access to pre-configured blob storage writer instance handle that will allow to write generated tails.
 
-    :param wallet_handle: wallet handler (created by open_wallet).
+    :param wallet_handle: wallet handle (created by open_wallet).
     :param issuer_did: a DID of the issuer signing transaction to the Ledger
     :param revoc_def_type: revocation registry type (optional, default value depends on credential definition type). Supported types are:
         - 'CL_ACCUM': Type-3 pairing based accumulator. Default for 'CL' credential definition type
@@ -215,7 +215,7 @@ async def issuer_create_credential_offer(wallet_handle: int,
     credential request creation. Offer includes nonce and key correctness proof
     for authentication between protocol steps and integrity checking.
 
-    :param wallet_handle: wallet handler (created by open_wallet).
+    :param wallet_handle: wallet handle (created by open_wallet).
     :param cred_def_id: id of credential definition stored in the wallet
     :return:credential offer json:
      {
@@ -345,7 +345,7 @@ async def issuer_revoke_credential(wallet_handle: int,
     This call returns revoc registry delta as json file intended to be shared as REVOC_REG_ENTRY transaction.
     Note that it is possible to accumulate deltas to reduce ledger load.
 
-    :param wallet_handle: wallet handler (created by open_wallet).
+    :param wallet_handle: wallet handle (created by open_wallet).
     :param blob_storage_reader_handle: pre-configured blob storage reader instance handle that will allow
     to read revocation tails
     :param rev_reg_id: id of revocation registry stored in wallet
@@ -395,7 +395,7 @@ async def issuer_revoke_credential(wallet_handle: int,
 #     This call returns revoc registry delta as json file intended to be shared as REVOC_REG_ENTRY transaction.
 #     Note that it is possible to accumulate deltas to reduce ledger load.
 #
-#     :param wallet_handle: wallet handler (created by open_wallet).
+#     :param wallet_handle: wallet handle (created by open_wallet).
 #     :param blob_storage_reader_handle: pre-configured blob storage reader instance handle that will allow
 #     to read revocation tails
 #     :param rev_reg_id: id of revocation registry stored in wallet
@@ -471,7 +471,7 @@ async def prover_create_master_secret(wallet_handle: int,
     Creates a master secret with a given name and stores it in the wallet.
     The name must be unique.
 
-    :param wallet_handle: wallet handler (created by open_wallet).
+    :param wallet_handle: wallet handle (created by open_wallet).
     :param master_secret_name: (optional, if not present random one will be generated) new master id
     :return: id of generated master secret.
     """
@@ -510,7 +510,7 @@ async def prover_create_credential_req(wallet_handle: int,
     The master secret identified by the name must be already stored in the secure wallet (see prover_create_master_secret)
     The blinded master secret is a part of the credential request.
 
-    :param wallet_handle: wallet handler (created by open_wallet).
+    :param wallet_handle: wallet handle (created by open_wallet).
     :param prover_did: a DID of the prover
     :param cred_offer_json: credential offer as a json containing information about the issuer and a credential
     :param cred_def_json: credential definition json related to <cred_def_id> in <cred_offer_json>
@@ -588,7 +588,7 @@ async def prover_store_credential(wallet_handle: int,
             "attr::<attribute name>::value": <attribute raw value>,
         }
 
-    :param wallet_handle: wallet handler (created by open_wallet).
+    :param wallet_handle: wallet handle (created by open_wallet).
     :param cred_id: (optional, default is a random one) identifier by which credential will be stored in the wallet
     :param cred_req_metadata_json: a credential request metadata created by prover_create_credential_req
     :param cred_json: credential json received from issuer
@@ -637,7 +637,7 @@ async def prover_get_credential(wallet_handle: int,
     """
     Gets human readable credential by the given id.
 
-    :param wallet_handle: wallet handler (created by open_wallet).
+    :param wallet_handle: wallet handle (created by open_wallet).
     :param cred_id: Identifier by which requested credential is stored in the wallet
     :return:  credential json
      {
@@ -672,6 +672,35 @@ async def prover_get_credential(wallet_handle: int,
     return res
 
 
+async def prover_delete_credential(wallet_handle: int,
+                                cred_id: str) -> None:
+    """
+    Delete identified credential from wallet.
+
+    :param wallet_handle: wallet handle (created by open_wallet).
+    :param cred_id: identifier by which wallet stores credential to delete
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("prover_delete_credential: >>> wallet_handle: %r, cred_id: %r",
+                 wallet_handle,
+                 cred_id)
+
+    if not hasattr(prover_delete_credential, "cb"):
+        logger.debug("prover_delete_credential: Creating callback")
+        prover_delete_credential.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32))
+
+    c_wallet_handle = c_int32(wallet_handle)
+    c_cred_id = c_char_p(cred_id.encode('utf-8'))
+
+    await do_call('indy_prover_delete_credential',
+                        c_wallet_handle,
+                        c_cred_id,
+                        prover_delete_credential.cb)
+
+    logger.debug("prover_delete_credential: <<<")
+
+
 async def prover_get_credentials(wallet_handle: int,
                                  filter_json: str) -> str:
     """
@@ -682,7 +711,7 @@ async def prover_get_credentials(wallet_handle: int,
     NOTE: This method is deprecated because immediately returns all fetched credentials.
     Use <prover_search_credentials> to fetch records by small batches.
 
-    :param wallet_handle: wallet handler (created by open_wallet).
+    :param wallet_handle: wallet handle (created by open_wallet).
     :param filter_json: filter for credentials
         {
             "schema_id": string, (Optional)
@@ -734,7 +763,7 @@ async def prover_search_credentials(wallet_handle: int,
     Instead of immediately returning of fetched credentials this call returns search_handle that can be used later
     to fetch records by small batches (with prover_credentials_search_fetch_records).
 
-    :param wallet_handle: wallet handler (created by open_wallet).
+    :param wallet_handle: wallet handle (created by open_wallet).
     :param query_json: wql style filter for credentials searching based on tags.
         where wql query: indy-sdk/docs/design/011-wallet-query-language/README.md
     :return:
@@ -839,7 +868,7 @@ async def prover_get_credentials_for_proof_req(wallet_handle: int,
     NOTE: This method is deprecated because immediately returns all fetched credentials.
     Use <prover_search_credentials_for_proof_req> to fetch records by small batches.
 
-    :param wallet_handle: wallet handler (created by open_wallet).
+    :param wallet_handle: wallet handle (created by open_wallet).
     :param proof_request_json: proof request json
         {
             "name": string,
@@ -940,7 +969,7 @@ async def prover_search_credentials_for_proof_req(wallet_handle: int,
     Instead of immediately returning of fetched credentials this call returns search_handle that can be used later
     to fetch records by small batches (with prover_fetch_credentials_for_proof_req).
 
-    :param wallet_handle: wallet handler (created by open_wallet).
+    :param wallet_handle: wallet handle (created by open_wallet).
     :param proof_request_json: proof request json
         {
             "name": string,
@@ -1086,7 +1115,7 @@ async def prover_create_proof(wallet_handle: int,
     The proof request also contains nonce.
     The proof contains either proof or self-attested attribute value for each requested attribute.
 
-    :param wallet_handle: wallet handler (created by open_wallet).
+    :param wallet_handle: wallet handle (created by open_wallet).
     :param proof_req_json: proof request json
         {
             "name": string,
