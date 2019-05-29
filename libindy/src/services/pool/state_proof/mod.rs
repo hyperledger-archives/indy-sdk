@@ -418,16 +418,16 @@ fn _parse_reply_for_multi_sp(_json_msg: &SJsonValue, data: Option<&str>, parsed_
             let multi_signature = parsed_data["stateProofFrom"]["multi_signature"].clone();
 
             let value_str = if !parsed_data["value"]["accum_from"].is_null() {
-                json!({
+                Some(json!({
                     "lsn": parsed_data["value"]["accum_from"]["seqNo"],
                     "lut": parsed_data["value"]["accum_from"]["txnTime"],
                     "val": parsed_data["value"]["accum_from"],
-                }).to_string()
+                }).to_string())
             } else {
-                return Err("No accum_from value".to_string());
+                None
             };
 
-            (proof.to_owned(), root_hash.to_owned(), multi_signature, Some(value_str))
+            (proof.to_owned(), root_hash.to_owned(), multi_signature, value_str)
         }
         constants::GET_REVOC_REG_DELTA => return Ok(None),
         _ => {
