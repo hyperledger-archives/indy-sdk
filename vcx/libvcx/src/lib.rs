@@ -367,7 +367,7 @@ mod tests {
 
         // AS INSTITUTION VALIDATE PROOF
         set_institution();
-        proof::update_state(proof_req_handle).unwrap();
+        proof::update_state(proof_req_handle, None).unwrap();
         assert_eq!(proof::get_proof_state(proof_req_handle).unwrap(), ProofStateType::ProofValidated as u32);
         println!("proof validated!");
         let wallet = ::utils::libindy::payments::get_wallet_token_info().unwrap();
@@ -389,7 +389,7 @@ mod tests {
 
         // AS INSTITUTION VALIDATE REVOKED PROOF
         set_institution();
-        proof::update_state(proof_req_handle2).unwrap();
+        proof::update_state(proof_req_handle2, None).unwrap();
         assert_eq!(proof::get_proof_state(proof_req_handle2).unwrap(), ProofStateType::ProofInvalid as u32);
         println!("proof invalid - revoked!");
 
@@ -404,7 +404,7 @@ mod tests {
 
         // AS INSTITUTION VALIDATE REVOKED PROOF - VALID
         set_institution();
-        proof::update_state(proof_req_handle3).unwrap();
+        proof::update_state(proof_req_handle3, None).unwrap();
         assert_eq!(proof::get_proof_state(proof_req_handle3).unwrap(), ProofStateType::ProofValidated as u32);
         println!("proof valid for specified interval!");
 
