@@ -12,16 +12,21 @@ pub enum AuthAction {
 /**
    Enum of the constraint type within the GAT_AUTH_RULE result data
     # parameters
-   ROLE - The final constraint
+   Role - The final constraint
    Combination - Combine multiple constraints all of them must be met
-   Empty - action is forbidden
+   Forbidden - action is forbidden
 */
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
-#[serde(untagged)]
+#[serde(tag = "constraint_id")]
 pub enum Constraint {
-    CombinationConstraint(CombinationConstraint),
+    #[serde(rename = "OR")]
+    OrConstraint(CombinationConstraint),
+    #[serde(rename = "AND")]
+    AndConstraint(CombinationConstraint),
+    #[serde(rename = "ROLE")]
     RoleConstraint(RoleConstraint),
-    EmptyConstraint(EmptyConstraint),
+    #[serde(rename = "FORBIDDEN")]
+    ForbiddenConstraint(ForbiddenConstraint),
 }
 
 /**
@@ -34,7 +39,6 @@ pub enum Constraint {
 */
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct RoleConstraint {
-    pub constraint_id: String,
     pub sig_count: Option<u32>,
     pub role: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -50,17 +54,15 @@ pub struct RoleConstraint {
 */
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct CombinationConstraint {
-    pub constraint_id: String,
     pub auth_constraints: Vec<Constraint>
 }
 
 /**
-   The empty constraint means that action is forbidden
+   The forbidden constraint means that action is forbidden
 */
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 #[serde(deny_unknown_fields)]
-pub struct EmptyConstraint {
-}
+pub struct ForbiddenConstraint {}
 
 #[derive(Serialize, PartialEq, Debug)]
 #[serde(untagged)]
