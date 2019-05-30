@@ -1095,7 +1095,7 @@ extern "C" {
                                                                               const char*   request_json)
                                                         );
 
-    /// Builds a SET_TXN_AUTHR_AGRMT_AML request. Request to add a new acceptance mechanism for transaction author agreement.
+    /// Builds a SET_TXN_AUTHR_AGRMT_AML request. Request to add a new list of acceptance mechanisms for transaction author agreement.
     /// Acceptance Mechanism is a description of the ways how the user may accept a transaction author agreement.
     ///
     /// EXPERIMENTAL
@@ -1118,18 +1118,18 @@ extern "C" {
     ///
     /// #Errors
     /// Common*
-    extern indy_error_t indy_build_acceptance_mechanism_request(indy_handle_t command_handle,
-                                                                const char *  submitter_did,
-                                                                const char *  aml,
-                                                                const char *  version,
-                                                                const char *  aml_context,
+    extern indy_error_t indy_build_acceptance_mechanisms_request(indy_handle_t command_handle,
+                                                                 const char *  submitter_did,
+                                                                 const char *  aml,
+                                                                 const char *  version,
+                                                                 const char *  aml_context,
 
-                                                                void           (*cb)(indy_handle_t command_handle_,
-                                                                                     indy_error_t  err,
-                                                                                     const char*   request_json)
-                                                               );
+                                                                 void           (*cb)(indy_handle_t command_handle_,
+                                                                                      indy_error_t  err,
+                                                                                      const char*   request_json)
+                                                                );
 
-    /// Builds a GET_TXN_AUTHR_AGRMT_AML request. Request to get acceptance mechanisms from the ledger
+    /// Builds a GET_TXN_AUTHR_AGRMT_AML request. Request to get a list of  acceptance mechanisms from the ledger
     /// valid for specified time or the latest one.
     ///
     /// EXPERIMENTAL
@@ -1148,15 +1148,15 @@ extern "C" {
     ///
     /// #Errors
     /// Common*
-    extern indy_error_t indy_build_get_acceptance_mechanism_request(indy_handle_t command_handle,
-                                                                    const char *  submitter_did,
-                                                                    indy_i64_t  timestamp,
-                                                                    const char *  version,
+    extern indy_error_t indy_build_get_acceptance_mechanisms_request(indy_handle_t command_handle,
+                                                                     const char *  submitter_did,
+                                                                     indy_i64_t  timestamp,
+                                                                     const char *  version,
 
-                                                                    void           (*cb)(indy_handle_t command_handle_,
-                                                                                         indy_error_t  err,
-                                                                                         const char*   request_json)
-                                                                   );
+                                                                     void           (*cb)(indy_handle_t command_handle_,
+                                                                                          indy_error_t  err,
+                                                                                          const char*   request_json)
+                                                                    );
 
     /// Append transaction author agreement acceptance data to a request.
     /// This function should be called before signing and sending a request

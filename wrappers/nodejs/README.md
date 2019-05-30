@@ -1845,10 +1845,10 @@ Null data or empty JSON are acceptable here. In this case, ledger will return th
 
 Errors: `Common*`
 
-#### buildAcceptanceMechanismRequest \( submitterDid, aml, version, amlContext \) -&gt; request
+#### buildAcceptanceMechanismsRequest \( submitterDid, aml, version, amlContext \) -&gt; request
 
 Builds a SET_TXN_AUTHR_AGRMT_AML request. 
-Request to add a new acceptance mechanism for transaction author agreement.
+Request to add a new list of acceptance mechanisms for transaction author agreement.
 Acceptance Mechanism is a description of the ways how the user may accept a transaction author agreement.
 
 EXPERIMENTAL
@@ -1869,10 +1869,10 @@ EXPERIMENTAL
 
 Errors: `Common*`
 
-#### buildGetAcceptanceMechanismRequest \( submitterDid, timestamp \) -&gt; request
+#### buildGetAcceptanceMechanismsRequest \( submitterDid, timestamp \) -&gt; request
 
 Builds a GET_TXN_AUTHR_AGRMT_AML request. 
-Request to get acceptance mechanisms from the ledger valid for specified time or the latest one.
+Request to get a list of  acceptance mechanisms from the ledger valid for specified time or the latest one.
 
 EXPERIMENTAL
 

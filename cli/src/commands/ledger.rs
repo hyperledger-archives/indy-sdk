@@ -1694,7 +1694,7 @@ pub mod aml_command {
             (None, None) => return Err(println_err!("Either `aml` or `file` parameter must be specified"))
         };
 
-        let mut request = Ledger::build_acceptance_mechanism_request(&submitter_did, &aml, &version, context)
+        let mut request = Ledger::build_acceptance_mechanisms_request(&submitter_did, &aml, &version, context)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
 
         let payment_method = set_request_fees(&mut request, wallet_handle, Some(&submitter_did), &fees_inputs, &fees_outputs, extra)?;
