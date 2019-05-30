@@ -11,7 +11,7 @@ use ffi::{ResponseEmptyCB,
           ResponseI32CB};
 
 use futures::Future;
-use ffi::{CommandHandle, PoolHandle};
+use {CommandHandle, PoolHandle};
 
 /// Creates a new local pool ledger configuration that can be used later to connect pool nodes.
 ///

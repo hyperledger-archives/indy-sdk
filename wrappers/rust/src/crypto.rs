@@ -12,7 +12,7 @@ use std::ptr::null;
 
 use {ErrorCode, IndyError};
 use utils::callbacks::{ClosureHandler, ResultHandler};
-use ffi::{WalletHandle, CommandHandle};
+use {WalletHandle, CommandHandle};
 
 /// Creates key pair in wallet
 /// # Arguments
