@@ -8,7 +8,7 @@ use utils::callbacks::{ClosureHandler, ResultHandler};
 
 use ffi::cache;
 use ffi::{ResponseEmptyCB, ResponseStringCB};
-use ffi::{WalletHandle, CommandHandle, PoolHandle};
+use {WalletHandle, CommandHandle, PoolHandle};
 
 /// Get schema json data for specified schema id.
 /// If data is present inside of cache, cached data is returned.
