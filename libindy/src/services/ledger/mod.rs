@@ -635,8 +635,8 @@ impl LedgerService {
         Ok(request)
     }
 
-    pub fn build_acceptance_mechanism_request(&self, identifier: &str, aml: AcceptanceMechanisms, version: &str, aml_context: Option<&str>) -> IndyResult<String> {
-        info!("build_acceptance_mechanism_request >>> identifier: {:?}, aml {:?}, version {:?}, aml_context {:?}", identifier, aml, version, aml_context);
+    pub fn build_acceptance_mechanisms_request(&self, identifier: &str, aml: AcceptanceMechanisms, version: &str, aml_context: Option<&str>) -> IndyResult<String> {
+        info!("build_acceptance_mechanisms_request >>> identifier: {:?}, aml {:?}, version {:?}, aml_context {:?}", identifier, aml, version, aml_context);
 
         let operation = SetAcceptanceMechanismOperation::new(aml,
                                                              version.to_string(),
@@ -645,13 +645,13 @@ impl LedgerService {
         let request = Request::build_request(Some(identifier), operation)
             .to_indy(IndyErrorKind::InvalidState, "TXN_AUTHR_AGRMT_AML request json is invalid")?;
 
-        info!("build_acceptance_mechanism_request <<< request: {:?}", request);
+        info!("build_acceptance_mechanisms_request <<< request: {:?}", request);
 
         Ok(request)
     }
 
-    pub fn build_get_acceptance_mechanism_request(&self, identifier: Option<&str>, timestamp: Option<u64>, version: Option<&str>) -> IndyResult<String> {
-        info!("build_get_acceptance_mechanism_request >>> identifier: {:?}, timestamp {:?}, version {:?}", identifier, timestamp, version);
+    pub fn build_get_acceptance_mechanisms_request(&self, identifier: Option<&str>, timestamp: Option<u64>, version: Option<&str>) -> IndyResult<String> {
+        info!("build_get_acceptance_mechanisms_request >>> identifier: {:?}, timestamp {:?}, version {:?}", identifier, timestamp, version);
 
         if timestamp.is_some() && version.is_some() {
             return Err(err_msg(IndyErrorKind::InvalidStructure, "timestamp and version cannot be specified together."));
@@ -662,7 +662,7 @@ impl LedgerService {
         let request = Request::build_request(identifier, operation)
             .to_indy(IndyErrorKind::InvalidState, "GET_TXN_AUTHR_AGRMT_AML request json is invalid")?;
 
-        info!("build_get_acceptance_mechanism_request <<< request: {:?}", request);
+        info!("build_get_acceptance_mechanisms_request <<< request: {:?}", request);
 
         Ok(request)
     }
@@ -1346,7 +1346,7 @@ mod tests {
         }
 
         #[test]
-        fn build_acceptance_mechanism_request() {
+        fn build_acceptance_mechanisms_request() {
             let ledger_service = LedgerService::new();
 
             let expected_result = json!({
@@ -1355,12 +1355,12 @@ mod tests {
                 "version":  VERSION,
             });
 
-            let request = ledger_service.build_acceptance_mechanism_request(IDENTIFIER, _aml(), VERSION, None).unwrap();
+            let request = ledger_service.build_acceptance_mechanisms_request(IDENTIFIER, _aml(), VERSION, None).unwrap();
             check_request(&request, expected_result);
         }
 
         #[test]
-        fn build_acceptance_mechanism_request_with_context() {
+        fn build_acceptance_mechanisms_request_with_context() {
             let ledger_service = LedgerService::new();
 
             let expected_result = json!({
@@ -1370,24 +1370,24 @@ mod tests {
                 "amlContext": CONTEXT.to_string(),
             });
 
-            let request = ledger_service.build_acceptance_mechanism_request(IDENTIFIER, _aml(), VERSION, Some(CONTEXT)).unwrap();
+            let request = ledger_service.build_acceptance_mechanisms_request(IDENTIFIER, _aml(), VERSION, Some(CONTEXT)).unwrap();
             check_request(&request, expected_result);
         }
 
         #[test]
-        fn build_get_acceptance_mechanism_request() {
+        fn build_get_acceptance_mechanisms_request() {
             let ledger_service = LedgerService::new();
 
             let expected_result = json!({
                 "type": GET_TXN_AUTHR_AGRMT_AML,
             });
 
-            let request = ledger_service.build_get_acceptance_mechanism_request(None, None, None).unwrap();
+            let request = ledger_service.build_get_acceptance_mechanisms_request(None, None, None).unwrap();
             check_request(&request, expected_result);
         }
 
         #[test]
-        fn build_get_acceptance_mechanism_request_for_timestamp() {
+        fn build_get_acceptance_mechanisms_request_for_timestamp() {
             let ledger_service = LedgerService::new();
 
             let expected_result = json!({
@@ -1395,12 +1395,12 @@ mod tests {
                 "timestamp": TIMESTAMP,
             });
 
-            let request = ledger_service.build_get_acceptance_mechanism_request(None, Some(TIMESTAMP), None).unwrap();
+            let request = ledger_service.build_get_acceptance_mechanisms_request(None, Some(TIMESTAMP), None).unwrap();
             check_request(&request, expected_result);
         }
 
         #[test]
-        fn build_get_acceptance_mechanism_request_for_version() {
+        fn build_get_acceptance_mechanisms_request_for_version() {
             let ledger_service = LedgerService::new();
 
             let expected_result = json!({
@@ -1408,15 +1408,15 @@ mod tests {
                 "version": VERSION,
             });
 
-            let request = ledger_service.build_get_acceptance_mechanism_request(None, None, Some(VERSION)).unwrap();
+            let request = ledger_service.build_get_acceptance_mechanisms_request(None, None, Some(VERSION)).unwrap();
             check_request(&request, expected_result);
         }
 
         #[test]
-        fn build_get_acceptance_mechanism_request_for_timestamp_and_version() {
+        fn build_get_acceptance_mechanisms_request_for_timestamp_and_version() {
             let ledger_service = LedgerService::new();
 
-            let res = ledger_service.build_get_acceptance_mechanism_request(None, Some(TIMESTAMP), Some(VERSION));
+            let res = ledger_service.build_get_acceptance_mechanisms_request(None, Some(TIMESTAMP), Some(VERSION));
             assert_kind!(IndyErrorKind::InvalidStructure, res);
         }
     }
