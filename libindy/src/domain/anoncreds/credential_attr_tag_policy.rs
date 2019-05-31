@@ -5,10 +5,6 @@ use serde::de::{Deserializer, Deserialize};
 
 use named_type::NamedType;
 
-fn canon(attr: &str) -> String {
-    attr.replace(" ", "").to_lowercase()
-}
-
 #[derive(Debug, NamedType)]
 pub struct CredentialAttrTagPolicy {
     pub taggable: HashSet<String>
@@ -16,14 +12,14 @@ pub struct CredentialAttrTagPolicy {
 
 impl CredentialAttrTagPolicy {
     pub fn is_taggable(&self, attr_name: &str) -> bool {
-        self.taggable.contains(canon(attr_name).as_str())
+        self.taggable.contains(&attr_name.to_string().replace(" ", "").to_lowercase())
     }
 }
 
 impl From<Vec<String>> for CredentialAttrTagPolicy {
     fn from(taggables: Vec<String>) -> Self {
         CredentialAttrTagPolicy {
-            taggable: taggables.into_iter().map(|a| canon(a.as_str())).collect()
+            taggable: taggables.into_iter().map(|a| a.replace(" ", "").to_lowercase()).collect()
         }
     }
 }

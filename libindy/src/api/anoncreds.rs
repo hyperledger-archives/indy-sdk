@@ -739,6 +739,8 @@ pub extern fn indy_prover_create_credential_req(command_handle: CommandHandle,
 /// Writes a non-secret record marking attributes to tag, and optionally
 /// updates tags on existing credentials on the credential definition to match.
 ///
+/// EXPERIMENTAL
+///
 /// The following tags are always present on write:
 ///     {
 ///         "schema_id": <credential schema id>,
@@ -808,6 +810,8 @@ pub extern fn indy_prover_set_credential_attr_tag_policy(command_handle: Command
 }
 
 /// Get credential attribute tagging policy by credential definition id.
+///
+/// EXPERIMENTAL
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.

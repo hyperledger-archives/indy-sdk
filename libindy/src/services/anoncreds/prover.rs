@@ -297,13 +297,9 @@ impl Prover {
         credential.values
             .iter()
             .for_each(|(attr, values)| {
-                match catpol {
-                    Some(cp) if !cp.is_taggable(attr.as_str()) => {  // abstain for attrs policy marks untaggable
-                    }
-                    _ => {
-                        res.insert(format!("attr::{}::marker", attr_common_view(&attr)), ATTRIBUTE_EXISTENCE_MARKER.to_string());
-                        res.insert(format!("attr::{}::value", attr_common_view(&attr)), values.raw.clone());
-                    }
+                if catpol.map(|cp| cp.is_taggable(attr.as_str())).unwrap_or(true) {  // abstain for attrs policy marks untaggable
+                    res.insert(format!("attr::{}::marker", attr_common_view(&attr)), ATTRIBUTE_EXISTENCE_MARKER.to_string());
+                    res.insert(format!("attr::{}::value", attr_common_view(&attr)), values.raw.clone());
                 }
             });
 
