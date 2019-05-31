@@ -40,6 +40,22 @@ use std::ffi::CStr;
 
 use failure::{Backtrace, Fail};
 
+pub use ffi::{
+    IndyHandle,
+    CommandHandle,
+    WalletHandle,
+    PoolHandle,
+    SearchHandle,
+    RecordHandle,
+    TailWriterHandle,
+    StorageHandle,
+    BlobStorageReaderHandle,
+    BlobStorageReaderCfgHandle,
+    MetadataHandle,
+    Timeout,
+    TailsWriterHandle,
+};
+
 /// Set libindy runtime configuration. Can be optionally called to change current params.
 ///
 /// # Arguments

@@ -10,7 +10,7 @@ use ffi::{ResponseStringCB,
           ResponseStringStringCB};
 
 use utils::callbacks::{ClosureHandler, ResultHandler};
-use ffi::{WalletHandle, CommandHandle};
+use {WalletHandle, CommandHandle};
 
 /// Create the payment address for specified payment method
 ///
