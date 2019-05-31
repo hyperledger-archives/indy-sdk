@@ -13,7 +13,8 @@ pub enum AuthAction {
    Enum of the constraint type within the GAT_AUTH_RULE result data
     # parameters
    Role - The final constraint
-   Combination - Combine multiple constraints all of them must be met
+   And - Combine multiple constraints all of them must be met
+   Or - Combine multiple constraints any of them must be met
    Forbidden - action is forbidden
 */
 #[derive(Serialize, Deserialize, PartialEq, Debug)]

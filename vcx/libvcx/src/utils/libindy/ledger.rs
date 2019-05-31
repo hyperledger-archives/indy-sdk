@@ -190,8 +190,9 @@ pub mod auth_rule {
     /**
        Enum of the constraint type within the GAT_AUTH_RULE result data
         # parameters
-       ROLE - The final constraint
-       Combination - Combine multiple constraints all of them must be met
+       Role - The final constraint
+       And - Combine multiple constraints all of them must be met
+       Or - Combine multiple constraints any of them must be met
        Forbidden - action is forbidden
    */
     #[derive(Serialize, Deserialize, Debug, Clone)]
