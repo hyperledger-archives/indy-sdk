@@ -579,7 +579,7 @@ mod medium_cases {
 
         #[test]
         fn indy_open_wallet_works_for_two_wallets_with_same_ids_but_different_paths() {
-            utils::setup();
+            utils::setup("indy_open_wallet_works_for_two_wallets_with_same_ids_but_different_paths");
 
             let wallet_config_1 = json!({
                 "id": "indy_open_wallet_works_for_two_wallets_with_same_ids_but_different_paths",
@@ -589,7 +589,7 @@ mod medium_cases {
                 "id": "indy_open_wallet_works_for_two_wallets_with_same_ids_but_different_paths",
                 "storage_type": "default",
                 "storage_config": {
-                    "path": _custom_path(),
+                    "path": _custom_path("indy_open_wallet_works_for_two_wallets_with_same_ids_but_different_paths"),
                 }
             }).to_string();
 
@@ -605,7 +605,7 @@ mod medium_cases {
             wallet::delete_wallet(&wallet_config_1, WALLET_CREDENTIALS).unwrap();
             wallet::delete_wallet(&wallet_config_2, WALLET_CREDENTIALS).unwrap();
 
-            utils::tear_down();
+            utils::tear_down("indy_open_wallet_works_for_two_wallets_with_same_ids_but_different_paths");
         }
 
         #[test]

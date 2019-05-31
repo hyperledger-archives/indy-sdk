@@ -1078,7 +1078,7 @@ mod tests {
 
     #[test]
     fn wallet_service_open_wallet_works_for_two_wallets_with_same_ids_but_different_paths() {
-        _cleanup();
+        _cleanup("wallet_service_open_wallet_works_for_two_wallets_with_same_ids_but_different_paths");
 
         let wallet_service = WalletService::new();
 

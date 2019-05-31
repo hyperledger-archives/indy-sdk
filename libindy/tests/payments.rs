@@ -379,7 +379,7 @@ mod high_cases {
 
         #[test]
         fn indy_prepare_payment_extra_with_acceptance_data_works_for_text_version() {
-            utils::setup();
+            let (wallet_handle, wallet_config) = setup("indy_prepare_payment_extra_with_acceptance_data_works_for_text_version");
 
             let extra = payments::prepare_extra_with_acceptance_data(None,
                                                                      Some(TEXT),
@@ -389,12 +389,12 @@ mod high_cases {
                                                                      TIME_OF_ACCEPTANCE).unwrap();
             _check_request_meta(&extra);
 
-            utils::tear_down();
+            utils::tear_down_with_wallet(wallet_handle, "indy_prepare_payment_extra_with_acceptance_data_works_for_text_version", &wallet_config);
         }
 
         #[test]
         fn indy_prepare_payment_extra_with_acceptance_data_works_for_hash() {
-            utils::setup();
+            let (wallet_handle, wallet_config) = setup("indy_prepare_payment_extra_with_acceptance_data_works_for_hash");
 
             let extra = payments::prepare_extra_with_acceptance_data(None,
                                                                      None,
@@ -404,12 +404,12 @@ mod high_cases {
                                                                      TIME_OF_ACCEPTANCE).unwrap();
             _check_request_meta(&extra);
 
-            utils::tear_down();
+            utils::tear_down_with_wallet(wallet_handle, "indy_prepare_payment_extra_with_acceptance_data_works_for_hash", &wallet_config);
         }
 
         #[test]
         fn indy_prepare_payment_extra_with_acceptance_data_works_for_text_version_and_hash() {
-            utils::setup();
+            let (wallet_handle, wallet_config) = setup("indy_prepare_payment_extra_with_acceptance_data_works_for_text_version_and_hash");
 
             let extra = payments::prepare_extra_with_acceptance_data(None,
                                                                      Some(TEXT),
@@ -419,12 +419,12 @@ mod high_cases {
                                                                      TIME_OF_ACCEPTANCE).unwrap();
             _check_request_meta(&extra);
 
-            utils::tear_down();
+            utils::tear_down_with_wallet(wallet_handle, "indy_prepare_payment_extra_with_acceptance_data_works_for_text_version_and_hash", &wallet_config);
         }
 
         #[test]
         fn indy_prepare_payment_extra_with_acceptance_data_works_for_text_version_not_correspond_to_hash() {
-            utils::setup();
+            let (wallet_handle, wallet_config) = setup("indy_prepare_payment_extra_with_acceptance_data_works_for_text_version_not_correspond_to_hash");
 
             let res = payments::prepare_extra_with_acceptance_data(None,
                                                                    Some("other text"),
@@ -434,12 +434,12 @@ mod high_cases {
                                                                    TIME_OF_ACCEPTANCE);
             assert_code!(ErrorCode::CommonInvalidStructure, res);
 
-            utils::tear_down();
+            utils::tear_down_with_wallet(wallet_handle, "indy_prepare_payment_extra_with_acceptance_data_works_for_text_version_not_correspond_to_hash", &wallet_config);
         }
 
         #[test]
         fn indy_prepare_payment_extra_with_acceptance_data_works_for_invalid_request() {
-            utils::setup();
+            let (wallet_handle, wallet_config) = setup("indy_prepare_payment_extra_with_acceptance_data_works_for_invalid_request");
 
             let res = payments::prepare_extra_with_acceptance_data(Some("Invalid extra string"),
                                                                    None,
@@ -449,7 +449,7 @@ mod high_cases {
                                                                    TIME_OF_ACCEPTANCE);
             assert_code!(ErrorCode::CommonInvalidStructure, res);
 
-            utils::tear_down();
+            utils::tear_down_with_wallet(wallet_handle, "indy_prepare_payment_extra_with_acceptance_data_works_for_invalid_request", &wallet_config);
         }
     }
 

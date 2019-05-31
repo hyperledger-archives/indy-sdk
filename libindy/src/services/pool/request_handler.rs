@@ -1329,7 +1329,7 @@ pub mod tests {
             set_freshness_threshold(300);
             add_state_proof_parser();
 
-            let mut request_handler = _request_handler(2, 4);
+            let mut request_handler = _request_handler("request_handler_process_reply_event_from_single_state_works_for_state_proof_from_past", 2, 4);
             request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None, (None, Some(_get_cur_time() - 400)))));
 
             {

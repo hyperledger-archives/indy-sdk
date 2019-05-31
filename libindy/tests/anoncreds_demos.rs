@@ -143,10 +143,6 @@ mod demos {
         wallet::close_and_delete_wallet(prover_wallet_handle, &prover_wallet_config).unwrap();
 
         utils::tear_down("anoncreds_works_for_single_issuer_single_prover");
-        wallet::close_wallet(issuer_wallet_handle).unwrap();
-        wallet::close_wallet(prover_wallet_handle).unwrap();
-
-        utils::tear_down();
     }
 
     #[test]
@@ -2057,10 +2053,10 @@ mod demos {
     #[cfg(feature = "revocation_tests")]
     #[test]
     fn anoncreds_works_for_issuance_by_demand_revocation_strategy_for_revoke_not_issued_credential_id() {
-        utils::setup();
+        utils::setup("anoncreds_works_for_issuance_by_demand_revocation_strategy_for_revoke_not_issued_credential_id");
 
         //1. Issuer creates wallet, gets wallet handle
-        let issuer_wallet_handle = wallet::create_and_open_default_wallet().unwrap();
+        let (issuer_wallet_handle, issuer_wallet_config) = wallet::create_and_open_default_wallet("anoncreds_works_for_issuance_by_demand_revocation_strategy_for_revoke_not_issued_credential_id").unwrap();
 
         //2. Issuer creates schema
         let (_, schema_json) = anoncreds::issuer_create_schema(ISSUER_DID,
@@ -2104,10 +2100,10 @@ mod demos {
     #[cfg(feature = "revocation_tests")]
     #[test]
     fn anoncreds_works_for_issuance_by_default_revocation_strategy_for_revoke_not_issued_credential_id() {
-        utils::setup();
+        utils::setup("anoncreds_works_for_issuance_by_default_revocation_strategy_for_revoke_not_issued_credential_id");
 
         //1. Issuer creates wallet, gets wallet handle
-        let issuer_wallet_handle = wallet::create_and_open_default_wallet().unwrap();
+        let (issuer_wallet_handle, issuer_wallet_config) = wallet::create_and_open_default_wallet("anoncreds_works_for_issuance_by_default_revocation_strategy_for_revoke_not_issued_credential_id").unwrap();
 
         //2 Issuer creates Schema, Credential Definition and Revocation Registry
         let (_, _,
@@ -2263,13 +2259,13 @@ mod demos {
 
     #[test]
     fn anoncreds_works_for_credential_deletion() {
-        utils::setup();
+        utils::setup("anoncreds_works_for_credential_deletion");
 
         //1. Create Issuer wallet, gets wallet handle
-        let issuer_wallet_handle = wallet::create_and_open_default_wallet().unwrap();
+        let (issuer_wallet_handle, issuer_wallet_config) = wallet::create_and_open_default_wallet("FIXMEname").unwrap();
 
         //2. Create Prover wallet, gets wallet handle
-        let prover_wallet_handle = wallet::create_and_open_default_wallet().unwrap();
+        let (prover_wallet_handle, prover_wallet_config) = wallet::create_and_open_default_wallet("FIXMEname").unwrap();
 
         //3. Issuer creates Schema and Credential Definition
         let (_schema_id, _schema_json, cred_def_id, cred_def_json) = anoncreds::multi_steps_issuer_preparation(issuer_wallet_handle,
@@ -2300,9 +2296,9 @@ mod demos {
         cred = anoncreds::prover_get_credential(prover_wallet_handle, CREDENTIAL1_ID);
         assert!(cred.is_err());
 
-        wallet::close_wallet(issuer_wallet_handle).unwrap();
-        wallet::close_wallet(prover_wallet_handle).unwrap();
+        wallet::close_and_delete_wallet(issuer_wallet_handle, &issuer_wallet_config).unwrap();
+        wallet::close_and_delete_wallet(prover_wallet_handle, &prover_wallet_config).unwrap();
 
-        utils::tear_down();
+        utils::tear_down("anoncreds_works_for_credential_deletion");
     }
 }

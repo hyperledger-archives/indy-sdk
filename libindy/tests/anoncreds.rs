@@ -38,8 +38,7 @@ use utils::domain::anoncreds::credential_definition::CredentialDefinition;
 use utils::domain::anoncreds::credential::CredentialInfo;
 use utils::domain::anoncreds::credential_for_proof_request::{CredentialsForProofRequest, RequestedCredential};
 use utils::domain::anoncreds::proof::Proof;
-use utils::domain::anoncreds::revocation_state::RevocationState;
-use utils::domain::anoncreds::revocation_registry::RevocationRegistry;
+use utils::domain::anoncreds::proof_request::{AttributeInfo, ProofRequest};
 
 use std::collections::HashSet;
 

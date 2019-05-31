@@ -295,7 +295,7 @@ mod high_cases {
 
         #[test]
         fn indy_multi_sign_request_works_for_start_from_single_signature() {
-            let wallet_handle = utils::setup_with_wallet();
+            let (wallet_handle, wallet_config) = utils::setup_with_wallet("indy_multi_sign_request_works_for_start_from_single_signature");
 
             let (did, _) = did::create_and_store_my_did(wallet_handle, Some(TRUSTEE_SEED)).unwrap();
             let (did2, _) = did::create_and_store_my_did(wallet_handle, Some(MY1_SEED)).unwrap();
@@ -310,7 +310,7 @@ mod high_cases {
             assert_eq!(signatures[DID_TRUSTEE], r#"3YnLxoUd4utFLzeXUkeGefAqAdHUD7rBprpSx2CJeH7gRYnyjkgJi7tCnFgUiMo62k6M2AyUDtJrkUSgHfcq3vua"#);
             assert_eq!(signatures[DID_MY1], r#"4EyvSFPoeQCJLziGVqjuMxrbuoWjAWUGPd6LdxeZuG9w3Bcbt7cSvhjrv8SX5e8mGf8jrf3K6xd9kEhXsQLqUg45"#);
 
-            utils::tear_down_with_wallet(wallet_handle);
+            utils::tear_down_with_wallet(wallet_handle, "indy_multi_sign_request_works_for_start_from_single_signature", &wallet_config);
         }
 
         #[test]
@@ -335,7 +335,7 @@ mod high_cases {
 
         #[test]
         fn indy_multi_sign_request_works_for_twice_use_same_did() {
-            let wallet_handle = utils::setup_with_wallet();
+            let (wallet_handle, wallet_config) = utils::setup_with_wallet("indy_multi_sign_request_works_for_twice_use_same_did");
 
             let (did, _) = did::create_and_store_my_did(wallet_handle, Some(MY1_SEED)).unwrap();
 
@@ -347,7 +347,7 @@ mod high_cases {
             assert_eq!(1, signatures.len());
             assert_eq!(signatures[DID_MY1], r#"49aXkbrtTE3e522AefE76J51WzUiakw3ZbxxWzf44cv7RS21n8mMr4vJzi4TymuqDupzCz7wEtuGz6rA94Y73kKR"#);
 
-            utils::tear_down_with_wallet(wallet_handle);
+            utils::tear_down_with_wallet(wallet_handle, "indy_multi_sign_request_works_for_twice_use_same_did", &wallet_config);
         }
     }
 
@@ -1518,13 +1518,13 @@ mod high_cases {
 
             let _revoc_reg_delta: RevocationRegistryDeltaV1 = serde_json::from_str(&revoc_reg_delta_json).unwrap();
 
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_get_revoc_reg_delta_request_works", &wallet_config);
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_get_revoc_reg_delta_request_works_for_two_timestamps() {
-            let (wallet_handle, pool_handle) = utils::setup_with_wallet_and_pool();
+            let (wallet_handle, pool_handle, wallet_config) = utils::setup_with_wallet_and_pool("indy_get_revoc_reg_delta_request_works_for_two_timestamps");
 
             let (_, _, rev_reg_id) = ledger::post_entities();
 
@@ -1537,7 +1537,7 @@ mod high_cases {
 
             let _revoc_reg_delta: RevocationRegistryDeltaV1 = serde_json::from_str(&revoc_reg_delta_json).unwrap();
 
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_get_revoc_reg_delta_request_works", &wallet_config);
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_get_revoc_reg_delta_request_works_for_two_timestamps", &wallet_config);
         }
 
         #[test]
@@ -2146,7 +2146,7 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_auth_rule_requests_works_for_adding_new_identity_owner() {
-            let (wallet_handle, pool_handle, trustee_did) = utils::setup_trustee();
+            let (wallet_handle, pool_handle, trustee_did, wallet_config) = utils::setup_trustee("indy_auth_rule_requests_works_for_adding_new_identity_owner");
 
             let (_, default_constraint_json) = _get_constraint(pool_handle,
                                                                &ADD_AUTH_ACTION,
@@ -2170,13 +2170,13 @@ mod high_cases {
             _change_constraint(pool_handle, wallet_handle, &trustee_did, ADD_AUTH_ACTION, constants::NYM,
                                FIELD, None, None, &default_constraint_json);
 
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_auth_rule_requests_works_for_adding_new_identity_owner", &wallet_config);
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_auth_rule_requests_works_for_demote_trustee() {
-            let (wallet_handle, pool_handle, trustee_did) = utils::setup_trustee();
+            let (wallet_handle, pool_handle, trustee_did, wallet_config) = utils::setup_trustee("indy_auth_rule_requests_works_for_demote_trustee");
 
             let (_, default_constraint_json) = _get_constraint(pool_handle,
                                                                &EDIT_AUTH_ACTION,
@@ -2200,13 +2200,13 @@ mod high_cases {
             _change_constraint(pool_handle, wallet_handle, &trustee_did, EDIT_AUTH_ACTION, constants::NYM,
                                FIELD, Some(VALUE), None, &default_constraint_json);
 
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_auth_rule_requests_works_for_demote_trustee", &wallet_config);
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_auth_rule_requests_works_for_promote_role_to_trustee() {
-            let (wallet_handle, pool_handle, trustee_did) = utils::setup_trustee();
+            let (wallet_handle, pool_handle, trustee_did, wallet_config) = utils::setup_trustee("indy_auth_rule_requests_works_for_promote_role_to_trustee");
 
             let (_, default_constraint_json) = _get_constraint(pool_handle,
                                                                &EDIT_AUTH_ACTION,
@@ -2230,13 +2230,13 @@ mod high_cases {
             _change_constraint(pool_handle, wallet_handle, &trustee_did, EDIT_AUTH_ACTION, constants::NYM,
                                FIELD, None, Some(VALUE), &default_constraint_json);
 
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_auth_rule_requests_works_for_promote_role_to_trustee", &wallet_config);
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_auth_rule_requests_works_for_change_trustee_to_steward() {
-            let (wallet_handle, pool_handle, trustee_did) = utils::setup_trustee();
+            let (wallet_handle, pool_handle, trustee_did, wallet_config) = utils::setup_trustee("indy_auth_rule_requests_works_for_change_trustee_to_steward");
 
             let (_, default_constraint_json) = _get_constraint(pool_handle,
                                                                &EDIT_AUTH_ACTION,
@@ -2261,7 +2261,7 @@ mod high_cases {
             _change_constraint(pool_handle, wallet_handle, &trustee_did, EDIT_AUTH_ACTION,
                                constants::NYM, FIELD, Some("0"), Some("2"), &default_constraint_json);
 
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_auth_rule_requests_works_for_change_trustee_to_steward", &wallet_config);
         }
 
         fn _change_constraint(pool_handle: i32, wallet_handle: i32, trustee_did: &str, action: &str, txn_type: &str, field: &str,
@@ -2539,7 +2539,7 @@ mod high_cases {
 
         #[test]
         fn indy_append_txn_author_agreement_acceptance_to_request_works_for_text_version() {
-            utils::setup();
+            utils::setup("indy_append_txn_author_agreement_acceptance_to_request_works_for_text_version");
 
             let request = ledger::append_txn_author_agreement_acceptance_to_request(REQUEST,
                                                                                     Some(TEXT),
@@ -2549,12 +2549,12 @@ mod high_cases {
                                                                                     TIME_OF_ACCEPTANCE).unwrap();
             _check_request_meta(&request);
 
-            utils::tear_down();
+            utils::tear_down("indy_append_txn_author_agreement_acceptance_to_request_works_for_text_version");
         }
 
         #[test]
         fn indy_append_txn_author_agreement_acceptance_to_request_works_for_hash() {
-            utils::setup();
+            utils::setup("indy_append_txn_author_agreement_acceptance_to_request_works_for_hash");
 
             let request = ledger::append_txn_author_agreement_acceptance_to_request(REQUEST,
                                                                                     None,
@@ -2564,12 +2564,12 @@ mod high_cases {
                                                                                     TIME_OF_ACCEPTANCE).unwrap();
             _check_request_meta(&request);
 
-            utils::tear_down();
+            utils::tear_down("indy_append_txn_author_agreement_acceptance_to_request_works_for_hash");
         }
 
         #[test]
         fn indy_append_txn_author_agreement_acceptance_to_request_works_for_text_version_and_hash() {
-            utils::setup();
+            utils::setup("indy_append_txn_author_agreement_acceptance_to_request_works_for_text_version_and_hash");
 
             let request = ledger::append_txn_author_agreement_acceptance_to_request(REQUEST,
                                                                                     Some(TEXT),
@@ -2579,12 +2579,12 @@ mod high_cases {
                                                                                     TIME_OF_ACCEPTANCE).unwrap();
             _check_request_meta(&request);
 
-            utils::tear_down();
+            utils::tear_down("indy_append_txn_author_agreement_acceptance_to_request_works_for_text_version_and_hash");
         }
 
         #[test]
         fn indy_append_txn_author_agreement_acceptance_to_request_works_for_text_version_not_correspond_to_hash() {
-            utils::setup();
+            utils::setup("indy_append_txn_author_agreement_acceptance_to_request_works_for_text_version_not_correspond_to_hash");
 
             let res = ledger::append_txn_author_agreement_acceptance_to_request(REQUEST,
                                                                                 Some("other text"),
@@ -2594,12 +2594,12 @@ mod high_cases {
                                                                                 TIME_OF_ACCEPTANCE);
             assert_code!(ErrorCode::CommonInvalidStructure, res);
 
-            utils::tear_down();
+            utils::tear_down("indy_append_txn_author_agreement_acceptance_to_request_works_for_text_version_not_correspond_to_hash");
         }
 
         #[test]
         fn indy_append_txn_author_agreement_acceptance_to_request_works_for_invalid_request() {
-            utils::setup();
+            utils::setup("indy_append_txn_author_agreement_acceptance_to_request_works_for_invalid_request");
 
             let res = ledger::append_txn_author_agreement_acceptance_to_request("Invalid request string",
                                                                                 None,
@@ -2609,12 +2609,12 @@ mod high_cases {
                                                                                 TIME_OF_ACCEPTANCE);
             assert_code!(ErrorCode::CommonInvalidStructure, res);
 
-            utils::tear_down();
+            utils::tear_down("indy_append_txn_author_agreement_acceptance_to_request_works_for_invalid_request");
         }
 
         #[test]
         fn indy_append_txn_author_agreement_acceptance_to_request_works_for_missed_text_version_hash() {
-            utils::setup();
+            utils::setup("indy_append_txn_author_agreement_acceptance_to_request_works_for_missed_text_version_hash");
 
             let res = ledger::append_txn_author_agreement_acceptance_to_request(REQUEST,
                                                                                 None,
@@ -2624,12 +2624,12 @@ mod high_cases {
                                                                                 TIME_OF_ACCEPTANCE);
             assert_code!(ErrorCode::CommonInvalidStructure, res);
 
-            utils::tear_down();
+            utils::tear_down("indy_append_txn_author_agreement_acceptance_to_request_works_for_missed_text_version_hash");
         }
 
         #[test]
         fn indy_append_txn_author_agreement_acceptance_to_request_works_for_partial_combination_of_text_version() {
-            utils::setup();
+            utils::setup("indy_append_txn_author_agreement_acceptance_to_request_works_for_partial_combination_of_text_version");
 
             let res = ledger::append_txn_author_agreement_acceptance_to_request(REQUEST,
                                                                                 Some(TEXT),
@@ -2647,7 +2647,7 @@ mod high_cases {
                                                                                 TIME_OF_ACCEPTANCE);
             assert_code!(ErrorCode::CommonInvalidStructure, res);
 
-            utils::tear_down();
+            utils::tear_down("indy_append_txn_author_agreement_acceptance_to_request_works_for_partial_combination_of_text_version");
         }
 
         fn _rand_string() -> String {
@@ -2705,7 +2705,7 @@ mod high_cases {
 
         #[test]
         fn indy_txn_author_agreement_requests_works() {
-            let (wallet_handle, pool_handle, trustee_did) = utils::setup_trustee();
+            let (wallet_handle, pool_handle, trustee_did, wallet_config) = utils::setup_trustee("indy_txn_author_agreement_requests_works");
 
             _set_aml(pool_handle, wallet_handle, &trustee_did);
 
@@ -2725,12 +2725,12 @@ mod high_cases {
 
             _reset_taa(pool_handle, wallet_handle, &trustee_did);
 
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_txn_author_agreement_requests_works", &wallet_config);
         }
 
         #[test]
         fn indy_acceptance_mechanism_requests_works() {
-            let (wallet_handle, pool_handle, trustee_did) = utils::setup_trustee();
+            let (wallet_handle, pool_handle, trustee_did, wallet_config) = utils::setup_trustee("indy_acceptance_mechanism_requests_works");
 
             let (aml, _, aml_version, aml_context) = _gen_aml_data();
 
@@ -2748,12 +2748,12 @@ mod high_cases {
             //                assert_eq!(response["result"]["data"], expected_data);
             //            }
 
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_acceptance_mechanism_requests_works", &wallet_config);
         }
 
         #[test]
         fn indy_author_agreement_works() {
-            let (wallet_handle, pool_handle, trustee_did) = utils::setup_trustee();
+            let (wallet_handle, pool_handle, trustee_did, wallet_config) = utils::setup_trustee("indy_author_agreement_works");
 
             let (_, aml_label, _, _) = _set_aml(pool_handle, wallet_handle, &trustee_did);
             let (taa_text, taa_version) = _set_taa(pool_handle, wallet_handle, &trustee_did);
@@ -2779,12 +2779,12 @@ mod high_cases {
 
             _reset_taa(pool_handle, wallet_handle, &trustee_did);
 
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_author_agreement_works", &wallet_config);
         }
 
         #[test]
         fn indy_reset_author_agreement_works() {
-            let (wallet_handle, pool_handle, trustee_did) = utils::setup_trustee();
+            let (wallet_handle, pool_handle, trustee_did, wallet_config) = utils::setup_trustee("indy_reset_author_agreement_works");
 
             _set_aml(pool_handle, wallet_handle, &trustee_did);
             _set_taa(pool_handle, wallet_handle, &trustee_did);
@@ -2802,12 +2802,12 @@ mod high_cases {
             let nym_resp = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_req).unwrap();
             pool::check_response_type(&nym_resp, ResponseType::REPLY);
 
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_reset_author_agreement_works", &wallet_config);
         }
 
         #[test]
         fn indy_author_agreement_works_for_using_invalid_taa() {
-            let (wallet_handle, pool_handle, trustee_did) = utils::setup_trustee();
+            let (wallet_handle, pool_handle, trustee_did, wallet_config) = utils::setup_trustee("indy_author_agreement_works_for_using_invalid_taa");
 
             let (_, aml_label, _, _) = _set_aml(pool_handle, wallet_handle, &trustee_did);
             _set_taa(pool_handle, wallet_handle, &trustee_did);
@@ -2829,12 +2829,12 @@ mod high_cases {
 
             _reset_taa(pool_handle, wallet_handle, &trustee_did);
 
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_author_agreement_works_for_using_invalid_taa", &wallet_config);
         }
 
         #[test]
         fn indy_author_agreement_works_for_using_invalid_aml() {
-            let (wallet_handle, pool_handle, trustee_did) = utils::setup_trustee();
+            let (wallet_handle, pool_handle, trustee_did, wallet_config) = utils::setup_trustee("indy_author_agreement_works_for_using_invalid_aml");
 
             _set_aml(pool_handle, wallet_handle, &trustee_did);
             let (taa_text, taa_version) = _set_taa(pool_handle, wallet_handle, &trustee_did);
@@ -2856,12 +2856,12 @@ mod high_cases {
 
             _reset_taa(pool_handle, wallet_handle, &trustee_did);
 
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_author_agreement_works_for_using_invalid_aml", &wallet_config);
         }
 
         #[test]
         fn indy_author_agreement_works_for_using_not_last_taa() {
-            let (wallet_handle, pool_handle, trustee_did) = utils::setup_trustee();
+            let (wallet_handle, pool_handle, trustee_did, wallet_config) = utils::setup_trustee("indy_author_agreement_works_for_using_not_last_taa");
 
             let (_, aml_label, _, _) = _set_aml(pool_handle, wallet_handle, &trustee_did);
             let (taa_text, taa_version) = _set_taa(pool_handle, wallet_handle, &trustee_did);
@@ -2895,7 +2895,7 @@ mod high_cases {
 
             _reset_taa(pool_handle, wallet_handle, &trustee_did);
 
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_author_agreement_works_for_using_not_last_taa", &wallet_config);
         }
     }
 }
