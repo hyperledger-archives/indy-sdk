@@ -852,7 +852,7 @@ pub extern fn indy_parse_payment_response(command_handle: CommandHandle,
     res
 }
 
-/// Append payment extra JSON with TAA acceptance data
+/// Prepare payment extra JSON with TAA acceptance data
 ///
 /// EXPERIMENTAL
 ///

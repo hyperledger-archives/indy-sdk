@@ -11,7 +11,7 @@ use ffi::{ResponseStringCB,
           ResponseStringStringU64CB};
 
 use utils::callbacks::{ClosureHandler, ResultHandler};
-use ffi::{WalletHandle, CommandHandle, PoolHandle};
+use {WalletHandle, CommandHandle, PoolHandle};
 
 /// Signs and submits request message to validator pool.
 ///
