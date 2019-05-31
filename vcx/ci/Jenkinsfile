@@ -17,11 +17,11 @@ class Globals {
 
     static String rustVersion = "1.32.0"
 
-    static String libindyVersion = "1.8.2"
+    static String libindyVersion = "1.9.0"
 
     static String libindyTag = ""
 
-    static String libnullVersion = "1.8.2"
+    static String libnullVersion = "1.9.0"
 
     static String nullpayTag = ""
 
