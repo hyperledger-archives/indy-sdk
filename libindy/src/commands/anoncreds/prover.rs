@@ -2,7 +2,7 @@ use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
-use indy_crypto::cl::{new_nonce, RevocationRegistry, Witness};
+use ursa::cl::{new_nonce, RevocationRegistry, Witness};
 
 use domain::anoncreds::credential::{Credential, CredentialInfo};
 use domain::anoncreds::credential_definition::{cred_defs_map_to_cred_defs_v1_map, CredentialDefinition, CredentialDefinitionV1};
@@ -55,6 +55,10 @@ pub enum ProverCommand {
         WalletHandle,
         String, // credential id
         Box<Fn(IndyResult<String>) + Send>),
+    DeleteCredential(
+        WalletHandle,
+        String, // credential id
+        Box<Fn(IndyResult<()>) + Send>),
     SearchCredentials(
         WalletHandle,
         Option<String>, // query json
@@ -178,6 +182,10 @@ impl ProverCommandExecutor {
                 info!(target: "prover_command_executor", "GetCredential command received");
                 cb(self.get_credential(wallet_handle, &cred_id));
             }
+            ProverCommand::DeleteCredential(wallet_handle, cred_id, cb) => {
+                info!(target: "prover_command_executor", "DeleteCredential command received");
+                cb(self.delete_credential(wallet_handle, &cred_id));
+            }
             ProverCommand::SearchCredentials(wallet_handle, query_json, cb) => {
                 info!(target: "prover_command_executor", "SearchCredentials command received");
                 cb(self.search_credentials(wallet_handle, query_json.as_ref().map(String::as_str)));
@@ -279,7 +287,7 @@ impl ProverCommandExecutor {
 
         let credential_request_metadata = CredentialRequestMetadata {
             master_secret_blinding_data: ms_blinding_data,
-            nonce: credential_request.nonce.clone()?,
+            nonce: credential_request.nonce.try_clone()?,
             master_secret_name: master_secret_id.to_string()
         };
 
@@ -484,7 +492,7 @@ impl ProverCommandExecutor {
                                                                        &attr_id,
                                                                        &requested_attr.restrictions,
                                                                        &extra_query)?;
-            let mut credentials_search =
+            let credentials_search =
                 self.wallet_service.search_indy_records::<Credential>(wallet_handle, &query_json, &SearchOptions::id_value())?;
 
             let interval = self.anoncreds_service.prover.get_non_revoc_interval(&proof_request.non_revoked, &requested_attr.non_revoked);
@@ -499,7 +507,7 @@ impl ProverCommandExecutor {
                                                                        &predicate_id,
                                                                        &requested_predicate.restrictions,
                                                                        &extra_query)?;
-            let mut credentials_search =
+            let credentials_search =
                 self.wallet_service.search_indy_records::<Credential>(wallet_handle, &query_json, &SearchOptions::id_value())?;
 
             let interval = self.anoncreds_service.prover.get_non_revoc_interval(&proof_request.non_revoked, &requested_predicate.non_revoked);
@@ -548,6 +556,18 @@ impl ProverCommandExecutor {
         trace!("close_credentials_search_for_proof_req <<< res: {:?}", res);
 
         Ok(res)
+    }
+
+    fn delete_credential(&self,
+                        wallet_handle: WalletHandle,
+                        cred_id: &str) -> IndyResult<()> {
+        trace!("delete_credential >>> wallet_handle: {:?}, cred_id: {:?}", wallet_handle, cred_id);
+
+        if !self.wallet_service.record_exists::<Credential>(wallet_handle, cred_id)? {
+            return Err(err_msg(IndyErrorKind::WalletItemNotFound, format!("Credential {} not found", cred_id)));
+        }
+
+        self.wallet_service.delete_indy_record::<Credential>(wallet_handle, cred_id)
     }
 
     fn create_proof(&self,

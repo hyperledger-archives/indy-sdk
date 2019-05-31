@@ -197,7 +197,7 @@
  Fetch next records for wallet search.
 
  Not if there are no records this call returns WalletNoRecords error.
- 
+
  @param searchHandle wallet search handle (created by openSearchInWallet)
  @param walletHandle wallet handle returned by IndyWallet::openWalletWithName.
  @param count Count of records to fetch
@@ -227,4 +227,5 @@
  */
 + (void)closeSearchWithHandle:(IndyHandle)searchHandle
          completion:(void (^)(NSError *error))completion;
+
 @end

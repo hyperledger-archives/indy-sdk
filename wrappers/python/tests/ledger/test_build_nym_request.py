@@ -61,7 +61,7 @@ async def test_build_nym_request_works_with_option_fields():
 async def test_nym_request_works_for_different_roles(wallet_handle, pool_handle, identity_trustee1):
     (trustee_did, _) = identity_trustee1
 
-    await check_for_role(pool_handle, wallet_handle, trustee_did, 'TRUST_ANCHOR', '101')
+    await check_for_role(pool_handle, wallet_handle, trustee_did, 'ENDORSER', '101')
     await check_for_role(pool_handle, wallet_handle, trustee_did, 'TRUSTEE', '0')
     await check_for_role(pool_handle, wallet_handle, trustee_did, 'STEWARD', '2')
 

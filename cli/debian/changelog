@@ -1,6 +1,22 @@
-indy-cli (1.8.2) unstable; urgency=medium
+indy-cli (1.9.0) unstable; urgency=medium
 
 [ Hyperledger ]
+
+## 1.9.0
+* Updated Indy-CLI to use session based approach to support work with `Transaction Author Agreement` concept.
+    * user will be asked if he would like to accept TAA on `pool open` command.
+    * added `pool show-taa` to show and accept TAA.
+* Added new commands to set up Transaction Author Agreement on the ledger.
+    * `ledger txn-author-agreement` to send Transaction Author Agreement to the ledger.
+    * `ledger txn-acceptance-mechanisms` to send TAA Acceptance Mechanisms to the ledger.
+* Updated Indy-CLI to provide a functionality of saving requests into CLI context and the following usage of them.
+* Added optional `send` parameter to ledger related CLI commands.
+* Added commands to read/store transaction into a file.
+    * `ledger save-transaction` to save transaction from CLI context into a file.
+    * `ledger load-transaction` to read transaction from a file and store it into CLI context.
+
+## 1.8.3
+* Updated `ledger auth-rule` and `ledger get-auth-rule` commands.
 
 ## 1.8.2
 * Added new commands to work with ledger auth rules:

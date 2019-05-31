@@ -1,8 +1,8 @@
-extern crate indy_crypto;
+extern crate ursa;
 extern crate serde;
 extern crate serde_json;
 
-use self::indy_crypto::cl::RevocationRegistry as CryptoRevocationRegistry;
+use self::ursa::cl::RevocationRegistry as CryptoRevocationRegistry;
 use named_type::NamedType;
 
 use std::collections::HashMap;

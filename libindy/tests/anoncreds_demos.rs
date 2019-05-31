@@ -16,7 +16,7 @@ extern crate serde_json;
 extern crate byteorder;
 extern crate indyrs as indy;
 extern crate indyrs as api;
-extern crate indy_crypto;
+extern crate ursa;
 extern crate uuid;
 extern crate named_type;
 extern crate rmp_serde;
@@ -143,6 +143,10 @@ mod demos {
         wallet::close_and_delete_wallet(prover_wallet_handle, &prover_wallet_config).unwrap();
 
         utils::tear_down("anoncreds_works_for_single_issuer_single_prover");
+        wallet::close_wallet(issuer_wallet_handle).unwrap();
+        wallet::close_wallet(prover_wallet_handle).unwrap();
+
+        utils::tear_down();
     }
 
     #[test]
@@ -314,7 +318,7 @@ mod demos {
                })
            }),
            "requested_predicates": json!({
-               "predicate1_referent": json!({ "name":"age", "p_type":">=", "p_value":18 }),
+               "predicate1_referent": json!({ "name":"age", "p_type":">=", "p_value":18, "restrictions": json!({ "cred_def_id": gvt_cred_def_id })}),
                "predicate2_referent": json!({ "name":"period", "p_type":">=", "p_value":5 }),
            }),
         }).to_string();
@@ -2053,10 +2057,10 @@ mod demos {
     #[cfg(feature = "revocation_tests")]
     #[test]
     fn anoncreds_works_for_issuance_by_demand_revocation_strategy_for_revoke_not_issued_credential_id() {
-        utils::setup("anoncreds_works_for_issuance_by_demand_revocation_strategy_for_revoke_not_issued_credential_id");
+        utils::setup();
 
         //1. Issuer creates wallet, gets wallet handle
-        let (issuer_wallet_handle, issuer_wallet_config) = wallet::create_and_open_default_wallet("anoncreds_works_for_issuance_by_demand_revocation_strategy_for_revoke_not_issued_credential_id").unwrap();
+        let issuer_wallet_handle = wallet::create_and_open_default_wallet().unwrap();
 
         //2. Issuer creates schema
         let (_, schema_json) = anoncreds::issuer_create_schema(ISSUER_DID,
@@ -2100,10 +2104,10 @@ mod demos {
     #[cfg(feature = "revocation_tests")]
     #[test]
     fn anoncreds_works_for_issuance_by_default_revocation_strategy_for_revoke_not_issued_credential_id() {
-        utils::setup("anoncreds_works_for_issuance_by_default_revocation_strategy_for_revoke_not_issued_credential_id");
+        utils::setup();
 
         //1. Issuer creates wallet, gets wallet handle
-        let (issuer_wallet_handle, issuer_wallet_config) = wallet::create_and_open_default_wallet("anoncreds_works_for_issuance_by_default_revocation_strategy_for_revoke_not_issued_credential_id").unwrap();
+        let issuer_wallet_handle = wallet::create_and_open_default_wallet().unwrap();
 
         //2 Issuer creates Schema, Credential Definition and Revocation Registry
         let (_, _,
@@ -2255,5 +2259,50 @@ mod demos {
         wallet::close_and_delete_wallet(prover_wallet_handle, &prover_wallet_config).unwrap();
 
         utils::tear_down("anoncreds_works_for_multiple_requested_predicates_from_one_credential");
+    }
+
+    #[test]
+    fn anoncreds_works_for_credential_deletion() {
+        utils::setup();
+
+        //1. Create Issuer wallet, gets wallet handle
+        let issuer_wallet_handle = wallet::create_and_open_default_wallet().unwrap();
+
+        //2. Create Prover wallet, gets wallet handle
+        let prover_wallet_handle = wallet::create_and_open_default_wallet().unwrap();
+
+        //3. Issuer creates Schema and Credential Definition
+        let (_schema_id, _schema_json, cred_def_id, cred_def_json) = anoncreds::multi_steps_issuer_preparation(issuer_wallet_handle,
+                                                                                                               ISSUER_DID,
+                                                                                                               GVT_SCHEMA_NAME,
+                                                                                                               GVT_SCHEMA_ATTRIBUTES);
+
+        //4. Prover creates Master Secret
+        anoncreds::prover_create_master_secret(prover_wallet_handle, COMMON_MASTER_SECRET).unwrap();
+
+        //5. Issuance credential for Prover
+        anoncreds::multi_steps_create_credential(COMMON_MASTER_SECRET,
+                                                 prover_wallet_handle,
+                                                 issuer_wallet_handle,
+                                                 CREDENTIAL1_ID,
+                                                 &anoncreds::gvt_credential_values_json(),
+                                                 &cred_def_id,
+                                                 &cred_def_json);
+
+        //6. Prover gets credential by identifier
+        let mut cred = anoncreds::prover_get_credential(prover_wallet_handle, CREDENTIAL1_ID);
+        assert!(cred.is_ok());
+
+        //7. Prover deletes credential
+        anoncreds::prover_delete_credential(prover_wallet_handle, CREDENTIAL1_ID).unwrap();
+
+        //8. Prover cannot get deleted credential by identifier
+        cred = anoncreds::prover_get_credential(prover_wallet_handle, CREDENTIAL1_ID);
+        assert!(cred.is_err());
+
+        wallet::close_wallet(issuer_wallet_handle).unwrap();
+        wallet::close_wallet(prover_wallet_handle).unwrap();
+
+        utils::tear_down();
     }
 }

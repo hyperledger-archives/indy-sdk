@@ -25,7 +25,7 @@ test {
 }
 
 static def versionMajor() {
-    return '0.2.3'
+    return '0.3.0'
 }
 
 static def version() {
