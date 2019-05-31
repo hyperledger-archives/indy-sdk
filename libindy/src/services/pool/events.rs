@@ -31,6 +31,10 @@ pub const REQUESTS_FOR_STATE_PROOFS_IN_THE_PAST: [&str; 3] = [
     constants::GET_TXN_AUTHR_AGRMT_AML,
 ];
 
+pub const REQUESTS_FOR_MULTI_STATE_PROOFS: [&str; 1] = [
+    constants::GET_REVOC_REG_DELTA,
+];
+
 #[derive(Debug, Clone)]
 pub enum NetworkerEvent {
     SendOneRequest(
