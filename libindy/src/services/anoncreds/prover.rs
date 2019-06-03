@@ -1,7 +1,7 @@
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 
-use indy_crypto::cl::{
+use ursa::cl::{
     BlindedCredentialSecrets,
     BlindedCredentialSecretsCorrectnessProof,
     CredentialPublicKey,
@@ -9,9 +9,9 @@ use indy_crypto::cl::{
     MasterSecret,
     SubProofRequest,
 };
-use indy_crypto::cl::issuer::Issuer as CryptoIssuer;
-use indy_crypto::cl::prover::Prover as CryptoProver;
-use indy_crypto::cl::verifier::Verifier as CryptoVerifier;
+use ursa::cl::issuer::Issuer as CryptoIssuer;
+use ursa::cl::prover::Prover as CryptoProver;
+use ursa::cl::verifier::Verifier as CryptoVerifier;
 
 use domain::anoncreds::credential::{AttributeValues, Credential};
 use domain::anoncreds::credential_definition::CredentialDefinitionV1 as CredentialDefinition;
@@ -27,7 +27,7 @@ use domain::anoncreds::schema::SchemaV1;
 use errors::prelude::*;
 use services::anoncreds::helpers::*;
 
-const ATTRIBUTE_EXISTENCE_MARKER: &'static str = "1";
+const ATTRIBUTE_EXISTENCE_MARKER: &str = "1";
 
 pub struct Prover {}
 
@@ -373,7 +373,22 @@ impl Prover {
                 let attribute_value = attribute_value.parse::<i32>()
                     .to_indy(IndyErrorKind::InvalidStructure, format!("Credential attribute value \"{:?}\" is invalid", attribute_value))?;
                 Ok(attribute_value >= predicate.p_value)
-            }
+            },
+            PredicateTypes::GT => {
+                 let attribute_value = attribute_value.parse::<i32>()
+                    .to_indy(IndyErrorKind::InvalidStructure, format!("Credential attribute value \"{:?}\" is invalid", attribute_value))?;
+                 Ok(attribute_value > predicate.p_value)
+             },
+             PredicateTypes::LE => {
+                 let attribute_value = attribute_value.parse::<i32>()
+                    .to_indy(IndyErrorKind::InvalidStructure, format!("Credential attribute value \"{:?}\" is invalid", attribute_value))?;
+                 Ok(attribute_value <= predicate.p_value)
+             },
+             PredicateTypes::LT => {
+                 let attribute_value = attribute_value.parse::<i32>()
+                    .to_indy(IndyErrorKind::InvalidStructure, format!("Credential attribute value \"{:?}\" is invalid", attribute_value))?;
+                 Ok(attribute_value < predicate.p_value)
+             }
         };
 
         trace!("attribute_satisfy_predicate <<< res: {:?}", res);
@@ -431,7 +446,9 @@ impl Prover {
         }
 
         for predicate in req_predicates_for_credential {
-            sub_proof_request_builder.add_predicate(&attr_common_view(&predicate.predicate_info.name), "GE", predicate.predicate_info.p_value)?;
+            let p_type = format!("{}", predicate.predicate_info.p_type);
+
+            sub_proof_request_builder.add_predicate(&attr_common_view(&predicate.predicate_info.name), &p_type, predicate.predicate_info.p_value)?;
         }
 
         let sub_proof_request = sub_proof_request_builder.finalize()?;
@@ -858,7 +875,7 @@ mod tests {
 
         fn _proof_req() -> ProofRequest {
             ProofRequest {
-                nonce: indy_crypto::cl::new_nonce().unwrap(),
+                nonce: ursa::cl::new_nonce().unwrap(),
                 name: "Job-Application".to_string(),
                 version: "0.1".to_string(),
                 requested_attributes: hashmap!(

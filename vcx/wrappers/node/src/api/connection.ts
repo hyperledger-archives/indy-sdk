@@ -211,9 +211,9 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
    */
   public async sendMessage (msgData: IMessageData): Promise<string> {
     const sendMsgOptions = {
-      "msg_title": msgData.title,
-      "msg_type": msgData.type,
-      "ref_msg_id": msgData.refMsgId
+      msg_title: msgData.title,
+      msg_type: msgData.type,
+      ref_msg_id: msgData.refMsgId
     }
     try {
       return await createFFICallbackPromise<string>(

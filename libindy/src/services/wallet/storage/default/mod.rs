@@ -297,7 +297,7 @@ impl WalletStorage for SQLiteStorage {
 
         let item = match res {
             Ok(entity) => entity,
-            Err(rusqlite::Error::QueryReturnedNoRows) => return Err(err_msg(IndyErrorKind::WalletItemNotFound, "Walelt item not found")),
+            Err(rusqlite::Error::QueryReturnedNoRows) => return Err(err_msg(IndyErrorKind::WalletItemNotFound, "Wallet item not found")),
             Err(err) => return Err(IndyError::from(err))
         };
 
@@ -374,9 +374,9 @@ impl WalletStorage for SQLiteStorage {
             let mut stmt_p = tx.prepare_cached("INSERT INTO tags_plaintext (item_id, name, value) VALUES (?1, ?2, ?3)")?;
 
             for tag in tags {
-                match tag {
-                    &Tag::Encrypted(ref tag_name, ref tag_data) => stmt_e.execute(&[&id, tag_name, tag_data])?,
-                    &Tag::PlainText(ref tag_name, ref tag_data) => stmt_p.execute(&[&id, tag_name, tag_data])?
+                match *tag {
+                    Tag::Encrypted(ref tag_name, ref tag_data) => stmt_e.execute(&[&id, tag_name, tag_data])?,
+                    Tag::PlainText(ref tag_name, ref tag_data) => stmt_p.execute(&[&id, tag_name, tag_data])?
                 };
             }
         }
@@ -391,8 +391,8 @@ impl WalletStorage for SQLiteStorage {
 
         match res {
             Ok(1) => Ok(()),
-            Ok(0) => return Err(err_msg(IndyErrorKind::WalletItemNotFound, "Item to update not found")),
-            Ok(_) => return Err(err_msg(IndyErrorKind::InvalidState, "More than one row update. Seems wallet structure is inconsistent")),
+            Ok(0) => Err(err_msg(IndyErrorKind::WalletItemNotFound, "Item to update not found")),
+            Ok(_) => Err(err_msg(IndyErrorKind::InvalidState, "More than one row update. Seems wallet structure is inconsistent")),
             Err(err) => Err(err.into()),
         }
     }
@@ -414,9 +414,9 @@ impl WalletStorage for SQLiteStorage {
             let mut plain_tag_insert_stmt = tx.prepare_cached("INSERT OR REPLACE INTO tags_plaintext (item_id, name, value) VALUES (?1, ?2, ?3)")?;
 
             for tag in tags {
-                match tag {
-                    &Tag::Encrypted(ref tag_name, ref tag_data) => enc_tag_insert_stmt.execute(&[&item_id, tag_name, tag_data])?,
-                    &Tag::PlainText(ref tag_name, ref tag_data) => plain_tag_insert_stmt.execute(&[&item_id, tag_name, tag_data])?
+                match *tag {
+                    Tag::Encrypted(ref tag_name, ref tag_data) => enc_tag_insert_stmt.execute(&[&item_id, tag_name, tag_data])?,
+                    Tag::PlainText(ref tag_name, ref tag_data) => plain_tag_insert_stmt.execute(&[&item_id, tag_name, tag_data])?
                 };
             }
         }
@@ -445,9 +445,9 @@ impl WalletStorage for SQLiteStorage {
             let mut plain_tag_insert_stmt = tx.prepare_cached("INSERT INTO tags_plaintext (item_id, name, value) VALUES (?1, ?2, ?3)")?;
 
             for tag in tags {
-                match tag {
-                    &Tag::Encrypted(ref tag_name, ref tag_data) => enc_tag_insert_stmt.execute(&[&item_id, tag_name, tag_data])?,
-                    &Tag::PlainText(ref tag_name, ref tag_data) => plain_tag_insert_stmt.execute(&[&item_id, tag_name, tag_data])?
+                match *tag {
+                    Tag::Encrypted(ref tag_name, ref tag_data) => enc_tag_insert_stmt.execute(&[&item_id, tag_name, tag_data])?,
+                    Tag::PlainText(ref tag_name, ref tag_data) => plain_tag_insert_stmt.execute(&[&item_id, tag_name, tag_data])?
                 };
             }
         }
@@ -472,9 +472,9 @@ impl WalletStorage for SQLiteStorage {
             let mut plain_tag_delete_stmt = tx.prepare_cached("DELETE FROM tags_plaintext WHERE item_id = ?1 AND name = ?2")?;
 
             for tag_name in tag_names {
-                match tag_name {
-                    &TagName::OfEncrypted(ref tag_name) => enc_tag_delete_stmt.execute(&[&item_id, tag_name])?,
-                    &TagName::OfPlain(ref tag_name) => plain_tag_delete_stmt.execute(&[&item_id, tag_name])?,
+                match *tag_name {
+                    TagName::OfEncrypted(ref tag_name) => enc_tag_delete_stmt.execute(&[&item_id, tag_name])?,
+                    TagName::OfPlain(ref tag_name) => plain_tag_delete_stmt.execute(&[&item_id, tag_name])?,
                 };
             }
         }
@@ -531,8 +531,8 @@ impl WalletStorage for SQLiteStorage {
 
         match res {
             Ok(entity) => Ok(entity),
-            Err(rusqlite::Error::QueryReturnedNoRows) => return Err(err_msg(IndyErrorKind::WalletItemNotFound, "Wallet item not found")),
-            Err(err) => return Err(IndyError::from(err))
+            Err(rusqlite::Error::QueryReturnedNoRows) => Err(err_msg(IndyErrorKind::WalletItemNotFound, "Wallet item not found")),
+            Err(err) => Err(IndyError::from(err))
         }
     }
 
@@ -650,7 +650,7 @@ impl WalletStorageType for SQLiteStorageType {
         let db_file_path = SQLiteStorageType::_db_path(id, config.as_ref());
 
         if !db_file_path.exists() {
-            return Err(err_msg(IndyErrorKind::WalletNotFound, "Wallet storage file isn't found"));
+            return Err(err_msg(IndyErrorKind::WalletNotFound, format!("Wallet storage file isn't found: {:?}", db_file_path)));
         }
 
         std::fs::remove_dir_all(db_file_path.parent().unwrap())?;
@@ -694,7 +694,7 @@ impl WalletStorageType for SQLiteStorageType {
         let db_path = SQLiteStorageType::_db_path(id, config.as_ref());
 
         if db_path.exists() {
-            return Err(err_msg(IndyErrorKind::WalletAlreadyExists, "Wallet database file already exists"));
+            return Err(err_msg(IndyErrorKind::WalletAlreadyExists, format!("Wallet database file already exists: {:?}", db_path)));
         }
 
         fs::DirBuilder::new()
@@ -778,9 +778,9 @@ impl WalletStorageType for SQLiteStorageType {
 
 impl From<rusqlite::Error> for IndyError {
     fn from(err: rusqlite::Error) -> IndyError {
-        match &err {
-            &rusqlite::Error::SqliteFailure(libsqlite3_sys::Error { code: libsqlite3_sys::ErrorCode::ConstraintViolation, extended_code: _ }, _) => err.to_indy(IndyErrorKind::WalletItemAlreadyExists, "Wallet item already exists"),
-            &rusqlite::Error::SqliteFailure(libsqlite3_sys::Error { code: libsqlite3_sys::ErrorCode::SystemIOFailure, extended_code: _ }, _) => err.to_indy(IndyErrorKind::IOError, "IO error during access sqlite database"),
+        match err {
+            rusqlite::Error::SqliteFailure(libsqlite3_sys::Error { code: libsqlite3_sys::ErrorCode::ConstraintViolation, extended_code: _ }, _) => err.to_indy(IndyErrorKind::WalletItemAlreadyExists, "Wallet item already exists"),
+            rusqlite::Error::SqliteFailure(libsqlite3_sys::Error { code: libsqlite3_sys::ErrorCode::SystemIOFailure, extended_code: _ }, _) => err.to_indy(IndyErrorKind::IOError, "IO error during access sqlite database"),
             _ => err.to_indy(IndyErrorKind::InvalidState, "Unexpected sqlite error"),
         }
     }

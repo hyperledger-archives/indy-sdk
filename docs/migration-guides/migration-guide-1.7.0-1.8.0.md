@@ -3,7 +3,7 @@
 # Libindy 1.7 to 1.8 migration Guide
 
 This document is written for developers using Libindy to provide necessary information and
-to simplify their transition to Libindy 1.7 from Libindy 1.8. If you are using older Libindy
+to simplify their transition to Libindy 1.8 from Libindy 1.7. If you are using older Libindy
 version you can check migration guides history:
 
 * [Libindy 1.3 to 1.4 migration](https://github.com/hyperledger/indy-sdk/blob/v1.4.0/doc/migration-guide.md)
@@ -279,3 +279,10 @@ indy_build_get_auth_rule_request(command_handle: CommandHandle,
     </td>
   </tr>
 </table>
+
+## Libindy 1.8.2 to 1.8.3 migration Guide
+
+Updated behavior of `indy_build_auth_rule_request` and `indy_build_get_auth_rule_request` API functions:
+*  `new_value` can be empty string for `ADD` action.
+*  `new_value` can be null for `EDIT` action.
+*  `old_value` is skipped during transaction serialization for `ADD` action. 

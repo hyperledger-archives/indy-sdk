@@ -478,7 +478,7 @@ pub extern fn vcx_connection_send_message(command_handle: u32,
     check_useful_c_str!(send_msg_options, VcxErrorKind::InvalidOption);
 
     trace!("vcx_message_send(command_handle: {}, connection_handle: {}, msg: {}, send_msg_options: {})",
-          command_handle, connection_handle, msg, send_msg_options);
+           command_handle, connection_handle, msg, send_msg_options);
 
     spawn(move|| {
         match ::messages::send_message::send_generic_message(connection_handle, &msg, &send_msg_options) {

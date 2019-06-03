@@ -17,15 +17,15 @@ import json
 import pprint
 
 from indy import pool, ledger, wallet, did
-from indy.error import IndyError
+from indy.error import IndyError, ErrorCode
 
+from utils import get_pool_genesis_txn_path, PROTOCOL_VERSION
 
 pool_name = 'pool'
-wallet_name = 'wallet'
-genesis_file_path = '/home/vagrant/code/evernym/indy-sdk/cli/docker_pool_transactions_genesis'
+genesis_file_path = get_pool_genesis_txn_path(pool_name)
+
+wallet_config = json.dumps({"id": "wallet"})
 wallet_credentials = json.dumps({"key": "wallet_key"})
-
-
 
 def print_log(value_color="", value_noncolor=""):
     """set the colors for text."""
@@ -36,11 +36,17 @@ def print_log(value_color="", value_noncolor=""):
 
 async def write_nym_and_query_verkey():
     try:
+        await pool.set_protocol_version(PROTOCOL_VERSION)
+
         # 1.
         print_log('\n1. Creates a new local pool ledger configuration that is used '
                   'later when connecting to ledger.\n')
-        pool_config = json.dumps({'genesis_txn': genesis_file_path})
-        await pool.create_pool_ledger_config(config_name=pool_name, config=pool_config)
+        pool_config = json.dumps({'genesis_txn': str(genesis_file_path)})
+        try:
+            await pool.create_pool_ledger_config(config_name=pool_name, config=pool_config)
+        except IndyError as ex:
+            if ex.error_code == ErrorCode.PoolLedgerConfigAlreadyExistsError:
+                pass
 
         # 2.
         print_log('\n2. Open pool ledger and get handle from libindy\n')
@@ -48,11 +54,15 @@ async def write_nym_and_query_verkey():
 
         # 3.
         print_log('\n3. Creating new secure wallet\n')
-        await wallet.create_wallet(pool_name, wallet_name, None, None, wallet_credentials)
+        try:
+            await wallet.create_wallet(wallet_config, wallet_credentials)
+        except IndyError as ex:
+            if ex.error_code == ErrorCode.WalletAlreadyExistsError:
+                pass
 
         # 4.
         print_log('\n4. Open wallet and get handle from libindy\n')
-        wallet_handle = await wallet.open_wallet(wallet_name, None, wallet_credentials)
+        wallet_handle = await wallet.open_wallet(wallet_config, wallet_credentials)
 
         # 5.
         print_log('\n5. Generating and storing steward DID and verkey\n')
@@ -124,7 +134,7 @@ async def write_nym_and_query_verkey():
 
         # 14.
         print_log('\n14. Deleting created wallet\n')
-        await wallet.delete_wallet(wallet_name, wallet_credentials)
+        await wallet.delete_wallet(wallet_config, wallet_credentials)
 
         # 15.
         print_log('\n15. Deleting pool ledger config\n')

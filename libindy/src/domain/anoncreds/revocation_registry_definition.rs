@@ -1,12 +1,12 @@
-use indy_crypto::cl::{RevocationKeyPublic, RevocationKeyPrivate};
+use ursa::cl::{RevocationKeyPublic, RevocationKeyPrivate};
 
 use super::DELIMITER;
 
 use std::collections::{HashMap, HashSet};
 use named_type::NamedType;
 
-pub const CL_ACCUM: &'static str = "CL_ACCUM";
-pub const REV_REG_DEG_MARKER: &'static str = "4";
+pub const CL_ACCUM: &str = "CL_ACCUM";
+pub const REV_REG_DEG_MARKER: &str = "4";
 
 #[derive(Deserialize, Debug, Serialize)]
 pub struct RevocationRegistryConfig {
@@ -35,8 +35,8 @@ pub enum RegistryType {
 
 impl RegistryType {
     pub fn to_str(&self) -> &'static str {
-        match self {
-            &RegistryType::CL_ACCUM => CL_ACCUM
+        match *self {
+            RegistryType::CL_ACCUM => CL_ACCUM
         }
     }
 }

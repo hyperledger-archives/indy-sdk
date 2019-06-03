@@ -1,6 +1,7 @@
 #![warn(dead_code)]
 
-use {ErrorCode, IndyHandle, IndyError};
+use ::{ErrorCode, IndyError};
+use ffi::CommandHandle;
 
 use libc::c_char;
 
@@ -12,26 +13,26 @@ use futures::*;
 use futures::sync::oneshot;
 
 lazy_static! {
-    static ref CALLBACKS_EMPTY: Mutex<HashMap<IndyHandle, oneshot::Sender<Result<(), IndyError>>>> = Default::default();
-    static ref CALLBACKS_SLICE: Mutex<HashMap<IndyHandle, oneshot::Sender<Result<Vec<u8>, IndyError>>>> = Default::default();
-    static ref CALLBACKS_HANDLE: Mutex<HashMap<IndyHandle, oneshot::Sender<Result<IndyHandle, IndyError>>>> = Default::default();
-    static ref CALLBACKS_BOOL: Mutex<HashMap<IndyHandle, oneshot::Sender<Result<bool, IndyError>>>> = Default::default();
-    static ref CALLBACKS_STR_SLICE: Mutex<HashMap<IndyHandle, oneshot::Sender<Result<(String, Vec<u8>), IndyError>>>> = Default::default();
-    static ref CALLBACKS_HANDLE_USIZE: Mutex<HashMap<IndyHandle, oneshot::Sender<Result<(IndyHandle, usize), IndyError>>>> = Default::default();
-    static ref CALLBACKS_STR_STR_U64: Mutex<HashMap<IndyHandle, oneshot::Sender<Result<(String, String, u64), IndyError>>>> = Default::default();
-    static ref CALLBACKS_STR: Mutex<HashMap<IndyHandle, oneshot::Sender<Result<String, IndyError>>>> = Default::default();
-    static ref CALLBACKS_STR_STR: Mutex<HashMap<IndyHandle, oneshot::Sender<Result<(String, String), IndyError>>>> = Default::default();
-    static ref CALLBACKS_STR_OPTSTR: Mutex<HashMap<IndyHandle, oneshot::Sender<Result<(String, Option<String>), IndyError>>>> = Default::default();
-    static ref CALLBACKS_STR_STR_STR: Mutex<HashMap<IndyHandle, oneshot::Sender<Result<(String, String, String), IndyError>>>> = Default::default();
-    static ref CALLBACKS_STR_OPTSTR_OPTSTR: Mutex<HashMap<IndyHandle, oneshot::Sender<Result<(String, Option<String>, Option<String>), IndyError>>>> = Default::default();
+    static ref CALLBACKS_EMPTY: Mutex<HashMap<CommandHandle, oneshot::Sender<Result<(), IndyError>>>> = Default::default();
+    static ref CALLBACKS_SLICE: Mutex<HashMap<CommandHandle, oneshot::Sender<Result<Vec<u8>, IndyError>>>> = Default::default();
+    static ref CALLBACKS_HANDLE: Mutex<HashMap<CommandHandle, oneshot::Sender<Result<CommandHandle, IndyError>>>> = Default::default();
+    static ref CALLBACKS_BOOL: Mutex<HashMap<CommandHandle, oneshot::Sender<Result<bool, IndyError>>>> = Default::default();
+    static ref CALLBACKS_STR_SLICE: Mutex<HashMap<CommandHandle, oneshot::Sender<Result<(String, Vec<u8>), IndyError>>>> = Default::default();
+    static ref CALLBACKS_HANDLE_USIZE: Mutex<HashMap<CommandHandle, oneshot::Sender<Result<(CommandHandle, usize), IndyError>>>> = Default::default();
+    static ref CALLBACKS_STR_STR_U64: Mutex<HashMap<CommandHandle, oneshot::Sender<Result<(String, String, u64), IndyError>>>> = Default::default();
+    static ref CALLBACKS_STR: Mutex<HashMap<CommandHandle, oneshot::Sender<Result<String, IndyError>>>> = Default::default();
+    static ref CALLBACKS_STR_STR: Mutex<HashMap<CommandHandle, oneshot::Sender<Result<(String, String), IndyError>>>> = Default::default();
+    static ref CALLBACKS_STR_OPTSTR: Mutex<HashMap<CommandHandle, oneshot::Sender<Result<(String, Option<String>), IndyError>>>> = Default::default();
+    static ref CALLBACKS_STR_STR_STR: Mutex<HashMap<CommandHandle, oneshot::Sender<Result<(String, String, String), IndyError>>>> = Default::default();
+    static ref CALLBACKS_STR_OPTSTR_OPTSTR: Mutex<HashMap<CommandHandle, oneshot::Sender<Result<(String, Option<String>, Option<String>), IndyError>>>> = Default::default();
 }
 
 macro_rules! cb_ec {
     ($name:ident($($cr:ident:$crt:ty),*)->$rrt:ty, $cbs:ident, $res:expr) => (
     pub fn $name() -> (sync::oneshot::Receiver<Result<$rrt, IndyError>>,
-                          IndyHandle,
-                          Option<extern fn(command_handle: IndyHandle, err: i32, $($crt),*)>) {
-        extern fn callback(command_handle: IndyHandle, err: i32, $($cr:$crt),*) {
+                          CommandHandle,
+                          Option<extern fn(command_handle: CommandHandle, err: i32, $($crt),*)>) {
+        extern fn callback(command_handle: CommandHandle, err: i32, $($cr:$crt),*) {
             let tx = {
                 let mut callbacks = $cbs.lock().unwrap();
                 callbacks.remove(&command_handle).unwrap()
@@ -63,9 +64,9 @@ pub struct ClosureHandler {}
 impl ClosureHandler {
     cb_ec!(cb_ec()->(), CALLBACKS_EMPTY, ());
 
-    cb_ec!(cb_ec_handle(handle:IndyHandle)->IndyHandle, CALLBACKS_HANDLE, handle);
+    cb_ec!(cb_ec_handle(handle:CommandHandle)->CommandHandle, CALLBACKS_HANDLE, handle);
 
-    cb_ec!(cb_ec_handle_usize(handle:IndyHandle, u: usize)->(IndyHandle, usize), CALLBACKS_HANDLE_USIZE, (handle, u));
+    cb_ec!(cb_ec_handle_usize(handle:CommandHandle, u: usize)->(CommandHandle, usize), CALLBACKS_HANDLE_USIZE, (handle, u));
 
     cb_ec!(cb_ec_string(str1:*const c_char)->String,
            CALLBACKS_STR,
@@ -97,12 +98,12 @@ impl ClosureHandler {
            CALLBACKS_STR_SLICE,
            (rust_str!(str), rust_slice!(data, len).to_owned()));
 
-    cb_ec!(cb_ec_bool(b: u8)->bool, CALLBACKS_BOOL, b > 0);
+    cb_ec!(cb_ec_bool(b: bool)->bool, CALLBACKS_BOOL, b);
 }
 
 macro_rules! result_handler {
     ($name:ident($res_type:ty), $map:ident) => (
-    pub fn $name(command_handle: IndyHandle,
+    pub fn $name(command_handle: CommandHandle,
                  err: ErrorCode,
                  rx: sync::oneshot::Receiver<Result<$res_type, IndyError>>) -> Box<Future<Item=$res_type, Error= IndyError>> {
         if err != ErrorCode::Success {
@@ -122,11 +123,11 @@ pub struct ResultHandler {}
 
 impl ResultHandler {
     result_handler!(empty(()), CALLBACKS_EMPTY);
-    result_handler!(handle(IndyHandle), CALLBACKS_HANDLE);
+    result_handler!(handle(CommandHandle), CALLBACKS_HANDLE);
     result_handler!(slice(Vec<u8>), CALLBACKS_SLICE);
     result_handler!(bool(bool), CALLBACKS_BOOL);
     result_handler!(str(String), CALLBACKS_STR);
-    result_handler!(handle_usize((IndyHandle, usize)), CALLBACKS_HANDLE_USIZE);
+    result_handler!(handle_usize((CommandHandle, usize)), CALLBACKS_HANDLE_USIZE);
     result_handler!(str_slice((String, Vec<u8>)), CALLBACKS_STR_SLICE);
     result_handler!(str_str((String, String)), CALLBACKS_STR_STR);
     result_handler!(str_optstr((String, Option<String>)), CALLBACKS_STR_OPTSTR);

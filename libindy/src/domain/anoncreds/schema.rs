@@ -2,7 +2,7 @@ use super::DELIMITER;
 
 use std::collections::{HashMap, HashSet};
 
-pub const SCHEMA_MARKER: &'static str = "2";
+pub const SCHEMA_MARKER: &str = "2";
 pub const MAX_ATTRIBUTES_COUNT: usize = 125;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -26,6 +26,10 @@ pub enum Schema {
 impl Schema {
     pub fn schema_id(did: &str, name: &str, version: &str) -> String {
         format!("{}{}{}{}{}{}{}", did, DELIMITER, SCHEMA_MARKER, DELIMITER, name, DELIMITER, version)
+    }
+
+    pub fn issuer_did(schema_id: &str) -> Option<String> {
+        schema_id.split(':').collect::<Vec<&str>>().get(0).and_then(|s| Some(s.to_string()))
     }
 }
 

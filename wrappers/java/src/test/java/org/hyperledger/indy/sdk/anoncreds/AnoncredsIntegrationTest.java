@@ -45,6 +45,7 @@ public class AnoncredsIntegrationTest {
 	String gvtSchemaAttributes = "[\"name\", \"age\", \"sex\", \"height\"]";
 	String credentialId1 = "id1";
 	String credentialId2 = "id2";
+    String credentialIdX = "idX";
 	// note that encoding is not standardized by Indy except that 32-bit integers are encoded as themselves. IS-786
 	String gvtCredentialValuesJson = new JSONObject("{\n" +
 			"               \"sex\":{\"raw\":\"male\",\"encoded\":\"5944657099558967239210949258394887428692050081607692519917050011144233115103\"},\n" +
@@ -162,6 +163,8 @@ public class AnoncredsIntegrationTest {
 
 		String credentialId3 = "id3";
 		Anoncreds.proverStoreCredential(wallet, credentialId3, issuer2GvtCredReqMetadata, issuer2GvtCredential, issuer2gvtCredDef, null).get();
+
+		Anoncreds.proverStoreCredential(wallet, credentialIdX, issuer2GvtCredReqMetadata, issuer2GvtCredential, issuer2gvtCredDef, null).get();
 
 		walletOpened = true;
 	}

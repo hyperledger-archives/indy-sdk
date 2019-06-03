@@ -42,6 +42,7 @@ pub static CONFIG_THREADPOOL_SIZE: &'static str = "threadpool_size";
 pub static CONFIG_WALLET_KEY_DERIVATION: &'static str = "wallet_key_derivation";
 pub static CONFIG_PROTOCOL_VERSION: &'static str = "protocol_version";
 pub static CONFIG_PAYMENT_METHOD: &'static str = "payment_method";
+pub static CONFIG_TXN_AUTHOR_AGREEMENT: &'static str = "author_agreement";
 
 pub static DEFAULT_PROTOCOL_VERSION: usize = 2;
 pub static MAX_SUPPORTED_PROTOCOL_VERSION: usize = 2;
