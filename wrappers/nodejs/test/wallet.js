@@ -13,16 +13,16 @@ test('wallet', async function (t) {
   var walletCredentials = { 'key': 'key' }
   await indy.createWallet(walletConfig, walletCredentials)
 
-  var err = await t.throws(indy.createWallet(walletConfig, walletCredentials))
+  var err = await t.throwsAsync(indy.createWallet(walletConfig, walletCredentials))
   t.is(err.indyName, 'WalletAlreadyExistsError')
 
   var handle = await indy.openWallet(walletConfig, walletCredentials)
   t.truthy(handle >= 0)
 
-  //  err = await t.throws(indy.openWallet(walletConfig, walletCredentials))
+  //  err = await t.throwsAsync(indy.openWallet(walletConfig, walletCredentials))
   //  t.is(err.indyName, 'WalletAlreadyOpenedError')
 
-  err = await t.throws(indy.closeWallet(-1))
+  err = await t.throwsAsync(indy.closeWallet(-1))
   t.is(err.indyName, 'WalletInvalidHandle')
 
   var [did] = await indy.createAndStoreMyDid(handle, {})

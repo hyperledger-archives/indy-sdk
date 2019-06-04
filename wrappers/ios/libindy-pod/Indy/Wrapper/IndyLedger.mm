@@ -850,16 +850,16 @@
     }
 }
 
-+ (void)buildAcceptanceMechanismRequestWithSubmitterDid:(NSString *)submitterDid
-                                                    aml:(NSString *)aml
-                                                version:(NSString *)version
-                                             amlContext:(NSString *)amlContext
-                                             completion:(void (^)(NSError *error, NSString *responseMetadata))completion {
++ (void)buildAcceptanceMechanismsRequestWithSubmitterDid:(NSString *)submitterDid
+                                                     aml:(NSString *)aml
+                                                 version:(NSString *)version
+                                              amlContext:(NSString *)amlContext
+                                              completion:(void (^)(NSError *error, NSString *responseMetadata))completion {
     indy_error_t ret;
 
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
 
-    ret = indy_build_acceptance_mechanism_request(handle,
+    ret = indy_build_acceptance_mechanisms_request(handle,
             [submitterDid UTF8String],
             [aml UTF8String],
             [version UTF8String],
@@ -875,15 +875,15 @@
     }
 }
 
-+ (void)buildGetAcceptanceMechanismRequestWithSubmitterDid:(NSString *)submitterDid
-                                                 timestamp:(NSNumber *)timestamp
-                                                   version:(NSString *)version
-                                                completion:(void (^)(NSError *error, NSString *responseMetadata))completion {
++ (void)buildGetAcceptanceMechanismsRequestWithSubmitterDid:(NSString *)submitterDid
+                                                  timestamp:(NSNumber *)timestamp
+                                                    version:(NSString *)version
+                                                 completion:(void (^)(NSError *error, NSString *responseMetadata))completion {
     indy_error_t ret;
 
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
 
-    ret = indy_build_get_acceptance_mechanism_request(handle,
+    ret = indy_build_get_acceptance_mechanisms_request(handle,
             [submitterDid UTF8String],
             timestamp ? [timestamp longLongValue] : -1,
             [version UTF8String],

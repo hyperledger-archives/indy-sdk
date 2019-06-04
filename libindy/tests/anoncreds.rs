@@ -3855,6 +3855,22 @@ mod medium_cases {
         }
     }
 
+    mod prover_delete_credential {
+        use super::*;
+
+        #[test]
+        fn prover_delete_credential_works_for_not_found() {
+            anoncreds::init_common_wallet();
+
+            let wallet_handle = wallet::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+            let res = anoncreds::prover_delete_credential(wallet_handle, "other_cred_id");
+            assert_code!(ErrorCode::WalletItemNotFound, res);
+
+            wallet::close_wallet(wallet_handle).unwrap();
+        }
+    }
+
     mod prover_get_credentials_for_proof_req {
         use super::*;
 

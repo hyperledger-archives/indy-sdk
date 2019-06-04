@@ -11,7 +11,7 @@ use ffi::{wallet, non_secrets};
 use ffi::{ResponseEmptyCB,
           ResponseStringCB,
           ResponseI32CB};
-use ffi::{CommandHandle, WalletHandle, SearchHandle};
+use {CommandHandle, WalletHandle, SearchHandle};
 
 /// Registers custom wallet implementation.
 ///

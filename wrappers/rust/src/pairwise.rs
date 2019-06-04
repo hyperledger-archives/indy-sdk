@@ -11,7 +11,7 @@ use ffi::pairwise;
 use ffi::{ResponseEmptyCB,
           ResponseStringCB,
           ResponseBoolCB};
-use ffi::{WalletHandle, CommandHandle};
+use {WalletHandle, CommandHandle};
 
 pub fn is_pairwise_exists(wallet_handle: WalletHandle, their_did: &str) -> Box<Future<Item=bool, Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_bool();

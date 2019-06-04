@@ -10,7 +10,7 @@ use ffi::{ResponseEmptyCB,
           ResponseStringStringCB};
 
 use utils::callbacks::{ClosureHandler, ResultHandler};
-use ffi::{CommandHandle, WalletHandle, PoolHandle};
+use {CommandHandle, WalletHandle, PoolHandle};
 
 /// Creates keys (signing and encryption keys) for a new
 /// DID (owned by the caller of the library).

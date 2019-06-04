@@ -893,7 +893,6 @@ mod tests {
 
         fn _role_constraint() -> Constraint {
             Constraint::RoleConstraint(RoleConstraint {
-                constraint_id: "ROLE".to_string(),
                 sig_count: Some(0),
                 metadata: None,
                 role: Some(String::new()),
@@ -928,14 +927,12 @@ mod tests {
         fn build_auth_rule_request_works_for_combination_constraints() {
             let ledger_service = LedgerService::new();
 
-            let constraint = Constraint::CombinationConstraint(
+            let constraint = Constraint::AndConstraint(
                 CombinationConstraint {
-                    constraint_id: "AND".to_string(),
                     auth_constraints: vec![
                         _role_constraint(),
-                        Constraint::CombinationConstraint(
+                        Constraint::OrConstraint(
                             CombinationConstraint {
-                                constraint_id: "OR".to_string(),
                                 auth_constraints: vec![
                                     _role_constraint(), _role_constraint(), ],
                             }
@@ -1162,7 +1159,7 @@ mod tests {
         }
 
         #[test]
-        fn build_acceptance_mechanism_request() {
+        fn build_acceptance_mechanisms_request() {
             let ledger_service = LedgerService::new();
 
             let expected_result = json!({
@@ -1171,12 +1168,12 @@ mod tests {
                 "version":  VERSION,
             });
 
-            let request = ledger_service.build_acceptance_mechanism_request(IDENTIFIER, _aml(), VERSION, None).unwrap();
+            let request = ledger_service.build_acceptance_mechanisms_request(IDENTIFIER, _aml(), VERSION, None).unwrap();
             check_request(&request, expected_result);
         }
 
         #[test]
-        fn build_acceptance_mechanism_request_with_context() {
+        fn build_acceptance_mechanisms_request_with_context() {
             let ledger_service = LedgerService::new();
 
             let expected_result = json!({
@@ -1186,24 +1183,24 @@ mod tests {
                 "amlContext": CONTEXT.to_string(),
             });
 
-            let request = ledger_service.build_acceptance_mechanism_request(IDENTIFIER, _aml(), VERSION, Some(CONTEXT)).unwrap();
+            let request = ledger_service.build_acceptance_mechanisms_request(IDENTIFIER, _aml(), VERSION, Some(CONTEXT)).unwrap();
             check_request(&request, expected_result);
         }
 
         #[test]
-        fn build_get_acceptance_mechanism_request() {
+        fn build_get_acceptance_mechanisms_request() {
             let ledger_service = LedgerService::new();
 
             let expected_result = json!({
                 "type": GET_TXN_AUTHR_AGRMT_AML,
             });
 
-            let request = ledger_service.build_get_acceptance_mechanism_request(None, None, None).unwrap();
+            let request = ledger_service.build_get_acceptance_mechanisms_request(None, None, None).unwrap();
             check_request(&request, expected_result);
         }
 
         #[test]
-        fn build_get_acceptance_mechanism_request_for_timestamp() {
+        fn build_get_acceptance_mechanisms_request_for_timestamp() {
             let ledger_service = LedgerService::new();
 
             let expected_result = json!({
@@ -1211,12 +1208,12 @@ mod tests {
                 "timestamp": TIMESTAMP,
             });
 
-            let request = ledger_service.build_get_acceptance_mechanism_request(None, Some(TIMESTAMP), None).unwrap();
+            let request = ledger_service.build_get_acceptance_mechanisms_request(None, Some(TIMESTAMP), None).unwrap();
             check_request(&request, expected_result);
         }
 
         #[test]
-        fn build_get_acceptance_mechanism_request_for_version() {
+        fn build_get_acceptance_mechanisms_request_for_version() {
             let ledger_service = LedgerService::new();
 
             let expected_result = json!({
@@ -1224,15 +1221,15 @@ mod tests {
                 "version": VERSION,
             });
 
-            let request = ledger_service.build_get_acceptance_mechanism_request(None, None, Some(VERSION)).unwrap();
+            let request = ledger_service.build_get_acceptance_mechanisms_request(None, None, Some(VERSION)).unwrap();
             check_request(&request, expected_result);
         }
 
         #[test]
-        fn build_get_acceptance_mechanism_request_for_timestamp_and_version() {
+        fn build_get_acceptance_mechanisms_request_for_timestamp_and_version() {
             let ledger_service = LedgerService::new();
 
-            let res = ledger_service.build_get_acceptance_mechanism_request(None, Some(TIMESTAMP), Some(VERSION));
+            let res = ledger_service.build_get_acceptance_mechanisms_request(None, Some(TIMESTAMP), Some(VERSION));
             assert_kind!(IndyErrorKind::InvalidStructure, res);
         }
     }

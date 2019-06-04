@@ -239,13 +239,13 @@ pub enum LedgerCommand {
         Option<String>, // submitter did
         Option<GetTxnAuthorAgreementData>, // data
         Box<Fn(IndyResult<String>) + Send>),
-    BuildAcceptanceMechanismRequest(
+    BuildAcceptanceMechanismRequests(
         String, // submitter did
         AcceptanceMechanisms, // aml
         String, // version
         Option<String>, // aml context
         Box<Fn(IndyResult<String>) + Send>),
-    BuildGetAcceptanceMechanismRequest(
+    BuildGetAcceptanceMechanismsRequest(
         Option<String>, // submitter did
         Option<u64>, // timestamp
         Option<String>, // version
@@ -478,15 +478,15 @@ impl LedgerCommandExecutor {
                 info!(target: "ledger_command_executor", "BuildGetTxnAuthorAgreementRequest command received");
                 cb(self.build_get_txn_author_agreement_request(submitter_did.as_ref().map(String::as_str), data.as_ref()));
             }
-            LedgerCommand::BuildAcceptanceMechanismRequest(submitter_did, aml, version, aml_context, cb) => {
-                info!(target: "ledger_command_executor", "BuildAcceptanceMechanismRequest command received");
-                cb(self.build_acceptance_mechanism_request(&submitter_did, aml, &version, aml_context.as_ref().map(String::as_str)));
+            LedgerCommand::BuildAcceptanceMechanismRequests(submitter_did, aml, version, aml_context, cb) => {
+                info!(target: "ledger_command_executor", "BuildAcceptanceMechanismRequests command received");
+                cb(self.build_acceptance_mechanisms_request(&submitter_did, aml, &version, aml_context.as_ref().map(String::as_str)));
             }
-            LedgerCommand::BuildGetAcceptanceMechanismRequest(submitter_did, timestamp, version, cb) => {
-                info!(target: "ledger_command_executor", "BuildGetAcceptanceMechanismRequest command received");
-                cb(self.build_get_acceptance_mechanism_request(submitter_did.as_ref().map(String::as_str),
-                                                               timestamp,
-                                                               version.as_ref().map(String::as_str)));
+            LedgerCommand::BuildGetAcceptanceMechanismsRequest(submitter_did, timestamp, version, cb) => {
+                info!(target: "ledger_command_executor", "BuildGetAcceptanceMechanismsRequest command received");
+                cb(self.build_get_acceptance_mechanisms_request(submitter_did.as_ref().map(String::as_str),
+                                                                timestamp,
+                                                                version.as_ref().map(String::as_str)));
             }
             LedgerCommand::AppendTxnAuthorAgreementAcceptanceToRequest(request_json, text, version, hash, acc_mech_type, time_of_acceptance, cb) => {
                 info!(target: "ledger_command_executor", "AppendTxnAuthorAgreementAcceptanceToRequest command received");
@@ -1112,33 +1112,33 @@ impl LedgerCommandExecutor {
         Ok(res)
     }
 
-    fn build_acceptance_mechanism_request(&self,
-                                          submitter_did: &str,
-                                          aml: AcceptanceMechanisms,
-                                          version: &str,
-                                          aml_context: Option<&str>) -> IndyResult<String> {
-        debug!("build_acceptance_mechanism_request >>> submitter_did: {:?}, aml: {:?}, version: {:?}, aml_context: {:?}", submitter_did, aml, version, aml_context);
+    fn build_acceptance_mechanisms_request(&self,
+                                           submitter_did: &str,
+                                           aml: AcceptanceMechanisms,
+                                           version: &str,
+                                           aml_context: Option<&str>) -> IndyResult<String> {
+        debug!("build_acceptance_mechanisms_request >>> submitter_did: {:?}, aml: {:?}, version: {:?}, aml_context: {:?}", submitter_did, aml, version, aml_context);
 
         self.crypto_service.validate_did(submitter_did)?;
 
-        let res = self.ledger_service.build_acceptance_mechanism_request(submitter_did, aml, version, aml_context)?;
+        let res = self.ledger_service.build_acceptance_mechanisms_request(submitter_did, aml, version, aml_context)?;
 
-        debug!("build_acceptance_mechanism_request <<< res: {:?}", res);
+        debug!("build_acceptance_mechanisms_request <<< res: {:?}", res);
 
         Ok(res)
     }
 
-    fn build_get_acceptance_mechanism_request(&self,
-                                              submitter_did: Option<&str>,
-                                              timestamp: Option<u64>,
-                                              version: Option<&str>) -> IndyResult<String> {
-        debug!("build_get_acceptance_mechanism_request >>> submitter_did: {:?}, timestamp: {:?}, version: {:?}", submitter_did, timestamp, version);
+    fn build_get_acceptance_mechanisms_request(&self,
+                                               submitter_did: Option<&str>,
+                                               timestamp: Option<u64>,
+                                               version: Option<&str>) -> IndyResult<String> {
+        debug!("build_get_acceptance_mechanisms_request >>> submitter_did: {:?}, timestamp: {:?}, version: {:?}", submitter_did, timestamp, version);
 
         self.validate_opt_did(submitter_did)?;
 
-        let res = self.ledger_service.build_get_acceptance_mechanism_request(submitter_did, timestamp, version)?;
+        let res = self.ledger_service.build_get_acceptance_mechanisms_request(submitter_did, timestamp, version)?;
 
-        debug!("build_get_acceptance_mechanism_request <<< res: {:?}", res);
+        debug!("build_get_acceptance_mechanisms_request <<< res: {:?}", res);
 
         Ok(res)
     }

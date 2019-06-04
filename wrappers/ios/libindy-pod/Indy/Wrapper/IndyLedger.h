@@ -732,7 +732,7 @@
                                                completion:(void (^)(NSError *error, NSString *responseMetadata))completion;
 
 /**
- Builds a SET_TXN_AUTHR_AGRMT_AML request. Request to add a new acceptance mechanism for transaction author agreement.
+ Builds a SET_TXN_AUTHR_AGRMT_AML request. Request to add a new list of acceptance mechanisms for transaction author agreement.
  Acceptance Mechanism is a description of the ways how the user may accept a transaction author agreement.
  
  EXPERIMENTAL
@@ -749,14 +749,14 @@
 
  Returns Request result as json.
  */
-+ (void)buildAcceptanceMechanismRequestWithSubmitterDid:(NSString *)submitterDid
-                                                    aml:(NSString *)aml
-                                                version:(NSString *)version
-                                             amlContext:(NSString *)amlContext
-                                             completion:(void (^)(NSError *error, NSString *responseMetadata))completion;
++ (void)buildAcceptanceMechanismsRequestWithSubmitterDid:(NSString *)submitterDid
+                                                     aml:(NSString *)aml
+                                                 version:(NSString *)version
+                                              amlContext:(NSString *)amlContext
+                                              completion:(void (^)(NSError *error, NSString *responseMetadata))completion;
 
 /**
- Builds a GET_TXN_AUTHR_AGRMT_AML request. Request to get acceptance mechanisms from the ledger
+ Builds a GET_TXN_AUTHR_AGRMT_AML request. Request to get a list of  acceptance mechanisms from the ledger
  valid for specified time or the latest one.
  
  EXPERIMENTAL
@@ -769,10 +769,10 @@
 
  Returns Request result as json.
  */
-+ (void)buildGetAcceptanceMechanismRequestWithSubmitterDid:(NSString *)submitterDid
-                                                 timestamp:(NSNumber *)timestamp
-                                                   version:(NSString *)version
-                                                completion:(void (^)(NSError *error, NSString *responseMetadata))completion;
++ (void)buildGetAcceptanceMechanismsRequestWithSubmitterDid:(NSString *)submitterDid
+                                                  timestamp:(NSNumber *)timestamp
+                                                    version:(NSString *)version
+                                                 completion:(void (^)(NSError *error, NSString *responseMetadata))completion;
 
 /**
  Append transaction author agreement acceptance data to a request.
