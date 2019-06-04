@@ -38,7 +38,7 @@ use utils::domain::anoncreds::credential_definition::CredentialDefinition;
 use utils::domain::anoncreds::credential::CredentialInfo;
 use utils::domain::anoncreds::credential_for_proof_request::{CredentialsForProofRequest, RequestedCredential};
 use utils::domain::anoncreds::proof::Proof;
-use utils::domain::anoncreds::proof_request::{ProofRequest, AttributeInfo};
+use utils::domain::anoncreds::proof_request::{AttributeInfo, ProofRequest};
 
 use std::collections::HashSet;
 
@@ -234,7 +234,7 @@ mod high_cases {
             let (credential_def_json, credential_offer, _, _) = anoncreds::init_common_wallet();
 
             let wallet_handle = wallet::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
-            let prover_wallet_handle = wallet::create_and_open_default_wallet().unwrap();
+            let (prover_wallet_handle, prover_wallet_config) = wallet::create_and_open_default_wallet("prover_store_credential_works_for_invalid_wallet_handle").unwrap();
 
             anoncreds::prover_create_master_secret(prover_wallet_handle, COMMON_MASTER_SECRET).unwrap();
 
@@ -262,6 +262,7 @@ mod high_cases {
 
             wallet::close_wallet(wallet_handle).unwrap();
             wallet::close_wallet(prover_wallet_handle).unwrap();
+            wallet::delete_wallet(&prover_wallet_config, WALLET_CREDENTIALS).unwrap();
         }
     }
 
@@ -3587,7 +3588,7 @@ mod medium_cases {
 
         #[test]
         fn issuer_create_and_store_credential_def_works_for_correct_signature_type() {
-            let wallet_handle = wallet::create_and_open_default_wallet().unwrap();
+            let (wallet_handle, wallet_config) = wallet::create_and_open_default_wallet("issuer_create_and_store_credential_def_works_for_correct_signature_type").unwrap();
 
             anoncreds::issuer_create_credential_definition(wallet_handle,
                                                            ISSUER_DID,
@@ -3597,6 +3598,7 @@ mod medium_cases {
                                                            Some(&anoncreds::default_cred_def_config())).unwrap();
 
             wallet::close_wallet(wallet_handle).unwrap();
+            wallet::delete_wallet(&wallet_config, WALLET_CREDENTIALS).unwrap();
         }
 
         #[test]
@@ -3652,7 +3654,7 @@ mod medium_cases {
 
         #[test]
         fn issuer_create_and_store_credential_def_works_for_null_config() {
-            let wallet_handle = wallet::create_and_open_default_wallet().unwrap();
+            let (wallet_handle, wallet_config) = wallet::create_and_open_default_wallet("issuer_create_and_store_credential_def_works_for_null_config").unwrap();
 
             anoncreds::issuer_create_credential_definition(wallet_handle,
                                                            DID_MY1,
@@ -3661,6 +3663,7 @@ mod medium_cases {
                                                            None,
                                                            None).unwrap();
             wallet::close_wallet(wallet_handle).unwrap();
+            wallet::delete_wallet(&wallet_config, WALLET_CREDENTIALS).unwrap();
         }
     }
 
