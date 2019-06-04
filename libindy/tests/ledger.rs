@@ -2118,7 +2118,7 @@ mod high_cases {
 
             let expected_result = json!({
                 "type": constants::AUTH_RULES,
-                "data": data.clone()
+                "rules": data.clone()
             });
 
             let request = ledger::build_auth_rules_request(DID_TRUSTEE, &data.to_string()).unwrap();
@@ -2384,17 +2384,17 @@ mod high_cases {
             let action2: (&str, &str, &str, Option<&str>, Option<&str>) = (EDIT_AUTH_ACTION, constants::NYM, FIELD, Some(VALUE), Some(NEW_VALUE));
 
             let (_, default_constraint_action_1) = _get_constraint(pool_handle, action1.0,
-                                                                   action1.1, action1.2, action1.3, action1.3);
+                                                                   action1.1, action1.2, action1.3, action1.4);
 
             let (_, default_constraint_action_2) = _get_constraint(pool_handle, action2.0,
-                                                                   action2.1, action2.2, action2.3, action2.3);
+                                                                   action2.1, action2.2, action2.3, action2.4);
 
             let data = json!([
                 {
-                    "auth_type": constants::NYM,
-                    "auth_action": ADD_AUTH_ACTION,
-                    "field": FIELD,
-                    "new_value": VALUE,
+                    "auth_type": action1.1,
+                    "auth_action": action1.0,
+                    "field": action1.2,
+                    "new_value": action1.4,
                     "constraint": json!({
                         "sig_count": 1,
                         "metadata": {},
@@ -2404,11 +2404,11 @@ mod high_cases {
                     })
                 },
                 {
-                    "auth_type": constants::NYM,
-                    "auth_action": EDIT_AUTH_ACTION,
-                    "field": FIELD,
-                    "old_value": VALUE,
-                    "new_value": NEW_VALUE,
+                    "auth_type": action2.1,
+                    "auth_action": action2.0,
+                    "field": action2.2,
+                    "old_value": action2.3,
+                    "new_value": action2.4,
                     "constraint": json!({
                         "sig_count": 1,
                         "metadata": {},
@@ -2425,22 +2425,22 @@ mod high_cases {
 
             ::std::thread::sleep(::std::time::Duration::from_secs(1));
 
-            let (actual_constraint, _) = _get_constraint(pool_handle, action1.0, action1.1, action1.2, action1.3, action1.3);
+            let (actual_constraint, _) = _get_constraint(pool_handle, action1.0, action1.1, action1.2, action1.3, action1.4);
 
             let expected_constraint: serde_json::Value = serde_json::from_str(ROLE_CONSTRAINT).unwrap();
             assert_eq!(expected_constraint, actual_constraint);
 
             let (actual_constraint, _) = _get_constraint(pool_handle, action2.0,
-                                                         action2.1, action2.2, action2.3, action2.3);
+                                                         action2.1, action2.2, action2.3, action2.4);
 
             let expected_constraint: serde_json::Value = serde_json::from_str(ROLE_CONSTRAINT).unwrap();
             assert_eq!(expected_constraint, actual_constraint);
 
             _change_constraint(pool_handle, wallet_handle, &trustee_did, action1.0,
-                               action1.1, action1.2, action1.3, action1.3, &default_constraint_action_1);
+                               action1.1, action1.2, action1.3, action1.4, &default_constraint_action_1);
 
             _change_constraint(pool_handle, wallet_handle, &trustee_did, action2.0,
-                               action2.1, action2.2, action2.3, action2.3, &default_constraint_action_2);
+                               action2.1, action2.2, action2.3, action2.4, &default_constraint_action_2);
 
             utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
         }

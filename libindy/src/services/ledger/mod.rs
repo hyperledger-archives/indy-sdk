@@ -407,8 +407,8 @@ impl LedgerService {
     }
 
     #[logfn(Info)]
-    pub fn build_auth_rules_request(&self, submitter_did: &str, data: AuthRulesData) -> IndyResult<String> {
-        build_result!(AuthRulesOperation, Some(submitter_did), data)
+    pub fn build_auth_rules_request(&self, submitter_did: &str, rules: AuthRules) -> IndyResult<String> {
+        build_result!(AuthRulesOperation, Some(submitter_did), rules)
     }
 
     #[logfn(Info)]
@@ -449,12 +449,12 @@ impl LedgerService {
     }
 
     #[logfn(Info)]
-    pub fn build_acceptance_mechanism_request(&self, identifier: &str, aml: AcceptanceMechanisms, version: &str, aml_context: Option<&str>) -> IndyResult<String> {
+    pub fn build_acceptance_mechanisms_request(&self, identifier: &str, aml: AcceptanceMechanisms, version: &str, aml_context: Option<&str>) -> IndyResult<String> {
         build_result!(SetAcceptanceMechanismOperation, Some(identifier), aml, version.to_string(), aml_context.map(String::from))
     }
 
     #[logfn(Info)]
-    pub fn build_get_acceptance_mechanism_request(&self, identifier: Option<&str>, timestamp: Option<u64>, version: Option<&str>) -> IndyResult<String> {
+    pub fn build_get_acceptance_mechanisms_request(&self, identifier: Option<&str>, timestamp: Option<u64>, version: Option<&str>) -> IndyResult<String> {
         if timestamp.is_some() && version.is_some() {
             return Err(err_msg(IndyErrorKind::InvalidStructure, "timestamp and version cannot be specified together."));
         }
@@ -1066,7 +1066,7 @@ mod tests {
         fn build_auth_rules_request_works() {
             let ledger_service = LedgerService::new();
 
-            let mut data = AuthRulesData::new();
+            let mut data = AuthRules::new();
             data.push(AuthRuleData::Add(AddAuthRuleData {
                 auth_type: NYM.to_string(),
                 field: FIELD.to_string(),
@@ -1084,7 +1084,7 @@ mod tests {
 
             let expected_result = json!({
                 "type": AUTH_RULES,
-                "data": data.clone(),
+                "rules": data.clone(),
             });
 
             let request = ledger_service.build_auth_rules_request(IDENTIFIER, data).unwrap();

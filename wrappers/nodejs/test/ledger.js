@@ -184,7 +184,7 @@ test('ledger', async function (t) {
   var authRulesData = [expectedAuthRule]
   req = await indy.buildAuthRulesRequest(trusteeDid, authRulesData)
   res = await indy.submitRequest(pool.handle, req)
-  t.deepEqual(req['operation'], { 'type': '122', 'data': authRulesData })
+  t.deepEqual(req['operation'], { 'type': '122', 'rules': authRulesData })
 
   // author agreement
   req = await indy.buildTxnAuthorAgreementRequest(trusteeDid, 'indy agreement', '1.0.0')

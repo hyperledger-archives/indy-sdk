@@ -14,7 +14,7 @@ use domain::crypto::did::Did;
 use domain::crypto::key::Key;
 use domain::ledger::node::NodeOperationData;
 use domain::ledger::author_agreement::{GetTxnAuthorAgreementData, AcceptanceMechanisms};
-use domain::ledger::auth_rule::AuthRulesData;
+use domain::ledger::auth_rule::AuthRules;
 use domain::ledger::request::Request;
 use errors::prelude::*;
 use services::crypto::CryptoService;
@@ -200,7 +200,7 @@ pub enum LedgerCommand {
         Box<Fn(IndyResult<String>) + Send>),
     BuildAuthRulesRequest(
         String, // submitter did
-        AuthRulesData, // auth rules data
+        AuthRules, // auth rules
         Box<Fn(IndyResult<String>) + Send>),
     BuildGetAuthRuleRequest(
         Option<String>, // submitter did
@@ -441,9 +441,9 @@ impl LedgerCommandExecutor {
                 info!(target: "ledger_command_executor", "BuildAuthRuleRequest command received");
                 cb(self.build_auth_rule_request(&submitter_did, &txn_type, &action, &field, old_value.as_ref().map(String::as_str), new_value.as_ref().map(String::as_str), &constraint));
             }
-            LedgerCommand::BuildAuthRulesRequest(submitter_did, data, cb) => {
+            LedgerCommand::BuildAuthRulesRequest(submitter_did, rules, cb) => {
                 info!(target: "ledger_command_executor", "BuildAuthRulesRequest command received");
-                cb(self.build_auth_rules_request(&submitter_did, data));
+                cb(self.build_auth_rules_request(&submitter_did, rules));
             }
             LedgerCommand::BuildGetAuthRuleRequest(submitter_did, txn_type, action, field, old_value, new_value, cb) => {
                 info!(target: "ledger_command_executor", "BuildGetAuthRuleRequest command received");
@@ -1052,12 +1052,12 @@ impl LedgerCommandExecutor {
 
     fn build_auth_rules_request(&self,
                                submitter_did: &str,
-                               data: AuthRulesData) -> IndyResult<String> {
-        debug!("build_auth_rules_request >>> submitter_did: {:?}, data: {:?}", submitter_did, data);
+                               rules: AuthRules) -> IndyResult<String> {
+        debug!("build_auth_rules_request >>> submitter_did: {:?}, rules: {:?}", submitter_did, rules);
 
         self.validate_opt_did(Some(submitter_did))?;
 
-        let res = self.ledger_service.build_auth_rules_request(submitter_did, data)?;
+        let res = self.ledger_service.build_auth_rules_request(submitter_did, rules)?;
 
         debug!("build_auth_rules_request <<< res: {:?}", res);
 

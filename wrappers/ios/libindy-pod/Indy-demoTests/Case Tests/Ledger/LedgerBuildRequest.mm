@@ -708,8 +708,8 @@
     NSDictionary *expectedResult = @{
             @"identifier": [TestUtils trusteeDid],
             @"operation": @{
-                    @"type": @"120",
-                    @"data": data,
+                    @"type": @"122",
+                    @"rules": data,
             }
     };
     

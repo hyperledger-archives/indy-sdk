@@ -103,7 +103,7 @@ async def test_build_auth_rules_request_works():
         "identifier": identifier,
         "operation": {
             "type": "122",
-            "data": data
+            "rules": data
         }
     }
 

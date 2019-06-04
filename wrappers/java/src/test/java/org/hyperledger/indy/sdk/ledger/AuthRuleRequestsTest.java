@@ -111,7 +111,7 @@ public class AuthRuleRequestsTest extends IndyIntegrationTest {
 				.put("operation",
 						new JSONObject()
 								.put("type", "122")
-								.put("data", data)
+								.put("rules", data)
 				);
 
 		String request = Ledger.buildAuthRulesRequest(DID, data.toString()).get();

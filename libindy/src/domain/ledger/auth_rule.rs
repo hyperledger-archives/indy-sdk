@@ -17,7 +17,7 @@ pub enum AuthAction {
    Or - Combine multiple constraints any of them must be met
    Forbidden - action is forbidden
 */
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 #[serde(tag = "constraint_id")]
 pub enum Constraint {
     #[serde(rename = "OR")]
@@ -61,7 +61,7 @@ pub struct CombinationConstraint {
 /**
    The forbidden constraint means that action is forbidden
 */
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct ForbiddenConstraint {}
 
@@ -188,7 +188,7 @@ impl GetAuthRuleOperation {
     }
 }
 
-pub type AuthRulesData = Vec<AuthRuleData>;
+pub type AuthRules = Vec<AuthRuleData>;
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 #[serde(tag = "auth_action")]
@@ -220,11 +220,11 @@ pub struct EditAuthRuleData {
 pub struct AuthRulesOperation {
     #[serde(rename = "type")]
     pub _type: String,
-    pub data: AuthRulesData
+    pub rules: AuthRules
 }
 
 impl AuthRulesOperation {
-    pub fn new(data: AuthRulesData) -> AuthRulesOperation {
-        AuthRulesOperation { _type: AUTH_RULES.to_string(), data }
+    pub fn new(rules: AuthRules) -> AuthRulesOperation {
+        AuthRulesOperation { _type: AUTH_RULES.to_string(), rules }
     }
 }
