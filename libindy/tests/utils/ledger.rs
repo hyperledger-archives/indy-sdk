@@ -321,6 +321,8 @@ pub fn post_entities() -> (&'static str, &'static str, &'static str) {
             mem::forget(rev_reg_id);
             REV_REG_DEF_ID = res;
 
+            pool::close(pool_handle).unwrap();
+            pool::delete(pool_name).unwrap();
             wallet::close_wallet(wallet_handle).unwrap();
             wallet::delete_wallet(&wallet_config, WALLET_CREDENTIALS).unwrap();
         });
