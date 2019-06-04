@@ -27,7 +27,6 @@ extern crate serde;
 #[macro_use]
 mod utils;
 
-use utils::wallet;
 use utils::cache::*;
 
 use self::indy::ErrorCode;
@@ -45,7 +44,7 @@ mod high_cases {
 
         #[test]
         fn indy_get_schema_empty_options() {
-            let (wallet_handle, pool_handle) = utils::setup_with_wallet_and_pool();
+            let (wallet_handle, pool_handle, wallet_config) = utils::setup_with_wallet_and_pool("indy_get_schema_empty_options");
 
             let (schema_id, _, _) = utils::ledger::post_entities();
 
@@ -60,12 +59,12 @@ mod high_cases {
 
             let _schema: SchemaV1 = serde_json::from_str(&schema_json).unwrap();
 
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_get_schema_empty_options", &wallet_config);
         }
 
         #[test]
         fn indy_get_schema_empty_options_for_unknown_id() {
-            let (wallet_handle, pool_handle) = utils::setup_with_wallet_and_pool();
+            let (wallet_handle, pool_handle, wallet_config) = utils::setup_with_wallet_and_pool("indy_get_schema_empty_options_for_unknown_id");
 
             let options_json = json!({}).to_string();
 
@@ -78,12 +77,12 @@ mod high_cases {
 
             assert_code!(ErrorCode::LedgerNotFound, res);
 
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_get_schema_empty_options_for_unknown_id", &wallet_config);
         }
 
         #[test]
         fn indy_get_schema_only_cache_no_cached_data() {
-            let (wallet_handle, pool_handle) = utils::setup_with_wallet_and_pool();
+            let (wallet_handle, pool_handle, wallet_config) = utils::setup_with_wallet_and_pool("indy_get_schema_only_cache_no_cached_data");
 
             let (schema_id, _, _) = utils::ledger::post_entities();
 
@@ -98,12 +97,12 @@ mod high_cases {
 
             assert_code!(ErrorCode::LedgerNotFound, res);
 
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_get_schema_only_cache_no_cached_data", &wallet_config);
         }
 
         #[test]
         fn indy_get_schema_cache_works() {
-            let (wallet_handle, pool_handle) = utils::setup_with_wallet_and_pool();
+            let (wallet_handle, pool_handle, wallet_config) = utils::setup_with_wallet_and_pool("indy_get_schema_cache_works");
 
             let (schema_id, _, _) = utils::ledger::post_entities();
 
@@ -130,12 +129,12 @@ mod high_cases {
 
             assert_eq!(schema_json1, schema_json2);
 
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_get_schema_cache_works", &wallet_config);
         }
 
         #[test]
         fn indy_get_schema_no_store_works() {
-            let (wallet_handle, pool_handle) = utils::setup_with_wallet_and_pool();
+            let (wallet_handle, pool_handle, wallet_config) = utils::setup_with_wallet_and_pool("indy_get_schema_no_store_works");
 
             let (schema_id, _, _) = utils::ledger::post_entities();
 
@@ -160,12 +159,12 @@ mod high_cases {
             );
             assert_code!(ErrorCode::LedgerNotFound, res);
 
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_get_schema_no_store_works", &wallet_config);
         }
 
         #[test]
         fn indy_get_schema_no_cache_works() {
-            let (wallet_handle, pool_handle) = utils::setup_with_wallet_and_pool();
+            let (wallet_handle, pool_handle, wallet_config) = utils::setup_with_wallet_and_pool("indy_get_schema_no_cache_works");
 
             let (schema_id, _, _) = utils::ledger::post_entities();
 
@@ -190,12 +189,12 @@ mod high_cases {
             );
             assert_code!(ErrorCode::LedgerNotFound, res);
 
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_get_schema_no_cache_works", &wallet_config);
         }
 
         #[test]
         fn indy_get_schema_min_fresh_works() {
-            let (wallet_handle, pool_handle) = utils::setup_with_wallet_and_pool();
+            let (wallet_handle, pool_handle, wallet_config) = utils::setup_with_wallet_and_pool("indy_get_schema_min_fresh_works");
 
             let (schema_id, _, _) = utils::ledger::post_entities();
 
@@ -222,34 +221,34 @@ mod high_cases {
             );
             assert_code!(ErrorCode::LedgerNotFound, res);
 
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_get_schema_min_fresh_works", &wallet_config);
         }
 
         #[test]
         fn indy_purge_schema_cache_no_options() {
-            let wallet_handle = utils::setup_with_wallet();
+            let (wallet_handle, wallet_config) = utils::setup_with_wallet("indy_purge_schema_cache_no_options");
 
             purge_schema_cache(wallet_handle, "{}").unwrap();
 
-            wallet::close_wallet(wallet_handle).unwrap();
+            utils::tear_down_with_wallet(wallet_handle, "indy_purge_schema_cache_no_options", &wallet_config);
         }
 
         #[test]
         fn indy_purge_schema_cache_all_data() {
-            let wallet_handle = utils::setup_with_wallet();
+            let (wallet_handle, wallet_config) = utils::setup_with_wallet("indy_purge_schema_cache_all_data");
 
             purge_schema_cache(wallet_handle, &json!({"minFresh": -1}).to_string()).unwrap();
 
-            wallet::close_wallet(wallet_handle).unwrap();
+            utils::tear_down_with_wallet(wallet_handle, "indy_purge_schema_cache_all_data", &wallet_config);
         }
 
         #[test]
         fn indy_purge_schema_cache_older_than_1000_seconds() {
-            let wallet_handle = utils::setup_with_wallet();
+            let (wallet_handle, wallet_config) = utils::setup_with_wallet("indy_purge_schema_cache_older_than_1000_seconds");
 
             purge_schema_cache(wallet_handle, &json!({"minFresh": 1000}).to_string()).unwrap();
 
-            wallet::close_wallet(wallet_handle).unwrap();
+            utils::tear_down_with_wallet(wallet_handle, "indy_purge_schema_cache_older_than_1000_seconds", &wallet_config);
         }
     }
 
@@ -262,7 +261,7 @@ mod high_cases {
 
         #[test]
         fn indy_get_cred_def_empty_options() {
-            let (wallet_handle, pool_handle) = utils::setup_with_wallet_and_pool();
+            let (wallet_handle, pool_handle, wallet_config) = utils::setup_with_wallet_and_pool("indy_get_cred_def_empty_options");
 
             let (_, cred_def_id, _) = utils::ledger::post_entities();
 
@@ -277,12 +276,12 @@ mod high_cases {
 
             let _cred_def: CredentialDefinition = serde_json::from_str(&cred_def_json).unwrap();
 
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_get_cred_def_empty_options", &wallet_config);
         }
 
         #[test]
         fn indy_get_cred_def_only_cache_no_cached_data() {
-            let (wallet_handle, pool_handle) = utils::setup_with_wallet_and_pool();
+            let (wallet_handle, pool_handle, wallet_config) = utils::setup_with_wallet_and_pool("indy_get_cred_def_only_cache_no_cached_data");
 
             let (_, cred_def_id, _) = utils::ledger::post_entities();
 
@@ -297,12 +296,12 @@ mod high_cases {
 
             assert_code!(ErrorCode::LedgerNotFound, res);
 
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_get_cred_def_only_cache_no_cached_data", &wallet_config);
         }
 
         #[test]
         fn indy_get_cred_def_cache_works() {
-            let (wallet_handle, pool_handle) = utils::setup_with_wallet_and_pool();
+            let (wallet_handle, pool_handle, wallet_config) = utils::setup_with_wallet_and_pool("indy_get_cred_def_cache_works");
 
             let (_, cred_def_id, _) = utils::ledger::post_entities();
 
@@ -329,12 +328,12 @@ mod high_cases {
 
             assert_eq!(cred_def_json1, cred_def_json2);
 
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_get_cred_def_cache_works", &wallet_config);
         }
 
         #[test]
         fn indy_get_cred_def_no_store_works() {
-            let (wallet_handle, pool_handle) = utils::setup_with_wallet_and_pool();
+            let (wallet_handle, pool_handle, wallet_config) = utils::setup_with_wallet_and_pool("indy_get_cred_def_no_store_works");
 
             let (_, cred_def_id, _) = utils::ledger::post_entities();
 
@@ -359,12 +358,12 @@ mod high_cases {
             );
             assert_code!(ErrorCode::LedgerNotFound, res);
 
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_get_cred_def_no_store_works", &wallet_config);
         }
 
         #[test]
         fn indy_get_cred_def_no_cache_works() {
-            let (wallet_handle, pool_handle) = utils::setup_with_wallet_and_pool();
+            let (wallet_handle, pool_handle, wallet_config) = utils::setup_with_wallet_and_pool("indy_get_cred_def_no_cache_works");
 
             let (_, cred_def_id, _) = utils::ledger::post_entities();
 
@@ -389,12 +388,12 @@ mod high_cases {
             );
             assert_code!(ErrorCode::LedgerNotFound, res);
 
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_get_cred_def_no_cache_works", &wallet_config);
         }
 
         #[test]
         fn indy_get_cred_def_min_fresh_works() {
-            let (wallet_handle, pool_handle) = utils::setup_with_wallet_and_pool();
+            let (wallet_handle, pool_handle, wallet_config) = utils::setup_with_wallet_and_pool("indy_get_cred_def_min_fresh_works");
 
             let (_, cred_def_id, _) = utils::ledger::post_entities();
 
@@ -421,34 +420,34 @@ mod high_cases {
             );
             assert_code!(ErrorCode::LedgerNotFound, res);
 
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_get_cred_def_min_fresh_works", &wallet_config);
         }
 
         #[test]
         fn indy_purge_cred_def_cache_no_options() {
-            let wallet_handle = utils::setup_with_wallet();
+            let (wallet_handle, wallet_config) = utils::setup_with_wallet("indy_purge_cred_def_cache_no_options");
 
             purge_cred_def_cache(wallet_handle, "{}").unwrap();
 
-            wallet::close_wallet(wallet_handle).unwrap();
+            utils::tear_down_with_wallet(wallet_handle, "indy_purge_cred_def_cache_no_options", &wallet_config);
         }
 
         #[test]
         fn indy_purge_cred_def_cache_all_data() {
-            let wallet_handle = utils::setup_with_wallet();
+            let (wallet_handle, wallet_config) = utils::setup_with_wallet("indy_purge_cred_def_cache_all_data");
 
             purge_cred_def_cache(wallet_handle, &json!({"minFresh": -1}).to_string()).unwrap();
 
-            wallet::close_wallet(wallet_handle).unwrap();
+            utils::tear_down_with_wallet(wallet_handle, "indy_purge_cred_def_cache_all_data", &wallet_config);
         }
 
         #[test]
         fn indy_purge_cred_def_cache_older_than_1000_seconds() {
-            let wallet_handle = utils::setup_with_wallet();
+            let (wallet_handle, wallet_config) = utils::setup_with_wallet("indy_purge_cred_def_cache_older_than_1000_seconds");
 
             purge_cred_def_cache(wallet_handle, &json!({"minFresh": 1000}).to_string()).unwrap();
 
-            wallet::close_wallet(wallet_handle).unwrap();
+            utils::tear_down_with_wallet(wallet_handle, "indy_purge_cred_def_cache_older_than_1000_seconds", &wallet_config);
         }
     }
 }
