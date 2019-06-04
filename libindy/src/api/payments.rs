@@ -1236,7 +1236,7 @@ pub extern fn indy_parse_verify_payment_response(command_handle: CommandHandle,
     result
 }
 
-/// Parse GET_AUTH_RULE response to get action constraints and fee amount match to requester information.
+/// Get fee amount that requester has to pay for performing of transaction correspondent to auth rule.
 ///
 /// # Params
 /// command_handle: Command handle to map callback to caller context.
@@ -1249,24 +1249,19 @@ pub extern fn indy_parse_verify_payment_response(command_handle: CommandHandle,
 /// fees_json: fees are set on the ledger.
 ///
 /// # Return
-/// request_info_json: payment info if a requester match to the action constraints or empty json otherwise.
-/// {
-///     "price": u64 - tokens amount required for action performing.
-///     "role": string - role of users who should sign,
-///     "sig_count": string - count of signers,
-/// }
+/// price: tokens amount required for transaction performing.
 ///
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_parse_request_info(command_handle: CommandHandle,
-                                      get_auth_rule_response_json: *const c_char,
-                                      requester_info_json: *const c_char,
-                                      fees_json: *const c_char,
-                                      cb: Option<extern fn(command_handle_: CommandHandle,
-                                                         err: ErrorCode,
-                                                         request_info_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_parse_request_info: >>> get_auth_rule_response_json: {:?}, requester_info_json: {:?}, fees_json: {:?}",
+pub extern fn indy_get_transaction_price(command_handle: CommandHandle,
+                                         get_auth_rule_response_json: *const c_char,
+                                         requester_info_json: *const c_char,
+                                         fees_json: *const c_char,
+                                         cb: Option<extern fn(command_handle_: CommandHandle,
+                                                              err: ErrorCode,
+                                                              price: u64)>) -> ErrorCode {
+    trace!("indy_get_transaction_price: >>> get_auth_rule_response_json: {:?}, requester_info_json: {:?}, fees_json: {:?}",
            get_auth_rule_response_json, requester_info_json, fees_json);
 
     check_useful_c_str!(get_auth_rule_response_json, ErrorCode::CommonInvalidParam2);
@@ -1274,26 +1269,25 @@ pub extern fn indy_parse_request_info(command_handle: CommandHandle,
     check_useful_json!(fees_json, ErrorCode::CommonInvalidParam4, Fees);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
-    trace!("indy_parse_request_info: entities >>> get_auth_rule_response_json: {:?}, requester_info_json: {:?}, fees_json: {:?}",
+    trace!("indy_get_transaction_price: entities >>> get_auth_rule_response_json: {:?}, requester_info_json: {:?}, fees_json: {:?}",
            get_auth_rule_response_json, requester_info_json, fees_json);
 
     let result = CommandExecutor::instance()
         .send(Command::Payments(
-            PaymentsCommand::ParseRequestInfo(
+            PaymentsCommand::GetTransactionPrice(
                 get_auth_rule_response_json,
                 requester_info_json,
                 fees_json,
                 Box::new(move |result| {
-                    let (err, request_info_json) = prepare_result_1!(result,String::new());
-                    trace!("indy_parse_request_info: request_info_json: {:?}", request_info_json);
-                    let request_info_json = ctypes::string_to_cstring(request_info_json);
-                    cb(command_handle, err, request_info_json.as_ptr());
+                    let (err, price) = prepare_result_1!(result, 0);
+                    trace!("indy_get_transaction_price: price: {:?}", price);
+                    cb(command_handle, err, price);
                 })
             )));
 
     let result = prepare_result!(result);
 
-    trace!("indy_parse_request_info: <<< result: {:?}", result);
+    trace!("indy_get_transaction_price: <<< result: {:?}", result);
 
     result
 }

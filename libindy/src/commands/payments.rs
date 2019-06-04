@@ -138,11 +138,11 @@ pub enum PaymentsCommand {
     ParseVerifyPaymentResponseAck(
         i32,
         IndyResult<String>),
-    ParseRequestInfo(
+    GetTransactionPrice(
         String, // get auth rule response json
         RequesterInfo, //requester info
         Fees, //fees
-        Box<Fn(IndyResult<String>) + Send>),
+        Box<Fn(IndyResult<u64>) + Send>),
 }
 
 pub struct PaymentsCommandExecutor {
@@ -287,31 +287,21 @@ impl PaymentsCommandExecutor {
                 info!(target: "payments_command_executor", "ParseVerifyResponseAck command received");
                 self.parse_verify_payment_response_ack(command_handle, result);
             }
-            PaymentsCommand::ParseRequestInfo(get_auth_rule_response_json, requester_info, fees_json, cb) => {
-                info!(target: "payments_command_executor", "ParseRequestInfo command received");
-                cb(self.parse_request_info(&get_auth_rule_response_json, requester_info, &fees_json));
+            PaymentsCommand::GetTransactionPrice(get_auth_rule_response_json, requester_info, fees_json, cb) => {
+                info!(target: "payments_command_executor", "GetTransactionPrice command received");
+                cb(self.get_transaction_price(&get_auth_rule_response_json, requester_info, &fees_json));
             }
         }
     }
 
-    pub fn parse_request_info(&self, get_auth_rule_response_json: &str, requester_info: RequesterInfo, fees: &Fees) -> IndyResult<String> {
-        trace!("parse_request_info >>> get_auth_rule_response_json: {:?}, requester_info: {:?}, fees: {:?}", get_auth_rule_response_json, requester_info, fees);
+    pub fn get_transaction_price(&self, get_auth_rule_response_json: &str, requester_info: RequesterInfo, fees: &Fees) -> IndyResult<u64> {
+        trace!("get_transaction_price >>> get_auth_rule_response_json: {:?}, requester_info: {:?}, fees: {:?}", get_auth_rule_response_json, requester_info, fees);
 
         let auth_rule = PaymentsCommandExecutor::_parse_get_auth_rule_response(get_auth_rule_response_json)?;
 
-        let request_info = self.payments_service.get_request_info_match_to_requester(&auth_rule.constraint, &requester_info, &fees)?;
+        let res = self.payments_service.get_min_transaction_price(&auth_rule.constraint, &requester_info, &fees)?;
 
-        let res = match request_info {
-            Some(info) => {
-                serde_json::to_string(&info)
-                    .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("{:?}", err)))?
-            }
-            None => {
-                json!({}).to_string()
-            }
-        };
-
-        trace!("parse_request_info <<< {:?}", res);
+        trace!("get_transaction_price <<< {:?}", res);
 
         Ok(res)
     }

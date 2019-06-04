@@ -432,6 +432,34 @@ extern "C" {
                                                                                 const char*   txn_json)
                                                            );
 
+    /// Get fee amount that requester has to pay for performing of transaction correspondent to auth rule.
+    ///
+    /// # Params
+    /// command_handle: Command handle to map callback to caller context.
+    /// get_auth_rule_response_json: response on GET_AUTH_RULE request.
+    /// requester_info_json: {
+    ///     "role": string - role of a user which can sign transaction.
+    ///     "count": string - count of users.
+    ///     "is_owner": bool - if user is an owner of transaction.
+    /// }
+    /// fees_json: fees are set on the ledger.
+    ///
+    /// # Return
+    /// price: tokens amount required for transaction performing.
+    ///
+    /// #Errors
+    /// Common*
+
+    extern indy_error_t indy_get_transaction_price(indy_handle_t command_handle,
+                                                   const char *  get_auth_rule_response_json,
+                                                   const char *  requester_info_json,
+                                                   const char *  fees_json,
+
+                                                   void           (*cb)(indy_handle_t command_handle_,
+                                                                        indy_error_t  err,
+                                                                        indy_u64_t    price)
+                                                   );
+
 #ifdef __cplusplus
 }
 #endif

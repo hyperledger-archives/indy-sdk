@@ -1,5 +1,50 @@
 Approaches:
-1) The user prepares all data stored on the ledger and calls a function that parses needed information:
+1) 1) The user prepares all data stored on the ledger and calls a function that returns an action fee amount.
+Pros: explicit, single-purpose, flexible, follows to the common Indy pattern - separate function for one independent action.  
+Cons: user need to prepare data stored on the ledger.
+```
+/// Parse GET_AUTH_RULE response to get action constraints and fee amount match to requester information.
+///
+/// # Params
+/// command_handle: Command handle to map callback to caller context.
+/// get_auth_rule_response_json: response on GET_AUTH_RULE request.
+/// requester_info_json: {
+///     "role": string - role of a user which can sign transaction.
+///     "count": string - count of users.
+///     "is_owner": bool - if user is an owner of transaction.
+/// }
+/// fees_json: fees are set on the ledger.
+///
+/// # Return
+/// request_info_json: payment info if a requester match to the action constraints or empty json otherwise.
+/// {
+///     "price": u64 - tokens amount required for action performing.
+///     "role": string - role of users who should sign,
+///     "sig_count": string - count of signers,
+/// }
+///
+/// #Errors
+/// Common*
+#[no_mangle]
+pub extern fn indy_get_txn_price(command_handle: CommandHandle,
+                                 get_auth_rule_response_json: *const c_char,
+                                 requester_info_json: *const c_char,
+                                 fees_json: *const c_char,
+                                 cb: Option<extern fn(command_handle_: CommandHandle,
+                                                      err: ErrorCode,
+                                                      request_info_json: *const c_char)>) -> ErrorCode {
+.......
+```
+Example of usage:
+```
+get_auth_rule_req = indy_build_get_auth_rule_request(..)
+get_auth_rule_res = indy_submit_request(get_auth_rule_req, ...)
+get_fees_req = indy_build_payment_req(...)
+get_fees_res = indy_submit_request(get_fees_req, ...)
+fees = indy_parse_payment_response(get_fees_res, ...)
+req_info_json = indy_parse_request_info(get_auth_rule_res, requester_info_json, fees)
+```
+2) Similar to the 1 option but returns json which contains action requirements in addition to the fee amount.
 Pros: explicit, single-purpose, flexible, follows to the common Indy pattern - separate function for one independent action.  
 Cons: user need to prepare data stored on the ledger.
 ```
@@ -44,7 +89,7 @@ get_fees_res = indy_submit_request(get_fees_req, ...)
 fees = indy_parse_payment_response(get_fees_res, ...)
 req_info_json = indy_parse_request_info(get_auth_rule_res, requester_info_json, fees)
 ```
-2) The user calls a function that automatically fetches the required information from the ledger (auth rule and fees):
+3) The user calls a function that automatically fetches the required information from the ledger (auth rule and fees):
 Pros: automatically fetches the required information from the ledger.  
 Cons: user need to define action, does a lot of intermediate steps internally that contradicts to Indy functions pattern, many parameters.
 ```
@@ -92,7 +137,7 @@ pub extern fn indy_get_request_info(command_handle: CommandHandle,
                                                          request_info_json: *const c_char)>) -> ErrorCode {
 .......
 ```
-3) Similar to the 2 option but introduces replacement of action json by some aliases like `add_new_trustee`.
+4) Similar to the 2 option but introduces replacement of action json by some aliases like `add_new_trustee`.
 The function will fetch the required information from the ledger automatically.
 Pros: API definition is simpler than for 2 option. User doesn't need to know auth rule parts.  
 Cons: It requires changes in AUTH_RULE related functions to follow the same pattern. Probably on the both side: sdk and ledger.

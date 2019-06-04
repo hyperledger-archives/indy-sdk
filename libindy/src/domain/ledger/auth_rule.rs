@@ -44,6 +44,7 @@ pub struct RoleConstraint {
     pub role: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<Value>,
+    #[serde(default)]
     pub need_to_be_owner: bool,
 }
 
