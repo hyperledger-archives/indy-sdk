@@ -25,8 +25,9 @@ const REQUEST_FOR_FULL: [&str; 2] = [
 ];
 
 
-pub const REQUESTS_FOR_STATE_PROOFS_IN_THE_PAST: [&str; 3] = [
+pub const REQUESTS_FOR_STATE_PROOFS_IN_THE_PAST: [&str; 4] = [
     constants::GET_REVOC_REG,
+    constants::GET_REVOC_REG_DELTA,
     constants::GET_TXN_AUTHR_AGRMT,
     constants::GET_TXN_AUTHR_AGRMT_AML,
 ];
@@ -130,7 +131,7 @@ pub enum RequestEvent {
         String, // message
         String, // req_id
         Option<Vec<u8>>, // expected key for State Proof in Reply,
-        Option<u64> // expected timestamp for freshness comparison
+        (Option<u64>, Option<u64>) // expected timestamps for freshness comparison
     ),
     CustomConsensusRequest(
         String, // message
@@ -235,10 +236,10 @@ impl Into<Option<RequestEvent>> for PoolEvent {
                         None
                     } else if REQUESTS_FOR_STATE_PROOFS.contains(&op.as_str()) {
                         let key = super::state_proof::parse_key_from_request_for_builtin_sp(&req);
-                        let timestamp = _parse_timestamp_from_req_for_builtin_sp(req, &op);
-                        Some(RequestEvent::CustomSingleRequest(msg, req_id.clone(), key, timestamp))
+                        let timestamps = _parse_timestamp_from_req_for_builtin_sp(req, &op);
+                        Some(RequestEvent::CustomSingleRequest(msg, req_id.clone(), key, timestamps))
                     } else if PoolService::get_sp_parser(&op.as_str()).is_some() {
-                        Some(RequestEvent::CustomSingleRequest(msg, req_id.clone(), None, None))
+                        Some(RequestEvent::CustomSingleRequest(msg, req_id.clone(), None, (None, None)))
                     } else {
                         Some(RequestEvent::CustomConsensusRequest(msg, req_id.clone()))
                     }
@@ -253,16 +254,19 @@ impl Into<Option<RequestEvent>> for PoolEvent {
     }
 }
 
-fn _parse_timestamp_from_req_for_builtin_sp(req: &SJsonValue, op: &str) -> Option<u64> {
+fn _parse_timestamp_from_req_for_builtin_sp(req: &SJsonValue, op: &str) -> (Option<u64>, Option<u64>) {
     if !REQUESTS_FOR_STATE_PROOFS_IN_THE_PAST.contains(&op) {
-        return None;
+        return (None, None);
     }
 
     match op {
         constants::GET_REVOC_REG | constants::GET_TXN_AUTHR_AGRMT | constants::GET_TXN_AUTHR_AGRMT_AML => {
-            req["operation"]["data"]["timestamp"].as_u64()
+            (None, req["operation"]["timestamp"].as_u64())
         }
-        _ => { None }
+        constants::GET_REVOC_REG_DELTA => {
+            (req["operation"]["from"].as_u64(), req["operation"]["to"].as_u64())
+        }
+        _ => { (None, None) }
     }
 }
 

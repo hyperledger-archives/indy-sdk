@@ -15,7 +15,7 @@ use ffi::{ResponseStringStringCB,
           ResponseI32CB,
           ResponseEmptyCB,
           ResponseBoolCB};
-use ffi::{CommandHandle, WalletHandle, SearchHandle, BlobStorageReaderHandle, TailsWriterHandle};
+use {CommandHandle, WalletHandle, SearchHandle, BlobStorageReaderHandle, TailsWriterHandle};
 use ffi::BlobStorageReaderCfgHandle;
 
 /// Create credential schema entity that describes credential attributes list and allows credentials
@@ -53,7 +53,7 @@ fn _issuer_create_schema(command_handle: CommandHandle, issuer_did: &str, name: 
     let attrs = c_str!(attrs);
 
     ErrorCode::from(unsafe {
-      anoncreds::indy_issuer_create_schema(command_handle, issuer_did.as_ptr(), name.as_ptr(), version.as_ptr(), attrs.as_ptr(), cb)
+        anoncreds::indy_issuer_create_schema(command_handle, issuer_did.as_ptr(), name.as_ptr(), version.as_ptr(), attrs.as_ptr(), cb)
     })
 }
 
@@ -96,16 +96,16 @@ fn _issuer_create_and_store_credential_def(command_handle: CommandHandle, wallet
     let config_json = c_str!(config_json);
 
     ErrorCode::from(unsafe {
-      anoncreds::indy_issuer_create_and_store_credential_def(
-          command_handle,
-          wallet_handle,
-          issuer_did.as_ptr(),
-          schema_json.as_ptr(),
-          tag.as_ptr(),
-          opt_c_ptr!(signature_type, signature_type_str),
-          config_json.as_ptr(),
-          cb
-      )
+        anoncreds::indy_issuer_create_and_store_credential_def(
+            command_handle,
+            wallet_handle,
+            issuer_did.as_ptr(),
+            schema_json.as_ptr(),
+            tag.as_ptr(),
+            opt_c_ptr!(signature_type, signature_type_str),
+            config_json.as_ptr(),
+            cb
+        )
     })
 }
 
@@ -169,7 +169,7 @@ fn _issuer_create_and_store_revoc_reg(command_handle: CommandHandle, wallet_hand
     let config_json = c_str!(config_json);
 
     ErrorCode::from(unsafe {
-      anoncreds::indy_issuer_create_and_store_revoc_reg(command_handle, wallet_handle, issuer_did.as_ptr(), opt_c_ptr!(revoc_def_type, revoc_def_type_str), tag.as_ptr(), cred_def_id.as_ptr(), config_json.as_ptr(), tails_writer_handle, cb)
+        anoncreds::indy_issuer_create_and_store_revoc_reg(command_handle, wallet_handle, issuer_did.as_ptr(), opt_c_ptr!(revoc_def_type, revoc_def_type_str), tag.as_ptr(), cred_def_id.as_ptr(), config_json.as_ptr(), tails_writer_handle, cb)
     })
 }
 
@@ -201,7 +201,7 @@ fn _issuer_create_credential_offer(command_handle: CommandHandle, wallet_handle:
     let cred_def_id = c_str!(cred_def_id);
 
     ErrorCode::from(unsafe {
-      anoncreds::indy_issuer_create_credential_offer(command_handle, wallet_handle, cred_def_id.as_ptr(), cb)
+        anoncreds::indy_issuer_create_credential_offer(command_handle, wallet_handle, cred_def_id.as_ptr(), cb)
     })
 }
 
@@ -271,7 +271,7 @@ fn _issuer_create_credential(
     let rev_reg_id_str = opt_c_str!(rev_reg_id);
 
     ErrorCode::from(unsafe {
-      anoncreds::indy_issuer_create_credential(command_handle, wallet_handle, cred_offer_json.as_ptr(), cred_req_json.as_ptr(), cred_values_json.as_ptr(), opt_c_ptr!(rev_reg_id, rev_reg_id_str), blob_storage_reader_handle, cb)
+        anoncreds::indy_issuer_create_credential(command_handle, wallet_handle, cred_offer_json.as_ptr(), cred_req_json.as_ptr(), cred_values_json.as_ptr(), opt_c_ptr!(rev_reg_id, rev_reg_id_str), blob_storage_reader_handle, cb)
     })
 }
 
@@ -309,7 +309,7 @@ fn _issuer_revoke_credential(command_handle: CommandHandle,
     let cred_revoc_id = c_str!(cred_revoc_id);
 
     ErrorCode::from(unsafe {
-      anoncreds::indy_issuer_revoke_credential(command_handle, wallet_handle, blob_storage_reader_cfg_handle, rev_reg_id.as_ptr(), cred_revoc_id.as_ptr(), cb)
+        anoncreds::indy_issuer_revoke_credential(command_handle, wallet_handle, blob_storage_reader_cfg_handle, rev_reg_id.as_ptr(), cred_revoc_id.as_ptr(), cb)
     })
 }
 
@@ -335,7 +335,7 @@ fn _issuer_merge_revocation_registry_deltas(command_handle: CommandHandle, rev_r
     let other_rev_reg_delta_json = c_str!(other_rev_reg_delta_json);
 
     ErrorCode::from(unsafe {
-      anoncreds::indy_issuer_merge_revocation_registry_deltas(command_handle, rev_reg_delta_json.as_ptr(), other_rev_reg_delta_json.as_ptr(), cb)
+        anoncreds::indy_issuer_merge_revocation_registry_deltas(command_handle, rev_reg_delta_json.as_ptr(), other_rev_reg_delta_json.as_ptr(), cb)
     })
 }
 
@@ -361,7 +361,7 @@ fn _prover_create_master_secret(command_handle: CommandHandle, wallet_handle: Wa
     let master_secret_id_str = opt_c_str!(master_secret_id);
 
     ErrorCode::from(unsafe {
-      anoncreds::indy_prover_create_master_secret(command_handle, wallet_handle, opt_c_ptr!(master_secret_id, master_secret_id_str), cb)
+        anoncreds::indy_prover_create_master_secret(command_handle, wallet_handle, opt_c_ptr!(master_secret_id, master_secret_id_str), cb)
     })
 }
 
@@ -392,7 +392,7 @@ fn _prover_get_credential(command_handle: CommandHandle, wallet_handle: WalletHa
     let cred_id = c_str!(cred_id);
 
     ErrorCode::from(unsafe {
-      anoncreds::indy_prover_get_credential(command_handle, wallet_handle, cred_id.as_ptr(), cb)
+        anoncreds::indy_prover_get_credential(command_handle, wallet_handle, cred_id.as_ptr(), cb)
     })
 }
 
@@ -413,7 +413,7 @@ fn _prover_delete_credential(command_handle: CommandHandle, wallet_handle: Walle
     let cred_id = c_str!(cred_id);
 
     ErrorCode::from(unsafe {
-      anoncreds::indy_prover_delete_credential(command_handle, wallet_handle, cred_id.as_ptr(), cb)
+        anoncreds::indy_prover_delete_credential(command_handle, wallet_handle, cred_id.as_ptr(), cb)
     })
 }
 
@@ -457,7 +457,7 @@ fn _prover_create_credential_req(command_handle: CommandHandle, wallet_handle: W
     let master_secret_id = c_str!(master_secret_id);
 
     ErrorCode::from(unsafe {
-      anoncreds::indy_prover_create_credential_req(command_handle, wallet_handle, prover_did.as_ptr(), cred_offer_json.as_ptr(), cred_def_json.as_ptr(), master_secret_id.as_ptr(), cb)
+        anoncreds::indy_prover_create_credential_req(command_handle, wallet_handle, prover_did.as_ptr(), cred_offer_json.as_ptr(), cred_def_json.as_ptr(), master_secret_id.as_ptr(), cb)
     })
 }
 
@@ -504,7 +504,7 @@ fn _prover_store_credential(command_handle: CommandHandle, wallet_handle: Wallet
     let rev_reg_def_json_str = opt_c_str!(rev_reg_def_json);
 
     ErrorCode::from(unsafe {
-      anoncreds::indy_prover_store_credential(command_handle, wallet_handle, opt_c_ptr!(cred_id, cred_id_str), cred_req_metadata_json.as_ptr(), cred_json.as_ptr(), cred_def_json.as_ptr(), opt_c_ptr!(rev_reg_def_json, rev_reg_def_json_str), cb)
+        anoncreds::indy_prover_store_credential(command_handle, wallet_handle, opt_c_ptr!(cred_id, cred_id_str), cred_req_metadata_json.as_ptr(), cred_json.as_ptr(), cred_def_json.as_ptr(), opt_c_ptr!(rev_reg_def_json, rev_reg_def_json_str), cb)
     })
 }
 
@@ -544,7 +544,7 @@ fn _prover_get_credentials(command_handle: CommandHandle, wallet_handle: WalletH
     let filter_json_str = opt_c_str!(filter_json);
 
     ErrorCode::from(unsafe {
-      anoncreds::indy_prover_get_credentials(command_handle, wallet_handle, opt_c_ptr!(filter_json, filter_json_str), cb)
+        anoncreds::indy_prover_get_credentials(command_handle, wallet_handle, opt_c_ptr!(filter_json, filter_json_str), cb)
     })
 }
 
@@ -575,7 +575,7 @@ fn _prover_search_credentials(command_handle: CommandHandle, wallet_handle: Wall
     let query_json_str = opt_c_str!(query_json);
 
     ErrorCode::from(unsafe {
-      anoncreds::indy_prover_search_credentials(command_handle, wallet_handle, opt_c_ptr!(query_json, query_json_str), cb)
+        anoncreds::indy_prover_search_credentials(command_handle, wallet_handle, opt_c_ptr!(query_json, query_json_str), cb)
     })
 }
 
@@ -604,9 +604,8 @@ pub fn prover_fetch_credentials(search_handle: SearchHandle, count: usize) -> Bo
 }
 
 fn _prover_fetch_credentials(command_handle: CommandHandle, search_handle: SearchHandle, count: usize, cb: Option<ResponseStringCB>) -> ErrorCode {
-
     ErrorCode::from(unsafe {
-      anoncreds::indy_prover_fetch_credentials(command_handle, search_handle, count, cb)
+        anoncreds::indy_prover_fetch_credentials(command_handle, search_handle, count, cb)
     })
 }
 
@@ -623,9 +622,8 @@ pub fn prover_close_credentials_search(search_handle: SearchHandle) -> Box<Futur
 }
 
 fn _prover_close_credentials_search(command_handle: CommandHandle, search_handle: SearchHandle, cb: Option<ResponseEmptyCB>) -> ErrorCode {
-
     ErrorCode::from(unsafe {
-      anoncreds::indy_prover_close_credentials_search(command_handle, search_handle, cb)
+        anoncreds::indy_prover_close_credentials_search(command_handle, search_handle, cb)
     })
 }
 
@@ -716,7 +714,7 @@ fn _prover_get_credentials_for_proof_req(command_handle: CommandHandle, wallet_h
     let proof_request_json = c_str!(proof_request_json);
 
     ErrorCode::from(unsafe {
-      anoncreds::indy_prover_get_credentials_for_proof_req(command_handle, wallet_handle, proof_request_json.as_ptr(), cb)
+        anoncreds::indy_prover_get_credentials_for_proof_req(command_handle, wallet_handle, proof_request_json.as_ptr(), cb)
     })
 }
 
@@ -802,7 +800,7 @@ fn _prover_search_credentials_for_proof_req(command_handle: CommandHandle,
     let extra_query_json_str = opt_c_str!(extra_query_json);
 
     ErrorCode::from(unsafe {
-      anoncreds::indy_prover_search_credentials_for_proof_req(command_handle, wallet_handle, proof_request_json.as_ptr(), opt_c_ptr!(extra_query_json, extra_query_json_str), cb)
+        anoncreds::indy_prover_search_credentials_for_proof_req(command_handle, wallet_handle, proof_request_json.as_ptr(), opt_c_ptr!(extra_query_json, extra_query_json_str), cb)
     })
 }
 
@@ -849,7 +847,7 @@ fn _prover_fetch_credentials_for_proof_req(command_handle: CommandHandle, search
     let item_referent = c_str!(item_referent);
 
     ErrorCode::from(unsafe {
-      anoncreds::indy_prover_fetch_credentials_for_proof_req(command_handle, search_handle, item_referent.as_ptr(), count, cb)
+        anoncreds::indy_prover_fetch_credentials_for_proof_req(command_handle, search_handle, item_referent.as_ptr(), count, cb)
     })
 }
 
@@ -866,9 +864,8 @@ pub fn prover_close_credentials_search_for_proof_req(search_handle: SearchHandle
 }
 
 fn _prover_close_credentials_search_for_proof_req(command_handle: CommandHandle, search_handle: SearchHandle, cb: Option<ResponseEmptyCB>) -> ErrorCode {
-
     ErrorCode::from(unsafe {
-      anoncreds::indy_prover_close_credentials_search_for_proof_req(command_handle, search_handle, cb)
+        anoncreds::indy_prover_close_credentials_search_for_proof_req(command_handle, search_handle, cb)
     })
 }
 
@@ -1016,7 +1013,7 @@ fn _prover_create_proof(command_handle: CommandHandle, wallet_handle: WalletHand
     let rev_states_json = c_str!(rev_states_json);
 
     ErrorCode::from(unsafe {
-      anoncreds::indy_prover_create_proof(command_handle, wallet_handle, proof_req_json.as_ptr(), requested_credentials_json.as_ptr(), master_secret_id.as_ptr(), schemas_json.as_ptr(), credential_defs_json.as_ptr(), rev_states_json.as_ptr(), cb)
+        anoncreds::indy_prover_create_proof(command_handle, wallet_handle, proof_req_json.as_ptr(), requested_credentials_json.as_ptr(), master_secret_id.as_ptr(), schemas_json.as_ptr(), credential_defs_json.as_ptr(), rev_states_json.as_ptr(), cb)
     })
 }
 
@@ -1154,7 +1151,7 @@ fn _create_revocation_state(command_handle: CommandHandle, blob_storage_reader_h
     let cred_rev_id = c_str!(cred_rev_id);
 
     ErrorCode::from(unsafe {
-      anoncreds::indy_create_revocation_state(command_handle, blob_storage_reader_handle, rev_reg_def_json.as_ptr(), rev_reg_delta_json.as_ptr(), timestamp, cred_rev_id.as_ptr(), cb)
+        anoncreds::indy_create_revocation_state(command_handle, blob_storage_reader_handle, rev_reg_def_json.as_ptr(), rev_reg_delta_json.as_ptr(), timestamp, cred_rev_id.as_ptr(), cb)
     })
 }
 
@@ -1191,6 +1188,6 @@ fn _update_revocation_state(command_handle: CommandHandle, blob_storage_reader_h
     let cred_rev_id = c_str!(cred_rev_id);
 
     ErrorCode::from(unsafe {
-      anoncreds::indy_update_revocation_state(command_handle, blob_storage_reader_handle, rev_state_json.as_ptr(), rev_reg_def_json.as_ptr(), rev_reg_delta_json.as_ptr(), timestamp, cred_rev_id.as_ptr(), cb)
+        anoncreds::indy_update_revocation_state(command_handle, blob_storage_reader_handle, rev_state_json.as_ptr(), rev_reg_def_json.as_ptr(), rev_reg_delta_json.as_ptr(), timestamp, cred_rev_id.as_ptr(), cb)
     })
 }
