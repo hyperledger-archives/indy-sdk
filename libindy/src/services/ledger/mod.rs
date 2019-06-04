@@ -1106,7 +1106,6 @@ mod tests {
 
         fn _role_constraint() -> Constraint {
             Constraint::RoleConstraint(RoleConstraint {
-                constraint_id: "ROLE".to_string(),
                 sig_count: Some(0),
                 metadata: None,
                 role: Some(String::new()),
@@ -1141,14 +1140,12 @@ mod tests {
         fn build_auth_rule_request_works_for_combination_constraints() {
             let ledger_service = LedgerService::new();
 
-            let constraint = Constraint::CombinationConstraint(
+            let constraint = Constraint::AndConstraint(
                 CombinationConstraint {
-                    constraint_id: "AND".to_string(),
                     auth_constraints: vec![
                         _role_constraint(),
-                        Constraint::CombinationConstraint(
+                        Constraint::OrConstraint(
                             CombinationConstraint {
-                                constraint_id: "OR".to_string(),
                                 auth_constraints: vec![
                                     _role_constraint(), _role_constraint(), ],
                             }

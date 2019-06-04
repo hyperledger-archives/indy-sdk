@@ -1508,8 +1508,27 @@ mod high_cases {
 
             let (_, _, rev_reg_id) = ledger::post_entities();
 
-            let to = time::get_time().sec as u64 + 1000;
+            let to = time::get_time().sec as u64 + 300;
             let get_rev_reg_delta_req = ledger::build_get_revoc_reg_delta_request(Some(DID_MY1), &rev_reg_id, None, to).unwrap();
+            let get_rev_reg_delta_resp = ledger::submit_request(pool_handle, &get_rev_reg_delta_req).unwrap();
+
+            let (_, revoc_reg_delta_json, _) = ledger::parse_get_revoc_reg_delta_response(&get_rev_reg_delta_resp).unwrap();
+
+            let _revoc_reg_delta: RevocationRegistryDeltaV1 = serde_json::from_str(&revoc_reg_delta_json).unwrap();
+
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_get_revoc_reg_delta_request_works_for_two_timestamps() {
+            let (wallet_handle, pool_handle) = utils::setup_with_wallet_and_pool();
+
+            let (_, _, rev_reg_id) = ledger::post_entities();
+
+            let from = time::get_time().sec as u64;
+            let to = time::get_time().sec as u64 + 300;
+            let get_rev_reg_delta_req = ledger::build_get_revoc_reg_delta_request(Some(DID_MY1), &rev_reg_id, Some(from), to).unwrap();
             let get_rev_reg_delta_resp = ledger::submit_request(pool_handle, &get_rev_reg_delta_req).unwrap();
 
             let (_, revoc_reg_delta_json, _) = ledger::parse_get_revoc_reg_delta_response(&get_rev_reg_delta_resp).unwrap();
@@ -2690,21 +2709,17 @@ mod high_cases {
 
             let (taa_text, taa_version) = _gen_taa_data();
 
-            {
-                let request = ledger::build_txn_author_agreement_request(&trustee_did, &taa_text, &taa_version).unwrap();
-                let response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &request).unwrap();
-                pool::check_response_type(&response, ResponseType::REPLY);
-            }
+            let txn_author_agreement_request = ledger::build_txn_author_agreement_request(&trustee_did, &taa_text, &taa_version).unwrap();
+            let txn_author_agreement_response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &txn_author_agreement_request).unwrap();
+            pool::check_response_type(&txn_author_agreement_response, ResponseType::REPLY);
 
-            {
-                let request = ledger::build_get_txn_author_agreement_request(Some(&trustee_did), None).unwrap();
-                let response = ledger::submit_request(pool_handle, &request).unwrap();
-                pool::check_response_type(&response, ResponseType::REPLY);
+            let get_txn_author_agreement_request = ledger::build_get_txn_author_agreement_request(Some(&trustee_did), None).unwrap();
+            let get_txn_author_agreement_response = ledger::submit_request_with_retries(pool_handle, &get_txn_author_agreement_request, &txn_author_agreement_response).unwrap();
+            pool::check_response_type(&get_txn_author_agreement_response, ResponseType::REPLY);
 
-                let response: serde_json::Value = serde_json::from_str(&response).unwrap();
-                let expected_data = json!({"text": taa_text, "version": taa_version});
-                assert_eq!(response["result"]["data"], expected_data);
-            }
+            let response: serde_json::Value = serde_json::from_str(&get_txn_author_agreement_response).unwrap();
+            let expected_data = json!({"text": taa_text, "version": taa_version});
+            assert_eq!(response["result"]["data"], expected_data);
 
             _reset_taa(pool_handle, wallet_handle, &trustee_did);
 
@@ -2717,11 +2732,9 @@ mod high_cases {
 
             let (aml, _, aml_version, aml_context) = _gen_aml_data();
 
-            {
-                let request = ledger::build_acceptance_mechanisms_request(&trustee_did, &aml, &aml_version, Some(&aml_context)).unwrap();
-                let response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &request).unwrap();
-                pool::check_response_type(&response, ResponseType::REPLY);
-            }
+            let acceptance_mechanisms_request = ledger::build_acceptance_mechanisms_request(&trustee_did, &aml, &aml_version, Some(&aml_context)).unwrap();
+            let acceptance_mechanisms_response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &acceptance_mechanisms_request).unwrap();
+            pool::check_response_type(&acceptance_mechanisms_response, ResponseType::REPLY);
 
             //            {
             //                let request = ledger::build_get_acceptance_mechanisms_request(Some(&trustee_did), None, None).unwrap();
@@ -2745,28 +2758,22 @@ mod high_cases {
 
             let (did_, verkey_) = did::create_and_store_my_did(wallet_handle, None).unwrap();
 
-            {
-                let nym_req = ledger::build_nym_request(&trustee_did, &did_, Some(&verkey_), None, None).unwrap();
-                let nym_resp = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_req).unwrap();
-                pool::check_response_type(&nym_resp, ResponseType::REJECT);
-            }
+            let nym_req = ledger::build_nym_request(&trustee_did, &did_, Some(&verkey_), None, None).unwrap();
+            let nym_resp = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_req).unwrap();
+            pool::check_response_type(&nym_resp, ResponseType::REJECT);
 
-            {
-                let nym_req = ledger::build_nym_request(&trustee_did, &did_, Some(&verkey_), None, None).unwrap();
-                let nym_req = ledger::append_txn_author_agreement_acceptance_to_request(&nym_req,
-                                                                                        Some(&taa_text), Some(&taa_version),
-                                                                                        None, &aml_label,
-                                                                                        time::get_time().sec as u64).unwrap();
+            let nym_req = ledger::build_nym_request(&trustee_did, &did_, Some(&verkey_), None, None).unwrap();
+            let nym_req = ledger::append_txn_author_agreement_acceptance_to_request(&nym_req,
+                                                                                    Some(&taa_text), Some(&taa_version),
+                                                                                    None, &aml_label,
+                                                                                    time::get_time().sec as u64).unwrap();
 
-                let nym_resp = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_req).unwrap();
-                pool::check_response_type(&nym_resp, ResponseType::REPLY);
-            }
+            let nym_resp = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_req).unwrap();
+            pool::check_response_type(&nym_resp, ResponseType::REPLY);
 
-            {
-                let get_nym_req = ledger::build_get_nym_request(Some(&trustee_did), &did_).unwrap();
-                let get_nym_resp = ledger::submit_request(pool_handle, &get_nym_req).unwrap();
-                pool::check_response_type(&get_nym_resp, ResponseType::REPLY);
-            }
+            let get_nym_req = ledger::build_get_nym_request(Some(&trustee_did), &did_).unwrap();
+            let get_nym_resp = ledger::submit_request_with_retries(pool_handle, &get_nym_req, &nym_resp).unwrap();
+            pool::check_response_type(&get_nym_resp, ResponseType::REPLY);
 
             _reset_taa(pool_handle, wallet_handle, &trustee_did);
 
