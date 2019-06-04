@@ -17,7 +17,7 @@ pub enum AuthAction {
    Or - Combine multiple constraints any of them must be met
    Forbidden - action is forbidden
 */
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 #[serde(tag = "constraint_id")]
 pub enum Constraint {
     #[serde(rename = "OR")]
@@ -38,14 +38,13 @@ pub enum Constraint {
    metadata -  An additional parameters of the constraint (contains transaction FEE cost).
    need_to_be_owner - The flag specifying if a user must be an owner of the transaction.
 */
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct RoleConstraint {
-    pub sig_count: Option<u32>,
-    pub role: Option<String>,
+    pub sig_count: u32,
+    pub role: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<Value>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub need_to_be_owner: Option<bool>,
+    pub need_to_be_owner: bool,
 }
 
 /**
@@ -53,7 +52,7 @@ pub struct RoleConstraint {
     # parameters
    auth_constraints - The type of the combination
 */
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct CombinationConstraint {
     pub auth_constraints: Vec<Constraint>
 }
@@ -61,7 +60,7 @@ pub struct CombinationConstraint {
 /**
    The forbidden constraint means that action is forbidden
 */
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct ForbiddenConstraint {}
 
@@ -186,4 +185,14 @@ impl GetAuthRuleOperation {
                 })
         }
     }
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+pub struct AuthRuleData {
+    pub auth_type: String,
+    pub auth_action: String,
+    pub field: String,
+    pub old_value: Option<String>,
+    pub new_value: Option<String>,
+    pub constraint: Constraint,
 }
