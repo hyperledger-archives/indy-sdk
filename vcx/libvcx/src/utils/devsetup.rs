@@ -388,7 +388,7 @@ pub mod tests {
         //BE INSTITUTION AND CHECK THAT INVITE WAS ACCEPTED
         ::utils::devsetup::tests::set_institution();
         thread::sleep(Duration::from_millis(2000));
-        update_state(alice).unwrap();
+        update_state(alice, None).unwrap();
         assert_eq!(VcxStateType::VcxStateAccepted as u32, get_state(alice));
 
         teardown!("agency");

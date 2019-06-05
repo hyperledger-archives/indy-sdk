@@ -5,12 +5,14 @@ from vcx.error import ErrorCode, VcxError
 from vcx.state import State, ProofState
 from vcx.api.proof import Proof
 from vcx.api.connection import Connection
+from tests.conftest import proof_message
 
 source_id = '123'
 name = 'proof name'
 connection_options = '{"connection_type":"SMS","phone":"8019119191","use_public_did":true}'
 requested_attrs = [{"name": "age", "restrictions": [{"schema_id": "6XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11", "schema_name":"Faber Student Info", "schema_version":"1.0", "schema_issuer_did":"6XFh8yBzrpJQmNyZzgoTqB", "issuer_did":"8XFh8yBzrpJQmNyZzgoTqB", "cred_def_id": "8XFh8yBzrpJQmNyZzgoTqB:3:CL:1766" }, { "schema_id": "5XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11", "schema_name":"BYU Student Info", "schema_version":"1.0", "schema_issuer_did":"5XFh8yBzrpJQmNyZzgoTqB", "issuer_did":"66Fh8yBzrpJQmNyZzgoTqB", "cred_def_id": "66Fh8yBzrpJQmNyZzgoTqB:3:CL:1766" } ] }, { "name":"name", "restrictions": [ { "schema_id": "6XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11", "schema_name":"Faber Student Info", "schema_version":"1.0", "schema_issuer_did":"6XFh8yBzrpJQmNyZzgoTqB", "issuer_did":"8XFh8yBzrpJQmNyZzgoTqB", "cred_def_id": "8XFh8yBzrpJQmNyZzgoTqB:3:CL:1766" }, { "schema_id": "5XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11", "schema_name":"BYU Student Info", "schema_version":"1.0", "schema_issuer_did":"5XFh8yBzrpJQmNyZzgoTqB", "issuer_did":"66Fh8yBzrpJQmNyZzgoTqB", "cred_def_id": "66Fh8yBzrpJQmNyZzgoTqB:3:CL:1766"}]}]
 revocation_interval = {}
+
 
 @pytest.mark.asyncio
 async def test_create_proof_has_libindy_error_with_no_init():
@@ -113,6 +115,17 @@ async def test_request_proof():
     proof = await Proof.create(source_id, name, requested_attrs, revocation_interval)
     await proof.request_proof(connection)
     assert await proof.get_state() == State.OfferSent
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures('vcx_init_test_mode')
+async def test_update_state_with_message():
+    connection = await Connection.create(source_id)
+    await connection.connect(connection_options)
+    proof = await Proof.create(source_id, name, requested_attrs, revocation_interval)
+    await proof.request_proof(connection)
+    assert await proof.get_state() == State.OfferSent
+    state = await proof.update_state_with_message(proof_message)
+    assert state == State.Accepted
 
 
 @pytest.mark.asyncio
