@@ -1062,6 +1062,46 @@ fn _build_auth_rule_request(command_handle: CommandHandle,
     })
 }
 
+/// Builds a AUTH_RULES request. Request to change multiple authentication rules for a ledger transaction.
+///
+/// # Arguments
+/// * `submitter_did`: DID of the request sender.
+/// * `data`: a list of auth rules: [
+///     {
+///         "auth_type": ledger transaction alias or associated value,
+///         "auth_action": type of an action,
+///         "field": transaction field,
+///         "old_value": (Optional) old value of a field, which can be changed to a new_value (mandatory for EDIT action),
+///         "new_value": (Optional) new value that can be used to fill the field,
+///         "constraint": set of constraints required for execution of an action in the format described above for `build_auth_rule_request` function.
+///     }
+/// ]
+///
+/// # Returns
+/// Request result as json.
+pub fn build_auth_rules_request(submitter_did: &str, data: &str) -> Box<Future<Item=String, Error=IndyError>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+
+    let err = _build_auth_rules_request(command_handle, submitter_did, data, cb);
+
+    ResultHandler::str(command_handle, err, receiver)
+}
+
+fn _build_auth_rules_request(command_handle: CommandHandle,
+                             submitter_did: &str,
+                             data: &str,
+                             cb: Option<ResponseStringCB>) -> ErrorCode {
+    let submitter_did = c_str!(submitter_did);
+    let data = c_str!(data);
+
+    ErrorCode::from(unsafe {
+        ledger::indy_build_auth_rules_request(command_handle,
+                                              submitter_did.as_ptr(),
+                                              data.as_ptr(),
+                                              cb)
+    })
+}
+
 /// Builds a GET_AUTH_RULE request. Request to get authentication rules for a ledger transaction.
 ///
 /// NOTE: Either none or all transaction related parameters must be specified (`old_value` can be skipped for `ADD` action).

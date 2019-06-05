@@ -1002,6 +1002,43 @@ extern "C" {
                                                                           const char*   request_json)
                                                     );
 
+
+    /// Builds a AUTH_RULES request. Request to change multiple authentication rules for a ledger transaction.
+    ///
+    /// #Params
+    /// command_handle: command handle to map callback to caller context.
+    /// submitter_did: DID of the request sender.
+    /// data: a list of auth rules: [
+    ///     {
+    ///         "auth_type": ledger transaction alias or associated value,
+    ///         "auth_action": type of an action,
+    ///         "field": transaction field,
+    ///         "old_value": (Optional) old value of a field, which can be changed to a new_value (mandatory for EDIT action),
+    ///         "new_value": (Optional) new value that can be used to fill the field,
+    ///         "constraint": set of constraints required for execution of an action in the format described above for `indy_build_auth_rule_request` function.
+    ///     }
+    /// ]
+    ///
+    /// Default ledger auth rules: https://github.com/hyperledger/indy-node/blob/master/docs/source/auth_rules.md
+    ///
+    /// More about AUTH_RULES request: https://github.com/hyperledger/indy-node/blob/master/docs/source/requests.md#auth_rules
+    ///
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// Request result as json.
+    ///
+    /// #Errors
+    /// Common*
+    extern indy_error_t indy_build_auth_rules_request(indy_handle_t command_handle,
+                                                     const char *  submitter_did,
+                                                     const char *  data,
+
+                                                     void           (*cb)(indy_handle_t command_handle_,
+                                                                          indy_error_t  err,
+                                                                          const char*   request_json)
+                                                    );
+
     /// Builds a GET_AUTH_RULE request. Request to get authentication rules for a ledger transaction.
     ///
     /// NOTE: Either none or all transaction related parameters must be specified (`old_value` can be skipped for `ADD` action).

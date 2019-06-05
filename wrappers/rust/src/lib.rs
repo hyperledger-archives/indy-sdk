@@ -56,6 +56,8 @@ pub use ffi::{
     TailsWriterHandle,
 };
 
+pub use ffi::{INVALID_POOL_HANDLE, INVALID_WALLET_HANDLE};
+
 /// Set libindy runtime configuration. Can be optionally called to change current params.
 ///
 /// # Arguments
