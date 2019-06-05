@@ -14,7 +14,7 @@ use domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefini
 use domain::anoncreds::revocation_registry_delta::{RevocationRegistryDelta, RevocationRegistryDeltaV1};
 use domain::anoncreds::schema::{Schema, SchemaV1, MAX_ATTRIBUTES_COUNT};
 use domain::ledger::attrib::{AttribOperation, GetAttribOperation};
-use domain::ledger::constants::{GET_VALIDATOR_INFO, NYM, POOL_RESTART, ROLE_REMOVE, STEWARD, ENDORSER, TRUSTEE, NETWORK_MONITOR, txn_name_to_code};
+use domain::ledger::constants::{GET_VALIDATOR_INFO, NYM, POOL_RESTART, ROLE_REMOVE, STEWARD, ENDORSER, TRUSTEE, NETWORK_MONITOR, ROLES, txn_name_to_code};
 use domain::ledger::cred_def::{CredDefOperation, GetCredDefOperation, GetCredDefReplyResult};
 use domain::ledger::ddo::GetDdoOperation;
 use domain::ledger::node::{NodeOperation, NodeOperationData};
@@ -74,6 +74,7 @@ impl LedgerService {
                     "TRUSTEE" => TRUSTEE,
                     "TRUST_ANCHOR" | "ENDORSER" => ENDORSER,
                     "NETWORK_MONITOR" => NETWORK_MONITOR,
+                    role if ROLES.contains(&role) => role,
                     role @ _ => return Err(err_msg(IndyErrorKind::InvalidStructure, format!("Invalid role: {}", role)))
                 }.to_string())
             }
