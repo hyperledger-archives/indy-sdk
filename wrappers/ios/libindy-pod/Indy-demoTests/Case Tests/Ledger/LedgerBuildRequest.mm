@@ -679,6 +679,55 @@
     XCTAssertTrue([request contains:expectedResult], @"Request doesn't contain expectedResult");
 }
 
+- (void)testBuildAuthRulesRequestsWorks {
+    NSDictionary *constraint = @{
+            @"sig_count": @(1),
+            @"role": @"0",
+            @"constraint_id": @"ROLE",
+            @"need_to_be_owner": @(false)
+    };
+
+    NSArray *data = @[
+        @{
+            @"auth_type": @"1",
+            @"auth_action": @"ADD",
+            @"field": @"role",
+            @"new_value": @"101",
+            @"constraint": constraint
+        },
+        @{
+            @"auth_type": @"1",
+            @"auth_action": @"EDIT",
+            @"field": @"role",
+            @"old_value": @"0",
+            @"new_value": @"101",
+            @"constraint": constraint
+        },
+    ];
+
+    NSDictionary *expectedResult = @{
+            @"identifier": [TestUtils trusteeDid],
+            @"operation": @{
+                    @"type": @"122",
+                    @"rules": data,
+            }
+    };
+    
+    NSError *error;
+    NSData *jsonData = [NSJSONSerialization dataWithJSONObject:data options:NSJSONWritingPrettyPrinted error:&error];
+    NSString *dataJson = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+    
+    NSString *requestJson;
+    ret = [[LedgerUtils sharedInstance] buildAuthRulesRequestWithSubmitterDid:[TestUtils trusteeDid]
+                                                                         data:dataJson
+                                                                   outRequest:&requestJson];
+    XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildAuthRulesRequestWithSubmitterDid() failed!");
+
+    NSDictionary *request = [NSDictionary fromString:requestJson];
+
+    XCTAssertTrue([request contains:expectedResult], @"Request doesn't contain expectedResult");
+}
+
 - (void)testBuildGetAuthRuleRequestsWorks {
     NSDictionary *expectedResult = @{
             @"identifier": [TestUtils trusteeDid],
