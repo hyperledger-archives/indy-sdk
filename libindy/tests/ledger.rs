@@ -2380,7 +2380,7 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_auth_rules_request_works() {
-            let (wallet_handle, pool_handle, trustee_did) = utils::setup_trustee();
+            let (wallet_handle, pool_handle, trustee_did, wallet_config) = utils::setup_trustee("indy_auth_rules_request_works");
 
             let action1: (&str, &str, &str, Option<&str>, Option<&str>) = (ADD_AUTH_ACTION, constants::NYM, FIELD, None, Some(VALUE));
             let action2: (&str, &str, &str, Option<&str>, Option<&str>) = (EDIT_AUTH_ACTION, constants::NYM, FIELD, Some(VALUE), Some(NEW_VALUE));
@@ -2444,7 +2444,7 @@ mod high_cases {
             _change_constraint(pool_handle, wallet_handle, &trustee_did, action2.0,
                                action2.1, action2.2, action2.3, action2.4, &default_constraint_action_2);
 
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_auth_rules_request_works", &wallet_config);
         }
     }
 
