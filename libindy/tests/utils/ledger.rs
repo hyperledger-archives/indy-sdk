@@ -265,10 +265,12 @@ pub fn post_entities() -> (&'static str, &'static str, &'static str) {
 
     unsafe {
         COMMON_ENTITIES_INIT.call_once(|| {
-            let pool_name = "COMMON_ENTITIES_POOL";
-            let pool_handle = pool::create_and_open_pool_ledger(pool_name).unwrap();
+            let pool_and_wallet_name = "COMMON_ENTITIES_POOL";
+            super::test::cleanup_storage(pool_and_wallet_name);
 
-            let wallet_handle = wallet::create_and_open_default_wallet().unwrap();
+            let pool_handle = pool::create_and_open_pool_ledger(pool_and_wallet_name).unwrap();
+
+            let (wallet_handle, wallet_config) = wallet::create_and_open_default_wallet(pool_and_wallet_name).unwrap();
 
             let (issuer_did, _) = did::create_store_and_publish_my_did_from_trustee(wallet_handle, pool_handle).unwrap();
 
@@ -326,7 +328,10 @@ pub fn post_entities() -> (&'static str, &'static str, &'static str) {
             mem::forget(rev_reg_id);
             REV_REG_DEF_ID = res;
 
+            pool::close(pool_handle).unwrap();
+            pool::delete(pool_and_wallet_name).unwrap();
             wallet::close_wallet(wallet_handle).unwrap();
+            wallet::delete_wallet(&wallet_config, WALLET_CREDENTIALS).unwrap();
         });
 
         (SCHEMA_ID, CRED_DEF_ID, REV_REG_DEF_ID)
