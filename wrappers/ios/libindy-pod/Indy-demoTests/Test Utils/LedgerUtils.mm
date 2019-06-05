@@ -761,6 +761,28 @@
     return err;
 }
 
+- (NSError *)buildAuthRulesRequestWithSubmitterDid:(NSString *)submitterDid
+                                              data:(NSString *)data
+                                        outRequest:(NSString **)resultJson {
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+    __block NSString *outJson = nil;
+
+    [IndyLedger buildAuthRulesRequestWithSubmitterDid:submitterDid
+                                                 data:data
+                                           completion:^(NSError *error, NSString *json) {
+                                               err = error;
+                                               outJson = json;
+                                               [completionExpectation fulfill];
+                                           }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
+
+    if (resultJson) {*resultJson = outJson;}
+
+    return err;
+}
+
 - (NSError *)buildGetAuthRuleRequestWithSubmitterDid:(NSString *)submitterDid
                                              txnType:(NSString *)txnType
                                               action:(NSString *)action

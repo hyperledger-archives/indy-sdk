@@ -142,6 +142,12 @@ pub fn libindy_build_auth_rule_request(submitter_did: &str, txn_type: &str, acti
         .map_err(map_rust_indy_sdk_error)
 }
 
+pub fn libindy_build_auth_rules_request(submitter_did: &str, data: &str) -> VcxResult<String> {
+    ledger::build_auth_rules_request(submitter_did, data)
+        .wait()
+        .map_err(map_rust_indy_sdk_error)
+}
+
 pub fn libindy_build_get_auth_rule_request(submitter_did: Option<&str>, txn_type: Option<&str>, action: Option<&str>, field: Option<&str>,
                                            old_value: Option<&str>, new_value: Option<&str>) -> VcxResult<String> {
     ledger::build_get_auth_rule_request(submitter_did, txn_type, action, field, old_value, new_value)
@@ -278,50 +284,28 @@ pub mod auth_rule {
         let fees: HashMap<String, String> = ::serde_json::from_str(rules_fee)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize fees: {:?}", err)))?;
 
-        let mut responses: Vec<Box<Future<Item=String, Error=::indy::IndyError>>> = Vec::new();
+        let mut auth_rules: Vec<AuthRule> = auth_rules.clone();
 
-        for (txn_, fee_alias) in fees {
-            for auth_rule in auth_rules.iter() {
-                if auth_rule.auth_type == txn_ {
-                    let mut constraint = auth_rule.constraint.clone();
-                    _set_fee_to_constraint(&mut constraint, &fee_alias);
-
-                    match constraint {
-                        Constraint::ForbiddenConstraint(_) => {}
-                        mut constraint @ _ => {
-                            responses.push(_send_auth_rule(submitter_did, auth_rule, &constraint)?);
-                        }
-                    }
+        auth_rules
+            .iter_mut()
+            .for_each(|auth_rule| {
+                if let Some(fee_alias) = fees.get(&auth_rule.auth_type) {
+                    _set_fee_to_constraint(&mut auth_rule.constraint, &fee_alias);
                 }
-            }
-        }
+            });
 
-        responses
-            .into_iter()
-            .map(|response| _check_auth_rule_responses(response))
-            .collect::<VcxResult<Vec<()>>>()?;
-
-        Ok(())
+        _send_auth_rules(submitter_did, &auth_rules)
     }
 
-    fn _send_auth_rule(submitter_did: &str, auth_rule: &AuthRule, constraint: &Constraint) -> VcxResult<Box<Future<Item=String, Error=::indy::IndyError>>> {
-        let constraint_json = ::serde_json::to_string(&constraint)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidLedgerResponse, format!("{:?}", err)))?;
+    fn _send_auth_rules(submitter_did: &str, data: &Vec<AuthRule>) -> VcxResult<()> {
+        let data = serde_json::to_string(&data)
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize auth rules: {:?}", err)))?;
 
-        let auth_rule_request = libindy_build_auth_rule_request(submitter_did,
-                                                                &auth_rule.auth_type,
-                                                                &auth_rule.auth_action,
-                                                                &auth_rule.field,
-                                                                auth_rule.old_value.as_ref().map(String::as_str),
-                                                                auth_rule.new_value.as_ref().map(String::as_str),
-                                                                &constraint_json)?;
+        let auth_rules_request = libindy_build_auth_rules_request(submitter_did, &data)?;
 
-        let response = ledger::sign_and_submit_request(get_pool_handle()?, get_wallet_handle(), submitter_did, &auth_rule_request);
-        Ok(response)
-    }
-
-    fn _check_auth_rule_responses(response: Box<Future<Item=String, Error=::indy::IndyError>>) -> VcxResult<()> {
-        let response = response.wait().map_err(map_rust_indy_sdk_error)?;
+        let response = ledger::sign_and_submit_request(get_pool_handle()?, get_wallet_handle(), submitter_did, &auth_rules_request)
+            .wait()
+            .map_err(map_rust_indy_sdk_error)?;
 
         let response: serde_json::Value = ::serde_json::from_str(&response)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidLedgerResponse, format!("{:?}", err)))?;
@@ -346,7 +330,6 @@ pub mod auth_rule {
                 .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidLedgerResponse, err)).unwrap();
 
             let mut auth_rules = AUTH_RULES.lock().unwrap();
-
             *auth_rules = response.result.data;
         })
     }

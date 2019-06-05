@@ -6,6 +6,7 @@ use connection;
 use std::ptr;
 use utils::threadpool::spawn;
 use error::prelude::*;
+use messages::get_message::Message;
 
 /// Create a new Proof object that requests a proof for an enterprise
 ///
@@ -133,7 +134,7 @@ pub extern fn vcx_proof_update_state(command_handle: u32,
     }
 
     spawn(move|| {
-        match proof::update_state(proof_handle) {
+        match proof::update_state(proof_handle, None) {
             Ok(x) => {
                 trace!("vcx_proof_update_state_cb(command_handle: {}, rc: {}, proof_handle: {}, state: {}) source_id: {}",
                       command_handle, error::SUCCESS.message, proof_handle, x, source_id);
@@ -152,7 +153,63 @@ pub extern fn vcx_proof_update_state(command_handle: u32,
     error::SUCCESS.code_num
 }
 
-/// Get the current state of the proof object
+/// Checks for any state change from the given message and updates the proof state attribute
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// proof_handle: Proof handle that was provided during creation. Used to access proof object
+///
+/// message: String containing updated status
+///
+/// cb: Callback that provides most current state of the proof and error status of request
+///
+/// #Returns
+/// Error code as a u32
+#[no_mangle]
+pub extern fn vcx_proof_update_state_with_message(command_handle: u32,
+                                                  proof_handle: u32,
+                                                  message: *const c_char,
+                                                  cb: Option<extern fn(xcommand_handle: u32, err: u32, state: u32)>) -> u32 {
+    info!("vcx_proof_update_state_with_message >>>");
+
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+    check_useful_c_str!(message, VcxErrorKind::InvalidOption);
+
+    let source_id = proof::get_source_id(proof_handle).unwrap_or_default();
+    trace!("vcx_proof_update_state_with_message(command_handle: {}, proof_handle: {}) source_id: {}",
+          command_handle, proof_handle, source_id);
+
+    if !proof::is_valid_handle(proof_handle) {
+        return VcxError::from(VcxErrorKind::InvalidProofHandle).into()
+    }
+
+    let message: Message = match serde_json::from_str(&message) {
+        Ok(x) => x,
+        Err(_) => return VcxError::from(VcxErrorKind::InvalidJson).into(),
+    };
+
+    spawn(move|| {
+        match proof::update_state(proof_handle, Some(message)) {
+            Ok(x) => {
+                trace!("vcx_proof_update_state_with_message_cb(command_handle: {}, rc: {}, proof_handle: {}, state: {}) source_id: {}",
+                      command_handle, error::SUCCESS.message, proof_handle, x, source_id);
+                cb(command_handle, error::SUCCESS.code_num, x);
+            },
+            Err(x) => {
+                warn!("vcx_proof_update_state_with_message_cb(command_handle: {}, rc: {}, proof_handle: {}, state: {}) source_id: {}",
+                      command_handle, x, proof_handle, 0, source_id);
+                cb(command_handle, x.into(), 0);
+            }
+        }
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
+
+/// Get the current state of the proof object from the given message
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
@@ -406,7 +463,7 @@ pub extern fn vcx_get_proof(command_handle: u32,
 
     spawn(move|| {
         //update the state to see if proof has come, ignore any errors
-        match proof::update_state(proof_handle) {
+        match proof::update_state(proof_handle, None) {
             Ok(_) => (),
             Err(_) => (),
         };
@@ -549,6 +606,16 @@ mod tests {
         cb.receive(Some(Duration::from_secs(10))).unwrap();
 
         assert_eq!(proof::get_state(proof_handle).unwrap(),VcxStateType::VcxStateOfferSent as u32);
+
+        let cb = return_types_u32::Return_U32_U32::new().unwrap();
+        assert_eq!(vcx_proof_update_state_with_message(cb.command_handle,
+                                                       proof_handle,
+                                                       CString::new(PROOF_RESPONSE_STR).unwrap().into_raw(),
+                                                       Some(cb.get_callback())),
+                   error::SUCCESS.code_num);
+        let state = cb.receive(Some(Duration::from_secs(10))).unwrap();
+
+        assert_eq!(proof::get_state(proof_handle).unwrap(),VcxStateType::VcxStateAccepted as u32);
     }
 
     #[test]
