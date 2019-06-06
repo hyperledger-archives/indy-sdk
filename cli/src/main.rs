@@ -170,6 +170,7 @@ fn build_executor() -> CommandExecutor {
         .add_command(ledger::verify_payment_receipt_command::new())
         .add_command(ledger::sign_multi_command::new())
         .add_command(ledger::auth_rule_command::new())
+        .add_command(ledger::auth_rules_command::new())
         .add_command(ledger::get_auth_rule_command::new())
         .add_command(ledger::save_transaction_command::new())
         .add_command(ledger::load_transaction_command::new())
