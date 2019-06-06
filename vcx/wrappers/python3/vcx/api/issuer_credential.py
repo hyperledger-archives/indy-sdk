@@ -112,6 +112,30 @@ class IssuerCredential(VcxStateful):
         """
         return await self._update_state(IssuerCredential, 'vcx_issuer_credential_update_state')
 
+    async def update_state_with_message(self, message: str) -> int:
+        """
+        Update the state of the credential based on the given message.
+        Example:
+        cred = await IssuerCredential.create(source_id)
+        assert await cred.update_state_with_message(message) == State.Accepted
+        :param message:
+        :return Current state of the IssuerCredential
+        """
+        if not hasattr(IssuerCredential.update_state_with_message, "cb"):
+            self.logger.debug("vcx_issuer_credential_update_state_with_message: Creating callback")
+            IssuerCredential.update_state_with_message.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_uint32))
+
+        c_handle = c_uint32(self.handle)
+        c_message = c_char_p(message.encode('utf-8'))
+
+        state = await do_call('vcx_issuer_credential_update_state_with_message',
+                              c_handle,
+                              c_message,
+                              IssuerCredential.update_state_with_message.cb)
+
+        self.logger.debug("vcx_issuer_credential_update_state_with_message completed")
+        return state
+
     async def get_state(self) -> int:
         """
         Gets the state of the entity.

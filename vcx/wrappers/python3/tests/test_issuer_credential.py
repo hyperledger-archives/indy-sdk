@@ -4,6 +4,7 @@ from vcx.state import State
 from vcx.api.issuer_credential import IssuerCredential
 from vcx.api.connection import Connection
 from vcx.api.credential_def import CredentialDef
+from tests.conftest import cred_request_message
 
 source_id = '1'
 schema_no = 1234
@@ -181,6 +182,18 @@ async def test_send_credential():
     issuer_credential2 = await issuer_credential.deserialize(data)
     await issuer_credential2.send_credential(connection)
     assert await issuer_credential2.get_state() == State.Accepted
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures('vcx_init_test_mode')
+async def test_send_credential_with_message():
+    connection = await Connection.create(source_id)
+    await connection.connect(connection_options)
+    cred_def = await CredentialDef.create(source_id, name, schema_id, 0)
+    issuer_credential = await IssuerCredential.create(source_id, attrs, cred_def.handle, name, price)
+    await issuer_credential.send_offer(connection)
+    assert await issuer_credential.update_state_with_message(cred_request_message) == State.RequestReceived
+    await issuer_credential.send_credential(connection)
+    assert await issuer_credential.get_state() == State.Accepted
 
 
 @pytest.mark.asyncio

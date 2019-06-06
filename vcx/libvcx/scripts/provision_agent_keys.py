@@ -51,6 +51,10 @@ def get_agency_info(agency_url):
 def register_agent(args):
     vcx = CDLL("/usr/lib/libvcx.so")
 
+    if args.verbose:
+            c_debug = c_char_p('debug'.encode('utf-8'))
+            vcx.vcx_set_default_logger(c_debug)
+
     agency_info = get_agency_info(args.AGENCY_URL)
     json_str = json.dumps({'agency_url':args.AGENCY_URL,
         'agency_did':agency_info['DID'],
@@ -81,11 +85,6 @@ def register_agent(args):
 
 async def main():
     args = parse_args()
-
-    if args.verbose:
-        os.environ["RUST_LOG"] = "info"
-    else:
-        os.environ["RUST_LOG"] = "error"
 
     register_agent(args)
 
