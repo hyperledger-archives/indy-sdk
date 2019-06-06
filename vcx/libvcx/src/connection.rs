@@ -470,7 +470,7 @@ pub fn parse_acceptance_details(handle: u32, message: &Message) -> VcxResult<Sen
     }
 }
 
-pub fn update_state(handle: u32) -> VcxResult<u32> {
+pub fn update_state(handle: u32, message: Option<String>) -> VcxResult<u32> {
     debug!("updating state for connection {}", get_source_id(handle).unwrap_or_default());
     let state = get_state(handle);
 
@@ -497,15 +497,21 @@ pub fn update_state(handle: u32) -> VcxResult<u32> {
     if get_state(handle) == VcxStateType::VcxStateOfferSent as u32 || get_state(handle) == VcxStateType::VcxStateInitialized as u32 {
         for message in response {
             if message.status_code == MessageStatusCode::Accepted && message.msg_type == RemoteMessageType::ConnReqAnswer {
-                let details = parse_acceptance_details(handle, &message)
-                    .map_err(|err| err.extend("Cannot parse acceptance details"))?;
-
-                set_their_pw_did(handle, &details.did).ok();
-                set_their_pw_verkey(handle, &details.verkey).ok();
-                set_state(handle, VcxStateType::VcxStateAccepted).ok();
+                process_acceptance_message(handle, message)?;
             }
         }
     };
+
+    Ok(error::SUCCESS.code_num)
+}
+
+pub fn process_acceptance_message(handle: u32, message: Message) -> VcxResult<u32> {
+    let details = parse_acceptance_details(handle, &message)
+        .map_err(|err| err.extend("Cannot parse acceptance details"))?;
+
+    set_their_pw_did(handle, &details.did).ok();
+    set_their_pw_verkey(handle, &details.verkey).ok();
+    set_state(handle, VcxStateType::VcxStateAccepted).ok();
 
     Ok(error::SUCCESS.code_num)
 }
@@ -700,7 +706,7 @@ pub mod tests {
         //BE INSTITUTION AND CHECK THAT INVITE WAS ACCEPTED
         ::utils::devsetup::tests::set_institution();
         thread::sleep(Duration::from_millis(2000));
-        update_state(alice).unwrap();
+        update_state(alice, None).unwrap();
         assert_eq!(VcxStateType::VcxStateAccepted as u32, get_state(alice));
         (faber, alice)
     }
@@ -730,6 +736,9 @@ pub mod tests {
         assert!(!get_pw_verkey(handle).unwrap().is_empty());
         assert_eq!(get_state(handle), VcxStateType::VcxStateInitialized as u32);
         connect(handle, Some("{}".to_string())).unwrap();
+        ::utils::httpclient::set_next_u8_response(GET_MESSAGES_INVITE_ACCEPTED_RESPONSE.to_vec());
+        update_state(handle, None).unwrap();
+        assert_eq!(get_state(handle), VcxStateType::VcxStateAccepted as u32);
         assert_eq!(delete_connection(handle).unwrap(), 0);
         // This errors b/c we release handle in delete connection
         assert!(release(handle).is_err());
@@ -793,7 +802,7 @@ pub mod tests {
 
         println!("updating state, handle: {}", handle);
         httpclient::set_next_u8_response(GET_MESSAGES_RESPONSE.to_vec());
-        update_state(handle).unwrap();
+        update_state(handle, None).unwrap();
         let details = get_invite_details(handle, true).unwrap();
         assert!(details.contains("\"dp\":"));
         assert_eq!(get_invite_details(12345, true).unwrap_err().kind(), VcxErrorKind::InvalidConnectionHandle);
@@ -993,6 +1002,14 @@ pub mod tests {
         let handle_2 = create_connection_with_invite("alice", &details).unwrap();
 
         connect(handle_2, Some("{}".to_string())).unwrap();
+    }
+
+    #[test]
+    fn test_process_acceptance_message() {
+        init!("true");
+        let handle = create_connection("test_process_acceptance_message").unwrap();
+        let message = serde_json::from_str(INVITE_ACCEPTED_RESPONSE).unwrap();
+        assert_eq!(error::SUCCESS.code_num, process_acceptance_message(handle, message).unwrap());
     }
 
     #[test]

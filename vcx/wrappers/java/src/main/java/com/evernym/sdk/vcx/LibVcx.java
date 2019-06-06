@@ -105,6 +105,11 @@ public abstract class LibVcx {
         public int vcx_connection_update_state(int command_handle, int connection_handle, Callback cb);
 
         /**
+         * Request a State update from the given message for the given connection.
+         */
+        public int vcx_connection_update_state_with_message(int command_handle, int connection_handle, String message, Callback cb);
+
+        /**
          * Retrieves the State of the connection
          */
         public int vcx_connection_get_state(int command_handle, int connection_handle, Callback cb);
@@ -144,6 +149,9 @@ public abstract class LibVcx {
 
         /** Updates the state of the credential from the agency. */
         public int vcx_issuer_credential_update_state(int command_handle, int credential_handle, Callback cb);
+
+        /** Updates the state of the credential from the given message. */
+        public int vcx_issuer_credential_update_state_with_message(int command_handle, int credential_handle, String message, Callback cb);
 
         /** Retrieves the state of the issuer_credential. */
         public int vcx_issuer_credential_get_state(int command_handle, int credential_handle, Callback cb);
@@ -200,6 +208,11 @@ public abstract class LibVcx {
          * Populates status with the current State of this proof request.
          */
         public int vcx_proof_update_state(int command_handle, int proof_handle, Callback cb);
+
+        /**
+         * Updates the state of the proof from the given message.
+         */
+        public int vcx_proof_update_state_with_message(int command_handle, int proof_handle, String message, Callback cb);
 
         /**
          * Retrieves the State of the proof.

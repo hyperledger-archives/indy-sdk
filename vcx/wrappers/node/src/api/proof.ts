@@ -1,4 +1,4 @@
-import { Callback } from 'ffi'
+import * as ffi from 'ffi'
 import { VCXInternalError } from '../errors'
 import { rustAPI } from '../rustlib'
 import { createFFICallbackPromise } from '../utils/ffi-helpers'
@@ -176,6 +176,41 @@ export class Proof extends VCXBaseWithState<IProofData> {
   }
 
   /**
+   *
+   * Updates the state of the proof from the given message.
+   *
+   * Example:
+   * ```
+   * await object.updateStateWithMessage(message)
+   * ```
+   * @returns {Promise<void>}
+   */
+  public async updateStateWithMessage (message: string): Promise<void> {
+    try {
+      const commandHandle = 0
+      await createFFICallbackPromise<number>(
+        (resolve, reject, cb) => {
+          const rc = rustAPI().vcx_proof_update_state_with_message(commandHandle, this.handle, message, cb)
+          if (rc) {
+            resolve(StateType.None)
+          }
+        },
+        (resolve, reject) => ffi.Callback(
+          'void',
+          ['uint32', 'uint32', 'uint32'],
+          (handle: number, err: any, state: StateType) => {
+            if (err) {
+              reject(err)
+            }
+            resolve(state)
+          })
+      )
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
+
+  /**
    * Sends a proof request to pairwise connection.
    *
    * Example
@@ -200,7 +235,7 @@ export class Proof extends VCXBaseWithState<IProofData> {
               reject(rc)
             }
           },
-          (resolve, reject) => Callback(
+          (resolve, reject) => ffi.Callback(
             'void',
             ['uint32', 'uint32'],
             (xcommandHandle: number, err: number) => {
@@ -243,7 +278,7 @@ export class Proof extends VCXBaseWithState<IProofData> {
               reject(rc)
             }
           },
-          (resolve, reject) => Callback(
+          (resolve, reject) => ffi.Callback(
             'void',
             ['uint32', 'uint32', 'uint32', 'string'],
             (xcommandHandle: number, err: number, proofState: ProofState, proofData: string) => {

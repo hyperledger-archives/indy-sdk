@@ -1412,20 +1412,58 @@ pub mod auth_rule_command {
     }
 }
 
-pub mod get_auth_rule_command {
+pub mod auth_rules_command {
     use super::*;
 
-    pub type AuthRulesData = Vec<AuthRuleData>;
+    command!(CommandMetadata::build("auth-rules", "Send AUTH_RULES request to change authentication rules for multiple ledger transactions.")
+                .add_main_param("rules", r#"A list of auth rules: [{"auth_type", "auth_action", "field", "old_value", "new_value"},{...}]"#)
+                .add_optional_param("send","Send the request to the Ledger (True by default). If false then created request will be printed and stored into CLI context.")
+                .add_example(r#"ledger auth-rules [{"auth_type":"1","auth_action":"ADD","field":"role","new_value":"101","constraint":{"sig_count":1,"role":"0","constraint_id":"ROLE","need_to_be_owner":false}}]"#)
+                .finalize()
+    );
 
-    #[derive(Deserialize, Debug)]
-    pub struct AuthRuleData {
-        pub auth_type: String,
-        pub auth_action: String,
-        pub field: String,
-        pub old_value: Option<String>,
-        pub new_value: Option<String>,
-        pub constraint: serde_json::Value,
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
+
+        let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
+        let (wallet_handle, wallet_name) = ensure_opened_wallet(&ctx)?;
+        let submitter_did = ensure_active_did(&ctx)?;
+
+        let rules = get_str_param("rules", params).map_err(error_err!())?;
+        let send = get_opt_bool_param("send", params).map_err(error_err!())?.unwrap_or(SEND_REQUEST);
+
+        let request = Ledger::build_auth_rules_request(&submitter_did, &rules)
+            .map_err(|err| handle_indy_error(err, None, None, None))?;
+
+        let (_, response): (String, Response<serde_json::Value>) =
+            send_write_request!(ctx, send, &request, pool_handle, &pool_name, wallet_handle, &wallet_name, &submitter_did);
+
+        let result = handle_transaction_response(response)?;
+        println!("result {:?}", result);
+
+        let rules: AuthRulesData = serde_json::from_value(result["txn"]["data"]["rules"].clone())
+            .map_err(|_| println_err!("Wrong data has been received"))?;
+        let res = print_auth_rules(rules);
+
+        trace!("execute << {:?}", res);
+        Ok(res)
     }
+}
+
+pub type AuthRulesData = Vec<AuthRuleData>;
+
+#[derive(Deserialize, Debug)]
+pub struct AuthRuleData {
+    pub auth_type: String,
+    pub auth_action: String,
+    pub field: String,
+    pub old_value: Option<String>,
+    pub new_value: Option<String>,
+    pub constraint: serde_json::Value,
+}
+
+pub mod get_auth_rule_command {
+    use super::*;
 
     command!(CommandMetadata::build("get-auth-rule", r#"Send GET_AUTH_RULE request to get authentication rules for ledger transactions.
         Note: Either none or all parameters must be specified (`old_value` can be skipped for `ADD` action)."#)
@@ -1464,16 +1502,24 @@ pub mod get_auth_rule_command {
         let rules: AuthRulesData = serde_json::from_value(result["data"].clone())
             .map_err(|_| println_err!("Wrong data has been received"))?;
 
-        let constraints = rules
-            .into_iter()
-            .map(|rule| {
-                let auth_type = get_txn_title(&serde_json::Value::String(rule.auth_type.clone()));
-                let action = rule.auth_action;
-                let field = rule.field;
-                let old_value = if action == "ADD" { None } else { rule.old_value };
-                let new_value = rule.new_value;
+        let res = print_auth_rules(rules);
 
-                json!({
+        trace!("execute << {:?}", res);
+        Ok(res)
+    }
+}
+
+fn print_auth_rules(rules: AuthRulesData) {
+    let constraints = rules
+        .into_iter()
+        .map(|rule| {
+            let auth_type = get_txn_title(&serde_json::Value::String(rule.auth_type.clone()));
+            let action = rule.auth_action;
+            let field = rule.field;
+            let old_value = if action == "ADD" { None } else { rule.old_value };
+            let new_value = rule.new_value;
+
+            json!({
                     "auth_type": auth_type,
                     "auth_action": action,
                     "field": field,
@@ -1481,21 +1527,17 @@ pub mod get_auth_rule_command {
                     "new_value": new_value,
                     "constraint": ::serde_json::to_string_pretty(&rule.constraint).unwrap(),
                 })
-            })
-            .collect::<Vec<serde_json::Value>>();
+        })
+        .collect::<Vec<serde_json::Value>>();
 
-        let res = print_list_table(&constraints,
-                                   &vec![("auth_type", "Type"),
-                                         ("auth_action", "Action"),
-                                         ("field", "Field"),
-                                         ("old_value", "Old Value"),
-                                         ("new_value", "New Value"),
-                                         ("constraint", "Constraint")],
-                                   "There are no rules set");
-
-        trace!("execute << {:?}", res);
-        Ok(res)
-    }
+    print_list_table(&constraints,
+                               &vec![("auth_type", "Type"),
+                                     ("auth_action", "Action"),
+                                     ("field", "Field"),
+                                     ("old_value", "Old Value"),
+                                     ("new_value", "New Value"),
+                                     ("constraint", "Constraint")],
+                               "There are no rules set");
 }
 
 pub mod save_transaction_command {
