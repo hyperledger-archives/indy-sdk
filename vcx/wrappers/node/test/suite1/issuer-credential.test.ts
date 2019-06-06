@@ -7,6 +7,7 @@ import {
   dataIssuerCredentialCreate,
   issuerCredentialCreate
 } from 'helpers/entities'
+import { CRED_REQ_MESSAGE } from 'helpers/test-constants'
 import { initVcxTestMode, shouldThrow } from 'helpers/utils'
 import {
   Connection,
@@ -163,6 +164,16 @@ describe('IssuerCredential:', () => {
       VCXMock.setVcxMock(VCXMockMessage.IssuerCredentialReq)
       VCXMock.setVcxMock(VCXMockMessage.UpdateIssuerCredential)
       await issuerCredential.updateState()
+      assert.equal(await issuerCredential.getState(), StateType.RequestReceived)
+      await issuerCredential.sendCredential(connection)
+      assert.equal(await issuerCredential.getState(), StateType.Accepted)
+    })
+
+    it('success', async () => {
+      const connection = await connectionCreateConnect()
+      const issuerCredential = await issuerCredentialCreate()
+      await issuerCredential.sendOffer(connection)
+      await issuerCredential.updateStateWithMessage(CRED_REQ_MESSAGE)
       assert.equal(await issuerCredential.getState(), StateType.RequestReceived)
       await issuerCredential.sendCredential(connection)
       assert.equal(await issuerCredential.getState(), StateType.Accepted)

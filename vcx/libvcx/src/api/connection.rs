@@ -3,8 +3,9 @@ use utils::cstring::CStringUtils;
 use utils::error;
 use utils::threadpool::spawn;
 use std::ptr;
-use connection::{get_source_id, create_connection, create_connection_with_invite, connect, to_string, get_state, release, is_valid_handle, update_state, from_string, get_invite_details, delete_connection};
+use connection::{get_source_id, create_connection, create_connection_with_invite, connect, to_string, get_state, release, is_valid_handle, update_state, from_string, get_invite_details, delete_connection, process_acceptance_message};
 use error::prelude::*;
+use messages::get_message::Message;
 
 /// Delete a Connection object and release its handle
 ///
@@ -332,7 +333,66 @@ pub extern fn vcx_connection_update_state(command_handle: u32,
     }
 
     spawn(move|| {
-        let rc = match update_state(connection_handle) {
+        let rc = match update_state(connection_handle, None) {
+            Ok(x) => {
+                trace!("vcx_connection_update_state_cb(command_handle: {}, rc: {}, connection_handle: {}, state: {}), source_id: {:?}",
+                      command_handle, error::SUCCESS.message, connection_handle, get_state(connection_handle), source_id);
+                x
+            },
+            Err(x) => {
+                warn!("vcx_connection_update_state_cb(command_handle: {}, rc: {}, connection_handle: {}, state: {}), source_id: {:?}",
+                      command_handle, x, connection_handle, get_state(connection_handle), source_id);
+                x.into()
+            },
+        };
+        let state = get_state(connection_handle);
+        cb(command_handle, rc, state);
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
+
+/// Checks the message any state change and updates the the state attribute
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// connection_handle: was provided during creation. Used to identify connection object
+///
+/// message: message to process
+///
+/// cb: Callback that provides most current state of the credential and error status of request
+///
+/// #Returns
+/// Error code as a u32
+#[no_mangle]
+pub extern fn vcx_connection_update_state_with_message(command_handle: u32,
+                                          connection_handle: u32,
+                                          message: *const c_char,
+                                          cb: Option<extern fn(xcommand_handle: u32, err: u32, state: u32)>) -> u32 {
+    info!("vcx_connection_update_state_with_message >>>");
+
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+    check_useful_c_str!(message, VcxErrorKind::InvalidOption);
+
+    let source_id = get_source_id(connection_handle).unwrap_or_default();
+    trace!("vcx_connection_update_state(command_handle: {}, connection_handle: {}), source_id: {:?}",
+          command_handle, connection_handle, source_id);
+
+    if !is_valid_handle(connection_handle) {
+        error!("vcx_connection_get_state - invalid handle");
+        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into()
+    }
+
+    let message: Message = match serde_json::from_str(&message) {
+        Ok(x) => x,
+        Err(_) => return VcxError::from(VcxErrorKind::InvalidJson).into(),
+    };
+
+    spawn(move|| {
+        let rc = match process_acceptance_message(connection_handle, message) {
             Ok(x) => {
                 trace!("vcx_connection_update_state_cb(command_handle: {}, rc: {}, connection_handle: {}, state: {}), source_id: {:?}",
                       command_handle, error::SUCCESS.message, connection_handle, get_state(connection_handle), source_id);
@@ -678,7 +738,7 @@ mod tests {
     use std::time::Duration;
     use api::{return_types_u32, VcxStateType};
     use utils::httpclient;
-    use utils::constants::GET_MESSAGES_RESPONSE;
+    use utils::constants::{GET_MESSAGES_RESPONSE, INVITE_ACCEPTED_RESPONSE};
     use utils::error::SUCCESS;
 
     #[test]
@@ -730,6 +790,18 @@ mod tests {
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         httpclient::set_next_u8_response(GET_MESSAGES_RESPONSE.to_vec());
         let rc = vcx_connection_update_state(cb.command_handle,handle,Some(cb.get_callback()));
+        assert_eq!(rc, error::SUCCESS.code_num);
+        assert_eq!(cb.receive(Some(Duration::from_secs(10))).unwrap(), VcxStateType::VcxStateAccepted as u32);
+    }
+
+    #[test]
+    fn test_vcx_connection_update_state_with_message() {
+        init!("true");
+        let handle = build_test_connection();
+        assert!(handle > 0);
+        connect(handle,None).unwrap();
+        let cb = return_types_u32::Return_U32_U32::new().unwrap();
+        let rc = vcx_connection_update_state_with_message(cb.command_handle,handle,CString::new(INVITE_ACCEPTED_RESPONSE).unwrap().into_raw(), Some(cb.get_callback()));
         assert_eq!(rc, error::SUCCESS.code_num);
         assert_eq!(cb.receive(Some(Duration::from_secs(10))).unwrap(), VcxStateType::VcxStateAccepted as u32);
     }

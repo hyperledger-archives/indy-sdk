@@ -47,7 +47,7 @@ async def main():
     # Set some additional configuration options specific to faber
     config['institution_name'] = 'Faber'
     config['institution_logo_url'] = 'http://robohash.org/234'
-    config['genesis_path'] = 'docker.txn'
+    config['genesis_path'] = 'genesis.txn'
     
     print("#2 Initialize libvcx with new configuration")
     await vcx_init_with_config(json.dumps(config))

@@ -6,6 +6,7 @@ import {
   dataProofCreate,
   proofCreate
 } from 'helpers/entities'
+import { TEST_PROOF_RESPONSE } from 'helpers/test-constants'
 import { initVcxTestMode, shouldThrow } from 'helpers/utils'
 import { Connection, Proof, ProofState, StateType, VCXCode, VCXMock, VCXMockMessage } from 'src'
 
@@ -121,6 +122,20 @@ describe('Proof:', () => {
       VCXMock.setVcxMock(VCXMockMessage.Proof)
       VCXMock.setVcxMock(VCXMockMessage.UpdateProof)
       await proof.updateState()
+      assert.equal(await proof.getState(), StateType.Accepted)
+      const proofData = await proof.getProof(connection)
+      assert.ok(proofData)
+      assert.ok(proofData.proof)
+      assert.equal(proofData.proofState, ProofState.Verified)
+      assert.equal(proof.proofState, ProofState.Verified)
+    })
+
+    it('success via message-> received', async () => {
+      const connection = await connectionCreateConnect()
+      const proof = await proofCreate()
+      await proof.requestProof(connection)
+      assert.equal(await proof.getState(), StateType.OfferSent)
+      await proof.updateStateWithMessage(TEST_PROOF_RESPONSE)
       assert.equal(await proof.getState(), StateType.Accepted)
       const proofData = await proof.getProof(connection)
       assert.ok(proofData)
