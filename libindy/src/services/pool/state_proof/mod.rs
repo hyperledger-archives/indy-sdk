@@ -2,7 +2,6 @@ extern crate digest;
 extern crate hex;
 extern crate log_derive;
 extern crate ursa;
-extern crate rlp;
 extern crate rmp_serde;
 extern crate rust_base58;
 extern crate sha2;
@@ -12,6 +11,10 @@ use std::collections::HashMap;
 use std::ffi::{CStr, CString};
 
 use base64;
+use rlp::{
+    encode as rlp_encode,
+    UntrustedRlp,
+};
 use serde_json;
 use serde_json::Value as SJsonValue;
 
@@ -30,10 +33,6 @@ use self::hex::ToHex;
 use self::log_derive::logfn;
 use self::ursa::bls::{Bls, Generator, MultiSignature, VerKey};
 use self::node::{Node, TrieDB};
-use self::rlp::{
-    encode as rlp_encode,
-    UntrustedRlp,
-};
 use self::rust_base58::FromBase58;
 use self::sha3::Digest;
 
