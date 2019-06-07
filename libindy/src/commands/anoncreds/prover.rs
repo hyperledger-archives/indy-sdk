@@ -400,9 +400,10 @@ impl ProverCommandExecutor {
         let out_cred_id = cred_id.map(String::from).unwrap_or(uuid::Uuid::new_v4().to_string());
 
         let catpol_json = self.get_credential_attr_tag_policy(wallet_handle, credential.cred_def_id.as_str())?;
-        let catpol: Option<CredentialAttrTagPolicy> = match catpol_json {
-            _ if catpol_json == "null" => None,
-            _ => Some(serde_json::from_str(catpol_json.as_str()).to_indy(IndyErrorKind::InvalidState, "Cannot deserialize CredentialAttrTagPolicy")?)
+        let catpol: Option<CredentialAttrTagPolicy> = if catpol_json.ne("null") {
+            Some(serde_json::from_str(catpol_json.as_str()).to_indy(IndyErrorKind::InvalidState, "Cannot deserialize CredentialAttrTagPolicy")?)
+        } else {
+            None
         };
 
         let cred_tags = self.anoncreds_service.prover.build_credential_tags(&credential, &catpol.as_ref());
