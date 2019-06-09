@@ -2,7 +2,6 @@ extern crate digest;
 extern crate hex;
 extern crate log_derive;
 extern crate ursa;
-extern crate rlp;
 extern crate rmp_serde;
 extern crate rust_base58;
 extern crate sha2;
@@ -12,6 +11,10 @@ use std::collections::HashMap;
 use std::ffi::{CStr, CString};
 
 use base64;
+use rlp::{
+    encode as rlp_encode,
+    UntrustedRlp,
+};
 use serde_json;
 use serde_json::Value as SJsonValue;
 
@@ -30,10 +33,6 @@ use self::hex::ToHex;
 use self::log_derive::logfn;
 use self::ursa::bls::{Bls, Generator, MultiSignature, VerKey};
 use self::node::{Node, TrieDB};
-use self::rlp::{
-    encode as rlp_encode,
-    UntrustedRlp,
-};
 use self::rust_base58::FromBase58;
 use self::sha3::Digest;
 
@@ -320,6 +319,10 @@ fn _parse_reply_for_builtin_sp(json_msg: &SJsonValue, type_: &str, key: &[u8]) -
             trace!("TransactionHandler::parse_reply_for_builtin_sp: Data is object");
             (Some(json_msg["data"].to_string()), SJsonValue::from(map.clone()))
         }
+        SJsonValue::Array(ref array) => {
+            trace!("TransactionHandler::parse_reply_for_builtin_sp: Data is array");
+            (Some(json_msg["data"].to_string()), SJsonValue::from(array.clone()))
+        }
         _ => {
             trace!("TransactionHandler::parse_reply_for_builtin_sp: <<< Data field is invalid type");
             return None;
@@ -571,8 +574,12 @@ fn _parse_reply_for_proof_value(json_msg: &SJsonValue, data: Option<&str>, parse
                 value["val"] = parsed_data.clone();
             }
             constants::GET_AUTH_RULE => {
-                match parsed_data.as_object().and_then(|data| data.values().next()) {
-                    Some(ref x) => value = x.clone().clone(),
+                let constraint = parsed_data
+                    .as_array()
+                    .and_then(|data| data.first())
+                    .map(|auth_rule| auth_rule["constraint"].clone());
+                match constraint {
+                    Some(ref x) => value = x.clone(),
                     None => return Ok(None)
                 };
             }

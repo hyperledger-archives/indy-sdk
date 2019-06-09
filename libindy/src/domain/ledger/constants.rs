@@ -37,6 +37,7 @@ pub const ENDORSER: &str = "101";
 pub const NETWORK_MONITOR: &str = "201";
 pub const ROLE_REMOVE: &str = "";
 
+pub const ROLES: [&str; 4] = [TRUSTEE, STEWARD, ENDORSER, NETWORK_MONITOR];
 
 pub fn txn_name_to_code(txn: &str) -> Option<&str> {
     if REQUESTS.contains(&txn) {
