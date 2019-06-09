@@ -644,11 +644,8 @@ fn _if_rev_delta_multi_state_proof_expected(sp_key: &[u8]) -> bool {
 mod tests {
     use super::*;
 
-    use self::hex::FromHex;
-    use self::libc::c_char;
-
-    extern crate hex;
-    extern crate libc;
+    use hex::FromHex;
+    use libc::c_char;
 
     #[test]
     fn state_proof_nodes_parse_and_get_works() {

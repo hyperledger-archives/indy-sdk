@@ -1,6 +1,5 @@
 extern crate futures;
 extern crate indy_sys;
-extern crate libc;
 
 use indy::{IndyError, ErrorCode};
 use indy::payments;
@@ -9,7 +8,7 @@ use self::indy_sys::{payments as payments_sys};
 
 use std::collections::VecDeque;
 use std::ffi::CString;
-use self::libc::c_char;
+use super::libc::c_char;
 use std::sync::{Once, ONCE_INIT, Mutex};
 
 use utils::callback;
