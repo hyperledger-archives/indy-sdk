@@ -1,11 +1,9 @@
-extern crate ursa;
-
 use errors::prelude::*;
 
 use domain::anoncreds::credential::AttributeValues;
 use domain::anoncreds::proof_request::{AttributeInfo, PredicateInfo, ProofRequestExtraQuery};
 use services::anoncreds::prover::Prover;
-use self::ursa::cl::{issuer, verifier, CredentialSchema, NonCredentialSchema, MasterSecret, CredentialValues, SubProofRequest};
+use ursa::cl::{issuer, verifier, CredentialSchema, NonCredentialSchema, MasterSecret, CredentialValues, SubProofRequest};
 
 
 use std::collections::{HashSet, HashMap};

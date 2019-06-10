@@ -1,4 +1,3 @@
-extern crate ursa;
 extern crate rmp_serde;
 extern crate serde;
 extern crate serde_json;

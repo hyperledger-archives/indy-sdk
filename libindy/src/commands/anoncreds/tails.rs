@@ -1,5 +1,4 @@
 extern crate digest;
-extern crate ursa;
 extern crate sha2;
 extern crate rust_base58;
 
@@ -7,8 +6,8 @@ use errors::prelude::*;
 use services::blob_storage::BlobStorageService;
 use domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinitionV1;
 
-use self::ursa::cl::{Tail, RevocationTailsAccessor, RevocationTailsGenerator};
-use self::ursa::errors::prelude::{UrsaCryptoError, UrsaCryptoErrorKind};
+use ursa::cl::{Tail, RevocationTailsAccessor, RevocationTailsGenerator};
+use ursa::errors::prelude::{UrsaCryptoError, UrsaCryptoErrorKind};
 
 use self::rust_base58::{ToBase58, FromBase58};
 

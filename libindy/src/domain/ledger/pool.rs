@@ -1,6 +1,5 @@
 extern crate serde;
 extern crate serde_json;
-extern crate ursa;
 
 use super::constants::{POOL_CONFIG, POOL_UPGRADE, POOL_RESTART};
 

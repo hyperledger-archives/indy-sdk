@@ -1,4 +1,3 @@
-extern crate byteorder;
 extern crate digest;
 extern crate hex;
 extern crate ursa;
@@ -9,7 +8,7 @@ extern crate sha2;
 extern crate time;
 extern crate zmq;
 
-use self::byteorder::{ByteOrder, LittleEndian};
+use byteorder::{ByteOrder, LittleEndian};
 use self::zmq::Socket;
 
 use std::{fs, io};
@@ -634,7 +633,7 @@ mod tests {
 
         use super::*;
 
-        use self::ursa::bls::{Generator, SignKey, VerKey};
+        use ursa::bls::{Generator, SignKey, VerKey};
 
         pub static POLL_TIMEOUT: i64 = 1_000; /* in ms */
 
