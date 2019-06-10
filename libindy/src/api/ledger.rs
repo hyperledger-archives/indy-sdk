@@ -1,5 +1,3 @@
-extern crate libc;
-
 use api::{ErrorCode, CommandHandle, WalletHandle, PoolHandle};
 use errors::prelude::*;
 use commands::{Command, CommandExecutor};
@@ -14,7 +12,7 @@ use domain::ledger::auth_rule::AuthRules;
 use utils::ctypes;
 
 use serde_json;
-use self::libc::c_char;
+use libc::c_char;
 
 /// Signs and submits request message to validator pool.
 ///

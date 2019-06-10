@@ -1,4 +1,3 @@
-extern crate libc;
 extern crate serde_json;
 
 use api::{ErrorCode, IndyHandle, CommandHandle, WalletHandle, SearchHandle};
@@ -22,7 +21,7 @@ use domain::anoncreds::revocation_registry::RevocationRegistry;
 use domain::anoncreds::revocation_state::RevocationState;
 use utils::ctypes;
 
-use self::libc::c_char;
+use libc::c_char;
 use std::ptr;
 use std::collections::HashMap;
 

@@ -1,5 +1,7 @@
 #![allow(dead_code, unused_macros)]
 
+extern crate libc;
+
 use utils::constants::WALLET_CREDENTIALS;
 
 pub mod callback;
