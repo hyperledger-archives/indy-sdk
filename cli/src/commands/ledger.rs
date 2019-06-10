@@ -1070,7 +1070,6 @@ pub mod payment_command {
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
-        let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
         let (wallet_handle, _) = ensure_opened_wallet(&ctx)?;
         let submitter_did = get_active_did(&ctx);
         let mut extra = get_opt_str_param("extra", params).map_err(error_err!())?.map(String::from);
@@ -1090,7 +1089,15 @@ pub mod payment_command {
         let (request, payment_method) = Payment::build_payment_req(wallet_handle, submitter_did.as_ref().map(String::as_str), &inputs, &outputs, extra.as_ref().map(String::as_str))
             .map_err(|err| handle_payment_error(err, None))?;
 
-        let (response, _) = send_read_request!(&ctx, send, &request, pool_handle, &pool_name, submitter_did.as_ref().map(String::as_str));
+        let response =
+            if send {
+                let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
+                let (r, _) = send_read_request!(&ctx, send, &request, pool_handle, &pool_name, submitter_did.as_ref().map(String::as_str));
+                r
+            } else {
+                let (r, _) = send_read_request!(&ctx, send, &request, 0, "", submitter_did.as_ref().map(String::as_str));
+                r
+            };
 
         let res = match Payment::parse_payment_response(&payment_method, &response) {
             Ok(receipts_json) => {
