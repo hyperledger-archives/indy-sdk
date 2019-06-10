@@ -1,9 +1,8 @@
-extern crate libc;
 extern crate sodiumoxide;
 extern crate zeroize;
 
 use errors::prelude::*;
-use self::libc::size_t;
+use libc::size_t;
 
 use self::zeroize::Zeroize;
 

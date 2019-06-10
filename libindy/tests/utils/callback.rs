@@ -1,9 +1,8 @@
-extern crate libc;
 extern crate indy_sys;
 
 use self::indy_sys::Error as ErrorCode;
 
-use self::libc::c_char;
+use super::libc::c_char;
 use std::ffi::CStr;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicUsize, Ordering};
