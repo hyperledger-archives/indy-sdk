@@ -1,4 +1,3 @@
-extern crate serde_json;
 extern crate zeroize;
 
 use std::collections::HashMap;
