@@ -1,5 +1,4 @@
 extern crate sodiumoxide;
-extern crate zeroize;
 
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -8,7 +7,7 @@ use utils::crypto::{hmacsha256, chacha20poly1305_ietf};
 
 use errors::prelude::*;
 
-use self::zeroize::Zeroize;
+use zeroize::Zeroize;
 
 use super::storage;
 use super::iterator::WalletIterator;
