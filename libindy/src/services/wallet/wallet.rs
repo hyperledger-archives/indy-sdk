@@ -1,5 +1,3 @@
-extern crate sodiumoxide;
-
 use std::collections::HashMap;
 use std::rc::Rc;
 
@@ -41,8 +39,6 @@ impl Keys {
     }
 
     pub fn serialize_encrypted(&self, master_key: &chacha20poly1305_ietf::Key) -> IndyResult<Vec<u8>> {
-        extern crate rmp_serde;
-
         let mut serialized = rmp_serde::to_vec(self)
             .to_indy(IndyErrorKind::InvalidState, "Unable to serialize keys")?;
 
@@ -53,8 +49,6 @@ impl Keys {
     }
 
     pub fn deserialize_encrypted(bytes: &[u8], master_key: &chacha20poly1305_ietf::Key) -> IndyResult<Keys> {
-        extern crate rmp_serde;
-
         let mut decrypted = decrypt_merged(bytes, master_key)?;
 
         let keys: Keys = rmp_serde::from_slice(&decrypted)

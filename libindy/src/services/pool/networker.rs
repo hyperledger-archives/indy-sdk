@@ -1,5 +1,3 @@
-extern crate zmq;
-
 use std::cell::RefCell;
 use std::collections::{BTreeMap, HashMap, HashSet};
 
@@ -14,8 +12,8 @@ use utils::sequence;
 
 use super::time::Duration;
 
-use self::zmq::PollItem;
-use self::zmq::Socket as ZSocket;
+use super::zmq::PollItem;
+use super::zmq::Socket as ZSocket;
 
 pub trait Networker {
     fn new(active_timeout: i64, conn_limit: usize, preordered_nodes: Vec<String>) -> Self;

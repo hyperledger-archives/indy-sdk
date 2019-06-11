@@ -1,5 +1,3 @@
-extern crate log_derive;
-
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -34,7 +32,7 @@ use super::ursa::bls::VerKey;
 
 use rust_base58::FromBase58;
 use std::hash::{Hash, Hasher};
-use self::log_derive::logfn;
+use log_derive::logfn;
 
 struct RequestSM<T: Networker> {
     f: usize,

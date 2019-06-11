@@ -1,5 +1,3 @@
-extern crate rmp_serde;
-
 use std::{fs, io};
 use std::collections::HashMap;
 use std::io::{BufRead, Read, Write};
