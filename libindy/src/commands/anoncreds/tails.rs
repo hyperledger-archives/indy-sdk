@@ -1,6 +1,3 @@
-extern crate digest;
-extern crate sha2;
-
 use errors::prelude::*;
 use services::blob_storage::BlobStorageService;
 use domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinitionV1;

@@ -1,9 +1,7 @@
-extern crate digest;
 extern crate hex;
 extern crate ursa;
 extern crate rand;
 extern crate rmp_serde;
-extern crate sha2;
 extern crate time;
 extern crate zmq;
 
