@@ -393,11 +393,11 @@ pub mod networker_tests {
     use std::thread;
 
     use domain::pool::{MAX_REQ_PER_POOL_CON, POOL_ACK_TIMEOUT, POOL_CON_ACTIVE_TO, POOL_REPLY_TIMEOUT};
-    use services::pool::rust_base58::FromBase58;
     use services::pool::tests::nodes_emulator;
     use utils::crypto::ed25519_sign;
 
     use super::*;
+    use rust_base58::base58::FromBase58;
 
     const REQ_ID: &'static str = "1";
     const MESSAGE: &'static str = "msg";

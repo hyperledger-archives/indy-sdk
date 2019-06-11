@@ -42,6 +42,7 @@ extern crate core;
 extern crate hex;
 
 extern crate log_derive;
+extern crate rust_base58;
 
 // Note that to use macroses from util inside of other modules it must be loaded first!
 #[macro_use]

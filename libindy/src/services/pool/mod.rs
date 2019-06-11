@@ -3,7 +3,6 @@ extern crate hex;
 extern crate ursa;
 extern crate rand;
 extern crate rmp_serde;
-extern crate rust_base58;
 extern crate sha2;
 extern crate time;
 extern crate zmq;
@@ -628,7 +627,7 @@ mod tests {
     pub mod nodes_emulator {
         extern crate sodiumoxide;
 
-        use services::pool::rust_base58::{FromBase58, ToBase58};
+        use rust_base58::{FromBase58, ToBase58};
         use utils::crypto::ed25519_sign;
 
         use super::*;

@@ -2,7 +2,6 @@ extern crate digest;
 extern crate hex;
 extern crate log_derive;
 extern crate rmp_serde;
-extern crate rust_base58;
 extern crate sha2;
 extern crate sha3;
 
@@ -32,7 +31,7 @@ use self::hex::ToHex;
 use self::log_derive::logfn;
 use ursa::bls::{Bls, Generator, MultiSignature, VerKey};
 use self::node::{Node, TrieDB};
-use self::rust_base58::FromBase58;
+use rust_base58::FromBase58;
 use self::sha3::Digest;
 
 mod node;

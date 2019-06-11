@@ -1,4 +1,3 @@
-extern crate rust_base58;
 extern crate log_derive;
 
 use std::cell::RefCell;
@@ -33,7 +32,7 @@ use services::pool::types::HashableValue;
 use super::ursa::bls::Generator;
 use super::ursa::bls::VerKey;
 
-use self::rust_base58::FromBase58;
+use rust_base58::FromBase58;
 use std::hash::{Hash, Hasher};
 use self::log_derive::logfn;
 
