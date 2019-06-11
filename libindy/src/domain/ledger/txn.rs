@@ -1,6 +1,3 @@
-extern crate serde;
-extern crate serde_json;
-
 use super::constants::GET_TXN;
 
 #[derive(Serialize, PartialEq, Debug)]

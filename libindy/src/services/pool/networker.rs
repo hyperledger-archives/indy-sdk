@@ -1,4 +1,3 @@
-extern crate time;
 extern crate zmq;
 
 use std::cell::RefCell;
