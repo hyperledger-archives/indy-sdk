@@ -71,7 +71,13 @@ public abstract class LibIndy {
 		public int indy_parse_get_revoc_reg_delta_response(int command_handle, String get_revoc_reg_delta_response, Callback cb);
 		public int indy_get_response_metadata(int command_handle, String response, Callback cb);
 		public int indy_build_auth_rule_request(int command_handle, String submitter_did, String txn_type, String action, String field, String old_value, String new_value, String constraint, Callback cb);
+		public int indy_build_auth_rules_request(int command_handle, String submitter_did, String data, Callback cb);
 		public int indy_build_get_auth_rule_request(int command_handle, String submitter_did, String txn_type, String action, String field, String old_value, String new_value, Callback cb);
+		public int indy_build_txn_author_agreement_request(int command_handle, String submitter_did, String text, String version, Callback cb);
+		public int indy_build_get_txn_author_agreement_request(int command_handle, String submitter_did, String data, Callback cb);
+		public int indy_build_acceptance_mechanisms_request(int command_handle, String submitter_did, String aml, String version, String aml_context, Callback cb);
+		public int indy_build_get_acceptance_mechanisms_request(int command_handle, String submitter_did, int timestamp, String version, Callback cb);
+		public int indy_append_txn_author_agreement_acceptance_to_request(int command_handle, String request_json, String text, String version, String hash, String acc_mech_type, long time_of_acceptance, Callback cb);
 
 		// did.rs
 
@@ -118,6 +124,7 @@ public abstract class LibIndy {
 		public int indy_prover_store_credential(int command_handle, int wallet_handle, String cred_id, String cred_req_metadata_json, String cred_json, String cred_def_json, String rev_reg_def_json, Callback cb);
 		public int indy_prover_get_credentials(int command_handle, int wallet_handle, String filter_json, Callback cb);
 		public int indy_prover_get_credential(int command_handle, int wallet_handle, String cred_id, Callback cb);
+		public int indy_prover_delete_credential(int command_handle, int wallet_handle, String cred_id, Callback cb);
 		public int indy_prover_search_credentials(int command_handle, int wallet_handle, String query_json, Callback cb);
 		public int indy_prover_fetch_credentials(int command_handle, int search_handle, int count, Callback cb);
 		public int indy_prover_close_credentials_search(int command_handle, int search_handle, Callback cb);
@@ -154,6 +161,10 @@ public abstract class LibIndy {
 		public int indy_open_wallet_search(int command_handle, int wallet_handle, String type, String query_json, String options_json, Callback cb);
 		public int indy_fetch_wallet_search_next_records(int command_handle, int wallet_handle, int wallet_search_handle, int count, Callback cb);
 		public int indy_close_wallet_search(int command_handle, int wallet_search_handle, Callback cb);
+		public int indy_get_schema(int command_handle, int pool_handle, int wallet_handle, String submitter_did, String id, String options_json, Callback cb);
+		public int indy_get_cred_def(int command_handle, int pool_handle, int wallet_handle, String submitter_did, String id, String options_json, Callback cb);
+		public int indy_purge_schema_cache(int command_handle, int wallet_handle, String options_json, Callback cb);
+		public int indy_purge_cred_def_cache(int command_handle, int wallet_handle, String options_json, Callback cb);
 
 		// payments.rs
 		int indy_create_payment_address(int command_handle, int wallet_handle, String payment_method, String config, Callback cb);
@@ -170,6 +181,7 @@ public abstract class LibIndy {
 		int indy_parse_get_txn_fees_response(int command_handle, String payment_method, String resp_json, Callback cb);
 		int indy_build_verify_payment_req(int command_handle, int wallet_handle, String submitter_did, String receipt, Callback cb);
 		int indy_parse_verify_payment_response(int command_handle, String payment_method, String resp_json, Callback cb);
+		int indy_prepare_payment_extra_with_acceptance_data(int command_handle, String extra_json, String text, String version, String hash, String acc_mech_type, long time_of_acceptance, Callback cb);
 
 		int indy_set_logger(Pointer context, Callback enabled, Callback log, Callback flush);
 

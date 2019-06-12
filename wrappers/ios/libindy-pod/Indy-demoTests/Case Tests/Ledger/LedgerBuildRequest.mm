@@ -223,7 +223,7 @@
                     @"primary": @{
                             @"n": @"1",
                             @"s": @"2",
-                            @"r": @{@"height": @"1",@"master_secret": @"1"},
+                            @"r": @{@"height": @"1", @"master_secret": @"1"},
                             @"rctxt": @"1",
                             @"z": @"1"
                     }
@@ -645,12 +645,12 @@
 
 - (void)testBuildAuthRuleRequestsWorks {
     NSDictionary *constraint = @{
-        @"sig_count": @(1),
-        @"role": @"0",
-        @"constraint_id": @"ROLE",
-        @"need_to_be_owner": @(false)
+            @"sig_count": @(1),
+            @"role": @"0",
+            @"constraint_id": @"ROLE",
+            @"need_to_be_owner": @(false)
     };
-    
+
     NSDictionary *expectedResult = @{
             @"identifier": [TestUtils trusteeDid],
             @"operation": @{
@@ -665,14 +665,63 @@
 
     NSString *requestJson;
     ret = [[LedgerUtils sharedInstance] buildAuthRuleRequestWithSubmitterDid:[TestUtils trusteeDid]
-                                                              txnType:@"NYM"
-                                                               action:@"ADD"
-                                                                 field:@"role"
-                                                                  oldValue:nil
-                                                                   newValue:@"101"
-                                                                   constraint:[NSDictionary toString:constraint]
-                                                             outRequest:&requestJson];
+                                                                     txnType:@"NYM"
+                                                                      action:@"ADD"
+                                                                       field:@"role"
+                                                                    oldValue:nil
+                                                                    newValue:@"101"
+                                                                  constraint:[NSDictionary toString:constraint]
+                                                                  outRequest:&requestJson];
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildAuthRuleRequestWithSubmitterDid() failed!");
+
+    NSDictionary *request = [NSDictionary fromString:requestJson];
+
+    XCTAssertTrue([request contains:expectedResult], @"Request doesn't contain expectedResult");
+}
+
+- (void)testBuildAuthRulesRequestsWorks {
+    NSDictionary *constraint = @{
+            @"sig_count": @(1),
+            @"role": @"0",
+            @"constraint_id": @"ROLE",
+            @"need_to_be_owner": @(false)
+    };
+
+    NSArray *data = @[
+        @{
+            @"auth_type": @"1",
+            @"auth_action": @"ADD",
+            @"field": @"role",
+            @"new_value": @"101",
+            @"constraint": constraint
+        },
+        @{
+            @"auth_type": @"1",
+            @"auth_action": @"EDIT",
+            @"field": @"role",
+            @"old_value": @"0",
+            @"new_value": @"101",
+            @"constraint": constraint
+        },
+    ];
+
+    NSDictionary *expectedResult = @{
+            @"identifier": [TestUtils trusteeDid],
+            @"operation": @{
+                    @"type": @"122",
+                    @"rules": data,
+            }
+    };
+    
+    NSError *error;
+    NSData *jsonData = [NSJSONSerialization dataWithJSONObject:data options:NSJSONWritingPrettyPrinted error:&error];
+    NSString *dataJson = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+    
+    NSString *requestJson;
+    ret = [[LedgerUtils sharedInstance] buildAuthRulesRequestWithSubmitterDid:[TestUtils trusteeDid]
+                                                                         data:dataJson
+                                                                   outRequest:&requestJson];
+    XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildAuthRulesRequestWithSubmitterDid() failed!");
 
     NSDictionary *request = [NSDictionary fromString:requestJson];
 
@@ -704,6 +753,148 @@
     NSDictionary *request = [NSDictionary fromString:requestJson];
 
     XCTAssertTrue([request contains:expectedResult], @"Request doesn't contain expectedResult");
+}
+
+// MARK: Author Agreement request
+
+- (void)testBuildTxnAuthorAgreementRequestWorks {
+    NSDictionary *expectedResult = @{
+            @"type": @"4",
+            @"text": @"indy agreement",
+            @"version": @"1.0.0",
+    };
+
+    NSString *requestJson;
+    ret = [[LedgerUtils sharedInstance] buildTxnAuthorAgreementRequestWithSubmitterDid:[TestUtils trusteeDid]
+                                                                                  text:@"indy agreement"
+                                                                               version:@"1.0.0"
+                                                                            outRequest:&requestJson];
+    XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildTxnAuthorAgreementRequestWithSubmitterDid() failed!");
+
+    NSDictionary *request = [NSDictionary fromString:requestJson];
+
+    XCTAssertTrue([request contains:expectedResult], @"Request doesn't contain expectedResult");
+}
+
+- (void)testBuildGetTxnAuthorAgreementRequestWorks {
+    NSDictionary *expectedResult = @{
+            @"type": @"6",
+            @"version": @"1.0.0",
+    };
+
+    NSDictionary *data = @{
+            @"version": @"1.0.0",
+    };
+
+    NSString *requestJson;
+    ret = [[LedgerUtils sharedInstance] buildGetTxnAuthorAgreementRequestWithSubmitterDid:[TestUtils trusteeDid]
+                                                                                     data:[NSDictionary toString:data]
+                                                                               outRequest:&requestJson];
+    XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildTxnAuthorAgreementRequestWithSubmitterDid() failed!");
+
+    NSDictionary *request = [NSDictionary fromString:requestJson];
+
+    XCTAssertTrue([expectedResult isEqualToDictionary:request[@"operation"]], @"Wrong Result Json!");
+}
+
+// MARK: Acceptance Mechanism
+
+- (void)testBuildAcceptanceMechanismRequestWorks {
+    NSDictionary *aml = @{
+            @"acceptance mechanism label 1": @"description",
+    };
+    NSString *version = @"1.0.0";
+    NSString *context = @"some context";
+
+    NSDictionary *expectedResult = @{
+            @"type": @"5",
+            @"aml": aml,
+            @"version": version,
+            @"amlContext": context,
+    };
+
+    NSString *requestJson;
+    ret = [[LedgerUtils sharedInstance] buildAcceptanceMechanismsRequestWithSubmitterDid:[TestUtils trusteeDid]
+                                                                                     aml:[NSDictionary toString:aml]
+                                                                                 version:version
+                                                                              amlContext:context
+                                                                              outRequest:&requestJson];
+    XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildAcceptanceMechanismsRequestWithSubmitterDid() failed!");
+
+    NSDictionary *request = [NSDictionary fromString:requestJson];
+
+    XCTAssertTrue([expectedResult isEqualToDictionary:request[@"operation"]], @"Wrong Result Json!");
+}
+
+- (void)testBuildGetAcceptanceMechanismRequestWorksForTimestamp {
+    NSDictionary *expectedResult = @{
+            @"type": @"7",
+            @"timestamp": @(123456789),
+    };
+
+    NSString *requestJson;
+    ret = [[LedgerUtils sharedInstance] buildGetAcceptanceMechanismsRequestWithSubmitterDid:[TestUtils trusteeDid]
+                                                                                  timestamp:@(123456789)
+                                                                                    version:nil
+                                                                                 outRequest:&requestJson];
+    XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildGetAcceptanceMechanismsRequestWithSubmitterDid() failed!");
+
+    NSDictionary *request = [NSDictionary fromString:requestJson];
+
+    XCTAssertTrue([expectedResult isEqualToDictionary:request[@"operation"]], @"Wrong Result Json!");
+}
+
+- (void)testBuildGetAcceptanceMechanismsRequestWorksForVersion {
+    NSString *version = @"1.0.0";
+
+    NSDictionary *expectedResult = @{
+            @"type": @"7",
+            @"version": version,
+    };
+
+    NSString *requestJson;
+    ret = [[LedgerUtils sharedInstance] buildGetAcceptanceMechanismsRequestWithSubmitterDid:[TestUtils trusteeDid]
+                                                                                 timestamp:nil
+                                                                                   version:version
+                                                                                outRequest:&requestJson];
+    XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildGetAcceptanceMechanismsRequestWithSubmitterDid() failed!");
+
+    NSDictionary *request = [NSDictionary fromString:requestJson];
+
+    XCTAssertTrue([expectedResult isEqualToDictionary:request[@"operation"]], @"Wrong Result Json!");
+}
+
+// MARK: Author Agreement Acceptance Data
+
+- (void)testAppendTxnAuthorAgreementAcceptanceToRequestWorks {
+    NSDictionary *request = @{
+            @"reqId": @(1496822211362017764),
+            @"identifier": @"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL",
+            @"operation": @{
+                    @"type": @"1",
+                    @"dest": @"VsKV7grR1BUE29mG2Fm2kX",
+                    @"dest": @"GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa"
+            }
+    };
+
+    NSString *requestJson;
+    ret = [[LedgerUtils sharedInstance] appendTxnAuthorAgreementAcceptanceToRequest:[NSDictionary toString:request]
+                                                                               text:@"some agreement text"
+                                                                            version:@"1.0.0"
+                                                                          taaDigest:@"050e52a57837fff904d3d059c8a123e3a04177042bf467db2b2c27abd8045d5e"
+                                                                        accMechType:@"acceptance type 1"
+                                                                   timeOfAcceptance:@(123456789)
+                                                                         outRequest:&requestJson];
+    XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildTxnAuthorAgreementRequestWithSubmitterDid() failed!");
+    NSDictionary *expectedMeta = @{
+            @"mechanism": @"acceptance type 1",
+            @"taaDigest": @"050e52a57837fff904d3d059c8a123e3a04177042bf467db2b2c27abd8045d5e",
+            @"time": @(123456789),
+    };
+
+    request = [NSDictionary fromString:requestJson];
+
+    XCTAssertTrue([expectedMeta isEqualToDictionary:request[@"taaAcceptance"]], @"Wrong Result Json!");
 }
 
 @end

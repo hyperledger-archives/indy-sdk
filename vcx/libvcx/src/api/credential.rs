@@ -85,7 +85,7 @@ pub extern fn vcx_credential_create_with_offer(command_handle: u32,
     check_useful_c_str!(offer, VcxErrorKind::InvalidOption);
 
     trace!("vcx_credential_create_with_offer(command_handle: {}, source_id: {}, offer: {})",
-           command_handle, source_id, offer);
+           command_handle, source_id, secret!(&offer));
 
     spawn(move || {
         match credential::credential_create_with_offer(&source_id, &offer) {

@@ -9,6 +9,7 @@ pub mod blob_storage;
 pub mod non_secrets;
 pub mod payments;
 pub mod logger;
+pub mod cache;
 
 use libc::c_char;
 

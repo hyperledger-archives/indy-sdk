@@ -37,6 +37,8 @@
 		5DB57A5F1F711EE600EB4C90 /* IndyTypes.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DB57A371F711EE600EB4C90 /* IndyTypes.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		5DB57A601F711EE600EB4C90 /* IndyWallet.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DB57A381F711EE600EB4C90 /* IndyWallet.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		5DB57A611F711EE600EB4C90 /* IndyWallet.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57A391F711EE600EB4C90 /* IndyWallet.mm */; };
+		78E844EB229306030069FF36 /* IndyCache.h in Headers */ = {isa = PBXBuildFile; fileRef = 78E844E9229306030069FF36 /* IndyCache.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		78E844EC229306030069FF36 /* IndyCache.mm in Sources */ = {isa = PBXBuildFile; fileRef = 78E844EA229306030069FF36 /* IndyCache.mm */; };
 		ADF5F09002A987F55A08F493 /* IndyNonSecrets.h in Headers */ = {isa = PBXBuildFile; fileRef = ADF5F1B3292A4FAEE6C9B4BB /* IndyNonSecrets.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		ADF5F180774B3F07CF685B00 /* IndyNonSecrets.mm in Sources */ = {isa = PBXBuildFile; fileRef = ADF5FD56969EAF15313B3399 /* IndyNonSecrets.mm */; };
 		ADF5F3B8EFC4D2816713001C /* IndyBlobStorage.mm in Sources */ = {isa = PBXBuildFile; fileRef = ADF5F28481E59F87D3680FB0 /* IndyBlobStorage.mm */; };
@@ -85,6 +87,8 @@
 		5DB57A381F711EE600EB4C90 /* IndyWallet.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyWallet.h; sourceTree = "<group>"; };
 		5DB57A391F711EE600EB4C90 /* IndyWallet.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = IndyWallet.mm; sourceTree = "<group>"; };
 		788BE98286C5622244B9A7F5 /* libPods-Indy.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-Indy.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		78E844E9229306030069FF36 /* IndyCache.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyCache.h; sourceTree = "<group>"; };
+		78E844EA229306030069FF36 /* IndyCache.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = IndyCache.mm; sourceTree = "<group>"; };
 		ADF5F0289053914846F15C3E /* IndyBlobStorage.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyBlobStorage.h; sourceTree = "<group>"; };
 		ADF5F1B3292A4FAEE6C9B4BB /* IndyNonSecrets.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyNonSecrets.h; sourceTree = "<group>"; };
 		ADF5F28481E59F87D3680FB0 /* IndyBlobStorage.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = IndyBlobStorage.mm; sourceTree = "<group>"; };
@@ -181,6 +185,8 @@
 		5DB57A2B1F711EE600EB4C90 /* Wrapper */ = {
 			isa = PBXGroup;
 			children = (
+				78E844E9229306030069FF36 /* IndyCache.h */,
+				78E844EA229306030069FF36 /* IndyCache.mm */,
 				053FA7E61FB32097006CEC35 /* IndyCrypto.h */,
 				053FA7E71FB32097006CEC35 /* IndyCrypto.mm */,
 				5D57DEE01F861FBD00CD63FE /* IndyPairwise.h */,
@@ -244,6 +250,7 @@
 				ADF5FFAD8BF145CFC7C57C28 /* IndyBlobStorage.h in Headers */,
 				ADF5F6E301043F50DBFA7C63 /* IndyPayment.h in Headers */,
 				ADF5F09002A987F55A08F493 /* IndyNonSecrets.h in Headers */,
+				78E844EB229306030069FF36 /* IndyCache.h in Headers */,
 				ADF5FB81DCE4370CF99C0B81 /* IndyUtils.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -348,6 +355,7 @@
 				5D57DED21F853A9700CD63FE /* NSError+IndyError.m in Sources */,
 				5D57DED91F853A9700CD63FE /* IndySequenceUtils.m in Sources */,
 				5D57DED01F853A9700CD63FE /* NSDictionary+JSON.m in Sources */,
+				78E844EC229306030069FF36 /* IndyCache.mm in Sources */,
 				053FA7E91FB32097006CEC35 /* IndyCrypto.mm in Sources */,
 				5D57DED41F853A9700CD63FE /* NSString+JSON.m in Sources */,
 				5DB57A5E1F711EE600EB4C90 /* IndyDid.mm in Sources */,

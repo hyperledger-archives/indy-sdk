@@ -94,6 +94,30 @@ class Proof(VcxStateful):
         """
         return await self._update_state(Proof, 'vcx_proof_update_state')
 
+    async def update_state_with_message(self, message: str) -> int:
+        """
+        Update the state of the proof based on the given message.
+        Example:
+        proof = await Proof.create(source_id)
+        assert await proof.update_state_with_message(message) == State.Accepted
+        :param message:
+        :return Current state of the Proof
+        """
+        if not hasattr(Proof.update_state_with_message, "cb"):
+            self.logger.debug("vcx_proof_update_state_with_message: Creating callback")
+            Proof.update_state_with_message.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_uint32))
+
+        c_handle = c_uint32(self.handle)
+        c_message = c_char_p(message.encode('utf-8'))
+
+        state = await do_call('vcx_proof_update_state_with_message',
+                              c_handle,
+                              c_message,
+                              Proof.update_state_with_message.cb)
+
+        self.logger.debug("vcx_proof_update_state_with_message completed")
+        return state
+
     async def get_state(self) -> int:
         """
         Gets the state of the entity.

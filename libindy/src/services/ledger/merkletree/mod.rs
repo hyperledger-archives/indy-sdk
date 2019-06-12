@@ -19,12 +19,12 @@ impl MerkleTree {
     }
 
     pub fn find_hash<'a>(from: &'a Tree, required_hash: &Vec<u8>) -> Option<&'a Tree> {
-        match from {
-            &Tree::Empty { .. } => {
+        match *from {
+            Tree::Empty { .. } => {
                 assert!(false);
                 None
             }
-            &Tree::Node { ref left, ref right, ref hash, .. } => {
+            Tree::Node { ref left, ref right, ref hash, .. } => {
                 if hash == required_hash {
                     Some(from)
                 } else {
@@ -47,7 +47,7 @@ impl MerkleTree {
                     }
                 }
             }
-            &Tree::Leaf { ref hash, .. } => {
+            Tree::Leaf { ref hash, .. } => {
                 if hash == required_hash {
                     Some(from)
                 } else {
@@ -78,8 +78,8 @@ impl MerkleTree {
         let mut new_node = new_size - 1;
 
         while old_node % 2 != 0 {
-            old_node = old_node / 2;
-            new_node = new_node / 2;
+            old_node /= 2;
+            new_node /= 2;
         }
 
         let mut proofs = proof.iter();
@@ -103,14 +103,14 @@ impl MerkleTree {
                 new_hash = Hash::hash_nodes(&new_hash,
                                             unwrap_opt_or_return!(proofs.next(), Ok(false)))?.to_vec();
             }
-            old_node = old_node / 2;
-            new_node = new_node / 2;
+            old_node /= 2;
+            new_node /= 2;
         }
 
         while new_node != 0 {
             let n = unwrap_opt_or_return!(proofs.next(), Ok(false));
             new_hash = Hash::hash_nodes(&new_hash, n)?.to_vec();
-            new_node = new_node / 2;
+            new_node /= 2;
         }
 
         if new_hash != *new_root_hash {

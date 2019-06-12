@@ -134,7 +134,7 @@ public class UtilsApi extends VcxJava.API {
         return future;
     }
 
-    private static Callback getLedgerFeesCB = new Callback() {
+    private static Callback stringCB = new Callback() {
         @SuppressWarnings({"unused", "unchecked"})
         public void callback(int commandHandle, int err, String fees) {
             logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], fees = [" + fees + "]");
@@ -152,10 +152,36 @@ public class UtilsApi extends VcxJava.API {
 
         int result = LibVcx.api.vcx_ledger_get_fees(
                 commandHandle,
-                getLedgerFeesCB
+                stringCB
         );
         checkResult(result);
         return future;
     }
 
+    public static CompletableFuture<String> getLedgerAuthorAgreement() throws VcxException {
+        logger.debug("getLedgerAuthorAgreement() called");
+        CompletableFuture<String> future = new CompletableFuture<>();
+        int commandHandle = addFuture(future);
+
+        int result = LibVcx.api.vcx_get_ledger_author_agreement(
+                commandHandle,
+                stringCB
+        );
+        checkResult(result);
+        return future;
+    }
+
+    public static void setActiveTxnAuthorAgreementMeta(String text, String version,
+                                                         String hash, String accMechType, long timeOfAcceptance) throws VcxException {
+        ParamGuard.notNull(accMechType, "accMechType");
+        logger.debug("vcxProvisionAgent() called with: text = [" + text + "], version = [" + version + "]," +
+                " hash = [" + hash + "], accMechType = [" + accMechType + "], timeOfAcceptance = [" + timeOfAcceptance + "]");
+        int result = LibVcx.api.vcx_set_active_txn_author_agreement_meta(text, version, hash, accMechType, timeOfAcceptance);
+        checkResult(result);
+    }
+
+    public static void vcxMockSetAgencyResponse(int messageIndex) {
+        logger.debug("vcxMockSetAgencyResponse() called");
+        LibVcx.api.vcx_set_next_agency_response(messageIndex);
+    }
 }

@@ -1,4 +1,3 @@
-extern crate libc;
 
 use api::{ErrorCode, IndyHandle, CommandHandle, WalletHandle, SearchHandle, StorageHandle, INVALID_WALLET_HANDLE};
 use commands::{Command, CommandExecutor};
@@ -8,7 +7,7 @@ use errors::prelude::*;
 use utils::ctypes;
 
 use serde_json;
-use self::libc::c_char;
+use libc::c_char;
 
 
 /// Register custom wallet storage implementation.

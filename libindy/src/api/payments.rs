@@ -1,6 +1,4 @@
-extern crate libc;
-
-use self::libc::c_char;
+use libc::c_char;
 use api::{ErrorCode, CommandHandle, WalletHandle};
 use commands::{Command, CommandExecutor};
 use commands::payments::PaymentsCommand;
@@ -848,6 +846,79 @@ pub extern fn indy_parse_payment_response(command_handle: CommandHandle,
     let res = prepare_result!(result);
 
     trace!("indy_parse_payment_response: <<< res: {:?}", res);
+
+    res
+}
+
+/// Prepare payment extra JSON with TAA acceptance data
+///
+/// EXPERIMENTAL
+///
+/// This function may calculate digest by itself or consume it as a parameter.
+/// If all text, version and taa_digest parameters are specified, a check integrity of them will be done.
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// extra_json: (optional) original extra json.
+/// text and version - (optional) raw data about TAA from ledger.
+///     These parameters should be passed together.
+///     These parameters are required if taa_digest parameter is omitted.
+/// taa_digest - (optional) digest on text and version. This parameter is required if text and version parameters are omitted.
+/// mechanism - mechanism how user has accepted the TAA
+/// time - UTC timestamp when user has accepted the TAA
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Updated request result as json.
+///
+/// #Errors
+/// Common*
+#[no_mangle]
+pub extern fn indy_prepare_payment_extra_with_acceptance_data(command_handle: CommandHandle,
+                                                              extra_json: *const c_char,
+                                                              text: *const c_char,
+                                                              version: *const c_char,
+                                                              taa_digest: *const c_char,
+                                                              mechanism: *const c_char,
+                                                              time: u64,
+                                                              cb: Option<extern fn(command_handle_: CommandHandle,
+                                                                                   err: ErrorCode,
+                                                                                   extra_with_acceptance: *const c_char)>) -> ErrorCode {
+    trace!("indy_prepare_payment_extra_with_acceptance_data: >>> extra_json: {:?}, text: {:?}, version: {:?}, taa_digest: {:?}, \
+        mechanism: {:?}, time: {:?}",
+           extra_json, text, version, taa_digest, mechanism, time);
+
+    check_useful_opt_c_str!(extra_json, ErrorCode::CommonInvalidParam2);
+    check_useful_opt_c_str!(text, ErrorCode::CommonInvalidParam3);
+    check_useful_opt_c_str!(version, ErrorCode::CommonInvalidParam4);
+    check_useful_opt_c_str!(taa_digest, ErrorCode::CommonInvalidParam5);
+    check_useful_c_str!(mechanism, ErrorCode::CommonInvalidParam6);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam8);
+
+    trace!("indy_prepare_payment_extra_with_acceptance_data: entities >>> extra_json: {:?}, text: {:?}, version: {:?}, taa_digest: {:?}, \
+        mechanism: {:?}, time: {:?}",
+           extra_json, text, version, taa_digest, mechanism, time);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Payments(
+            PaymentsCommand::AppendTxnAuthorAgreementAcceptanceToExtra(
+                extra_json,
+                text,
+                version,
+                taa_digest,
+                mechanism,
+                time,
+                Box::new(move |result| {
+                    let (err, extra_with_acceptance) = prepare_result_1!(result, String::new());
+                    trace!("indy_prepare_payment_extra_with_acceptance_data: extra_with_acceptance: {:?}", extra_with_acceptance);
+                    let extra_with_acceptance = ctypes::string_to_cstring(extra_with_acceptance);
+                    cb(command_handle, err, extra_with_acceptance.as_ptr())
+                })
+            )));
+
+    let res = prepare_result!(result);
+
+    trace!("indy_prepare_payment_extra_with_acceptance_data: <<< res: {:?}", res);
 
     res
 }

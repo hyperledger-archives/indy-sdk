@@ -6,6 +6,7 @@ use command_executor::{Command, CommandContext, CommandParams, CommandMetadata, 
 use commands::get_str_param;
 
 use utils::logger;
+use utils::file::read_file;
 
 pub mod about_command {
     use super::*;
@@ -35,8 +36,6 @@ pub mod about_command {
 
 pub mod show_command {
     use super::*;
-    use std::io::Read;
-    use std::fs::File;
 
     command!(CommandMetadata::build("show", "Print the content of text file")
                             .add_main_param("file", "The path to file to show")
@@ -48,17 +47,8 @@ pub mod show_command {
 
         let file = get_str_param("file", params).map_err(error_err!())?;
 
-        let mut file = File::open(file)
-            .map_err(error_err!())
-            .map_err(map_println_err!("Can't read the file"))?;
-
-        let content = {
-            let mut s = String::new();
-            file.read_to_string(&mut s)
-                .map_err(error_err!())
-                .map_err(|err| println_err!("Can't read the file: {}", err))?;
-            s
-        };
+        let content = read_file(file)
+            .map_err(|err| println_err!("{}", err))?;
 
         println!("{}", content);
         let res = Ok(());

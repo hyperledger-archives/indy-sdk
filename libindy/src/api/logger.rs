@@ -1,8 +1,7 @@
-extern crate libc;
 extern crate time;
 extern crate log;
 
-use self::libc::{c_void, c_char};
+use libc::{c_void, c_char};
 
 use api::ErrorCode;
 use errors::prelude::*;

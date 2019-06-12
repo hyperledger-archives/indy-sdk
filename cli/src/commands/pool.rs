@@ -1,12 +1,14 @@
 extern crate serde_json;
+extern crate chrono;
 
-use command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata};
+use command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata, wait_for_user_reply};
 use commands::*;
 
 use indy::{ErrorCode, IndyError};
 use libindy::pool::Pool;
 use utils::table::print_list_table;
 
+use self::chrono::prelude::*;
 use serde_json::Value as JSONValue;
 use serde_json::Map as JSONMap;
 
@@ -98,6 +100,7 @@ pub mod connect_command {
                     match Pool::close(handle) {
                         Ok(()) => {
                             set_connected_pool(ctx, None);
+                            set_transaction_author_info(ctx, None);
                             Ok(println_succ!("Pool \"{}\" has been disconnected", name))
                         }
                         Err(err) => Err(handle_indy_error(err, None, None, Some(name.as_ref())))
@@ -118,7 +121,8 @@ pub mod connect_command {
                 match Pool::open_pool_ledger(name, Some(&config)) {
                     Ok(handle) => {
                         set_connected_pool(ctx, Some((handle, name.to_owned())));
-                        Ok(println_succ!("Pool \"{}\" has been connected", name))
+                        println_succ!("Pool \"{}\" has been connected", name);
+                        Ok(handle)
                     }
                     Err(err) => {
                         match err.error_code {
@@ -131,7 +135,8 @@ pub mod connect_command {
                         }
                     }
                 }
-            });
+            })
+            .and_then(|handle| set_transaction_author_agreement(ctx, handle, true).map(|_| ()));
 
         trace!("execute << {:?}", res);
         res
@@ -186,6 +191,31 @@ pub mod list_command {
     }
 }
 
+pub mod show_taa_command {
+    use super::*;
+
+    command!(CommandMetadata::build("show-taa", "Show transaction author agreement set on Ledger.")
+                .finalize()
+    );
+
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
+
+        let pool_handle = ensure_connected_pool_handle(&ctx)?;
+
+        let res = match set_transaction_author_agreement(ctx, pool_handle, false) {
+            Ok(Some(_)) => { Ok(()) }
+            Ok(None) => {
+                Ok(println!("There is no transaction agreement set on the Pool."))
+            }
+            Err(err) => Err(err)
+        };
+
+        trace!("execute << {:?}", res);
+        res
+    }
+}
+
 pub mod refresh_command {
     use super::*;
 
@@ -227,6 +257,7 @@ pub mod disconnect_command {
         let res = match Pool::close(handle) {
             Ok(()) => {
                 set_connected_pool(ctx, None);
+                set_transaction_author_info(ctx, None);
                 Ok(println_succ!("Pool \"{}\" has been disconnected", name))
             }
             Err(err) => Err(handle_indy_error(err, None, Some(&name), None))
@@ -269,6 +300,56 @@ pub mod delete_command {
 
         trace!("execute << {:?}", res);
         res
+    }
+}
+
+pub fn accept_transaction_author_agreement(ctx: &CommandContext, text: &str, version: &str) {
+    println!("Would you like to accept it? (y/n)");
+
+    let accept_agreement = wait_for_user_reply();
+
+    if !accept_agreement {
+        println_warn!("The Transaction Author Agreement has NOT been Accepted.");
+        println!("Use `pool show-taa` command to accept the Agreement.");
+        println!();
+        return;
+    }
+
+    println_succ!("Transaction Author Agreement has been accepted.");
+
+    let time_of_acceptance = Utc::now().timestamp() as u64;
+
+    set_transaction_author_info(ctx, Some((text.to_string(), version.to_string(), time_of_acceptance)));
+}
+
+pub fn set_transaction_author_agreement(ctx: &CommandContext, pool_handle: i32, ask_for_showing: bool) -> Result<Option<()>, ()> {
+    if let Some((text, version)) = ledger::get_active_transaction_author_agreement(pool_handle)? {
+        if ask_for_showing {
+            println!();
+            println!("There is a Transaction Author Agreement set on the connected Pool.");
+            println!("You should read and accept it to be able to send transactions to the Pool.");
+            println!("You can postpone accepting the Agreement. Accept it later by calling `pool show-taa` command");
+            println!("Would you like to read it? (y/n)");
+
+            let read_agreement = wait_for_user_reply();
+
+            if !read_agreement {
+                println_warn!("The Transaction Author Agreement has NOT been Accepted.");
+                println!("Use `pool show-taa` command to accept the Agreement.");
+                println!();
+                return Ok(Some(()));
+            }
+        }
+
+        println!("Transaction Author Agreement");
+        println!("Version: {:?}", version);
+        println!("Content: \n {:?}", text);
+
+        accept_transaction_author_agreement(ctx, &text, &version);
+
+        Ok(Some(()))
+    } else {
+        Ok(None)
     }
 }
 

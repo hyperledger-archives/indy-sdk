@@ -9,12 +9,20 @@ export const VcxStatus = StructType({
   status: 'int'
 })
 
+interface IUintTypes {
+  [key: string]: string
+}
+const UINTS_TYPES: IUintTypes = { x86: 'uint32', x64: 'uint64' }
+const ARCHITECTURE: string = process.env.LIBVCX_FFI_ARCHITECTURE || 'x86'
+const FFI_UINT: string = UINTS_TYPES[ARCHITECTURE]
+
 // FFI Type Strings
 export const FFI_ERROR_CODE = 'int'
 export const FFI_BOOL = 'bool'
 export const FFI_CONNECTION_HANDLE = 'uint32'
 export const FFI_UNSIGNED_INT = 'uint32'
-export const FFI_UNSIGNED_INT_PTR = ref.refType('uint32')
+export const FFI_UNSIGNED_LONG = 'uint64'
+export const FFI_UNSIGNED_INT_PTR = FFI_UINT
 export const FFI_STRING = 'string'
 export const FFI_CONFIG_PATH = FFI_STRING
 export const FFI_STRING_DATA = 'string'
@@ -54,6 +62,10 @@ export interface IFFIEntryPoint {
   vcx_version: () => string,
   vcx_messages_download: (commandId: number, status: string, uids: string, pairwiseDids: string, cb: any) => number,
   vcx_messages_update_status: (commandId: number, status: string, msgIds: string, cb: any) => number,
+  vcx_get_ledger_author_agreement: (commandId: number, cb: any) => number,
+  vcx_set_active_txn_author_agreement_meta: (text: string | undefined | null, version: string | undefined | null,
+                                             hash: string | undefined | null, accMechType: string,
+                                             timeOfAcceptance: number) => number,
 
   // wallet
   vcx_wallet_get_token_info: (commandId: number, payment: number | undefined | null, cb: any) => number,
@@ -86,9 +98,10 @@ export interface IFFIEntryPoint {
   vcx_connection_release: (handle: number) => number,
   vcx_connection_serialize: (commandId: number, handle: number, cb: any) => number,
   vcx_connection_update_state: (commandId: number, handle: number, cb: any) => number,
+  vcx_connection_update_state_with_message: (commandId: number, handle: number, message: string, cb: any) => number,
   vcx_connection_get_state: (commandId: number, handle: number, cb: any) => number,
   vcx_connection_invite_details: (commandId: number, handle: number, abbreviated: boolean, cb: any) => number,
-  vcx_connection_send_message: (commandId: number, handle: number, msg: string, type: string, title: string, cb: any) =>
+  vcx_connection_send_message: (commandId: number, handle: number, msg: string, sendMsgOptions: string, cb: any) =>
     number,
   vcx_connection_sign_data: (commandId: number, handle: number, data: number, dataLength: number, cb: any) => number
   vcx_connection_verify_signature: (commandId: number, handle: number, data: number, dataLength: number,
@@ -99,6 +112,8 @@ export interface IFFIEntryPoint {
   vcx_issuer_credential_deserialize: (commandId: number, data: string, cb: any) => number,
   vcx_issuer_credential_serialize: (commandId: number, handle: number, cb: any) => number,
   vcx_issuer_credential_update_state: (commandId: number, handle: number, cb: any) => number,
+  vcx_issuer_credential_update_state_with_message: (commandId: number, handle: number, message: string, cb: any) =>
+    number,
   vcx_issuer_credential_get_state: (commandId: number, handle: number, cb: any) => number,
   vcx_issuer_create_credential: (commandId: number, sourceId: string, credDefHandle: number, issuerDid: string | null,
                                  attr: string, credentialName: string, price: string, cb: any) => number,
@@ -118,6 +133,7 @@ export interface IFFIEntryPoint {
   vcx_proof_send_request: (commandId: number, proofHandle: number, connectionHandle: number, cb: any) => number,
   vcx_proof_serialize: (commandId: number, handle: number, cb: any) => number,
   vcx_proof_update_state: (commandId: number, handle: number, cb: any) => number,
+  vcx_proof_update_state_with_message: (commandId: number, handle: number, message: string, cb: any) => number,
   vcx_proof_get_state: (commandId: number, handle: number, cb: any) => number,
 
   // disclosed proof
@@ -193,6 +209,9 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
     FFI_STRING_DATA, FFI_CALLBACK_PTR]],
   vcx_messages_update_status: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_STRING_DATA, FFI_STRING_DATA,
     FFI_CALLBACK_PTR]],
+  vcx_get_ledger_author_agreement: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CALLBACK_PTR]],
+  vcx_set_active_txn_author_agreement_meta: [FFI_ERROR_CODE, [FFI_STRING_DATA, FFI_STRING_DATA,
+    FFI_STRING_DATA, FFI_STRING_DATA, FFI_UNSIGNED_LONG]],
 
   // wallet
   vcx_wallet_get_token_info: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_PAYMENT_HANDLE, FFI_CALLBACK_PTR]],
@@ -231,20 +250,24 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
   vcx_connection_release: [FFI_ERROR_CODE, [FFI_CONNECTION_HANDLE]],
   vcx_connection_serialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_CALLBACK_PTR]],
   vcx_connection_update_state: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_CALLBACK_PTR]],
+  vcx_connection_update_state_with_message: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE,
+    FFI_STRING_DATA, FFI_CALLBACK_PTR]],
   vcx_connection_get_state: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_CALLBACK_PTR]],
   vcx_connection_invite_details: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_BOOL,
     FFI_CALLBACK_PTR]],
   vcx_connection_send_message: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_STRING_DATA,
-    FFI_STRING_DATA, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
-  vcx_connection_sign_data: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_UNSIGNED_INT,
+    FFI_STRING_DATA, FFI_CALLBACK_PTR]],
+  vcx_connection_sign_data: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_UNSIGNED_INT_PTR,
     FFI_UNSIGNED_INT, FFI_CALLBACK_PTR]],
-  vcx_connection_verify_signature: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_UNSIGNED_INT,
-    FFI_UNSIGNED_INT, FFI_UNSIGNED_INT, FFI_UNSIGNED_INT, FFI_CALLBACK_PTR]],
+  vcx_connection_verify_signature: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_UNSIGNED_INT_PTR,
+    FFI_UNSIGNED_INT, FFI_UNSIGNED_INT_PTR, FFI_UNSIGNED_INT, FFI_CALLBACK_PTR]],
 
   // issuer
   vcx_issuer_credential_deserialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
   vcx_issuer_credential_serialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CREDENTIAL_HANDLE, FFI_CALLBACK_PTR]],
   vcx_issuer_credential_update_state: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CREDENTIAL_HANDLE, FFI_CALLBACK_PTR]],
+  vcx_issuer_credential_update_state_with_message: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CREDENTIAL_HANDLE,
+    FFI_STRING_DATA, FFI_CALLBACK_PTR]],
   vcx_issuer_credential_get_state: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CREDENTIAL_HANDLE, FFI_CALLBACK_PTR]],
   vcx_issuer_create_credential: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_SOURCE_ID,
     FFI_CREDENTIALDEF_HANDLE, FFI_STRING_DATA, FFI_STRING_DATA, FFI_STRING_DATA, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
@@ -267,6 +290,8 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
     FFI_CALLBACK_PTR]],
   vcx_proof_serialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_PROOF_HANDLE, FFI_CALLBACK_PTR]],
   vcx_proof_update_state: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_PROOF_HANDLE, FFI_CALLBACK_PTR]],
+  vcx_proof_update_state_with_message: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_PROOF_HANDLE, FFI_STRING_DATA,
+    FFI_CALLBACK_PTR]],
   vcx_proof_get_state: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_PROOF_HANDLE, FFI_CALLBACK_PTR]],
 
   // disclosed proof

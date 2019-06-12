@@ -49,6 +49,15 @@ fn main() {
     while let Some(arg) = args.next() {
         match arg.as_str() {
             "-h" | "--help" => return _print_help(),
+            "--config" => {
+                let file = unwrap_or_return!(args.next(), println_err!("CLI configuration file is not specified"));
+
+                match CliConfig::read_from_file(&file)
+                    .and_then(|config| config.handle(&command_executor)) {
+                    Ok(()) => {}
+                    Err(err) => return println_err!("{}", err)
+                }
+            }
             "--logger-config" => {
                 let file = unwrap_or_return!(args.next(), println_err!("Logger config file is not specified"));
                 match utils::logger::IndyCliLogger::init(&file) {
@@ -68,6 +77,39 @@ fn main() {
         }
     }
     execute_stdin(command_executor);
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct CliConfig {
+    pub logger_config: Option<String>,
+    pub plugins: Option<String>,
+    pub taa_acceptance_mechanism: Option<String>,
+}
+
+impl CliConfig {
+    fn read_from_file(file: &str) -> Result<CliConfig, String> {
+        let content = utils::file::read_file(file)?;
+        let config: CliConfig = serde_json::from_str(&content)
+            .map_err(|err| format!("Invalid CLI configuration file: {:?}", err))?;
+        Ok(config)
+    }
+
+    fn handle(&self, command_executor: &CommandExecutor) -> Result<(), String> {
+        if let Some(ref logger_config) = self.logger_config {
+            utils::logger::IndyCliLogger::init(logger_config)?;
+            println_succ!("Logger has been initialized according to the config file: \"{}\"", logger_config);
+        }
+        if let Some(ref plugins) = self.plugins {
+            _load_plugins(&command_executor, plugins);
+        }
+        if let Some(ref taa_acceptance_mechanism) = self.taa_acceptance_mechanism {
+            command_executor.ctx().set_taa_acceptance_mechanism(taa_acceptance_mechanism);
+            println_succ!("\"{}\" is used as transaction author agreement acceptance mechanism", taa_acceptance_mechanism);
+        }
+        Ok(())
+    }
 }
 
 fn build_executor() -> CommandExecutor {
@@ -92,6 +134,7 @@ fn build_executor() -> CommandExecutor {
         .add_command(pool::list_command::new())
         .add_command(pool::disconnect_command::new())
         .add_command(pool::delete_command::new())
+        .add_command(pool::show_taa_command::new())
         .finalize_group()
         .add_group(wallet::group::new())
         .add_command(wallet::create_command::new())
@@ -127,7 +170,12 @@ fn build_executor() -> CommandExecutor {
         .add_command(ledger::verify_payment_receipt_command::new())
         .add_command(ledger::sign_multi_command::new())
         .add_command(ledger::auth_rule_command::new())
+        .add_command(ledger::auth_rules_command::new())
         .add_command(ledger::get_auth_rule_command::new())
+        .add_command(ledger::save_transaction_command::new())
+        .add_command(ledger::load_transaction_command::new())
+        .add_command(ledger::taa_command::new())
+        .add_command(ledger::aml_command::new())
         .finalize_group()
         .add_group(payment_address::group::new())
         .add_command(payment_address::create_command::new())
@@ -204,6 +252,12 @@ fn _print_help() {
     println!();
     println_acc!("\tInit logger according to a config file. \n\tIndy Cli uses `log4rs` logging framework: https://crates.io/crates/log4rs");
     println_acc!("\tUsage: indy-cli --logger-config <path-to-config-file>");
+    println!();
+    println_acc!("\tUse config file for CLI initialization. A config file can contain the following fields:");
+    println_acc!("\t\tplugins - a list of plugins to load in Libindy (is equal to usage of \"--plugins\" option).");
+    println_acc!("\t\tloggerConfig - path to a logger config file (is equal to usage of \"--logger-config\" option).");
+    println_acc!("\t\ttaaAcceptanceMechanism - transaction author agreement acceptance mechanism to use for sending write transactions to the Ledger.");
+    println_acc!("\tUsage: indy-cli --config <path-to-config-json-file>");
     println!();
 }
 
