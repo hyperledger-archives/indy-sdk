@@ -14,7 +14,7 @@
 #import "WalletUtils.h"
 #import <Indy/Indy.h>
 #import "NSDictionary+JSON.h"
-#import "Indy_demoTests-Swift.h"
+#import "Base58Utils.h"
 
 @interface Base58Test : XCTestCase
 
@@ -24,9 +24,9 @@
 
 - (void)testDecode
 {
-    XCTAssertTrue([[Base58 decode:@""] isEqualToData:[@"" dataUsingEncoding:NSUTF8StringEncoding allowLossyConversion:false]], @"");
-    XCTAssertTrue([[Base58 decode:@"3mJr7AoUXx2Wqd"] isEqualToData:[@"1234598760" dataUsingEncoding:NSUTF8StringEncoding allowLossyConversion:false]], @"");
-    XCTAssertTrue([[Base58 decode:@"3yxU3u1igY8WkgtjK92fbJQCd4BZiiT1v25f"] isEqualToData:[@"abcdefghijklmnopqrstuvwxyz" dataUsingEncoding:NSUTF8StringEncoding allowLossyConversion:false]], @"");
+    XCTAssertTrue([[Base58Utils decode:@""] isEqualToData:[@"" dataUsingEncoding:NSUTF8StringEncoding allowLossyConversion:false]], @"");
+    XCTAssertTrue([[Base58Utils decode:@"3mJr7AoUXx2Wqd"] isEqualToData:[@"1234598760" dataUsingEncoding:NSUTF8StringEncoding allowLossyConversion:false]], @"");
+    XCTAssertTrue([[Base58Utils decode:@"3yxU3u1igY8WkgtjK92fbJQCd4BZiiT1v25f"] isEqualToData:[@"abcdefghijklmnopqrstuvwxyz" dataUsingEncoding:NSUTF8StringEncoding allowLossyConversion:false]], @"");
 }
 
 @end

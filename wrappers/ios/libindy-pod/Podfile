@@ -12,8 +12,9 @@ def appPods
 end
 
 target 'Indy-demo' do
+    use_frameworks!
     project 'Indy-demo'
-    pod 'BigInt', '~> 4.0'
+    pod 'BigInt'
 
     target 'Indy-demoTests' do
 	inherit! :search_paths
