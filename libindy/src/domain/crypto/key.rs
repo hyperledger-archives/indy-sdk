@@ -1,4 +1,3 @@
-extern crate ursa;
 extern crate zeroize;
 
 use self::zeroize::Zeroize;

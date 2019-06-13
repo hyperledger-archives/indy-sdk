@@ -21,7 +21,7 @@ use services::pool::events::*;
 use services::pool::merkle_tree_factory;
 use services::pool::networker::{Networker, ZMQNetworker};
 use services::pool::request_handler::{RequestHandler, RequestHandlerImpl};
-use services::pool::rust_base58::{FromBase58, ToBase58};
+use rust_base58::{FromBase58, ToBase58};
 use services::pool::types::{LedgerStatus, RemoteNode};
 use utils::crypto::ed25519_sign;
 

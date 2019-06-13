@@ -1,6 +1,3 @@
-extern crate byteorder;
-extern crate rmp_serde;
-
 use std::{fs, io};
 use std::collections::HashMap;
 use std::io::{BufRead, Read, Write};
@@ -15,7 +12,7 @@ use services::ledger::merkletree::merkletree::MerkleTree;
 use services::pool::types::{NodeTransaction, NodeTransactionV0, NodeTransactionV1};
 use utils::environment;
 
-use self::byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
+use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
 pub fn create(pool_name: &str) -> IndyResult<MerkleTree> {
     let mut p = environment::pool_path(pool_name);
