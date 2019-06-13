@@ -7,6 +7,8 @@ use zeroize::Zeroize;
 
 pub const SEEDBYTES: usize = 32; // randombytes_seedbytes
 
+#[derive(Zeroize)]
+#[zeroize(drop)]
 pub struct Seed([u8; SEEDBYTES]);
 
 impl Seed {
@@ -25,8 +27,6 @@ impl Seed {
         Ok(seed)
     }
 }
-
-memzeroize!(Seed, 0);
 
 pub fn randombytes(size: usize) -> Vec<u8> {
     self::sodiumoxide::randombytes::randombytes(size)
