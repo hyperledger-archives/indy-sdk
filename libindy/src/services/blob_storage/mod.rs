@@ -1,15 +1,11 @@
-extern crate digest;
-extern crate ursa;
-extern crate sha2;
-
 use std::cell::RefCell;
 use std::collections::HashMap;
 
 use errors::prelude::*;
 use utils::sequence;
 
-use self::digest::{FixedOutput, Input};
-use self::sha2::Sha256;
+use digest::{FixedOutput, Input};
+use sha2::Sha256;
 
 mod default_writer;
 mod default_reader;

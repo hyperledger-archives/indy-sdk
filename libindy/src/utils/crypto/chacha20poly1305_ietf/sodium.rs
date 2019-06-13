@@ -1,5 +1,4 @@
 extern crate sodiumoxide;
-extern crate zeroize;
 
 use domain::wallet::KeyDerivationMethod;
 use errors::prelude::*;

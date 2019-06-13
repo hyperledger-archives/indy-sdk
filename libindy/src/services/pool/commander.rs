@@ -1,11 +1,9 @@
-extern crate byteorder;
-
 use errors::prelude::*;
 use services::pool::events::PoolEvent;
 
 use super::zmq;
 
-use self::byteorder::{ByteOrder, LittleEndian};
+use byteorder::{ByteOrder, LittleEndian};
 
 pub struct Commander {
     cmd_socket: zmq::Socket,

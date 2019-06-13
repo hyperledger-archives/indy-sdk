@@ -1,10 +1,6 @@
-extern crate digest;
-extern crate sha2;
-extern crate rust_base58;
-
-use self::digest::{FixedOutput, Input};
-use self::sha2::Sha256;
-use self::rust_base58::ToBase58;
+use digest::{FixedOutput, Input};
+use sha2::Sha256;
+use rust_base58::ToBase58;
 
 use super::{ReadableBlob, Reader, ReaderType};
 use errors::prelude::*;

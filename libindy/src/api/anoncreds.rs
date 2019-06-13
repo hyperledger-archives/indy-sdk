@@ -1,5 +1,3 @@
-extern crate serde_json;
-
 use api::{ErrorCode, IndyHandle, CommandHandle, WalletHandle, SearchHandle};
 use errors::prelude::*;
 use commands::{Command, CommandExecutor};
