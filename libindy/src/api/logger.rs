@@ -1,6 +1,3 @@
-extern crate time;
-extern crate log;
-
 use libc::{c_void, c_char};
 
 use api::ErrorCode;

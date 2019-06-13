@@ -1,5 +1,3 @@
-extern crate ursa;
-
 use std::collections::{HashMap, HashSet};
 
 use domain::anoncreds::credential_definition::{CredentialDefinitionV1, CredentialDefinition};
@@ -11,8 +9,8 @@ use domain::anoncreds::schema::{SchemaV1, Schema};
 use errors::prelude::*;
 use services::anoncreds::helpers::*;
 
-use self::ursa::cl::CredentialPublicKey;
-use self::ursa::cl::verifier::Verifier as CryptoVerifier;
+use ursa::cl::CredentialPublicKey;
+use ursa::cl::verifier::Verifier as CryptoVerifier;
 use services::wallet::language::{parse_from_json, Operator};
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]

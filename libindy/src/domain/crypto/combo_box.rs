@@ -1,5 +1,4 @@
-extern crate rmp_serde;
-
+use rmp_serde;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ComboBox {

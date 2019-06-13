@@ -316,10 +316,8 @@ fn parse_single_operator(operator_name: String, key: String, value: serde_json::
 
 #[cfg(test)]
 mod tests {
-    extern crate rand;
-
     use super::*;
-    use self::rand::{thread_rng, Rng};
+    use rand::{thread_rng, Rng};
     use rand::distributions::{Alphanumeric, Standard};
     use std::hash::Hash;
     use std::collections::HashSet;

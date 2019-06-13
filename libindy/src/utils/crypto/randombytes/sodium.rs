@@ -1,10 +1,9 @@
 extern crate sodiumoxide;
-extern crate zeroize;
 
 use errors::prelude::*;
 use libc::size_t;
 
-use self::zeroize::Zeroize;
+use zeroize::Zeroize;
 
 pub const SEEDBYTES: usize = 32; // randombytes_seedbytes
 
