@@ -309,8 +309,8 @@ pub fn accept_transaction_author_agreement(ctx: &CommandContext, text: &str, ver
     let accept_agreement = wait_for_user_reply();
 
     if !accept_agreement {
-        println_warn!("Transaction author agreement has NOT been Accepted.");
-        println!("Use `pool show-taa` command if you will need to accept a Pool agreement.");
+        println_warn!("The Transaction Author Agreement has NOT been Accepted.");
+        println!("Use `pool show-taa` command to accept the Agreement.");
         println!();
         return;
     }
@@ -326,16 +326,16 @@ pub fn set_transaction_author_agreement(ctx: &CommandContext, pool_handle: i32, 
     if let Some((text, version)) = ledger::get_active_transaction_author_agreement(pool_handle)? {
         if ask_for_showing {
             println!();
-            println!("There is a transaction author agreement set on the connected Pool.");
+            println!("There is a Transaction Author Agreement set on the connected Pool.");
             println!("You should read and accept it to be able to send transactions to the Pool.");
-            println!("Either you can skip it and accept agreement later by calling `pool show-taa` command.");
+            println!("You can postpone accepting the Agreement. Accept it later by calling `pool show-taa` command");
             println!("Would you like to read it? (y/n)");
 
             let read_agreement = wait_for_user_reply();
 
             if !read_agreement {
-                println_warn!("Transaction author agreement has NOT been Accepted.");
-                println!("Use `pool show-taa` command if you will need to accept a Pool agreement.");
+                println_warn!("The Transaction Author Agreement has NOT been Accepted.");
+                println!("Use `pool show-taa` command to accept the Agreement.");
                 println!();
                 return Ok(Some(()));
             }

@@ -1,9 +1,6 @@
-extern crate hex;
-extern crate serde_json;
-
 use errors::prelude::*;
-use self::hex::ToHex;
-use self::serde_json::Value;
+use hex::ToHex;
+use serde_json::Value;
 use utils::crypto::hash::Hash;
 use domain::ledger::constants::{ATTRIB, GET_ATTR};
 

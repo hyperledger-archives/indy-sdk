@@ -761,6 +761,28 @@
     return err;
 }
 
+- (NSError *)buildAuthRulesRequestWithSubmitterDid:(NSString *)submitterDid
+                                              data:(NSString *)data
+                                        outRequest:(NSString **)resultJson {
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+    __block NSString *outJson = nil;
+
+    [IndyLedger buildAuthRulesRequestWithSubmitterDid:submitterDid
+                                                 data:data
+                                           completion:^(NSError *error, NSString *json) {
+                                               err = error;
+                                               outJson = json;
+                                               [completionExpectation fulfill];
+                                           }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
+
+    if (resultJson) {*resultJson = outJson;}
+
+    return err;
+}
+
 - (NSError *)buildGetAuthRuleRequestWithSubmitterDid:(NSString *)submitterDid
                                              txnType:(NSString *)txnType
                                               action:(NSString *)action
@@ -855,7 +877,7 @@
     return err;
 }
 
-- (NSError *)buildAcceptanceMechanismRequestWithSubmitterDid:(NSString *)submitterDid
+- (NSError *)buildAcceptanceMechanismsRequestWithSubmitterDid:(NSString *)submitterDid
                                                          aml:(NSString *)aml
                                                      version:(NSString *)version
                                                   amlContext:(NSString *)amlContext
@@ -864,15 +886,15 @@
     __block NSError *err = nil;
     __block NSString *outJson = nil;
 
-    [IndyLedger buildAcceptanceMechanismRequestWithSubmitterDid:submitterDid
-                                                            aml:aml
-                                                        version:version
-                                                     amlContext:amlContext
-                                                     completion:^(NSError *error, NSString *json) {
-                                                         err = error;
-                                                         outJson = json;
-                                                         [completionExpectation fulfill];
-                                                     }];
+    [IndyLedger buildAcceptanceMechanismsRequestWithSubmitterDid:submitterDid
+                                                             aml:aml
+                                                         version:version
+                                                      amlContext:amlContext
+                                                      completion:^(NSError *error, NSString *json) {
+                                                          err = error;
+                                                          outJson = json;
+                                                          [completionExpectation fulfill];
+                                                      }];
 
     [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
 
@@ -881,22 +903,22 @@
     return err;
 }
 
-- (NSError *)buildGetAcceptanceMechanismRequestWithSubmitterDid:(NSString *)submitterDid
-                                                      timestamp:(NSNumber *)timestamp
-                                                        version:(NSString *)version
-                                                     outRequest:(NSString **)resultJson {
+- (NSError *)buildGetAcceptanceMechanismsRequestWithSubmitterDid:(NSString *)submitterDid
+                                                       timestamp:(NSNumber *)timestamp
+                                                         version:(NSString *)version
+                                                      outRequest:(NSString **)resultJson {
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
     __block NSError *err = nil;
     __block NSString *outJson = nil;
 
-    [IndyLedger buildGetAcceptanceMechanismRequestWithSubmitterDid:submitterDid
-                                                         timestamp:timestamp
-                                                           version:version
-                                                        completion:^(NSError *error, NSString *json) {
-                                                            err = error;
-                                                            outJson = json;
-                                                            [completionExpectation fulfill];
-                                                        }];
+    [IndyLedger buildGetAcceptanceMechanismsRequestWithSubmitterDid:submitterDid
+                                                          timestamp:timestamp
+                                                            version:version
+                                                         completion:^(NSError *error, NSString *json) {
+                                                             err = error;
+                                                             outJson = json;
+                                                             [completionExpectation fulfill];
+                                                         }];
 
     [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
 

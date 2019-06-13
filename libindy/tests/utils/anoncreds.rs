@@ -770,7 +770,8 @@ pub fn init_common_wallet() -> (&'static str, &'static str, &'static str, &'stat
 
     unsafe {
         COMMON_WALLET_INIT.call_once(|| {
-            test::cleanup_storage();
+            // this name must match the one in ANONCREDS_WALLET_CONFIG
+            test::cleanup_storage("anoncreds_wallet");
 
             pool::set_protocol_version(PROTOCOL_VERSION).unwrap();
 

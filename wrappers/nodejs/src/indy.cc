@@ -2072,6 +2072,25 @@ NAN_METHOD(buildAuthRuleRequest) {
   delete arg6;
 }
 
+void buildAuthRulesRequest_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbString(xerr, arg0);
+  }
+}
+NAN_METHOD(buildAuthRulesRequest) {
+  INDY_ASSERT_NARGS(buildAuthRulesRequest, 3)
+  INDY_ASSERT_STRING(buildAuthRulesRequest, 0, submitterDid)
+  INDY_ASSERT_STRING(buildAuthRulesRequest, 1, data)
+  INDY_ASSERT_FUNCTION(buildAuthRulesRequest, 2)
+  const char* arg0 = argToCString(info[0]);
+  const char* arg1 = argToCString(info[1]);
+  IndyCallback* icb = argToIndyCb(info[2]);
+  indyCalled(icb, indy_build_auth_rules_request(icb->handle, arg0, arg1, buildAuthRulesRequest_cb));
+  delete arg0;
+  delete arg1;
+}
+
 void buildGetAuthRuleRequest_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
   IndyCallback* icb = IndyCallback::getCallback(handle);
   if(icb != nullptr){
@@ -2144,48 +2163,48 @@ NAN_METHOD(buildGetTxnAuthorAgreementRequest) {
   delete arg1;
 }
 
-void buildAcceptanceMechanismRequest_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
+void buildAcceptanceMechanismsRequest_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
   IndyCallback* icb = IndyCallback::getCallback(handle);
   if(icb != nullptr){
     icb->cbString(xerr, arg0);
   }
 }
-NAN_METHOD(buildAcceptanceMechanismRequest) {
-  INDY_ASSERT_NARGS(buildAcceptanceMechanismRequest, 5)
-  INDY_ASSERT_STRING(buildAcceptanceMechanismRequest, 0, submitterDid)
-  INDY_ASSERT_STRING(buildAcceptanceMechanismRequest, 1, aml)
-  INDY_ASSERT_STRING(buildAcceptanceMechanismRequest, 2, version)
-  INDY_ASSERT_STRING(buildAcceptanceMechanismRequest, 3, amlContext)
-  INDY_ASSERT_FUNCTION(buildAcceptanceMechanismRequest, 4)
+NAN_METHOD(buildAcceptanceMechanismsRequest) {
+  INDY_ASSERT_NARGS(buildAcceptanceMechanismsRequest, 5)
+  INDY_ASSERT_STRING(buildAcceptanceMechanismsRequest, 0, submitterDid)
+  INDY_ASSERT_STRING(buildAcceptanceMechanismsRequest, 1, aml)
+  INDY_ASSERT_STRING(buildAcceptanceMechanismsRequest, 2, version)
+  INDY_ASSERT_STRING(buildAcceptanceMechanismsRequest, 3, amlContext)
+  INDY_ASSERT_FUNCTION(buildAcceptanceMechanismsRequest, 4)
   const char* arg0 = argToCString(info[0]);
   const char* arg1 = argToCString(info[1]);
   const char* arg2 = argToCString(info[2]);
   const char* arg3 = argToCString(info[3]);
   IndyCallback* icb = argToIndyCb(info[4]);
-  indyCalled(icb, indy_build_acceptance_mechanism_request(icb->handle, arg0, arg1, arg2, arg3, buildAcceptanceMechanismRequest_cb));
+  indyCalled(icb, indy_build_acceptance_mechanisms_request(icb->handle, arg0, arg1, arg2, arg3, buildAcceptanceMechanismsRequest_cb));
   delete arg0;
   delete arg1;
   delete arg2;
   delete arg3;
 }
 
-void buildGetAcceptanceMechanismRequest_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
+void buildGetAcceptanceMechanismsRequest_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
   IndyCallback* icb = IndyCallback::getCallback(handle);
   if(icb != nullptr){
     icb->cbString(xerr, arg0);
   }
 }
-NAN_METHOD(buildGetAcceptanceMechanismRequest) {
-  INDY_ASSERT_NARGS(buildGetAcceptanceMechanismRequest, 4)
-  INDY_ASSERT_STRING(buildGetAcceptanceMechanismRequest, 0, submitterDid)
-  INDY_ASSERT_NUMBER(buildGetAcceptanceMechanismRequest, 1, timestamp)
-  INDY_ASSERT_STRING(buildGetAcceptanceMechanismRequest, 2, version)
-  INDY_ASSERT_FUNCTION(buildGetAcceptanceMechanismRequest, 3)
+NAN_METHOD(buildGetAcceptanceMechanismsRequest) {
+  INDY_ASSERT_NARGS(buildGetAcceptanceMechanismsRequest, 4)
+  INDY_ASSERT_STRING(buildGetAcceptanceMechanismsRequest, 0, submitterDid)
+  INDY_ASSERT_NUMBER(buildGetAcceptanceMechanismsRequest, 1, timestamp)
+  INDY_ASSERT_STRING(buildGetAcceptanceMechanismsRequest, 2, version)
+  INDY_ASSERT_FUNCTION(buildGetAcceptanceMechanismsRequest, 3)
   const char* arg0 = argToCString(info[0]);
   indy_i64_t arg1 = argToInt32(info[1]);
   const char* arg2 = argToCString(info[2]);
   IndyCallback* icb = argToIndyCb(info[3]);
-  indyCalled(icb, indy_build_get_acceptance_mechanism_request(icb->handle, arg0, arg1, arg2, buildGetAcceptanceMechanismRequest_cb));
+  indyCalled(icb, indy_build_get_acceptance_mechanisms_request(icb->handle, arg0, arg1, arg2, buildGetAcceptanceMechanismsRequest_cb));
   delete arg0;
   delete arg2;
 }
@@ -3414,11 +3433,12 @@ NAN_MODULE_INIT(InitAll) {
   Nan::Export(target, "buildGetRevocRegDeltaRequest", buildGetRevocRegDeltaRequest);
   Nan::Export(target, "parseGetRevocRegDeltaResponse", parseGetRevocRegDeltaResponse);
   Nan::Export(target, "buildAuthRuleRequest", buildAuthRuleRequest);
+  Nan::Export(target, "buildAuthRulesRequest", buildAuthRulesRequest);
   Nan::Export(target, "buildGetAuthRuleRequest", buildGetAuthRuleRequest);
   Nan::Export(target, "buildTxnAuthorAgreementRequest", buildTxnAuthorAgreementRequest);
   Nan::Export(target, "buildGetTxnAuthorAgreementRequest", buildGetTxnAuthorAgreementRequest);
-  Nan::Export(target, "buildAcceptanceMechanismRequest", buildAcceptanceMechanismRequest);
-  Nan::Export(target, "buildGetAcceptanceMechanismRequest", buildGetAcceptanceMechanismRequest);
+  Nan::Export(target, "buildAcceptanceMechanismsRequest", buildAcceptanceMechanismsRequest);
+  Nan::Export(target, "buildGetAcceptanceMechanismsRequest", buildGetAcceptanceMechanismsRequest);
   Nan::Export(target, "appendTxnAuthorAgreementAcceptanceToRequest", appendTxnAuthorAgreementAcceptanceToRequest);
   Nan::Export(target, "getResponseMetadata", getResponseMetadata);
   Nan::Export(target, "addWalletRecord", addWalletRecord);

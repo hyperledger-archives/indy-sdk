@@ -40,7 +40,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     cd ../cli
     cargo build
     echo 'export DYLD_LIBRARY_PATH='$LIBRARY_PATH'
-export LD_LIBRARY_PATH='$LIBRARY_PATH >> ~/.bash_profile 
+export LD_LIBRARY_PATH='$LIBRARY_PATH >> ~/.bash_profile
     echo -e "${ongreen}Libindy installed.$endcolor"
 else
     echo -e "${onred}You are not running MacOS. This is a MacOS installer.$endcolor"

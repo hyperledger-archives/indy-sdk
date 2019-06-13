@@ -1,6 +1,3 @@
-extern crate byteorder;
-extern crate rmp_serde;
-
 use std::{fs, io};
 use std::collections::HashMap;
 use std::io::{BufRead, Read, Write};
@@ -15,7 +12,7 @@ use services::ledger::merkletree::merkletree::MerkleTree;
 use services::pool::types::{NodeTransaction, NodeTransactionV0, NodeTransactionV1};
 use utils::environment;
 
-use self::byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
+use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
 pub fn create(pool_name: &str) -> IndyResult<MerkleTree> {
     let mut p = environment::pool_path(pool_name);
@@ -247,8 +244,7 @@ mod tests {
     pub const NODE1_OLD: &'static str = r#"{"data":{"alias":"Node1","client_ip":"192.168.1.35","client_port":9702,"node_ip":"192.168.1.35","node_port":9701,"services":["VALIDATOR"]},"dest":"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv","identifier":"FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4","txnId":"fea82e10e894419fe2bea7d96296a6d46f50f93f9eeda954ec461b2ed2950b62","type":"0"}"#;
     pub const NODE2_OLD: &'static str = r#"{"data":{"alias":"Node2","client_ip":"192.168.1.35","client_port":9704,"node_ip":"192.168.1.35","node_port":9703,"services":["VALIDATOR"]},"dest":"8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb","identifier":"8QhFxKxyaFsJy4CyxeYX34dFH8oWqyBv1P4HLQCsoeLy","txnId":"1ac8aece2a18ced660fef8694b61aac3af08ba875ce3026a160acbc3a3af35fc","type":"0"}"#;
 
-    fn _write_genesis_txns(txns: &str) {
-        let pool_name = "test";
+    fn _write_genesis_txns(pool_name: &str, txns: &str) {
         let mut path = environment::pool_path(pool_name);
         fs::create_dir_all(path.as_path()).unwrap();
         path.push(pool_name);
@@ -261,72 +257,78 @@ mod tests {
 
     #[test]
     fn pool_worker_build_node_state_works_for_new_txns_format_and_1_protocol_version() {
-        test::cleanup_storage();
+        test::cleanup_storage("pool_worker_build_node_state_works_for_new_txns_format_and_1_protocol_version");
 
         _set_protocol_version(1);
 
         let node_txns = test::gen_txns();
         let txns_src = node_txns[0..(2 as usize)].join("\n");
 
-        _write_genesis_txns(&txns_src);
+        _write_genesis_txns("pool_worker_build_node_state_works_for_new_txns_format_and_1_protocol_version", &txns_src);
 
-        let merkle_tree = super::create("test").unwrap();
+        let merkle_tree = super::create("pool_worker_build_node_state_works_for_new_txns_format_and_1_protocol_version").unwrap();
         let res = super::build_node_state(&merkle_tree);
         assert_kind!(IndyErrorKind::PoolIncompatibleProtocolVersion, res);
+
+        test::cleanup_storage("pool_worker_build_node_state_works_for_new_txns_format_and_1_protocol_version");
     }
 
     #[test]
     pub fn pool_worker_works_for_deserialize_cache() {
-        test::cleanup_storage();
+        test::cleanup_storage("pool_worker_works_for_deserialize_cache");
+        {
+            _set_protocol_version(TEST_PROTOCOL_VERSION);
 
-        _set_protocol_version(TEST_PROTOCOL_VERSION);
+            let node_txns = test::gen_txns();
 
-        let node_txns = test::gen_txns();
+            let txn1_json: serde_json::Value = serde_json::from_str(&node_txns[0]).unwrap();
+            let txn2_json: serde_json::Value = serde_json::from_str(&node_txns[1]).unwrap();
+            let txn3_json: serde_json::Value = serde_json::from_str(&node_txns[2]).unwrap();
+            let txn4_json: serde_json::Value = serde_json::from_str(&node_txns[3]).unwrap();
 
-        let txn1_json: serde_json::Value = serde_json::from_str(&node_txns[0]).unwrap();
-        let txn2_json: serde_json::Value = serde_json::from_str(&node_txns[1]).unwrap();
-        let txn3_json: serde_json::Value = serde_json::from_str(&node_txns[2]).unwrap();
-        let txn4_json: serde_json::Value = serde_json::from_str(&node_txns[3]).unwrap();
+            let pool_cache = vec![rmp_serde::to_vec_named(&txn1_json).unwrap(),
+                                  rmp_serde::to_vec_named(&txn2_json).unwrap(),
+                                  rmp_serde::to_vec_named(&txn3_json).unwrap(),
+                                  rmp_serde::to_vec_named(&txn4_json).unwrap()];
 
-        let pool_cache = vec![rmp_serde::to_vec_named(&txn1_json).unwrap(),
-                              rmp_serde::to_vec_named(&txn2_json).unwrap(),
-                              rmp_serde::to_vec_named(&txn3_json).unwrap(),
-                              rmp_serde::to_vec_named(&txn4_json).unwrap()];
+            let pool_name = "pool_worker_works_for_deserialize_cache";
+            let mut path = environment::pool_path(pool_name);
+            fs::create_dir_all(path.as_path()).unwrap();
+            path.push("stored");
+            path.set_extension("btxn");
+            let mut f = fs::File::create(path.as_path()).unwrap();
+            pool_cache.iter().for_each(|vec| {
+                f.write_u64::<LittleEndian>(vec.len() as u64).unwrap();
+                f.write_all(vec).unwrap();
+            });
 
-        let pool_name = "test";
-        let mut path = environment::pool_path(pool_name);
-        fs::create_dir_all(path.as_path()).unwrap();
-        path.push("stored");
-        path.set_extension("btxn");
-        let mut f = fs::File::create(path.as_path()).unwrap();
-        pool_cache.iter().for_each(|vec| {
-            f.write_u64::<LittleEndian>(vec.len() as u64).unwrap();
-            f.write_all(vec).unwrap();
-        });
-
-        let merkle_tree = super::create("test").unwrap();
-        let _node_state = super::build_node_state(&merkle_tree).unwrap();
+            let merkle_tree = super::create(pool_name).unwrap();
+            let _node_state = super::build_node_state(&merkle_tree).unwrap();
+        }
+        test::cleanup_storage("pool_worker_works_for_deserialize_cache");
     }
 
     #[test]
     fn pool_worker_restore_merkle_tree_works_from_genesis_txns() {
-        test::cleanup_storage();
+        test::cleanup_storage("pool_worker_restore_merkle_tree_works_from_genesis_txns");
 
         let node_txns = test::gen_txns();
         let txns_src = format!("{}\n{}",
                                node_txns[0].replace(environment::test_pool_ip().as_str(), "10.0.0.2"),
                                node_txns[1].replace(environment::test_pool_ip().as_str(), "10.0.0.2"));
-        _write_genesis_txns(&txns_src);
+        _write_genesis_txns("pool_worker_restore_merkle_tree_works_from_genesis_txns", &txns_src);
 
-        let merkle_tree = super::create("test").unwrap();
+        let merkle_tree = super::create("pool_worker_restore_merkle_tree_works_from_genesis_txns").unwrap();
 
         assert_eq!(merkle_tree.count(), 2, "test restored MT size");
         assert_eq!(merkle_tree.root_hash_hex(), "c715aef44aaacab8746c9a505ba106b5554fe6d29ec7f0a2abc9d7723fdea523", "test restored MT root hash");
+
+        test::cleanup_storage("pool_worker_restore_merkle_tree_works_from_genesis_txns");
     }
 
     #[test]
     fn pool_worker_build_node_state_works_for_old_format() {
-        test::cleanup_storage();
+        test::cleanup_storage("pool_worker_build_node_state_works_for_old_format");
 
         _set_protocol_version(1);
 
@@ -335,9 +337,9 @@ mod tests {
 
         let txns_src = format!("{}\n{}\n", NODE1_OLD, NODE2_OLD);
 
-        _write_genesis_txns(&txns_src);
+        _write_genesis_txns("pool_worker_build_node_state_works_for_old_format", &txns_src);
 
-        let merkle_tree = super::create("test").unwrap();
+        let merkle_tree = super::create("pool_worker_build_node_state_works_for_old_format").unwrap();
         let node_state = super::build_node_state(&merkle_tree).unwrap();
 
         assert_eq!(1, ProtocolVersion::get());
@@ -348,11 +350,13 @@ mod tests {
 
         assert_eq!(node_state["Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv"], node1);
         assert_eq!(node_state["8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb"], node2);
+
+        test::cleanup_storage("pool_worker_build_node_state_works_for_old_format");
     }
 
     #[test]
     fn pool_worker_build_node_state_works_for_new_format() {
-        test::cleanup_storage();
+        test::cleanup_storage("pool_worker_build_node_state_works_for_new_format");
 
         _set_protocol_version(TEST_PROTOCOL_VERSION);
 
@@ -363,9 +367,9 @@ mod tests {
 
         let txns_src = node_txns.join("\n");
 
-        _write_genesis_txns(&txns_src);
+        _write_genesis_txns("pool_worker_build_node_state_works_for_new_format", &txns_src);
 
-        let merkle_tree = super::create("test").unwrap();
+        let merkle_tree = super::create("pool_worker_build_node_state_works_for_new_format").unwrap();
         let node_state = super::build_node_state(&merkle_tree).unwrap();
 
         assert_eq!(2, ProtocolVersion::get());
@@ -376,20 +380,24 @@ mod tests {
 
         assert_eq!(node_state["Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv"], node1);
         assert_eq!(node_state["8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb"], node2);
+
+        test::cleanup_storage("pool_worker_build_node_state_works_for_new_format");
     }
 
     #[test]
     fn pool_worker_build_node_state_works_for_old_txns_format_and_2_protocol_version() {
-        test::cleanup_storage();
+        test::cleanup_storage("pool_worker_build_node_state_works_for_old_txns_format_and_2_protocol_version");
 
         _set_protocol_version(TEST_PROTOCOL_VERSION);
 
         let txns_src = format!("{}\n{}\n", NODE1_OLD, NODE2_OLD);
 
-        _write_genesis_txns(&txns_src);
+        _write_genesis_txns("pool_worker_build_node_state_works_for_old_txns_format_and_2_protocol_version", &txns_src);
 
-        let merkle_tree = super::create("test").unwrap();
+        let merkle_tree = super::create("pool_worker_build_node_state_works_for_old_txns_format_and_2_protocol_version").unwrap();
         let res = super::build_node_state(&merkle_tree);
         assert_kind!(IndyErrorKind::PoolIncompatibleProtocolVersion, res);
+
+        test::cleanup_storage("pool_worker_build_node_state_works_for_old_txns_format_and_2_protocol_version");
     }
 }

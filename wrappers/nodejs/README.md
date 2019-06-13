@@ -1786,6 +1786,34 @@ More about AUTH_RULE request: https://github.com/hyperledger/indy-node/blob/mast
 
 Errors: `Common*`
 
+#### buildAuthRulesRequest \( submitterDid, data \) -&gt; request
+
+Builds a AUTH_RULES request. Request to change multiple authentication rules for a ledger transaction.
+
+* `submitterDid`: String - \(Optional\) DID of the read request sender \(if not provided then default Libindy DID will be used\).
+* `constraint`: Json - a list of auth rules:
+```
+[
+    {
+        "auth_type": ledger transaction alias or associated value,
+        "auth_action": type of an action,
+        "field": transaction field,
+        "old_value": (Optional) old value of a field, which can be changed to a new_value (mandatory for EDIT action),
+        "new_value": (Optional) new value that can be used to fill the field,
+        "constraint": set of constraints required for execution of an action in the format described above for `buildAuthRuleRequest` function.
+    },
+    ...
+]
+```
+
+Default ledger auth rules: https://github.com/hyperledger/indy-node/blob/master/docs/source/auth_rules.md
+
+More about AUTH_RULE request: https://github.com/hyperledger/indy-node/blob/master/docs/source/requests.md#auth_rules   
+
+* __->__ `request`: Json
+
+Errors: `Common*`
+
 
 #### buildGetAuthRuleRequest \( submitterDid, txnType, action, field, oldValue, newValue \) -&gt; request
 
@@ -1845,10 +1873,10 @@ Null data or empty JSON are acceptable here. In this case, ledger will return th
 
 Errors: `Common*`
 
-#### buildAcceptanceMechanismRequest \( submitterDid, aml, version, amlContext \) -&gt; request
+#### buildAcceptanceMechanismsRequest \( submitterDid, aml, version, amlContext \) -&gt; request
 
 Builds a SET_TXN_AUTHR_AGRMT_AML request. 
-Request to add a new acceptance mechanism for transaction author agreement.
+Request to add a new list of acceptance mechanisms for transaction author agreement.
 Acceptance Mechanism is a description of the ways how the user may accept a transaction author agreement.
 
 EXPERIMENTAL
@@ -1869,10 +1897,10 @@ EXPERIMENTAL
 
 Errors: `Common*`
 
-#### buildGetAcceptanceMechanismRequest \( submitterDid, timestamp \) -&gt; request
+#### buildGetAcceptanceMechanismsRequest \( submitterDid, timestamp \) -&gt; request
 
 Builds a GET_TXN_AUTHR_AGRMT_AML request. 
-Request to get acceptance mechanisms from the ledger valid for specified time or the latest one.
+Request to get a list of  acceptance mechanisms from the ledger valid for specified time or the latest one.
 
 EXPERIMENTAL
 

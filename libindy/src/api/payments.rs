@@ -1,6 +1,4 @@
-extern crate libc;
-
-use self::libc::c_char;
+use libc::c_char;
 use api::{ErrorCode, CommandHandle, WalletHandle};
 use commands::{Command, CommandExecutor};
 use commands::payments::PaymentsCommand;
@@ -852,7 +850,7 @@ pub extern fn indy_parse_payment_response(command_handle: CommandHandle,
     res
 }
 
-/// Append payment extra JSON with TAA acceptance data
+/// Prepare payment extra JSON with TAA acceptance data
 ///
 /// EXPERIMENTAL
 ///

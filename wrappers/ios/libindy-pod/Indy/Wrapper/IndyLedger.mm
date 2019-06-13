@@ -737,6 +737,27 @@
     }
 }
 
++ (void)buildAuthRulesRequestWithSubmitterDid:(NSString *)submitterDid
+                                         data:(NSString *)data
+                                  completion:(void (^)(NSError *error, NSString *requestJSON))completion {
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+
+    ret = indy_build_auth_rules_request(handle,
+            [submitterDid UTF8String],
+            [data UTF8String],
+            IndyWrapperCommonStringCallback);
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret], nil);
+        });
+    }
+}
+
 + (void)buildGetAuthRuleRequestWithSubmitterDid:(NSString *)submitterDid
                                         txnType:(NSString *)txnType
                                          action:(NSString *)action
@@ -829,16 +850,16 @@
     }
 }
 
-+ (void)buildAcceptanceMechanismRequestWithSubmitterDid:(NSString *)submitterDid
-                                                    aml:(NSString *)aml
-                                                version:(NSString *)version
-                                             amlContext:(NSString *)amlContext
-                                             completion:(void (^)(NSError *error, NSString *responseMetadata))completion {
++ (void)buildAcceptanceMechanismsRequestWithSubmitterDid:(NSString *)submitterDid
+                                                     aml:(NSString *)aml
+                                                 version:(NSString *)version
+                                              amlContext:(NSString *)amlContext
+                                              completion:(void (^)(NSError *error, NSString *responseMetadata))completion {
     indy_error_t ret;
 
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
 
-    ret = indy_build_acceptance_mechanism_request(handle,
+    ret = indy_build_acceptance_mechanisms_request(handle,
             [submitterDid UTF8String],
             [aml UTF8String],
             [version UTF8String],
@@ -854,15 +875,15 @@
     }
 }
 
-+ (void)buildGetAcceptanceMechanismRequestWithSubmitterDid:(NSString *)submitterDid
-                                                 timestamp:(NSNumber *)timestamp
-                                                   version:(NSString *)version
-                                                completion:(void (^)(NSError *error, NSString *responseMetadata))completion {
++ (void)buildGetAcceptanceMechanismsRequestWithSubmitterDid:(NSString *)submitterDid
+                                                  timestamp:(NSNumber *)timestamp
+                                                    version:(NSString *)version
+                                                 completion:(void (^)(NSError *error, NSString *responseMetadata))completion {
     indy_error_t ret;
 
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
 
-    ret = indy_build_get_acceptance_mechanism_request(handle,
+    ret = indy_build_get_acceptance_mechanisms_request(handle,
             [submitterDid UTF8String],
             timestamp ? [timestamp longLongValue] : -1,
             [version UTF8String],

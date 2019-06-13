@@ -234,6 +234,12 @@ extern {
                                         cb: Option<ResponseStringCB>) -> Error;
 
     #[no_mangle]
+    pub fn indy_build_auth_rules_request(command_handle: CommandHandle,
+                                         submitter_did: CString,
+                                         data: CString,
+                                         cb: Option<ResponseStringCB>) -> Error;
+
+    #[no_mangle]
     pub fn indy_build_get_auth_rule_request(command_handle: CommandHandle,
                                             submitter_did: CString,
                                             txn_type: CString,
@@ -257,19 +263,19 @@ extern {
                                                        cb: Option<ResponseStringCB>) -> Error;
 
     #[no_mangle]
-    pub fn indy_build_acceptance_mechanism_request(command_handle: CommandHandle,
-                                                   submitter_did: CString,
-                                                   aml: CString,
-                                                   version: CString,
-                                                   aml_context: CString,
-                                                   cb: Option<ResponseStringCB>) -> Error;
+    pub fn indy_build_acceptance_mechanisms_request(command_handle: CommandHandle,
+                                                    submitter_did: CString,
+                                                    aml: CString,
+                                                    version: CString,
+                                                    aml_context: CString,
+                                                    cb: Option<ResponseStringCB>) -> Error;
 
     #[no_mangle]
-    pub fn indy_build_get_acceptance_mechanism_request(command_handle: CommandHandle,
-                                                       submitter_did: CString,
-                                                       timestamp: i64,
-                                                       version: CString,
-                                                       cb: Option<ResponseStringCB>) -> Error;
+    pub fn indy_build_get_acceptance_mechanisms_request(command_handle: CommandHandle,
+                                                        submitter_did: CString,
+                                                        timestamp: i64,
+                                                        version: CString,
+                                                        cb: Option<ResponseStringCB>) -> Error;
 
     #[no_mangle]
     pub fn indy_append_txn_author_agreement_acceptance_to_request(command_handle: CommandHandle,

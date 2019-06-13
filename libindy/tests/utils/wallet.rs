@@ -1,5 +1,4 @@
 extern crate futures;
-extern crate libc;
 
 use serde_json;
 
@@ -14,7 +13,7 @@ use utils::inmem_wallet::InmemWallet;
 use std::collections::HashSet;
 use std::sync::Mutex;
 use std::ffi::CString;
-use self::libc::c_char;
+use super::libc::c_char;
 
 use utils::constants::{TYPE, INMEM_TYPE, WALLET_CREDENTIALS};
 
@@ -81,27 +80,29 @@ pub fn open_wallet(config: &str, credentials: &str) -> Result<i32, IndyError> {
     wallet::open_wallet(config, credentials).wait()
 }
 
-pub fn create_and_open_wallet(storage_type: Option<&str>) -> Result<i32, IndyError> {
+pub fn create_and_open_wallet(storage_type: Option<&str>) -> Result<(i32, String), IndyError> {
     let config = json!({
             "id": format!("default-wallet_id-{}", sequence::get_next_id()),
             "storage_type": storage_type.unwrap_or(TYPE)
         }).to_string();
 
     create_wallet(&config, WALLET_CREDENTIALS)?;
-    open_wallet(&config, WALLET_CREDENTIALS)
+    let wallet_handle = open_wallet(&config, WALLET_CREDENTIALS).unwrap();
+    Ok((wallet_handle, config))
 }
 
-pub fn create_and_open_default_wallet() -> Result<i32, IndyError> {
+pub fn create_and_open_default_wallet(wallet_name: &str) -> Result<(i32, String), IndyError> {
     let config = json!({
-            "id": format!("default-wallet_id-{}", sequence::get_next_id()),
+            "id": format!("default-wallet_id-{}-{}", wallet_name, sequence::get_next_id()),
             "storage_type": TYPE
         }).to_string();
 
     create_wallet(&config, WALLET_CREDENTIALS)?;
-    open_wallet(&config, WALLET_CREDENTIALS)
+    let wallet_handle = open_wallet(&config, WALLET_CREDENTIALS).unwrap();
+    Ok((wallet_handle, config))
 }
 
-pub fn create_and_open_plugged_wallet() -> Result<i32, IndyError> {
+pub fn create_and_open_plugged_wallet() -> Result<(i32, String), IndyError> {
     let config = json!({
             "id": format!("default-wallet_id-{}", sequence::get_next_id()),
             "storage_type": INMEM_TYPE
@@ -109,7 +110,8 @@ pub fn create_and_open_plugged_wallet() -> Result<i32, IndyError> {
 
     register_wallet_storage("inmem", false).unwrap();
     create_wallet(&config, WALLET_CREDENTIALS)?;
-    open_wallet(&config, WALLET_CREDENTIALS)
+    let wallet_handle = open_wallet(&config, WALLET_CREDENTIALS).unwrap();
+    Ok((wallet_handle, config))
 }
 
 pub fn delete_wallet(config: &str, credentials: &str) -> Result<(), IndyError> {
@@ -120,6 +122,11 @@ pub fn close_wallet(wallet_handle: i32) -> Result<(), IndyError> {
     wallet::close_wallet(wallet_handle).wait()
 }
 
+pub fn close_and_delete_wallet(wallet_handle: i32, wallet_config: &str) -> Result<(), IndyError> {
+    close_wallet(wallet_handle)?;
+    delete_wallet(wallet_config, WALLET_CREDENTIALS)
+}
+
 pub fn export_wallet(wallet_handle: i32, export_config_json: &str) -> Result<(), IndyError> {
     wallet::export_wallet(wallet_handle, export_config_json).wait()
 }
@@ -128,8 +135,8 @@ pub fn import_wallet(config: &str, credentials: &str, import_config: &str) -> Re
     wallet::import_wallet(config, credentials, import_config).wait()
 }
 
-pub fn export_wallet_path() -> PathBuf {
-    environment::tmp_file_path("export_file")
+pub fn export_wallet_path(name: &str) -> PathBuf {
+    environment::tmp_file_path(name)
 }
 
 pub fn prepare_export_wallet_config(path: &Path) -> String {

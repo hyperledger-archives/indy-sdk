@@ -547,6 +547,12 @@ indy.buildAuthRuleRequest = function buildAuthRuleRequest (submitterDid, txnType
   return cb.promise
 }
 
+indy.buildAuthRulesRequest = function buildAuthRulesRequest (submitterDid, data, cb) {
+  cb = wrapIndyCallback(cb, fromJson)
+  capi.buildAuthRulesRequest(submitterDid, toJson(data), cb)
+  return cb.promise
+}
+
 indy.buildGetAuthRuleRequest = function buildGetAuthRuleRequest (submitterDid, txnType, action, field, oldValue, newValue, cb) {
   cb = wrapIndyCallback(cb, fromJson)
   capi.buildGetAuthRuleRequest(submitterDid, txnType, action, field, oldValue, newValue, cb)
@@ -565,15 +571,15 @@ indy.buildGetTxnAuthorAgreementRequest = function buildGetTxnAuthorAgreementRequ
   return cb.promise
 }
 
-indy.buildAcceptanceMechanismRequest = function buildAcceptanceMechanismRequest (submitterDid, aml, version, amlContext, cb) {
+indy.buildAcceptanceMechanismsRequest = function buildAcceptanceMechanismsRequest (submitterDid, aml, version, amlContext, cb) {
   cb = wrapIndyCallback(cb, fromJson)
-  capi.buildAcceptanceMechanismRequest(submitterDid, toJson(aml), version, amlContext, cb)
+  capi.buildAcceptanceMechanismsRequest(submitterDid, toJson(aml), version, amlContext, cb)
   return cb.promise
 }
 
-indy.buildGetAcceptanceMechanismRequest = function buildGetAcceptanceMechanismRequest (submitterDid, timestamp, version, cb) {
+indy.buildGetAcceptanceMechanismsRequest = function buildGetAcceptanceMechanismsRequest (submitterDid, timestamp, version, cb) {
   cb = wrapIndyCallback(cb, fromJson)
-  capi.buildGetAcceptanceMechanismRequest(submitterDid, timestamp == null ? -1 : timestamp, version, cb)
+  capi.buildGetAcceptanceMechanismsRequest(submitterDid, timestamp == null ? -1 : timestamp, version, cb)
   return cb.promise
 }
 

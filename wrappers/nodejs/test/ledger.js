@@ -173,6 +173,19 @@ test('ledger', async function (t) {
   res = await indy.submitRequest(pool.handle, req)
   t.deepEqual(res['result']['data'][0]['constraint'], constraint)
 
+  var expectedAuthRule = {
+    'auth_type': 'NYM',
+    'auth_action': 'ADD',
+    'field': 'role',
+    'new_value': '101',
+    'constraint': constraint
+  }
+
+  var authRulesData = [expectedAuthRule]
+  req = await indy.buildAuthRulesRequest(trusteeDid, authRulesData)
+  res = await indy.submitRequest(pool.handle, req)
+  t.deepEqual(req['operation'], { 'type': '122', 'rules': authRulesData })
+
   // author agreement
   req = await indy.buildTxnAuthorAgreementRequest(trusteeDid, 'indy agreement', '1.0.0')
   t.deepEqual(req['operation'], { 'type': '4', 'text': 'indy agreement', 'version': '1.0.0' })
@@ -182,10 +195,10 @@ test('ledger', async function (t) {
 
   // acceptance mechanism
   var aml = { 'acceptance mechanism label 1': 'some acceptance mechanism description 1' }
-  req = await indy.buildAcceptanceMechanismRequest(trusteeDid, aml, '1.0.0', null)
+  req = await indy.buildAcceptanceMechanismsRequest(trusteeDid, aml, '1.0.0', null)
   t.deepEqual(req['operation'], { 'type': '5', 'aml': aml, 'version': '1.0.0' })
 
-  req = await indy.buildGetAcceptanceMechanismRequest(null, 123456789, null)
+  req = await indy.buildGetAcceptanceMechanismsRequest(null, 123456789, null)
   t.deepEqual(req['operation'], { 'type': '7', 'timestamp': 123456789 })
 
   // author agreement acceptance data

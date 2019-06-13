@@ -25,7 +25,7 @@ public class AcceptanceMechanismRequestTest extends IndyIntegrationTest {
 								.put("amlContext", amlContext)
 				);
 
-		String request = Ledger.buildAcceptanceMechanismRequest(DID, aml.toString(), version, amlContext).get();
+		String request = Ledger.buildAcceptanceMechanismsRequest(DID, aml.toString(), version, amlContext).get();
 
 		assert (new JSONObject(request).toMap().entrySet()
 				.containsAll(
@@ -43,7 +43,7 @@ public class AcceptanceMechanismRequestTest extends IndyIntegrationTest {
 								.put("timestamp", timestamp)
 				);
 
-		String request = Ledger.buildGetAcceptanceMechanismRequest(null, timestamp, null).get();
+		String request = Ledger.buildGetAcceptanceMechanismsRequest(null, timestamp, null).get();
 
 		assert (new JSONObject(request).toMap().entrySet()
 				.containsAll(
@@ -61,7 +61,7 @@ public class AcceptanceMechanismRequestTest extends IndyIntegrationTest {
 								.put("version", version)
 				);
 
-		String request = Ledger.buildGetAcceptanceMechanismRequest(null, -1, version).get();
+		String request = Ledger.buildGetAcceptanceMechanismsRequest(null, -1, version).get();
 
 		assert (new JSONObject(request).toMap().entrySet()
 				.containsAll(
