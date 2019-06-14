@@ -346,7 +346,9 @@ impl RemoteNode {
         s.set_identity(&key_pair.public_key)?;
         s.set_curve_secretkey(&key_pair.secret_key)?;
         s.set_curve_publickey(&key_pair.public_key)?;
-        s.set_curve_serverkey(self.public_key.as_slice())?;
+        s.set_curve_serverkey(zmq::z85_encode(self.public_key.as_slice())
+            .to_indy(IndyErrorKind::InvalidStructure, "Can't encode server key as z85")? // FIXME: review kind
+            .as_bytes())?;
         s.set_linger(0)?; //TODO set correct timeout
         s.connect(&self.zaddr)?;
         Ok(s)
