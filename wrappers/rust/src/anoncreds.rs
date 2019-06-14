@@ -461,6 +461,76 @@ fn _prover_create_credential_req(command_handle: CommandHandle, wallet_handle: W
     })
 }
 
+/// Set credential attribute tagging policy.
+/// Writes a non-secret record marking attributes to tag, and optionally
+/// updates tags on existing credentials on the credential definition to match.
+///
+/// The following tags are always present on write:
+///     {
+///         "schema_id": <credential schema id>,
+///         "schema_issuer_did": <credential schema issuer did>,
+///         "schema_name": <credential schema name>,
+///         "schema_version": <credential schema version>,
+///         "issuer_did": <credential issuer did>,
+///         "cred_def_id": <credential definition id>,
+///         "rev_reg_id": <credential revocation registry id>, // "None" as string if not present
+///     }
+///
+/// The policy sets the following tags for each attribute it marks taggable, written to subsequent
+/// credentials and (optionally) all existing credentials on the credential definition:
+///     {
+///         "attr::<attribute name>::marker": "1",
+///         "attr::<attribute name>::value": <attribute raw value>,
+///     }
+///
+/// # Arguments
+/// command_handle: command handle to map callback to user context.
+/// wallet_handle: wallet handle (created by Wallet::open_wallet).
+/// cred_def_id: credential definition id
+/// tag_attrs_json: JSON array with names of attributes to tag by policy, or null for all
+/// retroactive: boolean, whether to apply policy to existing credentials on credential definition identifier
+pub fn prover_set_credential_attr_tag_policy(wallet_handle: WalletHandle, cred_def_id: &str, tag_attrs_json: Option<&str>, retroactive: bool) -> Box<Future<Item=(), Error=IndyError>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
+
+    let err = _prover_set_credential_attr_tag_policy(command_handle, wallet_handle, cred_def_id, tag_attrs_json, retroactive, cb);
+
+    ResultHandler::empty(command_handle, err, receiver)
+}
+
+fn _prover_set_credential_attr_tag_policy(command_handle: CommandHandle, wallet_handle: WalletHandle, cred_def_id: &str, tag_attrs_json: Option<&str>, retroactive: bool, cb: Option<ResponseEmptyCB>) -> ErrorCode {
+    let cred_def_id = c_str!(cred_def_id);
+    let tag_attrs_json_str = opt_c_str!(tag_attrs_json);
+
+    ErrorCode::from(unsafe {
+      anoncreds::indy_prover_set_credential_attr_tag_policy(command_handle, wallet_handle, cred_def_id.as_ptr(), opt_c_ptr!(tag_attrs_json, tag_attrs_json_str), retroactive, cb)
+    })
+}
+
+/// Get credential attribute tagging policy by credential definition id.
+///
+/// # Arguments
+/// * `wallet_handle`: wallet handle (created by Wallet::open_wallet).
+/// * `cred_id`: Identifier by which requested credential is stored in the wallet
+///
+/// # Returns
+/// JSON array with all attributes that current policy marks taggable;
+/// null for default policy (tag all credential attributes).
+pub fn prover_get_credential_attr_tag_policy(wallet_handle: WalletHandle, cred_id: &str) -> Box<Future<Item=String, Error=IndyError>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+
+    let err = _prover_get_credential_attr_tag_policy(command_handle, wallet_handle, cred_id, cb);
+
+    ResultHandler::str(command_handle, err, receiver)
+}
+
+fn _prover_get_credential_attr_tag_policy(command_handle: CommandHandle, wallet_handle: WalletHandle, cred_id: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+    let cred_id = c_str!(cred_id);
+
+    ErrorCode::from(unsafe {
+      anoncreds::indy_prover_get_credential_attr_tag_policy(command_handle, wallet_handle, cred_id.as_ptr(), cb)
+    })
+}
+
 /// Check credential provided by Issuer for the given credential request,
 /// updates the credential by a master secret and stores in a secure wallet.
 ///
@@ -473,7 +543,7 @@ fn _prover_create_credential_req(command_handle: CommandHandle, wallet_handle: W
 ///         "issuer_did": <credential issuer did>,
 ///         "cred_def_id": <credential definition id>,
 ///         "rev_reg_id": <credential revocation registry id>, // "None" as string if not present
-///         // for every attribute in <credential values>
+///         // for every attribute in <credential values> that credential attribute tagging policy marks taggable
 ///         "attr::<attribute name>::marker": "1",
 ///         "attr::<attribute name>::value": <attribute raw value>,
 ///     }
