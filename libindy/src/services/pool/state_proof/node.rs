@@ -138,10 +138,17 @@ impl rlp::Decodable for Node {
     }
 }
 
-type NodeHash = generic_array::GenericArray<u8, <sha3::Sha3_256 as digest::FixedOutput>::OutputSize>;
+type NodeHash = sha3::digest::generic_array::GenericArray<u8, <sha3::Sha3_256 as sha3::digest::FixedOutput>::OutputSize>;
 pub type TrieDB<'a> = HashMap<NodeHash, &'a Node>;
 
 impl Node {
+    pub fn get_hash<'a>(&'a self) -> NodeHash{
+        use rlp::{
+            encode as rlp_encode
+        };
+        let encoded = rlp_encode(self);
+        sha3::Digest::digest(encoded.to_vec().as_slice()) as NodeHash
+    }
     pub fn get_str_value<'a, 'b>(&'a self, db: &'a TrieDB, path: &'b [u8]) -> IndyResult<Option<String>> {
         let value = self.get_value(db, path)?;
         if let Some(vec) = value {

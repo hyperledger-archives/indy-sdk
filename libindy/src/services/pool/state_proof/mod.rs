@@ -6,7 +6,6 @@ use std::ffi::{CStr, CString};
 
 use base64;
 use rlp::{
-    encode as rlp_encode,
     UntrustedRlp,
 };
 use serde_json;
@@ -464,16 +463,11 @@ fn _parse_reply_for_proof_signature_checking(json_msg: &SJsonValue) -> Option<(&
 }
 
 fn _verify_proof(proofs_rlp: &[u8], root_hash: &[u8], key: &[u8], expected_value: Option<&str>) -> bool {
-    use sha3::Digest;
     debug!("verify_proof >> key {:?}, expected_value {:?}", key, expected_value);
     let nodes: Vec<Node> = UntrustedRlp::new(proofs_rlp).as_list().unwrap_or_default(); //default will cause error below
     let mut map: TrieDB = HashMap::new();
     for node in &nodes {
-        let encoded = rlp_encode(node);
-        let mut hasher = sha3::Sha3_256::default();
-        hasher.input(encoded.to_vec().as_slice());
-        let hash = hasher.result();
-        map.insert(hash, node);
+        map.insert(node.get_hash(), node);
     }
     map.get(root_hash).map(|root| {
         root
@@ -641,8 +635,6 @@ mod tests {
     use hex::FromHex;
     use libc::c_char;
 
-    use sha3::Digest;
-
     #[test]
     fn state_proof_nodes_parse_and_get_works() {
         /*
@@ -665,11 +657,7 @@ mod tests {
         let mut map: TrieDB = HashMap::new();
         for node in &proofs {
             info!("{:?}", node);
-            let encoded = rlp_encode(node);
-            info!("{:?}", encoded);
-            let mut hasher = sha3::Sha3_256::default();
-            hasher.input(encoded.to_vec().as_slice());
-            let out = hasher.result();
+            let out = node.get_hash();
             info!("{:?}", out);
             map.insert(out, node);
         }
