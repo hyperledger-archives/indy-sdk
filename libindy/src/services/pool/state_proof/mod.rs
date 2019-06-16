@@ -23,7 +23,6 @@ use super::types::*;
 
 use digest::FixedOutput;
 use digest::Input;
-use hex::ToHex;
 use self::log_derive::logfn;
 use ursa::bls::{Bls, Generator, MultiSignature, VerKey};
 use self::node::{Node, TrieDB};
@@ -139,7 +138,7 @@ pub fn parse_key_from_request_for_builtin_sp(json_msg: &SJsonValue) -> Option<Ve
                 let mut hasher = sha2::Sha256::default();
                 hasher.process(attr_name.as_bytes());
                 let marker = if ProtocolVersion::is_node_1_3() { '\x01' } else { '1' };
-                format!(":{}:{}", marker, hasher.fixed_result().to_hex())
+                format!(":{}:{}", marker, hex::encode(hasher.fixed_result()))
             } else {
                 trace!("TransactionHandler::parse_reply_for_builtin_sp: <<< GET_ATTR No key suffix");
                 return None;
@@ -562,7 +561,7 @@ fn _parse_reply_for_proof_value(json_msg: &SJsonValue, data: Option<&str>, parse
             constants::GET_ATTR => {
                 let mut hasher = sha2::Sha256::default();
                 hasher.process(data.as_bytes());
-                value["val"] = SJsonValue::String(hasher.fixed_result().to_hex());
+                value["val"] = SJsonValue::String(hex::encode(hasher.fixed_result()));
             }
             constants::GET_CRED_DEF | constants::GET_REVOC_REG_DEF | constants::GET_REVOC_REG | constants::GET_TXN_AUTHR_AGRMT_AML => {
                 value["val"] = parsed_data.clone();
@@ -598,10 +597,9 @@ fn _parse_reply_for_proof_value(json_msg: &SJsonValue, data: Option<&str>, parse
                 if _is_full_taa_state_value_expected(sp_key) {
                     value["val"] = parsed_data.clone();
                 } else {
-                    value = SJsonValue::String(_calculate_taa_digest(parsed_data["text"].as_str().unwrap_or(""),
+                    value = SJsonValue::String(hex::encode(_calculate_taa_digest(parsed_data["text"].as_str().unwrap_or(""),
                                                                      parsed_data["version"].as_str().unwrap_or(""))
-                        .map_err(|err| format!("Can't calculate expected TAA digest to verify StateProof on the request ({})", err))?
-                        .to_hex());
+                        .map_err(|err| format!("Can't calculate expected TAA digest to verify StateProof on the request ({})", err))?));
                 }
             }
             _ => {
