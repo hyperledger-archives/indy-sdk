@@ -554,9 +554,9 @@ mod tests {
 
     use super::*;
 
-    const IDENTIFIER: &'static str = "NcYxiDXkpYi6ov5FcYDi1e";
-    const DEST: &'static str = "VsKV7grR1BUE29mG2Fm2kX";
-    const VERKEY: &'static str = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
+    const IDENTIFIER: &str = "NcYxiDXkpYi6ov5FcYDi1e";
+    const DEST: &str = "VsKV7grR1BUE29mG2Fm2kX";
+    const VERKEY: &str = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
 
     #[test]
     fn build_nym_request_works_for_only_required_fields() {

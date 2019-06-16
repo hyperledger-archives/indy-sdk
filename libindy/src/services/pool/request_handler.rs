@@ -831,15 +831,15 @@ pub mod tests {
 
     use super::*;
 
-    const MESSAGE: &'static str = "message";
-    const REQ_ID: &'static str = "1";
-    const NODE: &'static str = "n1";
-    const NODE_2: &'static str = "n2";
-    const NODE_3: &'static str = "n3";
-    const NODE_4: &'static str = "n4";
-    const SIMPLE_REPLY: &'static str = r#"{"result":{}}"#;
-    const REJECT_REPLY: &'static str = r#"{"op":"REJECT", "result": {"reason": "reject"}}"#;
-    const NACK_REPLY: &'static str = r#"{"op":"REQNACK", "result": {"reason": "reqnack"}}"#;
+    const MESSAGE: &str = "message";
+    const REQ_ID: &str = "1";
+    const NODE: &str = "n1";
+    const NODE_2: &str = "n2";
+    const NODE_3: &str = "n3";
+    const NODE_4: &str = "n4";
+    const SIMPLE_REPLY: &str = r#"{"result":{}}"#;
+    const REJECT_REPLY: &str = r#"{"op":"REJECT", "result": {"reason": "reject"}}"#;
+    const NACK_REPLY: &str = r#"{"op":"REQNACK", "result": {"reason": "reqnack"}}"#;
 
     #[derive(Debug)]
     pub struct MockRequestHandler {}
