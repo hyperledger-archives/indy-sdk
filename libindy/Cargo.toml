@@ -58,7 +58,7 @@ log-derive = "0.3.0"
 derivative = "1.0.0"
 dirs = "1.0.4"
 openssl = { version = "=0.10.12", optional = true }
-owning_ref = "0.3.3"
+owning_ref = "0.4"
 rand = "0.6.5"
 rusqlite = "0.13.0" # Make sure rusqlite for android is also bumped with this. Rusqlite for android is at the bottom of this document.
 libsqlite3-sys = "0.9.1"
