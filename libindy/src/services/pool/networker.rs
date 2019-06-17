@@ -397,9 +397,9 @@ pub mod networker_tests {
     use super::*;
     use rust_base58::base58::FromBase58;
 
-    const REQ_ID: &'static str = "1";
-    const MESSAGE: &'static str = "msg";
-    const NODE_NAME: &'static str = "n1";
+    const REQ_ID: &str = "1";
+    const MESSAGE: &str = "msg";
+    const NODE_NAME: &str = "n1";
 
     pub fn _remote_node(txn: &NodeTransactionV1) -> RemoteNode {
         RemoteNode {

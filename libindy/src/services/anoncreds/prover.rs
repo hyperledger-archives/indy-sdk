@@ -467,14 +467,14 @@ impl Prover {
 mod tests {
     use super::*;
 
-    const SCHEMA_ID: &'static str = "did:2:gvt:1.0";
-    const SCHEMA_ISSUER_DID: &'static str = "did";
-    const SCHEMA_NAME: &'static str = "gvt";
-    const SCHEMA_VERSION: &'static str = "1.0";
-    const ISSUER_DID: &'static str = "did";
-    const CRED_DEF_ID: &'static str = "did:3:CL:did:2:gvt:1.0";
-    const REV_REG_ID: &'static str = "did:4:did:3:CL:did:2:gvt:1.0:CL_ACCUM:TAG_1";
-    const NO_REV_REG_ID: &'static str = "None";
+    const SCHEMA_ID: &str = "did:2:gvt:1.0";
+    const SCHEMA_ISSUER_DID: &str = "did";
+    const SCHEMA_NAME: &str = "gvt";
+    const SCHEMA_VERSION: &str = "1.0";
+    const ISSUER_DID: &str = "did";
+    const CRED_DEF_ID: &str = "did:3:CL:did:2:gvt:1.0";
+    const REV_REG_ID: &str = "did:4:did:3:CL:did:2:gvt:1.0:CL_ACCUM:TAG_1";
+    const NO_REV_REG_ID: &str = "None";
 
     macro_rules! hashmap {
         ($( $key: expr => $val: expr ),*) => {
@@ -582,8 +582,8 @@ mod tests {
     mod build_query {
         use super::*;
 
-        const ATTR_NAME: &'static str = "name";
-        const ATTR_REFERENT: &'static str = "attr_1";
+        const ATTR_NAME: &str = "name";
+        const ATTR_REFERENT: &str = "attr_1";
 
         fn _value(json: &str) -> serde_json::Value {
             serde_json::from_str::<serde_json::Value>(json).unwrap()
@@ -875,9 +875,9 @@ mod tests {
 
         use super::*;
 
-        const CRED_ID: &'static str = "8591bcac-ee7d-4bef-ba7e-984696440b30";
-        const ATTRIBUTE_REFERENT: &'static str = "attribute_referent";
-        const PREDICATE_REFERENT: &'static str = "predicate_referent";
+        const CRED_ID: &str = "8591bcac-ee7d-4bef-ba7e-984696440b30";
+        const ATTRIBUTE_REFERENT: &str = "attribute_referent";
+        const PREDICATE_REFERENT: &str = "predicate_referent";
 
         fn _attr_info() -> AttributeInfo {
             AttributeInfo {
