@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use hex::{ToHex, FromHex};
+use hex::FromHex;
 use ursa::cl::RevocationRegistryDelta as CryproRevocationRegistryDelta;
 use serde::de::DeserializeOwned;
 use serde_json;
@@ -508,7 +508,7 @@ impl LedgerService {
                 return Err(err_msg(IndyErrorKind::InvalidStructure, "Invalid combination of params: `text` and `version` should be passed or skipped together."));
             }
             (Some(text_), Some(version_), None) => {
-                self._calculate_hash(text_, version_)?.to_hex()
+                hex::encode(self._calculate_hash(text_, version_)?)
             }
             (Some(text_), Some(version_), Some(hash_)) => {
                 self._compare_hash(text_, version_, hash_)?;
