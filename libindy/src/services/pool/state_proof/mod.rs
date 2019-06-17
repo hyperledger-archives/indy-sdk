@@ -20,8 +20,6 @@ use utils::crypto::hash::hash as openssl_hash;
 use super::PoolService;
 use super::types::*;
 
-use digest::FixedOutput;
-use digest::Input;
 use self::log_derive::logfn;
 use ursa::bls::{Bls, Generator, MultiSignature, VerKey};
 use self::node::{Node, TrieDB};
