@@ -40,25 +40,26 @@ pub mod group {
 }
 
 macro_rules! send_write_request {
-    ($ctx:expr, $send:expr, $request:expr, $pool_handle:expr, $pool_name:expr, $wallet_handle:expr, $wallet_name:expr, $submitter_did:expr) => ({
+    ($ctx:expr, $send:expr, $request:expr, $wallet_handle:expr, $wallet_name:expr, $submitter_did:expr) => ({
         let request = Ledger::sign_request($wallet_handle, $submitter_did, $request)
-            .map_err(|err| handle_indy_error(err, Some($submitter_did), Some($pool_name), Some($wallet_name)))?;
+            .map_err(|err| handle_indy_error(err, Some($submitter_did), None, Some($wallet_name)))?;
 
-        send_request!($ctx, $send, &request, $pool_handle, $pool_name, Some($wallet_name), Some($submitter_did))
+        send_request!($ctx, $send, &request, Some($wallet_name), Some($submitter_did))
     })
 }
 
 macro_rules! send_read_request {
-    ($ctx:expr, $send:expr, $request:expr, $pool_handle:expr, $pool_name:expr, $submitter_did:expr) => {
-        send_request!($ctx, $send, $request, $pool_handle, $pool_name, None, $submitter_did)
-    }
+    ($ctx:expr, $send:expr, $request:expr, $submitter_did:expr) => ({
+        send_request!($ctx, $send, $request, None, $submitter_did)
+    })
 }
 
 macro_rules! send_request {
-    ($ctx:expr, $send:expr, $request:expr, $pool_handle:expr, $pool_name:expr, $wallet_name:expr, $submitter_did:expr) => {
+    ($ctx:expr, $send:expr, $request:expr, $wallet_name:expr, $submitter_did:expr) => {
         if $send {
-            let response_json = Ledger::submit_request($pool_handle, $request)
-                .map_err(|err| handle_indy_error(err, $submitter_did, Some($pool_name), $wallet_name))?;
+            let (pool_handle, pool_name) = ensure_connected_pool($ctx)?;
+            let response_json = Ledger::submit_request(pool_handle, $request)
+                .map_err(|err| handle_indy_error(err, $submitter_did, Some(&pool_name), $wallet_name))?;
 
             let response = serde_json::from_str::<Response<serde_json::Value>>(&response_json)
                 .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
@@ -96,7 +97,6 @@ pub mod nym_command {
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
-        let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
         let (wallet_handle, wallet_name) = ensure_opened_wallet(&ctx)?;
         let submitter_did = ensure_active_did(&ctx)?;
 
@@ -116,7 +116,7 @@ pub mod nym_command {
         let payment_method = set_request_fees(&mut request, wallet_handle, Some(&submitter_did), &fees_inputs, &fees_outputs, extra)?;
 
         let (response_json, mut response): (String, Response<serde_json::Value>) =
-            send_write_request!(ctx, send, &request, pool_handle, &pool_name, wallet_handle, &wallet_name, &submitter_did);
+            send_write_request!(ctx, send, &request, wallet_handle, &wallet_name, &submitter_did);
 
         if let Some(result) = response.result.as_mut() {
             result["txn"]["data"]["role"] = get_role_title(&result["txn"]["data"]["role"]);
@@ -154,7 +154,6 @@ pub mod get_nym_command {
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
-        let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
         let submitter_did = get_active_did(&ctx);
 
         let target_did = get_str_param("did", params).map_err(error_err!())?;
@@ -163,7 +162,7 @@ pub mod get_nym_command {
         let request = Ledger::build_get_nym_request(submitter_did.as_ref().map(String::as_str), target_did)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
 
-        let (_, mut response) = send_read_request!(&ctx, send, &request, pool_handle, &pool_name, submitter_did.as_ref().map(String::as_str));
+        let (_, mut response) = send_read_request!(&ctx, send, &request, submitter_did.as_ref().map(String::as_str));
 
         if let Some(result) = response.result.as_mut() {
             let data = serde_json::from_str::<serde_json::Value>(&result["data"].as_str().unwrap_or(""));
@@ -213,7 +212,6 @@ pub mod attrib_command {
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
-        let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
         let (wallet_handle, wallet_name) = ensure_opened_wallet(&ctx)?;
         let submitter_did = ensure_active_did(&ctx)?;
 
@@ -234,7 +232,7 @@ pub mod attrib_command {
         let payment_method = set_request_fees(&mut request, wallet_handle, Some(&submitter_did), &fees_inputs, &fees_outputs, extra)?;
 
         let (response_json, response): (String, Response<serde_json::Value>) =
-            send_write_request!(ctx, send, &request, pool_handle, &pool_name, wallet_handle, &wallet_name, &submitter_did);
+            send_write_request!(ctx, send, &request, wallet_handle, &wallet_name, &submitter_did);
 
         let attribute =
             if raw.is_some() {
@@ -277,7 +275,6 @@ pub mod get_attrib_command {
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
-        let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
         let submitter_did = get_active_did(&ctx);
 
         let target_did = get_str_param("did", params).map_err(error_err!())?;
@@ -289,7 +286,7 @@ pub mod get_attrib_command {
         let request = Ledger::build_get_attrib_request(submitter_did.as_ref().map(String::as_str), target_did, raw, hash, enc)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
 
-        let (_, mut response) = send_read_request!(&ctx, send, &request, pool_handle, &pool_name, submitter_did.as_ref().map(String::as_str));
+        let (_, mut response) = send_read_request!(&ctx, send, &request, submitter_did.as_ref().map(String::as_str));
 
         if let Some(result) = response.result.as_mut() {
             let data = result["data"].as_str().map(|data| serde_json::Value::String(data.to_string()));
@@ -330,7 +327,6 @@ pub mod schema_command {
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
-        let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
         let (wallet_handle, wallet_name) = ensure_opened_wallet(&ctx)?;
         let submitter_did = ensure_active_did(&ctx)?;
 
@@ -362,7 +358,7 @@ pub mod schema_command {
         let payment_method = set_request_fees(&mut request, wallet_handle, Some(&submitter_did), &fees_inputs, &fees_outputs, extra)?;
 
         let (response_json, response): (String, Response<serde_json::Value>) =
-            send_write_request!(ctx, send, &request, pool_handle, &pool_name, wallet_handle, &wallet_name, &submitter_did);
+            send_write_request!(ctx, send, &request, wallet_handle, &wallet_name, &submitter_did);
 
         handle_transaction_response(response)
             .map(|result| print_transaction_response(result,
@@ -472,7 +468,6 @@ pub mod get_schema_command {
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
-        let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
         let submitter_did = get_active_did(&ctx);
 
         let target_did = get_str_param("did", params).map_err(error_err!())?;
@@ -485,7 +480,7 @@ pub mod get_schema_command {
         let request = Ledger::build_get_schema_request(submitter_did.as_ref().map(String::as_str), &id)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
 
-        let (_, response) = send_read_request!(&ctx, send, &request, pool_handle, &pool_name, submitter_did.as_ref().map(String::as_str));
+        let (_, response) = send_read_request!(&ctx, send, &request, submitter_did.as_ref().map(String::as_str));
 
         if let Some(result) = response.result.as_ref() {
             if !result["seqNo"].is_i64() {
@@ -526,7 +521,6 @@ pub mod cred_def_command {
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
-        let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
         let (wallet_handle, wallet_name) = ensure_opened_wallet(&ctx)?;
         let submitter_did = ensure_active_did(&ctx)?;
 
@@ -568,7 +562,7 @@ pub mod cred_def_command {
         let payment_method = set_request_fees(&mut request, wallet_handle, Some(&submitter_did), &fees_inputs, &fees_outputs, extra)?;
 
         let (response_json, response): (String, Response<serde_json::Value>) =
-            send_write_request!(ctx, send, &request, pool_handle, &pool_name, wallet_handle, &wallet_name, &submitter_did);
+            send_write_request!(ctx, send, &request, wallet_handle, &wallet_name, &submitter_did);
 
         handle_transaction_response(response)
             .map(|result| print_transaction_response(result,
@@ -603,7 +597,6 @@ pub mod get_cred_def_command {
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
-        let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
         let submitter_did = get_active_did(&ctx);
 
         let schema_id = get_str_param("schema_id", params).map_err(error_err!())?;
@@ -617,7 +610,7 @@ pub mod get_cred_def_command {
         let request = Ledger::build_get_cred_def_request(submitter_did.as_ref().map(String::as_str), &id)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
 
-        let (_, response) = send_read_request!(&ctx, send, &request, pool_handle, &pool_name, submitter_did.as_ref().map(String::as_str));
+        let (_, response) = send_read_request!(&ctx, send, &request, submitter_did.as_ref().map(String::as_str));
 
         if let Some(result) = response.result.as_ref() {
             if !result["seqNo"].is_i64() {
@@ -661,7 +654,6 @@ pub mod node_command {
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
-        let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
         let (wallet_handle, wallet_name) = ensure_opened_wallet(&ctx)?;
         let submitter_did = ensure_active_did(&ctx)?;
 
@@ -693,7 +685,7 @@ pub mod node_command {
             .map_err(|err| handle_indy_error(err, None, None, None))?;
 
         let (_, response): (String, Response<serde_json::Value>) =
-            send_write_request!(ctx, send, &request, pool_handle, &pool_name, wallet_handle, &wallet_name, &submitter_did);
+            send_write_request!(ctx, send, &request, wallet_handle, &wallet_name, &submitter_did);
 
         let res = handle_transaction_response(response)
             .map(|result| print_transaction_response(result,
@@ -728,7 +720,6 @@ pub mod pool_config_command {
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
-        let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
         let (wallet_handle, wallet_name) = ensure_opened_wallet(&ctx)?;
         let submitter_did = ensure_active_did(&ctx)?;
 
@@ -740,7 +731,7 @@ pub mod pool_config_command {
             .map_err(|err| handle_indy_error(err, None, None, None))?;
 
         let (_, response): (String, Response<serde_json::Value>) =
-            send_write_request!(ctx, send, &request, pool_handle, &pool_name, wallet_handle, &wallet_name, &submitter_did);
+            send_write_request!(ctx, send, &request, wallet_handle, &wallet_name, &submitter_did);
 
         let res = handle_transaction_response(response)
             .map(|result| print_transaction_response(result,
@@ -865,7 +856,6 @@ pub mod pool_upgrade_command {
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
-        let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
         let (wallet_handle, wallet_name) = ensure_opened_wallet(&ctx)?;
         let submitter_did = ensure_active_did(&ctx)?;
 
@@ -886,7 +876,7 @@ pub mod pool_upgrade_command {
             .map_err(|err| handle_indy_error(err, None, None, None))?;
 
         let (_, response): (String, Response<serde_json::Value>) =
-            send_write_request!(ctx, send, &request, pool_handle, &pool_name, wallet_handle, &wallet_name, &submitter_did);
+            send_write_request!(ctx, send, &request, wallet_handle, &wallet_name, &submitter_did);
 
         let mut schedule = None;
         let mut hash = None;
@@ -1020,7 +1010,6 @@ pub mod get_payment_sources_command {
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
-        let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
         let (wallet_handle, _) = ensure_opened_wallet(&ctx)?;
         let submitter_did = get_active_did(&ctx);
 
@@ -1030,7 +1019,7 @@ pub mod get_payment_sources_command {
         let (request, payment_method) = Payment::build_get_payment_sources_request(wallet_handle, submitter_did.as_ref().map(String::as_str), payment_address)
             .map_err(|err| handle_payment_error(err, None))?;
 
-        let (response, _) = send_read_request!(&ctx, send, &request, pool_handle, &pool_name, submitter_did.as_ref().map(String::as_str));
+        let (response, _) = send_read_request!(&ctx, send, &request, submitter_did.as_ref().map(String::as_str));
 
         let res = match Payment::parse_get_payment_sources_response(&payment_method, &response) {
             Ok(sources_json) => {
@@ -1089,15 +1078,7 @@ pub mod payment_command {
         let (request, payment_method) = Payment::build_payment_req(wallet_handle, submitter_did.as_ref().map(String::as_str), &inputs, &outputs, extra.as_ref().map(String::as_str))
             .map_err(|err| handle_payment_error(err, None))?;
 
-        let response =
-            if send {
-                let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
-                let (r, _) = send_read_request!(&ctx, send, &request, pool_handle, &pool_name, submitter_did.as_ref().map(String::as_str));
-                r
-            } else {
-                let (r, _) = send_read_request!(&ctx, send, &request, 0, "", submitter_did.as_ref().map(String::as_str));
-                r
-            };
+        let (response, _) = send_read_request!(&ctx, send, &request, submitter_did.as_ref().map(String::as_str));
 
         let res = match Payment::parse_payment_response(&payment_method, &response) {
             Ok(receipts_json) => {
@@ -1133,7 +1114,6 @@ pub mod get_fees_command {
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
-        let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
         let (wallet_handle, _) = ensure_opened_wallet(&ctx)?;
         let submitter_did = get_active_did(&ctx);
 
@@ -1143,7 +1123,7 @@ pub mod get_fees_command {
         let request = Payment::build_get_txn_fees_req(wallet_handle, submitter_did.as_ref().map(String::as_str), payment_method)
             .map_err(|err| handle_payment_error(err, Some(payment_method)))?;
 
-        let (response, _) = send_read_request!(&ctx, send, &request, pool_handle, &pool_name, submitter_did.as_ref().map(String::as_str));
+        let (response, _) = send_read_request!(&ctx, send, &request, submitter_did.as_ref().map(String::as_str));
 
         let res = match Payment::parse_get_txn_fees_response(&payment_method, &response) {
             Ok(fees_json) => {
@@ -1262,7 +1242,6 @@ pub mod verify_payment_receipt_command {
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
-        let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
         let (wallet_handle, _) = ensure_opened_wallet(&ctx)?;
         let submitter_did = get_active_did(&ctx);
 
@@ -1272,7 +1251,7 @@ pub mod verify_payment_receipt_command {
         let (request, payment_method) = Payment::build_verify_payment_req(wallet_handle, submitter_did.as_ref().map(String::as_str), receipt)
             .map_err(|err| handle_payment_error(err, None))?;
 
-        let (response, _) = send_read_request!(&ctx, send, &request, pool_handle, &pool_name, submitter_did.as_ref().map(String::as_str));
+        let (response, _) = send_read_request!(&ctx, send, &request, submitter_did.as_ref().map(String::as_str));
 
         let res = match Payment::parse_verify_payment_response(&payment_method, &response) {
             Ok(info_json) => {
@@ -1379,7 +1358,6 @@ pub mod auth_rule_command {
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
-        let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
         let (wallet_handle, wallet_name) = ensure_opened_wallet(&ctx)?;
         let submitter_did = ensure_active_did(&ctx)?;
 
@@ -1395,7 +1373,7 @@ pub mod auth_rule_command {
             .map_err(|err| handle_indy_error(err, None, None, None))?;
 
         let (_, mut response): (String, Response<serde_json::Value>) =
-            send_write_request!(ctx, send, &request, pool_handle, &pool_name, wallet_handle, &wallet_name, &submitter_did);
+            send_write_request!(ctx, send, &request, wallet_handle, &wallet_name, &submitter_did);
 
         if let Some(result) = response.result.as_mut() {
             result["txn"]["data"]["auth_type"] = get_txn_title(&result["txn"]["data"]["auth_type"]);
@@ -1432,7 +1410,6 @@ pub mod auth_rules_command {
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
-        let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
         let (wallet_handle, wallet_name) = ensure_opened_wallet(&ctx)?;
         let submitter_did = ensure_active_did(&ctx)?;
 
@@ -1443,7 +1420,7 @@ pub mod auth_rules_command {
             .map_err(|err| handle_indy_error(err, None, None, None))?;
 
         let (_, response): (String, Response<serde_json::Value>) =
-            send_write_request!(ctx, send, &request, pool_handle, &pool_name, wallet_handle, &wallet_name, &submitter_did);
+            send_write_request!(ctx, send, &request, wallet_handle, &wallet_name, &submitter_did);
 
         let result = handle_transaction_response(response)?;
         println!("result {:?}", result);
@@ -1489,7 +1466,6 @@ pub mod get_auth_rule_command {
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
-        let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
         let submitter_did = get_active_did(&ctx);
 
         let auth_type = get_opt_str_param("txn_type", params).map_err(error_err!())?;
@@ -1502,7 +1478,7 @@ pub mod get_auth_rule_command {
         let request = Ledger::build_get_auth_rule_request(submitter_did.as_ref().map(String::as_str), auth_type, auth_action, field, old_value, new_value)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
 
-        let (_, response) = send_read_request!(&ctx, send, &request, pool_handle, &pool_name, submitter_did.as_ref().map(String::as_str));
+        let (_, response) = send_read_request!(&ctx, send, &request, submitter_did.as_ref().map(String::as_str));
 
         let result = handle_transaction_response(response)?;
 
@@ -1644,7 +1620,6 @@ pub mod taa_command {
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
-        let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
         let (wallet_handle, wallet_name) = ensure_opened_wallet(&ctx)?;
         let submitter_did = ensure_active_did(&ctx)?;
 
@@ -1672,7 +1647,7 @@ pub mod taa_command {
         let payment_method = set_request_fees(&mut request, wallet_handle, Some(&submitter_did), &fees_inputs, &fees_outputs, extra)?;
 
         let (response_json, response): (String, Response<serde_json::Value>) =
-            send_write_request!(ctx, send, &request, pool_handle, &pool_name, wallet_handle, &wallet_name, &submitter_did);
+            send_write_request!(ctx, send, &request, wallet_handle, &wallet_name, &submitter_did);
 
         handle_transaction_response(response)
             .map(|result| {
@@ -1721,7 +1696,6 @@ pub mod aml_command {
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
-        let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
         let (wallet_handle, wallet_name) = ensure_opened_wallet(&ctx)?;
         let submitter_did = ensure_active_did(&ctx)?;
 
@@ -1750,7 +1724,7 @@ pub mod aml_command {
         let payment_method = set_request_fees(&mut request, wallet_handle, Some(&submitter_did), &fees_inputs, &fees_outputs, extra)?;
 
         let (response_json, response): (String, Response<serde_json::Value>) =
-            send_write_request!(ctx, send, &request, pool_handle, &pool_name, wallet_handle, &wallet_name, &submitter_did);
+            send_write_request!(ctx, send, &request, wallet_handle, &wallet_name, &submitter_did);
 
         handle_transaction_response(response)
             .map(|result| print_transaction_response(result,
