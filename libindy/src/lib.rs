@@ -44,7 +44,6 @@ extern crate hex;
 extern crate log_derive;
 extern crate rust_base58;
 
-extern crate digest;
 extern crate sha2;
 extern crate sha3;
 

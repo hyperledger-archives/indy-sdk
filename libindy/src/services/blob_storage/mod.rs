@@ -4,8 +4,8 @@ use std::collections::HashMap;
 use errors::prelude::*;
 use utils::sequence;
 
-use digest::{FixedOutput, Input};
 use sha2::Sha256;
+use sha2::digest::{FixedOutput, Input};
 
 mod default_writer;
 mod default_reader;
@@ -95,7 +95,7 @@ impl BlobStorageService {
         let &mut (ref mut writer, ref mut hasher) = writers
             .get_mut(&handle).ok_or(err_msg(IndyErrorKind::InvalidStructure, "Invalid BlobStorage handle"))?; // FIXME: Review error kind
 
-        hasher.process(bytes);
+        hasher.input(bytes);
         writer.append(bytes)
     }
 
