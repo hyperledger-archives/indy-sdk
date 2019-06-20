@@ -234,7 +234,13 @@ void IndyWrapperCommonStringCallback(indy_handle_t xcommand_handle,
     [[IndyCallbacks sharedInstance] deleteCommandHandleFor:xcommand_handle];
 
     void (^completion)(NSError *, NSString *) = (void (^)(NSError *, NSString *arg1)) block;
-    NSString *sarg1 = [NSString stringWithUTF8String:arg1];
+    
+    NSString *sarg1;
+    if (arg1)
+    {
+        sarg1 = [NSString stringWithUTF8String:arg1];
+    }
+    
     NSError *error = [NSError errorFromIndyError:err];
 
     if (completion) {
@@ -268,9 +274,19 @@ void IndyWrapperCommonStringStringCallback(indy_handle_t xcommand_handle,
     [[IndyCallbacks sharedInstance] deleteCommandHandleFor:xcommand_handle];
 
     void (^completion)(NSError *, NSString *arg1, NSString *arg2) = (void (^)(NSError *, NSString *arg1, NSString *arg2)) block;
-
-    NSString *sarg1 = [NSString stringWithUTF8String:arg1];
-    NSString *sarg2 = [NSString stringWithUTF8String:arg2];
+    
+    NSString *sarg1;
+    if (arg1)
+    {
+        sarg1 = [NSString stringWithUTF8String:arg1];
+    }
+    
+    NSString *sarg2;
+    if (arg2)
+    {
+        sarg2 = [NSString stringWithUTF8String:arg2];
+    }
+    
     NSError *error = [NSError errorFromIndyError:err];
 
     if (completion) {
@@ -289,9 +305,12 @@ void IndyWrapperCommonStringOptStringCallback(indy_handle_t xcommand_handle,
 
     void (^completion)(NSError *, NSString *arg1, NSString *arg2) = (void (^)(NSError *, NSString *arg1, NSString *arg2)) block;
 
-    NSString *sarg1 = [NSString stringWithUTF8String:arg1];
-    NSString *sarg2 = nil;
+    NSString *sarg1;
+    NSString *sarg2;
     if (arg1) {
+        sarg1 = [NSString stringWithUTF8String:arg1];
+    }
+    if (arg2) {
         sarg2 = [NSString stringWithUTF8String:arg2];
     }
     NSError *error = [NSError errorFromIndyError:err];
@@ -313,7 +332,10 @@ void IndyWrapperCommonStringOptStringOptStringCallback(indy_handle_t xcommand_ha
 
     void (^completion)(NSError *, NSString *arg1, NSString *arg2, NSString *arg3) = (void (^)(NSError *, NSString *arg1, NSString *arg2, NSString *arg3)) block;
 
-    NSString *sarg1 = [NSString stringWithUTF8String:arg1];
+    NSString *sarg1;
+    if (arg1) {
+        sarg1 = [NSString stringWithUTF8String:arg1];
+    }
     NSString *sarg2 = nil;
     if (arg2) {
         sarg2 = [NSString stringWithUTF8String:arg2];
@@ -341,9 +363,18 @@ void IndyWrapperCommonStringStringStringCallback(indy_handle_t xcommand_handle,
 
     void (^completion)(NSError *, NSString *arg1, NSString *arg2, NSString *arg3) = (void (^)(NSError *, NSString *arg1, NSString *arg2, NSString *arg3)) block;
 
-    NSString *sarg1 = [NSString stringWithUTF8String:arg1];
-    NSString *sarg2 = [NSString stringWithUTF8String:arg2];
-    NSString *sarg3 = [NSString stringWithUTF8String:arg3];
+    NSString *sarg1;
+    if (arg1) {
+        sarg1 = [NSString stringWithUTF8String:arg1];
+    }
+    NSString *sarg2 = nil;
+    if (arg2) {
+        sarg2 = [NSString stringWithUTF8String:arg2];
+    }
+    NSString *sarg3 = nil;
+    if (arg3) {
+        sarg3 = [NSString stringWithUTF8String:arg3];
+    }
     NSError *error = [NSError errorFromIndyError:err];
 
     if (completion) {
@@ -363,7 +394,11 @@ void IndyWrapperCommonDataCallback(indy_handle_t xcommand_handle,
 
     void (^completion)(NSError *, NSData *arg) = (void (^)(NSError *, NSData *arg)) block;
 
-    NSData *sarg = [NSData dataWithBytes:arg1 length:arg2];
+    NSData *sarg;
+    if (arg1 && arg2)
+    {
+        sarg = [NSData dataWithBytes:arg1 length:arg2];
+    }
     NSError *error = [NSError errorFromIndyError:err];
 
     if (completion) {
@@ -387,7 +422,12 @@ void IndyWrapperCommonStringDataCallback(indy_handle_t xcommand_handle,
     if (arg1) {
         sarg1 = [NSString stringWithUTF8String:arg1];
     }
-    NSData *sarg2 = [NSData dataWithBytes:arg2 length:arg3];
+    
+    NSData *sarg2;
+    if (arg2 && arg3)
+    {
+        sarg2 = [NSData dataWithBytes:arg2 length:arg3];
+    }
     NSError *error = [NSError errorFromIndyError:err];
 
     if (completion) {
@@ -406,11 +446,17 @@ void IndyWrapperCommonStringStringLongCallback(indy_handle_t xcommand_handle,
     [[IndyCallbacks sharedInstance] deleteCommandHandleFor:xcommand_handle];
 
     void (^completion)(NSError *, NSString *, NSString *, NSNumber *) = (void (^)(NSError *, NSString *arg1, NSString *arg2, NSNumber *arg3)) block;
-    NSString *sarg1 = [NSString stringWithUTF8String:arg1];
-    NSString *sarg2 = [NSString stringWithUTF8String:arg2];
+    
+    NSString *sarg1;
+    if (arg1) {
+        sarg1 = [NSString stringWithUTF8String:arg1];
+    }
+    NSString *sarg2 = nil;
+    if (arg2) {
+        sarg2 = [NSString stringWithUTF8String:arg2];
+    }
     NSNumber *sarg3 = [NSNumber numberWithInt:arg3];
     NSError *error = [NSError errorFromIndyError:err];
-
 
     if (completion) {
         dispatch_async(dispatch_get_main_queue(), ^{

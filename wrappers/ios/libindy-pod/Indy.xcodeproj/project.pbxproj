@@ -132,7 +132,6 @@
 				88A7D3856ABA7BAE34B97FB1 /* Pods-Indy.debug.xcconfig */,
 				55A3677CB10DE78CA6871B28 /* Pods-Indy.release.xcconfig */,
 			);
-			name = Pods;
 			path = Pods;
 			sourceTree = "<group>";
 		};
