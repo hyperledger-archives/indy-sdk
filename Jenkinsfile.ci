@@ -83,7 +83,8 @@ def windowsTesting() {
                             bat "cargo test --no-run"
 
                             echo "Windows Libindy before Test: Deleting %TEMP\\indy_client"
-                            bat DEL /S /Q %TEMP%\indy_client
+                            bat DEL /S /Q /F %TEMP%\indy_client
+                            bat DEL /S /Q /F %UserProfile%\.indy_client
 
                             echo "Windows Libindy Test: Run tests"
                             withEnv([
@@ -95,7 +96,8 @@ def windowsTesting() {
                             }
 
                             echo "Windows Libindy after Test: Deleting %TEMP\\indy_client"
-                            bat DEL /S /Q %TEMP%\indy_client
+                            bat DEL /S /Q /F %TEMP%\indy_client
+                            bat DEL /S /Q /F %UserProfile%\.indy_client
 
                         }
                     }
