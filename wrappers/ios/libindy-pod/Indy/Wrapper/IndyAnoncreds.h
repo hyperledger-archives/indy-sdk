@@ -50,7 +50,11 @@
  @param tag: allows to distinct between credential definitions for the same issuer and schema
  @param type: type_: credential definition type (optional, 'CL' by default) that defines credentials signature and revocation math.
  Supported types are:
-    - 'CL': Camenisch-Lysyanskaya credential signature type
+    - 'CL': Camenisch-Lysyanskaya credential signature type that is implemented according to the algorithm in this paper:
+                https://github.com/hyperledger/ursa/blob/master/libursa/docs/AnonCred.pdf
+            And is documented in this HIPE:
+                https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336fdc8cc1/text/anoncreds-protocol/README.md
+
  @param configJSON: type-specific configuration of credential definition as json:
  - 'CL':
    - revocationSupport: whether to request non-revocation credential (optional, default false)
