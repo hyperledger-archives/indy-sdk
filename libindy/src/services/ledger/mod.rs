@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use hex::{ToHex, FromHex};
+use hex::FromHex;
 use ursa::cl::RevocationRegistryDelta as CryproRevocationRegistryDelta;
 use serde::de::DeserializeOwned;
 use serde_json;
@@ -14,7 +14,7 @@ use domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefini
 use domain::anoncreds::revocation_registry_delta::{RevocationRegistryDelta, RevocationRegistryDeltaV1};
 use domain::anoncreds::schema::{Schema, SchemaV1, MAX_ATTRIBUTES_COUNT};
 use domain::ledger::attrib::{AttribOperation, GetAttribOperation};
-use domain::ledger::constants::{GET_VALIDATOR_INFO, NYM, POOL_RESTART, ROLE_REMOVE, STEWARD, ENDORSER, TRUSTEE, NETWORK_MONITOR, txn_name_to_code};
+use domain::ledger::constants::{GET_VALIDATOR_INFO, NYM, POOL_RESTART, ROLE_REMOVE, STEWARD, ENDORSER, TRUSTEE, NETWORK_MONITOR, ROLES, txn_name_to_code};
 use domain::ledger::cred_def::{CredDefOperation, GetCredDefOperation, GetCredDefReplyResult};
 use domain::ledger::ddo::GetDdoOperation;
 use domain::ledger::node::{NodeOperation, NodeOperationData};
@@ -74,6 +74,7 @@ impl LedgerService {
                     "TRUSTEE" => TRUSTEE,
                     "TRUST_ANCHOR" | "ENDORSER" => ENDORSER,
                     "NETWORK_MONITOR" => NETWORK_MONITOR,
+                    role if ROLES.contains(&role) => role,
                     role @ _ => return Err(err_msg(IndyErrorKind::InvalidStructure, format!("Invalid role: {}", role)))
                 }.to_string())
             }
@@ -507,7 +508,7 @@ impl LedgerService {
                 return Err(err_msg(IndyErrorKind::InvalidStructure, "Invalid combination of params: `text` and `version` should be passed or skipped together."));
             }
             (Some(text_), Some(version_), None) => {
-                self._calculate_hash(text_, version_)?.to_hex()
+                hex::encode(self._calculate_hash(text_, version_)?)
             }
             (Some(text_), Some(version_), Some(hash_)) => {
                 self._compare_hash(text_, version_, hash_)?;
@@ -553,9 +554,9 @@ mod tests {
 
     use super::*;
 
-    const IDENTIFIER: &'static str = "NcYxiDXkpYi6ov5FcYDi1e";
-    const DEST: &'static str = "VsKV7grR1BUE29mG2Fm2kX";
-    const VERKEY: &'static str = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
+    const IDENTIFIER: &str = "NcYxiDXkpYi6ov5FcYDi1e";
+    const DEST: &str = "VsKV7grR1BUE29mG2Fm2kX";
+    const VERKEY: &str = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
 
     #[test]
     fn build_nym_request_works_for_only_required_fields() {

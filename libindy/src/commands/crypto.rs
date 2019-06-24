@@ -1,7 +1,3 @@
-extern crate ursa;
-extern crate serde_json;
-extern crate zeroize;
-
 use std::collections::HashMap;
 
 use domain::crypto::key::{Key, KeyInfo, KeyMetadata};

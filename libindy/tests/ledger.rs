@@ -479,7 +479,6 @@ mod high_cases {
 
     mod attrib_requests {
         use super::*;
-        use self::hex::ToHex;
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
@@ -616,7 +615,7 @@ mod high_cases {
 
             let mut ctx = Hasher::new(MessageDigest::sha256()).unwrap();
             ctx.update(&ATTRIB_RAW_DATA.as_bytes()).unwrap();
-            let hashed_attr = ctx.finish().unwrap().as_ref().to_hex();
+            let hashed_attr = hex::encode(ctx.finish().unwrap().as_ref());
 
             let attrib_request = ledger::build_attrib_request(&did,
                                                               &did,
@@ -642,7 +641,7 @@ mod high_cases {
 
             let key = secretbox::gen_key();
             let nonce = secretbox::gen_nonce();
-            let encryted_attr = secretbox::seal(&ATTRIB_RAW_DATA.as_bytes(), &nonce, &key).to_hex();
+            let encryted_attr = hex::encode(secretbox::seal(&ATTRIB_RAW_DATA.as_bytes(), &nonce, &key));
 
             let attrib_request = ledger::build_attrib_request(&did,
                                                               &did,

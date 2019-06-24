@@ -1,17 +1,13 @@
-extern crate digest;
-extern crate hex;
 extern crate log_derive;
-extern crate ursa;
-extern crate rlp;
 extern crate rmp_serde;
-extern crate rust_base58;
-extern crate sha2;
-extern crate sha3;
 
 use std::collections::HashMap;
 use std::ffi::{CStr, CString};
 
 use base64;
+use rlp::{
+    UntrustedRlp,
+};
 use serde_json;
 use serde_json::Value as SJsonValue;
 
@@ -24,18 +20,10 @@ use utils::crypto::hash::hash as openssl_hash;
 use super::PoolService;
 use super::types::*;
 
-use self::digest::FixedOutput;
-use self::digest::Input;
-use self::hex::ToHex;
 use self::log_derive::logfn;
-use self::ursa::bls::{Bls, Generator, MultiSignature, VerKey};
+use ursa::bls::{Bls, Generator, MultiSignature, VerKey};
 use self::node::{Node, TrieDB};
-use self::rlp::{
-    encode as rlp_encode,
-    UntrustedRlp,
-};
-use self::rust_base58::FromBase58;
-use self::sha3::Digest;
+use rust_base58::FromBase58;
 
 mod node;
 
@@ -134,6 +122,7 @@ pub fn verify_parsed_sp(parsed_sps: Vec<ParsedSP>,
 
 #[logfn(Trace)]
 pub fn parse_key_from_request_for_builtin_sp(json_msg: &SJsonValue) -> Option<Vec<u8>> {
+    use sha2::digest::{FixedOutput, Input};
     let type_ = json_msg["operation"]["type"].as_str()?;
     let json_msg = &json_msg["operation"];
     let key_suffix: String = match type_ {
@@ -144,9 +133,9 @@ pub fn parse_key_from_request_for_builtin_sp(json_msg: &SJsonValue) -> Option<Ve
                 trace!("TransactionHandler::parse_reply_for_builtin_sp: GET_ATTR attr_name {:?}", attr_name);
 
                 let mut hasher = sha2::Sha256::default();
-                hasher.process(attr_name.as_bytes());
+                hasher.input(attr_name.as_bytes());
                 let marker = if ProtocolVersion::is_node_1_3() { '\x01' } else { '1' };
-                format!(":{}:{}", marker, hasher.fixed_result().to_hex())
+                format!(":{}:{}", marker, hex::encode(hasher.fixed_result()))
             } else {
                 trace!("TransactionHandler::parse_reply_for_builtin_sp: <<< GET_ATTR No key suffix");
                 return None;
@@ -258,7 +247,7 @@ pub fn parse_key_from_request_for_builtin_sp(json_msg: &SJsonValue) -> Option<Ve
         constants::GET_NYM => {
             if let Some(dest) = dest {
                 let mut hasher = sha2::Sha256::default();
-                hasher.process(dest.as_bytes());
+                hasher.input(dest.as_bytes());
                 hasher.fixed_result().to_vec()
             } else {
                 debug!("TransactionHandler::parse_reply_for_builtin_sp: <<< No dest");
@@ -477,11 +466,7 @@ fn _verify_proof(proofs_rlp: &[u8], root_hash: &[u8], key: &[u8], expected_value
     let nodes: Vec<Node> = UntrustedRlp::new(proofs_rlp).as_list().unwrap_or_default(); //default will cause error below
     let mut map: TrieDB = HashMap::new();
     for node in &nodes {
-        let encoded = rlp_encode(node);
-        let mut hasher = sha3::Sha3_256::default();
-        hasher.input(encoded.to_vec().as_slice());
-        let hash = hasher.result();
-        map.insert(hash, node);
+        map.insert(node.get_hash(), node);
     }
     map.get(root_hash).map(|root| {
         root
@@ -540,6 +525,7 @@ fn _verify_proof_signature(signature: &str,
 }
 
 fn _parse_reply_for_proof_value(json_msg: &SJsonValue, data: Option<&str>, parsed_data: &SJsonValue, xtype: &str, sp_key: &[u8]) -> Result<Option<String>, String> {
+    use sha2::digest::{FixedOutput, Input};
     if let Some(data) = data {
         let mut value = json!({});
 
@@ -568,8 +554,8 @@ fn _parse_reply_for_proof_value(json_msg: &SJsonValue, data: Option<&str>, parse
             }
             constants::GET_ATTR => {
                 let mut hasher = sha2::Sha256::default();
-                hasher.process(data.as_bytes());
-                value["val"] = SJsonValue::String(hasher.fixed_result().to_hex());
+                hasher.input(data.as_bytes());
+                value["val"] = SJsonValue::String(hex::encode(hasher.fixed_result()));
             }
             constants::GET_CRED_DEF | constants::GET_REVOC_REG_DEF | constants::GET_REVOC_REG | constants::GET_TXN_AUTHR_AGRMT_AML => {
                 value["val"] = parsed_data.clone();
@@ -605,10 +591,9 @@ fn _parse_reply_for_proof_value(json_msg: &SJsonValue, data: Option<&str>, parse
                 if _is_full_taa_state_value_expected(sp_key) {
                     value["val"] = parsed_data.clone();
                 } else {
-                    value = SJsonValue::String(_calculate_taa_digest(parsed_data["text"].as_str().unwrap_or(""),
+                    value = SJsonValue::String(hex::encode(_calculate_taa_digest(parsed_data["text"].as_str().unwrap_or(""),
                                                                      parsed_data["version"].as_str().unwrap_or(""))
-                        .map_err(|err| format!("Can't calculate expected TAA digest to verify StateProof on the request ({})", err))?
-                        .to_hex());
+                        .map_err(|err| format!("Can't calculate expected TAA digest to verify StateProof on the request ({})", err))?));
                 }
             }
             _ => {
@@ -645,11 +630,8 @@ fn _if_rev_delta_multi_state_proof_expected(sp_key: &[u8]) -> bool {
 mod tests {
     use super::*;
 
-    use self::hex::FromHex;
-    use self::libc::c_char;
-
-    extern crate hex;
-    extern crate libc;
+    use hex::FromHex;
+    use libc::c_char;
 
     #[test]
     fn state_proof_nodes_parse_and_get_works() {
@@ -673,11 +655,7 @@ mod tests {
         let mut map: TrieDB = HashMap::new();
         for node in &proofs {
             info!("{:?}", node);
-            let encoded = rlp_encode(node);
-            info!("{:?}", encoded);
-            let mut hasher = sha3::Sha3_256::default();
-            hasher.input(encoded.to_vec().as_slice());
-            let out = hasher.result();
+            let out = node.get_hash();
             info!("{:?}", out);
             map.insert(out, node);
         }

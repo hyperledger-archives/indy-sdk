@@ -84,7 +84,7 @@ async def issuer_create_and_store_credential_def(wallet_handle: int,
     :param  config_json: (optional) type-specific configuration of credential definition as json:
         - 'CL':
           - support_revocation: whether to request non-revocation credential (optional, default false)
-    :return: 
+    :return:
         cred_def_id: identifier of created credential definition
         cred_def_json: public part of created credential definition
     """
@@ -164,7 +164,7 @@ async def issuer_create_and_store_revoc_reg(wallet_handle: int,
             "max_cred_num": maximum number of credentials the new registry can process (optional, default 100000)
         }
     :param tails_writer_handle:
-    :return: 
+    :return:
         revoc_reg_id: identifier of created revocation registry definition
         revoc_reg_def_json: public part of revocation registry definition
         revoc_reg_entry_json: revocation registry entry that defines initial state of revocation registry
@@ -279,7 +279,7 @@ async def issuer_create_credential(wallet_handle: int,
     :param rev_reg_id: (Optional) id of revocation registry definition stored in the wallet
     :param blob_storage_reader_handle: pre-configured blob storage reader instance handle that
     will allow to read revocation tails
-    :return: 
+    :return:
      cred_json: Credential json containing signed credential values
      {
          "schema_id": string,
@@ -504,7 +504,7 @@ async def prover_create_credential_req(wallet_handle: int,
                                        cred_def_json: str,
                                        master_secret_id: str) -> (str, str):
     """
-    Creates a clam request for the given credential offer.
+    Creates a credential request for the given credential offer.
 
     The method creates a blinded master secret for a master secret identified by a provided name.
     The master secret identified by the name must be already stored in the secure wallet (see prover_create_master_secret)
@@ -515,7 +515,7 @@ async def prover_create_credential_req(wallet_handle: int,
     :param cred_offer_json: credential offer as a json containing information about the issuer and a credential
     :param cred_def_json: credential definition json related to <cred_def_id> in <cred_offer_json>
     :param master_secret_id: the id of the master secret stored in the wallet
-    :return: 
+    :return:
      cred_req_json: Credential request json for creation of credential by Issuer
      {
       "prover_did" : string,
@@ -564,6 +564,82 @@ async def prover_create_credential_req(wallet_handle: int,
     return res
 
 
+async def prover_set_credential_attr_tag_policy(wallet_handle: int,
+                                                cred_def_id: str,
+                                                tag_attrs_json: Optional[str],
+                                                retroactive: bool) -> None:
+    """
+    Set credential attribute tag policy for input credential definition id.
+    Specify None to clear policy, resetting to default (tag all attributes).
+    Set retroactive to force all existing credentials in wallet on input credential definition id into compliance,
+    rewriting their tags accordingly.
+
+    :param wallet_handle: wallet handle (created by open_wallet).
+    :param cred_def_id: credential definition identifier.
+    :param tag_attrs_json: JSON array of attribute names to tag - empty array for None, null for all.
+    :param retroactive: whether to rewrite tags on existing credentials to comply with specified policy.
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("prover_set_credential_attr_tag_policy: >>> wallet_handle: %r, cred_def_id: %r, "
+                 "tag_attrs_json: %r, retroactive: %r",
+                 wallet_handle,
+                 cred_def_id,
+                 tag_attrs_json,
+                 retroactive)
+
+    if not hasattr(prover_set_credential_attr_tag_policy, "cb"):
+        logger.debug("prover_set_credential_attr_tag_policy: Creating callback")
+        prover_set_credential_attr_tag_policy.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32))
+
+    c_wallet_handle = c_int32(wallet_handle)
+    c_cred_def_id = c_char_p(cred_def_id.encode('utf-8'))
+    c_tag_attrs_json = c_char_p(tag_attrs_json.encode('utf-8')) if tag_attrs_json is not None else None
+    c_retroactive = c_bool(retroactive)
+
+    res = await do_call('indy_prover_set_credential_attr_tag_policy',
+                            c_wallet_handle,
+                            c_cred_def_id,
+                            c_tag_attrs_json,
+                            c_retroactive,
+                            prover_set_credential_attr_tag_policy.cb)
+
+    logger.debug("prover_set_credential_attr_tag_policy: <<< res: %r", res)
+    return res
+
+
+async def prover_get_credential_attr_tag_policy(wallet_handle: int,
+                                                cred_def_id: str) -> str:
+    """
+    Get current attribute tag policy for input credential definition id, as a JSON list
+    of attribute names (null for default policy tagging all attributes).
+
+    :param wallet_handle: wallet handle (created by open_wallet).
+    :param cred_def_id: credential definition identifier.
+    :return: credential attr tag policy as JSON list with canonical names of attributes to tag (JSON null for all).
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("prover_get_credential_attr_tag_policy: >>> wallet_handle: %r, cred_def_id: %r",
+                 wallet_handle,
+                 cred_def_id)
+
+    if not hasattr(prover_get_credential_attr_tag_policy, "cb"):
+        logger.debug("prover_get_credential_attr_tag_policy: Creating callback")
+        prover_get_credential_attr_tag_policy.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_wallet_handle = c_int32(wallet_handle)
+    c_cred_def_id = c_char_p(cred_def_id.encode('utf-8'))
+
+    catpol_json = await do_call('indy_prover_get_credential_attr_tag_policy',
+                                     c_wallet_handle,
+                                     c_cred_def_id,
+                                     prover_get_credential_attr_tag_policy.cb)
+
+    res = catpol_json.decode()
+    logger.debug("prover_get_credential_attr_tag_policy: <<< res: %r", res)
+    return res
+
 async def prover_store_credential(wallet_handle: int,
                                   cred_id: Optional[str],
                                   cred_req_metadata_json: str,
@@ -573,7 +649,7 @@ async def prover_store_credential(wallet_handle: int,
     """
     Check credential provided by Issuer for the given credential request,
     updates the credential by a master secret and stores in a secure wallet.
-    
+
     To support efficient search the following tags will be created for stored credential:
         {
             "schema_id": <credential schema id>,
@@ -583,7 +659,7 @@ async def prover_store_credential(wallet_handle: int,
             "issuer_did": <credential issuer did>,
             "cred_def_id": <credential definition id>,
             "rev_reg_id": <credential revocation registry id>, # "None" as string if not present
-            // for every attribute in <credential values>
+            // for every attribute in <credential values> that credential attribute tagging policy marks taggable
             "attr::<attribute name>::marker": "1",
             "attr::<attribute name>::value": <attribute raw value>,
         }
@@ -1283,7 +1359,7 @@ async def verifier_verify_proof(proof_request_json: str,
     Verifies a proof (of multiple credential).
     All required schemas, public keys and revocation registries must be provided.
 
-    :param proof_request_json: 
+    :param proof_request_json:
          {
              "name": string,
              "version": string,

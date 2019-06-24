@@ -1,12 +1,11 @@
-extern crate libc;
-
 use api::{ErrorCode, CommandHandle, WalletHandle, PoolHandle};
 use commands::{Command, CommandExecutor};
 use commands::cache::CacheCommand;
 use errors::prelude::*;
 use utils::ctypes;
 
-use self::libc::c_char;
+use
+libc::c_char;
 
 
 /// Gets credential definition json data for specified credential definition id.
