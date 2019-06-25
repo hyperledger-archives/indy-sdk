@@ -126,6 +126,20 @@ namespace Hyperledger.Indy.PaymentsApi
         static ParsePaymentResponseDelegate ParsePaymentResponseCallback = ParsePaymentResponseCallbackMethod;
 
 #if __IOS__
+        [MonoPInvokeCallback(typeof(PreparePaymentExtraWithAcceptanceDataDelegate))]
+#endif
+        static void PreparePaymentExtraWithAcceptanceDataCallbackMethod(int xcommand_handle, int err, string extra_with_acceptance)
+        {
+            var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
+
+            if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
+                return;
+
+            taskCompletionSource.SetResult(extra_with_acceptance);
+        }
+        static PreparePaymentExtraWithAcceptanceDataDelegate PreparePaymentExtraWithAcceptanceDataCallback = PreparePaymentExtraWithAcceptanceDataCallbackMethod;
+
+#if __IOS__
         [MonoPInvokeCallback(typeof(BuildMintReqDelegate))]
 #endif
         static void BuildMintRequestCallbackMethod(int xcommand_handle, int err, string mint_req_json, string payment_method)
@@ -353,7 +367,6 @@ namespace Hyperledger.Indy.PaymentsApi
         public static Task<PaymentResult> AddRequestFeesAsync(Wallet wallet, string submitterDid, string reqJson, string inputsJson, string outputsJson, string extra)
         {
             ParamGuard.NotNull(wallet, "wallet");
-            ParamGuard.NotNullOrWhiteSpace(submitterDid, "submitterDid");
 
             var taskCompletionSource = new TaskCompletionSource<PaymentResult>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
@@ -422,7 +435,6 @@ namespace Hyperledger.Indy.PaymentsApi
         /// <param name="paymentAddress">target payment address</param>
         public static Task<PaymentResult> BuildGetPaymentSourcesAsync(Wallet wallet, string submittedDid, string paymentAddress)
         {
-            ParamGuard.NotNullOrWhiteSpace(submittedDid, "submittedDid");
             ParamGuard.NotNullOrWhiteSpace(paymentAddress, "paymentAddress");
 
             var taskCompletionSource = new TaskCompletionSource<PaymentResult>();
@@ -502,7 +514,6 @@ namespace Hyperledger.Indy.PaymentsApi
         public static Task<PaymentResult> BuildPaymentRequestAsync(Wallet wallet, string submitterDid, string inputsJson, string outputsJson, string extra)
         {
             ParamGuard.NotNull(wallet, "wallet");
-            ParamGuard.NotNullOrWhiteSpace(submitterDid, "submitterDid");
             ParamGuard.NotNullOrWhiteSpace(inputsJson, "inputsJson");
             ParamGuard.NotNullOrWhiteSpace(outputsJson, "outputsJson");
 
@@ -559,6 +570,51 @@ namespace Hyperledger.Indy.PaymentsApi
         }
 
         /// <summary>
+        /// Prepare payment extra JSON with TAA acceptance data
+        ///
+        /// EXPERIMENTAL
+        ///
+        /// This function may calculate digest by itself or consume it as a parameter.
+        /// If all text, version and taa_digest parameters are specified, a check integrity of them will be done.
+        /// </summary>
+        /// <param name="extra_json">(optional) original extra json.</param>
+        /// <param name="text">
+        /// text and version - (optional) raw data about TAA from ledger.
+        ///     These parameters should be passed together.
+        ///     These parameters are required if taa_digest parameter is omitted.
+        /// </param>
+        /// <param name="version">
+        /// text and version - (optional) raw data about TAA from ledger.
+        ///     These parameters should be passed together.
+        ///     These parameters are required if taa_digest parameter is omitted.
+        /// </param>
+        /// <param name="taa_digest">(optional) digest on text and version. This parameter is required if text and version parameters are omitted.</param>
+        /// <param name="mechanism">mechanism how user has accepted the TAA</param>
+        /// <param name="time">UTC timestamp when user has accepted the TAA</param>
+        /// <returns>Updated request result as json.</returns>
+        public static Task<string> PreparePaymentExtraWithAcceptanceDataAsync(string extra_json, string text, string version, string taa_digest, string mechanism, ulong time)
+        {
+            ParamGuard.NotNullOrWhiteSpace(mechanism, "mechanism");
+
+            var taskCompletionSource = new TaskCompletionSource<string>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var result = NativeMethods.indy_prepare_payment_extra_with_acceptance_data(
+                commandHandle,
+                extra_json,
+                text,
+                version,
+                taa_digest,
+                mechanism,
+                time,
+                PreparePaymentExtraWithAcceptanceDataCallback);
+
+            CallbackHelper.CheckResult(result);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
         /// Builds Indy request for doing tokens minting
         /// according to this payment method.
         ///
@@ -578,7 +634,6 @@ namespace Hyperledger.Indy.PaymentsApi
         public static Task<PaymentResult> BuildMintRequestAsync(Wallet wallet, string submitterDid, string outputsJson, string extra)
         {
             ParamGuard.NotNull(wallet, "wallet");
-            ParamGuard.NotNullOrWhiteSpace(submitterDid, "submitterDid");
             ParamGuard.NotNullOrWhiteSpace(outputsJson, "outputsJson");
 
             var taskCompletionSource = new TaskCompletionSource<PaymentResult>();
@@ -617,7 +672,6 @@ namespace Hyperledger.Indy.PaymentsApi
         public static Task<string> BuildSetTxnFeesRequestAsync(Wallet wallet, string submitterDid, string paymentMethod, string feesJson)
         {
             ParamGuard.NotNull(wallet, "wallet");
-            ParamGuard.NotNullOrWhiteSpace(submitterDid, "submitterDid");
             ParamGuard.NotNullOrWhiteSpace(paymentMethod, "paymentMethod");
             ParamGuard.NotNullOrWhiteSpace(feesJson, "feesJson");
 
@@ -650,7 +704,6 @@ namespace Hyperledger.Indy.PaymentsApi
         public static Task<string> BuildGetTxnFeesRequestAsync(Wallet wallet, string submitterDid, string paymentMethod)
         {
             ParamGuard.NotNull(wallet, "wallet");
-            ParamGuard.NotNullOrWhiteSpace(submitterDid, "submitterDid");
             ParamGuard.NotNullOrWhiteSpace(paymentMethod, "paymentMethod");
 
             var taskCompletionSource = new TaskCompletionSource<string>();
@@ -711,7 +764,6 @@ namespace Hyperledger.Indy.PaymentsApi
         public static Task<PaymentResult> BuildVerifyPaymentRequestAsync(Wallet wallet, string submitterDid, string receipt)
         {
             ParamGuard.NotNull(wallet, "wallet");
-            ParamGuard.NotNullOrWhiteSpace(submitterDid, "submitterDid");
             ParamGuard.NotNullOrWhiteSpace(receipt, "receipt");
 
             var taskCompletionSource = new TaskCompletionSource<PaymentResult>();
