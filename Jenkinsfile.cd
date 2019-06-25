@@ -44,7 +44,8 @@ def testing() {
                 //  FIXME 'redhat-test' : { rhelTesting() }, https://jira.hyperledger.org/browse/IS-1212
                 'android-test': { androidTesting() },
                 'windows-test': { windowsTesting() },
-                'ios-test'    : { iosTesting() }
+                'ios-test'    : { iosTesting() },
+                'macos-test'  : { macosTesting() }
         ])
     }
 }
@@ -58,6 +59,7 @@ def publishing() {
                 'windows-files': { windowsPublishing() },
                 'android-files': { androidPublishing() },
                 'ios-files'    : { iosPublishing() },
+                'macos-files': { macOsPublishing() },
         ])
 
         if (publishedVersions['windows-files'] != publishedVersions['ubuntu-files']) { // FIXME check rhel too, IS-307
@@ -590,7 +592,7 @@ def windowsTesting() {
                                 bat "cargo test --release"
                             }
                         }
-                        stash includes: 'target/release/*.dll', name: 'LibindyWindowsBuildResult'
+                        stash includes: 'target/release/*.dll,target/release/*.dll.lib', name: 'LibindyWindowsBuildResult'
                     }
 
                     dir('libnullpay') {
@@ -612,7 +614,7 @@ def windowsTesting() {
                             }
                         }
 
-                        stash includes: 'target/release/*.dll', name: 'LibnullpayWindowsBuildResult'
+                        stash includes: 'target/release/*.dll,target/release/*.dll.lib', name: 'LibnullpayWindowsBuildResult'
                     }
 
                     bat "PowerShell.exe \"Copy-Item $WORKSPACE/libnullpay/target/release/nullpay.dll -Destination $WORKSPACE/cli\""
@@ -672,11 +674,8 @@ def windowsTesting() {
                             }
                         }
 
-                        stash includes: 'target/release/*.dll', name: 'LibvcxWindowsBuildResult'
+                        stash includes: 'target/release/*.dll,target/release/*.dll.lib', name: 'LibvcxWindowsBuildResult'
                     }
-
-                    //TODO wrappers testing
-
                 } finally {
                     try {
                         bat "docker -H $INDY_SDK_SERVER_IP stop indy_pool"
@@ -827,6 +826,58 @@ def buildIOSPod(packageName, targets) {
 def rhelTesting() {
     stage('RedHat Test') {
         linuxTesting("ci/amazon.dockerfile ci", "RedHat", "pool_network", false)
+    }
+}
+
+def macosTesting() {
+    node('macos') {
+        stage('MacOS Test') {
+            try {
+                echo "MacOS Test: Checkout scm"
+                checkout scm
+
+                setupRust()
+                setupBrewPackages()
+
+                macosModuleBuilding('libindy') // TODO: testing
+
+                stash includes: 'libindy/target/release/libindy.dylib,libindy/target/release/libindy.a', name: 'LibindyMacosBuildResult'
+
+                sh "cp libindy/target/release/libindy.dylib libnullpay"
+                sh "cp libindy/target/release/libindy.dylib vcx/libvcx"
+
+                macosModuleBuilding('libnullpay') // TODO: testing
+
+                stash includes: 'libnullpay/target/release/libnullpay.dylib,libnullpay/target/release/libnullpay.a', name: 'LibnullpayMacosBuildResult'
+
+                sh "cp libnullpay/target/release/libnullpay.dylib vcx/libvcx"
+
+                macosModuleBuilding('vcx/libvcx')
+
+                stash includes: 'vcx/libvcx/target/release/libvcx.dylib,vcx/libvcx/target/release/libvcx.a', name: 'LibvcxMacosBuildResult'
+
+                macosModuleTesting('vcx/libvcx')
+
+                //TODO wrappers testing
+            } finally {
+                step([$class: 'WsCleanup'])
+            }
+        }
+    }
+}
+
+def macosModuleBuilding(library) {
+    dir(library) {
+        echo "MacOS ${library} Testing: Build"
+        sh "LIBRARY_PATH=./ cargo build --release --features fatal_warnings"
+        sh "LIBRARY_PATH=./ cargo test --release --no-run"
+    }
+}
+
+def macosModuleTesting(library) {
+    dir(library) {
+        echo "MacOS ${library} Testing: Run Tests"
+        sh "LIBRARY_PATH=./ RUST_TEST_THREADS=1 cargo test --release"
     }
 }
 
@@ -1039,6 +1090,52 @@ def publishIOSAtrifacts(testEnv, packageName, stashName, version, targetName) {
 
             if (targetName != null) {
                 sh "ssh -v -oStrictHostKeyChecking=no -i $sovrin_repo_key repo@$SOVRIN_REPO_HOST mv $target/$version/${packageName}.tar.gz $target/$version/$targetName"
+            }
+        }
+    }
+}
+
+def macOsPublishing() {
+    node('ubuntu') {
+        stage('Publish Libindy MacOS Files') {
+            try {
+                echo 'Publish iOS files: Checkout scm'
+                checkout scm
+
+                echo 'Publish MacOS files: Build docker image'
+                def libindyVersion = getSrcVersion("libindy")
+                testEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
+
+                echo 'Publish Libindy MacOS Library'
+                publishMacOsArtifact(testEnv, "libindy", "libindy", "LibindyMacosBuildResult", libindyVersion)
+
+                echo 'Publish Libnullpay MacOS Library'
+                def libnullpayVersion = getSrcVersion("libnullpay")
+                publishMacOsArtifact(testEnv, "libnullpay", "libnullpay", "LibnullpayMacosBuildResult", libnullpayVersion)
+
+                echo 'Publish Libvcx MacOS Library'
+                def libvcxVersion = getSrcVersion("vcx/libvcx")
+                publishMacOsArtifact(testEnv, "libvcx", "vcx/libvcx", "LibvcxMacosBuildResult", libvcxVersion)
+            }
+            finally {
+                echo 'Publish iOS files: Cleanup'
+                step([$class: 'WsCleanup'])
+            }
+        }
+    }
+}
+
+def publishMacOsArtifact(testEnv, packageName, packagePath, stashName, packageVersion) {
+    testEnv.inside {
+        sh 'chmod -R 777 ci'
+
+        unstash name: stashName
+
+        withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'repo_key')]) {
+            withEnv([
+                    "SOVRIN_REPO_HOST=$SOVRIN_REPO_HOST",
+            ]) {
+                sh "ci/macos-zip-and-upload.sh $packagePath $packageName $packageVersion '${repo_key}' $env.BRANCH_NAME $env.BUILD_NUMBER"
             }
         }
     }
@@ -1292,6 +1389,15 @@ def publishingRCtoStable() {
 
                 echo 'Moving iOS RC artifacts to Stable: libnullpay'
                 publishLibnullpayIOSFilesRCtoStable(libnullpayVersion)
+
+                echo 'Moving MacOS RC artifacts to Stable: libindy'
+                publishLibindyMacOSFilesRCtoStable(libindyVersion)
+
+                echo 'Moving MacOS RC artifacts to Stable: libnullpay'
+                publishLibnullpayMacOSFilesRCtoStable(libnullpayVersion)
+
+                echo 'Moving MacOS RC artifacts to Stable: libvcx'
+                publishLibvcxMacOSFilesRCtoStable(libvcxVersion)
             } finally {
                 echo 'Moving RC artifacts to Stable: Cleanup'
                 step([$class: 'WsCleanup'])
@@ -1356,6 +1462,33 @@ def publishLibnullpayIOSFilesRCtoStable(version) {
 
     src = "/var/repository/repos/ios/libnullpay/rc/libnullpay-core/$rcFullVersion/"
     target = "/var/repository/repos/ios/libnullpay/stable/libnullpay-core/$version/"
+
+    copyFilesFromRcToStable(src, target)
+}
+
+def publishLibindyMacOSFilesRCtoStable(version) {
+    rcFullVersion = fullVersion(version)
+
+    src = "/var/repository/repos/macos/libindy/rc/$rcFullVersion/"
+    target = "/var/repository/repos/macos/libindy/stable/$version/"
+
+    copyFilesFromRcToStable(src, target)
+}
+
+def publishLibnullpayMacOSFilesRCtoStable(version) {
+    rcFullVersion = fullVersion(version)
+
+    src = "/var/repository/repos/macos/libnullpay/rc/$rcFullVersion/"
+    target = "/var/repository/repos/macos/libnullpay/stable/$version/"
+
+    copyFilesFromRcToStable(src, target)
+}
+
+def publishLibvcxMacOSFilesRCtoStable(version) {
+    rcFullVersion = fullVersion(version)
+
+    src = "/var/repository/repos/macos/libvcx/rc/$rcFullVersion/"
+    target = "/var/repository/repos/macos/libvcx/stable/$version/"
 
     copyFilesFromRcToStable(src, target)
 }
@@ -1435,7 +1568,7 @@ def shell(command) {
 }
 
 def setupRust() {
-    shell("rustup default 1.32.0")
+    shell("rustup default 1.34.1")
 }
 
 def androidPublishing() {

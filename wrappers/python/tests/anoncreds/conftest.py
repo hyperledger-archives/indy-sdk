@@ -386,4 +386,4 @@ async def prepopulated_wallet(wallet_handle, gvt_schema_json, xyz_schema_json, g
                                             issuer_2_gvt_cred, issuer2_gvt_credential_def_json, None)
 
     return issuer1_gvt_credential_def_json, issuer_1_gvt_credential_offer_json, issuer_1_gvt_cred_req, \
-           issuer_1_gvt_cred_req_metadata, issuer_1_gvt_cred,
+           issuer_1_gvt_cred_req_metadata, issuer_1_gvt_cred

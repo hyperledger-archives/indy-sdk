@@ -114,28 +114,32 @@ class Connection(VcxStateful):
                                        Connection.connect.cb)
         return invite_details
 
-    async def send_message(self, msg: str, msg_type: str, msg_title: str) -> str:
+    async def send_message(self, msg: str, msg_type: str, msg_title: str, ref_msg_id: str = None) -> str:
         """
             Send a generic message to the connection
             :param msg:
             :param msg_type:
             :param msg_title:
+            :param ref_msg_id: if responding to a message, provide msg id
             :return:
             """
         if not hasattr(Connection.send_message, "cb"):
             self.logger.debug("vcx_connection_send_message: Creating callback")
             Connection.send_message.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
 
+        send_msg_options = {
+            "msg_type": msg_type,
+            "msg_title": msg_title,
+            "ref_msg_id": ref_msg_id
+        }
         c_connection_handle = c_uint32(self.handle)
         c_msg = c_char_p(msg.encode('utf-8'))
-        c_msg_type = c_char_p(msg_type.encode('utf-8'))
-        c_msg_title = c_char_p(msg_title.encode('utf-8'))
+        c_send_msg_options = c_char_p(json.dumps(send_msg_options).encode('utf-8'))
 
         result = await do_call('vcx_connection_send_message',
                                c_connection_handle,
                                c_msg,
-                               c_msg_type,
-                               c_msg_title,
+                               c_send_msg_options,
                                Connection.send_message.cb)
 
         self.logger.debug("vcx_connection_send_message completed")
@@ -219,6 +223,30 @@ class Connection(VcxStateful):
         :return: Current state of the connection
         """
         return await self._update_state(Connection, 'vcx_connection_update_state')
+
+    async def update_state_with_message(self, message: str) -> int:
+        """
+        Update the state of the connection based on the given message.
+        Example:
+        connection = await Connection.create(source_id)
+        assert await connection.update_state_with_message(message) == State.Accepted
+        :param message:
+        :return Current state of the connection
+        """
+        if not hasattr(Connection.update_state_with_message, "cb"):
+            self.logger.debug("vcx_connection_update_state_with_message: Creating callback")
+            Connection.update_state_with_message.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_uint32))
+
+        c_handle = c_uint32(self.handle)
+        c_message = c_char_p(message.encode('utf-8'))
+
+        state = await do_call('vcx_connection_update_state_with_message',
+                              c_handle,
+                              c_message,
+                              Connection.update_state_with_message.cb)
+
+        self.logger.debug("vcx_connection_update_state_with_message completed")
+        return state
 
     async def get_state(self) -> int:
         """

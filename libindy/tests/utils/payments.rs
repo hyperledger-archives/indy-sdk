@@ -1,6 +1,5 @@
 extern crate futures;
 extern crate indy_sys;
-extern crate libc;
 
 use indy::{IndyError, ErrorCode};
 use indy::payments;
@@ -9,7 +8,7 @@ use self::indy_sys::{payments as payments_sys};
 
 use std::collections::VecDeque;
 use std::ffi::CString;
-use self::libc::c_char;
+use super::libc::c_char;
 use std::sync::{Once, ONCE_INIT, Mutex};
 
 use utils::callback;
@@ -226,6 +225,15 @@ pub fn parse_get_payment_sources_response(payment_method: &str, resp_json: &str)
 
 pub fn parse_payment_response(payment_method: &str, resp_json: &str) -> Result<String, IndyError> {
     payments::parse_payment_response(payment_method, resp_json).wait()
+}
+
+pub fn prepare_extra_with_acceptance_data(extra: Option<&str>,
+                                          text: Option<&str>,
+                                          version: Option<&str>,
+                                          taa_digest: Option<&str>,
+                                          acc_mech_type: &str,
+                                          time_of_acceptance: u64) -> Result<String, IndyError> {
+    payments::prepare_extra_with_acceptance_data(extra, text, version, taa_digest, acc_mech_type, time_of_acceptance).wait()
 }
 
 pub fn build_mint_req(wallet_handle: i32, submitter_did: Option<&str>, outputs_json: &str, extra: Option<&str>) -> Result<(String, String), IndyError> {

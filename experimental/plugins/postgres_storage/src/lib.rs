@@ -1529,7 +1529,7 @@ mod tests {
 
         _close_and_delete_wallet(handle);
     }
-/* TODO unit test for eallet search
+/* TODO unit test for wallet search
     #[test]
     fn postgres_wallet_search_records_works() {
         _cleanup();

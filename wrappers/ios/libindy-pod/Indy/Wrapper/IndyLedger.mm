@@ -737,6 +737,27 @@
     }
 }
 
++ (void)buildAuthRulesRequestWithSubmitterDid:(NSString *)submitterDid
+                                         data:(NSString *)data
+                                  completion:(void (^)(NSError *error, NSString *requestJSON))completion {
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+
+    ret = indy_build_auth_rules_request(handle,
+            [submitterDid UTF8String],
+            [data UTF8String],
+            IndyWrapperCommonStringCallback);
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret], nil);
+        });
+    }
+}
+
 + (void)buildGetAuthRuleRequestWithSubmitterDid:(NSString *)submitterDid
                                         txnType:(NSString *)txnType
                                          action:(NSString *)action
@@ -774,6 +795,127 @@
 
     ret = indy_get_response_metadata(handle,
             [response UTF8String],
+            IndyWrapperCommonStringCallback);
+
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret], nil);
+        });
+    }
+}
+
++ (void)buildTxnAuthorAgreementRequestWithSubmitterDid:(NSString *)submitterDid
+                                                  text:(NSString *)text
+                                               version:(NSString *)version
+                                            completion:(void (^)(NSError *error, NSString *responseMetadata))completion {
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = indy_build_txn_author_agreement_request(handle,
+            [submitterDid UTF8String],
+            [text UTF8String],
+            [version UTF8String],
+            IndyWrapperCommonStringCallback);
+
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret], nil);
+        });
+    }
+}
+
++ (void)buildGetTxnAuthorAgreementRequestWithSubmitterDid:(NSString *)submitterDid
+                                                     data:(NSString *)data
+                                               completion:(void (^)(NSError *error, NSString *responseMetadata))completion {
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = indy_build_get_txn_author_agreement_request(handle,
+            [submitterDid UTF8String],
+            [data UTF8String],
+            IndyWrapperCommonStringCallback);
+
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret], nil);
+        });
+    }
+}
+
++ (void)buildAcceptanceMechanismsRequestWithSubmitterDid:(NSString *)submitterDid
+                                                     aml:(NSString *)aml
+                                                 version:(NSString *)version
+                                              amlContext:(NSString *)amlContext
+                                              completion:(void (^)(NSError *error, NSString *responseMetadata))completion {
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = indy_build_acceptance_mechanisms_request(handle,
+            [submitterDid UTF8String],
+            [aml UTF8String],
+            [version UTF8String],
+            [amlContext UTF8String],
+            IndyWrapperCommonStringCallback);
+
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret], nil);
+        });
+    }
+}
+
++ (void)buildGetAcceptanceMechanismsRequestWithSubmitterDid:(NSString *)submitterDid
+                                                  timestamp:(NSNumber *)timestamp
+                                                    version:(NSString *)version
+                                                 completion:(void (^)(NSError *error, NSString *responseMetadata))completion {
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = indy_build_get_acceptance_mechanisms_request(handle,
+            [submitterDid UTF8String],
+            timestamp ? [timestamp longLongValue] : -1,
+            [version UTF8String],
+            IndyWrapperCommonStringCallback);
+
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret], nil);
+        });
+    }
+}
+
++ (void)appendTxnAuthorAgreementAcceptanceToRequest:(NSString *)requestJson
+                                               text:(NSString *)text
+                                            version:(NSString *)version
+                                          taaDigest:(NSString *)taaDigest
+                                        accMechType:(NSString *)accMechType
+                                   timeOfAcceptance:(NSNumber *)timeOfAcceptance
+                                         completion:(void (^)(NSError *error, NSString *responseMetadata))completion {
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = indy_append_txn_author_agreement_acceptance_to_request(handle,
+            [requestJson UTF8String],
+            [text UTF8String],
+            [version UTF8String],
+            [taaDigest UTF8String],
+            [accMechType UTF8String],
+            [timeOfAcceptance unsignedLongLongValue],
             IndyWrapperCommonStringCallback);
 
     if (ret != Success) {

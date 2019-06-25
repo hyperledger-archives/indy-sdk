@@ -1,5 +1,3 @@
-extern crate libc;
-
 use api::{ErrorCode, CommandHandle, WalletHandle, PoolHandle};
 use errors::prelude::*;
 use commands::{Command, CommandExecutor};
@@ -8,11 +6,13 @@ use domain::anoncreds::credential_definition::CredentialDefinition;
 use domain::anoncreds::schema::Schema;
 use domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinition;
 use domain::anoncreds::revocation_registry_delta::RevocationRegistryDelta;
+use domain::ledger::author_agreement::{GetTxnAuthorAgreementData, AcceptanceMechanisms};
 use domain::ledger::node::NodeOperationData;
+use domain::ledger::auth_rule::AuthRules;
 use utils::ctypes;
 
 use serde_json;
-use self::libc::c_char;
+use libc::c_char;
 
 /// Signs and submits request message to validator pool.
 ///
@@ -363,6 +363,7 @@ pub extern fn indy_build_get_ddo_request(command_handle: CommandHandle,
 ///                             TRUSTEE
 ///                             STEWARD
 ///                             TRUST_ANCHOR
+///                             ENDORSER - equal to TRUST_ANCHOR that will be removed soon
 ///                             NETWORK_MONITOR
 ///                             empty string to reset role
 /// cb: Callback that takes command result as parameter.
@@ -1839,12 +1840,13 @@ pub extern fn indy_get_response_metadata(command_handle: CommandHandle,
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
+/// submitter_did: DID of the request sender.
 /// txn_type: ledger transaction alias or associated value.
 /// action: type of an action.
 ///     Can be either "ADD" (to add a new rule) or "EDIT" (to edit an existing one).
 /// field: transaction field.
-/// old_value: old value of a field, which can be changed to a new_value (mandatory for EDIT action).
-/// new_value: new value that can be used to fill the field.
+/// old_value: (Optional) old value of a field, which can be changed to a new_value (mandatory for EDIT action).
+/// new_value: (Optional) new value that can be used to fill the field.
 /// constraint: set of constraints required for execution of an action in the following format:
 ///     {
 ///         constraint_id - <string> type of a constraint.
@@ -1892,7 +1894,7 @@ pub extern fn indy_build_auth_rule_request(command_handle: CommandHandle,
     check_useful_c_str!(action, ErrorCode::CommonInvalidParam4);
     check_useful_c_str!(field, ErrorCode::CommonInvalidParam5);
     check_useful_opt_c_str!(old_value, ErrorCode::CommonInvalidParam6);
-    check_useful_c_str!(new_value, ErrorCode::CommonInvalidParam7);
+    check_useful_opt_c_str!(new_value, ErrorCode::CommonInvalidParam7);
     check_useful_c_str!(constraint, ErrorCode::CommonInvalidParam8);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam9);
 
@@ -1924,6 +1926,72 @@ pub extern fn indy_build_auth_rule_request(command_handle: CommandHandle,
     res
 }
 
+/// Builds a AUTH_RULES request. Request to change multiple authentication rules for a ledger transaction.
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// submitter_did: DID of the request sender.
+/// rules: a list of auth rules: [
+///     {
+///         "auth_type": ledger transaction alias or associated value,
+///         "auth_action": type of an action,
+///         "field": transaction field,
+///         "old_value": (Optional) old value of a field, which can be changed to a new_value (mandatory for EDIT action),
+///         "new_value": (Optional) new value that can be used to fill the field,
+///         "constraint": set of constraints required for execution of an action in the format described above for `indy_build_auth_rule_request` function.
+///     },
+///     ...
+/// ]
+///
+/// Default ledger auth rules: https://github.com/hyperledger/indy-node/blob/master/docs/source/auth_rules.md
+///
+/// More about AUTH_RULES request: https://github.com/hyperledger/indy-node/blob/master/docs/source/requests.md#auth_rules
+///
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Request result as json.
+///
+/// #Errors
+/// Common*
+#[no_mangle]
+pub extern fn indy_build_auth_rules_request(command_handle: CommandHandle,
+                                            submitter_did: *const c_char,
+                                            rules: *const c_char,
+                                            cb: Option<extern fn(command_handle_: CommandHandle,
+                                                                 err: ErrorCode,
+                                                                 request_json: *const c_char)>) -> ErrorCode {
+    trace!("indy_build_auth_rules_request: >>> submitter_did: {:?}, rules: {:?}", submitter_did, rules);
+
+    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
+    check_useful_json!(rules, ErrorCode::CommonInvalidParam3, AuthRules);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    if rules.is_empty() {
+        return err_msg(IndyErrorKind::InvalidStructure, "Empty list of Auth Rules has been passed").into();
+    }
+
+    trace!("indy_build_auth_rules_request: entities >>> submitter_did: {:?}, rules: {:?}", submitter_did, rules);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Ledger(LedgerCommand::BuildAuthRulesRequest(
+            submitter_did,
+            rules,
+            Box::new(move |result| {
+                let (err, request_json) = prepare_result_1!(result, String::new());
+                trace!("indy_build_auth_rules_request: request_json: {:?}", request_json);
+                let request_json = ctypes::string_to_cstring(request_json);
+                cb(command_handle, err, request_json.as_ptr())
+            })
+        )));
+
+    let res = prepare_result!(result);
+
+    trace!("indy_build_auth_rules_request: <<< res: {:?}", res);
+
+    res
+}
+
 /// Builds a GET_AUTH_RULE request. Request to get authentication rules for ledger transactions.
 ///
 /// NOTE: Either none or all transaction related parameters must be specified (`old_value` can be skipped for `ADD` action).
@@ -1936,7 +2004,7 @@ pub extern fn indy_build_auth_rule_request(command_handle: CommandHandle,
 /// txn_type: (Optional) target ledger transaction alias or associated value.
 /// action: (Optional) target action type. Can be either "ADD" or "EDIT".
 /// field: (Optional) target transaction field.
-/// old_value: (Optional) old value of field, which can be changed to a new_value (must be specified for EDIT action).
+/// old_value: (Optional) old value of field, which can be changed to a new_value (mandatory for EDIT action).
 /// new_value: (Optional) new value that can be used to fill the field.
 ///
 /// cb: Callback that takes command result as parameter.
@@ -1992,6 +2060,322 @@ pub extern fn indy_build_get_auth_rule_request(command_handle: CommandHandle,
     let res = prepare_result!(result);
 
     trace!("indy_build_get_auth_rule_request: <<< res: {:?}", res);
+
+    res
+}
+
+/// Builds a TXN_AUTHR_AGRMT request. Request to add a new version of Transaction Author Agreement to the ledger.
+///
+/// EXPERIMENTAL
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// submitter_did: DID of the request sender.
+/// text: a content of the TTA.
+/// version: a version of the TTA (unique UTF-8 string).
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Request result as json.
+///
+/// #Errors
+/// Common*
+#[no_mangle]
+pub extern fn indy_build_txn_author_agreement_request(command_handle: CommandHandle,
+                                                      submitter_did: *const c_char,
+                                                      text: *const c_char,
+                                                      version: *const c_char,
+                                                      cb: Option<extern fn(command_handle_: CommandHandle,
+                                                                           err: ErrorCode,
+                                                                           request_json: *const c_char)>) -> ErrorCode {
+    trace!("indy_build_txn_author_agreement_request: >>> submitter_did: {:?}, text: {:?}, version: {:?}", submitter_did, text, version);
+
+    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
+    check_useful_c_str_empty_accepted!(text, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(version, ErrorCode::CommonInvalidParam4);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
+
+    trace!("indy_build_txn_author_agreement_request: entities >>> submitter_did: {:?}, text: {:?}, version: {:?}", submitter_did, text, version);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Ledger(
+            LedgerCommand::BuildTxnAuthorAgreementRequest(
+                submitter_did,
+                text,
+                version,
+                Box::new(move |result| {
+                    let (err, request_json) = prepare_result_1!(result, String::new());
+                    trace!("indy_build_txn_author_agreement_request: request_json: {:?}", request_json);
+                    let request_json = ctypes::string_to_cstring(request_json);
+                    cb(command_handle, err, request_json.as_ptr())
+                })
+            )));
+
+    let res = prepare_result!(result);
+
+    trace!("indy_build_txn_author_agreement_request: <<< res: {:?}", res);
+
+    res
+}
+
+/// Builds a GET_TXN_AUTHR_AGRMT request. Request to get a specific Transaction Author Agreement from the ledger.
+///
+/// EXPERIMENTAL
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// submitter_did: (Optional) DID of the request sender.
+/// data: (Optional) specifies a condition for getting specific TAA.
+/// Contains 3 mutually exclusive optional fields:
+/// {
+///     hash: Optional<str> - hash of requested TAA,
+///     version: Optional<str> - version of requested TAA.
+///     timestamp: Optional<u64> - ledger will return TAA valid at requested timestamp.
+/// }
+/// Null data or empty JSON are acceptable here. In this case, ledger will return the latest version of TAA.
+///
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Request result as json.
+///
+/// #Errors
+/// Common*
+#[no_mangle]
+pub extern fn indy_build_get_txn_author_agreement_request(command_handle: CommandHandle,
+                                                          submitter_did: *const c_char,
+                                                          data: *const c_char,
+                                                          cb: Option<extern fn(command_handle_: CommandHandle,
+                                                                               err: ErrorCode,
+                                                                               request_json: *const c_char)>) -> ErrorCode {
+    trace!("indy_build_get_txn_author_agreement_request: >>> submitter_did: {:?}, data: {:?}?", submitter_did, data);
+
+    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
+    check_useful_opt_json!(data, ErrorCode::CommonInvalidParam3, GetTxnAuthorAgreementData);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    trace!("indy_build_get_txn_author_agreement_request: entities >>> submitter_did: {:?}, data: {:?}", submitter_did, data);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Ledger(
+            LedgerCommand::BuildGetTxnAuthorAgreementRequest(
+                submitter_did,
+                data,
+                Box::new(move |result| {
+                    let (err, request_json) = prepare_result_1!(result, String::new());
+                    trace!("indy_build_get_txn_author_agreement_request: request_json: {:?}", request_json);
+                    let request_json = ctypes::string_to_cstring(request_json);
+                    cb(command_handle, err, request_json.as_ptr())
+                })
+            )));
+
+    let res = prepare_result!(result);
+
+    trace!("indy_build_get_txn_author_agreement_request: <<< res: {:?}", res);
+
+    res
+}
+
+/// Builds a SET_TXN_AUTHR_AGRMT_AML request. Request to add a new list of acceptance mechanisms for transaction author agreement.
+/// Acceptance Mechanism is a description of the ways how the user may accept a transaction author agreement.
+///
+/// EXPERIMENTAL
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// submitter_did: DID of the request sender.
+/// aml: a set of new acceptance mechanisms:
+/// {
+///     “<acceptance mechanism label 1>”: { acceptance mechanism description 1},
+///     “<acceptance mechanism label 2>”: { acceptance mechanism description 2},
+///     ...
+/// }
+/// version: a version of new acceptance mechanisms. (Note: unique on the Ledger)
+/// aml_context: (Optional) common context information about acceptance mechanisms (may be a URL to external resource).
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Request result as json.
+///
+/// #Errors
+/// Common*
+#[no_mangle]
+pub extern fn indy_build_acceptance_mechanisms_request(command_handle: CommandHandle,
+                                                       submitter_did: *const c_char,
+                                                       aml: *const c_char,
+                                                       version: *const c_char,
+                                                       aml_context: *const c_char,
+                                                       cb: Option<extern fn(command_handle_: CommandHandle,
+                                                                            err: ErrorCode,
+                                                                            request_json: *const c_char)>) -> ErrorCode {
+    trace!("indy_build_acceptance_mechanisms_request: >>> submitter_did: {:?}, aml: {:?}, version: {:?}, aml_context: {:?}",
+           submitter_did, aml, version, aml_context);
+
+    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
+    check_useful_json!(aml, ErrorCode::CommonInvalidParam3, AcceptanceMechanisms);
+    check_useful_c_str!(version, ErrorCode::CommonInvalidParam4);
+    check_useful_opt_c_str!(aml_context, ErrorCode::CommonInvalidParam5);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
+
+    //break early and error out if no acceptance mechanisms
+    if aml.is_empty() {
+        return ErrorCode::CommonInvalidParam3;
+    }
+
+    trace!("indy_build_acceptance_mechanisms_request: entities >>> submitter_did: {:?}, aml: {:?}, version: {:?}, aml_context: {:?}",
+           submitter_did, aml, version, aml_context);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Ledger(
+            LedgerCommand::BuildAcceptanceMechanismRequests(
+                submitter_did,
+                aml,
+                version,
+                aml_context,
+                Box::new(move |result| {
+                    let (err, request_json) = prepare_result_1!(result, String::new());
+                    trace!("indy_build_acceptance_mechanisms_request: request_json: {:?}", request_json);
+                    let request_json = ctypes::string_to_cstring(request_json);
+                    cb(command_handle, err, request_json.as_ptr())
+                })
+            )));
+
+    let res = prepare_result!(result);
+
+    trace!("indy_build_acceptance_mechanisms_request: <<< res: {:?}", res);
+
+    res
+}
+
+/// Builds a GET_TXN_AUTHR_AGRMT_AML request. Request to get a list of  acceptance mechanisms from the ledger
+/// valid for specified time or the latest one.
+///
+/// EXPERIMENTAL
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// submitter_did: (Optional) DID of the request sender.
+/// timestamp: i64 - time to get an active acceptance mechanisms. Pass -1 to get the latest one.
+/// version: (Optional) version of acceptance mechanisms.
+/// cb: Callback that takes command result as parameter.
+///
+/// NOTE: timestamp and version cannot be specified together.
+///
+/// #Returns
+/// Request result as json.
+///
+/// #Errors
+/// Common*
+#[no_mangle]
+pub extern fn indy_build_get_acceptance_mechanisms_request(command_handle: CommandHandle,
+                                                           submitter_did: *const c_char,
+                                                           timestamp: i64,
+                                                           version: *const c_char,
+                                                           cb: Option<extern fn(command_handle_: CommandHandle,
+                                                                               err: ErrorCode,
+                                                                               request_json: *const c_char)>) -> ErrorCode {
+    trace!("indy_build_get_acceptance_mechanisms_request: >>> submitter_did: {:?}, timestamp: {:?}, version: {:?}", submitter_did, timestamp, version);
+
+    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
+    check_useful_opt_c_str!(version, ErrorCode::CommonInvalidParam4);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
+
+    let timestamp = if timestamp != -1 { Some(timestamp as u64) } else { None };
+
+    trace!("indy_build_get_acceptance_mechanisms_request: entities >>> submitter_did: {:?}, timestamp: {:?}, version: {:?}", submitter_did, timestamp, version);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Ledger(
+            LedgerCommand::BuildGetAcceptanceMechanismsRequest(
+                submitter_did,
+                timestamp,
+                version,
+                Box::new(move |result| {
+                    let (err, request_json) = prepare_result_1!(result, String::new());
+                    trace!("indy_build_get_acceptance_mechanisms_request: request_json: {:?}", request_json);
+                    let request_json = ctypes::string_to_cstring(request_json);
+                    cb(command_handle, err, request_json.as_ptr())
+                })
+            )));
+
+    let res = prepare_result!(result);
+
+    trace!("indy_build_get_acceptance_mechanisms_request: <<< res: {:?}", res);
+
+    res
+}
+
+/// Append transaction author agreement acceptance data to a request.
+/// This function should be called before signing and sending a request
+/// if there is any transaction author agreement set on the Ledger.
+///
+/// EXPERIMENTAL
+///
+/// This function may calculate digest by itself or consume it as a parameter.
+/// If all text, version and taa_digest parameters are specified, a check integrity of them will be done.
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// request_json: original request data json.
+/// text and version - (optional) raw data about TAA from ledger.
+///     These parameters should be passed together.
+///     These parameters are required if taa_digest parameter is omitted.
+/// taa_digest - (optional) digest on text and version. This parameter is required if text and version parameters are omitted.
+/// mechanism - mechanism how user has accepted the TAA
+/// time - UTC timestamp when user has accepted the TAA
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Updated request result as json.
+///
+/// #Errors
+/// Common*
+#[no_mangle]
+pub extern fn indy_append_txn_author_agreement_acceptance_to_request(command_handle: CommandHandle,
+                                                                     request_json: *const c_char,
+                                                                     text: *const c_char,
+                                                                     version: *const c_char,
+                                                                     taa_digest: *const c_char,
+                                                                     mechanism: *const c_char,
+                                                                     time: u64,
+                                                                     cb: Option<extern fn(command_handle_: CommandHandle,
+                                                                                          err: ErrorCode,
+                                                                                          request_with_meta_json: *const c_char)>) -> ErrorCode {
+    trace!("indy_append_txn_author_agreement_acceptance_to_request: >>> request_json: {:?}, text: {:?}, version: {:?}, taa_digest: {:?}, \
+        mechanism: {:?}, time: {:?}",
+           request_json, text, version, taa_digest, mechanism, time);
+
+    check_useful_c_str!(request_json, ErrorCode::CommonInvalidParam2);
+    check_useful_opt_c_str!(text, ErrorCode::CommonInvalidParam3);
+    check_useful_opt_c_str!(version, ErrorCode::CommonInvalidParam4);
+    check_useful_opt_c_str!(taa_digest, ErrorCode::CommonInvalidParam5);
+    check_useful_c_str!(mechanism, ErrorCode::CommonInvalidParam6);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam8);
+
+    trace!("indy_append_txn_author_agreement_acceptance_to_request: entities >>> request_json: {:?}, text: {:?}, version: {:?}, taa_digest: {:?}, \
+        mechanism: {:?}, time: {:?}",
+           request_json, text, version, taa_digest, mechanism, time);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Ledger(
+            LedgerCommand::AppendTxnAuthorAgreementAcceptanceToRequest(
+                request_json,
+                text,
+                version,
+                taa_digest,
+                mechanism,
+                time,
+                Box::new(move |result| {
+                    let (err, request_json) = prepare_result_1!(result, String::new());
+                    trace!("indy_append_txn_author_agreement_acceptance_to_request: request_json: {:?}", request_json);
+                    let request_json = ctypes::string_to_cstring(request_json);
+                    cb(command_handle, err, request_json.as_ptr())
+                })
+            )));
+
+    let res = prepare_result!(result);
+
+    trace!("indy_append_txn_author_agreement_acceptance_to_request: <<< res: {:?}", res);
 
     res
 }

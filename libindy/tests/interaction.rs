@@ -16,13 +16,14 @@ extern crate serde_json;
 extern crate byteorder;
 extern crate indyrs as indy;
 extern crate indyrs as api;
-extern crate indy_crypto;
+extern crate ursa;
 extern crate uuid;
 extern crate named_type;
 extern crate rmp_serde;
 extern crate rust_base58;
 extern crate time;
 extern crate serde;
+extern crate core;
 
 #[macro_use]
 mod utils;
@@ -47,6 +48,7 @@ use utils::domain::anoncreds::revocation_registry::RevocationRegistry;
 use std::thread;
 
 use serde_json::Value;
+use core::borrow::Borrow;
 
 
 struct Pool{
@@ -87,8 +89,8 @@ struct Verifier{
 impl Pool {
 
 
-    pub fn new() -> Pool {
-        Pool{ pool_handle : pool::create_and_open_pool_ledger(POOL).unwrap() }
+    pub fn new(pool_name: &str) -> Pool {
+        Pool{ pool_handle : pool::create_and_open_pool_ledger(pool_name).unwrap() }
     }
 
     pub fn close(self) {
@@ -159,7 +161,7 @@ impl Issuer {
 
     pub fn new(pool: &Pool) -> Issuer{
 
-        let wallet_handle = wallet::create_and_open_default_wallet().unwrap();
+        let (wallet_handle, _wallet_config) = wallet::create_and_open_default_wallet(format!("wallet_for_pool_{}", pool.pool_handle).borrow()).unwrap();
         Issuer {
             // Issuer creates wallet, gets wallet handle
             issuer_wallet_handle: wallet_handle,
@@ -295,7 +297,7 @@ impl Prover
     pub fn new(master_secret_id : Option<&str>) -> Prover
     {
         // Prover creates wallet, gets wallet handle
-        let prover_wallet_handle = wallet::create_and_open_default_wallet().unwrap();
+        let (prover_wallet_handle, _prover_wallet_config) = wallet::create_and_open_default_wallet("interactions_prover").unwrap();
         // Prover create DID
         let (prover_did, prover_verkey) = did::create_my_did(prover_wallet_handle, "{}").unwrap();
         // Prover creates Master Secret
@@ -525,7 +527,7 @@ impl Verifier{
 #[cfg(feature = "revocation_tests")]
 #[test]
 fn anoncreds_revocation_interaction_test_issuance_by_demand() {
-    anoncreds_revocation_interaction_test_one_prover(r#"{"max_cred_num":5, "issuance_type":"ISSUANCE_ON_DEMAND"}"#);
+    anoncreds_revocation_interaction_test_one_prover("anoncreds_revocation_interaction_test_issuance_by_demand", r#"{"max_cred_num":5, "issuance_type":"ISSUANCE_ON_DEMAND"}"#);
 }
 
 #[cfg(feature = "revocation_tests")]
@@ -533,15 +535,15 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand() {
 #[test]
 fn anoncreds_revocation_interaction_test_issuance_by_default()
 {
-    anoncreds_revocation_interaction_test_one_prover(r#"{"max_cred_num":5, "issuance_type":"ISSUANCE_BY_DEFAULT"}"#);
+    anoncreds_revocation_interaction_test_one_prover("anoncreds_revocation_interaction_test_issuance_by_default", r#"{"max_cred_num":5, "issuance_type":"ISSUANCE_BY_DEFAULT"}"#);
 }
 
 // the common function for two previous tests
-fn anoncreds_revocation_interaction_test_one_prover(revocation_registry_config: &str)
+fn anoncreds_revocation_interaction_test_one_prover(pool_name: &str, revocation_registry_config: &str)
 {
-    utils::setup();
+    utils::setup(pool_name);
 
-    let pool = Pool::new();
+    let pool = Pool::new(pool_name);
 
     let mut issuer = Issuer::new(&pool);
 
@@ -629,7 +631,7 @@ fn anoncreds_revocation_interaction_test_one_prover(revocation_registry_config: 
 
     pool.close();
 
-    utils::tear_down();
+    utils::tear_down(pool_name);
 }
 
 
@@ -655,9 +657,9 @@ fn multi_steps_create_revocation_credential(pool : &Pool, issuer: &Issuer, prove
 #[cfg(any(feature = "force_full_interaction_tests", not(target_os = "android")))]
 #[test]
 fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_post_entry_three_times_proving_first() {
-    utils::setup();
+    utils::setup("anoncreds_4711");
 
-    let pool = Pool::new();
+    let pool = Pool::new("anoncreds_4711");
 
     let mut issuer = Issuer::new(&pool);
 
@@ -726,16 +728,16 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_po
 
     pool.close();
 
-    utils::tear_down();
+    utils::tear_down("anoncreds_4711");
 }
 
 #[cfg(feature = "revocation_tests")]
 #[cfg(any(feature = "force_full_interaction_tests", not(target_os = "android")))]
 #[test]
 fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_post_common_entry_proving_all() {
-    utils::setup();
+    utils::setup("anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_post_common_entry_proving_all");
 
-    let pool = Pool::new();
+    let pool = Pool::new("anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_post_common_entry_proving_all");
 
     let mut issuer = Issuer::new(&pool);
 
@@ -827,5 +829,5 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_po
     pool.close();
 
 
-    utils::tear_down();
+    utils::tear_down("anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_post_common_entry_proving_all");
 }

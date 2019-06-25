@@ -108,6 +108,7 @@
                                  TRUSTEE
                                  STEWARD
                                  TRUST_ANCHOR
+                                 ENDORSER - equal to TRUST_ANCHOR that will be removed soon
                                  NETWORK_MONITOR
                                  empty string to reset role
  @param completion Callback that takes command result as parameter. Returns request result as json.
@@ -579,8 +580,8 @@
  @param action - type of an action.
           Can be either "ADD" (to add a new rule) or "EDIT" (to edit an existing one).
  @param field - transaction field.
- @param oldValue - old value of a field, which can be changed to a new_value (mandatory for EDIT action).
- @param newValue - new value that can be used to fill the field.
+ @param oldValue - (Optional) old value of a field, which can be changed to a new_value (mandatory for EDIT action).
+ @param newValue - (Optional) new value that can be used to fill the field.
  @param constraint - set of constraints required for execution of an action in the following format:
         {
             constraint_id - <string> type of a constraint.
@@ -611,6 +612,33 @@
                                   constraint:(NSString *)constraint
                                   completion:(void (^)(NSError *error, NSString *requestJSON))completion;
 
+
+/**
+ Builds a AUTH_RULES request. Request to change multiple authentication rules for a ledger transaction.
+
+ @param submitterDid DID of the submitter stored in secured Wallet.
+ @param data - a list of auth rules: [
+        {
+            "auth_type": ledger transaction alias or associated value,
+            "auth_action": type of an action,
+            "field": transaction field,
+            "old_value": (Optional) old value of a field, which can be changed to a new_value (mandatory for EDIT action),
+            "new_value": (Optional) new value that can be used to fill the field,
+            "constraint": set of constraints required for execution of an action in the format described above for `indy_build_auth_rule_request` function.
+        },
+        ...
+    ]
+
+ Default ledger auth rules: https://github.com/hyperledger/indy-node/blob/master/docs/source/auth_rules.md
+
+ More about AUTH_RULE request: https://github.com/hyperledger/indy-node/blob/master/docs/source/requests.md#auth_rules
+
+ @param completion Callback that takes command result as parameter. Returns request result as json.
+ */
++ (void)buildAuthRulesRequestWithSubmitterDid:(NSString *)submitterDid
+                                         data:(NSString *)data
+                                   completion:(void (^)(NSError *error, NSString *requestJSON))completion;
+
 /**
  Builds a GET_AUTH_RULE request. Request to get authentication rules for ledger transactions.
 
@@ -622,7 +650,7 @@
  @param txnType - (Optional) target ledger transaction alias or associated value.
  @param action - (Optional) target action type. Can be either "ADD" or "EDIT".
  @param field - (Optional) target transaction field.
- @param oldValue - (Optional) old value of field, which can be changed to a new_value (must be specified for EDIT action).
+ @param oldValue - (Optional) old value of field, which can be changed to a new_value (mandatory for EDIT action).
  @param newValue - (Optional) new value that can be used to fill the field.
 
  @param completion Callback that takes command result as parameter. Returns request result as json.
@@ -665,5 +693,114 @@
  */
 + (void)getResponseMetadata:(NSString *)response
                  completion:(void (^)(NSError *error, NSString *responseMetadata))completion;
+
+/**
+ Builds a TXN_AUTHR_AGRMT request. Request to add a new version of Transaction Author Agreement to the ledger.
+
+ EXPERIMENTAL
+
+ @param submitterDid DID of the request sender.
+ @param text a content of the TTA.
+ @param version a version of the TTA (unique UTF-8 string).
+ 
+ Returns Request result as json.
+ */
++ (void)buildTxnAuthorAgreementRequestWithSubmitterDid:(NSString *)submitterDid
+                                                  text:(NSString *)text
+                                               version:(NSString *)version
+                                            completion:(void (^)(NSError *error, NSString *responseMetadata))completion;
+
+/**
+ Builds a GET_TXN_AUTHR_AGRMT request. Request to get a specific Transaction Author Agreement from the ledger.
+
+ EXPERIMENTAL
+
+ @param submitterDid (Optional) DID of the request sender.
+ @param data (Optional) specifies a condition for getting specific TAA.
+ Contains 3 mutually exclusive optional fields:
+ {
+     hash: Optional<str> - hash of requested TAA,
+     version: Optional<str> - version of requested TAA.
+     timestamp: Optional<u64> - ledger will return TAA valid at requested timestamp.
+ }
+ Null data or empty JSON are acceptable here. In this case, ledger will return the latest version of TAA.
+ 
+ Returns Request result as json.
+ */
++ (void)buildGetTxnAuthorAgreementRequestWithSubmitterDid:(NSString *)submitterDid
+                                                     data:(NSString *)data
+                                               completion:(void (^)(NSError *error, NSString *responseMetadata))completion;
+
+/**
+ Builds a SET_TXN_AUTHR_AGRMT_AML request. Request to add a new list of acceptance mechanisms for transaction author agreement.
+ Acceptance Mechanism is a description of the ways how the user may accept a transaction author agreement.
+ 
+ EXPERIMENTAL
+
+ @param submitterDid DID of the request sender.
+ @param aml a set of new acceptance mechanisms:
+ {
+     “<acceptance mechanism label 1>”: { acceptance mechanism description 1},
+     “<acceptance mechanism label 2>”: { acceptance mechanism description 2},
+     ...
+ }
+ @param version a version of new acceptance mechanisms. (Note: unique on the Ledger).
+ @param amlContext (Optional) common context information about acceptance mechanisms (may be a URL to external resource).
+
+ Returns Request result as json.
+ */
++ (void)buildAcceptanceMechanismsRequestWithSubmitterDid:(NSString *)submitterDid
+                                                     aml:(NSString *)aml
+                                                 version:(NSString *)version
+                                              amlContext:(NSString *)amlContext
+                                              completion:(void (^)(NSError *error, NSString *responseMetadata))completion;
+
+/**
+ Builds a GET_TXN_AUTHR_AGRMT_AML request. Request to get a list of  acceptance mechanisms from the ledger
+ valid for specified time or the latest one.
+ 
+ EXPERIMENTAL
+
+ @param submitterDid (Optional) DID of the request sender.
+ @param timestamp time to get an active acceptance mechanisms. The latest one will be returned for nil.
+ @param version (Optional) version of acceptance mechanisms.
+
+ NOTE: timestamp and version cannot be specified together.
+
+ Returns Request result as json.
+ */
++ (void)buildGetAcceptanceMechanismsRequestWithSubmitterDid:(NSString *)submitterDid
+                                                  timestamp:(NSNumber *)timestamp
+                                                    version:(NSString *)version
+                                                 completion:(void (^)(NSError *error, NSString *responseMetadata))completion;
+
+/**
+ Append transaction author agreement acceptance data to a request.
+ This function should be called before signing and sending a request
+ if there is any transaction author agreement set on the Ledger.
+
+ EXPERIMENTAL
+
+ This function may calculate hash by itself or consume it as a parameter.
+ If all text, version and taaDigest parameters are specified, a check integrity of them will be done.
+
+ @param requestJson original request data json.
+ @param text (Optional) raw data about TAA from ledger.
+ @param version (Optional) version of TAA from ledger.
+     text and version should be passed together.
+     text and version are required if taaDigest parameter is omitted.
+ @param taaDigest (Optional) hash on text and version. This parameter is required if text and version parameters are omitted.
+ @param accMechType mechanism how user has accepted the TAA
+ @param timeOfAcceptance UTC timestamp when user has accepted the TAA
+
+ Returns Updated request result as json.
+ */
++ (void)appendTxnAuthorAgreementAcceptanceToRequest:(NSString *)requestJson
+                                               text:(NSString *)text
+                                            version:(NSString *)version
+                                          taaDigest:(NSString *)taaDigest
+                                        accMechType:(NSString *)accMechType
+                                   timeOfAcceptance:(NSNumber *)timeOfAcceptance
+                                         completion:(void (^)(NSError *error, NSString *responseMetadata))completion;
 
 @end

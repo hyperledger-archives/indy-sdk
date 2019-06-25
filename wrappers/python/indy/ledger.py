@@ -91,11 +91,11 @@ async def submit_action(pool_handle: int,
                         timeout: Optional[int]) -> str:
     """
     Send action to particular nodes of validator pool.
-    
+
     The list of requests can be send:
         POOL_RESTART
         GET_VALIDATOR_INFO
-   
+
     The request is sent to the nodes as is. It's assumed that it's already prepared.
 
     :param pool_handle: pool handle (created by open_pool_ledger).
@@ -263,6 +263,7 @@ async def build_nym_request(submitter_did: str,
                              TRUSTEE
                              STEWARD
                              TRUST_ANCHOR
+                             ENDORSER - equal to TRUST_ANCHOR that will be removed soon
                              NETWORK_MONITOR
                              empty string to reset role
     :return: Request result as json.
@@ -1030,7 +1031,7 @@ async def build_revoc_reg_entry_request(submitter_did: str,
     :param submitter_did: DID of the submitter stored in secured Wallet.
     :param revoc_reg_def_id:  ID of the corresponding RevocRegDef.
     :param rev_def_type:  Revocation Registry type (only CL_ACCUM is supported for now).
-    :param value: Registry-specific data: 
+    :param value: Registry-specific data:
        {
            value: {
                prevAccum: string - previous accumulator value.
@@ -1039,7 +1040,7 @@ async def build_revoc_reg_entry_request(submitter_did: str,
                revoked: array<number> an array of revoked indices.
            },
            ver: string - version revocation registry entry json
-      
+
        }
     :return: Request result as json.
     """
@@ -1268,7 +1269,7 @@ async def build_auth_rule_request(submitter_did: str,
                                   action: str,
                                   field: str,
                                   old_value: Optional[str],
-                                  new_value: str,
+                                  new_value: Optional[str],
                                   constraint: str) -> str:
     """
     Builds a AUTH_RULE request. Request to change authentication rules for a ledger transaction.
@@ -1278,8 +1279,8 @@ async def build_auth_rule_request(submitter_did: str,
     :param action: type of an action.
        Can be either "ADD" (to add a new rule) or "EDIT" (to edit an existing one).
     :param field: transaction field.
-    :param old_value: old value of a field, which can be changed to a new_value (mandatory for EDIT action).
-    :param new_value: new value that can be used to fill the field.
+    :param old_value: (Optional) old value of a field, which can be changed to a new_value (mandatory for EDIT action).
+    :param new_value: (Optional) new value that can be used to fill the field.
     :param constraint: set of constraints required for execution of an action in the following format:
         {
             constraint_id - <string> type of a constraint.
@@ -1322,7 +1323,7 @@ async def build_auth_rule_request(submitter_did: str,
     c_action = c_char_p(action.encode('utf-8'))
     c_field = c_char_p(field.encode('utf-8'))
     c_old_value = c_char_p(old_value.encode('utf-8')) if old_value is not None else None
-    c_new_value = c_char_p(new_value.encode('utf-8'))
+    c_new_value = c_char_p(new_value.encode('utf-8')) if new_value is not None else None
     c_constraint = c_char_p(constraint.encode('utf-8'))
 
     request_json = await do_call('indy_build_auth_rule_request',
@@ -1337,6 +1338,52 @@ async def build_auth_rule_request(submitter_did: str,
 
     res = request_json.decode()
     logger.debug("build_auth_rule_request: <<< res: %r", res)
+    return res
+
+
+async def build_auth_rules_request(submitter_did: str,
+                                   data: str) -> str:
+    """
+    Builds a AUTH_RULES request. Request to change multiple authentication rules for a ledger transaction.
+
+    :param submitter_did: DID of the submitter stored in secured Wallet.
+    :param data: a list of auth rules: [
+        {
+            "auth_type": ledger transaction alias or associated value,
+            "auth_action": type of an action,
+            "field": transaction field,
+            "old_value": (Optional) old value of a field, which can be changed to a new_value (mandatory for EDIT action),
+            "new_value": (Optional) new value that can be used to fill the field,
+            "constraint": set of constraints required for execution of an action in the format described above for `build_auth_rule_request` function.
+        }
+    ]
+
+    Default ledger auth rules: https://github.com/hyperledger/indy-node/blob/master/docs/source/auth_rules.md
+
+    More about AUTH_RULE request: https://github.com/hyperledger/indy-node/blob/master/docs/source/requests.md#auth_rules
+
+    :return: Request result as json.
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("build_auth_rules_request: >>> submitter_did: %r, data: %r",
+                 submitter_did,
+                 data)
+
+    if not hasattr(build_auth_rules_request, "cb"):
+        logger.debug("build_auth_rules_request: Creating callback")
+        build_auth_rules_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
+    c_data = c_char_p(data.encode('utf-8'))
+
+    request_json = await do_call('indy_build_auth_rules_request',
+                                 c_submitter_did,
+                                 c_data,
+                                 build_auth_rules_request.cb)
+
+    res = request_json.decode()
+    logger.debug("build_auth_rules_request: <<< res: %r", res)
     return res
 
 
@@ -1357,8 +1404,8 @@ async def build_get_auth_rule_request(submitter_did: Optional[str],
     :param txn_type: target ledger transaction alias or associated value.
     :param action: target action type. Can be either "ADD" or "EDIT".
     :param field: target transaction field.
-    :param old_value: old value of field, which can be changed to a new_value (must be specified for EDIT action).
-    :param new_value: new value that can be used to fill the field.
+    :param old_value: (Optional) old value of field, which can be changed to a new_value (must be specified for EDIT action).
+    :param new_value: (Optional) new value that can be used to fill the field.
 
     :return: Request result as json.
     """
@@ -1395,4 +1442,242 @@ async def build_get_auth_rule_request(submitter_did: Optional[str],
 
     res = request_json.decode()
     logger.debug("build_get_auth_rule_request: <<< res: %r", res)
+    return res
+
+
+async def build_txn_author_agreement_request(submitter_did: str,
+                                             text: str,
+                                             version: str) -> str:
+    """
+    Builds a TXN_AUTHR_AGRMT request. Request to add a new version of Transaction Author Agreement to the ledger.
+
+    EXPERIMENTAL
+
+    :param submitter_did: DID of the request sender.
+    :param text: a content of the TTA.
+    :param version: a version of the TTA (unique UTF-8 string).
+
+    :return: Request result as json.
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("build_txn_author_agreement_request: >>> submitter_did: %r, text: %r, version: %r",
+                 submitter_did,
+                 text,
+                 version)
+
+    if not hasattr(build_txn_author_agreement_request, "cb"):
+        logger.debug("build_txn_author_agreement_request: Creating callback")
+        build_txn_author_agreement_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
+    c_text = c_char_p(text.encode('utf-8'))
+    c_version = c_char_p(version.encode('utf-8'))
+
+    request_json = await do_call('indy_build_txn_author_agreement_request',
+                                 c_submitter_did,
+                                 c_text,
+                                 c_version,
+                                 build_txn_author_agreement_request.cb)
+
+    res = request_json.decode()
+    logger.debug("build_txn_author_agreement_request: <<< res: %r", res)
+    return res
+
+
+async def build_get_txn_author_agreement_request(submitter_did: Optional[str],
+                                                 data: Optional[str]) -> str:
+    """
+    Builds a GET_TXN_AUTHR_AGRMT request. Request to get a specific Transaction Author Agreement from the ledger.
+
+    EXPERIMENTAL
+
+    :param submitter_did: (Optional) DID of the read request sender.
+    :param data: (Optional) specifies a condition for getting specific TAA.
+     Contains 3 mutually exclusive optional fields:
+     {
+         hash: Optional<str> - hash of requested TAA,
+         version: Optional<str> - version of requested TAA.
+         timestamp: Optional<i64> - ledger will return TAA valid at requested timestamp.
+     }
+     Null data or empty JSON are acceptable here. In this case, ledger will return the latest version of TAA.
+
+    :return: Request result as json.
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("build_get_txn_author_agreement_request: >>> submitter_did: %r, data: %r",
+                 submitter_did,
+                 data)
+
+    if not hasattr(build_get_txn_author_agreement_request, "cb"):
+        logger.debug("build_get_txn_author_agreement_request: Creating callback")
+        build_get_txn_author_agreement_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_submitter_did = c_char_p(submitter_did.encode('utf-8')) if submitter_did is not None else None
+    c_data = c_char_p(data.encode('utf-8')) if data is not None else None
+
+    request_json = await do_call('indy_build_get_txn_author_agreement_request',
+                                 c_submitter_did,
+                                 c_data,
+                                 build_get_txn_author_agreement_request.cb)
+
+    res = request_json.decode()
+    logger.debug("build_get_txn_author_agreement_request: <<< res: %r", res)
+    return res
+
+
+async def build_acceptance_mechanisms_request(submitter_did: str,
+                                              aml: str,
+                                              version: str,
+                                              aml_context: Optional[str]) -> str:
+    """
+    Builds a SET_TXN_AUTHR_AGRMT_AML request. Request to add a new list of acceptance mechanisms for transaction author agreement.
+    Acceptance Mechanism is a description of the ways how the user may accept a transaction author agreement.
+
+    EXPERIMENTAL
+
+    :param submitter_did: DID of request sender.
+    :param aml: a set of new acceptance mechanisms:
+    {
+        “<acceptance mechanism label 1>”: { acceptance mechanism description 1},
+        “<acceptance mechanism label 2>”: { acceptance mechanism description 2},
+        ...
+    }
+    :param version: a version of new acceptance mechanisms. (Note: unique on the Ledger)
+    :param aml_context: (Optional) common context information about acceptance mechanisms (may be a URL to external resource).
+
+    :return: Request result as json.
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("build_acceptance_mechanisms_request: >>> submitter_did: %r, aml: %r, version: %r, aml_context: %r",
+                 submitter_did,
+                 aml,
+                 version,
+                 aml_context)
+
+    if not hasattr(build_acceptance_mechanisms_request, "cb"):
+        logger.debug("build_acceptance_mechanisms_request: Creating callback")
+        build_acceptance_mechanisms_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
+    c_aml = c_char_p(aml.encode('utf-8'))
+    c_version = c_char_p(version.encode('utf-8'))
+    c_aml_context = c_char_p(aml_context.encode('utf-8')) if aml_context is not None else None
+
+    request_json = await do_call('indy_build_acceptance_mechanisms_request',
+                                 c_submitter_did,
+                                 c_aml,
+                                 c_version,
+                                 c_aml_context,
+                                 build_acceptance_mechanisms_request.cb)
+
+    res = request_json.decode()
+    logger.debug("build_acceptance_mechanisms_request: <<< res: %r", res)
+    return res
+
+
+async def build_get_acceptance_mechanisms_request(submitter_did: Optional[str],
+                                                  timestamp: Optional[int],
+                                                  version: Optional[str]) -> str:
+    """
+    Builds a GET_TXN_AUTHR_AGRMT_AML request. Request to get a list of  acceptance mechanisms from the ledger
+    valid for specified time or the latest one.
+
+    EXPERIMENTAL
+
+    :param submitter_did: (Optional) DID of read request sender.
+    :param timestamp: (Optional) time to get an active acceptance mechanisms. The latest one will be returned for the empty timestamp.
+    :param version: (Optional) version of acceptance mechanisms.
+
+    NOTE: timestamp and version cannot be specified together.
+
+    :return: Request result as json.
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("build_get_acceptance_mechanisms_request: >>> submitter_did: %r, timestamp: %r, version: %r",
+                 submitter_did,
+                 timestamp,
+                 version)
+
+    if not hasattr(build_get_acceptance_mechanisms_request, "cb"):
+        logger.debug("build_get_acceptance_mechanisms_request: Creating callback")
+        build_get_acceptance_mechanisms_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_submitter_did = c_char_p(submitter_did.encode('utf-8')) if submitter_did is not None else None
+    c_timestamp = c_int64(timestamp) if timestamp is not None else c_int(-1)
+    c_version = c_char_p(version.encode('utf-8')) if version is not None else None
+
+    request_json = await do_call('indy_build_get_acceptance_mechanisms_request',
+                                 c_submitter_did,
+                                 c_timestamp,
+                                 c_version,
+                                 build_get_acceptance_mechanisms_request.cb)
+
+    res = request_json.decode()
+    logger.debug("build_get_acceptance_mechanisms_request: <<< res: %r", res)
+    return res
+
+
+async def append_txn_author_agreement_acceptance_to_request(request_json: str,
+                                                            text: Optional[str],
+                                                            version: Optional[str],
+                                                            taa_digest: Optional[str],
+                                                            mechanism: str,
+                                                            time: int) -> str:
+    """
+    Append transaction author agreement acceptance data to a request.
+    This function should be called before signing and sending a request
+    if there is any transaction author agreement set on the Ledger.
+
+    EXPERIMENTAL
+
+    This function may calculate hash by itself or consume it as a parameter.
+    If all text, version and taa_digest parameters are specified, a check integrity of them will be done.
+
+    :param request_json: original request data json.
+    :param text and version: (Optional) raw data about TAA from ledger.
+               These parameters should be passed together.
+               These parameters are required if taa_digest parameter is omitted.
+    :param taa_digest: (Optional) hash on text and version. This parameter is required if text and version parameters are omitted.
+    :param mechanism: mechanism how user has accepted the TAA
+    :param time: UTC timestamp when user has accepted the TAA
+
+    :return: Updated request result as json.
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug(
+        "append_txn_author_agreement_acceptance_to_request: >>> request_json: %r, text: %r, version: %r, hash: %r, "
+        "acc_mech_type: %r, time_of_acceptance: %r",
+        request_json,
+        text,
+        version,
+        taa_digest,
+        mechanism,
+        time)
+
+    if not hasattr(append_txn_author_agreement_acceptance_to_request, "cb"):
+        logger.debug("append_txn_author_agreement_acceptance_to_request: Creating callback")
+        append_txn_author_agreement_acceptance_to_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_request_json = c_char_p(request_json.encode('utf-8'))
+    c_text = c_char_p(text.encode('utf-8')) if text is not None else None
+    c_version = c_char_p(version.encode('utf-8')) if version is not None else None
+    c_taa_digest = c_char_p(taa_digest.encode('utf-8')) if taa_digest is not None else None
+    c_mechanism = c_char_p(mechanism.encode('utf-8'))
+
+    request_json = await do_call('indy_append_txn_author_agreement_acceptance_to_request',
+                                 c_request_json,
+                                 c_text,
+                                 c_version,
+                                 c_taa_digest,
+                                 c_mechanism,
+                                 c_uint64(time),
+                                 append_txn_author_agreement_acceptance_to_request.cb)
+
+    res = request_json.decode()
+    logger.debug("append_txn_author_agreement_acceptance_to_request: <<< res: %r", res)
     return res

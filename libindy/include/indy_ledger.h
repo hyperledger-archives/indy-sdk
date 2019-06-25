@@ -203,6 +203,7 @@ extern "C" {
     ///                             TRUSTEE
     ///                             STEWARD
     ///                             TRUST_ANCHOR
+    ///                             ENDORSER - equal to TRUST_ANCHOR that will be removed soon
     ///                             empty string to reset role
     /// cb: Callback that takes command result as parameter.
     ///
@@ -963,8 +964,8 @@ extern "C" {
     /// action: type of an action.
     ///     Can be either "ADD" (to add a new rule) or "EDIT" (to edit an existing one).
     /// field: transaction field.
-    /// old_value: old value of a field, which can be changed to a new_value (mandatory for EDIT action).
-    /// new_value: new value that can be used to fill the field.
+    /// old_value: (Optional) old value of a field, which can be changed to a new_value (mandatory for EDIT action).
+    /// new_value: (Optional) new value that can be used to fill the field.
     /// constraint: set of constraints required for execution of an action in the following format
     ///     {
     ///         constraint_id - <string> type of a constraint.
@@ -1001,6 +1002,43 @@ extern "C" {
                                                                           const char*   request_json)
                                                     );
 
+
+    /// Builds a AUTH_RULES request. Request to change multiple authentication rules for a ledger transaction.
+    ///
+    /// #Params
+    /// command_handle: command handle to map callback to caller context.
+    /// submitter_did: DID of the request sender.
+    /// data: a list of auth rules: [
+    ///     {
+    ///         "auth_type": ledger transaction alias or associated value,
+    ///         "auth_action": type of an action,
+    ///         "field": transaction field,
+    ///         "old_value": (Optional) old value of a field, which can be changed to a new_value (mandatory for EDIT action),
+    ///         "new_value": (Optional) new value that can be used to fill the field,
+    ///         "constraint": set of constraints required for execution of an action in the format described above for `indy_build_auth_rule_request` function.
+    ///     }
+    /// ]
+    ///
+    /// Default ledger auth rules: https://github.com/hyperledger/indy-node/blob/master/docs/source/auth_rules.md
+    ///
+    /// More about AUTH_RULES request: https://github.com/hyperledger/indy-node/blob/master/docs/source/requests.md#auth_rules
+    ///
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// Request result as json.
+    ///
+    /// #Errors
+    /// Common*
+    extern indy_error_t indy_build_auth_rules_request(indy_handle_t command_handle,
+                                                     const char *  submitter_did,
+                                                     const char *  data,
+
+                                                     void           (*cb)(indy_handle_t command_handle_,
+                                                                          indy_error_t  err,
+                                                                          const char*   request_json)
+                                                    );
+
     /// Builds a GET_AUTH_RULE request. Request to get authentication rules for a ledger transaction.
     ///
     /// NOTE: Either none or all transaction related parameters must be specified (`old_value` can be skipped for `ADD` action).
@@ -1013,7 +1051,7 @@ extern "C" {
     /// txn_type: (Optional) target ledger transaction alias or associated value.
     /// action: (Optional) target action type. Can be either "ADD" or "EDIT".
     /// field: (Optional) target transaction field.
-    /// old_value: (Optional) old value of field, which can be changed to a new_value (must be specified for EDIT action).
+    /// old_value: (Optional) old value of field, which can be changed to a new_value (mandatory for EDIT action).
     /// new_value: (Optional) new value that can be used to fill the field.
     ///
     /// cb: Callback that takes command result as parameter.
@@ -1035,6 +1073,165 @@ extern "C" {
                                                                               indy_error_t  err,
                                                                               const char*   request_json)
                                                         );
+
+    /// Builds a TXN_AUTHR_AGRMT request. Request to add a new version of Transaction Author Agreement to the ledger.
+    ///
+    /// EXPERIMENTAL
+    ///
+    /// #Params
+    /// command_handle: command handle to map callback to caller context.
+    /// submitter_did: DID of the request sender.
+    /// text: a content of the TTA.
+    /// version: a version of the TTA (unique UTF-8 string).
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// Request result as json.
+    ///
+    /// #Errors
+    /// Common*
+    extern indy_error_t indy_build_txn_author_agreement_request(indy_handle_t command_handle,
+                                                                const char *  submitter_did,
+                                                                const char *  text,
+                                                                const char *  version,
+
+                                                                void           (*cb)(indy_handle_t command_handle_,
+                                                                                     indy_error_t  err,
+                                                                                     const char*   request_json)
+                                                               );
+
+    /// Builds a GET_TXN_AUTHR_AGRMT request. Request to get a specific Transaction Author Agreement from the ledger.
+    ///
+    /// EXPERIMENTAL
+    ///
+    /// #Params
+    /// command_handle: command handle to map callback to caller context.
+    /// submitter_did: (Optional) DID of the request sender.
+    /// data: (Optional) specifies a condition for getting specific TAA.
+    /// Contains 3 mutually exclusive optional fields:
+    /// {
+    ///     hash: Optional<str> - hash of requested TAA,
+    ///     version: Optional<str> - version of requested TAA.
+    ///     timestamp: Optional<u64> - ledger will return TAA valid at requested timestamp.
+    /// }
+    /// Null data or empty JSON are acceptable here. In this case, ledger will return the latest version of TAA.
+    ///
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// Request result as json.
+    ///
+    /// #Errors
+    /// Common*
+    extern indy_error_t indy_build_get_txn_author_agreement_request(indy_handle_t command_handle,
+                                                         const char *  submitter_did,
+                                                         const char *  data,
+
+                                                         void           (*cb)(indy_handle_t command_handle_,
+                                                                              indy_error_t  err,
+                                                                              const char*   request_json)
+                                                        );
+
+    /// Builds a SET_TXN_AUTHR_AGRMT_AML request. Request to add a new list of acceptance mechanisms for transaction author agreement.
+    /// Acceptance Mechanism is a description of the ways how the user may accept a transaction author agreement.
+    ///
+    /// EXPERIMENTAL
+    ///
+    /// #Params
+    /// command_handle: command handle to map callback to caller context.
+    /// submitter_did: DID of the request sender.
+    /// aml: a set of new acceptance mechanisms:
+    /// {
+    ///     “<acceptance mechanism label 1>”: { acceptance mechanism description 1},
+    ///     “<acceptance mechanism label 2>”: { acceptance mechanism description 2},
+    ///     ...
+    /// }
+    /// version: a version of new acceptance mechanisms. (Note: unique on the Ledger)
+    /// aml_context: (Optional) common context information about acceptance mechanisms (may be a URL to external resource).
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// Request result as json.
+    ///
+    /// #Errors
+    /// Common*
+    extern indy_error_t indy_build_acceptance_mechanisms_request(indy_handle_t command_handle,
+                                                                 const char *  submitter_did,
+                                                                 const char *  aml,
+                                                                 const char *  version,
+                                                                 const char *  aml_context,
+
+                                                                 void           (*cb)(indy_handle_t command_handle_,
+                                                                                      indy_error_t  err,
+                                                                                      const char*   request_json)
+                                                                );
+
+    /// Builds a GET_TXN_AUTHR_AGRMT_AML request. Request to get a list of  acceptance mechanisms from the ledger
+    /// valid for specified time or the latest one.
+    ///
+    /// EXPERIMENTAL
+    ///
+    /// #Params
+    /// command_handle: command handle to map callback to caller context.
+    /// submitter_did: (Optional) DID of the request sender.
+    /// timestamp: i64 - time to get an active acceptance mechanisms. Pass -1 to get the latest one.
+    /// version: (Optional) version of acceptance mechanisms.
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// NOTE: timestamp and version cannot be specified together.
+    ///
+    /// #Returns
+    /// Request result as json.
+    ///
+    /// #Errors
+    /// Common*
+    extern indy_error_t indy_build_get_acceptance_mechanisms_request(indy_handle_t command_handle,
+                                                                     const char *  submitter_did,
+                                                                     indy_i64_t  timestamp,
+                                                                     const char *  version,
+
+                                                                     void           (*cb)(indy_handle_t command_handle_,
+                                                                                          indy_error_t  err,
+                                                                                          const char*   request_json)
+                                                                    );
+
+    /// Append transaction author agreement acceptance data to a request.
+    /// This function should be called before signing and sending a request
+    /// if there is any transaction author agreement set on the Ledger.
+    ///
+    /// EXPERIMENTAL
+    ///
+    /// This function may calculate hash by itself or consume it as a parameter.
+    /// If all text, version and taa_digest parameters are specified, a check integrity of them will be done.
+    ///
+    /// #Params
+    /// command_handle: command handle to map callback to caller context.
+    /// request_json: original request data json.
+    /// text and version - (optional) raw data about TAA from ledger.
+    ///     These parameters should be passed together.
+    ///     These parameters are required if taa_digest parameter is omitted.
+    /// taa_digest - (optional) hash on text and version. This parameter is required if text and version parameters are omitted.
+    /// mechanism - mechanism how user has accepted the TAA
+    /// time - UTC timestamp when user has accepted the TAA
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// Updated request result as json.
+    ///
+    /// #Errors
+    /// Common*
+    extern indy_error_t indy_append_txn_author_agreement_acceptance_to_request(indy_handle_t command_handle,
+                                                                               const char *  request_json,
+                                                                               const char *  text,
+                                                                               const char *  version,
+                                                                               const char *  taa_digest,
+                                                                               const char *  mechanism,
+                                                                               indy_u64_t    time,
+
+                                                                               void           (*cb)(indy_handle_t command_handle_,
+                                                                                                    indy_error_t  err,
+                                                                                                    const char*   request_with_meta_json)
+                                                                               );
 
 #ifdef __cplusplus
 }

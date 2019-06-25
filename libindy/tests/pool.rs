@@ -18,7 +18,7 @@ extern crate serde_json;
 extern crate byteorder;
 extern crate indyrs as indy;
 extern crate indyrs as api;
-extern crate indy_crypto;
+extern crate ursa;
 extern crate uuid;
 extern crate named_type;
 extern crate rmp_serde;
@@ -41,63 +41,63 @@ mod high_cases {
 
         #[test]
         fn create_pool_ledger_config_works() {
-            utils::setup();
+            utils::setup("create_pool_ledger_config_works");
 
-            let txn_file_path = pool::create_genesis_txn_file_for_test_pool(POOL, None, None);
+            let txn_file_path = pool::create_genesis_txn_file_for_test_pool("create_pool_ledger_config_works", None, None);
             let pool_config = pool::pool_config_json(txn_file_path.as_path());
 
-            pool::create_pool_ledger_config(POOL, Some(pool_config.as_str())).unwrap();
+            pool::create_pool_ledger_config("create_pool_ledger_config_works", Some(pool_config.as_str())).unwrap();
 
-            utils::tear_down();
+            utils::tear_down("create_pool_ledger_config_works");
         }
 
         #[test]
         fn create_pool_ledger_config_works_for_empty_name() {
-            utils::setup();
+            utils::setup("create_pool_ledger_config_works_for_empty_name");
 
             let pool_name = "";
             let res = pool::create_pool_ledger_config(pool_name, None);
             assert_code!(ErrorCode::CommonInvalidParam2, res);
 
-            utils::tear_down();
+            utils::tear_down("create_pool_ledger_config_works_for_empty_name");
         }
 
         #[test]
         fn create_pool_ledger_config_works_for_config_json() {
-            utils::setup();
+            utils::setup("create_pool_ledger_config_works_for_config_json");
 
-            let txn_file_path = pool::create_genesis_txn_file_for_test_pool(POOL, None, None);
+            let txn_file_path = pool::create_genesis_txn_file_for_test_pool("create_pool_ledger_config_works_for_config_json", None, None);
             let pool_config = pool::pool_config_json(txn_file_path.as_path());
 
-            pool::create_pool_ledger_config(POOL, Some(pool_config.as_str())).unwrap();
+            pool::create_pool_ledger_config("create_pool_ledger_config_works_for_config_json", Some(pool_config.as_str())).unwrap();
 
-            utils::tear_down();
+            utils::tear_down("create_pool_ledger_config_works_for_config_json");
         }
 
 
         #[test]
         fn create_pool_ledger_config_works_for_specific_config() {
-            utils::setup();
+            utils::setup("create_pool_ledger_config_works_for_specific_config");
 
             let txn_file_path = environment::tmp_file_path("specific_filename.txn");
-            let txn_file_path = pool::create_genesis_txn_file_for_test_pool(POOL, None, Some(txn_file_path.as_path()));
+            let txn_file_path = pool::create_genesis_txn_file_for_test_pool("create_pool_ledger_config_works_for_specific_config", None, Some(txn_file_path.as_path()));
             let pool_config = pool::pool_config_json(txn_file_path.as_path());
 
-            pool::create_pool_ledger_config(POOL, Some(pool_config.as_str())).unwrap();
+            pool::create_pool_ledger_config("create_pool_ledger_config_works_for_specific_config", Some(pool_config.as_str())).unwrap();
 
-            utils::tear_down();
+            utils::tear_down("create_pool_ledger_config_works_for_specific_config");
         }
 
         #[test]
         fn create_pool_ledger_config_works_for_empty_genesis_txns() {
-            utils::setup();
+            utils::setup("create_pool_ledger_config_works_for_empty_genesis_txns");
 
-            let txn_file_path = pool::create_genesis_txn_file_for_test_pool("pool_create", Some(0), None);
+            let txn_file_path = pool::create_genesis_txn_file_for_test_pool("create_pool_ledger_config_works_for_empty_genesis_txns", Some(0), None);
             let pool_config = pool::pool_config_json(txn_file_path.as_path());
-            let res = pool::create_pool_ledger_config("pool_create", Some(pool_config.as_str()));
+            let res = pool::create_pool_ledger_config("create_pool_ledger_config_works_for_empty_genesis_txns", Some(pool_config.as_str()));
             assert_code!(ErrorCode::CommonInvalidStructure, res);
 
-            utils::tear_down();
+            utils::tear_down("create_pool_ledger_config_works_for_empty_genesis_txns");
         }
     }
 
@@ -107,24 +107,24 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn open_pool_ledger_works() {
-            utils::setup();
+            utils::setup("open_pool_ledger_works");
 
             pool::set_protocol_version(PROTOCOL_VERSION).unwrap();
 
-            let pool_name = "pool_open";
+            let pool_name = "open_pool_ledger_works";
             let txn_file_path = pool::create_genesis_txn_file_for_test_pool(pool_name, None, None);
             let pool_config = pool::pool_config_json(txn_file_path.as_path());
             pool::create_pool_ledger_config(pool_name, Some(pool_config.as_str())).unwrap();
 
             pool::open_pool_ledger(pool_name, None).unwrap();
 
-            utils::tear_down();
+            utils::tear_down("open_pool_ledger_works");
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn open_pool_ledger_works_for_config() {
-            utils::setup();
+            utils::setup("open_pool_ledger_works_for_config");
 
             pool::set_protocol_version(PROTOCOL_VERSION).unwrap();
 
@@ -137,27 +137,27 @@ mod high_cases {
 
             pool::open_pool_ledger(pool_name, Some(config)).unwrap();
 
-            utils::tear_down();
+            utils::tear_down("open_pool_ledger_works_for_config");
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn open_pool_ledger_works_for_twice() {
-            utils::setup();
+            utils::setup("open_pool_ledger_works_for_twice");
 
-            let pool_name = "pool_open_twice";
+            let pool_name = "open_pool_ledger_works_for_twice";
             pool::create_and_open_pool_ledger(pool_name).unwrap();
 
             let res = pool::open_pool_ledger(pool_name, None);
             assert_code!(ErrorCode::PoolLedgerInvalidPoolHandle, res);
 
-            utils::tear_down();
+            utils::tear_down("open_pool_ledger_works_for_twice");
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn open_pool_ledger_works_for_two_nodes() {
-            utils::setup();
+            utils::setup("open_pool_ledger_works_for_two_nodes");
 
             pool::set_protocol_version(PROTOCOL_VERSION).unwrap();
 
@@ -168,13 +168,13 @@ mod high_cases {
 
             pool::open_pool_ledger(pool_name, None).unwrap();
 
-            utils::tear_down();
+            utils::tear_down("open_pool_ledger_works_for_two_nodes");
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn open_pool_ledger_works_for_three_nodes() {
-            utils::setup();
+            utils::setup("open_pool_ledger_works_for_three_nodes");
 
             pool::set_protocol_version(PROTOCOL_VERSION).unwrap();
 
@@ -185,13 +185,13 @@ mod high_cases {
 
             pool::open_pool_ledger(pool_name, None).unwrap();
 
-            utils::tear_down();
+            utils::tear_down("open_pool_ledger_works_for_three_nodes");
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         pub fn open_pool_ledger_works_for_cached_txns() {
-            utils::setup();
+            utils::setup("open_pool_ledger_works_for_cached_txns");
 
             pool::set_protocol_version(PROTOCOL_VERSION).unwrap();
 
@@ -203,16 +203,16 @@ mod high_cases {
 
             pool::open_pool_ledger(pool_name, None).unwrap();
 
-            utils::tear_down();
+            utils::tear_down("open_pool_ledger_works_for_cached_txns");
         }
 
         #[test]
         pub fn open_pool_ledger_works_for_corrupted_cached_txns() {
-            utils::setup();
+            utils::setup("open_pool_ledger_works_for_corrupted_cached_txns");
 
             pool::set_protocol_version(PROTOCOL_VERSION).unwrap();
 
-            let pool_name = "open_pool_ledger_works_corrupted_for_cached_txns";
+            let pool_name = "open_pool_ledger_works_for_corrupted_cached_txns";
             let txn_file_path = pool::create_genesis_txn_file_for_test_pool(pool_name, None, None);
             let pool_config = pool::pool_config_json(txn_file_path.as_path());
             pool::create_pool_ledger_config(pool_name, Some(pool_config.as_str())).unwrap();
@@ -220,7 +220,7 @@ mod high_cases {
 
             pool::open_pool_ledger(pool_name, None).unwrap();
 
-            utils::tear_down();
+            utils::tear_down("open_pool_ledger_works_for_corrupted_cached_txns");
         }
     }
 
@@ -230,11 +230,11 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_refresh_pool_ledger_works() {
-            let pool_handle = utils::setup_with_pool();
+            let pool_handle = utils::setup_with_pool("indy_refresh_pool_ledger_works");
 
             pool::refresh(pool_handle).unwrap();
 
-            utils::tear_down_with_pool(pool_handle);
+            utils::tear_down_with_pool(pool_handle, "indy_refresh_pool_ledger_works");
         }
     }
 
@@ -246,41 +246,41 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_close_pool_ledger_works() {
-            let pool_handle = utils::setup_with_pool();
+            let pool_handle = utils::setup_with_pool("indy_close_pool_ledger_works");
 
             pool::close(pool_handle).unwrap();
 
-            utils::tear_down();
+            utils::tear_down("indy_close_pool_ledger_works");
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_close_pool_ledger_works_for_twice() {
-            let pool_handle = utils::setup_with_pool();
+            let pool_handle = utils::setup_with_pool("indy_close_pool_ledger_works_for_twice");
 
             pool::close(pool_handle).unwrap();
             let res= pool::close(pool_handle);
             assert_code!(ErrorCode::PoolLedgerInvalidPoolHandle, res);
 
-            utils::tear_down();
+            utils::tear_down("indy_close_pool_ledger_works_for_twice");
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_close_pool_ledger_works_for_reopen_after_close() {
-            let pool_handle = utils::setup_with_pool();
+            let pool_handle = utils::setup_with_pool("indy_close_pool_ledger_works_for_reopen_after_close");
 
             pool::close(pool_handle).unwrap();
-            let pool_handle = pool::open_pool_ledger(POOL, None).unwrap();
+            let pool_handle = pool::open_pool_ledger("indy_close_pool_ledger_works_for_reopen_after_close", None).unwrap();
             pool::close(pool_handle).unwrap();
 
-            utils::tear_down();
+            utils::tear_down("indy_close_pool_ledger_works_for_reopen_after_close");
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_close_pool_ledger_works_for_pending_request() {
-            let pool_handle = utils::setup_with_pool();
+            let pool_handle = utils::setup_with_pool("indy_close_pool_ledger_works_for_pending_request");
 
             let get_nym_req = ledger::build_get_nym_request(Some(DID_MY1), DID_MY1).unwrap();
 
@@ -293,9 +293,9 @@ mod high_cases {
 
             /* Now any request to API can failed, if pool::close works incorrect in case of pending requests.
                For example try to delete the pool. */
-            pool::delete(POOL).unwrap();
+            pool::delete("indy_close_pool_ledger_works_for_pending_request").unwrap();
 
-            utils::tear_down();
+            utils::tear_down("indy_close_pool_ledger_works_for_pending_request");
         }
     }
 
@@ -304,41 +304,41 @@ mod high_cases {
 
         #[test]
         fn indy_delete_pool_ledger_config_works() {
-            utils::setup();
+            utils::setup("indy_delete_pool_ledger_config_works");
 
-            let txn_file_path = pool::create_genesis_txn_file_for_test_pool(POOL, None, None);
+            let txn_file_path = pool::create_genesis_txn_file_for_test_pool("indy_delete_pool_ledger_config_works", None, None);
             let pool_config = pool::pool_config_json(txn_file_path.as_path());
-            pool::create_pool_ledger_config(POOL, Some(pool_config.as_str())).unwrap();
+            pool::create_pool_ledger_config("indy_delete_pool_ledger_config_works", Some(pool_config.as_str())).unwrap();
 
-            pool::delete(POOL).unwrap();
+            pool::delete("indy_delete_pool_ledger_config_works").unwrap();
 
-            utils::tear_down();
+            utils::tear_down("indy_delete_pool_ledger_config_works");
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_delete_pool_ledger_config_works_for_opened() {
-            utils::setup();
+            utils::setup("indy_delete_pool_ledger_config_works_for_opened");
 
-            let pool_handle = pool::create_and_open_pool_ledger(POOL).unwrap();
+            let pool_handle = pool::create_and_open_pool_ledger("indy_delete_pool_ledger_config_works_for_opened").unwrap();
 
-            let res = pool::delete(POOL);
+            let res = pool::delete("indy_delete_pool_ledger_config_works_for_opened");
             assert_code!(ErrorCode::CommonInvalidState, res);
 
             pool::close(pool_handle).unwrap();
 
-            utils::tear_down();
+            utils::tear_down("indy_delete_pool_ledger_config_works_for_opened");
         }
 
         #[test]
         fn indy_delete_pool_ledger_config_works_for_closed() {
-            utils::setup();
+            utils::setup("indy_delete_pool_ledger_config_works_for_closed");
 
-            let pool_handle = pool::create_and_open_pool_ledger(POOL).unwrap();
+            let pool_handle = pool::create_and_open_pool_ledger("indy_delete_pool_ledger_config_works_for_closed").unwrap();
             pool::close(pool_handle).unwrap();
-            pool::delete(POOL).unwrap();
+            pool::delete("indy_delete_pool_ledger_config_works_for_closed").unwrap();
 
-            utils::tear_down();
+            utils::tear_down("indy_delete_pool_ledger_config_works_for_closed");
         }
     }
 
@@ -360,51 +360,51 @@ mod medium_cases {
 
         #[test]
         fn create_pool_ledger_config_works_for_invalid_config_json() {
-            utils::setup();
+            utils::setup("create_pool_ledger_config_works_for_invalid_config_json");
 
             let config = r#"{}"#.to_string();
 
-            let res = pool::create_pool_ledger_config(POOL, Some(config.as_str()));
+            let res = pool::create_pool_ledger_config("create_pool_ledger_config_works_for_invalid_config_json", Some(config.as_str()));
             assert_code!(ErrorCode::CommonInvalidStructure, res);
 
-            utils::tear_down();
+            utils::tear_down("create_pool_ledger_config_works_for_invalid_config_json");
         }
 
         #[test]
         fn create_pool_ledger_config_works_for_invalid_genesis_txn_path() {
-            utils::setup();
+            utils::setup("create_pool_ledger_config_works_for_invalid_genesis_txn_path");
 
             let config = r#"{"genesis_txn": "path"}"#.to_string();
 
-            let res = pool::create_pool_ledger_config(POOL, Some(config.as_str()));
+            let res = pool::create_pool_ledger_config("create_pool_ledger_config_works_for_invalid_genesis_txn_path", Some(config.as_str()));
             assert_code!(ErrorCode::CommonIOError, res);
 
-            utils::tear_down();
+            utils::tear_down("create_pool_ledger_config_works_for_invalid_genesis_txn_path");
         }
 
         #[test]
         fn create_pool_ledger_config_works_for_twice() {
-            utils::setup();
+            utils::setup("create_pool_ledger_config_works_for_twice");
 
-            let txn_file_path = pool::create_genesis_txn_file_for_test_pool(POOL, None, None);
+            let txn_file_path = pool::create_genesis_txn_file_for_test_pool("create_pool_ledger_config_works_for_twice", None, None);
             let pool_config = pool::pool_config_json(txn_file_path.as_path());
 
-            pool::create_pool_ledger_config(POOL, Some(pool_config.as_str())).unwrap();
-            let res = pool::create_pool_ledger_config(POOL, Some(pool_config.as_str()));
+            pool::create_pool_ledger_config("create_pool_ledger_config_works_for_twice", Some(pool_config.as_str())).unwrap();
+            let res = pool::create_pool_ledger_config("create_pool_ledger_config_works_for_twice", Some(pool_config.as_str()));
             assert_code!(ErrorCode::PoolLedgerConfigAlreadyExistsError, res);
 
-            utils::tear_down();
+            utils::tear_down("create_pool_ledger_config_works_for_twice");
         }
 
         #[test]
         fn create_pool_ledger_config_works_for_empty_lines_in_genesis_txn_file() {
-            utils::setup();
+            utils::setup("create_pool_ledger_config_works_for_empty_lines_in_genesis_txn_file");
 
-            let txn_file_path = pool::create_genesis_txn_file_for_empty_lines(POOL, None);
+            let txn_file_path = pool::create_genesis_txn_file_for_empty_lines("create_pool_ledger_config_works_for_empty_lines_in_genesis_txn_file", None);
             let pool_config = pool::pool_config_json(txn_file_path.as_path());
-            pool::create_pool_ledger_config("pool_create", Some(pool_config.as_str())).unwrap();
+            pool::create_pool_ledger_config("create_pool_ledger_config_works_for_empty_lines_in_genesis_txn_file", Some(pool_config.as_str())).unwrap();
 
-            utils::tear_down();
+            utils::tear_down("create_pool_ledger_config_works_for_empty_lines_in_genesis_txn_file");
         }
     }
 
@@ -414,33 +414,33 @@ mod medium_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn open_pool_ledger_works_for_invalid_name() {
-            utils::setup();
+            utils::setup("open_pool_ledger_works_for_invalid_name");
 
-            let res = pool::open_pool_ledger(POOL, None);
+            let res = pool::open_pool_ledger("open_pool_ledger_works_for_invalid_name", None);
             assert_code!(ErrorCode::PoolLedgerNotCreatedError, res);
 
-            utils::tear_down();
+            utils::tear_down("open_pool_ledger_works_for_invalid_name");
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn open_pool_ledger_works_after_error() {
-            utils::setup();
+            utils::setup("open_pool_ledger_works_after_error");
 
-            let res = pool::open_pool_ledger(POOL, None);
+            let res = pool::open_pool_ledger("open_pool_ledger_works_after_error", None);
             assert_code!(ErrorCode::PoolLedgerNotCreatedError, res);
 
-            let pool_handle = pool::create_and_open_pool_ledger(POOL).unwrap();
+            let pool_handle = pool::create_and_open_pool_ledger("open_pool_ledger_works_after_error").unwrap();
 
             pool::close(pool_handle).unwrap();
 
-            utils::tear_down();
+            utils::tear_down("open_pool_ledger_works_after_error");
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn open_pool_ledger_works_for_invalid_nodes_file() {
-            utils::setup();
+            utils::setup("open_pool_ledger_works_for_invalid_nodes_file");
 
             pool::set_protocol_version(PROTOCOL_VERSION).unwrap();
 
@@ -452,13 +452,13 @@ mod medium_cases {
             let res = pool::open_pool_ledger(pool_name, Some(pool_config.as_str()));
             assert_code!(ErrorCode::CommonInvalidState, res);
 
-            utils::tear_down();
+            utils::tear_down("open_pool_ledger_works_for_invalid_nodes_file");
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn open_pool_ledger_works_for_wrong_alias() {
-            utils::setup();
+            utils::setup("open_pool_ledger_works_for_wrong_alias");
 
             pool::set_protocol_version(PROTOCOL_VERSION).unwrap();
 
@@ -470,14 +470,14 @@ mod medium_cases {
             let res = pool::open_pool_ledger(pool_name, None);
             assert_code!(ErrorCode::CommonInvalidState, res);
 
-            utils::tear_down();
+            utils::tear_down("open_pool_ledger_works_for_wrong_alias");
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn open_pool_ledger_works_for_invalid_config() {
-            utils::setup();
-            let name = "pool_open_invalid_confi";
+            utils::setup("open_pool_ledger_works_for_invalid_config");
+            let name = "open_pool_ledger_works_for_invalid_config";
             let config = r#"{"timeout": "true"}"#;
 
             pool::set_protocol_version(PROTOCOL_VERSION).unwrap();
@@ -489,41 +489,41 @@ mod medium_cases {
             let res = pool::open_pool_ledger(name, Some(config));
             assert_code!(ErrorCode::CommonInvalidStructure, res);
 
-            utils::tear_down();
+            utils::tear_down("open_pool_ledger_works_for_invalid_config");
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn open_pool_ledger_works_for_incompatible_protocol_version() {
-            utils::setup();
+            utils::setup("open_pool_ledger_works_for_incompatible_protocol_version");
 
             pool::set_protocol_version(1).unwrap();
 
-            let txn_file_path = pool::create_genesis_txn_file_for_test_pool(POOL, None, None);
+            let txn_file_path = pool::create_genesis_txn_file_for_test_pool("open_pool_ledger_works_for_incompatible_protocol_version", None, None);
             let pool_config = pool::pool_config_json(txn_file_path.as_path());
-            pool::create_pool_ledger_config(POOL, Some(pool_config.as_str())).unwrap();
+            pool::create_pool_ledger_config("open_pool_ledger_works_for_incompatible_protocol_version", Some(pool_config.as_str())).unwrap();
 
-            let res = pool::open_pool_ledger(POOL, None);
+            let res = pool::open_pool_ledger("open_pool_ledger_works_for_incompatible_protocol_version", None);
             assert_code!(ErrorCode::PoolIncompatibleProtocolVersion, res);
 
-            utils::tear_down();
+            utils::tear_down("open_pool_ledger_works_for_incompatible_protocol_version");
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn open_pool_ledger_works_for_wrong_ips() {
-            utils::setup();
+            utils::setup("open_pool_ledger_works_for_wrong_ips");
 
             pool::set_protocol_version(PROTOCOL_VERSION).unwrap();
 
-            let txn_file_path = pool::create_genesis_txn_file_for_test_pool_with_wrong_ips(POOL, None);
+            let txn_file_path = pool::create_genesis_txn_file_for_test_pool_with_wrong_ips("open_pool_ledger_works_for_wrong_ips", None);
             let pool_config = pool::pool_config_json(txn_file_path.as_path());
-            pool::create_pool_ledger_config(POOL, Some(pool_config.as_str())).unwrap();
+            pool::create_pool_ledger_config("open_pool_ledger_works_for_wrong_ips", Some(pool_config.as_str())).unwrap();
 
-            let res = pool::open_pool_ledger(POOL, None);
+            let res = pool::open_pool_ledger("open_pool_ledger_works_for_wrong_ips", None);
             assert_code!(ErrorCode::PoolLedgerTimeout, res);
 
-            utils::tear_down();
+            utils::tear_down("open_pool_ledger_works_for_wrong_ips");
         }
     }
 
@@ -533,12 +533,12 @@ mod medium_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_close_pool_ledger_works_for_invalid_handle() {
-            let pool_handle = utils::setup_with_pool();
+            let pool_handle = utils::setup_with_pool("indy_close_pool_ledger_works_for_invalid_handle");
 
             let res = pool::close(pool_handle + 1);
             assert_code!(ErrorCode::PoolLedgerInvalidPoolHandle, res);
 
-            utils::tear_down_with_pool(pool_handle);
+            utils::tear_down_with_pool(pool_handle, "indy_close_pool_ledger_works_for_invalid_handle");
         }
     }
 
@@ -547,25 +547,25 @@ mod medium_cases {
 
         #[test]
         fn indy_delete_pool_ledger_config_works_for_not_created() {
-            utils::setup();
+            utils::setup("indy_delete_pool_ledger_config_works_for_not_created");
 
-            let res = pool::delete(POOL);
+            let res = pool::delete("indy_delete_pool_ledger_config_works_for_not_created");
             assert_code!(ErrorCode::CommonIOError, res);
 
-            utils::tear_down();
+            utils::tear_down("indy_delete_pool_ledger_config_works_for_not_created");
         }
 
         #[test]
         fn indy_delete_pool_ledger_config_works_for_twice() {
-            utils::setup();
+            utils::setup("indy_delete_pool_ledger_config_works_for_twice");
 
-            let pool_handle = pool::create_and_open_pool_ledger(POOL).unwrap();
+            let pool_handle = pool::create_and_open_pool_ledger("indy_delete_pool_ledger_config_works_for_twice").unwrap();
             pool::close(pool_handle).unwrap();
-            pool::delete(POOL).unwrap();
-            let res = pool::delete(POOL);
+            pool::delete("indy_delete_pool_ledger_config_works_for_twice").unwrap();
+            let res = pool::delete("indy_delete_pool_ledger_config_works_for_twice");
             assert_code!(ErrorCode::CommonIOError, res);
 
-            utils::tear_down();
+            utils::tear_down("indy_delete_pool_ledger_config_works_for_twice");
         }
     }
 
@@ -575,9 +575,9 @@ mod medium_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_refresh_pool_ledger_works_for_invalid_handle() {
-            utils::setup();
+            utils::setup("indy_refresh_pool_ledger_works_for_invalid_handle");
 
-            let pool_handle = pool::create_and_open_pool_ledger(POOL).unwrap();
+            let pool_handle = pool::create_and_open_pool_ledger("indy_refresh_pool_ledger_works_for_invalid_handle").unwrap();
 
             let invalid_pool_handle = pool_handle + 1;
             let res = pool::refresh(invalid_pool_handle);
@@ -585,7 +585,7 @@ mod medium_cases {
 
             pool::close(pool_handle).unwrap();
 
-            utils::tear_down();
+            utils::tear_down("indy_refresh_pool_ledger_works_for_invalid_handle");
         }
     }
 

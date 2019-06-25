@@ -1,5 +1,3 @@
-extern crate indy_crypto;
-
 use named_type::NamedType;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

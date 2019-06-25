@@ -1,7 +1,3 @@
-extern crate indy_crypto;
-extern crate serde_json;
-extern crate zeroize;
-
 use std::collections::HashMap;
 
 use domain::crypto::key::{Key, KeyInfo, KeyMetadata};
@@ -72,7 +68,7 @@ pub enum CryptoCommand {
     ),
     PackMessage(
         Vec<u8>, // plaintext message
-        String,  // list of receiver's keys
+        Vec<String>,  // list of receiver's keys
         Option<String>,  // senders verkey
         WalletHandle,
         Box<Fn(IndyResult<Vec<u8>>) + Send>,
@@ -140,7 +136,7 @@ impl CryptoCommandExecutor {
             }
             CryptoCommand::PackMessage(message, receivers, sender_vk, wallet_handle, cb) => {
                 info!("PackMessage command received");
-                cb(self.pack_msg(message, &receivers, sender_vk, wallet_handle));
+                cb(self.pack_msg(message, receivers, sender_vk, wallet_handle));
             }
             CryptoCommand::UnpackMessage(jwe_json, wallet_handle, cb) => {
                 info!("UnpackMessage command received");
@@ -361,24 +357,14 @@ impl CryptoCommandExecutor {
     pub fn pack_msg(
         &self,
         message: Vec<u8>,
-        receivers: &str,
+        receiver_list: Vec<String>,
         sender_vk: Option<String>,
         wallet_handle: WalletHandle,
     ) -> IndyResult<Vec<u8>> {
 
-        //parse receivers to structs
-        let receiver_list: Vec<String> = serde_json::from_str(receivers).map_err(|err| {
-            err_msg(IndyErrorKind::InvalidStructure, format!(
-                "Failed to deserialize receiver list of keys {}",
-                err
-            ))
-        })?;
-
         //break early and error out if no receivers keys are provided
         if receiver_list.is_empty() {
-            return Err(err_msg(IndyErrorKind::InvalidStructure, format!(
-                "No receiver keys found"
-            )));
+            return Err(err_msg(IndyErrorKind::InvalidStructure, "No receiver keys found".to_string()));
         }
 
         //generate content encryption key that will encrypt `message`
@@ -553,12 +539,12 @@ impl CryptoCommandExecutor {
             recipient_verkey: recipient.header.kid
         };
 
-        return serde_json::to_vec(&res).map_err(|err| {
+        serde_json::to_vec(&res).map_err(|err| {
             err_msg(IndyErrorKind::InvalidStructure, format!(
                 "Failed to serialize message {}",
                 err
             ))
-        });
+        })
     }
 
     fn _find_correct_recipient(&self, protected_struct: Protected, wallet_handle: WalletHandle) -> IndyResult<(Recipient, bool)>{
@@ -574,7 +560,7 @@ impl CryptoCommandExecutor {
                 return Ok((recipient.clone(), recipient.header.sender.is_some()))
             }
         }
-        return Err(IndyError::from(IndyErrorKind::WalletItemNotFound));
+        Err(IndyError::from(IndyErrorKind::WalletItemNotFound))
     }
 
     fn _unpack_cek_authcrypt(&self, recipient: Recipient, wallet_handle: WalletHandle) -> IndyResult<(Option<String>, chacha20poly1305_ietf::Key)> {

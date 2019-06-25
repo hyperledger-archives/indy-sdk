@@ -253,54 +253,54 @@ indy> ledger <subcommand>
 #### NYM transaction
 Send NYM transaction
 ```
-ledger nym did=<did-value> [verkey=<verkey-value>] [role=<role-value>] [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>]
+ledger nym did=<did-value> [verkey=<verkey-value>] [role=<role-value>] [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>] [send=<true or false>]
 ```
 
 #### GET_NYM transaction
 Send GET_NYM transaction
 ```
-ledger get-nym did=<did-value>
+ledger get-nym did=<did-value> [send=<true or false>]
 ```
 
 #### ATTRIB transaction
 Send ATTRIB transaction
 ```
-ledger attrib did=<did-value> [hash=<hash-value>] [raw=<raw-value>] [enc=<enc-value>]  [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>]
+ledger attrib did=<did-value> [hash=<hash-value>] [raw=<raw-value>] [enc=<enc-value>]  [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>] [send=<true or false>]
 ```
 
 #### GET_ATTRIB transaction
 Send GET_ATTRIB transaction
 ```
-ledger get-attrib did=<did-value> [raw=<raw-value>] [hash=<hash-value>] [enc=<enc-value>]
+ledger get-attrib did=<did-value> [raw=<raw-value>] [hash=<hash-value>] [enc=<enc-value>] [send=<true or false>]
 ```
 
 #### SCHEMA transaction
 Send SCHEMA transaction
 ```
-ledger schema name=<name-value> version=<version-value> attr_names=<attr_names-value>  [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>]
+ledger schema name=<name-value> version=<version-value> attr_names=<attr_names-value>  [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>] [send=<true or false>]
 ```
 
 #### GET_SCHEMA transaction
 ```
-ledger get-schema did=<did-value> name=<name-value> version=<version-value>
+ledger get-schema did=<did-value> name=<name-value> version=<version-value> [send=<true or false>]
 ```
 
 #### CRED_DEF transaction
 Send CRED_DEF transaction
 ```
-ledger cred-def schema_id=<schema_id-value> signature_type=<signature_type-value> [tag=<tag>] primary=<primary-value> [revocation=<revocation-value>]  [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>]
+ledger cred-def schema_id=<schema_id-value> signature_type=<signature_type-value> [tag=<tag>] primary=<primary-value> [revocation=<revocation-value>]  [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>] [send=<true or false>]
 ```
 
 #### GET_CRED_DEF transaction
 Send GET_CRED_DEF transaction
 ```
-ledger get-cred-def schema_id=<schema_id-value> signature_type=<signature_type-value> origin=<origin-value>
+ledger get-cred-def schema_id=<schema_id-value> signature_type=<signature_type-value> origin=<origin-value> [send=<true or false>]
 ```
 
 #### NODE transaction
 Send NODE transaction
 ```
-ledger node target=<target-value> alias=<alias-value> [node_ip=<node_ip-value>] [node_port=<node_port-value>] [client_ip=<client_ip-value>] [client_port=<client_port-value>] [blskey=<blskey-value>] [blskey_pop=<blskey-proof-of-possession>] [services=<services-value>]
+ledger node target=<target-value> alias=<alias-value> [node_ip=<node_ip-value>] [node_port=<node_port-value>] [client_ip=<client_ip-value>] [client_port=<client_port-value>] [blskey=<blskey-value>] [blskey_pop=<blskey-proof-of-possession>] [services=<services-value>] [send=<true or false>]
 ```
 
 #### GET_VALIDATOR_INFO transaction
@@ -312,13 +312,13 @@ ledger get-validator-info [nodes=<node names>] [timeout=<timeout>]
 #### POOL_UPGRADE transaction
 Send POOL_UPGRADE transaction
 ```
-ledger pool-upgrade name=<name> version=<version> action=<start or cancel> sha256=<sha256> [timeout=<timeout>] [schedule=<schedule>] [justification=<justification>] [reinstall=<true or false (default false)>] [force=<true or false (default false)>] [package=<package>]
+ledger pool-upgrade name=<name> version=<version> action=<start or cancel> sha256=<sha256> [timeout=<timeout>] [schedule=<schedule>] [justification=<justification>] [reinstall=<true or false (default false)>] [force=<true or false (default false)>] [package=<package>] [send=<true or false>]
 ```
 
 #### POOL_CONFIG transaction
 Send POOL_CONFIG transaction
 ```
-ledger pool-config writes=<true or false (default false)> [force=<true or false (default false)>]
+ledger pool-config writes=<true or false (default false)> [force=<true or false (default false)>] [send=<true or false>]
 ```
 
 #### POOL_RESTART transaction
@@ -336,31 +336,31 @@ ledger custom [txn=]<txn-json-value> [sign=<true|false>]
 #### AUTH_RULE transaction
 Send AUTH_RULE transaction
 ```
-ledger auth-rule txn_type=<txn type> action=<add or edit> field=<txn field> [old_value=<value>] new_value=<new_value> constraint=<{constraint json}>
+ledger auth-rule txn_type=<txn type> action=<add or edit> field=<txn field> [old_value=<value>] [new_value=<new_value>] constraint=<{constraint json}> [send=<true or false>]
 ```
 
 #### GET_AUTH_RULE transaction
 Send GET_AUTH_RULE transaction
 ```
-ledger get-auth-rule [txn_type=<txn type>] [action=<ADD or EDIT>] [field=<txn field>] [old_value=<value>] [new_value=<new_value>]
+ledger get-auth-rule [txn_type=<txn type>] [action=<ADD or EDIT>] [field=<txn field>] [old_value=<value>] [new_value=<new_value>] [send=<true or false>]
 ```
 
 #### GET_PAYMENT_SOURCES transaction
 Send GET_PAYMENT_SOURCES transaction
 ```
-ledger get-payment-sources payment_address=<payment_address>
+ledger get-payment-sources payment_address=<payment_address> [send=<true or false>]
 ```
 
 #### PAYMENT transaction
 Send PAYMENT transaction
 ```
-ledger payment inputs=<source-1>,..,<source-n> outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>) [extra=<extra>]
+ledger payment inputs=<source-1>,..,<source-n> outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>) [extra=<extra>] [send=<true or false>]
 ```
 
 #### GET_FEES transaction
 Send GET_FEES transaction
 ```
-ledger get-fees payment_method=<payment_method>
+ledger get-fees payment_method=<payment_method> [send=<true or false>]
 ```
 
 #### MINT transaction
@@ -378,13 +378,37 @@ ledger set-fees-prepare payment_method=<payment_method> fees=<txn-type-1>:<amoun
 #### VERIFY_PAYMENT_RECEIPT transaction
 Prepare VERIFY_PAYMENT_RECEIPT transaction
 ```
-ledger verify-payment-receipt <receipt>
+ledger verify-payment-receipt <receipt> [send=<true or false>]
 ```
 
 #### Add multi signature to transaction
 Add multi signature by current DID to transaction
 ```
 ledger sign-multi txn=<txn_json>
+```
+
+#### Save transaction to a file.
+Save stored into CLI context transaction to a file.
+```
+ledger save-transaction file=<path to file>
+```
+
+#### Load transaction from a file.
+Read transaction from a file and store it into CLI context.
+```
+ledger load-transaction file=<path to file>
+```
+
+#### TXN_AUTHR_AGRMT transaction.
+Request to add a new version of Transaction Author Agreement to the ledger.
+```
+ledger ledger txn-author-agreement [text=<agreement content>] [file=<file with agreement>] version=<version> [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>] [send=<true or false>]
+```
+
+#### SET_TXN_AUTHR_AGRMT_AML transaction.
+Request to add new acceptance mechanisms for transaction author agreement.
+```
+ledger txn-acceptance-mechanisms [aml=<acceptance mechanisms>] [file=<file with acceptance mechanisms>] version=<version> [context=<some context>] [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>] [send=<true or false>]
 ```
 
 ### Payment Address commands

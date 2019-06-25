@@ -1,9 +1,3 @@
-extern crate indy_crypto;
-extern crate rmp_serde;
-extern crate serde;
-extern crate serde_json;
-extern crate time;
-
 use std::cmp::Eq;
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
@@ -271,9 +265,9 @@ pub enum Reply {
 
 impl Reply {
     pub fn req_id(&self) -> u64 {
-        match self {
-            &Reply::ReplyV0(ref reply) => reply.result.req_id,
-            &Reply::ReplyV1(ref reply) => reply.result.txn.metadata.req_id
+        match *self {
+            Reply::ReplyV0(ref reply) => reply.result.req_id,
+            Reply::ReplyV1(ref reply) => reply.result.txn.metadata.req_id
         }
     }
 }
@@ -307,9 +301,9 @@ pub enum Response {
 
 impl Response {
     pub fn req_id(&self) -> u64 {
-        match self {
-            &Response::ResponseV0(ref res) => res.req_id,
-            &Response::ResponseV1(ref res) => res.metadata.req_id
+        match *self {
+            Response::ResponseV0(ref res) => res.req_id,
+            Response::ResponseV1(ref res) => res.metadata.req_id
         }
     }
 }

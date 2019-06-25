@@ -1,5 +1,38 @@
 # Changelog
 
+## 1.9.0 - 2019-05-31
+* Added a set of functions to support work with `Transaction Author Agreement` concept.
+   This guarantees that every write transaction author agree that the information they submit 
+   to the ledger meets the requirements outlined by ledger governance.
+    * `indy_build_txn_author_agreement_request` to add a new version of Transaction Author Agreement to the ledger.
+    * `indy_build_get_txn_author_agreement_request` to get a Transaction Author Agreement from the ledger.
+    * `indy_build_acceptance_mechanisms_request` to add new acceptance mechanisms for transaction author agreement.
+    * `indy_build_get_acceptance_mechanisms_request` to get acceptance mechanisms from the ledger.
+    * `indy_append_txn_author_agreement_acceptance_to_request` to append transaction author agreement acceptance data to a request.
+    * `indy_append_txn_author_agreement_acceptance_to_request` to append transaction author agreement acceptance data to a request.
+    * `indy_prepare_payment_extra_with_acceptance_data` to prepare payment extra JSON with TAA acceptance data.
+* Updated Indy-CLI to use session based approach to support work with `Transaction Author Agreement` concept.    
+    * user will be asked if he would like to accept TAA on `pool open` command.
+    * added `pool show-taa` to show and accept TAA.
+* Updated Libindy `indy_verifier_verify_proof` function to check restrictions on requested predicates during validation of proof.
+* Updated Libindy to use [Ursa](https://github.com/hyperledger/ursa) instead of [Indy-Crypto](https://github.com/hyperledger/indy-crypto).
+* Updated Indy-CLI to provide a functionality of saving transactions into CLI context and the following usage of them.
+* Added *EXPERIMENTAL* `Cache API` to Libindy that provides an ability to get and to store schemas and credential definitions into the wallet.    * `indy_get_cred_def` to get credential definition for specified credential definition id.
+    * `indy_purge_cred_def_cache` to purge credential definition cache.
+    * `indy_get_schema` to get schema for specified schema id.
+    * `indy_purge_schema_cache` to purge schema cache.
+* Updated Indy-SDK CD pipeline to build and to publish MacOs artifacts for Libindy, Libnullpay, and Libvcx.
+* Implemented `State Proof` verification for some types of GET requests to the ledger.
+* Bugfixes:
+    * others minor bugfixes
+    
+## 1.8.3 - 2019-04-30
+* Bugfixes:
+    * Fixed behavior of `auth_rule` and `get_auth_rule` request builders
+    * Extended windows packages to contain *.dll.lib file.
+    * Fixed `boolean` datatype representation for FFI.
+    * others minor bugfixes
+
 ## 1.8.2 - 2019-03-26
 * Added new functions to Libindy Ledger API:
     * `indy_build_auth_rule_request` to change an existing ledger auth rule.

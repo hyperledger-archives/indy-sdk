@@ -1,4 +1,4 @@
-use {ErrorCode, IndyHandle, IndyError};
+use {ErrorCode, IndyError};
 
 use std::ffi::CString;
 use std::ptr::null;
@@ -11,6 +11,7 @@ use ffi::{ResponseStringCB,
           ResponseStringStringU64CB};
 
 use utils::callbacks::{ClosureHandler, ResultHandler};
+use {WalletHandle, CommandHandle, PoolHandle};
 
 /// Signs and submits request message to validator pool.
 ///
@@ -26,7 +27,7 @@ use utils::callbacks::{ClosureHandler, ResultHandler};
 ///
 /// # Returns
 /// Request result as json.
-pub fn sign_and_submit_request(pool_handle: IndyHandle, wallet_handle: IndyHandle, submitter_did: &str, request_json: &str) -> Box<Future<Item=String, Error=IndyError>> {
+pub fn sign_and_submit_request(pool_handle: PoolHandle, wallet_handle: WalletHandle, submitter_did: &str, request_json: &str) -> Box<Future<Item=String, Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
     let err = _sign_and_submit_request(command_handle, pool_handle, wallet_handle, submitter_did, request_json, cb);
@@ -34,7 +35,7 @@ pub fn sign_and_submit_request(pool_handle: IndyHandle, wallet_handle: IndyHandl
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _sign_and_submit_request(command_handle: IndyHandle, pool_handle: IndyHandle, wallet_handle: IndyHandle, submitter_did: &str, request_json: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _sign_and_submit_request(command_handle: CommandHandle, pool_handle: PoolHandle, wallet_handle: WalletHandle, submitter_did: &str, request_json: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
     let submitter_did = c_str!(submitter_did);
     let request_json = c_str!(request_json);
 
@@ -58,7 +59,7 @@ fn _sign_and_submit_request(command_handle: IndyHandle, pool_handle: IndyHandle,
 ///
 /// # Returns
 /// Request result as json.
-pub fn submit_request(pool_handle: IndyHandle, request_json: &str) -> Box<Future<Item=String, Error=IndyError>> {
+pub fn submit_request(pool_handle: PoolHandle, request_json: &str) -> Box<Future<Item=String, Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
     let err = _submit_request(command_handle, pool_handle, request_json, cb);
@@ -66,13 +67,13 @@ pub fn submit_request(pool_handle: IndyHandle, request_json: &str) -> Box<Future
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _submit_request(command_handle: IndyHandle, pool_handle: IndyHandle, request_json: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _submit_request(command_handle: CommandHandle, pool_handle: PoolHandle, request_json: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
     let request_json = c_str!(request_json);
 
     ErrorCode::from(unsafe { ledger::indy_submit_request(command_handle, pool_handle, request_json.as_ptr(), cb) })
 }
 
-pub fn submit_action(pool_handle: IndyHandle, request_json: &str, nodes: Option<&str>, wait_timeout: Option<i32>) -> Box<Future<Item=String, Error=IndyError>> {
+pub fn submit_action(pool_handle: PoolHandle, request_json: &str, nodes: Option<&str>, wait_timeout: Option<i32>) -> Box<Future<Item=String, Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
     let err = _submit_action(command_handle, pool_handle, request_json, nodes, wait_timeout, cb);
@@ -80,7 +81,7 @@ pub fn submit_action(pool_handle: IndyHandle, request_json: &str, nodes: Option<
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _submit_action(command_handle: IndyHandle, pool_handle: IndyHandle, request_json: &str, nodes: Option<&str>, wait_timeout: Option<i32>, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _submit_action(command_handle: CommandHandle, pool_handle: PoolHandle, request_json: &str, nodes: Option<&str>, wait_timeout: Option<i32>, cb: Option<ResponseStringCB>) -> ErrorCode {
     let request_json = c_str!(request_json);
     let nodes_str = opt_c_str!(nodes);
 
@@ -101,7 +102,7 @@ fn _submit_action(command_handle: IndyHandle, pool_handle: IndyHandle, request_j
 ///
 /// # Returns
 /// Signed request json.
-pub fn sign_request(wallet_handle: IndyHandle, submitter_did: &str, request_json: &str) -> Box<Future<Item=String, Error=IndyError>> {
+pub fn sign_request(wallet_handle: WalletHandle, submitter_did: &str, request_json: &str) -> Box<Future<Item=String, Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
     let err = _sign_request(command_handle, wallet_handle, submitter_did, request_json, cb);
@@ -109,7 +110,7 @@ pub fn sign_request(wallet_handle: IndyHandle, submitter_did: &str, request_json
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _sign_request(command_handle: IndyHandle, wallet_handle: IndyHandle, submitter_did: &str, request_json: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _sign_request(command_handle: CommandHandle, wallet_handle: WalletHandle, submitter_did: &str, request_json: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
     let submitter_did = c_str!(submitter_did);
     let request_json = c_str!(request_json);
 
@@ -128,7 +129,7 @@ fn _sign_request(command_handle: IndyHandle, wallet_handle: IndyHandle, submitte
 ///
 /// # Returns
 /// Signed request json.
-pub fn multi_sign_request(wallet_handle: IndyHandle, submitter_did: &str, request_json: &str) -> Box<Future<Item=String, Error=IndyError>> {
+pub fn multi_sign_request(wallet_handle: WalletHandle, submitter_did: &str, request_json: &str) -> Box<Future<Item=String, Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
     let err = _multi_sign_request(command_handle, wallet_handle, submitter_did, request_json, cb);
@@ -136,7 +137,7 @@ pub fn multi_sign_request(wallet_handle: IndyHandle, submitter_did: &str, reques
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _multi_sign_request(command_handle: IndyHandle, wallet_handle: IndyHandle, submitter_did: &str, request_json: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _multi_sign_request(command_handle: CommandHandle, wallet_handle: WalletHandle, submitter_did: &str, request_json: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
     let submitter_did = c_str!(submitter_did);
     let request_json = c_str!(request_json);
 
@@ -159,7 +160,7 @@ pub fn build_get_ddo_request(submitter_did: Option<&str>, target_did: &str) -> B
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _build_get_ddo_request(command_handle: IndyHandle, submitter_did: Option<&str>, target_did: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _build_get_ddo_request(command_handle: CommandHandle, submitter_did: Option<&str>, target_did: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
     let submitter_did_str = opt_c_str!(submitter_did);
     let target_did = c_str!(target_did);
 
@@ -178,6 +179,7 @@ fn _build_get_ddo_request(command_handle: IndyHandle, submitter_did: Option<&str
 ///                             TRUSTEE
 ///                             STEWARD
 ///                             TRUST_ANCHOR
+///                             ENDORSER - equal to TRUST_ANCHOR that will be removed soon
 ///                             NETWORK_MONITOR
 ///                             empty string to reset role
 ///
@@ -191,7 +193,7 @@ pub fn build_nym_request(submitter_did: &str, target_did: &str, verkey: Option<&
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _build_nym_request(command_handle: IndyHandle,
+fn _build_nym_request(command_handle: CommandHandle,
                       submitter_did: &str,
                       target_did: &str,
                       verkey: Option<&str>,
@@ -232,7 +234,7 @@ pub fn build_get_nym_request(submitter_did: Option<&str>, target_did: &str) -> B
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _build_get_nym_request(command_handle: IndyHandle, submitter_did: Option<&str>, target_did: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _build_get_nym_request(command_handle: CommandHandle, submitter_did: Option<&str>, target_did: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
     let submitter_did_str = opt_c_str!(submitter_did);
     let target_did = c_str!(target_did);
 
@@ -259,7 +261,7 @@ pub fn build_get_txn_request(submitter_did: Option<&str>, ledger_type: Option<&s
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _build_get_txn_request(command_handle: IndyHandle, submitter_did: Option<&str>, ledger_type: Option<&str>, seq_no: i32, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _build_get_txn_request(command_handle: CommandHandle, submitter_did: Option<&str>, ledger_type: Option<&str>, seq_no: i32, cb: Option<ResponseStringCB>) -> ErrorCode {
     let submitter_did_str = opt_c_str!(submitter_did);
     let ledger_type_str = opt_c_str!(ledger_type);
 
@@ -285,7 +287,7 @@ pub fn build_attrib_request(submitter_did: &str, target_did: &str, hash: Option<
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _build_attrib_request(command_handle: IndyHandle, submitter_did: &str, target_did: &str, hash: Option<&str>, raw: Option<&str>, enc: Option<&str>, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _build_attrib_request(command_handle: CommandHandle, submitter_did: &str, target_did: &str, hash: Option<&str>, raw: Option<&str>, enc: Option<&str>, cb: Option<ResponseStringCB>) -> ErrorCode {
     let submitter_did = c_str!(submitter_did);
     let target_did = c_str!(target_did);
 
@@ -323,7 +325,7 @@ pub fn build_get_attrib_request(submitter_did: Option<&str>, target_did: &str, r
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _build_get_attrib_request(command_handle: IndyHandle, submitter_did: Option<&str>, target_did: &str, raw: Option<&str>, hash: Option<&str>, enc: Option<&str>, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _build_get_attrib_request(command_handle: CommandHandle, submitter_did: Option<&str>, target_did: &str, raw: Option<&str>, hash: Option<&str>, enc: Option<&str>, cb: Option<ResponseStringCB>) -> ErrorCode {
     let submitter_did_str = opt_c_str!(submitter_did);
     let target_did = c_str!(target_did);
 
@@ -365,7 +367,7 @@ pub fn build_schema_request(submitter_did: &str, data: &str) -> Box<Future<Item=
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _build_schema_request(command_handle: IndyHandle, submitter_did: &str, data: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _build_schema_request(command_handle: CommandHandle, submitter_did: &str, data: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
     let submitter_did = c_str!(submitter_did);
     let data = c_str!(data);
 
@@ -388,7 +390,7 @@ pub fn build_get_schema_request(submitter_did: Option<&str>, id: &str) -> Box<Fu
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _build_get_schema_request(command_handle: IndyHandle, submitter_did: Option<&str>, id: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _build_get_schema_request(command_handle: CommandHandle, submitter_did: Option<&str>, id: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
     let submitter_did_str = opt_c_str!(submitter_did);
     let id = c_str!(id);
 
@@ -417,7 +419,7 @@ pub fn parse_get_schema_response(get_schema_response: &str) -> Box<Future<Item=(
     ResultHandler::str_str(command_handle, err, receiver)
 }
 
-fn _parse_get_schema_response(command_handle: IndyHandle, get_schema_response: &str, cb: Option<ResponseStringStringCB>) -> ErrorCode {
+fn _parse_get_schema_response(command_handle: CommandHandle, get_schema_response: &str, cb: Option<ResponseStringStringCB>) -> ErrorCode {
     let get_schema_response = c_str!(get_schema_response);
 
     ErrorCode::from(unsafe { ledger::indy_parse_get_schema_response(command_handle, get_schema_response.as_ptr(), cb) })
@@ -451,7 +453,7 @@ pub fn build_cred_def_request(submitter_did: &str, data: &str) -> Box<Future<Ite
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _build_cred_def_request(command_handle: IndyHandle, submitter_did: &str, data: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _build_cred_def_request(command_handle: CommandHandle, submitter_did: &str, data: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
     let submitter_did = c_str!(submitter_did);
     let data = c_str!(data);
 
@@ -475,7 +477,7 @@ pub fn build_get_cred_def_request(submitter_did: Option<&str>, id: &str) -> Box<
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _build_get_cred_def_request(command_handle: IndyHandle, submitter_did: Option<&str>, id: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _build_get_cred_def_request(command_handle: CommandHandle, submitter_did: Option<&str>, id: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
     let submitter_did_str = opt_c_str!(submitter_did);
     let id = c_str!(id);
 
@@ -508,7 +510,7 @@ pub fn parse_get_cred_def_response(get_cred_def_response: &str) -> Box<Future<It
     ResultHandler::str_str(command_handle, err, receiver)
 }
 
-fn _parse_get_cred_def_response(command_handle: IndyHandle, get_cred_def_response: &str, cb: Option<ResponseStringStringCB>) -> ErrorCode {
+fn _parse_get_cred_def_response(command_handle: CommandHandle, get_cred_def_response: &str, cb: Option<ResponseStringStringCB>) -> ErrorCode {
     let get_cred_def_response = c_str!(get_cred_def_response);
 
     ErrorCode::from(unsafe { ledger::indy_parse_get_cred_def_response(command_handle, get_cred_def_response.as_ptr(), cb) })
@@ -539,7 +541,7 @@ pub fn build_node_request(submitter_did: &str, target_did: &str, data: &str) -> 
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _build_node_request(command_handle: IndyHandle, submitter_did: &str, target_did: &str, data: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _build_node_request(command_handle: CommandHandle, submitter_did: &str, target_did: &str, data: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
     let submitter_did = c_str!(submitter_did);
     let target_did = c_str!(target_did);
     let data = c_str!(data);
@@ -562,7 +564,7 @@ pub fn build_get_validator_info_request(submitter_did: &str) -> Box<Future<Item=
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _build_get_validator_info_request(command_handle: IndyHandle, submitter_did: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _build_get_validator_info_request(command_handle: CommandHandle, submitter_did: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
     let submitter_did = c_str!(submitter_did);
 
     ErrorCode::from(unsafe {
@@ -589,7 +591,7 @@ pub fn build_pool_config_request(submitter_did: &str, writes: bool, force: bool)
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _build_pool_config_request(command_handle: IndyHandle, submitter_did: &str, writes: bool, force: bool, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _build_pool_config_request(command_handle: CommandHandle, submitter_did: &str, writes: bool, force: bool, cb: Option<ResponseStringCB>) -> ErrorCode {
     let submitter_did = c_str!(submitter_did);
 
     ErrorCode::from(unsafe { ledger::indy_build_pool_config_request(command_handle, submitter_did.as_ptr(), writes, force, cb) })
@@ -612,7 +614,7 @@ pub fn build_pool_restart_request(submitter_did: &str, action: &str, datetime: O
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _build_pool_restart_request(command_handle: IndyHandle, submitter_did: &str, action: &str, datetime: Option<&str>, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _build_pool_restart_request(command_handle: CommandHandle, submitter_did: &str, action: &str, datetime: Option<&str>, cb: Option<ResponseStringCB>) -> ErrorCode {
     let submitter_did = c_str!(submitter_did);
     let action = c_str!(action);
     let datetime_str = opt_c_str!(datetime);
@@ -663,7 +665,7 @@ pub fn build_pool_upgrade_request(submitter_did: &str,
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _build_pool_upgrade_request(command_handle: IndyHandle,
+fn _build_pool_upgrade_request(command_handle: CommandHandle,
                                submitter_did: &str,
                                name: &str,
                                version: &str,
@@ -735,7 +737,7 @@ pub fn build_revoc_reg_def_request(submitter_did: &str, data: &str) -> Box<Futur
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _build_revoc_reg_def_request(command_handle: IndyHandle, submitter_did: &str, data: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _build_revoc_reg_def_request(command_handle: CommandHandle, submitter_did: &str, data: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
     let submitter_did = c_str!(submitter_did);
     let data = c_str!(data);
 
@@ -759,7 +761,7 @@ pub fn build_get_revoc_reg_def_request(submitter_did: Option<&str>, id: &str) ->
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _build_get_revoc_reg_def_request(command_handle: IndyHandle, submitter_did: Option<&str>, id: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _build_get_revoc_reg_def_request(command_handle: CommandHandle, submitter_did: Option<&str>, id: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
     let submitter_did_str = opt_c_str!(submitter_did);
     let id = c_str!(id);
 
@@ -796,7 +798,7 @@ pub fn parse_get_revoc_reg_def_response(get_revoc_reg_def_response: &str) -> Box
     ResultHandler::str_str(command_handle, err, receiver)
 }
 
-fn _parse_get_revoc_reg_def_response(command_handle: IndyHandle, get_revoc_reg_def_response: &str, cb: Option<ResponseStringStringCB>) -> ErrorCode {
+fn _parse_get_revoc_reg_def_response(command_handle: CommandHandle, get_revoc_reg_def_response: &str, cb: Option<ResponseStringStringCB>) -> ErrorCode {
     let get_revoc_reg_def_response = c_str!(get_revoc_reg_def_response);
 
     ErrorCode::from(unsafe { ledger::indy_parse_get_revoc_reg_def_response(command_handle, get_revoc_reg_def_response.as_ptr(), cb) })
@@ -832,7 +834,7 @@ pub fn build_revoc_reg_entry_request(submitter_did: &str, revoc_reg_def_id: &str
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _build_revoc_reg_entry_request(command_handle: IndyHandle, submitter_did: &str, revoc_reg_def_id: &str, rev_def_type: &str, value: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _build_revoc_reg_entry_request(command_handle: CommandHandle, submitter_did: &str, revoc_reg_def_id: &str, rev_def_type: &str, value: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
     let submitter_did = c_str!(submitter_did);
     let revoc_reg_def_id = c_str!(revoc_reg_def_id);
     let rev_def_type = c_str!(rev_def_type);
@@ -859,7 +861,7 @@ pub fn build_get_revoc_reg_request(submitter_did: Option<&str>, revoc_reg_def_id
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _build_get_revoc_reg_request(command_handle: IndyHandle, submitter_did: Option<&str>, revoc_reg_def_id: &str, timestamp: i64, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _build_get_revoc_reg_request(command_handle: CommandHandle, submitter_did: Option<&str>, revoc_reg_def_id: &str, timestamp: i64, cb: Option<ResponseStringCB>) -> ErrorCode {
     let submitter_did_str = opt_c_str!(submitter_did);
     let revoc_reg_def_id = c_str!(revoc_reg_def_id);
 
@@ -887,7 +889,7 @@ pub fn parse_get_revoc_reg_response(get_revoc_reg_response: &str) -> Box<Future<
     ResultHandler::str_str_u64(command_handle, err, receiver)
 }
 
-fn _parse_get_revoc_reg_response(command_handle: IndyHandle, get_revoc_reg_response: &str, cb: Option<ResponseStringStringU64CB>) -> ErrorCode {
+fn _parse_get_revoc_reg_response(command_handle: CommandHandle, get_revoc_reg_response: &str, cb: Option<ResponseStringStringU64CB>) -> ErrorCode {
     let get_revoc_reg_response = c_str!(get_revoc_reg_response);
 
     ErrorCode::from(unsafe { ledger::indy_parse_get_revoc_reg_response(command_handle, get_revoc_reg_response.as_ptr(), cb) })
@@ -913,7 +915,7 @@ pub fn build_get_revoc_reg_delta_request(submitter_did: Option<&str>, revoc_reg_
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _build_get_revoc_reg_delta_request(command_handle: IndyHandle, submitter_did: Option<&str>, revoc_reg_def_id: &str, from: i64, to: i64, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _build_get_revoc_reg_delta_request(command_handle: CommandHandle, submitter_did: Option<&str>, revoc_reg_def_id: &str, from: i64, to: i64, cb: Option<ResponseStringCB>) -> ErrorCode {
     let submitter_did_str = opt_c_str!(submitter_did);
     let revoc_reg_def_id = c_str!(revoc_reg_def_id);
 
@@ -944,7 +946,7 @@ pub fn parse_get_revoc_reg_delta_response(get_revoc_reg_delta_response: &str) ->
     ResultHandler::str_str_u64(command_handle, err, receiver)
 }
 
-fn _parse_get_revoc_reg_delta_response(command_handle: IndyHandle, get_revoc_reg_delta_response: &str, cb: Option<ResponseStringStringU64CB>) -> ErrorCode {
+fn _parse_get_revoc_reg_delta_response(command_handle: CommandHandle, get_revoc_reg_delta_response: &str, cb: Option<ResponseStringStringU64CB>) -> ErrorCode {
     let get_revoc_reg_delta_response = c_str!(get_revoc_reg_delta_response);
 
     ErrorCode::from(unsafe { ledger::indy_parse_get_revoc_reg_delta_response(command_handle, get_revoc_reg_delta_response.as_ptr(), cb) })
@@ -988,7 +990,7 @@ pub fn get_response_metadata(response: &str) -> Box<Future<Item=String, Error=In
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _get_response_metadata(command_handle: IndyHandle, response: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _get_response_metadata(command_handle: CommandHandle, response: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
     let response = c_str!(response);
 
     ErrorCode::from(unsafe { ledger::indy_get_response_metadata(command_handle, response.as_ptr(), cb) })
@@ -1001,8 +1003,8 @@ fn _get_response_metadata(command_handle: IndyHandle, response: &str, cb: Option
 /// * `field`: type of an action for which authentication rules will be applied.
 ///     Can be either "ADD" (to add a new rule) or "EDIT" (to edit an existing one).
 /// * `action`: transaction field for which authentication rule will be applied.
-/// * `old_value`: old value of a field, which can be changed to a new_value (mandatory for EDIT action).
-/// * `new_value`: new value that can be used to fill the field.
+/// * `old_value`: (Optional) old value of a field, which can be changed to a new_value (mandatory for EDIT action).
+/// * `new_value`:(Optional) new value that can be used to fill the field.
 /// * `constraint`: set of constraints required for execution of an action in the following format:
 ///     {
 ///         constraint_id - <string> type of a constraint.
@@ -1021,7 +1023,7 @@ fn _get_response_metadata(command_handle: IndyHandle, response: &str, cb: Option
 /// # Returns
 /// Request result as json.
 pub fn build_auth_rule_request(submitter_did: &str, txn_type: &str, action: &str, field: &str,
-                               old_value: Option<&str>, new_value: &str, constraint: &str) -> Box<Future<Item=String, Error=IndyError>> {
+                               old_value: Option<&str>, new_value: Option<&str>, constraint: &str) -> Box<Future<Item=String, Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
     let err = _build_auth_rule_request(command_handle, submitter_did, txn_type, action, field, old_value, new_value, constraint, cb);
@@ -1029,23 +1031,23 @@ pub fn build_auth_rule_request(submitter_did: &str, txn_type: &str, action: &str
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _build_auth_rule_request(command_handle: IndyHandle,
+fn _build_auth_rule_request(command_handle: CommandHandle,
                             submitter_did: &str,
                             txn_type: &str,
                             action: &str,
                             field: &str,
                             old_value: Option<&str>,
-                            new_value: &str,
+                            new_value: Option<&str>,
                             constraint: &str,
                             cb: Option<ResponseStringCB>) -> ErrorCode {
     let submitter_did = c_str!(submitter_did);
     let txn_type = c_str!(txn_type);
     let action = c_str!(action);
     let field = c_str!(field);
-    let new_value = c_str!(new_value);
     let constraint = c_str!(constraint);
 
     let old_value_str = opt_c_str!(old_value);
+    let new_value_str = opt_c_str!(new_value);
 
     ErrorCode::from(unsafe {
         ledger::indy_build_auth_rule_request(command_handle,
@@ -1054,9 +1056,49 @@ fn _build_auth_rule_request(command_handle: IndyHandle,
                                              action.as_ptr(),
                                              field.as_ptr(),
                                              opt_c_ptr!(old_value, old_value_str),
-                                             new_value.as_ptr(),
+                                             opt_c_ptr!(new_value, new_value_str),
                                              constraint.as_ptr(),
                                              cb)
+    })
+}
+
+/// Builds a AUTH_RULES request. Request to change multiple authentication rules for a ledger transaction.
+///
+/// # Arguments
+/// * `submitter_did`: DID of the request sender.
+/// * `data`: a list of auth rules: [
+///     {
+///         "auth_type": ledger transaction alias or associated value,
+///         "auth_action": type of an action,
+///         "field": transaction field,
+///         "old_value": (Optional) old value of a field, which can be changed to a new_value (mandatory for EDIT action),
+///         "new_value": (Optional) new value that can be used to fill the field,
+///         "constraint": set of constraints required for execution of an action in the format described above for `build_auth_rule_request` function.
+///     }
+/// ]
+///
+/// # Returns
+/// Request result as json.
+pub fn build_auth_rules_request(submitter_did: &str, data: &str) -> Box<Future<Item=String, Error=IndyError>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+
+    let err = _build_auth_rules_request(command_handle, submitter_did, data, cb);
+
+    ResultHandler::str(command_handle, err, receiver)
+}
+
+fn _build_auth_rules_request(command_handle: CommandHandle,
+                             submitter_did: &str,
+                             data: &str,
+                             cb: Option<ResponseStringCB>) -> ErrorCode {
+    let submitter_did = c_str!(submitter_did);
+    let data = c_str!(data);
+
+    ErrorCode::from(unsafe {
+        ledger::indy_build_auth_rules_request(command_handle,
+                                              submitter_did.as_ptr(),
+                                              data.as_ptr(),
+                                              cb)
     })
 }
 
@@ -1067,11 +1109,11 @@ fn _build_auth_rule_request(command_handle: IndyHandle,
 ///     * all - to get authentication rules for specific action (`old_value` can be skipped for `ADD` action)
 ///
 /// # Arguments
-/// * `txn_type`: target ledger transaction alias or associated value.
-/// * `action`: target action type. Can be either "ADD" or "EDIT".
-/// * `field`: target transaction field.
-/// * `old_value`: old value of field, which can be changed to a new_value (must be specified for EDIT action).
-/// * `new_value`: new value that can be used to fill the field.
+/// * `txn_type`: (Optional) target ledger transaction alias or associated value.
+/// * `action`: (Optional) target action type. Can be either "ADD" or "EDIT".
+/// * `field`: (Optional) target transaction field.
+/// * `old_value`: (Optional) old value of field, which can be changed to a new_value (mandatory for EDIT action).
+/// * `new_value`: (Optional) new value that can be used to fill the field.
 ///
 /// # Returns
 /// Request result as json.
@@ -1084,7 +1126,7 @@ pub fn build_get_auth_rule_request(submitter_did: Option<&str>, txn_type: Option
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _build_get_auth_rule_request(command_handle: IndyHandle,
+fn _build_get_auth_rule_request(command_handle: CommandHandle,
                                 submitter_did: Option<&str>,
                                 txn_type: Option<&str>,
                                 action: Option<&str>,
@@ -1110,5 +1152,218 @@ fn _build_get_auth_rule_request(command_handle: IndyHandle,
                                                  opt_c_ptr!(old_value, old_value_str),
                                                  opt_c_ptr!(new_value, new_value_str),
                                                  cb)
+    })
+}
+
+/// Builds a TXN_AUTHR_AGRMT request. Request to add a new version of Transaction Author Agreement to the ledger.
+///
+/// # Arguments
+/// * `submitter_did`: DID of the request sender.
+/// * `text`: a content of the TTA.
+/// * `version`: a version of the TTA (unique UTF-8 string).
+///
+/// # Returns
+/// Request result as json.
+pub fn build_txn_author_agreement_request(submitter_did: &str, text: &str, version: &str) -> Box<Future<Item=String, Error=IndyError>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+
+    let err = _build_txn_author_agreement_request(command_handle, submitter_did, text, version, cb);
+
+    ResultHandler::str(command_handle, err, receiver)
+}
+
+fn _build_txn_author_agreement_request(command_handle: CommandHandle,
+                                       submitter_did: &str,
+                                       text: &str,
+                                       version: &str,
+                                       cb: Option<ResponseStringCB>) -> ErrorCode {
+    let submitter_did = c_str!(submitter_did);
+    let text = c_str!(text);
+    let version = c_str!(version);
+
+    ErrorCode::from(unsafe {
+        ledger::indy_build_txn_author_agreement_request(command_handle,
+                                                        submitter_did.as_ptr(),
+                                                        text.as_ptr(),
+                                                        version.as_ptr(),
+                                                        cb)
+    })
+}
+
+/// Builds a GET_TXN_AUTHR_AGRMT request. Request to get a specific Transaction Author Agreement from the ledger.
+///
+/// # Arguments
+/// * `submitter_did`: (Optional) DID of the request sender.
+/// * `data`: (Optional) specifies a condition for getting specific TAA.
+/// Contains 3 mutually exclusive optional fields:
+/// {
+///     hash: Optional<str> - hash of requested TAA,
+///     version: Optional<str> - version of requested TAA.
+///     timestamp: Optional<u64> - ledger will return TAA valid at requested timestamp.
+/// }
+/// Null data or empty JSON are acceptable here. In this case, ledger will return the latest version of TAA.
+///
+/// # Returns
+/// Request result as json.
+pub fn build_get_txn_author_agreement_request(submitter_did: Option<&str>, data: Option<&str>) -> Box<Future<Item=String, Error=IndyError>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+
+    let err = _build_get_txn_author_agreement_request(command_handle, submitter_did, data, cb);
+
+    ResultHandler::str(command_handle, err, receiver)
+}
+
+fn _build_get_txn_author_agreement_request(command_handle: CommandHandle,
+                                           submitter_did: Option<&str>,
+                                           data: Option<&str>,
+                                           cb: Option<ResponseStringCB>) -> ErrorCode {
+    let submitter_did_str = opt_c_str!(submitter_did);
+    let data_str = opt_c_str!(data);
+
+    ErrorCode::from(unsafe {
+        ledger::indy_build_get_txn_author_agreement_request(command_handle,
+                                                            opt_c_ptr!(submitter_did, submitter_did_str),
+                                                            opt_c_ptr!(data, data_str),
+                                                            cb)
+    })
+}
+
+/// Builds a SET_TXN_AUTHR_AGRMT_AML request. Request to add a new list of acceptance mechanisms for transaction author agreement.
+/// Acceptance Mechanism is a description of the ways how the user may accept a transaction author agreement.
+///
+/// # Arguments
+/// * `submitter_did`: DID of the request sender.
+/// * `aml`: a set of new acceptance mechanisms:
+/// {
+///     “<acceptance mechanism label 1>”: { acceptance mechanism description 1},
+///     “<acceptance mechanism label 2>”: { acceptance mechanism description 2},
+///     ...
+/// }
+/// * `version`: a version of new acceptance mechanisms. (Note: unique on the Ledger).
+/// * `aml_context`: (Optional) common context information about acceptance mechanisms (may be a URL to external resource).
+///
+/// # Returns
+/// Request result as json.
+pub fn build_acceptance_mechanisms_request(submitter_did: &str, aml: &str, version: &str, aml_context: Option<&str>) -> Box<Future<Item=String, Error=IndyError>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+
+    let err = _build_acceptance_mechanisms_request(command_handle, submitter_did, aml, version, aml_context, cb);
+
+    ResultHandler::str(command_handle, err, receiver)
+}
+
+fn _build_acceptance_mechanisms_request(command_handle: CommandHandle,
+                                        submitter_did: &str,
+                                        aml: &str,
+                                        version: &str,
+                                        aml_context: Option<&str>,
+                                        cb: Option<ResponseStringCB>) -> ErrorCode {
+    let submitter_did = c_str!(submitter_did);
+    let aml = c_str!(aml);
+    let version = c_str!(version);
+    let aml_context_str = opt_c_str!(aml_context);
+
+    ErrorCode::from(unsafe {
+        ledger::indy_build_acceptance_mechanisms_request(command_handle,
+                                                         submitter_did.as_ptr(),
+                                                         aml.as_ptr(),
+                                                         version.as_ptr(),
+                                                         opt_c_ptr!(aml_context, aml_context_str),
+                                                         cb)
+    })
+}
+
+/// Builds a GET_TXN_AUTHR_AGRMT_AML request. Request to get a list of  acceptance mechanisms from the ledger
+/// valid for specified time or the latest one.
+///
+/// # Arguments
+/// * `submitter_did`: (Optional) DID of the request sender.
+/// * `timestamp`: (Optional) time to get an active acceptance mechanisms.
+/// * `version`: (Optional) version of acceptance mechanisms.
+///
+/// NOTE: timestamp and version cannot be specified together.
+///
+/// # Returns
+/// Request result as json.
+pub fn build_get_acceptance_mechanisms_request(submitter_did: Option<&str>, timestamp: Option<i64>, version: Option<&str>) -> Box<Future<Item=String, Error=IndyError>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+
+    let err = _build_get_acceptance_mechanisms_request(command_handle, submitter_did, timestamp, version, cb);
+
+    ResultHandler::str(command_handle, err, receiver)
+}
+
+fn _build_get_acceptance_mechanisms_request(command_handle: CommandHandle,
+                                            submitter_did: Option<&str>,
+                                            timestamp: Option<i64>,
+                                            version: Option<&str>,
+                                            cb: Option<ResponseStringCB>) -> ErrorCode {
+    let submitter_did_str = opt_c_str!(submitter_did);
+    let timestamp = timestamp.unwrap_or(-1);
+    let version_str = opt_c_str!(version);
+
+    ErrorCode::from(unsafe {
+        ledger::indy_build_get_acceptance_mechanisms_request(command_handle,
+                                                             opt_c_ptr!(submitter_did, submitter_did_str),
+                                                             timestamp,
+                                                             opt_c_ptr!(version, version_str),
+                                                             cb)
+    })
+}
+
+/// Append transaction author agreement acceptance data to a request.
+/// This function should be called before signing and sending a request
+/// if there is any transaction author agreement set on the Ledger.
+///
+/// This function may calculate digest by itself or consume it as a parameter.
+/// If all text, version and taa_digest parameters are specified, a check integrity of them will be done.
+///
+/// # Arguments
+/// * `request_json`: original request data json.
+/// * `text` and `version`: (optional) raw data about TAA from ledger.
+///     These parameters should be passed together.
+///     These parameters are required if taa_digest parameter is omitted.
+/// * `taa_digest`: (optional) digest on text and version. This parameter is required if text and version parameters are omitted.
+/// * `mechanism`: mechanism how user has accepted the TAA
+/// * `time`: UTC timestamp when user has accepted the TAA
+///
+/// # Returns
+/// Updated request result as json.
+pub fn append_txn_author_agreement_acceptance_to_request(request_json: &str,
+                                                         text: Option<&str>,
+                                                         version: Option<&str>,
+                                                         taa_digest: Option<&str>,
+                                                         mechanism: &str,
+                                                         time: u64) -> Box<Future<Item=String, Error=IndyError>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+
+    let err = _append_txn_author_agreement_acceptance_to_request(command_handle, request_json, text, version, taa_digest, mechanism, time, cb);
+
+    ResultHandler::str(command_handle, err, receiver)
+}
+
+fn _append_txn_author_agreement_acceptance_to_request(command_handle: CommandHandle,
+                                                      request_json: &str,
+                                                      text: Option<&str>,
+                                                      version: Option<&str>,
+                                                      taa_digest: Option<&str>,
+                                                      mechanism: &str,
+                                                      time: u64,
+                                                      cb: Option<ResponseStringCB>) -> ErrorCode {
+    let request_json = c_str!(request_json);
+    let text_str = opt_c_str!(text);
+    let version_str = opt_c_str!(version);
+    let taa_digest_str = opt_c_str!(taa_digest);
+    let mechanism = c_str!(mechanism);
+
+    ErrorCode::from(unsafe {
+        ledger::indy_append_txn_author_agreement_acceptance_to_request(command_handle,
+                                                                       request_json.as_ptr(),
+                                                                       opt_c_ptr!(text, text_str),
+                                                                       opt_c_ptr!(version, version_str),
+                                                                       opt_c_ptr!(taa_digest, taa_digest_str),
+                                                                       mechanism.as_ptr(),
+                                                                       time,
+                                                                       cb)
     })
 }

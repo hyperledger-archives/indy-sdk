@@ -9,6 +9,8 @@ use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::error::Error;
 
+use linefeed::{Reader, ReadResult};
+
 #[derive(Debug)]
 pub struct ParamMetadata {
     name: &'static str,
@@ -148,8 +150,10 @@ pub struct CommandContext {
     sub_prompts: RefCell<BTreeMap<usize, String>>,
     is_exit: RefCell<bool>,
     int_values: RefCell<HashMap<&'static str, i32>>,
+    uint_values: RefCell<HashMap<&'static str, u64>>,
     string_values: RefCell<HashMap<&'static str, String>>,
     plugins: RefCell<HashMap<String, libloading::Library>>,
+    taa_acceptance_mechanism: RefCell<String>,
 }
 
 impl CommandContext {
@@ -159,8 +163,10 @@ impl CommandContext {
             sub_prompts: RefCell::new(BTreeMap::new()),
             is_exit: RefCell::new(false),
             int_values: RefCell::new(HashMap::new()),
+            uint_values: RefCell::new(HashMap::new()),
             string_values: RefCell::new(HashMap::new()),
             plugins: RefCell::new(HashMap::new()),
+            taa_acceptance_mechanism: RefCell::new(String::new()),
         }
     }
 
@@ -209,6 +215,18 @@ impl CommandContext {
         self.int_values.borrow().get(key).map(i32::to_owned)
     }
 
+    pub fn set_uint_value(&self, key: &'static str, value: Option<u64>) {
+        if let Some(value) = value {
+            self.uint_values.borrow_mut().insert(key, value);
+        } else {
+            self.uint_values.borrow_mut().remove(key);
+        }
+    }
+
+    pub fn get_uint_value(&self, key: &'static str) -> Option<u64> {
+        self.uint_values.borrow().get(key).cloned()
+    }
+
     pub fn set_string_value(&self, key: &'static str, value: Option<String>) {
         if let Some(value) = value {
             self.string_values.borrow_mut().insert(key, value);
@@ -224,6 +242,14 @@ impl CommandContext {
     pub fn add_plugin(&self, plugin_name: &str, plugin: libloading::Library) {
         //TODO check already exists. Also check libindy
         self.plugins.borrow_mut().insert(plugin_name.to_string(), plugin);
+    }
+
+    pub fn set_taa_acceptance_mechanism(&self, taa_acceptance_mechanism: &str) {
+        *self.taa_acceptance_mechanism.borrow_mut() = taa_acceptance_mechanism.to_string();
+    }
+
+    pub fn get_taa_acceptance_mechanism(&self) -> String {
+        self.taa_acceptance_mechanism.borrow().to_string()
     }
 }
 
@@ -737,7 +763,7 @@ impl CommandExecutor {
 
         for (pos, ch) in s.char_indices() {
             if ch.is_whitespace() && !is_whitespace_escape {
-                return (&s[..pos], s[pos..].trim_left());
+                return (&s[..pos], s[pos..].trim_start());
             }
 
             if !is_quote_escape && ch == '"' {
@@ -767,7 +793,6 @@ impl CommandExecutor {
 
         (first_word, second_word, if params.is_empty() { None } else { Some(params) })
     }
-
 
     fn _trim_quotes(s: &str) -> &str {
         if s.len() > 1 && s.starts_with("\"") && s.ends_with("\"") {
@@ -843,6 +868,27 @@ impl CommandExecutorGroupBuilder {
             grouped_commands: self.grouped_commands,
         }
     }
+}
+
+// TODO: think about better place
+pub fn wait_for_user_reply() -> bool {
+    let mut reader = Reader::new("User Reply Reader").unwrap();
+
+    while let Ok(ReadResult::Input(line)) = reader.read_line() {
+        let line = line.trim();
+        if line.is_empty() {
+            continue;
+        }
+
+        if line == "y" || line == "yes" {
+            return true;
+        } else if line == "n" || line == "no" {
+            return false;
+        } else {
+            continue
+        }
+    }
+    return false;
 }
 
 #[cfg(test)]

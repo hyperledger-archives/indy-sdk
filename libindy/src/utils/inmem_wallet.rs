@@ -1,6 +1,6 @@
 extern crate libc;
 extern crate time;
-extern crate indy_crypto;
+extern crate ursa;
 extern crate serde_json;
 
 use api::ErrorCode;

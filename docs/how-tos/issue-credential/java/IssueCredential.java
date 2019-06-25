@@ -113,7 +113,7 @@ public class IssueCredential {
                 "               \"age\":[\"28\",\"28\"]\n" +
                 "        }";
 		AnoncredsResults.IssuerCreateClaimResult createClaimResult = issuerCreateClaim(walletHandle, claimRequestJSON,
-				claimAttributesJson, - 1).get();
+				credAttribsJson, - 1).get();
 		String claimJSON = createClaimResult.getClaimJson();
 		System.out.println("Claim:\n" + claimJSON);
 
