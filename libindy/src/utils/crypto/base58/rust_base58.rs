@@ -1,7 +1,5 @@
-extern crate rust_base58;
-
 use errors::prelude::*;
-use self::rust_base58::{FromBase58, ToBase58};
+use rust_base58::base58::{ToBase58, FromBase58};
 
 pub fn encode(doc: &[u8]) -> String {
     doc.to_base58()

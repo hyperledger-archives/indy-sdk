@@ -1786,6 +1786,34 @@ More about AUTH_RULE request: https://github.com/hyperledger/indy-node/blob/mast
 
 Errors: `Common*`
 
+#### buildAuthRulesRequest \( submitterDid, data \) -&gt; request
+
+Builds a AUTH_RULES request. Request to change multiple authentication rules for a ledger transaction.
+
+* `submitterDid`: String - \(Optional\) DID of the read request sender \(if not provided then default Libindy DID will be used\).
+* `constraint`: Json - a list of auth rules:
+```
+[
+    {
+        "auth_type": ledger transaction alias or associated value,
+        "auth_action": type of an action,
+        "field": transaction field,
+        "old_value": (Optional) old value of a field, which can be changed to a new_value (mandatory for EDIT action),
+        "new_value": (Optional) new value that can be used to fill the field,
+        "constraint": set of constraints required for execution of an action in the format described above for `buildAuthRuleRequest` function.
+    },
+    ...
+]
+```
+
+Default ledger auth rules: https://github.com/hyperledger/indy-node/blob/master/docs/source/auth_rules.md
+
+More about AUTH_RULE request: https://github.com/hyperledger/indy-node/blob/master/docs/source/requests.md#auth_rules   
+
+* __->__ `request`: Json
+
+Errors: `Common*`
+
 
 #### buildGetAuthRuleRequest \( submitterDid, txnType, action, field, oldValue, newValue \) -&gt; request
 

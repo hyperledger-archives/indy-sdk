@@ -540,8 +540,6 @@ impl From<NulError> for IndyError {
 }
 
 mod cbs {
-    extern crate libc;
-
     use std::ffi::CStr;
     use std::sync::Mutex;
 
@@ -550,7 +548,7 @@ mod cbs {
 
     use super::*;
 
-    use self::libc::c_char;
+    use libc::c_char;
 
     pub fn create_address_cb(cmd_handle: i32, wallet_handle: WalletHandle) -> Option<extern fn(command_handle: i32,
                                                                                                err: ErrorCode,

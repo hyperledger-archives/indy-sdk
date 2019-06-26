@@ -1,5 +1,3 @@
-extern crate ursa;
-
 use std::collections::{HashMap, HashSet};
 
 use domain::anoncreds::credential_definition::{CredentialDefinitionV1, CredentialDefinition};
@@ -11,8 +9,8 @@ use domain::anoncreds::schema::{SchemaV1, Schema};
 use errors::prelude::*;
 use services::anoncreds::helpers::*;
 
-use self::ursa::cl::CredentialPublicKey;
-use self::ursa::cl::verifier::Verifier as CryptoVerifier;
+use ursa::cl::CredentialPublicKey;
+use ursa::cl::verifier::Verifier as CryptoVerifier;
 use services::wallet::language::{parse_from_json, Operator};
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
@@ -437,12 +435,12 @@ mod tests {
     use super::*;
     use services::wallet::language::{TagName, TargetValue};
 
-    pub const SCHEMA_ID: &'static str = "123";
-    pub const SCHEMA_NAME: &'static str = "Schema Name";
-    pub const SCHEMA_ISSUER_DID: &'static str = "234";
-    pub const SCHEMA_VERSION: &'static str = "1.2.3";
-    pub const CRED_DEF_ID: &'static str = "345";
-    pub const ISSUER_DID: &'static str = "456";
+    pub const SCHEMA_ID: &str = "123";
+    pub const SCHEMA_NAME: &str = "Schema Name";
+    pub const SCHEMA_ISSUER_DID: &str = "234";
+    pub const SCHEMA_VERSION: &str = "1.2.3";
+    pub const CRED_DEF_ID: &str = "345";
+    pub const ISSUER_DID: &str = "456";
 
     fn encrypted_tag(tag: String) -> TagName { TagName::EncryptedTagName(tag.into_bytes()) }
 

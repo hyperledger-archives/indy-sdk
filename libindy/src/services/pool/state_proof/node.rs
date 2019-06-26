@@ -1,8 +1,3 @@
-extern crate digest;
-extern crate generic_array;
-extern crate rlp;
-extern crate sha3;
-
 use std::collections::HashMap;
 
 use rlp::{DecoderError as RlpDecoderError, Prototype as RlpPrototype,
@@ -12,12 +7,13 @@ use rlp::{DecoderError as RlpDecoderError, Prototype as RlpPrototype,
 
 use errors::prelude::*;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
 pub enum Node {
     Leaf(Leaf),
     Extension(Extension),
     Full(FullNode),
     Hash(Vec<u8>),
+    Blank,
 }
 
 impl Node {
@@ -25,23 +21,24 @@ impl Node {
     const FULL_SIZE: usize = Node::RADIX + 1;
     const PAIR_SIZE: usize = 2;
     const HASH_SIZE: usize = 32;
+    const EMPTY_SIZE: usize = 0;
     const IS_LEAF_MASK: u8 = 0x20;
     const IS_PATH_ODD_MASK: u8 = 0x10;
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
 pub struct FullNode {
     nodes: [Option<Box<Node>>; Node::RADIX],
     value: Option<Vec<u8>>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
 pub struct Leaf {
     path: Vec<u8>,
     value: Vec<u8>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
 pub struct Extension {
     path: Vec<u8>,
     next: Box<Node>,
@@ -77,6 +74,9 @@ impl rlp::Encodable for Node {
                 } else {
                     s.append_empty_data();
                 }
+            }
+            Node::Blank => {
+                s.append_empty_data();
             }
         }
     }
@@ -127,6 +127,9 @@ impl rlp::Decodable for Node {
             RlpPrototype::Data(Node::HASH_SIZE) => {
                 Ok(Node::Hash(rlp.as_val()?))
             }
+            RlpPrototype::Data(Node::EMPTY_SIZE) => {
+                Ok(Node::Blank)
+            }
             _ => {
                 error!("Unexpected data while parsing Patricia Merkle Trie: {:?}: {:?}", rlp.prototype(), rlp);
                 Err(RlpDecoderError::Custom("Unexpected data"))
@@ -135,10 +138,21 @@ impl rlp::Decodable for Node {
     }
 }
 
-type NodeHash = generic_array::GenericArray<u8, <sha3::Sha3_256 as digest::FixedOutput>::OutputSize>;
+type NodeHash = sha3::digest::generic_array::GenericArray<u8, <sha3::Sha3_256 as sha3::digest::FixedOutput>::OutputSize>;
 pub type TrieDB<'a> = HashMap<NodeHash, &'a Node>;
 
 impl Node {
+    pub fn get_hash(&self) -> NodeHash{
+        use rlp::{
+            encode as rlp_encode
+        };
+        use sha3::{digest::FixedOutput};
+        use sha3::Digest;
+        let encoded = rlp_encode(self);
+        let mut hasher = sha3::Sha3_256::default();
+        hasher.input(encoded.to_vec().as_slice());
+        hasher.fixed_result()
+    }
     pub fn get_str_value<'a, 'b>(&'a self, db: &'a TrieDB, path: &'b [u8]) -> IndyResult<Option<String>> {
         let value = self.get_value(db, path)?;
         if let Some(vec) = value {
@@ -217,6 +231,9 @@ impl Node {
                     Ok(None)
                 }
             }
+            Node::Blank => {
+                Ok(None)
+            }
         }
     }
 
@@ -239,5 +256,22 @@ impl Node {
             nibbles.insert(0, path[0] & 0x0F);
         }
         (is_leaf, nibbles)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn node_deserialize_works_for_emtpy() {
+        assert_eq!(UntrustedRlp::new(&base64::decode("wYA=").unwrap()).as_list::<Node>().unwrap(),
+                   vec![Node::Blank]);
+    }
+
+    #[test]
+    fn node_serialize_works_for_emtpy() {
+        assert_eq!(base64::encode(&rlp::encode_list(&vec![Node::Blank])),
+                   "wYA=");
     }
 }

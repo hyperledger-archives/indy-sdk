@@ -128,6 +128,41 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
   protected _inviteDetailFn = rustAPI().vcx_connection_invite_details
 
   /**
+   *
+   * Updates the state of the connection from the given message.
+   *
+   * Example:
+   * ```
+   * await object.updateStateWithMessage(message)
+   * ```
+   * @returns {Promise<void>}
+   */
+  public async updateStateWithMessage (message: string): Promise<void> {
+    try {
+      const commandHandle = 0
+      await createFFICallbackPromise<number>(
+        (resolve, reject, cb) => {
+          const rc = rustAPI().vcx_connection_update_state_with_message(commandHandle, this.handle, message, cb)
+          if (rc) {
+            resolve(StateType.None)
+          }
+        },
+        (resolve, reject) => ffi.Callback(
+          'void',
+          ['uint32', 'uint32', 'uint32'],
+          (handle: number, err: any, state: StateType) => {
+            if (err) {
+              reject(err)
+            }
+            resolve(state)
+          })
+      )
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
+
+  /**
    * Delete the object from the agency and release any memory associated with it
    *
    * Example:

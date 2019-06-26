@@ -215,8 +215,6 @@ pub(super) fn decrypt_storage_record(record: &StorageRecord, keys: &Keys) -> Ind
 
 #[cfg(test)]
 mod tests {
-    extern crate serde_json;
-
     use services::wallet::wallet::EncryptedValue;
     use services::wallet::wallet::Keys;
     use utils::crypto::hmacsha256;

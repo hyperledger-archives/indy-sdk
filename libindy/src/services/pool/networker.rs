@@ -1,6 +1,3 @@
-extern crate time;
-extern crate zmq;
-
 use std::cell::RefCell;
 use std::collections::{BTreeMap, HashMap, HashSet};
 
@@ -15,8 +12,8 @@ use utils::sequence;
 
 use super::time::Duration;
 
-use self::zmq::PollItem;
-use self::zmq::Socket as ZSocket;
+use super::zmq::PollItem;
+use super::zmq::Socket as ZSocket;
 
 pub trait Networker {
     fn new(active_timeout: i64, conn_limit: usize, preordered_nodes: Vec<String>) -> Self;
@@ -394,15 +391,15 @@ pub mod networker_tests {
     use std::thread;
 
     use domain::pool::{MAX_REQ_PER_POOL_CON, POOL_ACK_TIMEOUT, POOL_CON_ACTIVE_TO, POOL_REPLY_TIMEOUT};
-    use services::pool::rust_base58::FromBase58;
     use services::pool::tests::nodes_emulator;
     use utils::crypto::ed25519_sign;
 
     use super::*;
+    use rust_base58::base58::FromBase58;
 
-    const REQ_ID: &'static str = "1";
-    const MESSAGE: &'static str = "msg";
-    const NODE_NAME: &'static str = "n1";
+    const REQ_ID: &str = "1";
+    const MESSAGE: &str = "msg";
+    const NODE_NAME: &str = "n1";
 
     pub fn _remote_node(txn: &NodeTransactionV1) -> RemoteNode {
         RemoteNode {

@@ -69,7 +69,13 @@ fn main() {
                 let plugins = unwrap_or_return!(args.next(), println_err!("Plugins are not specified"));
                 _load_plugins(&command_executor, &plugins)
             }
-            _ if args.len() == 0 => execute_batch(&command_executor, Some(&arg)),
+            _ if args.len() == 0 => {
+                execute_batch(&command_executor, Some(&arg));
+
+                if command_executor.ctx().is_exit() {
+                    return;
+                }
+            },
             _ => {
                 println_err!("Unknown option");
                 return _print_help();
@@ -170,6 +176,7 @@ fn build_executor() -> CommandExecutor {
         .add_command(ledger::verify_payment_receipt_command::new())
         .add_command(ledger::sign_multi_command::new())
         .add_command(ledger::auth_rule_command::new())
+        .add_command(ledger::auth_rules_command::new())
         .add_command(ledger::get_auth_rule_command::new())
         .add_command(ledger::save_transaction_command::new())
         .add_command(ledger::load_transaction_command::new())
@@ -212,6 +219,7 @@ fn execute_interactive<T>(command_executor: CommandExecutor, mut reader: Reader<
 }
 
 fn execute_batch(command_executor: &CommandExecutor, script_path: Option<&str>) {
+    command_executor.ctx().set_batch_mode();
     if let Some(script_path) = script_path {
         let file = match File::open(script_path) {
             Ok(file) => file,
@@ -222,6 +230,7 @@ fn execute_batch(command_executor: &CommandExecutor, script_path: Option<&str>) 
         let stdin = std::io::stdin();
         _iter_batch(command_executor, stdin.lock());
     };
+    command_executor.ctx().set_not_batch_mode();
 }
 
 fn _load_plugins(command_executor: &CommandExecutor, plugins_str: &str) {
@@ -283,6 +292,10 @@ fn _iter_batch<T>(command_executor: &CommandExecutor, reader: T) where T: std::i
         }
         println!();
         line_num += 1;
+
+        if command_executor.ctx().is_exit() {
+            break;
+        }
     }
 }
 

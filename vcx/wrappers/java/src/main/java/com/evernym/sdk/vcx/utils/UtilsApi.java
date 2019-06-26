@@ -171,7 +171,6 @@ public class UtilsApi extends VcxJava.API {
         return future;
     }
 
-
     public static void setActiveTxnAuthorAgreementMeta(String text, String version,
                                                          String hash, String accMechType, long timeOfAcceptance) throws VcxException {
         ParamGuard.notNull(accMechType, "accMechType");
@@ -181,4 +180,8 @@ public class UtilsApi extends VcxJava.API {
         checkResult(result);
     }
 
+    public static void vcxMockSetAgencyResponse(int messageIndex) {
+        logger.debug("vcxMockSetAgencyResponse() called");
+        LibVcx.api.vcx_set_next_agency_response(messageIndex);
+    }
 }

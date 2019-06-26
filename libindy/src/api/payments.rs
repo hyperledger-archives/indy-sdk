@@ -1,6 +1,4 @@
-extern crate libc;
-
-use self::libc::c_char;
+use libc::c_char;
 use api::{ErrorCode, CommandHandle, WalletHandle};
 use commands::{Command, CommandExecutor};
 use commands::payments::PaymentsCommand;

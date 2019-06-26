@@ -1341,6 +1341,52 @@ async def build_auth_rule_request(submitter_did: str,
     return res
 
 
+async def build_auth_rules_request(submitter_did: str,
+                                   data: str) -> str:
+    """
+    Builds a AUTH_RULES request. Request to change multiple authentication rules for a ledger transaction.
+
+    :param submitter_did: DID of the submitter stored in secured Wallet.
+    :param data: a list of auth rules: [
+        {
+            "auth_type": ledger transaction alias or associated value,
+            "auth_action": type of an action,
+            "field": transaction field,
+            "old_value": (Optional) old value of a field, which can be changed to a new_value (mandatory for EDIT action),
+            "new_value": (Optional) new value that can be used to fill the field,
+            "constraint": set of constraints required for execution of an action in the format described above for `build_auth_rule_request` function.
+        }
+    ]
+
+    Default ledger auth rules: https://github.com/hyperledger/indy-node/blob/master/docs/source/auth_rules.md
+
+    More about AUTH_RULE request: https://github.com/hyperledger/indy-node/blob/master/docs/source/requests.md#auth_rules
+
+    :return: Request result as json.
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("build_auth_rules_request: >>> submitter_did: %r, data: %r",
+                 submitter_did,
+                 data)
+
+    if not hasattr(build_auth_rules_request, "cb"):
+        logger.debug("build_auth_rules_request: Creating callback")
+        build_auth_rules_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
+    c_data = c_char_p(data.encode('utf-8'))
+
+    request_json = await do_call('indy_build_auth_rules_request',
+                                 c_submitter_did,
+                                 c_data,
+                                 build_auth_rules_request.cb)
+
+    res = request_json.decode()
+    logger.debug("build_auth_rules_request: <<< res: %r", res)
+    return res
+
+
 async def build_get_auth_rule_request(submitter_did: Optional[str],
                                       txn_type: Optional[str],
                                       action: Optional[str],
