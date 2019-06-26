@@ -101,6 +101,10 @@ Collecting of backtrace can be enabled by:
 
 ### anoncreds
 
+These functions wrap the Ursa algorithm as documented in this [paper](https://github.com/hyperledger/ursa/blob/master/libursa/docs/AnonCred.pdf):
+
+And is documented in this [HIPE](https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336fdc8cc1/text/anoncreds-protocol/README.md):
+
 #### issuerCreateSchema \( issuerDid, name, version, attrNames \) -&gt; \[ id, schema \]
 
 Create credential schema entity that describes credential attributes list and allows credentials
@@ -173,7 +177,9 @@ This call requires access to pre-configured blob storage writer instance handle 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `issuerDid`: String - a DID of the issuer signing transaction to the Ledger
 * `revocDefType`: String - revocation registry type \(optional, default value depends on credential definition type\). Supported types are:
-  *  'CL\_ACCUM': Type-3 pairing based accumulator. Default for 'CL' credential definition type
+  *  'CL\_ACCUM': Type-3 pairing based accumulator implemented according to the algorithm in this paper:
+                    https://github.com/hyperledger/ursa/blob/master/libursa/docs/AnonCred.pdf
+                  This type is default for 'CL' credential definition type.
 * `tag`: String - allows to distinct between revocation registries for the same issuer and credential definition
 * `credDefId`: String - id of stored in ledger credential definition
 * `config`: Json - type-specific configuration of revocation registry as json:
@@ -209,7 +215,9 @@ for authentication between protocol steps and integrity checking.
         "cred_def_id": string,
         // Fields below can depend on Cred Def type
         "nonce": string,
-        "key_correctness_proof" : <key_correctness_proof>
+        "key_correctness_proof" : key correctness proof for credential definition correspondent to cred_def_id
+                                  (opaque type that contains data structures internal to Ursa.
+                                  It should not be parsed and are likely to change in future versions).
     }
 ````
 
@@ -249,8 +257,12 @@ Example:
         "rev_reg_def_id", Optional<string>,
         "values": <see cred_values_json above>,
         // Fields below can depend on Cred Def type
-        "signature": <signature>,
+        "signature": <credential signature>,
+                     (opaque type that contains data structures internal to Ursa.
+                     It should not be parsed and are likely to change in future versions).
         "signature_correctness_proof": <signature_correctness_proof>
+                                       (opaque type that contains data structures internal to Ursa.
+                                        It should not be parsed and are likely to change in future versions).
     }
 cred_revoc_id: local id for revocation info (Can be used for revocation of this credential)
 revoc_reg_delta_json: Revocation registry delta json with a newly issued credential
@@ -318,7 +330,11 @@ The blinded master secret is a part of the credential request.
      "cred_def_id" : string,
         // Fields below can depend on Cred Def type
      "blinded_ms" : <blinded_master_secret>,
+                   (opaque type that contains data structures internal to Ursa.
+                    It should not be parsed and are likely to change in future versions).
      "blinded_ms_correctness_proof" : <blinded_ms_correctness_proof>,
+                                       (opaque type that contains data structures internal to Ursa.
+                                        It should not be parsed and are likely to change in future versions).
      "nonce": string
    }
 cred_req_metadata_json: Credential request metadata json for further processing of received form Issuer credential.
@@ -685,7 +701,8 @@ There is also aggregated proof part common for all credential proofs.
         "proof": {
             "proofs": [ <credential_proof>, <credential_proof>, <credential_proof> ],
             "aggregated_proof": <aggregated_proof>
-        }
+        } (opaque type that contains data structures internal to Ursa.
+            It should not be parsed and are likely to change in future versions).
         "identifiers": [{schema_id, cred_def_id, Optional<rev_reg_id>, Optional<timestamp>}]
     }
 ````

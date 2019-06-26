@@ -5,6 +5,14 @@ from ctypes import *
 
 import logging
 
+"""
+These functions wrap the Ursa algorithm as documented in this paper:
+https://github.com/hyperledger/ursa/blob/master/libursa/docs/AnonCred.pdf
+
+And is documented in this HIPE:
+https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336fdc8cc1/text/anoncreds-protocol/README.md
+"""
+
 
 async def issuer_create_schema(issuer_did: str,
                                name: str,
@@ -90,6 +98,17 @@ async def issuer_create_and_store_credential_def(wallet_handle: int,
     :return:
         cred_def_id: identifier of created credential definition
         cred_def_json: public part of created credential definition
+            {
+                id: string - identifier of credential definition
+                schemaId: string - identifier of stored in ledger schema
+                type: string - type of the credential definition. CL is the only supported type now.
+                tag: string - allows to distinct between credential definitions for the same issuer and schema
+                value: Dictionary with Credential Definition's data is depended on the signature type: {
+                    primary: primary credential public key,
+                    Optional<revocation>: revocation credential public key
+                },
+                ver: Version of the CredDef json
+            }
     """
 
     logger = logging.getLogger(__name__)
@@ -155,7 +174,9 @@ async def issuer_create_and_store_revoc_reg(wallet_handle: int,
     :param wallet_handle: wallet handle (created by open_wallet).
     :param issuer_did: a DID of the issuer signing transaction to the Ledger
     :param revoc_def_type: revocation registry type (optional, default value depends on credential definition type). Supported types are:
-        - 'CL_ACCUM': Type-3 pairing based accumulator. Default for 'CL' credential definition type
+                - 'CL_ACCUM': Type-3 pairing based accumulator implemented according to the algorithm in this paper:
+                                  https://github.com/hyperledger/ursa/blob/master/libursa/docs/AnonCred.pdf
+                              This type is default for 'CL' credential definition type.
     :param tag: allows to distinct between revocation registries for the same issuer and credential definition
     :param cred_def_id: id of stored in ledger credential definition
     :param config_json: type-specific configuration of revocation registry as json:
@@ -170,7 +191,31 @@ async def issuer_create_and_store_revoc_reg(wallet_handle: int,
     :return:
         revoc_reg_id: identifier of created revocation registry definition
         revoc_reg_def_json: public part of revocation registry definition
+            {
+                "id": string - ID of the Revocation Registry,
+                "revocDefType": string - Revocation Registry type (only CL_ACCUM is supported for now),
+                "tag": string - Unique descriptive ID of the Registry,
+                "credDefId": string - ID of the corresponding CredentialDefinition,
+                "value": Registry-specific data {
+                    "issuanceType": string - Type of Issuance(ISSUANCE_BY_DEFAULT or ISSUANCE_ON_DEMAND),
+                    "maxCredNum": number - Maximum number of credentials the Registry can serve.
+                    "tailsHash": string - Hash of tails.
+                    "tailsLocation": string - Location of tails file.
+                    "publicKeys": <public_keys> - Registry's public key (opaque type that contains data structures internal to Ursa.
+                                                                         It should not be parsed and are likely to change in future versions).
+                },
+                "ver": string - version of revocation registry definition json.
+            }
         revoc_reg_entry_json: revocation registry entry that defines initial state of revocation registry
+            {
+                value: {
+                    prevAccum: string - previous accumulator value.
+                    accum: string - current accumulator value.
+                    issued: array<number> - an array of issued indices.
+                    revoked: array<number> an array of revoked indices.
+                },
+                ver: string - version revocation registry entry json
+            }    
     """
 
     logger = logging.getLogger(__name__)
@@ -226,7 +271,9 @@ async def issuer_create_credential_offer(wallet_handle: int,
          "cred_def_id": string,
          // Fields below can depend on Cred Def type
          "nonce": string,
-         "key_correctness_proof" : <key_correctness_proof>
+         "key_correctness_proof" : key correctness proof for credential definition correspondent to cred_def_id
+                                   (opaque type that contains data structures internal to Ursa.
+                                   It should not be parsed and are likely to change in future versions).
      }
     """
 
@@ -290,8 +337,12 @@ async def issuer_create_credential(wallet_handle: int,
          "rev_reg_def_id", Optional<string>,
          "values": <see cred_values_json above>,
          // Fields below can depend on Cred Def type
-         "signature": <signature>,
-         "signature_correctness_proof": <signature_correctness_proof>
+         "signature": <credential signature>,
+                       (opaque type that contains data structures internal to Ursa.
+                        It should not be parsed and are likely to change in future versions).
+         "signature_correctness_proof": credential signature correctness proof
+                                         (opaque type that contains data structures internal to Ursa.
+                                          It should not be parsed and are likely to change in future versions).
      }
      cred_revoc_id: local id for revocation info (Can be used for revocation of this cred)
      revoc_reg_delta_json: Revocation registry delta json with a newly issued credential
@@ -525,7 +576,11 @@ async def prover_create_credential_req(wallet_handle: int,
       "cred_def_id" : string,
          // Fields below can depend on Cred Def type
       "blinded_ms" : <blinded_master_secret>,
+                     (opaque type that contains data structures internal to Ursa.
+                      It should not be parsed and are likely to change in future versions).
       "blinded_ms_correctness_proof" : <blinded_ms_correctness_proof>,
+                     (opaque type that contains data structures internal to Ursa.
+                      It should not be parsed and are likely to change in future versions).
       "nonce": string
     }
      cred_req_metadata_json: Credential request metadata json for processing of received form Issuer credential.
@@ -1309,7 +1364,8 @@ async def prover_create_proof(wallet_handle: int,
               "proof": {
                   "proofs": [ <credential_proof>, <credential_proof>, <credential_proof> ],
                   "aggregated_proof": <aggregated_proof>
-              }
+              } (opaque type that contains data structures internal to Ursa.
+                 It should not be parsed and are likely to change in future versions).
               "identifiers": [{schema_id, cred_def_id, Optional<rev_reg_id>, Optional<timestamp>}]
           }
     """
