@@ -272,6 +272,62 @@ pub extern fn vcx_credential_send_request(command_handle: u32,
     error::SUCCESS.code_num
 }
 
+/// Get the credential request message that can be sent to the specified connection
+///
+/// #params
+/// command_handle: command handle to map callback to user context
+///
+/// credential_handle: credential handle that was provided during creation. Used to identify credential object
+///
+/// connection_handle: Connection handle that identifies pairwise connection
+///
+/// cb: Callback that provides error status of credential request
+///
+/// #Returns
+/// Error code as a u32
+#[no_mangle]
+pub extern fn vcx_credential_get_request_msg(command_handle: u32,
+                                             credential_handle: u32,
+                                             connection_handle: u32,
+                                             payment_handle: u32,
+                                             cb: Option<extern fn(xcommand_handle: u32, err: u32, msg: *const c_char)>) -> u32 {
+    info!("vcx_credential_get_request_msg >>>");
+
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+
+    if !credential::is_valid_handle(credential_handle) {
+        return VcxError::from(VcxErrorKind::InvalidCredentialHandle).into()
+    }
+
+    if !connection::is_valid_handle(connection_handle) {
+        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into()
+    }
+
+    let source_id = credential::get_source_id(credential_handle).unwrap_or_default();
+    trace!("vcx_credential_get_request_msg(command_handle: {}, credential_handle: {}, connection_handle: {}), source_id: {:?}",
+           command_handle, credential_handle, connection_handle, source_id);
+
+    spawn(move || {
+        match credential::generate_credential_request_msg(credential_handle, connection_handle) {
+            Ok(msg) => {
+                let msg = CStringUtils::string_to_cstring(msg);
+                trace!("vcx_credential_get_request_msg_cb(command_handle: {}, rc: {}) source_id: {}",
+                       command_handle, error::SUCCESS.message, source_id);
+                cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
+            }
+            Err(e) => {
+                warn!("vcx_credential_get_request_msg_cb(command_handle: {}, rc: {}) source_id: {}",
+                      command_handle, e, source_id);
+                cb(command_handle, e.into(), ptr::null_mut());
+            }
+        };
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
+
 /// Queries agency for credential offers from the given connection.
 ///
 /// #Params
@@ -721,6 +777,22 @@ mod tests {
         let cb = return_types_u32::Return_U32::new().unwrap();
         assert_eq!(vcx_credential_send_request(cb.command_handle, handle, cxn, 0, Some(cb.get_callback())), error::SUCCESS.code_num);
         cb.receive(Some(Duration::from_secs(10))).unwrap();
+    }
+
+    #[test]
+    fn test_vcx_credential_get_request_msg() {
+        init!("true");
+        let cxn = ::connection::tests::build_test_connection();
+        ::connection::connect(cxn, None).unwrap();
+        let handle = credential::from_string(DEFAULT_SERIALIZED_CREDENTIAL).unwrap();
+        ::utils::httpclient::set_next_u8_response(::utils::constants::NEW_CREDENTIAL_OFFER_RESPONSE.to_vec());
+        let cb = return_types_u32::Return_U32_U32::new().unwrap();
+        assert_eq!(vcx_credential_update_state(cb.command_handle, handle, Some(cb.get_callback())), error::SUCCESS.code_num);
+        assert_eq!(cb.receive(Some(Duration::from_secs(10))).unwrap(), VcxStateType::VcxStateRequestReceived as u32);
+        let cb = return_types_u32::Return_U32_STR::new().unwrap();
+        assert_eq!(vcx_credential_get_request_msg(cb.command_handle, handle, cxn, 0, Some(cb.get_callback())), error::SUCCESS.code_num);
+        let msg = cb.receive(Some(Duration::from_secs(10))).unwrap().unwrap();
+        assert!(msg.len() > 0);
     }
 
     #[test]

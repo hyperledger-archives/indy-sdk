@@ -225,6 +225,45 @@ export class Credential extends VCXBaseWithState<ICredentialStructData> {
       throw new VCXInternalError(err)
     }
   }
+  /**
+   * Gets the credential request message for sending to the specifed connection.
+   *
+   * ```
+   * connection = await Connection.create({id: 'foobar'})
+   * inviteDetails = await connection.connect()
+   * credential = Credential.create(data)
+   * await credential.sendRequest({ connection, 1000 })
+   * ```
+   *
+   */
+  public async getRequestMessage ({ connection, payment }: ICredentialSendData): Promise<string> {
+    try {
+      return await createFFICallbackPromise<string>(
+          (resolve, reject, cb) => {
+            const rc = rustAPI().vcx_credential_get_request_msg(0, this.handle, connection.handle, payment, cb)
+            if (rc) {
+              reject(rc)
+            }
+          },
+          (resolve, reject) => Callback(
+            'void',
+            ['uint32', 'uint32', 'string'],
+            (xHandle: number, err: number, message: string) => {
+              if (err) {
+                reject(err)
+                return
+              }
+              if (!message) {
+                reject(`Credential ${this.sourceId} returned empty string`)
+                return
+              }
+              resolve(message)
+            })
+        )
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
 
   get credOffer (): string {
     return this._credOffer

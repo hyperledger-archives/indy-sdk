@@ -167,7 +167,7 @@ The following wrappers are tested and complete.
 * [NodeJS](wrappers/node/README.md)
 
 ## Getting started guide
-[The tutorial](docs/source/getting-started/getting-started.md) which introduces Libvcx and explains how the whole ecosystem works, and how the functions in the SDK can be used to construct rich clients.
+[The tutorial](docs/getting-started/getting-started.md) which introduces Libvcx and explains how the whole ecosystem works, and how the functions in the SDK can be used to construct rich clients.
 
 ### Example use
 For the main workflow example check [demo](https://github.com/hyperledger/indy-sdk/tree/master/vcx/wrappers/python3/demo).

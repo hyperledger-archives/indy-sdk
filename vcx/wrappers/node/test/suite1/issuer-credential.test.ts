@@ -154,6 +154,13 @@ describe('IssuerCredential:', () => {
       const error = await shouldThrow(() => issuerCredential.sendOffer(connection))
       assert.equal(error.vcxCode, VCXCode.INVALID_CONNECTION_HANDLE)
     })
+
+    it('can generate the offer message', async () => {
+      const connection = await connectionCreateConnect()
+      const issuerCredential = await issuerCredentialCreate()
+      const message = await issuerCredential.getCredentialOfferMsg(connection)
+      assert(message.length > 0)
+    })
   })
 
   describe('sendCredential:', () => {
@@ -199,6 +206,18 @@ describe('IssuerCredential:', () => {
       await issuerCredential.sendOffer(connection)
       const error = await shouldThrow(() => issuerCredential.sendCredential(connection))
       assert.equal(error.vcxCode, VCXCode.NOT_READY)
+    })
+
+    it('can generate the credential message', async () => {
+      const connection = await connectionCreateConnect()
+      const issuerCredential = await issuerCredentialCreate()
+      await issuerCredential.sendOffer(connection)
+      VCXMock.setVcxMock(VCXMockMessage.IssuerCredentialReq)
+      VCXMock.setVcxMock(VCXMockMessage.UpdateIssuerCredential)
+      await issuerCredential.updateState()
+      assert.equal(await issuerCredential.getState(), StateType.RequestReceived)
+      const message = await issuerCredential.getCredentialMsg(connection)
+      assert(message.length > 0)
     })
   })
 
