@@ -14,6 +14,8 @@ use utils::environment;
 
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
+const POOL_EXT : &str = "txn";
+
 pub fn create(pool_name: &str) -> IndyResult<MerkleTree> {
     let mut p = environment::pool_path(pool_name);
 
@@ -24,7 +26,7 @@ pub fn create(pool_name: &str) -> IndyResult<MerkleTree> {
     if !p_stored.exists() {
         trace!("Restoring merkle tree from genesis");
         p.push(pool_name);
-        p.set_extension("txn");
+        p.set_extension(POOL_EXT);
 
         if !p.exists() {
             trace!("here");
@@ -39,10 +41,7 @@ pub fn create(pool_name: &str) -> IndyResult<MerkleTree> {
 }
 
 pub fn drop_cache(pool_name: &str) -> IndyResult<()> {
-    let mut p = environment::pool_path(pool_name);
-
-    p.push("stored");
-    p.set_extension("btxn");
+    let p = get_pool_stored_path(pool_name, false);
     if p.exists() {
         warn!("Cache is invalid -- dropping it!");
         fs::remove_file(p)
@@ -104,11 +103,22 @@ fn _from_genesis(file_name: &PathBuf) -> IndyResult<MerkleTree> {
     Ok(mt)
 }
 
-pub fn dump_new_txns(pool_name: &str, txns: &Vec<Vec<u8>>) -> IndyResult<()> {
-    let mut p = environment::pool_path(pool_name);
-    p.push("stored");
-    p.set_extension("btxn");
+fn get_pool_stored_path(pool_name: &str, create_dir: bool) -> PathBuf {
+    get_pool_stored_path_base(pool_name, create_dir, "stored", "btxn")
+}
 
+fn get_pool_stored_path_base(pool_name: &str, create_dir: bool, filename: &str, ext: &str) -> PathBuf {
+    let mut path = environment::pool_path(pool_name);
+    if create_dir {
+        fs::create_dir_all(path.as_path()).unwrap();
+    }
+    path.push(filename);
+    path.set_extension(ext);
+    path
+}
+
+pub fn dump_new_txns(pool_name: &str, txns: &Vec<Vec<u8>>) -> IndyResult<()> {
+    let p = get_pool_stored_path( pool_name, false);
     if !p.exists() {
         _dump_genesis_to_stored(&p, pool_name)?;
     }
@@ -122,9 +132,7 @@ pub fn dump_new_txns(pool_name: &str, txns: &Vec<Vec<u8>>) -> IndyResult<()> {
 }
 
 fn _dump_genesis_to_stored(p: &PathBuf, pool_name: &str) -> IndyResult<()> {
-    let mut p_genesis = environment::pool_path(pool_name);
-    p_genesis.push(pool_name);
-    p_genesis.set_extension("txn");
+    let p_genesis = get_pool_stored_path_base(pool_name, false, pool_name, POOL_EXT);
 
     if !p_genesis.exists() {
         trace!("here");
@@ -245,10 +253,7 @@ mod tests {
     pub const NODE2_OLD: &str = r#"{"data":{"alias":"Node2","client_ip":"192.168.1.35","client_port":9704,"node_ip":"192.168.1.35","node_port":9703,"services":["VALIDATOR"]},"dest":"8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb","identifier":"8QhFxKxyaFsJy4CyxeYX34dFH8oWqyBv1P4HLQCsoeLy","txnId":"1ac8aece2a18ced660fef8694b61aac3af08ba875ce3026a160acbc3a3af35fc","type":"0"}"#;
 
     fn _write_genesis_txns(pool_name: &str, txns: &str) {
-        let mut path = environment::pool_path(pool_name);
-        fs::create_dir_all(path.as_path()).unwrap();
-        path.push(pool_name);
-        path.set_extension("txn");
+        let path = get_pool_stored_path_base(pool_name, true, pool_name, POOL_EXT);
         let mut f = fs::File::create(path.as_path()).unwrap();
         f.write(txns.as_bytes()).unwrap();
         f.flush().unwrap();
@@ -292,10 +297,7 @@ mod tests {
                                   rmp_serde::to_vec_named(&txn4_json).unwrap()];
 
             let pool_name = "pool_worker_works_for_deserialize_cache";
-            let mut path = environment::pool_path(pool_name);
-            fs::create_dir_all(path.as_path()).unwrap();
-            path.push("stored");
-            path.set_extension("btxn");
+            let path = get_pool_stored_path(pool_name, true);
             let mut f = fs::File::create(path.as_path()).unwrap();
             pool_cache.iter().for_each(|vec| {
                 f.write_u64::<LittleEndian>(vec.len() as u64).unwrap();
