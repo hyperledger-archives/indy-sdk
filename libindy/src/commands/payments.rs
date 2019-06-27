@@ -12,7 +12,7 @@ use services::ledger::LedgerService;
 use services::payments::{PaymentsMethodCBs, PaymentsService, RequesterInfo, Fees};
 use services::wallet::{RecordOptions, WalletService};
 use api::WalletHandle;
-use domain::ledger::auth_rule::AuthRuleData;
+use domain::ledger::auth_rule::EditAuthRuleData;
 use domain::ledger::response::Reply;
 
 pub enum PaymentsCommand {
@@ -138,11 +138,11 @@ pub enum PaymentsCommand {
     ParseVerifyPaymentResponseAck(
         i32,
         IndyResult<String>),
-    GetTransactionPrice(
+    GetRequestInfo(
         String, // get auth rule response json
         RequesterInfo, //requester info
         Fees, //fees
-        Box<Fn(IndyResult<u64>) + Send>),
+        Box<Fn(IndyResult<String>) + Send>),
 }
 
 pub struct PaymentsCommandExecutor {
@@ -287,46 +287,11 @@ impl PaymentsCommandExecutor {
                 info!(target: "payments_command_executor", "ParseVerifyResponseAck command received");
                 self.parse_verify_payment_response_ack(command_handle, result);
             }
-            PaymentsCommand::GetTransactionPrice(get_auth_rule_response_json, requester_info, fees_json, cb) => {
-                info!(target: "payments_command_executor", "GetTransactionPrice command received");
-                cb(self.get_transaction_price(&get_auth_rule_response_json, requester_info, &fees_json));
+            PaymentsCommand::GetRequestInfo(get_auth_rule_response_json, requester_info, fees_json, cb) => {
+                info!(target: "payments_command_executor", "GetRequestInfo command received");
+                cb(self.get_request_info(&get_auth_rule_response_json, requester_info, &fees_json));
             }
         }
-    }
-
-    pub fn get_transaction_price(&self, get_auth_rule_response_json: &str, requester_info: RequesterInfo, fees: &Fees) -> IndyResult<u64> {
-        trace!("get_transaction_price >>> get_auth_rule_response_json: {:?}, requester_info: {:?}, fees: {:?}", get_auth_rule_response_json, requester_info, fees);
-
-        let auth_rule = PaymentsCommandExecutor::_parse_get_auth_rule_response(get_auth_rule_response_json)?;
-
-        let res = self.payments_service.get_min_transaction_price(&auth_rule.constraint, &requester_info, &fees)?;
-
-        trace!("get_transaction_price <<< {:?}", res);
-
-        Ok(res)
-    }
-
-    fn _parse_get_auth_rule_response(get_auth_rule_response_json: &str) -> IndyResult<AuthRuleData> {
-        trace!("_parse_get_auth_rule_response >>> get_auth_rule_response_json: {:?}", get_auth_rule_response_json);
-
-        let get_auth_rule_response: Reply<Vec<AuthRuleData>> = serde_json::from_str(&get_auth_rule_response_json)
-            .to_indy(IndyErrorKind::InvalidStructure, "Cannot parse GetAuthRule response")?;
-
-        let mut auth_rules = get_auth_rule_response.result();
-
-        if auth_rules.len() == 0 {
-            return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, "GetAuthRule response doesn't contain any auth rule"));
-        }
-
-        if auth_rules.len() > 1 {
-            return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, "GetAuthRule response contains more than one auth rule"));
-        }
-
-        let res = auth_rules.pop().unwrap();
-
-        trace!("_parse_get_auth_rule_response <<< {:?}", res);
-
-        Ok(res)
     }
 
     fn register_method(&self, type_: &str, methods: PaymentsMethodCBs) -> IndyResult<()> {
@@ -753,5 +718,43 @@ impl PaymentsCommandExecutor {
             }
             (Ok(mth1), Ok(_)) => Ok(mth1)
         }
+    }
+
+    pub fn get_request_info(&self, get_auth_rule_response_json: &str, requester_info: RequesterInfo, fees: &Fees) -> IndyResult<String> {
+        trace!("get_request_info >>> get_auth_rule_response_json: {:?}, requester_info: {:?}, fees: {:?}", get_auth_rule_response_json, requester_info, fees);
+
+        let auth_rule = PaymentsCommandExecutor::_parse_get_auth_rule_response(get_auth_rule_response_json)?;
+
+        let req_info = self.payments_service.get_request_info_with_min_price(&auth_rule.constraint, &requester_info, &fees)?;
+
+        let res = serde_json::to_string(&req_info)
+            .to_indy(IndyErrorKind::InvalidState, "Cannot serialize RequestInfo")?;
+
+        trace!("get_request_info <<< {:?}", res);
+
+        Ok(res)
+    }
+
+    fn _parse_get_auth_rule_response(get_auth_rule_response_json: &str) -> IndyResult<EditAuthRuleData> {
+        trace!("_parse_get_auth_rule_response >>> get_auth_rule_response_json: {:?}", get_auth_rule_response_json);
+
+        let get_auth_rule_response: Reply<Vec<EditAuthRuleData>> = serde_json::from_str(&get_auth_rule_response_json)
+            .to_indy(IndyErrorKind::InvalidStructure, "Cannot parse GetAuthRule response")?;
+
+        let mut auth_rules = get_auth_rule_response.result();
+
+        if auth_rules.len() == 0 {
+            return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, "GetAuthRule response doesn't contain any auth rule"));
+        }
+
+        if auth_rules.len() > 1 {
+            return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, "GetAuthRule response contains more than one auth rule"));
+        }
+
+        let res = auth_rules.pop().unwrap();
+
+        trace!("_parse_get_auth_rule_response <<< {:?}", res);
+
+        Ok(res)
     }
 }

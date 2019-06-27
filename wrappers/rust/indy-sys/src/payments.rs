@@ -130,11 +130,11 @@ extern {
                                               cb: Option<ResponseStringCB>) -> Error;
 
     #[no_mangle]
-    pub fn indy_parse_request_info(command_handle: CommandHandle,
-                                   get_auth_rule_resp_json: CString,
-                                   requester_info_json: CString,
-                                   fees_json: CString,
-                                   cb: Option<ResponseStringCB>) -> Error;
+    pub fn indy_get_request_info(command_handle: CommandHandle,
+                                 get_auth_rule_resp_json: CString,
+                                 requester_info_json: CString,
+                                 fees_json: CString,
+                                 cb: Option<ResponseStringCB>) -> Error;
 }
 
 pub type CreatePaymentAddressCB = extern fn(command_handle: CommandHandle,

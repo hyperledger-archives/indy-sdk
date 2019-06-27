@@ -16,12 +16,7 @@ Cons: user need to prepare data stored on the ledger.
 /// fees_json: fees are set on the ledger.
 ///
 /// # Return
-/// request_info_json: payment info if a requester match to the action constraints or empty json otherwise.
-/// {
-///     "price": u64 - tokens amount required for action performing.
-///     "role": string - role of users who should sign,
-///     "sig_count": string - count of signers,
-/// }
+/// price: tokens amount required for action performingю
 ///
 /// #Errors
 /// Common*
@@ -32,7 +27,7 @@ pub extern fn indy_get_txn_price(command_handle: CommandHandle,
                                  fees_json: *const c_char,
                                  cb: Option<extern fn(command_handle_: CommandHandle,
                                                       err: ErrorCode,
-                                                      request_info_json: *const c_char)>) -> ErrorCode {
+                                                      price: u64)>) -> ErrorCode {
 .......
 ```
 Example of usage:
@@ -42,13 +37,16 @@ get_auth_rule_res = indy_submit_request(get_auth_rule_req, ...)
 get_fees_req = indy_build_payment_req(...)
 get_fees_res = indy_submit_request(get_fees_req, ...)
 fees = indy_parse_payment_response(get_fees_res, ...)
-req_info_json = indy_parse_request_info(get_auth_rule_res, requester_info_json, fees)
+price = indy_parse_request_info(get_auth_rule_res, requester_info_json, fees)
 ```
 2) Similar to the 1 option but returns json which contains action requirements in addition to the fee amount.
 Pros: explicit, single-purpose, flexible, follows to the common Indy pattern - separate function for one independent action.  
 Cons: user need to prepare data stored on the ledger.
 ```
-/// Parse GET_AUTH_RULE response to get action constraints and fee amount match to requester information.
+/// Gets request requirements (with minimal price) correspondent to specific auth rule and
+/// in case the requester can perform this action.
+///
+/// If the requester does not match to transaction auth rule, `TransactionNotAllowed` error will be thrown.
 ///
 /// # Params
 /// command_handle: Command handle to map callback to caller context.
@@ -61,23 +59,24 @@ Cons: user need to prepare data stored on the ledger.
 /// fees_json: fees are set on the ledger.
 ///
 /// # Return
-/// request_info_json: payment info if a requester match to the action constraints or empty json otherwise.
+/// request_info_json: request info if a requester match to the action auth rule.
 /// {
-///     "price": u64 - tokens amount required for action performing.
-///     "role": string - role of users who should sign,
-///     "sig_count": string - count of signers,
+///     "price": u64 - tokens amount required for action performing,
+///     "requirements": [{
+///         "role": string - role of users who should sign,
+///         "sig_count": string - count of signers,
+///         "need_to_be_owner": bool - if requester need to be owner,
+///     }]
 /// }
 ///
-/// #Errors
-/// Common*
 #[no_mangle]
-pub extern fn indy_parse_request_info(command_handle: CommandHandle,
-                                      get_auth_rule_response_json: *const c_char,
-                                      requester_info_json: *const c_char,
-                                      fees_json: *const c_char,
-                                      cb: Option<extern fn(command_handle_: CommandHandle,
-                                                         err: ErrorCode,
-                                                         request_info_json: *const c_char)>) -> ErrorCode {
+pub extern fn indy_get_request_info(command_handle: CommandHandle,
+                                    get_auth_rule_response_json: *const c_char,
+                                    requester_info_json: *const c_char,
+                                    fees_json: *const c_char,
+                                    cb: Option<extern fn(command_handle_: CommandHandle,
+                                                       err: ErrorCode,
+                                                       request_info_json: *const c_char)>) -> ErrorCode {
 .......
 ```
 Example of usage:
@@ -117,9 +116,12 @@ Cons: user need to define action, does a lot of intermediate steps internally th
 /// # Return
 /// request_info_json: payment info if a requester match to the action constraints or empty json otherwise.
 /// {
-///     "price": u64 - tokens amount required for action performing.
-///     "role": string - role of users who should sign,
-///     "sig_count": string - count of signers,
+///     "price": u64 - tokens amount required for action performing,
+///     "requirements": [{
+///         "role": string - role of users who should sign,
+///         "sig_count": string - count of signers,
+///         "need_to_be_owner": bool - if requester need to be owner,
+///     }]
 /// }
 ///
 /// #Errors
@@ -160,9 +162,12 @@ Cons: It requires changes in AUTH_RULE related functions to follow the same patt
 /// # Return
 /// request_info_json: payment info if a requester match to the action constraints or empty json otherwise.
 /// {
-///     "price": u64 - tokens amount required for action performing.
-///     "role": string - role of users who should sign,
-///     "sig_count": string - count of signers,
+///     "price": u64 - tokens amount required for action performing,
+///     "requirements": [{
+///         "role": string - role of users who should sign,
+///         "sig_count": string - count of signers,
+///         "need_to_be_owner": bool - if requester need to be owner,
+///     }]
 /// }
 ///
 /// #Errors

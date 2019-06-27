@@ -228,13 +228,3 @@ impl AuthRulesOperation {
         AuthRulesOperation { _type: AUTH_RULES.to_string(), rules }
     }
 }
-
-#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
-pub struct AuthRuleData {
-    pub auth_type: String,
-    pub auth_action: String,
-    pub field: String,
-    pub old_value: Option<String>,
-    pub new_value: Option<String>,
-    pub constraint: Constraint,
-}
