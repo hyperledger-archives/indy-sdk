@@ -2485,6 +2485,36 @@ amount: &lt;int&gt;, \/\/ amount
 extra: &lt;str&gt;, \/\/optional data
 }
 
+#### getRequestInfo \( getAuthRuleResponse, requesterInfo, fees \) -&gt; requestInfo
+
+Gets request requirements (with minimal price) correspondent to specific auth rule and in case the requester can perform this action.
+
+If the requester does not match to transaction auth rule, `TransactionNotAllowed` error will be thrown.
+
+* `getAuthRuleResponse`: String - response on GET_AUTH_RULE request.
+* `requesterInfo`: Json:
+```
+{
+    "role": string - role of a user which can sign transaction.
+    "count": u64 - count of users.
+    "is_owner": bool - if user is an owner of transaction.
+}
+```
+* `fees`: Json - fees are set on the ledger.
+* __->__ `requestInfo`: Json - request info if a requester match to the action auth rule.
+```
+{
+    "price": u64 - tokens amount required for action performing,
+    "requirements": [{
+        "role": string - role of users who should sign,
+        "sig_count": u64 - count of signers,
+        "need_to_be_owner": bool - if requester need to be owner,
+    }]
+}
+```
+
+Errors: `Common*`, `Ledger*`
+
 
 ### pool
 

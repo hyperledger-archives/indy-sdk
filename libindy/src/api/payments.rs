@@ -1244,7 +1244,7 @@ pub extern fn indy_parse_verify_payment_response(command_handle: CommandHandle,
 /// get_auth_rule_response_json: response on GET_AUTH_RULE request.
 /// requester_info_json: {
 ///     "role": string - role of a user which can sign transaction.
-///     "count": string - count of users.
+///     "count": u64 - count of users.
 ///     "is_owner": bool - if user is an owner of transaction.
 /// }
 /// fees_json: fees are set on the ledger.
@@ -1255,7 +1255,7 @@ pub extern fn indy_parse_verify_payment_response(command_handle: CommandHandle,
 ///     "price": u64 - tokens amount required for action performing,
 ///     "requirements": [{
 ///         "role": string - role of users who should sign,
-///         "sig_count": string - count of signers,
+///         "sig_count": u64 - count of signers,
 ///         "need_to_be_owner": bool - if requester need to be owner,
 ///     }]
 /// }

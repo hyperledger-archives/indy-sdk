@@ -682,3 +682,56 @@ async def parse_verify_payment_response(payment_method: str,
     res = receipts_json.decode()
     logger.debug("parse_verify_payment_response: <<< res: %r", res)
     return res
+
+
+async def get_request_info(get_auth_rule_response_json: str,
+                           requester_info_json: str,
+                           fees_json: str) -> str:
+    """
+    Gets request requirements (with minimal price) correspondent to specific auth rule and
+    in case the requester can perform this action.
+   
+    If the requester does not match to transaction auth rule, `TransactionNotAllowed` error will be thrown.
+
+    :param get_auth_rule_response_json: response on GET_AUTH_RULE request.
+    :param requester_info_json: {
+        "role": string - role of a user which can sign transaction.
+        "count": u64 - count of users.
+        "is_owner": bool - if user is an owner of transaction.
+    }
+    :param fees_json: fees are set on the ledger.
+
+    :return: request_info_json: request info if a requester match to the action auth rule.
+    {
+        "price": u64 - tokens amount required for action performing,
+        "requirements": [{
+            "role": string - role of users who should sign,
+            "sig_count": u64 - count of signers,
+            "need_to_be_owner": bool - if requester need to be owner,
+        }]
+    }
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("get_request_info: >>> get_auth_rule_response_json: %r, requester_info_json: %r, fees_json: %r",
+                 get_auth_rule_response_json,
+                 requester_info_json,
+                 fees_json)
+
+    if not hasattr(get_request_info, "cb"):
+        logger.debug("get_request_info: Creating callback")
+        get_request_info.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_get_auth_rule_response_json = c_char_p(get_auth_rule_response_json.encode('utf-8'))
+    c_requester_info_json = c_char_p(requester_info_json.encode('utf-8'))
+    c_fees_json = c_char_p(fees_json.encode('utf-8'))
+
+    request_info_json = await do_call('indy_get_request_info',
+                                      c_get_auth_rule_response_json,
+                                      c_requester_info_json,
+                                      c_fees_json,
+                                      get_request_info.cb)
+
+    res = request_info_json.decode()
+    logger.debug("get_request_info: <<< res: %r", res)
+    return res

@@ -656,6 +656,56 @@ public class Payments extends IndyJava.API {
 
         return future;
     }
+    
+    /**
+     * Gets request requirements (with minimal price) correspondent to specific auth rule and
+     * in case the requester can perform this action.
+     *
+     * If the requester does not match to transaction auth rule, `TransactionNotAllowed` error will be thrown.    
+     * 
+     * @param getAuthRuleResponseJson response on GET_AUTH_RULE request.
+     * @param requesterInfoJson {
+     *     "role": u64 - role of a user which can sign transaction.
+     *     "count": string - count of users.
+     *     "is_owner": bool - if user is an owner of transaction.
+     * }
+     * @param feesJson fees are set on the ledger.
+     *                 
+     * @return requestInfoJson: request info if a requester match to the action auth rule.
+     * {
+     *     "price": u64 - tokens amount required for action performing,
+     *     "requirements": [{
+     *         "role": string - role of users who should sign,
+     *         "sig_count": u64 - count of signers,
+     *         "need_to_be_owner": bool - if requester need to be owner,
+     *     }]
+     * }
+     * 
+     * @throws IndyException Thrown if a call to the underlying SDK fails.
+     */
+    public static CompletableFuture<String> getRequestInfo(
+            String getAuthRuleResponseJson,
+            String requesterInfoJson,
+            String feesJson
+    ) throws IndyException {
+        ParamGuard.notNull(getAuthRuleResponseJson, "getAuthRuleResponseJson");
+        ParamGuard.notNull(requesterInfoJson, "requesterInfoJson");
+        ParamGuard.notNull(feesJson, "feesJson");
+
+        CompletableFuture<String> future = new CompletableFuture<>();
+        int commandHandle = addFuture(future);
+        
+        int result = LibIndy.api.indy_get_request_info(
+                commandHandle,
+                getAuthRuleResponseJson,
+                requesterInfoJson,
+                feesJson,
+                stringCompleteCb);
+
+        checkResult(future, result);
+
+        return future;
+    }
 
     @FunctionalInterface
     interface QuadFunction<Arg1, Arg2, Arg3, Arg4, Res> {

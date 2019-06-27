@@ -170,6 +170,9 @@ class ErrorCode(IntEnum):
     # Extra funds on inputs
     PaymentExtraFundsError = 705
 
+    # The transaction is not allowed to a requester
+    TransactionNotAllowedError = 706
+
 
 class IndyError(Exception):
     # error_code: ErrorCode - libindy error code

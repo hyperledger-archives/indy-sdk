@@ -432,33 +432,42 @@ extern "C" {
                                                                                 const char*   txn_json)
                                                            );
 
-    /// Get fee amount that requester has to pay for performing of transaction correspondent to auth rule.
+    /// Gets request requirements (with minimal price) correspondent to specific auth rule and
+    /// in case the requester can perform this action.
+    ///
+    /// If the requester does not match to transaction auth rule, `TransactionNotAllowed` error will be thrown.
     ///
     /// # Params
     /// command_handle: Command handle to map callback to caller context.
     /// get_auth_rule_response_json: response on GET_AUTH_RULE request.
     /// requester_info_json: {
     ///     "role": string - role of a user which can sign transaction.
-    ///     "count": string - count of users.
+    ///     "count": u64 - count of users.
     ///     "is_owner": bool - if user is an owner of transaction.
     /// }
     /// fees_json: fees are set on the ledger.
     ///
     /// # Return
-    /// price: tokens amount required for transaction performing.
+    /// request_info_json: request info if a requester match to the action auth rule.
+    /// {
+    ///     "price": u64 - tokens amount required for action performing,
+    ///     "requirements": [{
+    ///         "role": string - role of users who should sign,
+    ///         "sig_count": u64 - count of signers,
+    ///         "need_to_be_owner": bool - if requester need to be owner,
+    ///     }]
+    /// }
     ///
-    /// #Errors
-    /// Common*
 
-    extern indy_error_t indy_get_transaction_price(indy_handle_t command_handle,
-                                                   const char *  get_auth_rule_response_json,
-                                                   const char *  requester_info_json,
-                                                   const char *  fees_json,
+    extern indy_error_t indy_get_request_info(indy_handle_t command_handle,
+                                              const char *  get_auth_rule_response_json,
+                                              const char *  requester_info_json,
+                                              const char *  fees_json,
 
-                                                   void           (*cb)(indy_handle_t command_handle_,
-                                                                        indy_error_t  err,
-                                                                        indy_u64_t    price)
-                                                   );
+                                              void           (*cb)(indy_handle_t command_handle_,
+                                                                   indy_error_t  err,
+                                                                   const char*   request_info_json)
+                                              );
 
 #ifdef __cplusplus
 }
