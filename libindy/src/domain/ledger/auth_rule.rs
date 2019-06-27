@@ -216,6 +216,21 @@ pub struct EditAuthRuleData {
     pub constraint: Constraint,
 }
 
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
+pub struct GetAuthRuleResult {
+    pub data: Vec<AuthRule>
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+pub struct AuthRule {
+    pub auth_type: String,
+    pub auth_action: String,
+    pub field: String,
+    pub old_value: Option<String>,
+    pub new_value: Option<String>,
+    pub constraint: Constraint,
+}
+
 #[derive(Serialize, PartialEq, Debug)]
 pub struct AuthRulesOperation {
     #[serde(rename = "type")]

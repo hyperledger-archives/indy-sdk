@@ -535,13 +535,7 @@ impl PaymentsService {
     fn _get_req_info(constraint: &RoleConstraint, fees: &Fees) -> IndyResult<RequestInfo> {
         let alias = constraint.metadata.as_ref().and_then(|meta| meta["fees"].as_str());
 
-        let price = match alias {
-            Some(alias_) =>
-                fees.get(alias_)
-                    .cloned()
-                    .ok_or(IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Fee not found for {:?} alias in fees json: {:?}", alias, fees))),
-            None => Ok(0)
-        }?;
+        let price = alias.and_then(|alias_| fees.get(alias_)).cloned().unwrap_or(0);
 
         let req_info = RequestInfo {
             price,
@@ -960,5 +954,26 @@ mod test {
 
         let res = payment_service.get_request_info_with_min_price(&constraint, &requester_info, &fees);
         assert!(res.is_err());
+    }
+
+    #[test]
+    fn test_get_min_transaction_price_for_no_fee() {
+        let payment_service = PaymentsService::new();
+
+        let constraint = _single_trustee();
+        let requester_info = _trustee_requester();
+
+        let req_info = payment_service.get_request_info_with_min_price(&constraint, &requester_info, &HashMap::new()).unwrap();
+
+        let expected_req_info = RequestInfo {
+            price: 0,
+            requirements: vec![Requirement {
+                sig_count: 1,
+                role: 0.to_string(),
+                need_to_be_owner: false,
+            }],
+        };
+
+        assert_eq!(expected_req_info, req_info);
     }
 }

@@ -12,7 +12,7 @@ use services::ledger::LedgerService;
 use services::payments::{PaymentsMethodCBs, PaymentsService, RequesterInfo, Fees};
 use services::wallet::{RecordOptions, WalletService};
 use api::WalletHandle;
-use domain::ledger::auth_rule::EditAuthRuleData;
+use domain::ledger::auth_rule::{GetAuthRuleResult, AuthRule};
 use domain::ledger::response::Reply;
 
 pub enum PaymentsCommand {
@@ -735,13 +735,13 @@ impl PaymentsCommandExecutor {
         Ok(res)
     }
 
-    fn _parse_get_auth_rule_response(get_auth_rule_response_json: &str) -> IndyResult<EditAuthRuleData> {
+    fn _parse_get_auth_rule_response(get_auth_rule_response_json: &str) -> IndyResult<AuthRule> {
         trace!("_parse_get_auth_rule_response >>> get_auth_rule_response_json: {:?}", get_auth_rule_response_json);
 
-        let get_auth_rule_response: Reply<Vec<EditAuthRuleData>> = serde_json::from_str(&get_auth_rule_response_json)
+        let get_auth_rule_response: Reply<GetAuthRuleResult> = serde_json::from_str(&get_auth_rule_response_json)
             .to_indy(IndyErrorKind::InvalidStructure, "Cannot parse GetAuthRule response")?;
 
-        let mut auth_rules = get_auth_rule_response.result();
+        let mut auth_rules = get_auth_rule_response.result().data;
 
         if auth_rules.len() == 0 {
             return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, "GetAuthRule response doesn't contain any auth rule"));

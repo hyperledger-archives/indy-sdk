@@ -114,15 +114,7 @@ Cons: user need to define action, does a lot of intermediate steps internally th
 /// }
 ///
 /// # Return
-/// request_info_json: payment info if a requester match to the action constraints or empty json otherwise.
-/// {
-///     "price": u64 - tokens amount required for action performing,
-///     "requirements": [{
-///         "role": string - role of users who should sign,
-///         "sig_count": string - count of signers,
-///         "need_to_be_owner": bool - if requester need to be owner,
-///     }]
-/// }
+/// "price": u64 - tokens amount required for action performing,
 ///
 /// #Errors
 /// Common*
@@ -136,7 +128,7 @@ pub extern fn indy_get_request_info(command_handle: CommandHandle,
                                     requester_info_json: *const c_char,
                                     cb: Option<extern fn(command_handle_: CommandHandle,
                                                          err: ErrorCode,
-                                                         request_info_json: *const c_char)>) -> ErrorCode {
+                                                         price: u64)>) -> ErrorCode {
 .......
 ```
 4) Similar to the 2 option but introduces replacement of action json by some aliases like `add_new_trustee`.

@@ -306,6 +306,10 @@ pub enum ErrorCode
     // Extra funds on inputs
     #[fail(display = "PaymentExtraFundsError")]
     PaymentExtraFundsError = 705,
+
+    // The transaction is not allowed to a requester
+    #[fail(display = "The transaction is not allowed to a requester")]
+    TransactionNotAllowed,
 }
 
 
