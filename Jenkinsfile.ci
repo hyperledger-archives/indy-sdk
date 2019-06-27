@@ -82,6 +82,10 @@ def windowsTesting() {
                             bat "cargo build --features fatal_warnings"
                             bat "cargo test --no-run"
 
+                            echo "Windows Libindy before Test: Deleting %TEMP\\indy_client"
+                            bat "DEL /S /Q /F %TEMP%\\indy_client"
+                            bat "DEL /S /Q /F %UserProfile%\\.indy_client"
+
                             echo "Windows Libindy Test: Run tests"
                             withEnv([
                                     "RUST_TEST_THREADS=1",
@@ -90,6 +94,11 @@ def windowsTesting() {
                             ]) {
                                 bat "cargo test"
                             }
+
+                            echo "Windows Libindy after Test: Deleting %TEMP\\indy_client"
+                            bat "DEL /S /Q /F %TEMP%\\indy_client"
+                            bat "DEL /S /Q /F %UserProfile%\\.indy_client"
+
                         }
                     }
 
@@ -164,6 +173,12 @@ def windowsTesting() {
                     //TODO wrappers testing
 
                 } finally {
+                    try {
+                        echo "Windows Libindy after Test: Deleting %TEMP\\indy_client"
+                        bat "DEL /S /Q /F %TEMP%\\indy_client"
+                        bat "DEL /S /Q /F %UserProfile%\\.indy_client"
+                    } catch (ignore) {
+                    }
                     try {
                         bat "docker -H $INDY_SDK_SERVER_IP stop indy_pool"
                     } catch (ignore) {

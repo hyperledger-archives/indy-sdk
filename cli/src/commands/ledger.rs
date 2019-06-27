@@ -947,7 +947,7 @@ pub mod custom_command {
                     println!("Transaction stored into context: {:?}.", txn_);
                     println!("Would you like to send it? (y/n)");
 
-                    let use_transaction = ::command_executor::wait_for_user_reply();
+                    let use_transaction = ::command_executor::wait_for_user_reply(ctx);
 
                     if !use_transaction {
                         return Ok(println!("No transaction has been send."));
@@ -1290,7 +1290,7 @@ pub mod sign_multi_command {
             println!("Transaction stored into context: {:?}.", txn_);
             println!("Would you like to use it? (y/n)");
 
-            let use_transaction = ::command_executor::wait_for_user_reply();
+            let use_transaction = ::command_executor::wait_for_user_reply(ctx);
 
             if !use_transaction {
                 return Ok(println!("No transaction has been signed."));
@@ -1542,7 +1542,7 @@ pub mod save_transaction_command {
         println!("Transaction: {:?}.", transaction);
         println!("Would you like to save it? (y/n)");
 
-        let save_transaction = ::command_executor::wait_for_user_reply();
+        let save_transaction = ::command_executor::wait_for_user_reply(ctx);
 
         if !save_transaction {
             return Ok(println!("The transaction has not been saved."));

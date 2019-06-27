@@ -306,7 +306,7 @@ pub mod delete_command {
 pub fn accept_transaction_author_agreement(ctx: &CommandContext, text: &str, version: &str) {
     println!("Would you like to accept it? (y/n)");
 
-    let accept_agreement = wait_for_user_reply();
+    let accept_agreement = wait_for_user_reply(ctx);
 
     if !accept_agreement {
         println_warn!("The Transaction Author Agreement has NOT been Accepted.");
@@ -331,7 +331,7 @@ pub fn set_transaction_author_agreement(ctx: &CommandContext, pool_handle: i32, 
             println!("You can postpone accepting the Agreement. Accept it later by calling `pool show-taa` command");
             println!("Would you like to read it? (y/n)");
 
-            let read_agreement = wait_for_user_reply();
+            let read_agreement = wait_for_user_reply(ctx);
 
             if !read_agreement {
                 println_warn!("The Transaction Author Agreement has NOT been Accepted.");
