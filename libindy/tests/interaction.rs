@@ -735,9 +735,9 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_po
 #[cfg(any(feature = "force_full_interaction_tests", not(target_os = "android")))]
 #[test]
 fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_post_common_entry_proving_all() {
-    utils::setup("anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_post_common_entry_proving_all");
+    utils::setup("aritibdtcpcepa");
 
-    let pool = Pool::new("anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_post_common_entry_proving_all");
+    let pool = Pool::new("aritibdtcpcepa");
 
     let mut issuer = Issuer::new(&pool);
 
@@ -829,5 +829,5 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_po
     pool.close();
 
 
-    utils::tear_down("anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_post_common_entry_proving_all");
+    utils::tear_down("aritibdtcpcepa");
 }

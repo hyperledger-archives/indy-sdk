@@ -399,7 +399,7 @@
     return err;
 }
 
-- (NSError *)getRequestInfoForRequester:((NSString *)requesterInfoJson
+- (NSError *)getRequestInfoForRequester:(NSString *)requesterInfoJson
                 getAuthRuleResponseJson:(NSString *)getAuthRuleResponseJson
                                feesJson:(NSString *)feesJson
                         requestInfoJson:(NSString **)requestInfoJson {
