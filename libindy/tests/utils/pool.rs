@@ -26,15 +26,16 @@ struct PoolConfig {
 pub fn create_genesis_txn_file(pool_name: &str,
                                txn_file_data: &str,
                                txn_file_path: Option<&Path>) -> PathBuf {
-    let txn_file_path = txn_file_path.map_or(
-        environment::tmp_file_path(format!("{}.txn", pool_name).as_str()),
-        |path| path.to_path_buf());
-
-    if !txn_file_path.parent().unwrap().exists() {
-        fs::DirBuilder::new()
-            .recursive(true)
-            .create(txn_file_path.parent().unwrap()).unwrap();
-    }
+    let txn_file_path= match txn_file_path {
+        Some(path) => path.to_path_buf(),
+        None => {
+            let mut pool_path = environment::tmp_file_path(pool_name);
+            fs::create_dir_all(pool_path.as_path()).unwrap();
+            pool_path.push(pool_name);
+            pool_path.set_extension("txn");
+            pool_path
+        }
+    };
 
     let mut f = fs::File::create(txn_file_path.as_path()).unwrap();
     f.write_all(txn_file_data.as_bytes()).unwrap();

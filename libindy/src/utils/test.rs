@@ -2,6 +2,7 @@ use utils::environment;
 
 use std::fs;
 use std::path::PathBuf;
+use std::fs::File;
 
 
 pub fn cleanup_files(dir: &PathBuf, name: &str) {
@@ -37,6 +38,15 @@ pub fn cleanup_storage(name: &str) {
     cleanup_pool(name);
     cleanup_indy_home(name);
     cleanup_temp(name);
+}
+
+#[cfg(test)]
+pub fn test_pool_create_poolfile(pool_name: &str) -> File {
+    let mut pool_path = environment::pool_path(pool_name);
+    fs::create_dir_all(pool_path.as_path()).unwrap();
+    pool_path.push(pool_name);
+    pool_path.set_extension("txn");
+    fs::File::create(pool_path.as_path()).unwrap()
 }
 
 pub fn gen_txns() -> Vec<String> {
