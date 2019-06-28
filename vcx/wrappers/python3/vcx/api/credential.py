@@ -209,6 +209,34 @@ class Credential(VcxStateful):
                       c_payment,
                       Credential.send_request.cb)
 
+    async def get_request_msg(self, connection: Connection, payment_handle: int):
+        """
+        Approves the credential offer and gets the credential request message
+        :param connection: connection to submit request from
+        :param payment_handle: currently unused
+        :return:
+        Example:
+        connection = await Connection.create(source_id)
+        await connection.connect(phone_number)
+        credential = await Credential.create(source_id, offer)
+        await credential.send_request(connection, 0)
+        """
+        if not hasattr(Credential.get_request_msg, "cb"):
+            self.logger.debug("vcx_credential_get_request_msg: Creating callback")
+            Credential.get_request_msg.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
+
+        c_credential_handle = c_uint32(self.handle)
+        c_connection_handle = c_uint32(connection.handle)
+        c_payment = c_uint32(payment_handle)
+
+        msg = await do_call('vcx_credential_get_request_msg',
+                      c_credential_handle,
+                      c_connection_handle,
+                      c_payment,
+                      Credential.get_request_msg.cb)
+
+        return json.loads(msg.decode())
+
     async def get_payment_info(self):
         """
         Retrieve Payment Transaction Information for this Credential. Typically this will include

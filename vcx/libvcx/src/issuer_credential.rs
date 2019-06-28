@@ -127,6 +127,33 @@ impl IssuerCredential {
         Ok(error::SUCCESS.code_num)
     }
 
+    pub fn generate_credential_offer_msg(&mut self, connection_handle: u32) -> VcxResult<(String, String)> {
+        let mut payload = Vec::new();
+
+        let connection_name = settings::get_config_value(settings::CONFIG_INSTITUTION_NAME)?;
+
+        let payment = self.generate_payment_info()?;
+
+        let title = if let Some(x) = payment {
+            payload.push(json!(x));
+            format!("{} wants you to pay tokens for: {}", connection_name, self.credential_name)
+        } else {
+            format!("{} is offering you a credential: {}", connection_name, self.credential_name)
+        };
+
+        let credential_offer = self.generate_credential_offer(&self.issued_did)?;
+        let cred_json = json!(credential_offer);
+
+        payload.push(cred_json);
+
+        let payload = serde_json::to_string(&payload)
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize payload: {}", err)))?;
+
+        self.credential_offer = Some(credential_offer);
+
+        Ok((payload, title))
+    }
+
     fn send_credential_offer(&mut self, connection_handle: u32) -> VcxResult<u32> {
         trace!("IssuerCredential::send_credential_offer >>> connection_handle: {}", connection_handle);
 
@@ -147,24 +174,8 @@ impl IssuerCredential {
         self.issued_vk = connection::get_pw_verkey(connection_handle)?;
         self.remote_vk = connection::get_their_pw_verkey(connection_handle)?;
 
-        let payment = self.generate_payment_info()?;
-        let credential_offer = self.generate_credential_offer(&self.issued_did)?;
-        let cred_json = json!(credential_offer);
-        let mut payload = Vec::new();
 
-        let connection_name = settings::get_config_value(settings::CONFIG_INSTITUTION_NAME)?;
-
-        let title = if let Some(x) = payment {
-            payload.push(json!(x));
-            format!("{} wants you to pay tokens for: {}", connection_name, self.credential_name)
-        } else {
-            format!("{} is offering you a credential: {}", connection_name, self.credential_name)
-        };
-
-        payload.push(cred_json);
-
-        let payload = serde_json::to_string(&payload)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize payload: {}", err)))?;
+        let (payload, title) = self.generate_credential_offer_msg(connection_handle)?;
 
         debug!("credential offer data: {}", secret!(&payload));
 
@@ -184,10 +195,24 @@ impl IssuerCredential {
 
         self.msg_uid = response.get_msg_uid()?;
         self.state = VcxStateType::VcxStateOfferSent;
-        self.credential_offer = Some(credential_offer);
 
         debug!("sent credential offer for: {}", self.source_id);
         return Ok(error::SUCCESS.code_num);
+    }
+
+    fn generate_credential_msg(&mut self, connection_handle: u32) -> VcxResult<String> {
+        let to = connection::get_pw_did(connection_handle)?;
+        let attrs_with_encodings = self.create_attributes_encodings()?;
+
+        let data = if settings::test_indy_mode_enabled() {
+            CRED_MSG.to_string()
+        } else {
+            let cred = self.generate_credential(&attrs_with_encodings, &to)?;
+            serde_json::to_string(&cred)
+                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidCredential, format!("Cannot serialize credential: {}", err)))?
+        };
+
+        Ok(data)
     }
 
     fn send_credential(&mut self, connection_handle: u32) -> VcxResult<u32> {
@@ -206,16 +231,7 @@ impl IssuerCredential {
 
         self.verify_payment()?;
 
-        let to = connection::get_pw_did(connection_handle)?;
-        let attrs_with_encodings = self.create_attributes_encodings()?;
-
-        let data = if settings::test_indy_mode_enabled() {
-            CRED_MSG.to_string()
-        } else {
-            let cred = self.generate_credential(&attrs_with_encodings, &to)?;
-            serde_json::to_string(&cred)
-                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidCredential, format!("Cannot serialize credential: {}", err)))?
-        };
+        let data = self.generate_credential_msg(connection_handle)?;
 
         debug!("credential data: {}", secret!(&data));
 
@@ -614,9 +630,21 @@ pub fn from_string(credential_data: &str) -> VcxResult<u32> {
     ISSUER_CREDENTIAL_MAP.add(schema)
 }
 
+pub fn generate_credential_offer_msg(handle: u32, connection_handle: u32) -> VcxResult<(String, String)> {
+    ISSUER_CREDENTIAL_MAP.get_mut(handle, |i| {
+        i.generate_credential_offer_msg(connection_handle)
+    })
+}
+
 pub fn send_credential_offer(handle: u32, connection_handle: u32) -> VcxResult<u32> {
     ISSUER_CREDENTIAL_MAP.get_mut(handle, |i| {
         i.send_credential_offer(connection_handle)
+    })
+}
+
+pub fn generate_credential_msg(handle: u32, connection_handle: u32) -> VcxResult<String> {
+    ISSUER_CREDENTIAL_MAP.get_mut(handle, |i| {
+        i.generate_credential_msg(connection_handle)
     })
 }
 

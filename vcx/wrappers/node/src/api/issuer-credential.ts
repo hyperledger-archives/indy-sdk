@@ -215,7 +215,47 @@ export class IssuerCredential extends VCXBaseWithState<IIssuerCredentialData> {
       throw new VCXInternalError(err)
     }
   }
-
+  /**
+   * Gets the credential offer message for sending to connection.
+   *
+   * ```
+   * connection = await connectionCreateConnect()
+   * issuerCredential = await issuerCredentialCreate()
+   * await issuerCredential.sendOffer(connection)
+   * await issuerCredential.updateState()
+   * assert.equal(await issuerCredential.getState(), StateType.RequestReceived)
+   * await issuerCredential.sendCredential(connection)
+   * ```
+   *
+   */
+  public async getCredentialOfferMsg (connection: Connection): Promise<string> {
+    try {
+      return await createFFICallbackPromise<string>(
+          (resolve, reject, cb) => {
+            const rc = rustAPI().vcx_issuer_get_credential_offer_msg(0, this.handle, connection.handle, cb)
+            if (rc) {
+              reject(rc)
+            }
+          },
+          (resolve, reject) => ffi.Callback(
+            'void',
+            ['uint32', 'uint32', 'string'],
+            (xHandle: number, err: number, message: string) => {
+              if (err) {
+                reject(err)
+                return
+              }
+              if (!message) {
+                reject(`Credential ${this.sourceId} returned empty string`)
+                return
+              }
+              resolve(message)
+            })
+        )
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
   /**
    * Sends the credential to the end user.
    *
@@ -254,7 +294,48 @@ export class IssuerCredential extends VCXBaseWithState<IIssuerCredentialData> {
       throw new VCXInternalError(err)
     }
   }
-
+  /**
+   * Gets the credential message for sending to connection.
+   *
+   * Credential is made up of the data sent during Credential Offer
+   * ```
+   * connection = await connectionCreateConnect()
+   * issuerCredential = await issuerCredentialCreate()
+   * await issuerCredential.sendOffer(connection)
+   * await issuerCredential.updateState()
+   * assert.equal(await issuerCredential.getState(), StateType.RequestReceived)
+   * await issuerCredential.sendCredential(connection)
+   * ```
+   *
+   */
+  public async getCredentialMsg (connection: Connection): Promise<string> {
+    try {
+      return await createFFICallbackPromise<string>(
+          (resolve, reject, cb) => {
+            const rc = rustAPI().vcx_issuer_get_credential_msg(0, this.handle, connection.handle, cb)
+            if (rc) {
+              reject(rc)
+            }
+          },
+          (resolve, reject) => ffi.Callback(
+            'void',
+            ['uint32', 'uint32', 'string'],
+            (xHandle: number, err: number, message: string) => {
+              if (err) {
+                reject(err)
+                return
+              }
+              if (!message) {
+                reject(`Credential ${this.sourceId} returned empty string`)
+                return
+              }
+              resolve(message)
+            })
+        )
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
   /**
    * Revokes credential.
    *

@@ -138,6 +138,15 @@ async def test_send_offer():
     txn = await issuer_credential.get_payment_txn()
     assert(txn)
 
+@pytest.mark.asyncio
+@pytest.mark.usefixtures('vcx_init_test_mode')
+async def test_get_offer_msg():
+    connection = await Connection.create(source_id)
+    await connection.connect(connection_options)
+    cred_def = await CredentialDef.create(source_id, name, schema_id, 0)
+    issuer_credential = await IssuerCredential.create(source_id, attrs, cred_def.handle, name, price)
+    msg = await issuer_credential.get_offer_msg(connection)
+    assert(msg)
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
@@ -194,6 +203,24 @@ async def test_send_credential_with_message():
     assert await issuer_credential.update_state_with_message(cred_request_message) == State.RequestReceived
     await issuer_credential.send_credential(connection)
     assert await issuer_credential.get_state() == State.Accepted
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures('vcx_init_test_mode')
+async def test_get_credential_msg():
+    connection = await Connection.create(source_id)
+    await connection.connect(connection_options)
+    cred_def = await CredentialDef.create(source_id, name, schema_id, 0)
+    issuer_credential = await IssuerCredential.create(source_id, attrs, cred_def.handle, name, price)
+    await issuer_credential.send_offer(connection)
+    assert await issuer_credential.update_state() == State.OfferSent
+    # simulate consumer sending credential_req
+    data = await issuer_credential.serialize()
+    data['data']['state'] = State.RequestReceived
+    data['data']['credential_request'] = req
+    issuer_credential2 = await issuer_credential.deserialize(data)
+    msg = await issuer_credential2.get_credential_msg(connection)
+    assert(msg)
 
 
 @pytest.mark.asyncio
