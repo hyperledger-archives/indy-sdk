@@ -98,7 +98,7 @@
                         receiptInfoJson:(NSString **)receiptInfoJson;
 
 // MARK: - Get Request Info
-- (NSError *)getRequestInfoForRequester:((NSString *)requesterInfoJson
+- (NSError *)getRequestInfoForRequester:(NSString *)requesterInfoJson
                 getAuthRuleResponseJson:(NSString *)getAuthRuleResponseJson
                                feesJson:(NSString *)feesJson
                         requestInfoJson:(NSString **)requestInfoJson;
