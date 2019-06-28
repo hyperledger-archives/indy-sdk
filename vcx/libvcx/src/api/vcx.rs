@@ -1021,10 +1021,9 @@ mod tests {
     }
 
     #[cfg(feature = "pool_tests")]
-    #[cfg(feature = "agency")]
     #[test]
     fn test_init_minimal() {
-        init!("agency");
+        init!("ledger");
         let content = get_settings();
         settings::clear_config();
         // Store settings and handles
@@ -1045,8 +1044,6 @@ mod tests {
         assert_eq!(error::SUCCESS.code_num, vcx_init_minimal(config));
         // test that wallet and pool are operational
         ::utils::libindy::anoncreds::tests::create_and_store_credential(::utils::constants::DEFAULT_SCHEMA_ATTRS, false);
-        assert!(::connection::tests::build_test_connection() > 0);
-        teardown!("agency");
     }
 
     #[test]
