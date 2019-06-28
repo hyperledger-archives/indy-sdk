@@ -320,4 +320,26 @@
                      paymentMethod:(NSString *)paymentMethod
                         completion:(void (^)(NSError *error, NSString *txnJson))completion;
 
+/**
+ Gets request requirements (with minimal price) correspondent to specific auth rule and
+ in case the requester can perform this action.
+
+ If the requester does not match to transaction auth rule, `TransactionNotAllowed` error will be thrown.
+
+ @param requesterInfoJson
+ {
+   "role": string - role of a user which can sign transaction.
+   "count": u64 - count of users.
+   "is_owner": bool - if user is an owner of transaction.
+ }
+ @param getAuthRuleResponseJson response on GET_AUTH_RULE request.
+ @param feesJson fees are set on the ledger.
+
+ @param completion Callback that takes command result as parameter. Returns setTxnFeesRequest json.
+ */
++ (void)getRequestInfoForRequester:(NSString *)requesterInfoJson
+           getAuthRuleResponseJson:(NSString *)getAuthRuleResponseJson
+                          feesJson:(NSString *)feesJson
+                        completion:(void (^)(NSError *error, NSString *requestInfoJson))completion;
+
 @end
