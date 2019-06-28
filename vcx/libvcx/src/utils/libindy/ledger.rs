@@ -155,6 +155,12 @@ pub fn libindy_build_get_auth_rule_request(submitter_did: Option<&str>, txn_type
         .map_err(map_rust_indy_sdk_error)
 }
 
+pub fn libindy_build_get_nym_request(submitter_did: Option<&str>, did: &str) -> VcxResult<String> {
+    ledger::build_get_nym_request(submitter_did, did)
+        .wait()
+        .map_err(map_rust_indy_sdk_error)
+}
+
 pub mod auth_rule {
     use super::*;
     use std::collections::{HashMap, HashSet};
@@ -275,6 +281,15 @@ pub mod auth_rule {
         constraint: Constraint
     }
 
+    #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+    pub struct Action {
+        pub auth_type: String,
+        pub auth_action: String,
+        pub field: String,
+        pub old_value: Option<String>,
+        pub new_value: Option<String>,
+    }
+
     // Helpers to set fee alias for auth rules
     pub fn set_actions_fee_aliases(submitter_did: &str, rules_fee: &str) -> VcxResult<()> {
         _get_default_ledger_auth_rules();
@@ -348,66 +363,39 @@ pub mod auth_rule {
         }
     }
 
-    pub fn get_action_fee_alias(action: (&str, &str, &str, Option<&str>, &str)) -> VcxResult<Option<String>> {
+    pub fn get_action_auth_rule(action: (&str, &str, &str, Option<&str>, Option<&str>)) -> VcxResult<String> {
+        if settings::test_indy_mode_enabled() { return Ok(r#"{"result":{"data":[{"new_value":"0","constraint":{"need_to_be_owner":false,"sig_count":1,"metadata":{"fees":"101"},"role":"0","constraint_id":"ROLE"},"field":"role","auth_type":"1","auth_action":"ADD"}],"identifier":"LibindyDid111111111111","auth_action":"ADD","new_value":"0","reqId":15616,"auth_type":"1","type":"121","field":"role"},"op":"REPLY"}"#.to_string()); }
+
         let (txn_type, action, field, old_value, new_value) = action;
 
-        if settings::test_indy_mode_enabled() { return Ok(Some(txn_type.to_string())); }
-
-        let constraint = _get_action_constraint(txn_type, action, field, old_value, Some(new_value))?;
-        _extract_fee_alias_from_constraint(&constraint, None)
-    }
-
-    fn _get_action_constraint(txn_type: &str, action: &str, field: &str,
-                              old_value: Option<&str>, new_value: Option<&str>) -> VcxResult<Constraint> {
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
 
         let request = libindy_build_get_auth_rule_request(Some(&did), Some(txn_type), Some(action), Some(field), old_value, new_value)?;
 
-        let response = libindy_submit_request(&request)?;
+        let response_json = libindy_submit_request(&request)?;
 
-        let mut response: GetAuthRuleResponse = ::serde_json::from_str(&response)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidLedgerResponse, err))?;
+        let response: serde_json::Value = ::serde_json::from_str(&response_json)
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidLedgerResponse, format!("{:?}", err)))?;
 
-        let auth_rule = response.result.data.pop()
-            .ok_or(VcxError::from_msg(VcxErrorKind::InvalidLedgerResponse,
-                                      format!("Auth Rule not found for action: auth_type: {:?}, auth_action: {:?}, field: {:?}, old_value: {:?}, new_value: {:?}",
-                                              txn_type, action, field, old_value, new_value)))?;
-
-        Ok(auth_rule.constraint)
-    }
-
-    fn _extract_fee_alias_from_constraint(constraint: &Constraint, cur_fee: Option<String>) -> VcxResult<Option<String>> {
-        let fee = match constraint {
-            Constraint::RoleConstraint(constraint) => {
-                constraint.metadata.as_ref().and_then(|metadata| metadata.fees.clone())
-            }
-            Constraint::AndConstraint(constraint) | Constraint::OrConstraint(constraint) => {
-                let fees: HashSet<Option<String>> = constraint.auth_constraints
-                    .iter()
-                    .map(|constraint| _extract_fee_alias_from_constraint(constraint, cur_fee.clone()))
-                    .collect::<VcxResult<HashSet<Option<String>>>>()?;
-                if fees.len() != 1 {
-                    return Err(VcxError::from_msg(VcxErrorKind::InvalidLedgerResponse, format!("There are multiple different fees: {:?}", fees)));
-                }
-
-                fees.into_iter().next().unwrap()
-            }
-            Constraint::ForbiddenConstraint(_) => None
-        };
-
-        match (cur_fee, fee) {
-            (None, None) => Ok(None),
-            (Some(cur_fee_), None) => Ok(Some(cur_fee_)),
-            (None, Some(fee)) => Ok(Some(fee)),
-            (Some(cur_fee_), Some(fee)) => {
-                if cur_fee_ != fee {
-                    return Err(VcxError::from_msg(VcxErrorKind::InvalidLedgerResponse, format!("Fee values are different. current fee: {}, new fee: {}", cur_fee_, fee)));
-                } else {
-                    Ok(Some(cur_fee_))
-                }
-            }
+        match response["op"].as_str().unwrap_or_default() {
+            "REPLY" => Ok(response_json),
+            _ => Err(VcxError::from(VcxErrorKind::InvalidLedgerResponse))
         }
     }
+}
+
+pub fn get_nym(did: &str) -> VcxResult<String> {
+    let submitter_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
+    let get_nym_req = libindy_build_get_nym_request(Some(&submitter_did), &did)?;
+    libindy_submit_request(&get_nym_req)
+}
+
+pub fn get_role(did: &str) -> VcxResult<String> {
+    let get_nym_resp = get_nym(&did)?;
+    let get_nym_resp: serde_json::Value = serde_json::from_str(&get_nym_resp)
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidLedgerResponse, format!("{:?}", err)))?;
+    let role = get_nym_resp["result"]["data"]["role"].as_str().unwrap_or("").to_string();
+    Ok(role)
 }
 
 pub fn parse_response(response: &str) -> VcxResult<Response> {

@@ -3,7 +3,7 @@ use messages::{A2AMessage, A2AMessageV1, A2AMessageV2, A2AMessageKinds, prepare_
 use messages::message_type::MessageTypes;
 use utils::constants::*;
 use utils::{error, httpclient};
-use utils::libindy::{wallet, anoncreds};
+use utils::libindy::{wallet, anoncreds, ledger};
 use utils::libindy::signus::create_and_store_my_did;
 use error::prelude::*;
 
@@ -185,6 +185,7 @@ pub fn connect_register_provision(config: &str) -> VcxResult<String> {
 
     settings::set_config_value(settings::CONFIG_INSTITUTION_DID, &my_did);
     settings::set_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY, &my_vk);
+    settings::set_config_value(settings::CONFIG_SDK_TO_REMOTE_ROLE, &ledger::get_role(&my_did)?);
 
     trace!("Connecting to Agency");
 
