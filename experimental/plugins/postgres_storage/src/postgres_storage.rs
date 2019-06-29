@@ -109,6 +109,7 @@ impl Default for SearchOptions {
 
 
 const _POSTGRES_DB: &str = "postgres";
+const _WALLETS_DB: &str = "wallets";
 const _PLAIN_TAGS_QUERY: &str = "SELECT name, value from tags_plaintext where item_id = $1";
 const _ENCRYPTED_TAGS_QUERY: &str = "SELECT name, value from tags_encrypted where item_id = $1";
 const _CREATE_WALLET_DATABASE: &str = "CREATE DATABASE $1";
@@ -294,11 +295,11 @@ impl StorageIterator for PostgresStorageIterator {
 #[derive(Deserialize, Debug)]
 pub struct PostgresConfig {
     url: String,
-    // TODO add additional configuration options
-    tls: Option<String>,                // default off
+    tls: Option<String>,             // default off
     max_connections: Option<u32>,    // default 5
     min_idle_time: Option<u32>,      // default 0
     connection_timeout: Option<u64>, // default 5
+    wallet_scheme: Option<WalletScheme>,   // default DatabasePerWallet
 }
 
 impl PostgresConfig {
@@ -342,6 +343,12 @@ impl PostgresConfig {
         match &self.connection_timeout {
             Some(timeout) => *timeout,
             None => 5
+        }
+    }
+    fn wallet_scheme(&self) -> WalletScheme {
+        match &self.wallet_scheme {
+            Some(scheme) => *scheme,
+            None => WalletScheme::DatabasePerWallet
         }
     }
 }
