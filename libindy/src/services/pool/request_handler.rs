@@ -1,6 +1,3 @@
-extern crate rust_base58;
-extern crate log_derive;
-
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -33,9 +30,9 @@ use services::pool::types::HashableValue;
 use super::ursa::bls::Generator;
 use super::ursa::bls::VerKey;
 
-use self::rust_base58::FromBase58;
+use rust_base58::FromBase58;
 use std::hash::{Hash, Hasher};
-use self::log_derive::logfn;
+use log_derive::logfn;
 
 struct RequestSM<T: Networker> {
     f: usize,
@@ -831,19 +828,20 @@ pub mod tests {
     use services::pool::networker::MockNetworker;
     use services::pool::types::{ConsistencyProof, LedgerStatus, Reply, ReplyResultV1, ReplyTxnV1, ReplyV1, Response, ResponseMetadata, ResponseV1};
     use utils::test;
+    use utils::test::test_pool_create_poolfile;
 
     use super::*;
+    use std::io::Write;
 
-    const MESSAGE: &'static str = "message";
-    const REQ_ID: &'static str = "1";
-    const NODE: &'static str = "n1";
-    const NODE_2: &'static str = "n2";
-    const NODE_3: &'static str = "n3";
-    const NODE_4: &'static str = "n4";
-    const SIMPLE_REPLY: &'static str = r#"{"result":{}}"#;
-    const REJECT_REPLY: &'static str = r#"{"op":"REJECT", "result": {"reason": "reject"}}"#;
-    const NACK_REPLY: &'static str = r#"{"op":"REQNACK", "result": {"reason": "reqnack"}}"#;
-    const POOL: &'static str = "pool1";
+    const MESSAGE: &str = "message";
+    const REQ_ID: &str = "1";
+    const NODE: &str = "n1";
+    const NODE_2: &str = "n2";
+    const NODE_3: &str = "n3";
+    const NODE_4: &str = "n4";
+    const SIMPLE_REPLY: &str = r#"{"result":{}}"#;
+    const REJECT_REPLY: &str = r#"{"op":"REJECT", "result": {"reason": "reject"}}"#;
+    const NACK_REPLY: &str = r#"{"op":"REQNACK", "result": {"reason": "reqnack"}}"#;
 
     #[derive(Debug)]
     pub struct MockRequestHandler {}
@@ -921,7 +919,7 @@ pub mod tests {
         }
     }
 
-    fn _request_handler(f: usize, nodes_cnt: usize) -> RequestHandlerImpl<MockNetworker> {
+    fn _request_handler(pool_name: &str, f: usize, nodes_cnt: usize) -> RequestHandlerImpl<MockNetworker> {
         let networker = Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![])));
 
         let mut default_nodes: HashMap<String, Option<VerKey>> = HashMap::new();
@@ -939,38 +937,26 @@ pub mod tests {
                                 &vec![],
                                 &nodes,
                                 None,
-                                POOL,
+                                pool_name,
                                 0,
                                 0)
     }
 
     // required because of dumping txns to cache
-    fn _create_pool(content: Option<String>) {
-        use utils::environment;
-        use std::fs;
-        use std::fs::File;
-        use std::io::Write;
-
-        let mut path = environment::pool_path(POOL);
-
-        path.push(POOL);
-        path.set_extension("txn");
-
-        fs::create_dir_all(path.parent().unwrap()).unwrap();
-
-        let mut file = File::create(path).unwrap();
+    fn _create_pool(pool_name: &str, content: Option<String>) {
+        let mut file = test_pool_create_poolfile(pool_name);
         file.write_all(content.unwrap_or("{}".to_string()).as_bytes()).unwrap();
     }
 
     #[test]
     fn request_handler_new_works() {
-        let request_handler = _request_handler(0, 1);
+        let request_handler = _request_handler("request_handler_new_works", 0, 1);
         assert_match!(RequestState::Start(_), request_handler.request_wrapper.unwrap().state);
     }
 
     #[test]
     fn request_handler_process_event_works() {
-        let mut request_handler = _request_handler(0, 1);
+        let mut request_handler = _request_handler("request_handler_process_event_works", 0, 1);
         request_handler.process_event(None);
     }
 
@@ -979,77 +965,77 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_ledger_status_event_from_start_works() {
-            let mut request_handler = _request_handler(0, 1);
+            let mut request_handler = _request_handler("request_handler_process_ledger_status_event_from_start_works", 0, 1);
             request_handler.process_event(Some(RequestEvent::LedgerStatus(LedgerStatus::default(), Some(NODE.to_string()), Some(MerkleTree::default()))));
             assert_match!(RequestState::CatchupConsensus(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
         fn request_handler_process_catchup_req_event_from_start_works() {
-            let mut request_handler = _request_handler(0, 1);
+            let mut request_handler = _request_handler("request_handler_process_catchup_req_event_from_start_works", 0, 1);
             request_handler.process_event(Some(RequestEvent::CatchupReq(MerkleTree::default(), 1, vec![])));
             assert_match!(RequestState::CatchupSingle(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
         fn request_handler_process_catchup_req_event_from_start_works_for_no_transactions_to_catchup() {
-            let mut request_handler = _request_handler(0, 1);
+            let mut request_handler = _request_handler("request_handler_process_catchup_req_event_from_start_works_for_no_transactions_to_catchup", 0, 1);
             request_handler.process_event(Some(RequestEvent::CatchupReq(MerkleTree::default(), 0, vec![])));
             assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
         fn request_handler_process_custom_single_req_event_from_start_works() {
-            let mut request_handler = _request_handler(0, 1);
+            let mut request_handler = _request_handler("request_handler_process_custom_single_req_event_from_start_works", 0, 1);
             request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None, (None, None))));
             assert_match!(RequestState::Single(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
         fn request_handler_process_consensus_full_req_event_from_start_works() {
-            let mut request_handler = _request_handler(0, 1);
+            let mut request_handler = _request_handler("request_handler_process_consensus_full_req_event_from_start_works", 0, 1);
             request_handler.process_event(Some(RequestEvent::CustomFullRequest(MESSAGE.to_string(), REQ_ID.to_string(), None, None)));
             assert_match!(RequestState::Full(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
         fn request_handler_process_consensus_full_req_event_from_start_works_for_list_nodes() {
-            let mut request_handler = _request_handler(0, 1);
+            let mut request_handler = _request_handler("request_handler_process_consensus_full_req_event_from_start_works_for_list_nodes", 0, 1);
             request_handler.process_event(Some(RequestEvent::CustomFullRequest(MESSAGE.to_string(), REQ_ID.to_string(), None, Some(format!(r#"["{}"]"#, NODE)))));
             assert_match!(RequestState::Full(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
         fn request_handler_process_consensus_full_req_event_from_start_works_for_empty_list_nodes() {
-            let mut request_handler = _request_handler(0, 1);
+            let mut request_handler = _request_handler("request_handler_process_consensus_full_req_event_from_start_works_for_empty_list_nodes", 0, 1);
             request_handler.process_event(Some(RequestEvent::CustomFullRequest(MESSAGE.to_string(), REQ_ID.to_string(), None, Some("[ ]".to_string()))));
             assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
         fn request_handler_process_consensus_full_req_event_from_start_works_for_list_nodes_contains_unknown_node() {
-            let mut request_handler = _request_handler(0, 1);
+            let mut request_handler = _request_handler("request_handler_process_consensus_full_req_event_from_start_works_for_list_nodes_contains_unknown_node", 0, 1);
             request_handler.process_event(Some(RequestEvent::CustomFullRequest(MESSAGE.to_string(), REQ_ID.to_string(), None, Some("[Unknown Node]".to_string()))));
             assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
         fn request_handler_process_consensus_full_req_event_from_start_works_for_invalid_list_nodes_format() {
-            let mut request_handler = _request_handler(0, 1);
+            let mut request_handler = _request_handler("request_handler_process_consensus_full_req_event_from_start_works_for_invalid_list_nodes_format", 0, 1);
             request_handler.process_event(Some(RequestEvent::CustomFullRequest(MESSAGE.to_string(), REQ_ID.to_string(), None, Some(format!(r#""{}""#, NODE)))));
             assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
         fn request_handler_process_custom_consensus_req_event_from_start_works() {
-            let mut request_handler = _request_handler(0, 1);
+            let mut request_handler = _request_handler("request_handler_process_custom_consensus_req_event_from_start_works", 0, 1);
             request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), REQ_ID.to_string())));
             assert_match!(RequestState::Consensus(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
         fn request_handler_process_other_event_from_start_works() {
-            let mut request_handler = _request_handler(0, 1);
+            let mut request_handler = _request_handler("request_handler_process_other_event_from_start_works", 0, 1);
             request_handler.process_event(Some(RequestEvent::Timeout(REQ_ID.to_string(), NODE.to_string())));
             assert_match!(RequestState::Start(_), request_handler.request_wrapper.unwrap().state);
         }
@@ -1060,7 +1046,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_reply_event_from_consensus_state_works_for_consensus_reached() {
-            let mut request_handler = _request_handler(0, 1);
+            let mut request_handler = _request_handler("request_handler_process_reply_event_from_consensus_state_works_for_consensus_reached", 0, 1);
             request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), SIMPLE_REPLY.to_string(), NODE.to_string(), REQ_ID.to_string())));
             assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
@@ -1070,7 +1056,7 @@ pub mod tests {
         fn request_handler_process_reply_event_from_consensus_state_works_for_consensus_reached_with_mixed_msgs() {
             // the test will use 4 nodes, each node replying with a response to the "custom consensus request" message
             // some nodes accept, some reject and some nack.  the end result is consensus should not be reached
-            let mut request_handler = _request_handler(1, 4);
+            let mut request_handler = _request_handler("request_handler_process_reply_event_from_consensus_state_works_for_consensus_reached_with_mixed_msgs", 1, 4);
 
             request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), SIMPLE_REPLY.to_string(), NODE.to_string(), REQ_ID.to_string())));
@@ -1093,7 +1079,7 @@ pub mod tests {
         fn request_handler_process_reply_event_from_consensus_state_works_for_consensus_reached_with_0_concensus() {
             // the test will use 4 nodes, each node replying with a response to the "custom consensus request" message
             // some nodes accept, some reject and some nack.  the end result is consensus should not be reached
-            let mut request_handler = _request_handler(1, 4);
+            let mut request_handler = _request_handler("request_handler_process_reply_event_from_consensus_state_works_for_consensus_reached_with_0_concensus", 1, 4);
 
             request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), SIMPLE_REPLY.to_string(), NODE.to_string(), REQ_ID.to_string())));
@@ -1112,7 +1098,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_reply_event_from_consensus_state_works_for_consensus_reachable() {
-            let mut request_handler = _request_handler(1, 2);
+            let mut request_handler = _request_handler("request_handler_process_reply_event_from_consensus_state_works_for_consensus_reachable", 1, 2);
             request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), SIMPLE_REPLY.to_string(), NODE.to_string(), REQ_ID.to_string())));
             assert_match!(RequestState::Consensus(_), request_handler.request_wrapper.unwrap().state);
@@ -1120,7 +1106,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_reply_event_from_consensus_state_works_for_consensus_not_reachable() {
-            let mut request_handler = _request_handler(1, 2);
+            let mut request_handler = _request_handler("request_handler_process_reply_event_from_consensus_state_works_for_consensus_not_reachable", 1, 2);
             request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), r#"{"result":{}}"#.to_string(), NODE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), r#"{}"#.to_string(), NODE_2.to_string(), REQ_ID.to_string())));
@@ -1129,7 +1115,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_reply_event_from_consensus_state_works_for_invalid_message() {
-            let mut request_handler = _request_handler(1, 4);
+            let mut request_handler = _request_handler("request_handler_process_reply_event_from_consensus_state_works_for_invalid_message", 1, 4);
             request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), "".to_string(), NODE.to_string(), REQ_ID.to_string())));
             assert_match!(RequestState::Consensus(_), request_handler.request_wrapper.unwrap().state);
@@ -1137,7 +1123,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_reqack_event_from_consensus_state_works() {
-            let mut request_handler = _request_handler(1, 4);
+            let mut request_handler = _request_handler("request_handler_process_reqack_event_from_consensus_state_works", 1, 4);
             request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::ReqACK(Response::default(), "{}".to_string(), NODE.to_string(), REQ_ID.to_string())));
             assert_match!(RequestState::Consensus(_), request_handler.request_wrapper.unwrap().state);
@@ -1145,7 +1131,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_reqnack_event_from_consensus_state_works_for_consensus_reached() {
-            let mut request_handler = _request_handler(1, 1);
+            let mut request_handler = _request_handler("request_handler_process_reqnack_event_from_consensus_state_works_for_consensus_reached", 1, 1);
             request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::ReqNACK(Response::default(), "{}".to_string(), NODE.to_string(), REQ_ID.to_string())));
             assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
@@ -1153,7 +1139,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_reqnack_event_from_consensus_state_works_for_consensus_reachable() {
-            let mut request_handler = _request_handler(1, 3);
+            let mut request_handler = _request_handler("request_handler_process_reqnack_event_from_consensus_state_works_for_consensus_reachable", 1, 3);
             request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::ReqNACK(Response::default(), "{}".to_string(), NODE.to_string(), REQ_ID.to_string())));
             assert_match!(RequestState::Consensus(_), request_handler.request_wrapper.unwrap().state);
@@ -1161,7 +1147,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_reqnack_event_from_consensus_state_works_for_consensus_not_reachable() {
-            let mut request_handler = _request_handler(1, 2);
+            let mut request_handler = _request_handler("request_handler_process_reqnack_event_from_consensus_state_works_for_consensus_not_reachable", 1, 2);
             request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::ReqNACK(Response::default(), "{}".to_string(), NODE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::ReqNACK(Response::default(), r#"{"result":{}}"#.to_string(), NODE.to_string(), REQ_ID.to_string())));
@@ -1170,7 +1156,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_reject_event_from_consensus_state_works_for_consensus_reached() {
-            let mut request_handler = _request_handler(1, 1);
+            let mut request_handler = _request_handler("request_handler_process_reject_event_from_consensus_state_works_for_consensus_reached", 1, 1);
             request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Reject(Response::default(), "{}".to_string(), NODE.to_string(), REQ_ID.to_string())));
             assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
@@ -1178,7 +1164,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_reject_event_from_consensus_state_works_for_consensus_reachable() {
-            let mut request_handler = _request_handler(1, 3);
+            let mut request_handler = _request_handler("request_handler_process_reject_event_from_consensus_state_works_for_consensus_reachable", 1, 3);
             request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Reject(Response::default(), "{}".to_string(), NODE.to_string(), REQ_ID.to_string())));
             assert_match!(RequestState::Consensus(_), request_handler.request_wrapper.unwrap().state);
@@ -1186,7 +1172,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_reject_event_from_consensus_state_works_for_consensus_not_reachable() {
-            let mut request_handler = _request_handler(1, 2);
+            let mut request_handler = _request_handler("request_handler_process_reject_event_from_consensus_state_works_for_consensus_not_reachable", 1, 2);
             request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Reject(Response::default(), "{}".to_string(), NODE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Reject(Response::default(), r#"{"result":{}}"#.to_string(), NODE.to_string(), REQ_ID.to_string())));
@@ -1195,7 +1181,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_timeout_event_from_consensus_state_works_for_consensus_reachable() {
-            let mut request_handler = _request_handler(1, 3);
+            let mut request_handler = _request_handler("request_handler_process_timeout_event_from_consensus_state_works_for_consensus_reachable", 1, 3);
             request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Timeout(NODE.to_string(), REQ_ID.to_string())));
             assert_match!(RequestState::Consensus(_), request_handler.request_wrapper.unwrap().state);
@@ -1203,7 +1189,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_timeout_event_from_consensus_state_works_for_consensus_not_reachable() {
-            let mut request_handler = _request_handler(1, 1);
+            let mut request_handler = _request_handler("request_handler_process_timeout_event_from_consensus_state_works_for_consensus_not_reachable", 1, 1);
             request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Timeout(NODE.to_string(), REQ_ID.to_string())));
             assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
@@ -1211,7 +1197,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_terminate_event_from_consensus_state_works_for_consensus_not_reachable() {
-            let mut request_handler = _request_handler(0, 1);
+            let mut request_handler = _request_handler("request_handler_process_terminate_event_from_consensus_state_works_for_consensus_not_reachable", 0, 1);
             request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Terminate));
             assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
@@ -1219,7 +1205,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_other_event_from_consensus_state_works() {
-            let mut request_handler = _request_handler(1, 4);
+            let mut request_handler = _request_handler("request_handler_process_other_event_from_consensus_state_works", 1, 4);
             request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Ping));
             assert_match!(RequestState::Consensus(_), request_handler.request_wrapper.unwrap().state);
@@ -1232,7 +1218,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_reply_event_from_single_state_works_for_consensus_reached() {
-            let mut request_handler = _request_handler(1, 2);
+            let mut request_handler = _request_handler("request_handler_process_reply_event_from_single_state_works_for_consensus_reached", 1, 2);
             request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None, (None, None))));
             request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), "{}".to_string(), NODE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), "{}".to_string(), NODE_2.to_string(), REQ_ID.to_string())));
@@ -1260,7 +1246,7 @@ pub mod tests {
         fn request_handler_process_reply_event_from_single_state_works_for_state_proof() {
             set_freshness_threshold(600);
             add_state_proof_parser();
-            let mut request_handler = _request_handler(1, 2);
+            let mut request_handler = _request_handler("request_handler_process_reply_event_from_single_state_works_for_state_proof", 1, 2);
             request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None, (None, None))));
             request_handler.process_event(Some(
                 RequestEvent::Reply(Reply::default(), correct_state_proof_reply(_get_cur_time() - 300), NODE.to_string(), REQ_ID.to_string()))
@@ -1272,7 +1258,7 @@ pub mod tests {
         fn request_handler_process_reply_event_from_single_state_works_for_state_proof_from_future() {
             set_freshness_threshold(600);
             add_state_proof_parser();
-            let mut request_handler = _request_handler(1, 2);
+            let mut request_handler = _request_handler("request_handler_process_reply_event_from_single_state_works_for_state_proof_from_future", 1, 2);
             request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None, (None, None))));
             request_handler.process_event(
                 Some(RequestEvent::Reply(Reply::default(), correct_state_proof_reply(_get_cur_time() + 300), NODE.to_string(), REQ_ID.to_string()))
@@ -1303,7 +1289,7 @@ pub mod tests {
         fn request_handler_process_reply_event_from_single_state_works_for_freshness_filtering() {
             set_freshness_threshold(600);
             add_state_proof_parser();
-            let mut request_handler = _request_handler(2, 4);
+            let mut request_handler = _request_handler("request_handler_process_reply_event_from_single_state_works_for_freshness_filtering", 2, 4);
             request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None, (None, None))));
             //
             request_handler.process_event(Some(RequestEvent::Reply(
@@ -1330,7 +1316,7 @@ pub mod tests {
             set_freshness_threshold(300);
             add_state_proof_parser();
 
-            let mut request_handler = _request_handler(2, 4);
+            let mut request_handler = _request_handler("request_handler_process_reply_event_from_single_state_works_for_state_proof_from_past", 2, 4);
             request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None, (None, Some(_get_cur_time() - 400)))));
 
             {
@@ -1357,7 +1343,7 @@ pub mod tests {
             // Register custom state proof parser
             add_state_proof_parser();
 
-            let mut request_handler = _request_handler(2, 4);
+            let mut request_handler = _request_handler("request_handler_process_reply_event_from_single_state_works_for_freshness_filtering_from_env_variable", 2, 4);
             request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None, (None, None))));
             //
             request_handler.process_event(Some(RequestEvent::Reply(
@@ -1382,7 +1368,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_reply_event_from_single_state_works_for_not_completed() {
-            let mut request_handler = _request_handler(1, 2);
+            let mut request_handler = _request_handler("request_handler_process_reply_event_from_single_state_works_for_not_completed", 1, 2);
             request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None, (None, None))));
             request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), "{}".to_string(), NODE.to_string(), REQ_ID.to_string())));
             assert_match!(RequestState::Single(_), request_handler.request_wrapper.unwrap().state);
@@ -1390,7 +1376,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_reply_event_from_single_state_works_for_cannot_be_completed() {
-            let mut request_handler = _request_handler(1, 1);
+            let mut request_handler = _request_handler("request_handler_process_reply_event_from_single_state_works_for_cannot_be_completed", 1, 1);
             request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None, (None, None))));
             request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), "{}".to_string(), NODE.to_string(), REQ_ID.to_string())));
             assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
@@ -1398,7 +1384,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_reply_event_from_single_state_works_for_invalid_message() {
-            let mut request_handler = _request_handler(1, 2);
+            let mut request_handler = _request_handler("request_handler_process_reply_event_from_single_state_works_for_invalid_message", 1, 2);
             request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None, (None, None))));
             request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), "".to_string(), NODE.to_string(), REQ_ID.to_string())));
             assert_match!(RequestState::Single(_), request_handler.request_wrapper.unwrap().state);
@@ -1406,7 +1392,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_reqack_event_from_single_state_works() {
-            let mut request_handler = _request_handler(1, 1);
+            let mut request_handler = _request_handler("request_handler_process_reqack_event_from_single_state_works", 1, 1);
             request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None, (None, None))));
             request_handler.process_event(Some(RequestEvent::ReqACK(Response::default(), "{}".to_string(), NODE.to_string(), REQ_ID.to_string())));
             assert_match!(RequestState::Single(_), request_handler.request_wrapper.unwrap().state);
@@ -1414,7 +1400,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_reqnack_event_from_single_state_works_for_completed() {
-            let mut request_handler = _request_handler(1, 2);
+            let mut request_handler = _request_handler("request_handler_process_reqnack_event_from_single_state_works_for_completed", 1, 2);
             request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None, (None, None))));
             request_handler.process_event(Some(RequestEvent::ReqNACK(Response::default(), "{}".to_string(), NODE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::ReqNACK(Response::default(), "{}".to_string(), NODE_2.to_string(), REQ_ID.to_string())));
@@ -1423,7 +1409,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_reqnack_event_from_single_state_works_for_not_completed() {
-            let mut request_handler = _request_handler(1, 3);
+            let mut request_handler = _request_handler("request_handler_process_reqnack_event_from_single_state_works_for_not_completed", 1, 3);
             request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None, (None, None))));
             request_handler.process_event(Some(RequestEvent::ReqNACK(Response::default(), "{}".to_string(), NODE.to_string(), REQ_ID.to_string())));
             assert_match!(RequestState::Single(_), request_handler.request_wrapper.unwrap().state);
@@ -1431,7 +1417,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_reject_event_from_single_state_works_for_completed() {
-            let mut request_handler = _request_handler(1, 2);
+            let mut request_handler = _request_handler("request_handler_process_reject_event_from_single_state_works_for_completed", 1, 2);
             request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None, (None, None))));
             request_handler.process_event(Some(RequestEvent::Reject(Response::default(), "{}".to_string(), NODE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Reject(Response::default(), "{}".to_string(), NODE_2.to_string(), REQ_ID.to_string())));
@@ -1440,7 +1426,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_reject_event_from_single_state_works_for_not_completed() {
-            let mut request_handler = _request_handler(1, 3);
+            let mut request_handler = _request_handler("request_handler_process_reject_event_from_single_state_works_for_not_completed", 1, 3);
             request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None, (None, None))));
             request_handler.process_event(Some(RequestEvent::Reject(Response::default(), "{}".to_string(), NODE.to_string(), REQ_ID.to_string())));
             assert_match!(RequestState::Single(_), request_handler.request_wrapper.unwrap().state);
@@ -1448,7 +1434,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_timeout_event_from_single_state_works() {
-            let mut request_handler = _request_handler(1, 2);
+            let mut request_handler = _request_handler("request_handler_process_timeout_event_from_single_state_works", 1, 2);
             request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None, (None, None))));
             request_handler.process_event(Some(RequestEvent::Timeout(REQ_ID.to_string(), NODE.to_string())));
             assert_match!(RequestState::Single(_), request_handler.request_wrapper.unwrap().state);
@@ -1456,7 +1442,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_timeout_event_from_single_state_works_for_cannot_be_completed() {
-            let mut request_handler = _request_handler(1, 1);
+            let mut request_handler = _request_handler("request_handler_process_timeout_event_from_single_state_works_for_cannot_be_completed", 1, 1);
             request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None, (None, None))));
             request_handler.process_event(Some(RequestEvent::Timeout(REQ_ID.to_string(), NODE.to_string())));
             assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
@@ -1464,7 +1450,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_terminate_event_from_single_state_works() {
-            let mut request_handler = _request_handler(1, 2);
+            let mut request_handler = _request_handler("request_handler_process_terminate_event_from_single_state_works", 1, 2);
             request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None, (None, None))));
             request_handler.process_event(Some(RequestEvent::Terminate));
             assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
@@ -1472,7 +1458,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_other_event_from_single_state_works() {
-            let mut request_handler = _request_handler(1, 2);
+            let mut request_handler = _request_handler("request_handler_process_other_event_from_single_state_works", 1, 2);
             request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None, (None, None))));
             request_handler.process_event(Some(RequestEvent::Pong));
             assert_match!(RequestState::Single(_), request_handler.request_wrapper.unwrap().state);
@@ -1482,7 +1468,7 @@ pub mod tests {
         fn request_handler_process_reply_event_from_single_state_works_for_consensus_reached_with_mixed_msgs() {
             // the test will use 4 nodes, each node replying with a response to the "custom consensus request" message
             // some nodes accept, some reject and some nack.  the end result is consensus should not be reached
-            let mut request_handler = _request_handler(1, 4);
+            let mut request_handler = _request_handler("request_handler_process_reply_event_from_single_state_works_for_consensus_reached_with_mixed_msgs", 1, 4);
 
             request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None, (None, None))));
             request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), SIMPLE_REPLY.to_string(), NODE.to_string(), REQ_ID.to_string())));
@@ -1505,7 +1491,7 @@ pub mod tests {
         fn request_handler_process_reply_event_from_single_state_works_for_consensus_reached_with_0_concensus() {
             // the test will use 4 nodes, each node replying with a response to the "custom consensus request" message
             // some nodes accept, some reject and some nack.  the end result is consensus should not be reached
-            let mut request_handler = _request_handler(1, 4);
+            let mut request_handler = _request_handler("request_handler_process_reply_event_from_single_state_works_for_consensus_reached_with_0_concensus", 1, 4);
 
             request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string(), None, (None, None))));
             request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), SIMPLE_REPLY.to_string(), NODE.to_string(), REQ_ID.to_string())));
@@ -1529,7 +1515,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_ledger_status_event_from_catchup_consensus_state_works_for_catchup_completed() {
-            let mut request_handler = _request_handler(0, 1);
+            let mut request_handler = _request_handler("request_handler_process_ledger_status_event_from_catchup_consensus_state_works_for_catchup_completed", 0, 1);
             request_handler.process_event(Some(RequestEvent::LedgerStatus(LedgerStatus::default(), Some(NODE.to_string()), Some(MerkleTree::default()))));
             request_handler.process_event(Some(RequestEvent::LedgerStatus(LedgerStatus::default(), Some(NODE.to_string()), Some(MerkleTree::default()))));
             assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
@@ -1537,7 +1523,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_ledger_status_event_from_catchup_consensus_state_works_for_catchup_not_completed() {
-            let mut request_handler = _request_handler(1, 1);
+            let mut request_handler = _request_handler("request_handler_process_ledger_status_event_from_catchup_consensus_state_works_for_catchup_not_completed", 1, 1);
             request_handler.process_event(Some(RequestEvent::LedgerStatus(LedgerStatus::default(), Some(NODE.to_string()), Some(MerkleTree::default()))));
             request_handler.process_event(Some(RequestEvent::LedgerStatus(LedgerStatus::default(), Some(NODE.to_string()), Some(MerkleTree::default()))));
             assert_match!(RequestState::CatchupConsensus(_), request_handler.request_wrapper.unwrap().state);
@@ -1545,7 +1531,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_consistency_proof_event_from_catchup_consensus_state_works_for_catchup_completed() {
-            let mut request_handler = _request_handler(0, 1);
+            let mut request_handler = _request_handler("request_handler_process_consistency_proof_event_from_catchup_consensus_state_works_for_catchup_completed", 0, 1);
             request_handler.process_event(Some(RequestEvent::LedgerStatus(LedgerStatus::default(), Some(NODE.to_string()), Some(MerkleTree::default()))));
             request_handler.process_event(Some(RequestEvent::ConsistencyProof(ConsistencyProof::default(), NODE.to_string())));
             assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
@@ -1553,7 +1539,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_consistency_proof_event_from_catchup_consensus_state_works_for_catchup_not_completed() {
-            let mut request_handler = _request_handler(1, 1);
+            let mut request_handler = _request_handler("request_handler_process_consistency_proof_event_from_catchup_consensus_state_works_for_catchup_not_completed", 1, 1);
             request_handler.process_event(Some(RequestEvent::LedgerStatus(LedgerStatus::default(), Some(NODE.to_string()), Some(MerkleTree::default()))));
             request_handler.process_event(Some(RequestEvent::ConsistencyProof(ConsistencyProof::default(), NODE.to_string())));
             assert_match!(RequestState::CatchupConsensus(_), request_handler.request_wrapper.unwrap().state);
@@ -1561,7 +1547,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_timeout_event_from_catchup_consensus_state_works() {
-            let mut request_handler = _request_handler(1, 1);
+            let mut request_handler = _request_handler("request_handler_process_timeout_event_from_catchup_consensus_state_works", 1, 1);
             request_handler.process_event(Some(RequestEvent::LedgerStatus(LedgerStatus::default(), Some(NODE.to_string()), Some(MerkleTree::default()))));
             request_handler.process_event(Some(RequestEvent::Timeout(REQ_ID.to_string(), NODE.to_string())));
             assert_match!(RequestState::CatchupConsensus(_), request_handler.request_wrapper.unwrap().state);
@@ -1569,7 +1555,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_timeout_event_from_catchup_consensus_state_works_for_all_timeouts() {
-            let mut request_handler = _request_handler(0, 1);
+            let mut request_handler = _request_handler("request_handler_process_timeout_event_from_catchup_consensus_state_works_for_all_timeouts", 0, 1);
             request_handler.process_event(Some(RequestEvent::LedgerStatus(LedgerStatus::default(), Some(NODE.to_string()), Some(MerkleTree::default()))));
             request_handler.process_event(Some(RequestEvent::Timeout(REQ_ID.to_string(), NODE.to_string())));
             assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
@@ -1577,7 +1563,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_terminate_event_from_catchup_consensus_state_works() {
-            let mut request_handler = _request_handler(0, 1);
+            let mut request_handler = _request_handler("request_handler_process_terminate_event_from_catchup_consensus_state_works", 0, 1);
             request_handler.process_event(Some(RequestEvent::LedgerStatus(LedgerStatus::default(), Some(NODE.to_string()), Some(MerkleTree::default()))));
             request_handler.process_event(Some(RequestEvent::Terminate));
             assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
@@ -1585,7 +1571,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_other_event_from_catchup_consensus_state_works() {
-            let mut request_handler = _request_handler(0, 1);
+            let mut request_handler = _request_handler("request_handler_process_other_event_from_catchup_consensus_state_works", 0, 1);
             request_handler.process_event(Some(RequestEvent::LedgerStatus(LedgerStatus::default(), Some(NODE.to_string()), Some(MerkleTree::default()))));
             request_handler.process_event(Some(RequestEvent::Pong));
             assert_match!(RequestState::CatchupConsensus(_), request_handler.request_wrapper.unwrap().state);
@@ -1593,7 +1579,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_ledger_status_event_from_catchup_consensus_state_works_for_splitted_pool() {
-            let mut request_handler = _request_handler(1, 4);
+            let mut request_handler = _request_handler("request_handler_process_ledger_status_event_from_catchup_consensus_state_works_for_splitted_pool", 1, 4);
             request_handler.process_event(Some(RequestEvent::LedgerStatus(LedgerStatus::default(), Some(NODE.to_string()), Some(MerkleTree::default()))));
             assert_match!(&RequestState::CatchupConsensus(_), &request_handler.request_wrapper.as_ref().unwrap().state);
 
@@ -1614,10 +1600,10 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_catchup_reply_event_from_catchup_single_state_works() {
-            test::cleanup_indy_home();
-            _create_pool(None);
+            test::cleanup_pool("request_handler_process_catchup_reply_event_from_catchup_single_state_works");
+            _create_pool("request_handler_process_catchup_reply_event_from_catchup_single_state_works", None);
 
-            let mut request_handler = _request_handler(0, 1);
+            let mut request_handler = _request_handler("request_handler_process_catchup_reply_event_from_catchup_single_state_works", 0, 1);
 
             let mt = MerkleTree {
                 root: Tree::Leaf {
@@ -1638,12 +1624,12 @@ pub mod tests {
 
             request_handler.process_event(Some(RequestEvent::CatchupRep(cr, "Node1".to_string())));
             assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
-            test::cleanup_indy_home();
+            test::cleanup_pool("request_handler_process_catchup_reply_event_from_catchup_single_state_works");
         }
 
         #[test]
         fn request_handler_process_catchup_reply_event_from_catchup_single_state_works_for_error() {
-            let mut request_handler = _request_handler(0, 1);
+            let mut request_handler = _request_handler("request_handler_process_catchup_reply_event_from_catchup_single_state_works_for_error", 0, 1);
             request_handler.process_event(Some(RequestEvent::CatchupReq(MerkleTree::default(), 1, vec![])));
             request_handler.process_event(Some(RequestEvent::CatchupRep(CatchupRep::default(), NODE.to_string())));
             assert_match!(RequestState::CatchupSingle(_), request_handler.request_wrapper.unwrap().state);
@@ -1651,7 +1637,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_timeout_event_from_catchup_single_state_works() {
-            let mut request_handler = _request_handler(0, 1);
+            let mut request_handler = _request_handler("request_handler_process_timeout_event_from_catchup_single_state_works", 0, 1);
             request_handler.process_event(Some(RequestEvent::CatchupReq(MerkleTree::default(), 1, vec![])));
             request_handler.process_event(Some(RequestEvent::Timeout(REQ_ID.to_string(), NODE.to_string())));
             assert_match!(RequestState::CatchupSingle(_), request_handler.request_wrapper.unwrap().state);
@@ -1659,7 +1645,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_terminate_event_from_catchup_single_state_works() {
-            let mut request_handler = _request_handler(0, 1);
+            let mut request_handler = _request_handler("request_handler_process_terminate_event_from_catchup_single_state_works", 0, 1);
             request_handler.process_event(Some(RequestEvent::CatchupReq(MerkleTree::default(), 1, vec![])));
             request_handler.process_event(Some(RequestEvent::Terminate));
             assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
@@ -1667,7 +1653,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_other_event_from_catchup_single_state_works() {
-            let mut request_handler = _request_handler(0, 1);
+            let mut request_handler = _request_handler("request_handler_process_other_event_from_catchup_single_state_works", 0, 1);
             request_handler.process_event(Some(RequestEvent::CatchupReq(MerkleTree::default(), 1, vec![])));
             request_handler.process_event(Some(RequestEvent::Pong));
             assert_match!(RequestState::CatchupSingle(_), request_handler.request_wrapper.unwrap().state);
@@ -1679,7 +1665,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_reply_event_from_full_state_works_for_completed() {
-            let mut request_handler = _request_handler(1, 1);
+            let mut request_handler = _request_handler("request_handler_process_reply_event_from_full_state_works_for_completed", 1, 1);
             request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), REQ_ID.to_string(), None, None)));
             request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), r#"{"result":""}"#.to_string(), NODE.to_string(), REQ_ID.to_string())));
             assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
@@ -1687,7 +1673,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_reply_event_from_full_state_works_for_not_completed() {
-            let mut request_handler = _request_handler(1, 2);
+            let mut request_handler = _request_handler("request_handler_process_reply_event_from_full_state_works_for_not_completed", 1, 2);
             request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), REQ_ID.to_string(), None, None)));
             request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), r#"{"result":""}"#.to_string(), NODE.to_string(), REQ_ID.to_string())));
             assert_match!(RequestState::Full(_), request_handler.request_wrapper.unwrap().state);
@@ -1695,7 +1681,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_reply_event_from_full_state_works_for_different_replies() {
-            let mut request_handler = _request_handler(1, 2);
+            let mut request_handler = _request_handler("request_handler_process_reply_event_from_full_state_works_for_different_replies", 1, 2);
             request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), REQ_ID.to_string(), None, None)));
             request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), r#"{"result":"11"}"#.to_string(), NODE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), r#"{"result":"22"}"#.to_string(), "n2".to_string(), REQ_ID.to_string())));
@@ -1704,7 +1690,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_reqnack_event_from_full_state_works_for_completed() {
-            let mut request_handler = _request_handler(1, 1);
+            let mut request_handler = _request_handler("request_handler_process_reqnack_event_from_full_state_works_for_completed", 1, 1);
             request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), REQ_ID.to_string(), None, None)));
             request_handler.process_event(Some(RequestEvent::ReqNACK(Response::default(), r#"{"result":""}"#.to_string(), NODE.to_string(), REQ_ID.to_string())));
             assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
@@ -1712,7 +1698,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_reqnack_event_from_full_state_works_for_not_completed() {
-            let mut request_handler = _request_handler(1, 2);
+            let mut request_handler = _request_handler("request_handler_process_reqnack_event_from_full_state_works_for_not_completed", 1, 2);
             request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), REQ_ID.to_string(), None, None)));
             request_handler.process_event(Some(RequestEvent::ReqNACK(Response::default(), r#"{"result":""}"#.to_string(), NODE.to_string(), REQ_ID.to_string())));
             assert_match!(RequestState::Full(_), request_handler.request_wrapper.unwrap().state);
@@ -1720,7 +1706,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_reject_event_from_full_state_works_for_completed() {
-            let mut request_handler = _request_handler(1, 1);
+            let mut request_handler = _request_handler("request_handler_process_reject_event_from_full_state_works_for_completed", 1, 1);
             request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), REQ_ID.to_string(), None, None)));
             request_handler.process_event(Some(RequestEvent::Reject(Response::default(), r#"{"result":""}"#.to_string(), NODE.to_string(), REQ_ID.to_string())));
             assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
@@ -1728,7 +1714,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_reject_event_from_full_state_works_for_not_completed() {
-            let mut request_handler = _request_handler(1, 2);
+            let mut request_handler = _request_handler("request_handler_process_reject_event_from_full_state_works_for_not_completed", 1, 2);
             request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), REQ_ID.to_string(), None, None)));
             request_handler.process_event(Some(RequestEvent::Reject(Response::default(), r#"{"result":""}"#.to_string(), NODE.to_string(), REQ_ID.to_string())));
             assert_match!(RequestState::Full(_), request_handler.request_wrapper.unwrap().state);
@@ -1736,7 +1722,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_timeout_event_from_full_state_works_for_completed() {
-            let mut request_handler = _request_handler(1, 1);
+            let mut request_handler = _request_handler("request_handler_process_timeout_event_from_full_state_works_for_completed", 1, 1);
             request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), REQ_ID.to_string(), None, None)));
             request_handler.process_event(Some(RequestEvent::Timeout(REQ_ID.to_string(), NODE.to_string())));
             assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
@@ -1744,7 +1730,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_timeout_event_from_full_state_works_for_not_completed() {
-            let mut request_handler = _request_handler(1, 2);
+            let mut request_handler = _request_handler("request_handler_process_timeout_event_from_full_state_works_for_not_completed", 1, 2);
             request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), REQ_ID.to_string(), None, None)));
             request_handler.process_event(Some(RequestEvent::Timeout(REQ_ID.to_string(), NODE.to_string())));
             assert_match!(RequestState::Full(_), request_handler.request_wrapper.unwrap().state);
@@ -1752,7 +1738,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_reqack_event_from_full_state_works() {
-            let mut request_handler = _request_handler(0, 1);
+            let mut request_handler = _request_handler("request_handler_process_reqack_event_from_full_state_works", 0, 1);
             request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), REQ_ID.to_string(), None, None)));
             request_handler.process_event(Some(RequestEvent::ReqACK(Response::default(), r#"{"result":""}"#.to_string(), NODE.to_string(), REQ_ID.to_string())));
             assert_match!(RequestState::Full(_), request_handler.request_wrapper.unwrap().state);
@@ -1760,7 +1746,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_terminate_event_from_full_state_works() {
-            let mut request_handler = _request_handler(0, 1);
+            let mut request_handler = _request_handler("request_handler_process_terminate_event_from_full_state_works", 0, 1);
             request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), REQ_ID.to_string(), None, None)));
             request_handler.process_event(Some(RequestEvent::Terminate));
             assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
@@ -1768,7 +1754,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_other_event_from_full_state_works() {
-            let mut request_handler = _request_handler(0, 1);
+            let mut request_handler = _request_handler("request_handler_process_other_event_from_full_state_works", 0, 1);
             request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), REQ_ID.to_string(), None, None)));
             request_handler.process_event(Some(RequestEvent::Pong));
             assert_match!(RequestState::Full(_), request_handler.request_wrapper.unwrap().state);
@@ -1780,7 +1766,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_event_from_finish_state_works() {
-            let mut request_handler = _request_handler(0, 1);
+            let mut request_handler = _request_handler("request_handler_process_event_from_finish_state_works", 0, 1);
             request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Terminate));
             request_handler.process_event(Some(RequestEvent::Ping));

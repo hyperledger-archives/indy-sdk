@@ -41,6 +41,9 @@ pub type TailsWriterHandle = i32;
 
 pub type Error = i32;
 
+pub const INVALID_POOL_HANDLE: PoolHandle = 0;
+pub const INVALID_WALLET_HANDLE: WalletHandle = 0;
+
 pub type ResponseEmptyCB = extern fn(xcommand_handle: CommandHandle, err: Error);
 pub type ResponseBoolCB = extern fn(xcommand_handle: CommandHandle, err: Error, bool1: bool);
 pub type ResponseI32CB = extern fn(xcommand_handle: CommandHandle, err: Error, handle: IndyHandle);

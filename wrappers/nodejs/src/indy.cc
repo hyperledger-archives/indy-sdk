@@ -2072,6 +2072,25 @@ NAN_METHOD(buildAuthRuleRequest) {
   delete arg6;
 }
 
+void buildAuthRulesRequest_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbString(xerr, arg0);
+  }
+}
+NAN_METHOD(buildAuthRulesRequest) {
+  INDY_ASSERT_NARGS(buildAuthRulesRequest, 3)
+  INDY_ASSERT_STRING(buildAuthRulesRequest, 0, submitterDid)
+  INDY_ASSERT_STRING(buildAuthRulesRequest, 1, data)
+  INDY_ASSERT_FUNCTION(buildAuthRulesRequest, 2)
+  const char* arg0 = argToCString(info[0]);
+  const char* arg1 = argToCString(info[1]);
+  IndyCallback* icb = argToIndyCb(info[2]);
+  indyCalled(icb, indy_build_auth_rules_request(icb->handle, arg0, arg1, buildAuthRulesRequest_cb));
+  delete arg0;
+  delete arg1;
+}
+
 void buildGetAuthRuleRequest_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
   IndyCallback* icb = IndyCallback::getCallback(handle);
   if(icb != nullptr){
@@ -3414,6 +3433,7 @@ NAN_MODULE_INIT(InitAll) {
   Nan::Export(target, "buildGetRevocRegDeltaRequest", buildGetRevocRegDeltaRequest);
   Nan::Export(target, "parseGetRevocRegDeltaResponse", parseGetRevocRegDeltaResponse);
   Nan::Export(target, "buildAuthRuleRequest", buildAuthRuleRequest);
+  Nan::Export(target, "buildAuthRulesRequest", buildAuthRulesRequest);
   Nan::Export(target, "buildGetAuthRuleRequest", buildGetAuthRuleRequest);
   Nan::Export(target, "buildTxnAuthorAgreementRequest", buildTxnAuthorAgreementRequest);
   Nan::Export(target, "buildGetTxnAuthorAgreementRequest", buildGetTxnAuthorAgreementRequest);

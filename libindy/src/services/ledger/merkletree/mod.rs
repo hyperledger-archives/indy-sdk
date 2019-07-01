@@ -197,10 +197,8 @@ impl MerkleTree {
 
 #[cfg(test)]
 mod tests {
-    extern crate rust_base58;
-
     use super::*;
-    use self::rust_base58::FromBase58;
+    use rust_base58::FromBase58;
 
     #[test]
     fn append_works() {

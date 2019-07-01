@@ -41,6 +41,14 @@ extern crate core;
 
 extern crate hex;
 
+extern crate log_derive;
+extern crate rust_base58;
+
+extern crate sha2;
+extern crate sha3;
+
+extern crate zeroize;
+
 // Note that to use macroses from util inside of other modules it must be loaded first!
 #[macro_use]
 mod utils;

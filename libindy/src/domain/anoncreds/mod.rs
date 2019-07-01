@@ -1,4 +1,5 @@
 pub mod credential;
+pub mod credential_attr_tag_policy;
 pub mod credential_definition;
 pub mod credential_for_proof_request;
 pub mod credential_offer;

@@ -1,9 +1,3 @@
-extern crate ursa;
-extern crate rmp_serde;
-extern crate serde;
-extern crate serde_json;
-extern crate time;
-
 use std::cmp::Eq;
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};

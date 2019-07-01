@@ -1,6 +1,3 @@
-extern crate libc;
-extern crate serde_json;
-
 use api::{ErrorCode, IndyHandle, CommandHandle, WalletHandle, SearchHandle};
 use errors::prelude::*;
 use commands::{Command, CommandExecutor};
@@ -12,6 +9,7 @@ use domain::anoncreds::schema::{Schema, AttributeNames};
 use domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionConfig};
 use domain::anoncreds::credential_offer::CredentialOffer;
 use domain::anoncreds::credential_request::{CredentialRequest, CredentialRequestMetadata};
+use domain::anoncreds::credential_attr_tag_policy::CredentialAttrTagPolicy;
 use domain::anoncreds::credential::{Credential, AttributeValues};
 use domain::anoncreds::revocation_registry_definition::{RevocationRegistryConfig, RevocationRegistryDefinition};
 use domain::anoncreds::revocation_registry_delta::RevocationRegistryDelta;
@@ -22,9 +20,19 @@ use domain::anoncreds::revocation_registry::RevocationRegistry;
 use domain::anoncreds::revocation_state::RevocationState;
 use utils::ctypes;
 
-use self::libc::c_char;
+use libc::c_char;
 use std::ptr;
 use std::collections::HashMap;
+
+/*
+These functions wrap the Ursa algorithm as documented in this paper:
+https://github.com/hyperledger/ursa/blob/master/libursa/docs/AnonCred.pdf
+
+And is documented in this HIPE:
+https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336fdc8cc1/text/anoncreds-protocol/README.md
+*/
+
+
 
 /// Create credential schema entity that describes credential attributes list and allows credentials
 /// interoperability.
@@ -112,8 +120,12 @@ pub extern fn indy_issuer_create_schema(command_handle: CommandHandle,
 /// issuer_did: a DID of the issuer signing cred_def transaction to the Ledger
 /// schema_json: credential schema as a json
 /// tag: allows to distinct between credential definitions for the same issuer and schema
-/// signature_type: credential definition type (optional, 'CL' by default) that defines credentials signature and revocation math. Supported types are:
-/// - 'CL': Camenisch-Lysyanskaya credential signature type
+/// signature_type: credential definition type (optional, 'CL' by default) that defines credentials signature and revocation math.
+/// Supported signature types:
+/// - 'CL': Camenisch-Lysyanskaya credential signature type that is implemented according to the algorithm in this paper:
+///             https://github.com/hyperledger/ursa/blob/master/libursa/docs/AnonCred.pdf
+///         And is documented in this HIPE:
+///             https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336fdc8cc1/text/anoncreds-protocol/README.md
 /// config_json: (optional) type-specific configuration of credential definition as json:
 /// - 'CL':
 ///   - support_revocation: whether to request non-revocation credential (optional, default false)
@@ -122,6 +134,20 @@ pub extern fn indy_issuer_create_schema(command_handle: CommandHandle,
 /// #Returns
 /// cred_def_id: identifier of created credential definition
 /// cred_def_json: public part of created credential definition
+/// {
+///     id: string - identifier of credential definition
+///     schemaId: string - identifier of stored in ledger schema
+///     type: string - type of the credential definition. CL is the only supported type now.
+///     tag: string - allows to distinct between credential definitions for the same issuer and schema
+///     value: Dictionary with Credential Definition's data is depended on the signature type: {
+///         primary: primary credential public key,
+///         Optional<revocation>: revocation credential public key
+///     },
+///     ver: Version of the CredDef json
+/// }
+///
+/// Note: `primary` and `revocation` fields of credential definition are complex opaque types that contain data structures internal to Ursa.
+/// They should not be parsed and are likely to change in future versions.
 ///
 /// #Errors
 /// Common*
@@ -199,7 +225,9 @@ pub extern fn indy_issuer_create_and_store_credential_def(command_handle: Comman
 /// command_handle: command handle to map callback to user context.
 /// issuer_did: a DID of the issuer signing transaction to the Ledger
 /// revoc_def_type: revocation registry type (optional, default value depends on credential definition type). Supported types are:
-/// - 'CL_ACCUM': Type-3 pairing based accumulator. Default for 'CL' credential definition type
+/// - 'CL_ACCUM': Type-3 pairing based accumulator implemented according to the algorithm in this paper:
+///                   https://github.com/hyperledger/ursa/blob/master/libursa/docs/AnonCred.pdf
+///               This type is default for 'CL' credential definition type.
 /// tag: allows to distinct between revocation registries for the same issuer and credential definition
 /// cred_def_id: id of stored in ledger credential definition
 /// config_json: type-specific configuration of revocation registry as json:
@@ -216,7 +244,31 @@ pub extern fn indy_issuer_create_and_store_credential_def(command_handle: Comman
 /// #Returns
 /// revoc_reg_id: identifier of created revocation registry definition
 /// revoc_reg_def_json: public part of revocation registry definition
+///     {
+///         "id": string - ID of the Revocation Registry,
+///         "revocDefType": string - Revocation Registry type (only CL_ACCUM is supported for now),
+///         "tag": string - Unique descriptive ID of the Registry,
+///         "credDefId": string - ID of the corresponding CredentialDefinition,
+///         "value": Registry-specific data {
+///             "issuanceType": string - Type of Issuance(ISSUANCE_BY_DEFAULT or ISSUANCE_ON_DEMAND),
+///             "maxCredNum": number - Maximum number of credentials the Registry can serve.
+///             "tailsHash": string - Hash of tails.
+///             "tailsLocation": string - Location of tails file.
+///             "publicKeys": <public_keys> - Registry's public key (opaque type that contains data structures internal to Ursa.
+///                                                                  It should not be parsed and are likely to change in future versions).
+///         },
+///         "ver": string - version of revocation registry definition json.
+///     }
 /// revoc_reg_entry_json: revocation registry entry that defines initial state of revocation registry
+/// {
+///     value: {
+///         prevAccum: string - previous accumulator value.
+///         accum: string - current accumulator value.
+///         issued: array<number> - an array of issued indices.
+///         revoked: array<number> an array of revoked indices.
+///     },
+///     ver: string - version revocation registry entry json
+/// }
 ///
 /// #Errors
 /// Common*
@@ -294,7 +346,9 @@ pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: CommandHand
 ///         "cred_def_id": string,
 ///         // Fields below can depend on Cred Def type
 ///         "nonce": string,
-///         "key_correctness_proof" : <key_correctness_proof>
+///         "key_correctness_proof" : key correctness proof for credential definition correspondent to cred_def_id
+///                                   (opaque type that contains data structures internal to Ursa.
+///                                   It should not be parsed and are likely to change in future versions).
 ///     }
 ///
 /// #Errors
@@ -369,8 +423,12 @@ pub extern fn indy_issuer_create_credential_offer(command_handle: CommandHandle,
 ///         "rev_reg_def_id", Optional<string>,
 ///         "values": <see cred_values_json above>,
 ///         // Fields below can depend on Cred Def type
-///         "signature": <signature>,
-///         "signature_correctness_proof": <signature_correctness_proof>
+///         "signature": <credential signature>,
+///                      (opaque type that contains data structures internal to Ursa.
+///                       It should not be parsed and are likely to change in future versions).
+///         "signature_correctness_proof": credential signature correctness proof
+///                      (opaque type that contains data structures internal to Ursa.
+///                       It should not be parsed and are likely to change in future versions).
 ///     }
 /// cred_revoc_id: local id for revocation info (Can be used for revocation of this credential)
 /// revoc_reg_delta_json: Revocation registry delta json with a newly issued credential
@@ -677,7 +735,11 @@ pub extern fn indy_prover_create_master_secret(command_handle: CommandHandle,
 ///      "cred_def_id" : string,
 ///         // Fields below can depend on Cred Def type
 ///      "blinded_ms" : <blinded_master_secret>,
+///                     (opaque type that contains data structures internal to Ursa.
+///                      It should not be parsed and are likely to change in future versions).
 ///      "blinded_ms_correctness_proof" : <blinded_ms_correctness_proof>,
+///                     (opaque type that contains data structures internal to Ursa.
+///                      It should not be parsed and are likely to change in future versions).
 ///      "nonce": string
 ///    }
 /// cred_req_metadata_json: Credential request metadata json for further processing of received form Issuer credential.
@@ -734,6 +796,133 @@ pub extern fn indy_prover_create_credential_req(command_handle: CommandHandle,
     res
 }
 
+/// Set credential attribute tagging policy.
+/// Writes a non-secret record marking attributes to tag, and optionally
+/// updates tags on existing credentials on the credential definition to match.
+///
+/// EXPERIMENTAL
+///
+/// The following tags are always present on write:
+///     {
+///         "schema_id": <credential schema id>,
+///         "schema_issuer_did": <credential schema issuer did>,
+///         "schema_name": <credential schema name>,
+///         "schema_version": <credential schema version>,
+///         "issuer_did": <credential issuer did>,
+///         "cred_def_id": <credential definition id>,
+///         "rev_reg_id": <credential revocation registry id>, // "None" as string if not present
+///     }
+///
+/// The policy sets the following tags for each attribute it marks taggable, written to subsequent
+/// credentials and (optionally) all existing credentials on the credential definition:
+///     {
+///         "attr::<attribute name>::marker": "1",
+///         "attr::<attribute name>::value": <attribute raw value>,
+///     }
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+/// wallet_handle: wallet handle (created by open_wallet).
+/// cred_def_id: credential definition id
+/// tag_attrs_json: JSON array with names of attributes to tag by policy, or null for all
+/// retroactive: boolean, whether to apply policy to existing credentials on credential definition identifier
+/// cb: Callback that takes command result as parameter.
+///
+/// #Errors
+/// Anoncreds*
+/// Common*
+/// Wallet*
+#[no_mangle]
+pub extern fn indy_prover_set_credential_attr_tag_policy(command_handle: CommandHandle,
+                                                         wallet_handle: WalletHandle,
+                                                         cred_def_id: *const c_char,
+                                                         tag_attrs_json: *const c_char,
+                                                         retroactive: bool,
+                                                         cb: Option<extern fn(command_handle_: CommandHandle, err: ErrorCode)>) -> ErrorCode {
+    trace!("indy_prover_set_credential_attr_tag_policy: >>> wallet_handle: {:?}, cred_def_id: {:?}, tag_attrs_json: {:?}, retroactive: {:?}", wallet_handle, cred_def_id, tag_attrs_json, retroactive);
+
+    check_useful_c_str!(cred_def_id, ErrorCode::CommonInvalidParam3);
+    check_useful_opt_json!(tag_attrs_json, ErrorCode::CommonInvalidParam4, CredentialAttrTagPolicy);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
+
+    trace!("indy_prover_set_credential_attr_tag_policy: entities >>> wallet_handle: {:?}, cred_def_id: {:?}, tag_attrs_json: {:?}, retroactive: {:?}",
+    wallet_handle, cred_def_id, tag_attrs_json, retroactive);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Anoncreds(
+            AnoncredsCommand::Prover(
+                ProverCommand::SetCredentialAttrTagPolicy(
+                    wallet_handle,
+                    cred_def_id,
+                    tag_attrs_json,
+                    retroactive,
+                    Box::new(move |result| {
+                        let err = prepare_result!(result);
+                        trace!("indy_prover_set_credential_attr_tag_policy: ");
+                        cb(command_handle, err)
+                    })
+                ))));
+
+    let res = prepare_result!(result);
+
+    trace!("indy_prover_set_credential_attr_tag_policy: <<< res: {:?}", res);
+
+    res
+}
+
+/// Get credential attribute tagging policy by credential definition id.
+///
+/// EXPERIMENTAL
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+/// wallet_handle: wallet handle (created by open_wallet).
+/// cred_def_id: credential definition id
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// JSON array with all attributes that current policy marks taggable;
+/// null for default policy (tag all credential attributes).
+/// 
+/// #Errors
+/// Anoncreds*
+/// Common*
+/// Wallet*
+#[no_mangle]
+pub extern fn indy_prover_get_credential_attr_tag_policy(command_handle: CommandHandle,
+                                                         wallet_handle: WalletHandle,
+                                                         cred_def_id: *const c_char,
+                                                         cb: Option<extern fn(command_handle_: CommandHandle,
+                                                                              err: ErrorCode,
+                                                                              catpol_json: *const c_char)>) -> ErrorCode {
+    trace!("indy_prover_get_credential_attr_tag_policy: >>> wallet_handle: {:?}, cred_def_id: {:?}", wallet_handle, cred_def_id);
+
+    check_useful_c_str!(cred_def_id, ErrorCode::CommonInvalidParam3);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    trace!("indy_prover_get_credential_attr_tag_policy: entities >>> wallet_handle: {:?}, cred_def_id: {:?}", wallet_handle, cred_def_id);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Anoncreds(
+            AnoncredsCommand::Prover(
+                ProverCommand::GetCredentialAttrTagPolicy(
+                    wallet_handle,
+                    cred_def_id,
+                    Box::new(move |result| {
+                        let (err, catpol_json) = prepare_result_1!(result, String::new());
+                        trace!("indy_prover_get_credential_attr_tag_policy: catpol_json: {:?}", catpol_json);
+                        let catpol_json = ctypes::string_to_cstring(catpol_json);
+                        cb(command_handle, err, catpol_json.as_ptr())
+                    })
+                ))));
+
+    let res = prepare_result!(result);
+
+    trace!("indy_prover_get_credential_attr_tag_policy: <<< res: {:?}", res);
+
+    res
+}
+
 /// Check credential provided by Issuer for the given credential request,
 /// updates the credential by a master secret and stores in a secure wallet.
 ///
@@ -746,7 +935,7 @@ pub extern fn indy_prover_create_credential_req(command_handle: CommandHandle,
 ///         "issuer_did": <credential issuer did>,
 ///         "cred_def_id": <credential definition id>,
 ///         "rev_reg_id": <credential revocation registry id>, // "None" as string if not present
-///         // for every attribute in <credential values>
+///         // for every attribute in <credential values> that credential attribute tagging policy marks taggable
 ///         "attr::<attribute name>::marker": "1",
 ///         "attr::<attribute name>::value": <attribute raw value>,
 ///     }
@@ -1570,7 +1759,8 @@ pub  extern fn indy_prover_close_credentials_search_for_proof_req(command_handle
 ///         "proof": {
 ///             "proofs": [ <credential_proof>, <credential_proof>, <credential_proof> ],
 ///             "aggregated_proof": <aggregated_proof>
-///         }
+///         } (opaque type that contains data structures internal to Ursa.
+///           It should not be parsed and are likely to change in future versions).
 ///         "identifiers": [{schema_id, cred_def_id, Optional<rev_reg_id>, Optional<timestamp>}]
 ///     }
 ///
@@ -1779,7 +1969,8 @@ pub extern fn indy_verifier_verify_proof(command_handle: CommandHandle,
 /// revocation state json:
 ///     {
 ///         "rev_reg": <revocation registry>,
-///         "witness": <witness>,
+///         "witness": <witness>,  (opaque type that contains data structures internal to Ursa.
+///                                 It should not be parsed and are likely to change in future versions).
 ///         "timestamp" : integer
 ///     }
 ///
@@ -1847,7 +2038,8 @@ pub extern fn indy_create_revocation_state(command_handle: CommandHandle,
 /// revocation state json:
 ///     {
 ///         "rev_reg": <revocation registry>,
-///         "witness": <witness>,
+///         "witness": <witness>,  (opaque type that contains data structures internal to Ursa.
+///                                 It should not be parsed and are likely to change in future versions).
 ///         "timestamp" : integer
 ///     }
 ///

@@ -77,6 +77,20 @@ public class ConnectionApi extends VcxJava.API {
         return future;
     }
 
+    public static CompletableFuture<Integer> vcxConnectionUpdateStateWithMessage(int connectionHandle, String message) throws VcxException {
+        logger.debug("vcxConnectionUpdateState() called with: connectionHandle = [" + connectionHandle + "]");
+        CompletableFuture<Integer> future = new CompletableFuture<>();
+        int commandHandle = addFuture(future);
+
+        int result = LibVcx.api.vcx_connection_update_state_with_message(
+                commandHandle,
+                connectionHandle,
+                message,
+                vcxUpdateStateCB
+        );
+        checkResult(result);
+        return future;
+    }
 
     private static Callback vcxCreateConnectionWithInviteCB = new Callback() {
         @SuppressWarnings({"unused", "unchecked"})

@@ -737,6 +737,27 @@
     }
 }
 
++ (void)buildAuthRulesRequestWithSubmitterDid:(NSString *)submitterDid
+                                         data:(NSString *)data
+                                  completion:(void (^)(NSError *error, NSString *requestJSON))completion {
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+
+    ret = indy_build_auth_rules_request(handle,
+            [submitterDid UTF8String],
+            [data UTF8String],
+            IndyWrapperCommonStringCallback);
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret], nil);
+        });
+    }
+}
+
 + (void)buildGetAuthRuleRequestWithSubmitterDid:(NSString *)submitterDid
                                         txnType:(NSString *)txnType
                                          action:(NSString *)action

@@ -10,6 +10,14 @@
 @interface IndyAnoncreds : NSObject
 
 /**
+These functions wrap the Ursa algorithm as documented in this paper:
+https://github.com/hyperledger/ursa/blob/master/libursa/docs/AnonCred.pdf
+
+And is documented in this HIPE:
+https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336fdc8cc1/text/anoncreds-protocol/README.md
+*.
+
+/**
  Create credential schema entity that describes credential attributes list and allows credentials
  interoperability.
 
@@ -50,7 +58,11 @@
  @param tag: allows to distinct between credential definitions for the same issuer and schema
  @param type: type_: credential definition type (optional, 'CL' by default) that defines credentials signature and revocation math.
  Supported types are:
-    - 'CL': Camenisch-Lysyanskaya credential signature type
+    - 'CL': Camenisch-Lysyanskaya credential signature type that is implemented according to the algorithm in this paper:
+                https://github.com/hyperledger/ursa/blob/master/libursa/docs/AnonCred.pdf
+            And is documented in this HIPE:
+                https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336fdc8cc1/text/anoncreds-protocol/README.md
+
  @param configJSON: type-specific configuration of credential definition as json:
  - 'CL':
    - revocationSupport: whether to request non-revocation credential (optional, default false)
@@ -59,6 +71,20 @@
  Returns:
     credDefId: identifier of created credential definition.
     credDefJson: public part of created credential definition
+   {
+       id: string - identifier of credential definition
+       schemaId: string - identifier of stored in ledger schema
+       type: string - type of the credential definition. CL is the only supported type now.
+       tag: string - allows to distinct between credential definitions for the same issuer and schema
+       value: Dictionary with Credential Definition's data is depended on the signature type: {
+           primary: primary credential public key,
+           Optional<revocation>: revocation credential public key
+       },
+       ver: Version of the CredDef json
+   }
+   
+   Note: `primary` and `revocation` fields of credential definition are complex opaque types that contain data structures internal to Ursa.
+   They should not be parsed and are likely to change in future versions.
 */
 + (void)issuerCreateAndStoreCredentialDefForSchema:(NSString *)schemaJSON
                                          issuerDID:(NSString *)issuerDID
@@ -89,7 +115,9 @@
  @param walletHandle: wallet handler (created by open_wallet).
  @param issuerDID: a DID of the issuer signing transaction to the Ledger
  @param type: (optional, default value depends on credential definition type). Supported types are:
-                - 'CL_ACCUM': Type-3 pairing based accumulator. Default for 'CL' credential definition type
+               - 'CL_ACCUM': Type-3 pairing based accumulator implemented according to the algorithm in this paper:
+                                 https://github.com/hyperledger/ursa/blob/master/libursa/docs/AnonCred.pdf
+                             This type is default for 'CL' credential definition type.
  @param tag: allows to distinct between revocation registries for the same issuer and credential definition
  @param credDefID: id of stored in ledger credential definition
  @param configJSON: type-specific configuration of revocation registry as json:
@@ -105,8 +133,32 @@
  Returns 
     revocRegID: identifier of created revocation registry definition
     revocRegDefJSON: public part of revocation registry definition
+       {
+           "id": string - ID of the Revocation Registry,
+           "revocDefType": string - Revocation Registry type (only CL_ACCUM is supported for now),
+           "tag": string - Unique descriptive ID of the Registry,
+           "credDefId": string - ID of the corresponding CredentialDefinition,
+           "value": Registry-specific data {
+               "issuanceType": string - Type of Issuance(ISSUANCE_BY_DEFAULT or ISSUANCE_ON_DEMAND),
+               "maxCredNum": number - Maximum number of credentials the Registry can serve.
+               "tailsHash": string - Hash of tails.
+               "tailsLocation": string - Location of tails file.
+               "publicKeys": <public_keys> - Registry's public key (opaque type that contains data structures internal to Ursa.
+                                                                    It should not be parsed and are likely to change in future versions).
+           },
+           "ver": string - version of revocation registry definition json.
+       }
     revocRegEntryJSON: revocation registry entry that defines initial state of revocation registry
- */
+       {
+           value: {
+               prevAccum: string - previous accumulator value.
+               accum: string - current accumulator value.
+               issued: array<number> - an array of issued indices.
+               revoked: array<number> an array of revoked indices.
+           },
+           ver: string - version revocation registry entry json
+       }
+*/
 + (void)issuerCreateAndStoreRevocRegForCredentialDefId:(NSString *)credDefID
                                              issuerDID:(NSString *)issuerDID
                                                   type:(NSString *)type
@@ -130,7 +182,9 @@
          "cred_def_id": string,
          // Fields below can depend on Cred Def type
          "nonce": string,
-         "key_correctness_proof" : <key_correctness_proof>
+         "key_correctness_proof" : key correctness proof for credential definition correspondent to cred_def_id
+                                   (opaque type that contains data structures internal to Ursa.
+                                   It should not be parsed and are likely to change in future versions).
      }
 */
 + (void)issuerCreateCredentialOfferForCredDefId:(NSString *)credDefID
@@ -169,8 +223,12 @@
             "rev_reg_def_id", Optional<string>,
             "values": <see cred_values_json above>,
             // Fields below can depend on Cred Def type
-            "signature": <signature>,
-            "signature_correctness_proof": <signature_correctness_proof>
+            "signature": <credential signature>,
+                         (opaque type that contains data structures internal to Ursa.
+                          It should not be parsed and are likely to change in future versions).
+            "signature_correctness_proof": credential signature correctness proof
+                         (opaque type that contains data structures internal to Ursa.
+                          It should not be parsed and are likely to change in future versions).
         }
      credRevocID: local id for revocation info (Can be used for revocation of this cred)
      revocRegDeltaJSON: Revocation registry delta json with a newly issued credential
@@ -258,7 +316,11 @@
       "cred_def_id" : string,
          // Fields below can depend on Cred Def type
       "blinded_ms" : <blinded_master_secret>,
+                    (opaque type that contains data structures internal to Ursa.
+                     It should not be parsed and are likely to change in future versions).
       "blinded_ms_correctness_proof" : <blinded_ms_correctness_proof>,
+                    (opaque type that contains data structures internal to Ursa.
+                     It should not be parsed and are likely to change in future versions).
       "nonce": string
     }
     credReqMetadataJSON: Credential request metadata json for further processing of received form Issuer credential.
@@ -677,7 +739,8 @@
           "proof": {
               "proofs": [ <credential_proof>, <credential_proof>, <credential_proof> ],
               "aggregated_proof": <aggregated_proof>
-          }
+          } - (opaque type that contains data structures internal to Ursa.
+              It should not be parsed and are likely to change in future versions).
           "identifiers": [{schema_id, cred_def_id, Optional<rev_reg_id>, Optional<timestamp>}]
       }
   */

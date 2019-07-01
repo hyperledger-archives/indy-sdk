@@ -173,6 +173,19 @@ test('ledger', async function (t) {
   res = await indy.submitRequest(pool.handle, req)
   t.deepEqual(res['result']['data'][0]['constraint'], constraint)
 
+  var expectedAuthRule = {
+    'auth_type': 'NYM',
+    'auth_action': 'ADD',
+    'field': 'role',
+    'new_value': '101',
+    'constraint': constraint
+  }
+
+  var authRulesData = [expectedAuthRule]
+  req = await indy.buildAuthRulesRequest(trusteeDid, authRulesData)
+  res = await indy.submitRequest(pool.handle, req)
+  t.deepEqual(req['operation'], { 'type': '122', 'rules': authRulesData })
+
   // author agreement
   req = await indy.buildTxnAuthorAgreementRequest(trusteeDid, 'indy agreement', '1.0.0')
   t.deepEqual(req['operation'], { 'type': '4', 'text': 'indy agreement', 'version': '1.0.0' })

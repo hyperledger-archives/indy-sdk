@@ -612,6 +612,33 @@
                                   constraint:(NSString *)constraint
                                   completion:(void (^)(NSError *error, NSString *requestJSON))completion;
 
+
+/**
+ Builds a AUTH_RULES request. Request to change multiple authentication rules for a ledger transaction.
+
+ @param submitterDid DID of the submitter stored in secured Wallet.
+ @param data - a list of auth rules: [
+        {
+            "auth_type": ledger transaction alias or associated value,
+            "auth_action": type of an action,
+            "field": transaction field,
+            "old_value": (Optional) old value of a field, which can be changed to a new_value (mandatory for EDIT action),
+            "new_value": (Optional) new value that can be used to fill the field,
+            "constraint": set of constraints required for execution of an action in the format described above for `indy_build_auth_rule_request` function.
+        },
+        ...
+    ]
+
+ Default ledger auth rules: https://github.com/hyperledger/indy-node/blob/master/docs/source/auth_rules.md
+
+ More about AUTH_RULE request: https://github.com/hyperledger/indy-node/blob/master/docs/source/requests.md#auth_rules
+
+ @param completion Callback that takes command result as parameter. Returns request result as json.
+ */
++ (void)buildAuthRulesRequestWithSubmitterDid:(NSString *)submitterDid
+                                         data:(NSString *)data
+                                   completion:(void (^)(NSError *error, NSString *requestJSON))completion;
+
 /**
  Builds a GET_AUTH_RULE request. Request to get authentication rules for ledger transactions.
 

@@ -86,6 +86,15 @@ pub fn prover_create_credential_req(wallet_handle: i32, prover_did: &str, cred_o
     anoncreds::prover_create_credential_req(wallet_handle, prover_did, cred_offer_json, cred_def_json, master_secret_id).wait()
 }
 
+pub fn prover_set_credential_attr_tag_policy(wallet_handle: i32, cred_def_id: &str, tag_attrs_json: Option<&str>,
+                                             retroactive: bool) -> Result<(), IndyError> {
+    anoncreds::prover_set_credential_attr_tag_policy(wallet_handle, cred_def_id, tag_attrs_json, retroactive).wait()
+}
+
+pub fn prover_get_credential_attr_tag_policy(wallet_handle: i32, cred_def_id: &str) -> Result<String, IndyError> {
+    anoncreds::prover_get_credential_attr_tag_policy(wallet_handle, cred_def_id).wait()
+}
+
 pub fn prover_store_credential(wallet_handle: i32, cred_id: &str, cred_req_metadata_json: &str, cred_json: &str,
                                cred_def_json: &str, rev_reg_def_json: Option<&str>) -> Result<String, IndyError> {
     anoncreds::prover_store_credential(wallet_handle, Some(cred_id), cred_req_metadata_json, cred_json, cred_def_json, rev_reg_def_json).wait()
@@ -770,7 +779,8 @@ pub fn init_common_wallet() -> (&'static str, &'static str, &'static str, &'stat
 
     unsafe {
         COMMON_WALLET_INIT.call_once(|| {
-            test::cleanup_storage();
+            // this name must match the one in ANONCREDS_WALLET_CONFIG
+            test::cleanup_storage("anoncreds_wallet");
 
             pool::set_protocol_version(PROTOCOL_VERSION).unwrap();
 

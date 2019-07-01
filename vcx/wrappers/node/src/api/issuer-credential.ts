@@ -1,5 +1,4 @@
-import { Callback } from 'ffi'
-
+import * as ffi from 'ffi'
 import { VCXInternalError } from '../errors'
 import { rustAPI } from '../rustlib'
 import { createFFICallbackPromise } from '../utils/ffi-helpers'
@@ -166,7 +165,7 @@ export class IssuerCredential extends VCXBaseWithState<IIssuerCredentialData> {
               reject(rc)
             }
           },
-          (resolve, reject) => Callback(
+          (resolve, reject) => ffi.Callback(
             'void',
             ['uint32', 'uint32'],
             (xcommandHandle: number, err: number) => {
@@ -177,6 +176,41 @@ export class IssuerCredential extends VCXBaseWithState<IIssuerCredentialData> {
               resolve()
             })
         )
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
+
+  /**
+   *
+   * Updates the state of the credential from the given message.
+   *
+   * Example:
+   * ```
+   * await object.updateStateWithMessage(message)
+   * ```
+   * @returns {Promise<void>}
+   */
+  public async updateStateWithMessage (message: string): Promise<void> {
+    try {
+      const commandHandle = 0
+      await createFFICallbackPromise<number>(
+        (resolve, reject, cb) => {
+          const rc = rustAPI().vcx_issuer_credential_update_state_with_message(commandHandle, this.handle, message, cb)
+          if (rc) {
+            resolve(StateType.None)
+          }
+        },
+        (resolve, reject) => ffi.Callback(
+          'void',
+          ['uint32', 'uint32', 'uint32'],
+          (handle: number, err: any, state: StateType) => {
+            if (err) {
+              reject(err)
+            }
+            resolve(state)
+          })
+      )
     } catch (err) {
       throw new VCXInternalError(err)
     }
@@ -205,7 +239,7 @@ export class IssuerCredential extends VCXBaseWithState<IIssuerCredentialData> {
             reject(rc)
           }
         },
-        (resolve, reject) => Callback(
+        (resolve, reject) => ffi.Callback(
           'void',
           ['uint32', 'uint32'],
           (xcommandHandle: number, err: number) => {
@@ -245,7 +279,7 @@ export class IssuerCredential extends VCXBaseWithState<IIssuerCredentialData> {
             reject(rc)
           }
         },
-        (resolve, reject) => Callback(
+        (resolve, reject) => ffi.Callback(
           'void',
           ['uint32', 'uint32'],
           (xcommandHandle: number, err: number) => {

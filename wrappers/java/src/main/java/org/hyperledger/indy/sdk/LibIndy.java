@@ -71,6 +71,7 @@ public abstract class LibIndy {
 		public int indy_parse_get_revoc_reg_delta_response(int command_handle, String get_revoc_reg_delta_response, Callback cb);
 		public int indy_get_response_metadata(int command_handle, String response, Callback cb);
 		public int indy_build_auth_rule_request(int command_handle, String submitter_did, String txn_type, String action, String field, String old_value, String new_value, String constraint, Callback cb);
+		public int indy_build_auth_rules_request(int command_handle, String submitter_did, String data, Callback cb);
 		public int indy_build_get_auth_rule_request(int command_handle, String submitter_did, String txn_type, String action, String field, String old_value, String new_value, Callback cb);
 		public int indy_build_txn_author_agreement_request(int command_handle, String submitter_did, String text, String version, Callback cb);
 		public int indy_build_get_txn_author_agreement_request(int command_handle, String submitter_did, String data, Callback cb);

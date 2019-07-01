@@ -1,5 +1,3 @@
-extern crate libc;
-
 use api::{ErrorCode, CommandHandle, WalletHandle, PoolHandle};
 use errors::prelude::*;
 use commands::{Command, CommandExecutor};
@@ -10,10 +8,11 @@ use domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinit
 use domain::anoncreds::revocation_registry_delta::RevocationRegistryDelta;
 use domain::ledger::author_agreement::{GetTxnAuthorAgreementData, AcceptanceMechanisms};
 use domain::ledger::node::NodeOperationData;
+use domain::ledger::auth_rule::AuthRules;
 use utils::ctypes;
 
 use serde_json;
-use self::libc::c_char;
+use libc::c_char;
 
 /// Signs and submits request message to validator pool.
 ///
@@ -1841,6 +1840,7 @@ pub extern fn indy_get_response_metadata(command_handle: CommandHandle,
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
+/// submitter_did: DID of the request sender.
 /// txn_type: ledger transaction alias or associated value.
 /// action: type of an action.
 ///     Can be either "ADD" (to add a new rule) or "EDIT" (to edit an existing one).
@@ -1922,6 +1922,72 @@ pub extern fn indy_build_auth_rule_request(command_handle: CommandHandle,
     let res = prepare_result!(result);
 
     trace!("indy_build_auth_rule_request: <<< res: {:?}", res);
+
+    res
+}
+
+/// Builds a AUTH_RULES request. Request to change multiple authentication rules for a ledger transaction.
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// submitter_did: DID of the request sender.
+/// rules: a list of auth rules: [
+///     {
+///         "auth_type": ledger transaction alias or associated value,
+///         "auth_action": type of an action,
+///         "field": transaction field,
+///         "old_value": (Optional) old value of a field, which can be changed to a new_value (mandatory for EDIT action),
+///         "new_value": (Optional) new value that can be used to fill the field,
+///         "constraint": set of constraints required for execution of an action in the format described above for `indy_build_auth_rule_request` function.
+///     },
+///     ...
+/// ]
+///
+/// Default ledger auth rules: https://github.com/hyperledger/indy-node/blob/master/docs/source/auth_rules.md
+///
+/// More about AUTH_RULES request: https://github.com/hyperledger/indy-node/blob/master/docs/source/requests.md#auth_rules
+///
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Request result as json.
+///
+/// #Errors
+/// Common*
+#[no_mangle]
+pub extern fn indy_build_auth_rules_request(command_handle: CommandHandle,
+                                            submitter_did: *const c_char,
+                                            rules: *const c_char,
+                                            cb: Option<extern fn(command_handle_: CommandHandle,
+                                                                 err: ErrorCode,
+                                                                 request_json: *const c_char)>) -> ErrorCode {
+    trace!("indy_build_auth_rules_request: >>> submitter_did: {:?}, rules: {:?}", submitter_did, rules);
+
+    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
+    check_useful_json!(rules, ErrorCode::CommonInvalidParam3, AuthRules);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    if rules.is_empty() {
+        return err_msg(IndyErrorKind::InvalidStructure, "Empty list of Auth Rules has been passed").into();
+    }
+
+    trace!("indy_build_auth_rules_request: entities >>> submitter_did: {:?}, rules: {:?}", submitter_did, rules);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Ledger(LedgerCommand::BuildAuthRulesRequest(
+            submitter_did,
+            rules,
+            Box::new(move |result| {
+                let (err, request_json) = prepare_result_1!(result, String::new());
+                trace!("indy_build_auth_rules_request: request_json: {:?}", request_json);
+                let request_json = ctypes::string_to_cstring(request_json);
+                cb(command_handle, err, request_json.as_ptr())
+            })
+        )));
+
+    let res = prepare_result!(result);
+
+    trace!("indy_build_auth_rules_request: <<< res: {:?}", res);
 
     res
 }
