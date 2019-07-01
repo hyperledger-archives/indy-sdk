@@ -114,6 +114,12 @@ describe('Proof:', () => {
       assert.equal(await proof.getState(), StateType.OfferSent)
     })
 
+    it('successfully get request message', async () => {
+      const proof = await proofCreate()
+      const msg = await proof.getProofRequestMessage()
+      assert(msg)
+    })
+
     it('success -> received', async () => {
       const connection = await connectionCreateConnect()
       const proof = await proofCreate()

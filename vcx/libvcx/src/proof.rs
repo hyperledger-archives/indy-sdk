@@ -236,6 +236,24 @@ impl Proof {
                                  &rev_regs_json)
     }
 
+    fn generate_proof_request_msg(&mut self) -> VcxResult<String> {
+        let data_version = "0.1";
+        let mut proof_obj = messages::proof_request();
+        let proof_request = proof_obj
+            .type_version(&self.version)?
+            .nonce(&self.nonce)?
+            .proof_name(&self.name)?
+            .proof_data_version(data_version)?
+            .requested_attrs(&self.requested_attrs)?
+            .requested_predicates(&self.requested_predicates)?
+            .from_timestamp(self.revocation_interval.from)?
+            .to_timestamp(self.revocation_interval.to)?
+            .serialize_message()?;
+
+        self.proof_request = Some(proof_obj);
+        Ok(proof_request)
+    }
+
     fn send_proof_request(&mut self, connection_handle: u32) -> VcxResult<u32> {
         trace!("Proof::send_proof_request >>> connection_handle: {}", connection_handle);
 
@@ -257,21 +275,9 @@ impl Proof {
                self.remote_vk,
                self.prover_vk);
 
-        let data_version = "0.1";
-        let mut proof_obj = messages::proof_request();
-        let proof_request = proof_obj
-            .type_version(&self.version)?
-            .nonce(&self.nonce)?
-            .proof_name(&self.name)?
-            .proof_data_version(data_version)?
-            .requested_attrs(&self.requested_attrs)?
-            .requested_predicates(&self.requested_predicates)?
-            .from_timestamp(self.revocation_interval.from)?
-            .to_timestamp(self.revocation_interval.to)?
-            .serialize_message()?;
-
-        self.proof_request = Some(proof_obj);
         let title = format!("{} wants you to share: {}", settings::get_config_value(settings::CONFIG_INSTITUTION_NAME)?, self.name);
+
+        let proof_request = self.generate_proof_request_msg()?;
 
         let response = messages::send_message()
             .to(&self.prover_did)?
@@ -476,6 +482,12 @@ pub fn from_string(proof_data: &str) -> VcxResult<u32> {
 
     let source_id = derived_proof.source_id.clone();
     PROOF_MAP.add(derived_proof)
+}
+
+pub fn generate_proof_request_msg(handle: u32) -> VcxResult<String> {
+    PROOF_MAP.get_mut(handle, |p| {
+        p.generate_proof_request_msg()
+    })
 }
 
 pub fn send_proof_request(handle: u32, connection_handle: u32) -> VcxResult<u32> {

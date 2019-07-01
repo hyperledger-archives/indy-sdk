@@ -199,6 +199,11 @@ public abstract class LibVcx {
         public int vcx_proof_send_request(int command_handle, int proof_handle, int connection_handle, Callback cb);
 
         /**
+         * Get the proof request message for sending.
+         */
+        public int vcx_proof_get_request_msg(int command_handle, int proof_handle, Callback cb);
+
+        /**
          * Populate response_data with the latest proof offer received.
          */
         public int vcx_get_proof(int command_handle, int proof_handle, int connection_handle, Callback cb);
@@ -258,6 +263,11 @@ public abstract class LibVcx {
          * Asynchronously send a proof to the connection.
          */
         public int vcx_disclosed_proof_send_proof(int command_handle, int proof_handle, int connection_handle, Callback cb);
+
+        /**
+         * Get the proof message for sending.
+         */
+        public int vcx_disclosed_proof_get_proof_msg(int command_handle, int proof_handle, Callback cb);
 
         /**
          * Populates status with the current State of this disclosed_proof request.

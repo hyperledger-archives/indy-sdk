@@ -118,6 +118,13 @@ async def test_request_proof():
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
+async def test_get_request_msg():
+    proof = await Proof.create(source_id, name, requested_attrs, revocation_interval)
+    msg = await proof.get_proof_request_msg()
+    assert msg
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_update_state_with_message():
     connection = await Connection.create(source_id)
     await connection.connect(connection_options)
