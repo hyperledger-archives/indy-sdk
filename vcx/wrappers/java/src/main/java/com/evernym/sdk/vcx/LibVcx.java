@@ -317,6 +317,8 @@ public abstract class LibVcx {
 
         public int vcx_set_active_txn_author_agreement_meta(String text, String version, String hash, String accMechType, long timeOfAcceptance);
 
+        public int vcx_get_request_price(int command_handle, String action_json, String requester_info_json, Callback cb);
+
         /**
          * credential object
          *

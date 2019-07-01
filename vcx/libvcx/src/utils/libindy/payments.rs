@@ -221,7 +221,7 @@ pub fn pay_for_txn(req: &str, txn_action: (&str, &str, &str, Option<&str>, Optio
         return Ok((Some(PaymentTxn::from_parts(inputs, outputs, 1, false)), SUBMIT_SCHEMA_RESPONSE.to_string()));
     }
 
-    let txn_price = get_txn_price(txn_action, None)?;
+    let txn_price = get_action_price(txn_action, None)?;
     if txn_price == 0 {
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
         let txn_response = libindy_sign_and_submit_request(&did, req)?;
@@ -275,7 +275,7 @@ pub fn pay_a_payee(price: u64, address: &str) -> VcxResult<(PaymentTxn, String)>
     trace!("pay_a_payee >>> price: {}, address {}", price, address);
     debug!("sending {} tokens to address {}", price, address);
 
-    let ledger_cost = get_txn_price(CREATE_TRANSFER_ACTION, None)?;
+    let ledger_cost = get_action_price(CREATE_TRANSFER_ACTION, None)?;
     let (remainder, input, refund_address) = inputs(price + ledger_cost)?;
     let outputs = outputs(remainder, &refund_address, Some(address.to_string()), Some(price))?;
 
@@ -334,20 +334,20 @@ fn get_request_info(get_auth_rule_resp_json: &str, requester_info_json: &str, fe
         .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, err))
 }
 
-pub fn get_action_price(action_json: String, requester_info_json: Option<String>) -> VcxResult<u64> {
+pub fn get_request_price(action_json: String, requester_info_json: Option<String>) -> VcxResult<u64> {
     let action: auth_rule::Action = ::serde_json::from_str(&action_json)
         .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize Action: {:?}", err)))?;
 
-    get_txn_price((&action.auth_type,
-                   &action.auth_action,
-                   &action.field,
-                   action.old_value.as_ref().map(String::as_str),
-                   action.new_value.as_ref().map(String::as_str)),
-                  requester_info_json)
+    get_action_price((&action.auth_type,
+                      &action.auth_action,
+                      &action.field,
+                      action.old_value.as_ref().map(String::as_str),
+                      action.new_value.as_ref().map(String::as_str)),
+                     requester_info_json)
 }
 
-fn get_txn_price(action: (&str, &str, &str, Option<&str>, Option<&str>), requester_info_json: Option<String>) -> VcxResult<u64> {
-    let get_auth_rule_resp = match auth_rule::get_action_auth_rule(action) {
+fn get_action_price(action: (&str, &str, &str, Option<&str>, Option<&str>), requester_info_json: Option<String>) -> VcxResult<u64> {
+    let get_auth_rule_resp = match auth_rule::get_action_auth_rule(action) { // TODO: Huck to save backward compatibility
         Ok(resp) => resp,
         Err(_) => return Ok(0)
     };
@@ -673,11 +673,11 @@ pub mod tests {
     #[test]
     fn test_get_txn_cost() {
         init!("ledger");
-        assert_eq!(get_txn_price(::utils::constants::CREATE_SCHEMA_ACTION, None).unwrap(), 2);
-        assert_eq!(get_txn_price(::utils::constants::CREATE_CRED_DEF_ACTION, None).unwrap(), 42);
+        assert_eq!(get_action_price(::utils::constants::CREATE_SCHEMA_ACTION, None).unwrap(), 2);
+        assert_eq!(get_action_price(::utils::constants::CREATE_CRED_DEF_ACTION, None).unwrap(), 42);
 
         let unknown_action = ("unknown txn", "ADD", "*", None, Some("*"));
-        assert_eq!(get_txn_price(unknown_action, None).unwrap(), 0);
+        assert_eq!(get_action_price(unknown_action, None).unwrap(), 0);
     }
 
     #[test]
@@ -776,7 +776,7 @@ pub mod tests {
         let ledger_fees = json!({"10001": transfer_fee}).to_string();
         mint_tokens_and_set_fees(None, None, Some(ledger_fees), None).unwrap();
         assert_eq!(get_my_balance(), initial_wallet_balance);
-        assert_eq!(get_txn_price(CREATE_TRANSFER_ACTION, None).unwrap(), transfer_fee);
+        assert_eq!(get_action_price(CREATE_TRANSFER_ACTION, None).unwrap(), transfer_fee);
 
         // Transfer everything besides 50. Remaining balance will be 50 - ledger fees
         let balance_after_transfer = 50;
@@ -887,7 +887,6 @@ pub mod tests {
             "auth_type":"1",
             "auth_action":"ADD",
             "new_value":"0",
-            "type":"121",
             "field":"role"
         }).to_string()
     }
@@ -902,7 +901,7 @@ pub mod tests {
             "sig_count":1,
         }).to_string();
 
-        let price = get_action_price(_action(), Some(requester_info)).unwrap();
+        let price = get_request_price(_action(), Some(requester_info)).unwrap();
         assert_eq!(2, price);
     }
 
@@ -918,7 +917,7 @@ pub mod tests {
             "sig_count":1,
         }).to_string();
 
-        let res = get_action_price(action_json, Some(requester_info));
+        let res = get_request_price(action_json, Some(requester_info));
         assert!(res.is_err());
     }
 }

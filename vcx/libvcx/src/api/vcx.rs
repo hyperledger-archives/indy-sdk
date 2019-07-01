@@ -1,7 +1,7 @@
 use utils::version_constants;
 use libc::c_char;
 use utils::cstring::CStringUtils;
-use utils::libindy::{wallet, pool, ledger, payments};
+use utils::libindy::{wallet, pool, ledger};
 use utils::error;
 use settings;
 use std::ffi::CString;
@@ -373,59 +373,6 @@ pub extern fn vcx_get_current_error(error_json_p: *mut *const c_char) {
     unsafe { *error_json_p = error };
 
     trace!("vcx_get_current_error: <<<");
-}
-
-
-/// Gets minimal request price for performing an action in case the requester can perform this action.
-///
-/// # Params
-/// action_json: {
-///     "auth_type": ledger transaction alias or associated value,
-///     "auth_action": type of an action.,
-///     "field": transaction field,
-///     "old_value": (Optional) old value of a field, which can be changed to a new_value (mandatory for EDIT action),
-///     "new_value": (Optional) new value that can be used to fill the field,
-/// }
-/// requester_info_json: (Optional) {
-///     "role": string - role of a user which can sign transaction.
-///     "count": string - count of users.
-///     "is_owner": bool - if user is an owner of transaction.
-/// } otherwise context info will be used
-///
-/// # Return
-/// "price": u64 - tokens amount required for action performing
-#[no_mangle]
-pub extern fn vcx_get_action_price(command_handle: u32,
-                                   action_json: *const c_char,
-                                   requester_info_json: *const c_char,
-                                   cb: Option<extern fn(xcommand_handle: u32, err: u32, price: u64)>) -> u32 {
-    info!("vcx_get_action_price >>>");
-
-    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
-    check_useful_c_str!(action_json, VcxErrorKind::InvalidOption);
-    check_useful_opt_c_str!(requester_info_json, VcxErrorKind::InvalidOption);
-
-    trace!(target: "vcx", "vcx_get_action_price(command_handle: {}, action_json: {}, requester_info_json: {:?})",
-           command_handle, action_json, requester_info_json);
-
-    spawn(move || {
-        match payments::get_action_price(action_json, requester_info_json) {
-            Ok(x) => {
-                trace!(target: "vcx", "vcx_get_action_price_cb(command_handle: {}, rc: {}, handle: {})",
-                       command_handle, error::SUCCESS.message, x);
-                cb(command_handle, error::SUCCESS.code_num, x);
-            }
-            Err(x) => {
-                warn!("vcx_get_action_price_cb(command_handle: {}, rc: {}, handle: {})",
-                      command_handle, x, 0);
-                cb(command_handle, x.into(), 0);
-            }
-        };
-
-        Ok(())
-    });
-
-    error::SUCCESS.code_num
 }
 
 #[cfg(test)]

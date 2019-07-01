@@ -163,7 +163,7 @@ pub fn libindy_build_get_nym_request(submitter_did: Option<&str>, did: &str) -> 
 
 pub mod auth_rule {
     use super::*;
-    use std::collections::{HashMap, HashSet};
+    use std::collections::{HashMap};
     use std::sync::{Once, ONCE_INIT};
     use std::sync::Mutex;
 
