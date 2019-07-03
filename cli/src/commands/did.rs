@@ -1,4 +1,4 @@
-use command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata};
+use command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata, DynamicCompletionType};
 use commands::*;
 use utils::table::print_list_table;
 
@@ -165,7 +165,7 @@ pub mod use_command {
     use super::*;
 
     command!(CommandMetadata::build("use", "Use DID")
-                .add_main_param("did", "Did stored in wallet")
+                .add_main_param_with_dynamic_completion("did", "Did stored in wallet", DynamicCompletionType::Did)
                 .add_example("did use VsKV7grR1BUE29mG2Fm2kX")
                 .finalize());
 
@@ -398,6 +398,21 @@ pub mod list_command {
     }
 }
 
+pub fn list_dids(ctx: &CommandContext) -> Vec<String> {
+    get_opened_wallet(&ctx)
+        .and_then(|(wallet_handle, _)|
+            Did::list_dids_with_meta(wallet_handle).ok()
+        )
+        .and_then(|dids|
+            serde_json::from_str::<Vec<serde_json::Value>>(&dids).ok()
+        )
+        .unwrap_or(vec![])
+        .into_iter()
+        .map(|did|
+            did["did"].as_str().map(String::from).unwrap_or(String::new())
+        )
+        .collect()
+}
 
 #[cfg(test)]
 pub mod tests {

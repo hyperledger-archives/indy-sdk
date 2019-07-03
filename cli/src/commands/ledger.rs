@@ -1,7 +1,7 @@
 extern crate regex;
 extern crate chrono;
 
-use command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata};
+use command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata, DynamicCompletionType};
 use commands::*;
 use commands::payment_address::handle_payment_error;
 
@@ -1001,7 +1001,7 @@ pub mod get_payment_sources_command {
     use super::*;
 
     command!(CommandMetadata::build("get-payment-sources", "Get sources list for payment address.")
-                .add_required_param("payment_address","Target payment address")
+                .add_required_param_with_dynamic_completion("payment_address","Target payment address", DynamicCompletionType::PaymentAddress)
                 .add_optional_param("send","Send the request to the Ledger (True by default). If false then created request will be printed and stored into CLI context.")
                 .add_example("ledger get-payment-sources payment_address=pay:null:GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa")
                 .finalize()
@@ -1514,13 +1514,13 @@ fn print_auth_rules(rules: AuthRulesData) {
         .collect::<Vec<serde_json::Value>>();
 
     print_list_table(&constraints,
-                               &vec![("auth_type", "Type"),
-                                     ("auth_action", "Action"),
-                                     ("field", "Field"),
-                                     ("old_value", "Old Value"),
-                                     ("new_value", "New Value"),
-                                     ("constraint", "Constraint")],
-                               "There are no rules set");
+                     &vec![("auth_type", "Type"),
+                           ("auth_action", "Action"),
+                           ("field", "Field"),
+                           ("old_value", "Old Value"),
+                           ("new_value", "New Value"),
+                           ("constraint", "Constraint")],
+                     "There are no rules set");
 }
 
 pub mod save_transaction_command {
