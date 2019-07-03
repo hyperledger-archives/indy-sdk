@@ -165,6 +165,18 @@ class Credential(VcxStateful):
         """
         return await self._update_state(Credential, 'vcx_credential_update_state')
 
+    async def update_state_with_message(self, message: str) -> int:
+
+        """
+        Update the state of the proof based on the given message.
+        Example:
+        proof = await Proof.create(source_id)
+        assert await proof.update_state_with_message(message) == State.Accepted
+        :param message:
+        :return Current state of the Proof
+        """
+        return await self._update_state_with_message(Credential, message, 'vcx_credential_update_state_with_message')
+
     async def get_state(self) -> int:
         """
         Gets the state of the entity.

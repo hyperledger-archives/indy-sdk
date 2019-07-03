@@ -1,10 +1,11 @@
 import pytest
+import json
 from vcx.error import ErrorCode, VcxError
 from vcx.state import State
 from vcx.api.issuer_credential import IssuerCredential
 from vcx.api.connection import Connection
 from vcx.api.credential_def import CredentialDef
-from tests.conftest import cred_request_message
+from vcx.api.credential import Credential
 
 source_id = '1'
 schema_no = 1234
@@ -140,13 +141,22 @@ async def test_send_offer():
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
-async def test_get_offer_msg():
+async def test_get_msgs():
     connection = await Connection.create(source_id)
     await connection.connect(connection_options)
     cred_def = await CredentialDef.create(source_id, name, schema_id, 0)
     issuer_credential = await IssuerCredential.create(source_id, attrs, cred_def.handle, name, price)
-    msg = await issuer_credential.get_offer_msg(connection)
-    assert(msg)
+    offer = await issuer_credential.get_offer_msg(connection)
+    assert(offer)
+    cred = await Credential.create("cred", offer)
+    assert(cred)
+    request = await cred.get_request_msg(connection, 0)
+    print(request)
+    await issuer_credential.update_state_with_message(json.dumps(request))
+    assert await issuer_credential.get_state() == State.RequestReceived
+    cred_msg = await issuer_credential.get_credential_msg(connection)
+    await cred.update_state_with_message(json.dumps(cred_msg))
+    assert(await cred.get_state() == State.Accepted)
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
@@ -191,18 +201,6 @@ async def test_send_credential():
     issuer_credential2 = await issuer_credential.deserialize(data)
     await issuer_credential2.send_credential(connection)
     assert await issuer_credential2.get_state() == State.Accepted
-
-@pytest.mark.asyncio
-@pytest.mark.usefixtures('vcx_init_test_mode')
-async def test_send_credential_with_message():
-    connection = await Connection.create(source_id)
-    await connection.connect(connection_options)
-    cred_def = await CredentialDef.create(source_id, name, schema_id, 0)
-    issuer_credential = await IssuerCredential.create(source_id, attrs, cred_def.handle, name, price)
-    await issuer_credential.send_offer(connection)
-    assert await issuer_credential.update_state_with_message(cred_request_message) == State.RequestReceived
-    await issuer_credential.send_credential(connection)
-    assert await issuer_credential.get_state() == State.Accepted
 
 
 @pytest.mark.asyncio

@@ -179,6 +179,19 @@ class DisclosedProof(VcxStateful):
         """
         return await self._update_state(DisclosedProof, 'vcx_disclosed_proof_update_state')
 
+    async def update_state_with_message(self, message: str) -> int:
+        """
+        Example:
+        msg_id = '1'
+        phone_number = '8019119191'
+        connection = await Connection.create(source_id)
+        await connection.connect(phone_number)
+        disclosed_proof = await DisclosedProof.create_with_msgid(source_id, connection, msg_id)
+        assert await disclosed_proof.update_state_with_message(msg) == State.RequestReceived
+        :return:
+        """
+        return await self._update_state_with_message(DisclosedProof, message, 'vcx_disclosed_proof_update_state_with_message')
+
     async def get_state(self) -> int:
         """
 

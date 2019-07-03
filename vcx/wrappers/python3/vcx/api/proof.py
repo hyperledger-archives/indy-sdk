@@ -103,20 +103,7 @@ class Proof(VcxStateful):
         :param message:
         :return Current state of the Proof
         """
-        if not hasattr(Proof.update_state_with_message, "cb"):
-            self.logger.debug("vcx_proof_update_state_with_message: Creating callback")
-            Proof.update_state_with_message.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_uint32))
-
-        c_handle = c_uint32(self.handle)
-        c_message = c_char_p(message.encode('utf-8'))
-
-        state = await do_call('vcx_proof_update_state_with_message',
-                              c_handle,
-                              c_message,
-                              Proof.update_state_with_message.cb)
-
-        self.logger.debug("vcx_proof_update_state_with_message completed")
-        return state
+        return await self._update_state_with_message(Connection, message, 'vcx_proof_update_state_with_message')
 
     async def get_state(self) -> int:
         """

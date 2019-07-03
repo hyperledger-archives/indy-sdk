@@ -8,7 +8,6 @@ use issuer_credential;
 use std::ptr;
 use utils::threadpool::spawn;
 use error::prelude::*;
-use messages::get_message::Message;
 
 /// Create a Issuer Credential object that provides a credential for an enterprise's user
 /// Assumes a credential definition has been written to the ledger.
@@ -290,11 +289,6 @@ pub extern fn vcx_issuer_credential_update_state_with_message(command_handle: u3
     if !issuer_credential::is_valid_handle(credential_handle) {
         return VcxError::from(VcxErrorKind::InvalidIssuerCredentialHandle).into()
     }
-
-    let message: Message = match serde_json::from_str(&message) {
-        Ok(x) => x,
-        Err(_) => return VcxError::from(VcxErrorKind::InvalidJson).into(),
-    };
 
     spawn(move || {
         match issuer_credential::update_state(credential_handle, Some(message)) {

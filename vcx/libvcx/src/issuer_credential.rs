@@ -15,7 +15,6 @@ use utils::openssl::encode;
 use utils::libindy::payments::PaymentTxn;
 use object_cache::ObjectCache;
 use error::prelude::*;
-use messages::get_message::Message;
 
 lazy_static! {
     static ref ISSUER_CREDENTIAL_MAP: ObjectCache < IssuerCredential > = Default::default();
@@ -267,37 +266,41 @@ impl IssuerCredential {
 
     // TODO: The error arm of this Result is never used in any calling functions.
     // So currently there is no way to test the error status.
-    fn get_credential_offer_status(&mut self, message: Option<Message>) -> VcxResult<u32> {
+    fn get_credential_offer_status(&mut self, message: Option<String>) -> VcxResult<u32> {
         debug!("updating state for credential offer: {} msg_uid: {:?}", self.source_id, self.msg_uid);
         if self.state == VcxStateType::VcxStateRequestReceived {
             return Ok(self.get_state());
         }
-        if self.state != VcxStateType::VcxStateOfferSent || self.msg_uid.is_empty() || self.issued_did.is_empty() {
+        if message.is_none() && (self.state != VcxStateType::VcxStateOfferSent || self.msg_uid.is_empty() || self.issued_did.is_empty()) {
             return Ok(self.get_state());
         }
 
-        let (offer_uid, payload) = match message {
-            None => messages::get_message::get_ref_msg(&self.msg_uid,
-                                               &self.issued_did,
-                                               &self.issued_vk,
-                                               &self.agent_did,
-                                               &self.agent_vk)?,
-            Some(ref message) if (message.payload.is_some()) => (message.uid.clone(), message.payload.clone().unwrap()),
-            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Cannot find referent message")),
-        };
+        let (payload, offer_uid) = match message {
+            None => {
+                // Check cloud agent for pending messages
+                let (msg_id, message) = messages::get_message::get_ref_msg(&self.msg_uid,
+                                                                              &self.issued_did,
+                                                                              &self.issued_vk,
+                                                                              &self.agent_did,
+                                                                              &self.agent_vk)?;
 
-        let (payload, thread) = Payloads::decrypt(&self.issued_vk, &payload)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::Common(err.into()), "Cannot decrypt CredentialOffer payload"))?;
+                let (payload, thread) = Payloads::decrypt(&self.issued_vk, &message)
+                    .map_err(|err| VcxError::from_msg(VcxErrorKind::Common(err.into()), "Cannot decrypt CredentialOffer payload"))?;
+
+                if let Some(tr) = thread {
+                    let remote_did = self.remote_did.as_str();
+                    self.thread.as_mut().map(|thread| thread.increment_receiver(&remote_did));
+                }
+
+                (payload, Some(msg_id))
+            },
+            Some(ref payload) => (payload.clone(), None)
+        };
 
         let mut cred_req: CredentialRequest = serde_json::from_str(&payload)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize CredentialRequest: {}", err)))?;
 
-        cred_req.msg_ref_id = Some(offer_uid);
-
-        if let Some(tr) = thread {
-            let remote_did = self.remote_did.as_str();
-            self.thread.as_mut().map(|thread| thread.increment_receiver(&remote_did));
-        }
+        cred_req.msg_ref_id = offer_uid;
 
         self.credential_request = Some(cred_req);
         debug!("received credential request for credential offer: {}", self.source_id);
@@ -305,9 +308,11 @@ impl IssuerCredential {
         Ok(self.get_state())
     }
 
-    fn update_state(&mut self, message: Option<Message>) -> VcxResult<u32> {
+    fn update_state(&mut self, message: Option<String>) -> VcxResult<u32> {
         trace!("IssuerCredential::update_state >>>");
-        self.get_credential_offer_status(message)
+        let result = self.get_credential_offer_status(message);
+        debug!("result: {:?}", result);
+        result
         //There will probably be more things here once we do other things with the credential
     }
 
@@ -591,7 +596,7 @@ pub fn issuer_credential_create(cred_def_handle: u32,
     Ok(handle)
 }
 
-pub fn update_state(handle: u32, message: Option<Message>) -> VcxResult<u32> {
+pub fn update_state(handle: u32, message: Option<String>) -> VcxResult<u32> {
     ISSUER_CREDENTIAL_MAP.get_mut(handle, |i| {
         match i.update_state(message.clone()) {
             Ok(x) => Ok(x),
@@ -1003,8 +1008,7 @@ pub mod tests {
     fn test_update_state_with_message() {
         init!("true");
         let mut credential = create_pending_issuer_credential();
-        let message: Message = serde_json::from_str(CREDENTIAL_REQ_RESPONSE_STR).unwrap();
-        credential.update_state(Some(message)).unwrap();
+        credential.update_state(Some(CREDENTIAL_REQ_RESPONSE_STR.to_string())).unwrap();
         assert_eq!(credential.get_state(), VcxStateType::VcxStateRequestReceived as u32);
     }
 
@@ -1012,8 +1016,7 @@ pub mod tests {
     fn test_update_state_with_bad_message() {
         init!("true");
         let mut credential = create_pending_issuer_credential();
-        let message: Message = serde_json::from_str(INVITE_ACCEPTED_RESPONSE).unwrap();
-        let rc = credential.update_state(Some(message));
+        let rc = credential.update_state(Some(INVITE_ACCEPTED_RESPONSE.to_string()));
         assert_eq!(credential.get_state(), VcxStateType::VcxStateOfferSent as u32);
         assert!(rc.is_err());
     }

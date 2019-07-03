@@ -187,6 +187,7 @@ export class Credential extends VCXBaseWithState<ICredentialStructData> {
   public paymentManager!: CredentialPaymentManager
   protected _releaseFn = rustAPI().vcx_credential_release
   protected _updateStFn = rustAPI().vcx_credential_update_state
+  protected _updateStWithMessageFn = rustAPI().vcx_credential_update_state_with_message
   protected _getStFn = rustAPI().vcx_credential_get_state
   protected _serializeFn = rustAPI().vcx_credential_serialize
   protected _deserializeFn = rustAPI().vcx_credential_deserialize

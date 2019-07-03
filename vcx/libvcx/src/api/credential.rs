@@ -404,7 +404,7 @@ pub extern fn vcx_credential_update_state(command_handle: u32,
            command_handle, credential_handle, source_id);
 
     spawn(move || {
-        match credential::update_state(credential_handle) {
+        match credential::update_state(credential_handle, None) {
             Ok(_) => (),
             Err(e) => {
                 error!("vcx_credential_update_state_cb(command_handle: {}, rc: {}, state: {}), source_id: {:?}",
@@ -416,6 +416,67 @@ pub extern fn vcx_credential_update_state(command_handle: u32,
         let state = match credential::get_state(credential_handle) {
             Ok(s) => {
                 trace!("vcx_credential_update_state_cb(command_handle: {}, rc: {}, state: {}), source_id: {:?}",
+                       command_handle, error::SUCCESS.message, s, source_id);
+                cb(command_handle, error::SUCCESS.code_num, s)
+            }
+            Err(e) => {
+                error!("vcx_credential_update_state_cb(command_handle: {}, rc: {}, state: {}), source_id: {:?}",
+                       command_handle, e, 0, source_id);
+                cb(command_handle, e.into(), 0)
+            }
+        };
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
+
+/// Checks for any state change from the given message and updates the the state attribute.  If it detects a credential it
+/// will store the credential in the wallet and update the state.
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// credential_handle: Credential handle that was provided during creation. Used to identify credential object
+///
+/// message: string containing updated status
+///
+/// cb: Callback that provides most current state of the credential and error status of request
+///
+/// #Returns
+/// Error code as a u32
+#[no_mangle]
+pub extern fn vcx_credential_update_state_with_message(command_handle: u32,
+                                                       credential_handle: u32,
+                                                       message: *const c_char,
+                                                       cb: Option<extern fn(xcommand_handle: u32, err: u32, state: u32)>) -> u32 {
+    info!("vcx_credential_update_state_with_message >>>");
+
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+    check_useful_c_str!(message, VcxErrorKind::InvalidOption);
+
+    if !credential::is_valid_handle(credential_handle) {
+        return VcxError::from(VcxErrorKind::InvalidCredentialHandle).into()
+    }
+
+    let source_id = credential::get_source_id(credential_handle).unwrap_or_default();
+    trace!("vcx_credential_update_state_with_message(command_handle: {}, credential_handle: {}), source_id: {:?}",
+           command_handle, credential_handle, source_id);
+
+    spawn(move || {
+        match credential::update_state(credential_handle, Some(message)) {
+            Ok(_) => (),
+            Err(e) => {
+                error!("vcx_credential_update_state_with_message_cb(command_handle: {}, rc: {}, state: {}), source_id: {:?}",
+                       command_handle, e, 0, source_id);
+                cb(command_handle, e.into(), 0)
+            }
+        }
+
+        let state = match credential::get_state(credential_handle) {
+            Ok(s) => {
+                trace!("vcx_credential_update_state_with_message_cb(command_handle: {}, rc: {}, state: {}), source_id: {:?}",
                        command_handle, error::SUCCESS.message, s, source_id);
                 cb(command_handle, error::SUCCESS.code_num, s)
             }

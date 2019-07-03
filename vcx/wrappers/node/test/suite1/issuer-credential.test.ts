@@ -7,10 +7,10 @@ import {
   dataIssuerCredentialCreate,
   issuerCredentialCreate
 } from 'helpers/entities'
-import { CRED_REQ_MESSAGE } from 'helpers/test-constants'
 import { initVcxTestMode, shouldThrow } from 'helpers/utils'
 import {
   Connection,
+  Credential,
   IssuerCredential,
   IssuerCredentialPaymentManager,
   StateType,
@@ -179,11 +179,14 @@ describe('IssuerCredential:', () => {
     it('success', async () => {
       const connection = await connectionCreateConnect()
       const issuerCredential = await issuerCredentialCreate()
-      await issuerCredential.sendOffer(connection)
-      await issuerCredential.updateStateWithMessage(CRED_REQ_MESSAGE)
+      const offer = await issuerCredential.getCredentialOfferMsg(connection)
+      const cred = await Credential.create({ sourceId: 'name', offer, connection })
+      const request = await cred.getRequestMessage({ connection, payment: 0 })
+      await issuerCredential.updateStateWithMessage(request)
       assert.equal(await issuerCredential.getState(), StateType.RequestReceived)
-      await issuerCredential.sendCredential(connection)
-      assert.equal(await issuerCredential.getState(), StateType.Accepted)
+      const credMsg = await issuerCredential.getCredentialMsg(connection)
+      await cred.updateStateWithMessage(credMsg)
+      assert.equal(await cred.getState(), StateType.Accepted)
     })
 
     it('throws: not initialized', async () => {

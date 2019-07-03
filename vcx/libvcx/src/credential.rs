@@ -175,21 +175,28 @@ impl Credential {
         return Ok(error::SUCCESS.code_num);
     }
 
-    fn _check_msg(&mut self) -> VcxResult<()> {
-        let agent_did = self.agent_did.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidCredentialHandle))?;
-        let agent_vk = self.agent_vk.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidCredentialHandle))?;
-        let my_did = self.my_did.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidCredentialHandle))?;
-        let my_vk = self.my_vk.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidCredentialHandle))?;
-        let msg_uid = self.msg_uid.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidCredentialHandle))?;
+    fn _check_msg(&mut self, message: Option<String>) -> VcxResult<()> {
 
-        let (_, payload) = get_message::get_ref_msg(msg_uid, my_did, my_vk, agent_did, agent_vk)?;
+        let credential = match message {
+            None => {
+                let agent_did = self.agent_did.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidCredentialHandle))?;
+                let agent_vk = self.agent_vk.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidCredentialHandle))?;
+                let my_did = self.my_did.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidCredentialHandle))?;
+                let my_vk = self.my_vk.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidCredentialHandle))?;
+                let msg_uid = self.msg_uid.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidCredentialHandle))?;
 
-        let (credential, thread) = Payloads::decrypt(&my_vk, &payload)?;
+                let (_, payload) = get_message::get_ref_msg(msg_uid, my_did, my_vk, agent_did, agent_vk)?;
 
-        if let Some(_) = thread {
-            let their_did = self.their_did.as_ref().map(String::as_str).unwrap_or("");
-            self.thread.as_mut().map(|thread| thread.increment_receiver(&their_did));
-        }
+                let (credential, thread) = Payloads::decrypt(&my_vk, &payload)?;
+
+                if let Some(_) = thread {
+                    let their_did = self.their_did.as_ref().map(String::as_str).unwrap_or("");
+                    self.thread.as_mut().map(|thread| thread.increment_receiver(&their_did));
+                };
+                credential
+            },
+            Some(ref message) => message.clone(),
+        };
 
         let credential_msg: CredentialMessage = serde_json::from_str(&credential)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidCredential, format!("Cannot deserialize CredentialMessage: {}", err)))?;
@@ -215,12 +222,12 @@ impl Credential {
         Ok(())
     }
 
-    fn update_state(&mut self) {
+    fn update_state(&mut self, message: Option<String>) {
         trace!("Credential::update_state >>>");
         match self.state {
             VcxStateType::VcxStateOfferSent => {
                 //Check for messages
-                let _ = self._check_msg();
+                let _ = self._check_msg(message);
             }
             VcxStateType::VcxStateAccepted => {
                 //Check for revocation
@@ -334,6 +341,10 @@ impl Credential {
             .map(|obj: ObjectWithVersion<Credential>| obj.data)
             .map_err(|err| err.extend("Cannot deserialize Credential"))
     }
+
+    fn set_state(&mut self, state: VcxStateType) {
+        self.state = state;
+    }
 }
 
 //********************************************
@@ -371,10 +382,10 @@ fn _credential_create(source_id: &str) -> Credential {
     new_credential
 }
 
-pub fn update_state(handle: u32) -> VcxResult<u32> {
+pub fn update_state(handle: u32, message: Option<String>) -> VcxResult<u32> {
     HANDLE_MAP.get_mut(handle, |obj| {
         debug!("updating state for credential {} with msg_id {:?}", obj.source_id, obj.msg_uid);
-        obj.update_state();
+        obj.update_state(message.clone());
         Ok(error::SUCCESS.code_num)
     })
 }
@@ -413,7 +424,9 @@ pub fn get_state(handle: u32) -> VcxResult<u32> {
 
 pub fn generate_credential_request_msg(handle: u32, connection_handle:u32) -> VcxResult<String> {
      HANDLE_MAP.get_mut(handle, |obj| {
-        obj.generate_request_msg(connection_handle)
+         let req = obj.generate_request_msg(connection_handle);
+         obj.set_state(VcxStateType::VcxStateOfferSent);
+         req
     }).map_err(handle_err)
 }
 
@@ -670,7 +683,7 @@ pub mod tests {
         assert_eq!(get_credential_id(c_h).unwrap(), "");
         httpclient::set_next_u8_response(::utils::constants::CREDENTIAL_RESPONSE.to_vec());
         httpclient::set_next_u8_response(::utils::constants::UPDATE_CREDENTIAL_RESPONSE.to_vec());
-        update_state(c_h).unwrap();
+        update_state(c_h, None).unwrap();
         assert_eq!(get_state(c_h).unwrap(), VcxStateType::VcxStateAccepted as u32);
         assert_eq!(get_credential_id(c_h).unwrap(), "cred_id"); // this is set in test mode
         assert!(get_credential(c_h).unwrap().len() > 100);

@@ -339,7 +339,7 @@ pub extern fn vcx_disclosed_proof_update_state(command_handle: u32,
            command_handle, proof_handle, source_id);
 
     spawn(move || {
-        match disclosed_proof::update_state(proof_handle) {
+        match disclosed_proof::update_state(proof_handle, None) {
             Ok(s) => {
                 trace!("vcx_disclosed_proof_update_state_cb(command_handle: {}, rc: {}, state: {}) source_id: {}",
                        command_handle, error::SUCCESS.message, s, source_id);
@@ -347,6 +347,57 @@ pub extern fn vcx_disclosed_proof_update_state(command_handle: u32,
             }
             Err(e) => {
                 error!("vcx_disclosed_proof_update_state_cb(command_handle: {}, rc: {}, state: {}) source_id: {}",
+                       command_handle, e, 0, source_id);
+                cb(command_handle, e.into(), 0)
+            }
+        };
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
+
+/// Checks for any state change from the given message and updates the the state attribute
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// proof_handle: Credential handle that was provided during creation. Used to identify disclosed proof object
+///
+/// message: message to parse for state changes
+///
+/// cb: Callback that provides most current state of the disclosed proof and error status of request
+///
+/// #Returns
+/// Error code as a u32
+#[no_mangle]
+pub extern fn vcx_disclosed_proof_update_state_with_message(command_handle: u32,
+                                                            proof_handle: u32,
+                                                            message: *const c_char,
+                                                            cb: Option<extern fn(xcommand_handle: u32, err: u32, state: u32)>) -> u32 {
+    info!("vcx_disclosed_proof_update_state_with_message >>>");
+
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+    check_useful_c_str!(message, VcxErrorKind::InvalidOption);
+
+    if !disclosed_proof::is_valid_handle(proof_handle) {
+        return VcxError::from(VcxErrorKind::InvalidDisclosedProofHandle).into()
+    }
+
+    let source_id = disclosed_proof::get_source_id(proof_handle).unwrap_or_default();
+    trace!("vcx_disclosed_proof_update_state_with_message(command_handle: {}, proof_handle: {}) source_id: {}",
+           command_handle, proof_handle, source_id);
+
+    spawn(move || {
+        match disclosed_proof::update_state(proof_handle, Some(message)) {
+            Ok(s) => {
+                trace!("vcx_disclosed_proof_update_state__with_message_cb(command_handle: {}, rc: {}, state: {}) source_id: {}",
+                       command_handle, error::SUCCESS.message, s, source_id);
+                cb(command_handle, error::SUCCESS.code_num, s)
+            }
+            Err(e) => {
+                error!("vcx_disclosed_proof_update_state_with_message_cb(command_handle: {}, rc: {}, state: {}) source_id: {}",
                        command_handle, e, 0, source_id);
                 cb(command_handle, e.into(), 0)
             }

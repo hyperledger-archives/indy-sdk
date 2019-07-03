@@ -488,7 +488,7 @@ pub fn get_state(handle: u32) -> VcxResult<u32> {
 }
 
 // update_state is just the same as get_state for disclosed_proof
-pub fn update_state(handle: u32) -> VcxResult<u32> {
+pub fn update_state(handle: u32, message: Option<String>) -> VcxResult<u32> {
     HANDLE_MAP.get(handle, |obj| {
         Ok(obj.get_state())
     })

@@ -435,8 +435,8 @@ mod tests {
         },
         get_temp_dir_path
     };
+    use api::VcxStateType;
     use api::return_types_u32;
-    use messages::get_message::Message;
     use api::connection::vcx_connection_create;
 
     fn create_config_util(logging: Option<&str>) -> String {
@@ -1061,10 +1061,13 @@ mod tests {
         let cred_handle = ::issuer_credential::from_string(::utils::constants::DEFAULT_SERIALIZED_ISSUER_CREDENTIAL).unwrap();
         let connection_handle = ::connection::from_string(::utils::constants::DEFAULT_CONNECTION).unwrap();
 
-        ::issuer_credential::generate_credential_offer_msg(cred_handle, connection_handle).unwrap();
-        let message: Message = serde_json::from_str(::utils::constants::CREDENTIAL_REQ_RESPONSE_STR).unwrap();
-        ::issuer_credential::update_state(cred_handle, Some(message)).unwrap();
-        ::issuer_credential::generate_credential_msg(cred_handle, connection_handle).unwrap();
+        let (offer, _) = ::issuer_credential::generate_credential_offer_msg(cred_handle, connection_handle).unwrap();
+        let mycred = ::credential::credential_create_with_offer("test1", &offer).unwrap();
+        let request = ::credential::generate_credential_request_msg(mycred, connection_handle).unwrap();
+        ::issuer_credential::update_state(cred_handle, Some(request)).unwrap();
+        let cred = ::issuer_credential::generate_credential_msg(cred_handle, connection_handle).unwrap();
+        ::credential::update_state(mycred, Some(cred)).unwrap();
+        assert!(::credential::get_state(mycred).unwrap() == VcxStateType::VcxStateAccepted as u32);
     }
 
     #[test]

@@ -126,6 +126,7 @@ export class IssuerCredential extends VCXBaseWithState<IIssuerCredentialData> {
   public paymentManager!: IssuerCredentialPaymentManager
   protected _releaseFn = rustAPI().vcx_issuer_credential_release
   protected _updateStFn = rustAPI().vcx_issuer_credential_update_state
+  protected _updateStWithMessageFn = rustAPI(). vcx_issuer_credential_update_state_with_message
   protected _getStFn = rustAPI().vcx_issuer_credential_get_state
   protected _serializeFn = rustAPI().vcx_issuer_credential_serialize
   protected _deserializeFn = rustAPI().vcx_issuer_credential_deserialize
@@ -181,40 +182,6 @@ export class IssuerCredential extends VCXBaseWithState<IIssuerCredentialData> {
     }
   }
 
-  /**
-   *
-   * Updates the state of the credential from the given message.
-   *
-   * Example:
-   * ```
-   * await object.updateStateWithMessage(message)
-   * ```
-   * @returns {Promise<void>}
-   */
-  public async updateStateWithMessage (message: string): Promise<void> {
-    try {
-      const commandHandle = 0
-      await createFFICallbackPromise<number>(
-        (resolve, reject, cb) => {
-          const rc = rustAPI().vcx_issuer_credential_update_state_with_message(commandHandle, this.handle, message, cb)
-          if (rc) {
-            resolve(StateType.None)
-          }
-        },
-        (resolve, reject) => ffi.Callback(
-          'void',
-          ['uint32', 'uint32', 'uint32'],
-          (handle: number, err: any, state: StateType) => {
-            if (err) {
-              reject(err)
-            }
-            resolve(state)
-          })
-      )
-    } catch (err) {
-      throw new VCXInternalError(err)
-    }
-  }
   /**
    * Gets the credential offer message for sending to connection.
    *

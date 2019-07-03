@@ -6,7 +6,6 @@ use connection;
 use std::ptr;
 use utils::threadpool::spawn;
 use error::prelude::*;
-use messages::get_message::Message;
 
 /// Create a new Proof object that requests a proof for an enterprise
 ///
@@ -183,11 +182,6 @@ pub extern fn vcx_proof_update_state_with_message(command_handle: u32,
     if !proof::is_valid_handle(proof_handle) {
         return VcxError::from(VcxErrorKind::InvalidProofHandle).into()
     }
-
-    let message: Message = match serde_json::from_str(&message) {
-        Ok(x) => x,
-        Err(_) => return VcxError::from(VcxErrorKind::InvalidJson).into(),
-    };
 
     spawn(move|| {
         match proof::update_state(proof_handle, Some(message)) {
@@ -580,6 +574,19 @@ mod tests {
         let (cb, rc) = create_proof_util();
         assert_eq!(rc, error::SUCCESS.code_num);
         cb.receive(Some(Duration::from_secs(10))).unwrap();
+    }
+
+    #[test]
+    fn test_proof_no_agency() {
+        init!("true");
+        let (cb, rc) = create_proof_util();
+        assert_eq!(rc, error::SUCCESS.code_num);
+        let ph = cb.receive(Some(Duration::from_secs(10))).unwrap();
+        let request = ::proof::generate_proof_request_msg(ph).unwrap();
+        let dp = ::disclosed_proof::create_proof("test", &request).unwrap();
+        let p = ::disclosed_proof::generate_proof_msg(dp).unwrap();
+        ::proof::update_state(ph, Some(p)).unwrap();
+        assert!(::proof::get_state(ph).unwrap() == VcxStateType::VcxStateAccepted as u32);
     }
 
     #[test]
