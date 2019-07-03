@@ -20,6 +20,8 @@ RUN pip3 install -U \
 	pip \
 	setuptools \
 	jupyter \
+	tornado==4.5.3 \
+	tornado==4.5.3 \
 	python3-indy==1.8.1-dev-1039
 
 RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 68DB5E88 \
