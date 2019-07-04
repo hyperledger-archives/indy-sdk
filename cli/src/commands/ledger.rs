@@ -1045,11 +1045,18 @@ pub mod get_payment_sources_command {
 pub mod payment_command {
     use super::*;
 
-    command!(CommandMetadata::build("payment", "Send request for doing payment.")
-                .add_required_param("inputs","The list of payment sources")
-                .add_required_param("outputs","The list of outputs in the following format: (recipient, amount)")
+    command!(CommandMetadata::build("payment", "Send request for doing the payment. \n\
+        One of the next parameter combinations must be specified:\n\
+        (source_payment_address, target_payment_address, amount) - CLI builds payment data according to payment addresses\n\
+        (inputs, outputs) - explicit specification of payment sources")
+                .add_optional_param("source_payment_address","Payment address of sender.")
+                .add_optional_param("target_payment_address","Payment address of recipient.")
+                .add_optional_param("amount","Payment amount.")
+                .add_optional_param("inputs","The list of payment sources")
+                .add_optional_param("outputs","The list of outputs in the following format: (recipient, amount)")
                 .add_required_param("extra","Optional information for payment operation")
                 .add_optional_param("send","Send the request to the Ledger (True by default). If false then created request will be printed and stored into CLI context.")
+                .add_example("ledger payment source_payment_address=pay:null:GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa target_payment_address=pay:null:FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4 amount=100")
                 .add_example("ledger payment inputs=pay:null:111_rBuQo2A1sc9jrJg outputs=(pay:null:FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4,100)")
                 .add_example("ledger payment inputs=pay:null:111_rBuQo2A1sc9jrJg outputs=(pay:null:FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4,100) extra=some_extra")
                 .add_example("ledger payment inputs=pay:null:111_rBuQo2A1sc9jrJg,pay:null:222_aEwACvA1sc9jrJg outputs=(pay:null:FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4,100),(pay:null:ABABefwrhscbaAShva7dkx1d2dZ3zUF8ckg7wmL7ofN4,5)")
@@ -1061,14 +1068,19 @@ pub mod payment_command {
 
         let (wallet_handle, _) = ensure_opened_wallet(&ctx)?;
         let submitter_did = get_active_did(&ctx);
+
+        let source_payment_address = get_opt_str_param("source_payment_address", params).map_err(error_err!())?.map(String::from);
+        let target_payment_address = get_opt_str_param("target_payment_address", params).map_err(error_err!())?.map(String::from);
+        let amount = get_opt_number_param::<u64>("amount", params).map_err(error_err!())?;
+
+        let inputs = get_opt_str_array_param("inputs", params).map_err(error_err!())?;
+        let outputs = get_opt_str_tuple_array_param("outputs", params).map_err(error_err!())?;
+
         let mut extra = get_opt_str_param("extra", params).map_err(error_err!())?.map(String::from);
+
         let send = get_opt_bool_param("send", params).map_err(error_err!())?.unwrap_or(SEND_REQUEST);
 
-        let inputs = get_str_array_param("inputs", params).map_err(error_err!())?;
-        let outputs = get_str_tuple_array_param("outputs", params).map_err(error_err!())?;
-
-        let inputs = parse_payment_inputs(&inputs).map_err(error_err!())?;
-        let outputs = parse_payment_outputs(&outputs).map_err(error_err!())?;
+        let (inputs, outputs) = get_payment_info(&ctx, source_payment_address, target_payment_address, amount, inputs, outputs)?;
 
         if let Some((text, version, acc_mech_type, time_of_acceptance)) = get_transaction_author_info(&ctx) {
             extra = Some(Payment::prepare_payment_extra_with_acceptance_data(extra.as_ref().map(String::as_str), Some(&text), Some(&version), None, &acc_mech_type, time_of_acceptance)
@@ -1790,20 +1802,21 @@ fn parse_payment_outputs(outputs: &Vec<String>) -> Result<String, ()> {
         return Err(println_err!("Outputs list is empty"));
     }
 
-    let mut output_objects: Vec<serde_json::Value> = Vec::new();
+    let mut output_objects: Vec<Output> = Vec::new();
     for output in outputs {
         let parts: Vec<&str> = output.split(OUTPUTS_DELIMITER).collect::<Vec<&str>>();
 
-        output_objects.push(json!({
-                        "recipient": parts.get(0)
-                                          .ok_or(())
-                                          .map_err(|_| println_err!("Invalid format of Outputs: Payment Address not found"))?,
-                        "amount": parts.get(1)
-                                    .ok_or(())
-                                    .map_err(|_| println_err!("Invalid format of Outputs: Amount not found"))
-                                    .and_then(|amount| amount.parse::<u64>()
-                                        .map_err(|_| println_err!("Invalid format of Outputs: Amount must be integer and greater then 0")))?
-                    }));
+        output_objects.push(Output {
+            recipient: parts.get(0)
+                .ok_or(())
+                .map_err(|_| println_err!("Invalid format of Outputs: Payment Address not found"))?
+                .to_string(),
+            amount: parts.get(1)
+                .ok_or(())
+                .map_err(|_| println_err!("Invalid format of Outputs: Amount not found"))
+                .and_then(|amount| amount.parse::<u64>()
+                    .map_err(|_| println_err!("Invalid format of Outputs: Amount must be integer and greater then 0")))?
+        });
     }
 
     serde_json::to_string(&output_objects)
@@ -1997,6 +2010,111 @@ pub fn get_active_transaction_author_agreement(_pool_handle: i32) -> Result<Opti
         (Some(text), Some(version)) => Ok(Some((text.to_string(), version.to_string()))),
         _ => Ok(None)
     }
+}
+
+#[derive(Deserialize, Debug)]
+struct Source {
+    source: String,
+    amount: u64,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct Output {
+    recipient: String,
+    amount: u64,
+}
+
+fn get_payment_sources(ctx: &CommandContext, payment_address: &str) -> Result<Vec<Source>, ()> {
+    let (pool_handle, pool_name) = ensure_connected_pool(ctx)?;
+    let (wallet_handle, wallet_name) = ensure_opened_wallet(ctx)?;
+    let submitter_did = get_active_did(&ctx);
+
+    Payment::build_get_payment_sources_request(wallet_handle, submitter_did.as_ref().map(String::as_str), payment_address)
+        .and_then(|(request, payment_method)|
+            Ledger::submit_request(pool_handle, &request)
+                .map(|response| (response, payment_method))
+        )
+        .and_then(|(response, payment_method)|
+            Payment::parse_get_payment_sources_response(&payment_method, &response)
+        )
+        .map_err(|err|
+            handle_indy_error(err, submitter_did.as_ref().map(String::as_str), Some(&pool_name), Some(&wallet_name))
+        )
+        .and_then(|sources_json|
+            serde_json::from_str(&sources_json)
+                .map_err(|err| println_err!("Invalid transaction response: {:?}", err))
+        )
+}
+
+fn get_payment_info(ctx: &CommandContext,
+                    source_payment_address: Option<String>,
+                    target_payment_address: Option<String>,
+                    amount: Option<u64>,
+                    inputs: Option<Vec<&str>>,
+                    outputs: Option<Vec<String>>) -> Result<(String, String), ()> {
+    match (source_payment_address, target_payment_address, amount) {
+        (Some(source_address), Some(target_address), Some(amount_)) => {
+            get_payment_info_for_addresses(&ctx, &source_address, &target_address, amount_)
+        }
+        _ => {
+            match (inputs, outputs) {
+                (Some(inputs_), Some(outputs_)) => {
+                    let inputs = parse_payment_inputs(&inputs_).map_err(error_err!())?;
+                    let outputs = parse_payment_outputs(&outputs_).map_err(error_err!())?;
+                    Ok((inputs, outputs))
+                }
+                _ => return Err(println_err!("One of the next parameter combinations must be specified:\n\
+                        (source_payment_address, target_payment_address, amount) - CLI builds payment data according to payment addresses\n\
+                        (inputs, outputs) - explicit specification of payment sources"))
+            }
+        }
+    }
+}
+
+fn get_payment_info_for_addresses(ctx: &CommandContext, source_address: &str, target_address: &str, amount: u64) -> Result<(String, String), ()> {
+    let sources: Vec<Source> = get_payment_sources(ctx, source_address)?;
+
+    let (inputs, refund) = inputs(sources, amount)?;
+    let outputs = outputs(target_address, amount, source_address, refund);
+
+    let inputs_json = serde_json::to_string(&inputs)
+        .map_err(|err| println_err!("Invalid payment inputs: {:?}", err))?;
+
+    let outputs_json = serde_json::to_string(&outputs)
+        .map_err(|err| println_err!("Invalid outputs: {:?}", err))?;
+
+    Ok((inputs_json, outputs_json))
+}
+
+fn inputs(sources: Vec<Source>, amount: u64) -> Result<(Vec<String>, u64), ()> {
+    let mut inputs: Vec<String> = Vec::new();
+    let mut balance = 0;
+
+    for source in sources {
+        if balance < amount {
+            balance += source.amount;
+            inputs.push(source.source);
+        }
+    }
+
+    if balance < amount {
+        return Err(println_err!("Not enough payment sources: balance: {}, required: {}", balance, amount));
+    }
+
+    let refund = balance - amount;
+
+    Ok((inputs, refund))
+}
+
+fn outputs(target_address: &str, amount: u64, source_address: &str, refund: u64) -> Vec<Output> {
+    let mut outputs: Vec<Output> = vec![];
+    outputs.push(Output { recipient: target_address.to_string(), amount });
+
+    if refund > 0 {
+        outputs.push(Output { recipient: source_address.to_string(), amount: refund });
+    }
+
+    outputs
 }
 
 #[derive(Deserialize, Eq, PartialEq, Debug)]
@@ -3451,6 +3569,22 @@ pub mod tests {
         }
 
         #[test]
+        pub fn payment_works_for_addresses() {
+            let ctx = setup_with_wallet_and_pool_and_payment_plugin();
+            use_trustee(&ctx);
+            let payment_address_from = create_address_and_mint_sources(&ctx);
+            {
+                let cmd = payment_command::new();
+                let mut params = CommandParams::new();
+                params.insert("source_payment_address", payment_address_from);
+                params.insert("target_payment_address", PAYMENT_ADDRESS.to_string());
+                params.insert("amount", "10".to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            tear_down_with_wallet_and_pool(&ctx);
+        }
+
+        #[test]
         pub fn payment_works_for_extra() {
             let ctx = setup_with_wallet_and_pool_and_payment_plugin();
             use_trustee(&ctx);
@@ -3691,6 +3825,21 @@ pub mod tests {
                 let mut params = CommandParams::new();
                 params.insert("inputs", input);
                 params.insert("outputs", format!("({},{})", PAYMENT_ADDRESS, -10));
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+            tear_down_with_wallet_and_pool(&ctx);
+        }
+
+        #[test]
+        pub fn payment_works_for_unknown_source_address() {
+            let ctx = setup_with_wallet_and_pool_and_payment_plugin();
+            use_trustee(&ctx);
+            {
+                let cmd = payment_command::new();
+                let mut params = CommandParams::new();
+                params.insert("source_payment_address", PAYMENT_ADDRESS.to_string());
+                params.insert("target_payment_address", PAYMENT_ADDRESS.to_string());
+                params.insert("amount", "10".to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
             }
             tear_down_with_wallet_and_pool(&ctx);
@@ -4408,18 +4557,8 @@ pub mod tests {
 
     #[cfg(feature = "nullpay_plugin")]
     pub fn get_source_input(ctx: &CommandContext, payment_address: &str) -> String {
-        let (pool_handle, _) = get_connected_pool(ctx).unwrap();
-        let (wallet_handle, _) = get_opened_wallet(ctx).unwrap();
-        let submitter_did = ensure_active_did(&ctx).unwrap();
-
-        let (get_sources_txn_json, _) = Payment::build_get_payment_sources_request(wallet_handle, Some(&submitter_did), payment_address).unwrap();
-        let response = Ledger::submit_request(pool_handle, &get_sources_txn_json).unwrap();
-
-        let sources_json = Payment::parse_get_payment_sources_response(NULL_PAYMENT_METHOD, &response).unwrap();
-
-        let sources = serde_json::from_str::<serde_json::Value>(&sources_json).unwrap();
-        let source: &serde_json::Value = &sources.as_array().unwrap()[0];
-        source["source"].as_str().unwrap().to_string()
+        let sources = get_payment_sources(ctx, payment_address).unwrap();
+        sources[0].source.clone()
     }
 
     #[cfg(feature = "nullpay_plugin")]
