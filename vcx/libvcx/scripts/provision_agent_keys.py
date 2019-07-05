@@ -17,7 +17,7 @@ def parse_args():
     parser.add_argument("--wallet-type", help="optional type of libindy wallet")
     parser.add_argument("--agent-seed", help="optional seed used to create enterprise->agent DID/VK")
     parser.add_argument("--enterprise-seed", help="optional seed used to create enterprise DID/VK")
-    parser.add_argument("--verbose", action="store_true")
+    parser.add_argument("-v", "--verbose", action="store_true")
     return parser.parse_args()
 
 def get_agency_info(agency_url):
