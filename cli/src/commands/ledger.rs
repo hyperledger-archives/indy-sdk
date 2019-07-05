@@ -1047,11 +1047,12 @@ pub mod payment_command {
 
     command!(CommandMetadata::build("payment", "Send request for doing the payment. \n\
         One of the next parameter combinations must be specified:\n\
-        (source_payment_address, target_payment_address, amount) - CLI builds payment data according to payment addresses\n\
+        (source_payment_address, target_payment_address, amount, Optional(fee)) - CLI builds payment data according to payment addresses\n\
         (inputs, outputs) - explicit specification of payment sources")
                 .add_optional_param("source_payment_address","Payment address of sender.")
                 .add_optional_param("target_payment_address","Payment address of recipient.")
                 .add_optional_param("amount","Payment amount.")
+                .add_optional_param("fee","Transaction fee set on the ledger.")
                 .add_optional_param("inputs","The list of payment sources")
                 .add_optional_param("outputs","The list of outputs in the following format: (recipient, amount)")
                 .add_required_param("extra","Optional information for payment operation")
@@ -1072,6 +1073,7 @@ pub mod payment_command {
         let source_payment_address = get_opt_str_param("source_payment_address", params).map_err(error_err!())?.map(String::from);
         let target_payment_address = get_opt_str_param("target_payment_address", params).map_err(error_err!())?.map(String::from);
         let amount = get_opt_number_param::<u64>("amount", params).map_err(error_err!())?;
+        let fee = get_opt_number_param::<u64>("fee", params).map_err(error_err!())?;
 
         let inputs = get_opt_str_array_param("inputs", params).map_err(error_err!())?;
         let outputs = get_opt_str_tuple_array_param("outputs", params).map_err(error_err!())?;
@@ -1080,7 +1082,7 @@ pub mod payment_command {
 
         let send = get_opt_bool_param("send", params).map_err(error_err!())?.unwrap_or(SEND_REQUEST);
 
-        let (inputs, outputs) = get_payment_info(&ctx, source_payment_address, target_payment_address, amount, inputs, outputs)?;
+        let (inputs, outputs) = get_payment_info(&ctx, source_payment_address, target_payment_address, amount, fee, inputs, outputs)?;
 
         if let Some((text, version, acc_mech_type, time_of_acceptance)) = get_transaction_author_info(&ctx) {
             extra = Some(Payment::prepare_payment_extra_with_acceptance_data(extra.as_ref().map(String::as_str), Some(&text), Some(&version), None, &acc_mech_type, time_of_acceptance)
@@ -2050,11 +2052,12 @@ fn get_payment_info(ctx: &CommandContext,
                     source_payment_address: Option<String>,
                     target_payment_address: Option<String>,
                     amount: Option<u64>,
+                    fee: Option<u64>,
                     inputs: Option<Vec<&str>>,
                     outputs: Option<Vec<String>>) -> Result<(String, String), ()> {
     match (source_payment_address, target_payment_address, amount) {
         (Some(source_address), Some(target_address), Some(amount_)) => {
-            get_payment_info_for_addresses(&ctx, &source_address, &target_address, amount_)
+            build_payment_info_for_addresses(&ctx, &source_address, &target_address, amount_, fee)
         }
         _ => {
             match (inputs, outputs) {
@@ -2071,10 +2074,14 @@ fn get_payment_info(ctx: &CommandContext,
     }
 }
 
-fn get_payment_info_for_addresses(ctx: &CommandContext, source_address: &str, target_address: &str, amount: u64) -> Result<(String, String), ()> {
+fn build_payment_info_for_addresses(ctx: &CommandContext,
+                                    source_address: &str,
+                                    target_address: &str,
+                                    amount: u64,
+                                    fee: Option<u64>) -> Result<(String, String), ()> {
     let sources: Vec<Source> = get_payment_sources(ctx, source_address)?;
 
-    let (inputs, refund) = inputs(sources, amount)?;
+    let (inputs, refund) = inputs(sources, amount, fee)?;
     let outputs = outputs(target_address, amount, source_address, refund);
 
     let inputs_json = serde_json::to_string(&inputs)
@@ -2086,22 +2093,23 @@ fn get_payment_info_for_addresses(ctx: &CommandContext, source_address: &str, ta
     Ok((inputs_json, outputs_json))
 }
 
-fn inputs(sources: Vec<Source>, amount: u64) -> Result<(Vec<String>, u64), ()> {
+fn inputs(sources: Vec<Source>, amount: u64, fee: Option<u64>) -> Result<(Vec<String>, u64), ()> {
     let mut inputs: Vec<String> = Vec::new();
     let mut balance = 0;
+    let required = amount + fee.unwrap_or(0);
 
     for source in sources {
-        if balance < amount {
+        if balance < required {
             balance += source.amount;
             inputs.push(source.source);
         }
     }
 
-    if balance < amount {
-        return Err(println_err!("Not enough payment sources: balance: {}, required: {}", balance, amount));
+    if balance < required {
+        return Err(println_err!("Not enough payment sources: balance: {}, required: {}", balance, required));
     }
 
-    let refund = balance - amount;
+    let refund = balance - required;
 
     Ok((inputs, refund))
 }
