@@ -1014,8 +1014,8 @@ mod tests {
     use wql::storage::ENCRYPTED_KEY_LEN;
 
     // TODO We need init() to be the first test run in order to create the wallets database
-    #[test]
-    fn postgres_storage_type_init_works() {
+    //#[test]
+    fn _postgres_storage_type_init_works() {
         _cleanup();
 
         let config = _wallet_config();
@@ -1706,6 +1706,10 @@ mod tests {
         let config = _wallet_config();
         let credentials = _wallet_credentials();
 
+        let err = PostgresWallet::init(config.as_ref().map_or(ptr::null(), |x| x.as_ptr()), 
+                                       credentials.as_ref().map_or(ptr::null(), |x| x.as_ptr()));
+        assert_eq!(err, ErrorCode::Success);
+
         let _err = PostgresWallet::delete(id.as_ptr(), 
                                             config.as_ref().map_or(ptr::null(), |x| x.as_ptr()), 
                                             credentials.as_ref().map_or(ptr::null(), |x| x.as_ptr()));
@@ -1716,8 +1720,18 @@ mod tests {
     }
 
     fn _wallet_config() -> Option<CString> {
+        return _wallet_config_multi();
+        //let config = Some(json!({
+        //    "url": "localhost:5432".to_owned()
+        //}).to_string());
+        //config.map(CString::new)
+        //    .map_or(Ok(None), |r| r.map(Some)).unwrap()
+    }
+
+    fn _wallet_config_multi() -> Option<CString> {
         let config = Some(json!({
-            "url": "localhost:5432".to_owned()
+            "url": "localhost:5432".to_owned(),
+            "wallet_scheme": "MultiWalletSingleTable".to_owned()
         }).to_string());
         config.map(CString::new)
             .map_or(Ok(None), |r| r.map(Some)).unwrap()
