@@ -528,6 +528,8 @@ impl WalletStrategy for DatabasePerWalletStrategy {
             Err(_) => return Err(WalletStorageError::NotFound)
         };
 
+        // TODO close _conn
+        
         let manager = match PostgresConnectionManager::new(&url[..], config.r2d2_tls()) {
             Ok(manager) => manager,
             Err(_) => return Err(WalletStorageError::NotFound)
@@ -661,10 +663,28 @@ impl WalletStrategy for MultiWalletSingleTableStrategy {
         let url = PostgresStorageType::_postgres_url(_WALLETS_DB, &config, &credentials);
 
         // don't need a connection, but connect just to verify we can
-        let _conn = match postgres::Connection::connect(&url[..], config.tls()) {
+        let conn = match postgres::Connection::connect(&url[..], config.tls()) {
             Ok(conn) => conn,
             Err(_) => return Err(WalletStorageError::NotFound)
         };
+
+        // select metadata for this wallet to ensure it exists
+        let res: Result<Vec<u8>, WalletStorageError> = {
+            let mut rows = conn.query(
+                "SELECT value FROM metadata WHERE wallet_id = $1",
+                &[&id]);
+            match rows.as_mut().unwrap().iter().next() {
+                Some(row) => Ok(row.get(0)),
+                None => Err(WalletStorageError::ItemNotFound)
+            }
+        };
+
+        match res {
+            Ok(_entity) => (),
+            Err(_) => return Err(WalletStorageError::NotFound)
+        };
+
+        // TODO close conn
 
         let manager = match PostgresConnectionManager::new(&url[..], config.r2d2_tls()) {
             Ok(manager) => manager,
@@ -674,8 +694,6 @@ impl WalletStrategy for MultiWalletSingleTableStrategy {
             Ok(pool) => pool,
             Err(_) => return Err(WalletStorageError::NotFound)
         };
-
-        // TODO select meta-data for this wallet to ensure it exists
 
         Ok(Box::new(PostgresStorage { 
             pool: pool,
