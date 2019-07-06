@@ -1713,6 +1713,7 @@ impl WalletStorageType for PostgresStorageType {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::env;
 
     use utils::test;
 
@@ -2208,11 +2209,19 @@ mod tests {
     }
 
     fn _wallet_config() -> String {
-        return _wallet_config_multi();
-        //let config = json!({
-        //    "url": "localhost:5432".to_owned()
-        //}).to_string();
-        //config
+        let wallet_scheme = env::var("WALLET_SCHEME");
+        match wallet_scheme {
+            Ok(scheme) => {
+                if scheme == "MultiWalletSingleTable" {
+                    return _wallet_config_multi();
+                }
+            },
+            Err(_) => ()
+        };
+        let config = json!({
+            "url": "localhost:5432".to_owned()
+        }).to_string();
+        config
     }
 
     fn _wallet_config_multi() -> String {

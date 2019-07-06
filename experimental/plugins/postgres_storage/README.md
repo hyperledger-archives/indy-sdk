@@ -75,6 +75,28 @@ cd indy-sdk/experimental/plugins/postgres_storage
 RUST_BACKTRACE=1 cargo test -- --nocapture --test-threads=1
 ```
 
+## Database-per-wallet vs Multi-wallet database
+
+The plug-in supports two schemes - a database per wallet, or a single database containing multiple wallets.
+
+Note to use the multi-wallet-database mode you need to call an initial init() function in the plug-in.
+
+In the initial wallet config:
+
+```
+{"url":"localhost:5432", "wallet_scheme":"MultiWalletSingleTable"}
+```
+
+The default if not specified is database-per-wallet.
+
+To run unit tests in each mode, specify:
+
+```
+WALLET_SCHEME=MultiWalletSingleTable cargo test -- --nocapture --test-threads=1
+```
+
+The default if not specified is database-per-wallet.
+
 ## Running CLI with the Postgres Plug-in
 
 The CLI has been updated to include parameters to support loading external wallet storage from an external plug-in, and extra parameters to specify configuration and credentials when creating, opening and deleting a wallet:

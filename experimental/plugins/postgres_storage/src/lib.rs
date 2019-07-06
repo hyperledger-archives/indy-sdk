@@ -1009,6 +1009,7 @@ fn _tag_names_from_json(json: &str) -> Result<Vec<TagName>, WalletStorageError> 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::env;
     use std::ffi::{CString, CStr};
     use std::{slice, ptr};
     use wql::storage::ENCRYPTED_KEY_LEN;
@@ -1720,12 +1721,20 @@ mod tests {
     }
 
     fn _wallet_config() -> Option<CString> {
-        return _wallet_config_multi();
-        //let config = Some(json!({
-        //    "url": "localhost:5432".to_owned()
-        //}).to_string());
-        //config.map(CString::new)
-        //    .map_or(Ok(None), |r| r.map(Some)).unwrap()
+        let wallet_scheme = env::var("WALLET_SCHEME");
+        match wallet_scheme {
+            Ok(scheme) => {
+                if scheme == "MultiWalletSingleTable" {
+                    return _wallet_config_multi();
+                }
+            },
+            Err(_) => ()
+        };
+        let config = Some(json!({
+            "url": "localhost:5432".to_owned()
+        }).to_string());
+        config.map(CString::new)
+            .map_or(Ok(None), |r| r.map(Some)).unwrap()
     }
 
     fn _wallet_config_multi() -> Option<CString> {
