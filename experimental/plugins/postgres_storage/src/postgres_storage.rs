@@ -1434,8 +1434,20 @@ impl WalletStorage for PostgresStorage {
         let query_qualifier = unsafe {
             SELECTED_STRATEGY.query_qualifier()
         };
+        let wallet_id_arg = self.wallet_id.as_bytes().to_owned();
         let total_count: Option<usize> = if search_options.retrieve_total_count {
-            let (query_string, query_arguments) = query::wql_to_sql_count(&type_, query)?;
+            // TODO add an extra parameter with the SELECTED_STRATEGY.query_qualifier to AND to the query
+            //let (query_string, query_arguments) = query::wql_to_sql_count(&type_, query)?;
+            let (query_string, query_arguments) = match query_qualifier {
+                Some(_) => {
+                    let (mut query_string, mut query_arguments) = query::wql_to_sql_count(&type_, query)?;
+                    query_arguments.push(&wallet_id_arg);
+                    let arg_str = format!(" AND wallet_id = ${}", query_arguments.len());
+                    query_string.push_str(&arg_str);
+                    (query_string, query_arguments)
+                },
+                None => query::wql_to_sql_count(&type_, query)?
+            };
 
             let mut rows = conn.query(
                 &query_string,
@@ -1456,7 +1468,18 @@ impl WalletStorage for PostgresStorage {
                 retrieve_type: search_options.retrieve_type,
             };
 
-            let (query_string, query_arguments) = query::wql_to_sql(&type_, query, options)?;
+            // TODO add an extra parameter with the SELECTED_STRATEGY.query_qualifier to AND to the query
+            //let (query_string, query_arguments) = query::wql_to_sql(&type_, query, options)?;
+            let (query_string, query_arguments) = match query_qualifier {
+                Some(_) => {
+                    let (mut query_string, mut query_arguments) = query::wql_to_sql(&type_, query, options)?;
+                    query_arguments.push(&wallet_id_arg);
+                    let arg_str = format!(" AND wallet_id = ${}", query_arguments.len());
+                    query_string.push_str(&arg_str);
+                    (query_string, query_arguments)
+                },
+                None => query::wql_to_sql(&type_, query, options)?
+            };
 
             let statement = self._prepare_statement(&query_string)?;
             let tag_retriever = if fetch_options.retrieve_tags {
