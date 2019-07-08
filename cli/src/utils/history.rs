@@ -1,7 +1,7 @@
 use linefeed::{Reader, Terminal};
 
 use utils::environment::EnvironmentUtils;
-use utils::file::{read_lines_from_file, write_lines_to_file};
+use utils::file::{read_lines_from_file, write_file};
 
 
 const HISTORY_SIZE: usize = 100;
@@ -20,7 +20,14 @@ pub fn load<T>(reader: &mut Reader<T>) -> Result<(), String> where T: Terminal {
 }
 
 pub fn persist<T>(reader: &Reader<T>) -> Result<(), String> where T: Terminal {
-    let content = reader.history().collect::<std::collections::HashSet<&str>>();
+    let content =
+        reader
+            .history()
+            .collect::<std::collections::HashSet<&str>>()
+            .into_iter()
+            .collect::<Vec<&str>>()
+            .join("\n");
+
     let path = EnvironmentUtils::history_file_path();
-    write_lines_to_file(path, content)
+    write_file(&path, &content)
 }
