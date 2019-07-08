@@ -5,6 +5,7 @@ use utils::file::{read_lines_from_file, write_file};
 
 
 const HISTORY_SIZE: usize = 100;
+const SECRET_DATA: [&str; 2] = ["seed", "key"];
 
 pub fn load<T>(reader: &mut Reader<T>) -> Result<(), String> where T: Terminal {
     reader.set_history_size(HISTORY_SIZE);
@@ -23,6 +24,9 @@ pub fn persist<T>(reader: &Reader<T>) -> Result<(), String> where T: Terminal {
     let content =
         reader
             .history()
+            .filter(|record|
+                !SECRET_DATA.iter().any(|secret_word| record.contains(&format!("{}=", secret_word)))
+            )
             .collect::<std::collections::HashSet<&str>>()
             .into_iter()
             .collect::<Vec<&str>>()
