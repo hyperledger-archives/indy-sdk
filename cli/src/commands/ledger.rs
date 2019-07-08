@@ -77,10 +77,10 @@ macro_rules! send_request {
 pub mod nym_command {
     use super::*;
 
-    command!(CommandMetadata::build("nym", "Send NYM transaction to the Ledger. \n\
-        One of the next parameter combinations must be specified to pay a fee:\n\
-        (source_payment_address, fee) - CLI builds payment data according to payment addresses\n\
-        (fees_inputs, fees_outputs) - explicit specification of payment sources")
+    command!(CommandMetadata::build("nym", r#"Send NYM transaction to the Ledger.
+                One of the next parameter combinations must be specified to pay a transaction fee (if it is set on the ledger):
+                (source_payment_address, fee) - CLI automatically gets payment sources corresponded to the source payment address and prepares data
+                (fees_inputs, fees_outputs) - explicit specification of payment sources"#)
                 .add_required_param("did", "DID of new identity")
                 .add_optional_param("verkey", "Verification key of new identity")
                 .add_optional_param("role", "Role of identity. One of: STEWARD, TRUSTEE, TRUST_ANCHOR, ENDORSER, NETWORK_MONITOR or associated number, or empty in case of blacklisting NYM")
@@ -203,10 +203,10 @@ pub mod get_nym_command {
 pub mod attrib_command {
     use super::*;
 
-    command!(CommandMetadata::build("attrib", "Send Attribute transaction to the Ledger for exists NYM. \n\
-        One of the next parameter combinations must be specified to pay a fee:\n\
-        (source_payment_address, fee) - CLI builds payment data according to payment addresses\n\
-        (fees_inputs, fees_outputs) - explicit specification of payment sources")
+    command!(CommandMetadata::build("attrib", r#"Send Attribute transaction to the Ledger for exists NYM.
+                One of the next parameter combinations must be specified to pay a transaction fee (if it is set on the ledger):
+                (source_payment_address, fee) - CLI automatically gets payment sources corresponded to the source payment address and prepares data
+                (fees_inputs, fees_outputs) - explicit specification of payment sources"#)
                 .add_required_param("did",  "DID of identity presented in Ledger")
                 .add_optional_param("hash", "Hash of attribute data")
                 .add_optional_param("raw", "JSON representation of attribute data")
@@ -331,10 +331,10 @@ pub mod get_attrib_command {
 pub mod schema_command {
     use super::*;
 
-    command!(CommandMetadata::build("schema", "Send Schema transaction to the Ledger. \n\
-        One of the next parameter combinations must be specified to pay a fee:\n\
-        (source_payment_address, fee) - CLI builds payment data according to payment addresses\n\
-        (fees_inputs, fees_outputs) - explicit specification of payment sources")
+    command!(CommandMetadata::build("schema", r#"Send Schema transaction to the Ledger.
+                One of the next parameter combinations must be specified to pay a transaction fee (if it is set on the ledger):
+                (source_payment_address, fee) - CLI automatically gets payment sources corresponded to the source payment address and prepares data
+                (fees_inputs, fees_outputs) - explicit specification of payment sources"#)
                 .add_required_param("name", "Schema name")
                 .add_required_param("version", "Schema version")
                 .add_required_param("attr_names", "Schema attributes split by comma (the number of attributes should be less or equal than 125)")
@@ -535,10 +535,10 @@ pub mod get_schema_command {
 pub mod cred_def_command {
     use super::*;
 
-    command!(CommandMetadata::build("cred-def", "Send Cred Def transaction to the Ledger. \n\
-        One of the next parameter combinations must be specified to pay a fee:\n\
-        (source_payment_address, fee) - CLI builds payment data according to payment addresses\n\
-        (fees_inputs, fees_outputs) - explicit specification of payment sources")
+    command!(CommandMetadata::build("cred-def", r#"Send Cred Def transaction to the Ledger.
+                One of the next parameter combinations must be specified to pay a transaction fee (if it is set on the ledger):
+                (source_payment_address, fee) - CLI automatically gets payment sources corresponded to the source payment address and prepares data
+                (fees_inputs, fees_outputs) - explicit specification of payment sources"#)
                 .add_required_param("schema_id", "Sequence number of schema")
                 .add_required_param("signature_type", "Signature type (only CL supported now)")
                 .add_optional_param("tag", "Allows to distinct between credential definitions for the same issuer and schema. Note that it is mandatory for indy-node version 1.4.x and higher")
@@ -1086,19 +1086,22 @@ pub mod get_payment_sources_command {
 pub mod payment_command {
     use super::*;
 
-    command!(CommandMetadata::build("payment", "Send request for doing the payment. \n\
-        One of the next parameter combinations must be specified to pay a fee:\n\
-        (source_payment_address, target_payment_address, amount, Optional(fee)) - CLI builds payment data according to payment addresses\n\
-        (inputs, outputs) - explicit specification of payment sources")
+    command!(CommandMetadata::build("payment", r#"Send request for doing the payment.
+                One of the next parameter combinations must be specified:
+                (source_payment_address, target_payment_address, amount, Optional(fee)) - CLI automatically gets payment sources corresponded to the source payment address and prepares data
+                (inputs, outputs) - explicit specification of payment sources"#)
                 .add_optional_param("source_payment_address","Payment address of sender.")
                 .add_optional_param("target_payment_address","Payment address of recipient.")
                 .add_optional_param("amount","Payment amount.")
                 .add_optional_param("fee","Transaction fee set on the ledger.")
                 .add_optional_param("inputs","The list of payment sources")
-                .add_optional_param("outputs","The list of outputs in the following format: (recipient, amount)")
-                .add_required_param("extra","Optional information for payment operation")
+                .add_optional_param("outputs",r#"The list of outputs in the following format: (recipient, amount)
+                recipient - payment address of recipient
+                amount- payment amount"#)
+                .add_optional_param("extra","Optional information for payment operation")
                 .add_optional_param("send","Send the request to the Ledger (True by default). If false then created request will be printed and stored into CLI context.")
                 .add_example("ledger payment source_payment_address=pay:null:GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa target_payment_address=pay:null:FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4 amount=100")
+                .add_example("ledger payment source_payment_address=pay:null:GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa target_payment_address=pay:null:FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4 amount=100 fee=2")
                 .add_example("ledger payment inputs=pay:null:111_rBuQo2A1sc9jrJg outputs=(pay:null:FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4,100)")
                 .add_example("ledger payment inputs=pay:null:111_rBuQo2A1sc9jrJg outputs=(pay:null:FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4,100) extra=some_extra")
                 .add_example("ledger payment inputs=pay:null:111_rBuQo2A1sc9jrJg,pay:null:222_aEwACvA1sc9jrJg outputs=(pay:null:FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4,100),(pay:null:ABABefwrhscbaAShva7dkx1d2dZ3zUF8ckg7wmL7ofN4,5)")
@@ -1659,10 +1662,10 @@ pub mod load_transaction_command {
 pub mod taa_command {
     use super::*;
 
-    command!(CommandMetadata::build("txn-author-agreement", "Send Transaction Author Agreement to the ledger. \n\
-        One of the next parameter combinations must be specified to pay a fee:\n\
-        (source_payment_address, fee) - CLI builds payment data according to payment addresses\n\
-        (fees_inputs, fees_outputs) - explicit specification of payment sources")
+    command!(CommandMetadata::build("txn-author-agreement", r#"Send Transaction Author Agreement to the ledger.
+                One of the next parameter combinations must be specified to pay a transaction fee (if it is set on the ledger):
+                (source_payment_address, fee) - CLI automatically gets payment sources corresponded to the source payment address and prepares data
+                (fees_inputs, fees_outputs) - explicit specification of payment sources"#)
                 .add_optional_param("text", "The content of a new agreement. Use empty to reset an active agreement")
                 .add_optional_param("file", "The path to file containing a content of agreement to send (an alternative to the `text` parameter)")
                 .add_required_param("version", "The version of a new agreement")
@@ -1745,10 +1748,10 @@ pub mod taa_command {
 pub mod aml_command {
     use super::*;
 
-    command!(CommandMetadata::build("txn-acceptance-mechanisms", "Send TAA Acceptance Mechanisms to the ledger. \n\
-        One of the next parameter combinations must be specified to pay a fee:\n\
-        (source_payment_address, fee) - CLI builds payment data according to payment addresses\n\
-        (fees_inputs, fees_outputs) - explicit specification of payment sources")
+    command!(CommandMetadata::build("txn-acceptance-mechanisms", r#"Send TAA Acceptance Mechanisms to the ledger.
+                One of the next parameter combinations must be specified to pay a transaction fee (if it is set on the ledger):
+                (source_payment_address, fee) - CLI automatically gets payment sources corresponded to the source payment address and prepares data
+                (fees_inputs, fees_outputs) - explicit specification of payment sources"#)
                 .add_optional_param("aml", "The set of new acceptance mechanisms.")
                 .add_optional_param("file", "The path to file containing a set of acceptance mechanisms to send (an alternative to the text parameter).")
                 .add_required_param("version", "The version of a new set of acceptance mechanisms.")
