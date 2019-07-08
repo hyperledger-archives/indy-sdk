@@ -40,7 +40,7 @@ COPY ./vcx/ci/scripts/installCert.sh /tmp
 RUN /tmp/installCert.sh
 
 # Add sovrin to sources.list
-RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 68DB5E88 && \
+RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CE7709D068DB5E88 && \
     add-apt-repository "deb https://repo.sovrin.org/sdk/deb xenial master" && \
     add-apt-repository "deb https://repo.sovrin.org/sdk/deb xenial stable" && \
     add-apt-repository 'deb https://repo.sovrin.org/deb xenial master'
