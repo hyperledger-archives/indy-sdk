@@ -22,7 +22,7 @@ RUN pip3 install -U \
 	jupyter \
 	python3-indy==1.8.1-dev-1039
 
-RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 68DB5E88 \
+RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CE7709D068DB5E88 \
     && add-apt-repository "deb https://repo.sovrin.org/sdk/deb xenial master" \
     && apt-get update \
     && apt-get install -y \

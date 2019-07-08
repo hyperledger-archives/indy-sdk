@@ -984,7 +984,7 @@ impl CommandExecutorGroupBuilder {
 
 // TODO: think about better place
 pub fn wait_for_user_reply(ctx: &CommandContext) -> bool {
-    if ctx.is_batch_mode() {
+    if ctx.is_batch_mode() || cfg!(test) {
         return true;
     }
 
