@@ -15,7 +15,7 @@ infrastructure.
 ### Ubuntu based distributions (Ubuntu 16.04)
 It is recommended to install the VCX packages with APT:
 
-    sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 68DB5E88
+    sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CE7709D068DB5E88
     sudo add-apt-repository "deb https://repo.sovrin.org/sdk/deb xenial {release channel}"
     sudo apt-get update
     sudo apt-get install -y libvcx
