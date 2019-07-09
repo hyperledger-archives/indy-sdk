@@ -12,8 +12,7 @@ use services::ledger::LedgerService;
 use services::payments::{PaymentsMethodCBs, PaymentsService, RequesterInfo, Fees};
 use services::wallet::{RecordOptions, WalletService};
 use api::WalletHandle;
-use domain::ledger::auth_rule::{GetAuthRuleResult, AuthRule};
-use domain::ledger::response::Reply;
+use domain::ledger::auth_rule::AuthRule;
 
 pub enum PaymentsCommand {
     RegisterMethod(
@@ -723,7 +722,7 @@ impl PaymentsCommandExecutor {
     pub fn get_request_info(&self, get_auth_rule_response_json: &str, requester_info: RequesterInfo, fees: &Fees) -> IndyResult<String> {
         trace!("get_request_info >>> get_auth_rule_response_json: {:?}, requester_info: {:?}, fees: {:?}", get_auth_rule_response_json, requester_info, fees);
 
-        let auth_rule = PaymentsCommandExecutor::_parse_get_auth_rule_response(get_auth_rule_response_json)?;
+        let auth_rule = self._parse_get_auth_rule_response(get_auth_rule_response_json)?;
 
         let req_info = self.payments_service.get_request_info_with_min_price(&auth_rule.constraint, &requester_info, &fees)?;
 
@@ -735,20 +734,17 @@ impl PaymentsCommandExecutor {
         Ok(res)
     }
 
-    fn _parse_get_auth_rule_response(get_auth_rule_response_json: &str) -> IndyResult<AuthRule> {
+    fn _parse_get_auth_rule_response(&self, get_auth_rule_response_json: &str) -> IndyResult<AuthRule> {
         trace!("_parse_get_auth_rule_response >>> get_auth_rule_response_json: {:?}", get_auth_rule_response_json);
 
-        let get_auth_rule_response: Reply<GetAuthRuleResult> = serde_json::from_str(&get_auth_rule_response_json)
-            .to_indy(IndyErrorKind::InvalidStructure, "Cannot parse GetAuthRule response")?;
-
-        let mut auth_rules = get_auth_rule_response.result().data;
+        let mut auth_rules: Vec<AuthRule> = self.ledger_service.parse_get_auth_rule_response(get_auth_rule_response_json)?;
 
         if auth_rules.len() == 0 {
-            return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, "GetAuthRule response doesn't contain any auth rule"));
+            return Err(IndyError::from_msg(IndyErrorKind::InvalidTransaction, "GetAuthRule response doesn't contain any auth rule"));
         }
 
-        if auth_rules.len() > 1 {
-            return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, "GetAuthRule response contains more than one auth rule"));
+        if auth_rules.len() != 1 {
+            return Err(IndyError::from_msg(IndyErrorKind::InvalidTransaction, "GetAuthRule response contains more than one auth rule"));
         }
 
         let res = auth_rules.pop().unwrap();
