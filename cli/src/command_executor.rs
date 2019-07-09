@@ -439,29 +439,32 @@ impl CommandExecutor {
 
     fn _get_param_dynamic_completions(&self,
                                       command_params: &[ParamMetadata],
-                                      params: &Vec<&str>,
                                       line: &str,
-                                      word: &str) -> Option<Vec<(String, char)>> {
-        if line.ends_with(" ") {
-            return None;
-        }
-
-        let dyn_completion_type = params.last()
-            .and_then(|last_param| {
-                command_params
-                    .iter()
-                    .find(|param| param.name == *last_param)
-                    .and_then(|param| param.dynamic_completion_type.clone())
-            });
-
-        if let Some(type_) = dyn_completion_type {
-            return Some(self._get_dynamic_completions(type_, word));
-        }
-
-        return None;
+                                      word: &str,
+                                      cursor: usize) -> Option<Vec<(String, char)>> {
+        CommandExecutor::get_active_param(line, cursor, command_params)
+            .and_then(|param| param.dynamic_completion_type.clone())
+            .map(|type_| self._get_dynamic_completions(type_, word))
     }
 
-    fn command_params(&self, command: &Command, params: &Vec<&str>, line: &str, word: &str) -> Vec<(String, char)> {
+    fn get_active_param<'a>(line: &str, cursor: usize, params: &'a [ParamMetadata]) -> Option<&'a ParamMetadata> {
+        let line = &line[..cursor];
+        let last_space_index = line.rfind(" ").unwrap_or(0);
+        let line = &line[last_space_index..];
+
+        params
+            .iter()
+            .fold((0, None), |(max_index, last_param), param| {
+                if let Some(index_) = line.find(&format!("{}=", param.name)) {
+                    if index_ >= max_index /*&& index_ > last_space_index*/ {
+                        return (index_, Some(param));
+                    }
+                    (max_index, last_param)
+                } else { (max_index, last_param) }
+            }).1
+    }
+
+    fn command_params(&self, command: &Command, params: &Vec<&str>, line: &str, word: &str, cursor: usize) -> Vec<(String, char)> {
         let mut completes: Vec<(String, char)> = Vec::new();
 
         if command.metadata().main_param.is_some() && (params.len() == 0 && word.is_empty() || params.len() == 1 && !word.is_empty()) {
@@ -472,7 +475,7 @@ impl CommandExecutor {
             .metadata()
             .params();
 
-        match self._get_param_dynamic_completions(command_params, params, line, word) {
+        match self._get_param_dynamic_completions(command_params, line, word, cursor) {
             Some(completions_) => {
                 completes.extend(completions_);
                 return completes;
@@ -517,7 +520,7 @@ impl CommandExecutor {
         commands.contains_key(sub_command)
     }
 
-    pub fn complete(&self, line: &str, word: &str, _start: usize, _end: usize) -> Vec<(String, char)> {
+    pub fn complete(&self, line: &str, word: &str, cursor: usize) -> Vec<(String, char)> {
         let mut completes: Vec<(String, char)> = vec![];
 
         let (first_word, second_word, params) = CommandExecutor::_split_arguments(line);
@@ -530,7 +533,7 @@ impl CommandExecutor {
             (Some(command), None, None) => {
                 if self.commands.contains_key(command) {
                     let command = &self.commands[command];
-                    completes.extend(self.command_params(command, &vec![], line, word));
+                    completes.extend(self.command_params(command, &vec![], line, word, cursor));
                     return completes;
                 }
 
@@ -560,7 +563,7 @@ impl CommandExecutor {
                 }
 
                 if self.commands.contains_key(command) {
-                    completes.extend(self.command_params(&self.commands[command], &vec![sub_command], line, word));
+                    completes.extend(self.command_params(&self.commands[command], &vec![sub_command], line, word, cursor));
                     return completes;
                 }
 
@@ -572,7 +575,7 @@ impl CommandExecutor {
                         completes.push((word.to_owned(), ' '));
                     }
 
-                    completes.extend(self.command_params(sub_command, &vec![], line, word));
+                    completes.extend(self.command_params(sub_command, &vec![], line, word, cursor));
                     return completes;
                 }
 
@@ -589,7 +592,7 @@ impl CommandExecutor {
             }
             (Some(command), None, Some(params)) => {
                 if self.commands.contains_key(command) {
-                    completes.extend(self.command_params(&self.commands[command], &params, line, word));
+                    completes.extend(self.command_params(&self.commands[command], &params, line, word, cursor));
                     return completes;
                 }
                 return completes;
@@ -607,13 +610,13 @@ impl CommandExecutor {
                 if self.grouped_commands.contains_key(command) && CommandExecutor::is_subcommand(&self.grouped_commands, command, sub_command) {
                     let (_, ref commands) = self.grouped_commands[command];
                     let sub_command = commands.get(sub_command).unwrap();
-                    completes.extend(self.command_params(&sub_command, &params, line, word));
+                    completes.extend(self.command_params(&sub_command, &params, line, word, cursor));
                     return completes;
                 }
 
                 if self.commands.contains_key(command) {
                     params.insert(0, sub_command);
-                    completes.extend(self.command_params(&self.commands[command], &params, line, word));
+                    completes.extend(self.command_params(&self.commands[command], &params, line, word, cursor));
                     return completes;
                 }
 
@@ -890,6 +893,7 @@ impl CommandExecutor {
 
     fn _split_arguments(s: &str) -> (Option<&str>, Option<&str>, Option<Vec<&str>>) {
         let mut parts = s.trim().split_whitespace();
+
         let first_word = parts.next();
         let mut second_word = parts.next();
         let mut params = parts
@@ -1055,4 +1059,3 @@ mod tests {
         assert_eq!(unescape("123\\\"456"), Some("123\"456".to_owned()));
     }
 }
-
