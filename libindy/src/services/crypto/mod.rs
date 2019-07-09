@@ -412,7 +412,8 @@ impl CryptoService {
 
         if did.len() != 16 && did.len() != 32 {
             return Err(err_msg(IndyErrorKind::InvalidStructure,
-                               format!("Trying to use `did` with unexpected length: {}. The length of base58-decoded `did` must be either 16 or 32 bytes.", did.len())));
+                               format!("Trying to use DID with unexpected length: {}. \
+                               The 16- or 32-byte number upon which a DID is based should be 22/23 or 44/45 bytes when encoded as base58.", did.len())));
         }
 
         let res = ();
