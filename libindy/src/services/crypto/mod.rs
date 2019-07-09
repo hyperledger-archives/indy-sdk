@@ -365,7 +365,9 @@ impl CryptoService {
             Vec::from_hex(seed)
                 .to_indy(IndyErrorKind::InvalidStructure, "Seed is invalid hex")?
         } else {
-            return Err(err_msg(IndyErrorKind::InvalidStructure, "Invalid Seed length"));
+            return Err(err_msg(IndyErrorKind::InvalidStructure,
+                               format!("Trying to use invalid `seed`. It can be either \
+                               {} bytes string or base64 string or {} bytes HEX string", ed25519_sign::SEEDBYTES, ed25519_sign::SEEDBYTES * 2)));
         };
 
         let res = ed25519_sign::Seed::from_slice(bytes.as_slice())?;
@@ -409,7 +411,9 @@ impl CryptoService {
         let did = base58::decode(did)?;
 
         if did.len() != 16 && did.len() != 32 {
-            return Err(err_msg(IndyErrorKind::InvalidStructure, format!("Trying to use did with unexpected len: {}", did.len())));
+            return Err(err_msg(IndyErrorKind::InvalidStructure,
+                               format!("Trying to use DID with unexpected length: {}. \
+                               The 16- or 32-byte number upon which a DID is based should be 22/23 or 44/45 bytes when encoded as base58.", did.len())));
         }
 
         let res = ();
