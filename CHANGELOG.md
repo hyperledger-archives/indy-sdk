@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.10.0 - 2019-07-1
+* Added new *EXPERIMENTAL* functions to Libindy Anoncreds API to configure what tags to build on credential storage in prover wallet:
+    * `indy_prover_set_credential_attr_tag_policy` to set credential attribute tagging policy. 
+    * `indy_prover_get_credential_attr_tag_policy` to get credential attribute tagging policy by credential definition id. 
+* Added `indy_build_auth_rules_request` function to Libindy Ledger API to change multiple ledger auth rules. 
+Added correspondent `ledger auth-rules` command to Indy CLI.
+* Bugfixes:
+    * Allowed offline signing of transactions in Indy-CLI.
+    * others minor bugfixes
+    
 ## 1.9.0 - 2019-05-31
 * Added a set of functions to support work with `Transaction Author Agreement` concept.
    This guarantees that every write transaction author agree that the information they submit 

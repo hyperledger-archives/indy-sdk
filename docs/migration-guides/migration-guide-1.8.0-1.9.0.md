@@ -15,7 +15,7 @@ version you can check migration guides history:
 ## Table of contents
 
 * [Notes](#notes)
-* [Libindy 1.8 to 1.8.9 migration](#libindy-18-to-190-migration-guide)
+* [Libindy 1.8 to 1.9 migration](#libindy-18-to-190-migration-guide)
     * [Ledger API](#libindy-api)
     * [Cache API](#cache-api)
     * [Anoncreds API](#anoncreds-api)
