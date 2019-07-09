@@ -6,6 +6,7 @@ use std::ptr::null;
 
 use serde_json;
 
+use ursa::encoding::hex;
 use api::{ErrorCode, WalletHandle};
 use api::payments::*;
 use errors::prelude::*;
@@ -30,6 +31,8 @@ pub struct PaymentsMethod {
     parse_get_txn_fees_response: ParseGetTxnFeesResponseCB,
     build_verify_payment_req: BuildVerifyPaymentReqCB,
     parse_verify_payment_response: ParseVerifyPaymentResponseCB,
+    sign_with_address: SignWithAddressCB,
+    verify_with_address: VerifyWithAddressCB
 }
 
 pub type PaymentsMethodCBs = PaymentsMethod;
@@ -47,7 +50,9 @@ impl PaymentsMethodCBs {
                build_get_txn_fees_req: BuildGetTxnFeesReqCB,
                parse_get_txn_fees_response: ParseGetTxnFeesResponseCB,
                build_verify_payment_req: BuildVerifyPaymentReqCB,
-               parse_verify_payment_response: ParseVerifyPaymentResponseCB) -> Self {
+               parse_verify_payment_response: ParseVerifyPaymentResponseCB,
+               sign_with_address: SignWithAddressCB,
+               verify_with_address: VerifyWithAddressCB) -> Self {
         PaymentsMethodCBs {
             create_address,
             add_request_fees,
@@ -62,6 +67,8 @@ impl PaymentsMethodCBs {
             parse_get_txn_fees_response,
             build_verify_payment_req,
             parse_verify_payment_response,
+            sign_with_address,
+            verify_with_address
         }
     }
 }
@@ -410,6 +417,34 @@ impl PaymentsService {
         trace!("parse_method_from_payment_address <<< result: {:?}", res);
         res
     }
+
+    pub fn sign_with_address(&self, cmd_handle: i32, method: &str, wallet_handle: WalletHandle, address: &str, message: &[u8]) -> IndyResult<()> {
+        trace!("sign_with_address >>> wallet_handle: {:?}, address: {:?}, message: {:?}", wallet_handle, address, hex::bin2hex(message));
+        let sign_with_address: SignWithAddressCB = self.methods.borrow().get(method)
+                    .ok_or(err_msg(IndyErrorKind::UnknownPaymentMethodType, format!("Unknown payment method {}", method)))?.sign_with_address;
+
+        let address = CString::new(address)?;
+
+        let err = sign_with_address(cmd_handle, wallet_handle.0, address.as_ptr(), message.as_ptr() as *const u8, message.len() as u32, cbs::sign_with_address_cb(cmd_handle));
+
+        let res = err.into();
+        trace!("sign_with_address <<< result: {:?}", res);
+        res
+    }
+
+    pub fn verify_with_address(&self, cmd_handle: i32, method: &str, address: &str, message: &[u8], signature: &[u8]) -> IndyResult<()> {
+        trace!("verify_with_address >>> address: {:?}, message: {:?}, signature: {:?}", address, hex::bin2hex(message), hex::bin2hex(signature));
+        let verify_with_address: VerifyWithAddressCB = self.methods.borrow().get(method)
+                    .ok_or(err_msg(IndyErrorKind::UnknownPaymentMethodType, format!("Unknown payment method {}", method)))?.verify_with_address;
+
+        let address = CString::new(address)?;
+
+        let err = verify_with_address(cmd_handle, address.as_ptr(), message.as_ptr() as *const u8, message.len() as u32, signature.as_ptr() as *const u8, signature.len() as u32, cbs::verify_with_address_cb(cmd_handle));
+
+        let res = err.into();
+        trace!("verify_with_address <<< result: {:?}", res);
+        res
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -514,6 +549,14 @@ mod cbs {
         send_ack(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::ParseVerifyPaymentResponseAck(cmd_handle, result)))
     }
 
+    pub fn sign_with_address_cb(cmd_handle: i32) -> Option<extern fn(command_handle: i32, err: ErrorCode, raw: *const u8, raw_len: u32) -> ErrorCode> {
+        send_array_ack(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::SignWithAddressAck(cmd_handle, result)))
+    }
+
+    pub fn verify_with_address_cb(cmd_handle: i32) -> Option<extern fn(command_handle: i32, err: ErrorCode, res: u8) -> ErrorCode> {
+        send_bool_ack(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::VerifyWithAddressAck(cmd_handle, result)))
+    }
+
     fn send_ack(cmd_handle: i32, builder: Box<Fn(i32, IndyResult<String>) -> PaymentsCommand + Send>) -> Option<extern fn(command_handle: i32,
                                                                                                                           err: ErrorCode,
                                                                                                                           c_str: *const c_char) -> ErrorCode> {
@@ -525,6 +568,33 @@ mod cbs {
             };
             CommandExecutor::instance().send(Command::Payments(
                 builder(cmd_handle, result))).into()
+        }))
+    }
+
+    fn send_array_ack(cmd_handle: i32, builder: Box<Fn(i32, IndyResult<Vec<u8>>) -> PaymentsCommand + Send>) -> Option<extern fn(command_handle: i32,
+                                                                                                                                 err: ErrorCode,
+                                                                                                                                 raw: *const u8,
+                                                                                                                                 raw_len: u32) -> ErrorCode> {
+            cbs::_closure_to_cb_byte_array(cmd_handle, Box::new(move |err, sig| -> ErrorCode {
+                let result = if err == ErrorCode::Success {
+                    Ok(sig)
+                } else {
+                    Err(err.into())
+                };
+                CommandExecutor::instance().send(Command::Payments(builder(cmd_handle, result))).into()
+            }))
+    }
+
+    fn send_bool_ack(cmd_handle: i32, builder: Box<Fn(i32, IndyResult<bool>) -> PaymentsCommand + Send>) -> Option<extern fn(command_handle: i32,
+                                                                                                                           err: ErrorCode,
+                                                                                                                           result: u8)-> ErrorCode> {
+        cbs::_closure_to_cb_bool(cmd_handle, Box::new(move |err, v| -> ErrorCode {
+            let result = if err == ErrorCode::Success {
+                Ok(v)
+            } else {
+                Err(err.into())
+            };
+            CommandExecutor::instance().send(Command::Payments(builder(cmd_handle, result))).into()
         }))
     }
 
@@ -541,6 +611,44 @@ mod cbs {
             let mut cb = callbacks.remove(&command_handle).unwrap();
             let metadata = unsafe { CStr::from_ptr(c_str).to_str().unwrap().to_string() };
             cb(err, metadata)
+        }
+
+        let mut callbacks = CALLBACKS.lock().unwrap();
+        callbacks.insert(command_handle, closure);
+
+        Some(_callback)
+    }
+
+    pub fn _closure_to_cb_byte_array(command_handle: i32, closure: Box<FnMut(ErrorCode, Vec<u8>) -> ErrorCode + Send>)
+                                     -> Option<extern fn(command_handle: i32, err: ErrorCode, raw: *const u8, len: u32) -> ErrorCode>{
+        lazy_static! {
+            static ref CALLBACKS: Mutex < HashMap <i32, Box < FnMut(ErrorCode, Vec<u8>) -> ErrorCode + Send > >> = Default::default();
+        }
+
+        extern "C" fn _callback(command_handle: i32, err: ErrorCode, message_raw: *const u8, message_len: u32) -> ErrorCode {
+            let mut callbacks = CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            let slice = unsafe { ::std::slice::from_raw_parts(message_raw, message_len as usize) };
+            cb(err, slice.to_vec())
+        }
+
+        let mut callbacks = CALLBACKS.lock().unwrap();
+        callbacks.insert(command_handle, closure);
+
+        Some(_callback)
+    }
+
+    pub fn _closure_to_cb_bool(command_handle: i32, closure: Box<FnMut(ErrorCode, bool) -> ErrorCode + Send>)
+                               -> Option<extern fn(command_handle: i32, err: ErrorCode, res: u8) -> ErrorCode> {
+        lazy_static! {
+            static ref CALLBACKS: Mutex < HashMap <i32, Box < FnMut(ErrorCode, bool) -> ErrorCode + Send > >> = Default::default();
+        }
+
+        extern "C" fn _callback(command_handle: i32, err: ErrorCode, result: u8) -> ErrorCode {
+            let mut callbacks = CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+
+            cb(err, result != 0)
         }
 
         let mut callbacks = CALLBACKS.lock().unwrap();
