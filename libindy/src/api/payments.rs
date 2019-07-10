@@ -307,6 +307,41 @@ pub type ParseVerifyPaymentResponseCB = extern fn(command_handle: CommandHandle,
                                                                 err: ErrorCode,
                                                                 txn_json: *const c_char) -> ErrorCode>) -> ErrorCode;
 
+/// Sign a message using the private key from a public payment address
+///
+/// # Params
+/// command_handle: command handle to map callback to context
+/// wallet_handle: wallet handle
+/// address: the public payment address to use to sign a message
+/// message_raw: a pointer to first byte of message to be signed
+/// message_len: a message length
+/// cb: Callback that takes command result as parameter.
+///
+/// # Return
+/// a signature byte array
+pub type SignWithAddressCB = extern fn (command_handle: i32, wallet_handle: i32,
+                                        address: *const c_char,
+                                        message_raw: *const u8, message_len: u32,
+                                        cb: Option<extern fn(command_handle: i32, err: ErrorCode, raw: *const u8, len: u32) -> ErrorCode>) -> ErrorCode;
+
+/// Verify a signature with a public payment address.
+///
+/// # Params
+/// command_handle: command handle to map callback to user context.
+/// address: public payment address of the message signer
+/// message_raw: a pointer to first byte of message that has been signed
+/// message_len: a message length
+/// signature_raw: a pointer to first byte of signature to be verified
+/// signature_len: a signature length
+/// cb: Callback that takes command result as parameter.
+///
+/// # Returns
+/// valid: true - if signature is valid, false - otherwise
+pub type VerifyWithAddressCB = extern fn (command_handle: i32, address: *const c_char,
+                                          message_raw: *const u8, message_len: u32,
+                                          signature_raw: *const u8, signature_len: u32,
+                                          cb: Option<extern fn(command_handle: i32, err: ErrorCode, result: u8) -> ErrorCode>) -> ErrorCode;
+
 /// Register custom payment implementation.
 ///
 /// It allows library user to provide custom payment method implementation as set of handlers.
@@ -346,6 +381,8 @@ pub extern fn indy_register_payment_method(command_handle: CommandHandle,
                                            parse_get_txn_fees_response: Option<ParseGetTxnFeesResponseCB>,
                                            build_verify_payment_req: Option<BuildVerifyPaymentReqCB>,
                                            parse_verify_payment_response: Option<ParseVerifyPaymentResponseCB>,
+                                           sign_with_address: Option<SignWithAddressCB>,
+                                           verify_with_address: Option<VerifyWithAddressCB>,
                                            cb: Option<extern fn(command_handle_: CommandHandle,
                                                                 err: ErrorCode)>) -> ErrorCode {
     trace!("indy_register_payment_method: >>> payment_method: {:?}", payment_method);
@@ -364,6 +401,8 @@ pub extern fn indy_register_payment_method(command_handle: CommandHandle,
     check_useful_c_callback!(parse_get_txn_fees_response, ErrorCode::CommonInvalidParam13);
     check_useful_c_callback!(build_verify_payment_req, ErrorCode::CommonInvalidParam14);
     check_useful_c_callback!(parse_verify_payment_response, ErrorCode::CommonInvalidParam15);
+    check_useful_c_callback!(sign_with_address, ErrorCode::CommonInvalidParam16);
+    check_useful_c_callback!(verify_with_address, ErrorCode::CommonInvalidParam17);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam16);
 
     trace!("indy_register_payment_method: entities >>> payment_method: {:?}", payment_method);
@@ -382,6 +421,8 @@ pub extern fn indy_register_payment_method(command_handle: CommandHandle,
         parse_get_txn_fees_response,
         build_verify_payment_req,
         parse_verify_payment_response,
+        sign_with_address,
+        verify_with_address
     );
     let result =
         CommandExecutor::instance().send(
@@ -1231,4 +1272,101 @@ pub extern fn indy_parse_verify_payment_response(command_handle: CommandHandle,
     trace!("indy_parse_verify_payment_response: <<< result: {:?}", result);
 
     result
+}
+
+/// Signs a message with a payment address.
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+/// wallet_handle: wallet handler (created by open_wallet).
+/// address: payment address of message signer. The key must be created by calling indy_create_address
+/// message_raw: a pointer to first byte of message to be signed
+/// message_len: a message length
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// a signature string
+///
+/// #Errors
+/// Common*
+/// Wallet*
+/// Crypto*
+#[no_mangle]
+pub extern fn indy_sign_with_address(command_handle: CommandHandle,
+                                     wallet_handle: WalletHandle,
+                                     address: *const c_char,
+                                     message_raw: *const u8,
+                                     message_len: u32,
+                                     cb: Option<extern fn(command_handle_: CommandHandle,
+                                                          err: ErrorCode,
+                                                          signature_raw: *const u8,
+                                                          signature_len: u32)>) -> ErrorCode {
+    trace!("indy_sign_with_address: >>> wallet_handle: {:?}, address: {:?}, message_raw: {:?}, message_len: {:?}",
+           wallet_handle, address, message_raw, message_len);
+    check_useful_c_str!(address, ErrorCode::CommonInvalidParam3);
+    check_useful_c_byte_array!(message_raw, message_len, ErrorCode::CommonInvalidParam4, ErrorCode::CommonInvalidParam5);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
+
+    trace!("indy_sign_with_address: entities >>> wallet_handle: {:?}, address: {:?}, message_raw: {:?}, message_len: {:?}",
+           wallet_handle, address, message_raw, message_len);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Payments(
+            PaymentsCommand::SignWithAddressReq(wallet_handle,
+                                                address,
+                                                message_raw,
+                                                Box::new(move |result| {
+                                                    let (err, signature) = prepare_result_1!(result, Vec::new());
+                                                    trace!("indy_sign_with_address: signature: {:?}", signature);
+                                                    let (signature_raw, signature_len) = ctypes::vec_to_pointer(&signature);
+                                                    cb(command_handle, err, signature_raw, signature_len)
+                                        }))
+        ));
+
+
+    let res = prepare_result!(result);
+
+    trace!("indy_sign_with_address: <<< res: {:?}", res);
+
+    res
+}
+
+#[no_mangle]
+pub extern fn indy_verify_with_address(command_handle: CommandHandle,
+                                       address: *const c_char,
+                                       message_raw: *const u8,
+                                       message_len: u32,
+                                       signature_raw: *const u8,
+                                       signature_len: u32,
+                                       cb: Option<extern fn(command_handle_: CommandHandle,
+                                                            err: ErrorCode,
+                                                            result: bool)>) -> ErrorCode {
+    trace!("indy_verify_with_address: >>> address: {:?}, message_raw: {:?}, message_len: {:?}, signature_raw: {:?}, signature_len: {:?}",
+           address, message_raw, message_len, signature_raw, signature_len);
+
+    check_useful_c_str!(address, ErrorCode::CommonInvalidParam2);
+    check_useful_c_byte_array!(message_raw, message_len, ErrorCode::CommonInvalidParam3, ErrorCode::CommonInvalidParam4);
+    check_useful_c_byte_array!(signature_raw, signature_len, ErrorCode::CommonInvalidParam5, ErrorCode::CommonInvalidParam6);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
+
+    trace!("indy_verify_with_address: entities >>> address: {:?}, message_raw: {:?}, message_len: {:?}, signature_raw: {:?}, signature_len: {:?}",
+           address, message_raw, message_len, signature_raw, signature_len);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Payments(PaymentsCommand::VerifyWithAddressReq(
+            address,
+            message_raw,
+            signature_raw,
+            Box::new(move |result| {
+                let (err, valid) = prepare_result_1!(result, false);
+                trace!("indy_verify_with_address: valid: {:?}", valid);
+                cb(command_handle, err, valid)
+            })
+        )));
+
+    let res = prepare_result!(result);
+
+    trace!("indy_verify_with_address: <<< res: {:?}", res);
+
+    res
 }

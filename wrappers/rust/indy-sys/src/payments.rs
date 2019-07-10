@@ -20,6 +20,8 @@ extern {
                                         parse_get_txn_fees_response: Option<ParseGetTxnFeesResponseCB>,
                                         build_verify_payment_req: Option<BuildVerifyPaymentReqCB>,
                                         parse_verify_payment_response: Option<ParseVerifyPaymentResponseCB>,
+                                        sign_with_address: Option<SignWithAddressCB>,
+                                        verify_with_address: Option<VerifyWithAddressCB>,
                                         cb: Option<ResponseEmptyCB>) -> Error;
 
     #[no_mangle]
@@ -129,6 +131,21 @@ extern {
                                               payment_method: CString,
                                               resp_json: CString,
                                               cb: Option<ResponseStringCB>) -> Error;
+    #[no_mangle]
+    pub fn indy_sign_with_address(command_handle: CommandHandle,
+                                  wallet_handle: WalletHandle,
+                                  address: CString,
+                                  message_raw: BString,
+                                  message_len: u32,
+                                  cb: Option<ResponseSliceCB>) -> Error;
+    #[no_mangle]
+    pub fn indy_verify_with_address(command_handle: CommandHandle,
+                                    address: CString,
+                                    message_raw: BString,
+                                    message_len: u32,
+                                    signature_raw: BString,
+                                    signature_len: u32,
+                                    cb: Option<ResponseBoolCB>) -> Error;
 }
 
 pub type CreatePaymentAddressCB = extern fn(command_handle: CommandHandle,
@@ -216,3 +233,14 @@ pub type ParseVerifyPaymentResponseCB = extern fn(command_handle: CommandHandle,
                                                   cb: Option<extern fn(command_handle_: CommandHandle,
                                                                 err: Error,
                                                                 txn_json: CString) -> Error>) -> Error;
+
+pub type SignWithAddressCB = extern fn (command_handle: CommandHandle, wallet_handle: WalletHandle,
+                                        address: CString,
+                                        message_raw: BString, message_len: u32,
+                                        cb: Option<extern fn(command_handle: i32, err: Error, raw: BString, len: u32)>) -> Error;
+
+pub type VerifyWithAddressCB = extern fn (command_handle: i32, address: CString,
+                                          message_raw: BString, message_len: u32,
+                                          signature_raw: BString, signature_len: u32,
+                                          cb: Option<extern fn(command_handle: i32, err: Error, result: bool)>) -> Error;
+
