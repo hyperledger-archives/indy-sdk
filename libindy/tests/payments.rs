@@ -365,7 +365,7 @@ mod high_cases {
         const VERSION: &str = "1.0.0";
         const HASH: &str = "050e52a57837fff904d3d059c8a123e3a04177042bf467db2b2c27abd8045d5e";
         const ACCEPTANCE_MECH_TYPE: &str = "acceptance type 1";
-        const TIME_OF_ACCEPTANCE: u64 = 123456789;
+        const TIME_OF_ACCEPTANCE: u64 = 123379200;
 
         fn _check_request_meta(extra: &str) {
             let extra: serde_json::Value = serde_json::from_str(&extra).unwrap();

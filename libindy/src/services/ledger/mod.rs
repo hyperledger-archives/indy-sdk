@@ -519,10 +519,15 @@ impl LedgerService {
         let acceptance_data = TxnAuthrAgrmtAcceptanceData {
             mechanism: mechanism.to_string(),
             taa_digest,
-            time,
+            time: LedgerService::datetime_to_date_timestamp(time),
         };
 
         Ok(acceptance_data)
+    }
+
+    fn datetime_to_date_timestamp(time: u64) -> u64{
+        const SEC_IN_DAY: u64 = 86400;
+        time / SEC_IN_DAY * SEC_IN_DAY
     }
 
     fn _calculate_hash(&self, text: &str, version: &str) -> IndyResult<Vec<u8>> {
@@ -1233,6 +1238,15 @@ mod tests {
             let res = ledger_service.build_get_acceptance_mechanisms_request(None, Some(TIMESTAMP), Some(VERSION));
             assert_kind!(IndyErrorKind::InvalidStructure, res);
         }
+    }
+
+    #[test]
+    fn datetime_to_date(){
+        assert_eq!(0, LedgerService::datetime_to_date_timestamp(0));
+        assert_eq!(0, LedgerService::datetime_to_date_timestamp(20));
+        assert_eq!(1562284800, LedgerService::datetime_to_date_timestamp(1562367600));
+        assert_eq!(1562284800, LedgerService::datetime_to_date_timestamp(1562319963));
+        assert_eq!(1562284800, LedgerService::datetime_to_date_timestamp(1562284800));
     }
 
     fn check_request(request: &str, expected_result: serde_json::Value) {
