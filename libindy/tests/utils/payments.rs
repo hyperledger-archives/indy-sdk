@@ -61,6 +61,100 @@ macro_rules! mocked_handler {
     )
 }
 
+macro_rules! mocked_handler_slice {
+    ($first_param_name: ident: $first_param_type: ty $(, $param_name: ident: $param_type: ty)*) => (
+        use super::*;
+
+        lazy_static! {
+          static ref INJECTIONS: Mutex<VecDeque<(i32, Vec<u8>)>> = Default::default();
+        }
+
+        pub extern fn handle(cmd_handle: i32,
+                                    $first_param_name: $first_param_type,
+                                    $($param_name: $param_type,)*
+                                    cb: Option<extern fn(command_handle_: i32, err_: i32, raw: *const u8, len: u32)>) -> i32 {
+
+            let cb = cb.unwrap_or_else(|| {
+                panic!("Null passed as callback!")
+            });
+
+            if let Ok(mut injections) = INJECTIONS.lock() {
+                if let Some((err, r)) = injections.pop_front() {
+                    (cb)(cmd_handle, err, r.as_slice().as_ptr() as *const u8, r.len() as u32);
+                    return err;
+                }
+            } else {
+                panic!("Can't lock injections mutex");
+            }
+
+            panic!("No injections left!");
+        }
+
+        pub fn inject_mock(err: ErrorCode, r: Vec<u8>) {
+            if let Ok(mut injections) = INJECTIONS.lock() {
+                injections.push_back((err as i32, r))
+            } else {
+                panic!("Can't lock injections mutex");
+            }
+        }
+
+        pub fn clear_mocks() {
+            if let Ok(mut injections) = INJECTIONS.lock() {
+                injections.clear();
+            } else {
+                panic!("Can't lock injections mutex");
+            }
+        }
+    )
+}
+
+macro_rules! mocked_handler_bool {
+    ($first_param_name: ident: $first_param_type: ty $(, $param_name: ident: $param_type: ty)*) => (
+        use super::*;
+
+        lazy_static! {
+          static ref INJECTIONS: Mutex<VecDeque<(i32, bool)>> = Default::default();
+        }
+
+        pub extern fn handle(cmd_handle: i32,
+                                    $first_param_name: $first_param_type,
+                                    $($param_name: $param_type,)*
+                                    cb: Option<extern fn(command_handle_: i32, err_: i32, valid: bool)>) -> i32 {
+
+            let cb = cb.unwrap_or_else(|| {
+                panic!("Null passed as callback!")
+            });
+
+            if let Ok(mut injections) = INJECTIONS.lock() {
+                if let Some((err, res)) = injections.pop_front() {
+                    (cb)(cmd_handle, err, res);
+                    return err;
+                }
+            } else {
+                panic!("Can't lock injections mutex");
+            }
+
+            panic!("No injections left!");
+        }
+
+        pub fn inject_mock(err: ErrorCode, r: bool) {
+            if let Ok(mut injections) = INJECTIONS.lock() {
+                injections.push_back((err as i32, r))
+            } else {
+                panic!("Can't lock injections mutex");
+            }
+        }
+
+        pub fn clear_mocks() {
+            if let Ok(mut injections) = INJECTIONS.lock() {
+                injections.clear();
+            } else {
+                panic!("Can't lock injections mutex");
+            }
+        }
+    )
+}
+
 type IndyPaymentCallback = extern fn(command_handle_: i32,
                                      err: i32,
                                      payment_address: *const c_char) -> i32;
@@ -92,6 +186,8 @@ pub mod mock_method {
                                                        Some(parse_get_txn_fees_response::handle),
                                                        Some(build_verify_payment_req::handle),
                                                        Some(parse_verify_payment_response::handle),
+                                                       Some(sign_with_address::handle),
+                                                       Some(verify_with_address::handle),
                                                        cb,
                 );
             }
@@ -151,6 +247,14 @@ pub mod mock_method {
     pub mod parse_verify_payment_response {
         mocked_handler!(_resp_json: *const c_char);
     }
+
+    pub mod sign_with_address {
+        mocked_handler_slice!(_wallet_handle: i32, _address: *const c_char, _message_raw: *const u8, _message_len: u32);
+    }
+
+    pub mod verify_with_address {
+        mocked_handler_bool!(_address: *const c_char, _message_raw: *const u8, _message_len: u32, _signature: *const u8, _signature_len: u32);
+    }
 }
 
 pub fn register_payment_method(payment_method_name: &str,
@@ -167,6 +271,8 @@ pub fn register_payment_method(payment_method_name: &str,
                                parse_get_txn_fees_response: Option<payments_sys::ParseGetTxnFeesResponseCB>,
                                build_verify_payment_req: Option<payments_sys::BuildVerifyPaymentReqCB>,
                                parse_verify_payment_response: Option<payments_sys::ParseVerifyPaymentResponseCB>,
+                               sign_with_address: Option<payments_sys::SignWithAddressCB>,
+                               verify_with_address: Option<payments_sys::VerifyWithAddressCB>
 ) -> Result<(), ErrorCode> {
     let (receiver, cmd_handle, cb) = callback::_closure_to_cb_ec();
 
@@ -188,6 +294,8 @@ pub fn register_payment_method(payment_method_name: &str,
                                                parse_get_txn_fees_response,
                                                build_verify_payment_req,
                                                parse_verify_payment_response,
+                                               sign_with_address,
+                                               verify_with_address,
                                                cb,
         )
     };
@@ -258,4 +366,12 @@ pub fn build_verify_payment_req(wallet_handle: i32, submitter_did: Option<&str>,
 
 pub fn parse_verify_payment_response(payment_method: &str, resp_json: &str) -> Result<String, IndyError> {
     payments::parse_verify_payment_response(payment_method, resp_json).wait()
+}
+
+pub fn sign_with_address(wallet_handle: i32, address: &str, message: &[u8]) -> Result<Vec<u8>, IndyError> {
+    payments::sign_with_address(wallet_handle, address, message).wait()
+}
+
+pub fn verify_with_address(address: &str, message: &[u8], signature: &[u8]) -> Result<bool, IndyError> {
+    payments::verify_with_address(address, message, signature).wait()
 }
