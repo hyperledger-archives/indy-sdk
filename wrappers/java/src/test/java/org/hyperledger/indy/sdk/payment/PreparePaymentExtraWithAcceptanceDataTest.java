@@ -15,7 +15,7 @@ public class PreparePaymentExtraWithAcceptanceDataTest extends IndyIntegrationTe
 	private String version = "1.0.0";
 	private String acceptanceMechanismType = "acceptance type 1";
 	private String hash = "050e52a57837fff904d3d059c8a123e3a04177042bf467db2b2c27abd8045d5e";
-	private int timeOfAcceptance = 123456789;
+	private int timeOfAcceptance = 123379200;
 	private JSONObject taaAcceptance = new JSONObject()
 			.put("mechanism", acceptanceMechanismType)
 			.put("taaDigest", hash)
