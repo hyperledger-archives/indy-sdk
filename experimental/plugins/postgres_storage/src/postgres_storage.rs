@@ -1419,7 +1419,6 @@ impl WalletStorage for PostgresStorage {
         Ok(Box::new(storage_iterator))
     }
 
-    // TODO add wallet_id limitation to search
     fn search(&self, type_: &[u8], query: &language::Operator, options: Option<&str>) -> Result<Box<StorageIterator>, WalletStorageError> {
         let type_ = type_.to_vec(); // FIXME
 
@@ -1430,14 +1429,11 @@ impl WalletStorage for PostgresStorage {
 
         let pool = self.pool.clone();
         let conn = pool.get().unwrap();
-        // TODO add wallet_id limitation to search
         let query_qualifier = unsafe {
             SELECTED_STRATEGY.query_qualifier()
         };
         let wallet_id_arg = self.wallet_id.as_bytes().to_owned();
         let total_count: Option<usize> = if search_options.retrieve_total_count {
-            // TODO add an extra parameter with the SELECTED_STRATEGY.query_qualifier to AND to the query
-            //let (query_string, query_arguments) = query::wql_to_sql_count(&type_, query)?;
             let (query_string, query_arguments) = match query_qualifier {
                 Some(_) => {
                     let (mut query_string, mut query_arguments) = query::wql_to_sql_count(&type_, query)?;
@@ -1468,8 +1464,6 @@ impl WalletStorage for PostgresStorage {
                 retrieve_type: search_options.retrieve_type,
             };
 
-            // TODO add an extra parameter with the SELECTED_STRATEGY.query_qualifier to AND to the query
-            //let (query_string, query_arguments) = query::wql_to_sql(&type_, query, options)?;
             let (query_string, query_arguments) = match query_qualifier {
                 Some(_) => {
                     let (mut query_string, mut query_arguments) = query::wql_to_sql(&type_, query, options)?;
@@ -1497,10 +1491,7 @@ impl WalletStorage for PostgresStorage {
     }
 
     fn close(&mut self) -> Result<(), WalletStorageError> {
-        //let pool = self.pool.clone();
-        //let conn = pool.get().unwrap();
-        // TODO throws a borrow error; temporary workaround is to rely on idle connection timeout
-        //let _ret = conn.finish();
+        // TODO throws a borrow error if we try to close the connection here; temporary workaround is to rely on idle connection timeout
         Ok(())
     }
 }

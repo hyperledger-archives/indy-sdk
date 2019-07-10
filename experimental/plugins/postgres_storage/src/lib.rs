@@ -1014,19 +1014,6 @@ mod tests {
     use std::{slice, ptr};
     use wql::storage::ENCRYPTED_KEY_LEN;
 
-    // TODO We need init() to be the first test run in order to create the wallets database
-    //#[test]
-    fn _postgres_storage_type_init_works() {
-        _cleanup();
-
-        let config = _wallet_config();
-        let credentials = _wallet_credentials();
-
-        let err = PostgresWallet::init(config.as_ref().map_or(ptr::null(), |x| x.as_ptr()), 
-                                       credentials.as_ref().map_or(ptr::null(), |x| x.as_ptr()));
-        assert_eq!(err, ErrorCode::Success);
-    }
-
     #[test]
     fn postgres_wallet_crud_works() {
         _cleanup();
