@@ -1124,10 +1124,10 @@ pub mod get_fees_command {
             .map_err(|err| handle_payment_error(err, Some(payment_method)))?;
 
         let (response, _) = send_read_request!(&ctx, send, &request, submitter_did.as_ref().map(String::as_str));
-
+        
         let res = match Payment::parse_get_txn_fees_response(&payment_method, &response) {
             Ok(fees_json) => {
-                let mut fees: HashMap<String, i32> = serde_json::from_str(&fees_json)
+                let mut fees: HashMap<String, u64> = serde_json::from_str(&fees_json)
                     .map_err(|_| println_err!("Wrong data has been received"))?;
 
                 let mut fees =
@@ -1216,8 +1216,6 @@ pub mod set_fees_prepare_command {
 
         let mut request = Payment::build_set_txn_fees_req(wallet_handle, submitter_did.as_ref().map(String::as_str), &payment_method, &fees)
             .map_err(|err| handle_payment_error(err, None))?;
-
-        set_author_agreement(ctx, &mut request)?;
 
         println_succ!("SET_FEES transaction has been created:");
         println!("     {}", request);
