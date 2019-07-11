@@ -95,6 +95,105 @@ pub mod list_command {
     }
 }
 
+pub mod sign_command {
+    use super::*;
+
+    command!(CommandMetadata::build("sign", "Create a proof of payment address control by signing an input and producing a signature.")
+                .add_required_param("address", "Payment address to use")
+                .add_required_param("input", "The input data to be signed")
+                .add_example("sign address=pav:sov:1a2b3c4d5e6f7g8h9ioplkjhgfdsfgbv input=910274529363984")
+                .finalize());
+
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
+
+        let wallet_handle = ensure_opened_wallet_handle(&ctx)?;
+
+        let address = get_str_param("address", params).map_err(error_err!())?;
+        let input = get_str_param("input", params).map_err(error_err!())?;
+
+        let res = match Payment::sign_with_address(wallet_handle, address, input) {
+            Ok(signature) => Ok(println_succ!("Signature \"0x{}\"", bin2hex(signature.as_slice()))),
+            Err(err) => Err(handle_indy_error(err, None, None, None))
+        };
+
+        trace!("execute << {:?}", res);
+        res
+    }
+
+    fn bin2hex(b: &[u8]) -> String {
+        b.iter()
+            .map(|b| format!("{:02x}", b))
+            .collect::<Vec<_>>()
+            .join("")
+    }
+}
+
+pub mod verify_command {
+    use super::*;
+
+    command!(CommandMetadata::build("verify", "Verify a proof of payment address control by verifying a signature.")
+             .add_required_param("address", "Payment address to use")
+             .add_required_param("input", "The input data that was signed")
+             .add_required_param("signature", "The signature generated from sign-with-address")
+             .add_example("verify address=pav:sov:1a2b3c4d5e6f7g8h9ioplkjhgfdsfgbv input=910274529363984 signature=0x1c542a32bd39cf1fd343fd4f211ea2f7fb5c4bca0ab7c7d8c7dc192511593484b86cb9b919040981addf81ee4c0feae080ef592efdb7c6ea6e4ae1c007a60178")
+             .finalize());
+
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
+
+        let address = get_str_param("address", params).map_err(error_err!())?;
+        let input = get_str_param("input", params).map_err(error_err!())?;
+        let signature = get_str_param("signature", params).map_err(error_err!())?;
+
+        if &signature[0..2] != "0x" {
+            println_err!("Wrong data has been received. Expected signature to start with '0x'");
+            return Err(());
+        }
+
+        let sig = hex2bin(&signature[2..]).map_err(|e| println_err!("{}", e))?;
+
+        let res = match Payment::verify_with_address(address, input, sig.as_slice()) {
+            Ok(valid) => {
+                if valid {
+                    Ok(println_succ!("Valid signature"))
+                } else {
+                    Ok(println_err!("Invalid signature"))
+                }
+            }
+            Err(err) => Err(handle_indy_error(err, None, None, None))
+        };
+
+        trace!("execute << {:?}", res);
+        res
+    }
+
+    fn hex2bin(s: &str) -> Result<Vec<u8>, String> {
+        if s.len() % 2 != 0 {
+            return Err("Bad input".to_string());
+        }
+        for (i, ch) in s.chars().enumerate() {
+            if !ch.is_digit(16) {
+                return Err(format!(
+                    "Bad character position {}",
+                    i
+                ));
+            }
+        }
+
+        let input: Vec<_> = s.chars().collect();
+
+        let decoded: Vec<u8> = input
+            .chunks(2)
+            .map(|chunk| {
+                ((chunk[0].to_digit(16).unwrap() << 4) | (chunk[1].to_digit(16).unwrap())) as u8
+            })
+            .collect();
+
+        Ok(decoded)
+    }
+}
+
 pub fn handle_payment_error(err: IndyError, payment_method: Option<&str>) {
     match err.error_code {
         ErrorCode::UnknownPaymentMethod => println_err!("Unknown payment method {}", payment_method.unwrap_or("")),
