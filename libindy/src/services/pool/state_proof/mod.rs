@@ -585,7 +585,11 @@ fn _parse_reply_for_proof_value(json_msg: &SJsonValue, data: Option<&str>, parse
                 };
             }
             constants::GET_REVOC_REG_DELTA => {
-                value["val"] = parsed_data["value"]["accum_to"].clone();
+                if !parsed_data["value"]["accum_to"].is_null() {
+                    value["val"] = parsed_data["value"]["accum_to"].clone()
+                } else {
+                    return Ok(None)
+                }
             }
             constants::GET_TXN_AUTHR_AGRMT => {
                 if _is_full_taa_state_value_expected(sp_key) {
