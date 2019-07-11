@@ -398,6 +398,25 @@ pub mod list_command {
     }
 }
 
+pub fn dids(ctx: &CommandContext) -> Vec<(String, String)> {
+    get_opened_wallet(&ctx)
+        .and_then(|(wallet_handle, _)|
+            Did::list_dids_with_meta(wallet_handle).ok()
+        )
+        .and_then(|dids|
+            serde_json::from_str::<Vec<serde_json::Value>>(&dids).ok()
+        )
+        .unwrap_or(vec![])
+        .into_iter()
+        .map(|did|
+            (did["did"].as_str().map(String::from).unwrap_or(String::new()), did["verkey"].as_str().map(String::from).unwrap_or(String::new()))
+        )
+        .map(|(did, verkey)| {
+            let verkey_ = Did::abbreviate_verkey(&did, &verkey).unwrap_or(verkey);
+            (did, verkey_)
+        })
+        .collect()
+}
 
 #[cfg(test)]
 pub mod tests {
