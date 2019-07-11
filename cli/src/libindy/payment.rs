@@ -65,4 +65,12 @@ impl Payment {
                                                       taa_digest: Option<&str>, mechanism: &str, time: u64) -> Result<String, IndyError> {
         payments::prepare_extra_with_acceptance_data(extra_json, text, version, taa_digest, mechanism, time).wait()
     }
+
+    pub fn sign_with_address(wallet_handle: i32, address: &str, input: &str) -> Result<Vec<u8>, IndyError> {
+        payments::sign_with_address(wallet_handle, address, input.as_bytes()).wait()
+    }
+
+    pub fn verify_with_address(address: &str, input: &str, signature: &[u8]) -> Result<bool, IndyError> {
+        payments::verify_with_address(address, input.as_bytes(), signature).wait()
+    }
 }
