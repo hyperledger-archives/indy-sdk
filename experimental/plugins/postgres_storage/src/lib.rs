@@ -86,6 +86,11 @@ pub extern fn postgresstorage_init() -> libindy::ErrorCode {
     )
 }
 
+#[no_mangle]
+pub extern fn init_storagetype(config: *const c_char, credentials: *const c_char) -> libindy::ErrorCode {
+    return PostgresWallet::init(config, credentials);
+}
+
 struct PostgresStorageContext {
     // TODO save handle, config and credentials in case we need to re-connect to database
     _xhandle: i32,        // reference returned to client to track open wallet connection

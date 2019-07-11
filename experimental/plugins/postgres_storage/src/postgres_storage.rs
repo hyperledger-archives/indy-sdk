@@ -1432,13 +1432,13 @@ impl WalletStorage for PostgresStorage {
         let query_qualifier = unsafe {
             SELECTED_STRATEGY.query_qualifier()
         };
-        let wallet_id_arg = self.wallet_id.as_bytes().to_owned();
+        let wallet_id_arg = self.wallet_id.to_owned();
         let total_count: Option<usize> = if search_options.retrieve_total_count {
             let (query_string, query_arguments) = match query_qualifier {
                 Some(_) => {
                     let (mut query_string, mut query_arguments) = query::wql_to_sql_count(&type_, query)?;
                     query_arguments.push(&wallet_id_arg);
-                    let arg_str = format!(" AND wallet_id = ${}", query_arguments.len());
+                    let arg_str = format!(" AND i.wallet_id = ${}", query_arguments.len());
                     query_string.push_str(&arg_str);
                     (query_string, query_arguments)
                 },
@@ -1468,7 +1468,7 @@ impl WalletStorage for PostgresStorage {
                 Some(_) => {
                     let (mut query_string, mut query_arguments) = query::wql_to_sql(&type_, query, options)?;
                     query_arguments.push(&wallet_id_arg);
-                    let arg_str = format!(" AND wallet_id = ${}", query_arguments.len());
+                    let arg_str = format!(" AND i.wallet_id = ${}", query_arguments.len());
                     query_string.push_str(&arg_str);
                     (query_string, query_arguments)
                 },
