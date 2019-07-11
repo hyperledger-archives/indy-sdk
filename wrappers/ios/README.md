@@ -57,7 +57,7 @@ Add pod to target:
 1. Create directory with name defined in LIBINDY_POD_VERSION:
    
    ```
-   mkdir LIBINDY_POD_VERSION
+   mkdir $LIBINDY_POD_VERSION
    ```
 1. Copy libindy.podspec.json to that new directory from some previous version.
 1. Edit this json -> change version field to LIBINDY_POD_VERSION.
