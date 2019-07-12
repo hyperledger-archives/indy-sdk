@@ -1214,7 +1214,7 @@ pub mod set_fees_prepare_command {
 
         let fees = parse_payment_fees(&fees).map_err(error_err!())?;
 
-        let mut request = Payment::build_set_txn_fees_req(wallet_handle, submitter_did.as_ref().map(String::as_str), &payment_method, &fees)
+        let request = Payment::build_set_txn_fees_req(wallet_handle, submitter_did.as_ref().map(String::as_str), &payment_method, &fees)
             .map_err(|err| handle_payment_error(err, None))?;
 
         println_succ!("SET_FEES transaction has been created:");
