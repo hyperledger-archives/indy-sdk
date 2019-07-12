@@ -84,8 +84,6 @@ mod high_cases {
                                                          Some(payments::mock_method::parse_get_txn_fees_response::handle),
                                                          Some(payments::mock_method::build_verify_payment_req::handle),
                                                          Some(payments::mock_method::parse_verify_payment_response::handle),
-                                                         Some(payments::mock_method::sign_with_address::handle),
-                                                         Some(payments::mock_method::verify_with_address::handle)
             ).unwrap();
 
             utils::tear_down("register_payment_method_works");
@@ -604,6 +602,7 @@ mod high_cases {
         }
     }
 
+
     mod build_verify_payment_req {
         use super::*;
 
@@ -678,8 +677,6 @@ mod medium_cases {
                                                         None,
                                                         None,
                                                         None,
-                                                        None,
-                                                        None
             ).unwrap_err();
 
             assert_eq!(ErrorCode::CommonInvalidParam3, err);
@@ -1725,38 +1722,6 @@ mod medium_cases {
             assert_code!(ErrorCode::WalletAccessFailed, err);
 
             utils::tear_down_with_wallet(wallet_handle, "parse_verify_payment_response_works_for_generic_error", &wallet_config);
-        }
-    }
-
-    mod sign_with_address {
-        use super::*;
-
-        #[test]
-        pub fn sign_with_address_works_for_nonexistent_plugin() {
-            let (wallet_handle, wallet_config) = utils::setup_with_wallet("sign_with_address_works_for_nonexistent_plugin");
-            payments::mock_method::init();
-
-            let err = payments::sign_with_address(wallet_handle, "", Vec::new().as_slice());
-
-            assert!(err.is_err());
-
-            utils::tear_down_with_wallet(wallet_handle, "sign_with_address_works_for_nonexistent_plugin", &wallet_config);
-        }
-    }
-
-    mod verify_with_address {
-        use super::*;
-
-        #[test]
-        pub fn verify_with_address_works_for_nonexistent_plugin() {
-            let (wallet_handle, wallet_config) = utils::setup_with_wallet("sign_with_address_works_for_nonexistent_plugin");
-            payments::mock_method::init();
-
-            let err = payments::verify_with_address("", Vec::new().as_slice(), Vec::new().as_slice());
-
-            assert!(err.is_err());
-
-            utils::tear_down_with_wallet(wallet_handle, "sign_with_address_works_for_nonexistent_plugin", &wallet_config);
         }
     }
 }
