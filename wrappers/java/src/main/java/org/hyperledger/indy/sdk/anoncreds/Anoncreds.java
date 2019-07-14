@@ -898,7 +898,7 @@ public class Anoncreds extends IndyJava.API {
 	 *     {
 	 *         "name": string,
 	 *         "version": string,
-	 *         "nonce": string, - a big number represented as a string (use `generateNonce` funciton to generate 80-bit number)
+	 *         "nonce": string, - a big number represented as a string (use `generateNonce` function to generate 80-bit number)
 	 *         "requested_attributes": { // set of requested attributes
 	 *              "attr_referent": {attr_info}, // see below
 	 *              ...,
@@ -992,7 +992,7 @@ public class Anoncreds extends IndyJava.API {
 	 *     {
 	 *         "name": string,
 	 *         "version": string,
-	 *         "nonce": string, - a big number represented as a string (use `generateNonce` funciton to generate 80-bit number)
+	 *         "nonce": string, - a big number represented as a string (use `generateNonce` function to generate 80-bit number)
 	 *         "requested_attributes": { // set of requested attributes
 	 *              "attr_referent": {attr_info}, // see below
 	 *              ...,
@@ -1121,7 +1121,7 @@ public class Anoncreds extends IndyJava.API {
 	 *     {
 	 *         "name": string,
 	 *         "version": string,
-	 *         "nonce": string, - a big number represented as a string (use `generateNonce` funciton to generate 80-bit number)
+	 *         "nonce": string, - a big number represented as a string (use `generateNonce` function to generate 80-bit number)
 	 *         "requested_attributes": { // set of requested attributes
 	 *              "attr_referent": {attr_info}, // see below
 	 *              ...,

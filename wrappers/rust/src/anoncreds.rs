@@ -766,7 +766,7 @@ fn _prover_close_credentials_search(command_handle: CommandHandle, search_handle
 ///     {
 ///         "name": string,
 ///         "version": string,
-///         "nonce": string, - a big number represented as a string (use `generate_nonce` funciton to generate 80-bit number)
+///         "nonce": string, - a big number represented as a string (use `generate_nonce` function to generate 80-bit number)
 ///         "requested_attributes": { // set of requested attributes
 ///              "<attr_referent>": <attr_info>, // see below
 ///              ...,
@@ -858,7 +858,7 @@ fn _prover_get_credentials_for_proof_req(command_handle: CommandHandle, wallet_h
 ///     {
 ///         "name": string,
 ///         "version": string,
-///         "nonce": string, - a big number represented as a string (use `generate_nonce` funciton to generate 80-bit number)
+///         "nonce": string, - a big number represented as a string (use `generate_nonce` function to generate 80-bit number)
 ///         "requested_attributes": { // set of requested attributes
 ///              "<attr_referent>": <attr_info>, // see below
 ///              ...,
@@ -1011,7 +1011,7 @@ fn _prover_close_credentials_search_for_proof_req(command_handle: CommandHandle,
 ///     {
 ///         "name": string,
 ///         "version": string,
-///         "nonce": string, - a big number represented as a string (use `generate_nonce` funciton to generate 80-bit number)
+///         "nonce": string, - a big number represented as a string (use `generate_nonce` function to generate 80-bit number)
 ///         "requested_attributes": { // set of requested attributes
 ///              "<attr_referent>": <attr_info>, // see below
 ///              ...,
@@ -1156,7 +1156,7 @@ fn _prover_create_proof(command_handle: CommandHandle, wallet_handle: WalletHand
 ///     {
 ///         "name": string,
 ///         "version": string,
-///         "nonce": string, - a big number represented as a string (use `generate_nonce` funciton to generate 80-bit number)
+///         "nonce": string, - a big number represented as a string (use `generate_nonce` function to generate 80-bit number)
 ///         "requested_attributes": { // set of requested attributes
 ///              "<attr_referent>": <attr_info>, // see below
 ///              ...,

@@ -1009,7 +1009,7 @@ async def prover_get_credentials_for_proof_req(wallet_handle: int,
         {
             "name": string,
             "version": string,
-            "nonce": string, - a big number represented as a string (use `generate_nonce` funciton to generate 80-bit number)
+            "nonce": string, - a big number represented as a string (use `generate_nonce` function to generate 80-bit number)
             "requested_attributes": { // set of requested attributes
                  "<attr_referent>": <attr_info>, // see below
                  ...,
@@ -1110,7 +1110,7 @@ async def prover_search_credentials_for_proof_req(wallet_handle: int,
         {
             "name": string,
             "version": string,
-            "nonce": string, - a big number represented as a string (use `generate_nonce` funciton to generate 80-bit number)
+            "nonce": string, - a big number represented as a string (use `generate_nonce` function to generate 80-bit number)
             "requested_attributes": { // set of requested attributes
                  "<attr_referent>": <attr_info>, // see below
                  ...,
@@ -1256,7 +1256,7 @@ async def prover_create_proof(wallet_handle: int,
         {
             "name": string,
             "version": string,
-            "nonce": string, - a big number represented as a string (use `generate_nonce` funciton to generate 80-bit number)
+            "nonce": string, - a big number represented as a string (use `generate_nonce` function to generate 80-bit number)
             "requested_attributes": { // set of requested attributes
                  "<attr_referent>": <attr_info>, // see below
                  ...,
@@ -1424,7 +1424,7 @@ async def verifier_verify_proof(proof_request_json: str,
          {
              "name": string,
              "version": string,
-             "nonce": string, - a big number represented as a string (use `generate_nonce` funciton to generate 80-bit number)
+             "nonce": string, - a big number represented as a string (use `generate_nonce` function to generate 80-bit number)
              "requested_attributes": { // set of requested attributes
                   "<attr_referent>": <attr_info>, // see below
                   ...,
