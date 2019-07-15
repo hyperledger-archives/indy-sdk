@@ -1,15 +1,15 @@
+from logging import ERROR, WARNING, INFO, DEBUG, CRITICAL
+import logging
+from typing import Optional
+import asyncio
+import itertools
 import json
+import sys
 
-from .error import ErrorCode, IndyError
+from .error import ErrorCode, IndyError, errorcode_to_exception
 
 from ctypes import *
 
-import asyncio
-import sys
-import itertools
-import logging
-from logging import ERROR, WARNING, INFO, DEBUG, CRITICAL
-from typing import Optional
 
 TRACE = 5
 
@@ -67,12 +67,13 @@ def create_cb(cb_type: CFUNCTYPE, transform_fn=None):
 
 
 def _get_indy_error(err: int) -> IndyError:
-    if err == ErrorCode.Success:
-        return IndyError(ErrorCode(err))
-    else:
-        error_details = _get_error_details()
-        error = IndyError(ErrorCode(err), error_details)
-        return error
+    errorcode = ErrorCode(err)
+    if errorcode == ErrorCode.Success:
+        return IndyError(errorcode)
+
+    error_details = _get_error_details()
+    error = errorcode_to_exception(errorcode)(errorcode, error_details)
+    return error
 
 
 def _get_error_details() -> Optional[dict]:
