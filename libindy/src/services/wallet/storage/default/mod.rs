@@ -5,9 +5,7 @@ use std;
 use std::fs;
 use std::rc::Rc;
 
-#[macro_use]
 use rusqlite;
-
 use serde_json;
 
 use errors::prelude::*;
