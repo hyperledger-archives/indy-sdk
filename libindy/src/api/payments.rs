@@ -1400,6 +1400,25 @@ pub extern fn indy_sign_with_address(command_handle: CommandHandle,
     res
 }
 
+/// Verify a signature with a payment address.
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+/// address: payment address of the message signer
+/// message_raw: a pointer to first byte of message that has been signed
+/// message_len: a message length
+/// signature_raw: a pointer to first byte of signature to be verified
+/// signature_len: a signature length
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// valid: true - if signature is valid, false - otherwise
+///
+/// #Errors
+/// Common*
+/// Wallet*
+/// Ledger*
+/// Crypto*
 #[no_mangle]
 pub extern fn indy_verify_with_address(command_handle: CommandHandle,
                                        address: *const c_char,
