@@ -72,7 +72,11 @@ def _get_indy_error(err: int) -> IndyError:
         return IndyError(errorcode)
 
     error_details = _get_error_details()
-    error = errorcode_to_exception(errorcode)(errorcode, error_details)
+    error_class = errorcode_to_exception(errorcode)
+    if error_class:
+        error = error_class(errorcode, error_details)
+    else:
+        error = IndyError(errorcode, error_details)
     return error
 
 
