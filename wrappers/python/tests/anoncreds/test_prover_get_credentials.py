@@ -1,8 +1,8 @@
-from indy.anoncreds import prover_get_credentials
-from indy.error import ErrorCode, IndyError
-
 import json
 import pytest
+
+from indy.anoncreds import prover_get_credentials
+from indy import error
 
 
 # noinspection PyUnusedLocal
@@ -66,7 +66,5 @@ async def test_prover_get_credentials_works_for_empty_result(wallet_handle, prep
 async def test_prover_get_credentials_works_for_invalid_wallet_handle(wallet_handle, prepopulated_wallet):
     invalid_wallet_handle = wallet_handle + 100
 
-    with pytest.raises(IndyError) as e:
+    with pytest.raises(error.WalletInvalidHandle):
         await prover_get_credentials(invalid_wallet_handle, '{}')
-
-    assert ErrorCode.WalletInvalidHandle == e.value.error_code
