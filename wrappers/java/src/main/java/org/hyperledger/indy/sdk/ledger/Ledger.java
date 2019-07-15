@@ -1591,7 +1591,7 @@ public class Ledger extends IndyJava.API {
 	 *     `text` and `version` parameters are required if taaDigest parameter is omitted.
 	 * @param taaDigest - (Optional) digest on text and version. This parameter is required if text and version parameters are omitted.
 	 * @param mechanism - mechanism how user has accepted the TAA
-	 * @param time - UTC timestamp when user has accepted the TAA. Note that the time portion will be discarded to avoid a privacy risk.
+	 * @param time - UTC timestamp when user has accepted the TAA
 	 *
 	 * @return A future resolving to an updated request result as json.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.

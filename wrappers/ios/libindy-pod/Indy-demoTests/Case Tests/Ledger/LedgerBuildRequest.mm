@@ -883,13 +883,13 @@
                                                                             version:@"1.0.0"
                                                                           taaDigest:@"050e52a57837fff904d3d059c8a123e3a04177042bf467db2b2c27abd8045d5e"
                                                                         accMechType:@"acceptance type 1"
-                                                                   timeOfAcceptance:@(123379200)
+                                                                   timeOfAcceptance:@(123456789)
                                                                          outRequest:&requestJson];
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildTxnAuthorAgreementRequestWithSubmitterDid() failed!");
     NSDictionary *expectedMeta = @{
             @"mechanism": @"acceptance type 1",
             @"taaDigest": @"050e52a57837fff904d3d059c8a123e3a04177042bf467db2b2c27abd8045d5e",
-            @"time": @(123379200),
+            @"time": @(123456789),
     };
 
     request = [NSDictionary fromString:requestJson];

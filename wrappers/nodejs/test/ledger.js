@@ -198,15 +198,15 @@ test('ledger', async function (t) {
   req = await indy.buildAcceptanceMechanismsRequest(trusteeDid, aml, '1.0.0', null)
   t.deepEqual(req['operation'], { 'type': '5', 'aml': aml, 'version': '1.0.0' })
 
-  req = await indy.buildGetAcceptanceMechanismsRequest(null, 123379200, null)
-  t.deepEqual(req['operation'], { 'type': '7', 'timestamp': 123379200 })
+  req = await indy.buildGetAcceptanceMechanismsRequest(null, 123456789, null)
+  t.deepEqual(req['operation'], { 'type': '7', 'timestamp': 123456789 })
 
   // author agreement acceptance data
-  req = await indy.appendTxnAuthorAgreementAcceptanceToRequest(req, 'indy agreement', '1.0.0', null, 'acceptance mechanism label 1', 123379200)
+  req = await indy.appendTxnAuthorAgreementAcceptanceToRequest(req, 'indy agreement', '1.0.0', null, 'acceptance mechanism label 1', 123456789)
   var expectedMeta = {
     'mechanism': 'acceptance mechanism label 1',
     'taaDigest': '7213b9aabf8677edf6b17d20a9fbfaddb059ea4cb122d163bdf658ea67196120',
-    'time': 123379200
+    'time': 123456789
   }
   t.deepEqual(req['taaAcceptance'], expectedMeta)
 

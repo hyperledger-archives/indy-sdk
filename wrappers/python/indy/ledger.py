@@ -1643,7 +1643,7 @@ async def append_txn_author_agreement_acceptance_to_request(request_json: str,
                These parameters are required if taa_digest parameter is omitted.
     :param taa_digest: (Optional) hash on text and version. This parameter is required if text and version parameters are omitted.
     :param mechanism: mechanism how user has accepted the TAA
-    :param time: UTC timestamp when user has accepted the TAA. Note that the time portion will be discarded to avoid a privacy risk.
+    :param time: UTC timestamp when user has accepted the TAA
 
     :return: Updated request result as json.
     """

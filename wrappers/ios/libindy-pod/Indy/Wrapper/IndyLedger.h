@@ -791,7 +791,7 @@
      text and version are required if taaDigest parameter is omitted.
  @param taaDigest (Optional) hash on text and version. This parameter is required if text and version parameters are omitted.
  @param accMechType mechanism how user has accepted the TAA
- @param timeOfAcceptance UTC timestamp when user has accepted the TAA. Note that the time portion will be discarded to avoid a privacy risk.
+ @param timeOfAcceptance UTC timestamp when user has accepted the TAA
 
  Returns Updated request result as json.
  */
