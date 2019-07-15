@@ -1838,15 +1838,23 @@ mod medium_cases {
         use super::*;
 
         #[test]
-        pub fn sign_with_address_works_for_nonexistent_plugin() {
-            let (wallet_handle, wallet_config) = utils::setup_with_wallet("sign_with_address_works_for_nonexistent_plugin");
+        pub fn sign_with_address_fails_for_nonexistent_plugin() {
+            let (wallet_handle, wallet_config) = utils::setup_with_wallet("sign_with_address_fails_for_nonexistent_plugin");
             payments::mock_method::init();
 
             let err = payments::sign_with_address(wallet_handle, "", Vec::new().as_slice());
 
             assert!(err.is_err());
 
-            utils::tear_down_with_wallet(wallet_handle, "sign_with_address_works_for_nonexistent_plugin", &wallet_config);
+            utils::tear_down_with_wallet(wallet_handle, "sign_with_address_fails_for_nonexistent_plugin", &wallet_config);
+        }
+
+        #[test]
+        pub fn sign_with_address_fails_for_invalid_wallet_handle() {
+            payments::mock_method::init();
+            let err = payments::sign_with_address(INVALID_WALLET_HANDLE, "", Vec::new().as_slice());
+
+            assert!(err.is_err());
         }
     }
 
@@ -1854,15 +1862,15 @@ mod medium_cases {
         use super::*;
 
         #[test]
-        pub fn verify_with_address_works_for_nonexistent_plugin() {
-            let (wallet_handle, wallet_config) = utils::setup_with_wallet("sign_with_address_works_for_nonexistent_plugin");
+        pub fn verify_with_address_fails_for_nonexistent_plugin() {
+            let (wallet_handle, wallet_config) = utils::setup_with_wallet("verify_with_address_fails_for_nonexistent_plugin");
             payments::mock_method::init();
 
             let err = payments::verify_with_address("", Vec::new().as_slice(), Vec::new().as_slice());
 
             assert!(err.is_err());
 
-            utils::tear_down_with_wallet(wallet_handle, "sign_with_address_works_for_nonexistent_plugin", &wallet_config);
+            utils::tear_down_with_wallet(wallet_handle, "verify_with_address_fails_for_nonexistent_plugin", &wallet_config);
         }
     }
 }
