@@ -154,6 +154,7 @@ pub struct CommandContext {
     string_values: RefCell<HashMap<&'static str, String>>,
     plugins: RefCell<HashMap<String, libloading::Library>>,
     taa_acceptance_mechanism: RefCell<String>,
+    is_batch_mode: RefCell<bool>,
 }
 
 impl CommandContext {
@@ -167,6 +168,7 @@ impl CommandContext {
             string_values: RefCell::new(HashMap::new()),
             plugins: RefCell::new(HashMap::new()),
             taa_acceptance_mechanism: RefCell::new(String::new()),
+            is_batch_mode: RefCell::new(false),
         }
     }
 
@@ -250,6 +252,18 @@ impl CommandContext {
 
     pub fn get_taa_acceptance_mechanism(&self) -> String {
         self.taa_acceptance_mechanism.borrow().to_string()
+    }
+
+    pub fn set_batch_mode(&self) {
+        *self.is_batch_mode.borrow_mut() = true;
+    }
+
+    pub fn set_not_batch_mode(&self) {
+        *self.is_batch_mode.borrow_mut() = false;
+    }
+
+    pub fn is_batch_mode(&self) -> bool {
+        *self.is_batch_mode.borrow()
     }
 }
 
@@ -871,7 +885,11 @@ impl CommandExecutorGroupBuilder {
 }
 
 // TODO: think about better place
-pub fn wait_for_user_reply() -> bool {
+pub fn wait_for_user_reply(ctx: &CommandContext) -> bool {
+    if ctx.is_batch_mode() || cfg!(test) {
+        return true;
+    }
+
     let mut reader = Reader::new("User Reply Reader").unwrap();
 
     while let Ok(ReadResult::Input(line)) = reader.read_line() {

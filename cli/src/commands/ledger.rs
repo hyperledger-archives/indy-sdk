@@ -947,7 +947,7 @@ pub mod custom_command {
                     println!("Transaction stored into context: {:?}.", txn_);
                     println!("Would you like to send it? (y/n)");
 
-                    let use_transaction = ::command_executor::wait_for_user_reply();
+                    let use_transaction = ::command_executor::wait_for_user_reply(ctx);
 
                     if !use_transaction {
                         return Ok(println!("No transaction has been send."));
@@ -1124,10 +1124,10 @@ pub mod get_fees_command {
             .map_err(|err| handle_payment_error(err, Some(payment_method)))?;
 
         let (response, _) = send_read_request!(&ctx, send, &request, submitter_did.as_ref().map(String::as_str));
-
+        
         let res = match Payment::parse_get_txn_fees_response(&payment_method, &response) {
             Ok(fees_json) => {
-                let mut fees: HashMap<String, i32> = serde_json::from_str(&fees_json)
+                let mut fees: HashMap<String, u64> = serde_json::from_str(&fees_json)
                     .map_err(|_| println_err!("Wrong data has been received"))?;
 
                 let mut fees =
@@ -1214,10 +1214,8 @@ pub mod set_fees_prepare_command {
 
         let fees = parse_payment_fees(&fees).map_err(error_err!())?;
 
-        let mut request = Payment::build_set_txn_fees_req(wallet_handle, submitter_did.as_ref().map(String::as_str), &payment_method, &fees)
+        let request = Payment::build_set_txn_fees_req(wallet_handle, submitter_did.as_ref().map(String::as_str), &payment_method, &fees)
             .map_err(|err| handle_payment_error(err, None))?;
-
-        set_author_agreement(ctx, &mut request)?;
 
         println_succ!("SET_FEES transaction has been created:");
         println!("     {}", request);
@@ -1290,7 +1288,7 @@ pub mod sign_multi_command {
             println!("Transaction stored into context: {:?}.", txn_);
             println!("Would you like to use it? (y/n)");
 
-            let use_transaction = ::command_executor::wait_for_user_reply();
+            let use_transaction = ::command_executor::wait_for_user_reply(ctx);
 
             if !use_transaction {
                 return Ok(println!("No transaction has been signed."));
@@ -1542,7 +1540,7 @@ pub mod save_transaction_command {
         println!("Transaction: {:?}.", transaction);
         println!("Would you like to save it? (y/n)");
 
-        let save_transaction = ::command_executor::wait_for_user_reply();
+        let save_transaction = ::command_executor::wait_for_user_reply(ctx);
 
         if !save_transaction {
             return Ok(println!("The transaction has not been saved."));
@@ -1746,6 +1744,10 @@ pub mod aml_command {
 
 pub fn set_author_agreement(ctx: &CommandContext, request: &mut String) -> Result<(), ()> {
     if let Some((text, version, acc_mech_type, time_of_acceptance)) = get_transaction_author_info(&ctx) {
+        if acc_mech_type.is_empty(){
+            return Err(println_err!("Transaction author agreement Acceptance Mechanism isn't set."));
+        }
+
         *request = Ledger::append_txn_author_agreement_acceptance_to_request(&request, Some(&text), Some(&version), None, &acc_mech_type, time_of_acceptance)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
     };

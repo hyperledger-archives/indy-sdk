@@ -14,6 +14,9 @@ Export the `LD_LIBRARY_PATH` environment variable to point to the `libindy.so` p
 ### On Mac OS
 You must have `libindy.dylib` at `/usr/local/lib/libindy.dylib` before running npm install.
     
+### On Windows
+[Install Libindy](https://github.com/hyperledger/indy-sdk#windows)
+
 ## Run this samples
 
 Inside `samples/nodejs/` :

@@ -451,7 +451,7 @@ def linuxPythonTesting(env_name, network_name, testEnv, stashBuildResults) {
             echo "${env_name} Libindy Test: Test python wrapper"
 
             sh '''
-                    python3.5 -m pip install --user -e .
+                    python3.5 -m pip install --user -e .[test]
                     LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_LOG=indy::=debug TEST_POOL_IP=10.0.0.2 python3.5 -m pytest
                 '''
         }

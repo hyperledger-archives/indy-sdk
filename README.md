@@ -112,7 +112,7 @@ Please refer to our [release workflow](docs/contributors/release-workflow.md) fo
 ### Ubuntu based distributions (Ubuntu 16.04)
 It is recommended to install the SDK packages with APT:
 
-    sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 68DB5E88
+    sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CE7709D068DB5E88
     sudo add-apt-repository "deb https://repo.sovrin.org/sdk/deb xenial {release channel}"
     sudo apt-get update
     sudo apt-get install -y libindy
@@ -310,13 +310,15 @@ details.
 * An explanation of how to install the official command line interface for that provides commands to manage wallets and interactions with the ledger: [Indy CLI](cli/README.md)
 
 ## How to migrate
-The documents that provide necessary information for Libindy migration. This document is written for developers using Libindy 1.3.0 to provide necessary information and
-to simplify their transition to API of Libindy 1.4.0.
+The documents that provide necessary information for Libindy migrations.
+ 
 * [v1.3.0 → v1.4.0](docs/migration-guides/migration-guide-1.3.0-1.4.0.md)
 * [v1.4.0 → v1.5.0](docs/migration-guides/migration-guide-1.4.0-1.5.0.md)
 * [v1.5.0 → v1.6.x](docs/migration-guides/migration-guide-1.5.0-1.6.0.md)
 * [v1.6.0 → v1.7.x](docs/migration-guides/migration-guide-1.6.0-1.7.0.md)
 * [v1.7.0 → v1.8.x](docs/migration-guides/migration-guide-1.7.0-1.8.0.md)
+* [v1.8.0 → v1.9.x](docs/migration-guides/migration-guide-1.8.0-1.9.0.md)
+* [v1.9.0 → v1.10.x](docs/migration-guides/migration-guide-1.9.0-1.10.0.md)
 
 ## How to Contribute
 * We'd love your help; see these [instructions on how to contribute](http://bit.ly/2ugd0bq).
