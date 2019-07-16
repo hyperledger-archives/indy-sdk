@@ -1023,7 +1023,7 @@ pub mod get_payment_sources_command {
 
         let res = match Payment::parse_get_payment_sources_response(&payment_method, &response) {
             Ok(sources_json) => {
-                let mut sources: Vec<serde_json::Value> = serde_json::from_str(&sources_json)
+                let sources: Vec<serde_json::Value> = serde_json::from_str(&sources_json)
                     .map_err(|_| println_err!("Wrong data has been received"))?;
 
                 print_list_table(&sources,
@@ -1082,7 +1082,7 @@ pub mod payment_command {
 
         let res = match Payment::parse_payment_response(&payment_method, &response) {
             Ok(receipts_json) => {
-                let mut receipts: Vec<serde_json::Value> = serde_json::from_str(&receipts_json)
+                let receipts: Vec<serde_json::Value> = serde_json::from_str(&receipts_json)
                     .map_err(|_| println_err!("Wrong data has been received"))?;
 
                 print_list_table(&receipts,
@@ -1127,10 +1127,10 @@ pub mod get_fees_command {
         
         let res = match Payment::parse_get_txn_fees_response(&payment_method, &response) {
             Ok(fees_json) => {
-                let mut fees: HashMap<String, u64> = serde_json::from_str(&fees_json)
+                let fees: HashMap<String, u64> = serde_json::from_str(&fees_json)
                     .map_err(|_| println_err!("Wrong data has been received"))?;
 
-                let mut fees =
+                let fees =
                     fees
                         .iter()
                         .map(|(key, value)|
