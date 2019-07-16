@@ -33,7 +33,6 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
 */
 
 
-
 /// Create credential schema entity that describes credential attributes list and allows credentials
 /// interoperability.
 ///
@@ -846,7 +845,7 @@ pub extern fn indy_prover_set_credential_attr_tag_policy(command_handle: Command
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
     trace!("indy_prover_set_credential_attr_tag_policy: entities >>> wallet_handle: {:?}, cred_def_id: {:?}, tag_attrs_json: {:?}, retroactive: {:?}",
-    wallet_handle, cred_def_id, tag_attrs_json, retroactive);
+           wallet_handle, cred_def_id, tag_attrs_json, retroactive);
 
     let result = CommandExecutor::instance()
         .send(Command::Anoncreds(
@@ -1075,11 +1074,11 @@ pub extern fn indy_prover_get_credential(command_handle: CommandHandle,
 /// Wallet*
 #[no_mangle]
 pub extern fn indy_prover_delete_credential(command_handle: CommandHandle,
-                                         wallet_handle: WalletHandle,
-                                         cred_id: *const c_char,
-                                         cb: Option<extern fn(
-                                             command_handle_: CommandHandle,
-                                             err: ErrorCode)>) -> ErrorCode {
+                                            wallet_handle: WalletHandle,
+                                            cred_id: *const c_char,
+                                            cb: Option<extern fn(
+                                                command_handle_: CommandHandle,
+                                                err: ErrorCode)>) -> ErrorCode {
     trace!("indy_prover_delete_credential: >>> wallet_handle: {:?}, cred_id: {:?}", wallet_handle, cred_id);
 
     check_useful_c_str!(cred_id, ErrorCode::CommonInvalidParam3);
@@ -1141,7 +1140,7 @@ pub extern fn indy_prover_delete_credential(command_handle: CommandHandle,
 /// Common*
 /// Wallet*
 #[no_mangle]
-#[deprecated(since="1.6.1", note="Please use indy_prover_search_credentials instead!")]
+#[deprecated(since = "1.6.1", note = "Please use indy_prover_search_credentials instead!")]
 pub extern fn indy_prover_get_credentials(command_handle: CommandHandle,
                                           wallet_handle: WalletHandle,
                                           filter_json: *const c_char,
@@ -1336,7 +1335,7 @@ pub  extern fn indy_prover_close_credentials_search(command_handle: CommandHandl
 ///     {
 ///         "name": string,
 ///         "version": string,
-///         "nonce": string,
+///         "nonce": string, - a big number represented as a string (use `indy_generate_nonce` function to generate 80-bit number)
 ///         "requested_attributes": { // set of requested attributes
 ///              "<attr_referent>": <attr_info>, // see below
 ///              ...,
@@ -1406,7 +1405,7 @@ pub  extern fn indy_prover_close_credentials_search(command_handle: CommandHandl
 /// Anoncreds*
 /// Common*
 /// Wallet*
-#[deprecated(since="1.6.1", note="Please use indy_prover_search_credentials_for_proof_req instead!")]
+#[deprecated(since = "1.6.1", note = "Please use indy_prover_search_credentials_for_proof_req instead!")]
 #[no_mangle]
 pub extern fn indy_prover_get_credentials_for_proof_req(command_handle: CommandHandle,
                                                         wallet_handle: WalletHandle,
@@ -1455,7 +1454,7 @@ pub extern fn indy_prover_get_credentials_for_proof_req(command_handle: CommandH
 ///     {
 ///         "name": string,
 ///         "version": string,
-///         "nonce": string,
+///         "nonce": string, - a big number represented as a string (use `indy_generate_nonce` function to generate 80-bit number)
 ///         "requested_attributes": { // set of requested attributes
 ///              "<attr_referent>": <attr_info>, // see below
 ///              ...,
@@ -1648,7 +1647,7 @@ pub  extern fn indy_prover_close_credentials_search_for_proof_req(command_handle
 ///     {
 ///         "name": string,
 ///         "version": string,
-///         "nonce": string,
+///         "nonce": string, - a big number represented as a string (use `indy_generate_nonce` function to generate 80-bit number)
 ///         "requested_attributes": { // set of requested attributes
 ///              "<attr_referent>": <attr_info>, // see below
 ///              ...,
@@ -1829,7 +1828,7 @@ pub extern fn indy_prover_create_proof(command_handle: CommandHandle,
 ///     {
 ///         "name": string,
 ///         "version": string,
-///         "nonce": string,
+///         "nonce": string, - a big number represented as a string (use `indy_generate_nonce` function to generate 80-bit number)
 ///         "requested_attributes": { // set of requested attributes
 ///              "<attr_referent>": <attr_info>, // see below
 ///              ...,
@@ -2092,3 +2091,41 @@ pub extern fn indy_update_revocation_state(command_handle: CommandHandle,
 
     res
 }
+
+
+///  Generates 80-bit numbers that can be used as a nonce for proof request.
+///
+/// #Params
+/// command_handle: command handle to map callback to user context
+/// cb: Callback that takes command result as parameter
+///
+/// #Returns
+/// nonce: generated number as a string
+///
+#[no_mangle]
+pub extern fn indy_generate_nonce(command_handle: CommandHandle,
+                                  cb: Option<extern fn(
+                                      command_handle_: CommandHandle, err: ErrorCode,
+                                      nonce: *const c_char)>) -> ErrorCode {
+    trace!("indy_generate_nonce: >>> ");
+
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam2);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Anoncreds(AnoncredsCommand::Verifier(
+            VerifierCommand::GenerateNonce(
+                Box::new(move |result| {
+                    let (err, nonce) = prepare_result_1!(result, String::new());
+                    trace!("indy_generate_nonce: nonce: {:?}", nonce);
+                    let nonce = ctypes::string_to_cstring(nonce);
+                    cb(command_handle, err, nonce.as_ptr())
+                })
+            ))));
+
+    let res = prepare_result!(result);
+
+    trace!("indy_generate_nonce: <<< res: {:?}", res);
+
+    res
+}
+

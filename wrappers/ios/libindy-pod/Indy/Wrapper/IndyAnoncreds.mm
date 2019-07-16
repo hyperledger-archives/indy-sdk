@@ -597,4 +597,21 @@
     }
 }
 
++ (void)generateNonce:(void (^)(NSError *error, NSString *nonce))completion {
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = indy_generate_nonce(handle,
+            IndyWrapperCommonStringCallback
+    );
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret], nil);
+        });
+    }
+}
+
 @end
