@@ -283,6 +283,13 @@ extern "C" {
                                                                           const char*   updated_rev_state_json)
                                                      );
 
+
+    extern indy_error_t indy_generate_nonce(indy_handle_t command_handle,
+                                            void           (*cb)(indy_handle_t command_handle_,
+                                                                 indy_error_t  err,
+                                                                 const char*   nonce)
+                                            );
+
 #ifdef __cplusplus
 }
 #endif

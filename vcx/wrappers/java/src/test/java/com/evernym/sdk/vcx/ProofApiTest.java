@@ -144,6 +144,15 @@ public class ProofApiTest {
     }
 
     @Test
+    @DisplayName("get request msg")
+    void getRequestMsg() throws VcxException, ExecutionException, InterruptedException {
+        int proofHandle = TestHelper.getResultFromFuture(ProofApi.proofCreate(sourceId, TestHelper.convertToValidJson(attr), "", "{}", name));
+        assert (proofHandle != 0);
+        String result = TestHelper.getResultFromFuture(ProofApi.proofGetRequestMsg(proofHandle));
+        assert(result.length() > 0);
+    }
+
+    @Test
     @DisplayName("request proof to invalid connection handle")
     void requestProofToInvalidConnection() {
         Assertions.assertThrows(InvalidConnectionHandleException.class, () -> {

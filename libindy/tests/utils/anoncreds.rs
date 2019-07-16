@@ -164,6 +164,10 @@ pub fn update_revocation_state(tails_reader_handle: i32, rev_state_json: &str, r
     anoncreds::update_revocation_state(tails_reader_handle, rev_state_json, rev_reg_def_json, rev_reg_delta_json, timestamp, cred_rev_id).wait()
 }
 
+pub fn generate_nonce() -> Result<String, IndyError> {
+    anoncreds::generate_nonce().wait()
+}
+
 pub fn default_cred_def_config() -> String {
     serde_json::to_string(&CredentialDefinitionConfig { support_revocation: false }).unwrap()
 }

@@ -178,7 +178,7 @@ pub fn get_wallet_token_info() -> VcxResult<WalletInfo> {
     for address in addresses.iter() {
         if is_valid_address(&address, &method) {
             debug!("getting address info for {}", address);
-            let mut info = get_address_info(&address)?;
+            let info = get_address_info(&address)?;
 
             for utxo in info.utxo.iter() { balance += utxo.amount as u64; }
 

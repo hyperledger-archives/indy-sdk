@@ -898,7 +898,7 @@ public class Anoncreds extends IndyJava.API {
 	 *     {
 	 *         "name": string,
 	 *         "version": string,
-	 *         "nonce": string,
+	 *         "nonce": string, - a big number represented as a string (use `generateNonce` function to generate 80-bit number)
 	 *         "requested_attributes": { // set of requested attributes
 	 *              "attr_referent": {attr_info}, // see below
 	 *              ...,
@@ -992,7 +992,7 @@ public class Anoncreds extends IndyJava.API {
 	 *     {
 	 *         "name": string,
 	 *         "version": string,
-	 *         "nonce": string,
+	 *         "nonce": string, - a big number represented as a string (use `generateNonce` function to generate 80-bit number)
 	 *         "requested_attributes": { // set of requested attributes
 	 *              "attr_referent": {attr_info}, // see below
 	 *              ...,
@@ -1121,7 +1121,7 @@ public class Anoncreds extends IndyJava.API {
 	 *     {
 	 *         "name": string,
 	 *         "version": string,
-	 *         "nonce": string,
+	 *         "nonce": string, - a big number represented as a string (use `generateNonce` function to generate 80-bit number)
 	 *         "requested_attributes": { // set of requested attributes
 	 *              "attr_referent": {attr_info}, // see below
 	 *              ...,
@@ -1313,6 +1313,27 @@ public class Anoncreds extends IndyJava.API {
 				revRegDelta,
 				timestamp,
 				credRevId,
+				stringCb);
+
+		checkResult(future, result);
+
+		return future;
+	}
+
+	/**
+	 * Generates 80-bit numbers that can be used as a nonce for proof request.
+	 *
+	 * @return A future that resolves to a generated number as a string
+	 *
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<String> generateNonce() throws IndyException {
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int result = LibIndy.api.indy_generate_nonce(
+				commandHandle,
 				stringCb);
 
 		checkResult(future, result);
