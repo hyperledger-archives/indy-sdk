@@ -108,6 +108,17 @@ pub fn handle_payment_error(err: IndyError, payment_method: Option<&str>) {
     }
 }
 
+pub fn list_payment_addresses(ctx: &CommandContext) -> Vec<String> {
+    get_opened_wallet(ctx)
+        .and_then(|(wallet_handle, _)|
+            Payment::list_payment_addresses(wallet_handle).ok()
+        )
+        .and_then(|payment_addresses|
+            serde_json::from_str(&payment_addresses).ok()
+        )
+        .unwrap_or_default()
+}
+
 #[cfg(test)]
 #[cfg(feature = "nullpay_plugin")]
 pub mod tests {
@@ -224,12 +235,6 @@ pub mod tests {
             }
             tear_down();
         }
-    }
-
-    fn list_payment_addresses(ctx: &CommandContext) -> Vec<String> {
-        let wallet_handle = ensure_opened_wallet_handle(ctx).unwrap();
-        let payment_addresses = Payment::list_payment_addresses(wallet_handle).unwrap();
-        serde_json::from_str(&payment_addresses).unwrap()
     }
 
     pub fn create_payment_address(ctx: &CommandContext) -> String {
