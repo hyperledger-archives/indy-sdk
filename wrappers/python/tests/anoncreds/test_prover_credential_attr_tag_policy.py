@@ -1,8 +1,7 @@
-from indy import anoncreds
-from indy.error import ErrorCode, IndyError
-
 import json
 import pytest
+
+from indy import anoncreds, error
 
 
 async def _check_catpol(wallet_handle, cred_def_json, cred_def_id, cred_id, cred_value, offer_json, cred_req,
@@ -346,16 +345,14 @@ async def test_prover_credential_attr_tag_policy_works_for_invalid_wallet(wallet
                                                                           issuer_1_gvt_cred_def_id):
     invalid_wallet_handle = wallet_handle + 100
 
-    with pytest.raises(IndyError) as e:
+    with pytest.raises(error.WalletInvalidHandle):
         await anoncreds.prover_set_credential_attr_tag_policy(invalid_wallet_handle,
                                                               issuer_1_gvt_cred_def_id, None, False)
 
-    assert ErrorCode.WalletInvalidHandle == e.value.error_code
 
-    with pytest.raises(IndyError) as e:
+    with pytest.raises(error.WalletInvalidHandle):
         await anoncreds.prover_get_credential_attr_tag_policy(invalid_wallet_handle, issuer_1_gvt_cred_def_id)
 
-    assert ErrorCode.WalletInvalidHandle == e.value.error_code
 
 
 # noinspection PyUnusedLocal
