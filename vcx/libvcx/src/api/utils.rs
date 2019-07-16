@@ -344,6 +344,22 @@ pub extern fn vcx_messages_update_status(command_handle: u32,
     error::SUCCESS.code_num
 }
 
+/// Set the pool handle before calling vcx_init_minimal
+///
+/// #params
+///
+/// handle: pool handle that libvcx should use
+///
+/// #Returns
+/// Error code as u32
+#[no_mangle]
+pub extern fn vcx_pool_set_handle(handle: i32) -> i32 {
+    if handle <= 0 { ::utils::libindy::pool::change_pool_handle(None); }
+    else { ::utils::libindy::pool::change_pool_handle(Some(handle)); }
+
+    handle
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

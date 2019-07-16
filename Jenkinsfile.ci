@@ -82,6 +82,10 @@ def windowsTesting() {
                             bat "cargo build --features fatal_warnings"
                             bat "cargo test --no-run"
 
+                            echo "Windows Libindy before Test: Deleting %TEMP\\indy_client"
+                            bat "DEL /S /Q /F %TEMP%\\indy_client"
+                            bat "DEL /S /Q /F %UserProfile%\\.indy_client"
+
                             echo "Windows Libindy Test: Run tests"
                             withEnv([
                                     "RUST_TEST_THREADS=1",
@@ -90,6 +94,11 @@ def windowsTesting() {
                             ]) {
                                 bat "cargo test"
                             }
+
+                            echo "Windows Libindy after Test: Deleting %TEMP\\indy_client"
+                            bat "DEL /S /Q /F %TEMP%\\indy_client"
+                            bat "DEL /S /Q /F %UserProfile%\\.indy_client"
+
                         }
                     }
 
@@ -164,6 +173,12 @@ def windowsTesting() {
                     //TODO wrappers testing
 
                 } finally {
+                    try {
+                        echo "Windows Libindy after Test: Deleting %TEMP\\indy_client"
+                        bat "DEL /S /Q /F %TEMP%\\indy_client"
+                        bat "DEL /S /Q /F %UserProfile%\\.indy_client"
+                    } catch (ignore) {
+                    }
                     try {
                         bat "docker -H $INDY_SDK_SERVER_IP stop indy_pool"
                     } catch (ignore) {
@@ -604,7 +619,7 @@ def linuxPythonTesting(env_name, network_name, testEnv) {
             echo "${env_name} Libindy Test: Test python wrapper"
 
             sh '''
-                python3.5 -m pip install --user -e .
+                python3.5 -m pip install --user -e .[test]
                 LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} TEST_POOL_IP=10.0.0.2 python3.5 -m pytest
             '''
         }
@@ -677,6 +692,7 @@ def linuxCLITesting(env_name, network_name, testEnv) {
     testEnv.inside("--network=${network_name}") {
         sh '''
             cd cli
+            LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo build --features fatal_warnings
             LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --features "nullpay_plugin" --no-run
             LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --features "nullpay_plugin"
         '''

@@ -828,8 +828,10 @@ pub mod tests {
     use services::pool::networker::MockNetworker;
     use services::pool::types::{ConsistencyProof, LedgerStatus, Reply, ReplyResultV1, ReplyTxnV1, ReplyV1, Response, ResponseMetadata, ResponseV1};
     use utils::test;
+    use utils::test::test_pool_create_poolfile;
 
     use super::*;
+    use std::io::Write;
 
     const MESSAGE: &str = "message";
     const REQ_ID: &str = "1";
@@ -942,19 +944,7 @@ pub mod tests {
 
     // required because of dumping txns to cache
     fn _create_pool(pool_name: &str, content: Option<String>) {
-        use utils::environment;
-        use std::fs;
-        use std::fs::File;
-        use std::io::Write;
-
-        let mut path = environment::pool_path(pool_name);
-
-        path.push(pool_name);
-        path.set_extension("txn");
-
-        fs::create_dir_all(path.parent().unwrap()).unwrap();
-
-        let mut file = File::create(path).unwrap();
+        let mut file = test_pool_create_poolfile(pool_name);
         file.write_all(content.unwrap_or("{}".to_string()).as_bytes()).unwrap();
     }
 

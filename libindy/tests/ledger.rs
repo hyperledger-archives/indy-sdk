@@ -2635,13 +2635,18 @@ mod high_cases {
         const ACCEPTANCE_MECH_TYPE: &str = "acceptance type 1";
         const TIME_OF_ACCEPTANCE: u64 = 123456789;
 
+        fn _datetime_to_date_timestamp(time: u64) -> u64{
+            const SEC_IN_DAY: u64 = 86400;
+            time / SEC_IN_DAY * SEC_IN_DAY
+        }
+        
         fn _check_request_meta(request: &str) {
             let request: serde_json::Value = serde_json::from_str(&request).unwrap();
 
             let expected_meta = json!({
                 "mechanism": ACCEPTANCE_MECH_TYPE,
                 "taaDigest": HASH,
-                "time": TIME_OF_ACCEPTANCE
+                "time": _datetime_to_date_timestamp(TIME_OF_ACCEPTANCE)
             });
 
             assert_eq!(request["taaAcceptance"], expected_meta);

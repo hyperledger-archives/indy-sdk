@@ -8,7 +8,7 @@ TEXT = 'some agreement text'
 VERSION = '1.0.0'
 ACCEPTANCE_MECH_TYPE = 'acceptance type 1'
 TAA_DIGEST = '050e52a57837fff904d3d059c8a123e3a04177042bf467db2b2c27abd8045d5e'
-TIME_OF_ACCEPTANCE = 123456789
+TIME_OF_ACCEPTANCE = 123379200
 EXTRA = {
     "data": "some extra",
 }

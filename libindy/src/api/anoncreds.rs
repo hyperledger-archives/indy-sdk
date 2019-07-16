@@ -24,6 +24,16 @@ use libc::c_char;
 use std::ptr;
 use std::collections::HashMap;
 
+/*
+These functions wrap the Ursa algorithm as documented in this paper:
+https://github.com/hyperledger/ursa/blob/master/libursa/docs/AnonCred.pdf
+
+And is documented in this HIPE:
+https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336fdc8cc1/text/anoncreds-protocol/README.md
+*/
+
+
+
 /// Create credential schema entity that describes credential attributes list and allows credentials
 /// interoperability.
 ///
@@ -110,8 +120,12 @@ pub extern fn indy_issuer_create_schema(command_handle: CommandHandle,
 /// issuer_did: a DID of the issuer signing cred_def transaction to the Ledger
 /// schema_json: credential schema as a json
 /// tag: allows to distinct between credential definitions for the same issuer and schema
-/// signature_type: credential definition type (optional, 'CL' by default) that defines credentials signature and revocation math. Supported types are:
-/// - 'CL': Camenisch-Lysyanskaya credential signature type
+/// signature_type: credential definition type (optional, 'CL' by default) that defines credentials signature and revocation math.
+/// Supported signature types:
+/// - 'CL': Camenisch-Lysyanskaya credential signature type that is implemented according to the algorithm in this paper:
+///             https://github.com/hyperledger/ursa/blob/master/libursa/docs/AnonCred.pdf
+///         And is documented in this HIPE:
+///             https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336fdc8cc1/text/anoncreds-protocol/README.md
 /// config_json: (optional) type-specific configuration of credential definition as json:
 /// - 'CL':
 ///   - support_revocation: whether to request non-revocation credential (optional, default false)
@@ -120,6 +134,20 @@ pub extern fn indy_issuer_create_schema(command_handle: CommandHandle,
 /// #Returns
 /// cred_def_id: identifier of created credential definition
 /// cred_def_json: public part of created credential definition
+/// {
+///     id: string - identifier of credential definition
+///     schemaId: string - identifier of stored in ledger schema
+///     type: string - type of the credential definition. CL is the only supported type now.
+///     tag: string - allows to distinct between credential definitions for the same issuer and schema
+///     value: Dictionary with Credential Definition's data is depended on the signature type: {
+///         primary: primary credential public key,
+///         Optional<revocation>: revocation credential public key
+///     },
+///     ver: Version of the CredDef json
+/// }
+///
+/// Note: `primary` and `revocation` fields of credential definition are complex opaque types that contain data structures internal to Ursa.
+/// They should not be parsed and are likely to change in future versions.
 ///
 /// #Errors
 /// Common*
@@ -197,7 +225,9 @@ pub extern fn indy_issuer_create_and_store_credential_def(command_handle: Comman
 /// command_handle: command handle to map callback to user context.
 /// issuer_did: a DID of the issuer signing transaction to the Ledger
 /// revoc_def_type: revocation registry type (optional, default value depends on credential definition type). Supported types are:
-/// - 'CL_ACCUM': Type-3 pairing based accumulator. Default for 'CL' credential definition type
+/// - 'CL_ACCUM': Type-3 pairing based accumulator implemented according to the algorithm in this paper:
+///                   https://github.com/hyperledger/ursa/blob/master/libursa/docs/AnonCred.pdf
+///               This type is default for 'CL' credential definition type.
 /// tag: allows to distinct between revocation registries for the same issuer and credential definition
 /// cred_def_id: id of stored in ledger credential definition
 /// config_json: type-specific configuration of revocation registry as json:
@@ -214,7 +244,31 @@ pub extern fn indy_issuer_create_and_store_credential_def(command_handle: Comman
 /// #Returns
 /// revoc_reg_id: identifier of created revocation registry definition
 /// revoc_reg_def_json: public part of revocation registry definition
+///     {
+///         "id": string - ID of the Revocation Registry,
+///         "revocDefType": string - Revocation Registry type (only CL_ACCUM is supported for now),
+///         "tag": string - Unique descriptive ID of the Registry,
+///         "credDefId": string - ID of the corresponding CredentialDefinition,
+///         "value": Registry-specific data {
+///             "issuanceType": string - Type of Issuance(ISSUANCE_BY_DEFAULT or ISSUANCE_ON_DEMAND),
+///             "maxCredNum": number - Maximum number of credentials the Registry can serve.
+///             "tailsHash": string - Hash of tails.
+///             "tailsLocation": string - Location of tails file.
+///             "publicKeys": <public_keys> - Registry's public key (opaque type that contains data structures internal to Ursa.
+///                                                                  It should not be parsed and are likely to change in future versions).
+///         },
+///         "ver": string - version of revocation registry definition json.
+///     }
 /// revoc_reg_entry_json: revocation registry entry that defines initial state of revocation registry
+/// {
+///     value: {
+///         prevAccum: string - previous accumulator value.
+///         accum: string - current accumulator value.
+///         issued: array<number> - an array of issued indices.
+///         revoked: array<number> an array of revoked indices.
+///     },
+///     ver: string - version revocation registry entry json
+/// }
 ///
 /// #Errors
 /// Common*
@@ -292,7 +346,9 @@ pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: CommandHand
 ///         "cred_def_id": string,
 ///         // Fields below can depend on Cred Def type
 ///         "nonce": string,
-///         "key_correctness_proof" : <key_correctness_proof>
+///         "key_correctness_proof" : key correctness proof for credential definition correspondent to cred_def_id
+///                                   (opaque type that contains data structures internal to Ursa.
+///                                   It should not be parsed and are likely to change in future versions).
 ///     }
 ///
 /// #Errors
@@ -367,8 +423,12 @@ pub extern fn indy_issuer_create_credential_offer(command_handle: CommandHandle,
 ///         "rev_reg_def_id", Optional<string>,
 ///         "values": <see cred_values_json above>,
 ///         // Fields below can depend on Cred Def type
-///         "signature": <signature>,
-///         "signature_correctness_proof": <signature_correctness_proof>
+///         "signature": <credential signature>,
+///                      (opaque type that contains data structures internal to Ursa.
+///                       It should not be parsed and are likely to change in future versions).
+///         "signature_correctness_proof": credential signature correctness proof
+///                      (opaque type that contains data structures internal to Ursa.
+///                       It should not be parsed and are likely to change in future versions).
 ///     }
 /// cred_revoc_id: local id for revocation info (Can be used for revocation of this credential)
 /// revoc_reg_delta_json: Revocation registry delta json with a newly issued credential
@@ -675,7 +735,11 @@ pub extern fn indy_prover_create_master_secret(command_handle: CommandHandle,
 ///      "cred_def_id" : string,
 ///         // Fields below can depend on Cred Def type
 ///      "blinded_ms" : <blinded_master_secret>,
+///                     (opaque type that contains data structures internal to Ursa.
+///                      It should not be parsed and are likely to change in future versions).
 ///      "blinded_ms_correctness_proof" : <blinded_ms_correctness_proof>,
+///                     (opaque type that contains data structures internal to Ursa.
+///                      It should not be parsed and are likely to change in future versions).
 ///      "nonce": string
 ///    }
 /// cred_req_metadata_json: Credential request metadata json for further processing of received form Issuer credential.
@@ -1695,7 +1759,8 @@ pub  extern fn indy_prover_close_credentials_search_for_proof_req(command_handle
 ///         "proof": {
 ///             "proofs": [ <credential_proof>, <credential_proof>, <credential_proof> ],
 ///             "aggregated_proof": <aggregated_proof>
-///         }
+///         } (opaque type that contains data structures internal to Ursa.
+///           It should not be parsed and are likely to change in future versions).
 ///         "identifiers": [{schema_id, cred_def_id, Optional<rev_reg_id>, Optional<timestamp>}]
 ///     }
 ///
@@ -1904,7 +1969,8 @@ pub extern fn indy_verifier_verify_proof(command_handle: CommandHandle,
 /// revocation state json:
 ///     {
 ///         "rev_reg": <revocation registry>,
-///         "witness": <witness>,
+///         "witness": <witness>,  (opaque type that contains data structures internal to Ursa.
+///                                 It should not be parsed and are likely to change in future versions).
 ///         "timestamp" : integer
 ///     }
 ///
@@ -1972,7 +2038,8 @@ pub extern fn indy_create_revocation_state(command_handle: CommandHandle,
 /// revocation state json:
 ///     {
 ///         "rev_reg": <revocation registry>,
-///         "witness": <witness>,
+///         "witness": <witness>,  (opaque type that contains data structures internal to Ursa.
+///                                 It should not be parsed and are likely to change in future versions).
 ///         "timestamp" : integer
 ///     }
 ///
