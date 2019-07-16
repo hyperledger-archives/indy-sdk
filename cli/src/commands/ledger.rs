@@ -108,10 +108,6 @@ pub mod nym_command {
         let extra = get_opt_str_param("extra", params).map_err(error_err!())?;
         let send = get_opt_bool_param("send", params).map_err(error_err!())?.unwrap_or(SEND_REQUEST);
 
-        if submitter_did == target_did {
-            println_err!("Target DID can't be equal to an active DID \"{}\".", submitter_did);
-            return Err(println_err!("Use `did rotate-key` command to change Verkey"));
-        }
 
         if let Some(target_verkey) = verkey {
             let dids = did::dids(ctx);
