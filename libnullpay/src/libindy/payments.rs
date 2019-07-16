@@ -83,15 +83,6 @@ pub type ParseVerifyPaymentResponseCB = extern fn(command_handle: i32,
                                                                 err: ErrorCode,
                                                                 txn_json: *const c_char) -> ErrorCode>) -> ErrorCode;
 
-pub type SignWithAddressCB = extern fn (command_handle: i32, wallet_handle: i32,
-                                        address: *const c_char,
-                                        message_raw: *const u8, message_len: u32,
-                                        cb: Option<extern fn(command_handle: i32, err: ErrorCode, raw: *const u8, len: u32)>) -> ErrorCode;
-pub type VerifyWithAddressCB = extern fn (command_handle: i32, address: *const c_char,
-                                          message_raw: *const u8, message_len: u32,
-                                          signature_raw: *const u8, signature_len: u32,
-                                          cb: Option<extern fn(command_handle: i32, err: ErrorCode, result: bool)>) -> ErrorCode;
-
 pub fn register_payment_method(
     payment_method: *const c_char,
     create_payment_address: CreatePaymentAddressCB,
@@ -107,8 +98,6 @@ pub fn register_payment_method(
     parse_get_txn_fees_response: ParseGetTxnFeesResponseCB,
     build_verify_payment_req: BuildVerifyPaymentReqCB,
     parse_verify_payment_response: ParseVerifyPaymentResponseCB,
-    sign_with_address: SignWithAddressCB,
-    verify_with_address: VerifyWithAddressCB
 ) -> ErrorCode {
     let (sender, receiver) = channel();
 
@@ -135,8 +124,6 @@ pub fn register_payment_method(
             Some(parse_get_txn_fees_response),
             Some(build_verify_payment_req),
             Some(parse_verify_payment_response),
-            Some(sign_with_address),
-            Some(verify_with_address),
             cb,
         );
     }
@@ -174,8 +161,6 @@ extern {
         parse_get_txn_fees_response: Option<ParseGetTxnFeesResponseCB>,
         build_verify_payment_req: Option<BuildVerifyPaymentReqCB>,
         parse_verify_payment_response: Option<ParseVerifyPaymentResponseCB>,
-        sign_with_address: Option<SignWithAddressCB>,
-        verify_with_address: Option<VerifyWithAddressCB>,
         cb: Option<extern fn(command_handle_: i32, err: ErrorCode)>) -> ErrorCode;
 
     #[no_mangle]

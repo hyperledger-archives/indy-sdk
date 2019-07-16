@@ -1,7 +1,6 @@
 import pytest
 
-from indy import pool
-from indy.error import ErrorCode, IndyError
+from indy import pool, error
 
 
 # noinspection PyUnusedLocal
@@ -14,7 +13,5 @@ async def test_delete_pool_ledger_config_works(pool_name, pool_ledger_config, po
 # noinspection PyUnusedLocal
 @pytest.mark.asyncio
 async def test_delete_pool_ledger_config_works_for_opened(pool_name, pool_handle):
-    with pytest.raises(IndyError) as e:
+    with pytest.raises(error.CommonInvalidState):
         await pool.delete_pool_ledger_config(pool_name)
-
-    assert ErrorCode.CommonInvalidState == e.value.error_code

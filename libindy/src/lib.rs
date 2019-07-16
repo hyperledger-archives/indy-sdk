@@ -26,7 +26,6 @@ extern crate named_type;
 extern crate named_type_derive;
 
 extern crate ursa;
-extern crate libsqlite3_sys;
 extern crate rlp;
 extern crate time;
 extern crate libc;
