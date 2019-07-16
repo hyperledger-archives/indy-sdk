@@ -1,4 +1,4 @@
-use command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata};
+use command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata, DynamicCompletionType};
 use commands::*;
 use utils::table::print_list_table;
 use indy::ErrorCode;
@@ -99,7 +99,7 @@ pub mod attach_command {
     use super::*;
 
     command!(CommandMetadata::build("attach", "Attach existing wallet to Indy CLI")
-                .add_main_param("name", "Identifier of the wallet")
+                .add_main_param_with_dynamic_completion("name", "Identifier of the wallet", DynamicCompletionType::Wallet)
                 .add_optional_param("storage_type", "Type of the wallet storage.")
                 .add_optional_param("storage_config", "The list of key:value pairs defined by storage type.")
                 .add_example("wallet attach wallet1")
@@ -134,7 +134,7 @@ pub mod open_command {
     use super::*;
 
     command_with_cleanup!(CommandMetadata::build("open", "Open wallet. Also close previously opened.")
-                            .add_main_param("name", "Identifier of the wallet")
+                            .add_main_param_with_dynamic_completion("name", "Identifier of the wallet", DynamicCompletionType::Wallet)
                             .add_required_deferred_param("key", "Key or passphrase used for wallet key derivation.
                                                Look to key_derivation_method param for information about supported key derivation methods.")
                             .add_optional_param("key_derivation_method", "Algorithm to use for wallet key derivation. One of:
@@ -294,7 +294,7 @@ pub mod delete_command {
     use super::*;
 
     command!(CommandMetadata::build("delete", "Delete wallet.")
-                .add_main_param("name", "Identifier of the wallet")
+                .add_main_param_with_dynamic_completion("name", "Identifier of the wallet", DynamicCompletionType::Wallet)
                 .add_required_deferred_param("key", "Key or passphrase used for wallet key derivation.
                                                Look to key_derivation_method param for information about supported key derivation methods.")
                 .add_optional_param("key_derivation_method", "Algorithm to use for wallet key derivation. One of:
@@ -352,7 +352,7 @@ pub mod detach_command {
     use super::*;
 
     command!(CommandMetadata::build("detach", "Detach wallet from Indy CLI")
-                .add_main_param("name", "Identifier of the wallet")
+                .add_main_param_with_dynamic_completion("name", "Identifier of the wallet", DynamicCompletionType::Wallet)
                 .add_example("wallet detach wallet1")
                 .finalize()
     );
@@ -425,7 +425,7 @@ pub mod import_command {
     use super::*;
 
     command!(CommandMetadata::build("import", "Create new wallet, attach to Indy CLI and then import content from the specified file")
-                .add_main_param("name", "The name of new wallet")
+                .add_main_param_with_dynamic_completion("name", "The name of new wallet", DynamicCompletionType::Wallet)
                 .add_required_deferred_param("key", "Key or passphrase used for wallet key derivation.
                                                Look to key_derivation_method param for information about supported key derivation methods.")
                 .add_optional_param("key_derivation_method", "Algorithm to use for wallet key derivation. One of:
@@ -558,6 +558,13 @@ fn _list_wallets() -> Vec<serde_json::Value> {
     }
 
     configs
+}
+
+pub fn wallet_names() -> Vec<String> {
+    _list_wallets()
+        .into_iter()
+        .map(|wallet| wallet["id"].as_str().map(String::from).unwrap_or(String::new()))
+        .collect()
 }
 
 fn map_key_derivation_method(key: Option<&str>) -> Result<&'static str, ()> {
