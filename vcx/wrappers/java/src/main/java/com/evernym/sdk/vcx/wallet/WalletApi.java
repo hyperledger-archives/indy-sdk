@@ -186,4 +186,7 @@ public class WalletApi extends VcxJava.API {
         return future;
     }
 
+    public static void setWalletHandle(int handle) {
+        LibVcx.api.vcx_wallet_set_handle(handle);
+    }
 }

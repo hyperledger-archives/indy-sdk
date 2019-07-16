@@ -37,7 +37,7 @@ pub extern fn vcx_init_with_config(command_handle: u32,
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
         settings::set_defaults();
     } else {
-        match settings::process_config_string(&config) {
+        match settings::process_config_string(&config, true) {
             Err(e) => {
                 error!("Invalid configuration specified: {}", e);
                 return e.into();
@@ -150,6 +150,53 @@ fn _finish_init(command_handle: u32, cb: extern fn(xcommand_handle: u32, err: u3
         }
         Ok(())
     });
+
+    error::SUCCESS.code_num
+}
+
+/// Initialize vcx with the minimal configuration (wallet, pool must already be set with
+/// vcx_wallet_set_handle() and vcx_pool_set_handle()) and without any agency configuration
+///
+/// #Example:
+///
+/// vcx_init_minimal('{"institution_name":"faber","institution_did":"44x8p4HubxzUK1dwxcc5FU",\
+//      "institution_verkey":"444MFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE"}')
+///
+/// #Params
+///
+/// config: minimal configuration
+///
+/// #Returns
+/// Error code as u32
+#[no_mangle]
+pub extern fn vcx_init_minimal(config: *const c_char) -> u32 {
+    check_useful_c_str!(config,VcxErrorKind::InvalidOption);
+
+    trace!("vcx_init_minimal(config: {:?})", config);
+
+    if config == "ENABLE_TEST_MODE" {
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
+        settings::set_defaults();
+    } else {
+        match settings::process_config_string(&config, false) {
+            Err(e) => {
+                error!("Invalid configuration specified: {}", e);
+                return e.into();
+            }
+            Ok(_) => (),
+        }
+    };
+
+    if wallet::get_wallet_handle() <= 0 || pool::get_pool_handle().is_err() {
+        error!("Library cannot be initialized without wallet/pool");
+        return error::INVALID_STATE.code_num;
+    }
+
+    ::utils::threadpool::init();
+
+    settings::log_settings();
+
+    trace!("libvcx version: {}{}", version_constants::VERSION, version_constants::REVISION);
 
     error::SUCCESS.code_num
 }
@@ -388,7 +435,9 @@ mod tests {
         },
         get_temp_dir_path
     };
+    use api::VcxStateType;
     use api::return_types_u32;
+    use api::connection::vcx_connection_create;
 
     fn create_config_util(logging: Option<&str>) -> String {
         json!({"agency_did" : "72x8p4HubxzUK1dwxcc5FU",
@@ -953,5 +1002,91 @@ mod tests {
                                              Some(cb.get_callback())), error::SUCCESS.code_num);
         let agreement = cb.receive(Some(Duration::from_secs(2))).unwrap();
         assert_eq!(::utils::constants::DEFAULT_AUTHOR_AGREEMENT, agreement.unwrap());
+    }
+
+    fn get_settings() -> String {
+        json!({
+            settings::CONFIG_AGENCY_DID:           settings::get_config_value(settings::CONFIG_AGENCY_DID).unwrap(),
+            settings::CONFIG_AGENCY_VERKEY:        settings::get_config_value(settings::CONFIG_AGENCY_VERKEY).unwrap(),
+            settings::CONFIG_AGENCY_ENDPOINT:      settings::get_config_value(settings::CONFIG_AGENCY_ENDPOINT).unwrap(),
+            settings::CONFIG_REMOTE_TO_SDK_DID:    settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID).unwrap(),
+            settings::CONFIG_REMOTE_TO_SDK_VERKEY: settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_VERKEY).unwrap(),
+            settings::CONFIG_SDK_TO_REMOTE_DID:    settings::get_config_value(settings::CONFIG_SDK_TO_REMOTE_DID).unwrap(),
+            settings::CONFIG_SDK_TO_REMOTE_VERKEY: settings::get_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY).unwrap(),
+            settings::CONFIG_INSTITUTION_NAME:     settings::get_config_value(settings::CONFIG_INSTITUTION_NAME).unwrap(),
+            settings::CONFIG_INSTITUTION_DID:      settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap(),
+            settings::CONFIG_INSTITUTION_LOGO_URL: settings::get_config_value(settings::CONFIG_INSTITUTION_LOGO_URL).unwrap(),
+            settings::CONFIG_PAYMENT_METHOD:       settings::get_config_value(settings::CONFIG_PAYMENT_METHOD).unwrap()
+        }).to_string()
+    }
+
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn test_init_minimal() {
+        init!("ledger");
+        let content = get_settings();
+        settings::clear_config();
+        // Store settings and handles
+        let config = CString::new(content).unwrap().into_raw();
+        let wallet_handle = ::utils::libindy::wallet::get_wallet_handle();
+        let pool_handle = ::utils::libindy::pool::get_pool_handle().unwrap();
+        assert!(wallet_handle > 0);
+        assert!(pool_handle > 0);
+        // Reset handles to 0
+        assert_eq!(::api::utils::vcx_pool_set_handle(0), 0);
+        assert_eq!(::api::wallet::vcx_wallet_set_handle(0), 0);
+        // Test for errors when handles not set
+        assert_ne!(error::SUCCESS.code_num, vcx_init_minimal(config));
+        ::api::wallet::vcx_wallet_set_handle(wallet_handle);
+        assert_ne!(error::SUCCESS.code_num, vcx_init_minimal(config));
+        ::api::utils::vcx_pool_set_handle(pool_handle);
+        // NOTE: handles are set independently, test config with no wallet or pool
+        assert_eq!(error::SUCCESS.code_num, vcx_init_minimal(config));
+        // test that wallet and pool are operational
+        ::utils::libindy::anoncreds::tests::create_and_store_credential(::utils::constants::DEFAULT_SCHEMA_ATTRS, false);
+    }
+
+    #[test]
+    fn test_no_agency_config() {
+        settings::clear_config();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        let config = json!({ "institution_name": "faber",
+                             "institution_did": "44x8p4HubxzUK1dwxcc5FU",
+                             "institution_verkey": "444MFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE"}).to_string();
+        let config = CString::new(config).unwrap().into_raw();
+        ::api::wallet::vcx_wallet_set_handle(1);
+        ::api::utils::vcx_pool_set_handle(1);
+        assert_eq!(vcx_init_minimal(config), error::SUCCESS.code_num);
+
+        let cred_handle = ::issuer_credential::from_string(::utils::constants::DEFAULT_SERIALIZED_ISSUER_CREDENTIAL).unwrap();
+        let connection_handle = ::connection::from_string(::utils::constants::DEFAULT_CONNECTION).unwrap();
+
+        let (offer, _) = ::issuer_credential::generate_credential_offer_msg(cred_handle, connection_handle).unwrap();
+        let mycred = ::credential::credential_create_with_offer("test1", &offer).unwrap();
+        let request = ::credential::generate_credential_request_msg(mycred, connection_handle).unwrap();
+        ::issuer_credential::update_state(cred_handle, Some(request)).unwrap();
+        let cred = ::issuer_credential::generate_credential_msg(cred_handle, connection_handle).unwrap();
+        ::credential::update_state(mycred, Some(cred)).unwrap();
+        assert!(::credential::get_state(mycred).unwrap() == VcxStateType::VcxStateAccepted as u32);
+    }
+
+    #[test]
+    fn test_invalid_agency_config() {
+        let config = json!({ "institution_name": "faber",
+                             "institution_did": "44x8p4HubxzUK1dwxcc5FU",
+                             "institution_verkey": "444MFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE"}).to_string();
+        let config = CString::new(config).unwrap().into_raw();
+        ::api::wallet::vcx_wallet_set_handle(1);
+        ::api::utils::vcx_pool_set_handle(1);
+        assert_eq!(vcx_init_minimal(config), error::SUCCESS.code_num);
+        let rc = vcx_connection_create(0,
+                                       CString::new("test_create_fails").unwrap().into_raw(),
+                                       None);
+        assert_eq!(rc, error::INVALID_OPTION.code_num);
+        let cb = return_types_u32::Return_U32_U32::new().unwrap();
+        let rc = vcx_connection_create(cb.command_handle,
+                                       ptr::null(),
+                                       Some(cb.get_callback()));
+        assert_eq!(rc, error::INVALID_OPTION.code_num);
     }
 }
