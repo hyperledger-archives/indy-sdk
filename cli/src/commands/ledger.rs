@@ -1,7 +1,7 @@
 extern crate regex;
 extern crate chrono;
 
-use command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata};
+use command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata, DynamicCompletionType};
 use commands::*;
 use commands::payment_address::handle_payment_error;
 
@@ -1001,7 +1001,7 @@ pub mod get_payment_sources_command {
     use super::*;
 
     command!(CommandMetadata::build("get-payment-sources", "Get sources list for payment address.")
-                .add_required_param("payment_address","Target payment address")
+                .add_required_param_with_dynamic_completion("payment_address","Target payment address", DynamicCompletionType::PaymentAddress)
                 .add_optional_param("send","Send the request to the Ledger (True by default). If false then created request will be printed and stored into CLI context.")
                 .add_example("ledger get-payment-sources payment_address=pay:null:GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa")
                 .finalize()
@@ -1023,7 +1023,7 @@ pub mod get_payment_sources_command {
 
         let res = match Payment::parse_get_payment_sources_response(&payment_method, &response) {
             Ok(sources_json) => {
-                let mut sources: Vec<serde_json::Value> = serde_json::from_str(&sources_json)
+                let sources: Vec<serde_json::Value> = serde_json::from_str(&sources_json)
                     .map_err(|_| println_err!("Wrong data has been received"))?;
 
                 print_list_table(&sources,
@@ -1082,7 +1082,7 @@ pub mod payment_command {
 
         let res = match Payment::parse_payment_response(&payment_method, &response) {
             Ok(receipts_json) => {
-                let mut receipts: Vec<serde_json::Value> = serde_json::from_str(&receipts_json)
+                let receipts: Vec<serde_json::Value> = serde_json::from_str(&receipts_json)
                     .map_err(|_| println_err!("Wrong data has been received"))?;
 
                 print_list_table(&receipts,
@@ -1127,10 +1127,10 @@ pub mod get_fees_command {
         
         let res = match Payment::parse_get_txn_fees_response(&payment_method, &response) {
             Ok(fees_json) => {
-                let mut fees: HashMap<String, u64> = serde_json::from_str(&fees_json)
+                let fees: HashMap<String, u64> = serde_json::from_str(&fees_json)
                     .map_err(|_| println_err!("Wrong data has been received"))?;
 
-                let mut fees =
+                let fees =
                     fees
                         .iter()
                         .map(|(key, value)|
@@ -1512,13 +1512,13 @@ fn print_auth_rules(rules: AuthRulesData) {
         .collect::<Vec<serde_json::Value>>();
 
     print_list_table(&constraints,
-                               &vec![("auth_type", "Type"),
-                                     ("auth_action", "Action"),
-                                     ("field", "Field"),
-                                     ("old_value", "Old Value"),
-                                     ("new_value", "New Value"),
-                                     ("constraint", "Constraint")],
-                               "There are no rules set");
+                     &vec![("auth_type", "Type"),
+                           ("auth_action", "Action"),
+                           ("field", "Field"),
+                           ("old_value", "Old Value"),
+                           ("new_value", "New Value"),
+                           ("constraint", "Constraint")],
+                     "There are no rules set");
 }
 
 pub mod save_transaction_command {

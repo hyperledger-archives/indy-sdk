@@ -179,6 +179,19 @@ class DisclosedProof(VcxStateful):
         """
         return await self._update_state(DisclosedProof, 'vcx_disclosed_proof_update_state')
 
+    async def update_state_with_message(self, message: str) -> int:
+        """
+        Example:
+        msg_id = '1'
+        phone_number = '8019119191'
+        connection = await Connection.create(source_id)
+        await connection.connect(phone_number)
+        disclosed_proof = await DisclosedProof.create_with_msgid(source_id, connection, msg_id)
+        assert await disclosed_proof.update_state_with_message(msg) == State.RequestReceived
+        :return:
+        """
+        return await self._update_state_with_message(DisclosedProof, message, 'vcx_disclosed_proof_update_state_with_message')
+
     async def get_state(self) -> int:
         """
 
@@ -248,6 +261,25 @@ class DisclosedProof(VcxStateful):
                       c_disclosed_proof_handle,
                       c_connection_handle,
                       DisclosedProof.send_proof.cb)
+
+    async def get_send_proof_msg(self):
+        """
+        Example:
+        msg = await disclosed_proof.get_send_proof_msg()
+        :param
+        :return:
+        """
+        if not hasattr(DisclosedProof.get_send_proof_msg, "cb"):
+            self.logger.debug("vcx_proof_send_request: Creating callback")
+            DisclosedProof.get_send_proof_msg.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
+
+        c_proof_handle = c_uint32(self.handle)
+
+        msg = await do_call('vcx_disclosed_proof_get_proof_msg',
+                      c_proof_handle,
+                      DisclosedProof.get_send_proof_msg.cb)
+
+        return json.loads(msg.decode())
 
 
     async def generate_proof(self, selected_creds: dict, self_attested_attrs: dict):

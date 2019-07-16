@@ -201,5 +201,9 @@ extern {
                                         timestamp: u64,
                                         cred_rev_id: CString,
                                         cb: Option<ResponseStringCB>) -> Error;
+
+    #[no_mangle]
+    pub fn indy_generate_nonce(command_handle: CommandHandle,
+                               cb: Option<ResponseStringCB>) -> Error;
 }
 
