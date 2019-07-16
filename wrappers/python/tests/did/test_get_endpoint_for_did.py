@@ -1,12 +1,9 @@
 import json
-
 import time
 
-from indy import IndyError
-from indy import did, ledger
-from indy.error import ErrorCode
-
 import pytest
+
+from indy import did, ledger, error
 
 
 @pytest.mark.asyncio
@@ -35,9 +32,8 @@ async def test_get_endpoint_for_did_works_from_ledger(pool_handle, wallet_handle
 
 @pytest.mark.asyncio
 async def test_get_endpoint_for_did_works_for_unknown_did(pool_handle, wallet_handle, did_my1):
-    with pytest.raises(IndyError) as e:
+    with pytest.raises(error.CommonInvalidState):
         await did.get_endpoint_for_did(wallet_handle, pool_handle, did_my1)
-    assert ErrorCode.CommonInvalidState == e.value.error_code
 
 
 @pytest.mark.asyncio
@@ -45,16 +41,14 @@ async def test_get_endpoint_for_did_works_invalid_wallet_handle(pool_handle, wal
                                                                 identity_trustee1, endpoint):
     (_did, key) = identity_trustee1
     await did.set_endpoint_for_did(wallet_handle, _did, endpoint, key)
-    with pytest.raises(IndyError) as e:
+    with pytest.raises(error.WalletInvalidHandle):
         invalid_wallet_handle = wallet_handle + 1
         await did.get_endpoint_for_did(invalid_wallet_handle, pool_handle, _did)
-    assert ErrorCode.WalletInvalidHandle == e.value.error_code
 
 
 @pytest.mark.asyncio
 async def test_get_endpoint_for_did_works_invalid_pool_handle(pool_handle, wallet_handle, identity_trustee1, endpoint):
     (_did, key) = identity_trustee1
-    with pytest.raises(IndyError) as e:
+    with pytest.raises(error.PoolLedgerInvalidPoolHandle):
         invalid_pool_handle = pool_handle + 1
         await did.get_endpoint_for_did(wallet_handle, invalid_pool_handle, _did)
-    assert ErrorCode.PoolLedgerInvalidPoolHandle == e.value.error_code

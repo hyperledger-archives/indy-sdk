@@ -2,6 +2,7 @@ package com.evernym.sdk.vcx;
 
 import com.evernym.sdk.vcx.vcx.VcxApi;
 import com.evernym.sdk.vcx.wallet.WalletApi;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

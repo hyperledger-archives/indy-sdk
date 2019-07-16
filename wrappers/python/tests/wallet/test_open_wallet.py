@@ -1,8 +1,6 @@
 import pytest
 
-from indy import IndyError
-from indy import wallet
-from indy.error import ErrorCode
+from indy import wallet, error
 
 
 @pytest.mark.asyncio
@@ -12,24 +10,20 @@ async def test_open_wallet_works(wallet_handle):
 
 @pytest.mark.asyncio
 async def test_open_wallet_works_for_not_created_wallet(wallet_config, credentials):
-    with pytest.raises(IndyError) as e:
+    with pytest.raises(error.WalletNotFoundError):
         await wallet.open_wallet(wallet_config, credentials)
-    assert ErrorCode.WalletNotFoundError == e.value.error_code
 
 
 @pytest.mark.asyncio
 async def test_open_wallet_works_for_twice(wallet_handle, wallet_config, credentials):
-    with pytest.raises(IndyError) as e:
+    with pytest.raises(error.WalletAlreadyOpenedError):
         await wallet.open_wallet(wallet_config, credentials)
-
-    assert ErrorCode.WalletAlreadyOpenedError == e.value.error_code
 
 
 @pytest.mark.asyncio
 async def test_open_wallet_works_for_missed_key(xwallet, wallet_config):
-    with pytest.raises(IndyError) as e:
+    with pytest.raises(error.CommonInvalidStructure):
         await wallet.open_wallet(wallet_config, "{}")
-    assert ErrorCode.CommonInvalidStructure == e.value.error_code
 
 
 @pytest.mark.asyncio

@@ -187,8 +187,6 @@ fn build_executor() -> CommandExecutor {
         .add_group(payment_address::group::new())
         .add_command(payment_address::create_command::new())
         .add_command(payment_address::list_command::new())
-        .add_command(payment_address::sign_command::new())
-        .add_command(payment_address::verify_command::new())
         .finalize_group()
         .finalize()
 }
@@ -309,12 +307,11 @@ fn _iter_batch<T>(command_executor: &CommandExecutor, reader: T) where T: std::i
 
 impl<Term: Terminal> Completer<Term> for CommandExecutor {
     fn complete(&self, word: &str, reader: &Reader<Term>,
-                start: usize, end: usize) -> Option<Vec<Completion>> {
+                _start: usize, _end: usize) -> Option<Vec<Completion>> {
         Some(self
             .complete(reader.buffer(),
                       word,
-                      start,
-                      end)
+                      reader.cursor())
             .into_iter()
             .map(|c| Completion {
                 completion: c.0,
