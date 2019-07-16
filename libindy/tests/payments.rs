@@ -758,6 +758,32 @@ mod high_cases {
             utils::tear_down("indy_get_request_info_for_no_fee");
         }
     }
+    
+    
+    mod sign_with_address {
+        use super::*;
+
+        #[test]
+        fn sign_with_address_works() {
+            let (wallet_handle, wallet_config) = setup("sign_with_address_works");
+
+            let test_vec = vec![0u8; 16];
+
+            payments::mock_method::create_payment_address::inject_mock(ErrorCode::Success, TEST_RES_STRING);
+            payments::create_payment_address(wallet_handle, EMPTY_OBJECT, TEST_RES_STRING).unwrap();
+            payments::mock_method::sign_with_address::inject_mock(ErrorCode::Success, test_vec);
+
+            let test_vec = vec![0u8; 32];
+
+            let res_plugin = payments::sign_with_address(wallet_handle, CORRECT_PAYMENT_ADDRESS, test_vec.as_slice()).unwrap();
+
+            let test_res: Vec<u8> = Vec::new();
+
+            assert_eq!(res_plugin, test_res);
+
+            utils::tear_down_with_wallet(wallet_handle, "sign_with_address_works", &wallet_config);
+        }
+    }
 }
 
 mod medium_cases {
