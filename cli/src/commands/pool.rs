@@ -1,7 +1,7 @@
 extern crate serde_json;
 extern crate chrono;
 
-use command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata, wait_for_user_reply};
+use command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata, wait_for_user_reply, DynamicCompletionType};
 use commands::*;
 
 use indy::{ErrorCode, IndyError};
@@ -65,7 +65,7 @@ pub mod connect_command {
     use super::*;
 
     command_with_cleanup!(CommandMetadata::build("connect", "Connect to pool with specified name. Also disconnect from previously connected.")
-                .add_main_param("name", "The name of pool")
+                .add_main_param_with_dynamic_completion("name", "The name of pool", DynamicCompletionType::Pool)
                 .add_optional_param("protocol-version", "Pool protocol version will be used for requests. One of: 1, 2. (2 by default)")
                 .add_optional_param("timeout", "Timeout for network request (in sec)")
                 .add_optional_param("extended-timeout", "Extended timeout for network request (in sec)")
@@ -272,7 +272,7 @@ pub mod delete_command {
     use super::*;
 
     command!(CommandMetadata::build("delete", "Delete pool config with specified name")
-                .add_main_param("name", "The name of deleted pool config")
+                .add_main_param_with_dynamic_completion("name", "The name of deleted pool config", DynamicCompletionType::Pool)
                 .add_example("pool delete pool1")
                 .finalize()
     );
@@ -301,6 +301,19 @@ pub mod delete_command {
         trace!("execute << {:?}", res);
         res
     }
+}
+
+pub fn pool_list() -> Vec<String> {
+    Pool::list().ok()
+        .and_then(|pools|
+            serde_json::from_str::<Vec<serde_json::Value>>(&pools).ok()
+        )
+        .unwrap_or(vec![])
+        .into_iter()
+        .map(|pool|
+            pool["pool"].as_str().map(String::from).unwrap_or(String::new())
+        )
+        .collect()
 }
 
 pub fn accept_transaction_author_agreement(ctx: &CommandContext, text: &str, version: &str) {

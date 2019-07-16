@@ -1,7 +1,7 @@
 extern crate regex;
 extern crate chrono;
 
-use command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata};
+use command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata, DynamicCompletionType};
 use commands::*;
 use commands::payment_address::handle_payment_error;
 
@@ -1001,7 +1001,7 @@ pub mod get_payment_sources_command {
     use super::*;
 
     command!(CommandMetadata::build("get-payment-sources", "Get sources list for payment address.")
-                .add_required_param("payment_address","Target payment address")
+                .add_required_param_with_dynamic_completion("payment_address","Target payment address", DynamicCompletionType::PaymentAddress)
                 .add_optional_param("send","Send the request to the Ledger (True by default). If false then created request will be printed and stored into CLI context.")
                 .add_example("ledger get-payment-sources payment_address=pay:null:GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa")
                 .finalize()
@@ -1023,7 +1023,7 @@ pub mod get_payment_sources_command {
 
         let res = match Payment::parse_get_payment_sources_response(&payment_method, &response) {
             Ok(sources_json) => {
-                let mut sources: Vec<serde_json::Value> = serde_json::from_str(&sources_json)
+                let sources: Vec<serde_json::Value> = serde_json::from_str(&sources_json)
                     .map_err(|_| println_err!("Wrong data has been received"))?;
 
                 print_list_table(&sources,
@@ -1082,7 +1082,7 @@ pub mod payment_command {
 
         let res = match Payment::parse_payment_response(&payment_method, &response) {
             Ok(receipts_json) => {
-                let mut receipts: Vec<serde_json::Value> = serde_json::from_str(&receipts_json)
+                let receipts: Vec<serde_json::Value> = serde_json::from_str(&receipts_json)
                     .map_err(|_| println_err!("Wrong data has been received"))?;
 
                 print_list_table(&receipts,
@@ -1124,13 +1124,13 @@ pub mod get_fees_command {
             .map_err(|err| handle_payment_error(err, Some(payment_method)))?;
 
         let (response, _) = send_read_request!(&ctx, send, &request, submitter_did.as_ref().map(String::as_str));
-
+        
         let res = match Payment::parse_get_txn_fees_response(&payment_method, &response) {
             Ok(fees_json) => {
-                let mut fees: HashMap<String, i32> = serde_json::from_str(&fees_json)
+                let fees: HashMap<String, u64> = serde_json::from_str(&fees_json)
                     .map_err(|_| println_err!("Wrong data has been received"))?;
 
-                let mut fees =
+                let fees =
                     fees
                         .iter()
                         .map(|(key, value)|
@@ -1214,10 +1214,8 @@ pub mod set_fees_prepare_command {
 
         let fees = parse_payment_fees(&fees).map_err(error_err!())?;
 
-        let mut request = Payment::build_set_txn_fees_req(wallet_handle, submitter_did.as_ref().map(String::as_str), &payment_method, &fees)
+        let request = Payment::build_set_txn_fees_req(wallet_handle, submitter_did.as_ref().map(String::as_str), &payment_method, &fees)
             .map_err(|err| handle_payment_error(err, None))?;
-
-        set_author_agreement(ctx, &mut request)?;
 
         println_succ!("SET_FEES transaction has been created:");
         println!("     {}", request);
@@ -1514,13 +1512,13 @@ fn print_auth_rules(rules: AuthRulesData) {
         .collect::<Vec<serde_json::Value>>();
 
     print_list_table(&constraints,
-                               &vec![("auth_type", "Type"),
-                                     ("auth_action", "Action"),
-                                     ("field", "Field"),
-                                     ("old_value", "Old Value"),
-                                     ("new_value", "New Value"),
-                                     ("constraint", "Constraint")],
-                               "There are no rules set");
+                     &vec![("auth_type", "Type"),
+                           ("auth_action", "Action"),
+                           ("field", "Field"),
+                           ("old_value", "Old Value"),
+                           ("new_value", "New Value"),
+                           ("constraint", "Constraint")],
+                     "There are no rules set");
 }
 
 pub mod save_transaction_command {
@@ -1746,6 +1744,10 @@ pub mod aml_command {
 
 pub fn set_author_agreement(ctx: &CommandContext, request: &mut String) -> Result<(), ()> {
     if let Some((text, version, acc_mech_type, time_of_acceptance)) = get_transaction_author_info(&ctx) {
+        if acc_mech_type.is_empty(){
+            return Err(println_err!("Transaction author agreement Acceptance Mechanism isn't set."));
+        }
+
         *request = Ledger::append_txn_author_agreement_acceptance_to_request(&request, Some(&text), Some(&version), None, &acc_mech_type, time_of_acceptance)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
     };

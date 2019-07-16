@@ -28,6 +28,7 @@ mod libindy;
 use command_executor::CommandExecutor;
 
 use commands::{common, did, ledger, pool, wallet, payment_address};
+use utils::history;
 
 use linefeed::{Reader, ReadResult, Terminal};
 use linefeed::complete::{Completer, Completion};
@@ -202,17 +203,22 @@ fn execute_interactive<T>(command_executor: CommandExecutor, mut reader: Reader<
     let command_executor = Rc::new(command_executor);
     reader.set_completer(command_executor.clone());
     reader.set_prompt(&command_executor.ctx().get_prompt());
+    history::load(&mut reader).ok();
 
     while let Ok(ReadResult::Input(line)) = reader.read_line() {
-        if line.trim().is_empty() {
+        let line = line.trim();
+        if line.is_empty() {
             continue;
         }
 
-        command_executor.execute(&line).is_ok();
-        reader.add_history(line);
+        if command_executor.execute(&line).is_ok() {
+            reader.add_history(line.to_string());
+        };
+
         reader.set_prompt(&command_executor.ctx().get_prompt());
 
         if command_executor.ctx().is_exit() {
+            history::persist(&mut reader).ok();
             break;
         }
     }
@@ -301,12 +307,11 @@ fn _iter_batch<T>(command_executor: &CommandExecutor, reader: T) where T: std::i
 
 impl<Term: Terminal> Completer<Term> for CommandExecutor {
     fn complete(&self, word: &str, reader: &Reader<Term>,
-                start: usize, end: usize) -> Option<Vec<Completion>> {
+                _start: usize, _end: usize) -> Option<Vec<Completion>> {
         Some(self
             .complete(reader.buffer(),
                       word,
-                      start,
-                      end)
+                      reader.cursor())
             .into_iter()
             .map(|c| Completion {
                 completion: c.0,

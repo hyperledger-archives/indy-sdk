@@ -221,6 +221,17 @@ async def test_send_request():
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
+async def test_get_request_msg():
+    connection = await Connection.create(source_id)
+    await connection.connect(connection_options)
+    cred_with_msg_id = credential_json
+    credential = await Credential.deserialize(credential_json_versioned)
+    msg = await credential.get_request_msg(connection, 0)
+    assert(msg)
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_send_request_with_invalid_state():
     with pytest.raises(VcxError) as e:
         connection = await Connection.create(source_id)

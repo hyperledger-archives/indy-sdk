@@ -489,7 +489,7 @@ Use &lt;proverSearchCredentialsForProofReq&gt; to fetch records by small batches
     {
         "name": string,
         "version": string,
-        "nonce": string,
+        "nonce": string, - a big number represented as a string (use `generateNonce` function to generate 80-bit number)
         "requested_attributes": { // set of requested attributes
              "<attr_referent>": <attr_info>, // see below
              ...,
@@ -543,7 +543,7 @@ to fetch records by small batches \(with proverFetchCredentialsForProofReq\).
     {
         "name": string,
         "version": string,
-        "nonce": string,
+        "nonce": string, - a big number represented as a string (use `generateNonce` function to generate 80-bit number)
         "requested_attributes": { // set of requested attributes
              "<attr_referent>": <attr_info>, // see below
              ...,
@@ -719,7 +719,7 @@ All required schemas, public keys and revocation registries must be provided.
     {
         "name": string,
         "version": string,
-        "nonce": string,
+        "nonce": string, - a big number represented as a string (use `generateNonce` function to generate 80-bit number)
         "requested_attributes": { // set of requested attributes
              "<attr_referent>": <attr_info>, // see below
              ...,
@@ -837,6 +837,14 @@ at the particular time moment \(to reduce calculation time\).
 ````
 
 Errors: `Common*`, `Wallet*`, `Anoncreds*`
+
+#### generateNonce \( \) -&gt; nonce
+
+Generates 80-bit numbers that can be used as a nonce for proof request.
+
+* __->__ `nonce`: Json - generated number as a string
+
+Errors: `Common*`
 
 ### blob_storage
 
@@ -1953,7 +1961,7 @@ If all text, version and taaDigest parameters are specified, a check integrity o
      * `text` and `version` parameters are required if taaDigest parameter is omitted.
 * `taaDigest`: String - \(Optional\) hash on text and version. This parameter is required if text and version parameters are omitted.
 * `accMechType`: String - mechanism how user has accepted the TAA.
-* `timeOfAcceptance`: Timestamp (Number) - UTC timestamp when user has accepted the TAA.
+* `timeOfAcceptance`: Timestamp (Number) - UTC timestamp when user has accepted the TAA. Note that the time portion will be discarded to avoid a privacy risk. 
 
 * __->__ `request`: Json
 
