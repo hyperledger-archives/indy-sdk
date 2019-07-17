@@ -194,6 +194,8 @@ public class IndyException extends Exception {
 				return new PaymentSourceDoesNotExistException();
 			case PaymentOperationNotSupportedError:
 				return new PaymentOperationNotSupportedException();
+			case TransactionNotAllowedError:
+				return new TransactionNotAllowedException();
 			default:
 				String message = String.format("An unmapped error with the code '%s' was returned by the SDK.", sdkErrorCode);
 				return new IndyException(message, sdkErrorCode);

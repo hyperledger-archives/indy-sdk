@@ -67,7 +67,7 @@ pub mod list_command {
 
         let res = match Payment::list_payment_addresses(wallet_handle) {
             Ok(payment_addresses_json) => {
-                let mut payment_addresses: Vec<String> = serde_json::from_str(&payment_addresses_json)
+                let payment_addresses: Vec<String> = serde_json::from_str(&payment_addresses_json)
                     .map_err(|_| println_err!("Wrong data has been received"))?;
 
                 let list_addresses =

@@ -9,7 +9,7 @@ use domain::anoncreds::schema::{SchemaV1, Schema};
 use errors::prelude::*;
 use services::anoncreds::helpers::*;
 
-use ursa::cl::CredentialPublicKey;
+use ursa::cl::{CredentialPublicKey, new_nonce, Nonce};
 use ursa::cl::verifier::Verifier as CryptoVerifier;
 use services::wallet::language::{parse_from_json, Operator};
 
@@ -116,6 +116,16 @@ impl Verifier {
         trace!("verify <<< valid: {:?}", valid);
 
         Ok(valid)
+    }
+
+    pub fn generate_nonce(&self) -> IndyResult<Nonce>{
+        trace!("generate_nonce >>> ");
+
+        let nonce = new_nonce()?;
+
+        trace!("generate_nonce <<< nonce: {:?} ", nonce);
+
+        Ok(nonce)
     }
 
     fn _get_revealed_attributes_for_credential(sub_proof_index: usize,

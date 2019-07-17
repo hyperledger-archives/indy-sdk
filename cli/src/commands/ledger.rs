@@ -108,6 +108,24 @@ pub mod nym_command {
         let extra = get_opt_str_param("extra", params).map_err(error_err!())?;
         let send = get_opt_bool_param("send", params).map_err(error_err!())?.unwrap_or(SEND_REQUEST);
 
+
+        if let Some(target_verkey) = verkey {
+            let dids = did::dids(ctx);
+
+            if let Some((_, verkey_)) = dids.iter().find(|(did_, _)| did_ == target_did) {
+                if verkey_ != target_verkey {
+                    println_warn!("There is the same `DID` stored in the wallet but with different Verkey: {:?}", verkey_);
+                    println_warn!("Do you really want to change Verkey on the ledger? (y/n)");
+
+                    let change_nym = ::command_executor::wait_for_user_reply(ctx);
+
+                    if !change_nym {
+                        return Ok(println!("The transaction has not been sent."));
+                    }
+                }
+            }
+        }
+
         let mut request = Ledger::build_nym_request(&submitter_did, target_did, verkey, None, role)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
 
@@ -1023,7 +1041,7 @@ pub mod get_payment_sources_command {
 
         let res = match Payment::parse_get_payment_sources_response(&payment_method, &response) {
             Ok(sources_json) => {
-                let mut sources: Vec<serde_json::Value> = serde_json::from_str(&sources_json)
+                let sources: Vec<serde_json::Value> = serde_json::from_str(&sources_json)
                     .map_err(|_| println_err!("Wrong data has been received"))?;
 
                 print_list_table(&sources,
@@ -1082,7 +1100,7 @@ pub mod payment_command {
 
         let res = match Payment::parse_payment_response(&payment_method, &response) {
             Ok(receipts_json) => {
-                let mut receipts: Vec<serde_json::Value> = serde_json::from_str(&receipts_json)
+                let receipts: Vec<serde_json::Value> = serde_json::from_str(&receipts_json)
                     .map_err(|_| println_err!("Wrong data has been received"))?;
 
                 print_list_table(&receipts,
@@ -1127,10 +1145,10 @@ pub mod get_fees_command {
         
         let res = match Payment::parse_get_txn_fees_response(&payment_method, &response) {
             Ok(fees_json) => {
-                let mut fees: HashMap<String, u64> = serde_json::from_str(&fees_json)
+                let fees: HashMap<String, u64> = serde_json::from_str(&fees_json)
                     .map_err(|_| println_err!("Wrong data has been received"))?;
 
-                let mut fees =
+                let fees =
                     fees
                         .iter()
                         .map(|(key, value)|
@@ -1744,7 +1762,7 @@ pub mod aml_command {
 
 pub fn set_author_agreement(ctx: &CommandContext, request: &mut String) -> Result<(), ()> {
     if let Some((text, version, acc_mech_type, time_of_acceptance)) = get_transaction_author_info(&ctx) {
-        if acc_mech_type.is_empty(){
+        if acc_mech_type.is_empty() {
             return Err(println_err!("Transaction author agreement Acceptance Mechanism isn't set."));
         }
 
