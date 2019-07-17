@@ -2108,7 +2108,7 @@ pub fn set_request_fees(ctx: &CommandContext,
             build_payment_sources_for_addresses(ctx, source_, None, None, Some(fee_))?
         }
         (Some(_), None) => { return Err(println_err!("Fee value must be specified together with `source_payment_address`.")); }
-        _ => {
+        (None, None) => {
             match fees_inputs {
                 Some(inputs_) => {
                     let inputs = inputs_.into_iter().map(String::from).collect();
@@ -2122,6 +2122,9 @@ pub fn set_request_fees(ctx: &CommandContext,
                 }
                 _ => { return Ok(None); }
             }
+        },
+        _ => {
+            return Err(println_err!("(source_payment_address, fee) - all or none parameters must be specified"))
         }
     };
 
@@ -2147,17 +2150,23 @@ fn prepare_sources_for_payment_cmd(ctx: &CommandContext,
         (Some(source_address), Some(target_address), Some(amount_)) => {
             build_payment_sources_for_addresses(&ctx, &source_address, Some(&target_address), Some(amount_), fee)?
         }
-        _ => {
+        (None, None, None) => {
             match (inputs, outputs) {
                 (Some(inputs_), Some(outputs_)) => {
                     let inputs = inputs_.into_iter().map(String::from).collect();
                     let outputs = parse_payment_outputs(&outputs_).map_err(error_err!())?;
                     (inputs, outputs)
                 }
-                _ => return Err(println_err!("One of the next parameter combinations must be specified:\n\
+                (None, None) => return Err(println_err!("One of the next parameter combinations must be specified:\n\
                         (source_payment_address, target_payment_address, amount, Optional(fee)) - CLI builds payment data according to payment addresses\n\
-                        (inputs, outputs) - explicit specification of payment sources"))
+                        (inputs, outputs) - explicit specification of payment sources")),
+                _ => {
+                    return Err(println_err!("(inputs, outputs) - all or none parameters must be specified"))
+                }
             }
+        },
+        _ => {
+            return Err(println_err!("(source_payment_address, target_payment_address, amount) - all or none parameters must be specified"))
         }
     };
 
