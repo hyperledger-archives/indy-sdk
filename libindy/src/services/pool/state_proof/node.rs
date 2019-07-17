@@ -165,6 +165,102 @@ impl Node {
             Ok(None)
         }
     }
+
+    pub fn get_all_values<'a>(&'a self, db: &'a TrieDB) -> IndyResult<Vec<(String, String)>> {
+        let vals = self._get_all_values(db)?;
+        let mut res: Vec<(String, String)> = vec![];
+        for (key, val) in vals {
+            res.push((Node::_nibbles_to_str(&key)?, val))
+        }
+        Ok(res)
+    }
+
+    fn _get_all_values<'a>(&'a self, db: &'a TrieDB) -> IndyResult<Vec<(Vec<u8>, String)>> {
+        trace!("Check proof, cur node: {:?}", self);
+        match *self {
+            Node::Full(ref node) => {
+                let mut res = vec![];
+                for nibble in 0..16 {
+                    let next = &node.nodes[nibble];
+                    if let Some(next) = next {
+                        trace!("Checking nibble {}", nibble);
+                        let mut sub_res: Vec<(Vec<u8>, String)> = next._get_all_values(db)?;
+                        trace!("Got some values: {:?}", sub_res);
+                        let mut sub_res = sub_res.into_iter().map(|(mut key, val)| {
+                            let mut key_new: Vec<u8> = vec![nibble as u8];
+                            key_new.append(&mut key);
+                            (key_new, val.to_owned())
+                        }).collect();
+                        trace!("Mapped values: {:?}", sub_res);
+                        res.append(&mut sub_res);
+                        trace!("Intermediate result: {:?}", res);
+                    }
+                }
+                if let Some(ref value) = node.value.as_ref() {
+                    let mut vec: Vec<Vec<u8>> = UntrustedRlp::new(value).as_list().unwrap_or_default(); //default will cause error below
+
+                    if let Some(val) = vec.pop() {
+                        if vec.is_empty() {
+                            res.push((Vec::new(), String::from_utf8(val.clone())
+                                .to_indy(IndyErrorKind::InvalidStructure, "Patricia Merkle Trie contains malformed utf8 string")?));
+                        }
+                    }
+                }
+                Ok(res)
+            }
+            Node::Hash(ref hash) => {
+                trace!("Node::_get_all_values in Hash");
+                let hash = NodeHash::from_slice(hash.as_slice());
+                if let Some(ref next) = db.get(hash) {
+                    trace!("found value in db");
+                    next._get_all_values(db)
+                } else {
+                    trace!("no value");
+                    Ok(vec![])
+                }
+            }
+            Node::Leaf(ref pair) => {
+                let (is_leaf, pair_path) = Node::parse_path(pair.path.as_slice());
+
+                if !is_leaf {
+                    return Err(err_msg(IndyErrorKind::InvalidState, "Incorrect Patricia Merkle Trie: node marked as leaf but path contains extension flag"));
+                }
+
+                trace!("Node::_get_all_values in Leaf stored path {:?}", String::from_utf8(pair_path.clone()));
+
+                let mut vec: Vec<Vec<u8>> = UntrustedRlp::new(pair.value.as_slice()).as_list().unwrap_or_default(); //default will cause error below
+
+                if let Some(val) = vec.pop() {
+                    if vec.is_empty() {
+                        return Ok(vec![(pair_path, String::from_utf8(val.clone())
+                            .to_indy(IndyErrorKind::InvalidStructure, "Patricia Merkle Trie contains malformed utf8 string")?)]);
+                    }
+                }
+                Err(err_msg(IndyErrorKind::InvalidStructure, "Unexpected data format of value in Patricia Merkle Trie"))
+            }
+            Node::Extension(ref pair) => {
+                let (is_leaf, pair_path) = Node::parse_path(pair.path.as_slice());
+
+                if is_leaf {
+                    return Err(err_msg(IndyErrorKind::InvalidState, "Incorrect Patricia Merkle Trie: node marked as extension but path contains leaf flag"));
+                }
+
+                let values = pair.next._get_all_values(db)?;
+
+                let res: Vec<(Vec<u8>, String)> = values.into_iter().map(|(mut key, value)| {
+                    let mut vec = pair_path.clone();
+                    vec.append(&mut key);
+                    (vec, value.to_owned())
+                }).collect();
+
+                Ok(res)
+            }
+            Node::Blank => {
+                Ok(vec![])
+            }
+        }
+    }
+
     fn get_value<'a, 'b>(&'a self, db: &'a TrieDB, path: &'b [u8]) -> IndyResult<Option<Vec<u8>>> {
         let nibble_path = Node::path_to_nibbles(path);
         match self._get_value(db, nibble_path.as_slice())? {
@@ -246,6 +342,16 @@ impl Node {
         }
 
         nibble_path
+    }
+
+    fn _nibbles_to_str(nibbles: &[u8]) -> IndyResult<String> {
+        trace!("Node::_nibbles_to_str >> nibbles: {:?}", nibbles);
+        let mut res: Vec<u8> = vec![];
+        for x in (0..nibbles.len()).step_by(2) {
+            let h: u8 = (nibbles[x] << 4) + nibbles[x+1];
+            res.push(h)
+        }
+        String::from_utf8(res).to_indy(IndyErrorKind::InvalidStructure, "Patricia Merkle Trie contains malformed utf8 string")
     }
 
     fn parse_path(path: &[u8]) -> (bool, Vec<u8>) {
