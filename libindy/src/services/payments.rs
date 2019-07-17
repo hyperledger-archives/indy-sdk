@@ -11,6 +11,8 @@ use api::payments::*;
 use errors::prelude::*;
 use utils::ctypes;
 
+use domain::ledger::auth_rule::{Constraint, RoleConstraint, CombinationConstraint};
+
 pub struct PaymentsService {
     methods: RefCell<HashMap<String, PaymentsMethod>>
 }
@@ -410,6 +412,142 @@ impl PaymentsService {
         trace!("parse_method_from_payment_address <<< result: {:?}", res);
         res
     }
+
+    pub fn get_request_info_with_min_price(&self, constraint: &Constraint, requester_info: &RequesterInfo, fees: &Fees) -> IndyResult<RequestInfo> {
+        trace!("get_request_info_with_min_price >>> constraint: {:?}, requester_info: {:?}, fees: {:?}", constraint, requester_info, fees);
+
+        let prices = PaymentsService::_handle_constraint(constraint, requester_info, fees)?;
+
+        let res = prices.into_iter()
+            .min_by_key(|x| x.price)
+            .ok_or(IndyError::from_msg(IndyErrorKind::InvalidStructure, "RequestInfo not found"))?;
+
+        trace!("get_request_info_with_min_price <<< result: {:?}", res);
+        Ok(res)
+    }
+
+    fn _handle_constraint(constraint: &Constraint, requester_info: &RequesterInfo, fees: &Fees) -> IndyResult<Vec<RequestInfo>> {
+        trace!("_handle_constraint >>> constraint: {:?}, requester_info: {:?}, fees: {:?}", constraint, requester_info, fees);
+
+        let res = match constraint {
+            Constraint::RoleConstraint(role_constraint) => PaymentsService::_handle_role_constraint(role_constraint, requester_info, fees),
+            Constraint::AndConstraint(combination_constraint) => PaymentsService::_handle_and_constraint(combination_constraint, requester_info, fees),
+            Constraint::OrConstraint(combination_constraint) => PaymentsService::_handle_or_constraint(combination_constraint, requester_info, fees),
+            Constraint::ForbiddenConstraint(_constraint) => return Err(IndyError::from_msg(IndyErrorKind::TransactionNotAllowed, "Transaction is forbidden for anyone"))
+        };
+
+        trace!("_handle_constraint <<< result: {:?}", res);
+        res
+    }
+
+    fn _handle_role_constraint(constraint: &RoleConstraint, requester_info: &RequesterInfo, fees: &Fees) -> IndyResult<Vec<RequestInfo>> {
+        trace!("_handle_role_constraint >>> constraint: {:?}, requester_info: {:?}, fees: {:?}", constraint, requester_info, fees);
+
+        PaymentsService::_check_requester_meet_to_role_constraint(constraint, requester_info)?;
+
+        let res = PaymentsService::_get_req_info(constraint, fees)?;
+
+        trace!("_handle_role_constraint <<< result: {:?}", res);
+        Ok(vec![res])
+    }
+
+    fn _handle_and_constraint(constraint: &CombinationConstraint, requester_info: &RequesterInfo, fees: &Fees) -> IndyResult<Vec<RequestInfo>> {
+        trace!("_handle_and_constraint >>> constraint: {:?}, requester_info: {:?}, fees: {:?}", constraint, requester_info, fees);
+
+        let req_info: Vec<RequestInfo> = constraint.auth_constraints
+            .iter()
+            .map(|constraint| PaymentsService::_handle_constraint(&constraint, requester_info, fees))
+            .collect::<IndyResult<Vec<Vec<RequestInfo>>>>()
+            .map_err(|_| IndyError::from_msg(IndyErrorKind::TransactionNotAllowed,
+                                             format!("Transaction is not allowed to requester: {:?}. \
+                                                                 The constraint \"{:?}\"  is not met.", requester_info, constraint)))?
+            .into_iter()
+            .flatten()
+            .collect();
+
+        let price = req_info.get(0)
+            .ok_or(IndyError::from_msg(IndyErrorKind::InvalidStructure, "AND Constraint doesn't contain sub constraints."))?
+            .price;
+
+        if req_info.iter().any(|x| x.price != price) {
+            return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure,
+                                           format!("AND Constraint contains branches with different price: {:?}.", req_info)));
+        }
+
+        let req_info = vec![RequestInfo {
+            price,
+            requirements: req_info
+                .into_iter()
+                .map(|req_info| req_info.requirements)
+                .flatten()
+                .collect::<Vec<Requirement>>()
+        }];
+
+        trace!("_handle_and_constraint <<< result: {:?}", req_info);
+        Ok(req_info)
+    }
+
+    fn _handle_or_constraint(constraint: &CombinationConstraint, requester_info: &RequesterInfo, fees: &Fees) -> IndyResult<Vec<RequestInfo>> {
+        trace!("_handle_or_constraint >>> constraint: {:?}, requester_info: {:?}, fees: {:?}", constraint, requester_info, fees);
+
+        let prices: Vec<RequestInfo> = constraint.auth_constraints
+            .iter()
+            .flat_map(|constraint| PaymentsService::_handle_constraint(&constraint, requester_info, fees))
+            .into_iter()
+            .flatten()
+            .collect();
+
+        if prices.is_empty() {
+            return Err(IndyError::from_msg(IndyErrorKind::TransactionNotAllowed,
+                                           format!("Transaction is not allowed to requester: {:?}. \
+                                                         Requester {:?} doesn't satisfy any constraint.", requester_info, constraint)));
+        }
+
+        trace!("_handle_and_constraint <<< result: {:?}", prices);
+        Ok(prices)
+    }
+
+    fn _check_requester_meet_to_role_constraint(constraint: &RoleConstraint, requester_info: &RequesterInfo) -> IndyResult<()> {
+        trace!("_check_requester_meet_to_role_constraint >>> constraint: {:?}, requester_info: {:?}", constraint, requester_info);
+
+        if constraint.sig_count == 0 {
+            return Ok(());
+        }
+
+        if constraint.role != requester_info.role && constraint.role != "*" {
+            return Err(IndyError::from_msg(IndyErrorKind::TransactionNotAllowed,
+                                           format!("The requester role {:?} doesn't meet to constraint \"{:?}\".", requester_info.role, constraint.role)));
+        }
+
+        if constraint.sig_count > requester_info.sig_count {
+            return Err(IndyError::from_msg(IndyErrorKind::TransactionNotAllowed,
+                                           format!("The requester signatures amount {:?} doesn't meet to constraint \"{:?}\".", requester_info.sig_count, constraint.sig_count)));
+        }
+
+        if constraint.need_to_be_owner && !requester_info.is_owner {
+            return Err(IndyError::from_msg(IndyErrorKind::TransactionNotAllowed,
+                                           format!("The requester must be an owner of the transaction that already present on the ledger.")));
+        }
+
+        return Ok(());
+    }
+
+    fn _get_req_info(constraint: &RoleConstraint, fees: &Fees) -> IndyResult<RequestInfo> {
+        let alias = constraint.metadata.as_ref().and_then(|meta| meta["fees"].as_str());
+
+        let price = alias.and_then(|alias_| fees.get(alias_)).cloned().unwrap_or(0);
+
+        let req_info = RequestInfo {
+            price,
+            requirements: vec![Requirement {
+                role: constraint.role.clone(),
+                sig_count: constraint.sig_count,
+                need_to_be_owner: constraint.need_to_be_owner,
+            }],
+        };
+
+        Ok(req_info)
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -437,8 +575,8 @@ mod cbs {
     use libc::c_char;
 
     pub fn create_address_cb(cmd_handle: i32, wallet_handle: WalletHandle) -> Option<extern fn(command_handle: i32,
-                                                                                      err: ErrorCode,
-                                                                                      c_str: *const c_char) -> ErrorCode> {
+                                                                                               err: ErrorCode,
+                                                                                               c_str: *const c_char) -> ErrorCode> {
         send_ack(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::CreateAddressAck(cmd_handle, wallet_handle, result)))
     }
 
@@ -547,5 +685,295 @@ mod cbs {
         callbacks.insert(command_handle, closure);
 
         Some(_callback)
+    }
+}
+
+pub type Fees = HashMap<String, u64>;
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+pub struct RequesterInfo {
+    pub role: String,
+    pub sig_count: u32,
+    #[serde(default)]
+    pub is_owner: bool,
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+pub struct RequestInfo {
+    pub price: u64,
+    pub requirements: Vec<Requirement>
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+pub struct Requirement {
+    pub role: String,
+    pub sig_count: u32,
+    pub need_to_be_owner: bool,
+}
+
+mod test {
+    use super::*;
+
+    fn _fees() -> Fees {
+        let mut fees = Fees::new();
+        fees.insert("1".to_string(), 20);
+        fees.insert("2".to_string(), 10);
+        fees
+    }
+
+    fn _single_trustee() -> Constraint {
+        Constraint::RoleConstraint(RoleConstraint {
+            sig_count: 1,
+            role: "0".to_string(),
+            metadata: Some(json!({"fees": "1"})),
+            need_to_be_owner: false,
+        })
+    }
+
+    fn _two_trustees() -> Constraint {
+        Constraint::RoleConstraint(RoleConstraint {
+            sig_count: 2,
+            role: "0".to_string(),
+            metadata: Some(json!({"fees": "1"})),
+            need_to_be_owner: false,
+        })
+    }
+
+    fn _single_owner() -> Constraint {
+        Constraint::RoleConstraint(RoleConstraint {
+            sig_count: 1,
+            role: "*".to_string(),
+            metadata: Some(json!({"fees": "2"})),
+            need_to_be_owner: true,
+        })
+    }
+
+    fn _single_steward() -> Constraint {
+        Constraint::RoleConstraint(RoleConstraint {
+            sig_count: 1,
+            role: "2".to_string(),
+            metadata: Some(json!({"fees": "2"})),
+            need_to_be_owner: false,
+        })
+    }
+
+    fn _trustee_requester() -> RequesterInfo {
+        RequesterInfo {
+            role: "0".to_string(),
+            sig_count: 1,
+            is_owner: false,
+        }
+    }
+
+    #[test]
+    fn test_get_min_transaction_price_for_single_solved_role_constraint() {
+        let payment_service = PaymentsService::new();
+
+        let constraint = _single_trustee();
+        let requester_info = _trustee_requester();
+        let fees = _fees();
+
+        let req_info = payment_service.get_request_info_with_min_price(&constraint, &requester_info, &fees).unwrap();
+
+        let expected_req_info = RequestInfo {
+            price: 20,
+            requirements: vec![Requirement {
+                sig_count: 1,
+                role: 0.to_string(),
+                need_to_be_owner: false,
+            }],
+        };
+
+        assert_eq!(expected_req_info, req_info);
+    }
+
+    #[test]
+    fn test_get_min_transaction_price_for_single_role_constraint_not_meet() {
+        let payment_service = PaymentsService::new();
+
+        let constraint = _single_trustee();
+        let fees = _fees();
+
+        let requester_info = RequesterInfo {
+            role: "101".to_string(),
+            sig_count: 1,
+            is_owner: true,
+        };
+
+        let res = payment_service.get_request_info_with_min_price(&constraint, &requester_info, &fees);
+        assert!(res.is_err());
+    }
+
+    #[test]
+    fn test_get_min_transaction_price_for_or_constraint_one_met() {
+        let payment_service = PaymentsService::new();
+
+        let constraint = Constraint::OrConstraint(
+            CombinationConstraint {
+                auth_constraints: vec![
+                    _single_trustee(),
+                    _single_owner()
+                ]
+            }
+        );
+
+        let requester_info = _trustee_requester();
+        let fees = _fees();
+
+        let req_info = payment_service.get_request_info_with_min_price(&constraint, &requester_info, &fees).unwrap();
+
+        let expected_req_info = RequestInfo {
+            price: 20,
+            requirements: vec![Requirement {
+                sig_count: 1,
+                role: 0.to_string(),
+                need_to_be_owner: false,
+            }],
+        };
+
+        assert_eq!(expected_req_info, req_info);
+    }
+
+    #[test]
+    fn test_get_min_transaction_price_for_or_constraint_two_met() {
+        let payment_service = PaymentsService::new();
+
+        let constraint = Constraint::OrConstraint(
+            CombinationConstraint {
+                auth_constraints: vec![
+                    _single_trustee(),
+                    _single_owner()
+                ]
+            }
+        );
+
+        let requester_info =
+            RequesterInfo {
+                role: "0".to_string(),
+                sig_count: 1,
+                is_owner: true,
+            };
+
+        let fees = _fees();
+
+        let req_info = payment_service.get_request_info_with_min_price(&constraint, &requester_info, &fees).unwrap();
+
+        let expected_req_info = RequestInfo {
+            price: 10,
+            requirements: vec![Requirement {
+                sig_count: 1,
+                role: "*".to_string(),
+                need_to_be_owner: true,
+            }],
+        };
+
+        assert_eq!(expected_req_info, req_info);
+    }
+
+    #[test]
+    fn test_get_min_transaction_price_for_or_constraint_two_not_met() {
+        let payment_service = PaymentsService::new();
+
+        let constraint = Constraint::OrConstraint(
+            CombinationConstraint {
+                auth_constraints: vec![
+                    _single_trustee(),
+                    _single_owner()
+                ]
+            }
+        );
+
+        let requester_info =
+            RequesterInfo {
+                role: "2".to_string(),
+                sig_count: 1,
+                is_owner: false,
+            };
+
+        let fees = _fees();
+
+        let res = payment_service.get_request_info_with_min_price(&constraint, &requester_info, &fees);
+        assert!(res.is_err());
+    }
+
+    #[test]
+    fn test_get_min_transaction_price_for_and_constraint_two_met() {
+        let payment_service = PaymentsService::new();
+
+        let constraint = Constraint::AndConstraint(
+            CombinationConstraint {
+                auth_constraints: vec![
+                    _single_steward(),
+                    _single_owner()
+                ]
+            }
+        );
+
+        let requester_info =
+            RequesterInfo {
+                role: "2".to_string(),
+                sig_count: 1,
+                is_owner: true,
+            };
+
+        let fees = _fees();
+
+        let req_info = payment_service.get_request_info_with_min_price(&constraint, &requester_info, &fees).unwrap();
+
+        let expected_req_info = RequestInfo {
+            price: 10,
+            requirements: vec![Requirement {
+                sig_count: 1,
+                role: 2.to_string(),
+                need_to_be_owner: false,
+            }, Requirement {
+                sig_count: 1,
+                role: "*".to_string(),
+                need_to_be_owner: true,
+            }],
+        };
+
+        assert_eq!(expected_req_info, req_info);
+    }
+
+    #[test]
+    fn test_get_min_transaction_price_for_and_constraint_two_one_not_met() {
+        let payment_service = PaymentsService::new();
+
+        let constraint = Constraint::AndConstraint(
+            CombinationConstraint {
+                auth_constraints: vec![
+                    _single_trustee(),
+                    _single_owner()
+                ]
+            }
+        );
+
+        let requester_info = _trustee_requester();
+        let fees = _fees();
+
+        let res = payment_service.get_request_info_with_min_price(&constraint, &requester_info, &fees);
+        assert!(res.is_err());
+    }
+
+    #[test]
+    fn test_get_min_transaction_price_for_no_fee() {
+        let payment_service = PaymentsService::new();
+
+        let constraint = _single_trustee();
+        let requester_info = _trustee_requester();
+
+        let req_info = payment_service.get_request_info_with_min_price(&constraint, &requester_info, &HashMap::new()).unwrap();
+
+        let expected_req_info = RequestInfo {
+            price: 0,
+            requirements: vec![Requirement {
+                sig_count: 1,
+                role: 0.to_string(),
+                need_to_be_owner: false,
+            }],
+        };
+
+        assert_eq!(expected_req_info, req_info);
     }
 }
