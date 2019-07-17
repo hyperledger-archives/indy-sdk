@@ -769,8 +769,8 @@ mod high_cases {
 
             let test_vec = vec![0u8; 16];
 
-            payments::mock_method::create_payment_address::inject_mock(ErrorCode::Success, TEST_RES_STRING);
-            payments::create_payment_address(wallet_handle, EMPTY_OBJECT, TEST_RES_STRING).unwrap();
+            payments::mock_method::create_payment_address::inject_mock(ErrorCode::Success, PAYMENT_METHOD_NAME);
+            payments::create_payment_address(wallet_handle, EMPTY_OBJECT, PAYMENT_METHOD_NAME).unwrap();
             payments::mock_method::sign_with_address::inject_mock(ErrorCode::Success, test_vec);
 
             let test_vec = vec![0u8; 32];
