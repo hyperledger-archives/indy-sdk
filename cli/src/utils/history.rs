@@ -27,8 +27,6 @@ pub fn persist<T>(reader: &Reader<T>) -> Result<(), String> where T: Terminal {
             .filter(|record|
                 !SECRET_DATA.iter().any(|secret_word| record.contains(secret_word))
             )
-            .collect::<std::collections::HashSet<&str>>()
-            .into_iter()
             .collect::<Vec<&str>>()
             .join("\n");
 
