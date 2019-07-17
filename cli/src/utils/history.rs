@@ -5,7 +5,7 @@ use utils::file::{read_lines_from_file, write_file};
 
 
 const HISTORY_SIZE: usize = 100;
-const SECRET_DATA: [&str; 2] = ["seed=", "key="];
+const SECRET_DATA: [&str; 2] = [" seed=", " key="];
 
 pub fn load<T>(reader: &mut Reader<T>) -> Result<(), String> where T: Terminal {
     reader.set_history_size(HISTORY_SIZE);

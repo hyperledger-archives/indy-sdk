@@ -30,7 +30,7 @@ use command_executor::CommandExecutor;
 use commands::{common, did, ledger, pool, wallet, payment_address};
 use utils::history;
 
-use linefeed::{Reader, ReadResult, Terminal};
+use linefeed::{Reader, ReadResult, Terminal, Signal};
 use linefeed::complete::{Completer, Completion};
 
 use std::env;
@@ -205,21 +205,30 @@ fn execute_interactive<T>(command_executor: CommandExecutor, mut reader: Reader<
     reader.set_prompt(&command_executor.ctx().get_prompt());
     history::load(&mut reader).ok();
 
-    while let Ok(ReadResult::Input(line)) = reader.read_line() {
-        let line = line.trim();
-        if line.is_empty() {
-            continue;
-        }
+    while let Ok(read_result) = reader.read_line() {
+        match read_result {
+            ReadResult::Input(line) => {
+                let line = line.trim();
+                if line.is_empty() {
+                    continue;
+                }
 
-        if command_executor.execute(&line).is_ok() {
-            reader.add_history(line.to_string());
-        };
+                if command_executor.execute(&line).is_ok() {
+                    reader.add_history(line.to_string());
+                };
 
-        reader.set_prompt(&command_executor.ctx().get_prompt());
+                reader.set_prompt(&command_executor.ctx().get_prompt());
 
-        if command_executor.ctx().is_exit() {
-            history::persist(&mut reader).ok();
-            break;
+                if command_executor.ctx().is_exit() {
+                    history::persist(&mut reader).ok();
+                    break;
+                }
+            },
+            ReadResult::Eof | ReadResult::Signal(Signal::Quit) | ReadResult::Signal(Signal::Break)| ReadResult::Signal(Signal::Interrupt) => {
+                history::persist(&mut reader).ok();
+                break;
+            },
+            _ => {break}
         }
     }
 }
