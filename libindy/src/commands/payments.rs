@@ -739,12 +739,8 @@ impl PaymentsCommandExecutor {
 
         let mut auth_rules: Vec<AuthRule> = self.ledger_service.parse_get_auth_rule_response(get_auth_rule_response_json)?;
 
-        if auth_rules.len() == 0 {
-            return Err(IndyError::from_msg(IndyErrorKind::InvalidTransaction, "GetAuthRule response doesn't contain any auth rule"));
-        }
-
         if auth_rules.len() != 1 {
-            return Err(IndyError::from_msg(IndyErrorKind::InvalidTransaction, "GetAuthRule response contains more than one auth rule"));
+            return Err(IndyError::from_msg(IndyErrorKind::InvalidTransaction, "GetAuthRule response must contain one auth rule"));
         }
 
         let res = auth_rules.pop().unwrap();
