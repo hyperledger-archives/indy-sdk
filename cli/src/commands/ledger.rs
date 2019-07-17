@@ -119,6 +119,24 @@ pub mod nym_command {
 
         let send = get_opt_bool_param("send", params).map_err(error_err!())?.unwrap_or(SEND_REQUEST);
 
+
+        if let Some(target_verkey) = verkey {
+            let dids = did::dids(ctx);
+
+            if let Some((_, verkey_)) = dids.iter().find(|(did_, _)| did_ == target_did) {
+                if verkey_ != target_verkey {
+                    println_warn!("There is the same `DID` stored in the wallet but with different Verkey: {:?}", verkey_);
+                    println_warn!("Do you really want to change Verkey on the ledger? (y/n)");
+
+                    let change_nym = ::command_executor::wait_for_user_reply(ctx);
+
+                    if !change_nym {
+                        return Ok(println!("The transaction has not been sent."));
+                    }
+                }
+            }
+        }
+
         let mut request = Ledger::build_nym_request(&submitter_did, target_did, verkey, None, role)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
 
@@ -1825,7 +1843,7 @@ pub mod aml_command {
 
 pub fn set_author_agreement(ctx: &CommandContext, request: &mut String) -> Result<(), ()> {
     if let Some((text, version, acc_mech_type, time_of_acceptance)) = get_transaction_author_info(&ctx) {
-        if acc_mech_type.is_empty(){
+        if acc_mech_type.is_empty() {
             return Err(println_err!("Transaction author agreement Acceptance Mechanism isn't set."));
         }
 

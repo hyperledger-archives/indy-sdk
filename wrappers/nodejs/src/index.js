@@ -821,6 +821,14 @@ indy.parseVerifyPaymentResponse = function parseVerifyPaymentResponse (paymentMe
   return cb.promise
 }
 
+indy.getRequestInfo = function getRequestInfo (getAuthRuleResponse, requesterInfo, fees, cb) {
+  cb = wrapIndyCallback(cb, function (data) {
+    return fromJson(data)
+  })
+  capi.getRequestInfo(toJson(getAuthRuleResponse), toJson(requesterInfo), toJson(fees), cb)
+  return cb.promise
+}
+
 indy.createPoolLedgerConfig = function createPoolLedgerConfig (configName, config, cb) {
   cb = wrapIndyCallback(cb)
   capi.createPoolLedgerConfig(configName, toJson(config), cb)

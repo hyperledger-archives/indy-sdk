@@ -109,6 +109,8 @@ pub enum IndyErrorKind {
     PaymentOperationNotSupported,
     #[fail(display = "Payment extra funds")]
     PaymentExtraFunds,
+    #[fail(display = "The transaction is not allowed to a requester")]
+    TransactionNotAllowed,
 }
 
 #[derive(Debug, Clone)]
@@ -322,6 +324,7 @@ impl From<IndyErrorKind> for ErrorCode {
             IndyErrorKind::PaymentSourceDoesNotExist => ErrorCode::PaymentSourceDoesNotExistError,
             IndyErrorKind::PaymentOperationNotSupported => ErrorCode::PaymentOperationNotSupportedError,
             IndyErrorKind::PaymentExtraFunds => ErrorCode::PaymentExtraFundsError,
+            IndyErrorKind::TransactionNotAllowed => ErrorCode::TransactionNotAllowedError,
         }
     }
 }
@@ -411,6 +414,7 @@ impl From<ErrorCode> for IndyErrorKind {
             ErrorCode::PaymentSourceDoesNotExistError => IndyErrorKind::PaymentSourceDoesNotExist,
             ErrorCode::PaymentOperationNotSupportedError => IndyErrorKind::PaymentOperationNotSupported,
             ErrorCode::PaymentExtraFundsError => IndyErrorKind::PaymentExtraFunds,
+            ErrorCode::TransactionNotAllowedError => IndyErrorKind::TransactionNotAllowed,
             _code => IndyErrorKind::InvalidState
         }
     }
