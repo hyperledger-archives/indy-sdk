@@ -40,7 +40,7 @@ use std::rc::Rc;
 
 fn main() {
     #[cfg(target_os = "windows")]
-    ansi_term::enable_ansi_support().is_ok();
+    let _ = ansi_term::enable_ansi_support().is_ok();
 
     let mut args = env::args();
     args.next(); // skip library
