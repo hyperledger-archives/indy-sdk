@@ -195,6 +195,12 @@ indy.updateRevocationState = function updateRevocationState (blobStorageReaderHa
   return cb.promise
 }
 
+indy.generateNonce = function generateNonce (cb) {
+  cb = wrapIndyCallback(cb)
+  capi.generateNonce(cb)
+  return cb.promise
+}
+
 indy.openBlobStorageReader = function openBlobStorageReader (type, config, cb) {
   cb = wrapIndyCallback(cb)
   capi.openBlobStorageReader(type, toJson(config), cb)
@@ -812,6 +818,14 @@ indy.buildVerifyPaymentReq = function buildVerifyPaymentReq (wh, submitterDid, r
 indy.parseVerifyPaymentResponse = function parseVerifyPaymentResponse (paymentMethod, resp, cb) {
   cb = wrapIndyCallback(cb, fromJson)
   capi.parseVerifyPaymentResponse(paymentMethod, toJson(resp), cb)
+  return cb.promise
+}
+
+indy.getRequestInfo = function getRequestInfo (getAuthRuleResponse, requesterInfo, fees, cb) {
+  cb = wrapIndyCallback(cb, function (data) {
+    return fromJson(data)
+  })
+  capi.getRequestInfo(toJson(getAuthRuleResponse), toJson(requesterInfo), toJson(fees), cb)
   return cb.promise
 }
 

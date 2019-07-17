@@ -548,6 +548,19 @@ impl LedgerService {
         }
         Ok(())
     }
+
+    pub fn parse_get_auth_rule_response(&self, response: &str) -> IndyResult<Vec<AuthRule>> {
+        trace!("parse_get_auth_rule_response >>> response: {:?}", response);
+
+        let response: Reply<GetAuthRuleResult> = serde_json::from_str(&response)
+            .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidTransaction, format!("Cannot parse GetAuthRule response: {:?}", err)))?;
+
+        let res = response.result().data;
+
+        trace!("parse_get_auth_rule_response <<< {:?}", res);
+
+        Ok(res)
+    }
 }
 
 #[cfg(test)]
@@ -899,10 +912,10 @@ mod tests {
 
         fn _role_constraint() -> Constraint {
             Constraint::RoleConstraint(RoleConstraint {
-                sig_count: Some(0),
+                sig_count: 0,
                 metadata: None,
-                role: Some(String::new()),
-                need_to_be_owner: Some(false),
+                role: String::new(),
+                need_to_be_owner: false,
             })
         }
 

@@ -496,7 +496,7 @@ fn _build_verify_req(command_handle: CommandHandle, wallet_handle: WalletHandle,
     let receipt = c_str!(receipt);
 
     ErrorCode::from(unsafe {
-      payments::indy_build_verify_payment_req(command_handle, wallet_handle, opt_c_ptr!(submitter_did, submitter_did_str), receipt.as_ptr(), cb)
+        payments::indy_build_verify_payment_req(command_handle, wallet_handle, opt_c_ptr!(submitter_did, submitter_did_str), receipt.as_ptr(), cb)
     })
 }
 
@@ -513,6 +513,51 @@ fn _parse_verify_response(command_handle: CommandHandle, payment_method: &str, r
     let resp_json = c_str!(resp_json);
 
     ErrorCode::from(unsafe {
-      payments::indy_parse_verify_payment_response(command_handle, payment_method.as_ptr(), resp_json.as_ptr(), cb)
+        payments::indy_parse_verify_payment_response(command_handle, payment_method.as_ptr(), resp_json.as_ptr(), cb)
+    })
+}
+
+/// Gets request requirements (with minimal price) correspondent to specific auth rule
+/// in case the requester can perform this action.
+///
+/// EXPERIMENTAL
+///
+/// If the requester does not match to the request constraints `TransactionNotAllowed` error will be thrown.
+///
+/// # Arguments
+/// * `get_auth_rule_response_json`: response on GET_AUTH_RULE request returning action constraints set on the ledger.
+/// * `requester_info_json`: {
+///     "role": string - role of a user which can sign a transaction.
+///     "sig_count": u64 - number of signers.
+///     "is_owner": bool - if user is an owner of transaction.
+/// }
+/// * `fees_json`: fees set on the ledger (result of `parse_get_txn_fees_response`).
+///
+/// # Returns
+/// * `request_info_json`: request info if a requester match to the action auth rule.
+/// {
+///     "price": u64 - tokens amount required for action performing,
+///     "requirements": [{
+///         "role": string - role of users who should sign,
+///         "sig_count": string - count of signers,
+///         "need_to_be_owner": bool - if requester need to be owner,
+///     }]
+/// }
+///
+pub fn get_request_info(get_auth_rule_resp_json: &str, requester_info_json: &str, fees_json: &str) -> Box<Future<Item=String, Error=IndyError>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+
+    let err = _get_request_info(command_handle, get_auth_rule_resp_json, requester_info_json, fees_json, cb);
+
+    ResultHandler::str(command_handle, err, receiver)
+}
+
+fn _get_request_info(command_handle: CommandHandle, get_auth_rule_resp_json: &str, requester_info_json: &str, fees_json: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+    let get_auth_rule_resp_json = c_str!(get_auth_rule_resp_json);
+    let requester_info_json = c_str!(requester_info_json);
+    let fees_json = c_str!(fees_json);
+
+    ErrorCode::from(unsafe {
+        payments::indy_get_request_info(command_handle, get_auth_rule_resp_json.as_ptr(), requester_info_json.as_ptr(), fees_json.as_ptr(), cb)
     })
 }

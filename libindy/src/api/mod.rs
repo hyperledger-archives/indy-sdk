@@ -248,6 +248,9 @@ pub enum ErrorCode
     // Extra funds on inputs
     PaymentExtraFundsError = 705,
 
+    // The transaction is not allowed to a requester
+    TransactionNotAllowedError = 706,
+
 }
 
 /// Set libindy runtime configuration. Can be optionally called to change current params.

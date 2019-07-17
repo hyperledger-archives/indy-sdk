@@ -1,4 +1,4 @@
-use command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata};
+use command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata, DynamicCompletionType};
 use commands::*;
 use utils::table::print_list_table;
 
@@ -165,7 +165,7 @@ pub mod use_command {
     use super::*;
 
     command!(CommandMetadata::build("use", "Use DID")
-                .add_main_param("did", "Did stored in wallet")
+                .add_main_param_with_dynamic_completion("did", "Did stored in wallet", DynamicCompletionType::Did)
                 .add_example("did use VsKV7grR1BUE29mG2Fm2kX")
                 .finalize());
 
@@ -398,8 +398,8 @@ pub mod list_command {
     }
 }
 
-pub fn dids(ctx: &CommandContext) -> Vec<(String, String)> {
-    get_opened_wallet(&ctx)
+fn _list_dids(ctx: &CommandContext) -> Vec<serde_json::Value> {
+    get_opened_wallet(ctx)
         .and_then(|(wallet_handle, _)|
             Did::list_dids_with_meta(wallet_handle).ok()
         )
@@ -407,6 +407,10 @@ pub fn dids(ctx: &CommandContext) -> Vec<(String, String)> {
             serde_json::from_str::<Vec<serde_json::Value>>(&dids).ok()
         )
         .unwrap_or(vec![])
+}
+
+pub fn dids(ctx: &CommandContext) -> Vec<(String, String)> {
+    _list_dids(ctx)
         .into_iter()
         .map(|did|
             (did["did"].as_str().map(String::from).unwrap_or(String::new()), did["verkey"].as_str().map(String::from).unwrap_or(String::new()))
@@ -415,6 +419,15 @@ pub fn dids(ctx: &CommandContext) -> Vec<(String, String)> {
             let verkey_ = Did::abbreviate_verkey(&did, &verkey).unwrap_or(verkey);
             (did, verkey_)
         })
+        .collect()
+}
+
+pub fn list_dids(ctx: &CommandContext) -> Vec<String> {
+    _list_dids(ctx)
+        .into_iter()
+        .map(|did|
+            did["did"].as_str().map(String::from).unwrap_or(String::new())
+        )
         .collect()
 }
 

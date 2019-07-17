@@ -171,6 +171,9 @@ class ErrorCode(IntEnum):
     # Extra funds on inputs
     PaymentExtraFundsError = 705
 
+    # The transaction is not allowed to a requester
+    TransactionNotAllowedError = 706
+
 
 class IndyError(Exception):
     """ Base Exception for all errors raised by Indy """
