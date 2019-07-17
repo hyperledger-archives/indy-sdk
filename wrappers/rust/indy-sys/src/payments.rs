@@ -3,7 +3,6 @@ use super::*;
 use {CString, Error, CommandHandle, WalletHandle};
 
 extern {
-
     #[no_mangle]
     pub fn indy_register_payment_method(command_handle: CommandHandle,
                                         payment_method: CString,
@@ -129,6 +128,13 @@ extern {
                                               payment_method: CString,
                                               resp_json: CString,
                                               cb: Option<ResponseStringCB>) -> Error;
+
+    #[no_mangle]
+    pub fn indy_get_request_info(command_handle: CommandHandle,
+                                 get_auth_rule_resp_json: CString,
+                                 requester_info_json: CString,
+                                 fees_json: CString,
+                                 cb: Option<ResponseStringCB>) -> Error;
 }
 
 pub type CreatePaymentAddressCB = extern fn(command_handle: CommandHandle,
@@ -209,10 +215,10 @@ pub type BuildVerifyPaymentReqCB = extern fn(command_handle: CommandHandle,
                                              submitter_did: CString,
                                              receipt: CString,
                                              cb: Option<extern fn(command_handle_: CommandHandle,
-                                                           err: Error,
-                                                           verify_txn_json: CString) -> Error>) -> Error;
+                                                                  err: Error,
+                                                                  verify_txn_json: CString) -> Error>) -> Error;
 pub type ParseVerifyPaymentResponseCB = extern fn(command_handle: CommandHandle,
                                                   resp_json: CString,
                                                   cb: Option<extern fn(command_handle_: CommandHandle,
-                                                                err: Error,
-                                                                txn_json: CString) -> Error>) -> Error;
+                                                                       err: Error,
+                                                                       txn_json: CString) -> Error>) -> Error;
