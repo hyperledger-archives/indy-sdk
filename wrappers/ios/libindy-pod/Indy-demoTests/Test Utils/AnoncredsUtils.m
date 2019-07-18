@@ -810,6 +810,25 @@
     return err;
 }
 
+- (NSError *)generateNonce:(NSString **)nonce {
+    __block NSError *err = nil;
+    __block NSString *outNonce;
+    XCTestExpectation *completionExpectation = nil;
+
+    completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+
+    [IndyAnoncreds generateNonce:^(NSError *error, NSString *n) {
+                                  err = error;
+                                  outNonce = n;
+                                  [completionExpectation fulfill];
+                              }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
+
+    if (nonce) {*nonce = outNonce;}
+    return err;
+}
+
 - (NSError *)verifierVerifyProofRequest:(NSString *)proofRequestJson
                               proofJSON:(NSString *)proofJSON
                             schemasJSON:(NSString *)schemasJSON

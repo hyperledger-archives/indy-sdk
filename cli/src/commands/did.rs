@@ -1,4 +1,4 @@
-use command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata};
+use command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata, DynamicCompletionType};
 use commands::*;
 use utils::table::print_list_table;
 
@@ -165,7 +165,7 @@ pub mod use_command {
     use super::*;
 
     command!(CommandMetadata::build("use", "Use DID")
-                .add_main_param("did", "Did stored in wallet")
+                .add_main_param_with_dynamic_completion("did", "Did stored in wallet", DynamicCompletionType::Did)
                 .add_example("did use VsKV7grR1BUE29mG2Fm2kX")
                 .finalize());
 
@@ -199,6 +199,8 @@ pub mod rotate_key_command {
 
     command!(CommandMetadata::build("rotate-key", "Rotate keys for active did")
                 .add_optional_deferred_param("seed", "If not provide then a random one will be created (UTF-8, base64 or hex)")
+                .add_optional_param("source_payment_address","Payment address of sender.")
+                .add_optional_param("fee","Transaction fee set on the ledger.")
                 .add_optional_param("fees_inputs","The list of source inputs")
                 .add_optional_param("fees_outputs","The list of outputs in the following format: (recipient, amount)")
                 .add_optional_param("extra","Optional information for fees payment operation")
@@ -212,9 +214,15 @@ pub mod rotate_key_command {
         trace!("execute >> ctx {:?} params {:?}", ctx, secret!(params));
 
         let seed = get_opt_str_param("seed", params).map_err(error_err!())?;
+
+        let source_payment_address = get_opt_str_param("source_payment_address", params).map_err(error_err!())?;
+        let fee = get_opt_number_param::<u64>("fee", params).map_err(error_err!())?;
+
         let fees_inputs = get_opt_str_array_param("fees_inputs", params).map_err(error_err!())?;
         let fees_outputs = get_opt_str_tuple_array_param("fees_outputs", params).map_err(error_err!())?;
+
         let extra = get_opt_str_param("extra", params).map_err(error_err!())?;
+
         let resume = get_opt_bool_param("resume", params).map_err(error_err!())?.unwrap_or(false);
 
         let did = ensure_active_did(&ctx)?;
@@ -300,7 +308,7 @@ pub mod rotate_key_command {
 
             ledger::set_author_agreement(ctx, &mut request)?;
 
-            let payment_method = set_request_fees(&mut request, wallet_handle, Some(&did), &fees_inputs, &fees_outputs, extra)?;
+            let payment_method = set_request_fees(ctx, &mut request, wallet_handle, Some(&did), source_payment_address, fee, fees_inputs, fees_outputs, extra)?;
 
             let response_json = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &did, &request)
                 .map_err(|err| {
@@ -398,6 +406,38 @@ pub mod list_command {
     }
 }
 
+fn _list_dids(ctx: &CommandContext) -> Vec<serde_json::Value> {
+    get_opened_wallet(ctx)
+        .and_then(|(wallet_handle, _)|
+            Did::list_dids_with_meta(wallet_handle).ok()
+        )
+        .and_then(|dids|
+            serde_json::from_str::<Vec<serde_json::Value>>(&dids).ok()
+        )
+        .unwrap_or(vec![])
+}
+
+pub fn dids(ctx: &CommandContext) -> Vec<(String, String)> {
+    _list_dids(ctx)
+        .into_iter()
+        .map(|did|
+            (did["did"].as_str().map(String::from).unwrap_or(String::new()), did["verkey"].as_str().map(String::from).unwrap_or(String::new()))
+        )
+        .map(|(did, verkey)| {
+            let verkey_ = Did::abbreviate_verkey(&did, &verkey).unwrap_or(verkey);
+            (did, verkey_)
+        })
+        .collect()
+}
+
+pub fn list_dids(ctx: &CommandContext) -> Vec<String> {
+    _list_dids(ctx)
+        .into_iter()
+        .map(|did|
+            did["did"].as_str().map(String::from).unwrap_or(String::new())
+        )
+        .collect()
+}
 
 #[cfg(test)]
 pub mod tests {

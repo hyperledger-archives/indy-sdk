@@ -888,6 +888,20 @@ NAN_METHOD(updateRevocationState) {
   delete arg5;
 }
 
+void generateNonce_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbString(xerr, arg0);
+  }
+}
+
+NAN_METHOD(generateNonce) {
+  INDY_ASSERT_NARGS(generateNonce, 1)
+  INDY_ASSERT_FUNCTION(generateNonce, 0)
+  IndyCallback* icb = argToIndyCb(info[0]);
+  indyCalled(icb, indy_generate_nonce(icb->handle, generateNonce_cb));
+}
+
 void openBlobStorageReader_cb(indy_handle_t handle, indy_error_t xerr, indy_handle_t arg0) {
   IndyCallback* icb = IndyCallback::getCallback(handle);
   if(icb != nullptr){
@@ -2992,6 +3006,29 @@ NAN_METHOD(parseVerifyPaymentResponse) {
   delete arg1;
 }
 
+void getRequestInfo_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbString(xerr, arg0);
+  }
+}
+
+NAN_METHOD(getRequestInfo) {
+  INDY_ASSERT_NARGS(buildGetAttribRequest, 4)
+  INDY_ASSERT_STRING(getRequestInfo, 0, getAuthRuleResponse)
+  INDY_ASSERT_STRING(getRequestInfo, 1, requesterInfo)
+  INDY_ASSERT_STRING(getRequestInfo, 2, fees)
+  INDY_ASSERT_FUNCTION(getRequestInfo, 3)
+  const char* arg0 = argToCString(info[0]);
+  const char* arg1 = argToCString(info[1]);
+  const char* arg2 = argToCString(info[2]);
+  IndyCallback* icb = argToIndyCb(info[3]);
+  indyCalled(icb, indy_get_request_info(icb->handle, arg0, arg1, arg2, getRequestInfo_cb));
+  delete arg0;
+  delete arg1;
+  delete arg2;
+}
+
 void createPoolLedgerConfig_cb(indy_handle_t handle, indy_error_t xerr) {
   IndyCallback* icb = IndyCallback::getCallback(handle);
   if(icb != nullptr){
@@ -3376,6 +3413,7 @@ NAN_MODULE_INIT(InitAll) {
   Nan::Export(target, "verifierVerifyProof", verifierVerifyProof);
   Nan::Export(target, "createRevocationState", createRevocationState);
   Nan::Export(target, "updateRevocationState", updateRevocationState);
+  Nan::Export(target, "generateNonce", generateNonce);
   Nan::Export(target, "openBlobStorageReader", openBlobStorageReader);
   Nan::Export(target, "openBlobStorageWriter", openBlobStorageWriter);
   Nan::Export(target, "createKey", createKey);
@@ -3476,6 +3514,7 @@ NAN_MODULE_INIT(InitAll) {
   Nan::Export(target, "buildVerifyPaymentReq", buildVerifyPaymentReq);
   Nan::Export(target, "parseVerifyPaymentResponse", parseVerifyPaymentResponse);
   Nan::Export(target, "createPoolLedgerConfig", createPoolLedgerConfig);
+  Nan::Export(target, "getRequestInfo", getRequestInfo);
   Nan::Export(target, "openPoolLedger", openPoolLedger);
   Nan::Export(target, "refreshPoolLedger", refreshPoolLedger);
   Nan::Export(target, "listPools", listPools);

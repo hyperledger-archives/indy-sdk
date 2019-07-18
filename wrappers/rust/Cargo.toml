@@ -30,7 +30,7 @@ log = { version = "0.4.1", features = ["std"] }
 num-traits = "0.2"
 num-derive = "0.2"
 indy-sys = { path ="indy-sys", version = "=1.10.0" }
-libc = "=0.2.41"
+libc = "=0.2.60"
 serde_json = "1.0.22"
 serde_derive = "1.0.76"
 serde = "1.0.76"

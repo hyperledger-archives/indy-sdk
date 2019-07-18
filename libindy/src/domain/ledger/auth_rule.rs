@@ -40,12 +40,12 @@ pub enum Constraint {
 */
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct RoleConstraint {
-    pub sig_count: Option<u32>,
-    pub role: Option<String>,
+    pub sig_count: u32,
+    pub role: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<Value>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub need_to_be_owner: Option<bool>,
+    #[serde(default)]
+    pub need_to_be_owner: bool,
 }
 
 /**
@@ -210,6 +210,21 @@ pub struct AddAuthRuleData {
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct EditAuthRuleData {
     pub auth_type: String,
+    pub field: String,
+    pub old_value: Option<String>,
+    pub new_value: Option<String>,
+    pub constraint: Constraint,
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
+pub struct GetAuthRuleResult {
+    pub data: Vec<AuthRule>
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+pub struct AuthRule {
+    pub auth_type: String,
+    pub auth_action: String,
     pub field: String,
     pub old_value: Option<String>,
     pub new_value: Option<String>,
