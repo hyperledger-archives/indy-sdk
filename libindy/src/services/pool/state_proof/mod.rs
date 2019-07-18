@@ -1239,9 +1239,6 @@ mod tests {
             "kvs_to_verify": {
                 "type": "Simple",
                 "kvs": [],
-                "verification_type": {
-                    "Simple": ()
-                }
             },
         }]);
 
@@ -1277,7 +1274,7 @@ mod tests {
                 "type": "Simple",
                 "kvs": [],
                 "verification_type": {
-                    "PrefixLimit": (1, 2, "abc")
+                    "NumericalSuffixAscendingNoGaps": (1, 2, "abc")
                 }
             },
         }]);
@@ -1314,7 +1311,7 @@ mod tests {
                 "type": "Simple",
                 "kvs": [],
                 "verification_type": {
-                    "PrefixLimit": (serde_json::Value::Null, serde_json::Value::Null, "abc")
+                    "NumericalSuffixAscendingNoGaps": (serde_json::Value::Null, serde_json::Value::Null, "abc")
                 }
             },
         }]);
