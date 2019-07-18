@@ -186,7 +186,7 @@ impl Node {
                         trace!("Checking nibble {}", nibble);
                         let mut sub_res: Vec<(Vec<u8>, String)> = next._get_all_values(db)?;
                         trace!("Got some values: {:?}", sub_res);
-                        let mut sub_res = sub_res.into_iter().map(|(mut key, val)| {
+                        sub_res = sub_res.into_iter().map(|(mut key, val)| {
                             let mut key_new: Vec<u8> = vec![nibble as u8];
                             key_new.append(&mut key);
                             (key_new, val.to_owned())

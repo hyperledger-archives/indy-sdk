@@ -100,7 +100,7 @@ pub fn verify_parsed_sp(parsed_sps: Vec<ParsedSP>,
         match parsed_sp.kvs_to_verify {
             KeyValuesInSP::Simple(kvs) => {
                 match kvs.verification_type {
-                    KeyValueSimpleDataVerificationType::Simple => {
+                    KeyValueSimpleDataVerificationType::Simple() => {
                         for (k, v) in kvs.kvs {
                             let key = unwrap_or_return!(base64::decode(&k), false);
                             if !_verify_proof(proof_nodes.as_slice(),
@@ -399,7 +399,7 @@ fn _parse_reply_for_sp(json_msg: &SJsonValue, data: Option<&str>, parsed_data: &
         multi_signature: json_msg["state_proof"]["multi_signature"].clone(),
         kvs_to_verify: KeyValuesInSP::Simple(KeyValueSimpleData {
             kvs: vec![(base64::encode(sp_key), value)],
-            verification_type: KeyValueSimpleDataVerificationType::Simple
+            verification_type: KeyValueSimpleDataVerificationType::Simple()
         }),
     })
 }
@@ -451,7 +451,7 @@ fn _parse_reply_for_multi_sp(_json_msg: &SJsonValue, data: Option<&str>, parsed_
         multi_signature,
         kvs_to_verify: KeyValuesInSP::Simple(KeyValueSimpleData {
             kvs: vec![(base64::encode(sp_key), value)],
-            verification_type: KeyValueSimpleDataVerificationType::Simple
+            verification_type: KeyValueSimpleDataVerificationType::Simple()
         }),
     }))
 }
@@ -1258,7 +1258,7 @@ mod tests {
         assert_eq!(parsed_sp.proof_nodes, "pns");
         assert_eq!(parsed_sp.kvs_to_verify,
                    KeyValuesInSP::Simple(KeyValueSimpleData { kvs: Vec::new(),
-                       verification_type: KeyValueSimpleDataVerificationType::Simple }));
+                       verification_type: KeyValueSimpleDataVerificationType::Simple() }));
     }
 
     #[test]
