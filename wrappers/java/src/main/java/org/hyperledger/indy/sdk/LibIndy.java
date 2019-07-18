@@ -4,6 +4,7 @@ import java.io.File;
 
 import com.sun.jna.*;
 import com.sun.jna.ptr.PointerByReference;
+import static com.sun.jna.Native.detach;
 
 public abstract class LibIndy {
 
@@ -260,7 +261,9 @@ public abstract class LibIndy {
 
 			@SuppressWarnings({"unused", "unchecked"})
 			public void callback(Pointer context, int level, String target, String message, String module_path, String file, int line) {
-				 org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(String.format("%s.native.%s", LibIndy.class.getName(), target.replace("::", ".")));
+				detach(false);
+
+				org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(String.format("%s.native.%s", LibIndy.class.getName(), target.replace("::", ".")));
 
 				String logMessage = String.format("%s:%d | %s", file, line, message);
 
