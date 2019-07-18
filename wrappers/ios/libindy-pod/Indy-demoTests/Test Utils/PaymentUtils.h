@@ -96,5 +96,12 @@
 - (NSError *)parseVerifyPaymentResponse:(NSString *)responseJson
                           paymentMethod:(NSString *)paymentMethod
                         receiptInfoJson:(NSString **)receiptInfoJson;
+
+// MARK: - Get Request Info
+- (NSError *)getRequestInfoForRequester:(NSString *)requesterInfoJson
+                getAuthRuleResponseJson:(NSString *)getAuthRuleResponseJson
+                               feesJson:(NSString *)feesJson
+                        requestInfoJson:(NSString **)requestInfoJson;
+
 @end
 

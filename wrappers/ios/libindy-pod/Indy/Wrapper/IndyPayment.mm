@@ -356,4 +356,28 @@
         });
     }
 }
+
++ (void)getRequestInfoForRequester:(NSString *)requesterInfoJson
+           getAuthRuleResponseJson:(NSString *)getAuthRuleResponseJson
+                          feesJson:(NSString *)feesJson
+                        completion:(void (^)(NSError *error, NSString *requestInfoJson))completion {
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = indy_get_request_info(handle,
+            [getAuthRuleResponseJson UTF8String],
+            [requesterInfoJson UTF8String],
+            [feesJson UTF8String],
+            IndyWrapperCommonStringCallback);
+
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret], nil);
+        });
+    }
+}
+
 @end

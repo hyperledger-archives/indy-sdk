@@ -8,7 +8,6 @@ use issuer_credential;
 use std::ptr;
 use utils::threadpool::spawn;
 use error::prelude::*;
-use messages::get_message::Message;
 
 /// Create a Issuer Credential object that provides a credential for an enterprise's user
 /// Assumes a credential definition has been written to the ledger.
@@ -125,7 +124,7 @@ pub extern fn vcx_issuer_send_credential_offer(command_handle: u32,
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
 
     let source_id = issuer_credential::get_source_id(credential_handle).unwrap_or_default();
-    trace!("vcx_issuer_send_credential(command_handle: {}, credential_handle: {}, connection_handle: {}) source_id: {}",
+    trace!("vcx_issuer_send_credential_offer(command_handle: {}, credential_handle: {}, connection_handle: {}) source_id: {}",
            command_handle, credential_handle, connection_handle, source_id);
 
     if !issuer_credential::is_valid_handle(credential_handle) {
@@ -151,6 +150,61 @@ pub extern fn vcx_issuer_send_credential_offer(command_handle: u32,
         };
 
         cb(command_handle, err);
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
+
+/// Send a credential offer to user showing what will be included in the actual credential
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// credential_handle: Credential handle that was provided during creation. Used to identify credential object
+///
+/// connection_handle: Connection handle that identifies pairwise connection
+///
+/// cb: Callback that provides error status of credential offer
+///
+/// #Returns
+/// Error code as a u32
+#[no_mangle]
+pub extern fn vcx_issuer_get_credential_offer_msg(command_handle: u32,
+                                                  credential_handle: u32,
+                                                  connection_handle: u32,
+                                                  cb: Option<extern fn(xcommand_handle: u32, err: u32, msg: *const c_char)>) -> u32 {
+    info!("vcx_issuer_get_credential_offer_msg >>>");
+
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+
+    let source_id = issuer_credential::get_source_id(credential_handle).unwrap_or_default();
+    trace!("vcx_issuer_get_credential_offer_msg(command_handle: {}, credential_handle: {}, connection_handle: {}) source_id: {}",
+           command_handle, credential_handle, connection_handle, source_id);
+
+    if !issuer_credential::is_valid_handle(credential_handle) {
+        return VcxError::from(VcxErrorKind::InvalidIssuerCredentialHandle).into()
+    }
+
+    if !connection::is_valid_handle(connection_handle) {
+        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into()
+    }
+
+    spawn(move || {
+        match issuer_credential::generate_credential_offer_msg(credential_handle, connection_handle) {
+            Ok((msg, _)) => {
+                let msg = CStringUtils::string_to_cstring(msg);
+                trace!("vcx_issuer_get_credential_offer_msg_cb(command_handle: {}, credential_handle: {}, rc: {}) source_id: {}",
+                       command_handle, credential_handle, error::SUCCESS.message, source_id);
+                cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
+            }
+            Err(x) => {
+                warn!("vcx_issuer_get_credential_offer_msg_cb(command_handle: {}, credential_handle: {}, rc: {}) source_id: {})",
+                      command_handle, credential_handle, x, source_id);
+                cb(command_handle, x.into(), ptr::null_mut());
+            }
+        };
 
         Ok(())
     });
@@ -235,11 +289,6 @@ pub extern fn vcx_issuer_credential_update_state_with_message(command_handle: u3
     if !issuer_credential::is_valid_handle(credential_handle) {
         return VcxError::from(VcxErrorKind::InvalidIssuerCredentialHandle).into()
     }
-
-    let message: Message = match serde_json::from_str(&message) {
-        Ok(x) => x,
-        Err(_) => return VcxError::from(VcxErrorKind::InvalidJson).into(),
-    };
 
     spawn(move || {
         match issuer_credential::update_state(credential_handle, Some(message)) {
@@ -368,6 +417,60 @@ pub extern fn vcx_issuer_send_credential(command_handle: u32,
         };
 
         cb(command_handle, err);
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
+
+/// Send Credential that was requested by user
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// credential_handle: Credential handle that was provided during creation. Used to identify credential object
+///
+/// connection_handle: Connection handle that identifies pairwise connection
+///
+/// cb: Callback that provides error status of sending the credential
+///
+/// #Returns
+/// Error code as a u32
+#[no_mangle]
+pub extern fn vcx_issuer_get_credential_msg(command_handle: u32,
+                                            credential_handle: u32,
+                                            connection_handle: u32,
+                                            cb: Option<extern fn(xcommand_handle: u32, err: u32, msg: *const c_char)>) -> u32 {
+    info!("vcx_issuer_get_credential_msg >>>");
+
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+
+    if !issuer_credential::is_valid_handle(credential_handle) {
+        return VcxError::from(VcxErrorKind::InvalidIssuerCredentialHandle).into()
+    }
+
+    if !connection::is_valid_handle(connection_handle) {
+        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into()
+    }
+
+    let source_id = issuer_credential::get_source_id(credential_handle).unwrap_or_default();
+    trace!("vcx_issuer_get_credential_msg(command_handle: {}, credential_handle: {}, connection_handle: {}) source_id: {}",
+           command_handle, credential_handle, connection_handle, source_id);
+    spawn(move || {
+        match issuer_credential::generate_credential_msg(credential_handle, connection_handle) {
+            Ok(msg) => {
+                let msg = CStringUtils::string_to_cstring(msg);
+                trace!("vcx_issuer_get_credential_msg_cb(command_handle: {}, credential_handle: {}, rc: {}) source_id: {}",
+                       command_handle, credential_handle, error::SUCCESS.message, source_id);
+                cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
+            }
+            Err(x) => {
+                warn!("vcx_issuer_get_credential_msg_cb(command_handle: {}, credential_handle: {}, rc: {}) source_id: {}",
+                      command_handle, credential_handle, x, source_id);
+                cb(command_handle, x.into(), ptr::null_mut());
+            }
+        };
 
         Ok(())
     });
@@ -782,6 +885,25 @@ mod tests {
     }
 
     #[test]
+    fn test_vcx_issuer_get_credential_offer_msg() {
+        init!("true");
+        let handle = issuer_credential::from_string(DEFAULT_SERIALIZED_ISSUER_CREDENTIAL).unwrap();
+        assert_eq!(issuer_credential::get_state(handle).unwrap(), VcxStateType::VcxStateInitialized as u32);
+
+        let connection_handle = ::connection::tests::build_test_connection();
+        connection::connect(connection_handle, None).unwrap();
+
+        let cb = return_types_u32::Return_U32_STR::new().unwrap();
+        assert_eq!(vcx_issuer_get_credential_offer_msg(cb.command_handle,
+                                                       handle,
+                                                       connection_handle,
+                                                       Some(cb.get_callback())),
+                   error::SUCCESS.code_num);
+        let msg = cb.receive(Some(Duration::from_secs(10))).unwrap().unwrap();
+        assert!(msg.len() > 0);
+    }
+
+    #[test]
     fn test_vcx_issuer_send_a_credential() {
         init!("true");
         settings::set_config_value(settings::CONFIG_INSTITUTION_DID, DEFAULT_DID);
@@ -800,6 +922,28 @@ mod tests {
                                               Some(cb.get_callback())),
                    error::SUCCESS.code_num);
         cb.receive(Some(Duration::from_secs(10))).unwrap();
+    }
+
+    #[test]
+    fn test_vcx_issuer_get_credential_msg() {
+        init!("true");
+        settings::set_config_value(settings::CONFIG_INSTITUTION_DID, DEFAULT_DID);
+        let test_name = "test_vcx_issuer_get_credential_msg";
+        let handle = issuer_credential::from_string(&issuer_credential_state_accepted()).unwrap();
+
+        // create connection
+        let connection_handle = ::connection::tests::build_test_connection();
+        connection::connect(connection_handle, None).unwrap();
+
+        // send the credential
+        let cb = return_types_u32::Return_U32_STR::new().unwrap();
+        assert_eq!(vcx_issuer_get_credential_msg(cb.command_handle,
+                                                 handle,
+                                                 connection_handle,
+                                                 Some(cb.get_callback())),
+                   error::SUCCESS.code_num);
+        let msg = cb.receive(Some(Duration::from_secs(10))).unwrap().unwrap();
+        assert!(msg.len() > 0);
     }
 
     #[test]

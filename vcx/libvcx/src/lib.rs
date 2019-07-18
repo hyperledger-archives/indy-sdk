@@ -189,7 +189,7 @@ mod tests {
         thread::sleep(Duration::from_millis(2000));
         // AS CONSUMER STORE CREDENTIAL
         tests::set_consumer();
-        credential::update_state(credential_handle).unwrap();
+        credential::update_state(credential_handle, None).unwrap();
         thread::sleep(Duration::from_millis(2000));
         println!("storing credential");
         credential::get_credential_id(credential_handle).unwrap();

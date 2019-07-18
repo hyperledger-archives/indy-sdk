@@ -399,5 +399,29 @@
     return err;
 }
 
+- (NSError *)getRequestInfoForRequester:(NSString *)requesterInfoJson
+                getAuthRuleResponseJson:(NSString *)getAuthRuleResponseJson
+                               feesJson:(NSString *)feesJson
+                        requestInfoJson:(NSString **)requestInfoJson {
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+    __block NSString *outRequestInfoJson = nil;
+
+    [IndyPayment getRequestInfoForRequester:requesterInfoJson
+                    getAuthRuleResponseJson:getAuthRuleResponseJson
+                                   feesJson:feesJson
+                                 completion:^(NSError *error, NSString *info) {
+                                      err = error;
+                                      outRequestInfoJson = info;
+                                      [completionExpectation fulfill];
+                                  }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
+
+    if (requestInfoJson) {*requestInfoJson = outRequestInfoJson;}
+
+    return err;
+}
+
 @end
 

@@ -79,9 +79,11 @@ test('anoncreds', async function (t) {
 
   await indy.proverCloseCredentialsSearch(sh)
 
+  var nonce = await indy.generateNonce()
+
   // Prover gets credentials for Proof Request
   var proofReq = {
-    'nonce': '123432421212',
+    'nonce': nonce,
     'name': 'proof_req_1',
     'version': '0.1',
     'requested_attributes': {
