@@ -30,7 +30,6 @@ use services::pool::types::HashableValue;
 use super::ursa::bls::Generator;
 use super::ursa::bls::VerKey;
 
-use rust_base58::FromBase58;
 use std::hash::{Hash, Hasher};
 use log_derive::logfn;
 
@@ -70,14 +69,14 @@ impl<T: Networker> RequestSM<T> {
                f: usize,
                cmd_ids: &Vec<i32>,
                nodes: &HashMap<String, Option<VerKey>>,
-               generator: Option<Generator>,
+               generator: Generator,
                pool_name: &str, timeout: i64, extended_timeout: i64) -> Self {
         RequestSM {
             f,
             cmd_ids: cmd_ids.clone(),
             nodes: nodes.clone(),
             pool_name: pool_name.to_string(),
-            generator: generator.unwrap_or(Generator::from_bytes(&DEFAULT_GENERATOR.from_base58().unwrap()).unwrap()),
+            generator,
             timeout,
             extended_timeout,
             state: RequestState::Start(StartState {
@@ -600,7 +599,7 @@ impl<T: Networker> RequestSM<T> {
 }
 
 pub trait RequestHandler<T: Networker> {
-    fn new(networker: Rc<RefCell<T>>, f: usize, cmd_ids: &Vec<i32>, nodes: &HashMap<String, Option<VerKey>>, generator: Option<Generator>, pool_name: &str, timeout: i64, extended_timeout: i64) -> Self;
+    fn new(networker: Rc<RefCell<T>>, f: usize, cmd_ids: &Vec<i32>, nodes: &HashMap<String, Option<VerKey>>, generator: Generator, pool_name: &str, timeout: i64, extended_timeout: i64) -> Self;
     fn process_event(&mut self, ore: Option<RequestEvent>) -> Option<PoolEvent>;
     fn is_terminal(&self) -> bool;
 }
@@ -610,7 +609,7 @@ pub struct RequestHandlerImpl<T: Networker> {
 }
 
 impl<T: Networker> RequestHandler<T> for RequestHandlerImpl<T> {
-    fn new(networker: Rc<RefCell<T>>, f: usize, cmd_ids: &Vec<i32>, nodes: &HashMap<String, Option<VerKey>>, generator: Option<Generator>, pool_name: &str, timeout: i64, extended_timeout: i64) -> Self {
+    fn new(networker: Rc<RefCell<T>>, f: usize, cmd_ids: &Vec<i32>, nodes: &HashMap<String, Option<VerKey>>, generator: Generator, pool_name: &str, timeout: i64, extended_timeout: i64) -> Self {
         RequestHandlerImpl {
             request_wrapper: Some(RequestSM::new(networker, f, cmd_ids, nodes, generator, pool_name, timeout, extended_timeout)),
         }
@@ -834,6 +833,7 @@ pub mod tests {
 
     use super::*;
     use std::io::Write;
+    use rust_base58::FromBase58;
 
     const MESSAGE: &str = "message";
     const REQ_ID: &str = "1";
@@ -849,7 +849,7 @@ pub mod tests {
     pub struct MockRequestHandler {}
 
     impl<T: Networker> RequestHandler<T> for MockRequestHandler {
-        fn new(_networker: Rc<RefCell<T>>, _f: usize, _cmd_ids: &Vec<i32>, _nodes: &HashMap<String, Option<VerKey>>, _generator: Option<Generator>, _pool_name: &str, _timeout: i64, _extended_timeout: i64) -> Self {
+        fn new(_networker: Rc<RefCell<T>>, _f: usize, _cmd_ids: &Vec<i32>, _nodes: &HashMap<String, Option<VerKey>>, _generator: Generator, _pool_name: &str, _timeout: i64, _extended_timeout: i64) -> Self {
             MockRequestHandler {}
         }
 
@@ -934,11 +934,12 @@ pub mod tests {
             nodes.insert(node_names[i].to_string(), None);
         }
 
+        let generator : Generator = Generator::from_bytes(&DEFAULT_GENERATOR.from_base58().unwrap()).unwrap();
         RequestHandlerImpl::new(networker,
                                 f,
                                 &vec![],
                                 &nodes,
-                                None,
+                                generator,
                                 pool_name,
                                 0,
                                 0)
