@@ -3107,8 +3107,56 @@ mod high_cases {
         }
 
         #[test]
-        fn verifier_verify_proof_works_for_wrong_proof() {
-            let proof_json = anoncreds::proof_json().replace("1139481716457488690172217916278103335", "1111111111111111111111111111111111111");
+        fn verifier_verify_proof_works_for_proof_does_not_correspond_to_request_attribute() {
+            let other_proof_req_json = json!({
+               "nonce":"123432421212",
+               "name":"proof_req_1",
+               "version":"0.1",
+               "requested_attributes": json!({
+                   "attr1_referent": json!({
+                       "name":"sex"
+                   })
+               }),
+               "requested_predicates": json!({}),
+            }).to_string();
+            let res = anoncreds::verifier_verify_proof(&other_proof_req_json,
+                                                       &anoncreds::proof_json(),
+                                                       &anoncreds::schemas_for_proof(),
+                                                       &anoncreds::cred_defs_for_proof(),
+                                                       "{}",
+                                                       "{}");
+            assert_code!(ErrorCode::AnoncredsProofRejected, res);
+        }
+
+        #[test]
+        fn verifier_verify_proof_works_for_wrong_revealed_attr_value() {
+            let proof_json = anoncreds::proof_json().replace(r#"name":"1139481716457488690172217916278103335"#, r#"name":"1111111111111111111111111111111111111"#);
+
+            let valid = anoncreds::verifier_verify_proof(&anoncreds::proof_request_attr(),
+                                                         &proof_json,
+                                                         &anoncreds::schemas_for_proof(),
+                                                         &anoncreds::cred_defs_for_proof(),
+                                                         "{}",
+                                                         "{}").unwrap();
+            assert!(!valid);
+        }
+
+        #[test]
+        fn verifier_verify_proof_works_for_wrong_encoded() {
+            let proof_json = anoncreds::proof_json().replace(r#"encoded":"1139481716457488690172217916278103335"#, r#"encoded":"1111111111111111111111111111111111111"#);
+
+            let valid = anoncreds::verifier_verify_proof(&anoncreds::proof_request_attr(),
+                                                         &proof_json,
+                                                         &anoncreds::schemas_for_proof(),
+                                                         &anoncreds::cred_defs_for_proof(),
+                                                         "{}",
+                                                         "{}").unwrap();
+            assert!(!valid);
+        }
+
+        #[test]
+        fn verifier_verify_proof_works_for_wrong_raw() {
+            let proof_json = anoncreds::proof_json().replace(r#"encoded":"Alex"#, r#"encoded":"Bob"#);
 
             let valid = anoncreds::verifier_verify_proof(&anoncreds::proof_request_attr(),
                                                          &proof_json,

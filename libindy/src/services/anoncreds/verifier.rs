@@ -45,12 +45,16 @@ impl Verifier {
         let received_predicates: HashMap<String, Identifier> = Verifier::_received_predicates(&full_proof)?;
         let received_self_attested_attrs: HashSet<String> = Verifier::_received_self_attested_attrs(&full_proof);
 
+        println!("received_revealed_attrs={:?}", &received_revealed_attrs);
+        println!("received_predicates={:?}", &received_predicates);
+        println!("received_self_attested_attrs={:?}", &received_self_attested_attrs);
+
         Verifier::_compare_attr_from_proof_and_request(proof_req,
                                                        &received_revealed_attrs,
                                                        &received_unrevealed_attrs,
                                                        &received_self_attested_attrs,
                                                        &received_predicates)?;
-
+        println!("Requested attributes and predicates present");
         Verifier::_verify_requested_restrictions(&proof_req,
                                                  schemas,
                                                  cred_defs,
@@ -58,7 +62,7 @@ impl Verifier {
                                                  &received_unrevealed_attrs,
                                                  &received_predicates,
                                                  &received_self_attested_attrs)?;
-
+        println!("Requested restrictions satisfy");
         let mut proof_verifier = CryptoVerifier::new_proof_verifier()?;
         let non_credential_schema = build_non_credential_schema()?;
 
@@ -96,6 +100,7 @@ impl Verifier {
             } else { (None, None) };
 
             let attrs_for_credential = Verifier::_get_revealed_attributes_for_credential(sub_proof_index, &full_proof.requested_proof, proof_req)?;
+            println!("revealed attrs_for_credential={:?}", &attrs_for_credential);
             let predicates_for_credential = Verifier::_get_predicates_for_credential(sub_proof_index, &full_proof.requested_proof, proof_req)?;
 
             let credential_schema = build_credential_schema(&schema.attr_names)?;
@@ -278,6 +283,7 @@ impl Verifier {
             let op = parse_from_json(
                 &build_wql_query(&info.name, &referent, &info.restrictions, &None)?
             )?;
+            println!("Operator is {:?}", &op);
 
             let filter = Verifier::_gather_filter_info(&referent, &proof_attr_identifiers, schemas, cred_defs)?;
 
