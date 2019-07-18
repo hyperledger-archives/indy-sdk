@@ -175,8 +175,71 @@ impl Node {
         Ok(res)
     }
 
+    pub fn get_node<'a, 'b>(&'a self, db: &'a TrieDB, path: &'b [u8]) -> IndyResult<Option<&Node>> {
+        trace!("Node::get_node >> path: {:?}", path);
+        let nibble_path = Node::path_to_nibbles(path);
+        trace!("Node::get_node >> made some nibbles >> nibbles: {:?}", nibble_path);
+        return self._get_node(db, nibble_path.as_slice())
+    }
+
+    fn _get_node<'a, 'b>(&'a self, db: &'a TrieDB, path: &'b [u8]) -> IndyResult<Option<&Node>> {
+        trace!("Getting node for prefix, cur node: {:?}, prefix: {:?}", self, path);
+        match *self {
+            Node::Full(ref node) => {
+                if path.is_empty() {
+                    return Ok(Some(self));
+                }
+                if let Some(ref next) = node.nodes[path[0] as usize] {
+                    return next._get_node(db, &path[1..]);
+                }
+                Ok(None)
+            }
+            Node::Hash(ref hash) => {
+                let hash = NodeHash::from_slice(hash.as_slice());
+                if let Some(ref next) = db.get(hash) {
+                    return next._get_node(db, path);
+                } else {
+                    return Err(err_msg(IndyErrorKind::InvalidStructure, "Incomplete key-value DB for Patricia Merkle Trie to get value by the key"));
+                }
+            }
+            Node::Leaf(ref pair) => {
+                let (is_leaf, pair_path) = Node::parse_path(pair.path.as_slice());
+
+                if !is_leaf {
+                    return Err(err_msg(IndyErrorKind::InvalidState, "Incorrect Patricia Merkle Trie: node marked as leaf but path contains extension flag"));
+                }
+
+                trace!("Node::_get_value in Leaf searched path {:?}, stored path {:?}", String::from_utf8(path.to_vec()), String::from_utf8(pair_path.clone()));
+
+                if pair_path == path {
+                    Ok(Some(self))
+                } else {
+                    Ok(None)
+                }
+            }
+            Node::Extension(ref pair) => {
+                let (is_leaf, pair_path) = Node::parse_path(pair.path.as_slice());
+
+                if is_leaf {
+                    return Err(err_msg(IndyErrorKind::InvalidState, "Incorrect Patricia Merkle Trie: node marked as extension but path contains leaf flag"));
+                }
+
+                trace!("current extension node path: {:?}", pair_path);
+
+                if path.starts_with(&pair_path) {
+                    pair.next._get_node(db, &path[pair_path.len()..])
+                } else {
+                    Ok(Some(self))
+                }
+            }
+            Node::Blank => {
+                Ok(None)
+            }
+        }
+    }
+
     fn _get_all_values<'a>(&'a self, db: &'a TrieDB) -> IndyResult<Vec<(Vec<u8>, String)>> {
-        trace!("Check proof, cur node: {:?}", self);
+        trace!("Getting all values, cur node: {:?}", self);
         match *self {
             Node::Full(ref node) => {
                 let mut res = vec![];
@@ -215,8 +278,7 @@ impl Node {
                     trace!("found value in db");
                     next._get_all_values(db)
                 } else {
-                    trace!("no value");
-                    Ok(vec![])
+                    Err(err_msg(IndyErrorKind::InvalidState, "Incorrect Patricia Merkle Trie: empty hash node when it should not be empty"))
                 }
             }
             Node::Leaf(ref pair) => {

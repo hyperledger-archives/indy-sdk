@@ -506,7 +506,14 @@ fn _verify_proof_range(proofs_rlp: &[u8],
         map.insert(node.get_hash(), node);
     }
     map.get(root_hash).map(|root| {
-        let res = root.get_all_values(&map).map_err(map_err_err!());
+        let prev = root.get_node(&map, prefix.as_bytes()).map_err(map_err_err!());
+        let node = if let Ok(Some(node)) = prev {
+            node
+        } else {
+            error!("Prefix not found, aborting");
+            return false
+        };
+        let res = node.get_all_values(&map).map_err(map_err_err!());
         trace!("All values from trie: {:?}", res);
         let vals = if let Some(vals) = res.ok() {
             vals
