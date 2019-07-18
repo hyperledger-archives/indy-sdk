@@ -688,27 +688,29 @@ async def get_request_info(get_auth_rule_response_json: str,
                            requester_info_json: str,
                            fees_json: str) -> str:
     """
-    Gets request requirements (with minimal price) correspondent to specific auth rule and
+    Gets request requirements (with minimal price) correspondent to specific auth rule
     in case the requester can perform this action.
-   
-    If the requester does not match to transaction auth rule, `TransactionNotAllowed` error will be thrown.
+ 
+    EXPERIMENTAL
+ 
+    If the requester does not match to the request constraints `TransactionNotAllowed` error will be thrown.
 
-    :param get_auth_rule_response_json: response on GET_AUTH_RULE request.
+    :param get_auth_rule_response_json: response on GET_AUTH_RULE request returning action constraints set on the ledger.
     :param requester_info_json: {
-        "role": string - role of a user which can sign transaction.
-        "count": u64 - count of users.
+        "role": string - role of a user which can sign a transaction.
+        "sig_count": u64 - number of signers.
         "is_owner": bool - if user is an owner of transaction.
     }
-    :param fees_json: fees are set on the ledger.
+    :param fees_json: fees set on the ledger (result of `parse_get_txn_fees_response`).
 
-    :return: request_info_json: request info if a requester match to the action auth rule.
+    :return: request_info_json: request info if a requester match to the action constraints.
     {
-        "price": u64 - tokens amount required for action performing,
-        "requirements": [{
-            "role": string - role of users who should sign,
-            "sig_count": u64 - count of signers,
-            "need_to_be_owner": bool - if requester need to be owner,
-        }]
+       "price": u64 - fee required for the action performing,
+       "requirements": [{
+           "role": string - role of users who should sign,
+           "sig_count": u64 - number of signers,
+           "need_to_be_owner": bool - if requester need to be owner
+       }]
     }
     """
 

@@ -781,6 +781,19 @@ pub  extern fn vcx_wallet_validate_payment_address(command_handle: i32,
     error::SUCCESS.code_num
 }
 
+/// Set the wallet handle before calling vcx_init_minimal
+///
+/// #params
+///
+/// handle: wallet handle that libvcx should use
+///
+/// #Returns
+/// Error code as u32
+#[no_mangle]
+pub extern fn vcx_wallet_set_handle(handle: i32) -> i32 {
+    wallet::set_wallet_handle(handle)
+}
+
 #[cfg(test)]
 pub mod tests {
     extern crate serde_json;

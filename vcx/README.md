@@ -15,7 +15,7 @@ infrastructure.
 ### Ubuntu based distributions (Ubuntu 16.04)
 It is recommended to install the VCX packages with APT:
 
-    sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 68DB5E88
+    sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CE7709D068DB5E88
     sudo add-apt-repository "deb https://repo.sovrin.org/sdk/deb xenial {release channel}"
     sudo apt-get update
     sudo apt-get install -y libvcx
@@ -167,7 +167,13 @@ The following wrappers are tested and complete.
 * [NodeJS](wrappers/node/README.md)
 
 ## Getting started guide
-[The tutorial](docs/source/getting-started/getting-started.md) which introduces Libvcx and explains how the whole ecosystem works, and how the functions in the SDK can be used to construct rich clients.
+[The tutorial](docs/getting-started/getting-started.md) which introduces Libvcx and explains how the whole ecosystem works, and how the functions in the SDK can be used to construct rich clients.
 
 ### Example use
 For the main workflow example check [demo](https://github.com/hyperledger/indy-sdk/tree/master/vcx/wrappers/python3/demo).
+
+## How to migrate
+The documents that provide necessary information for Libvcx migrations.
+ 
+* [v0.1.x → v0.2.0](docs/migration-guide-0.1.x-0.2.0.md)
+* [v0.2.x → v0.3.0](docs/migration-guide-0.2.x-0.3.0.md)

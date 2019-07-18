@@ -17,11 +17,9 @@ public abstract class LibVcx {
      */
     public interface API extends Library {
 
-        // pool.rs
-        public int vcx_init_with_config(int command_handle,
-                                        String config,
-                                        Callback cb);
+        public int vcx_init_with_config(int command_handle, String config, Callback cb);
         public int vcx_init(int command_handle, String config_path, Callback cb);
+        public int vcx_init_minimal(String config);
 
         public String vcx_error_c_message(int error_code);
         public int vcx_shutdown(boolean delete);
@@ -147,6 +145,9 @@ public abstract class LibVcx {
         /** Asynchronously sends the credential offer to the connection. */
         public int vcx_issuer_send_credential_offer(int command_handle, int credential_handle, int connection_handle, Callback cb);
 
+        /** Get the credential offer message that can be sent to the specified connection */
+        public int vcx_issuer_get_credential_offer_msg(int command_handle, int credential_handle, int connection_handle, Callback cb);
+
         /** Updates the state of the credential from the agency. */
         public int vcx_issuer_credential_update_state(int command_handle, int credential_handle, Callback cb);
 
@@ -158,6 +159,9 @@ public abstract class LibVcx {
 
         /** Asynchronously send the credential to the connection. Populates a handle to the new transaction. */
         public int vcx_issuer_send_credential(int command_handle, int credential_handle, int connection_handle, Callback cb);
+
+        /** Get the credential message that can be sent to the specified connection */
+        public int vcx_issuer_get_credential_msg(int command_handle, int credential_handle, int connection_handle, Callback cb);
 
         /** Populates status with the current state of this credential. */
         public int vcx_issuer_credential_serialize(int command_handle, int credential_handle, Callback cb);
@@ -193,6 +197,11 @@ public abstract class LibVcx {
          * Asynchronously send a proof request to the connection.
          */
         public int vcx_proof_send_request(int command_handle, int proof_handle, int connection_handle, Callback cb);
+
+        /**
+         * Get the proof request message for sending.
+         */
+        public int vcx_proof_get_request_msg(int command_handle, int proof_handle, Callback cb);
 
         /**
          * Populate response_data with the latest proof offer received.
@@ -256,6 +265,11 @@ public abstract class LibVcx {
         public int vcx_disclosed_proof_send_proof(int command_handle, int proof_handle, int connection_handle, Callback cb);
 
         /**
+         * Get the proof message for sending.
+         */
+        public int vcx_disclosed_proof_get_proof_msg(int command_handle, int proof_handle, Callback cb);
+
+        /**
          * Populates status with the current State of this disclosed_proof request.
          */
         public int vcx_disclosed_proof_update_state(int command_handle, int proof_handle, Callback cb);
@@ -317,6 +331,8 @@ public abstract class LibVcx {
 
         public int vcx_set_active_txn_author_agreement_meta(String text, String version, String hash, String accMechType, long timeOfAcceptance);
 
+        public int vcx_pool_set_handle(int handle);
+
         public int vcx_get_request_price(int command_handle, String action_json, String requester_info_json, Callback cb);
 
         /**
@@ -334,11 +350,17 @@ public abstract class LibVcx {
         /** Asynchronously sends the credential request to the connection. */
         public int vcx_credential_send_request(int command_handle, int credential_handle, int connection_handle,int payment_handle, Callback cb);
 
+        /** Get credential request message for given connection */
+        public int vcx_credential_get_request_msg(int command_handle, int credential_handle, int connection_handle, int payment_handle, Callback cb);
+
         /** Check for any credential offers from the connection. */
         public int vcx_credential_get_offers(int command_handle, int connection_handle,Callback cb);
 
         /** Updates the State of the credential from the agency. */
         public int vcx_credential_update_state(int command_handle, int credential_handle,Callback cb);
+
+        /** Updates the state of the credential from the given message. */
+        public int vcx_credential_update_state_with_message(int command_handle, int credential_handle, String message, Callback cb);
 
         /** Retrieves the State of the credential - including storing the credential if it has been sent. */
         public int vcx_credential_get_state(int command_handle, int credential_handle, Callback cb);
@@ -378,6 +400,9 @@ public abstract class LibVcx {
 
         /** Update a record in wallet */
         public int vcx_wallet_update_record_value(int command_handle, String recordType, String recordId, String recordValue, Callback cb);
+
+        /** Set wallet handle manually */
+        public int vcx_wallet_set_handle(int handle);
 
         /**
          * token object
@@ -433,8 +458,10 @@ public abstract class LibVcx {
          *
          */
 
-        /** Set custom logger implementation.. */
+        /** Set custom logger implementation. */
         int vcx_set_logger(Pointer context, Callback enabled, Callback log, Callback flush);
+        /** Set stdout logger implementation. */
+        int vcx_set_default_logger(String log_level);
 
     }
 

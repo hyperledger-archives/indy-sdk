@@ -419,7 +419,7 @@ impl PaymentsService {
         let prices = PaymentsService::_handle_constraint(constraint, requester_info, fees)?;
 
         let res = prices.into_iter()
-            .min_by(|x, y| x.price.cmp(&y.price))
+            .min_by_key(|x| x.price)
             .ok_or(IndyError::from_msg(IndyErrorKind::InvalidStructure, "RequestInfo not found"))?;
 
         trace!("get_request_info_with_min_price <<< result: {:?}", res);

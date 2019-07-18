@@ -195,6 +195,12 @@ indy.updateRevocationState = function updateRevocationState (blobStorageReaderHa
   return cb.promise
 }
 
+indy.generateNonce = function generateNonce (cb) {
+  cb = wrapIndyCallback(cb)
+  capi.generateNonce(cb)
+  return cb.promise
+}
+
 indy.openBlobStorageReader = function openBlobStorageReader (type, config, cb) {
   cb = wrapIndyCallback(cb)
   capi.openBlobStorageReader(type, toJson(config), cb)

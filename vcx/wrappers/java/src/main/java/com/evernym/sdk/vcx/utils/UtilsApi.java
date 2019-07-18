@@ -184,6 +184,10 @@ public class UtilsApi extends VcxJava.API {
         LibVcx.api.vcx_set_next_agency_response(messageIndex);
     }
 
+    public static void setPoolHandle(int handle) {
+        LibVcx.api.vcx_pool_set_handle(handle);
+    }
+
     private static Callback getReqPriceAsyncCB = new Callback() {
         @SuppressWarnings({"unused", "unchecked"})
         public void callback(int commandHandle, int err, long price) {

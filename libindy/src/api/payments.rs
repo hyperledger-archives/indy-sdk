@@ -1234,29 +1234,31 @@ pub extern fn indy_parse_verify_payment_response(command_handle: CommandHandle,
     result
 }
 
-/// Gets request requirements (with minimal price) correspondent to specific auth rule and
+/// Gets request requirements (with minimal price) correspondent to specific auth rule
 /// in case the requester can perform this action.
 ///
-/// If the requester does not match to transaction auth rule, `TransactionNotAllowed` error will be thrown.
+/// EXPERIMENTAL
+///
+/// If the requester does not match to the request constraints `TransactionNotAllowed` error will be thrown.
 ///
 /// # Params
 /// command_handle: Command handle to map callback to caller context.
-/// get_auth_rule_response_json: response on GET_AUTH_RULE request.
+/// get_auth_rule_response_json: response on GET_AUTH_RULE request returning action constraints set on the ledger.
 /// requester_info_json: {
-///     "role": string - role of a user which can sign transaction.
-///     "count": u64 - count of users.
+///     "role": string - role of a user which can sign a transaction.
+///     "sig_count": u64 - number of signers.
 ///     "is_owner": bool - if user is an owner of transaction.
 /// }
-/// fees_json: fees are set on the ledger.
+/// fees_json: fees set on the ledger (result of `indy_parse_get_txn_fees_response`).
 ///
 /// # Return
-/// request_info_json: request info if a requester match to the action auth rule.
+/// request_info_json: request info if a requester match to the action constraints.
 /// {
-///     "price": u64 - tokens amount required for action performing,
+///     "price": u64 - fee required for the action performing,
 ///     "requirements": [{
 ///         "role": string - role of users who should sign,
-///         "sig_count": u64 - count of signers,
-///         "need_to_be_owner": bool - if requester need to be owner,
+///         "sig_count": u64 - number of signers,
+///         "need_to_be_owner": bool - if requester need to be owner
 ///     }]
 /// }
 ///

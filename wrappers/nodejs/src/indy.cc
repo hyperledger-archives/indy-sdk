@@ -888,6 +888,20 @@ NAN_METHOD(updateRevocationState) {
   delete arg5;
 }
 
+void generateNonce_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbString(xerr, arg0);
+  }
+}
+
+NAN_METHOD(generateNonce) {
+  INDY_ASSERT_NARGS(generateNonce, 1)
+  INDY_ASSERT_FUNCTION(generateNonce, 0)
+  IndyCallback* icb = argToIndyCb(info[0]);
+  indyCalled(icb, indy_generate_nonce(icb->handle, generateNonce_cb));
+}
+
 void openBlobStorageReader_cb(indy_handle_t handle, indy_error_t xerr, indy_handle_t arg0) {
   IndyCallback* icb = IndyCallback::getCallback(handle);
   if(icb != nullptr){
@@ -3399,6 +3413,7 @@ NAN_MODULE_INIT(InitAll) {
   Nan::Export(target, "verifierVerifyProof", verifierVerifyProof);
   Nan::Export(target, "createRevocationState", createRevocationState);
   Nan::Export(target, "updateRevocationState", updateRevocationState);
+  Nan::Export(target, "generateNonce", generateNonce);
   Nan::Export(target, "openBlobStorageReader", openBlobStorageReader);
   Nan::Export(target, "openBlobStorageWriter", openBlobStorageWriter);
   Nan::Export(target, "createKey", createKey);
