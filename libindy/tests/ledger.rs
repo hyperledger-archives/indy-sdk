@@ -479,7 +479,6 @@ mod high_cases {
 
     mod attrib_requests {
         use super::*;
-        use self::hex::ToHex;
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
@@ -616,7 +615,7 @@ mod high_cases {
 
             let mut ctx = Hasher::new(MessageDigest::sha256()).unwrap();
             ctx.update(&ATTRIB_RAW_DATA.as_bytes()).unwrap();
-            let hashed_attr = ctx.finish().unwrap().as_ref().to_hex();
+            let hashed_attr = hex::encode(ctx.finish().unwrap().as_ref());
 
             let attrib_request = ledger::build_attrib_request(&did,
                                                               &did,
@@ -642,7 +641,7 @@ mod high_cases {
 
             let key = secretbox::gen_key();
             let nonce = secretbox::gen_nonce();
-            let encryted_attr = secretbox::seal(&ATTRIB_RAW_DATA.as_bytes(), &nonce, &key).to_hex();
+            let encryted_attr = hex::encode(secretbox::seal(&ATTRIB_RAW_DATA.as_bytes(), &nonce, &key));
 
             let attrib_request = ledger::build_attrib_request(&did,
                                                               &did,
@@ -2001,7 +2000,8 @@ mod high_cases {
                             {
                                 "constraint_id": "ROLE",
                                 "role": "0",
-                                "sig_count": 1
+                                "sig_count": 1,
+                                "need_to_be_owner": false
                             }
                         ]
                     }
@@ -2636,13 +2636,18 @@ mod high_cases {
         const ACCEPTANCE_MECH_TYPE: &str = "acceptance type 1";
         const TIME_OF_ACCEPTANCE: u64 = 123456789;
 
+        fn _datetime_to_date_timestamp(time: u64) -> u64{
+            const SEC_IN_DAY: u64 = 86400;
+            time / SEC_IN_DAY * SEC_IN_DAY
+        }
+        
         fn _check_request_meta(request: &str) {
             let request: serde_json::Value = serde_json::from_str(&request).unwrap();
 
             let expected_meta = json!({
                 "mechanism": ACCEPTANCE_MECH_TYPE,
                 "taaDigest": HASH,
-                "time": TIME_OF_ACCEPTANCE
+                "time": _datetime_to_date_timestamp(TIME_OF_ACCEPTANCE)
             });
 
             assert_eq!(request["taaAcceptance"], expected_meta);

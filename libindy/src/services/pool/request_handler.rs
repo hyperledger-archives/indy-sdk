@@ -1,6 +1,3 @@
-extern crate rust_base58;
-extern crate log_derive;
-
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -33,9 +30,9 @@ use services::pool::types::HashableValue;
 use super::ursa::bls::Generator;
 use super::ursa::bls::VerKey;
 
-use self::rust_base58::FromBase58;
+use rust_base58::FromBase58;
 use std::hash::{Hash, Hasher};
-use self::log_derive::logfn;
+use log_derive::logfn;
 
 struct RequestSM<T: Networker> {
     f: usize,
@@ -831,18 +828,20 @@ pub mod tests {
     use services::pool::networker::MockNetworker;
     use services::pool::types::{ConsistencyProof, LedgerStatus, Reply, ReplyResultV1, ReplyTxnV1, ReplyV1, Response, ResponseMetadata, ResponseV1};
     use utils::test;
+    use utils::test::test_pool_create_poolfile;
 
     use super::*;
+    use std::io::Write;
 
-    const MESSAGE: &'static str = "message";
-    const REQ_ID: &'static str = "1";
-    const NODE: &'static str = "n1";
-    const NODE_2: &'static str = "n2";
-    const NODE_3: &'static str = "n3";
-    const NODE_4: &'static str = "n4";
-    const SIMPLE_REPLY: &'static str = r#"{"result":{}}"#;
-    const REJECT_REPLY: &'static str = r#"{"op":"REJECT", "result": {"reason": "reject"}}"#;
-    const NACK_REPLY: &'static str = r#"{"op":"REQNACK", "result": {"reason": "reqnack"}}"#;
+    const MESSAGE: &str = "message";
+    const REQ_ID: &str = "1";
+    const NODE: &str = "n1";
+    const NODE_2: &str = "n2";
+    const NODE_3: &str = "n3";
+    const NODE_4: &str = "n4";
+    const SIMPLE_REPLY: &str = r#"{"result":{}}"#;
+    const REJECT_REPLY: &str = r#"{"op":"REJECT", "result": {"reason": "reject"}}"#;
+    const NACK_REPLY: &str = r#"{"op":"REQNACK", "result": {"reason": "reqnack"}}"#;
 
     #[derive(Debug)]
     pub struct MockRequestHandler {}
@@ -945,19 +944,7 @@ pub mod tests {
 
     // required because of dumping txns to cache
     fn _create_pool(pool_name: &str, content: Option<String>) {
-        use utils::environment;
-        use std::fs;
-        use std::fs::File;
-        use std::io::Write;
-
-        let mut path = environment::pool_path(pool_name);
-
-        path.push(pool_name);
-        path.set_extension("txn");
-
-        fs::create_dir_all(path.parent().unwrap()).unwrap();
-
-        let mut file = File::create(path).unwrap();
+        let mut file = test_pool_create_poolfile(pool_name);
         file.write_all(content.unwrap_or("{}".to_string()).as_bytes()).unwrap();
     }
 

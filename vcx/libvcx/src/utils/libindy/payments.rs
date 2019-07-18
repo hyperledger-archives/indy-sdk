@@ -178,7 +178,7 @@ pub fn get_wallet_token_info() -> VcxResult<WalletInfo> {
     for address in addresses.iter() {
         if is_valid_address(&address, &method) {
             debug!("getting address info for {}", address);
-            let mut info = get_address_info(&address)?;
+            let info = get_address_info(&address)?;
 
             for utxo in info.utxo.iter() { balance += utxo.amount as u64; }
 
@@ -320,19 +320,18 @@ pub fn pay_a_payee(price: u64, address: &str) -> VcxResult<(PaymentTxn, String)>
 }
 
 fn get_txn_price(txn_action: (&str, &str, &str, Option<&str>, &str)) -> VcxResult<u64> {
-//    TODO: uncomment to get fee alias when pool will be correct work with GET_AUTH_RULE
-//    let action_fee_alias = auth_rule::get_action_fee_alias(txn_action).ok();
-//    let alias = match action_fee_alias.and_then(|alias| alias) {
-//        Some(alias_) => alias_,
-//        None => return Ok(0)
-//    };
+    let action_fee_alias = auth_rule::get_action_fee_alias(txn_action).ok();
+    let alias = match action_fee_alias.and_then(|alias| alias) {
+        Some(alias_) => alias_,
+        None => return Ok(0)
+    };
 
     let ledger_fees = get_ledger_fees()?;
 
     let fees: HashMap<String, u64> = serde_json::from_str(&ledger_fees)
         .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize fees: {}", err)))?;
 
-    match fees.get(txn_action.0) { // use alias instead
+    match fees.get(&alias) {
         Some(x) => Ok(*x),
         None => Ok(0),
     }

@@ -86,6 +86,15 @@ pub fn prover_create_credential_req(wallet_handle: i32, prover_did: &str, cred_o
     anoncreds::prover_create_credential_req(wallet_handle, prover_did, cred_offer_json, cred_def_json, master_secret_id).wait()
 }
 
+pub fn prover_set_credential_attr_tag_policy(wallet_handle: i32, cred_def_id: &str, tag_attrs_json: Option<&str>,
+                                             retroactive: bool) -> Result<(), IndyError> {
+    anoncreds::prover_set_credential_attr_tag_policy(wallet_handle, cred_def_id, tag_attrs_json, retroactive).wait()
+}
+
+pub fn prover_get_credential_attr_tag_policy(wallet_handle: i32, cred_def_id: &str) -> Result<String, IndyError> {
+    anoncreds::prover_get_credential_attr_tag_policy(wallet_handle, cred_def_id).wait()
+}
+
 pub fn prover_store_credential(wallet_handle: i32, cred_id: &str, cred_req_metadata_json: &str, cred_json: &str,
                                cred_def_json: &str, rev_reg_def_json: Option<&str>) -> Result<String, IndyError> {
     anoncreds::prover_store_credential(wallet_handle, Some(cred_id), cred_req_metadata_json, cred_json, cred_def_json, rev_reg_def_json).wait()
@@ -153,6 +162,10 @@ pub fn create_revocation_state(blob_storage_reader_handle: i32, rev_reg_def_json
 pub fn update_revocation_state(tails_reader_handle: i32, rev_state_json: &str, rev_reg_def_json: &str,
                                rev_reg_delta_json: &str, timestamp: u64, cred_rev_id: &str) -> Result<String, IndyError> {
     anoncreds::update_revocation_state(tails_reader_handle, rev_state_json, rev_reg_def_json, rev_reg_delta_json, timestamp, cred_rev_id).wait()
+}
+
+pub fn generate_nonce() -> Result<String, IndyError> {
+    anoncreds::generate_nonce().wait()
 }
 
 pub fn default_cred_def_config() -> String {

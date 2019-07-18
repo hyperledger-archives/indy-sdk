@@ -1,11 +1,10 @@
 extern crate errno;
-extern crate libc;
 extern crate serde;
 extern crate sodiumoxide;
 
 use domain::wallet::KeyDerivationMethod;
 use errors::prelude::*;
-use self::libc::{c_int, c_ulonglong, size_t};
+use libc::{c_int, c_ulonglong, size_t};
 use self::sodiumoxide::crypto::pwhash;
 
 pub const SALTBYTES: usize = pwhash::SALTBYTES;

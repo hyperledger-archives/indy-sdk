@@ -768,4 +768,17 @@ export class Wallet {
       throw new VCXInternalError(err)
     }
   }
+
+  /**
+   * Set the wallet handle for libvcx to use, called before vcxInitPostIndy
+   *
+   * Example:
+   * ```
+   * Wallet.setHandle(1)
+   * setPoolHandle(1)
+   * vcxInitPostIndy(config)
+   */
+  public static setHandle (handle: number): void {
+    rustAPI().vcx_wallet_set_handle(handle)
+  }
 }

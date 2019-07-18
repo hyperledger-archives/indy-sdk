@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use hex::{ToHex, FromHex};
+use hex::FromHex;
 use ursa::cl::RevocationRegistryDelta as CryproRevocationRegistryDelta;
 use serde::de::DeserializeOwned;
 use serde_json;
@@ -508,7 +508,7 @@ impl LedgerService {
                 return Err(err_msg(IndyErrorKind::InvalidStructure, "Invalid combination of params: `text` and `version` should be passed or skipped together."));
             }
             (Some(text_), Some(version_), None) => {
-                self._calculate_hash(text_, version_)?.to_hex()
+                hex::encode(self._calculate_hash(text_, version_)?)
             }
             (Some(text_), Some(version_), Some(hash_)) => {
                 self._compare_hash(text_, version_, hash_)?;
@@ -519,10 +519,15 @@ impl LedgerService {
         let acceptance_data = TxnAuthrAgrmtAcceptanceData {
             mechanism: mechanism.to_string(),
             taa_digest,
-            time,
+            time: LedgerService::datetime_to_date_timestamp(time),
         };
 
         Ok(acceptance_data)
+    }
+
+    fn datetime_to_date_timestamp(time: u64) -> u64{
+        const SEC_IN_DAY: u64 = 86400;
+        time / SEC_IN_DAY * SEC_IN_DAY
     }
 
     fn _calculate_hash(&self, text: &str, version: &str) -> IndyResult<Vec<u8>> {
@@ -543,6 +548,19 @@ impl LedgerService {
         }
         Ok(())
     }
+
+    pub fn parse_get_auth_rule_response(&self, response: &str) -> IndyResult<Vec<AuthRule>> {
+        trace!("parse_get_auth_rule_response >>> response: {:?}", response);
+
+        let response: Reply<GetAuthRuleResult> = serde_json::from_str(&response)
+            .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidTransaction, format!("Cannot parse GetAuthRule response: {:?}", err)))?;
+
+        let res = response.result().data;
+
+        trace!("parse_get_auth_rule_response <<< {:?}", res);
+
+        Ok(res)
+    }
 }
 
 #[cfg(test)]
@@ -554,9 +572,9 @@ mod tests {
 
     use super::*;
 
-    const IDENTIFIER: &'static str = "NcYxiDXkpYi6ov5FcYDi1e";
-    const DEST: &'static str = "VsKV7grR1BUE29mG2Fm2kX";
-    const VERKEY: &'static str = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
+    const IDENTIFIER: &str = "NcYxiDXkpYi6ov5FcYDi1e";
+    const DEST: &str = "VsKV7grR1BUE29mG2Fm2kX";
+    const VERKEY: &str = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
 
     #[test]
     fn build_nym_request_works_for_only_required_fields() {
@@ -894,10 +912,10 @@ mod tests {
 
         fn _role_constraint() -> Constraint {
             Constraint::RoleConstraint(RoleConstraint {
-                sig_count: Some(0),
+                sig_count: 0,
                 metadata: None,
-                role: Some(String::new()),
-                need_to_be_owner: Some(false),
+                role: String::new(),
+                need_to_be_owner: false,
             })
         }
 
@@ -1233,6 +1251,15 @@ mod tests {
             let res = ledger_service.build_get_acceptance_mechanisms_request(None, Some(TIMESTAMP), Some(VERSION));
             assert_kind!(IndyErrorKind::InvalidStructure, res);
         }
+    }
+
+    #[test]
+    fn datetime_to_date(){
+        assert_eq!(0, LedgerService::datetime_to_date_timestamp(0));
+        assert_eq!(0, LedgerService::datetime_to_date_timestamp(20));
+        assert_eq!(1562284800, LedgerService::datetime_to_date_timestamp(1562367600));
+        assert_eq!(1562284800, LedgerService::datetime_to_date_timestamp(1562319963));
+        assert_eq!(1562284800, LedgerService::datetime_to_date_timestamp(1562284800));
     }
 
     fn check_request(request: &str, expected_result: serde_json::Value) {

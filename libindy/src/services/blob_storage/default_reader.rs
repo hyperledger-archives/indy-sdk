@@ -1,10 +1,6 @@
-extern crate digest;
-extern crate sha2;
-extern crate rust_base58;
-
-use self::digest::{FixedOutput, Input};
-use self::sha2::Sha256;
-use self::rust_base58::ToBase58;
+use sha2::Sha256;
+use sha2::digest::{FixedOutput, Input};
+use rust_base58::ToBase58;
 
 use super::{ReadableBlob, Reader, ReaderType};
 use errors::prelude::*;
@@ -46,6 +42,7 @@ impl Reader for DefaultReaderConfig {
 }
 
 impl ReadableBlob for DefaultReader {
+
     fn verify(&mut self) -> IndyResult<bool> {
         self.file.seek(SeekFrom::Start(0))?;
         let mut hasher = Sha256::default();
@@ -58,7 +55,7 @@ impl ReadableBlob for DefaultReader {
                 return Ok(hasher.fixed_result().as_slice().eq(self.hash.as_slice()));
             }
 
-            hasher.process(&buf[0..sz])
+            hasher.input(&buf[0..sz])
         }
     }
 

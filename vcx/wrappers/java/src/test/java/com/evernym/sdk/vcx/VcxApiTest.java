@@ -1,6 +1,9 @@
 package com.evernym.sdk.vcx;
 
+import com.evernym.sdk.vcx.utils.UtilsApi;
 import com.evernym.sdk.vcx.vcx.VcxApi;
+import com.evernym.sdk.vcx.wallet.WalletApi;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -46,4 +49,13 @@ public class VcxApiTest {
         String errorCMessage = VcxApi.vcxErrorCMessage(1001);
         assert (errorCMessage.equals("Unknown Error"));
     }
+
+    @Test
+    @DisplayName("init minimal")
+    void initMinimal() throws VcxException {
+        WalletApi.setWalletHandle(1);
+        UtilsApi.setPoolHandle(1);
+        assert (VcxApi.vcxInitMinimal("{\"institution_name\":\"f\",\"institution_did\":\"4\", \"institution_verkey\":\"4\"}") == 0);
+    }
+
 }

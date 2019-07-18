@@ -21,7 +21,7 @@ use services::pool::events::*;
 use services::pool::merkle_tree_factory;
 use services::pool::networker::{Networker, ZMQNetworker};
 use services::pool::request_handler::{RequestHandler, RequestHandlerImpl};
-use services::pool::rust_base58::{FromBase58, ToBase58};
+use rust_base58::{FromBase58, ToBase58};
 use services::pool::types::{LedgerStatus, RemoteNode};
 use utils::crypto::ed25519_sign;
 
@@ -755,6 +755,7 @@ mod tests {
     use services::pool::request_handler::tests::MockRequestHandler;
     use services::pool::types::{Message, Reply, ReplyResultV1, ReplyTxnV1, ReplyV1, ResponseMetadata};
     use utils::test;
+    use utils::test::test_pool_create_poolfile;
 
     use super::*;
 
@@ -783,12 +784,9 @@ mod tests {
     }
 
     mod pool_sm {
-        use std::fs;
         use std::io::Write;
 
         use serde_json;
-
-        use utils::environment;
 
         use super::*;
 
@@ -1235,11 +1233,7 @@ mod tests {
         fn _write_genesis_txns(pool_name: &str) {
             let txns = test::gen_txns().join("\n");
 
-            let mut path = environment::pool_path(pool_name);
-            fs::create_dir_all(path.as_path()).unwrap();
-            path.push(pool_name);
-            path.set_extension("txn");
-            let mut f = fs::File::create(path.as_path()).unwrap();
+            let mut f = test_pool_create_poolfile(pool_name);
             f.write(txns.as_bytes()).unwrap();
             f.flush().unwrap();
             f.sync_all().unwrap();

@@ -36,6 +36,7 @@ use utils::constants::*;
 
 use utils::domain::anoncreds::schema::Schema;
 use utils::domain::anoncreds::credential_definition::CredentialDefinition;
+use utils::domain::anoncreds::credential_attr_tag_policy::CredentialAttrTagPolicy;
 use utils::domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinition;
 use utils::domain::anoncreds::credential_for_proof_request::{CredentialsForProofRequest};
 use utils::domain::anoncreds::proof::Proof;
@@ -74,8 +75,9 @@ mod demos {
                                                  &cred_def_json);
 
         //6. Proof request
-        let proof_req_json = r#"{
-                                       "nonce":"123432421212",
+        let nonce = anoncreds::generate_nonce().unwrap();
+        let proof_req_json = json!({
+                                       "nonce": nonce,
                                        "name":"proof_req_1",
                                        "version":"0.1",
                                        "requested_attributes":{
@@ -90,7 +92,7 @@ mod demos {
                                        "requested_predicates":{
                                             "predicate1_referent":{"name":"age","p_type":">=","p_value":18}
                                        }
-                                    }"#;
+                                    }).to_string();
 
         //7. Prover gets Credentials for Proof Request
         let credentials_json = anoncreds::prover_get_credentials_for_proof_req(prover_wallet_handle, &proof_req_json).unwrap();
@@ -2258,14 +2260,92 @@ mod demos {
     }
 
     #[test]
+    fn anoncreds_works_for_credential_attr_tag_policy() {
+        utils::setup("anoncreds_works_for_credential_attr_tag_policy");
+
+        //1. Create Issuer wallet, gets wallet handle
+        let (issuer_wallet_handle, issuer_wallet_config) = wallet::create_and_open_default_wallet("anoncreds_works_for_credential_attr_tag_policy").unwrap();
+
+        //2. Create Prover wallet, gets wallet handle
+        let (prover_wallet_handle, prover_wallet_config) = wallet::create_and_open_default_wallet("anoncreds_works_for_credential_attr_tag_policy").unwrap();
+
+        //3. Issuer creates Schema and Credential Definition
+        let (_schema_id, _schema_json, cred_def_id, cred_def_json) = anoncreds::multi_steps_issuer_preparation(issuer_wallet_handle,
+                                                                                                               ISSUER_DID,
+                                                                                                               GVT_SCHEMA_NAME,
+                                                                                                               GVT_SCHEMA_ATTRIBUTES);
+
+        //4. Prover creates Master Secret
+        anoncreds::prover_create_master_secret(prover_wallet_handle, COMMON_MASTER_SECRET).unwrap();
+
+        //5. Prover gets (default) credential attr tag policy
+        let mut catpol_json = anoncreds::prover_get_credential_attr_tag_policy(prover_wallet_handle, &cred_def_id).unwrap();
+        assert_eq!(catpol_json, "null");
+
+        //6. Prover sets credential attr tag policy
+        let taggable_attrs = r#"["name", "height", "age"]"#;
+        anoncreds::prover_set_credential_attr_tag_policy(prover_wallet_handle, &cred_def_id, Some(taggable_attrs), false).unwrap();
+
+        //7. Prover gets credential attr tag policy
+        catpol_json = anoncreds::prover_get_credential_attr_tag_policy(prover_wallet_handle, &cred_def_id).unwrap();
+        let catpol = serde_json::from_str::<CredentialAttrTagPolicy>(&catpol_json).unwrap();
+        assert!(catpol.is_taggable("name"));
+        assert!(catpol.is_taggable("height"));
+        assert!(catpol.is_taggable("age"));
+
+        //8. Issuance credential for Prover
+        anoncreds::multi_steps_create_credential(COMMON_MASTER_SECRET,
+                                                 prover_wallet_handle,
+                                                 issuer_wallet_handle,
+                                                 CREDENTIAL1_ID,
+                                                 &anoncreds::gvt_credential_values_json(),
+                                                 &cred_def_id,
+                                                 &cred_def_json);
+
+        //9. Prover searches on tagged attribute
+        let mut filter_json = json!({
+            "attr::name::marker": "1",
+        }).to_string();
+
+        let (search_handle, count) = anoncreds::prover_search_credentials(prover_wallet_handle, &filter_json).unwrap();
+        assert_eq!(count, 1);
+        anoncreds::prover_close_credentials_search(search_handle).unwrap();
+
+        //10. Prover searches on untagged attribute
+        filter_json = json!({
+            "attr::sex::marker": "1",
+        }).to_string();
+
+        let (search_handle, count) = anoncreds::prover_search_credentials(prover_wallet_handle, &filter_json).unwrap();
+        assert_eq!(count, 0);
+        anoncreds::prover_close_credentials_search(search_handle).unwrap();
+
+        //11. Prover clears credential attr tag policy retroactively (restoring default tag-all)
+        anoncreds::prover_set_credential_attr_tag_policy(prover_wallet_handle, &cred_def_id, None, true).unwrap();
+
+        //12. Prover searches on formerly untagged attribute, but which default policy now tags
+        let (search_handle, count) = anoncreds::prover_search_credentials(prover_wallet_handle, &filter_json).unwrap();
+        assert_eq!(count, 1);
+        anoncreds::prover_close_credentials_search(search_handle).unwrap();
+
+        //13. Prover deletes credential
+        anoncreds::prover_delete_credential(prover_wallet_handle, CREDENTIAL1_ID).unwrap();
+
+        wallet::close_and_delete_wallet(issuer_wallet_handle, &issuer_wallet_config).unwrap();
+        wallet::close_and_delete_wallet(prover_wallet_handle, &prover_wallet_config).unwrap();
+
+        utils::tear_down("anoncreds_works_for_credential_attr_tag_policy");
+    }
+
+    #[test]
     fn anoncreds_works_for_credential_deletion() {
         utils::setup("anoncreds_works_for_credential_deletion");
 
         //1. Create Issuer wallet, gets wallet handle
-        let (issuer_wallet_handle, issuer_wallet_config) = wallet::create_and_open_default_wallet("FIXMEname").unwrap();
+        let (issuer_wallet_handle, issuer_wallet_config) = wallet::create_and_open_default_wallet("anoncreds_works_for_credential_deletion").unwrap();
 
         //2. Create Prover wallet, gets wallet handle
-        let (prover_wallet_handle, prover_wallet_config) = wallet::create_and_open_default_wallet("FIXMEname").unwrap();
+        let (prover_wallet_handle, prover_wallet_config) = wallet::create_and_open_default_wallet("anoncreds_works_for_credential_deletion").unwrap();
 
         //3. Issuer creates Schema and Credential Definition
         let (_schema_id, _schema_json, cred_def_id, cred_def_json) = anoncreds::multi_steps_issuer_preparation(issuer_wallet_handle,

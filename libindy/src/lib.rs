@@ -26,7 +26,6 @@ extern crate named_type;
 extern crate named_type_derive;
 
 extern crate ursa;
-extern crate libsqlite3_sys;
 extern crate rlp;
 extern crate time;
 extern crate libc;
@@ -42,6 +41,12 @@ extern crate core;
 extern crate hex;
 
 extern crate log_derive;
+extern crate rust_base58;
+
+extern crate sha2;
+extern crate sha3;
+
+extern crate zeroize;
 
 // Note that to use macroses from util inside of other modules it must be loaded first!
 #[macro_use]

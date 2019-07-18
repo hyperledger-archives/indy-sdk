@@ -28,8 +28,9 @@ mod libindy;
 use command_executor::CommandExecutor;
 
 use commands::{common, did, ledger, pool, wallet, payment_address};
+use utils::history;
 
-use linefeed::{Reader, ReadResult, Terminal};
+use linefeed::{Reader, ReadResult, Terminal, Signal};
 use linefeed::complete::{Completer, Completion};
 
 use std::env;
@@ -39,7 +40,7 @@ use std::rc::Rc;
 
 fn main() {
     #[cfg(target_os = "windows")]
-    ansi_term::enable_ansi_support().is_ok();
+    let _ = ansi_term::enable_ansi_support().is_ok();
 
     let mut args = env::args();
     args.next(); // skip library
@@ -69,7 +70,13 @@ fn main() {
                 let plugins = unwrap_or_return!(args.next(), println_err!("Plugins are not specified"));
                 _load_plugins(&command_executor, &plugins)
             }
-            _ if args.len() == 0 => execute_batch(&command_executor, Some(&arg)),
+            _ if args.len() == 0 => {
+                execute_batch(&command_executor, Some(&arg));
+
+                if command_executor.ctx().is_exit() {
+                    return;
+                }
+            },
             _ => {
                 println_err!("Unknown option");
                 return _print_help();
@@ -196,23 +203,38 @@ fn execute_interactive<T>(command_executor: CommandExecutor, mut reader: Reader<
     let command_executor = Rc::new(command_executor);
     reader.set_completer(command_executor.clone());
     reader.set_prompt(&command_executor.ctx().get_prompt());
+    history::load(&mut reader).ok();
 
-    while let Ok(ReadResult::Input(line)) = reader.read_line() {
-        if line.trim().is_empty() {
-            continue;
-        }
+    while let Ok(read_result) = reader.read_line() {
+        match read_result {
+            ReadResult::Input(line) => {
+                let line = line.trim();
+                if line.is_empty() {
+                    continue;
+                }
 
-        command_executor.execute(&line).is_ok();
-        reader.add_history(line);
-        reader.set_prompt(&command_executor.ctx().get_prompt());
+                if command_executor.execute(&line).is_ok() {
+                    reader.add_history(line.to_string());
+                };
 
-        if command_executor.ctx().is_exit() {
-            break;
+                reader.set_prompt(&command_executor.ctx().get_prompt());
+
+                if command_executor.ctx().is_exit() {
+                    history::persist(&mut reader).ok();
+                    break;
+                }
+            },
+            ReadResult::Eof | ReadResult::Signal(Signal::Quit) | ReadResult::Signal(Signal::Break)| ReadResult::Signal(Signal::Interrupt) => {
+                history::persist(&mut reader).ok();
+                break;
+            },
+            _ => {break}
         }
     }
 }
 
 fn execute_batch(command_executor: &CommandExecutor, script_path: Option<&str>) {
+    command_executor.ctx().set_batch_mode();
     if let Some(script_path) = script_path {
         let file = match File::open(script_path) {
             Ok(file) => file,
@@ -223,6 +245,7 @@ fn execute_batch(command_executor: &CommandExecutor, script_path: Option<&str>) 
         let stdin = std::io::stdin();
         _iter_batch(command_executor, stdin.lock());
     };
+    command_executor.ctx().set_not_batch_mode();
 }
 
 fn _load_plugins(command_executor: &CommandExecutor, plugins_str: &str) {
@@ -284,17 +307,20 @@ fn _iter_batch<T>(command_executor: &CommandExecutor, reader: T) where T: std::i
         }
         println!();
         line_num += 1;
+
+        if command_executor.ctx().is_exit() {
+            break;
+        }
     }
 }
 
 impl<Term: Terminal> Completer<Term> for CommandExecutor {
     fn complete(&self, word: &str, reader: &Reader<Term>,
-                start: usize, end: usize) -> Option<Vec<Completion>> {
+                _start: usize, _end: usize) -> Option<Vec<Completion>> {
         Some(self
             .complete(reader.buffer(),
                       word,
-                      start,
-                      end)
+                      reader.cursor())
             .into_iter()
             .map(|c| Completion {
                 completion: c.0,
