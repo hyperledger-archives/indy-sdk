@@ -5,11 +5,10 @@
 WORKDIR=${PWD}
 LIBINDY_WORKDIR=${WORKDIR}
 CI_DIR="${LIBINDY_WORKDIR}/ci"
+BUILD_TYPE="--release"
 export ANDROID_BUILD_FOLDER="/tmp/android_build"
 
 TARGET_ARCH=$1
-
-BUILD_TYPE=$2
 
 if [ -z "${TARGET_ARCH}" ]; then
     echo STDERR "Missing TARGET_ARCH argument"
@@ -43,7 +42,7 @@ build_test_artifacts(){
         # TODO move RUSTFLAGS to cargo config and do not duplicate it here
         # build - separate step to see origin build output
         RUSTFLAGS="-L${TOOLCHAIN_DIR}/sysroot/usr/${TOOLCHAIN_SYSROOT_LIB} -lc -lz -L${TOOLCHAIN_DIR}/${TRIPLET}/lib -L${LIBZMQ_LIB_DIR} -L${SODIUM_LIB_DIR} -lsodium -lzmq -lgnustl_shared" \
-            cargo build ${BUILD_TYPE} --target=${TRIPLET}
+            cargo build ${BUILD_TYPE} --target=${TRIPLET} --target-dir="target/${TARGET_ARCH}"
 
         # This is needed to get the correct message if test are not built. Next call will just reuse old results and parse the response.
         RUSTFLAGS="-L${TOOLCHAIN_DIR}/sysroot/usr/${TOOLCHAIN_SYSROOT_LIB} -lc -lz -L${TOOLCHAIN_DIR}/${TRIPLET}/lib -L${LIBZMQ_LIB_DIR} -L${SODIUM_LIB_DIR} -lsodium -lzmq -lgnustl_shared" \
