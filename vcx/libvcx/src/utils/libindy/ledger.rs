@@ -163,7 +163,7 @@ pub fn libindy_build_get_nym_request(submitter_did: Option<&str>, did: &str) -> 
 
 pub mod auth_rule {
     use super::*;
-    use std::collections::{HashMap};
+    use std::collections::HashMap;
     use std::sync::{Once, ONCE_INIT};
     use std::sync::Mutex;
 
@@ -391,6 +391,8 @@ pub fn get_nym(did: &str) -> VcxResult<String> {
 }
 
 pub fn get_role(did: &str) -> VcxResult<String> {
+    if settings::test_indy_mode_enabled() { return Ok(settings::DEFAULT_ROLE.to_string()); }
+
     let get_nym_resp = get_nym(&did)?;
     let get_nym_resp: serde_json::Value = serde_json::from_str(&get_nym_resp)
         .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidLedgerResponse, format!("{:?}", err)))?;
