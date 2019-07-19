@@ -22,18 +22,20 @@ if [ -z "${INDY_DIR}" ] ; then
         INDY_DIR="libindy_${TARGET_ARCH}"
         if [ -d "${INDY_DIR}" ] ; then
             echo "Found ${INDY_DIR}"
-        elif [ -z "$2" ] ; then
+        elif [ -n "$2" ] ; then
+            INDY_DIR=$2
+        elif [ -d "${LIBINDY_WORKDIR}/target/${TRIPLET}/release/" ] ; then
+            INDY_DIR="${LIBINDY_WORKDIR}/target/${TRIPLET}/release/"
+            echo "Found local INDY_DIR=${INDY_DIR}"
+        else
             echo STDERR "Missing INDY_DIR argument and environment variable"
             echo STDERR "e.g. set INDY_DIR=<path> for environment or libindy_${TARGET_ARCH}"
             exit 1
-        else
-            INDY_DIR=$2
         fi
         if [ -d "${INDY_DIR}/lib" ] ; then
             INDY_DIR="${INDY_DIR}/lib"
         fi
 fi
-echo "INDY_DIR=${INDY_DIR}"
 
 source ${CI_DIR}/setup.android.env.sh
 generate_arch_flags ${TARGET_ARCH}

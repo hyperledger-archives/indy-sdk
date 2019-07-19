@@ -42,7 +42,7 @@ build_test_artifacts(){
         # TODO move RUSTFLAGS to cargo config and do not duplicate it here
         # build - separate step to see origin build output
         RUSTFLAGS="-L${TOOLCHAIN_DIR}/sysroot/usr/${TOOLCHAIN_SYSROOT_LIB} -lc -lz -L${TOOLCHAIN_DIR}/${TRIPLET}/lib -L${LIBZMQ_LIB_DIR} -L${SODIUM_LIB_DIR} -lsodium -lzmq -lgnustl_shared" \
-            cargo build ${BUILD_TYPE} --target=${TRIPLET} --target-dir="target/${TARGET_ARCH}"
+            cargo build ${BUILD_TYPE} --target=${TRIPLET}
 
         # This is needed to get the correct message if test are not built. Next call will just reuse old results and parse the response.
         RUSTFLAGS="-L${TOOLCHAIN_DIR}/sysroot/usr/${TOOLCHAIN_SYSROOT_LIB} -lc -lz -L${TOOLCHAIN_DIR}/${TRIPLET}/lib -L${LIBZMQ_LIB_DIR} -L${SODIUM_LIB_DIR} -lsodium -lzmq -lgnustl_shared" \

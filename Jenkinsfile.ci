@@ -602,9 +602,8 @@ def linuxAndroidOnEmulatorTesting(env_name, network_name, testEnv) {
 
     for (directory in ["libnullpay", "vcx/libvcx"]) {
         echo "${env_name} ${directory} Test: Test on ${emu_arch} emulator"
-        sh "cp libindy/${emu_arch}/release/libindy.a,libindy/${emu_arch}/release/libindy.so ${directory}"
         testEnv.inside("--network=${network_name}") {
-            sh "cd ${directory} && INDY_DIR=. ./android.test.sh ${emu_arch}"
+            sh "cd ${directory} && ./android.test.sh ${emu_arch}"
         }
     }
 }
