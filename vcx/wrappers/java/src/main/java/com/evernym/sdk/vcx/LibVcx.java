@@ -2,6 +2,7 @@ package com.evernym.sdk.vcx;
 
 import com.sun.jna.*;
 import com.sun.jna.ptr.PointerByReference;
+import static com.sun.jna.Native.detach;
 
 import java.io.File;
 
@@ -536,6 +537,8 @@ public abstract class LibVcx {
 
             @SuppressWarnings({"unused", "unchecked"})
             public void callback(Pointer context, int level, String target, String message, String module_path, String file, int line) {
+                detach(false);
+
                 org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(String.format("%s.native.%s", LibVcx.class.getName(), target.replace("::", ".")));
 
                 String logMessage = String.format("%s:%d | %s", file, line, message);

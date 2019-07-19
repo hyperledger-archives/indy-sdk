@@ -137,6 +137,14 @@ impl CommandMetadataBuilder {
         self
     }
 
+    pub fn add_optional_param_with_dynamic_completion(mut self,
+                                                      name: &'static str,
+                                                      help: &'static str,
+                                                      dynamic_completion_type: DynamicCompletionType) -> CommandMetadataBuilder {
+        self.params.push(ParamMetadata::new(name, true, false, help, Some(dynamic_completion_type)));
+        self
+    }
+
     pub fn add_required_deferred_param(mut self,
                                        name: &'static str,
                                        help: &'static str) -> CommandMetadataBuilder {

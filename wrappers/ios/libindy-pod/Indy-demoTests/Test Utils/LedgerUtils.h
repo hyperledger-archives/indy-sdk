@@ -236,5 +236,8 @@
 - (NSError *)getResponseMetadata:(NSString *)response
                 responseMetadata:(NSString **)responseMetadata;
 
+- (NSString *)submitRetry:(NSString *)requestJson
+               poolHandle:(IndyHandle)poolHandle;
+
 
 @end
