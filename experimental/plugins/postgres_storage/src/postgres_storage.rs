@@ -159,11 +159,10 @@ const _CREATE_SCHEMA: [&str; 12] = [
 const _CREATE_SCHEMA_MULTI: [&str; 14] = [
     "CREATE TABLE IF NOT EXISTS metadata (
         wallet_id VARCHAR(64) NOT NULL,
-        id BIGSERIAL NOT NULL,
         value BYTEA NOT NULL,
-        PRIMARY KEY(wallet_id, id)
+        PRIMARY KEY(wallet_id)
     )",
-    "CREATE UNIQUE INDEX IF NOT EXISTS ux_metadata_wallet_id_id ON metadata(wallet_id, id)",
+    "CREATE UNIQUE INDEX IF NOT EXISTS ux_metadata_wallet_id_id ON metadata(wallet_id)",
     "CREATE UNIQUE INDEX IF NOT EXISTS ux_metadata_values ON metadata(wallet_id, value)",
     "CREATE TABLE IF NOT EXISTS items(
         wallet_id VARCHAR(64) NOT NULL,
