@@ -1077,7 +1077,7 @@ pub mod payment_command {
                 (source_payment_address, target_payment_address, amount, Optional(fee)) - CLI automatically gets payment sources corresponded to the source payment address and prepares data
                 (inputs, outputs) - explicit specification of payment sources"#)
                 .add_optional_param_with_dynamic_completion("source_payment_address","Payment address of sender.", DynamicCompletionType::PaymentAddress)
-                .add_optional_param("target_payment_address","Payment address of recipient.")
+                .add_optional_param_with_dynamic_completion("target_payment_address","Payment address of recipient", DynamicCompletionType::PaymentAddress)
                 .add_optional_param("amount","Payment amount.")
                 .add_optional_param("fee","Transaction fee set on the ledger.")
                 .add_optional_param("inputs","The list of payment sources")
@@ -2118,6 +2118,10 @@ fn prepare_sources_for_payment_cmd(ctx: &CommandContext,
                                    outputs: Option<Vec<String>>) -> Result<(String, String), ()> {
     let (inputs, outputs) = match (source_payment_address, target_payment_address, amount) {
         (Some(source_address), Some(target_address), Some(amount_)) => {
+            if amount_ <= 0{
+                return Err(println_err!("Payment amount must be greater than 0"))
+            }
+
             build_payment_sources_for_addresses(&ctx, &source_address, Some(&target_address), Some(amount_), fee)?
         }
         (None, None, None) => {
