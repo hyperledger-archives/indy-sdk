@@ -166,38 +166,46 @@ impl Node {
         }
     }
 
-    pub fn get_all_values<'a>(&'a self, db: &'a TrieDB) -> IndyResult<Vec<(String, String)>> {
-        let vals = self._get_all_values(db)?;
-        let mut res: Vec<(String, String)> = vec![];
-        for (key, val) in vals {
-            res.push((Node::_nibbles_to_str(&key)?, val))
+    pub fn get_all_values<'a>(&'a self, db: &'a TrieDB, prefix: Option<&[u8]>) -> IndyResult<Vec<(String, String)>> {
+        let node_and_prefix = prefix.map(|prf| self.get_node(db, &Node::path_to_nibbles(prf))).unwrap_or(Ok(Some((self, vec![]))))?;
+        if let Some((node, prf)) = node_and_prefix {
+            let vals = node._get_all_values(db, prf)?;
+            let mut res: Vec<(String, String)> = vec![];
+            for (key, val) in vals {
+                res.push((Node::_nibbles_to_str(&key)?, val))
+            }
+            Ok(res)
+        } else {
+            Ok(vec![])
         }
-        Ok(res)
     }
 
-    pub fn get_node<'a, 'b>(&'a self, db: &'a TrieDB, path: &'b [u8]) -> IndyResult<Option<&Node>> {
+    pub fn get_node<'a, 'b>(&'a self, db: &'a TrieDB, path: &'b [u8]) -> IndyResult<Option<(&Node, Vec<u8>)>> {
         trace!("Node::get_node >> path: {:?}", path);
         let nibble_path = Node::path_to_nibbles(path);
         trace!("Node::get_node >> made some nibbles >> nibbles: {:?}", nibble_path);
-        return self._get_node(db, nibble_path.as_slice())
+        return self._get_node(db, nibble_path.as_slice(), vec![].as_slice())
     }
 
-    fn _get_node<'a, 'b>(&'a self, db: &'a TrieDB, path: &'b [u8]) -> IndyResult<Option<&Node>> {
+    fn _get_node<'a, 'b>(&'a self, db: &'a TrieDB, path: &'b [u8], seen_path: &'b [u8]) -> IndyResult<Option<(&Node, Vec<u8>)>> {
         trace!("Getting node for prefix, cur node: {:?}, prefix: {:?}", self, path);
         match *self {
             Node::Full(ref node) => {
                 if path.is_empty() {
-                    return Ok(Some(self));
+                    return Ok(Some((self, seen_path.to_vec())));
                 }
                 if let Some(ref next) = node.nodes[path[0] as usize] {
-                    return next._get_node(db, &path[1..]);
+                    let mut new_seen_path = vec![];
+                    new_seen_path.extend_from_slice(seen_path);
+                    new_seen_path.extend_from_slice(&path[..1]);
+                    return next._get_node(db, &path[1..], new_seen_path.as_slice());
                 }
                 Ok(None)
             }
             Node::Hash(ref hash) => {
                 let hash = NodeHash::from_slice(hash.as_slice());
                 if let Some(ref next) = db.get(hash) {
-                    return next._get_node(db, path);
+                    return next._get_node(db, path, seen_path);
                 } else {
                     return Err(err_msg(IndyErrorKind::InvalidStructure, "Incomplete key-value DB for Patricia Merkle Trie to get value by the key"));
                 }
@@ -212,7 +220,10 @@ impl Node {
                 trace!("Node::_get_value in Leaf searched path {:?}, stored path {:?}", String::from_utf8(path.to_vec()), String::from_utf8(pair_path.clone()));
 
                 if pair_path == path {
-                    Ok(Some(self))
+                    let mut new_seen_path = vec![];
+                    new_seen_path.extend_from_slice(seen_path);
+                    new_seen_path.extend_from_slice(pair_path.as_slice());
+                    Ok(Some((self, new_seen_path)))
                 } else {
                     Ok(None)
                 }
@@ -227,9 +238,12 @@ impl Node {
                 trace!("current extension node path: {:?}", pair_path);
 
                 if path.starts_with(&pair_path) {
-                    pair.next._get_node(db, &path[pair_path.len()..])
+                    let mut new_seen_path = vec![];
+                    new_seen_path.extend_from_slice(seen_path);
+                    new_seen_path.extend_from_slice(pair_path.as_slice());
+                    pair.next._get_node(db, &path[pair_path.len()..], new_seen_path.as_slice())
                 } else {
-                    Ok(Some(self))
+                    Ok(Some((self, seen_path.to_vec())))
                 }
             }
             Node::Blank => {
@@ -238,7 +252,7 @@ impl Node {
         }
     }
 
-    fn _get_all_values<'a>(&'a self, db: &'a TrieDB) -> IndyResult<Vec<(Vec<u8>, String)>> {
+    fn _get_all_values<'a>(&'a self, db: &'a TrieDB, prefix: Vec<u8>) -> IndyResult<Vec<(Vec<u8>, String)>> {
         trace!("Getting all values, cur node: {:?}", self);
         match *self {
             Node::Full(ref node) => {
@@ -247,14 +261,10 @@ impl Node {
                     let next = &node.nodes[nibble];
                     if let Some(next) = next {
                         trace!("Checking nibble {}", nibble);
-                        let mut sub_res: Vec<(Vec<u8>, String)> = next._get_all_values(db)?;
+                        let mut prefix_nibble = prefix.clone();
+                        prefix_nibble.push(nibble as u8);
+                        let mut sub_res: Vec<(Vec<u8>, String)> = next._get_all_values(db, prefix_nibble)?;
                         trace!("Got some values: {:?}", sub_res);
-                        sub_res = sub_res.into_iter().map(|(mut key, val)| {
-                            let mut key_new: Vec<u8> = vec![nibble as u8];
-                            key_new.append(&mut key);
-                            (key_new, val.to_owned())
-                        }).collect();
-                        trace!("Mapped values: {:?}", sub_res);
                         res.append(&mut sub_res);
                         trace!("Intermediate result: {:?}", res);
                     }
@@ -264,7 +274,7 @@ impl Node {
 
                     if let Some(val) = vec.pop() {
                         if vec.is_empty() {
-                            res.push((Vec::new(), String::from_utf8(val.clone())
+                            res.push((prefix.clone(), String::from_utf8(val.clone())
                                 .to_indy(IndyErrorKind::InvalidStructure, "Patricia Merkle Trie contains malformed utf8 string")?));
                         }
                     }
@@ -276,7 +286,7 @@ impl Node {
                 let hash = NodeHash::from_slice(hash.as_slice());
                 if let Some(ref next) = db.get(hash) {
                     trace!("found value in db");
-                    next._get_all_values(db)
+                    next._get_all_values(db, prefix)
                 } else {
                     Err(err_msg(IndyErrorKind::InvalidState, "Incorrect Patricia Merkle Trie: empty hash node when it should not be empty"))
                 }
@@ -292,9 +302,13 @@ impl Node {
 
                 let mut vec: Vec<Vec<u8>> = UntrustedRlp::new(pair.value.as_slice()).as_list().unwrap_or_default(); //default will cause error below
 
+                let mut full_path = prefix.clone();
+                let mut path_left = pair_path.clone();
+                full_path.append(&mut path_left);
+
                 if let Some(val) = vec.pop() {
                     if vec.is_empty() {
-                        return Ok(vec![(pair_path, String::from_utf8(val.clone())
+                        return Ok(vec![(full_path, String::from_utf8(val.clone())
                             .to_indy(IndyErrorKind::InvalidStructure, "Patricia Merkle Trie contains malformed utf8 string")?)]);
                     }
                 }
@@ -307,15 +321,13 @@ impl Node {
                     return Err(err_msg(IndyErrorKind::InvalidState, "Incorrect Patricia Merkle Trie: node marked as extension but path contains leaf flag"));
                 }
 
-                let values = pair.next._get_all_values(db)?;
+                let mut full_path = prefix.clone();
+                let mut path_left = pair_path.clone();
+                full_path.append(&mut path_left);
 
-                let res: Vec<(Vec<u8>, String)> = values.into_iter().map(|(mut key, value)| {
-                    let mut vec = pair_path.clone();
-                    vec.append(&mut key);
-                    (vec, value.to_owned())
-                }).collect();
+                let values = pair.next._get_all_values(db, full_path)?;
 
-                Ok(res)
+                Ok(values)
             }
             Node::Blank => {
                 Ok(vec![])
@@ -343,12 +355,12 @@ impl Node {
     }
     fn _get_value<'a, 'b>(&'a self, db: &'a TrieDB, path: &'b [u8]) -> IndyResult<Option<&'a Vec<u8>>> {
         trace!("Check proof, cur node: {:?}", self);
-        match self._get_node(db, path)? {
-            Some(Node::Full(ref node)) => {
+        match self._get_node(db, path, vec![].as_slice())? {
+            Some((Node::Full(ref node), _)) => {
                 Ok(node.value.as_ref())
             }
-            Some(Node::Hash(_)) => Ok(None),
-            Some(Node::Leaf(ref pair)) => {
+            Some((Node::Hash(_), _)) => Ok(None),
+            Some((Node::Leaf(ref pair), _)) => {
                 let (is_leaf, _) = Node::parse_path(pair.path.as_slice());
 
                 if !is_leaf {
@@ -357,8 +369,8 @@ impl Node {
 
                 Ok(Some(&pair.value))
             }
-            Some(Node::Extension(_)) => Ok(None),
-            Some(Node::Blank) => Ok(None),
+            Some((Node::Extension(_), _)) => Ok(None),
+            Some((Node::Blank, _)) => Ok(None),
             None => Ok(None)
         }
     }

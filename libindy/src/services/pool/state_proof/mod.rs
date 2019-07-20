@@ -506,14 +506,7 @@ fn _verify_proof_range(proofs_rlp: &[u8],
         map.insert(node.get_hash(), node);
     }
     map.get(root_hash).map(|root| {
-        let prev = root.get_node(&map, prefix.as_bytes()).map_err(map_err_err!());
-        let node = if let Ok(Some(node)) = prev {
-            node
-        } else {
-            error!("Prefix not found, aborting");
-            return false
-        };
-        let res = node.get_all_values(&map).map_err(map_err_err!());
+        let res = root.get_all_values(&map, Some(prefix.as_bytes())).map_err(map_err_err!());
         trace!("All values from trie: {:?}", res);
         let vals = if let Some(vals) = res.ok() {
             vals
@@ -523,30 +516,24 @@ fn _verify_proof_range(proofs_rlp: &[u8],
         };
         // Preparation of data for verification
         // Fetch numerical suffixes
-        let vals_for_sort_check: Vec<Option<(u64, (String, String))>> = vals.into_iter()
+        let vals_for_sort_check: Vec<Option<(u64, (String, Option<String>))>> = vals.into_iter()
             .filter(|(key, _)| key.starts_with(prefix))
             .map(|(key, value)| {
                 let no = key.replacen(prefix, "", 1).parse::<u64>();
-                no.ok().map(|a| (a, (key, value)))
+                no.ok().map(|a| (a, (key, Some(value))))
         }).collect();
         if !vals_for_sort_check.iter().all(|a| a.is_some()) {
             error!("Some values in state proof are not correlating with state proof rule, aborting.");
             return false;
         }
-        let mut vals_for_sort: Vec<(u64, (String, String))> = vals_for_sort_check.into_iter().flat_map(|a| a).collect();
+        let mut vals_for_sort: Vec<(u64, (String, Option<String>))> = vals_for_sort_check.into_iter().flat_map(|a| a).collect();
         // Sort by numerical suffixes in ascending order
-        vals_for_sort.sort_by(|a, b| {
-            let (a_seq_no, _) = a;
-            let (b_seq_no, _) = b;
-            a_seq_no.cmp(b_seq_no)
-        });
+        vals_for_sort.sort_by_key(|&(a, _)| a);
         trace!("Sorted trie values: {:?}", vals_for_sort);
         // Shift on the left side by from
         let vals_with_from = if let Some(from_seqno) = from {
-            if let Some((idx, _)) = vals_for_sort.iter().enumerate().find(|(_, (seq_no, _))| *seq_no as u64 >= from_seqno) {
-                vals_for_sort[idx..].to_vec()
-            } else {
-                vec![]
+            match vals_for_sort.binary_search_by_key(&from_seqno, |&(a, _)| a) {
+                Ok(idx) | Err(idx) => vals_for_sort[idx..].to_vec()
             }
         } else {
             vals_for_sort
@@ -554,31 +541,19 @@ fn _verify_proof_range(proofs_rlp: &[u8],
         // Verification
         // Check that all values from response match the trie
         trace!("Got values from trie: {:?}", vals_with_from);
-        for (sp_val, res_val) in vals_with_from.iter().zip(kvs.iter()) {
-            if let ((_, (sp_key, sp_val)), (res_key, Some(res_val))) = (sp_val, res_val) {
-                if !(sp_key == res_key && sp_val == res_val) {
-                    error!("Failed state proof check on keys: sp {}: {}, res {}: {}", sp_key, sp_val, res_key, res_val);
-                    return false
+        let vals_slice = if let Some(next_seqno) = next {
+            match vals_with_from.binary_search_by_key(&next_seqno, |&(a, _)| a) {
+                Ok(idx) => &vals_with_from[..idx],
+                Err(_) => {
+                    error!("Next seqno is incorrect");
+                    return false;
                 }
             }
-        }
-        trace!("Values match collected");
-        // Check that next value is valid
-        if let Some(next_seqno) = next {
-            trace!("Checking next");
-            if vals_with_from.len() > kvs.len() {
-                let (seq_no, _) = vals_with_from[kvs.len()];
-                if seq_no != next_seqno {
-                    error!("Next seqno is incorrect: sp {}, res {}", seq_no, next_seqno);
-                    return false
-                }
-            }
-        // If there is no next value, sizes should fit -- zip misses it
-        } else if vals_with_from.len() > kvs.len() {
-            error!("There are more values in state proof than in response");
-            return false
-        }
-        true
+        } else {
+            vals_with_from.as_slice()
+        };
+        let vals_prepared: Vec<(String, Option<String>)> = vals_slice.into_iter().map(|&(_, ref pair)| pair.clone()).collect();
+        vals_prepared[..] == kvs[..]
     }).unwrap_or(false)
 }
 
