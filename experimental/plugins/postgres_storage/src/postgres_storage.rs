@@ -1503,6 +1503,23 @@ impl WalletStorage for PostgresStorage {
                     query_arguments.push(&wallet_id_arg);
                     let arg_str = format!(" AND i.wallet_id = ${}", query_arguments.len());
                     query_string.push_str(&arg_str);
+                    let mut with_clause = false;
+                    if query_string.contains("tags_plaintext") {
+                        query_arguments.push(&wallet_id_arg);
+                        query_string = format!("tags_plaintext as (select * from tags_plaintext where wallet_id = ${}) {}", query_arguments.len(), query_string);
+                        with_clause = true;
+                    }
+                    if query_string.contains("tags_encrypted") {
+                        if with_clause {
+                            query_string = format!(", {}", query_string);
+                        }
+                        query_arguments.push(&wallet_id_arg);
+                        query_string = format!("tags_encrypted as (select * from tags_encrypted where wallet_id = ${}) {}", query_arguments.len(), query_string);
+                        with_clause = true;
+                    }
+                    if with_clause {
+                        query_string = format!("WITH {}", query_string);
+                    }
                     (query_string, query_arguments)
                 },
                 None => query::wql_to_sql(&type_, query, options)?
