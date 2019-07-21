@@ -112,6 +112,8 @@ const _POSTGRES_DB: &str = "postgres";
 const _WALLETS_DB: &str = "wallets";
 const _PLAIN_TAGS_QUERY: &str = "SELECT name, value from tags_plaintext where item_id = $1";
 const _ENCRYPTED_TAGS_QUERY: &str = "SELECT name, value from tags_encrypted where item_id = $1";
+const _PLAIN_TAGS_QUERY_MULTI: &str = "SELECT name, value from tags_plaintext where item_id = $1 and wallet_id = $2";
+const _ENCRYPTED_TAGS_QUERY_MULTI: &str = "SELECT name, value from tags_encrypted where item_id = $1 and wallet_id = $2";
 const _CREATE_WALLET_DATABASE: &str = "CREATE DATABASE $1";
 const _CREATE_WALLETS_DATABASE: &str = "CREATE DATABASE wallets";
 // Note: wallet id length was constrained before by postgres database name length to 64 characters, keeping the same restrictions
@@ -223,20 +225,26 @@ const _DELETE_WALLET_MULTI: [&str; 4] = [
 struct TagRetriever<'a> {
     plain_tags_stmt: postgres::stmt::Statement<'a>,
     encrypted_tags_stmt: postgres::stmt::Statement<'a>,
+    wallet_id: Option<String>,
 }
 
 type TagRetrieverOwned = OwningHandle<Rc<r2d2::PooledConnection<PostgresConnectionManager>>, Box<TagRetriever<'static>>>;
 
 impl<'a> TagRetriever<'a> {
-    fn new_owned(conn: Rc<r2d2::PooledConnection<PostgresConnectionManager>>) -> Result<TagRetrieverOwned, WalletStorageError> {
+    fn new_owned(conn: Rc<r2d2::PooledConnection<PostgresConnectionManager>>, wallet_id: Option<String>) -> Result<TagRetrieverOwned, WalletStorageError> {
         OwningHandle::try_new(conn.clone(), |conn| -> Result<_, postgres::Error> {
             let (plain_tags_stmt, encrypted_tags_stmt) = unsafe {
-                ((*conn).prepare(_PLAIN_TAGS_QUERY)?,
-                 (*conn).prepare(_ENCRYPTED_TAGS_QUERY)?)
+                match wallet_id {
+                    Some(_) => ((*conn).prepare(_PLAIN_TAGS_QUERY_MULTI)?,
+                                (*conn).prepare(_ENCRYPTED_TAGS_QUERY_MULTI)?),
+                    None => ((*conn).prepare(_PLAIN_TAGS_QUERY)?,
+                                (*conn).prepare(_ENCRYPTED_TAGS_QUERY)?)
+                }
             };
             let tr = TagRetriever {
                 plain_tags_stmt,
                 encrypted_tags_stmt,
+                wallet_id
             };
             Ok(Box::new(tr))
         }).map_err(WalletStorageError::from)
@@ -245,14 +253,20 @@ impl<'a> TagRetriever<'a> {
     fn retrieve(&mut self, id: i64) -> Result<Vec<Tag>, WalletStorageError> {
         let mut tags = Vec::new();
 
-        let plain_results = self.plain_tags_stmt.query(&[&id])?;
+        let plain_results = match self.wallet_id {
+            Some(ref w_id) => self.plain_tags_stmt.query(&[&id, &w_id])?,
+            None => self.plain_tags_stmt.query(&[&id])?
+        };
         let mut iter_plain = plain_results.iter();
         while let Some(res) = iter_plain.next() {
             let row = res;
             tags.push(Tag::PlainText(row.get(0), row.get(1)));
         }
 
-        let encrypted_results = self.encrypted_tags_stmt.query(&[&id])?;
+        let encrypted_results = match self.wallet_id {
+            Some(ref w_id) => self.encrypted_tags_stmt.query(&[&id, &w_id])?,
+            None => self.encrypted_tags_stmt.query(&[&id])?
+        };
         let mut iter_encrypted = encrypted_results.iter();
         while let Some(res) = iter_encrypted.next() {
             let row = res;
@@ -1409,7 +1423,10 @@ impl WalletStorage for PostgresStorage {
             retrieve_tags: true,
         };
         let pool = self.pool.clone();
-        let tag_retriever = Some(TagRetriever::new_owned(Rc::new(pool.get().unwrap()).clone())?);
+        let tag_retriever = match query_qualifier {
+            Some(_) => Some(TagRetriever::new_owned(Rc::new(pool.get().unwrap()).clone(), Some(self.wallet_id.clone()))?),
+            None => Some(TagRetriever::new_owned(Rc::new(pool.get().unwrap()).clone(), None)?)
+        };
 
         let storage_iterator = match query_qualifier {
             Some(_) => PostgresStorageIterator::new(Some(statement), &[&self.wallet_id], fetch_options, tag_retriever, None)?,
@@ -1439,6 +1456,23 @@ impl WalletStorage for PostgresStorage {
                     query_arguments.push(&wallet_id_arg);
                     let arg_str = format!(" AND i.wallet_id = ${}", query_arguments.len());
                     query_string.push_str(&arg_str);
+                    let mut with_clause = false;
+                    if query_string.contains("tags_plaintext") {
+                        query_arguments.push(&wallet_id_arg);
+                        query_string = format!("tags_plaintext as (select * from tags_plaintext where wallet_id = ${}) {}", query_arguments.len(), query_string);
+                        with_clause = true;
+                    }
+                    if query_string.contains("tags_encrypted") {
+                        if with_clause {
+                            query_string = format!(", {}", query_string);
+                        }
+                        query_arguments.push(&wallet_id_arg);
+                        query_string = format!("tags_encrypted as (select * from tags_encrypted where wallet_id = ${}) {}", query_arguments.len(), query_string);
+                        with_clause = true;
+                    }
+                    if with_clause {
+                        query_string = format!("WITH {}", query_string);
+                    }
                     (query_string, query_arguments)
                 },
                 None => query::wql_to_sql_count(&type_, query)?
@@ -1477,7 +1511,10 @@ impl WalletStorage for PostgresStorage {
             let statement = self._prepare_statement(&query_string)?;
             let tag_retriever = if fetch_options.retrieve_tags {
                 let pool = self.pool.clone();
-                Some(TagRetriever::new_owned(Rc::new(pool.get().unwrap()).clone())?)
+                match query_qualifier {
+                    Some(_) => Some(TagRetriever::new_owned(Rc::new(pool.get().unwrap()).clone(), Some(self.wallet_id.clone()))?),
+                    None => Some(TagRetriever::new_owned(Rc::new(pool.get().unwrap()).clone(), None)?)
+                }
             } else {
                 None
             };
