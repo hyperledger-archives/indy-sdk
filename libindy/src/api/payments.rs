@@ -5,6 +5,7 @@ use commands::payments::PaymentsCommand;
 use services::payments::PaymentsMethodCBs;
 use errors::prelude::*;
 use utils::ctypes;
+use services::payments::{RequesterInfo, Fees};
 
 /// Create the payment address for this payment method.
 ///
@@ -282,8 +283,8 @@ pub type BuildVerifyPaymentReqCB = extern fn(command_handle: CommandHandle,
                                              submitter_did: *const c_char,
                                              receipt: *const c_char,
                                              cb: Option<extern fn(command_handle_: CommandHandle,
-                                                           err: ErrorCode,
-                                                           verify_txn_json: *const c_char) -> ErrorCode>) -> ErrorCode;
+                                                                  err: ErrorCode,
+                                                                  verify_txn_json: *const c_char) -> ErrorCode>) -> ErrorCode;
 
 /// Parses Indy response with information to verify receipt
 ///
@@ -304,8 +305,8 @@ pub type BuildVerifyPaymentReqCB = extern fn(command_handle: CommandHandle,
 pub type ParseVerifyPaymentResponseCB = extern fn(command_handle: CommandHandle,
                                                   resp_json: *const c_char,
                                                   cb: Option<extern fn(command_handle_: CommandHandle,
-                                                                err: ErrorCode,
-                                                                txn_json: *const c_char) -> ErrorCode>) -> ErrorCode;
+                                                                       err: ErrorCode,
+                                                                       txn_json: *const c_char) -> ErrorCode>) -> ErrorCode;
 
 /// Register custom payment implementation.
 ///
@@ -1150,9 +1151,9 @@ pub extern fn indy_build_verify_payment_req(command_handle: CommandHandle,
                                             submitter_did: *const c_char,
                                             receipt: *const c_char,
                                             cb: Option<extern fn(command_handle_: CommandHandle,
-                                                         err: ErrorCode,
-                                                         verify_txn_json: *const c_char,
-                                                         payment_method: *const c_char)>) -> ErrorCode {
+                                                                 err: ErrorCode,
+                                                                 verify_txn_json: *const c_char,
+                                                                 payment_method: *const c_char)>) -> ErrorCode {
     trace!("indy_build_verify_payment_req: >>> wallet_handle {:?}, submitter_did: {:?}, receipt: {:?}", wallet_handle, submitter_did, receipt);
     check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(receipt, ErrorCode::CommonInvalidParam4);
@@ -1204,8 +1205,8 @@ pub extern fn indy_parse_verify_payment_response(command_handle: CommandHandle,
                                                  payment_method: *const c_char,
                                                  resp_json: *const c_char,
                                                  cb: Option<extern fn(command_handle_: CommandHandle,
-                                                              err: ErrorCode,
-                                                              txn_json: *const c_char)>) -> ErrorCode {
+                                                                      err: ErrorCode,
+                                                                      txn_json: *const c_char)>) -> ErrorCode {
     trace!("indy_parse_verify_payment_response: >>> resp_json: {:?}", resp_json);
     check_useful_c_str!(payment_method, ErrorCode::CommonInvalidParam2);
     check_useful_c_str!(resp_json, ErrorCode::CommonInvalidParam3);
@@ -1229,6 +1230,74 @@ pub extern fn indy_parse_verify_payment_response(command_handle: CommandHandle,
     let result = prepare_result!(result);
 
     trace!("indy_parse_verify_payment_response: <<< result: {:?}", result);
+
+    result
+}
+
+/// Gets request requirements (with minimal price) correspondent to specific auth rule
+/// in case the requester can perform this action.
+///
+/// EXPERIMENTAL
+///
+/// If the requester does not match to the request constraints `TransactionNotAllowed` error will be thrown.
+///
+/// # Params
+/// command_handle: Command handle to map callback to caller context.
+/// get_auth_rule_response_json: response on GET_AUTH_RULE request returning action constraints set on the ledger.
+/// requester_info_json: {
+///     "role": string - role of a user which can sign a transaction.
+///     "sig_count": u64 - number of signers.
+///     "is_owner": bool - if user is an owner of transaction.
+/// }
+/// fees_json: fees set on the ledger (result of `indy_parse_get_txn_fees_response`).
+///
+/// # Return
+/// request_info_json: request info if a requester match to the action constraints.
+/// {
+///     "price": u64 - fee required for the action performing,
+///     "requirements": [{
+///         "role": string - role of users who should sign,
+///         "sig_count": u64 - number of signers,
+///         "need_to_be_owner": bool - if requester need to be owner
+///     }]
+/// }
+///
+#[no_mangle]
+pub extern fn indy_get_request_info(command_handle: CommandHandle,
+                                    get_auth_rule_response_json: *const c_char,
+                                    requester_info_json: *const c_char,
+                                    fees_json: *const c_char,
+                                    cb: Option<extern fn(command_handle_: CommandHandle,
+                                                         err: ErrorCode,
+                                                         request_info_json: *const c_char)>) -> ErrorCode {
+    trace!("indy_get_request_info: >>> get_auth_rule_response_json: {:?}, requester_info_json: {:?}, fees_json: {:?}",
+           get_auth_rule_response_json, requester_info_json, fees_json);
+
+    check_useful_c_str!(get_auth_rule_response_json, ErrorCode::CommonInvalidParam2);
+    check_useful_json!(requester_info_json, ErrorCode::CommonInvalidParam3, RequesterInfo);
+    check_useful_json!(fees_json, ErrorCode::CommonInvalidParam4, Fees);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
+
+    trace!("indy_get_request_info: entities >>> get_auth_rule_response_json: {:?}, requester_info_json: {:?}, fees_json: {:?}",
+           get_auth_rule_response_json, requester_info_json, fees_json);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Payments(
+            PaymentsCommand::GetRequestInfo(
+                get_auth_rule_response_json,
+                requester_info_json,
+                fees_json,
+                Box::new(move |result| {
+                    let (err, request_info_json) = prepare_result_1!(result, String::new());
+                    trace!("indy_get_request_info: request_info_json: {:?}", request_info_json);
+                    let request_info_json = ctypes::string_to_cstring(request_info_json);
+                    cb(command_handle, err, request_info_json.as_ptr());
+                })
+            )));
+
+    let result = prepare_result!(result);
+
+    trace!("indy_get_request_info: <<< result: {:?}", result);
 
     result
 }

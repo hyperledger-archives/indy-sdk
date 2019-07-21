@@ -1,8 +1,6 @@
-from indy import IndyError
-from indy import did
-from indy.error import ErrorCode
-
 import pytest
+
+from indy import did, error
 
 
 @pytest.mark.asyncio
@@ -29,23 +27,20 @@ async def test_set_endpoint_for_did_works_for_replace(pool_handle,wallet_handle,
 
 @pytest.mark.asyncio
 async def test_set_endpoint_for_did_works_for_invalid_did(wallet_handle, verkey_my1, endpoint):
-    with pytest.raises(IndyError) as e:
+    with pytest.raises(error.CommonInvalidStructure):
         await did.set_endpoint_for_did(wallet_handle, 'invalid_base58string', endpoint, verkey_my1)
-    assert ErrorCode.CommonInvalidStructure == e.value.error_code
 
 
 @pytest.mark.asyncio
 async def test_set_endpoint_for_did_works_for_invalid_transport_key(wallet_handle, identity_trustee1, endpoint):
     (_did, _) = identity_trustee1
-    with pytest.raises(IndyError) as e:
+    with pytest.raises(error.CommonInvalidStructure):
         await did.set_endpoint_for_did(wallet_handle, _did, endpoint, 'CnEDk___MnmiHXEV1WFgbV___eYnPqs___TdcZaNhFVW')
-    assert ErrorCode.CommonInvalidStructure == e.value.error_code
 
 
 @pytest.mark.asyncio
 async def test_set_endpoint_for_did_works_for_invalid_handle(wallet_handle, identity_trustee1, endpoint):
     (_did, key) = identity_trustee1
-    with pytest.raises(IndyError) as e:
+    with pytest.raises(error.WalletInvalidHandle):
         invalid_wallet_handle = wallet_handle + 1
         await did.set_endpoint_for_did(invalid_wallet_handle, _did, endpoint, key)
-    assert ErrorCode.WalletInvalidHandle == e.value.error_code

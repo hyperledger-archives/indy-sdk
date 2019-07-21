@@ -1,5 +1,5 @@
 from ctypes import *
-from vcx.common import do_call, create_cb
+from vcx.common import do_call, do_call_sync, create_cb
 import json
 
 import logging
@@ -516,3 +516,12 @@ class Wallet:
         logger.debug("vcx_wallet_export completed")
         return result
 
+    @staticmethod
+    def set_handle(handle: int) -> None:
+        """
+        Sets the wallet handle for libvcx to use, called before vcx_init_minimal
+        :param handle: wallet handle
+        """
+        c_handle = c_uint32(handle)
+
+        do_call_sync('vcx_wallet_set_handle', c_handle)

@@ -2,9 +2,7 @@ import json
 
 import pytest
 
-from indy import IndyError
-from indy import did
-from indy.error import ErrorCode
+from indy import did, error
 
 
 @pytest.mark.asyncio
@@ -23,15 +21,13 @@ async def test_key_for_local_did_works_for_their_did(wallet_handle, did_my1, ver
 
 @pytest.mark.asyncio
 async def test_key_for_local_did_works_for_unknown_did(wallet_handle, did_my2):
-    with pytest.raises(IndyError) as e:
+    with pytest.raises(error.WalletItemNotFound):
         await did.key_for_local_did(wallet_handle, did_my2)
-    assert ErrorCode.WalletItemNotFound == e.value.error_code
 
 
 @pytest.mark.asyncio
 async def test_key_for_local_did_works_for_invalid_wallet_handle(wallet_handle, identity_trustee1):
     (_did, _) = identity_trustee1
-    with pytest.raises(IndyError) as e:
+    with pytest.raises(error.WalletInvalidHandle):
         invalid_wallet_handle = wallet_handle + 1
         await did.key_for_local_did(invalid_wallet_handle, _did)
-    assert ErrorCode.WalletInvalidHandle == e.value.error_code
