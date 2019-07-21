@@ -1,5 +1,5 @@
 use errors::prelude::*;
-use utils::crypto::base58;
+use rust_base58::{FromBase58, ToBase58};
 
 
 pub fn build_full_verkey(dest: &str, verkey: Option<&str>) -> Result<String, IndyError> {
@@ -12,10 +12,10 @@ pub fn build_full_verkey(dest: &str, verkey: Option<&str>) -> Result<String, Ind
         };
 
         let verkey = if verkey.starts_with('~') {
-            let mut result = base58::decode(dest)?;
-            let mut end = base58::decode(&verkey[1..])?;
-            result.append(&mut end);
-            base58::encode(&result)
+            let mut result = dest.from_base58()?;
+            let mut end = verkey[1..].from_base58()?;
+            result.append(&mut end );
+            result.to_base58()
         } else {
             verkey.to_owned()
         };

@@ -3,10 +3,11 @@ use std::str;
 
 use domain::wallet::{KeyDerivationMethod, Metadata};
 use errors::prelude::*;
-use utils::crypto::{base58, chacha20poly1305_ietf, hmacsha256, pwhash_argon2i13};
+use utils::crypto::{chacha20poly1305_ietf, hmacsha256, pwhash_argon2i13};
 
 use super::{Keys, WalletRecord};
 use super::storage::{StorageRecord, Tag, TagName};
+use rust_base58::FromBase58;
 
 #[cfg(test)]
 pub(super) fn gen_master_key_salt() -> IndyResult<pwhash_argon2i13::Salt> {
@@ -78,8 +79,7 @@ fn _derive_master_key(passphrase: &str, salt: &pwhash_argon2i13::Salt, key_deriv
 }
 
 fn _raw_master_key(passphrase: &str) -> IndyResult<chacha20poly1305_ietf::Key> {
-    let bytes = &base58::decode(passphrase)
-        .map_err(|err| err.extend("Invalid mastery key"))?;
+    let bytes = passphrase.from_base58()?;
 
     chacha20poly1305_ietf::Key::from_slice(&bytes)
         .map_err(|err| err.extend("Invalid mastery key"))
