@@ -389,12 +389,12 @@ pub mod sign_with_address {
     pub extern fn handle(command_handle: i32, wallet_handle: i32, address: *const c_char, message_raw: *const u8, message_len: u32,
                                         cb: Option<extern fn(command_handle: i32, err: ErrorCode, raw: *const u8, len: u32)>) -> ErrorCode {
         check_useful_c_str!(address, ErrorCode::CommonInvalidState);
+        check_useful_c_byte_array!(message_raw, message_len, ErrorCode::CommonInvalidState, ErrorCode::CommonInvalidState);
         trace!("libnullpay::sign_with_address::handle << wallet_handle: {}\n    address: {:?}\n    message_raw: {:?}, message_len: {}", wallet_handle, address, message_raw, message_len);
 
         if let Some(cb) = cb {
-            let signature = rand::get_rand_string(15);
-            let sig_raw = signature.as_bytes();
-            cb(command_handle, ErrorCode::Success, sig_raw.as_ptr() as *const u8, sig_raw.len() as u32);
+            let signature = rand::gen_rand_signature(&address, message_raw.as_slice());
+            cb(command_handle, ErrorCode::Success, signature.as_slice().as_ptr() as *const u8, signature.len() as u32);
         }
 
         ErrorCode::Success
@@ -409,9 +409,19 @@ pub mod verify_with_address {
                          signature_raw: *const u8, signature_len: u32,
                          cb: Option<extern fn(command_handle: i32, err: ErrorCode, result: bool)>) -> ErrorCode {
         check_useful_c_str!(address, ErrorCode::CommonInvalidState);
+        check_useful_c_byte_array!(message_raw, message_len, ErrorCode::CommonInvalidState, ErrorCode::CommonInvalidState);
+        check_useful_c_byte_array!(signature_raw, signature_len, ErrorCode::CommonInvalidState, ErrorCode::CommonInvalidState);
         trace!("libnullpay::verify_with_address::handle << address: {:?}\n    message: {:?}\n    message_len: {}\n    signature: {:?}\n    signature_len: {}", address, message_raw, message_len, signature_raw, signature_len);
         if let Some(cb) = cb {
-            cb(command_handle, ErrorCode::Success, true);
+            let signature = rand::gen_rand_signature(&address, message_raw.as_slice());
+            let mut check = true;
+            let mut i = 0usize;
+            while check {
+                check &= signature[i] == signature_raw[i];
+                i += 1;
+            }
+
+            cb(command_handle, ErrorCode::Success, check);
         }
 
         ErrorCode::Success

@@ -11,6 +11,7 @@ extern crate log;
 extern crate serde_derive;
 extern crate serde_json;
 extern crate serde;
+extern crate sha2;
 
 mod libindy;
 #[macro_use]
