@@ -670,10 +670,9 @@ pub mod tests {
         assert_eq!(outputs(4, refund_address.as_str(), Some(payee_address), Some(payee_amount)).unwrap(), expected_output);
     }
 
-    #[cfg(feature = "pool_tests")]
     #[test]
     fn test_get_txn_cost() {
-        init!("ledger");
+        init!("true");
         assert_eq!(get_action_price(::utils::constants::CREATE_SCHEMA_ACTION, None).unwrap(), 2);
         assert_eq!(get_action_price(::utils::constants::CREATE_CRED_DEF_ACTION, None).unwrap(), 42);
 
