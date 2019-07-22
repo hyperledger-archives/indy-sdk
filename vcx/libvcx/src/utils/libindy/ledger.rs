@@ -396,7 +396,9 @@ pub fn get_role(did: &str) -> VcxResult<String> {
     let get_nym_resp = get_nym(&did)?;
     let get_nym_resp: serde_json::Value = serde_json::from_str(&get_nym_resp)
         .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidLedgerResponse, format!("{:?}", err)))?;
-    let role = get_nym_resp["result"]["data"]["role"].as_str().unwrap_or("").to_string();
+    let data: serde_json::Value = serde_json::from_str(& get_nym_resp["result"]["data"].as_str().unwrap_or("{}"))
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidLedgerResponse, format!("{:?}", err)))?;
+    let role = data["role"].as_str().unwrap_or("").to_string();
     Ok(role)
 }
 

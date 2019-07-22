@@ -347,7 +347,8 @@ pub fn get_request_price(action_json: String, requester_info_json: Option<String
 }
 
 fn get_action_price(action: (&str, &str, &str, Option<&str>, Option<&str>), requester_info_json: Option<String>) -> VcxResult<u64> {
-    let get_auth_rule_resp = match auth_rule::get_action_auth_rule(action) { // TODO: Huck to save backward compatibility
+    let get_auth_rule_resp = match auth_rule::get_action_auth_rule(action) {
+        // TODO: Huck to save backward compatibility
         Ok(resp) => resp,
         Err(_) => return Ok(0)
     };
@@ -362,11 +363,16 @@ fn get_action_price(action: (&str, &str, &str, Option<&str>, Option<&str>), requ
 }
 
 fn get_requester_info(requester_info_json: Option<String>) -> VcxResult<String> {
+    let role = match settings::get_config_value(settings::CONFIG_SDK_TO_REMOTE_ROLE) {
+        Ok(role) => role,
+        Err(_) => { ::utils::libindy::ledger::get_role(&settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?)? }
+    };
+
     // TODO: think about better way
     let res = match requester_info_json {
         Some(requester_info) => requester_info,
         None => json!({
-            "role": settings::get_config_value(settings::CONFIG_SDK_TO_REMOTE_ROLE)?,
+            "role": role,
             "sig_count": 1,
             "is_owner": true
         }).to_string()
