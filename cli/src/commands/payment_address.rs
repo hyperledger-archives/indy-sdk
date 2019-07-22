@@ -67,7 +67,7 @@ pub mod list_command {
 
         let res = match Payment::list_payment_addresses(wallet_handle) {
             Ok(payment_addresses_json) => {
-                let mut payment_addresses: Vec<String> = serde_json::from_str(&payment_addresses_json)
+                let payment_addresses: Vec<String> = serde_json::from_str(&payment_addresses_json)
                     .map_err(|_| println_err!("Wrong data has been received"))?;
 
                 let list_addresses =
@@ -106,6 +106,17 @@ pub fn handle_payment_error(err: IndyError, payment_method: Option<&str>) {
         ErrorCode::WalletItemAlreadyExists => println_err!("Payment address already exists"),
         _ => println_err!("{}", err.message)
     }
+}
+
+pub fn list_payment_addresses(ctx: &CommandContext) -> Vec<String> {
+    get_opened_wallet(ctx)
+        .and_then(|(wallet_handle, _)|
+            Payment::list_payment_addresses(wallet_handle).ok()
+        )
+        .and_then(|payment_addresses|
+            serde_json::from_str(&payment_addresses).ok()
+        )
+        .unwrap_or_default()
 }
 
 #[cfg(test)]
@@ -224,12 +235,6 @@ pub mod tests {
             }
             tear_down();
         }
-    }
-
-    fn list_payment_addresses(ctx: &CommandContext) -> Vec<String> {
-        let wallet_handle = ensure_opened_wallet_handle(ctx).unwrap();
-        let payment_addresses = Payment::list_payment_addresses(wallet_handle).unwrap();
-        serde_json::from_str(&payment_addresses).unwrap()
     }
 
     pub fn create_payment_address(ctx: &CommandContext) -> String {

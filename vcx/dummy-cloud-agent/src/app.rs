@@ -14,7 +14,7 @@ pub struct AppState {
 
 pub fn new(config: AppConfig, forward_agent: Addr<ForwardAgent>) -> App<AppState> {
     App::with_state(AppState { forward_agent })
-        .prefix(config.prefix.as_ref())
+        .prefix(config.prefix)
         .middleware(middleware::Logger::default()) // enable logger
         .resource("", |r| r.method(http::Method::GET).with(_get_endpoint_details))
         .resource("/msg", |r| r.method(http::Method::POST).with(_forward_message))

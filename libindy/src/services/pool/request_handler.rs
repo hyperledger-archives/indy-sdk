@@ -63,6 +63,8 @@ enum RequestState<T: Networker> {
     Finish(FinishState),
 }
 
+pub const DEFAULT_GENERATOR: &str = "3LHpUjiyFC2q2hD7MnwwNmVXiuaFbQx2XkAFJWzswCjgN1utjsCeLzHsKk1nJvFEaS4fcrUmVAkdhtPCYbrVyATZcmzwJReTcJqwqBCPTmTQ9uWPwz6rEncKb2pYYYFcdHa8N17HzVyTqKfgPi4X9pMetfT3A5xCHq54R2pDNYWVLDX";
+
 impl<T: Networker> RequestSM<T> {
     pub fn new(networker: Rc<RefCell<T>>,
                f: usize,
@@ -75,7 +77,7 @@ impl<T: Networker> RequestSM<T> {
             cmd_ids: cmd_ids.clone(),
             nodes: nodes.clone(),
             pool_name: pool_name.to_string(),
-            generator: generator.unwrap_or(Generator::from_bytes(&"3LHpUjiyFC2q2hD7MnwwNmVXiuaFbQx2XkAFJWzswCjgN1utjsCeLzHsKk1nJvFEaS4fcrUmVAkdhtPCYbrVyATZcmzwJReTcJqwqBCPTmTQ9uWPwz6rEncKb2pYYYFcdHa8N17HzVyTqKfgPi4X9pMetfT3A5xCHq54R2pDNYWVLDX".from_base58().unwrap()).unwrap()),
+            generator: generator.unwrap_or(Generator::from_bytes(&DEFAULT_GENERATOR.from_base58().unwrap()).unwrap()),
             timeout,
             extended_timeout,
             state: RequestState::Start(StartState {

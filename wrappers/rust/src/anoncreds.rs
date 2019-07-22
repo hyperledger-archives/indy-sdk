@@ -560,7 +560,7 @@ fn _prover_set_credential_attr_tag_policy(command_handle: CommandHandle, wallet_
     let tag_attrs_json_str = opt_c_str!(tag_attrs_json);
 
     ErrorCode::from(unsafe {
-      anoncreds::indy_prover_set_credential_attr_tag_policy(command_handle, wallet_handle, cred_def_id.as_ptr(), opt_c_ptr!(tag_attrs_json, tag_attrs_json_str), retroactive, cb)
+        anoncreds::indy_prover_set_credential_attr_tag_policy(command_handle, wallet_handle, cred_def_id.as_ptr(), opt_c_ptr!(tag_attrs_json, tag_attrs_json_str), retroactive, cb)
     })
 }
 
@@ -585,7 +585,7 @@ fn _prover_get_credential_attr_tag_policy(command_handle: CommandHandle, wallet_
     let cred_id = c_str!(cred_id);
 
     ErrorCode::from(unsafe {
-      anoncreds::indy_prover_get_credential_attr_tag_policy(command_handle, wallet_handle, cred_id.as_ptr(), cb)
+        anoncreds::indy_prover_get_credential_attr_tag_policy(command_handle, wallet_handle, cred_id.as_ptr(), cb)
     })
 }
 
@@ -766,7 +766,7 @@ fn _prover_close_credentials_search(command_handle: CommandHandle, search_handle
 ///     {
 ///         "name": string,
 ///         "version": string,
-///         "nonce": string,
+///         "nonce": string, - a big number represented as a string (use `generate_nonce` function to generate 80-bit number)
 ///         "requested_attributes": { // set of requested attributes
 ///              "<attr_referent>": <attr_info>, // see below
 ///              ...,
@@ -858,7 +858,7 @@ fn _prover_get_credentials_for_proof_req(command_handle: CommandHandle, wallet_h
 ///     {
 ///         "name": string,
 ///         "version": string,
-///         "nonce": string,
+///         "nonce": string, - a big number represented as a string (use `generate_nonce` function to generate 80-bit number)
 ///         "requested_attributes": { // set of requested attributes
 ///              "<attr_referent>": <attr_info>, // see below
 ///              ...,
@@ -1011,7 +1011,7 @@ fn _prover_close_credentials_search_for_proof_req(command_handle: CommandHandle,
 ///     {
 ///         "name": string,
 ///         "version": string,
-///         "nonce": string,
+///         "nonce": string, - a big number represented as a string (use `generate_nonce` function to generate 80-bit number)
 ///         "requested_attributes": { // set of requested attributes
 ///              "<attr_referent>": <attr_info>, // see below
 ///              ...,
@@ -1156,7 +1156,7 @@ fn _prover_create_proof(command_handle: CommandHandle, wallet_handle: WalletHand
 ///     {
 ///         "name": string,
 ///         "version": string,
-///         "nonce": string,
+///         "nonce": string, - a big number represented as a string (use `generate_nonce` function to generate 80-bit number)
 ///         "requested_attributes": { // set of requested attributes
 ///              "<attr_referent>": <attr_info>, // see below
 ///              ...,
@@ -1320,5 +1320,31 @@ fn _update_revocation_state(command_handle: CommandHandle, blob_storage_reader_h
 
     ErrorCode::from(unsafe {
         anoncreds::indy_update_revocation_state(command_handle, blob_storage_reader_handle, rev_state_json.as_ptr(), rev_reg_def_json.as_ptr(), rev_reg_delta_json.as_ptr(), timestamp, cred_rev_id.as_ptr(), cb)
+    })
+}
+
+/// Generates 80-bit numbers that can be used as a nonce for proof request.
+///
+/// # Arguments
+/// * `blob_storage_reader_handle`: configuration of blob storage reader handle that will allow to read revocation tails
+/// * `rev_state_json`: revocation registry state json
+/// * `rev_reg_def_json`: revocation registry definition json
+/// * `rev_reg_delta_json`: revocation registry definition delta json
+/// * `timestamp`: time represented as a total number of seconds from Unix Epoch
+/// * `cred_rev_id`: user credential revocation id in revocation registry
+///
+/// # Returns
+/// * `nonce`: generated number as a string
+pub fn generate_nonce() -> Box<Future<Item=String, Error=IndyError>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+
+    let err = _generate_nonce(command_handle, cb);
+
+    ResultHandler::str(command_handle, err, receiver)
+}
+
+fn _generate_nonce(command_handle: CommandHandle, cb: Option<ResponseStringCB>) -> ErrorCode {
+    ErrorCode::from(unsafe {
+        anoncreds::indy_generate_nonce(command_handle, cb)
     })
 }

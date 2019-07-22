@@ -21,7 +21,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     curl https://sh.rustup.rs -sSf | sh -s -- -y
     export PATH="$HOME/.cargo/bin:$PATH" # so can use cargo without relog
     brew install pkg-config \
-                 https://raw.githubusercontent.com/Homebrew/homebrew-core/65effd2b617bade68a8a2c5b39e1c3089cc0e945/Formula/libsodium.rb \
+                 https://raw.githubusercontent.com/Homebrew/homebrew-core/6fc62ce98a65b474d3a67441b5e82b7b8e51ffd1/Formula/libsodium.rb \
                  automake \
                  autoconf \
                  openssl \

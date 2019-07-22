@@ -2000,7 +2000,8 @@ mod high_cases {
                             {
                                 "constraint_id": "ROLE",
                                 "role": "0",
-                                "sig_count": 1
+                                "sig_count": 1,
+                                "need_to_be_owner": false
                             }
                         ]
                     }

@@ -882,6 +882,32 @@ namespace Hyperledger.Indy.AnonCredsApi
         }
 
         /// <summary>
+        /// Deletes credential with the given identifier.
+        /// </summary>
+        /// <param name="wallet">The wallet</param>
+        /// <param name="credentialId">The credential identifier</param>
+        /// <returns></returns>
+        public static Task ProverDeleteCredentialAsync(Wallet wallet, string credentialId)
+        {
+            ParamGuard.NotNull(wallet, "wallet");
+            ParamGuard.NotNullOrWhiteSpace(credentialId, "credentialId");
+
+            var taskCompletionSource = new TaskCompletionSource<bool>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var commandResult = NativeMethods.indy_prover_delete_credential(
+                commandHandle,
+                wallet.Handle,
+                credentialId,
+                CallbackHelper.TaskCompletingNoValueCallback
+                );
+
+            CallbackHelper.CheckResult(commandResult);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
         /// Search for credentials stored in wallet.
         /// Credentials can be filtered by tags created during saving of credential.
         ///
