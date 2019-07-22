@@ -108,21 +108,19 @@ impl rlp::Decodable for Node {
                     let cur = rlp.at(i)?;
                     match cur.prototype()? {
                         RlpPrototype::Data(0) => {
-                            continue
+                            continue;
                         }
                         _ => {
                             nodes[i] = Some(Box::new(cur.as_val()?));
                         }
                     }
                 }
-                let mut value: Option<Vec<u8>> = None;
-                if !rlp.at(Node::RADIX)?.is_empty() {
-                    value = Some(rlp.at(Node::RADIX)?.as_val()?)
-                }
-                Ok(Node::Full(FullNode {
-                    nodes: nodes,
-                    value: value,
-                }))
+                let value: Option<Vec<u8>> = if !rlp.at(Node::RADIX)?.is_empty() {
+                    Some(rlp.at(Node::RADIX)?.as_val()?)
+                } else {
+                    None
+                };
+                Ok(Node::Full(FullNode { nodes, value }))
             }
             RlpPrototype::Data(Node::HASH_SIZE) => {
                 Ok(Node::Hash(rlp.as_val()?))
@@ -142,10 +140,8 @@ type NodeHash = sha3::digest::generic_array::GenericArray<u8, <sha3::Sha3_256 as
 pub type TrieDB<'a> = HashMap<NodeHash, &'a Node>;
 
 impl Node {
-    pub fn get_hash(&self) -> NodeHash{
-        use rlp::{
-            encode as rlp_encode
-        };
+    pub fn get_hash(&self) -> NodeHash {
+        use rlp::encode as rlp_encode;
         use sha3::{digest::FixedOutput};
         use sha3::Digest;
         let encoded = rlp_encode(self);
@@ -184,7 +180,7 @@ impl Node {
         trace!("Node::get_node >> path: {:?}", path);
         let nibble_path = Node::path_to_nibbles(path);
         trace!("Node::get_node >> made some nibbles >> nibbles: {:?}", nibble_path);
-        return self._get_node(db, nibble_path.as_slice(), vec![].as_slice())
+        return self._get_node(db, nibble_path.as_slice(), vec![].as_slice());
     }
 
     fn _get_node<'a, 'b>(&'a self, db: &'a TrieDB, path: &'b [u8], seen_path: &'b [u8]) -> IndyResult<Option<(&Node, Vec<u8>)>> {
@@ -390,7 +386,7 @@ impl Node {
         trace!("Node::_nibbles_to_str >> nibbles: {:?}", nibbles);
         let mut res: Vec<u8> = vec![];
         for x in (0..nibbles.len()).step_by(2) {
-            let h: u8 = (nibbles[x] << 4) + nibbles[x+1];
+            let h: u8 = (nibbles[x] << 4) + nibbles[x + 1];
             res.push(h)
         }
         String::from_utf8(res).to_indy(IndyErrorKind::InvalidStructure, "Patricia Merkle Trie contains malformed utf8 string")
