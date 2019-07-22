@@ -18,6 +18,9 @@ if [ -z "${TARGET_ARCH}" ]; then
     exit 1
 fi
 
+source ${CI_DIR}/setup.android.env.sh
+generate_arch_flags ${TARGET_ARCH}
+
 if [ -z "${INDY_DIR}" ] ; then
         INDY_DIR="libindy_${TARGET_ARCH}"
         if [ -d "${INDY_DIR}" ] ; then
@@ -36,9 +39,6 @@ if [ -z "${INDY_DIR}" ] ; then
             INDY_DIR="${INDY_DIR}/lib"
         fi
 fi
-
-source ${CI_DIR}/setup.android.env.sh
-generate_arch_flags ${TARGET_ARCH}
 
 echo ">> in runner script"
 declare -a EXE_ARRAY
