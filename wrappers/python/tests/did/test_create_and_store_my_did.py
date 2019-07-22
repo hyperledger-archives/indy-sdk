@@ -1,11 +1,10 @@
 import json
 
-from indy import IndyError
-from indy import did
-from indy.error import ErrorCode
-
 import base58
 import pytest
+
+from indy import error
+from indy import did
 
 
 @pytest.mark.asyncio
@@ -45,28 +44,24 @@ async def test_create_my_did_works_for_correct_type(wallet_handle, seed_my1, did
 
 @pytest.mark.asyncio
 async def test_create_my_did_works_for_invalid_seed(wallet_handle):
-    with pytest.raises(IndyError) as e:
+    with pytest.raises(error.CommonInvalidStructure):
         await did.create_and_store_my_did(wallet_handle, json.dumps({'seed': 'aaaaaaaaaaa'}))
-    assert ErrorCode.CommonInvalidStructure == e.value.error_code
 
 
 @pytest.mark.asyncio
 async def test_create_my_did_works_for_invalid_crypto_type(wallet_handle):
-    with pytest.raises(IndyError) as e:
+    with pytest.raises(error.UnknownCryptoTypeError):
         await did.create_and_store_my_did(wallet_handle, json.dumps({'crypto_type': 'crypto_type'}))
-    assert ErrorCode.UnknownCryptoTypeError == e.value.error_code
 
 
 @pytest.mark.asyncio
 async def test_create_my_did_works_for_invalid_handle(wallet_handle):
-    with pytest.raises(IndyError) as e:
+    with pytest.raises(error.WalletInvalidHandle):
         await did.create_and_store_my_did(wallet_handle + 1, '{}')
-    assert ErrorCode.WalletInvalidHandle == e.value.error_code
 
 
 @pytest.mark.asyncio
 async def test_create_my_did_works_for_duplicate(wallet_handle):
     (_did, _) = await did.create_and_store_my_did(wallet_handle, '{}')
-    with pytest.raises(IndyError) as e:
+    with pytest.raises(error.DidAlreadyExistsError):
         await did.create_and_store_my_did(wallet_handle, json.dumps({'did': _did}))
-    assert ErrorCode.DidAlreadyExistsError == e.value.error_code

@@ -253,7 +253,7 @@ indy> ledger <subcommand>
 #### NYM transaction
 Send NYM transaction
 ```
-ledger nym did=<did-value> [verkey=<verkey-value>] [role=<role-value>] [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>] [send=<true or false>]
+ledger nym did=<did-value> [verkey=<verkey-value>] [role=<role-value>] [source_payment_address=<source_payment_address-value>] [fee=<fee-value>] [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>] [send=<true or false>]
 ```
 
 #### GET_NYM transaction
@@ -265,7 +265,7 @@ ledger get-nym did=<did-value> [send=<true or false>]
 #### ATTRIB transaction
 Send ATTRIB transaction
 ```
-ledger attrib did=<did-value> [hash=<hash-value>] [raw=<raw-value>] [enc=<enc-value>]  [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>] [send=<true or false>]
+ledger attrib did=<did-value> [hash=<hash-value>] [raw=<raw-value>] [enc=<enc-value>] [source_payment_address=<source_payment_address-value>] [fee=<fee-value>] [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>] [send=<true or false>]
 ```
 
 #### GET_ATTRIB transaction
@@ -277,7 +277,7 @@ ledger get-attrib did=<did-value> [raw=<raw-value>] [hash=<hash-value>] [enc=<en
 #### SCHEMA transaction
 Send SCHEMA transaction
 ```
-ledger schema name=<name-value> version=<version-value> attr_names=<attr_names-value>  [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>] [send=<true or false>]
+ledger schema name=<name-value> version=<version-value> attr_names=<attr_names-value> [source_payment_address=<source_payment_address-value>] [fee=<fee-value>] [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>] [send=<true or false>]
 ```
 
 #### GET_SCHEMA transaction
@@ -288,7 +288,7 @@ ledger get-schema did=<did-value> name=<name-value> version=<version-value> [sen
 #### CRED_DEF transaction
 Send CRED_DEF transaction
 ```
-ledger cred-def schema_id=<schema_id-value> signature_type=<signature_type-value> [tag=<tag>] primary=<primary-value> [revocation=<revocation-value>]  [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>] [send=<true or false>]
+ledger cred-def schema_id=<schema_id-value> signature_type=<signature_type-value> [tag=<tag>] primary=<primary-value> [revocation=<revocation-value>] [source_payment_address=<source_payment_address-value>] [fee=<fee-value>] [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>] [send=<true or false>]
 ```
 
 #### GET_CRED_DEF transaction
@@ -354,7 +354,7 @@ ledger get-payment-sources payment_address=<payment_address> [send=<true or fals
 #### PAYMENT transaction
 Send PAYMENT transaction
 ```
-ledger payment inputs=<source-1>,..,<source-n> outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>) [extra=<extra>] [send=<true or false>]
+ledger payment [source_payment_address=<payment address>] [target_payment_address=<payment address>] [amount=<number>] [fee=<transaction fee amount>] [inputs=<source-1>,..,<source-n>] [outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>] [send=<true or false>]
 ```
 
 #### GET_FEES transaction
@@ -402,13 +402,13 @@ ledger load-transaction file=<path to file>
 #### TXN_AUTHR_AGRMT transaction.
 Request to add a new version of Transaction Author Agreement to the ledger.
 ```
-ledger ledger txn-author-agreement [text=<agreement content>] [file=<file with agreement>] version=<version> [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>] [send=<true or false>]
+ledger ledger txn-author-agreement [text=<agreement content>] [file=<file with agreement>] version=<version> [source_payment_address=<source_payment_address-value>] [fee=<fee-value>] [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>] [send=<true or false>]
 ```
 
 #### SET_TXN_AUTHR_AGRMT_AML transaction.
 Request to add new acceptance mechanisms for transaction author agreement.
 ```
-ledger txn-acceptance-mechanisms [aml=<acceptance mechanisms>] [file=<file with acceptance mechanisms>] version=<version> [context=<some context>] [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>] [send=<true or false>]
+ledger txn-acceptance-mechanisms [aml=<acceptance mechanisms>] [file=<file with acceptance mechanisms>] version=<version> [context=<some context>] [source_payment_address=<source_payment_address-value>] [fee=<fee-value>] [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>] [send=<true or false>]
 ```
 
 ### Payment Address commands

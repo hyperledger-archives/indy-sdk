@@ -303,6 +303,11 @@ public enum ErrorCode {
 	 * Extra funds on inputs
 	 */
 	ExtraFundsError(705),
+
+	/**
+	 * The transaction is not allowed to a requester
+	 */
+	TransactionNotAllowedError(706),
 	;
 
 	private int value;
