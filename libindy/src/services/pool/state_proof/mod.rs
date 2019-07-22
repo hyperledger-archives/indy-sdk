@@ -5,9 +5,7 @@ use std::collections::HashMap;
 use std::ffi::{CStr, CString};
 
 use base64;
-use rlp::{
-    UntrustedRlp,
-};
+use rlp::UntrustedRlp;
 use serde_json;
 use serde_json::Value as SJsonValue;
 
@@ -100,7 +98,7 @@ pub fn verify_parsed_sp(parsed_sps: Vec<ParsedSP>,
         match parsed_sp.kvs_to_verify {
             KeyValuesInSP::Simple(kvs) => {
                 match kvs.verification_type {
-                    KeyValueSimpleDataVerificationType::Simple() => {
+                    KeyValueSimpleDataVerificationType::Simple => {
                         for (k, v) in kvs.kvs {
                             let key = unwrap_or_return!(base64::decode(&k), false);
                             if !_verify_proof(proof_nodes.as_slice(),
@@ -111,12 +109,12 @@ pub fn verify_parsed_sp(parsed_sps: Vec<ParsedSP>,
                             }
                         }
                     }
-                    KeyValueSimpleDataVerificationType::NumericalSuffixAscendingNoGaps(from, next, prefix) => {
+                    KeyValueSimpleDataVerificationType::NumericalSuffixAscendingNoGaps(data) => {
                         if !_verify_proof_range(proof_nodes.as_slice(),
                                                 root_hash.as_slice(),
-                                                prefix.as_str(),
-                                                from,
-                                                next,
+                                                data.prefix.as_str(),
+                                                data.from,
+                                                data.next,
                                                 &kvs.kvs) {
                             return false;
                         }
@@ -399,7 +397,7 @@ fn _parse_reply_for_sp(json_msg: &SJsonValue, data: Option<&str>, parsed_data: &
         multi_signature: json_msg["state_proof"]["multi_signature"].clone(),
         kvs_to_verify: KeyValuesInSP::Simple(KeyValueSimpleData {
             kvs: vec![(base64::encode(sp_key), value)],
-            verification_type: KeyValueSimpleDataVerificationType::Simple()
+            verification_type: KeyValueSimpleDataVerificationType::Simple,
         }),
     })
 }
@@ -451,7 +449,7 @@ fn _parse_reply_for_multi_sp(_json_msg: &SJsonValue, data: Option<&str>, parsed_
         multi_signature,
         kvs_to_verify: KeyValuesInSP::Simple(KeyValueSimpleData {
             kvs: vec![(base64::encode(sp_key), value)],
-            verification_type: KeyValueSimpleDataVerificationType::Simple()
+            verification_type: KeyValueSimpleDataVerificationType::Simple,
         }),
     }))
 }
@@ -512,7 +510,7 @@ fn _verify_proof_range(proofs_rlp: &[u8],
             vals
         } else {
             error!("Some errors happened while collecting values from state proof");
-            return false
+            return false;
         };
         // Preparation of data for verification
         // Fetch numerical suffixes
@@ -521,7 +519,7 @@ fn _verify_proof_range(proofs_rlp: &[u8],
             .map(|(key, value)| {
                 let no = key.replacen(prefix, "", 1).parse::<u64>();
                 no.ok().map(|a| (a, (key, Some(value))))
-        }).collect();
+            }).collect();
         if !vals_for_sort_check.iter().all(|a| a.is_some()) {
             error!("Some values in state proof are not correlating with state proof rule, aborting.");
             return false;
@@ -668,7 +666,7 @@ fn _parse_reply_for_proof_value(json_msg: &SJsonValue, data: Option<&str>, parse
                 if !parsed_data["value"]["accum_to"].is_null() {
                     value["val"] = parsed_data["value"]["accum_to"].clone()
                 } else {
-                    return Ok(None)
+                    return Ok(None);
                 }
             }
             constants::GET_TXN_AUTHR_AGRMT => {
@@ -676,7 +674,7 @@ fn _parse_reply_for_proof_value(json_msg: &SJsonValue, data: Option<&str>, parse
                     value["val"] = parsed_data.clone();
                 } else {
                     value = SJsonValue::String(hex::encode(_calculate_taa_digest(parsed_data["text"].as_str().unwrap_or(""),
-                                                                     parsed_data["version"].as_str().unwrap_or(""))
+                                                                                 parsed_data["version"].as_str().unwrap_or(""))
                         .map_err(|err| format!("Can't calculate expected TAA digest to verify StateProof on the request ({})", err))?));
                 }
             }
@@ -1236,8 +1234,10 @@ mod tests {
         assert_eq!(parsed_sp.multi_signature, "ms");
         assert_eq!(parsed_sp.proof_nodes, "pns");
         assert_eq!(parsed_sp.kvs_to_verify,
-                   KeyValuesInSP::Simple(KeyValueSimpleData { kvs: Vec::new(),
-                       verification_type: KeyValueSimpleDataVerificationType::Simple() }));
+                   KeyValuesInSP::Simple(KeyValueSimpleData {
+                       kvs: Vec::new(),
+                       verification_type: KeyValueSimpleDataVerificationType::Simple,
+                   }));
     }
 
     #[test]
@@ -1256,7 +1256,10 @@ mod tests {
                 "type": "Simple",
                 "kvs": [],
                 "verification_type": {
-                    "NumericalSuffixAscendingNoGaps": (1, 2, "abc")
+                    "type": "NumericalSuffixAscendingNoGaps",
+                    "from": 1,
+                    "next": 2,
+                    "prefix": "abc"
                 }
             },
         }]);
@@ -1273,8 +1276,15 @@ mod tests {
         assert_eq!(parsed_sp.multi_signature, "ms");
         assert_eq!(parsed_sp.proof_nodes, "pns");
         assert_eq!(parsed_sp.kvs_to_verify,
-                   KeyValuesInSP::Simple(KeyValueSimpleData { kvs: Vec::new(),
-                       verification_type: KeyValueSimpleDataVerificationType::NumericalSuffixAscendingNoGaps(Some(1), Some(2), "abc".to_string()) }));
+                   KeyValuesInSP::Simple(KeyValueSimpleData {
+                       kvs: Vec::new(),
+                       verification_type: KeyValueSimpleDataVerificationType::NumericalSuffixAscendingNoGaps(
+                           NumericalSuffixAscendingNoGapsData {
+                               from: Some(1),
+                               next: Some(2),
+                               prefix: "abc".to_string(),
+                           }),
+                   }));
     }
 
     #[test]
@@ -1293,7 +1303,10 @@ mod tests {
                 "type": "Simple",
                 "kvs": [],
                 "verification_type": {
-                    "NumericalSuffixAscendingNoGaps": (serde_json::Value::Null, serde_json::Value::Null, "abc")
+                    "type": "NumericalSuffixAscendingNoGaps",
+                    "from": serde_json::Value::Null,
+                    "next": serde_json::Value::Null,
+                    "prefix": "abc"
                 }
             },
         }]);
@@ -1310,7 +1323,14 @@ mod tests {
         assert_eq!(parsed_sp.multi_signature, "ms");
         assert_eq!(parsed_sp.proof_nodes, "pns");
         assert_eq!(parsed_sp.kvs_to_verify,
-                   KeyValuesInSP::Simple(KeyValueSimpleData { kvs: Vec::new(),
-                       verification_type: KeyValueSimpleDataVerificationType::NumericalSuffixAscendingNoGaps(None, None, "abc".to_string()) }));
+                   KeyValuesInSP::Simple(KeyValueSimpleData {
+                       kvs: Vec::new(),
+                       verification_type: KeyValueSimpleDataVerificationType::NumericalSuffixAscendingNoGaps(
+                           NumericalSuffixAscendingNoGapsData {
+                               from: None,
+                               next: None,
+                               prefix: "abc".to_string(),
+                           }),
+                   }));
     }
 }
