@@ -53,6 +53,7 @@ pub enum PaymentsCommand {
         WalletHandle,
         Option<String>, //submitter did
         String, //payment address
+        Option<u64>, //from
         Box<Fn(IndyResult<(String, String)>) + Send>),
     BuildGetPaymentSourcesRequestAck(
         i32, //handle
@@ -60,10 +61,10 @@ pub enum PaymentsCommand {
     ParseGetPaymentSourcesResponse(
         String, //type
         String, //response
-        Box<Fn(IndyResult<String>) + Send>),
+        Box<Fn(IndyResult<(String, i64)>) + Send>),
     ParseGetPaymentSourcesResponseAck(
         i32, //cmd_handle
-        IndyResult<String>),
+        IndyResult<(String, i64)>),
     BuildPaymentReq(
         WalletHandle,
         Option<String>, //submitter did
@@ -149,7 +150,8 @@ pub struct PaymentsCommandExecutor {
     wallet_service: Rc<WalletService>,
     crypto_service: Rc<CryptoService>,
     ledger_service: Rc<LedgerService>,
-    pending_callbacks: RefCell<HashMap<i32, Box<Fn(IndyResult<String>) + Send>>>,
+    pending_callbacks_str: RefCell<HashMap<i32, Box<Fn(IndyResult<String>) + Send>>>,
+    pending_callbacks_str_i64: RefCell<HashMap<i32, Box<Fn(IndyResult<(String, i64)>) + Send>>>,
 }
 
 impl PaymentsCommandExecutor {
@@ -159,7 +161,8 @@ impl PaymentsCommandExecutor {
             wallet_service,
             crypto_service,
             ledger_service,
-            pending_callbacks: RefCell::new(HashMap::new()),
+            pending_callbacks_str: RefCell::new(HashMap::new()),
+            pending_callbacks_str_i64: RefCell::new(HashMap::new()),
         }
     }
 
@@ -197,9 +200,9 @@ impl PaymentsCommandExecutor {
                 info!(target: "payments_command_executor", "ParseResponseWithFeesAck command received");
                 self.parse_response_with_fees_ack(cmd_handle, result);
             }
-            PaymentsCommand::BuildGetPaymentSourcesRequest(wallet_handle, submitter_did, payment_address, cb) => {
+            PaymentsCommand::BuildGetPaymentSourcesRequest(wallet_handle, submitter_did, payment_address, from, cb) => {
                 info!(target: "payments_command_executor", "BuildGetPaymentSourcesRequest command received");
-                self.build_get_payment_sources_request(wallet_handle, submitter_did.as_ref().map(String::as_str), &payment_address, cb);
+                self.build_get_payment_sources_request(wallet_handle, submitter_did.as_ref().map(String::as_str), &payment_address, from, cb);
             }
             PaymentsCommand::BuildGetPaymentSourcesRequestAck(cmd_handle, result) => {
                 info!(target: "payments_command_executor", "BuildGetPaymentSourcesRequestAck command received");
@@ -310,7 +313,7 @@ impl PaymentsCommandExecutor {
             Err(err) => return cb(Err(IndyError::from(err))),
             _ => ()
         };
-        self._process_method(cb, &|i| self.payments_service.create_address(i, wallet_handle, type_, config));
+        self._process_method_str(cb, &|i| self.payments_service.create_address(i, wallet_handle, type_, config));
 
         trace!("create_address <<<");
     }
@@ -326,7 +329,7 @@ impl PaymentsCommandExecutor {
             }
             Err(err) => Err(IndyError::from(err))
         };
-        self._common_ack(handle, total_result, "CreateAddressAck");
+        self._common_ack_str(handle, total_result, "CreateAddressAck");
         trace!("create_address_ack <<<");
     }
 
@@ -384,7 +387,7 @@ impl PaymentsCommandExecutor {
         match method {
             Ok(type_) => {
                 let type_copy = type_.to_string();
-                self._process_method(
+                self._process_method_str(
                     Box::new(move |result| cb(result.map(|e| (e, type_.to_string())))),
                     &|i| self.payments_service.add_request_fees(i, &type_copy, wallet_handle, submitter_did, req, inputs, outputs, extra),
                 );
@@ -398,23 +401,23 @@ impl PaymentsCommandExecutor {
 
     fn add_request_fees_ack(&self, cmd_handle: i32, result: IndyResult<String>) {
         trace!("add_request_fees_ack >>> result: {:?}", result);
-        self._common_ack_payments(cmd_handle, result, "AddRequestFeesAck");
+        self._common_ack_payments_str(cmd_handle, result, "AddRequestFeesAck");
         trace!("add_request_fees_ack <<<");
     }
 
     fn parse_response_with_fees(&self, type_: &str, response: &str, cb: Box<Fn(IndyResult<String>) + Send>) {
         trace!("parse_response_with_fees >>> type_: {:?}, response: {:?}", type_, response);
-        self._process_method(cb, &|i| self.payments_service.parse_response_with_fees(i, type_, response));
+        self._process_method_str(cb, &|i| self.payments_service.parse_response_with_fees(i, type_, response));
         trace!("parse_response_with_fees <<<");
     }
 
     fn parse_response_with_fees_ack(&self, cmd_handle: i32, result: IndyResult<String>) {
         trace!("parse_response_with_fees_ack >>> result: {:?}", result);
-        self._common_ack_payments(cmd_handle, result, "ParseResponseWithFeesFeesAck");
+        self._common_ack_payments_str(cmd_handle, result, "ParseResponseWithFeesFeesAck");
         trace!("parse_response_with_fees_ack <<<");
     }
 
-    fn build_get_payment_sources_request(&self, wallet_handle: WalletHandle, submitter_did: Option<&str>, payment_address: &str, cb: Box<Fn(IndyResult<(String, String)>) + Send>) {
+    fn build_get_payment_sources_request(&self, wallet_handle: WalletHandle, submitter_did: Option<&str>, payment_address: &str, next: Option<u64>, cb: Box<Fn(IndyResult<(String, String)>) + Send>) {
         trace!("build_get_payment_sources_request >>> wallet_handle: {:?}, submitter_did: {:?}, payment_address: {:?}", wallet_handle, submitter_did, payment_address);
         if let Some(did) = submitter_did {
             match self.crypto_service.validate_did(did).map_err(map_err_err!()) {
@@ -436,28 +439,28 @@ impl PaymentsCommandExecutor {
         };
         let method_copy = method.to_string();
 
-        self._process_method(
+        self._process_method_str(
             Box::new(move |get_sources_txn_json| cb(get_sources_txn_json.map(|s| (s, method.to_string())))),
-            &|i| self.payments_service.build_get_payment_sources_request(i, &method_copy, wallet_handle, submitter_did, payment_address),
+            &|i| self.payments_service.build_get_payment_sources_request(i, &method_copy, wallet_handle, submitter_did, payment_address, next),
         );
         trace!("build_get_payment_sources_request <<<");
     }
 
     fn build_get_payment_sources_request_ack(&self, cmd_handle: i32, result: IndyResult<String>) {
         trace!("build_get_payment_sources_request_ack >>> result: {:?}", result);
-        self._common_ack_payments(cmd_handle, result, "BuildGetSourcesRequestAck");
+        self._common_ack_payments_str(cmd_handle, result, "BuildGetSourcesRequestAck");
         trace!("build_get_payment_sources_request_ack <<<");
     }
 
-    fn parse_get_payment_sources_response(&self, type_: &str, response: &str, cb: Box<Fn(IndyResult<String>) + Send>) {
+    fn parse_get_payment_sources_response(&self, type_: &str, response: &str, cb: Box<Fn(IndyResult<(String, i64)>) + Send>) {
         trace!("parse_get_payment_sources_response >>> response: {:?}", response);
-        self._process_method(cb, &|i| self.payments_service.parse_get_payment_sources_response(i, type_, response));
+        self._process_method_str_i64(cb, &|i| self.payments_service.parse_get_payment_sources_response(i, type_, response));
         trace!("parse_get_payment_sources_response <<<");
     }
 
-    fn parse_get_payment_sources_response_ack(&self, cmd_handle: i32, result: IndyResult<String>) {
+    fn parse_get_payment_sources_response_ack(&self, cmd_handle: i32, result: IndyResult<(String, i64)>) {
         trace!("parse_get_payment_sources_response_ack >>> result: {:?}", result);
-        self._common_ack_payments(cmd_handle, result, "ParseGetSourcesResponseAck");
+        self._common_ack_payments_str_i64(cmd_handle, result, "ParseGetSourcesResponseAck");
         trace!("parse_get_payment_sources_response_ack <<<");
     }
 
@@ -482,7 +485,7 @@ impl PaymentsCommandExecutor {
         match method {
             Ok(type_) => {
                 let type_copy = type_.to_string();
-                self._process_method(
+                self._process_method_str(
                     Box::new(move |result| cb(result.map(|s| (s, type_.to_string())))),
                     &|i| self.payments_service.build_payment_req(i, &type_copy, wallet_handle, submitter_did, inputs, outputs, extra),
                 );
@@ -521,19 +524,19 @@ impl PaymentsCommandExecutor {
 
     fn build_payment_req_ack(&self, cmd_handle: i32, result: IndyResult<String>) {
         trace!("build_payment_req_ack >>> result: {:?}", result);
-        self._common_ack_payments(cmd_handle, result, "BuildPaymentReqAck");
+        self._common_ack_payments_str(cmd_handle, result, "BuildPaymentReqAck");
         trace!("build_payment_req_ack <<<");
     }
 
     fn parse_payment_response(&self, payment_method: &str, response: &str, cb: Box<Fn(IndyResult<String>) + Send>) {
         trace!("parse_payment_response >>> response: {:?}", response);
-        self._process_method(cb, &|i| self.payments_service.parse_payment_response(i, payment_method, response));
+        self._process_method_str(cb, &|i| self.payments_service.parse_payment_response(i, payment_method, response));
         trace!("parse_payment_response <<<");
     }
 
     fn parse_payment_response_ack(&self, cmd_handle: i32, result: IndyResult<String>) {
         trace!("parse_payment_response_ack >>> result: {:?}", result);
-        self._common_ack_payments(cmd_handle, result, "ParsePaymentResponseAck");
+        self._common_ack_payments_str(cmd_handle, result, "ParsePaymentResponseAck");
         trace!("parse_payment_response_ack <<<");
     }
 
@@ -555,7 +558,7 @@ impl PaymentsCommandExecutor {
         match self.payments_service.parse_method_from_outputs(outputs) {
             Ok(type_) => {
                 let type_copy = type_.to_string();
-                self._process_method(
+                self._process_method_str(
                     Box::new(move |result| cb(result.map(|s| (s, type_.to_string())))),
                     &|i| self.payments_service.build_mint_req(i, &type_copy, wallet_handle, submitter_did, outputs, extra),
                 );
@@ -567,7 +570,7 @@ impl PaymentsCommandExecutor {
 
     fn build_mint_req_ack(&self, cmd_handle: i32, result: IndyResult<String>) {
         trace!("build_mint_req_ack >>> result: {:?}", result);
-        self._common_ack_payments(cmd_handle, result, "BuildMintReqAck");
+        self._common_ack_payments_str(cmd_handle, result, "BuildMintReqAck");
         trace!("build_mint_req_ack <<<");
     }
 
@@ -589,14 +592,14 @@ impl PaymentsCommandExecutor {
                 error!("Cannot deserialize Fees: {:?}", err);
                 cb(Err(err.to_indy(IndyErrorKind::InvalidStructure, "Cannot deserialize Fees")))
             }
-            _ => self._process_method(cb, &|i| self.payments_service.build_set_txn_fees_req(i, type_, wallet_handle, submitter_did, fees)),
+            _ => self._process_method_str(cb, &|i| self.payments_service.build_set_txn_fees_req(i, type_, wallet_handle, submitter_did, fees)),
         };
         trace!("build_set_txn_fees_req <<<");
     }
 
     fn build_set_txn_fees_req_ack(&self, cmd_handle: i32, result: IndyResult<String>) {
         trace!("build_set_txn_fees_req_ack >>> result: {:?}", result);
-        self._common_ack_payments(cmd_handle, result, "BuildSetTxnFeesReq");
+        self._common_ack_payments_str(cmd_handle, result, "BuildSetTxnFeesReq");
         trace!("build_set_txn_fees_req_ack <<<");
     }
 
@@ -613,25 +616,25 @@ impl PaymentsCommandExecutor {
             _ => (),
         };
 
-        self._process_method(cb, &|i| self.payments_service.build_get_txn_fees_req(i, type_, wallet_handle, submitter_did));
+        self._process_method_str(cb, &|i| self.payments_service.build_get_txn_fees_req(i, type_, wallet_handle, submitter_did));
         trace!("build_get_txn_fees_req <<<");
     }
 
     fn build_get_txn_fees_req_ack(&self, cmd_handle: i32, result: IndyResult<String>) {
         trace!("build_get_txn_fees_req_ack >>> result: {:?}", result);
-        self._common_ack_payments(cmd_handle, result, "BuildGetTxnFeesReqAck");
+        self._common_ack_payments_str(cmd_handle, result, "BuildGetTxnFeesReqAck");
         trace!("build_get_txn_fees_req_ack <<<");
     }
 
     fn parse_get_txn_fees_response(&self, type_: &str, response: &str, cb: Box<Fn(IndyResult<String>) + Send>) {
         trace!("parse_get_txn_fees_response >>> response: {:?}", response);
-        self._process_method(cb, &|i| self.payments_service.parse_get_txn_fees_response(i, type_, response));
+        self._process_method_str(cb, &|i| self.payments_service.parse_get_txn_fees_response(i, type_, response));
         trace!("parse_get_txn_fees_response <<<");
     }
 
     fn parse_get_txn_fees_response_ack(&self, cmd_handle: i32, result: IndyResult<String>) {
         trace!("parse_get_txn_fees_response_ack >>> result: {:?}", result);
-        self._common_ack_payments(cmd_handle, result, "ParseGetTxnFeesResponseAck");
+        self._common_ack_payments_str(cmd_handle, result, "ParseGetTxnFeesResponseAck");
         trace!("parse_get_txn_fees_response_ack <<<");
     }
 
@@ -656,7 +659,7 @@ impl PaymentsCommandExecutor {
             }
         };
         let method_copy = method.to_string();
-        self._process_method(
+        self._process_method_str(
             Box::new(move |result| cb(result.map(|s| (s, method.to_string())))),
             &|i| self.payments_service.build_verify_payment_req(i, &method_copy, wallet_handle, submitter_did, receipt),
         );
@@ -665,41 +668,66 @@ impl PaymentsCommandExecutor {
 
     fn build_verify_payment_request_ack(&self, cmd_handle: i32, result: IndyResult<String>) {
         trace!("build_verify_payment_request_ack >>> result: {:?}", result);
-        self._common_ack_payments(cmd_handle, result, "BuildVerifyPaymentReqAck");
+        self._common_ack_payments_str(cmd_handle, result, "BuildVerifyPaymentReqAck");
         trace!("build_verify_payment_request_ack <<<");
     }
 
     fn parse_verify_payment_response(&self, type_: &str, resp_json: &str, cb: Box<Fn(IndyResult<String>) + Send>) {
         trace!("parse_verify_payment_response >>> response: {:?}", resp_json);
-        self._process_method(cb, &|i| self.payments_service.parse_verify_payment_response(i, type_, resp_json));
+        self._process_method_str(cb, &|i| self.payments_service.parse_verify_payment_response(i, type_, resp_json));
         trace!("parse_verify_payment_response <<<");
     }
 
     fn parse_verify_payment_response_ack(&self, cmd_handle: i32, result: IndyResult<String>) {
         trace!("parse_verify_payment_response_ack >>> result: {:?}", result);
-        self._common_ack_payments(cmd_handle, result, "ParseVerifyPaymentResponseAck");
+        self._common_ack_payments_str(cmd_handle, result, "ParseVerifyPaymentResponseAck");
         trace!("parse_verify_payment_response_ack <<<");
     }
 
     // HELPERS
 
-    fn _process_method(&self, cb: Box<Fn(IndyResult<String>) + Send>,
-                       method: &Fn(i32) -> IndyResult<()>) {
+    fn _process_method_str(&self, cb: Box<Fn(IndyResult<String>) + Send>,
+                           method: &Fn(i32) -> IndyResult<()>) {
         let cmd_handle = ::utils::sequence::get_next_id();
         match method(cmd_handle) {
             Ok(()) => {
-                self.pending_callbacks.borrow_mut().insert(cmd_handle, cb);
+                self.pending_callbacks_str.borrow_mut().insert(cmd_handle, cb);
             }
             Err(err) => cb(Err(IndyError::from(err)))
         }
     }
 
-    fn _common_ack_payments(&self, cmd_handle: i32, result: IndyResult<String>, name: &str) {
-        self._common_ack(cmd_handle, result.map_err(IndyError::from), name)
+    fn _process_method_str_i64(&self, cb: Box<Fn(IndyResult<(String, i64)>) + Send>,
+                           method: &Fn(i32) -> IndyResult<()>) {
+        let cmd_handle = ::utils::sequence::get_next_id();
+        match method(cmd_handle) {
+            Ok(()) => {
+                self.pending_callbacks_str_i64.borrow_mut().insert(cmd_handle, cb);
+            }
+            Err(err) => cb(Err(IndyError::from(err)))
+        }
     }
 
-    fn _common_ack(&self, cmd_handle: i32, result: IndyResult<String>, name: &str) {
-        match self.pending_callbacks.borrow_mut().remove(&cmd_handle) {
+    fn _common_ack_payments_str(&self, cmd_handle: i32, result: IndyResult<String>, name: &str) {
+        self._common_ack_str(cmd_handle, result.map_err(IndyError::from), name)
+    }
+
+    fn _common_ack_str(&self, cmd_handle: i32, result: IndyResult<String>, name: &str) {
+        match self.pending_callbacks_str.borrow_mut().remove(&cmd_handle) {
+            Some(cb) => {
+                cb(result)
+            }
+            None => error!("Can't process PaymentsCommand::{} for handle {} with result {:?} - appropriate callback not found!",
+                           name, cmd_handle, result),
+        }
+    }
+
+    fn _common_ack_payments_str_i64(&self, cmd_handle: i32, result: IndyResult<(String, i64)>, name: &str) {
+        self._common_ack_str_i64(cmd_handle, result.map_err(IndyError::from), name)
+    }
+
+    fn _common_ack_str_i64(&self, cmd_handle: i32, result: IndyResult<(String, i64)>, name: &str) {
+        match self.pending_callbacks_str_i64.borrow_mut().remove(&cmd_handle) {
             Some(cb) => {
                 cb(result)
             }

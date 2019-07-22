@@ -26,14 +26,18 @@ pub type ParseResponseWithFeesCB = extern fn(command_handle: i32,
                                              cb: Option<IndyPaymentCallback>) -> ErrorCode;
 
 pub type BuildGetPaymentSourcesRequestCB = extern fn(command_handle: i32,
-                                              wallet_handle: i32,
-                                              submitter_did: *const c_char,
-                                              payment_address: *const c_char,
-                                              cb: Option<IndyPaymentCallback>) -> ErrorCode;
+                                                     wallet_handle: i32,
+                                                     submitter_did: *const c_char,
+                                                     payment_address: *const c_char,
+                                                     from: Option<u64>,
+                                                     cb: Option<IndyPaymentCallback>) -> ErrorCode;
 
 pub type ParseGetPaymentSourcesResponseCB = extern fn(command_handle: i32,
-                                               resp_json: *const c_char,
-                                               cb: Option<IndyPaymentCallback>) -> ErrorCode;
+                                                      resp_json: *const c_char,
+                                                      cb: Option<extern fn(command_handle_: i32,
+                                                                           err: ErrorCode,
+                                                                           sources_json: *const c_char,
+                                                                           next: i64) -> ErrorCode>) -> ErrorCode;
 
 pub type BuildPaymentReqCB = extern fn(command_handle: i32,
                                        wallet_handle: i32,
@@ -74,14 +78,14 @@ pub type BuildVerifyPaymentReqCB = extern fn(command_handle: i32,
                                              submitter_did: *const c_char,
                                              receipt: *const c_char,
                                              cb: Option<extern fn(command_handle_: i32,
-                                                           err: ErrorCode,
-                                                           verify_txn_json: *const c_char) -> ErrorCode>) -> ErrorCode;
+                                                                  err: ErrorCode,
+                                                                  verify_txn_json: *const c_char) -> ErrorCode>) -> ErrorCode;
 
 pub type ParseVerifyPaymentResponseCB = extern fn(command_handle: i32,
                                                   resp_json: *const c_char,
                                                   cb: Option<extern fn(command_handle_: i32,
-                                                                err: ErrorCode,
-                                                                txn_json: *const c_char) -> ErrorCode>) -> ErrorCode;
+                                                                       err: ErrorCode,
+                                                                       txn_json: *const c_char) -> ErrorCode>) -> ErrorCode;
 
 pub fn register_payment_method(
     payment_method: *const c_char,

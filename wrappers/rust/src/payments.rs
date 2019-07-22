@@ -176,6 +176,7 @@ fn _parse_response_with_fees(command_handle: CommandHandle, payment_method: &str
 
 /// Builds Indy request for getting UTXO list for payment address
 /// according to this payment method.
+/// Deprecated. This function will be most likely be removed with Indy SDK 2.0 version
 ///
 /// # Arguments
 /// * `wallet_handle` - wallet handle
@@ -185,6 +186,7 @@ fn _parse_response_with_fees(command_handle: CommandHandle, payment_method: &str
 /// # Returns
 /// * `get_utxo_txn_json` - Indy request for getting UTXO list for payment address
 /// * `payment_method`
+#[deprecated(since="2.0.0", note="please use `parse_get_payment_sources_with_from_response` instead")]
 pub fn build_get_payment_sources_request(wallet_handle: WalletHandle, submitter_did: Option<&str>, payment_address: &str) -> Box<Future<Item=(String, String), Error=IndyError>> {
     let (receiver, command_handle, cb) =
         ClosureHandler::cb_ec_string_string();
@@ -198,10 +200,39 @@ fn _build_get_payment_sources_request(command_handle: CommandHandle, wallet_hand
     let submitter_did_str = opt_c_str!(submitter_did);
     let payment_address = c_str!(payment_address);
 
-    ErrorCode::from(unsafe { payments::indy_build_get_payment_sources_request(command_handle, wallet_handle, opt_c_ptr!(submitter_did, submitter_did_str), payment_address.as_ptr(), cb) })
+    ErrorCode::from(unsafe { payments::indy_build_get_payment_sources_with_from_request(command_handle, wallet_handle, opt_c_ptr!(submitter_did, submitter_did_str), payment_address.as_ptr(), -1, cb) })
+}
+
+/// Builds Indy request for getting UTXO list for payment address
+/// according to this payment method.
+///
+/// # Arguments
+/// * `wallet_handle` - wallet handle
+/// * `submitter_did` - DID of request sender
+/// * `payment_address` - target payment address
+/// * `from` - shift to the next slice of payment sources
+///
+/// # Returns
+/// * `get_utxo_txn_json` - Indy request for getting UTXO list for payment address
+/// * `payment_method`
+pub fn build_get_payment_sources_with_from_request(wallet_handle: WalletHandle, submitter_did: Option<&str>, payment_address: &str, from: Option<u64>) -> Box<Future<Item=(String, String), Error=IndyError>> {
+    let (receiver, command_handle, cb) =
+        ClosureHandler::cb_ec_string_string();
+
+    let err = _build_get_payment_sources_with_from_request(command_handle, wallet_handle, submitter_did, payment_address, from, cb);
+
+    ResultHandler::str_str(command_handle, err, receiver)
+}
+
+fn _build_get_payment_sources_with_from_request(command_handle: CommandHandle, wallet_handle: WalletHandle, submitter_did: Option<&str>, payment_address: &str, from: Option<u64>, cb: Option<ResponseStringStringCB>) -> ErrorCode {
+    let submitter_did_str = opt_c_str!(submitter_did);
+    let payment_address = c_str!(payment_address);
+
+    ErrorCode::from(unsafe { payments::indy_build_get_payment_sources_with_from_request(command_handle, wallet_handle, opt_c_ptr!(submitter_did, submitter_did_str), payment_address.as_ptr(), from.map(|a| a as i64).unwrap_or(-1), cb) })
 }
 
 /// Parses response for Indy request for getting UTXO list.
+/// Deprecated. This function will be most likely be removed with Indy SDK 2.0 version
 ///
 /// # Arguments
 /// * `payment_method`
@@ -216,19 +247,44 @@ fn _build_get_payment_sources_request(command_handle: CommandHandle, wallet_hand
 ///      amount: <int>, // amount of tokens in this input
 ///      extra: <str>, // optional data from payment transaction
 ///   }]
+#[deprecated(since="2.0.0", note="please use `parse_get_payment_sources_with_from_response` instead")]
 pub fn parse_get_payment_sources_response(payment_method: &str, resp_json: &str) -> Box<Future<Item=String, Error=IndyError>> {
-    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_i64();
 
-    let err = _parse_get_payment_sources_response(command_handle, payment_method, resp_json, cb);
+    let err = _parse_get_payment_sources_with_from_response(command_handle, payment_method, resp_json, cb);
 
-    ResultHandler::str(command_handle, err, receiver)
+    ResultHandler::str_i64(command_handle, err, receiver).map(|(s, i)| s)
 }
 
-fn _parse_get_payment_sources_response(command_handle: CommandHandle, payment_method: &str, resp_json: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+/// Parses response for Indy request for getting UTXO list.
+///
+/// # Arguments
+/// * `payment_method`
+/// * `resp_json` - response for Indy request for getting UTXO list
+///   Note: this param will be used to determine payment_method
+///
+/// # Returns
+/// * `utxo_json` - parsed (payment method and node version agnostic) utxo info as json:
+/// # Examples:
+///   sources -- [{
+///      input: <str>, // UTXO input
+///      amount: <int>, // amount of tokens in this input
+///      extra: <str>, // optional data from payment transaction
+///   }]
+///   next -- pointer to the next slice of payment address
+pub fn parse_get_payment_sources_with_from_response(payment_method: &str, resp_json: &str) -> Box<Future<Item=(String, Option<u64>), Error=IndyError>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_i64();
+
+    let err = _parse_get_payment_sources_with_from_response(command_handle, payment_method, resp_json, cb);
+
+    ResultHandler::str_i64(command_handle, err, receiver).map(|(s, i)| (s, if i >= 0 {Some(i as u64)} else {None}))
+}
+
+fn _parse_get_payment_sources_with_from_response(command_handle: CommandHandle, payment_method: &str, resp_json: &str, cb: Option<ResponseStringI64CB>) -> ErrorCode {
     let payment_method = c_str!(payment_method);
     let resp_json = c_str!(resp_json);
 
-    ErrorCode::from(unsafe { payments::indy_parse_get_payment_sources_response(command_handle, payment_method.as_ptr(), resp_json.as_ptr(), cb) })
+    ErrorCode::from(unsafe { payments::indy_parse_get_payment_sources_with_from_response(command_handle, payment_method.as_ptr(), resp_json.as_ptr(), cb) })
 }
 
 /// Builds Indy request for doing tokens payment
