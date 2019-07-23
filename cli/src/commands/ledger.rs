@@ -1069,7 +1069,7 @@ pub mod get_payment_sources_command {
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
-        let (wallet_handle, _) = ensure_opened_wallet(&ctx)?;
+        let wallet_handle = get_opened_wallet_handle(&ctx).unwrap_or(-1);
         let submitter_did = get_active_did(&ctx);
 
         let payment_address = get_str_param("payment_address", params).map_err(error_err!())?;
@@ -1190,7 +1190,7 @@ pub mod get_fees_command {
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
-        let (wallet_handle, _) = ensure_opened_wallet(&ctx)?;
+        let wallet_handle = get_opened_wallet_handle(&ctx).unwrap_or(-1);
         let submitter_did = get_active_did(&ctx);
 
         let payment_method = get_str_param("payment_method", params).map_err(error_err!())?;
@@ -1246,7 +1246,7 @@ pub mod mint_prepare_command {
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
-        let wallet_handle = ensure_opened_wallet_handle(ctx)?;
+        let wallet_handle = get_opened_wallet_handle(&ctx).unwrap_or(-1);
         let submitter_did = get_active_did(&ctx);
 
         let outputs = get_str_tuple_array_param("outputs", params).map_err(error_err!())?;
@@ -1285,7 +1285,7 @@ pub mod set_fees_prepare_command {
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
-        let wallet_handle = ensure_opened_wallet_handle(ctx)?;
+        let wallet_handle = get_opened_wallet_handle(&ctx).unwrap_or(-1);
         let submitter_did = get_active_did(&ctx);
 
         let payment_method = get_str_param("payment_method", params).map_err(error_err!())?;
@@ -1319,7 +1319,7 @@ pub mod verify_payment_receipt_command {
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
-        let (wallet_handle, _) = ensure_opened_wallet(&ctx)?;
+        let wallet_handle = get_opened_wallet_handle(&ctx).unwrap_or(-1);
         let submitter_did = get_active_did(&ctx);
 
         let receipt = get_str_param("receipt", params).map_err(error_err!())?;
