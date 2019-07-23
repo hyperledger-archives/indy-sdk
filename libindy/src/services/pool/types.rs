@@ -428,7 +428,32 @@ pub enum KeyValuesInSP {
 */
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub struct KeyValueSimpleData {
-    pub kvs: Vec<(String /* b64-encoded key */, Option<String /* val */>)>
+    pub kvs: Vec<(String /* b64-encoded key */, Option<String /* val */>)>,
+    #[serde(default)]
+    pub verification_type: KeyValueSimpleDataVerificationType
+}
+
+/**
+ Options of common state proof check process
+*/
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+#[serde(tag = "type")]
+pub enum KeyValueSimpleDataVerificationType {
+    Simple,
+    NumericalSuffixAscendingNoGaps(NumericalSuffixAscendingNoGapsData)
+}
+
+impl Default for KeyValueSimpleDataVerificationType {
+    fn default() -> Self {
+        KeyValueSimpleDataVerificationType::Simple
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+pub struct NumericalSuffixAscendingNoGapsData {
+    pub from: Option<u64>,
+    pub next: Option<u64>,
+    pub prefix: String
 }
 
 /**
