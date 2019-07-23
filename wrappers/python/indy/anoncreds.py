@@ -188,7 +188,13 @@ async def issuer_create_and_store_revoc_reg(wallet_handle: int,
                 2) ISSUANCE_ON_DEMAND: nothing is issued initially accumulator is 1 (used by default);
             "max_cred_num": maximum number of credentials the new registry can process (optional, default 100000)
         }
-    :param tails_writer_handle:
+    :param tails_writer_handle: handle of blob storage to store tails
+
+    NOTE:
+        Recursive creation of folder for Default Tails Writer (correspondent to `tails_writer_handle`)
+        in the system-wide temporary directory may fail in some setup due to permissions: `IO error: Permission denied`.
+        In this case use `TMPDIR` environment variable to define temporary directory specific for an application.
+
     :return:
         revoc_reg_id: identifier of created revocation registry definition
         revoc_reg_def_json: public part of revocation registry definition
