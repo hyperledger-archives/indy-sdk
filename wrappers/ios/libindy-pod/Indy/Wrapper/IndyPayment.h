@@ -342,9 +342,9 @@
  {
      "price": u64 - fee required for the action performing,
      "requirements": [{
-         "role": string - role of users who should sign,
+         "role": string (optional) - role of users who should sign,
          "sig_count": u64 - number of signers,
-         "need_to_be_owner": bool - if requester need to be owner
+         "need_to_be_owner": bool (optional) - if requester need to be owner
      }]
  }
  */
