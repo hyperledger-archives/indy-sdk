@@ -311,22 +311,7 @@ impl PaymentsCommandExecutor {
             PaymentsCommand::GetRequestInfo(get_auth_rule_response_json, requester_info, fees_json, cb) => {
                 info!(target: "payments_command_executor", "GetRequestInfo command received");
                 cb(self.get_request_info(&get_auth_rule_response_json, requester_info, &fees_json));
-            PaymentsCommand::SignWithAddressReq(wallet_handle, address, message, cb) => {
-                info!(target: "payments_command_executor", "SignWithAddressReq command received");
-                self.sign_with_address(wallet_handle, &address, message.as_slice(), cb);
-            },
-            PaymentsCommand::SignWithAddressAck(command_handle, result) => {
-                info!(target: "payments_command_executor", "SignWithAddressAck command received");
-                self.sign_with_address_ack(command_handle, result);
-            },
-            PaymentsCommand::VerifyWithAddressReq(address, message, signature, cb) => {
-                info!(target: "payments_command_executor", "VerifyWithAddressReq command received");
-                self.verify_with_address(&address, message.as_slice(), signature.as_slice(), cb);
-            },
-            PaymentsCommand::VerifyWithAddressAck(command_handle, result) => {
-                 info!(target: "payments_command_executor", "VerifyWithAddressAck command received");
-                self.verify_with_address_ack(command_handle, result);
-            }
+	        },
             PaymentsCommand::SignWithAddressReq(wallet_handle, address, message, cb) => {
                 info!(target: "payments_command_executor", "SignWithAddressReq command received");
                 self.sign_with_address(wallet_handle, &address, message.as_slice(), cb);
