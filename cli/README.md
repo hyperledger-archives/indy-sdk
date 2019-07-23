@@ -41,7 +41,7 @@ The most simple way is just start cli by `indy-cli` command and put `help` comma
 * --config - Define config file for CLI initialization. A config file can contain the following fields:
     * plugins - a list of plugins to load in Libindy (is equal to usage of "--plugins" option).
     * loggerConfig - path to a logger config file (is equal to usage of "--logger-config" option).
-    * taaAcceptanceMechanism - transaction author agreement acceptance mechanism to use for sending write transactions to the Ledger.
+    * taaAcceptanceMechanism - transaction author agreement acceptance mechanism to be used when sending write transactions to the Ledger.
 
 ### Old python-based CLI migration
 It is possible to import did's stored in the wallet of deprecated python-based CLI tool.

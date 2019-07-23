@@ -120,8 +120,8 @@ Library user can provide a custom logger implementation by passing a set of hand
 #### Error Handling
 
 Every Libindy API function returns an error code that indicates result status of function execution. 
-Some of errors occur in only one specific case but some are common for different functions.
-Libindy provides `indy_get_current_error` function which allows getting of details for last occurred error in additional to an error code.
+Some errors occur in only one specific case but some are common for different functions.
+Libindy provides `indy_get_current_error` function which allows getting of details for last occurred error in addition to an error code.
 
 This function should be called in two places to handle both cases of error occurrence:
 1) synchronous  - in the same application thread
@@ -148,19 +148,19 @@ There is a Command Line Interface (CLI) built over Libindy which provides a set 
 #### Options
 * -h and --help - Print usage. (usage: `indy-cli --help`)
 
-* --logger-config - Init logger according to a config file. <br>
-                    Indy Cli uses [log4rs](https://crates.io/crates/log4rs) logging framework <br>
-                    Usage: `indy-cli --logger-config <path-to-config-file>` <br>
-                    Example: `indy-cli --logger-config logger.yml` <br>
-                    An example config file can be found [here](../cli/logger.yml) <br>
+* --logger-config - Init logger according to a config file. \
+                    Indy Cli uses [log4rs](https://crates.io/crates/log4rs) logging framework \
+                    Usage: `indy-cli --logger-config <path-to-config-file>` \
+                    Example: `indy-cli --logger-config logger.yml` \
+                    An example config file can be found [here](../cli/logger.yml) \
                     By default no logger initialized.
             
-* --plugins - Load custom plugins in Libindy (e.g., wallet storage type, payment, etc.) <br>
-              Usage: `indy-cli --plugins <lib-1-name>:<init-func-1-name>,...,<lib-n-name>:<init-func-n-name>)` <br>
+* --plugins - Load custom plugins in Libindy (e.g., wallet storage type, payment, etc.) \
+              Usage: `indy-cli --plugins <lib-1-name>:<init-func-1-name>,...,<lib-n-name>:<init-func-n-name>)` \
               Example: `indy-cli --plugins libnullpay.so:nullpay_init`
 
-* --config - Define config file for CLI initialization. <br>
-             Usage: `indy-cli --config <path-to-config-json-file>` <br>
+* --config - Define config file for CLI initialization. \
+             Usage: `indy-cli --config <path-to-config-json-file>` \
              Example: `indy-cli --config linux-sample-config.json`
 
 #### Config
@@ -170,7 +170,7 @@ A config file can contain the following fields:
 {
   "loggerConfig": string, - path to a logger config file (is equal to usage of "--logger-config" option)
   "plugins": string, - a list of plugins to load in Libindy (is equal to usage of "--plugins" option)
-  "taaAcceptanceMechanism": string - transaction author agreement acceptance mechanism to use for sending write transactions to the Ledger.
+  "taaAcceptanceMechanism": string - transaction author agreement acceptance mechanism to be used when sending write transactions to the Ledger.
 }
 ```
 An example config file can be found [here](../cli/linux-sample-config.json)
@@ -178,8 +178,8 @@ An example config file can be found [here](../cli/linux-sample-config.json)
 #### Execution mode
 Indy-CLI supports two execution modes:
 * Interactive. In this mode CLI will read commands from terminal interactively (command by command).
-* Batch. In this mode all commands will be read from file or pipe and executed in series. <br>
-Usage: `indy-cli <path-to-file>` <br>
+* Batch. In this mode all commands will be read from file or pipe and executed in series. \
+Usage: `indy-cli <path-to-file>` \
 An example of a batch script:
     ```
     wallet create w1 key=k1
