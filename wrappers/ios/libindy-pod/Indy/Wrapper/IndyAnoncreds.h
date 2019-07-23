@@ -130,6 +130,12 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
      }
  @param tailsWriterHandle: handle of blob storage to store tails
  @param completion Callback that takes command result as parameter.
+ 
+ NOTE:
+     Recursive creation of folder for Default Tails Writer (correspondent to `tailsWriterHandle`)
+     in the system-wide temporary directory may fail in some setup due to permissions: `IO error: Permission denied`.
+     In this case use `TMPDIR` environment variable to define temporary directory specific for an application.
+ 
  Returns 
     revocRegID: identifier of created revocation registry definition
     revocRegDefJSON: public part of revocation registry definition
