@@ -299,10 +299,12 @@ mod tests {
     pub fn gen_nonce_and_encrypt_detached_decrypt_detached_works() {
         let data = randombytes(100);
         let key = gen_key();
-        let aad= randombytes(100);
+        // AAD allows the sender to tie extra (protocol) data to the encryption. Example JWE enc and alg
+        // Which the receiver MUST then check before decryption
+        let aad= b"some protocol data input to the encryption";
 
-        let (c, nonce, tag) = gen_nonce_and_encrypt_detached(&data, aad.as_slice(), &key);
-        let u = decrypt_detached(&c, &key, &nonce, &tag, Some(aad.as_slice())).unwrap();
+        let (c, nonce, tag) = gen_nonce_and_encrypt_detached(&data, aad, &key);
+        let u = decrypt_detached(&c, &key, &nonce, &tag, Some(aad)).unwrap();
         assert_eq!(data, u);
 }
 
