@@ -334,6 +334,8 @@ public abstract class LibVcx {
 
         public int vcx_pool_set_handle(int handle);
 
+        public int vcx_get_request_price(int command_handle, String action_json, String requester_info_json, Callback cb);
+
         /**
          * credential object
          *

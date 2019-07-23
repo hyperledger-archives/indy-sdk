@@ -999,7 +999,7 @@ mod tests {
         init!("true");
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         assert_eq!(vcx_get_ledger_author_agreement(cb.command_handle,
-                                             Some(cb.get_callback())), error::SUCCESS.code_num);
+                                                   Some(cb.get_callback())), error::SUCCESS.code_num);
         let agreement = cb.receive(Some(Duration::from_secs(2))).unwrap();
         assert_eq!(::utils::constants::DEFAULT_AUTHOR_AGREEMENT, agreement.unwrap());
     }
