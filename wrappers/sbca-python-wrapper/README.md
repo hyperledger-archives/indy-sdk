@@ -4,7 +4,7 @@
 >   [blockchain.swisscom.com](https://blockchain.swisscom.com/)
 
 
-This project is a custom python wrapper for Hyperledger's Libindy library that aims to optimize and remove redundant code of the existing wrapper. We are activly using this wrapper in our uppcoming Hyperledger Indy project "Cloud Authenticator" where we gona provide a Solution of Identity Management based on Indy.
+This project is a custom python wrapper for Hyperledger's Libindy library that aims to optimize and remove redundant code of the existing wrapper. We are actively using this wrapper in our upcoming Hyperledger Indy project "Cloud Authenticator" where we gonna provide a Solution of Identity Management based on Indy.
 
 
 ##  Setup
@@ -16,7 +16,7 @@ This project is a custom python wrapper for Hyperledger's Libindy library that a
 ### Installation
 The wrapper is an installable pip-package. Download and install it by running the following command:
 ```bash
-pip install sbca-indy-wrapper @ git+https://github.com/swisscom-blockchain/sbca-indy-wrapper.git@v1.8.1-pre
+pip install sbca-indy-wrapper git+https://github.com/swisscom-blockchain/sbca-indy-wrapper.git@v1.8.1-pre
 ```
 
 ##  Usage
@@ -30,7 +30,7 @@ from sbca_wrapper import Anoncreds, BlobStorage, Crypto, DID, Ledger, NonSecrets
 ```python
 from sbca_wrapper import  Wallet
 
-# TODO: Check if it Work
+# TODO: Check if it Works
 await Wallet.create(parameters)
 
 ```
@@ -39,7 +39,7 @@ await Wallet.create(parameters)
 ```python
 from sbca_wrapper import  DID
 
-# TODO: Check if it Work
+# TODO: Check if it Works
 await DID.create(parameters)
 
 ```
@@ -53,19 +53,20 @@ await DID.create(parameters)
         pass
 ```
 
-## Benefits of this Wrapper
+## Pros of this Wrapper
 *   No or less redundant Code than the current wrapper
 *   Actual dict/list returns instead of strings
 *   Easy to implement new Commands from Libindy
 
-## Downsides of this Wrapper
+## Cons of this Wrapper
 *   Need of a deep understanding of Python 3+ to maintain
 *   No Tests and minimal documentation
 
 ## Last Words
-We dont expect that our wrapper will replace the current one. But we hope that you guys can maybe take some points and merge / implement them. 0
+We don't expect that our wrapper will replace the current one. But we hope that you guys can maybe take some points and merge/implement them into the current one. From our view, Hyperledger Indy has a lot of potential becoming something big soon. <br />
+We are looking forward to the upcoming Updates and a decentral future.
 
-
+Best Regards
 ##  Authors
 **Lead Development**
 *   Roth Jeremy ([Skilletpan](https://github.com/Skilletpan))
