@@ -23,6 +23,7 @@ extern crate rmp_serde;
 extern crate rust_base58;
 extern crate time;
 extern crate serde;
+extern crate sha2;
 
 #[macro_use]
 mod utils;
@@ -759,27 +760,25 @@ mod high_cases {
         }
     }
     
-    
     mod sign_with_address {
         use super::*;
+        use sha2::Digest;
 
         #[test]
         fn sign_with_address_works() {
             let (wallet_handle, wallet_config) = setup("sign_with_address_works");
 
-            let test_vec = vec![0u8; 16];
+            let test_vec = vec![0u8; 32];
+
+            let test_sig = sha2::Sha256::digest(test_vec.as_slice()).as_slice().to_vec();
 
             payments::mock_method::create_payment_address::inject_mock(ErrorCode::Success, PAYMENT_METHOD_NAME);
             payments::create_payment_address(wallet_handle, EMPTY_OBJECT, PAYMENT_METHOD_NAME).unwrap();
-            payments::mock_method::sign_with_address::inject_mock(ErrorCode::Success, test_vec);
+            payments::mock_method::sign_with_address::inject_mock(ErrorCode::Success, test_sig);
 
-            let test_vec = vec![0u8; 32];
+            let res = payments::sign_with_address(wallet_handle, CORRECT_PAYMENT_ADDRESS, test_vec.as_slice()).unwrap();
 
-            let res_plugin = payments::sign_with_address(wallet_handle, CORRECT_PAYMENT_ADDRESS, test_vec.as_slice()).unwrap();
-
-            let test_res: Vec<u8> = Vec::new();
-
-            assert_eq!(res_plugin, test_res);
+            assert_eq!(res, vec![ 102, 104, 122, 173, 248, 98, 189, 119, 108, 143, 193, 139, 142, 159, 142, 32, 8, 151, 20, 133, 110, 226, 51, 179, 144, 42, 89, 29, 13, 95, 41, 37 ]);
 
             utils::tear_down_with_wallet(wallet_handle, "sign_with_address_works", &wallet_config);
         }
