@@ -314,6 +314,12 @@ public class Anoncreds extends IndyJava.API {
 	 *     "max_cred_num": maximum number of credentials the new registry can process (optional, default 100000)
 	 * }
 	 * @param tailsWriter Handle of blob storage to store tails
+	 *
+	 * NOTE:
+	 *      Recursive creation of folder for Default Tails Writer (correspondent to `tailsWriter`)
+	 *      in the system-wide temporary directory may fail in some setup due to permissions: `IO error: Permission denied`.
+	 *      In this case use `TMPDIR` environment variable to define temporary directory specific for an application.
+	 *
 	 * @return A future resolving to:
 	 * revocRegId: identifier of created revocation registry definition
 	 * revocRegDefJson: public part of revocation registry definition
