@@ -1,10 +1,10 @@
 # Indy SDK configuration
 
-Indy SDK contains several components some of them can be configured. 
+Indy SDK contains several components, some of which can be configured. 
 This configuration is useful when you need to define some specific customizations on your project. 
 Like predefined config files, additional plugins, logging and else.
 
-This document contains information on how every Indy-SDK component can be configured.
+This document contains information on how Indy-SDK components can be configured.
 
 * [Libindy](#libindy)
     * [Pool](#pool)
@@ -23,7 +23,7 @@ This document contains information on how every Indy-SDK component can be config
 #### Pool
 
 * Genesis Transactions - predefined transactions which will be used for a connection to Pool.
-`indy_create_pool_ledger_config` function accepts `config` parameter that looks like:
+`indy_create_pool_ledger_config` function accepts a `config` parameter that looks like:
 ```
 {
     "genesis_txn": string (optional), Path to a file containg genesis transactions.
@@ -33,19 +33,19 @@ This document contains information on how every Indy-SDK component can be config
 An example of genesis transactions can be found [here](../cli/docker_pool_transactions_genesis)
 
 * Connection
-`indy_open_pool_ledger` function opens pool ledger and performs connection to the nodes defined in the genesis transactions file.
-This function accepts config that allows defining a behavior of client-side connection:
+`indy_open_pool_ledger` function opens the pool ledger and forms connections to the nodes defined in the genesis transactions file.
+This function accepts a config that defines the behavior of the client-side connection:
 ```
 {
-    "timeout": int (optional) - specifies the maximum number of seconds for waiting for pool response (ACK, REPLY).
-    "extended_timeout": int (optional), an aditional time for waiting of PERLY in case if ACK has been received.
-    "preordered_nodes": array<string> -  (optional), names of nodes which will have a priority during request sending.
-        This can be useful for a user to prefer querying specific node.
-        Note: Not specified nodes will be placed in a random way.
+    "timeout": int (optional) - specifies the maximum number of seconds to wait for pool response (ACK, REPLY).
+    "extended_timeout": int (optional), an additional number of seconds to wait for REPLY in case ACK has been received.
+    "preordered_nodes": array<string> -  (optional), names of nodes which will have priority during request sending.
+        This can be useful if a user prefers querying specific nodes.
+        Note: Nodes not specified will be placed randomly.
 }
 ```
 
-* Protocol Version - specifies version of Indy Node which Libindy works (There is a global property PROTOCOL_VERSION that used in every request to the pool).
+* Protocol Version - specifies the version of Indy Node which Libindy works with (There is a global property PROTOCOL_VERSION that used in every request to the pool).
 ```
 1 - for Indy Node 1.3
 2 - for Indy Node 1.4 and greater
@@ -61,9 +61,9 @@ Libindy allows the building and sending of custom requests via a pluggable inter
 
 #### Wallet
 
-* Storage Type - libindy allows plugging different wallet implementations which handles storage layers. 
-Out of box Libindy uses Sqlite as a storage.
-`indy_register_wallet_storage` function allows registering of custom wallet storage implementation passing the set of callbacks.
+* Storage Type - libindy allows plugging different wallet implementations to handle storage layers. 
+Libindy uses Sqlite as the default storage layer.
+`indy_register_wallet_storage` function allows registering of custom wallet storage implementation, passing the set of callbacks.
 
 * Wallet Configuration
 ```
@@ -75,7 +75,7 @@ Out of box Libindy uses Sqlite as a storage.
                  Custom storage types can be registered with indy_register_wallet_storage call.
   "storage_config": object (optional), Storage configuration json. Storage type defines set of supported keys.
                     Can be optional if storage supports default configuration.
-                    For 'default' storage type configuration is:
+                    Configuration for 'default' storage type:
   {
     "path": string (optional), Path to the directory with wallet files.
             Defaults to $HOME/.indy_client/wallet.
@@ -91,10 +91,10 @@ Out of box Libindy uses Sqlite as a storage.
                  Look to key_derivation_method param for information about supported key derivation methods.
   "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
                          Can be optional if storage supports default configuration.
-                         For 'default' storage type should be empty.
+                         Should be empty for 'default' storage type.
   "key_derivation_method": optional<string> Algorithm to use for wallet key derivation:
                          ARGON2I_MOD - derive secured wallet master key (used by default)
-                         ARGON2I_INT - derive secured wallet master key (less secured but faster)
+                         ARGON2I_INT - derive secured wallet master key (less secure but faster)
                          RAW - raw wallet key master provided (skip derivation).
                                RAW keys can be generated with indy_generate_wallet_key call
 }
@@ -102,13 +102,13 @@ Out of box Libindy uses Sqlite as a storage.
 
 #### Payment
 
-Libindy provides generic API for building of payment-related transactions. 
-These functions look at registered payment methods and call corresponded handlers.
-Out-of-box Libindy doesn't not provide support of any payment method, but there is `indy_register_payment_method` API function to register a payment method.
-So any payment method like Sovrin tokens, Bitcoin tokens, Visa and etc can be plugged into Libindy.
+Libindy provides a generic API for building payment-related transactions. 
+These functions look at registered payment methods and call corresponding handlers.
+Libindy doesn't provide default support of any payment method. There is `indy_register_payment_method` API function to register a payment method.
+Any payment method (e.g., Sovrin tokens, Bitcoin, Visa, etc.) may be added to Libindy through plugins.
 
 #### Logging
-Libindy provides two ways on Logger initialization:
+Libindy provides two options for Logger initialization:
 
 * `indy_set_default_logger` function sets default logger implementation. 
 Rust `env_logger` is used by default.  This is a simple logger which writes to stdout (can be configured via `RUST_LOG` environment variable).
@@ -139,11 +139,11 @@ This function should be called in two places to handle both cases of error occur
 ```
 
 ## Indy-CLI
-There is Command Line Interface (CLI) built over Libindy which provides a set of commands to:
+There is a Command Line Interface (CLI) built over Libindy which provides a set of commands to:
 * Manage wallets
 * Manage pool configurations
 * Manage DIDs
-* Sending transactions to ledger
+* Send transactions to the ledger
 
 #### Options
 * -h and --help - Print usage. (usage: `indy-cli --help`)
@@ -152,10 +152,10 @@ There is Command Line Interface (CLI) built over Libindy which provides a set of
                     Indy Cli uses [log4rs](https://crates.io/crates/log4rs) logging framework <br>
                     Usage: `indy-cli --logger-config <path-to-config-file>` <br>
                     Example: `indy-cli --logger-config logger.yml` <br>
-                    An example of config file can be found [here](../cli/logger.yml) <br>
+                    An example config file can be found [here](../cli/logger.yml) <br>
                     By default no logger initialized.
             
-* --plugins - Load custom plugins in Libindy like wallet storage type, payment or else. <br>
+* --plugins - Load custom plugins in Libindy (e.g., wallet storage type, payment, etc.) <br>
               Usage: `indy-cli --plugins <lib-1-name>:<init-func-1-name>,...,<lib-n-name>:<init-func-n-name>)` <br>
               Example: `indy-cli --plugins libnullpay.so:nullpay_init`
 
@@ -164,7 +164,7 @@ There is Command Line Interface (CLI) built over Libindy which provides a set of
              Example: `indy-cli --config linux-sample-config.json`
 
 #### Config
-Indy-CLI supports initialization with predefined config file. 
+Indy-CLI supports initialization with a predefined config file. 
 A config file can contain the following fields:
 ```
 {
@@ -173,14 +173,14 @@ A config file can contain the following fields:
   "taaAcceptanceMechanism": string - transaction author agreement acceptance mechanism to use for sending write transactions to the Ledger.
 }
 ```
-An example of config file can be found [here](../cli/linux-sample-config.json)
+An example config file can be found [here](../cli/linux-sample-config.json)
 
 #### Execution mode
-Indy-CLI will support 2 execution modes:
+Indy-CLI supports two execution modes:
 * Interactive. In this mode CLI will read commands from terminal interactively (command by command).
-* Batch. In this code all commands will be read from file or pipe and executed in series. <br>
+* Batch. In this mode all commands will be read from file or pipe and executed in series. <br>
 Usage: `indy-cli <path-to-file>` <br>
-An example of file congaing batch script:
+An example of a batch script:
     ```
     wallet create w1 key=k1
     wallet open w1 key=k1
