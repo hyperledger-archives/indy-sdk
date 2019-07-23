@@ -37,7 +37,7 @@ build_test_artifacts(){
         cargo clean
 
         # TODO empty for full testing SET_OF_TESTS=''
-        SET_OF_TESTS='--lib --test interaction'
+        SET_OF_TESTS='--test interaction'
 
         # TODO move RUSTFLAGS to cargo config and do not duplicate it here
         # build - separate step to see origin build output
