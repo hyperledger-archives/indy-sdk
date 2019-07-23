@@ -17,12 +17,12 @@ impl Payment {
         payments::add_request_fees(wallet_handle, submitter_did, req_json, inputs_json, outputs_json, extra).wait()
     }
 
-    pub fn build_get_payment_sources_request(wallet_handle: i32, submitter_did: Option<&str>, payment_address: &str, from: Option<u64>) -> Result<(String, String), IndyError> {
-        payments::build_get_payment_sources_with_from_request(wallet_handle, submitter_did, payment_address, from).wait()
+    pub fn build_get_payment_sources_request(wallet_handle: i32, submitter_did: Option<&str>, payment_address: &str) -> Result<(String, String), IndyError> {
+        payments::build_get_payment_sources_with_from_request(wallet_handle, submitter_did, payment_address, None).wait()
     }
 
-    pub fn parse_get_payment_sources_response(payment_method: &str, resp_json: &str) -> Result<(String, Option<u64>), IndyError> {
-        payments::parse_get_payment_sources_with_from_response(payment_method, resp_json).wait()
+    pub fn parse_get_payment_sources_response(payment_method: &str, resp_json: &str) -> Result<String, IndyError> {
+        payments::parse_get_payment_sources_with_from_response(payment_method, resp_json).wait().map(|(s, _)| s)
     }
 
     pub fn build_payment_req(wallet_handle: i32, submitter_did: Option<&str>, inputs: &str, outputs: &str, extra: Option<&str>) -> Result<(String, String), IndyError> {

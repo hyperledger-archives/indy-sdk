@@ -1062,7 +1062,6 @@ pub mod get_payment_sources_command {
     command!(CommandMetadata::build("get-payment-sources", "Get sources list for payment address.")
                 .add_required_param_with_dynamic_completion("payment_address","Target payment address", DynamicCompletionType::PaymentAddress)
                 .add_optional_param("send","Send the request to the Ledger (True by default). If false then created request will be printed and stored into CLI context.")
-                .add_optional_param("from","Shift to the next slice of payment sources. No shift by default.")
                 .add_example("ledger get-payment-sources payment_address=pay:null:GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa")
                 .finalize()
     );
@@ -1075,15 +1074,14 @@ pub mod get_payment_sources_command {
 
         let payment_address = get_str_param("payment_address", params).map_err(error_err!())?;
         let send = get_opt_bool_param("send", params).map_err(error_err!())?.unwrap_or(SEND_REQUEST);
-        let from = get_opt_number_param("from", params).map_err(error_err!())?;
 
-        let (request, payment_method) = Payment::build_get_payment_sources_request(wallet_handle, submitter_did.as_ref().map(String::as_str), payment_address, from)
+        let (request, payment_method) = Payment::build_get_payment_sources_request(wallet_handle, submitter_did.as_ref().map(String::as_str), payment_address)
             .map_err(|err| handle_payment_error(err, None))?;
 
         let (response, _) = send_read_request!(&ctx, send, &request, submitter_did.as_ref().map(String::as_str));
 
         let res = match Payment::parse_get_payment_sources_response(&payment_method, &response) {
-            Ok((sources_json, next)) => {
+            Ok(sources_json) => {
                 let sources: Vec<serde_json::Value> = serde_json::from_str(&sources_json)
                     .map_err(|_| println_err!("Wrong data has been received"))?;
 
@@ -1094,9 +1092,6 @@ pub mod get_payment_sources_command {
                                        ("extra", "Extra")],
                                  "There are no source's");
 
-                if let Some(next_seqno) = next {
-                    pritnln!("Pointer to the next slice of UTXO's: {}", next_seqno);
-                }
                 Ok(())
             }
             Err(err) => Err(println_err!("Invalid data has been received: {:?}", err)),

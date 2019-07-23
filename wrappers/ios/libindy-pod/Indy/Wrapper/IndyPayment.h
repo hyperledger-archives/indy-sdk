@@ -91,9 +91,11 @@
                 paymentMethod:(NSString *)paymentMethod
                    completion:(void (^)(NSError *error, NSString *receiptsJson))completion;
 
+
 /**
  Builds Indy request for getting sources list for payment address
  according to this payment method.
+ This method is deprecated. It will be removed in Indy SDK 2.0.0. Use buildGetPaymentSourcesWithFromRequest
 
  @param requestJson Request data json.
  @param submitterDid (Optional) DID of request sender
@@ -111,7 +113,29 @@
 
 
 /**
+ Builds Indy request for getting sources list for payment address
+ according to this payment method.
+
+ @param requestJson Request data json.
+ @param submitterDid (Optional) DID of request sender
+ @param walletHandle Wallet handle (created by IndyWallet::openWalletWithName).
+ @param paymentAddress Target payment address
+ @param from pointer to the next slice of UTXOs. -1 by default
+ @param completion Callback that takes command result as parameter.
+ Returns
+    getSourcesTxnJson - Indy request for getting sources list for payment address
+    paymentMethod - used payment method
+ */
++ (void)buildGetPaymentSourcesWithFromRequest:(IndyHandle)walletHandle
+                                 submitterDid:(NSString *)submitterDid
+                               paymentAddress:(NSString *)paymentAddress
+                                         from:(int64_t)from
+                                   completion:(void (^)(NSError *error, NSString *getSourcesTxnJson, NSString *paymentMethod))completion;
+
+
+/**
  Parses response for Indy request for getting sources list.
+ This method is deprecated. It will be removed in Indy SDK 2.0.0. Use parseGetPaymentSourcesWithFromResponse
 
  @param responseJson response for Indy request for getting sources list
  @param paymentMethod
@@ -127,6 +151,26 @@
 + (void)parseGetPaymentSourcesResponse:(NSString *)responseJson
                          paymentMethod:(NSString *)paymentMethod
                             completion:(void (^)(NSError *error, NSString *sourcesJson))completion;
+
+
+/**
+ Parses response for Indy request for getting sources list.
+
+ @param responseJson response for Indy request for getting sources list
+ @param paymentMethod
+ @param completion Callback that takes command result as parameter.
+ Returns sourcesJson - parsed (payment method and node version agnostic) sources info as json:
+   [{
+      source: <str>, // source input
+      paymentAddress: <str>, //payment address for this source
+      amount: <int>, // amount
+      extra: <str>, // optional data from payment transaction
+   }]
+   next - pointer to the next slice of UTXOs. Will be -1 if no UTXO's left.
+ */
++ (void)parseGetPaymentSourcesWithFromResponse:(NSString *)responseJson
+                                 paymentMethod:(NSString *)paymentMethod
+                                    completion:(void (^)(NSError *error, NSString *sourcesJson, int64_t next))completion;
 
 
 /**

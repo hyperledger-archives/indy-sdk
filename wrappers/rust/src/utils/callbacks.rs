@@ -73,7 +73,7 @@ impl ClosureHandler {
            CALLBACKS_STR,
            rust_str!(str1));
 
-    cb_ec!(cb_ec_string_i64(str1:*const c_char, num: i64)->String,
+    cb_ec!(cb_ec_string_i64(str1:*const c_char, num: i64)->(String, i64),
            CALLBACKS_STR_I64,
            (rust_str!(str1), num));
 

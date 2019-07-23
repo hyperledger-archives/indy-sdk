@@ -2781,6 +2781,23 @@ NAN_METHOD(buildGetPaymentSourcesRequest) {
   delete arg2;
 }
 
+NAN_METHOD(buildGetPaymentSourcesWithFromRequest) {
+  INDY_ASSERT_NARGS(buildGetPaymentSourcesRequest, 5)
+  INDY_ASSERT_NUMBER(buildGetPaymentSourcesRequest, 0, wh)
+  INDY_ASSERT_STRING(buildGetPaymentSourcesRequest, 1, submitterDid)
+  INDY_ASSERT_STRING(buildGetPaymentSourcesRequest, 2, paymentAddress)
+  INDY_ASSERT_NUMBER(buildGetPaymentSourcesRequest, 3, from)
+  INDY_ASSERT_FUNCTION(buildGetPaymentSourcesRequest, 4)
+  indy_handle_t arg0 = argToInt32(info[0]);
+  const char* arg1 = argToCString(info[1]);
+  const char* arg2 = argToCString(info[2]);
+  indy_i64_t arg3 = argToInt64(info[3]);
+  IndyCallback* icb = argToIndyCb(info[4]);
+  indyCalled(icb, indy_build_get_payment_sources_with_from_request(icb->handle, arg0, arg1, arg2, arg3, buildGetPaymentSourcesRequest_cb));
+  delete arg1;
+  delete arg2;
+}
+
 void parseGetPaymentSourcesResponse_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
   IndyCallback* icb = IndyCallback::getCallback(handle);
   if(icb != nullptr){
@@ -2796,6 +2813,25 @@ NAN_METHOD(parseGetPaymentSourcesResponse) {
   const char* arg1 = argToCString(info[1]);
   IndyCallback* icb = argToIndyCb(info[2]);
   indyCalled(icb, indy_parse_get_payment_sources_response(icb->handle, arg0, arg1, parseGetPaymentSourcesResponse_cb));
+  delete arg0;
+  delete arg1;
+}
+
+void parseGetPaymentSourcesResponse_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0, int64 arg1) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbString(xerr, arg0, arg1);
+  }
+}
+NAN_METHOD(parseGetPaymentSourcesWithFromResponse) {
+  INDY_ASSERT_NARGS(parseGetPaymentSourcesResponse, 3)
+  INDY_ASSERT_STRING(parseGetPaymentSourcesResponse, 0, paymentMethod)
+  INDY_ASSERT_STRING(parseGetPaymentSourcesResponse, 1, resp)
+  INDY_ASSERT_FUNCTION(parseGetPaymentSourcesResponse, 2)
+  const char* arg0 = argToCString(info[0]);
+  const char* arg1 = argToCString(info[1]);
+  IndyCallback* icb = argToIndyCb(info[2]);
+  indyCalled(icb, indy_parse_get_payment_sources_with_from_response(icb->handle, arg0, arg1, parseGetPaymentSourcesWithFromResponse_cb));
   delete arg0;
   delete arg1;
 }

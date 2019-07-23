@@ -7,10 +7,12 @@ use futures::Future;
 
 use ffi::payments;
 use ffi::{ResponseStringCB,
-          ResponseStringStringCB};
+          ResponseStringStringCB,
+          ResponseStringI64CB};
 
 use utils::callbacks::{ClosureHandler, ResultHandler};
 use {WalletHandle, CommandHandle};
+use futures::IntoFuture;
 
 /// Create the payment address for specified payment method
 ///
@@ -253,7 +255,7 @@ pub fn parse_get_payment_sources_response(payment_method: &str, resp_json: &str)
 
     let err = _parse_get_payment_sources_with_from_response(command_handle, payment_method, resp_json, cb);
 
-    ResultHandler::str_i64(command_handle, err, receiver).map(|(s, i)| s)
+    Box::new(ResultHandler::str_i64(command_handle, err, receiver).map(|(s, _)| s).into_future())
 }
 
 /// Parses response for Indy request for getting UTXO list.
@@ -277,7 +279,7 @@ pub fn parse_get_payment_sources_with_from_response(payment_method: &str, resp_j
 
     let err = _parse_get_payment_sources_with_from_response(command_handle, payment_method, resp_json, cb);
 
-    ResultHandler::str_i64(command_handle, err, receiver).map(|(s, i)| (s, if i >= 0 {Some(i as u64)} else {None}))
+    Box::new(ResultHandler::str_i64(command_handle, err, receiver).map(|(s, i)| (s, if i >= 0 {Some(i as u64)} else {None})).into_future())
 }
 
 fn _parse_get_payment_sources_with_from_response(command_handle: CommandHandle, payment_method: &str, resp_json: &str, cb: Option<ResponseStringI64CB>) -> ErrorCode {

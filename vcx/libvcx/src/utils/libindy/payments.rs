@@ -126,18 +126,36 @@ pub fn get_address_info(address: &str) -> VcxResult<AddressInfo> {
 
     let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
 
-    let (txn, _) = payments::build_get_payment_sources_request(get_wallet_handle() as i32, Some(&did), address)
+    let (txn, _) = payments::build_get_payment_sources_with_from_request(get_wallet_handle() as i32, Some(&did), address, None)
         .wait()
         .map_err(map_rust_indy_sdk_error)?;
 
     let response = libindy_sign_and_submit_request(&did, &txn)?;
 
-    let response = payments::parse_get_payment_sources_response(settings::get_payment_method().as_str(), &response)
+    let (response, next) = payments::parse_get_payment_sources_with_from_response(settings::get_payment_method().as_str(), &response)
         .wait()
         .map_err(map_rust_indy_sdk_error)?;
 
-    let utxo: Vec<UTXO> = ::serde_json::from_str(&response)
+    let mut utxo: Vec<UTXO> = ::serde_json::from_str(&response.clone())
         .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize payment sources response: {}", err)))?;
+    let mut next_seqno = next;
+
+    while next_seqno.is_some() {
+        let (txn, _) = payments::build_get_payment_sources_with_from_request(get_wallet_handle() as i32, Some(&did), address, next_seqno)
+            .wait()
+            .map_err(map_rust_indy_sdk_error)?;
+
+        let response = libindy_sign_and_submit_request(&did, &txn)?;
+
+        let (response, next) = payments::parse_get_payment_sources_with_from_response(settings::get_payment_method().as_str(), &response)
+            .wait()
+            .map_err(map_rust_indy_sdk_error)?;
+        let mut res: Vec<UTXO> = ::serde_json::from_str(&response)
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize payment sources response: {}", err)))?;
+        next_seqno = next;
+
+        utxo.append(&mut res);
+    }
 
     let info = AddressInfo { address: address.to_string(), balance: _address_balance(&utxo), utxo };
 
