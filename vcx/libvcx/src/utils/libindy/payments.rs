@@ -363,10 +363,16 @@ fn get_action_price(action: (&str, &str, &str, Option<&str>, Option<&str>), requ
 }
 
 fn get_requester_info(requester_info_json: Option<String>) -> VcxResult<String> {
+    // TODO: THINK better
     let role = match settings::get_config_value(settings::CONFIG_SDK_TO_REMOTE_ROLE) {
         Ok(role) => role,
-        Err(_) => { ::utils::libindy::ledger::get_role(&settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?)? }
+        Err(_) => {
+            let role_ = ::utils::libindy::ledger::get_role(&settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?)?;
+            settings::set_config_value(settings::CONFIG_SDK_TO_REMOTE_ROLE, &role_);
+            role_
+        }
     };
+    let role = if role == "null" { None } else { Some(role) };
 
     // TODO: think about better way
     let res = match requester_info_json {
@@ -890,7 +896,7 @@ pub mod tests {
 
     fn _action() -> String {
         json!({
-            "auth_type":"1",
+            "auth_type":"101",
             "auth_action":"ADD",
             "new_value":"0",
             "field":"role"

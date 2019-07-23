@@ -85,7 +85,7 @@ def test_set_active_txn_author_agreement_meta():
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_vcx_get_request_price():
     action = {
-        "auth_type": "1",
+        "auth_type": "101",
         "auth_action": "ADD",
         "field": "role",
         "new_value": "0"

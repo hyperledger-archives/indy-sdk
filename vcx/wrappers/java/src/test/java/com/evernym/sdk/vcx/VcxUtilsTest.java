@@ -36,7 +36,7 @@ public class VcxUtilsTest {
     @DisplayName("get request price")
     void vcxGetRequestPrice() throws VcxException, ExecutionException, InterruptedException {
         String actionJson = "{\n" +
-                "    \"auth_type\": \"1\",\n" +
+                "    \"auth_type\": \"101\",\n" +
                 "    \"auth_action\": \"ADD\",\n" +
                 "    \"field\": \"role\",\n" +
                 "    \"new_value\": \"0\"\n" +

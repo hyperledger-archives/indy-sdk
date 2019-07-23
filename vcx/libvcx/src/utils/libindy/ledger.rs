@@ -398,7 +398,7 @@ pub fn get_role(did: &str) -> VcxResult<String> {
         .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidLedgerResponse, format!("{:?}", err)))?;
     let data: serde_json::Value = serde_json::from_str(& get_nym_resp["result"]["data"].as_str().unwrap_or("{}"))
         .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidLedgerResponse, format!("{:?}", err)))?;
-    let role = data["role"].as_str().unwrap_or("").to_string();
+    let role = data["role"].as_str().unwrap_or("null").to_string();
     Ok(role)
 }
 
