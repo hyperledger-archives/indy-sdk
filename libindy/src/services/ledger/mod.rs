@@ -914,7 +914,7 @@ mod tests {
             Constraint::RoleConstraint(RoleConstraint {
                 sig_count: 0,
                 metadata: None,
-                role: String::new(),
+                role: Some(String::new()),
                 need_to_be_owner: false,
             })
         }
