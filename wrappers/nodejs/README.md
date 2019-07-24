@@ -52,7 +52,7 @@ First, make sure you have the latest libindy for your platform. Also make sure y
 Second, make sure it's in the linker search path. The easiest way is to use the system library path.
 * ubuntu `/usr/lib/libindy.so`
 * osx `/usr/local/lib/libindy.dylib`
-* windows `c:\windows\system32\indy.dll`
+* windows use LD_LIBRARY_PATH to indicate the location of dll as specified below
 
 If you want to put the library in a custom folder i.e. `/foo/bar/libindy.so` then you can do this:
 ```sh
@@ -193,7 +193,13 @@ This call requires access to pre-configured blob storage writer instance handle 
     "max_cred_num": maximum number of credentials the new registry can process (optional, default 100000)
 }
 ````
-* `tailsWriterHandle`: Handle (Number) - handle of blob storage to store tails
+* `tailsWriterHandle`: Handle (Number) - handle of blob storage to store tails 
+
+NOTE:
+Recursive creation of folder for Default Tails Writer (correspondent to `tailsWriterHandle`)
+in the system-wide temporary directory may fail in some setup due to permissions: `IO error: Permission denied`.
+In this case use `TMPDIR` environment variable to define temporary directory specific for an application.
+
 * __->__ [ `revocRegId`: String, `revocRegDef`: Json, `revocRegEntry`: Json ] - revoc\_reg\_id: identifier of created revocation registry definition
 revoc\_reg\_def\_json: public part of revocation registry definition
 revoc\_reg\_entry\_json: revocation registry entry that defines initial state of revocation registry
@@ -2527,9 +2533,9 @@ If the requester does not match to the request constraints `TransactionNotAllowe
 * `requesterInfo`: Json:
 ```
 {
-    "role": string - role of a user which can sign a transaction.
+    "role": string (optional) - role of a user which can sign a transaction.
     "sig_count": u64 - number of signers.
-    "is_owner": bool - if user is an owner of transaction.
+    "is_owner": bool (optional) - if user is an owner of transaction.
 }
 ```
 * `fees`: Json - fees set on the ledger (result of `parseGetTxnFeesResponse`).
