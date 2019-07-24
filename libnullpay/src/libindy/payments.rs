@@ -29,7 +29,7 @@ pub type BuildGetPaymentSourcesRequestCB = extern fn(command_handle: i32,
                                                      wallet_handle: i32,
                                                      submitter_did: *const c_char,
                                                      payment_address: *const c_char,
-                                                     from: Option<u64>,
+                                                     from: i64,
                                                      cb: Option<IndyPaymentCallback>) -> ErrorCode;
 
 pub type ParseGetPaymentSourcesResponseCB = extern fn(command_handle: i32,

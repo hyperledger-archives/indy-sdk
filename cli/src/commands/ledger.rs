@@ -1091,7 +1091,6 @@ pub mod get_payment_sources_command {
                                        ("amount", "Amount"),
                                        ("extra", "Extra")],
                                  "There are no source's");
-
                 Ok(())
             }
             Err(err) => Err(println_err!("Invalid data has been received: {:?}", err)),
