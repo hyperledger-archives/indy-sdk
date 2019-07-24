@@ -16,9 +16,9 @@ use errors::prelude::*;
 use services::crypto::CryptoService;
 use services::ledger::LedgerService;
 use services::wallet::{RecordOptions, SearchOptions, WalletService};
-use utils::crypto::base58;
 use utils::sequence;
 use api::WalletHandle;
+use rust_base58::{FromBase58, ToBase58};
 
 pub enum DidCommand {
     CreateAndStoreMyDid(
@@ -470,13 +470,13 @@ impl DidCommandExecutor {
         self.crypto_service.validate_did(&did)?;
         self.crypto_service.validate_key(&verkey)?;
 
-        let did = base58::decode(&did)?;
-        let dverkey = base58::decode(&verkey)?;
+        let did = &did.from_base58()?;
+        let dverkey = &verkey.from_base58()?;
 
         let (first_part, second_part) = dverkey.split_at(16);
 
         let res = if first_part.eq(did.as_slice()) {
-            format!("~{}", base58::encode(second_part))
+            format!("~{}", second_part.to_base58())
         } else {
             verkey
         };
