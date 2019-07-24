@@ -24,6 +24,7 @@ extern crate rust_base58;
 extern crate time;
 extern crate serde;
 extern crate core;
+extern crate indy;
 
 #[macro_use]
 mod utils;

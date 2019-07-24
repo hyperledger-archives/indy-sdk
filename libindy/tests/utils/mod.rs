@@ -85,7 +85,7 @@ pub fn setup_with_pool(name: &str) -> i32 {
     pool::create_and_open_pool_ledger(name).unwrap()
 }
 
-pub fn tear_down_with_pool(pool_handle: i32, name: &str) {
+pub fn tear_down_with_pool(pool_handle: PoolHandle, name: &str) {
     pool::close(pool_handle).unwrap();
     tear_down(name);
 }
@@ -96,7 +96,7 @@ pub fn setup_with_wallet_and_pool(name: &str) -> (i32, i32, String) {
     (wallet_handle, pool_handle, config)
 }
 
-pub fn tear_down_with_wallet_and_pool(wallet_handle: i32, pool_handle: i32, name: &str, wallet_config: &str) {
+pub fn tear_down_with_wallet_and_pool(wallet_handle: i32, pool_handle: PoolHandle, name: &str, wallet_config: &str) {
     pool::close(pool_handle).unwrap();
     tear_down_with_wallet(wallet_handle, name, wallet_config);
 }

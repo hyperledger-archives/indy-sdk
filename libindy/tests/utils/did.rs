@@ -6,9 +6,10 @@ use self::futures::Future;
 
 use utils::{ledger, pool};
 use utils::types::ResponseType;
+use indy::api::PoolHandle;
 
 
-pub fn create_store_and_publish_my_did_from_trustee(wallet_handle: i32, pool_handle: i32) -> Result<(String, String), IndyError> {
+pub fn create_store_and_publish_my_did_from_trustee(wallet_handle: i32, pool_handle: PoolHandle) -> Result<(String, String), IndyError> {
     let (trustee_did, _) = create_and_store_my_did(wallet_handle, Some(::utils::constants::TRUSTEE_SEED))?;
     let (my_did, my_vk) = create_and_store_my_did(wallet_handle, None)?;
     let nym = ledger::build_nym_request(&trustee_did, &my_did, Some(&my_vk), None, Some("TRUSTEE"))?;
@@ -17,7 +18,7 @@ pub fn create_store_and_publish_my_did_from_trustee(wallet_handle: i32, pool_han
     Ok((my_did, my_vk))
 }
 
-pub fn create_store_and_publish_my_did_from_steward(wallet_handle: i32, pool_handle: i32) -> Result<(String, String), IndyError> {
+pub fn create_store_and_publish_my_did_from_steward(wallet_handle: i32, pool_handle: PoolHandle) -> Result<(String, String), IndyError> {
     let (trustee_did, _) = create_and_store_my_did(wallet_handle, Some(::utils::constants::TRUSTEE_SEED))?;
     let (my_did, my_vk) = create_and_store_my_did(wallet_handle, None)?;
     let nym = ledger::build_nym_request(&trustee_did, &my_did, Some(&my_vk), None, Some("STEWARD"))?;
@@ -52,7 +53,7 @@ pub fn replace_keys_apply(wallet_handle: i32, did: &str) -> Result<(), IndyError
     did::replace_keys_apply(wallet_handle, did).wait()
 }
 
-pub fn replace_keys(pool_handle: i32, wallet_handle: i32, did: &str) -> Result<String, IndyError> {
+pub fn replace_keys(pool_handle: PoolHandle, wallet_handle: i32, did: &str) -> Result<String, IndyError> {
     let verkey = did::replace_keys_start(wallet_handle, did, "{}").wait().unwrap();
 
     let nym_request = ledger::build_nym_request(did, did, Some(&verkey), None, None).unwrap();
@@ -63,11 +64,11 @@ pub fn replace_keys(pool_handle: i32, wallet_handle: i32, did: &str) -> Result<S
     Ok(verkey)
 }
 
-pub fn key_for_did(pool_handle: i32, wallet_handle: i32, did: &str) -> Result<String, IndyError> {
+pub fn key_for_did(pool_handle: PoolHandle, wallet_handle: i32, did: &str) -> Result<String, IndyError> {
     did::key_for_did(pool_handle, wallet_handle, did).wait()
 }
 
-pub fn key_for_local_did(wallet_handle: i32, did: &str) -> Result<String, IndyError> {
+pub fn key_for_local_did(wallet_handle: PoolHandle, did: &str) -> Result<String, IndyError> {
     did::key_for_local_did(wallet_handle, did).wait()
 }
 
@@ -75,7 +76,7 @@ pub fn set_endpoint_for_did(wallet_handle: i32, did: &str, address: &str, transp
     did::set_endpoint_for_did(wallet_handle, did, address, transport_key).wait()
 }
 
-pub fn get_endpoint_for_did(wallet_handle: i32, pool_handle: i32, did: &str) -> Result<(String, Option<String>), IndyError> {
+pub fn get_endpoint_for_did(wallet_handle: i32, pool_handle: PoolHandle, did: &str) -> Result<(String, Option<String>), IndyError> {
     did::get_endpoint_for_did(wallet_handle, pool_handle, did).wait()
 }
 

@@ -17,8 +17,7 @@ use services::crypto::CryptoService;
 use services::ledger::LedgerService;
 use services::wallet::{RecordOptions, SearchOptions, WalletService};
 use utils::sequence;
-use api::WalletHandle;
-use rust_base58::{FromBase58, ToBase58};
+use api::{WalletHandle, PoolHandle, CommandHandle};
 
 pub enum DidCommand {
     CreateAndStoreMyDid(
@@ -46,7 +45,7 @@ pub enum DidCommand {
         WalletHandle,
         Box<Fn(IndyResult<String>) + Send>),
     KeyForDid(
-        i32, // pool handle
+        PoolHandle, // pool handle
         WalletHandle,
         String, // did (my or their)
         Box<Fn(IndyResult<String/*key*/>) + Send>),
@@ -61,7 +60,7 @@ pub enum DidCommand {
         Box<Fn(IndyResult<()>) + Send>),
     GetEndpointForDid(
         WalletHandle,
-        i32, // pool handle
+        PoolHandle, // pool handle
         String, // did
         Box<Fn(IndyResult<(String, Option<String>)>) + Send>),
     SetDidMetadata(
@@ -81,13 +80,13 @@ pub enum DidCommand {
     GetNymAck(
         WalletHandle,
         IndyResult<String>, // GetNym Result
-        i32, // deferred cmd id
+        CommandHandle, // deferred cmd id
     ),
     // Internal commands
     GetAttribAck(
         WalletHandle,
         IndyResult<String>, // GetAttrib Result
-        i32, // deferred cmd id
+        CommandHandle, // deferred cmd id
     ),
 }
 
@@ -104,7 +103,7 @@ pub struct DidCommandExecutor {
     wallet_service: Rc<WalletService>,
     crypto_service: Rc<CryptoService>,
     ledger_service: Rc<LedgerService>,
-    deferred_commands: RefCell<HashMap<i32, DidCommand>>,
+    deferred_commands: RefCell<HashMap<CommandHandle, DidCommand>>,
 }
 
 impl DidCommandExecutor {
@@ -325,7 +324,7 @@ impl DidCommandExecutor {
     }
 
     fn key_for_did(&self,
-                   pool_handle: i32,
+                   pool_handle: PoolHandle,
                    wallet_handle: WalletHandle,
                    did: String,
                    cb: Box<Fn(IndyResult<String>) + Send>) {
@@ -405,7 +404,7 @@ impl DidCommandExecutor {
 
     fn get_endpoint_for_did(&self,
                             wallet_handle: WalletHandle,
-                            pool_handle: i32,
+                            pool_handle: PoolHandle,
                             did: String,
                             cb: Box<Fn(IndyResult<(String, Option<String>)>) + Send>) {
         debug!("get_endpoint_for_did >>> wallet_handle: {:?}, pool_handle: {:?}, did: {:?}", wallet_handle, pool_handle, did);
@@ -489,7 +488,7 @@ impl DidCommandExecutor {
     fn get_nym_ack(&self,
                    wallet_handle: WalletHandle,
                    get_nym_reply_result: IndyResult<String>,
-                   deferred_cmd_id: i32) {
+                   deferred_cmd_id: CommandHandle) {
         let res = self._get_nym_ack(wallet_handle, get_nym_reply_result);
         self._execute_deferred_command(deferred_cmd_id, res.err());
     }
@@ -528,7 +527,7 @@ impl DidCommandExecutor {
     fn get_attrib_ack(&self,
                       wallet_handle: WalletHandle,
                       get_attrib_reply_result: IndyResult<String>,
-                      deferred_cmd_id: i32) {
+                      deferred_cmd_id: CommandHandle) {
         let res = self._get_attrib_ack(wallet_handle, get_attrib_reply_result);
         self._execute_deferred_command(deferred_cmd_id, res.err());
     }
@@ -558,13 +557,13 @@ impl DidCommandExecutor {
         Ok(())
     }
 
-    fn _defer_command(&self, cmd: DidCommand) -> i32 {
-        let deferred_cmd_id = sequence::get_next_id();
+    fn _defer_command(&self, cmd: DidCommand) -> CommandHandle {
+        let deferred_cmd_id = CommandHandle(sequence::get_next_id());
         self.deferred_commands.borrow_mut().insert(deferred_cmd_id, cmd);
         deferred_cmd_id
     }
 
-    fn _execute_deferred_command(&self, deferred_cmd_id: i32, err: Option<IndyError>) {
+    fn _execute_deferred_command(&self, deferred_cmd_id: CommandHandle, err: Option<IndyError>) {
         if let Some(cmd) = self.deferred_commands.borrow_mut().remove(&deferred_cmd_id) {
             if let Some(err) = err {
                 self._call_error_cb(cmd, err);
@@ -572,7 +571,7 @@ impl DidCommandExecutor {
                 self.execute(cmd);
             }
         } else {
-            error!("No deferred command for id: {}", deferred_cmd_id)
+            error!("No deferred command for id: {:?}", deferred_cmd_id)
         }
     }
 
@@ -601,7 +600,7 @@ impl DidCommandExecutor {
     }
 
     fn _fetch_their_did_from_ledger(&self,
-                                    wallet_handle: WalletHandle, pool_handle: i32,
+                                    wallet_handle: WalletHandle, pool_handle: PoolHandle,
                                     did: &str, deferred_cmd: DidCommand) {
         // Defer this command until their did is fetched from ledger.
         let deferred_cmd_id = self._defer_command(deferred_cmd);
@@ -626,7 +625,7 @@ impl DidCommandExecutor {
     }
 
     fn _fetch_attrib_from_ledger(&self,
-                                 wallet_handle: WalletHandle, pool_handle: i32,
+                                 wallet_handle: WalletHandle, pool_handle: PoolHandle,
                                  did: &str, deferred_cmd: DidCommand) {
         // Defer this command until their did is fetched from ledger.
         let deferred_cmd_id = self._defer_command(deferred_cmd);

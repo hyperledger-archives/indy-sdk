@@ -27,8 +27,18 @@ pub struct WalletHandle(pub i32);
 pub const INVALID_WALLET_HANDLE : WalletHandle = WalletHandle(0);
 
 pub type CallbackHandle = i32;
-pub type PoolHandle = i32;
-pub type CommandHandle = i32;
+//pub type PoolHandle = i32;
+#[repr(transparent)]
+#[derive(Debug, Hash, PartialEq, Eq, Copy, Clone)]
+pub struct PoolHandle(pub i32);
+pub const INVALID_POOL_HANDLE : PoolHandle = PoolHandle(0);
+
+//pub type CommandHandle = i32;
+#[repr(transparent)]
+#[derive(Debug, Hash, PartialEq, Eq, Copy, Clone)]
+pub struct CommandHandle(pub i32);
+pub const INVALID_COMMAND_HANDLE : CommandHandle = CommandHandle(0);
+
 pub type StorageHandle = i32;
 pub type SearchHandle = i32;
 

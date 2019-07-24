@@ -1037,7 +1037,7 @@ pub extern fn indy_build_get_txn_request(command_handle: CommandHandle,
             seq_no,
             Box::new(move |result| {
                 let (err, request_json) = prepare_result_1!(result, String::new());
-                trace!("indy_build_get_txn_request: request_json: {:?}, cmd_handle: {}", request_json, command_handle);
+                trace!("indy_build_get_txn_request: request_json: {:?}, cmd_handle: {:?}", request_json, command_handle);
                 let request_json = ctypes::string_to_cstring(request_json);
                 cb(command_handle, err, request_json.as_ptr())
             })

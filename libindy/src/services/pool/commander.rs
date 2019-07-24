@@ -4,6 +4,7 @@ use services::pool::events::PoolEvent;
 use super::zmq;
 
 use byteorder::{ByteOrder, LittleEndian};
+use api::{CommandHandle, INVALID_COMMAND_HANDLE};
 
 pub struct Commander {
     cmd_socket: zmq::Socket,
@@ -28,8 +29,8 @@ impl Commander {
             .to_indy(IndyErrorKind::InvalidState, "Invalid utf8 sequence in command") // FIXME: review kind
             .map_err(map_err_trace!()).ok()?;
 
-        let id = cmd_parts.get(1).map(|cmd: &Vec<u8>| LittleEndian::read_i32(cmd.as_slice()))
-            .unwrap_or(-1);
+        let id = cmd_parts.get(1).map(|cmd: &Vec<u8>| CommandHandle(LittleEndian::read_i32(cmd.as_slice())))
+            .unwrap_or(INVALID_COMMAND_HANDLE);
 
         if "exit".eq(cmd_s.as_str()) {
             Some(PoolEvent::Close(id))
@@ -63,6 +64,7 @@ mod commander_tests {
     use utils::sequence;
 
     use super::*;
+    use api::CommandHandle;
 
     #[test]
     pub fn commander_new_works() {
@@ -106,7 +108,7 @@ mod commander_tests {
 
         let cmd = Commander::new(recv_cmd_sock);
 
-        let cmd_id: i32 = sequence::get_next_id();
+        let cmd_id: CommandHandle = CommandHandle(sequence::get_next_id());
         let mut buf = [0u8; 4];
         LittleEndian::write_i32(&mut buf, cmd_id);
         let msg = "exit";
@@ -134,7 +136,7 @@ mod commander_tests {
 
         let cmd = Commander::new(recv_cmd_sock);
 
-        let cmd_id: i32 = sequence::get_next_id();
+        let cmd_id = sequence::get_next_id();
         let mut buf = [0u8; 4];
         LittleEndian::write_i32(&mut buf, cmd_id);
         let msg = "connect";
@@ -148,7 +150,7 @@ mod commander_tests {
 
         let cmd = Commander::new(recv_cmd_sock);
 
-        let cmd_id: i32 = sequence::get_next_id();
+        let cmd_id = sequence::get_next_id();
         let mut buf = [0u8; 4];
         LittleEndian::write_i32(&mut buf, cmd_id);
         let mut buf_to = [0u8; 4];
