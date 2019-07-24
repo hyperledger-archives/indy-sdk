@@ -1,6 +1,11 @@
-libindy (1.10.0) unstable; urgency=medium
+libindy (1.10.1) unstable; urgency=medium
 
 [ Hyperledger ]
+
+## 1.10.1
+* Bugfixes
+    * Fixed `State Proof` verification for GET_REVOC_REG_DELTA requests in case of from and to are before first entry.
+    * others minor bugfixes
 
 ## 1.10.0
 * Added new *EXPERIMENTAL* functions to Anoncreds API to configure what tags to build on credential storage in prover wallet:
