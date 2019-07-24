@@ -108,7 +108,7 @@ pub type BuildGetPaymentSourcesRequestCB = extern fn(command_handle: CommandHand
                                                      wallet_handle: WalletHandle,
                                                      submitter_did: *const c_char,
                                                      payment_address: *const c_char,
-                                                     from: Option<u64>,
+                                                     from: i64,
                                                      cb: Option<extern fn(command_handle_: CommandHandle,
                                                                           err: ErrorCode,
                                                                           get_sources_txn_json: *const c_char) -> ErrorCode>) -> ErrorCode;

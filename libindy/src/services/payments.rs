@@ -144,13 +144,14 @@ impl PaymentsService {
 
         let submitter_did = submitter_did.map(ctypes::str_to_cstring);
         let address = CString::new(address)?;
+        let cb = cbs::build_get_payment_sources_request_cb(cmd_handle);
 
         let err = build_get_payment_sources_request(cmd_handle,
-                                                    wallet_handle,
-                                                    submitter_did.as_ref().map(|s| s.as_ptr()).unwrap_or(null()),
-                                                    address.as_ptr(),
-                                                    next,
-                                                    cbs::build_get_payment_sources_request_cb(cmd_handle));
+                                                              wallet_handle,
+                                                              submitter_did.as_ref().map(|s| s.as_ptr()).unwrap_or(null()),
+                                                              address.as_ptr(),
+                                                              next.map(|a| a as i64).unwrap_or(-1),
+                                                              cb);
 
         let res = err.into();
         trace!("build_get_payment_sources_request <<< result: {:?}", res);

@@ -86,8 +86,8 @@ pub extern fn indy_parse_get_payment_sources_with_from_response(command_handle: 
                                                                 resp_json: *const c_char,
                                                                 cb: Option<extern fn(command_handle_: CommandHandle,
                                                                                      err: ErrorCode,
-                                                                                     next: i64,
-                                                                                     sources_json: *const c_char)>) -> ErrorCode {
+                                                                                     sources_json: *const c_char,
+                                                                                     next: i64)>) -> ErrorCode {
     trace!("indy_parse_get_payment_sources_with_from_response: >>> payment_method: {:?}, resp_json: {:?}", payment_method, resp_json);
     check_useful_c_str!(payment_method, ErrorCode::CommonInvalidParam2);
     check_useful_c_str!(resp_json, ErrorCode::CommonInvalidParam3);
@@ -105,7 +105,7 @@ pub extern fn indy_parse_get_payment_sources_with_from_response(command_handle: 
                         let (err, sources_json, next) = prepare_result_2!(result, String::new(), -1);
                         trace!("indy_parse_get_payment_sources_with_from_response: sources_json: {:?}", sources_json);
                         let sources_json = ctypes::string_to_cstring(sources_json);
-                        cb(command_handle, err, next, sources_json.as_ptr());
+                        cb(command_handle, err, sources_json.as_ptr(), next);
                     }))
             ));
 

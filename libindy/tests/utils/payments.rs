@@ -16,40 +16,24 @@ use utils::callback;
 #[macro_export]
 macro_rules! mocked_handler {
     ($first_param_name: ident: $first_param_type: ty $(, $param_name: ident: $param_type: ty)*) => (
-        mocked_handler!($first_param_name: $first_param_type $(, $param_name: $param_type)* =>
-        payment_address: &str, *const c_char, CString; |injection| CString::new(injection).unwrap(); |storage: CString| storage.as_ptr());
-    );
-    ($first_param_name: ident: $first_param_type: ty $(, $param_name: ident: $param_type: ty)* =>
-        $first_return_name: ident: $first_injection_type: ty, $first_return_type: ty, $first_storage_type: ty; $first_mapper_injection_storage: expr; $first_mapper_storage_return: expr
-        $(, $return_name: ident: $injection_type: ty, $return_type: ty, $storage_type: ty; $mapper_injection_storage: expr; $mapper_storage_return: expr)* ) => (
         use super::*;
 
         lazy_static! {
-          static ref INJECTIONS: Mutex<VecDeque<(i32, $first_storage_type $(, $storage_type)*)>> = Default::default();
+          static ref INJECTIONS: Mutex<VecDeque<(i32, CString)>> = Default::default();
         }
 
         pub extern fn handle(cmd_handle: i32,
-                             $first_param_name: $first_param_type,
-                             $($param_name: $param_type,)*
-                             cb: Option<
-                                extern fn(
-                                    command_handle_: i32,
-                                    err: i32,
-                                    $first_return_name: $first_return_type,
-                                    $($return_name: $return_type,)*
-                                ) -> i32
-                             >) -> i32 {
-            println!("Handling mocked call");
+                                    $first_param_name: $first_param_type,
+                                    $($param_name: $param_type,)*
+                                    cb: Option<IndyPaymentCallback>) -> i32 {
+
             let cb = cb.unwrap_or_else(|| {
-                println!("NO CB!!!");
                 panic!("Null passed as callback!")
             });
 
             if let Ok(mut injections) = INJECTIONS.lock() {
-                if let Some((err, $first_return_name $(, $return_name)*)) = injections.pop_front() {
-                    let err = (cb)(cmd_handle, err, ($first_mapper_storage_return)($first_return_name)$(, ($mapper_storage_return)($return_name))*);
-                    println!("Found err: {}", err);
-                    return err;
+                if let Some((err, res)) = injections.pop_front() {
+                    return (cb)(cmd_handle, err, res.as_ptr());
                 }
             } else {
                 panic!("Can't lock injections mutex");
@@ -58,9 +42,10 @@ macro_rules! mocked_handler {
             panic!("No injections left!");
         }
 
-        pub fn inject_mock(err: ErrorCode, $first_return_name: $first_injection_type, $($return_name: $injection_type,)*) {
+        pub fn inject_mock(err: ErrorCode, res: &str) {
             if let Ok(mut injections) = INJECTIONS.lock() {
-                injections.push_back((err as i32, ($first_mapper_injection_storage)($first_return_name)$(, ($mapper_injection_storage)($return_name))*))
+                let res = CString::new(res).unwrap();
+                injections.push_back((err as i32, res))
             } else {
                 panic!("Can't lock injections mutex");
             }
@@ -137,9 +122,46 @@ pub mod mock_method {
     }
 
     pub mod parse_get_payment_sources_response {
-        mocked_handler!(_resp_json: *const c_char =>
-        sources: &str, *const c_char, CString; |injection| CString::new(injection).unwrap(); |storage: CString| storage.as_ptr(),
-        next: i64, i64, i64; |num| num; |num| num);
+        use super::*;
+
+        lazy_static! {
+          static ref INJECTIONS: Mutex<VecDeque<(i32, CString, i64)>> = Default::default();
+        }
+
+        pub extern fn handle(cmd_handle: i32,
+                             response: *const c_char,
+                             cb: Option<ParsePaymentSourcesCallback>) -> i32 {
+            let cb = cb.unwrap_or_else(|| {
+                panic!("Null passed as callback!")
+            });
+
+            if let Ok(mut injections) = INJECTIONS.lock() {
+                if let Some((err, res, num)) = injections.pop_front() {
+                    return (cb)(cmd_handle, err, res.as_ptr(), num);
+                }
+            } else {
+                panic!("Can't lock injections mutex");
+            }
+
+            panic!("No injections left!");
+        }
+
+        pub fn inject_mock(err: ErrorCode, res: &str, num: i64) {
+            if let Ok(mut injections) = INJECTIONS.lock() {
+                let res = CString::new(res).unwrap();
+                injections.push_back((err as i32, res, num))
+            } else {
+                panic!("Can't lock injections mutex");
+            }
+        }
+
+        pub fn clear_mocks() {
+            if let Ok(mut injections) = INJECTIONS.lock() {
+                injections.clear();
+            } else {
+                panic!("Can't lock injections mutex");
+            }
+        }
     }
 
     pub mod build_payment_req {
