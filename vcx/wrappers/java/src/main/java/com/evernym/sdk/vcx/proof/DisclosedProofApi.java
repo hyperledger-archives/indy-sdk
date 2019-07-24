@@ -77,8 +77,8 @@ public class DisclosedProofApi extends VcxJava.API {
 
     private static Callback vcxProofUpdateStateCB = new Callback() {
         @SuppressWarnings({"unused", "unchecked"})
-        public void callback(int commandHandle, int err, int proofHandle, int state) {
-            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], proofHandle = [" + proofHandle + "], state = [" + state + "]");
+        public void callback(int commandHandle, int err, int state) {
+            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], state = [" + state + "]");
             CompletableFuture<Integer> future = (CompletableFuture<Integer>) removeFuture(commandHandle);
             if (!checkCallback(future, err)) return;
             future.complete(state);
@@ -238,6 +238,28 @@ public class DisclosedProofApi extends VcxJava.API {
         return future;
     }
 
+    private static Callback vcxProofGetMsgCB = new Callback() {
+        @SuppressWarnings({"unused", "unchecked"})
+        public void callback(int commandHandle, int err, String msg) {
+            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], msg = [" + msg + "]");
+            CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(commandHandle);
+            if (!checkCallback(future, err)) return;
+            future.complete(msg);
+        }
+    };
+
+    public static CompletableFuture<String> getProofMsg(
+            int proofHandle
+    ) throws VcxException {
+        logger.debug("getProofMsg() called with: proofHandle = [" + proofHandle + "]");
+        CompletableFuture<String> future = new CompletableFuture<>();
+        int commandHandle = addFuture(future);
+
+        int result = LibVcx.api.vcx_disclosed_proof_get_proof_msg(commandHandle, proofHandle, vcxProofGetMsgCB);
+        checkResult(result);
+
+        return future;
+    }
 
     private static Callback vcxProofCreateWithRequestCB = new Callback() {
         public void callback(int command_handle, int err, int proofHandle) {

@@ -334,6 +334,7 @@ mod tests {
     use domain::ledger::request::ProtocolVersion;
     use services::pool::types::*;
     use utils::test;
+    use services::pool::request_handler::DEFAULT_GENERATOR;
 
     use super::*;
 
@@ -635,7 +636,7 @@ mod tests {
         pub static POLL_TIMEOUT: i64 = 1_000; /* in ms */
 
         pub fn node() -> NodeTransactionV1 {
-            let blskey = VerKey::new(&Generator::from_bytes(&"3LHpUjiyFC2q2hD7MnwwNmVXiuaFbQx2XkAFJWzswCjgN1utjsCeLzHsKk1nJvFEaS4fcrUmVAkdhtPCYbrVyATZcmzwJReTcJqwqBCPTmTQ9uWPwz6rEncKb2pYYYFcdHa8N17HzVyTqKfgPi4X9pMetfT3A5xCHq54R2pDNYWVLDX".from_base58().unwrap()).unwrap(),
+            let blskey = VerKey::new(&Generator::from_bytes(&DEFAULT_GENERATOR.from_base58().unwrap()).unwrap(),
                                      &SignKey::new(None).unwrap()).unwrap().as_bytes().to_base58();
 
             NodeTransactionV1 {
@@ -669,7 +670,7 @@ mod tests {
         }
 
         pub fn node_2() -> NodeTransactionV1 {
-            let blskey = VerKey::new(&Generator::from_bytes(&"3LHpUjiyFC2q2hD7MnwwNmVXiuaFbQx2XkAFJWzswCjgN1utjsCeLzHsKk1nJvFEaS4fcrUmVAkdhtPCYbrVyATZcmzwJReTcJqwqBCPTmTQ9uWPwz6rEncKb2pYYYFcdHa8N17HzVyTqKfgPi4X9pMetfT3A5xCHq54R2pDNYWVLDX".from_base58().unwrap()).unwrap(),
+            let blskey = VerKey::new(&Generator::from_bytes(&DEFAULT_GENERATOR.from_base58().unwrap()).unwrap(),
                                      &SignKey::new(None).unwrap()).unwrap().as_bytes().to_base58();
 
             NodeTransactionV1 {

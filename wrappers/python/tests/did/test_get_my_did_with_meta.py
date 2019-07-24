@@ -1,11 +1,8 @@
 import json
 
-from indy import IndyError
-from indy import did
-from indy.error import ErrorCode
-
-import base58
 import pytest
+
+from indy import did, error
 
 
 @pytest.mark.asyncio
@@ -22,12 +19,10 @@ async def test_get_my_did_works(wallet_handle, seed_my1, did_my1, verkey_my1, me
 
 @pytest.mark.asyncio
 async def test_get_my_dids_works_for_invalid_handle(wallet_handle, did_my1):
-    with pytest.raises(IndyError) as e:
+    with pytest.raises(error.WalletInvalidHandle):
         await did.get_my_did_with_meta(wallet_handle + 1, did_my1)
-    assert ErrorCode.WalletInvalidHandle == e.value.error_code
 
 @pytest.mark.asyncio
 async def test_get_my_did_with_metadata_works_for_no_metadata(wallet_handle, did_my1):
-    with pytest.raises(IndyError) as e:
+    with pytest.raises(error.WalletItemNotFound):
         await did.get_my_did_with_meta(wallet_handle, did_my1)
-    assert ErrorCode.WalletItemNotFound == e.value.error_code

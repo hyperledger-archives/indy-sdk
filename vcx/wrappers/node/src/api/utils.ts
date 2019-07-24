@@ -219,3 +219,7 @@ export async function updateMessages ({ msgJson }: IUpdateMessagesConfigs): Prom
     throw new VCXInternalError(err)
   }
 }
+
+export function setPoolHandle (handle: number): void {
+  rustAPI().vcx_pool_set_handle(handle)
+}

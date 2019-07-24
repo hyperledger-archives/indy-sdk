@@ -75,8 +75,9 @@ mod demos {
                                                  &cred_def_json);
 
         //6. Proof request
-        let proof_req_json = r#"{
-                                       "nonce":"123432421212",
+        let nonce = anoncreds::generate_nonce().unwrap();
+        let proof_req_json = json!({
+                                       "nonce": nonce,
                                        "name":"proof_req_1",
                                        "version":"0.1",
                                        "requested_attributes":{
@@ -91,7 +92,7 @@ mod demos {
                                        "requested_predicates":{
                                             "predicate1_referent":{"name":"age","p_type":">=","p_value":18}
                                        }
-                                    }"#;
+                                    }).to_string();
 
         //7. Prover gets Credentials for Proof Request
         let credentials_json = anoncreds::prover_get_credentials_for_proof_req(prover_wallet_handle, &proof_req_json).unwrap();

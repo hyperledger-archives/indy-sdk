@@ -4,16 +4,15 @@ use std::rc::Rc;
 use std::string::String;
 use std::vec::Vec;
 
-use ursa::encoding::hex;
-
 use serde_json;
 
 use errors::prelude::*;
 use services::crypto::CryptoService;
 use services::ledger::LedgerService;
-use services::payments::{PaymentsMethodCBs, PaymentsService};
+use services::payments::{PaymentsMethodCBs, PaymentsService, RequesterInfo, Fees};
 use services::wallet::{RecordOptions, WalletService};
 use api::WalletHandle;
+use domain::ledger::auth_rule::AuthRule;
 
 pub enum PaymentsCommand {
     RegisterMethod(
@@ -138,22 +137,11 @@ pub enum PaymentsCommand {
     ParseVerifyPaymentResponseAck(
         i32,
         IndyResult<String>),
-    SignWithAddressReq(
-        WalletHandle,
-        String, //address
-        Vec<u8>, //message
-        Box<Fn(IndyResult<Vec<u8>>) + Send>),
-    SignWithAddressAck(
-        i32,
-        IndyResult<Vec<u8>>),
-    VerifyWithAddressReq(
-        String, //address
-        Vec<u8>, //message
-        Vec<u8>, //signature
-        Box<Fn(IndyResult<bool>) + Send>),
-    VerifyWithAddressAck(
-        i32,
-        IndyResult<bool>)
+    GetRequestInfo(
+        String, // get auth rule response json
+        RequesterInfo, //requester info
+        Fees, //fees
+        Box<Fn(IndyResult<String>) + Send>),
 }
 
 pub struct PaymentsCommandExecutor {
@@ -162,8 +150,6 @@ pub struct PaymentsCommandExecutor {
     crypto_service: Rc<CryptoService>,
     ledger_service: Rc<LedgerService>,
     pending_callbacks: RefCell<HashMap<i32, Box<Fn(IndyResult<String>) + Send>>>,
-    pending_array_callbacks: RefCell<HashMap<i32, Box<Fn(IndyResult<Vec<u8>>) + Send>>>,
-    pending_bool_callbacks: RefCell<HashMap<i32, Box<Fn(IndyResult<bool>) + Send>>>
 }
 
 impl PaymentsCommandExecutor {
@@ -174,8 +160,6 @@ impl PaymentsCommandExecutor {
             crypto_service,
             ledger_service,
             pending_callbacks: RefCell::new(HashMap::new()),
-            pending_array_callbacks: RefCell::new(HashMap::new()),
-            pending_bool_callbacks: RefCell::new(HashMap::new())
         }
     }
 
@@ -302,21 +286,9 @@ impl PaymentsCommandExecutor {
                 info!(target: "payments_command_executor", "ParseVerifyResponseAck command received");
                 self.parse_verify_payment_response_ack(command_handle, result);
             }
-            PaymentsCommand::SignWithAddressReq(wallet_handle, address, message, cb) => {
-                info!(target: "payments_command_executor", "SignWithAddressReq command received");
-                self.sign_with_address(wallet_handle, &address, message.as_slice(), cb);
-            },
-            PaymentsCommand::SignWithAddressAck(command_handle, result) => {
-                info!(target: "payments_command_executor", "SignWithAddressAck command received");
-                self.sign_with_address_ack(command_handle, result);
-            },
-            PaymentsCommand::VerifyWithAddressReq(address, message, signature, cb) => {
-                info!(target: "payments_command_executor", "VerifyWithAddressReq command received");
-                self.verify_with_address(&address, message.as_slice(), signature.as_slice(), cb);
-            },
-            PaymentsCommand::VerifyWithAddressAck(command_handle, result) => {
-                 info!(target: "payments_command_executor", "VerifyWithAddressAck command received");
-                self.verify_with_address_ack(command_handle, result);
+            PaymentsCommand::GetRequestInfo(get_auth_rule_response_json, requester_info, fees_json, cb) => {
+                info!(target: "payments_command_executor", "GetRequestInfo command received");
+                cb(self.get_request_info(&get_auth_rule_response_json, requester_info, &fees_json));
             }
         }
     }
@@ -709,66 +681,6 @@ impl PaymentsCommandExecutor {
         trace!("parse_verify_payment_response_ack <<<");
     }
 
-    fn sign_with_address(&self, wallet_handle: WalletHandle, address: &str, message: &[u8], cb: Box<Fn(IndyResult<Vec<u8>>) + Send>) {
-        trace!("sign_with_address >>> address: {:?}, message: {:?}", address, hex::bin2hex(message));
-        match self.wallet_service.check(wallet_handle).map_err(map_err_err!()) {
-            Err(err) => return cb(Err(IndyError::from(err))),
-            _ => ()
-        };
-        let method = match self.payments_service.parse_method_from_payment_address(address) {
-            Ok(method) => method,
-            Err(err) => {
-                cb(Err(IndyError::from(err)));
-                return;
-            }
-        };
-        let cmd_handle = ::utils::sequence::get_next_id();
-
-        if let Err(err) = self.payments_service.sign_with_address(cmd_handle, &method, wallet_handle, address, message) {
-            cb(Err(IndyError::from(err)));
-        } else {
-            self.pending_array_callbacks.borrow_mut().insert(cmd_handle, cb);
-        }
-    }
-
-    fn sign_with_address_ack(&self, command_handle: i32, result: IndyResult<Vec<u8>>) {
-        trace!("sign_with_address_ack >>> result: {:?}", result);
-        match self.pending_array_callbacks.borrow_mut().remove(&command_handle) {
-            Some(cb) => cb(result),
-            None => error!("Can't process PaymentsCommand::SignWithAddressAck for handle {} with result {:?} - appropriate callback not found!", command_handle, result)
-        };
-        trace!("sign_with_address_ack <<<");
-    }
-
-    fn verify_with_address(&self, address: &str, message: &[u8], signature: &[u8], cb: Box<Fn(IndyResult<bool>) + Send>) {
-        trace!("sign_with_address >>> address: {:?}, message: {:?}, signature: {:?}", address, hex::bin2hex(message), hex::bin2hex(signature));
-
-        let method = match self.payments_service.parse_method_from_payment_address(address) {
-            Ok(method) => method,
-            Err(err) => {
-                cb(Err(IndyError::from(err)));
-                return;
-            }
-        };
-
-        let cmd_handle = ::utils::sequence::get_next_id();
-
-        if let Err(err) = self.payments_service.verify_with_address(cmd_handle, &method, address, message, signature) {
-            cb(Err(IndyError::from(err)))
-        } else {
-            self.pending_bool_callbacks.borrow_mut().insert(cmd_handle, cb);
-        }
-    }
-
-    fn verify_with_address_ack(&self, command_handle: i32, result: IndyResult<bool>) {
-        trace!("verify_with_address_ack >>> result: {:?}", result);
-        match self.pending_bool_callbacks.borrow_mut().remove(&command_handle) {
-            Some(cb) => cb(result),
-            None => error!("Can't process PaymentsCommand::VerifyWithAddressAck for handle {} with result {:?} - appropriate callback not found!", command_handle, result)
-        };
-        trace!("verify_with_address_ack <<<");
-    }
-
     // HELPERS
 
     fn _process_method(&self, cb: Box<Fn(IndyResult<String>) + Send>,
@@ -805,5 +717,36 @@ impl PaymentsCommandExecutor {
             }
             (Ok(mth1), Ok(_)) => Ok(mth1)
         }
+    }
+
+    pub fn get_request_info(&self, get_auth_rule_response_json: &str, requester_info: RequesterInfo, fees: &Fees) -> IndyResult<String> {
+        trace!("get_request_info >>> get_auth_rule_response_json: {:?}, requester_info: {:?}, fees: {:?}", get_auth_rule_response_json, requester_info, fees);
+
+        let auth_rule = self._parse_get_auth_rule_response(get_auth_rule_response_json)?;
+
+        let req_info = self.payments_service.get_request_info_with_min_price(&auth_rule.constraint, &requester_info, &fees)?;
+
+        let res = serde_json::to_string(&req_info)
+            .to_indy(IndyErrorKind::InvalidState, "Cannot serialize RequestInfo")?;
+
+        trace!("get_request_info <<< {:?}", res);
+
+        Ok(res)
+    }
+
+    fn _parse_get_auth_rule_response(&self, get_auth_rule_response_json: &str) -> IndyResult<AuthRule> {
+        trace!("_parse_get_auth_rule_response >>> get_auth_rule_response_json: {:?}", get_auth_rule_response_json);
+
+        let mut auth_rules: Vec<AuthRule> = self.ledger_service.parse_get_auth_rule_response(get_auth_rule_response_json)?;
+
+        if auth_rules.len() != 1 {
+            return Err(IndyError::from_msg(IndyErrorKind::InvalidTransaction, "GetAuthRule response must contain one auth rule"));
+        }
+
+        let res = auth_rules.pop().unwrap();
+
+        trace!("_parse_get_auth_rule_response <<< {:?}", res);
+
+        Ok(res)
     }
 }

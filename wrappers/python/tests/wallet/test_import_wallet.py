@@ -1,9 +1,6 @@
 import pytest
 
-from indy import IndyError
-from indy import did
-from indy import wallet
-from indy.error import ErrorCode
+from indy import did, error, wallet
 
 
 @pytest.mark.asyncio
@@ -30,6 +27,5 @@ async def test_import_wallet_works(wallet_handle, wallet_config, credentials, ex
 
 @pytest.mark.asyncio
 async def test_import_wallet_works_for_not_exit_path(wallet_config, credentials, export_config):
-    with pytest.raises(IndyError) as e:
+    with pytest.raises(error.CommonIOError):
         await wallet.import_wallet(wallet_config, credentials, export_config)
-    assert ErrorCode.CommonIOError == e.value.error_code

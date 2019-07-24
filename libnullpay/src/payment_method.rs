@@ -383,41 +383,6 @@ pub mod parse_verify_payment_response {
     }
 }
 
-pub mod sign_with_address {
-    use super::*;
-
-    pub extern fn handle(command_handle: i32, wallet_handle: i32, address: *const c_char, message_raw: *const u8, message_len: u32,
-                                        cb: Option<extern fn(command_handle: i32, err: ErrorCode, raw: *const u8, len: u32)>) -> ErrorCode {
-        check_useful_c_str!(address, ErrorCode::CommonInvalidState);
-        trace!("libnullpay::sign_with_address::handle << wallet_handle: {}\n    address: {:?}\n    message_raw: {:?}, message_len: {}", wallet_handle, address, message_raw, message_len);
-
-        if let Some(cb) = cb {
-            let signature = rand::get_rand_string(15);
-            let sig_raw = signature.as_bytes();
-            cb(command_handle, ErrorCode::Success, sig_raw.as_ptr() as *const u8, sig_raw.len() as u32);
-        }
-
-        ErrorCode::Success
-    }
-}
-
-pub mod verify_with_address {
-    use super::*;
-
-    pub extern fn handle(command_handle: i32, address: *const c_char,
-                         message_raw: *const u8, message_len: u32,
-                         signature_raw: *const u8, signature_len: u32,
-                         cb: Option<extern fn(command_handle: i32, err: ErrorCode, result: bool)>) -> ErrorCode {
-        check_useful_c_str!(address, ErrorCode::CommonInvalidState);
-        trace!("libnullpay::verify_with_address::handle << address: {:?}\n    message: {:?}\n    message_len: {}\n    signature: {:?}\n    signature_len: {}", address, message_raw, message_len, signature_raw, signature_len);
-        if let Some(cb) = cb {
-            cb(command_handle, ErrorCode::Success, true);
-        }
-
-        ErrorCode::Success
-    }
-}
-
 fn _process_parse_response(cmd_handle: i32, response: *const c_char, cb: Option<IndyPaymentCallback>) -> ErrorCode {
     check_useful_c_str!(response, ErrorCode::CommonInvalidState);
     trace!("resp_json: {}", response);

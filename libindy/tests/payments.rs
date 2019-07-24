@@ -84,8 +84,6 @@ mod high_cases {
                                                          Some(payments::mock_method::parse_get_txn_fees_response::handle),
                                                          Some(payments::mock_method::build_verify_payment_req::handle),
                                                          Some(payments::mock_method::parse_verify_payment_response::handle),
-                                                         Some(payments::mock_method::sign_with_address::handle),
-                                                         Some(payments::mock_method::verify_with_address::handle)
             ).unwrap();
 
             utils::tear_down("register_payment_method_works");
@@ -104,7 +102,7 @@ mod high_cases {
             let res_plugin = payments::create_payment_address(wallet_handle, EMPTY_OBJECT, PAYMENT_METHOD_NAME).unwrap();
 
             assert_eq!(res_plugin, TEST_RES_STRING);
-            
+
             utils::tear_down_with_wallet(wallet_handle, "create_payment_address_works", &wallet_config);
         }
     }
@@ -604,6 +602,7 @@ mod high_cases {
         }
     }
 
+
     mod build_verify_payment_req {
         use super::*;
 
@@ -652,6 +651,112 @@ mod high_cases {
             utils::tear_down_with_wallet(wallet_handle, "parse_verify_payment_response_works", &wallet_config);
         }
     }
+
+    mod indy_get_request_info {
+        use super::*;
+
+        fn _fees() -> String {
+            json!({
+                "1": 100
+            }).to_string()
+        }
+
+        fn _auth_rule() -> String {
+            json!({
+                "result":{
+                    "data":[{
+                        "new_value":"0",
+                        "constraint":{
+                            "need_to_be_owner":false,
+                            "sig_count":1,
+                            "metadata":{
+                                "fees": "1"
+                            },
+                            "role":"0",
+                            "constraint_id":"ROLE"
+                        },
+                        "field":"role",
+                        "auth_type":"1",
+                        "auth_action":"ADD"
+                    }],
+                    "identifier":"LibindyDid111111111111",
+                    "auth_action":"ADD",
+                    "new_value":"0",
+                    "reqId":15616,
+                    "auth_type":"1",
+                    "type":"121",
+                    "field":"role"
+                },
+                "op":"REPLY"
+            }).to_string()
+        }
+
+        fn _requester_info() -> String{
+            json!({
+                "role": "0",
+                "need_to_be_owner":false,
+                "sig_count":1,
+            }).to_string()
+        }
+
+        #[test]
+        fn indy_get_request_info_for_requester_match_to_constraint() {
+            utils::setup("indy_get_request_info_for_requester_match_to_constraint");
+
+            let req_info = payments::get_request_info(&_auth_rule(), &_requester_info(), &_fees()).unwrap();
+            let req_info: serde_json::Value = serde_json::from_str(&req_info).unwrap();
+
+            let expected_req_info = json!({
+                "price": 100,
+                "requirements": [{
+                    "role": "0",
+                    "need_to_be_owner":false,
+                    "sig_count":1,
+                }]
+            });
+
+            assert_eq!(expected_req_info, req_info);
+
+            utils::tear_down("indy_get_request_info_for_requester_match_to_constraint");
+        }
+
+        #[test]
+        fn indy_get_request_info_for_requester_not_match_to_constraint() {
+            utils::setup("indy_get_request_info_for_requester_not_match_to_constraint");
+
+            let requester_info = json!({
+                "role": "101",
+                "need_to_be_owner":false,
+                "sig_count":1,
+            }).to_string();
+
+            let res = payments::get_request_info(&_auth_rule(), &requester_info, &_fees());
+            assert_code!(ErrorCode::TransactionNotAllowed, res);
+
+            utils::tear_down("indy_get_request_info_for_requester_not_match_to_constraint");
+        }
+
+        #[test]
+        fn indy_get_request_info_for_no_fee() {
+            utils::setup("indy_get_request_info_for_no_fee");
+
+            let req_info = payments::get_request_info(&_auth_rule(), &_requester_info(), "{}").unwrap();
+            let req_info: serde_json::Value = serde_json::from_str(&req_info).unwrap();
+
+            let expected_req_info = json!({
+                "price": 0,
+                "requirements": [{
+                    "role": "0",
+                    "need_to_be_owner":false,
+                    "sig_count":1,
+                }]
+            });
+
+            assert_eq!(expected_req_info, req_info);
+
+            utils::tear_down("indy_get_request_info_for_no_fee");
+        }
+    }
 }
 
 mod medium_cases {
@@ -678,8 +783,6 @@ mod medium_cases {
                                                         None,
                                                         None,
                                                         None,
-                                                        None,
-                                                        None
             ).unwrap_err();
 
             assert_eq!(ErrorCode::CommonInvalidParam3, err);
@@ -1725,38 +1828,6 @@ mod medium_cases {
             assert_code!(ErrorCode::WalletAccessFailed, err);
 
             utils::tear_down_with_wallet(wallet_handle, "parse_verify_payment_response_works_for_generic_error", &wallet_config);
-        }
-    }
-
-    mod sign_with_address {
-        use super::*;
-
-        #[test]
-        pub fn sign_with_address_works_for_nonexistent_plugin() {
-            let (wallet_handle, wallet_config) = utils::setup_with_wallet("sign_with_address_works_for_nonexistent_plugin");
-            payments::mock_method::init();
-
-            let err = payments::sign_with_address(wallet_handle, "", Vec::new().as_slice());
-
-            assert!(err.is_err());
-
-            utils::tear_down_with_wallet(wallet_handle, "sign_with_address_works_for_nonexistent_plugin", &wallet_config);
-        }
-    }
-
-    mod verify_with_address {
-        use super::*;
-
-        #[test]
-        pub fn verify_with_address_works_for_nonexistent_plugin() {
-            let (wallet_handle, wallet_config) = utils::setup_with_wallet("sign_with_address_works_for_nonexistent_plugin");
-            payments::mock_method::init();
-
-            let err = payments::verify_with_address("", Vec::new().as_slice(), Vec::new().as_slice());
-
-            assert!(err.is_err());
-
-            utils::tear_down_with_wallet(wallet_handle, "sign_with_address_works_for_nonexistent_plugin", &wallet_config);
         }
     }
 }

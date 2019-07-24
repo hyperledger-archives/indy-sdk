@@ -3,7 +3,6 @@ use super::*;
 use {CString, Error, CommandHandle, WalletHandle};
 
 extern {
-
     #[no_mangle]
     pub fn indy_register_payment_method(command_handle: CommandHandle,
                                         payment_method: CString,
@@ -20,8 +19,6 @@ extern {
                                         parse_get_txn_fees_response: Option<ParseGetTxnFeesResponseCB>,
                                         build_verify_payment_req: Option<BuildVerifyPaymentReqCB>,
                                         parse_verify_payment_response: Option<ParseVerifyPaymentResponseCB>,
-                                        sign_with_address: Option<SignWithAddressCB>,
-                                        verify_with_address: Option<VerifyWithAddressCB>,
                                         cb: Option<ResponseEmptyCB>) -> Error;
 
     #[no_mangle]
@@ -131,21 +128,13 @@ extern {
                                               payment_method: CString,
                                               resp_json: CString,
                                               cb: Option<ResponseStringCB>) -> Error;
+
     #[no_mangle]
-    pub fn indy_sign_with_address(command_handle: CommandHandle,
-                                  wallet_handle: WalletHandle,
-                                  address: CString,
-                                  message_raw: BString,
-                                  message_len: u32,
-                                  cb: Option<ResponseSliceCB>) -> Error;
-    #[no_mangle]
-    pub fn indy_verify_with_address(command_handle: CommandHandle,
-                                    address: CString,
-                                    message_raw: BString,
-                                    message_len: u32,
-                                    signature_raw: BString,
-                                    signature_len: u32,
-                                    cb: Option<ResponseBoolCB>) -> Error;
+    pub fn indy_get_request_info(command_handle: CommandHandle,
+                                 get_auth_rule_resp_json: CString,
+                                 requester_info_json: CString,
+                                 fees_json: CString,
+                                 cb: Option<ResponseStringCB>) -> Error;
 }
 
 pub type CreatePaymentAddressCB = extern fn(command_handle: CommandHandle,
@@ -226,21 +215,10 @@ pub type BuildVerifyPaymentReqCB = extern fn(command_handle: CommandHandle,
                                              submitter_did: CString,
                                              receipt: CString,
                                              cb: Option<extern fn(command_handle_: CommandHandle,
-                                                           err: Error,
-                                                           verify_txn_json: CString) -> Error>) -> Error;
+                                                                  err: Error,
+                                                                  verify_txn_json: CString) -> Error>) -> Error;
 pub type ParseVerifyPaymentResponseCB = extern fn(command_handle: CommandHandle,
                                                   resp_json: CString,
                                                   cb: Option<extern fn(command_handle_: CommandHandle,
-                                                                err: Error,
-                                                                txn_json: CString) -> Error>) -> Error;
-
-pub type SignWithAddressCB = extern fn (command_handle: CommandHandle, wallet_handle: WalletHandle,
-                                        address: CString,
-                                        message_raw: BString, message_len: u32,
-                                        cb: Option<extern fn(command_handle: i32, err: Error, raw: BString, len: u32)>) -> Error;
-
-pub type VerifyWithAddressCB = extern fn (command_handle: i32, address: CString,
-                                          message_raw: BString, message_len: u32,
-                                          signature_raw: BString, signature_len: u32,
-                                          cb: Option<extern fn(command_handle: i32, err: Error, result: bool)>) -> Error;
-
+                                                                       err: Error,
+                                                                       txn_json: CString) -> Error>) -> Error;
