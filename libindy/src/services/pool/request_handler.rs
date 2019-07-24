@@ -934,7 +934,8 @@ pub mod tests {
             nodes.insert(node_names[i].to_string(), None);
         }
 
-        let generator : Generator = Generator::from_bytes(&DEFAULT_GENERATOR.from_base58().unwrap()).unwrap();
+//        let generator : Generator = Generator::from_bytes(&DEFAULT_GENERATOR.from_base58().unwrap()).unwrap();
+        let generator : Generator = Generator::new().unwrap();
         RequestHandlerImpl::new(networker,
                                 f,
                                 &vec![],

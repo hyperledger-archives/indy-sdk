@@ -309,7 +309,8 @@ impl<T: Networker, R: RequestHandler<T>> PoolSM<T, R> {
                     PoolEvent::CatchupRestart(merkle_tree) => {
                         if let Ok((nodes, remotes)) = _get_nodes_and_remotes(&merkle_tree) {
                             state.networker.borrow_mut().process_event(Some(NetworkerEvent::NodesStateUpdated(remotes)));
-                            let generator : Generator = Generator::from_bytes(&DEFAULT_GENERATOR.from_base58().unwrap()).unwrap();
+//                            let generator : Generator = Generator::from_bytes(&DEFAULT_GENERATOR.from_base58().unwrap()).unwrap();
+                            let generator : Generator = Generator::new().unwrap();
                             state.request_handler = R::new(state.networker.clone(), _get_f(nodes.len()), &vec![], &nodes, generator, &pool_name, timeout, extended_timeout);
                             let ls = _ledger_status(&merkle_tree);
                             state.request_handler.process_event(Some(RequestEvent::LedgerStatus(ls, None, Some(merkle_tree))));
@@ -321,7 +322,8 @@ impl<T: Networker, R: RequestHandler<T>> PoolSM<T, R> {
                     PoolEvent::CatchupTargetFound(target_mt_root, target_mt_size, merkle_tree) => {
                         if let Ok((nodes, remotes)) = _get_nodes_and_remotes(&merkle_tree) {
                             state.networker.borrow_mut().process_event(Some(NetworkerEvent::NodesStateUpdated(remotes)));
-                            let generator : Generator = Generator::from_bytes(&DEFAULT_GENERATOR.from_base58().unwrap()).unwrap();
+//                            let generator : Generator = Generator::from_bytes(&DEFAULT_GENERATOR.from_base58().unwrap()).unwrap();
+                            let generator : Generator = Generator::new().unwrap();
                             let mut request_handler = R::new(state.networker.clone(), _get_f(nodes.len()), &vec![], &nodes, generator, &pool_name, timeout, extended_timeout);
                             request_handler.process_event(Some(RequestEvent::CatchupReq(merkle_tree, target_mt_size, target_mt_root)));
                             PoolState::SyncCatchup((request_handler, state).into())
@@ -385,7 +387,8 @@ impl<T: Networker, R: RequestHandler<T>> PoolSM<T, R> {
                         let re: Option<RequestEvent> = pe.into();
                         match re.as_ref().map(|r| r.get_req_id()) {
                             Some(req_id) => {
-                                let generator : Generator = Generator::from_bytes(&DEFAULT_GENERATOR.from_base58().unwrap()).unwrap();
+//                                let generator : Generator = Generator::from_bytes(&DEFAULT_GENERATOR.from_base58().unwrap()).unwrap();
+                                let generator : Generator = Generator::new().unwrap();
                                 let mut request_handler = R::new(state.networker.clone(), _get_f(state.nodes.len()), &vec![cmd_id], &state.nodes, generator, &pool_name, timeout, extended_timeout);
                                 request_handler.process_event(re);
                                 state.request_handlers.insert(req_id.to_string(), request_handler); //FIXME check already exists
@@ -624,7 +627,8 @@ fn _get_request_handler_with_ledger_status_sent<T: Networker, R: RequestHandler<
         }
     };
     networker.borrow_mut().process_event(Some(NetworkerEvent::NodesStateUpdated(remotes)));
-    let generator : Generator = Generator::from_bytes(&DEFAULT_GENERATOR.from_base58().unwrap()).unwrap();
+//    let generator : Generator = Generator::from_bytes(&DEFAULT_GENERATOR.from_base58().unwrap()).unwrap();
+    let generator : Generator = Generator::new().unwrap();
     let mut request_handler = R::new(networker.clone(), _get_f(nodes.len()), &vec![], &nodes, generator, pool_name, timeout, extended_timeout);
     let ls = _ledger_status(&merkle);
     request_handler.process_event(Some(RequestEvent::LedgerStatus(ls, None, Some(merkle))));
