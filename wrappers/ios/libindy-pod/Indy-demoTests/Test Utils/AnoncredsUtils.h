@@ -178,6 +178,8 @@
                           revocRegsJSON:(NSString *)revocRegsJSON
                                 isValid:(BOOL *)isValid;
 
+- (NSError *)generateNonce:(NSString **)nonce;
+
 - (NSError *)initializeCommonWalletAndReturnHandle:(IndyHandle *)walletHandle
                                  credentialDefJson:(NSString **)credentialDefJson
                                credentialOfferJson:(NSString **)credentialOfferJson

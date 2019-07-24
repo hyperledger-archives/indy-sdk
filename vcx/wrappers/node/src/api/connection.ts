@@ -41,7 +41,8 @@ export interface IConnectOptions {
 export interface IMessageData {
   msg: string,
   type: string,
-  title: string
+  title: string,
+  refMsgId?: string,
 }
 
 export interface ISignatureData {
@@ -121,6 +122,7 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
 
   protected _releaseFn = rustAPI().vcx_connection_release
   protected _updateStFn = rustAPI().vcx_connection_update_state
+  protected _updateStWithMessageFn = rustAPI().vcx_connection_update_state_with_message
   protected _getStFn = rustAPI().vcx_connection_get_state
   protected _serializeFn = rustAPI().vcx_connection_serialize
   protected _deserializeFn = rustAPI().vcx_connection_deserialize
@@ -209,11 +211,16 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
    * @returns {Promise<string}
    */
   public async sendMessage (msgData: IMessageData): Promise<string> {
+    const sendMsgOptions = {
+      msg_title: msgData.title,
+      msg_type: msgData.type,
+      ref_msg_id: msgData.refMsgId
+    }
     try {
       return await createFFICallbackPromise<string>(
           (resolve, reject, cb) => {
             const rc = rustAPI().vcx_connection_send_message(0, this.handle,
-              msgData.msg, msgData.type, msgData.title, cb)
+              msgData.msg, JSON.stringify(sendMsgOptions), cb)
             if (rc) {
               reject(rc)
             }

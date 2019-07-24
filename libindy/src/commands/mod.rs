@@ -1,4 +1,4 @@
-extern crate indy_crypto;
+extern crate ursa;
 extern crate threadpool;
 
 use std::env;
@@ -17,6 +17,7 @@ use commands::pairwise::{PairwiseCommand, PairwiseCommandExecutor};
 use commands::payments::{PaymentsCommand, PaymentsCommandExecutor};
 use commands::pool::{PoolCommand, PoolCommandExecutor};
 use commands::wallet::{WalletCommand, WalletCommandExecutor};
+use commands::cache::{CacheCommand, CacheCommandExecutor};
 use domain::IndyConfig;
 use errors::prelude::*;
 use services::anoncreds::AnoncredsService;
@@ -39,6 +40,7 @@ pub mod wallet;
 pub mod pairwise;
 pub mod non_secrets;
 pub mod payments;
+pub mod cache;
 
 pub enum Command {
     Exit,
@@ -52,6 +54,7 @@ pub enum Command {
     Pairwise(PairwiseCommand),
     NonSecrets(NonSecretsCommand),
     Payments(PaymentsCommand),
+    Cache(CacheCommand),
 }
 
 lazy_static! {
@@ -112,7 +115,8 @@ impl CommandExecutor {
                 let pairwise_command_executor = PairwiseCommandExecutor::new(wallet_service.clone());
                 let blob_storage_command_executor = BlobStorageCommandExecutor::new(blob_storage_service.clone());
                 let non_secret_command_executor = NonSecretsCommandExecutor::new(wallet_service.clone());
-                let payments_command_executor = PaymentsCommandExecutor::new(payments_service.clone(), wallet_service.clone(), crypto_service.clone());
+                let payments_command_executor = PaymentsCommandExecutor::new(payments_service.clone(), wallet_service.clone(), crypto_service.clone(), ledger_service.clone());
+                let cache_command_executor = CacheCommandExecutor::new(wallet_service.clone());
 
                 loop {
                     match receiver.recv() {
@@ -155,6 +159,10 @@ impl CommandExecutor {
                         Ok(Command::Payments(cmd)) => {
                             info!("PaymentsCommand command received");
                             payments_command_executor.execute(cmd);
+                        }
+                        Ok(Command::Cache(cmd)) => {
+                            info!("CacheCommand command received");
+                            cache_command_executor.execute(cmd);
                         }
                         Ok(Command::Exit) => {
                             info!("Exit command received");

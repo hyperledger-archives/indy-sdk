@@ -476,3 +476,7 @@ Added `protocol_type` field to VCX provisioning config with indicates A2A messag
       </td>
     </tr>
 </table>
+
+## Libvcx 0.2.2 to 0.2.3 migration Guide
+
+The Libvcx 0.2.3 release contains fixes that don't affect API functions. 

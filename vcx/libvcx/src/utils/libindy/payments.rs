@@ -6,9 +6,9 @@ use std::fmt;
 use std::collections::HashMap;
 
 use utils::libindy::wallet::get_wallet_handle;
-use utils::libindy::ledger::{libindy_submit_request, libindy_sign_and_submit_request, libindy_sign_request};
-use utils::libindy::error_codes::{map_rust_indy_sdk_error};
-use utils::constants::{SUBMIT_SCHEMA_RESPONSE, TRANSFER_TXN_TYPE};
+use utils::libindy::ledger::{libindy_submit_request, libindy_sign_and_submit_request, libindy_sign_request, append_txn_author_agreement_to_request, auth_rule};
+use utils::libindy::error_codes::map_rust_indy_sdk_error;
+use utils::constants::{SUBMIT_SCHEMA_RESPONSE, CREATE_TRANSFER_ACTION};
 use settings;
 use error::prelude::*;
 
@@ -178,7 +178,7 @@ pub fn get_wallet_token_info() -> VcxResult<WalletInfo> {
     for address in addresses.iter() {
         if is_valid_address(&address, &method) {
             debug!("getting address info for {}", address);
-            let mut info = get_address_info(&address)?;
+            let info = get_address_info(&address)?;
 
             for utxo in info.utxo.iter() { balance += utxo.amount as u64; }
 
@@ -213,15 +213,15 @@ pub fn get_ledger_fees() -> VcxResult<String> {
         .map_err(map_rust_indy_sdk_error)
 }
 
-pub fn pay_for_txn(req: &str, txn_type: &str) -> VcxResult<(Option<PaymentTxn>, String)> {
-    debug!("pay_for_txn(req: {}, txn_type: {})", req, txn_type);
+pub fn pay_for_txn(req: &str, txn_action: (&str, &str, &str, Option<&str>, Option<&str>)) -> VcxResult<(Option<PaymentTxn>, String)> {
+    debug!("pay_for_txn(req: {}, txn_action: {:?})", req, txn_action);
     if settings::test_indy_mode_enabled() {
         let inputs = vec!["pay:null:9UFgyjuJxi1i1HD".to_string()];
         let outputs = serde_json::from_str::<Vec<::utils::libindy::payments::Output>>(r#"[{"amount":1,"extra":null,"recipient":"pay:null:xkIsxem0YNtHrRO"}]"#).unwrap();
         return Ok((Some(PaymentTxn::from_parts(inputs, outputs, 1, false)), SUBMIT_SCHEMA_RESPONSE.to_string()));
     }
 
-    let txn_price = get_txn_price(txn_type)?;
+    let txn_price = get_action_price(txn_action, None)?;
     if txn_price == 0 {
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
         let txn_response = libindy_sign_and_submit_request(&did, req)?;
@@ -275,7 +275,7 @@ pub fn pay_a_payee(price: u64, address: &str) -> VcxResult<(PaymentTxn, String)>
     trace!("pay_a_payee >>> price: {}, address {}", price, address);
     debug!("sending {} tokens to address {}", price, address);
 
-    let ledger_cost = get_txn_price(TRANSFER_TXN_TYPE)?;
+    let ledger_cost = get_action_price(CREATE_TRANSFER_ACTION, None)?;
     let (remainder, input, refund_address) = inputs(price + ledger_cost)?;
     let outputs = outputs(remainder, &refund_address, Some(address.to_string()), Some(price))?;
 
@@ -295,8 +295,22 @@ pub fn pay_a_payee(price: u64, address: &str) -> VcxResult<(PaymentTxn, String)>
 
     let (inputs_json, outputs_json) = _serialize_inputs_and_outputs(&input, &outputs)?;
 
+    let extra = match ::utils::author_agreement::get_txn_author_agreement()? {
+        Some(meta) => {
+            Some(payments::prepare_extra_with_acceptance_data(None,
+                                                              meta.text.as_ref().map(String::as_str),
+                                                              meta.version.as_ref().map(String::as_str),
+                                                              meta.taa_digest.as_ref().map(String::as_str),
+                                                              &meta.acceptance_mechanism_type,
+                                                              meta.time_of_acceptance)
+                .wait()
+                .map_err(map_rust_indy_sdk_error)?)
+        }
+        None => None
+    };
+
     let (request, payment_method) =
-        payments::build_payment_req(get_wallet_handle(), Some(&my_did), &inputs_json, &outputs_json, None)
+        payments::build_payment_req(get_wallet_handle(), Some(&my_did), &inputs_json, &outputs_json, extra.as_ref().map(String::as_str))
             .wait()
             .map_err(map_rust_indy_sdk_error)?;
 
@@ -305,16 +319,71 @@ pub fn pay_a_payee(price: u64, address: &str) -> VcxResult<(PaymentTxn, String)>
     Ok((payment, result))
 }
 
-fn get_txn_price(txn_type: &str) -> VcxResult<u64> {
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+pub struct RequestInfo {
+    pub price: u64,
+    pub requirements: Vec<::serde_json::Value>
+}
+
+fn get_request_info(get_auth_rule_resp_json: &str, requester_info_json: &str, fees_json: &str) -> VcxResult<RequestInfo> {
+    let req_info = payments::get_request_info(get_auth_rule_resp_json, requester_info_json, fees_json)
+        .wait()
+        .map_err(map_rust_indy_sdk_error)?;
+
+    ::serde_json::from_str(&req_info)
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, err))
+}
+
+pub fn get_request_price(action_json: String, requester_info_json: Option<String>) -> VcxResult<u64> {
+    let action: auth_rule::Action = ::serde_json::from_str(&action_json)
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize Action: {:?}", err)))?;
+
+    get_action_price((&action.auth_type,
+                      &action.auth_action,
+                      &action.field,
+                      action.old_value.as_ref().map(String::as_str),
+                      action.new_value.as_ref().map(String::as_str)),
+                     requester_info_json)
+}
+
+fn get_action_price(action: (&str, &str, &str, Option<&str>, Option<&str>), requester_info_json: Option<String>) -> VcxResult<u64> {
+    let get_auth_rule_resp = match auth_rule::get_action_auth_rule(action) {
+        // TODO: Huck to save backward compatibility
+        Ok(resp) => resp,
+        Err(_) => return Ok(0)
+    };
+
     let ledger_fees = get_ledger_fees()?;
 
-    let fees: HashMap<String, u64> = serde_json::from_str(&ledger_fees)
-        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize fees: {}", err)))?;
+    let requester_info = get_requester_info(requester_info_json)?;
 
-    match fees.get(txn_type) {
-        Some(x) => Ok(*x),
-        None => Ok(0),
-    }
+    let req_info = get_request_info(&get_auth_rule_resp, &requester_info, &ledger_fees)?;
+
+    Ok(req_info.price)
+}
+
+fn get_requester_info(requester_info_json: Option<String>) -> VcxResult<String> {
+    // TODO: THINK better
+    let role = match settings::get_config_value(settings::CONFIG_SDK_TO_REMOTE_ROLE) {
+        Ok(role) => role,
+        Err(_) => {
+            let role_ = ::utils::libindy::ledger::get_role(&settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?)?;
+            settings::set_config_value(settings::CONFIG_SDK_TO_REMOTE_ROLE, &role_);
+            role_
+        }
+    };
+    let role = if role == "null" { None } else { Some(role) };
+
+    // TODO: think about better way
+    let res = match requester_info_json {
+        Some(requester_info) => requester_info,
+        None => json!({
+            "role": role,
+            "sig_count": 1,
+            "is_owner": true
+        }).to_string()
+    };
+    Ok(res)
 }
 
 fn _address_balance(address: &Vec<UTXO>) -> u64 {
@@ -409,8 +478,8 @@ pub fn mint_tokens_and_set_fees(number_of_addresses: Option<u32>, tokens_per_add
         };
     }
 
-    if fees.is_some() {
-        let txn = payments::build_set_txn_fees_req(get_wallet_handle() as i32, Some(&did_1), settings::get_payment_method().as_str(), fees.unwrap())
+    if let Some(fees_) = fees {
+        let txn = payments::build_set_txn_fees_req(get_wallet_handle() as i32, Some(&did_1), settings::get_payment_method().as_str(), fees_)
             .wait()
             .map_err(map_rust_indy_sdk_error)?;
 
@@ -420,6 +489,14 @@ pub fn mint_tokens_and_set_fees(number_of_addresses: Option<u32>, tokens_per_add
         let sign4 = ::utils::libindy::ledger::multisign_request(&did_4, &sign3).unwrap();
 
         ::utils::libindy::ledger::libindy_submit_request(&sign4).unwrap();
+
+        let txn_fees: HashMap<String, String> =
+            ::serde_json::from_str::<HashMap<String, u64>>(fees_).unwrap()
+                .iter_mut()
+                .map(|(k, _v)| (k.to_string(), k.to_string()))
+                .collect();
+
+        auth_rule::set_actions_fee_aliases(&did_1, &json!(txn_fees).to_string()).unwrap();
     }
 
     Ok(())
@@ -431,7 +508,10 @@ fn add_new_trustee_did() -> (String, String) {
     let institution_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
 
     let (did, verkey) = ::utils::libindy::signus::create_and_store_my_did(None).unwrap();
-    let req_nym = ledger::build_nym_request(&institution_did, &did, Some(&verkey), None, Some("TRUSTEE")).wait().unwrap();
+    let mut req_nym = ledger::build_nym_request(&institution_did, &did, Some(&verkey), None, Some("TRUSTEE")).wait().unwrap();
+
+    req_nym = append_txn_author_agreement_to_request(&req_nym).unwrap();
+
     ::utils::libindy::ledger::libindy_sign_and_submit_request(&institution_did, &req_nym).unwrap();
     (did, verkey)
 }
@@ -605,9 +685,11 @@ pub mod tests {
     #[test]
     fn test_get_txn_cost() {
         init!("true");
-        assert_eq!(get_txn_price("101").unwrap(), 2);
-        assert_eq!(get_txn_price("102").unwrap(), 42);
-        assert_eq!(get_txn_price("Unknown txn type").unwrap(), 0);
+        assert_eq!(get_action_price(::utils::constants::CREATE_SCHEMA_ACTION, None).unwrap(), 2);
+        assert_eq!(get_action_price(::utils::constants::CREATE_CRED_DEF_ACTION, None).unwrap(), 42);
+
+        let unknown_action = ("unknown txn", "ADD", "*", None, Some("*"));
+        assert_eq!(get_action_price(unknown_action, None).unwrap(), 0);
     }
 
     #[test]
@@ -616,7 +698,7 @@ pub mod tests {
 
         // Schema
         let create_schema_req = ::utils::constants::SCHEMA_CREATE_JSON.to_string();
-        let (payment, response) = pay_for_txn(&create_schema_req, "101").unwrap();
+        let (payment, response) = pay_for_txn(&create_schema_req, ::utils::constants::CREATE_SCHEMA_ACTION).unwrap();
         assert_eq!(response, SUBMIT_SCHEMA_RESPONSE.to_string());
     }
 
@@ -628,7 +710,7 @@ pub mod tests {
         let create_schema_req = ::utils::libindy::anoncreds::tests::create_schema_req(&schema_json);
         let start_wallet = get_wallet_token_info().unwrap();
 
-        let (payment, response) = pay_for_txn(&create_schema_req, "101").unwrap();
+        let (payment, response) = pay_for_txn(&create_schema_req, ::utils::constants::CREATE_SCHEMA_ACTION).unwrap();
 
         let end_wallet = get_wallet_token_info().unwrap();
 
@@ -647,7 +729,7 @@ pub mod tests {
         let (_, schema_json) = ::utils::libindy::anoncreds::tests::create_schema(::utils::constants::DEFAULT_SCHEMA_ATTRS);
         let create_schema_req = ::utils::libindy::anoncreds::tests::create_schema_req(&schema_json);
 
-        let rc = pay_for_txn(&create_schema_req, "101");
+        let rc = pay_for_txn(&create_schema_req, ::utils::constants::CREATE_SCHEMA_ACTION);
 
         assert!(rc.is_err());
     }
@@ -693,6 +775,7 @@ pub mod tests {
     }
 
     #[cfg(feature = "pool_tests")]
+    #[ignore] // FIXME: there are no auth rules for XFER transaction on the ledger.
     #[test]
     fn test_fees_transferring_tokens() {
         init!("ledger");
@@ -705,7 +788,7 @@ pub mod tests {
         let ledger_fees = json!({"10001": transfer_fee}).to_string();
         mint_tokens_and_set_fees(None, None, Some(ledger_fees), None).unwrap();
         assert_eq!(get_my_balance(), initial_wallet_balance);
-        assert_eq!(get_txn_price(TRANSFER_TXN_TYPE).unwrap(), transfer_fee);
+        assert_eq!(get_action_price(CREATE_TRANSFER_ACTION, None).unwrap(), transfer_fee);
 
         // Transfer everything besides 50. Remaining balance will be 50 - ledger fees
         let balance_after_transfer = 50;
@@ -809,5 +892,44 @@ pub mod tests {
     fn test_two_init() {
         init!("ledger");
         init!("ledger");
+    }
+
+    fn _action() -> String {
+        json!({
+            "auth_type":"101",
+            "auth_action":"ADD",
+            "new_value":"0",
+            "field":"role"
+        }).to_string()
+    }
+
+    #[test]
+    fn get_action_price_for_requester_match_to_constraint() {
+        init!("true");
+
+        let requester_info = json!({
+            "role": "0",
+            "need_to_be_owner":false,
+            "sig_count":1,
+        }).to_string();
+
+        let price = get_request_price(_action(), Some(requester_info)).unwrap();
+        assert_eq!(2, price);
+    }
+
+    #[test]
+    fn get_action_price_for_requester_not_match_to_constraint() {
+        init!("true");
+
+        let action_json = _action();
+
+        let requester_info = json!({
+            "role": "101",
+            "need_to_be_owner":false,
+            "sig_count":1,
+        }).to_string();
+
+        let res = get_request_price(action_json, Some(requester_info));
+        assert!(res.is_err());
     }
 }

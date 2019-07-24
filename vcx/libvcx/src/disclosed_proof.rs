@@ -339,7 +339,7 @@ impl DisclosedProof {
     }
 
     fn generate_proof(&mut self, credentials: &str, self_attested_attrs: &str) -> VcxResult<u32> {
-        trace!("DisclosedProof::generate_proof >>> credentials: {}, self_attested_attrs: {}", credentials, self_attested_attrs);
+        trace!("DisclosedProof::generate_proof >>> credentials: {}, self_attested_attrs: {}", secret!(&credentials), secret!(&self_attested_attrs));
 
         debug!("generating proof {}", self.source_id);
         if settings::test_indy_mode_enabled() { return Ok(error::SUCCESS.code_num); }
@@ -373,6 +373,19 @@ impl DisclosedProof {
         Ok(error::SUCCESS.code_num)
     }
 
+    fn generate_proof_msg(&self) -> VcxResult<String> {
+        let proof = match settings::test_indy_mode_enabled() {
+            false => {
+                let proof: &ProofMessage = self.proof.as_ref().ok_or(VcxError::from(VcxErrorKind::CreateProof))?;
+                serde_json::to_string(&proof)
+                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize proof: {}", err)))?
+            }
+            true => DEFAULT_GENERATED_PROOF.to_string(),
+        };
+
+        Ok(proof)
+    }
+
     fn send_proof(&mut self, connection_handle: u32) -> VcxResult<u32> {
         trace!("DisclosedProof::send_proof >>> connection_handle: {}", connection_handle);
 
@@ -402,17 +415,10 @@ impl DisclosedProof {
         let proof_req = self.proof_request.as_ref().ok_or(VcxError::from(VcxErrorKind::CreateProof))?;
         let ref_msg_uid = proof_req.msg_ref_id.as_ref().ok_or(VcxError::from(VcxErrorKind::CreateProof))?;
 
-        let proof = match settings::test_indy_mode_enabled() {
-            false => {
-                let proof: &ProofMessage = self.proof.as_ref().ok_or(VcxError::from(VcxErrorKind::CreateProof))?;
-                serde_json::to_string(&proof)
-                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize proof: {}", err)))?
-            }
-            true => DEFAULT_GENERATED_PROOF.to_string(),
-        };
-
         let their_did = self.their_did.as_ref().map(String::as_str).unwrap_or("");
         self.thread.as_mut().map(|thread| thread.increment_receiver(&their_did));
+
+        let proof = self.generate_proof_msg()?;
 
         messages::send_message()
             .to(local_my_did)?
@@ -422,7 +428,7 @@ impl DisclosedProof {
             .agent_vk(local_agent_vk)?
             .edge_agent_payload(&local_my_vk, &local_their_vk, &proof, PayloadKinds::Proof, self.thread.clone())
             .map_err(|err| VcxError::from_msg(VcxErrorKind::GeneralConnectionError, format!("Cannot encrypt payload: {}", err)))?
-            .ref_msg_id(ref_msg_uid)?
+            .ref_msg_id(Some(ref_msg_uid.to_string()))?
             .send_secure()
             .map_err(|err| err.extend("Could not send proof"))?;
 
@@ -441,7 +447,7 @@ impl DisclosedProof {
             .map_err(|err| err.extend("Cannot serialize DisclosedProof"))
     }
     fn from_str(data: &str) -> VcxResult<DisclosedProof> {
-        trace!("DisclosedProof::from_str >>> data: {}", data);
+        trace!("DisclosedProof::from_str >>> data: {}", secret!(&data));
         ObjectWithVersion::deserialize(data)
             .map(|obj: ObjectWithVersion<DisclosedProof>| obj.data)
             .map_err(|err| err.extend("Cannot deserialize DisclosedProof"))
@@ -482,7 +488,7 @@ pub fn get_state(handle: u32) -> VcxResult<u32> {
 }
 
 // update_state is just the same as get_state for disclosed_proof
-pub fn update_state(handle: u32) -> VcxResult<u32> {
+pub fn update_state(handle: u32, message: Option<String>) -> VcxResult<u32> {
     HANDLE_MAP.get(handle, |obj| {
         Ok(obj.get_state())
     })
@@ -510,6 +516,12 @@ pub fn release(handle: u32) -> VcxResult<()> {
 
 pub fn release_all() {
     HANDLE_MAP.drain().ok();
+}
+
+pub fn generate_proof_msg(handle: u32) -> VcxResult<String> {
+    HANDLE_MAP.get_mut(handle, |obj| {
+        obj.generate_proof_msg()
+    })
 }
 
 pub fn send_proof(handle: u32, connection_handle: u32) -> VcxResult<u32> {

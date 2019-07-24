@@ -30,7 +30,6 @@ public class UtilsApi extends VcxJava.API {
         }
     };
 
-
     public static String vcxProvisionAgent(String config) {
         ParamGuard.notNullOrWhiteSpace(config, "config");
         logger.debug("vcxProvisionAgent() called with: config = [" + config + "]");
@@ -134,7 +133,7 @@ public class UtilsApi extends VcxJava.API {
         return future;
     }
 
-    private static Callback getLedgerFeesCB = new Callback() {
+    private static Callback stringCB = new Callback() {
         @SuppressWarnings({"unused", "unchecked"})
         public void callback(int commandHandle, int err, String fees) {
             logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], fees = [" + fees + "]");
@@ -152,10 +151,65 @@ public class UtilsApi extends VcxJava.API {
 
         int result = LibVcx.api.vcx_ledger_get_fees(
                 commandHandle,
-                getLedgerFeesCB
+                stringCB
         );
         checkResult(result);
         return future;
     }
 
+    public static CompletableFuture<String> getLedgerAuthorAgreement() throws VcxException {
+        logger.debug("getLedgerAuthorAgreement() called");
+        CompletableFuture<String> future = new CompletableFuture<>();
+        int commandHandle = addFuture(future);
+
+        int result = LibVcx.api.vcx_get_ledger_author_agreement(
+                commandHandle,
+                stringCB
+        );
+        checkResult(result);
+        return future;
+    }
+
+    public static void setActiveTxnAuthorAgreementMeta(String text, String version,
+                                                         String hash, String accMechType, long timeOfAcceptance) throws VcxException {
+        ParamGuard.notNull(accMechType, "accMechType");
+        logger.debug("vcxProvisionAgent() called with: text = [" + text + "], version = [" + version + "]," +
+                " hash = [" + hash + "], accMechType = [" + accMechType + "], timeOfAcceptance = [" + timeOfAcceptance + "]");
+        int result = LibVcx.api.vcx_set_active_txn_author_agreement_meta(text, version, hash, accMechType, timeOfAcceptance);
+        checkResult(result);
+    }
+
+    public static void vcxMockSetAgencyResponse(int messageIndex) {
+        logger.debug("vcxMockSetAgencyResponse() called");
+        LibVcx.api.vcx_set_next_agency_response(messageIndex);
+    }
+
+    public static void setPoolHandle(int handle) {
+        LibVcx.api.vcx_pool_set_handle(handle);
+    }
+
+    private static Callback getReqPriceAsyncCB = new Callback() {
+        @SuppressWarnings({"unused", "unchecked"})
+        public void callback(int commandHandle, int err, long price) {
+            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], price = [" + price + "]");
+            CompletableFuture<Long> future = (CompletableFuture<Long>) removeFuture(commandHandle);
+            if (!checkCallback(future, err)) return;
+
+            long result = price;
+            future.complete(result);
+        }
+    };
+
+    public static CompletableFuture<Long> vcxGetRequestPrice(String actionJson, String requesterInfoJson) throws VcxException {
+        ParamGuard.notNull(actionJson, "actionJson");
+        logger.debug("vcxGetRequestPrice() called with: actionJson = [" + actionJson + "], requesterInfoJson = [" + requesterInfoJson + "]");
+        CompletableFuture<Long> future = new CompletableFuture<Long>();
+        int commandHandle = addFuture(future);
+
+        int result = LibVcx.api.vcx_get_request_price(
+                commandHandle, actionJson, requesterInfoJson,
+                getReqPriceAsyncCB);
+        checkResult(result);
+        return future;
+    }
 }

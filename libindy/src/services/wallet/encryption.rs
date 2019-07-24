@@ -154,21 +154,21 @@ pub(super) fn decrypt_merged(joined_data: &[u8], key: &chacha20poly1305_ietf::Ke
 }
 
 pub(super) fn decrypt_tags(etags: &Option<Vec<Tag>>, tag_name_key: &chacha20poly1305_ietf::Key, tag_value_key: &chacha20poly1305_ietf::Key) -> IndyResult<Option<HashMap<String, String>>> {
-    match etags {
-        &None => Ok(None),
-        &Some(ref etags) => {
+    match *etags {
+        None => Ok(None),
+        Some(ref etags) => {
             let mut tags: HashMap<String, String> = HashMap::new();
 
             for etag in etags {
-                let (name, value) = match etag {
-                    &Tag::PlainText(ref ename, ref value) => {
+                let (name, value) = match *etag {
+                    Tag::PlainText(ref ename, ref value) => {
                         let name = match decrypt_merged(&ename, tag_name_key) {
                             Err(err) => return Err(err.to_indy(IndyErrorKind::WalletEncryptionError, "Unable to decrypt tag name")),
                             Ok(tag_name_bytes) => format!("~{}", str::from_utf8(&tag_name_bytes).to_indy(IndyErrorKind::WalletEncryptionError, "Tag name is invalid utf8")?)
                         };
                         (name, value.clone())
                     }
-                    &Tag::Encrypted(ref ename, ref evalue) => {
+                    Tag::Encrypted(ref ename, ref evalue) => {
                         let name = match decrypt_merged(&ename, tag_name_key) {
                             Err(err) => return Err(err.to_indy(IndyErrorKind::WalletEncryptionError, "Unable to decrypt tag name")),
                             Ok(tag_name) => String::from_utf8(tag_name).to_indy(IndyErrorKind::WalletEncryptionError, "Tag name is invalid utf8")?
@@ -215,8 +215,6 @@ pub(super) fn decrypt_storage_record(record: &StorageRecord, keys: &Keys) -> Ind
 
 #[cfg(test)]
 mod tests {
-    extern crate serde_json;
-
     use services::wallet::wallet::EncryptedValue;
     use services::wallet::wallet::Keys;
     use utils::crypto::hmacsha256;

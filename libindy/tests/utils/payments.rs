@@ -1,15 +1,14 @@
 extern crate futures;
 extern crate indy_sys;
-extern crate libc;
 
 use indy::{IndyError, ErrorCode};
 use indy::payments;
 use self::futures::Future;
-use self::indy_sys::{payments as payments_sys};
+use self::indy_sys::payments as payments_sys;
 
 use std::collections::VecDeque;
 use std::ffi::CString;
-use self::libc::c_char;
+use super::libc::c_char;
 use std::sync::{Once, ONCE_INIT, Mutex};
 
 use utils::callback;
@@ -79,21 +78,21 @@ pub mod mock_method {
             let payment_method_name = CString::new("null").unwrap();
             unsafe {
                 payments_sys::indy_register_payment_method(cmd_handle,
-                                                       payment_method_name.as_ptr(),
-                                                       Some(create_payment_address::handle),
-                                                       Some(add_request_fees::handle),
-                                                       Some(parse_response_with_fees::handle),
-                                                       Some(build_get_payment_sources_request::handle),
-                                                       Some(parse_get_payment_sources_response::handle),
-                                                       Some(build_payment_req::handle),
-                                                       Some(parse_payment_response::handle),
-                                                       Some(build_mint_req::handle),
-                                                       Some(build_set_txn_fees_req::handle),
-                                                       Some(build_get_txn_fees_req::handle),
-                                                       Some(parse_get_txn_fees_response::handle),
-                                                       Some(build_verify_payment_req::handle),
-                                                       Some(parse_verify_payment_response::handle),
-                                                       cb,
+                                                           payment_method_name.as_ptr(),
+                                                           Some(create_payment_address::handle),
+                                                           Some(add_request_fees::handle),
+                                                           Some(parse_response_with_fees::handle),
+                                                           Some(build_get_payment_sources_request::handle),
+                                                           Some(parse_get_payment_sources_response::handle),
+                                                           Some(build_payment_req::handle),
+                                                           Some(parse_payment_response::handle),
+                                                           Some(build_mint_req::handle),
+                                                           Some(build_set_txn_fees_req::handle),
+                                                           Some(build_get_txn_fees_req::handle),
+                                                           Some(parse_get_txn_fees_response::handle),
+                                                           Some(build_verify_payment_req::handle),
+                                                           Some(parse_verify_payment_response::handle),
+                                                           cb,
                 );
             }
 
@@ -175,21 +174,21 @@ pub fn register_payment_method(payment_method_name: &str,
 
     let err = unsafe {
         payments_sys::indy_register_payment_method(cmd_handle,
-                                               payment_method_name.as_ptr(),
-                                               create_payment_address,
-                                               add_request_fees,
-                                               parse_response_with_fees,
-                                               build_get_payment_sources_request,
-                                               parse_get_payment_sources_response,
-                                               build_payment_req,
-                                               parse_payment_response,
-                                               build_mint_req,
-                                               build_set_txn_fees_req,
-                                               build_get_txn_fees_req,
-                                               parse_get_txn_fees_response,
-                                               build_verify_payment_req,
-                                               parse_verify_payment_response,
-                                               cb,
+                                                   payment_method_name.as_ptr(),
+                                                   create_payment_address,
+                                                   add_request_fees,
+                                                   parse_response_with_fees,
+                                                   build_get_payment_sources_request,
+                                                   parse_get_payment_sources_response,
+                                                   build_payment_req,
+                                                   parse_payment_response,
+                                                   build_mint_req,
+                                                   build_set_txn_fees_req,
+                                                   build_get_txn_fees_req,
+                                                   parse_get_txn_fees_response,
+                                                   build_verify_payment_req,
+                                                   parse_verify_payment_response,
+                                                   cb,
         )
     };
 
@@ -228,6 +227,15 @@ pub fn parse_payment_response(payment_method: &str, resp_json: &str) -> Result<S
     payments::parse_payment_response(payment_method, resp_json).wait()
 }
 
+pub fn prepare_extra_with_acceptance_data(extra: Option<&str>,
+                                          text: Option<&str>,
+                                          version: Option<&str>,
+                                          taa_digest: Option<&str>,
+                                          acc_mech_type: &str,
+                                          time_of_acceptance: u64) -> Result<String, IndyError> {
+    payments::prepare_extra_with_acceptance_data(extra, text, version, taa_digest, acc_mech_type, time_of_acceptance).wait()
+}
+
 pub fn build_mint_req(wallet_handle: i32, submitter_did: Option<&str>, outputs_json: &str, extra: Option<&str>) -> Result<(String, String), IndyError> {
     payments::build_mint_req(wallet_handle, submitter_did, outputs_json, extra).wait()
 }
@@ -250,4 +258,8 @@ pub fn build_verify_payment_req(wallet_handle: i32, submitter_did: Option<&str>,
 
 pub fn parse_verify_payment_response(payment_method: &str, resp_json: &str) -> Result<String, IndyError> {
     payments::parse_verify_payment_response(payment_method, resp_json).wait()
+}
+
+pub fn get_request_info(get_auth_rule_resp_json: &str, requester_info_json: &str, fees_json: &str) -> Result<String, IndyError> {
+    payments::get_request_info(get_auth_rule_resp_json, requester_info_json, fees_json).wait()
 }

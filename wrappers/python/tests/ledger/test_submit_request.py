@@ -5,8 +5,7 @@ import time
 
 import pytest
 
-from indy import ledger, anoncreds, blob_storage
-from indy.error import ErrorCode, IndyError
+from indy import ledger, anoncreds, blob_storage, error
 
 
 @pytest.mark.asyncio
@@ -48,9 +47,8 @@ async def test_submit_request_works_for_invalid_pool_handle(pool_handle, identit
     get_nym_request = await ledger.build_get_nym_request(my_did, my_did)
     invalid_pool_handle = pool_handle + 1
 
-    with pytest.raises(IndyError) as e:
+    with pytest.raises(error.PoolLedgerInvalidPoolHandle):
         await ledger.submit_request(invalid_pool_handle, get_nym_request)
-    assert ErrorCode.PoolLedgerInvalidPoolHandle == e.value.error_code
 
 
 @pytest.mark.asyncio

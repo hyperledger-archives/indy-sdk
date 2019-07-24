@@ -1,7 +1,7 @@
 use utils::version_constants;
 use libc::c_char;
 use utils::cstring::CStringUtils;
-use utils::libindy::{wallet, pool};
+use utils::libindy::{wallet, pool, ledger};
 use utils::error;
 use settings;
 use std::ffi::CString;
@@ -37,7 +37,7 @@ pub extern fn vcx_init_with_config(command_handle: u32,
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
         settings::set_defaults();
     } else {
-        match settings::process_config_string(&config) {
+        match settings::process_config_string(&config, true) {
             Err(e) => {
                 error!("Invalid configuration specified: {}", e);
                 return e.into();
@@ -154,6 +154,53 @@ fn _finish_init(command_handle: u32, cb: extern fn(xcommand_handle: u32, err: u3
     error::SUCCESS.code_num
 }
 
+/// Initialize vcx with the minimal configuration (wallet, pool must already be set with
+/// vcx_wallet_set_handle() and vcx_pool_set_handle()) and without any agency configuration
+///
+/// #Example:
+///
+/// vcx_init_minimal('{"institution_name":"faber","institution_did":"44x8p4HubxzUK1dwxcc5FU",\
+//      "institution_verkey":"444MFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE"}')
+///
+/// #Params
+///
+/// config: minimal configuration
+///
+/// #Returns
+/// Error code as u32
+#[no_mangle]
+pub extern fn vcx_init_minimal(config: *const c_char) -> u32 {
+    check_useful_c_str!(config,VcxErrorKind::InvalidOption);
+
+    trace!("vcx_init_minimal(config: {:?})", config);
+
+    if config == "ENABLE_TEST_MODE" {
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
+        settings::set_defaults();
+    } else {
+        match settings::process_config_string(&config, false) {
+            Err(e) => {
+                error!("Invalid configuration specified: {}", e);
+                return e.into();
+            }
+            Ok(_) => (),
+        }
+    };
+
+    if wallet::get_wallet_handle() <= 0 || pool::get_pool_handle().is_err() {
+        error!("Library cannot be initialized without wallet/pool");
+        return error::INVALID_STATE.code_num;
+    }
+
+    ::utils::threadpool::init();
+
+    settings::log_settings();
+
+    trace!("libvcx version: {}{}", version_constants::VERSION, version_constants::REVISION);
+
+    error::SUCCESS.code_num
+}
+
 lazy_static! {
     pub static ref VERSION_STRING: CString = CString::new(format!("{}{}", version_constants::VERSION, version_constants::REVISION)).unwrap();
 }
@@ -242,6 +289,84 @@ pub extern fn vcx_update_institution_info(name: *const c_char, logo_url: *const 
     error::SUCCESS.code_num
 }
 
+/// Retrieve author agreement and acceptance mechanisms set on the Ledger
+///
+/// #params
+///
+/// command_handle: command handle to map callback to user context.
+///
+/// cb: Callback that provides array of matching messages retrieved
+///
+/// #Returns
+/// Error code as a u32
+#[no_mangle]
+pub extern fn vcx_get_ledger_author_agreement(command_handle: u32,
+                                              cb: Option<extern fn(xcommand_handle: u32, err: u32, author_agreement: *const c_char)>) -> u32 {
+    info!("vcx_get_ledger_author_agreement >>>");
+
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+
+    trace!("vcx_get_ledger_author_agreement(command_handle: {})",
+           command_handle);
+
+    spawn(move || {
+        match ledger::libindy_get_txn_author_agreement() {
+            Ok(x) => {
+                trace!("vcx_ledger_get_fees_cb(command_handle: {}, rc: {}, author_agreement: {})",
+                       command_handle, error::SUCCESS.message, x);
+
+                let msg = CStringUtils::string_to_cstring(x);
+                cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
+            }
+            Err(e) => {
+                error!("vcx_get_ledger_author_agreement(command_handle: {}, rc: {})",
+                       command_handle, e);
+                cb(command_handle, e.into(), ::std::ptr::null_mut());
+            }
+        };
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
+
+/// Set some accepted agreement as active.
+///
+/// As result of succesfull call of this funciton appropriate metadata will be appended to each write request by `indy_append_txn_author_agreement_meta_to_request` libindy call.
+///
+/// #Params
+/// text and version - (optional) raw data about TAA from ledger.
+///     These parameters should be passed together.
+///     These parameters are required if hash parameter is ommited.
+/// hash - (optional) hash on text and version. This parameter is required if text and version parameters are ommited.
+/// acc_mech_type - mechanism how user has accepted the TAA
+/// time_of_acceptance - UTC timestamp when user has accepted the TAA
+///
+/// #Returns
+/// Error code as a u32
+#[no_mangle]
+pub extern fn vcx_set_active_txn_author_agreement_meta(text: *const c_char,
+                                                       version: *const c_char,
+                                                       hash: *const c_char,
+                                                       acc_mech_type: *const c_char,
+                                                       time_of_acceptance: u64) -> u32 {
+    info!("vcx_set_active_txn_author_agreement_meta >>>");
+
+    check_useful_opt_c_str!(text, VcxErrorKind::InvalidOption);
+    check_useful_opt_c_str!(version, VcxErrorKind::InvalidOption);
+    check_useful_opt_c_str!(hash, VcxErrorKind::InvalidOption);
+    check_useful_c_str!(acc_mech_type, VcxErrorKind::InvalidOption);
+
+    trace!("vcx_set_active_txn_author_agreement_meta(text: {:?}, version: {:?}, hash: {:?}, acc_mech_type: {:?}, time_of_acceptance: {:?})",
+           text, version, hash, acc_mech_type, time_of_acceptance);
+
+    match ::utils::author_agreement::set_txn_author_agreement(text, version, hash, acc_mech_type, time_of_acceptance) {
+        Ok(x) => error::SUCCESS.code_num,
+        Err(err) => err.into()
+    }
+}
+
 #[no_mangle]
 pub extern fn vcx_mint_tokens(seed: *const c_char, fees: *const c_char) {
     info!("vcx_mint_tokens >>>");
@@ -310,7 +435,9 @@ mod tests {
         },
         get_temp_dir_path
     };
+    use api::VcxStateType;
     use api::return_types_u32;
+    use api::connection::vcx_connection_create;
 
     fn create_config_util(logging: Option<&str>) -> String {
         json!({"agency_did" : "72x8p4HubxzUK1dwxcc5FU",
@@ -804,6 +931,8 @@ mod tests {
 
     #[test]
     fn get_current_error_works_for_no_error() {
+        ::error::reset_current_error();
+
         let mut error_json_p: *const c_char = ptr::null();
 
         vcx_get_current_error(&mut error_json_p);
@@ -832,5 +961,132 @@ mod tests {
         let config = CString::new("{}").unwrap();
         ::api::utils::vcx_agent_provision_async(0, config.as_ptr(), Some(cb));
         ::std::thread::sleep(::std::time::Duration::from_secs(1));
+    }
+
+    #[test]
+    fn test_vcx_set_active_txn_author_agreement_meta() {
+        init!("true");
+        assert!(&settings::get_config_value(::settings::CONFIG_TXN_AUTHOR_AGREEMENT).is_err());
+
+        let text = "text";
+        let version = "1.0.0";
+        let acc_mech_type = "type 1";
+        let time_of_acceptance = 123456789;
+
+        assert_eq!(error::SUCCESS.code_num, vcx_set_active_txn_author_agreement_meta(CString::new(text.to_string()).unwrap().into_raw(),
+                                                                                     CString::new(version.to_string()).unwrap().into_raw(),
+                                                                                     ::std::ptr::null(),
+                                                                                     CString::new(acc_mech_type.to_string()).unwrap().into_raw(),
+                                                                                     time_of_acceptance));
+
+        let expected = json!({
+            "text": text,
+            "version": version,
+            "acceptanceMechanismType": acc_mech_type,
+            "timeOfAcceptance": time_of_acceptance,
+        });
+
+        let auth_agreement = settings::get_config_value(::settings::CONFIG_TXN_AUTHOR_AGREEMENT).unwrap();
+        let auth_agreement = ::serde_json::from_str::<::serde_json::Value>(&auth_agreement).unwrap();
+
+        assert_eq!(expected, auth_agreement);
+
+        ::settings::set_defaults();
+    }
+
+    #[test]
+    fn test_vcx_get_ledger_author_agreement() {
+        init!("true");
+        let cb = return_types_u32::Return_U32_STR::new().unwrap();
+        assert_eq!(vcx_get_ledger_author_agreement(cb.command_handle,
+                                                   Some(cb.get_callback())), error::SUCCESS.code_num);
+        let agreement = cb.receive(Some(Duration::from_secs(2))).unwrap();
+        assert_eq!(::utils::constants::DEFAULT_AUTHOR_AGREEMENT, agreement.unwrap());
+    }
+
+    fn get_settings() -> String {
+        json!({
+            settings::CONFIG_AGENCY_DID:           settings::get_config_value(settings::CONFIG_AGENCY_DID).unwrap(),
+            settings::CONFIG_AGENCY_VERKEY:        settings::get_config_value(settings::CONFIG_AGENCY_VERKEY).unwrap(),
+            settings::CONFIG_AGENCY_ENDPOINT:      settings::get_config_value(settings::CONFIG_AGENCY_ENDPOINT).unwrap(),
+            settings::CONFIG_REMOTE_TO_SDK_DID:    settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID).unwrap(),
+            settings::CONFIG_REMOTE_TO_SDK_VERKEY: settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_VERKEY).unwrap(),
+            settings::CONFIG_SDK_TO_REMOTE_DID:    settings::get_config_value(settings::CONFIG_SDK_TO_REMOTE_DID).unwrap(),
+            settings::CONFIG_SDK_TO_REMOTE_VERKEY: settings::get_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY).unwrap(),
+            settings::CONFIG_INSTITUTION_NAME:     settings::get_config_value(settings::CONFIG_INSTITUTION_NAME).unwrap(),
+            settings::CONFIG_INSTITUTION_DID:      settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap(),
+            settings::CONFIG_INSTITUTION_LOGO_URL: settings::get_config_value(settings::CONFIG_INSTITUTION_LOGO_URL).unwrap(),
+            settings::CONFIG_PAYMENT_METHOD:       settings::get_config_value(settings::CONFIG_PAYMENT_METHOD).unwrap()
+        }).to_string()
+    }
+
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn test_init_minimal() {
+        init!("ledger");
+        let content = get_settings();
+        settings::clear_config();
+        // Store settings and handles
+        let config = CString::new(content).unwrap().into_raw();
+        let wallet_handle = ::utils::libindy::wallet::get_wallet_handle();
+        let pool_handle = ::utils::libindy::pool::get_pool_handle().unwrap();
+        assert!(wallet_handle > 0);
+        assert!(pool_handle > 0);
+        // Reset handles to 0
+        assert_eq!(::api::utils::vcx_pool_set_handle(0), 0);
+        assert_eq!(::api::wallet::vcx_wallet_set_handle(0), 0);
+        // Test for errors when handles not set
+        assert_ne!(error::SUCCESS.code_num, vcx_init_minimal(config));
+        ::api::wallet::vcx_wallet_set_handle(wallet_handle);
+        assert_ne!(error::SUCCESS.code_num, vcx_init_minimal(config));
+        ::api::utils::vcx_pool_set_handle(pool_handle);
+        // NOTE: handles are set independently, test config with no wallet or pool
+        assert_eq!(error::SUCCESS.code_num, vcx_init_minimal(config));
+        // test that wallet and pool are operational
+        ::utils::libindy::anoncreds::tests::create_and_store_credential(::utils::constants::DEFAULT_SCHEMA_ATTRS, false);
+    }
+
+    #[test]
+    fn test_no_agency_config() {
+        settings::clear_config();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        let config = json!({ "institution_name": "faber",
+                             "institution_did": "44x8p4HubxzUK1dwxcc5FU",
+                             "institution_verkey": "444MFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE"}).to_string();
+        let config = CString::new(config).unwrap().into_raw();
+        ::api::wallet::vcx_wallet_set_handle(1);
+        ::api::utils::vcx_pool_set_handle(1);
+        assert_eq!(vcx_init_minimal(config), error::SUCCESS.code_num);
+
+        let cred_handle = ::issuer_credential::from_string(::utils::constants::DEFAULT_SERIALIZED_ISSUER_CREDENTIAL).unwrap();
+        let connection_handle = ::connection::from_string(::utils::constants::DEFAULT_CONNECTION).unwrap();
+
+        let (offer, _) = ::issuer_credential::generate_credential_offer_msg(cred_handle, connection_handle).unwrap();
+        let mycred = ::credential::credential_create_with_offer("test1", &offer).unwrap();
+        let request = ::credential::generate_credential_request_msg(mycred, connection_handle).unwrap();
+        ::issuer_credential::update_state(cred_handle, Some(request)).unwrap();
+        let cred = ::issuer_credential::generate_credential_msg(cred_handle, connection_handle).unwrap();
+        ::credential::update_state(mycred, Some(cred)).unwrap();
+        assert!(::credential::get_state(mycred).unwrap() == VcxStateType::VcxStateAccepted as u32);
+    }
+
+    #[test]
+    fn test_invalid_agency_config() {
+        let config = json!({ "institution_name": "faber",
+                             "institution_did": "44x8p4HubxzUK1dwxcc5FU",
+                             "institution_verkey": "444MFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE"}).to_string();
+        let config = CString::new(config).unwrap().into_raw();
+        ::api::wallet::vcx_wallet_set_handle(1);
+        ::api::utils::vcx_pool_set_handle(1);
+        assert_eq!(vcx_init_minimal(config), error::SUCCESS.code_num);
+        let rc = vcx_connection_create(0,
+                                       CString::new("test_create_fails").unwrap().into_raw(),
+                                       None);
+        assert_eq!(rc, error::INVALID_OPTION.code_num);
+        let cb = return_types_u32::Return_U32_U32::new().unwrap();
+        let rc = vcx_connection_create(cb.command_handle,
+                                       ptr::null(),
+                                       Some(cb.get_callback()));
+        assert_eq!(rc, error::INVALID_OPTION.code_num);
     }
 }

@@ -1,12 +1,10 @@
-extern crate libc;
-
 use api::{ErrorCode, CommandHandle, WalletHandle};
 use commands::{Command, CommandExecutor};
 use commands::pairwise::PairwiseCommand;
 use errors::prelude::*;
 use utils::ctypes;
 
-use self::libc::c_char;
+use libc::c_char;
 
 
 /// Check if pairwise is exists.

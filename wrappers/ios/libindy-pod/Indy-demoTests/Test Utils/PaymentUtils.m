@@ -218,6 +218,36 @@
     return err;
 }
 
+- (NSError *)preparePaymentExtraWithAcceptanceData:(NSString *)extraJson
+                                              text:(NSString *)text
+                                           version:(NSString *)version
+                                         taaDigest:(NSString *)taaDigest
+                                       accMechType:(NSString *)accMechType
+                                  timeOfAcceptance:(NSNumber *)timeOfAcceptance
+                               extraWithAcceptance:(NSString **)extraWithAcceptance {
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+    __block NSString *outJson = nil;
+
+    [IndyPayment preparePaymentExtraWithAcceptanceData:extraJson
+                                                  text:text
+                                               version:version
+                                             taaDigest:taaDigest
+                                           accMechType:accMechType
+                                      timeOfAcceptance:timeOfAcceptance
+                                            completion:^(NSError *error, NSString *json) {
+                                                err = error;
+                                                outJson = json;
+                                                [completionExpectation fulfill];
+                                            }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
+
+    if (extraWithAcceptance) {*extraWithAcceptance = outJson;}
+
+    return err;
+}
+
 - (NSError *)buildMintRequest:(IndyHandle)walletHandle
                  submitterDid:(NSString *)submitterDid
                   outputsJson:(NSString *)outputsJson
@@ -365,6 +395,30 @@
     [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
 
     if (receiptInfoJson) {*receiptInfoJson = outReceipts;}
+
+    return err;
+}
+
+- (NSError *)getRequestInfoForRequester:(NSString *)requesterInfoJson
+                getAuthRuleResponseJson:(NSString *)getAuthRuleResponseJson
+                               feesJson:(NSString *)feesJson
+                        requestInfoJson:(NSString **)requestInfoJson {
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+    __block NSString *outRequestInfoJson = nil;
+
+    [IndyPayment getRequestInfoForRequester:requesterInfoJson
+                    getAuthRuleResponseJson:getAuthRuleResponseJson
+                                   feesJson:feesJson
+                                 completion:^(NSError *error, NSString *info) {
+                                      err = error;
+                                      outRequestInfoJson = info;
+                                      [completionExpectation fulfill];
+                                  }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
+
+    if (requestInfoJson) {*requestInfoJson = outRequestInfoJson;}
 
     return err;
 }

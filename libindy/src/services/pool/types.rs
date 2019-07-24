@@ -1,9 +1,3 @@
-extern crate indy_crypto;
-extern crate rmp_serde;
-extern crate serde;
-extern crate serde_json;
-extern crate time;
-
 use std::cmp::Eq;
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
@@ -271,9 +265,9 @@ pub enum Reply {
 
 impl Reply {
     pub fn req_id(&self) -> u64 {
-        match self {
-            &Reply::ReplyV0(ref reply) => reply.result.req_id,
-            &Reply::ReplyV1(ref reply) => reply.result.txn.metadata.req_id
+        match *self {
+            Reply::ReplyV0(ref reply) => reply.result.req_id,
+            Reply::ReplyV1(ref reply) => reply.result.txn.metadata.req_id
         }
     }
 }
@@ -307,9 +301,9 @@ pub enum Response {
 
 impl Response {
     pub fn req_id(&self) -> u64 {
-        match self {
-            &Response::ResponseV0(ref res) => res.req_id,
-            &Response::ResponseV1(ref res) => res.metadata.req_id
+        match *self {
+            Response::ResponseV0(ref res) => res.req_id,
+            Response::ResponseV1(ref res) => res.metadata.req_id
         }
     }
 }
@@ -434,7 +428,32 @@ pub enum KeyValuesInSP {
 */
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub struct KeyValueSimpleData {
-    pub kvs: Vec<(String /* b64-encoded key */, Option<String /* val */>)>
+    pub kvs: Vec<(String /* b64-encoded key */, Option<String /* val */>)>,
+    #[serde(default)]
+    pub verification_type: KeyValueSimpleDataVerificationType
+}
+
+/**
+ Options of common state proof check process
+*/
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+#[serde(tag = "type")]
+pub enum KeyValueSimpleDataVerificationType {
+    Simple,
+    NumericalSuffixAscendingNoGaps(NumericalSuffixAscendingNoGapsData)
+}
+
+impl Default for KeyValueSimpleDataVerificationType {
+    fn default() -> Self {
+        KeyValueSimpleDataVerificationType::Simple
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+pub struct NumericalSuffixAscendingNoGapsData {
+    pub from: Option<u64>,
+    pub next: Option<u64>,
+    pub prefix: String
 }
 
 /**

@@ -31,6 +31,7 @@ if [ ${package_type} = "lib" ] ; then
   mkdir ${TEMP_ARCH_DIR}/lib
   cp -r ${folder}/include ${TEMP_ARCH_DIR}
   cp ./target/release/*.dll ${TEMP_ARCH_DIR}/lib/
+  cp ./target/release/*.dll.lib ${TEMP_ARCH_DIR}/lib/
 elif [ ${package_type} = "executable" ] ; then
   cp ./target/release/*.dll ${TEMP_ARCH_DIR}/
   cp ./target/release/${package}.exe ${TEMP_ARCH_DIR}/

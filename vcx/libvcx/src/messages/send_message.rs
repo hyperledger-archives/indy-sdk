@@ -67,8 +67,8 @@ impl SendMessageBuilder {
     }
 
 
-    pub fn ref_msg_id(&mut self, id: &str) -> VcxResult<&mut Self> {
-        self.ref_msg_id = Some(String::from(id));
+    pub fn ref_msg_id(&mut self, id: Option<String>) -> VcxResult<&mut Self> {
+        self.ref_msg_id = id;
         Ok(self)
     }
 
@@ -188,7 +188,14 @@ impl SendResponse {
     }
 }
 
-pub fn send_generic_message(connection_handle: u32, msg: &str, msg_type: &str, msg_title: &str) -> VcxResult<String> {
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+pub struct SendMessageOptions {
+    msg_type: String,
+    msg_title: String,
+    ref_msg_id: Option<String>,
+}
+
+pub fn send_generic_message(connection_handle: u32, msg: &str, msg_options: &str) -> VcxResult<String> {
     if connection::get_state(connection_handle) != VcxStateType::VcxStateAccepted as u32 {
         return Err(VcxError::from(VcxErrorKind::NotReady));
     }
@@ -199,16 +206,22 @@ pub fn send_generic_message(connection_handle: u32, msg: &str, msg_type: &str, m
     let vk = connection::get_pw_verkey(connection_handle)?;
     let remote_vk = connection::get_their_pw_verkey(connection_handle)?;
 
+    let msg_options: SendMessageOptions = serde_json::from_str(msg_options).map_err(|_| {
+        error!("Invalid SendMessage msg_options");
+        VcxError::from(VcxErrorKind::InvalidConfiguration)
+    })?;
+
     let response =
         send_message()
             .to(&did)?
             .to_vk(&vk)?
-            .msg_type(&RemoteMessageType::Other(msg_type.to_string()))?
-            .edge_agent_payload(&vk, &remote_vk, &msg, PayloadKinds::Other(msg_type.to_string()), None)?
+            .msg_type(&RemoteMessageType::Other(msg_options.msg_type.clone()))?
+            .edge_agent_payload(&vk, &remote_vk, &msg, PayloadKinds::Other(msg_options.msg_type.clone()), None)?
             .agent_did(&agent_did)?
             .agent_vk(&agent_vk)?
-            .set_title(&msg_title)?
-            .set_detail(&msg_title)?
+            .set_title(&msg_options.msg_title)?
+            .set_detail(&msg_options.msg_title)?
+            .ref_msg_id(msg_options.ref_msg_id.clone())?
             .status_code(&MessageStatusCode::Accepted)?
             .send_secure()?;
 
@@ -291,7 +304,7 @@ mod tests {
         let institution_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
         let (faber, alice) = ::connection::tests::create_connected_connections();
 
-        match send_generic_message(alice, "this is the message", "type", "title") {
+        match send_generic_message(alice, "this is the message", &json!({"msg_type":"type", "msg_title": "title", "ref_msg_id":null}).to_string()) {
             Ok(x) => println!("message id: {}", x),
             Err(x) => panic!("paniced! {}", x),
         };
@@ -301,12 +314,40 @@ mod tests {
         teardown!("agency");
     }
 
+    #[cfg(feature = "agency")]
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn test_send_message_and_download_response() {
+        init!("agency");
+        let institution_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
+        let (faber, alice) = ::connection::tests::create_connected_connections();
+
+        let msg_id = send_generic_message(alice, "this is the message", &json!({"msg_type":"type", "msg_title": "title", "ref_msg_id":null}).to_string()).unwrap();
+
+        ::utils::devsetup::tests::set_consumer();
+        let msg1 = get_message::download_messages(None, None, Some(vec![msg_id.clone()])).unwrap();
+        println!("{}", serde_json::to_string(&msg1).unwrap());
+        let msg_id_response = send_generic_message(faber, "this is the response", &json!({"msg_type":"response type", "msg_title": "test response", "ref_msg_id":msg_id}).to_string()).unwrap();
+
+        ::utils::devsetup::tests::set_institution();
+        let msg1 = get_message::download_messages(None, None, Some(vec![msg_id.clone()])).unwrap();
+        println!("{}", serde_json::to_string(&msg1).unwrap());
+
+        let ref_msg_id = msg1[0].clone().msgs[0].clone().ref_msg_id.unwrap();
+        assert_eq!(ref_msg_id, msg_id_response);
+
+        let response = get_message::download_messages(None, None, Some(vec![ref_msg_id.clone()])).unwrap();
+        println!("{}", serde_json::to_string(&response).unwrap());
+        assert_eq!(response[0].clone().msgs[0].clone().msg_type, RemoteMessageType::Other("response type".to_string()));
+        teardown!("agency");
+    }
+
     #[test]
     fn test_send_generic_message_fails_with_invalid_connection() {
         init!("true");
         let handle = ::connection::tests::build_test_connection();
 
-        match send_generic_message(handle, "this is the message", "type", "title") {
+        match send_generic_message(handle, "this is the message", &json!({"msg_type":"type", "msg_title": "title", "ref_msg_id":null}).to_string()) {
             Ok(x) => panic!("test shoudl fail: {}", x),
             Err(x) => assert_eq!(x.kind(), VcxErrorKind::NotReady),
         };

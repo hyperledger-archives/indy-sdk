@@ -372,6 +372,66 @@ async def parse_payment_response(payment_method: str,
     return res
 
 
+async def prepare_payment_extra_with_acceptance_data(extra_json: Optional[str],
+                                                     text: Optional[str],
+                                                     version: Optional[str],
+                                                     taa_digest: Optional[str],
+                                                     mechanism: str,
+                                                     time: int) -> str:
+    """
+    Append payment extra JSON with TAA acceptance data
+   
+    EXPERIMENTAL
+   
+    This function may calculate digest by itself or consume it as a parameter.
+    If all text, version and taa_digest parameters are specified, a check integrity of them will be done.
+
+    :param extra_json: (Optional) original extra json.
+    :param text and version: (Optional) raw data about TAA from ledger.
+               These parameters should be passed together.
+               These parameters are required if taa_digest parameter is omitted.
+    :param taa_digest: (Optional) hash on text and version. This parameter is required if text and version parameters are omitted.
+    :param mechanism: mechanism how user has accepted the TAA
+    :param time: UTC timestamp when user has accepted the TAA
+
+    :return: Updated request result as json.
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug(
+        "prepare_payment_extra_with_acceptance_data: >>> extra_json: %r, text: %r, version: %r, hash: %r, "
+        "acc_mech_type: %r, time_of_acceptance: %r",
+        extra_json,
+        text,
+        version,
+        taa_digest,
+        mechanism,
+        time)
+
+    if not hasattr(prepare_payment_extra_with_acceptance_data, "cb"):
+        logger.debug("prepare_payment_extra_with_acceptance_data: Creating callback")
+        prepare_payment_extra_with_acceptance_data.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_extra_json = c_char_p(extra_json.encode('utf-8')) if extra_json is not None else None
+    c_text = c_char_p(text.encode('utf-8')) if text is not None else None
+    c_version = c_char_p(version.encode('utf-8')) if version is not None else None
+    c_taa_digest = c_char_p(taa_digest.encode('utf-8')) if taa_digest is not None else None
+    c_mechanism = c_char_p(mechanism.encode('utf-8'))
+
+    request_json = await do_call('indy_prepare_payment_extra_with_acceptance_data',
+                                 c_extra_json,
+                                 c_text,
+                                 c_version,
+                                 c_taa_digest,
+                                 c_mechanism,
+                                 c_uint64(time),
+                                 prepare_payment_extra_with_acceptance_data.cb)
+
+    res = request_json.decode()
+    logger.debug("prepare_payment_extra_with_acceptance_data: <<< res: %r", res)
+    return res
+
+
 async def build_mint_req(wallet_handle: int,
                          submitter_did: str,
                          outputs_json: str,
@@ -621,4 +681,59 @@ async def parse_verify_payment_response(payment_method: str,
 
     res = receipts_json.decode()
     logger.debug("parse_verify_payment_response: <<< res: %r", res)
+    return res
+
+
+async def get_request_info(get_auth_rule_response_json: str,
+                           requester_info_json: str,
+                           fees_json: str) -> str:
+    """
+    Gets request requirements (with minimal price) correspondent to specific auth rule
+    in case the requester can perform this action.
+ 
+    EXPERIMENTAL
+ 
+    If the requester does not match to the request constraints `TransactionNotAllowed` error will be thrown.
+
+    :param get_auth_rule_response_json: response on GET_AUTH_RULE request returning action constraints set on the ledger.
+    :param requester_info_json: {
+        "role": string - role of a user which can sign a transaction.
+        "sig_count": u64 - number of signers.
+        "is_owner": bool - if user is an owner of transaction.
+    }
+    :param fees_json: fees set on the ledger (result of `parse_get_txn_fees_response`).
+
+    :return: request_info_json: request info if a requester match to the action constraints.
+    {
+       "price": u64 - fee required for the action performing,
+       "requirements": [{
+           "role": string (optional) - role of users who should sign,
+           "sig_count": u64 - number of signers,
+           "need_to_be_owner": bool (optional) - if requester need to be owner
+       }]
+    }
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("get_request_info: >>> get_auth_rule_response_json: %r, requester_info_json: %r, fees_json: %r",
+                 get_auth_rule_response_json,
+                 requester_info_json,
+                 fees_json)
+
+    if not hasattr(get_request_info, "cb"):
+        logger.debug("get_request_info: Creating callback")
+        get_request_info.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_get_auth_rule_response_json = c_char_p(get_auth_rule_response_json.encode('utf-8'))
+    c_requester_info_json = c_char_p(requester_info_json.encode('utf-8'))
+    c_fees_json = c_char_p(fees_json.encode('utf-8'))
+
+    request_info_json = await do_call('indy_get_request_info',
+                                      c_get_auth_rule_response_json,
+                                      c_requester_info_json,
+                                      c_fees_json,
+                                      get_request_info.cb)
+
+    res = request_info_json.decode()
+    logger.debug("get_request_info: <<< res: %r", res)
     return res

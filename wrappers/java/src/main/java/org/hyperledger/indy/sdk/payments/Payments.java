@@ -396,6 +396,54 @@ public class Payments extends IndyJava.API {
     }
 
     /**
+     * Append payment extra JSON with TAA acceptance data
+     *
+     * EXPERIMENTAL
+     *
+     * This function may calculate digest by itself or consume it as a parameter.
+     * If all text, version and taa_digest parameters are specified, a check integrity of them will be done.
+     *
+     * @param extraJson - (Optional) original extra json.
+     * @param text - (Optional) raw data about TAA from ledger.
+     * @param version - (Optional) raw version about TAA from ledger.
+     *     `text` and `version` parameters should be passed together.
+     *     `text` and `version` parameters are required if taaDigest parameter is omitted.
+     * @param taaDigest - (Optional) digest on text and version. This parameter is required if text and version parameters are omitted.
+     * @param mechanism - mechanism how user has accepted the TAA
+     * @param time - UTC timestamp when user has accepted the TAA
+     *
+     * @return A future resolving to an updated extra result as json.
+     * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+     */
+    public static CompletableFuture<String> preparePaymentExtraWithAcceptanceData(
+            String extraJson,
+            String text,
+            String version,
+            String taaDigest,
+            String mechanism,
+            long time) throws IndyException {
+
+        ParamGuard.notNull(mechanism, "mechanism");
+
+        CompletableFuture<String> future = new CompletableFuture<String>();
+        int commandHandle = addFuture(future);
+
+        int result = LibIndy.api.indy_prepare_payment_extra_with_acceptance_data(
+                commandHandle,
+                extraJson,
+                text,
+                version,
+                taaDigest,
+                mechanism,
+                time,
+                stringCompleteCb);
+
+        checkResult(future, result);
+
+        return future;
+    }
+
+    /**
      * Builds Indy request for doing minting
      * according to this payment method.
      *
@@ -603,6 +651,58 @@ public class Payments extends IndyJava.API {
         int commandHandle = addFuture(future);
 
         int result = method.apply(commandHandle, paymentMethod, respJson, stringCompleteCb);
+
+        checkResult(future, result);
+
+        return future;
+    }
+    
+    /**
+     * Gets request requirements (with minimal price) correspondent to specific auth rule
+     * in case the requester can perform this action.
+     *
+     * EXPERIMENTAL
+     *
+     * If the requester does not match to the request constraints `TransactionNotAllowed` error will be thrown.   
+     * 
+     * @param getAuthRuleResponseJson response on GET_AUTH_RULE request returning action constraints set on the ledger.
+     * @param requesterInfoJson {
+     *     "role": string - role of a user which can sign a transaction.
+     *     "sig_count": u64 - number of signers.
+     *     "is_owner": bool - if user is an owner of transaction.
+     * }
+     * @param feesJson fees set on the ledger (result of `parseGetTxnFeesResponse`).
+     *                 
+     * @return requestInfoJson: request info if a requester match to the action constraints.
+     * {
+     *     "price": u64 - fee required for the action performing,
+     *     "requirements": [{
+     *         "role": string (optional) - role of users who should sign,
+     *         "sig_count": u64 - number of signers,
+     *         "need_to_be_owner": bool (optional) - if requester need to be owner
+     *     }]
+     * }
+     * 
+     * @throws IndyException Thrown if a call to the underlying SDK fails.
+     */
+    public static CompletableFuture<String> getRequestInfo(
+            String getAuthRuleResponseJson,
+            String requesterInfoJson,
+            String feesJson
+    ) throws IndyException {
+        ParamGuard.notNull(getAuthRuleResponseJson, "getAuthRuleResponseJson");
+        ParamGuard.notNull(requesterInfoJson, "requesterInfoJson");
+        ParamGuard.notNull(feesJson, "feesJson");
+
+        CompletableFuture<String> future = new CompletableFuture<>();
+        int commandHandle = addFuture(future);
+        
+        int result = LibIndy.api.indy_get_request_info(
+                commandHandle,
+                getAuthRuleResponseJson,
+                requesterInfoJson,
+                feesJson,
+                stringCompleteCb);
 
         checkResult(future, result);
 

@@ -1,7 +1,3 @@
-extern crate indy_crypto;
-extern crate serde_json;
-extern crate zeroize;
-
 use std::collections::HashMap;
 
 use domain::crypto::key::{Key, KeyInfo, KeyMetadata};
@@ -16,6 +12,11 @@ use utils::crypto::base64;
 use utils::crypto::chacha20poly1305_ietf;
 use domain::crypto::combo_box::ComboBox;
 use api::WalletHandle;
+
+pub const PROTECTED_HEADER_ENC: &str = "xchacha20poly1305_ietf";
+pub const PROTECTED_HEADER_TYP: &str = "JWM/1.0";
+pub const PROTECTED_HEADER_ALG_AUTH: &str = "Authcrypt";
+pub const PROTECTED_HEADER_ALG_ANON: &str = "Anoncrypt";
 
 pub enum CryptoCommand {
     CreateKey(
@@ -72,7 +73,7 @@ pub enum CryptoCommand {
     ),
     PackMessage(
         Vec<u8>, // plaintext message
-        String,  // list of receiver's keys
+        Vec<String>,  // list of receiver's keys
         Option<String>,  // senders verkey
         WalletHandle,
         Box<Fn(IndyResult<Vec<u8>>) + Send>,
@@ -140,7 +141,7 @@ impl CryptoCommandExecutor {
             }
             CryptoCommand::PackMessage(message, receivers, sender_vk, wallet_handle, cb) => {
                 info!("PackMessage command received");
-                cb(self.pack_msg(message, &receivers, sender_vk, wallet_handle));
+                cb(self.pack_msg(message, receivers, sender_vk, wallet_handle));
             }
             CryptoCommand::UnpackMessage(jwe_json, wallet_handle, cb) => {
                 info!("UnpackMessage command received");
@@ -361,24 +362,14 @@ impl CryptoCommandExecutor {
     pub fn pack_msg(
         &self,
         message: Vec<u8>,
-        receivers: &str,
+        receiver_list: Vec<String>,
         sender_vk: Option<String>,
         wallet_handle: WalletHandle,
     ) -> IndyResult<Vec<u8>> {
 
-        //parse receivers to structs
-        let receiver_list: Vec<String> = serde_json::from_str(receivers).map_err(|err| {
-            err_msg(IndyErrorKind::InvalidStructure, format!(
-                "Failed to deserialize receiver list of keys {}",
-                err
-            ))
-        })?;
-
         //break early and error out if no receivers keys are provided
         if receiver_list.is_empty() {
-            return Err(err_msg(IndyErrorKind::InvalidStructure, format!(
-                "No receiver keys found"
-            )));
+            return Err(err_msg(IndyErrorKind::InvalidStructure, "No receiver keys found".to_string()));
         }
 
         //generate content encryption key that will encrypt `message`
@@ -460,12 +451,12 @@ impl CryptoCommandExecutor {
     }
 
     fn _base64_encode_protected(&self, encrypted_recipients_struct: Vec<Recipient>, alg_is_authcrypt: bool) -> IndyResult<String> {
-        let alg_val = if alg_is_authcrypt { String::from("Authcrypt") } else { String::from("Anoncrypt") };
+        let alg_val = if alg_is_authcrypt { String::from(PROTECTED_HEADER_ALG_AUTH) } else { String::from(PROTECTED_HEADER_ALG_ANON) };
 
         //structure protected and base64URL encode it
         let protected_struct = Protected {
-            enc: "xchacha20poly1305_ietf".to_string(),
-            typ: "JWM/1.0".to_string(),
+            enc: PROTECTED_HEADER_ENC.to_string(),
+            typ: PROTECTED_HEADER_TYP.to_string(),
             alg: alg_val,
             recipients: encrypted_recipients_struct,
         };
@@ -553,12 +544,12 @@ impl CryptoCommandExecutor {
             recipient_verkey: recipient.header.kid
         };
 
-        return serde_json::to_vec(&res).map_err(|err| {
+        serde_json::to_vec(&res).map_err(|err| {
             err_msg(IndyErrorKind::InvalidStructure, format!(
                 "Failed to serialize message {}",
                 err
             ))
-        });
+        })
     }
 
     fn _find_correct_recipient(&self, protected_struct: Protected, wallet_handle: WalletHandle) -> IndyResult<(Recipient, bool)>{
@@ -574,7 +565,7 @@ impl CryptoCommandExecutor {
                 return Ok((recipient.clone(), recipient.header.sender.is_some()))
             }
         }
-        return Err(IndyError::from(IndyErrorKind::WalletItemNotFound));
+        Err(IndyError::from(IndyErrorKind::WalletItemNotFound))
     }
 
     fn _unpack_cek_authcrypt(&self, recipient: Recipient, wallet_handle: WalletHandle) -> IndyResult<(Option<String>, chacha20poly1305_ietf::Key)> {

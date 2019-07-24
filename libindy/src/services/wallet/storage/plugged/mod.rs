@@ -155,7 +155,7 @@ impl StorageIterator for PluggedStorageIterator {
                 return Err(err.into());
             }
 
-            let mut value = unsafe { slice::from_raw_parts(value_bytes, value_bytes_len) };
+            let value = unsafe { slice::from_raw_parts(value_bytes, value_bytes_len) };
             Some(EncryptedValue::from_bytes(value)?)
         } else { None };
 
@@ -291,9 +291,9 @@ fn _tags_to_json(tags: &[Tag]) -> IndyResult<String> {
     let mut string_tags = HashMap::new();
 
     for tag in tags {
-        match tag {
-            &Tag::Encrypted(ref name, ref value) => string_tags.insert(base64::encode(&name), base64::encode(&value)),
-            &Tag::PlainText(ref name, ref value) => string_tags.insert(format!("~{}", &base64::encode(&name)), value.to_string()),
+        match *tag {
+            Tag::Encrypted(ref name, ref value) => string_tags.insert(base64::encode(&name), base64::encode(&value)),
+            Tag::PlainText(ref name, ref value) => string_tags.insert(format!("~{}", &base64::encode(&name)), value.to_string()),
         };
     }
 
@@ -308,7 +308,7 @@ fn _tags_from_json(json: &str) -> IndyResult<Vec<Tag>> {
     let mut tags = Vec::new();
 
     for (k, v) in string_tags {
-        if k.chars().next() == Some('~') {
+        if k.starts_with('~') {
             let mut key = k;
             key.remove(0);
             tags.push(
@@ -334,9 +334,9 @@ fn _tags_names_to_json(tag_names: &[TagName]) -> IndyResult<String> {
 
     for tag_name in tag_names {
         tags.push(
-            match tag_name {
-                &TagName::OfEncrypted(ref tag_name) => base64::encode(tag_name),
-                &TagName::OfPlain(ref tag_name) => format!("~{}", base64::encode(tag_name))
+            match *tag_name {
+                TagName::OfEncrypted(ref tag_name) => base64::encode(tag_name),
+                TagName::OfPlain(ref tag_name) => format!("~{}", base64::encode(tag_name))
             }
         )
     }
@@ -380,7 +380,7 @@ impl WalletStorage for PluggedStorage {
                 return Err(err.into());
             }
 
-            let mut value = unsafe { slice::from_raw_parts(value_bytes, value_bytes_len) };
+            let value = unsafe { slice::from_raw_parts(value_bytes, value_bytes_len) };
             Some(EncryptedValue::from_bytes(value)?)
         } else { None };
 
@@ -823,7 +823,8 @@ mod tests {
 
     use super::*;
 
-    use self::rand::{Rng, thread_rng};
+    use self::rand::{thread_rng, Rng};
+    use rand::distributions::{Alphanumeric, Standard};
 
     impl PartialEq for StorageRecord {
         fn eq(&self, other: &StorageRecord) -> bool {
@@ -874,11 +875,11 @@ mod tests {
     }
 
     fn _random_vector(len: usize) -> Vec<u8> {
-        thread_rng().gen_iter().take(len).collect()
+        thread_rng().sample_iter(&Standard).take(len).collect()
     }
 
     fn _random_string(len: usize) -> String {
-        thread_rng().gen_ascii_chars().take(len).collect()
+        thread_rng().sample_iter(&Alphanumeric).take(len).collect()
     }
 
     lazy_static!(

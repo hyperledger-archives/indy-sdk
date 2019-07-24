@@ -8,9 +8,11 @@ use serde_json;
 
 use errors::prelude::*;
 use services::crypto::CryptoService;
-use services::payments::{PaymentsMethodCBs, PaymentsService};
+use services::ledger::LedgerService;
+use services::payments::{PaymentsMethodCBs, PaymentsService, RequesterInfo, Fees};
 use services::wallet::{RecordOptions, WalletService};
 use api::WalletHandle;
+use domain::ledger::auth_rule::AuthRule;
 
 pub enum PaymentsCommand {
     RegisterMethod(
@@ -79,6 +81,14 @@ pub enum PaymentsCommand {
     ParsePaymentResponseAck(
         i32,
         IndyResult<String>),
+    AppendTxnAuthorAgreementAcceptanceToExtra(
+        Option<String>, // extra json
+        Option<String>, // text
+        Option<String>, // version
+        Option<String>, // hash
+        String, // acceptance mechanism type
+        u64, // time of acceptance
+        Box<Fn(IndyResult<String>) + Send>),
     BuildMintReq(
         WalletHandle,
         Option<String>, //submitter did
@@ -127,21 +137,28 @@ pub enum PaymentsCommand {
     ParseVerifyPaymentResponseAck(
         i32,
         IndyResult<String>),
+    GetRequestInfo(
+        String, // get auth rule response json
+        RequesterInfo, //requester info
+        Fees, //fees
+        Box<Fn(IndyResult<String>) + Send>),
 }
 
 pub struct PaymentsCommandExecutor {
     payments_service: Rc<PaymentsService>,
     wallet_service: Rc<WalletService>,
     crypto_service: Rc<CryptoService>,
+    ledger_service: Rc<LedgerService>,
     pending_callbacks: RefCell<HashMap<i32, Box<Fn(IndyResult<String>) + Send>>>,
 }
 
 impl PaymentsCommandExecutor {
-    pub fn new(payments_service: Rc<PaymentsService>, wallet_service: Rc<WalletService>, crypto_service: Rc<CryptoService>) -> PaymentsCommandExecutor {
+    pub fn new(payments_service: Rc<PaymentsService>, wallet_service: Rc<WalletService>, crypto_service: Rc<CryptoService>, ledger_service: Rc<LedgerService>) -> PaymentsCommandExecutor {
         PaymentsCommandExecutor {
             payments_service,
             wallet_service,
             crypto_service,
+            ledger_service,
             pending_callbacks: RefCell::new(HashMap::new()),
         }
     }
@@ -212,6 +229,15 @@ impl PaymentsCommandExecutor {
                 info!(target: "payments_command_executor", "ParsePaymentResponseAck command received");
                 self.parse_payment_response_ack(cmd_handle, result);
             }
+            PaymentsCommand::AppendTxnAuthorAgreementAcceptanceToExtra(extra, text, version, taa_digest, mechanism, time, cb) => {
+                info!(target: "payments_command_executor", "AppendTxnAuthorAgreementAcceptanceToExtra command received");
+                cb(self.append_txn_author_agreement_acceptance_to_extra(extra.as_ref().map(String::as_str),
+                                                                        text.as_ref().map(String::as_str),
+                                                                        version.as_ref().map(String::as_str),
+                                                                        taa_digest.as_ref().map(String::as_str),
+                                                                        &mechanism,
+                                                                        time));
+            }
             PaymentsCommand::BuildMintReq(wallet_handle, submitter_did, outputs, extra, cb) => {
                 info!(target: "payments_command_executor", "BuildMintReq command received");
                 self.build_mint_req(wallet_handle, submitter_did.as_ref().map(String::as_str), &outputs, extra.as_ref().map(String::as_str), cb);
@@ -259,6 +285,10 @@ impl PaymentsCommandExecutor {
             PaymentsCommand::ParseVerifyPaymentResponseAck(command_handle, result) => {
                 info!(target: "payments_command_executor", "ParseVerifyResponseAck command received");
                 self.parse_verify_payment_response_ack(command_handle, result);
+            }
+            PaymentsCommand::GetRequestInfo(get_auth_rule_response_json, requester_info, fees_json, cb) => {
+                info!(target: "payments_command_executor", "GetRequestInfo command received");
+                cb(self.get_request_info(&get_auth_rule_response_json, requester_info, &fees_json));
             }
         }
     }
@@ -464,6 +494,31 @@ impl PaymentsCommandExecutor {
         trace!("build_payment_req <<<");
     }
 
+    fn append_txn_author_agreement_acceptance_to_extra(&self,
+                                                       extra: Option<&str>,
+                                                       text: Option<&str>,
+                                                       version: Option<&str>,
+                                                       taa_digest: Option<&str>,
+                                                       mechanism: &str,
+                                                       time: u64) -> IndyResult<String> {
+        debug!("append_txn_author_agreement_acceptance_to_extra >>> extra: {:?}, text: {:?}, version: {:?}, taa_digest: {:?}, mechanism: {:?}, time: {:?}",
+               extra, text, version, taa_digest, mechanism, time);
+
+        let mut extra: serde_json::Value = serde_json::from_str(extra.unwrap_or("{}"))
+            .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Cannot deserialize extra: {:?}", err)))?;
+
+        let acceptance_data = self.ledger_service.prepare_acceptance_data(text, version, taa_digest, mechanism, time)?;
+
+        extra["taaAcceptance"] = serde_json::to_value(acceptance_data)
+            .to_indy(IndyErrorKind::InvalidState, "Can't serialize author agreement acceptance data")?;
+
+        let res: String = extra.to_string();
+
+        debug!("append_txn_author_agreement_acceptance_to_extra <<< res: {:?}", res);
+
+        Ok(res)
+    }
+
     fn build_payment_req_ack(&self, cmd_handle: i32, result: IndyResult<String>) {
         trace!("build_payment_req_ack >>> result: {:?}", result);
         self._common_ack_payments(cmd_handle, result, "BuildPaymentReqAck");
@@ -662,5 +717,36 @@ impl PaymentsCommandExecutor {
             }
             (Ok(mth1), Ok(_)) => Ok(mth1)
         }
+    }
+
+    pub fn get_request_info(&self, get_auth_rule_response_json: &str, requester_info: RequesterInfo, fees: &Fees) -> IndyResult<String> {
+        trace!("get_request_info >>> get_auth_rule_response_json: {:?}, requester_info: {:?}, fees: {:?}", get_auth_rule_response_json, requester_info, fees);
+
+        let auth_rule = self._parse_get_auth_rule_response(get_auth_rule_response_json)?;
+
+        let req_info = self.payments_service.get_request_info_with_min_price(&auth_rule.constraint, &requester_info, &fees)?;
+
+        let res = serde_json::to_string(&req_info)
+            .to_indy(IndyErrorKind::InvalidState, "Cannot serialize RequestInfo")?;
+
+        trace!("get_request_info <<< {:?}", res);
+
+        Ok(res)
+    }
+
+    fn _parse_get_auth_rule_response(&self, get_auth_rule_response_json: &str) -> IndyResult<AuthRule> {
+        trace!("_parse_get_auth_rule_response >>> get_auth_rule_response_json: {:?}", get_auth_rule_response_json);
+
+        let mut auth_rules: Vec<AuthRule> = self.ledger_service.parse_get_auth_rule_response(get_auth_rule_response_json)?;
+
+        if auth_rules.len() != 1 {
+            return Err(IndyError::from_msg(IndyErrorKind::InvalidTransaction, "GetAuthRule response must contain one auth rule"));
+        }
+
+        let res = auth_rules.pop().unwrap();
+
+        trace!("_parse_get_auth_rule_response <<< {:?}", res);
+
+        Ok(res)
     }
 }

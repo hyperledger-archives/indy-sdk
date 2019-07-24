@@ -1,24 +1,52 @@
 use utils::environment;
 
 use std::fs;
+use std::path::PathBuf;
+use std::fs::File;
 
-pub fn cleanup_indy_home() {
-    let path = environment::indy_home_path();
+
+pub fn cleanup_files(dir: &PathBuf, name: &str) {
+    let mut path = dir.clone();
+    path.push(name);
     if path.exists() {
-        fs::remove_dir_all(path).unwrap();
+        if path.is_dir() {
+            fs::remove_dir_all(path).unwrap();
+        } else {
+            fs::remove_file(path).unwrap();
+        }
     }
 }
 
-pub fn cleanup_temp() {
-    let path = environment::tmp_path();
-    if path.exists() {
-        fs::remove_dir_all(path).unwrap();
-    }
+pub fn cleanup_indy_home(name: &str) {
+    cleanup_files(&environment::indy_home_path(), name);
 }
 
-pub fn cleanup_storage() {
-    cleanup_indy_home();
-    cleanup_temp();
+pub fn cleanup_temp(name: &str) {
+    cleanup_files(&environment::tmp_path(), name);
+}
+
+pub fn cleanup_wallet(name: &str) {
+    cleanup_files(&environment::wallet_home_path(), name);
+}
+
+pub fn cleanup_pool(name: &str) {
+    cleanup_files(&environment::pool_home_path(), name);
+}
+
+pub fn cleanup_storage(name: &str) {
+    cleanup_wallet(name);
+    cleanup_pool(name);
+    cleanup_indy_home(name);
+    cleanup_temp(name);
+}
+
+#[cfg(test)]
+pub fn test_pool_create_poolfile(pool_name: &str) -> File {
+    let mut pool_path = environment::pool_path(pool_name);
+    fs::create_dir_all(pool_path.as_path()).unwrap();
+    pool_path.push(pool_name);
+    pool_path.set_extension("txn");
+    fs::File::create(pool_path.as_path()).unwrap()
 }
 
 pub fn gen_txns() -> Vec<String> {

@@ -1,6 +1,6 @@
 extern crate libc;
 extern crate time;
-extern crate indy_crypto;
+extern crate ursa;
 extern crate serde_json;
 
 use api::ErrorCode;
@@ -468,7 +468,7 @@ impl InmemWallet {
             Some(ref mut record) => {
                 let curr_tags_json = record.tags.to_str().unwrap().to_string() ;
 
-                let mut curr_tags_res = serde_json::from_str::<HashMap<String, String>>(&curr_tags_json);
+                let curr_tags_res = serde_json::from_str::<HashMap<String, String>>(&curr_tags_json);
                 let tags_names_to_delete = serde_json::from_str::<Vec<String>>(&tag_names);
 
                 let (mut curr_tags, tags_delete) = match (curr_tags_res, tags_names_to_delete) {

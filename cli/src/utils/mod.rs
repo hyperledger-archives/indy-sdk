@@ -7,6 +7,8 @@ pub mod term;
 #[cfg(test)]
 pub mod test;
 pub mod table;
+pub mod file;
+pub mod history;
 
 #[macro_export] //TODO move to more relevant place
 macro_rules! update_json_map_opt_key {

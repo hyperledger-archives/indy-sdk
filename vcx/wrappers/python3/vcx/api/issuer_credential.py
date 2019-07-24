@@ -112,6 +112,17 @@ class IssuerCredential(VcxStateful):
         """
         return await self._update_state(IssuerCredential, 'vcx_issuer_credential_update_state')
 
+    async def update_state_with_message(self, message: str) -> int:
+        """
+        Update the state of the credential based on the given message.
+        Example:
+        cred = await IssuerCredential.create(source_id)
+        assert await cred.update_state_with_message(message) == State.Accepted
+        :param message:
+        :return Current state of the IssuerCredential
+        """
+        return await self._update_state_with_message(IssuerCredential, message, 'vcx_issuer_credential_update_state_with_message')
+
     async def get_state(self) -> int:
         """
         Gets the state of the entity.
@@ -159,6 +170,38 @@ class IssuerCredential(VcxStateful):
                       c_connection_handle,
                       IssuerCredential.send_offer.cb)
 
+    async def get_offer_msg(self, connection: Connection):
+        """
+        Gets the offer message to send to specified connection.
+        :param connection: vcx.api.connection.Connection
+        :return: None
+
+        Example:
+        source_id = '1'
+        cred_def_id = 'cred_def_id1'
+        attrs = {'key': 'value', 'key2': 'value2', 'key3': 'value3'}
+        name = 'Credential Name'
+        issuer_did = '8XFh8yBzrpJQmNyZzgoTqB'
+        phone_number = '8019119191'
+        price = 1
+        issuer_credential = await IssuerCredential.create(source_id, attrs, cred_def_id, name, price)
+        connection = await Connection.create(source_id)
+        issuer_credential.get_offer_msg(connection)
+        """
+        if not hasattr(IssuerCredential.get_offer_msg, "cb"):
+            self.logger.debug("vcx_issuer_get_credential_offer_msg: Creating callback")
+            IssuerCredential.get_offer_msg.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
+
+        c_credential_handle = c_uint32(self.handle)
+        c_connection_handle = c_uint32(connection.handle)
+
+        msg = await do_call('vcx_issuer_get_credential_offer_msg',
+                      c_credential_handle,
+                      c_connection_handle,
+                      IssuerCredential.get_offer_msg.cb)
+
+        return json.loads(msg.decode())
+
     async def send_credential(self, connection: Connection):
         """
         Sends the credential to the end user (prover).
@@ -178,6 +221,28 @@ class IssuerCredential(VcxStateful):
                       c_credential_handle,
                       c_connection_handle,
                       IssuerCredential.send_credential.cb)
+
+    async def get_credential_msg(self, connection: Connection):
+        """
+        Get the credential to send to the end user (prover).
+        :param connection: Connection Object
+        :return: None
+            Example:
+            credential.send_credential(connection)
+        """
+        if not hasattr(IssuerCredential.get_credential_msg, "cb"):
+            self.logger.debug("vcx_issuer_get_credential_msg: Creating callback")
+            IssuerCredential.get_credential_msg.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
+
+        c_credential_handle = c_uint32(self.handle)
+        c_connection_handle = c_uint32(connection.handle)
+
+        msg = await do_call('vcx_issuer_get_credential_msg',
+                      c_credential_handle,
+                      c_connection_handle,
+                      IssuerCredential.get_credential_msg.cb)
+
+        return json.loads(msg.decode())
 
     async def revoke_credential(self):
         """

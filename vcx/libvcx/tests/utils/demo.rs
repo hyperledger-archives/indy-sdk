@@ -5,7 +5,7 @@ extern crate serde_json;
 
 use std::ptr;
 use std::collections::HashMap;
-use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use self::libc::c_char;
 use std::thread;
 use std::time::Duration;
@@ -30,7 +30,7 @@ macro_rules! check_useful_c_str {
 }
 
 lazy_static! {
-    static ref COMMAND_HANDLE_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
+    static ref COMMAND_HANDLE_COUNTER: AtomicUsize = AtomicUsize::new(1);
 }
 
 #[allow(unused_assignments)]

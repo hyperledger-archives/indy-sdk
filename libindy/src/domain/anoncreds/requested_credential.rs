@@ -1,5 +1,3 @@
-extern crate indy_crypto;
-
 use std::collections::HashMap;
 
 #[derive(Debug, Deserialize, Serialize)]

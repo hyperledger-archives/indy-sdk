@@ -20,6 +20,7 @@ Native bindings for [Hyperledger Indy](https://www.hyperledger.org/projects/hype
   * [pool](#pool)
   * [wallet](#wallet)
   * [logger](#logger)
+  * [cache](#cache)
   * [mod](#mod)
 - [Advanced](#advanced)
 - [Contributing](#contributing)
@@ -100,6 +101,10 @@ Collecting of backtrace can be enabled by:
 
 ### anoncreds
 
+These functions wrap the Ursa algorithm as documented in this [paper](https://github.com/hyperledger/ursa/blob/master/libursa/docs/AnonCred.pdf):
+
+And is documented in this [HIPE](https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336fdc8cc1/text/anoncreds-protocol/README.md):
+
 #### issuerCreateSchema \( issuerDid, name, version, attrNames \) -&gt; \[ id, schema \]
 
 Create credential schema entity that describes credential attributes list and allows credentials
@@ -137,7 +142,11 @@ It is IMPORTANT for current version GET Schema from Ledger with correct seq\_no 
 * `schema`: Json - credential schema as a json
 * `tag`: String - allows to distinct between credential definitions for the same issuer and schema
 * `signatureType`: String - credential definition type \(optional, 'CL' by default\) that defines credentials signature and revocation math. Supported types are:
-  *  'CL': Camenisch-Lysyanskaya credential signature type
+  *  'CL': Camenisch-Lysyanskaya credential signature type that is implemented according to the algorithm in this paper:
+                https://github.com/hyperledger/ursa/blob/master/libursa/docs/AnonCred.pdf
+           And is documented in this HIPE:
+               https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336fdc8cc1/text/anoncreds-protocol/README.md
+
 * `config`: Json - \(optional\) type-specific configuration of credential definition as json:
   *  'CL':
     *  support\_revocation: whether to request non-revocation credential \(optional, default false\)
@@ -168,7 +177,9 @@ This call requires access to pre-configured blob storage writer instance handle 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `issuerDid`: String - a DID of the issuer signing transaction to the Ledger
 * `revocDefType`: String - revocation registry type \(optional, default value depends on credential definition type\). Supported types are:
-  *  'CL\_ACCUM': Type-3 pairing based accumulator. Default for 'CL' credential definition type
+  *  'CL\_ACCUM': Type-3 pairing based accumulator implemented according to the algorithm in this paper:
+                    https://github.com/hyperledger/ursa/blob/master/libursa/docs/AnonCred.pdf
+                  This type is default for 'CL' credential definition type.
 * `tag`: String - allows to distinct between revocation registries for the same issuer and credential definition
 * `credDefId`: String - id of stored in ledger credential definition
 * `config`: Json - type-specific configuration of revocation registry as json:
@@ -182,7 +193,13 @@ This call requires access to pre-configured blob storage writer instance handle 
     "max_cred_num": maximum number of credentials the new registry can process (optional, default 100000)
 }
 ````
-* `tailsWriterHandle`: Handle (Number) - handle of blob storage to store tails
+* `tailsWriterHandle`: Handle (Number) - handle of blob storage to store tails 
+
+NOTE:
+Recursive creation of folder for Default Tails Writer (correspondent to `tailsWriterHandle`)
+in the system-wide temporary directory may fail in some setup due to permissions: `IO error: Permission denied`.
+In this case use `TMPDIR` environment variable to define temporary directory specific for an application.
+
 * __->__ [ `revocRegId`: String, `revocRegDef`: Json, `revocRegEntry`: Json ] - revoc\_reg\_id: identifier of created revocation registry definition
 revoc\_reg\_def\_json: public part of revocation registry definition
 revoc\_reg\_entry\_json: revocation registry entry that defines initial state of revocation registry
@@ -204,7 +221,9 @@ for authentication between protocol steps and integrity checking.
         "cred_def_id": string,
         // Fields below can depend on Cred Def type
         "nonce": string,
-        "key_correctness_proof" : <key_correctness_proof>
+        "key_correctness_proof" : key correctness proof for credential definition correspondent to cred_def_id
+                                  (opaque type that contains data structures internal to Ursa.
+                                  It should not be parsed and are likely to change in future versions).
     }
 ````
 
@@ -244,8 +263,12 @@ Example:
         "rev_reg_def_id", Optional<string>,
         "values": <see cred_values_json above>,
         // Fields below can depend on Cred Def type
-        "signature": <signature>,
+        "signature": <credential signature>,
+                     (opaque type that contains data structures internal to Ursa.
+                     It should not be parsed and are likely to change in future versions).
         "signature_correctness_proof": <signature_correctness_proof>
+                                       (opaque type that contains data structures internal to Ursa.
+                                        It should not be parsed and are likely to change in future versions).
     }
 cred_revoc_id: local id for revocation info (Can be used for revocation of this credential)
 revoc_reg_delta_json: Revocation registry delta json with a newly issued credential
@@ -313,7 +336,11 @@ The blinded master secret is a part of the credential request.
      "cred_def_id" : string,
         // Fields below can depend on Cred Def type
      "blinded_ms" : <blinded_master_secret>,
+                   (opaque type that contains data structures internal to Ursa.
+                    It should not be parsed and are likely to change in future versions).
      "blinded_ms_correctness_proof" : <blinded_ms_correctness_proof>,
+                                       (opaque type that contains data structures internal to Ursa.
+                                        It should not be parsed and are likely to change in future versions).
      "nonce": string
    }
 cred_req_metadata_json: Credential request metadata json for further processing of received form Issuer credential.
@@ -468,7 +495,7 @@ Use &lt;proverSearchCredentialsForProofReq&gt; to fetch records by small batches
     {
         "name": string,
         "version": string,
-        "nonce": string,
+        "nonce": string, - a big number represented as a string (use `generateNonce` function to generate 80-bit number)
         "requested_attributes": { // set of requested attributes
              "<attr_referent>": <attr_info>, // see below
              ...,
@@ -522,7 +549,7 @@ to fetch records by small batches \(with proverFetchCredentialsForProofReq\).
     {
         "name": string,
         "version": string,
-        "nonce": string,
+        "nonce": string, - a big number represented as a string (use `generateNonce` function to generate 80-bit number)
         "requested_attributes": { // set of requested attributes
              "<attr_referent>": <attr_info>, // see below
              ...,
@@ -680,7 +707,8 @@ There is also aggregated proof part common for all credential proofs.
         "proof": {
             "proofs": [ <credential_proof>, <credential_proof>, <credential_proof> ],
             "aggregated_proof": <aggregated_proof>
-        }
+        } (opaque type that contains data structures internal to Ursa.
+            It should not be parsed and are likely to change in future versions).
         "identifiers": [{schema_id, cred_def_id, Optional<rev_reg_id>, Optional<timestamp>}]
     }
 ````
@@ -697,7 +725,7 @@ All required schemas, public keys and revocation registries must be provided.
     {
         "name": string,
         "version": string,
-        "nonce": string,
+        "nonce": string, - a big number represented as a string (use `generateNonce` function to generate 80-bit number)
         "requested_attributes": { // set of requested attributes
              "<attr_referent>": <attr_info>, // see below
              ...,
@@ -815,6 +843,14 @@ at the particular time moment \(to reduce calculation time\).
 ````
 
 Errors: `Common*`, `Wallet*`, `Anoncreds*`
+
+#### generateNonce \( \) -&gt; nonce
+
+Generates 80-bit numbers that can be used as a nonce for proof request.
+
+* __->__ `nonce`: Json - generated number as a string
+
+Errors: `Common*`
 
 ### blob_storage
 
@@ -1759,8 +1795,8 @@ Builds a AUTH_RULE request. Request to change authentication rules for a ledger 
     * "EDIT" - to edit an existing one
 * `field`: String - transaction field.
 * `oldValue`: String - \(Optional\) old value of a field, which can be changed to a new_value (mandatory for EDIT action).
-* `newValue`: String - new value that can be used to fill the field. 
-* `constraint`: String - set of constraints required for execution of an action in the following format:
+* `newValue`: String - \(Optional\) new value that can be used to fill the field. 
+* `constraint`: Json - set of constraints required for execution of an action in the following format:
 ```
  {
      constraint_id - <string> type of a constraint.
@@ -1785,6 +1821,34 @@ More about AUTH_RULE request: https://github.com/hyperledger/indy-node/blob/mast
 
 Errors: `Common*`
 
+#### buildAuthRulesRequest \( submitterDid, data \) -&gt; request
+
+Builds a AUTH_RULES request. Request to change multiple authentication rules for a ledger transaction.
+
+* `submitterDid`: String - \(Optional\) DID of the read request sender \(if not provided then default Libindy DID will be used\).
+* `constraint`: Json - a list of auth rules:
+```
+[
+    {
+        "auth_type": ledger transaction alias or associated value,
+        "auth_action": type of an action,
+        "field": transaction field,
+        "old_value": (Optional) old value of a field, which can be changed to a new_value (mandatory for EDIT action),
+        "new_value": (Optional) new value that can be used to fill the field,
+        "constraint": set of constraints required for execution of an action in the format described above for `buildAuthRuleRequest` function.
+    },
+    ...
+]
+```
+
+Default ledger auth rules: https://github.com/hyperledger/indy-node/blob/master/docs/source/auth_rules.md
+
+More about AUTH_RULE request: https://github.com/hyperledger/indy-node/blob/master/docs/source/requests.md#auth_rules   
+
+* __->__ `request`: Json
+
+Errors: `Common*`
+
 
 #### buildGetAuthRuleRequest \( submitterDid, txnType, action, field, oldValue, newValue \) -&gt; request
 
@@ -1798,8 +1862,112 @@ NOTE: Either none or all transaction related parameters must be specified (`oldV
 * `txnType`: String - target ledger transaction alias or associated value.
 * `action`: String - target action type. Can be either "ADD" or "EDIT".
 * `field`: String - target transaction field.
-* `oldValue`: String - \(Optional\) old value of field, which can be changed to a new_value (must be specified for EDIT action).
+* `oldValue`: String - \(Optional\) old value of field, which can be changed to a new_value (mandatory for EDIT action).
 * `newValue`: String - \(Optional\) new value that can be used to fill the field. 
+
+* __->__ `request`: Json
+
+Errors: `Common*`
+
+#### buildTxnAuthorAgreementRequest \( submitterDid, text, version \) -&gt; request
+
+Builds a TXN_AUTHR_AGRMT request. 
+Request to add a new version of Transaction Author Agreement to the ledger.
+
+EXPERIMENTAL
+
+* `submitterDid`: String - DID of the request sender.
+* `text`: String - a content of the TTA.
+* `version`: String - a version of the TTA (unique UTF-8 string).
+
+* __->__ `request`: Json
+
+Errors: `Common*`
+
+
+#### buildGetTxnAuthorAgreementRequest \( submitterDid, data \) -&gt; request
+
+Builds a GET_TXN_AUTHR_AGRMT request. 
+Request to get a specific Transaction Author Agreement from the ledger.
+
+EXPERIMENTAL
+
+* `submitterDid`: String - \(Optional\) DID of the read request sender \(if not provided then default Libindy DID will be used\).
+* `data`: Json - \(Optional\) specifies a condition for getting specific TAA.
+Contains 3 mutually exclusive optional fields:
+```
+{
+   hash: Optional<str> - hash of requested TAA,
+   version: Optional<str> - version of requested TAA.
+   timestamp: Optional<u64> - ledger will return TAA valid at requested timestamp.
+}
+```
+Null data or empty JSON are acceptable here. In this case, ledger will return the latest version of TAA.
+
+* __->__ `request`: Json
+
+Errors: `Common*`
+
+#### buildAcceptanceMechanismsRequest \( submitterDid, aml, version, amlContext \) -&gt; request
+
+Builds a SET_TXN_AUTHR_AGRMT_AML request. 
+Request to add a new list of acceptance mechanisms for transaction author agreement.
+Acceptance Mechanism is a description of the ways how the user may accept a transaction author agreement.
+
+EXPERIMENTAL
+
+* `submitterDid`: String - DID of the request sender.
+* `aml`: Json - a set of new acceptance mechanisms:
+```
+{
+  “<acceptance mechanism label 1>”: { acceptance mechanism description 1},
+  “<acceptance mechanism label 2>”: { acceptance mechanism description 2},
+  ...
+}
+```
+* `version`: String - a version of new acceptance mechanisms. (Note: unique on the Ledger).
+* `amlContext`: String - \(Optional\) common context information about acceptance mechanisms (may be a URL to external resource).
+
+* __->__ `request`: Json
+
+Errors: `Common*`
+
+#### buildGetAcceptanceMechanismsRequest \( submitterDid, timestamp \) -&gt; request
+
+Builds a GET_TXN_AUTHR_AGRMT_AML request. 
+Request to get a list of  acceptance mechanisms from the ledger valid for specified time or the latest one.
+
+EXPERIMENTAL
+
+* `submitterDid`: String - \(Optional\) DID of the read request sender \(if not provided then default Libindy DID will be used\).
+* `timestamp`: Timestamp (Number) - \(Optional\) time to get an active acceptance mechanisms. The latest one will be returned for null.
+* `version`: Timestamp (String) - \(Optional\) version of acceptance mechanisms.
+
+NOTE: timestamp and version cannot be specified together.
+
+* __->__ `request`: Json
+
+Errors: `Common*`
+
+#### appendTxnAuthorAgreementAcceptanceToRequest \( requestJson, text, version, taaDigest, accMechType, timeOfAcceptance \) -&gt; request
+
+Append transaction author agreement acceptance data to a request.
+This function should be called before signing and sending a request
+if there is any transaction author agreement set on the Ledger.
+
+EXPERIMENTAL
+
+This function may calculate hash by itself or consume it as a parameter.
+If all text, version and taaDigest parameters are specified, a check integrity of them will be done.
+
+* `requestJson`: Json - original request data json.
+* `text`: String - \(Optional\) raw data about TAA from ledger.
+* `version`: String - \(Optional\) raw data about TAA from ledger.
+     * `text` and `version` parameters should be passed together.
+     * `text` and `version` parameters are required if taaDigest parameter is omitted.
+* `taaDigest`: String - \(Optional\) hash on text and version. This parameter is required if text and version parameters are omitted.
+* `accMechType`: String - mechanism how user has accepted the TAA.
+* `timeOfAcceptance`: Timestamp (Number) - UTC timestamp when user has accepted the TAA. Note that the time portion will be discarded to avoid a privacy risk. 
 
 * __->__ `request`: Json
 
@@ -2243,6 +2411,27 @@ Parses response for Indy request for payment txn.
   }]
 ````
 
+#### preparePaymentExtraWithAcceptanceData \( extraJson, text, version, taaDigest, accMechType, timeOfAcceptance \) -&gt; request
+
+Append payment extra JSON with TAA acceptance data
+
+EXPERIMENTAL
+
+This function may calculate hash by itself or consume it as a parameter.
+If all text, version and taaDigest parameters are specified, a check integrity of them will be done.
+
+* `extraJson`: Json - \(Optional\) original extra json.
+* `text`: String - \(Optional\) raw data about TAA from ledger.
+* `version`: String - \(Optional\) raw data about TAA from ledger.
+     * `text` and `version` parameters should be passed together.
+     * `text` and `version` parameters are required if taaDigest parameter is omitted.
+* `taaDigest`: String - \(Optional\) hash on text and version. This parameter is required if text and version parameters are omitted.
+* `accMechType`: String - mechanism how user has accepted the TAA.
+* `timeOfAcceptance`: Timestamp (Number) - UTC timestamp when user has accepted the TAA.
+
+* __->__ `request`: Json
+
+Errors: `Common*`
 
 #### buildMintReq \( wh, submitterDid, outputs, extra \) -&gt; \[ mintReq, paymentMethod \]
 
@@ -2330,6 +2519,39 @@ amount: &lt;int&gt;, \/\/ amount
 } \],
 extra: &lt;str&gt;, \/\/optional data
 }
+
+#### getRequestInfo \( getAuthRuleResponse, requesterInfo, fees \) -&gt; requestInfo
+
+Gets request requirements (with minimal price) correspondent to specific auth rule
+in case the requester can perform this action.
+
+*EXPERIMENTAL*
+
+If the requester does not match to the request constraints `TransactionNotAllowed` error will be thrown.
+
+* `getAuthRuleResponse`: String - response on GET_AUTH_RULE request returning action constraints set on the ledger.
+* `requesterInfo`: Json:
+```
+{
+    "role": string (optional) - role of a user which can sign a transaction.
+    "sig_count": u64 - number of signers.
+    "is_owner": bool (optional) - if user is an owner of transaction.
+}
+```
+* `fees`: Json - fees set on the ledger (result of `parseGetTxnFeesResponse`).
+* __->__ `requestInfo`: Json - request info if a requester match to the action constraints.
+```
+{
+    "price": u64 - fee required for the action performing,
+    "requirements": [{
+        "role": string - role of users who should sign,
+        "sig_count": u64 - number of signers,
+        "need_to_be_owner": bool - if requester need to be owner
+    }]
+}
+```
+
+Errors: `Common*`, `Ledger*`
 
 
 ### pool
@@ -2672,6 +2894,116 @@ indy.setLogger(function (level, target, message, modulePath, file, line) {
 Errors: `Common*`
 
 NOTE: This is a synchronous function (does not return a promise) but may call `logFn` asynchronously many times.
+
+### cache
+
+#### getSchema \( poolHandle, wh, submitterDid, id, options \) -&gt; schema
+
+Get schema json data for specified schema id.
+If data is present inside of cache, cached data is returned.
+Otherwise data is fetched from the ledger and stored inside of cache for future use.
+
+EXPERIMENTAL
+
+* `poolHandle`:
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
+* `submitterDid`: String - DID of the read request sender.
+* `id`: String - Schema ID in ledger
+* `options`: Json
+```
+ {
+    noCache: (bool, optional, false by default) Skip usage of cache,
+    noUpdate: (bool, optional, false by default) Use only cached data, do not try to update.
+    noStore: (bool, optional, false by default) Skip storing fresh data if updated,
+    minFresh: (int, optional, -1 by default) Return cached data if not older than this many seconds. -1 means do not check age.
+ }
+
+```
+__->__ schema: Json
+```
+{
+    id: identifier of schema
+    attrNames: array of attribute name strings
+    name: Schema's name string
+    version: Schema's version string
+    ver: Version of the Schema json
+}
+```
+
+Errors: `Common*`, `Wallet*`, `Ledger*`
+
+#### getCredDef \( poolHandle, wh, submitterDid, id, options \) -&gt; credDef
+
+EXPERIMENTAL
+
+Get credential definition json data for specified credential definition id.
+If data is present inside of cache, cached data is returned.
+Otherwise data is fetched from the ledger and stored inside of cache for future use.
+
+* `poolHandle`:
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
+* `submitterDid`: String - DID of the read request sender.
+* `id`: String - Credential Definition ID in ledger.
+* `options`: Json
+```
+ {
+    noCache: (bool, optional, false by default) Skip usage of cache,
+    noUpdate: (bool, optional, false by default) Use only cached data, do not try to update.
+    noStore: (bool, optional, false by default) Skip storing fresh data if updated,
+    minFresh: (int, optional, -1 by default) Return cached data if not older than this many seconds. -1 means do not check age.
+ }
+
+```
+__->__ credDef: Json
+```
+{
+    id: string - identifier of credential definition
+    schemaId: string - identifier of stored in ledger schema
+    type: string - type of the credential definition. CL is the only supported type now.
+    tag: string - allows to distinct between credential definitions for the same issuer and schema
+    value: Dictionary with Credential Definition's data: {
+        primary: primary credential public key,
+        Optional<revocation>: revocation credential public key
+    },
+    ver: Version of the Credential Definition json
+}
+```
+
+Errors: `Common*`, `Wallet*`, `Ledger*`
+
+#### purgeSchemaCache \( wh, options \) -&gt; void
+
+Purge schema cache.
+
+EXPERIMENTAL
+
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
+* `options`: Json
+```
+ {
+   maxAge: (int, optional, -1 by default) Purge cached data if older than this many seconds. -1 means purge all.
+ }
+```
+* __->__ void
+
+Errors: `Common*`, `Wallet*`
+
+#### purgeCredDefCache \( wh, options \) -&gt; void
+
+Purge credential definition cache.
+
+EXPERIMENTAL
+
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
+* `options`: Json
+```
+ {
+   maxAge: (int, optional, -1 by default) Purge cached data if older than this many seconds. -1 means purge all.
+ }
+```
+* __->__ void
+
+Errors: `Common*`, `Wallet*`
 
 ### mod
 

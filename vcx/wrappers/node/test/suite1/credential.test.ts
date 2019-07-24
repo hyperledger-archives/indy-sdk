@@ -144,6 +144,13 @@ describe('Credential:', () => {
       assert.equal(await credential.getState(), StateType.OfferSent)
     })
 
+    it('success: get request message', async () => {
+      const data = await dataCredentialCreateWithOffer()
+      const credential = await credentialCreateWithOffer(data)
+      const msg = await credential.getRequestMessage({ connection: data.connection, payment: 0 })
+      assert(msg.length > 0)
+    })
+
     it('success: issued', async () => {
       const data = await dataCredentialCreateWithOffer()
       const credential = await credentialCreateWithOffer(data)
