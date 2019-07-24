@@ -755,9 +755,25 @@ indy.buildGetPaymentSourcesRequest = function buildGetPaymentSourcesRequest (wh,
   return cb.promise
 }
 
+indy.buildGetPaymentSourcesWithFromRequest = function buildGetPaymentSourcesRequest (wh, submitterDid, paymentAddress, from, cb) {
+  cb = wrapIndyCallback(cb, function (data) {
+    return [fromJson(data[0]), data[1]]
+  })
+  capi.buildGetPaymentSourcesWithFromRequest(wh, submitterDid, paymentAddress, from, cb)
+  return cb.promise
+}
+
 indy.parseGetPaymentSourcesResponse = function parseGetPaymentSourcesResponse (paymentMethod, resp, cb) {
   cb = wrapIndyCallback(cb, fromJson)
   capi.parseGetPaymentSourcesResponse(paymentMethod, toJson(resp), cb)
+  return cb.promise
+}
+
+indy.parseGetPaymentSourcesWithFromResponse = function parseGetPaymentSourcesResponse (paymentMethod, resp, cb) {
+  cb = wrapIndyCallback(cb, function (data) {
+    return [fromJson(data[0]), data[1]]
+  })
+  capi.parseGetPaymentSourcesWithFromResponse(paymentMethod, toJson(resp), cb)
   return cb.promise
 }
 

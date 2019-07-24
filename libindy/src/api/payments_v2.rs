@@ -31,14 +31,14 @@ pub extern fn indy_build_get_payment_sources_with_from_request(command_handle: C
                                                                                     err: ErrorCode,
                                                                                     get_sources_txn_json: *const c_char,
                                                                                     payment_method: *const c_char)>) -> ErrorCode {
-    trace!("indy_build_get_payment_sources_request: >>> wallet_handle: {:?}, submitter_did: {:?}, payment_address: {:?}", wallet_handle, submitter_did, payment_address);
+    trace!("indy_build_get_payment_sources_with_from_request: >>> wallet_handle: {:?}, submitter_did: {:?}, payment_address: {:?}", wallet_handle, submitter_did, payment_address);
     check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(payment_address, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
     let from: Option<u64> = if from == -1 { None } else { Some(from as u64) };
 
-    trace!("indy_build_get_payment_sources_request: entities >>> wallet_handle: {:?}, submitter_did: {:?}, payment_address: {:?}, from: {:?}", wallet_handle, submitter_did, payment_address, from);
+    trace!("indy_build_get_payment_sources_with_from_request: entities >>> wallet_handle: {:?}, submitter_did: {:?}, payment_address: {:?}, from: {:?}", wallet_handle, submitter_did, payment_address, from);
 
     let result =
         CommandExecutor::instance().send(
@@ -50,7 +50,7 @@ pub extern fn indy_build_get_payment_sources_with_from_request(command_handle: C
                     from,
                     Box::new(move |result| {
                         let (err, get_sources_txn_json, payment_method) = prepare_result_2!(result, String::new(), String::new());
-                        trace!("indy_build_get_payment_sources_request: get_sources_txn_json: {:?}, payment_method: {:?}", get_sources_txn_json, payment_method);
+                        trace!("indy_build_get_payment_sources_with_from_request: get_sources_txn_json: {:?}, payment_method: {:?}", get_sources_txn_json, payment_method);
                         let get_sources_txn_json = ctypes::string_to_cstring(get_sources_txn_json);
                         let payment_method = ctypes::string_to_cstring(payment_method);
                         cb(command_handle, err, get_sources_txn_json.as_ptr(), payment_method.as_ptr());
@@ -59,7 +59,7 @@ pub extern fn indy_build_get_payment_sources_with_from_request(command_handle: C
 
     let res = prepare_result!(result);
 
-    trace!("indy_build_get_payment_sources_request: <<< res: {:?}", res);
+    trace!("indy_build_get_payment_sources_with_from_request: <<< res: {:?}", res);
 
     res
 }
@@ -88,12 +88,12 @@ pub extern fn indy_parse_get_payment_sources_with_from_response(command_handle: 
                                                                                      err: ErrorCode,
                                                                                      next: i64,
                                                                                      sources_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_parse_get_payment_sources_response: >>> payment_method: {:?}, resp_json: {:?}", payment_method, resp_json);
+    trace!("indy_parse_get_payment_sources_with_from_response: >>> payment_method: {:?}, resp_json: {:?}", payment_method, resp_json);
     check_useful_c_str!(payment_method, ErrorCode::CommonInvalidParam2);
     check_useful_c_str!(resp_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!("indy_parse_get_payment_sources_response: entities >>> payment_method: {:?}, resp_json: {:?}", payment_method, resp_json);
+    trace!("indy_parse_get_payment_sources_with_from_response: entities >>> payment_method: {:?}, resp_json: {:?}", payment_method, resp_json);
 
     let result =
         CommandExecutor::instance().send(
@@ -103,7 +103,7 @@ pub extern fn indy_parse_get_payment_sources_with_from_response(command_handle: 
                     resp_json,
                     Box::new(move |result| {
                         let (err, sources_json, next) = prepare_result_2!(result, String::new(), -1);
-                        trace!("indy_parse_get_payment_sources_response: sources_json: {:?}", sources_json);
+                        trace!("indy_parse_get_payment_sources_with_from_response: sources_json: {:?}", sources_json);
                         let sources_json = ctypes::string_to_cstring(sources_json);
                         cb(command_handle, err, next, sources_json.as_ptr());
                     }))
@@ -111,7 +111,7 @@ pub extern fn indy_parse_get_payment_sources_with_from_response(command_handle: 
 
     let res = prepare_result!(result);
 
-    trace!("indy_parse_get_payment_sources_response: <<< res: {:?}", res);
+    trace!("indy_parse_get_payment_sources_with_from_response: <<< res: {:?}", res);
 
     res
 }

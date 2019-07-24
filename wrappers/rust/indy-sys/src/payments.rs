@@ -163,6 +163,7 @@ pub type BuildGetPaymentSourcesRequestCB = extern fn(command_handle: CommandHand
                                                      wallet_handle: WalletHandle,
                                                      submitter_did: CString,
                                                      payment_address: CString,
+                                                     from: i64,
                                                      cb: Option<extern fn(command_handle_: CommandHandle,
                                                                           err: Error,
                                                                           get_sources_txn_json: CString) -> Error>) -> Error;
@@ -170,7 +171,8 @@ pub type ParseGetPaymentSourcesResponseCB = extern fn(command_handle: CommandHan
                                                       resp_json: CString,
                                                       cb: Option<extern fn(command_handle_: CommandHandle,
                                                                            err: Error,
-                                                                           sources_json: CString) -> Error>) -> Error;
+                                                                           sources_json: CString,
+                                                                           next: i64) -> Error>) -> Error;
 pub type BuildPaymentReqCB = extern fn(command_handle: CommandHandle,
                                        wallet_handle: WalletHandle,
                                        submitter_did: CString,
