@@ -127,6 +127,23 @@ public class Ledger extends IndyJava.API {
 		}
 	};
 
+	/**
+	 * Callback used when parseRegistryRequest completes.
+	 */
+	private static Callback parseRegistryRespaonseCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err, long timestamp) {
+
+			CompletableFuture<Long> future = (CompletableFuture<Long>) removeFuture(xcommand_handle);
+			if (! checkResult(future, err)) return;
+
+			long result = timestamp;
+			future.complete(result);
+		}
+	};
+
+
 
 	/*
 	 * STATIC METHODS
