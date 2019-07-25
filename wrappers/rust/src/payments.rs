@@ -596,9 +596,9 @@ fn _parse_verify_response(command_handle: CommandHandle, payment_method: &str, r
 /// {
 ///     "price": u64 - tokens amount required for action performing,
 ///     "requirements": [{
-///         "role": string - role of users who should sign,
+///         "role": string (optional) - role of users who should sign,
 ///         "sig_count": string - count of signers,
-///         "need_to_be_owner": bool - if requester need to be owner,
+///         "need_to_be_owner": bool (optional) - if requester need to be owner,
 ///     }]
 /// }
 ///
