@@ -334,7 +334,6 @@ mod tests {
     use domain::ledger::request::ProtocolVersion;
     use services::pool::types::*;
     use utils::test;
-    use services::pool::request_handler::DEFAULT_GENERATOR;
 
     use super::*;
 
@@ -626,12 +625,13 @@ mod tests {
     pub mod nodes_emulator {
         extern crate sodiumoxide;
 
-        use rust_base58::{FromBase58, ToBase58};
+        use rust_base58::{ToBase58, FromBase58};
         use utils::crypto::ed25519_sign;
 
         use super::*;
 
         use ursa::bls::{Generator, SignKey, VerKey};
+        use services::pool::request_handler::DEFAULT_GENERATOR;
 
         pub static POLL_TIMEOUT: i64 = 1_000; /* in ms */
 
