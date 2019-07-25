@@ -115,14 +115,12 @@ impl rlp::Decodable for Node {
                         }
                     }
                 }
-                let mut value: Option<Vec<u8>> = None;
-                if !rlp.at(Node::RADIX)?.is_empty() {
-                    value = Some(rlp.at(Node::RADIX)?.as_val()?)
-                }
-                Ok(Node::Full(FullNode {
-                    nodes: nodes,
-                    value: value,
-                }))
+                let value: Option<Vec<u8>> = if !rlp.at(Node::RADIX)?.is_empty() {
+                    Some(rlp.at(Node::RADIX)?.as_val()?)
+                } else {
+                    None
+                };
+                Ok(Node::Full(FullNode {nodes, value }))
             }
             RlpPrototype::Data(Node::HASH_SIZE) => {
                 Ok(Node::Hash(rlp.as_val()?))
