@@ -2128,7 +2128,7 @@ mod high_cases {
         }
 
         #[test]
-        fn indy_build_auth_rule_requests_works_for_need_to_be_on_ledger() {
+        fn indy_build_auth_rule_requests_works_for_off_ledger_signature() {
             let constraint = json!({
                 "sig_count": 1,
                 "metadata": {},

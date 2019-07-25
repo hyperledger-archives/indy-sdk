@@ -534,7 +534,7 @@ impl PaymentsService {
                                            format!("The requester signatures amount {:?} doesn't meet to constraint \"{:?}\".", requester_info.sig_count, constraint.sig_count)));
         }
 
-        if constraint.off_ledger_signature && !requester_info.is_off_ledger_signature {
+        if !constraint.off_ledger_signature && requester_info.is_off_ledger_signature {
             return Err(IndyError::from_msg(IndyErrorKind::TransactionNotAllowed,
                                            format!("The requester must be published on the ledger.")));
         }
@@ -747,7 +747,7 @@ mod test {
             role: Some("0".to_string()),
             metadata: Some(json!({"fees": "1"})),
             need_to_be_owner: false,
-            off_ledger_signature: true,
+            off_ledger_signature: false,
         })
     }
 
@@ -757,7 +757,7 @@ mod test {
             role: Some("0".to_string()),
             metadata: Some(json!({"fees": "1"})),
             need_to_be_owner: false,
-            off_ledger_signature: true,
+            off_ledger_signature: false,
         })
     }
 
@@ -767,7 +767,7 @@ mod test {
             role: Some("*".to_string()),
             metadata: Some(json!({"fees": "2"})),
             need_to_be_owner: true,
-            off_ledger_signature: true,
+            off_ledger_signature: false,
         })
     }
 
@@ -777,7 +777,7 @@ mod test {
             role: Some("2".to_string()),
             metadata: Some(json!({"fees": "2"})),
             need_to_be_owner: false,
-            off_ledger_signature: true,
+            off_ledger_signature: false,
         })
     }
 
@@ -787,7 +787,7 @@ mod test {
             role: None,
             metadata: Some(json!({"fees": "2"})),
             need_to_be_owner: true,
-            off_ledger_signature: true,
+            off_ledger_signature: false,
         })
     }
 
@@ -796,7 +796,7 @@ mod test {
             role: Some("0".to_string()),
             sig_count: 1,
             is_owner: false,
-            is_off_ledger_signature: true,
+            is_off_ledger_signature: false,
         }
     }
 
@@ -816,7 +816,7 @@ mod test {
                 sig_count: 1,
                 role: Some(0.to_string()),
                 need_to_be_owner: false,
-                off_ledger_signature: true,
+                off_ledger_signature: false,
             }],
         };
 
@@ -834,7 +834,7 @@ mod test {
             role: Some("101".to_string()),
             sig_count: 1,
             is_owner: true,
-            is_off_ledger_signature: true,
+            is_off_ledger_signature: false,
         };
 
         let res = payment_service.get_request_info_with_min_price(&constraint, &requester_info, &fees);
@@ -865,7 +865,7 @@ mod test {
                 sig_count: 1,
                 role: Some(0.to_string()),
                 need_to_be_owner: false,
-                off_ledger_signature: true,
+                off_ledger_signature: false,
             }],
         };
 
@@ -890,7 +890,7 @@ mod test {
                 role: Some("0".to_string()),
                 sig_count: 1,
                 is_owner: true,
-                is_off_ledger_signature: true,
+                is_off_ledger_signature: false,
             };
 
         let fees = _fees();
@@ -903,7 +903,7 @@ mod test {
                 sig_count: 1,
                 role: Some("*".to_string()),
                 need_to_be_owner: true,
-                off_ledger_signature: true,
+                off_ledger_signature: false,
             }],
         };
 
@@ -928,7 +928,7 @@ mod test {
                 role: Some("2".to_string()),
                 sig_count: 1,
                 is_owner: false,
-                is_off_ledger_signature: true,
+                is_off_ledger_signature: false,
             };
 
         let fees = _fees();
@@ -955,7 +955,7 @@ mod test {
                 role: Some("2".to_string()),
                 sig_count: 1,
                 is_owner: true,
-                is_off_ledger_signature: true,
+                is_off_ledger_signature: false,
             };
 
         let fees = _fees();
@@ -968,12 +968,12 @@ mod test {
                 sig_count: 1,
                 role: Some(2.to_string()),
                 need_to_be_owner: false,
-                off_ledger_signature: true,
+                off_ledger_signature: false,
             }, Requirement {
                 sig_count: 1,
                 role: Some("*".to_string()),
                 need_to_be_owner: true,
-                off_ledger_signature: true,
+                off_ledger_signature: false,
             }],
         };
 
@@ -1015,7 +1015,7 @@ mod test {
                 sig_count: 1,
                 role: Some(0.to_string()),
                 need_to_be_owner: false,
-                off_ledger_signature: true,
+                off_ledger_signature: false,
             }],
         };
 
@@ -1034,7 +1034,7 @@ mod test {
                 role: None,
                 sig_count: 1,
                 is_owner: true,
-                is_off_ledger_signature: true,
+                is_off_ledger_signature: false,
             };
 
         let req_info = payment_service.get_request_info_with_min_price(&constraint, &requester_info, &fees).unwrap();
@@ -1045,7 +1045,7 @@ mod test {
                 sig_count: 1,
                 role: None,
                 need_to_be_owner: true,
-                off_ledger_signature: true,
+                off_ledger_signature: false,
             }],
         };
 
@@ -1064,7 +1064,7 @@ mod test {
                 role: None,
                 sig_count: 1,
                 is_owner: false,
-                is_off_ledger_signature: true,
+                is_off_ledger_signature: false,
             };
 
         let res = payment_service.get_request_info_with_min_price(&constraint, &requester_info, &fees);
@@ -1072,7 +1072,7 @@ mod test {
     }
 
     #[test]
-    fn test_get_min_transaction_price_for_need_to_be_on_ledger_not_met() {
+    fn test_get_min_transaction_price_for_off_ledger_signature_not_met() {
         let payment_service = PaymentsService::new();
 
         let constraint = _single_identity_owner();
@@ -1083,7 +1083,7 @@ mod test {
                 role: None,
                 sig_count: 1,
                 is_owner: true,
-                is_off_ledger_signature: false,
+                is_off_ledger_signature: true,
             };
 
         let res = payment_service.get_request_info_with_min_price(&constraint, &requester_info, &fees);
