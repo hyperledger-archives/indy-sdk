@@ -123,7 +123,7 @@
 + (void)buildGetPaymentSourcesWithFromRequest:(IndyHandle)walletHandle
                                  submitterDid:(NSString *)submitterDid
                                paymentAddress:(NSString *)paymentAddress
-                                         from:(int64_t)from
+                                         from:(NSNumber *)from
                                    completion:(void (^)(NSError *error, NSString *getSourcesTxnJson, NSString *paymentMethod))completion {
     indy_error_t ret;
 
@@ -134,7 +134,7 @@
             walletHandle,
             [submitterDid UTF8String],
             [paymentAddress UTF8String],
-            from,
+            [from, intValue],
             IndyWrapperCommonStringStringCallback);
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
@@ -168,12 +168,12 @@
 
 + (void)parseGetPaymentSourcesWithFromResponse:(NSString *)responseJson
                                  paymentMethod:(NSString *)paymentMethod
-                                    completion:(void (^)(NSError *error, NSString *sourcesJson, int64_t next))completion {
+                                    completion:(void (^)(NSError *error, NSString *sourcesJson, NSNumber *next))completion {
     indy_error_t ret;
 
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
 
-    ret = indy_parse_get_payment_sources_response(handle,
+    ret = indy_parse_get_payment_sources_with_from_response(handle,
             [paymentMethod UTF8String],
             [responseJson UTF8String],
             IndyWrapperCommonStringCallback);

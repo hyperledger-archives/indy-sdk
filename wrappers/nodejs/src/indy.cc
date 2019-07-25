@@ -32,6 +32,7 @@ char* copyBuffer(const indy_u8_t* data, indy_u32_t len){
 enum IndyCallbackType {
     CB_NONE,
     CB_STRING,
+    CB_STRING_I64,
     CB_BOOLEAN,
     CB_HANDLE,
     CB_HANDLE_U32,
@@ -75,6 +76,15 @@ class IndyCallback : public Nan::AsyncResource {
         if(xerr == 0){
           type = CB_STRING;
           str0 = copyCStr(str);
+        }
+        send(xerr);
+    }
+
+    void cbStringI64(indy_error_t xerr, const char* str, indy_i64_t num){
+        if(xerr == 0){
+          type = CB_STRING_I64;
+          str0 = copyCStr(str);
+          i64int0 = num
         }
         send(xerr);
     }
@@ -187,6 +197,7 @@ class IndyCallback : public Nan::AsyncResource {
     indy_handle_t handle0;
     indy_i32_t i32int0;
     indy_u32_t u32int0;
+    indy_i64_t i64int0;
     unsigned long long timestamp0;
     char*    buffer0data;
     uint32_t buffer0len;
@@ -226,6 +237,12 @@ class IndyCallback : public Nan::AsyncResource {
                 break;
             case CB_I32:
                 argv[1] = Nan::New<v8::Number>(icb->i32int0);
+                break;
+            case CB_STRING_I64:
+                tuple = Nan::New<v8::Array>();
+                tuple->Set(0, toJSString(icb->str0))
+                tuple->Set(1, Nan::New<v8::Number>(icb->i64int0))
+                argv[1] = tuple;
                 break;
             case CB_BUFFER:
                 argv[1] = Nan::NewBuffer(icb->buffer0data, icb->buffer0len).ToLocalChecked();
@@ -2791,7 +2808,7 @@ NAN_METHOD(buildGetPaymentSourcesWithFromRequest) {
   indy_handle_t arg0 = argToInt32(info[0]);
   const char* arg1 = argToCString(info[1]);
   const char* arg2 = argToCString(info[2]);
-  indy_i64_t arg3 = argToInt64(info[3]);
+  indy_i64_t arg3 = argToInt32(info[3]);
   IndyCallback* icb = argToIndyCb(info[4]);
   indyCalled(icb, indy_build_get_payment_sources_with_from_request(icb->handle, arg0, arg1, arg2, arg3, buildGetPaymentSourcesRequest_cb));
   delete arg1;
@@ -2817,10 +2834,10 @@ NAN_METHOD(parseGetPaymentSourcesResponse) {
   delete arg1;
 }
 
-void parseGetPaymentSourcesResponse_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0, int64 arg1) {
+void parseGetPaymentSourcesWithFromResponse_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0, int64_t arg1) {
   IndyCallback* icb = IndyCallback::getCallback(handle);
   if(icb != nullptr){
-    icb->cbString(xerr, arg0, arg1);
+    icb->cbStringI64(xerr, arg0, arg1);
   }
 }
 NAN_METHOD(parseGetPaymentSourcesWithFromResponse) {

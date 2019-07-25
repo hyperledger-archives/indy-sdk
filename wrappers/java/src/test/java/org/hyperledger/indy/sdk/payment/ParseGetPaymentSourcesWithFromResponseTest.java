@@ -1,4 +1,4 @@
-package test.java.org.hyperledger.indy.sdk.payment;
+package org.hyperledger.indy.sdk.payment;
 
 import org.hyperledger.indy.sdk.payments.Payments;
 import org.hyperledger.indy.sdk.payments.UnknownPaymentMethodException;
