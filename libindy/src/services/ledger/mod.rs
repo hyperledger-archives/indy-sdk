@@ -916,6 +916,7 @@ mod tests {
                 metadata: None,
                 role: Some(String::new()),
                 need_to_be_owner: false,
+                off_ledger_signature: false,
             })
         }
 
