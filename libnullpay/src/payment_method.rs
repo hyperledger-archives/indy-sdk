@@ -9,6 +9,7 @@ use utils::types::*;
 use utils::rand;
 use utils::json_helper::parse_operation_from_request;
 use utils::cstring;
+use sha2::Digest;
 
 use serde_json::{from_str, to_string};
 use std::collections::HashMap;
@@ -393,7 +394,7 @@ pub mod sign_with_address {
         trace!("libnullpay::sign_with_address::handle << wallet_handle: {}\n    address: {:?}\n    message_raw: {:?}, message_len: {}", wallet_handle, address, message_raw, message_len);
 
         if let Some(cb) = cb {
-            let signature = rand::gen_rand_signature(&address, message_raw.as_slice());
+            let signature = _hash_as_signature(&address, message_raw.as_slice());
             cb(command_handle, ErrorCode::Success, signature.as_slice().as_ptr() as *const u8, signature.len() as u32);
         }
 
@@ -413,7 +414,7 @@ pub mod verify_with_address {
         check_useful_c_byte_array!(signature_raw, signature_len, ErrorCode::CommonInvalidState, ErrorCode::CommonInvalidState);
         trace!("libnullpay::verify_with_address::handle << address: {:?}\n    message: {:?}\n    message_len: {}\n    signature: {:?}\n    signature_len: {}", address, message_raw, message_len, signature_raw, signature_len);
         if let Some(cb) = cb {
-            let signature = rand::gen_rand_signature(&address, message_raw.as_slice());
+            let signature = _hash_as_signature(&address, message_raw.as_slice());
             let mut check = true;
             let mut i = 0usize;
             while check {
@@ -518,4 +519,11 @@ fn _count_total_inputs(inputs: &Vec<String>) -> u64 {
 
 fn _count_total_payments(outputs: &Vec<Output>) -> u64 {
     outputs.into_iter().fold(0, |acc, next| acc + next.amount)
+}
+
+fn _hash_as_signature(address: &str, message: &[u8]) -> Vec<u8> {
+    let mut bytes = Vec::new();
+    bytes.extend_from_slice(address.as_bytes());
+    bytes.extend_from_slice(message);
+    sha2::Sha256::digest(bytes.as_slice()).to_vec()
 }
