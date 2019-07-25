@@ -1645,7 +1645,7 @@ def androidBuildArtifact(buildEnv, arch, libVersion, artifact) {
             unstash name: "libindy_${arch}_zip"
             sh "cp libindy_android_${arch}_${libVersion}.zip vcx/libvcx && unzip -o vcx/libvcx/libindy_android_${arch}_${libVersion}.zip "
             stash includes: "libindy_android_${arch}_${libVersion}.zip", name: "libindy_${arch}_zip"
-            sh "cd vcx/libvcx && ${artifactName}_VERSION=${libVersion} LIBINDY_DIR=../../libindy_${arch}/lib ./${ANDROID_SCRIPT_PATH} -d $arch"
+            sh "cd vcx/libvcx && ${artifactName}_VERSION=${libVersion} LIBINDY_DIR=../../libindy_${arch}/lib INDY_DIR=../../libindy_${arch}/lib ./${ANDROID_SCRIPT_PATH} -d $arch"
             def libvcx_zip_name = "libvcx_android_${arch}_${libVersion}.zip"
             sh "cp vcx/libvcx/${libvcx_zip_name} ./"
             stash includes: "${libvcx_zip_name}", name: "libvcx_${arch}_zip"
