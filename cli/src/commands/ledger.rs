@@ -3654,22 +3654,6 @@ pub mod tests {
         }
 
         #[test]
-        pub fn get_payment_sources_works_for_no_active_wallet() {
-            let ctx = setup();
-
-            ::commands::pool::tests::create_and_connect_pool(&ctx);
-            load_null_payment_plugin(&ctx);
-            {
-                let cmd = get_payment_sources_command::new();
-                let mut params = CommandParams::new();
-                params.insert("payment_address", INVALID_PAYMENT_ADDRESS.to_string());
-                cmd.execute(&ctx, &params).unwrap_err();
-            }
-            disconnect_and_delete_pool(&ctx);
-            tear_down();
-        }
-
-        #[test]
         pub fn get_payment_sources_works_for_no_active_did() {
             let ctx = setup_with_wallet_and_pool_and_payment_plugin();
             {
@@ -4045,22 +4029,6 @@ pub mod tests {
         }
 
         #[test]
-        pub fn get_fees_works_for_no_active_wallet() {
-            let ctx = setup();
-
-            ::commands::pool::tests::create_and_connect_pool(&ctx);
-            load_null_payment_plugin(&ctx);
-            {
-                let cmd = get_fees_command::new();
-                let mut params = CommandParams::new();
-                params.insert("payment_method", NULL_PAYMENT_METHOD.to_string());
-                cmd.execute(&ctx, &params).unwrap_err();
-            }
-            disconnect_and_delete_pool(&ctx);
-            tear_down();
-        }
-
-        #[test]
         pub fn get_fees_works_for_no_active_did() {
             let ctx = setup_with_wallet_and_pool_and_payment_plugin();
             {
@@ -4280,22 +4248,6 @@ pub mod tests {
                 cmd.execute(&ctx, &params).unwrap_err();
             }
             tear_down_with_wallet_and_pool(&ctx);
-        }
-
-        #[test]
-        pub fn set_fees_prepare_works_for_no_active_wallet() {
-            let ctx = setup();
-            pool::tests::create_and_connect_pool(&ctx);
-            common::tests::load_null_payment_plugin(&ctx);
-            {
-                let cmd = set_fees_prepare_command::new();
-                let mut params = CommandParams::new();
-                params.insert("payment_method", NULL_PAYMENT_METHOD.to_string());
-                params.insert("fees", FEES.to_string());
-                cmd.execute(&ctx, &params).unwrap_err();
-            }
-            disconnect_and_delete_pool(&ctx);
-            tear_down();
         }
 
         #[test]
