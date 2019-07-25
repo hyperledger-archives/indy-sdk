@@ -38,7 +38,7 @@ pub enum Constraint {
    role - The role which the user must have to execute the action.
    metadata -  An additional parameters of the constraint (contains transaction FEE cost).
    need_to_be_owner - The flag specifying if a user must be an owner of the transaction (false by default) .
-   need_to_be_on_ledger - The flag specifying if a user already must be published on the ledger (false by default).
+   off_ledger_signature - allow signature of unknow for ledger did (false by default).
 */
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct RoleConstraint {
@@ -50,7 +50,7 @@ pub struct RoleConstraint {
     pub need_to_be_owner: bool,
     #[serde(default)]
     #[serde(skip_serializing_if = "Not::not")]
-    pub need_to_be_on_ledger: bool,
+    pub off_ledger_signature: bool,
 }
 
 /**

@@ -2135,7 +2135,7 @@ mod high_cases {
                 "role": "0",
                 "constraint_id": "ROLE",
                 "need_to_be_owner": false,
-                "need_to_be_on_ledger": true,
+                "off_ledger_signature": true,
             });
 
             // write

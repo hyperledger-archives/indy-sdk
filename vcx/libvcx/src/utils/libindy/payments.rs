@@ -381,7 +381,7 @@ fn get_requester_info(requester_info_json: Option<String>) -> VcxResult<String> 
             "role": role,
             "sig_count": 1,
             "is_owner": true,
-            "is_on_ledger": true,
+            "is_off_ledger_signature": true,
         }).to_string()
     };
     Ok(res)

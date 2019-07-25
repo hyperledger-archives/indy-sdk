@@ -1288,7 +1288,7 @@ async def build_auth_rule_request(submitter_did: str,
             role - <string> (optional) role of a user which satisfy to constrain.
             sig_count - <u32> the number of signatures required to execution action.
             need_to_be_owner - <bool> (optional) if user must be an owner of transaction (false by default).
-            need_to_be_on_ledger - <bool> (optional) if a user already must be published on the ledger (false by default).
+            off_ledger_signature - <bool> (optional) allow signature of unknow for ledger did (false by default).
             metadata - <object> (optional) additional parameters of the constraint.
         }
       can be combined by

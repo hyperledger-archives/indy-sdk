@@ -446,7 +446,7 @@ extern "C" {
     ///     "role": string (optional) - role of a user which can sign a transaction.
     ///     "sig_count": u64 - number of signers.
     ///     "is_owner": bool (optional) - if user is an owner of transaction (false by default).
-    ///     "is_on_ledger": bool (optional) - if user is published on the ledger (false by default).
+    ///     "is_off_ledger_signature": bool (optional) - if user did is unknow for ledger (false by default).
     /// }
     /// fees_json: fees set on the ledger (result of `indy_parse_get_txn_fees_response`).
     ///
@@ -458,7 +458,7 @@ extern "C" {
     ///         "role": string (optional) - role of users who should sign,
     ///         "sig_count": u64 - number of signers,
     ///         "need_to_be_owner": bool - if requester need to be owner
-    ///         "need_to_be_on_ledger": bool - if a user need to be published on the ledger.
+    ///         "off_ledger_signature": bool - allow signature of unknow for ledger did (false by default).
     ///     }]
     /// }
     ///
