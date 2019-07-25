@@ -129,7 +129,7 @@ pub mod mock_method {
         }
 
         pub extern fn handle(cmd_handle: i32,
-                             response: *const c_char,
+                             _response: *const c_char,
                              cb: Option<ParsePaymentSourcesCallback>) -> i32 {
             let cb = cb.unwrap_or_else(|| {
                 panic!("Null passed as callback!")

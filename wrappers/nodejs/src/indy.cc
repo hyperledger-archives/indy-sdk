@@ -2834,7 +2834,7 @@ NAN_METHOD(parseGetPaymentSourcesResponse) {
   delete arg1;
 }
 
-void parseGetPaymentSourcesWithFromResponse_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0, int64_t arg1) {
+void parseGetPaymentSourcesWithFromResponse_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0, indy_int64_t arg1) {
   IndyCallback* icb = IndyCallback::getCallback(handle);
   if(icb != nullptr){
     icb->cbStringI64(xerr, arg0, arg1);
