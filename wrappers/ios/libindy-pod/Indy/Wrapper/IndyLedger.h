@@ -586,10 +586,11 @@
         {
             constraint_id - <string> type of a constraint.
                 Can be either "ROLE" to specify final constraint or  "AND"/"OR" to combine constraints.
-            role - <string> role of a user which satisfy to constrain.
+            role - <string> (optional) role of a user which satisfy to constrain.
             sig_count - <u32> the number of signatures required to execution action.
-            need_to_be_owner - <bool> if user must be an owner of transaction.
-            metadata - <object> additional parameters of the constraint.
+            need_to_be_owner - <bool> if user must be an owner of transaction (false by default).
+            need_to_be_on_ledger - <bool> (optional) if a user already must be published on the ledger (false by default).
+            metadata - <object> (optional) additional parameters of the constraint.
         }
       can be combined by
         {

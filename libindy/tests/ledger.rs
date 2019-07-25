@@ -2127,6 +2127,37 @@ mod high_cases {
             check_request(&request, expected_result);
         }
 
+        #[test]
+        fn indy_build_auth_rule_requests_works_for_need_to_be_on_ledger() {
+            let constraint = json!({
+                "sig_count": 1,
+                "metadata": {},
+                "role": "0",
+                "constraint_id": "ROLE",
+                "need_to_be_owner": false,
+                "need_to_be_on_ledger": true,
+            });
+
+            // write
+            let expected_result = json!({
+                "type": constants::AUTH_RULE,
+                "auth_type": constants::NYM,
+                "auth_action": ADD_AUTH_ACTION,
+                "field": FIELD,
+                "new_value": VALUE,
+                "constraint": constraint,
+            });
+
+            let request = ledger::build_auth_rule_request(DID_TRUSTEE,
+                                                          constants::NYM,
+                                                          &ADD_AUTH_ACTION,
+                                                          FIELD,
+                                                          None,
+                                                          Some(VALUE),
+                                                          &constraint.to_string()).unwrap();
+            check_request(&request, expected_result);
+        }
+
 
         #[test]
         fn indy_build_get_auth_rule_request_works_for_get_all() {

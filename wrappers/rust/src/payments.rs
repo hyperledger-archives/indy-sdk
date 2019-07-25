@@ -527,9 +527,10 @@ fn _parse_verify_response(command_handle: CommandHandle, payment_method: &str, r
 /// # Arguments
 /// * `get_auth_rule_response_json`: response on GET_AUTH_RULE request returning action constraints set on the ledger.
 /// * `requester_info_json`: {
-///     "role": string - role of a user which can sign a transaction.
+///     "role": string (optional) - role of a user which can sign a transaction.
 ///     "sig_count": u64 - number of signers.
-///     "is_owner": bool - if user is an owner of transaction.
+///     "is_owner": bool (optional) - if user is an owner of transaction (false by default).
+///     "is_on_ledger": bool (optional) - if user is published on the ledger (false by default).
 /// }
 /// * `fees_json`: fees set on the ledger (result of `parse_get_txn_fees_response`).
 ///
@@ -540,7 +541,8 @@ fn _parse_verify_response(command_handle: CommandHandle, payment_method: &str, r
 ///     "requirements": [{
 ///         "role": string (optional) - role of users who should sign,
 ///         "sig_count": string - count of signers,
-///         "need_to_be_owner": bool (optional) - if requester need to be owner,
+///         "need_to_be_owner": bool - if requester need to be owner,
+///         "need_to_be_on_ledger": bool - if a user need to be published on the ledger.
 ///     }]
 /// }
 ///
