@@ -2799,12 +2799,12 @@ NAN_METHOD(buildGetPaymentSourcesRequest) {
 }
 
 NAN_METHOD(buildGetPaymentSourcesWithFromRequest) {
-  INDY_ASSERT_NARGS(buildGetPaymentSourcesRequest, 5)
-  INDY_ASSERT_NUMBER(buildGetPaymentSourcesRequest, 0, wh)
-  INDY_ASSERT_STRING(buildGetPaymentSourcesRequest, 1, submitterDid)
-  INDY_ASSERT_STRING(buildGetPaymentSourcesRequest, 2, paymentAddress)
-  INDY_ASSERT_NUMBER(buildGetPaymentSourcesRequest, 3, from)
-  INDY_ASSERT_FUNCTION(buildGetPaymentSourcesRequest, 4)
+  INDY_ASSERT_NARGS(buildGetPaymentSourcesWithFromRequest, 5)
+  INDY_ASSERT_NUMBER(buildGetPaymentSourcesWithFromRequest, 0, wh)
+  INDY_ASSERT_STRING(buildGetPaymentSourcesWithFromRequest, 1, submitterDid)
+  INDY_ASSERT_STRING(buildGetPaymentSourcesWithFromRequest, 2, paymentAddress)
+  INDY_ASSERT_NUMBER(buildGetPaymentSourcesWithFromRequest, 3, from)
+  INDY_ASSERT_FUNCTION(buildGetPaymentSourcesWithFromRequest, 4)
   indy_handle_t arg0 = argToInt32(info[0]);
   const char* arg1 = argToCString(info[1]);
   const char* arg2 = argToCString(info[2]);
@@ -2841,10 +2841,10 @@ void parseGetPaymentSourcesWithFromResponse_cb(indy_handle_t handle, indy_error_
   }
 }
 NAN_METHOD(parseGetPaymentSourcesWithFromResponse) {
-  INDY_ASSERT_NARGS(parseGetPaymentSourcesResponse, 3)
-  INDY_ASSERT_STRING(parseGetPaymentSourcesResponse, 0, paymentMethod)
-  INDY_ASSERT_STRING(parseGetPaymentSourcesResponse, 1, resp)
-  INDY_ASSERT_FUNCTION(parseGetPaymentSourcesResponse, 2)
+  INDY_ASSERT_NARGS(parseGetPaymentSourcesWithFromResponse, 3)
+  INDY_ASSERT_STRING(parseGetPaymentSourcesWithFromResponse, 0, paymentMethod)
+  INDY_ASSERT_STRING(parseGetPaymentSourcesWithFromResponse, 1, resp)
+  INDY_ASSERT_FUNCTION(parseGetPaymentSourcesWithFromResponse, 2)
   const char* arg0 = argToCString(info[0]);
   const char* arg1 = argToCString(info[1]);
   IndyCallback* icb = argToIndyCb(info[2]);
@@ -3556,7 +3556,9 @@ NAN_MODULE_INIT(InitAll) {
   Nan::Export(target, "addRequestFees", addRequestFees);
   Nan::Export(target, "parseResponseWithFees", parseResponseWithFees);
   Nan::Export(target, "buildGetPaymentSourcesRequest", buildGetPaymentSourcesRequest);
+  Nan::Export(target, "buildGetPaymentSourcesWithFromRequest", buildGetPaymentSourcesWithFromRequest);
   Nan::Export(target, "parseGetPaymentSourcesResponse", parseGetPaymentSourcesResponse);
+  Nan::Export(target, "parseGetPaymentSourcesWithFromResponse", parseGetPaymentSourcesWithFromResponse);
   Nan::Export(target, "buildPaymentReq", buildPaymentReq);
   Nan::Export(target, "parsePaymentResponse", parsePaymentResponse);
   Nan::Export(target, "preparePaymentExtraWithAcceptanceData", preparePaymentExtraWithAcceptanceData);
