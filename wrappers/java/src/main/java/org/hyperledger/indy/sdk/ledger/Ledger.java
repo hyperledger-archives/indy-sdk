@@ -127,6 +127,23 @@ public class Ledger extends IndyJava.API {
 		}
 	};
 
+	/**
+	 * Callback used when parseRegistryRequest completes.
+	 */
+	private static Callback parseRegistryRespaonseCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err, long timestamp) {
+
+			CompletableFuture<Long> future = (CompletableFuture<Long>) removeFuture(xcommand_handle);
+			if (! checkResult(future, err)) return;
+
+			long result = timestamp;
+			future.complete(result);
+		}
+	};
+
+
 
 	/*
 	 * STATIC METHODS
@@ -1281,10 +1298,11 @@ public class Ledger extends IndyJava.API {
 	 *     {
 	 *         constraint_id - [string] type of a constraint.
 	 *             Can be either "ROLE" to specify final constraint or  "AND"/"OR" to combine constraints.
-	 *         role - [string] role of a user which satisfy to constrain.
+	 *         role - [string] (optional) role of a user which satisfy to constrain.
 	 *         sig_count - [u32] the number of signatures required to execution action.
-	 *         need_to_be_owner - [bool] if user must be an owner of transaction.
-	 *         metadata - [object] additional parameters of the constraint.
+	 *         need_to_be_owner - [bool] (optional) if user must be an owner of transaction (false by default).
+	 *         off_ledger_signature - [bool] (optional) allow signature of unknow for ledger did (false by default).
+	 *         metadata - [object] (optional) additional parameters of the constraint.
 	 *     }
 	 * can be combined by
 	 *     {

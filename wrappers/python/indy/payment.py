@@ -697,9 +697,10 @@ async def get_request_info(get_auth_rule_response_json: str,
 
     :param get_auth_rule_response_json: response on GET_AUTH_RULE request returning action constraints set on the ledger.
     :param requester_info_json: {
-        "role": string - role of a user which can sign a transaction.
+        "role": string (optional) - role of a user which can sign a transaction.
         "sig_count": u64 - number of signers.
-        "is_owner": bool - if user is an owner of transaction.
+        "is_owner": bool (optional) - if user is an owner of transaction (false by default).
+        "is_off_ledger_signature": bool (optional) - if user did is unknow for ledger (false by default).
     }
     :param fees_json: fees set on the ledger (result of `parse_get_txn_fees_response`).
 
@@ -707,9 +708,10 @@ async def get_request_info(get_auth_rule_response_json: str,
     {
        "price": u64 - fee required for the action performing,
        "requirements": [{
-           "role": string - role of users who should sign,
+           "role": string (optional) - role of users who should sign,
            "sig_count": u64 - number of signers,
-           "need_to_be_owner": bool - if requester need to be owner
+           "need_to_be_owner": bool (optional) - if requester need to be owner,
+           "off_ledger_signature": bool (optional) - allow signature of unknow for ledger did (false by default).
        }]
     }
     """
