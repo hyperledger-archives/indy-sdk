@@ -1712,8 +1712,6 @@ def androidTesting() {
 }
 
 def androidBuildAsTesting() {
-    def libindyVersion
-
     node('ubuntu') {
         stage('Android test') {
             try {
