@@ -817,7 +817,7 @@ mod tests {
                                                 Some(cb.get_callback())),
                    error::INVALID_OPTION.code_num);
 
-        cb.receive(Some(Duration::from_secs(10))).is_err();
+        let _ = cb.receive(Some(Duration::from_secs(10))).is_err();
     }
 
     fn create_default_issuer_credential() -> u32 {

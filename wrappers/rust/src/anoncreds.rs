@@ -167,6 +167,11 @@ fn _issuer_create_and_store_credential_def(command_handle: CommandHandle, wallet
 ///     }
 /// * `tails_writer_handle`: handle of blob storage to store tails
 ///
+/// NOTE:
+///     Recursive creation of folder for Default Tails Writer (correspondent to `tails_writer_handle`)
+///     in the system-wide temporary directory may fail in some setup due to permissions: `IO error: Permission denied`.
+///     In this case use `TMPDIR` environment variable to define temporary directory specific for an application.
+///
 /// # Returns
 /// * `revoc_reg_id`: identifier of created revocation registry definition
 /// * `revoc_reg_def_json`: public part of revocation registry definition

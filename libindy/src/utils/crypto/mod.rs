@@ -10,10 +10,6 @@ pub mod ed25519_sign;
 // TODO: The name is misleading as the operations do not happen over ed25519 curve
 pub mod ed25519_box;
 
-#[cfg(feature = "base58_rust_base58")]
-#[path = "base58/rust_base58.rs"]
-pub mod base58;
-
 #[cfg(feature = "base64_rust_base64")]
 #[path = "base64/rust_base64.rs"]
 pub mod base64;

@@ -516,9 +516,18 @@ impl PaymentsService {
             return Ok(());
         }
 
-        if constraint.role != requester_info.role && constraint.role != "*" {
-            return Err(IndyError::from_msg(IndyErrorKind::TransactionNotAllowed,
-                                           format!("The requester role {:?} doesn't meet to constraint \"{:?}\".", requester_info.role, constraint.role)));
+        match (constraint.role.as_ref(), requester_info.role.as_ref()) {
+            (Some(c_role), Some(r_role)) => {
+                if c_role != r_role && c_role != "*" {
+                    return Err(IndyError::from_msg(IndyErrorKind::TransactionNotAllowed,
+                                                   format!("The requester role {:?} doesn't meet to constraint \"{:?}\".", r_role, c_role)));
+                }
+            }
+            (Some(c_role), None) => {
+                return Err(IndyError::from_msg(IndyErrorKind::TransactionNotAllowed,
+                                               format!("The requester role \"null\" doesn't meet to constraint \"{:?}\".", c_role)));
+            }
+            _ => {}
         }
 
         if constraint.sig_count > requester_info.sig_count {
@@ -732,7 +741,7 @@ pub type Fees = HashMap<String, u64>;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct RequesterInfo {
-    pub role: String,
+    pub role: Option<String>,
     pub sig_count: u32,
     #[serde(default)]
     pub is_owner: bool,
@@ -746,7 +755,7 @@ pub struct RequestInfo {
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct Requirement {
-    pub role: String,
+    pub role: Option<String>,
     pub sig_count: u32,
     pub need_to_be_owner: bool,
 }
@@ -764,7 +773,7 @@ mod test {
     fn _single_trustee() -> Constraint {
         Constraint::RoleConstraint(RoleConstraint {
             sig_count: 1,
-            role: "0".to_string(),
+            role: Some("0".to_string()),
             metadata: Some(json!({"fees": "1"})),
             need_to_be_owner: false,
         })
@@ -773,7 +782,7 @@ mod test {
     fn _two_trustees() -> Constraint {
         Constraint::RoleConstraint(RoleConstraint {
             sig_count: 2,
-            role: "0".to_string(),
+            role: Some("0".to_string()),
             metadata: Some(json!({"fees": "1"})),
             need_to_be_owner: false,
         })
@@ -782,7 +791,7 @@ mod test {
     fn _single_owner() -> Constraint {
         Constraint::RoleConstraint(RoleConstraint {
             sig_count: 1,
-            role: "*".to_string(),
+            role: Some("*".to_string()),
             metadata: Some(json!({"fees": "2"})),
             need_to_be_owner: true,
         })
@@ -791,15 +800,24 @@ mod test {
     fn _single_steward() -> Constraint {
         Constraint::RoleConstraint(RoleConstraint {
             sig_count: 1,
-            role: "2".to_string(),
+            role: Some("2".to_string()),
             metadata: Some(json!({"fees": "2"})),
             need_to_be_owner: false,
         })
     }
 
+    fn _single_identity_owner() -> Constraint {
+        Constraint::RoleConstraint(RoleConstraint {
+            sig_count: 1,
+            role: None,
+            metadata: Some(json!({"fees": "2"})),
+            need_to_be_owner: true,
+        })
+    }
+
     fn _trustee_requester() -> RequesterInfo {
         RequesterInfo {
-            role: "0".to_string(),
+            role: Some("0".to_string()),
             sig_count: 1,
             is_owner: false,
         }
@@ -819,7 +837,7 @@ mod test {
             price: 20,
             requirements: vec![Requirement {
                 sig_count: 1,
-                role: 0.to_string(),
+                role: Some(0.to_string()),
                 need_to_be_owner: false,
             }],
         };
@@ -835,7 +853,7 @@ mod test {
         let fees = _fees();
 
         let requester_info = RequesterInfo {
-            role: "101".to_string(),
+            role: Some("101".to_string()),
             sig_count: 1,
             is_owner: true,
         };
@@ -866,7 +884,7 @@ mod test {
             price: 20,
             requirements: vec![Requirement {
                 sig_count: 1,
-                role: 0.to_string(),
+                role: Some(0.to_string()),
                 need_to_be_owner: false,
             }],
         };
@@ -889,7 +907,7 @@ mod test {
 
         let requester_info =
             RequesterInfo {
-                role: "0".to_string(),
+                role: Some("0".to_string()),
                 sig_count: 1,
                 is_owner: true,
             };
@@ -902,7 +920,7 @@ mod test {
             price: 10,
             requirements: vec![Requirement {
                 sig_count: 1,
-                role: "*".to_string(),
+                role: Some("*".to_string()),
                 need_to_be_owner: true,
             }],
         };
@@ -925,7 +943,7 @@ mod test {
 
         let requester_info =
             RequesterInfo {
-                role: "2".to_string(),
+                role: Some("2".to_string()),
                 sig_count: 1,
                 is_owner: false,
             };
@@ -951,7 +969,7 @@ mod test {
 
         let requester_info =
             RequesterInfo {
-                role: "2".to_string(),
+                role: Some("2".to_string()),
                 sig_count: 1,
                 is_owner: true,
             };
@@ -964,11 +982,11 @@ mod test {
             price: 10,
             requirements: vec![Requirement {
                 sig_count: 1,
-                role: 2.to_string(),
+                role: Some(2.to_string()),
                 need_to_be_owner: false,
             }, Requirement {
                 sig_count: 1,
-                role: "*".to_string(),
+                role: Some("*".to_string()),
                 need_to_be_owner: true,
             }],
         };
@@ -1009,11 +1027,57 @@ mod test {
             price: 0,
             requirements: vec![Requirement {
                 sig_count: 1,
-                role: 0.to_string(),
+                role: Some(0.to_string()),
                 need_to_be_owner: false,
             }],
         };
 
         assert_eq!(expected_req_info, req_info);
+    }
+
+    #[test]
+    fn test_get_min_transaction_price_for_identity_owner() {
+        let payment_service = PaymentsService::new();
+
+        let constraint = _single_identity_owner();
+        let fees = _fees();
+
+        let requester_info =
+            RequesterInfo {
+                role: None,
+                sig_count: 1,
+                is_owner: true,
+            };
+
+        let req_info = payment_service.get_request_info_with_min_price(&constraint, &requester_info, &fees).unwrap();
+
+        let expected_req_info = RequestInfo {
+            price: 10,
+            requirements: vec![Requirement {
+                sig_count: 1,
+                role: None,
+                need_to_be_owner: true,
+            }],
+        };
+
+        assert_eq!(expected_req_info, req_info);
+    }
+
+    #[test]
+    fn test_get_min_transaction_price_for_identity_owner_not_met() {
+        let payment_service = PaymentsService::new();
+
+        let constraint = _single_identity_owner();
+        let fees = _fees();
+
+        let requester_info =
+            RequesterInfo {
+                role: None,
+                sig_count: 1,
+                is_owner: false,
+            };
+
+        let res = payment_service.get_request_info_with_min_price(&constraint, &requester_info, &fees);
+        assert!(res.is_err());
     }
 }
