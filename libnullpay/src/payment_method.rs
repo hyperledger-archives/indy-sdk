@@ -145,7 +145,7 @@ pub mod parse_response_with_fees {
 pub mod build_get_payment_sources_request {
     use super::*;
 
-    pub extern fn handle(cmd_handle: i32, _wallet_handle: i32, submitter_did: *const c_char, payment_address: *const c_char, from: i64, cb: Option<IndyPaymentCallback>) -> ErrorCode {
+    pub extern fn handle(cmd_handle: i32, _wallet_handle: i32, submitter_did: *const c_char, payment_address: *const c_char, _from: i64, cb: Option<IndyPaymentCallback>) -> ErrorCode {
         check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidState);
         check_useful_c_str!(payment_address, ErrorCode::CommonInvalidState);
         trace!("libnullpay::build_get_payment_sources_request::handle << payment_address: {}, submitter_did: {:?}", payment_address, submitter_did);
