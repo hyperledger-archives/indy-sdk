@@ -1384,6 +1384,9 @@ def publishingRCtoStable() {
                 echo 'Moving Android RC artifacts to Stable: libnullpay'
                 publishLibnullpayAndroidFilesRCtoStable()
 
+                echo 'Moving Android RC artifacts to Stable: libvcx'
+                publishLibvcxAndroidFilesRCtoStable()
+
                 echo 'Moving iOS RC artifacts to Stable: libindy'
                 publishLibindyIOSFilesRCtoStable(libindyVersion)
 
@@ -1429,6 +1432,11 @@ def publishLibindAndroidFilesRCtoStable(version) {
 def publishLibnullpayAndroidFilesRCtoStable() {
     def libnullpayVersion = getSrcVersion("libnullpay")
     publishAndroidFilesRCtoStable("libnullpay", libnullpayVersion)
+}
+
+def publishLibvcxAndroidFilesRCtoStable() {
+    def libvcxVersion = getSrcVersion("vcx/libvcx")
+    publishAndroidFilesRCtoStable("libvcx", libvcxVersion)
 }
 
 def publishAndroidFilesRCtoStable(packageName, version) {
