@@ -380,7 +380,8 @@ fn get_requester_info(requester_info_json: Option<String>) -> VcxResult<String> 
         None => json!({
             "role": role,
             "sig_count": 1,
-            "is_owner": true
+            "is_owner": true,
+            "is_off_ledger_signature": false,
         }).to_string()
     };
     Ok(res)
