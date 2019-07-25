@@ -24,10 +24,10 @@ use services::pool::{
     parse_response_metadata
 };
 use services::wallet::{RecordOptions, WalletService};
-use utils::crypto::base58;
 use utils::crypto::signature_serializer::serialize_signature;
 use api::WalletHandle;
 use commands::{Command, CommandExecutor};
+use rust_base58::ToBase58;
 
 pub enum LedgerCommand {
     SignAndSubmitRequest(
@@ -546,14 +546,14 @@ impl LedgerCommandExecutor {
         let signature = self.crypto_service.sign(&my_key, &serialized_request.as_bytes().to_vec())?;
 
         match signature_type {
-            SignatureType::Single => { request["signature"] = Value::String(base58::encode(&signature)); }
+            SignatureType::Single => { request["signature"] = Value::String(signature.to_base58()); }
             SignatureType::Multi => {
                 request.as_object_mut()
                     .map(|request| {
                         if !request.contains_key("signatures") {
                             request.insert("signatures".to_string(), Value::Object(serde_json::Map::new()));
                         }
-                        request["signatures"].as_object_mut().unwrap().insert(submitter_did.to_string(), Value::String(base58::encode(&signature)));
+                        request["signatures"].as_object_mut().unwrap().insert(submitter_did.to_string(), Value::String(signature.to_base58()));
 
                         if let (Some(identifier), Some(signature)) = (request.get("identifier").and_then(Value::as_str).map(str::to_owned),
                                                                       request.remove("signature")) {
