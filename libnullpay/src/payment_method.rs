@@ -178,19 +178,19 @@ pub mod parse_get_payment_sources_response {
                                                                                          next: i64) -> ErrorCode>) -> ErrorCode {
         trace!("libnullpay::parse_get_payment_sources_response::handle <<");
         lazy_static! {
-            static ref cb_st: Mutex<Vec<Option<extern fn(command_handle_: i32,
+            static ref CB_ST: Mutex<Vec<Option<extern fn(command_handle_: i32,
                                                    err: ErrorCode,
                                                    sources_json: *const c_char,
                                                    next: i64) -> ErrorCode>>> = Default::default();
         }
         {
-            let mut cbs = cb_st.lock().unwrap();
+            let mut cbs = CB_ST.lock().unwrap();
             cbs.push(cb)
         }
         extern fn cb_wrap(command_handle_: i32,
                           err: ErrorCode,
                           payment_address: *const c_char) -> ErrorCode {
-            let mut cbs = cb_st.lock().unwrap();
+            let mut cbs = CB_ST.lock().unwrap();
             match cbs.pop() {
                 Some(Some(cb)) => cb(command_handle_, err, payment_address, -1),
                 _ => ErrorCode::Success
