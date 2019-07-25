@@ -224,7 +224,7 @@ extern "C" {
     ///   }],
     /// next -- pointer to the next slice of UTXO
 
-    extern indy_error_t indy_parse_get_payment_sources_response(indy_handle_t command_handle,
+    extern indy_error_t indy_parse_get_payment_sources_with_from_response(indy_handle_t command_handle,
                                                                 const char *  payment_method,
                                                                 const char *  resp_json,
 

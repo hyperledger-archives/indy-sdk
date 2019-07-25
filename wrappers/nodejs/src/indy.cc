@@ -84,7 +84,7 @@ class IndyCallback : public Nan::AsyncResource {
         if(xerr == 0){
           type = CB_STRING_I64;
           str0 = copyCStr(str);
-          i64int0 = num
+          i64int0 = num;
         }
         send(xerr);
     }
@@ -240,8 +240,8 @@ class IndyCallback : public Nan::AsyncResource {
                 break;
             case CB_STRING_I64:
                 tuple = Nan::New<v8::Array>();
-                tuple->Set(0, toJSString(icb->str0))
-                tuple->Set(1, Nan::New<v8::Number>(icb->i64int0))
+                tuple->Set(0, toJSString(icb->str0));
+                tuple->Set(1, Nan::New<v8::Number>(icb->i64int0));
                 argv[1] = tuple;
                 break;
             case CB_BUFFER:
