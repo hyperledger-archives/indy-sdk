@@ -1596,11 +1596,10 @@ def androidPublishing() {
                 echo 'Publish Android binaries: Building docker image'
 
                 buildEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
-                vcxBuildEnv = dockerHelpers.build('indy-sdk-vcx', 'vcx/ci/ubuntu.dockerfile vcx/ci')
 
                 publishAndroid(buildEnv, libindyVersion, 'libindy')
                 publishAndroid(buildEnv, libnullpayVersion, 'libnullpay')
-                publishAndroid(vcxBuildEnv, libvcxVersion, 'libvcx')
+                publishAndroid(buildEnv, libvcxVersion, 'libvcx')
 
             }
             finally {
@@ -1611,10 +1610,10 @@ def androidPublishing() {
     }
 }
 
-def buildAndroid(buildEnv, version, name) {
+def buildAndroid(buildEnv, version, name, libIndyVersion = null) {
 
     for (arch in ["arm", "armv7", "x86", "arm64", "x86_64"]) {
-        androidBuildArtifact(buildEnv, arch, version, name)
+        androidBuildArtifact(buildEnv, arch, version, name, libIndyVersion)
     }
 }
 
@@ -1625,7 +1624,7 @@ def publishAndroid(buildEnv, version, name) {
     }
 }
 
-def androidBuildArtifact(buildEnv, arch, libVersion, artifact) {
+def androidBuildArtifact(buildEnv, arch, libVersion, artifact, libIndyVersion) {
 
     def ANDROID_SCRIPT_PATH = 'android.build.sh'
     echo "Building $artifact android files for $arch"
@@ -1651,8 +1650,8 @@ def androidBuildArtifact(buildEnv, arch, libVersion, artifact) {
     } else if (artifactName == "LIBVCX") {
         buildEnv.inside {
             unstash name: "libindy_${arch}_zip"
-            sh "cp libindy_android_${arch}_${libVersion}.zip vcx/libvcx && unzip -o vcx/libvcx/libindy_android_${arch}_${libVersion}.zip "
-            stash includes: "libindy_android_${arch}_${libVersion}.zip", name: "libindy_${arch}_zip"
+            sh "cp libindy_android_${arch}_${libIndyVersion}.zip vcx/libvcx && unzip -o vcx/libvcx/libindy_android_${arch}_${libIndyVersion}.zip "
+            stash includes: "libindy_android_${arch}_${libIndyVersion}.zip", name: "libindy_${arch}_zip"
             sh "cd vcx/libvcx && ${artifactName}_VERSION=${libVersion} LIBINDY_DIR=../../libindy_${arch}/lib INDY_DIR=../../libindy_${arch}/lib ./${ANDROID_SCRIPT_PATH} -d $arch"
             def libvcx_zip_name = "libvcx_android_${arch}_${libVersion}.zip"
             sh "cp vcx/libvcx/${libvcx_zip_name} ./"
@@ -1712,8 +1711,6 @@ def androidTesting() {
 }
 
 def androidBuildAsTesting() {
-    def libindyVersion
-
     node('ubuntu') {
         stage('Android test') {
             try {
@@ -1732,7 +1729,7 @@ def androidBuildAsTesting() {
 
                 buildAndroid(buildEnv, libindyVersion, 'libindy')
                 buildAndroid(buildEnv, libnullpayVersion, 'libnullpay')
-                buildAndroid(vcxBuildEnv, libvcxVersion, 'libvcx')
+                buildAndroid(vcxBuildEnv, libvcxVersion, 'libvcx', libindyVersion)
             }
             finally {
                 echo 'Building Android binaries: Cleanup'
