@@ -215,14 +215,6 @@ pub mod rotate_key_command {
 
         let seed = get_opt_str_param("seed", params).map_err(error_err!())?;
 
-        let source_payment_address = get_opt_str_param("source_payment_address", params).map_err(error_err!())?;
-        let fee = get_opt_number_param::<u64>("fee", params).map_err(error_err!())?;
-
-        let fees_inputs = get_opt_str_array_param("fees_inputs", params).map_err(error_err!())?;
-        let fees_outputs = get_opt_str_tuple_array_param("fees_outputs", params).map_err(error_err!())?;
-
-        let extra = get_opt_str_param("extra", params).map_err(error_err!())?;
-
         let resume = get_opt_bool_param("resume", params).map_err(error_err!())?.unwrap_or(false);
 
         let did = ensure_active_did(&ctx)?;
@@ -308,7 +300,7 @@ pub mod rotate_key_command {
 
             ledger::set_author_agreement(ctx, &mut request)?;
 
-            let payment_method = set_request_fees(ctx, &mut request, wallet_handle, Some(&did), source_payment_address, fee, fees_inputs, fees_outputs, extra)?;
+            let payment_method = set_request_fees(ctx,  params,&mut request, wallet_handle, Some(&did))?;
 
             let response_json = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &did, &request)
                 .map_err(|err| {
