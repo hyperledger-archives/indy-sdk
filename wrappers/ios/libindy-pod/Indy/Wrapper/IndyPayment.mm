@@ -176,7 +176,7 @@
     ret = indy_parse_get_payment_sources_with_from_response(handle,
             [paymentMethod UTF8String],
             [responseJson UTF8String],
-            IndyWrapperCommonStringCallback);
+            IndyWrapperCommonStringNumber64Callback);
 
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
