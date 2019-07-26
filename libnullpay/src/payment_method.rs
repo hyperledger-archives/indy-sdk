@@ -417,7 +417,7 @@ pub mod verify_with_address {
             let signature = _hash_as_signature(&address, message_raw.as_slice());
             let mut check = true;
             let mut i = 0usize;
-            while check {
+            while check && i < signature.len() {
                 check &= signature[i] == signature_raw[i];
                 i += 1;
             }
