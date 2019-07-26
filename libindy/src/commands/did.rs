@@ -16,8 +16,8 @@ use errors::prelude::*;
 use services::crypto::CryptoService;
 use services::ledger::LedgerService;
 use services::wallet::{RecordOptions, SearchOptions, WalletService};
-use utils::crypto::base58;
 use api::{WalletHandle, PoolHandle, CommandHandle, next_command_handle};
+use rust_base58::{FromBase58, ToBase58};
 
 pub enum DidCommand {
     CreateAndStoreMyDid(

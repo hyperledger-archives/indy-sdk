@@ -33,6 +33,7 @@ use super::ursa::bls::VerKey;
 use std::hash::{Hash, Hasher};
 use log_derive::logfn;
 use api::CommandHandle;
+use rust_base58::FromBase58;
 
 struct RequestSM<T: Networker> {
     f: usize,
@@ -600,7 +601,7 @@ impl<T: Networker> RequestSM<T> {
 }
 
 pub trait RequestHandler<T: Networker> {
-    fn new(networker: Rc<RefCell<T>>, f: usize, cmd_ids: &Vec<CommandHandle>, nodes: &HashMap<String, Option<VerKey>>, generator: Option<Generator>, pool_name: &str, timeout: i64, extended_timeout: i64) -> Self;
+    fn new(networker: Rc<RefCell<T>>, f: usize, cmd_ids: &Vec<CommandHandle>, nodes: &HashMap<String, Option<VerKey>>, pool_name: &str, timeout: i64, extended_timeout: i64) -> Self;
     fn process_event(&mut self, ore: Option<RequestEvent>) -> Option<PoolEvent>;
     fn is_terminal(&self) -> bool;
 }
@@ -610,7 +611,7 @@ pub struct RequestHandlerImpl<T: Networker> {
 }
 
 impl<T: Networker> RequestHandler<T> for RequestHandlerImpl<T> {
-    fn new(networker: Rc<RefCell<T>>, f: usize, cmd_ids: &Vec<CommandHandle>, nodes: &HashMap<String, Option<VerKey>>, generator: Option<Generator>, pool_name: &str, timeout: i64, extended_timeout: i64) -> Self {
+    fn new(networker: Rc<RefCell<T>>, f: usize, cmd_ids: &Vec<CommandHandle>, nodes: &HashMap<String, Option<VerKey>>, pool_name: &str, timeout: i64, extended_timeout: i64) -> Self {
         RequestHandlerImpl {
             request_wrapper: Some(RequestSM::new(networker, f, cmd_ids, nodes, pool_name, timeout, extended_timeout)),
         }
@@ -849,7 +850,7 @@ pub mod tests {
     pub struct MockRequestHandler {}
 
     impl<T: Networker> RequestHandler<T> for MockRequestHandler {
-        fn new(_networker: Rc<RefCell<T>>, _f: usize, _cmd_ids: &Vec<CommandHandle>, _nodes: &HashMap<String, Option<VerKey>>, _generator: Option<Generator>, _pool_name: &str, _timeout: i64, _extended_timeout: i64) -> Self {
+        fn new(_networker: Rc<RefCell<T>>, _f: usize, _cmd_ids: &Vec<CommandHandle>, _nodes: &HashMap<String, Option<VerKey>>, _pool_name: &str, _timeout: i64, _extended_timeout: i64) -> Self {
             MockRequestHandler {}
         }
 
