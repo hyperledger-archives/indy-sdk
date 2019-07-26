@@ -185,19 +185,19 @@ impl PoolCommandExecutor {
         Ok(res)
     }
 
-    fn close(&self, handle: PoolHandle, cb: Box<Fn(IndyResult<()>) + Send>) {
-        debug!("close >>> handle: {:?}", handle);
+    fn close(&self, pool_handle: PoolHandle, cb: Box<Fn(IndyResult<()>) + Send>) {
+        debug!("close >>> handle: {:?}", pool_handle);
 
-        let result = self.pool_service.close(handle)
-            .and_then(|handle| {
+        let result = self.pool_service.close(pool_handle)
+            .and_then(|cmd_id| {
                 match self.close_callbacks.try_borrow_mut() {
-                    Ok(cbs) => Ok((cbs, handle)),
+                    Ok(cbs) => Ok((cbs, cmd_id)),
                     Err(err) => Err(err.into())
                 }
             });
         match result {
             Err(err) => { cb(Err(err)); }
-            Ok((mut cbs, handle)) => { cbs.insert(handle, cb); /* TODO check if map contains same key */ }
+            Ok((mut cbs, cmd_id)) => { cbs.insert(cmd_id, cb); /* TODO check if map contains same key */ }
         };
 
         debug!("close <<<");
