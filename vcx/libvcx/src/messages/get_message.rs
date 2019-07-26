@@ -400,6 +400,21 @@ pub fn get_ref_msg(msg_id: &str, pw_did: &str, pw_vk: &str, agent_did: &str, age
     }
 }
 
+fn _parse_status_code(status_codes: Option<Vec<String>>) -> VcxResult<Option<Vec<MessageStatusCode>>> {
+    match status_codes {
+        Some(codes) => {
+            let codes = codes
+                .iter()
+                .map(|code|
+                    ::serde_json::from_str::<MessageStatusCode>(&format!("\"{}\"", code))
+                        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot parse message status code: {}", err)))
+                ).collect::<VcxResult<Vec<MessageStatusCode>>>()?;
+            Ok(Some(codes))
+        }
+        None => Ok(None)
+    }
+}
+
 pub fn download_messages(pairwise_dids: Option<Vec<String>>, status_codes: Option<Vec<String>>, uids: Option<Vec<String>>) -> VcxResult<Vec<MessageByConnection>> {
     trace!("download_messages >>> pairwise_dids: {:?}, status_codes: {:?}, uids: {:?}",
            pairwise_dids, status_codes, uids);
@@ -408,19 +423,7 @@ pub fn download_messages(pairwise_dids: Option<Vec<String>>, status_codes: Optio
         ::utils::httpclient::set_next_u8_response(::utils::constants::GET_ALL_MESSAGES_RESPONSE.to_vec());
     }
 
-    let status_codes =
-        match status_codes {
-            Some(codes) => {
-                let codes = codes
-                    .iter()
-                    .map(|code|
-                        ::serde_json::from_str::<MessageStatusCode>(&format!("\"{}\"", code))
-                            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot parse message status code: {}", err)))
-                    ).collect::<VcxResult<Vec<MessageStatusCode>>>()?;
-                Some(codes)
-            }
-            None => None
-        };
+    let status_codes = _parse_status_code(status_codes)?;
 
     let response =
         get_messages()
@@ -434,11 +437,36 @@ pub fn download_messages(pairwise_dids: Option<Vec<String>>, status_codes: Optio
     Ok(response)
 }
 
+pub fn download_agent_messages(status_codes: Option<Vec<String>>, uids: Option<Vec<String>>) -> VcxResult<Vec<Message>> {
+    trace!("download_messages >>> status_codes: {:?}, uids: {:?}", status_codes, uids);
+
+    if settings::test_agency_mode_enabled() {
+        ::utils::httpclient::set_next_u8_response(::utils::constants::GET_ALL_MESSAGES_RESPONSE.to_vec());
+    }
+
+    let status_codes = _parse_status_code(status_codes)?;
+
+    let response =
+        get_messages()
+            .to(&::settings::get_config_value(settings::CONFIG_SDK_TO_REMOTE_DID)?)?
+            .to_vk(&::settings::get_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY)?)?
+            .agent_did(&::settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?)?
+            .agent_vk(&::settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_VERKEY)?)?
+            .uid(uids)?
+            .status_codes(status_codes)?
+            .send_secure()?;
+
+    trace!("message returned: {:?}", response);
+    Ok(response)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use utils::constants::{GET_MESSAGES_RESPONSE, GET_ALL_MESSAGES_RESPONSE};
     use messages::message_type::MessageTypeV1;
+    use std::thread;
+    use std::time::Duration;
 
 
     #[test]
@@ -505,10 +533,29 @@ mod tests {
     #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
-    fn test_download_messages() {
-        use std::thread;
-        use std::time::Duration;
+    fn test_download_agent_messages() {
+        init!("agency");
 
+        // AS CONSUMER GET MESSAGES
+        ::utils::devsetup::tests::set_consumer();
+        let all_messages = download_agent_messages(None, None).unwrap();
+        assert_eq!(all_messages.len(), 0);
+
+        let wallet_backup = ::wallet_backup::create_wallet_backup("123", ::settings::DEFAULT_WALLET_KEY).unwrap();
+        thread::sleep(Duration::from_millis(2000));
+        let all_messages = download_agent_messages(None, None).unwrap();
+        assert_eq!(all_messages.len(), 1);
+
+        let invalid_status_code = "abc".to_string();
+        let bad_req = download_agent_messages(Some(vec![invalid_status_code]),  None);
+        assert!(bad_req.is_err());
+        teardown!("agency");
+    }
+
+    #[cfg(feature = "agency")]
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn test_download_messages() {
         init!("agency");
         let institution_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
         let (_faber, alice) = ::connection::tests::create_connected_connections();

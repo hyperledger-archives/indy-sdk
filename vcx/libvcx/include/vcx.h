@@ -1348,6 +1348,26 @@ vcx_error_t vcx_messages_download(vcx_command_handle_t command_handle,
                                const char *pw_dids,
                                void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
 
+// Retrieve messages from the cloud agent
+//
+// #params
+//
+// command_handle: command handle to map callback to user context.
+//
+// message_status: optional - query for messages with the specified status
+//
+// uids: optional, comma separated - query for messages with the specified uids
+//
+// cb: Callback that provides array of matching messages retrieved
+//
+// #Returns
+// Error code as a u32
+vcx_error_t vcx_download_agent_messages(vcx_command_handle_t command_handle,
+                               const char *message_status,
+                               const char *uids,
+                               void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
+
+
 // Update the status of messages from the specified connection
 //
 // #params
