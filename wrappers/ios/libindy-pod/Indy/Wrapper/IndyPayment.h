@@ -129,7 +129,7 @@
 + (void)buildGetPaymentSourcesWithFromRequest:(IndyHandle)walletHandle
                                  submitterDid:(NSString *)submitterDid
                                paymentAddress:(NSString *)paymentAddress
-                                         from:(int64_t)from
+                                         from:(NSNumber *)from
                                    completion:(void (^)(NSError *error, NSString *getSourcesTxnJson, NSString *paymentMethod))completion;
 
 
@@ -170,7 +170,7 @@
  */
 + (void)parseGetPaymentSourcesWithFromResponse:(NSString *)responseJson
                                  paymentMethod:(NSString *)paymentMethod
-                                    completion:(void (^)(NSError *error, NSString *sourcesJson, int64_t next))completion;
+                                    completion:(void (^)(NSError *error, NSString *sourcesJson, NSNumber *next))completion;
 
 
 /**

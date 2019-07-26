@@ -134,7 +134,7 @@
             walletHandle,
             [submitterDid UTF8String],
             [paymentAddress UTF8String],
-            [from, intValue],
+            [from intValue],
             IndyWrapperCommonStringStringCallback);
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
