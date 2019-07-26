@@ -20,21 +20,21 @@ pub const SCHEMA_DATA: &'static str = r#"{"id":"id","name":"gvt","version":"1.0"
 
 const SUBMIT_RETRY_CNT: usize = 3;
 
-pub fn sign_and_submit_request(pool_handle: PoolHandle, wallet_handle: i32, submitter_did: &str, request_json: &str) -> Result<String, IndyError> {
+pub fn sign_and_submit_request(pool_handle: i32, wallet_handle: i32, submitter_did: &str, request_json: &str) -> Result<String, IndyError> {
     ledger::sign_and_submit_request(pool_handle, wallet_handle, submitter_did, request_json).wait()
 }
 
-pub fn submit_request_with_retries(pool_handle: PoolHandle, request_json: &str, previous_response: &str) -> Result<String, IndyError> {
+pub fn submit_request_with_retries(pool_handle: i32, request_json: &str, previous_response: &str) -> Result<String, IndyError> {
     _submit_retry(extract_seq_no_from_reply(previous_response).unwrap(), || {
         submit_request(pool_handle, request_json)
     })
 }
 
-pub fn submit_request(pool_handle: PoolHandle, request_json: &str) -> Result<String, IndyError> {
+pub fn submit_request(pool_handle: i32, request_json: &str) -> Result<String, IndyError> {
     ledger::submit_request(pool_handle, request_json).wait()
 }
 
-pub fn submit_action(pool_handle: PoolHandle, request_json: &str, nodes: Option<&str>, timeout: Option<i32>) -> Result<String, IndyError> {
+pub fn submit_action(pool_handle: i32, request_json: &str, nodes: Option<&str>, timeout: Option<i32>) -> Result<String, IndyError> {
     ledger::submit_action(pool_handle, request_json, nodes, timeout).wait()
 }
 

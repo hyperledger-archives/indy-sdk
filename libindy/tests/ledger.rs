@@ -27,7 +27,6 @@ extern crate time;
 extern crate serde;
 extern crate sodiumoxide;
 extern crate rand;
-extern crate indy;
 
 #[macro_use]
 mod utils;

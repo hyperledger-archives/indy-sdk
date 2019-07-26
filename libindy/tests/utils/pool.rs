@@ -17,7 +17,7 @@ use time;
 use utils::types::{Response, ResponseType};
 use utils::constants::PROTOCOL_VERSION;
 use utils::{environment, test};
-use indy::api::PoolHandle;
+use api::PoolHandle;
 
 #[derive(Serialize, Deserialize)]
 struct PoolConfig {

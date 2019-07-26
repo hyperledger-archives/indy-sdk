@@ -25,7 +25,7 @@ use services::pool::{
 };
 use services::wallet::{RecordOptions, WalletService};
 use utils::crypto::signature_serializer::serialize_signature;
-use api::{WalletHandle, PoolHandle, CommandHandle};
+use api::{WalletHandle, PoolHandle, CommandHandle, next_command_handle};
 use commands::{Command, CommandExecutor};
 use rust_base58::ToBase58;
 
@@ -1177,7 +1177,7 @@ impl LedgerCommandExecutor {
 
         let request_json = try_cb!(self.build_get_schema_request(submitter_did, id), cb);
 
-        let cb_id = CommandHandle(::utils::sequence::get_next_id());
+        let cb_id = next_command_handle();
         self.pending_callbacks.borrow_mut().insert(cb_id, cb);
 
         self.submit_request(pool_handle, &request_json, Box::new(move |response| {
@@ -1202,7 +1202,7 @@ impl LedgerCommandExecutor {
 
         let request_json = try_cb!(self.build_get_cred_def_request(submitter_did, id), cb);
 
-        let cb_id = CommandHandle(::utils::sequence::get_next_id());
+        let cb_id = next_command_handle();
         self.pending_callbacks.borrow_mut().insert(cb_id, cb);
 
         self.submit_request(pool_handle, &request_json, Box::new(move |response| {

@@ -16,8 +16,8 @@ use errors::prelude::*;
 use services::crypto::CryptoService;
 use services::ledger::LedgerService;
 use services::wallet::{RecordOptions, SearchOptions, WalletService};
-use utils::sequence;
-use api::{WalletHandle, PoolHandle, CommandHandle};
+use utils::crypto::base58;
+use api::{WalletHandle, PoolHandle, CommandHandle, next_command_handle};
 
 pub enum DidCommand {
     CreateAndStoreMyDid(
@@ -558,7 +558,7 @@ impl DidCommandExecutor {
     }
 
     fn _defer_command(&self, cmd: DidCommand) -> CommandHandle {
-        let deferred_cmd_id = CommandHandle(sequence::get_next_id());
+        let deferred_cmd_id = next_command_handle();
         self.deferred_commands.borrow_mut().insert(deferred_cmd_id, cmd);
         deferred_cmd_id
     }

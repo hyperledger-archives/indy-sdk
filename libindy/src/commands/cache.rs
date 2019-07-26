@@ -10,6 +10,8 @@ use api::{WalletHandle, PoolHandle, CommandHandle};
 use commands::{Command, CommandExecutor};
 use commands::ledger::LedgerCommand;
 
+use api::next_command_handle;
+
 const CRED_DEF_CACHE: &str = "cred_def_cache";
 const SCHEMA_CACHE: &str = "schema_cache";
 
@@ -136,7 +138,7 @@ impl CacheCommandExecutor {
             return cb(Err(IndyError::from(IndyErrorKind::LedgerItemNotFound)));
         }
 
-        let cb_id = CommandHandle(::utils::sequence::get_next_id());
+        let cb_id = next_command_handle();
         self.pending_callbacks.borrow_mut().insert(cb_id, cb);
 
         CommandExecutor::instance().send(
@@ -231,7 +233,7 @@ impl CacheCommandExecutor {
             return cb(Err(IndyError::from(IndyErrorKind::LedgerItemNotFound)));
         }
 
-        let cb_id = CommandHandle(::utils::sequence::get_next_id());
+        let cb_id = next_command_handle();
         self.pending_callbacks.borrow_mut().insert(cb_id, cb);
 
         CommandExecutor::instance().send(

@@ -6,7 +6,7 @@ use self::futures::Future;
 
 use utils::{ledger, pool};
 use utils::types::ResponseType;
-use indy::api::PoolHandle;
+use api::PoolHandle;
 
 
 pub fn create_store_and_publish_my_did_from_trustee(wallet_handle: i32, pool_handle: PoolHandle) -> Result<(String, String), IndyError> {

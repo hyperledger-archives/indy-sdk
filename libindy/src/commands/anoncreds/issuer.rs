@@ -52,7 +52,7 @@ use services::pool::PoolService;
 use services::wallet::{RecordOptions, WalletService};
 
 use super::tails::{SDKTailsAccessor, store_tails_from_generator};
-use api::{WalletHandle, CommandHandle};
+use api::{WalletHandle, CommandHandle, next_command_handle};
 
 pub enum IssuerCommand {
     CreateSchema(
@@ -248,7 +248,7 @@ impl IssuerCommandExecutor {
         let (cred_def_config, schema_id, cred_def_id, signature_type) =
             try_cb!(self._prepare_create_and_store_credential_definition(wallet_handle, issuer_did, schema, tag, type_, config), cb);
 
-        let cb_id = CommandHandle(::utils::sequence::get_next_id());
+        let cb_id = next_command_handle();
         self.pending_callbacks.borrow_mut().insert(cb_id, cb);
 
         let tag = tag.to_string();

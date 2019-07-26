@@ -22,7 +22,7 @@ macro_rules! mocked_handler {
           static ref INJECTIONS: Mutex<VecDeque<(i32, CString)>> = Default::default();
         }
 
-        pub extern fn handle(cmd_handle: CommandHandle,
+        pub extern fn handle(cmd_handle: i32,
                                     $first_param_name: $first_param_type,
                                     $($param_name: $param_type,)*
                                     cb: Option<IndyPaymentCallback>) -> i32 {

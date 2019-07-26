@@ -14,6 +14,8 @@ use services::wallet::{RecordOptions, WalletService};
 use api::{WalletHandle, CommandHandle};
 use domain::ledger::auth_rule::AuthRule;
 
+use api::next_command_handle;
+
 pub enum PaymentsCommand {
     RegisterMethod(
         String, //type
@@ -685,7 +687,7 @@ impl PaymentsCommandExecutor {
 
     fn _process_method(&self, cb: Box<Fn(IndyResult<String>) + Send>,
                        method: &Fn(CommandHandle) -> IndyResult<()>) {
-        let cmd_handle = CommandHandle(::utils::sequence::get_next_id());
+        let cmd_handle = next_command_handle();
         match method(cmd_handle) {
             Ok(()) => {
                 self.pending_callbacks.borrow_mut().insert(cmd_handle, cb);
