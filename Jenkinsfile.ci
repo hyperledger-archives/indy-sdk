@@ -1,8 +1,8 @@
 #!groovy
 
 
-libindyBuildFinished = ["Ubuntu": false, "RedHat": false]
-libvcxBuildFinished = ["Ubuntu": false, "RedHat": false]
+libindyBuildFinished = ["Ubuntu 16.04": false, "Ubuntu 18.04": false, "RedHat": false]
+libvcxBuildFinished = ["Ubuntu 16.04": false, "Ubuntu 18.04": false, "RedHat": false]
 
 testing()
 
@@ -24,10 +24,10 @@ def testing() {
 
 def staticValidation() {
     parallel([
-        'libindy'    : { runValdiationRust('libindy') },
-        'libnullpay' : { runValdiationRust('libnullpay') },
-        'libvcx'     : { runValdiationRust('vcx/libvcx') },
-        'cli'        : { runValdiationRust('cli') }
+            'libindy'   : { runValdiationRust('libindy') },
+            'libnullpay': { runValdiationRust('libnullpay') },
+            'libvcx'    : { runValdiationRust('vcx/libvcx') },
+            'cli'       : { runValdiationRust('cli') }
     ])
 }
 
@@ -248,7 +248,7 @@ def androidTesting() {
 
 def iosTesting() {
 
-    def setupRustIOS ={
+    def setupRustIOS = {
         sh "rustup target add x86_64-apple-ios"
     }
 
@@ -339,17 +339,25 @@ def iosTesting() {
 
 def ubuntuTesting() {
     stage('Ubuntu Test') {
-        linuxTesting("ci/ubuntu.dockerfile ci", "Ubuntu", "pool_network")
+        parallel([
+                "ubuntu:16.04": {
+                    linuxTesting("ci/ubuntu.dockerfile ci", "Ubuntu 16.04", true)
+                },
+                "ubuntu:18.04": {
+                    linuxTesting("ci/ubuntu18.dockerfile ci", "Ubuntu 18.04", false)
+                }
+        ])
     }
 }
 
 def rhelTesting() {
     stage('RedHat Test') {
-        linuxTesting("ci/amazon.dockerfile ci", "RedHat", "pool_network")
+        linuxTesting("ci/amazon.dockerfile ci", "RedHat", false)
     }
 }
 
-def linuxTesting(file, env_name, network_name) {
+def linuxTesting(file, env_name, test_wrappers) {
+    def network_name = "pool_network"
     parallel([
             failFast                                  : true,
             "${env_name} Test: build and test libindy": {
@@ -362,28 +370,28 @@ def linuxTesting(file, env_name, network_name) {
                     libindyBuildFinished[env_name]
                 }
                 def jobs = [
-                        "${env_name}-nodejs-test"     : {
-                            linuxModuleTesting(file, env_name, network_name, this.&linuxNodejsTesting)
-                        },
-                        "${env_name}-cli-test"        : {
+                        "${env_name}-cli-test": {
                             linuxModuleTesting(file, env_name, network_name, this.&linuxCLITesting)
                         },
-                        "${env_name}-rust-test"       : {
-                            linuxModuleTesting(file, env_name, network_name, this.&linuxRustTesting)
-                        },
-                        "${env_name}-vcx-test"        : {
-                            vcxTesting(file, env_name, network_name)
-                        },
-                        "${env_name}-cloud-agent-test": {
-                            linuxModuleTesting(file, env_name, network_name, this.&linuxCloudAgentTesting)
+                        "${env_name}-vcx-test": {
+                            vcxTesting(file, env_name, network_name, test_wrappers)
                         }
                 ]
-                if (env_name == "Ubuntu") {
+                if (test_wrappers) {
+                    jobs["${env_name}-nodejs-test"] = {
+                        linuxModuleTesting(file, env_name, network_name, this.&linuxNodejsTesting)
+                    }
+                    jobs["${env_name}-rust-test"] = {
+                        linuxModuleTesting(file, env_name, network_name, this.&linuxRustTesting)
+                    }
                     jobs["${env_name}-java-test"] = {
                         linuxModuleTesting(file, env_name, network_name, this.&linuxJavaTesting)
                     }
                     jobs["${env_name}-python-test"] = {
                         linuxModuleTesting(file, env_name, network_name, this.&linuxPythonTesting)
+                    }
+                    jobs["${env_name}-cloud-agent-test"] = {
+                        linuxModuleTesting(file, env_name, network_name, this.&linuxCloudAgentTesting)
                     }
                 }
                 parallel(jobs)
@@ -391,7 +399,7 @@ def linuxTesting(file, env_name, network_name) {
     ])
 }
 
-def vcxTesting(file, env_name, network_name) {
+def vcxTesting(file, env_name, network_name, test_wrappers) {
     parallel([
             failFast                                     : true,
             "${env_name} Test: build and test libvcx"    : {
@@ -400,23 +408,23 @@ def vcxTesting(file, env_name, network_name) {
                 }
             },
             "${env_name} Test: test other vcx components": {
-                waitUntil {
-                    libvcxBuildFinished[env_name]
-                }
-                def jobs = [
-                        "${env_name}-vcx-nodejs-test": {
-                            linuxModuleTesting(file, env_name, network_name, this.&linuxVcxNodejsTesting)
-                        }
-                ]
-                if (env_name == "Ubuntu") {
-                    jobs["${env_name}-vcx-java-test"] = {
-                        linuxModuleTesting(file, env_name, network_name, this.&linuxVcxJavaTesting)
+                if (test_wrappers) {
+                    waitUntil {
+                        libvcxBuildFinished[env_name]
                     }
-                    jobs["${env_name}-vcx-python-test"] = {
-                        linuxModuleTesting(file, env_name, network_name, this.&linuxVcxPythonTesting)
-                    }
+                    def jobs = [
+                            "${env_name}-vcx-nodejs-test": {
+                                linuxModuleTesting(file, env_name, network_name, this.&linuxVcxNodejsTesting)
+                            },
+                            "${env_name}-vcx-java-test"  : {
+                                linuxModuleTesting(file, env_name, network_name, this.&linuxVcxJavaTesting)
+                            },
+                            "${env_name}-vcx-python-test": {
+                                linuxModuleTesting(file, env_name, network_name, this.&linuxVcxPythonTesting)
+                            }
+                    ]
+                    parallel(jobs)
                 }
-                parallel(jobs)
             },
     ])
 }
