@@ -237,7 +237,7 @@ impl PoolService {
     fn _send_msg(&self, cmd_id: CommandHandle, msg: &str, socket: &Socket, nodes: Option<&str>, timeout: Option<i32>) -> IndyResult<()> {
         let mut buf = [0u8; 4];
         let mut buf_to = [0u8; 4];
-        LittleEndian::write_i32(&mut buf, cmd_id);
+        LittleEndian::write_i32(&mut buf, cmd_id.0);
         let timeout = timeout.unwrap_or(-1);
         LittleEndian::write_i32(&mut buf_to, timeout);
         if let Some(nodes) = nodes {
