@@ -1038,7 +1038,7 @@ pub mod get_payment_sources_command {
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
-        let (wallet_handle, _) = ensure_opened_wallet(&ctx)?;
+        let wallet_handle = get_opened_wallet_handle(&ctx).unwrap_or(-1);
         let submitter_did = get_active_did(&ctx);
 
         let payment_address = get_str_param("payment_address", params).map_err(error_err!())?;
@@ -1157,7 +1157,7 @@ pub mod get_fees_command {
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
-        let (wallet_handle, _) = ensure_opened_wallet(&ctx)?;
+        let wallet_handle = get_opened_wallet_handle(&ctx).unwrap_or(-1);
         let submitter_did = get_active_did(&ctx);
 
         let payment_method = get_str_param("payment_method", params).map_err(error_err!())?;
@@ -1212,7 +1212,7 @@ pub mod mint_prepare_command {
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
-        let wallet_handle = ensure_opened_wallet_handle(ctx)?;
+        let wallet_handle = get_opened_wallet_handle(&ctx).unwrap_or(-1);
         let submitter_did = get_active_did(&ctx);
 
         let outputs = get_str_tuple_array_param("outputs", params).map_err(error_err!())?;
@@ -1251,7 +1251,7 @@ pub mod set_fees_prepare_command {
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
-        let wallet_handle = ensure_opened_wallet_handle(ctx)?;
+        let wallet_handle = get_opened_wallet_handle(&ctx).unwrap_or(-1);
         let submitter_did = get_active_did(&ctx);
 
         let payment_method = get_str_param("payment_method", params).map_err(error_err!())?;
@@ -1285,7 +1285,7 @@ pub mod verify_payment_receipt_command {
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
-        let (wallet_handle, _) = ensure_opened_wallet(&ctx)?;
+        let wallet_handle = get_opened_wallet_handle(&ctx).unwrap_or(-1);
         let submitter_did = get_active_did(&ctx);
 
         let receipt = get_str_param("receipt", params).map_err(error_err!())?;
@@ -3667,22 +3667,6 @@ pub mod tests {
         }
 
         #[test]
-        pub fn get_payment_sources_works_for_no_active_wallet() {
-            let ctx = setup();
-
-            ::commands::pool::tests::create_and_connect_pool(&ctx);
-            load_null_payment_plugin(&ctx);
-            {
-                let cmd = get_payment_sources_command::new();
-                let mut params = CommandParams::new();
-                params.insert("payment_address", INVALID_PAYMENT_ADDRESS.to_string());
-                cmd.execute(&ctx, &params).unwrap_err();
-            }
-            disconnect_and_delete_pool(&ctx);
-            tear_down();
-        }
-
-        #[test]
         pub fn get_payment_sources_works_for_no_active_did() {
             let ctx = setup_with_wallet_and_pool_and_payment_plugin();
             {
@@ -4058,22 +4042,6 @@ pub mod tests {
         }
 
         #[test]
-        pub fn get_fees_works_for_no_active_wallet() {
-            let ctx = setup();
-
-            ::commands::pool::tests::create_and_connect_pool(&ctx);
-            load_null_payment_plugin(&ctx);
-            {
-                let cmd = get_fees_command::new();
-                let mut params = CommandParams::new();
-                params.insert("payment_method", NULL_PAYMENT_METHOD.to_string());
-                cmd.execute(&ctx, &params).unwrap_err();
-            }
-            disconnect_and_delete_pool(&ctx);
-            tear_down();
-        }
-
-        #[test]
         pub fn get_fees_works_for_no_active_did() {
             let ctx = setup_with_wallet_and_pool_and_payment_plugin();
             {
@@ -4293,22 +4261,6 @@ pub mod tests {
                 cmd.execute(&ctx, &params).unwrap_err();
             }
             tear_down_with_wallet_and_pool(&ctx);
-        }
-
-        #[test]
-        pub fn set_fees_prepare_works_for_no_active_wallet() {
-            let ctx = setup();
-            pool::tests::create_and_connect_pool(&ctx);
-            common::tests::load_null_payment_plugin(&ctx);
-            {
-                let cmd = set_fees_prepare_command::new();
-                let mut params = CommandParams::new();
-                params.insert("payment_method", NULL_PAYMENT_METHOD.to_string());
-                params.insert("fees", FEES.to_string());
-                cmd.execute(&ctx, &params).unwrap_err();
-            }
-            disconnect_and_delete_pool(&ctx);
-            tear_down();
         }
 
         #[test]
