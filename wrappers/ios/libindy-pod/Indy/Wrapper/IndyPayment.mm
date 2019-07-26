@@ -182,7 +182,7 @@
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
 
         dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromIndyError:ret], nil);
+            completion([NSError errorFromIndyError:ret], nil, nil);
         });
     }
 }
