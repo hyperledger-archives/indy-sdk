@@ -871,17 +871,6 @@ mod medium_cases {
         }
 
         #[test]
-        fn create_payment_address_works_for_invalid_wallet_handle() {
-            let (wallet_handle, wallet_config) = setup("create_payment_address_works_for_invalid_wallet_handle");
-
-            let res = payments::create_payment_address(INVALID_WALLET_HANDLE, EMPTY_OBJECT, WRONG_PAYMENT_METHOD_NAME);
-
-            assert_code!(ErrorCode::WalletInvalidHandle, res);
-
-            utils::tear_down_with_wallet(wallet_handle, "create_payment_address_works_for_invalid_wallet_handle", &wallet_config);
-        }
-
-        #[test]
         fn create_payment_address_works_for_generic_error() {
             let (wallet_handle, wallet_config) = setup("create_payment_address_works_for_generic_error");
 
@@ -1046,23 +1035,6 @@ mod medium_cases {
         }
 
         #[test]
-        fn add_request_fees_works_for_invalid_wallet_handle() {
-            let (wallet_handle, wallet_config) = setup("add_request_fees_works_for_invalid_wallet_handle");
-
-            let err = payments::add_request_fees(INVALID_WALLET_HANDLE,
-                                                 Some(IDENTIFIER),
-                                                 EMPTY_OBJECT,
-                                                 CORRECT_INPUTS,
-                                                 EMPTY_ARRAY,
-                                                 None,
-            );
-
-            assert_code!(ErrorCode::WalletInvalidHandle, err);
-
-            utils::tear_down_with_wallet(wallet_handle, "add_request_fees_works_for_invalid_wallet_handle", &wallet_config);
-        }
-
-        #[test]
         fn add_request_fees_works_for_invalid_submitter_did() {
             let (wallet_handle, wallet_config) = setup("add_request_fees_works_for_invalid_submitter_did");
 
@@ -1183,16 +1155,6 @@ mod medium_cases {
             assert_code!(ErrorCode::IncompatiblePaymentError, err);
 
             utils::tear_down_with_wallet(wallet_handle, "build_get_payment_sources_request_works_for_malformed_payment_address", &wallet_config);
-        }
-
-        #[test]
-        pub fn build_get_payment_sources_request_works_for_invalid_wallet_handle() {
-            let (wallet_handle, wallet_config) = setup("build_get_payment_sources_request_works_for_invalid_wallet_handle");
-
-            let err = payments::build_get_payment_sources_request(INVALID_WALLET_HANDLE, Some(IDENTIFIER), CORRECT_PAYMENT_ADDRESS);
-            assert_code!(ErrorCode::WalletInvalidHandle, err);
-
-            utils::tear_down_with_wallet(wallet_handle, "build_get_payment_sources_request_works_for_invalid_wallet_handle", &wallet_config);
         }
 
         #[test]
@@ -1347,21 +1309,6 @@ mod medium_cases {
 
     mod payment_request {
         use super::*;
-
-        #[test]
-        fn build_payment_request_works_for_invalid_wallet_handle() {
-            let (wallet_handle, wallet_config) = setup("build_payment_request_works_for_invalid_wallet_handle");
-
-            let res = payments::build_payment_req(INVALID_WALLET_HANDLE,
-                                                  Some(IDENTIFIER),
-                                                  CORRECT_INPUTS,
-                                                  CORRECT_OUTPUTS,
-                                                  None);
-
-            assert_code!(ErrorCode::WalletInvalidHandle, res);
-
-            utils::tear_down_with_wallet(wallet_handle, "build_payment_request_works_for_invalid_wallet_handle", &wallet_config);
-        }
 
         #[test]
         fn build_payment_request_works_for_invalid_submitter_did() {
@@ -1627,20 +1574,6 @@ mod medium_cases {
         }
 
         #[test]
-        fn build_mint_request_works_for_invalid_wallet_handle() {
-            let (wallet_handle, wallet_config) = setup("build_mint_request_works_for_invalid_wallet_handle");
-
-            let res = payments::build_mint_req(INVALID_WALLET_HANDLE,
-                                               Some(IDENTIFIER),
-                                               CORRECT_OUTPUTS,
-                                               None);
-
-            assert_code!(ErrorCode::WalletInvalidHandle, res);
-
-            utils::tear_down_with_wallet(wallet_handle, "build_mint_request_works_for_invalid_wallet_handle", &wallet_config);
-        }
-
-        #[test]
         fn build_mint_request_works_for_invalid_submitter_did() {
             let (wallet_handle, wallet_config) = setup("build_mint_request_works_for_invalid_submitter_did");
 
@@ -1744,20 +1677,6 @@ mod medium_cases {
         }
 
         #[test]
-        fn build_set_txn_fees_request_works_for_invalid_wallet_handle() {
-            let (wallet_handle, wallet_config) = setup("build_set_txn_fees_request_works_for_invalid_wallet_handle");
-
-            let res = payments::build_set_txn_fees_req(INVALID_WALLET_HANDLE,
-                                                       Some(IDENTIFIER),
-                                                       PAYMENT_METHOD_NAME,
-                                                       CORRECT_FEES);
-
-            assert_code!(ErrorCode::WalletInvalidHandle, res);
-
-            utils::tear_down_with_wallet(wallet_handle, "build_set_txn_fees_request_works_for_invalid_wallet_handle", &wallet_config);
-        }
-
-        #[test]
         fn build_set_txn_fees_request_works_for_invalid_submitter_did() {
             let (wallet_handle, wallet_config) = setup("build_set_txn_fees_request_works_for_invalid_submitter_did");
 
@@ -1806,19 +1725,6 @@ mod medium_cases {
 
     mod get_txn_fees_request {
         use super::*;
-
-        #[test]
-        fn build_get_txn_fees_request_works_for_invalid_wallet_handle() {
-            let (wallet_handle, wallet_config) = setup("build_get_txn_fees_request_works_for_invalid_wallet_handle");
-
-            let res = payments::build_get_txn_fees_req(INVALID_WALLET_HANDLE,
-                                                       Some(IDENTIFIER),
-                                                       PAYMENT_METHOD_NAME);
-
-            assert_code!(ErrorCode::WalletInvalidHandle, res);
-
-            utils::tear_down_with_wallet(wallet_handle, "build_get_txn_fees_request_works_for_invalid_wallet_handle", &wallet_config);
-        }
 
         #[test]
         fn build_get_txn_fees_request_works_for_invalid_submitter_did() {
@@ -1920,16 +1826,6 @@ mod medium_cases {
             assert_code!(ErrorCode::IncompatiblePaymentError, ec);
 
             utils::tear_down_with_wallet(wallet_handle, "build_verify_payment_req_works_for_incorrect_payment_address", &wallet_config);
-        }
-
-        #[test]
-        pub fn build_verify_payment_req_works_for_invalid_wallet_handle() {
-            let (wallet_handle, wallet_config) = setup("build_verify_payment_req_works_for_invalid_wallet_handle");
-
-            let err = payments::build_verify_payment_req(INVALID_WALLET_HANDLE, Some(IDENTIFIER), CORRECT_PAYMENT_ADDRESS);
-            assert_code!(ErrorCode::WalletInvalidHandle, err);
-
-            utils::tear_down_with_wallet(wallet_handle, "build_verify_payment_req_works_for_invalid_wallet_handle", &wallet_config);
         }
 
         #[test]
