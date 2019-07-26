@@ -595,9 +595,11 @@ def linuxAndroidOnEmulatorTesting(env_name, network_name, testEnv) {
 
     def emu_arch = "x86"
 
-    echo "${env_name} Libindy Test: Test on ${emu_arch} emulator"
     testEnv.inside("--network=${network_name}") {
-        sh "cd libindy && ./android.test.sh ${emu_arch} --release"
+        for (directory in ["libindy", "libnullpay", "vcx/libvcx"]) {
+            echo "${env_name} ${directory} Test: Test on ${emu_arch} emulator"
+            sh "cd ${directory} && ./android.test.sh ${emu_arch}"
+        }
     }
 }
 
