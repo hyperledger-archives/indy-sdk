@@ -50,12 +50,12 @@ lazy_static! {
     static ref REGISTERED_SP_PARSERS: Mutex<HashMap<String, (CustomTransactionParser, CustomFree)>> = Mutex::new(HashMap::new());
 }
 
-fn next_pool_handle() -> PoolHandle {
-    PoolHandle(sequence::get_next_id())
-}
 //fn next_pool_handle() -> PoolHandle {
-//    sequence::get_next_id()
+//    PoolHandle(sequence::get_next_id())
 //}
+fn next_pool_handle() -> PoolHandle {
+    sequence::get_next_id()
+}
 
 pub struct PoolService {
     open_pools: RefCell<HashMap<PoolHandle, ZMQPool>>,
