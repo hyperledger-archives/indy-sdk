@@ -235,6 +235,12 @@ impl From<UrsaCryptoError> for IndyError {
     }
 }
 
+impl From<rust_base58::base58::FromBase58Error> for IndyError {
+    fn from(_err: rust_base58::base58::FromBase58Error) -> Self {
+        IndyError::from_msg(IndyErrorKind::InvalidStructure, "The base58 input contained a character not part of the base58 alphabet")
+    }
+}
+
 impl<T> From<IndyResult<T>> for ErrorCode {
     fn from(r: Result<T, IndyError>) -> ErrorCode {
         match r {

@@ -52,7 +52,7 @@ First, make sure you have the latest libindy for your platform. Also make sure y
 Second, make sure it's in the linker search path. The easiest way is to use the system library path.
 * ubuntu `/usr/lib/libindy.so`
 * osx `/usr/local/lib/libindy.dylib`
-* windows `c:\windows\system32\indy.dll`
+* windows use LD_LIBRARY_PATH to indicate the location of dll as specified below
 
 If you want to put the library in a custom folder i.e. `/foo/bar/libindy.so` then you can do this:
 ```sh
@@ -1801,10 +1801,11 @@ Builds a AUTH_RULE request. Request to change authentication rules for a ledger 
  {
      constraint_id - <string> type of a constraint.
          Can be either "ROLE" to specify final constraint or  "AND"/"OR" to combine constraints.
-     role - <string> role of a user which satisfy to constrain.
+     role - <string> (optional) role of a user which satisfy to constrain.
      sig_count - <u32> the number of signatures required to execution action.
-     need_to_be_owner - <bool> if user must be an owner of transaction.
-     metadata - <object> additional parameters of the constraint.
+     need_to_be_owner - <bool> (optional) if user must be an owner of transaction (false by default).
+     off_ledger_signature - <bool> (optional) allow signature of unknow for ledger did (false by default). 
+     metadata - <object> (optional) additional parameters of the constraint.
  }
 can be combined by
  {
@@ -2535,7 +2536,8 @@ If the requester does not match to the request constraints `TransactionNotAllowe
 {
     "role": string (optional) - role of a user which can sign a transaction.
     "sig_count": u64 - number of signers.
-    "is_owner": bool (optional) - if user is an owner of transaction.
+    "is_owner": bool (optional) - if user is an owner of transaction (false by default).
+    "is_off_ledger_signature": bool (optional) - if user did is unknow for ledger (false by default).
 }
 ```
 * `fees`: Json - fees set on the ledger (result of `parseGetTxnFeesResponse`).
@@ -2544,9 +2546,10 @@ If the requester does not match to the request constraints `TransactionNotAllowe
 {
     "price": u64 - fee required for the action performing,
     "requirements": [{
-        "role": string - role of users who should sign,
+        "role": string (optional) - role of users who should sign,
         "sig_count": u64 - number of signers,
-        "need_to_be_owner": bool - if requester need to be owner
+        "need_to_be_owner": bool - if requester need to be owner,
+        "off_ledger_signature": bool - allow signature of unknow for ledger did (false by default).
     }]
 }
 ```

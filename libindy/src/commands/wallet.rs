@@ -8,9 +8,10 @@ use domain::wallet::{Config, Credentials, ExportConfig, KeyConfig, Metadata};
 use errors::prelude::*;
 use services::crypto::CryptoService;
 use services::wallet::{KeyDerivationData, WalletService};
-use utils::crypto::{base58, chacha20poly1305_ietf, randombytes};
+use utils::crypto::{chacha20poly1305_ietf, randombytes};
 use utils::crypto::chacha20poly1305_ietf::Key as MasterKey;
 use api::{WalletHandle, CallbackHandle};
+use rust_base58::ToBase58;
 
 type DeriveKeyResult<T> = IndyResult<T>;
 
@@ -495,7 +496,7 @@ impl WalletCommandExecutor {
             None => randombytes::randombytes(chacha20poly1305_ietf::KEYBYTES)
         };
 
-        let res = base58::encode(&key[..]);
+        let res = key[..].to_base58();
 
         trace!("_generate_key <<< res: {:?}", res);
         Ok(res)

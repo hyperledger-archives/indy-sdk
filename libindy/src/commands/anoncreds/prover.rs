@@ -21,7 +21,7 @@ use domain::anoncreds::revocation_state::RevocationState;
 use domain::anoncreds::schema::{Schema, schemas_map_to_schemas_v1_map, SchemaV1};
 use errors::prelude::*;
 use services::anoncreds::AnoncredsService;
-use services::anoncreds::helpers::parse_cred_rev_id;
+use services::anoncreds::helpers::{parse_cred_rev_id, get_non_revoc_interval};
 use services::blob_storage::BlobStorageService;
 use services::crypto::CryptoService;
 use services::wallet::{RecordOptions, SearchOptions, WalletRecord, WalletSearch, WalletService};
@@ -531,7 +531,7 @@ impl ProverCommandExecutor {
                                                                        &requested_attr.restrictions,
                                                                        &None)?;
 
-            let interval = self.anoncreds_service.prover.get_non_revoc_interval(&proof_request.non_revoked, &requested_attr.non_revoked);
+            let interval = get_non_revoc_interval(&proof_request.non_revoked, &requested_attr.non_revoked);
 
             let credentials_for_attribute = self._query_requested_credentials(wallet_handle, &query_json, None, &interval)?;
 
@@ -544,7 +544,7 @@ impl ProverCommandExecutor {
                                                                        &requested_predicate.restrictions,
                                                                        &None)?;
 
-            let interval = self.anoncreds_service.prover.get_non_revoc_interval(&proof_request.non_revoked, &requested_predicate.non_revoked);
+            let interval = get_non_revoc_interval(&proof_request.non_revoked, &requested_predicate.non_revoked);
 
             let credentials_for_predicate =
                 self._query_requested_credentials(wallet_handle, &query_json, Some(&requested_predicate), &interval)?;
@@ -576,7 +576,7 @@ impl ProverCommandExecutor {
             let credentials_search =
                 self.wallet_service.search_indy_records::<Credential>(wallet_handle, &query_json, &SearchOptions::id_value())?;
 
-            let interval = self.anoncreds_service.prover.get_non_revoc_interval(&proof_request.non_revoked, &requested_attr.non_revoked);
+            let interval = get_non_revoc_interval(&proof_request.non_revoked, &requested_attr.non_revoked);
 
             credentials_for_proof_request_search.insert(attr_id.to_string(),
                                                         SearchForProofRequest::new(
@@ -591,7 +591,7 @@ impl ProverCommandExecutor {
             let credentials_search =
                 self.wallet_service.search_indy_records::<Credential>(wallet_handle, &query_json, &SearchOptions::id_value())?;
 
-            let interval = self.anoncreds_service.prover.get_non_revoc_interval(&proof_request.non_revoked, &requested_predicate.non_revoked);
+            let interval = get_non_revoc_interval(&proof_request.non_revoked, &requested_predicate.non_revoked);
 
             credentials_for_proof_request_search.insert(predicate_id.to_string(),
                                                         SearchForProofRequest::new(
