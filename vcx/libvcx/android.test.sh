@@ -2,8 +2,10 @@
 
 
 
-WORKDIR=${PWD}
-LIBINDY_WORKDIR=${WORKDIR}
+WORKDIR="$( cd "$(dirname "$0")" ; pwd -P )"
+LIBINDY_WORKDIR="$(realpath ${WORKDIR}/../../libindy)"
+LIBNULLPAY_WORKDIR="$(realpath ${WORKDIR}/../../libnullpay)"
+LIBVCX_WORKDIR=${WORKDIR}
 CI_DIR="${LIBINDY_WORKDIR}/ci"
 BUILD_TYPE="--release"
 export ANDROID_BUILD_FOLDER="/tmp/android_build"
@@ -16,13 +18,29 @@ if [ -z "${TARGET_ARCH}" ]; then
     exit 1
 fi
 
-set -e
-
 source ${CI_DIR}/setup.android.env.sh
 generate_arch_flags ${TARGET_ARCH}
 
+if [ -z "${INDY_DIR}" ] ; then
+        INDY_DIR="libindy_${TARGET_ARCH}"
+        if [ -d "${INDY_DIR}" ] ; then
+            echo "Found ${INDY_DIR}"
+        elif [ -n "$2" ] ; then
+            INDY_DIR=$2
+        elif [ -d "${LIBINDY_WORKDIR}/target/${TRIPLET}/release/" ] ; then
+            INDY_DIR="${LIBINDY_WORKDIR}/target/${TRIPLET}/release/"
+            echo "Found local INDY_DIR=${INDY_DIR}"
+        else
+            echo STDERR "Missing INDY_DIR argument and environment variable"
+            echo STDERR "e.g. set INDY_DIR=<path> for environment or libindy_${TARGET_ARCH}"
+            exit 1
+        fi
+        if [ -d "${INDY_DIR}/lib" ] ; then
+            INDY_DIR="${INDY_DIR}/lib"
+        fi
+fi
+
 echo ">> in runner script"
-WORKDIR=${PWD}
 declare -a EXE_ARRAY
 
 build_test_artifacts(){
@@ -36,28 +54,31 @@ build_test_artifacts(){
 
         cargo clean
 
-        # TODO empty for full testing SET_OF_TESTS=''
-        SET_OF_TESTS='--test interaction'
+        SET_OF_TESTS=''
 
         # TODO move RUSTFLAGS to cargo config and do not duplicate it here
         # build - separate step to see origin build output
-        RUSTFLAGS="-L${TOOLCHAIN_DIR}/sysroot/usr/${TOOLCHAIN_SYSROOT_LIB} -lc -lz -L${TOOLCHAIN_DIR}/${TRIPLET}/lib -L${LIBZMQ_LIB_DIR} -L${SODIUM_LIB_DIR} -lsodium -lzmq -lgnustl_shared" \
+        RUSTFLAGS="-L${TOOLCHAIN_DIR}/sysroot/usr/${TOOLCHAIN_SYSROOT_LIB} -lc -lz -L${TOOLCHAIN_DIR}/${TRIPLET}/lib -L${LIBZMQ_LIB_DIR} -L${SODIUM_LIB_DIR} -L${INDY_DIR} -lsodium -lzmq -lgnustl_shared -lindy" \
+        LIBINDY_DIR=${INDY_DIR} \
             cargo build ${BUILD_TYPE} --target=${TRIPLET}
 
         # This is needed to get the correct message if test are not built. Next call will just reuse old results and parse the response.
-        RUSTFLAGS="-L${TOOLCHAIN_DIR}/sysroot/usr/${TOOLCHAIN_SYSROOT_LIB} -lc -lz -L${TOOLCHAIN_DIR}/${TRIPLET}/lib -L${LIBZMQ_LIB_DIR} -L${SODIUM_LIB_DIR} -lsodium -lzmq -lgnustl_shared" \
+        RUSTFLAGS="-L${TOOLCHAIN_DIR}/sysroot/usr/${TOOLCHAIN_SYSROOT_LIB} -lc -lz -L${TOOLCHAIN_DIR}/${TRIPLET}/lib -L${LIBZMQ_LIB_DIR} -L${SODIUM_LIB_DIR} -L${INDY_DIR} -lsodium -lzmq -lgnustl_shared -lindy" \
+        LIBINDY_DIR=${INDY_DIR} \
             cargo test ${BUILD_TYPE} --target=${TRIPLET} ${SET_OF_TESTS} --no-run
 
         # collect items to execute tests, uses resulting files from previous step
         EXE_ARRAY=($(
-            RUSTFLAGS="-L${TOOLCHAIN_DIR}/sysroot/usr/${TOOLCHAIN_SYSROOT_LIB} -lc -lz -L${TOOLCHAIN_DIR}/${TRIPLET}/lib -L${LIBZMQ_LIB_DIR} -L${SODIUM_LIB_DIR} -lsodium -lzmq -lgnustl_shared" \
+            RUSTFLAGS="-L${TOOLCHAIN_DIR}/sysroot/usr/${TOOLCHAIN_SYSROOT_LIB} -lc -lz -L${TOOLCHAIN_DIR}/${TRIPLET}/lib -L${LIBZMQ_LIB_DIR} -L${SODIUM_LIB_DIR} -L${INDY_DIR} -lsodium -lzmq -lgnustl_shared -lindy" \
+            LIBINDY_DIR=${INDY_DIR} \
                 cargo test ${BUILD_TYPE} --target=${TRIPLET} ${SET_OF_TESTS} --no-run --message-format=json | jq -r "select(.profile.test == true) | .filenames[]"))
+
     popd
 }
 
 create_cargo_config(){
-mkdir -p ${LIBINDY_WORKDIR}/.cargo
-cat << EOF > ${LIBINDY_WORKDIR}/.cargo/config
+mkdir -p ${LIBVCX_WORKDIR}/.cargo
+cat << EOF > ${LIBVCX_WORKDIR}/.cargo/config
 [target.${TRIPLET}]
 ar = "$(realpath ${AR})"
 linker = "$(realpath ${CC})"
@@ -79,6 +100,9 @@ execute_on_device(){
 
     adb -e push \
     "${LIBINDY_WORKDIR}/target/${TRIPLET}/release/libindy.so" "/data/local/tmp/libindy.so"
+
+    adb -e push \
+    "${LIBNULLPAY_WORKDIR}/target/${TRIPLET}/release/libnullpay.so" "/data/local/tmp/libnullpay.so"
 
     adb -e logcat | grep indy &
 
