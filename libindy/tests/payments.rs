@@ -102,7 +102,7 @@ mod high_cases {
             let res_plugin = payments::create_payment_address(wallet_handle, EMPTY_OBJECT, PAYMENT_METHOD_NAME).unwrap();
 
             assert_eq!(res_plugin, TEST_RES_STRING);
-            
+
             utils::tear_down_with_wallet(wallet_handle, "create_payment_address_works", &wallet_config);
         }
     }
@@ -363,7 +363,7 @@ mod high_cases {
         const VERSION: &str = "1.0.0";
         const HASH: &str = "050e52a57837fff904d3d059c8a123e3a04177042bf467db2b2c27abd8045d5e";
         const ACCEPTANCE_MECH_TYPE: &str = "acceptance type 1";
-        const TIME_OF_ACCEPTANCE: u64 = 123456789;
+        const TIME_OF_ACCEPTANCE: u64 = 123379200;
 
         fn _check_request_meta(extra: &str) {
             let extra: serde_json::Value = serde_json::from_str(&extra).unwrap();
@@ -651,6 +651,112 @@ mod high_cases {
             utils::tear_down_with_wallet(wallet_handle, "parse_verify_payment_response_works", &wallet_config);
         }
     }
+
+    mod indy_get_request_info {
+        use super::*;
+
+        fn _fees() -> String {
+            json!({
+                "1": 100
+            }).to_string()
+        }
+
+        fn _auth_rule() -> String {
+            json!({
+                "result":{
+                    "data":[{
+                        "new_value":"0",
+                        "constraint":{
+                            "need_to_be_owner":false,
+                            "sig_count":1,
+                            "metadata":{
+                                "fees": "1"
+                            },
+                            "role":"0",
+                            "constraint_id":"ROLE"
+                        },
+                        "field":"role",
+                        "auth_type":"1",
+                        "auth_action":"ADD"
+                    }],
+                    "identifier":"LibindyDid111111111111",
+                    "auth_action":"ADD",
+                    "new_value":"0",
+                    "reqId":15616,
+                    "auth_type":"1",
+                    "type":"121",
+                    "field":"role"
+                },
+                "op":"REPLY"
+            }).to_string()
+        }
+
+        fn _requester_info() -> String{
+            json!({
+                "role": "0",
+                "need_to_be_owner":false,
+                "sig_count":1,
+            }).to_string()
+        }
+
+        #[test]
+        fn indy_get_request_info_for_requester_match_to_constraint() {
+            utils::setup("indy_get_request_info_for_requester_match_to_constraint");
+
+            let req_info = payments::get_request_info(&_auth_rule(), &_requester_info(), &_fees()).unwrap();
+            let req_info: serde_json::Value = serde_json::from_str(&req_info).unwrap();
+
+            let expected_req_info = json!({
+                "price": 100,
+                "requirements": [{
+                    "role": "0",
+                    "need_to_be_owner":false,
+                    "sig_count":1,
+                }]
+            });
+
+            assert_eq!(expected_req_info, req_info);
+
+            utils::tear_down("indy_get_request_info_for_requester_match_to_constraint");
+        }
+
+        #[test]
+        fn indy_get_request_info_for_requester_not_match_to_constraint() {
+            utils::setup("indy_get_request_info_for_requester_not_match_to_constraint");
+
+            let requester_info = json!({
+                "role": "101",
+                "need_to_be_owner":false,
+                "sig_count":1,
+            }).to_string();
+
+            let res = payments::get_request_info(&_auth_rule(), &requester_info, &_fees());
+            assert_code!(ErrorCode::TransactionNotAllowed, res);
+
+            utils::tear_down("indy_get_request_info_for_requester_not_match_to_constraint");
+        }
+
+        #[test]
+        fn indy_get_request_info_for_no_fee() {
+            utils::setup("indy_get_request_info_for_no_fee");
+
+            let req_info = payments::get_request_info(&_auth_rule(), &_requester_info(), "{}").unwrap();
+            let req_info: serde_json::Value = serde_json::from_str(&req_info).unwrap();
+
+            let expected_req_info = json!({
+                "price": 0,
+                "requirements": [{
+                    "role": "0",
+                    "need_to_be_owner":false,
+                    "sig_count":1,
+                }]
+            });
+
+            assert_eq!(expected_req_info, req_info);
+
+            utils::tear_down("indy_get_request_info_for_no_fee");
+        }
+    }
 }
 
 mod medium_cases {
@@ -697,17 +803,6 @@ mod medium_cases {
             assert_code!(ErrorCode::UnknownPaymentMethod, res);
 
             utils::tear_down_with_wallet(wallet_handle, "create_payment_address_works_for_non_existent_plugin", &wallet_config);
-        }
-
-        #[test]
-        fn create_payment_address_works_for_invalid_wallet_handle() {
-            let (wallet_handle, wallet_config) = setup("create_payment_address_works_for_invalid_wallet_handle");
-
-            let res = payments::create_payment_address(INVALID_WALLET_HANDLE, EMPTY_OBJECT, WRONG_PAYMENT_METHOD_NAME);
-
-            assert_code!(ErrorCode::WalletInvalidHandle, res);
-
-            utils::tear_down_with_wallet(wallet_handle, "create_payment_address_works_for_invalid_wallet_handle", &wallet_config);
         }
 
         #[test]
@@ -875,23 +970,6 @@ mod medium_cases {
         }
 
         #[test]
-        fn add_request_fees_works_for_invalid_wallet_handle() {
-            let (wallet_handle, wallet_config) = setup("add_request_fees_works_for_invalid_wallet_handle");
-
-            let err = payments::add_request_fees(INVALID_WALLET_HANDLE,
-                                                 Some(IDENTIFIER),
-                                                 EMPTY_OBJECT,
-                                                 CORRECT_INPUTS,
-                                                 EMPTY_ARRAY,
-                                                 None,
-            );
-
-            assert_code!(ErrorCode::WalletInvalidHandle, err);
-
-            utils::tear_down_with_wallet(wallet_handle, "add_request_fees_works_for_invalid_wallet_handle", &wallet_config);
-        }
-
-        #[test]
         fn add_request_fees_works_for_invalid_submitter_did() {
             let (wallet_handle, wallet_config) = setup("add_request_fees_works_for_invalid_submitter_did");
 
@@ -1015,16 +1093,6 @@ mod medium_cases {
         }
 
         #[test]
-        pub fn build_get_payment_sources_request_works_for_invalid_wallet_handle() {
-            let (wallet_handle, wallet_config) = setup("build_get_payment_sources_request_works_for_invalid_wallet_handle");
-
-            let err = payments::build_get_payment_sources_request(INVALID_WALLET_HANDLE, Some(IDENTIFIER), CORRECT_PAYMENT_ADDRESS);
-            assert_code!(ErrorCode::WalletInvalidHandle, err);
-
-            utils::tear_down_with_wallet(wallet_handle, "build_get_payment_sources_request_works_for_invalid_wallet_handle", &wallet_config);
-        }
-
-        #[test]
         pub fn build_get_payment_sources_request_works_for_invalid_submitter_did() {
             let (wallet_handle, wallet_config) = setup("build_get_payment_sources_request_works_for_invalid_submitter_did");
 
@@ -1083,21 +1151,6 @@ mod medium_cases {
 
     mod payment_request {
         use super::*;
-
-        #[test]
-        fn build_payment_request_works_for_invalid_wallet_handle() {
-            let (wallet_handle, wallet_config) = setup("build_payment_request_works_for_invalid_wallet_handle");
-
-            let res = payments::build_payment_req(INVALID_WALLET_HANDLE,
-                                                  Some(IDENTIFIER),
-                                                  CORRECT_INPUTS,
-                                                  CORRECT_OUTPUTS,
-                                                  None);
-
-            assert_code!(ErrorCode::WalletInvalidHandle, res);
-
-            utils::tear_down_with_wallet(wallet_handle, "build_payment_request_works_for_invalid_wallet_handle", &wallet_config);
-        }
 
         #[test]
         fn build_payment_request_works_for_invalid_submitter_did() {
@@ -1363,20 +1416,6 @@ mod medium_cases {
         }
 
         #[test]
-        fn build_mint_request_works_for_invalid_wallet_handle() {
-            let (wallet_handle, wallet_config) = setup("build_mint_request_works_for_invalid_wallet_handle");
-
-            let res = payments::build_mint_req(INVALID_WALLET_HANDLE,
-                                               Some(IDENTIFIER),
-                                               CORRECT_OUTPUTS,
-                                               None);
-
-            assert_code!(ErrorCode::WalletInvalidHandle, res);
-
-            utils::tear_down_with_wallet(wallet_handle, "build_mint_request_works_for_invalid_wallet_handle", &wallet_config);
-        }
-
-        #[test]
         fn build_mint_request_works_for_invalid_submitter_did() {
             let (wallet_handle, wallet_config) = setup("build_mint_request_works_for_invalid_submitter_did");
 
@@ -1480,20 +1519,6 @@ mod medium_cases {
         }
 
         #[test]
-        fn build_set_txn_fees_request_works_for_invalid_wallet_handle() {
-            let (wallet_handle, wallet_config) = setup("build_set_txn_fees_request_works_for_invalid_wallet_handle");
-
-            let res = payments::build_set_txn_fees_req(INVALID_WALLET_HANDLE,
-                                                       Some(IDENTIFIER),
-                                                       PAYMENT_METHOD_NAME,
-                                                       CORRECT_FEES);
-
-            assert_code!(ErrorCode::WalletInvalidHandle, res);
-
-            utils::tear_down_with_wallet(wallet_handle, "build_set_txn_fees_request_works_for_invalid_wallet_handle", &wallet_config);
-        }
-
-        #[test]
         fn build_set_txn_fees_request_works_for_invalid_submitter_did() {
             let (wallet_handle, wallet_config) = setup("build_set_txn_fees_request_works_for_invalid_submitter_did");
 
@@ -1542,19 +1567,6 @@ mod medium_cases {
 
     mod get_txn_fees_request {
         use super::*;
-
-        #[test]
-        fn build_get_txn_fees_request_works_for_invalid_wallet_handle() {
-            let (wallet_handle, wallet_config) = setup("build_get_txn_fees_request_works_for_invalid_wallet_handle");
-
-            let res = payments::build_get_txn_fees_req(INVALID_WALLET_HANDLE,
-                                                       Some(IDENTIFIER),
-                                                       PAYMENT_METHOD_NAME);
-
-            assert_code!(ErrorCode::WalletInvalidHandle, res);
-
-            utils::tear_down_with_wallet(wallet_handle, "build_get_txn_fees_request_works_for_invalid_wallet_handle", &wallet_config);
-        }
 
         #[test]
         fn build_get_txn_fees_request_works_for_invalid_submitter_did() {
@@ -1656,16 +1668,6 @@ mod medium_cases {
             assert_code!(ErrorCode::IncompatiblePaymentError, ec);
 
             utils::tear_down_with_wallet(wallet_handle, "build_verify_payment_req_works_for_incorrect_payment_address", &wallet_config);
-        }
-
-        #[test]
-        pub fn build_verify_payment_req_works_for_invalid_wallet_handle() {
-            let (wallet_handle, wallet_config) = setup("build_verify_payment_req_works_for_invalid_wallet_handle");
-
-            let err = payments::build_verify_payment_req(INVALID_WALLET_HANDLE, Some(IDENTIFIER), CORRECT_PAYMENT_ADDRESS);
-            assert_code!(ErrorCode::WalletInvalidHandle, err);
-
-            utils::tear_down_with_wallet(wallet_handle, "build_verify_payment_req_works_for_invalid_wallet_handle", &wallet_config);
         }
 
         #[test]

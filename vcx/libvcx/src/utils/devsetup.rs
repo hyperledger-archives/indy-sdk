@@ -159,13 +159,13 @@ pub mod tests {
         });
     }
 
-    #[cfg(all(unix, test))]
+    #[cfg(all(unix, test, not(target_os = "android")))]
     fn _load_lib(library: &str) -> libloading::Result<libloading::Library> {
         libloading::os::unix::Library::open(Some(library), libc::RTLD_NOW | libc::RTLD_NODELETE)
             .map(libloading::Library::from)
     }
 
-    #[cfg(any(not(unix), not(test)))]
+    #[cfg(any(not(unix), not(test), target_os = "android"))]
     fn _load_lib(library: &str) -> libloading::Result<libloading::Library> {
         libloading::Library::new(library)
     }
@@ -209,7 +209,7 @@ pub mod tests {
         unsafe {
             CONFIG_STRING.get(INSTITUTION_CONFIG, |t| {
                 settings::set_config_value(settings::CONFIG_PAYMENT_METHOD, settings::DEFAULT_PAYMENT_METHOD);
-                settings::process_config_string(&t)
+                settings::process_config_string(&t, true)
             }).unwrap();
         }
         change_wallet_handle();
@@ -220,7 +220,7 @@ pub mod tests {
         unsafe {
             CONFIG_STRING.get(CONSUMER_CONFIG, |t| {
                 settings::set_config_value(settings::CONFIG_PAYMENT_METHOD, settings::DEFAULT_PAYMENT_METHOD);
-                settings::process_config_string(&t)
+                settings::process_config_string(&t, true)
             }).unwrap();
         }
         change_wallet_handle();

@@ -18,14 +18,14 @@ RUN pip3 install -U \
 	pip==9.0.3 \
 	setuptools
 
-RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 68DB5E88
+RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CE7709D068DB5E88
 ARG indy_stream=master
 RUN echo "deb https://repo.sovrin.org/deb xenial $indy_stream" >> /etc/apt/sources.list
 
 RUN useradd -ms /bin/bash -u $uid indy
 
-ARG indy_plenum_ver=1.9.0~dev808
-ARG indy_node_ver=1.9.0~dev987
+ARG indy_plenum_ver=1.9.0~dev836
+ARG indy_node_ver=1.9.0~dev1025
 ARG python3_indy_crypto_ver=0.4.5
 ARG indy_crypto_ver=0.4.5
 

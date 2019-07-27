@@ -656,6 +656,60 @@ public class Payments extends IndyJava.API {
 
         return future;
     }
+    
+    /**
+     * Gets request requirements (with minimal price) correspondent to specific auth rule
+     * in case the requester can perform this action.
+     *
+     * EXPERIMENTAL
+     *
+     * If the requester does not match to the request constraints `TransactionNotAllowed` error will be thrown.   
+     * 
+     * @param getAuthRuleResponseJson response on GET_AUTH_RULE request returning action constraints set on the ledger.
+     * @param requesterInfoJson {
+     *     "role": string (optional) - role of a user which can sign a transaction.
+     *     "sig_count": u64 - number of signers.
+     *     "is_owner": bool (optional) - if user is an owner of transaction (false by default).
+     *     "is_off_ledger_signature": bool (optional) - if user did is unknow for ledger (false by default).
+     * }
+     * @param feesJson fees set on the ledger (result of `parseGetTxnFeesResponse`).
+     *                 
+     * @return requestInfoJson: request info if a requester match to the action constraints.
+     * {
+     *     "price": u64 - fee required for the action performing,
+     *     "requirements": [{
+     *         "role": string (optional) - role of users who should sign,
+     *         "sig_count": u64 - number of signers,
+     *         "need_to_be_owner": bool - if requester need to be owner
+     *         "off_ledger_signature": bool - allow signature of unknow for ledger did (false by default).
+     *     }]
+     * }
+     * 
+     * @throws IndyException Thrown if a call to the underlying SDK fails.
+     */
+    public static CompletableFuture<String> getRequestInfo(
+            String getAuthRuleResponseJson,
+            String requesterInfoJson,
+            String feesJson
+    ) throws IndyException {
+        ParamGuard.notNull(getAuthRuleResponseJson, "getAuthRuleResponseJson");
+        ParamGuard.notNull(requesterInfoJson, "requesterInfoJson");
+        ParamGuard.notNull(feesJson, "feesJson");
+
+        CompletableFuture<String> future = new CompletableFuture<>();
+        int commandHandle = addFuture(future);
+        
+        int result = LibIndy.api.indy_get_request_info(
+                commandHandle,
+                getAuthRuleResponseJson,
+                requesterInfoJson,
+                feesJson,
+                stringCompleteCb);
+
+        checkResult(future, result);
+
+        return future;
+    }
 
     @FunctionalInterface
     interface QuadFunction<Arg1, Arg2, Arg3, Arg4, Res> {

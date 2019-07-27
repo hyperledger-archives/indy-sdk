@@ -6,10 +6,6 @@ use utils::constants::WALLET_CREDENTIALS;
 
 pub mod callback;
 
-#[macro_use]
-#[path = "../../src/utils/memzeroize.rs"]
-pub mod zeroize;
-
 #[path = "../../src/utils/environment.rs"]
 pub mod environment;
 

@@ -1,5 +1,3 @@
-extern crate base64;
-
 use errors::prelude::*;
 use failure::ResultExt;
 

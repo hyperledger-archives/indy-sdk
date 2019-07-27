@@ -75,6 +75,9 @@ impl<'conn> Transaction<'conn> {
             DropBehavior::Commit => self.commit_(),
             DropBehavior::Rollback => self.rollback_(),
             DropBehavior::Ignore => Ok(()),
+            DropBehavior::Panic => {
+                panic!("drop behaviour is set to panic".to_string());
+            }
         }
     }
 }

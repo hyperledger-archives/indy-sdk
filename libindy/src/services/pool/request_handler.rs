@@ -1,6 +1,3 @@
-extern crate rust_base58;
-extern crate log_derive;
-
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -33,9 +30,9 @@ use services::pool::types::HashableValue;
 use super::ursa::bls::Generator;
 use super::ursa::bls::VerKey;
 
-use self::rust_base58::FromBase58;
 use std::hash::{Hash, Hasher};
-use self::log_derive::logfn;
+use log_derive::logfn;
+use rust_base58::FromBase58;
 
 struct RequestSM<T: Networker> {
     f: usize,
@@ -66,19 +63,21 @@ enum RequestState<T: Networker> {
     Finish(FinishState),
 }
 
+pub const DEFAULT_GENERATOR: &str = "3LHpUjiyFC2q2hD7MnwwNmVXiuaFbQx2XkAFJWzswCjgN1utjsCeLzHsKk1nJvFEaS4fcrUmVAkdhtPCYbrVyATZcmzwJReTcJqwqBCPTmTQ9uWPwz6rEncKb2pYYYFcdHa8N17HzVyTqKfgPi4X9pMetfT3A5xCHq54R2pDNYWVLDX";
+
 impl<T: Networker> RequestSM<T> {
     pub fn new(networker: Rc<RefCell<T>>,
                f: usize,
                cmd_ids: &Vec<i32>,
                nodes: &HashMap<String, Option<VerKey>>,
-               generator: Option<Generator>,
                pool_name: &str, timeout: i64, extended_timeout: i64) -> Self {
+        let generator : Generator = Generator::from_bytes(&DEFAULT_GENERATOR.from_base58().unwrap()).unwrap();
         RequestSM {
             f,
             cmd_ids: cmd_ids.clone(),
             nodes: nodes.clone(),
+            generator,
             pool_name: pool_name.to_string(),
-            generator: generator.unwrap_or(Generator::from_bytes(&"3LHpUjiyFC2q2hD7MnwwNmVXiuaFbQx2XkAFJWzswCjgN1utjsCeLzHsKk1nJvFEaS4fcrUmVAkdhtPCYbrVyATZcmzwJReTcJqwqBCPTmTQ9uWPwz6rEncKb2pYYYFcdHa8N17HzVyTqKfgPi4X9pMetfT3A5xCHq54R2pDNYWVLDX".from_base58().unwrap()).unwrap()),
             timeout,
             extended_timeout,
             state: RequestState::Start(StartState {
@@ -99,8 +98,8 @@ impl<T: Networker> RequestSM<T> {
             f,
             cmd_ids,
             nodes,
-            pool_name,
             generator,
+            pool_name,
             timeout,
             extended_timeout,
             state,
@@ -601,7 +600,7 @@ impl<T: Networker> RequestSM<T> {
 }
 
 pub trait RequestHandler<T: Networker> {
-    fn new(networker: Rc<RefCell<T>>, f: usize, cmd_ids: &Vec<i32>, nodes: &HashMap<String, Option<VerKey>>, generator: Option<Generator>, pool_name: &str, timeout: i64, extended_timeout: i64) -> Self;
+    fn new(networker: Rc<RefCell<T>>, f: usize, cmd_ids: &Vec<i32>, nodes: &HashMap<String, Option<VerKey>>, pool_name: &str, timeout: i64, extended_timeout: i64) -> Self;
     fn process_event(&mut self, ore: Option<RequestEvent>) -> Option<PoolEvent>;
     fn is_terminal(&self) -> bool;
 }
@@ -611,9 +610,9 @@ pub struct RequestHandlerImpl<T: Networker> {
 }
 
 impl<T: Networker> RequestHandler<T> for RequestHandlerImpl<T> {
-    fn new(networker: Rc<RefCell<T>>, f: usize, cmd_ids: &Vec<i32>, nodes: &HashMap<String, Option<VerKey>>, generator: Option<Generator>, pool_name: &str, timeout: i64, extended_timeout: i64) -> Self {
+    fn new(networker: Rc<RefCell<T>>, f: usize, cmd_ids: &Vec<i32>, nodes: &HashMap<String, Option<VerKey>>, pool_name: &str, timeout: i64, extended_timeout: i64) -> Self {
         RequestHandlerImpl {
-            request_wrapper: Some(RequestSM::new(networker, f, cmd_ids, nodes, generator, pool_name, timeout, extended_timeout)),
+            request_wrapper: Some(RequestSM::new(networker, f, cmd_ids, nodes, pool_name, timeout, extended_timeout)),
         }
     }
 
@@ -831,24 +830,26 @@ pub mod tests {
     use services::pool::networker::MockNetworker;
     use services::pool::types::{ConsistencyProof, LedgerStatus, Reply, ReplyResultV1, ReplyTxnV1, ReplyV1, Response, ResponseMetadata, ResponseV1};
     use utils::test;
+    use utils::test::test_pool_create_poolfile;
 
     use super::*;
+    use std::io::Write;
 
-    const MESSAGE: &'static str = "message";
-    const REQ_ID: &'static str = "1";
-    const NODE: &'static str = "n1";
-    const NODE_2: &'static str = "n2";
-    const NODE_3: &'static str = "n3";
-    const NODE_4: &'static str = "n4";
-    const SIMPLE_REPLY: &'static str = r#"{"result":{}}"#;
-    const REJECT_REPLY: &'static str = r#"{"op":"REJECT", "result": {"reason": "reject"}}"#;
-    const NACK_REPLY: &'static str = r#"{"op":"REQNACK", "result": {"reason": "reqnack"}}"#;
+    const MESSAGE: &str = "message";
+    const REQ_ID: &str = "1";
+    const NODE: &str = "n1";
+    const NODE_2: &str = "n2";
+    const NODE_3: &str = "n3";
+    const NODE_4: &str = "n4";
+    const SIMPLE_REPLY: &str = r#"{"result":{}}"#;
+    const REJECT_REPLY: &str = r#"{"op":"REJECT", "result": {"reason": "reject"}}"#;
+    const NACK_REPLY: &str = r#"{"op":"REQNACK", "result": {"reason": "reqnack"}}"#;
 
     #[derive(Debug)]
     pub struct MockRequestHandler {}
 
     impl<T: Networker> RequestHandler<T> for MockRequestHandler {
-        fn new(_networker: Rc<RefCell<T>>, _f: usize, _cmd_ids: &Vec<i32>, _nodes: &HashMap<String, Option<VerKey>>, _generator: Option<Generator>, _pool_name: &str, _timeout: i64, _extended_timeout: i64) -> Self {
+        fn new(_networker: Rc<RefCell<T>>, _f: usize, _cmd_ids: &Vec<i32>, _nodes: &HashMap<String, Option<VerKey>>, _pool_name: &str, _timeout: i64, _extended_timeout: i64) -> Self {
             MockRequestHandler {}
         }
 
@@ -937,7 +938,6 @@ pub mod tests {
                                 f,
                                 &vec![],
                                 &nodes,
-                                None,
                                 pool_name,
                                 0,
                                 0)
@@ -945,19 +945,7 @@ pub mod tests {
 
     // required because of dumping txns to cache
     fn _create_pool(pool_name: &str, content: Option<String>) {
-        use utils::environment;
-        use std::fs;
-        use std::fs::File;
-        use std::io::Write;
-
-        let mut path = environment::pool_path(pool_name);
-
-        path.push(pool_name);
-        path.set_extension("txn");
-
-        fs::create_dir_all(path.parent().unwrap()).unwrap();
-
-        let mut file = File::create(path).unwrap();
+        let mut file = test_pool_create_poolfile(pool_name);
         file.write_all(content.unwrap_or("{}".to_string()).as_bytes()).unwrap();
     }
 

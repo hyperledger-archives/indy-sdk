@@ -22,6 +22,7 @@ pub static CONFIG_REMOTE_TO_SDK_DID: &'static str = "remote_to_sdk_did";
 pub static CONFIG_REMOTE_TO_SDK_VERKEY: &'static str = "remote_to_sdk_verkey";
 pub static CONFIG_SDK_TO_REMOTE_DID: &'static str = "sdk_to_remote_did"; // functionally not used
 pub static CONFIG_SDK_TO_REMOTE_VERKEY: &'static str = "sdk_to_remote_verkey";
+pub static CONFIG_SDK_TO_REMOTE_ROLE: &'static str = "sdk_to_remote_role";
 pub static CONFIG_INSTITUTION_DID: &'static str = "institution_did";
 pub static CONFIG_INSTITUTION_VERKEY: &'static str = "institution_verkey"; // functionally not used
 pub static CONFIG_INSTITUTION_NAME: &'static str = "institution_name";
@@ -56,6 +57,7 @@ pub static DEFAULT_DEFAULT: &str = "default";
 pub static DEFAULT_URL: &str = "http://127.0.0.1:8080";
 pub static DEFAULT_DID: &str = "2hoqvcwupRTUNkXn6ArYzs";
 pub static DEFAULT_VERKEY: &str = "FuN98eH2eZybECWkofW6A9BKJxxnTatBCopfUiNxo6ZB";
+pub static DEFAULT_ROLE: &str = "0";
 pub static DEFAULT_ENABLE_TEST_MODE: &str = "false";
 pub static DEFAULT_WALLET_BACKUP_KEY: &str = "backup_wallet_key";
 pub static DEFAULT_WALLET_KEY: &str = "8dvfYSt5d1taSd6yJdpjq4emkwsPDDLYxkNFysFD2cZY";
@@ -103,6 +105,7 @@ pub fn set_defaults() -> u32 {
     settings.insert(CONFIG_INSTITUTION_LOGO_URL.to_string(), DEFAULT_URL.to_string());
     settings.insert(CONFIG_SDK_TO_REMOTE_DID.to_string(), DEFAULT_DID.to_string());
     settings.insert(CONFIG_SDK_TO_REMOTE_VERKEY.to_string(), DEFAULT_VERKEY.to_string());
+    settings.insert(CONFIG_SDK_TO_REMOTE_ROLE.to_string(), DEFAULT_ROLE.to_string());
     settings.insert(CONFIG_WALLET_KEY.to_string(), DEFAULT_WALLET_KEY.to_string());
     settings.insert(CONFIG_WALLET_KEY_DERIVATION.to_string(), DEFAULT_WALLET_KEY_DERIVATION.to_string());
     settings.insert(CONFIG_LINK_SECRET_ALIAS.to_string(), DEFAULT_LINK_SECRET_ALIAS.to_string());
@@ -194,7 +197,7 @@ pub fn test_agency_mode_enabled() -> bool {
     }
 }
 
-pub fn process_config_string(config: &str) -> VcxResult<u32> {
+pub fn process_config_string(config: &str, do_validation: bool) -> VcxResult<u32> {
     trace!("process_config_string >>> config {}", config);
 
     let configuration: Value = serde_json::from_str(config)
@@ -206,9 +209,11 @@ pub fn process_config_string(config: &str) -> VcxResult<u32> {
         }
     }
 
-    validate_config(
-        &SETTINGS.read().or(Err(VcxError::from(VcxErrorKind::InvalidConfiguration)))?.clone()
-    )
+    if do_validation {
+        validate_config(&SETTINGS.read().or(Err(VcxError::from(VcxErrorKind::InvalidConfiguration)))?.clone() )
+    } else {
+        Ok(error::SUCCESS.code_num)
+    }
 }
 
 pub fn process_config_file(path: &str) -> VcxResult<u32> {
@@ -218,7 +223,7 @@ pub fn process_config_file(path: &str) -> VcxResult<u32> {
         error!("Configuration path was invalid");
         Err(VcxError::from_msg(VcxErrorKind::InvalidConfiguration, "Cannot find config file"))
     } else {
-        process_config_string(&read_config_file(path)?)
+        process_config_string(&read_config_file(path)?, true)
     }
 }
 
@@ -457,7 +462,7 @@ pub mod tests {
             "wallet_key":"key"
         }).to_string();
 
-        assert_eq!(process_config_string(&content).unwrap(), error::SUCCESS.code_num);
+        assert_eq!(process_config_string(&content, true).unwrap(), error::SUCCESS.code_num);
     }
 
     #[test]
@@ -601,7 +606,7 @@ pub mod tests {
             "wallet_key":"key",
         }).to_string();
 
-        assert_eq!(process_config_string(&content).unwrap(), error::SUCCESS.code_num);
+        assert_eq!(process_config_string(&content, true).unwrap(), error::SUCCESS.code_num);
 
         assert_eq!(get_config_value("pool_name").unwrap(), "pool1".to_string());
         assert_eq!(get_config_value("config_name").unwrap(), "config1".to_string());

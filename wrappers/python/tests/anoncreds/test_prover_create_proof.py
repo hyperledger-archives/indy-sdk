@@ -1,8 +1,8 @@
-from indy.anoncreds import prover_create_proof
-from indy.error import ErrorCode, IndyError
-
 import json
 import pytest
+
+from indy.anoncreds import prover_create_proof
+from indy import error
 
 
 @pytest.mark.asyncio
@@ -68,11 +68,10 @@ async def test_prover_create_proof_works_for_using_not_satisfy_credential(wallet
         issuer_1_gvt_cred_def_id: json.loads(credential_def_json)
     }
 
-    with pytest.raises(IndyError) as e:
+    with pytest.raises(error.CommonInvalidStructure):
         await prover_create_proof(wallet_handle, json.dumps(proof_req), json.dumps(requested_credentials),
                                   master_secret_id, json.dumps(schemas), json.dumps(credential_defs), "{}")
 
-    assert ErrorCode.CommonInvalidStructure == e.value.error_code
 
 
 @pytest.mark.asyncio
@@ -101,8 +100,7 @@ async def test_prover_create_proof_works_for_invalid_wallet_handle(wallet_handle
 
     invalid_wallet_handle = wallet_handle + 100
 
-    with pytest.raises(IndyError) as e:
+    with pytest.raises(error.WalletInvalidHandle):
         await prover_create_proof(invalid_wallet_handle, json.dumps(proof_req), json.dumps(requested_credentials),
                                   master_secret_id, json.dumps(schemas), json.dumps(credential_defs), "{}")
 
-    assert ErrorCode.WalletInvalidHandle == e.value.error_code

@@ -198,6 +198,14 @@ async def test_send_proof():
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
+async def test_get_send_proof_msg():
+    disclosed_proof = await DisclosedProof.deserialize(proof_with_version)
+    msg = await disclosed_proof.get_send_proof_msg()
+    assert msg
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_send_proof_with_bad_connection():
     with pytest.raises(VcxError) as e:
         connection = Connection(source_id)

@@ -1285,10 +1285,11 @@ async def build_auth_rule_request(submitter_did: str,
         {
             constraint_id - <string> type of a constraint.
                 Can be either "ROLE" to specify final constraint or  "AND"/"OR" to combine constraints.
-            role - <string> role of a user which satisfy to constrain.
+            role - <string> (optional) role of a user which satisfy to constrain.
             sig_count - <u32> the number of signatures required to execution action.
-            need_to_be_owner - <bool> if user must be an owner of transaction.
-            metadata - <object> additional parameters of the constraint.
+            need_to_be_owner - <bool> (optional) if user must be an owner of transaction (false by default).
+            off_ledger_signature - <bool> (optional) allow signature of unknow for ledger did (false by default).
+            metadata - <object> (optional) additional parameters of the constraint.
         }
       can be combined by
         {
@@ -1643,7 +1644,7 @@ async def append_txn_author_agreement_acceptance_to_request(request_json: str,
                These parameters are required if taa_digest parameter is omitted.
     :param taa_digest: (Optional) hash on text and version. This parameter is required if text and version parameters are omitted.
     :param mechanism: mechanism how user has accepted the TAA
-    :param time: UTC timestamp when user has accepted the TAA
+    :param time: UTC timestamp when user has accepted the TAA. Note that the time portion will be discarded to avoid a privacy risk.
 
     :return: Updated request result as json.
     """

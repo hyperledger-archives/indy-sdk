@@ -1,5 +1,3 @@
-extern crate ursa;
-
 use std::collections::HashMap;
 
 #[derive(Debug, Deserialize, Serialize)]

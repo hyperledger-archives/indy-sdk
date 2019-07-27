@@ -1,7 +1,3 @@
-extern crate ursa;
-extern crate serde_json;
-extern crate zeroize;
-
 use std::collections::HashMap;
 
 use domain::crypto::key::{Key, KeyInfo, KeyMetadata};
@@ -16,6 +12,11 @@ use utils::crypto::base64;
 use utils::crypto::chacha20poly1305_ietf;
 use domain::crypto::combo_box::ComboBox;
 use api::WalletHandle;
+
+pub const PROTECTED_HEADER_ENC: &str = "xchacha20poly1305_ietf";
+pub const PROTECTED_HEADER_TYP: &str = "JWM/1.0";
+pub const PROTECTED_HEADER_ALG_AUTH: &str = "Authcrypt";
+pub const PROTECTED_HEADER_ALG_ANON: &str = "Anoncrypt";
 
 pub enum CryptoCommand {
     CreateKey(
@@ -450,12 +451,12 @@ impl CryptoCommandExecutor {
     }
 
     fn _base64_encode_protected(&self, encrypted_recipients_struct: Vec<Recipient>, alg_is_authcrypt: bool) -> IndyResult<String> {
-        let alg_val = if alg_is_authcrypt { String::from("Authcrypt") } else { String::from("Anoncrypt") };
+        let alg_val = if alg_is_authcrypt { String::from(PROTECTED_HEADER_ALG_AUTH) } else { String::from(PROTECTED_HEADER_ALG_ANON) };
 
         //structure protected and base64URL encode it
         let protected_struct = Protected {
-            enc: "xchacha20poly1305_ietf".to_string(),
-            typ: "JWM/1.0".to_string(),
+            enc: PROTECTED_HEADER_ENC.to_string(),
+            typ: PROTECTED_HEADER_TYP.to_string(),
             alg: alg_val,
             recipients: encrypted_recipients_struct,
         };

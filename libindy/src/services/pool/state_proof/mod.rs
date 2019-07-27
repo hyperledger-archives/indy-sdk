@@ -1,20 +1,11 @@
-extern crate digest;
-extern crate hex;
 extern crate log_derive;
-extern crate ursa;
 extern crate rmp_serde;
-extern crate rust_base58;
-extern crate sha2;
-extern crate sha3;
 
 use std::collections::HashMap;
 use std::ffi::{CStr, CString};
 
 use base64;
-use rlp::{
-    encode as rlp_encode,
-    UntrustedRlp,
-};
+use rlp::UntrustedRlp;
 use serde_json;
 use serde_json::Value as SJsonValue;
 
@@ -27,14 +18,10 @@ use utils::crypto::hash::hash as openssl_hash;
 use super::PoolService;
 use super::types::*;
 
-use self::digest::FixedOutput;
-use self::digest::Input;
-use self::hex::ToHex;
 use self::log_derive::logfn;
-use self::ursa::bls::{Bls, Generator, MultiSignature, VerKey};
+use ursa::bls::{Bls, Generator, MultiSignature, VerKey};
 use self::node::{Node, TrieDB};
-use self::rust_base58::FromBase58;
-use self::sha3::Digest;
+use rust_base58::FromBase58;
 
 mod node;
 
@@ -110,13 +97,27 @@ pub fn verify_parsed_sp(parsed_sps: Vec<ParsedSP>,
         let root_hash = unwrap_or_return!(parsed_sp.root_hash.from_base58(), false);
         match parsed_sp.kvs_to_verify {
             KeyValuesInSP::Simple(kvs) => {
-                for (k, v) in kvs.kvs {
-                    let key = unwrap_or_return!(base64::decode(&k), false);
-                    if !_verify_proof(proof_nodes.as_slice(),
-                                      root_hash.as_slice(),
-                                      &key,
-                                      v.as_ref().map(String::as_str)) {
-                        return false;
+                match kvs.verification_type {
+                    KeyValueSimpleDataVerificationType::Simple => {
+                        for (k, v) in kvs.kvs {
+                            let key = unwrap_or_return!(base64::decode(&k), false);
+                            if !_verify_proof(proof_nodes.as_slice(),
+                                              root_hash.as_slice(),
+                                              &key,
+                                              v.as_ref().map(String::as_str)) {
+                                return false;
+                            }
+                        }
+                    }
+                    KeyValueSimpleDataVerificationType::NumericalSuffixAscendingNoGaps(data) => {
+                        if !_verify_proof_range(proof_nodes.as_slice(),
+                                                root_hash.as_slice(),
+                                                data.prefix.as_str(),
+                                                data.from,
+                                                data.next,
+                                                &kvs.kvs) {
+                            return false;
+                        }
                     }
                 }
             }
@@ -133,6 +134,7 @@ pub fn verify_parsed_sp(parsed_sps: Vec<ParsedSP>,
 
 #[logfn(Trace)]
 pub fn parse_key_from_request_for_builtin_sp(json_msg: &SJsonValue) -> Option<Vec<u8>> {
+    use sha2::digest::{FixedOutput, Input};
     let type_ = json_msg["operation"]["type"].as_str()?;
     let json_msg = &json_msg["operation"];
     let key_suffix: String = match type_ {
@@ -143,9 +145,9 @@ pub fn parse_key_from_request_for_builtin_sp(json_msg: &SJsonValue) -> Option<Ve
                 trace!("TransactionHandler::parse_reply_for_builtin_sp: GET_ATTR attr_name {:?}", attr_name);
 
                 let mut hasher = sha2::Sha256::default();
-                hasher.process(attr_name.as_bytes());
+                hasher.input(attr_name.as_bytes());
                 let marker = if ProtocolVersion::is_node_1_3() { '\x01' } else { '1' };
-                format!(":{}:{}", marker, hasher.fixed_result().to_hex())
+                format!(":{}:{}", marker, hex::encode(hasher.fixed_result()))
             } else {
                 trace!("TransactionHandler::parse_reply_for_builtin_sp: <<< GET_ATTR No key suffix");
                 return None;
@@ -257,7 +259,7 @@ pub fn parse_key_from_request_for_builtin_sp(json_msg: &SJsonValue) -> Option<Ve
         constants::GET_NYM => {
             if let Some(dest) = dest {
                 let mut hasher = sha2::Sha256::default();
-                hasher.process(dest.as_bytes());
+                hasher.input(dest.as_bytes());
                 hasher.fixed_result().to_vec()
             } else {
                 debug!("TransactionHandler::parse_reply_for_builtin_sp: <<< No dest");
@@ -394,7 +396,8 @@ fn _parse_reply_for_sp(json_msg: &SJsonValue, data: Option<&str>, parsed_data: &
         proof_nodes: proof.to_owned(),
         multi_signature: json_msg["state_proof"]["multi_signature"].clone(),
         kvs_to_verify: KeyValuesInSP::Simple(KeyValueSimpleData {
-            kvs: vec![(base64::encode(sp_key), value)]
+            kvs: vec![(base64::encode(sp_key), value)],
+            verification_type: KeyValueSimpleDataVerificationType::Simple,
         }),
     })
 }
@@ -445,7 +448,8 @@ fn _parse_reply_for_multi_sp(_json_msg: &SJsonValue, data: Option<&str>, parsed_
         proof_nodes,
         multi_signature,
         kvs_to_verify: KeyValuesInSP::Simple(KeyValueSimpleData {
-            kvs: vec![(base64::encode(sp_key), value)]
+            kvs: vec![(base64::encode(sp_key), value)],
+            verification_type: KeyValueSimpleDataVerificationType::Simple,
         }),
     }))
 }
@@ -476,11 +480,7 @@ fn _verify_proof(proofs_rlp: &[u8], root_hash: &[u8], key: &[u8], expected_value
     let nodes: Vec<Node> = UntrustedRlp::new(proofs_rlp).as_list().unwrap_or_default(); //default will cause error below
     let mut map: TrieDB = HashMap::new();
     for node in &nodes {
-        let encoded = rlp_encode(node);
-        let mut hasher = sha3::Sha3_256::default();
-        hasher.input(encoded.to_vec().as_slice());
-        let hash = hasher.result();
-        map.insert(hash, node);
+        map.insert(node.get_hash(), node);
     }
     map.get(root_hash).map(|root| {
         root
@@ -488,6 +488,70 @@ fn _verify_proof(proofs_rlp: &[u8], root_hash: &[u8], key: &[u8], expected_value
             .map_err(map_err_trace!())
             .map(|value| value.as_ref().map(String::as_str).eq(&expected_value))
             .unwrap_or(false)
+    }).unwrap_or(false)
+}
+
+fn _verify_proof_range(proofs_rlp: &[u8],
+                       root_hash: &[u8],
+                       prefix: &str,
+                       from: Option<u64>,
+                       next: Option<u64>,
+                       kvs: &Vec<(String, Option<String>)>) -> bool {
+    debug!("verify_proof_range >> from {:?}, prefix {:?}, kvs {:?}", from, prefix, kvs);
+    let nodes: Vec<Node> = UntrustedRlp::new(proofs_rlp).as_list().unwrap_or_default(); //default will cause error below
+    let mut map: TrieDB = HashMap::new();
+    for node in &nodes {
+        map.insert(node.get_hash(), node);
+    }
+    map.get(root_hash).map(|root| {
+        let res = root.get_all_values(&map, Some(prefix.as_bytes())).map_err(map_err_err!());
+        trace!("All values from trie: {:?}", res);
+        let vals = if let Some(vals) = res.ok() {
+            vals
+        } else {
+            error!("Some errors happened while collecting values from state proof");
+            return false;
+        };
+        // Preparation of data for verification
+        // Fetch numerical suffixes
+        let vals_for_sort_check: Vec<Option<(u64, (String, Option<String>))>> = vals.into_iter()
+            .filter(|(key, _)| key.starts_with(prefix))
+            .map(|(key, value)| {
+                let no = key.replacen(prefix, "", 1).parse::<u64>();
+                no.ok().map(|a| (a, (key, Some(value))))
+            }).collect();
+        if !vals_for_sort_check.iter().all(|a| a.is_some()) {
+            error!("Some values in state proof are not correlating with state proof rule, aborting.");
+            return false;
+        }
+        let mut vals_for_sort: Vec<(u64, (String, Option<String>))> = vals_for_sort_check.into_iter().flat_map(|a| a).collect();
+        // Sort by numerical suffixes in ascending order
+        vals_for_sort.sort_by_key(|&(a, _)| a);
+        trace!("Sorted trie values: {:?}", vals_for_sort);
+        // Shift on the left side by from
+        let vals_with_from = if let Some(from_seqno) = from {
+            match vals_for_sort.binary_search_by_key(&from_seqno, |&(a, _)| a) {
+                Ok(idx) | Err(idx) => vals_for_sort[idx..].to_vec()
+            }
+        } else {
+            vals_for_sort
+        };
+        // Verification
+        // Check that all values from response match the trie
+        trace!("Got values from trie: {:?}", vals_with_from);
+        let vals_slice = if let Some(next_seqno) = next {
+            match vals_with_from.binary_search_by_key(&next_seqno, |&(a, _)| a) {
+                Ok(idx) => &vals_with_from[..idx],
+                Err(_) => {
+                    error!("Next seqno is incorrect");
+                    return false;
+                }
+            }
+        } else {
+            vals_with_from.as_slice()
+        };
+        let vals_prepared: Vec<(String, Option<String>)> = vals_slice.into_iter().map(|&(_, ref pair)| pair.clone()).collect();
+        vals_prepared[..] == kvs[..]
     }).unwrap_or(false)
 }
 
@@ -539,6 +603,7 @@ fn _verify_proof_signature(signature: &str,
 }
 
 fn _parse_reply_for_proof_value(json_msg: &SJsonValue, data: Option<&str>, parsed_data: &SJsonValue, xtype: &str, sp_key: &[u8]) -> Result<Option<String>, String> {
+    use sha2::digest::{FixedOutput, Input};
     if let Some(data) = data {
         let mut value = json!({});
 
@@ -567,8 +632,8 @@ fn _parse_reply_for_proof_value(json_msg: &SJsonValue, data: Option<&str>, parse
             }
             constants::GET_ATTR => {
                 let mut hasher = sha2::Sha256::default();
-                hasher.process(data.as_bytes());
-                value["val"] = SJsonValue::String(hasher.fixed_result().to_hex());
+                hasher.input(data.as_bytes());
+                value["val"] = SJsonValue::String(hex::encode(hasher.fixed_result()));
             }
             constants::GET_CRED_DEF | constants::GET_REVOC_REG_DEF | constants::GET_REVOC_REG | constants::GET_TXN_AUTHR_AGRMT_AML => {
                 value["val"] = parsed_data.clone();
@@ -598,16 +663,19 @@ fn _parse_reply_for_proof_value(json_msg: &SJsonValue, data: Option<&str>, parse
                 };
             }
             constants::GET_REVOC_REG_DELTA => {
-                value["val"] = parsed_data["value"]["accum_to"].clone();
+                if !parsed_data["value"]["accum_to"].is_null() {
+                    value["val"] = parsed_data["value"]["accum_to"].clone()
+                } else {
+                    return Ok(None);
+                }
             }
             constants::GET_TXN_AUTHR_AGRMT => {
                 if _is_full_taa_state_value_expected(sp_key) {
                     value["val"] = parsed_data.clone();
                 } else {
-                    value = SJsonValue::String(_calculate_taa_digest(parsed_data["text"].as_str().unwrap_or(""),
-                                                                     parsed_data["version"].as_str().unwrap_or(""))
-                        .map_err(|err| format!("Can't calculate expected TAA digest to verify StateProof on the request ({})", err))?
-                        .to_hex());
+                    value = SJsonValue::String(hex::encode(_calculate_taa_digest(parsed_data["text"].as_str().unwrap_or(""),
+                                                                                 parsed_data["version"].as_str().unwrap_or(""))
+                        .map_err(|err| format!("Can't calculate expected TAA digest to verify StateProof on the request ({})", err))?));
                 }
             }
             _ => {
@@ -669,11 +737,7 @@ mod tests {
         let mut map: TrieDB = HashMap::new();
         for node in &proofs {
             info!("{:?}", node);
-            let encoded = rlp_encode(node);
-            info!("{:?}", encoded);
-            let mut hasher = sha3::Sha3_256::default();
-            hasher.input(encoded.to_vec().as_slice());
-            let out = hasher.result();
+            let out = node.get_hash();
             info!("{:?}", out);
             map.insert(out, node);
         }
@@ -701,6 +765,409 @@ mod tests {
         assert!(_verify_proof(proofs.as_slice(), root_hash.as_slice(), "34".as_bytes(), Some("v2")));
         assert!(_verify_proof(proofs.as_slice(), root_hash.as_slice(), "3C".as_bytes(), Some("v3")));
         assert!(_verify_proof(proofs.as_slice(), root_hash.as_slice(), "4".as_bytes(), Some("v4")));
+    }
+
+    #[test]
+    fn state_proof_verify_proof_works_for_get_value_from_leaf_in_range() {
+        /*
+            'abcdefgh1'     -> '3630'
+            'abcdefgh4'     -> '3037'
+            'abcdefgh10'    -> '4970'
+            'abcdefgh11'    -> '4373'
+            'abcdefgh24'    -> '4905'
+            'abcdefgh99'    -> '4522'
+            'abcdefgh100'   -> '3833'
+        */
+        let proofs = base64::decode("+QEO34CAgMgwhsWEMzgzM4CAgICAgICAgICAgIbFhDQ5NzD4TYCgWvV3JP22NK5fmfA2xp0DgkFi9rkBdw4ADHTeyez/RtzKgiA0hsWENDkwNYDIIIbFhDMwMzeAgICAyoIgOYbFhDQ1MjKAgICAgICA94CAgKCwvJK5hgh1xdoCVjFsZLAr2Ct5ADxnseuJtF+m80+y64CAgICAgICAgICAgIbFhDM2MzD4OaAfBo1nqEW9/DhdOYucHjHAgqpZsF3f96awYBKZkmR2i8gghsWENDM3M4CAgICAgICAgICAgICAgOuJFhYmNkZWZnaDoNDKeVFnNI85QpRhrd2t8hS4By3wpD4R5ZyUegAPUtga").unwrap();
+        let root_hash = "EA9zTfmf5Ex4ZUTPpMwpsQxQzTkevtwg9PADTqJczhSF".from_base58().unwrap();
+        assert!(_verify_proof_range(
+            proofs.as_slice(),
+            root_hash.as_slice(),
+            "abcdefgh",
+            Some(10),
+            Some(99),
+            &vec![
+                ("abcdefgh10".to_string(), Some("4970".to_string())),
+                ("abcdefgh11".to_string(), Some("4373".to_string())),
+                ("abcdefgh24".to_string(), Some("4905".to_string())),
+            ]));
+    }
+
+    #[test]
+    fn state_proof_verify_proof_works_for_get_value_from_leaf_in_range_empty_from() {
+        /*
+            'abcdefgh1'     -> '3630'
+            'abcdefgh4'     -> '3037'
+            'abcdefgh10'    -> '4970'
+            'abcdefgh11'    -> '4373'
+            'abcdefgh24'    -> '4905'
+            'abcdefgh99'    -> '4522'
+            'abcdefgh100'   -> '3833'
+        */
+        let proofs = base64::decode("+QEO34CAgMgwhsWEMzgzM4CAgICAgICAgICAgIbFhDQ5NzD4TYCgWvV3JP22NK5fmfA2xp0DgkFi9rkBdw4ADHTeyez/RtzKgiA0hsWENDkwNYDIIIbFhDMwMzeAgICAyoIgOYbFhDQ1MjKAgICAgICA94CAgKCwvJK5hgh1xdoCVjFsZLAr2Ct5ADxnseuJtF+m80+y64CAgICAgICAgICAgIbFhDM2MzD4OaAfBo1nqEW9/DhdOYucHjHAgqpZsF3f96awYBKZkmR2i8gghsWENDM3M4CAgICAgICAgICAgICAgOuJFhYmNkZWZnaDoNDKeVFnNI85QpRhrd2t8hS4By3wpD4R5ZyUegAPUtga").unwrap();
+        let root_hash = "EA9zTfmf5Ex4ZUTPpMwpsQxQzTkevtwg9PADTqJczhSF".from_base58().unwrap();
+        assert!(_verify_proof_range(
+            proofs.as_slice(),
+            root_hash.as_slice(),
+            "abcdefgh",
+            Some(101),
+            None,
+            &vec![]));
+    }
+
+    #[test]
+    fn state_proof_verify_proof_works_for_get_value_from_leaf_in_range_fails_missing_values() {
+        /*
+            'abcdefgh1'     -> '3630'
+            'abcdefgh4'     -> '3037'
+            'abcdefgh10'    -> '4970'
+            'abcdefgh11'    -> '4373'
+            'abcdefgh24'    -> '4905'
+            'abcdefgh99'    -> '4522'
+            'abcdefgh100'   -> '3833'
+        */
+        let proofs = base64::decode("+QEO34CAgMgwhsWEMzgzM4CAgICAgICAgICAgIbFhDQ5NzD4TYCgWvV3JP22NK5fmfA2xp0DgkFi9rkBdw4ADHTeyez/RtzKgiA0hsWENDkwNYDIIIbFhDMwMzeAgICAyoIgOYbFhDQ1MjKAgICAgICA94CAgKCwvJK5hgh1xdoCVjFsZLAr2Ct5ADxnseuJtF+m80+y64CAgICAgICAgICAgIbFhDM2MzD4OaAfBo1nqEW9/DhdOYucHjHAgqpZsF3f96awYBKZkmR2i8gghsWENDM3M4CAgICAgICAgICAgICAgOuJFhYmNkZWZnaDoNDKeVFnNI85QpRhrd2t8hS4By3wpD4R5ZyUegAPUtga").unwrap();
+        let root_hash = "EA9zTfmf5Ex4ZUTPpMwpsQxQzTkevtwg9PADTqJczhSF".from_base58().unwrap();
+        // no "abcdefgh11" value in kvs
+        assert!(!_verify_proof_range(
+            proofs.as_slice(),
+            root_hash.as_slice(),
+            "abcdefgh",
+            Some(10),
+            Some(99),
+            &vec![
+                ("abcdefgh10".to_string(), Some("4970".to_string())),
+                ("abcdefgh24".to_string(), Some("4905".to_string())),
+            ]));
+    }
+
+    #[test]
+    fn state_proof_verify_proof_works_for_get_value_from_leaf_in_range_fails_extra_values() {
+        /*
+            'abcdefgh1'     -> '3630'
+            'abcdefgh4'     -> '3037'
+            'abcdefgh10'    -> '4970'
+            'abcdefgh11'    -> '4373'
+            'abcdefgh24'    -> '4905'
+            'abcdefgh99'    -> '4522'
+            'abcdefgh100'   -> '3833'
+        */
+        let proofs = base64::decode("+QEO34CAgMgwhsWEMzgzM4CAgICAgICAgICAgIbFhDQ5NzD4TYCgWvV3JP22NK5fmfA2xp0DgkFi9rkBdw4ADHTeyez/RtzKgiA0hsWENDkwNYDIIIbFhDMwMzeAgICAyoIgOYbFhDQ1MjKAgICAgICA94CAgKCwvJK5hgh1xdoCVjFsZLAr2Ct5ADxnseuJtF+m80+y64CAgICAgICAgICAgIbFhDM2MzD4OaAfBo1nqEW9/DhdOYucHjHAgqpZsF3f96awYBKZkmR2i8gghsWENDM3M4CAgICAgICAgICAgICAgOuJFhYmNkZWZnaDoNDKeVFnNI85QpRhrd2t8hS4By3wpD4R5ZyUegAPUtga").unwrap();
+        let root_hash = "EA9zTfmf5Ex4ZUTPpMwpsQxQzTkevtwg9PADTqJczhSF".from_base58().unwrap();
+        // no "abcdefgh11" value in kvs
+        assert!(!_verify_proof_range(
+            proofs.as_slice(),
+            root_hash.as_slice(),
+            "abcdefgh",
+            Some(10),
+            Some(99),
+            &vec![
+                ("abcdefgh10".to_string(), Some("4970".to_string())),
+                ("abcdefgh11".to_string(), Some("4373".to_string())),
+                ("abcdefgh13".to_string(), Some("4234".to_string())),
+                ("abcdefgh24".to_string(), Some("4905".to_string())),
+            ]));
+    }
+
+    #[test]
+    fn state_proof_verify_proof_works_for_get_value_from_leaf_in_range_fails_changed_values() {
+        /*
+            'abcdefgh1'     -> '3630'
+            'abcdefgh4'     -> '3037'
+            'abcdefgh10'    -> '4970'
+            'abcdefgh11'    -> '4373'
+            'abcdefgh24'    -> '4905'
+            'abcdefgh99'    -> '4522'
+            'abcdefgh100'   -> '3833'
+        */
+        let proofs = base64::decode("+QEO34CAgMgwhsWEMzgzM4CAgICAgICAgICAgIbFhDQ5NzD4TYCgWvV3JP22NK5fmfA2xp0DgkFi9rkBdw4ADHTeyez/RtzKgiA0hsWENDkwNYDIIIbFhDMwMzeAgICAyoIgOYbFhDQ1MjKAgICAgICA94CAgKCwvJK5hgh1xdoCVjFsZLAr2Ct5ADxnseuJtF+m80+y64CAgICAgICAgICAgIbFhDM2MzD4OaAfBo1nqEW9/DhdOYucHjHAgqpZsF3f96awYBKZkmR2i8gghsWENDM3M4CAgICAgICAgICAgICAgOuJFhYmNkZWZnaDoNDKeVFnNI85QpRhrd2t8hS4By3wpD4R5ZyUegAPUtga").unwrap();
+        let root_hash = "EA9zTfmf5Ex4ZUTPpMwpsQxQzTkevtwg9PADTqJczhSF".from_base58().unwrap();
+        assert!(!_verify_proof_range(
+            proofs.as_slice(),
+            root_hash.as_slice(),
+            "abcdefgh",
+            Some(10),
+            Some(99),
+            &vec![
+                ("abcdefgh10".to_string(), Some("4970".to_string())),
+                ("abcdefgh12".to_string(), Some("4373".to_string())),
+                ("abcdefgh24".to_string(), Some("4905".to_string())),
+            ]));
+    }
+
+    #[test]
+    fn state_proof_verify_proof_works_for_get_value_from_leaf_in_range_fails_wrong_next() {
+        /*
+            'abcdefgh1'     -> '3630'
+            'abcdefgh4'     -> '3037'
+            'abcdefgh10'    -> '4970'
+            'abcdefgh11'    -> '4373'
+            'abcdefgh24'    -> '4905'
+            'abcdefgh99'    -> '4522'
+            'abcdefgh100'   -> '3833'
+        */
+        let proofs = base64::decode("+QEO34CAgMgwhsWEMzgzM4CAgICAgICAgICAgIbFhDQ5NzD4TYCgWvV3JP22NK5fmfA2xp0DgkFi9rkBdw4ADHTeyez/RtzKgiA0hsWENDkwNYDIIIbFhDMwMzeAgICAyoIgOYbFhDQ1MjKAgICAgICA94CAgKCwvJK5hgh1xdoCVjFsZLAr2Ct5ADxnseuJtF+m80+y64CAgICAgICAgICAgIbFhDM2MzD4OaAfBo1nqEW9/DhdOYucHjHAgqpZsF3f96awYBKZkmR2i8gghsWENDM3M4CAgICAgICAgICAgICAgOuJFhYmNkZWZnaDoNDKeVFnNI85QpRhrd2t8hS4By3wpD4R5ZyUegAPUtga").unwrap();
+        let root_hash = "EA9zTfmf5Ex4ZUTPpMwpsQxQzTkevtwg9PADTqJczhSF".from_base58().unwrap();
+        assert!(!_verify_proof_range(
+            proofs.as_slice(),
+            root_hash.as_slice(),
+            "abcdefgh",
+            Some(10),
+            Some(100),
+            &vec![
+                ("abcdefgh10".to_string(), Some("4970".to_string())),
+                ("abcdefgh11".to_string(), Some("4373".to_string())),
+                ("abcdefgh24".to_string(), Some("4905".to_string())),
+            ]));
+    }
+
+    #[test]
+    fn state_proof_verify_proof_works_for_get_value_from_leaf_in_range_no_next() {
+        /*
+            'abcdefgh1'     -> '3630'
+            'abcdefgh4'     -> '3037'
+            'abcdefgh10'    -> '4970'
+            'abcdefgh11'    -> '4373'
+            'abcdefgh24'    -> '4905'
+            'abcdefgh99'    -> '4522'
+            'abcdefgh100'   -> '3833'
+        */
+        let proofs = base64::decode("+QEO34CAgMgwhsWEMzgzM4CAgICAgICAgICAgIbFhDQ5NzD4TYCgWvV3JP22NK5fmfA2xp0DgkFi9rkBdw4ADHTeyez/RtzKgiA0hsWENDkwNYDIIIbFhDMwMzeAgICAyoIgOYbFhDQ1MjKAgICAgICA94CAgKCwvJK5hgh1xdoCVjFsZLAr2Ct5ADxnseuJtF+m80+y64CAgICAgICAgICAgIbFhDM2MzD4OaAfBo1nqEW9/DhdOYucHjHAgqpZsF3f96awYBKZkmR2i8gghsWENDM3M4CAgICAgICAgICAgICAgOuJFhYmNkZWZnaDoNDKeVFnNI85QpRhrd2t8hS4By3wpD4R5ZyUegAPUtga").unwrap();
+        let root_hash = "EA9zTfmf5Ex4ZUTPpMwpsQxQzTkevtwg9PADTqJczhSF".from_base58().unwrap();
+        assert!(_verify_proof_range(
+            proofs.as_slice(),
+            root_hash.as_slice(),
+            "abcdefgh",
+            Some(10),
+            None,
+            &vec![
+                ("abcdefgh10".to_string(), Some("4970".to_string())),
+                ("abcdefgh11".to_string(), Some("4373".to_string())),
+                ("abcdefgh24".to_string(), Some("4905".to_string())),
+                ("abcdefgh99".to_string(), Some("4522".to_string())),
+                ("abcdefgh100".to_string(), Some("3833".to_string())),
+            ]));
+    }
+
+    #[test]
+    fn state_proof_verify_proof_works_for_get_value_from_leaf_in_range_no_next_fails_missing_values() {
+        /*
+            'abcdefgh1'     -> '3630'
+            'abcdefgh4'     -> '3037'
+            'abcdefgh10'    -> '4970'
+            'abcdefgh11'    -> '4373'
+            'abcdefgh24'    -> '4905'
+            'abcdefgh99'    -> '4522'
+            'abcdefgh100'   -> '3833'
+        */
+        let proofs = base64::decode("+QEO34CAgMgwhsWEMzgzM4CAgICAgICAgICAgIbFhDQ5NzD4TYCgWvV3JP22NK5fmfA2xp0DgkFi9rkBdw4ADHTeyez/RtzKgiA0hsWENDkwNYDIIIbFhDMwMzeAgICAyoIgOYbFhDQ1MjKAgICAgICA94CAgKCwvJK5hgh1xdoCVjFsZLAr2Ct5ADxnseuJtF+m80+y64CAgICAgICAgICAgIbFhDM2MzD4OaAfBo1nqEW9/DhdOYucHjHAgqpZsF3f96awYBKZkmR2i8gghsWENDM3M4CAgICAgICAgICAgICAgOuJFhYmNkZWZnaDoNDKeVFnNI85QpRhrd2t8hS4By3wpD4R5ZyUegAPUtga").unwrap();
+        let root_hash = "EA9zTfmf5Ex4ZUTPpMwpsQxQzTkevtwg9PADTqJczhSF".from_base58().unwrap();
+        assert!(!_verify_proof_range(
+            proofs.as_slice(),
+            root_hash.as_slice(),
+            "abcdefgh",
+            Some(10),
+            None,
+            &vec![
+                ("abcdefgh10".to_string(), Some("4970".to_string())),
+                ("abcdefgh11".to_string(), Some("4373".to_string())),
+//                ("abcdefgh24".to_string(), Some("4905".to_string())),
+                ("abcdefgh99".to_string(), Some("4522".to_string())),
+                ("abcdefgh100".to_string(), Some("3833".to_string())),
+            ]));
+    }
+
+    #[test]
+    fn state_proof_verify_proof_works_for_get_value_from_leaf_in_range_no_next_fails_extra_values() {
+        /*
+            'abcdefgh1'     -> '3630'
+            'abcdefgh4'     -> '3037'
+            'abcdefgh10'    -> '4970'
+            'abcdefgh11'    -> '4373'
+            'abcdefgh24'    -> '4905'
+            'abcdefgh99'    -> '4522'
+            'abcdefgh100'   -> '3833'
+        */
+        let proofs = base64::decode("+QEO34CAgMgwhsWEMzgzM4CAgICAgICAgICAgIbFhDQ5NzD4TYCgWvV3JP22NK5fmfA2xp0DgkFi9rkBdw4ADHTeyez/RtzKgiA0hsWENDkwNYDIIIbFhDMwMzeAgICAyoIgOYbFhDQ1MjKAgICAgICA94CAgKCwvJK5hgh1xdoCVjFsZLAr2Ct5ADxnseuJtF+m80+y64CAgICAgICAgICAgIbFhDM2MzD4OaAfBo1nqEW9/DhdOYucHjHAgqpZsF3f96awYBKZkmR2i8gghsWENDM3M4CAgICAgICAgICAgICAgOuJFhYmNkZWZnaDoNDKeVFnNI85QpRhrd2t8hS4By3wpD4R5ZyUegAPUtga").unwrap();
+        let root_hash = "EA9zTfmf5Ex4ZUTPpMwpsQxQzTkevtwg9PADTqJczhSF".from_base58().unwrap();
+        assert!(!_verify_proof_range(
+            proofs.as_slice(),
+            root_hash.as_slice(),
+            "abcdefgh",
+            Some(10),
+            None,
+            &vec![
+                ("abcdefgh10".to_string(), Some("4970".to_string())),
+                ("abcdefgh11".to_string(), Some("4373".to_string())),
+                ("abcdefgh24".to_string(), Some("4905".to_string())),
+                ("abcdefgh25".to_string(), Some("4905".to_string())),
+                ("abcdefgh99".to_string(), Some("4522".to_string())),
+                ("abcdefgh100".to_string(), Some("3833".to_string())),
+            ]));
+    }
+
+    #[test]
+    fn state_proof_verify_proof_works_for_get_value_from_leaf_in_range_no_next_fails_changed_values() {
+        /*
+            'abcdefgh1'     -> '3630'
+            'abcdefgh4'     -> '3037'
+            'abcdefgh10'    -> '4970'
+            'abcdefgh11'    -> '4373'
+            'abcdefgh24'    -> '4905'
+            'abcdefgh99'    -> '4522'
+            'abcdefgh100'   -> '3833'
+        */
+        let proofs = base64::decode("+QEO34CAgMgwhsWEMzgzM4CAgICAgICAgICAgIbFhDQ5NzD4TYCgWvV3JP22NK5fmfA2xp0DgkFi9rkBdw4ADHTeyez/RtzKgiA0hsWENDkwNYDIIIbFhDMwMzeAgICAyoIgOYbFhDQ1MjKAgICAgICA94CAgKCwvJK5hgh1xdoCVjFsZLAr2Ct5ADxnseuJtF+m80+y64CAgICAgICAgICAgIbFhDM2MzD4OaAfBo1nqEW9/DhdOYucHjHAgqpZsF3f96awYBKZkmR2i8gghsWENDM3M4CAgICAgICAgICAgICAgOuJFhYmNkZWZnaDoNDKeVFnNI85QpRhrd2t8hS4By3wpD4R5ZyUegAPUtga").unwrap();
+        let root_hash = "EA9zTfmf5Ex4ZUTPpMwpsQxQzTkevtwg9PADTqJczhSF".from_base58().unwrap();
+        assert!(!_verify_proof_range(
+            proofs.as_slice(),
+            root_hash.as_slice(),
+            "abcdefgh",
+            Some(10),
+            None,
+            &vec![
+                ("abcdefgh10".to_string(), Some("4970".to_string())),
+                ("abcdefgh11".to_string(), Some("4373".to_string())),
+                ("abcdefgh25".to_string(), Some("4905".to_string())),
+                ("abcdefgh99".to_string(), Some("4522".to_string())),
+                ("abcdefgh100".to_string(), Some("3833".to_string())),
+            ]));
+    }
+
+    #[test]
+    fn state_proof_verify_proof_works_for_get_value_from_leaf_in_range_no_from() {
+        /*
+            'abcdefgh1'     -> '3630'
+            'abcdefgh4'     -> '3037'
+            'abcdefgh10'    -> '4970'
+            'abcdefgh11'    -> '4373'
+            'abcdefgh24'    -> '4905'
+            'abcdefgh99'    -> '4522'
+            'abcdefgh100'   -> '3833'
+        */
+        let proofs = base64::decode("+QEO34CAgMgwhsWEMzgzM4CAgICAgICAgICAgIbFhDQ5NzD4TYCgWvV3JP22NK5fmfA2xp0DgkFi9rkBdw4ADHTeyez/RtzKgiA0hsWENDkwNYDIIIbFhDMwMzeAgICAyoIgOYbFhDQ1MjKAgICAgICA94CAgKCwvJK5hgh1xdoCVjFsZLAr2Ct5ADxnseuJtF+m80+y64CAgICAgICAgICAgIbFhDM2MzD4OaAfBo1nqEW9/DhdOYucHjHAgqpZsF3f96awYBKZkmR2i8gghsWENDM3M4CAgICAgICAgICAgICAgOuJFhYmNkZWZnaDoNDKeVFnNI85QpRhrd2t8hS4By3wpD4R5ZyUegAPUtga").unwrap();
+        let root_hash = "EA9zTfmf5Ex4ZUTPpMwpsQxQzTkevtwg9PADTqJczhSF".from_base58().unwrap();
+        assert!(_verify_proof_range(
+            proofs.as_slice(),
+            root_hash.as_slice(),
+            "abcdefgh",
+            None,
+            Some(24),
+            &vec![
+                ("abcdefgh1".to_string(), Some("3630".to_string())),
+                ("abcdefgh4".to_string(), Some("3037".to_string())),
+                ("abcdefgh10".to_string(), Some("4970".to_string())),
+                ("abcdefgh11".to_string(), Some("4373".to_string())),
+            ]));
+    }
+
+    #[test]
+    fn state_proof_verify_proof_works_for_get_value_from_leaf_in_range_no_from_fails_missing_values() {
+        /*
+            'abcdefgh1'     -> '3630'
+            'abcdefgh4'     -> '3037'
+            'abcdefgh10'    -> '4970'
+            'abcdefgh11'    -> '4373'
+            'abcdefgh24'    -> '4905'
+            'abcdefgh99'    -> '4522'
+            'abcdefgh100'   -> '3833'
+        */
+        let proofs = base64::decode("+QEO34CAgMgwhsWEMzgzM4CAgICAgICAgICAgIbFhDQ5NzD4TYCgWvV3JP22NK5fmfA2xp0DgkFi9rkBdw4ADHTeyez/RtzKgiA0hsWENDkwNYDIIIbFhDMwMzeAgICAyoIgOYbFhDQ1MjKAgICAgICA94CAgKCwvJK5hgh1xdoCVjFsZLAr2Ct5ADxnseuJtF+m80+y64CAgICAgICAgICAgIbFhDM2MzD4OaAfBo1nqEW9/DhdOYucHjHAgqpZsF3f96awYBKZkmR2i8gghsWENDM3M4CAgICAgICAgICAgICAgOuJFhYmNkZWZnaDoNDKeVFnNI85QpRhrd2t8hS4By3wpD4R5ZyUegAPUtga").unwrap();
+        let root_hash = "EA9zTfmf5Ex4ZUTPpMwpsQxQzTkevtwg9PADTqJczhSF".from_base58().unwrap();
+        assert!(!_verify_proof_range(
+            proofs.as_slice(),
+            root_hash.as_slice(),
+            "abcdefgh",
+            None,
+            Some(24),
+            &vec![
+                ("abcdefgh1".to_string(), Some("3630".to_string())),
+                ("abcdefgh4".to_string(), Some("3037".to_string())),
+//                ("abcdefgh10".to_string(), Some("4970".to_string())),
+                ("abcdefgh11".to_string(), Some("4373".to_string())),
+            ]));
+    }
+
+    #[test]
+    fn state_proof_verify_proof_works_for_get_value_from_leaf_in_range_no_from_fails_extra_values() {
+        /*
+            'abcdefgh1'     -> '3630'
+            'abcdefgh4'     -> '3037'
+            'abcdefgh10'    -> '4970'
+            'abcdefgh11'    -> '4373'
+            'abcdefgh24'    -> '4905'
+            'abcdefgh99'    -> '4522'
+            'abcdefgh100'   -> '3833'
+        */
+        let proofs = base64::decode("+QEO34CAgMgwhsWEMzgzM4CAgICAgICAgICAgIbFhDQ5NzD4TYCgWvV3JP22NK5fmfA2xp0DgkFi9rkBdw4ADHTeyez/RtzKgiA0hsWENDkwNYDIIIbFhDMwMzeAgICAyoIgOYbFhDQ1MjKAgICAgICA94CAgKCwvJK5hgh1xdoCVjFsZLAr2Ct5ADxnseuJtF+m80+y64CAgICAgICAgICAgIbFhDM2MzD4OaAfBo1nqEW9/DhdOYucHjHAgqpZsF3f96awYBKZkmR2i8gghsWENDM3M4CAgICAgICAgICAgICAgOuJFhYmNkZWZnaDoNDKeVFnNI85QpRhrd2t8hS4By3wpD4R5ZyUegAPUtga").unwrap();
+        let root_hash = "EA9zTfmf5Ex4ZUTPpMwpsQxQzTkevtwg9PADTqJczhSF".from_base58().unwrap();
+        assert!(!_verify_proof_range(
+            proofs.as_slice(),
+            root_hash.as_slice(),
+            "abcdefgh",
+            None,
+            Some(24),
+            &vec![
+                ("abcdefgh1".to_string(), Some("3630".to_string())),
+                ("abcdefgh4".to_string(), Some("3037".to_string())),
+                ("abcdefgh10".to_string(), Some("4970".to_string())),
+                ("abcdefgh11".to_string(), Some("4373".to_string())),
+                ("abcdefgh12".to_string(), Some("4373".to_string())),
+            ]));
+    }
+
+    #[test]
+    fn state_proof_verify_proof_works_for_get_value_from_leaf_in_range_no_from_fails_changed_values() {
+        /*
+            'abcdefgh1'     -> '3630'
+            'abcdefgh4'     -> '3037'
+            'abcdefgh10'    -> '4970'
+            'abcdefgh11'    -> '4373'
+            'abcdefgh24'    -> '4905'
+            'abcdefgh99'    -> '4522'
+            'abcdefgh100'   -> '3833'
+        */
+        let proofs = base64::decode("+QEO34CAgMgwhsWEMzgzM4CAgICAgICAgICAgIbFhDQ5NzD4TYCgWvV3JP22NK5fmfA2xp0DgkFi9rkBdw4ADHTeyez/RtzKgiA0hsWENDkwNYDIIIbFhDMwMzeAgICAyoIgOYbFhDQ1MjKAgICAgICA94CAgKCwvJK5hgh1xdoCVjFsZLAr2Ct5ADxnseuJtF+m80+y64CAgICAgICAgICAgIbFhDM2MzD4OaAfBo1nqEW9/DhdOYucHjHAgqpZsF3f96awYBKZkmR2i8gghsWENDM3M4CAgICAgICAgICAgICAgOuJFhYmNkZWZnaDoNDKeVFnNI85QpRhrd2t8hS4By3wpD4R5ZyUegAPUtga").unwrap();
+        let root_hash = "EA9zTfmf5Ex4ZUTPpMwpsQxQzTkevtwg9PADTqJczhSF".from_base58().unwrap();
+        assert!(!_verify_proof_range(
+            proofs.as_slice(),
+            root_hash.as_slice(),
+            "abcdefgh",
+            None,
+            Some(24),
+            &vec![
+                ("abcdefgh1".to_string(), Some("3630".to_string())),
+                ("abcdefgh4".to_string(), Some("3037".to_string())),
+                ("abcdefgh10".to_string(), Some("4970".to_string())),
+                ("abcdefgh12".to_string(), Some("4373".to_string())),
+            ]));
+    }
+
+    #[test]
+    fn state_proof_verify_proof_works_for_get_value_from_leaf_in_range_no_from_fails_wrong_next() {
+        /*
+            'abcdefgh1'     -> '3630'
+            'abcdefgh4'     -> '3037'
+            'abcdefgh10'    -> '4970'
+            'abcdefgh11'    -> '4373'
+            'abcdefgh24'    -> '4905'
+            'abcdefgh99'    -> '4522'
+            'abcdefgh100'   -> '3833'
+        */
+        let proofs = base64::decode("+QEO34CAgMgwhsWEMzgzM4CAgICAgICAgICAgIbFhDQ5NzD4TYCgWvV3JP22NK5fmfA2xp0DgkFi9rkBdw4ADHTeyez/RtzKgiA0hsWENDkwNYDIIIbFhDMwMzeAgICAyoIgOYbFhDQ1MjKAgICAgICA94CAgKCwvJK5hgh1xdoCVjFsZLAr2Ct5ADxnseuJtF+m80+y64CAgICAgICAgICAgIbFhDM2MzD4OaAfBo1nqEW9/DhdOYucHjHAgqpZsF3f96awYBKZkmR2i8gghsWENDM3M4CAgICAgICAgICAgICAgOuJFhYmNkZWZnaDoNDKeVFnNI85QpRhrd2t8hS4By3wpD4R5ZyUegAPUtga").unwrap();
+        let root_hash = "EA9zTfmf5Ex4ZUTPpMwpsQxQzTkevtwg9PADTqJczhSF".from_base58().unwrap();
+        assert!(!_verify_proof_range(
+            proofs.as_slice(),
+            root_hash.as_slice(),
+            "abcdefgh",
+            None,
+            Some(99),
+            &vec![
+                ("abcdefgh1".to_string(), Some("3630".to_string())),
+                ("abcdefgh4".to_string(), Some("3037".to_string())),
+                ("abcdefgh10".to_string(), Some("4970".to_string())),
+                ("abcdefgh11".to_string(), Some("4373".to_string())),
+            ]));
     }
 
     #[test]
@@ -767,6 +1234,103 @@ mod tests {
         assert_eq!(parsed_sp.multi_signature, "ms");
         assert_eq!(parsed_sp.proof_nodes, "pns");
         assert_eq!(parsed_sp.kvs_to_verify,
-                   KeyValuesInSP::Simple(KeyValueSimpleData { kvs: Vec::new() }));
+                   KeyValuesInSP::Simple(KeyValueSimpleData {
+                       kvs: Vec::new(),
+                       verification_type: KeyValueSimpleDataVerificationType::Simple,
+                   }));
+    }
+
+    #[test]
+    fn transaction_handler_parse_generic_reply_for_proof_checking_works_for_plugged_range() {
+        extern fn parse(msg: *const c_char, parsed: *mut *const c_char) -> ErrorCode {
+            unsafe { *parsed = msg; }
+            ErrorCode::Success
+        }
+        extern fn free(_data: *const c_char) -> ErrorCode { ErrorCode::Success }
+
+        let parsed_sp = json!([{
+            "root_hash": "rh",
+            "proof_nodes": "pns",
+            "multi_signature": "ms",
+            "kvs_to_verify": {
+                "type": "Simple",
+                "kvs": [],
+                "verification_type": {
+                    "type": "NumericalSuffixAscendingNoGaps",
+                    "from": 1,
+                    "next": 2,
+                    "prefix": "abc"
+                }
+            },
+        }]);
+
+        PoolService::register_sp_parser("test", parse, free).unwrap();
+        let mut parsed_sps = super::parse_generic_reply_for_proof_checking(&json!({"type".to_owned(): "test"}),
+                                                                           parsed_sp.to_string().as_str(),
+                                                                           None)
+            .unwrap();
+
+        assert_eq!(parsed_sps.len(), 1);
+        let parsed_sp = parsed_sps.remove(0);
+        assert_eq!(parsed_sp.root_hash, "rh");
+        assert_eq!(parsed_sp.multi_signature, "ms");
+        assert_eq!(parsed_sp.proof_nodes, "pns");
+        assert_eq!(parsed_sp.kvs_to_verify,
+                   KeyValuesInSP::Simple(KeyValueSimpleData {
+                       kvs: Vec::new(),
+                       verification_type: KeyValueSimpleDataVerificationType::NumericalSuffixAscendingNoGaps(
+                           NumericalSuffixAscendingNoGapsData {
+                               from: Some(1),
+                               next: Some(2),
+                               prefix: "abc".to_string(),
+                           }),
+                   }));
+    }
+
+    #[test]
+    fn transaction_handler_parse_generic_reply_for_proof_checking_works_for_plugged_range_nones() {
+        extern fn parse(msg: *const c_char, parsed: *mut *const c_char) -> ErrorCode {
+            unsafe { *parsed = msg; }
+            ErrorCode::Success
+        }
+        extern fn free(_data: *const c_char) -> ErrorCode { ErrorCode::Success }
+
+        let parsed_sp = json!([{
+            "root_hash": "rh",
+            "proof_nodes": "pns",
+            "multi_signature": "ms",
+            "kvs_to_verify": {
+                "type": "Simple",
+                "kvs": [],
+                "verification_type": {
+                    "type": "NumericalSuffixAscendingNoGaps",
+                    "from": serde_json::Value::Null,
+                    "next": serde_json::Value::Null,
+                    "prefix": "abc"
+                }
+            },
+        }]);
+
+        PoolService::register_sp_parser("test", parse, free).unwrap();
+        let mut parsed_sps = super::parse_generic_reply_for_proof_checking(&json!({"type".to_owned(): "test"}),
+                                                                           parsed_sp.to_string().as_str(),
+                                                                           None)
+            .unwrap();
+
+        assert_eq!(parsed_sps.len(), 1);
+        let parsed_sp = parsed_sps.remove(0);
+        assert_eq!(parsed_sp.root_hash, "rh");
+        assert_eq!(parsed_sp.multi_signature, "ms");
+        assert_eq!(parsed_sp.proof_nodes, "pns");
+        assert_eq!(parsed_sp.kvs_to_verify,
+                   KeyValuesInSP::Simple(KeyValueSimpleData {
+                       kvs: Vec::new(),
+                       verification_type: KeyValueSimpleDataVerificationType::NumericalSuffixAscendingNoGaps(
+                           NumericalSuffixAscendingNoGapsData {
+                               from: None,
+                               next: None,
+                               prefix: "abc".to_string(),
+                           }),
+                   }));
     }
 }

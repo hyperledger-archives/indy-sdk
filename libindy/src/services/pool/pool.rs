@@ -21,7 +21,7 @@ use services::pool::events::*;
 use services::pool::merkle_tree_factory;
 use services::pool::networker::{Networker, ZMQNetworker};
 use services::pool::request_handler::{RequestHandler, RequestHandlerImpl};
-use services::pool::rust_base58::{FromBase58, ToBase58};
+use rust_base58::{FromBase58, ToBase58};
 use services::pool::types::{LedgerStatus, RemoteNode};
 use utils::crypto::ed25519_sign;
 
@@ -308,7 +308,7 @@ impl<T: Networker, R: RequestHandler<T>> PoolSM<T, R> {
                     PoolEvent::CatchupRestart(merkle_tree) => {
                         if let Ok((nodes, remotes)) = _get_nodes_and_remotes(&merkle_tree) {
                             state.networker.borrow_mut().process_event(Some(NetworkerEvent::NodesStateUpdated(remotes)));
-                            state.request_handler = R::new(state.networker.clone(), _get_f(nodes.len()), &vec![], &nodes, None, &pool_name, timeout, extended_timeout);
+                            state.request_handler = R::new(state.networker.clone(), _get_f(nodes.len()), &vec![], &nodes, &pool_name, timeout, extended_timeout);
                             let ls = _ledger_status(&merkle_tree);
                             state.request_handler.process_event(Some(RequestEvent::LedgerStatus(ls, None, Some(merkle_tree))));
                             PoolState::GettingCatchupTarget(state)
@@ -319,7 +319,7 @@ impl<T: Networker, R: RequestHandler<T>> PoolSM<T, R> {
                     PoolEvent::CatchupTargetFound(target_mt_root, target_mt_size, merkle_tree) => {
                         if let Ok((nodes, remotes)) = _get_nodes_and_remotes(&merkle_tree) {
                             state.networker.borrow_mut().process_event(Some(NetworkerEvent::NodesStateUpdated(remotes)));
-                            let mut request_handler = R::new(state.networker.clone(), _get_f(nodes.len()), &vec![], &nodes, None, &pool_name, timeout, extended_timeout);
+                            let mut request_handler = R::new(state.networker.clone(), _get_f(nodes.len()), &vec![], &nodes, &pool_name, timeout, extended_timeout);
                             request_handler.process_event(Some(RequestEvent::CatchupReq(merkle_tree, target_mt_size, target_mt_root)));
                             PoolState::SyncCatchup((request_handler, state).into())
                         } else {
@@ -382,7 +382,7 @@ impl<T: Networker, R: RequestHandler<T>> PoolSM<T, R> {
                         let re: Option<RequestEvent> = pe.into();
                         match re.as_ref().map(|r| r.get_req_id()) {
                             Some(req_id) => {
-                                let mut request_handler = R::new(state.networker.clone(), _get_f(state.nodes.len()), &vec![cmd_id], &state.nodes, None, &pool_name, timeout, extended_timeout);
+                                let mut request_handler = R::new(state.networker.clone(), _get_f(state.nodes.len()), &vec![cmd_id], &state.nodes, &pool_name, timeout, extended_timeout);
                                 request_handler.process_event(re);
                                 state.request_handlers.insert(req_id.to_string(), request_handler); //FIXME check already exists
                             }
@@ -599,7 +599,12 @@ fn _get_f(cnt: usize) -> usize {
     (cnt - 1) / 3
 }
 
-fn _get_request_handler_with_ledger_status_sent<T: Networker, R: RequestHandler<T>>(networker: Rc<RefCell<T>>, pool_name: &str, timeout: i64, extended_timeout: i64) -> IndyResult<R> {
+fn _get_request_handler_with_ledger_status_sent<T: Networker, R: RequestHandler<T>>(
+    networker: Rc<RefCell<T>>,
+    pool_name: &str,
+    timeout: i64,
+    extended_timeout: i64) -> IndyResult<R>
+{
     let mut merkle = merkle_tree_factory::create(pool_name)?;
 
     let (nodes, remotes) = match _get_nodes_and_remotes(&merkle) {
@@ -615,7 +620,7 @@ fn _get_request_handler_with_ledger_status_sent<T: Networker, R: RequestHandler<
         }
     };
     networker.borrow_mut().process_event(Some(NetworkerEvent::NodesStateUpdated(remotes)));
-    let mut request_handler = R::new(networker.clone(), _get_f(nodes.len()), &vec![], &nodes, None, pool_name, timeout, extended_timeout);
+    let mut request_handler = R::new(networker.clone(), _get_f(nodes.len()), &vec![], &nodes, pool_name, timeout, extended_timeout);
     let ls = _ledger_status(&merkle);
     request_handler.process_event(Some(RequestEvent::LedgerStatus(ls, None, Some(merkle))));
     Ok(request_handler)
@@ -755,6 +760,7 @@ mod tests {
     use services::pool::request_handler::tests::MockRequestHandler;
     use services::pool::types::{Message, Reply, ReplyResultV1, ReplyTxnV1, ReplyV1, ResponseMetadata};
     use utils::test;
+    use utils::test::test_pool_create_poolfile;
 
     use super::*;
 
@@ -783,12 +789,9 @@ mod tests {
     }
 
     mod pool_sm {
-        use std::fs;
         use std::io::Write;
 
         use serde_json;
-
-        use utils::environment;
 
         use super::*;
 
@@ -1235,11 +1238,7 @@ mod tests {
         fn _write_genesis_txns(pool_name: &str) {
             let txns = test::gen_txns().join("\n");
 
-            let mut path = environment::pool_path(pool_name);
-            fs::create_dir_all(path.as_path()).unwrap();
-            path.push(pool_name);
-            path.set_extension("txn");
-            let mut f = fs::File::create(path.as_path()).unwrap();
+            let mut f = test_pool_create_poolfile(pool_name);
             f.write(txns.as_bytes()).unwrap();
             f.flush().unwrap();
             f.sync_all().unwrap();

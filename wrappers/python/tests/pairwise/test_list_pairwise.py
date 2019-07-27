@@ -1,10 +1,7 @@
-from indy import IndyError
-from indy import pairwise
-
 import pytest
 import json
 
-from indy.error import ErrorCode
+from indy import error, pairwise
 
 
 @pytest.mark.asyncio
@@ -30,7 +27,6 @@ async def test_list_pairwise_works_for_invalid_handle(wallet_handle, identity_my
     (their_did, _) = identity_trustee1
     await pairwise.create_pairwise(wallet_handle, their_did, my_did, None)
 
-    with pytest.raises(IndyError) as e:
+    with pytest.raises(error.WalletInvalidHandle):
         invalid_wallet_handle = wallet_handle + 1
         await pairwise.list_pairwise(invalid_wallet_handle)
-    assert ErrorCode.WalletInvalidHandle == e.value.error_code

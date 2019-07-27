@@ -14,11 +14,12 @@ use ursa::cl::prover::Prover as CryptoProver;
 use ursa::cl::verifier::Verifier as CryptoVerifier;
 
 use domain::anoncreds::credential::{AttributeValues, Credential};
+use domain::anoncreds::credential_attr_tag_policy::CredentialAttrTagPolicy;
 use domain::anoncreds::credential_definition::CredentialDefinitionV1 as CredentialDefinition;
 use domain::anoncreds::credential_offer::CredentialOffer;
 use domain::anoncreds::credential_request::CredentialRequestMetadata;
 use domain::anoncreds::proof::{Identifier, Proof, RequestedProof, RevealedAttributeInfo, SubProofReferent};
-use domain::anoncreds::proof_request::{NonRevocedInterval, PredicateInfo, PredicateTypes, ProofRequest, ProofRequestExtraQuery, RequestedAttributeInfo, RequestedPredicateInfo};
+use domain::anoncreds::proof_request::{PredicateInfo, PredicateTypes, ProofRequest, ProofRequestExtraQuery, RequestedAttributeInfo, RequestedPredicateInfo};
 use domain::anoncreds::requested_credential::ProvingCredentialKey;
 use domain::anoncreds::requested_credential::RequestedCredentials;
 use domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinitionV1;
@@ -62,8 +63,8 @@ impl Prover {
                                   cred_def: &CredentialDefinition,
                                   master_secret: &MasterSecret,
                                   credential_offer: &CredentialOffer) -> IndyResult<(BlindedCredentialSecrets,
-                                                                                 CredentialSecretsBlindingFactors,
-                                                                                 BlindedCredentialSecretsCorrectnessProof)> {
+                                                                                     CredentialSecretsBlindingFactors,
+                                                                                     BlindedCredentialSecretsCorrectnessProof)> {
         trace!("new_credential_request >>> cred_def: {:?}, master_secret: {:?}, credential_offer: {:?}",
                cred_def, secret!(&master_secret), credential_offer);
 
@@ -144,11 +145,7 @@ impl Prover {
             let cred_def: &CredentialDefinition = cred_defs.get(&credential.cred_def_id)
                 .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("CredentialDefinition not found by id: {:?}", credential.cred_def_id)))?;
 
-            let rev_state = if cred_def.value.revocation.is_some() {
-                let timestamp = cred_key.timestamp
-                    .clone()
-                    .ok_or(err_msg(IndyErrorKind::InvalidStructure, "Timestamp not found"))?;
-
+            let rev_state = if let Some(timestamp) = cred_key.timestamp {
                 let rev_reg_id = credential.rev_reg_id
                     .clone()
                     .ok_or(err_msg(IndyErrorKind::InvalidStructure, "Revocation Registry Id not found"))?;
@@ -202,16 +199,6 @@ impl Prover {
         trace!("create_proof <<< full_proof: {:?}", full_proof);
 
         Ok(full_proof)
-    }
-
-    pub fn get_non_revoc_interval(&self, global_interval: &Option<NonRevocedInterval>, local_interval: &Option<NonRevocedInterval>) -> Option<NonRevocedInterval> {
-        trace!("_get_non_revoc_interval >>> global_interval: {:?}, local_interval: {:?}", global_interval, local_interval);
-
-        let interval = local_interval.clone().or(global_interval.clone().or(None));
-
-        trace!("_get_non_revoc_interval <<< interval: {:?}", interval);
-
-        interval
     }
 
     pub fn _prepare_credentials_for_proving(requested_credentials: &RequestedCredentials,
@@ -281,8 +268,8 @@ impl Prover {
         res
     }
 
-    pub fn build_credential_tags(&self, credential: &Credential) -> HashMap<String, String> {
-        trace!("build_credential_tags >>> credential: {:?}", credential);
+    pub fn build_credential_tags(&self, credential: &Credential, catpol: &Option<&CredentialAttrTagPolicy>) -> HashMap<String, String> {
+        trace!("build_credential_tags >>> credential: {:?}, catpol: {:?}", credential, catpol);
 
         let mut res: HashMap<String, String> = HashMap::new();
         res.insert("schema_id".to_string(), credential.schema_id());
@@ -296,8 +283,11 @@ impl Prover {
         credential.values
             .iter()
             .for_each(|(attr, values)| {
-                res.insert(format!("attr::{}::marker", attr_common_view(&attr)), ATTRIBUTE_EXISTENCE_MARKER.to_string());
-                res.insert(format!("attr::{}::value", attr_common_view(&attr)), values.raw.clone());
+                if catpol.map(|cp| cp.is_taggable(attr.as_str())).unwrap_or(true) {
+                    // abstain for attrs policy marks untaggable
+                    res.insert(format!("attr::{}::marker", attr_common_view(&attr)), ATTRIBUTE_EXISTENCE_MARKER.to_string());
+                    res.insert(format!("attr::{}::value", attr_common_view(&attr)), values.raw.clone());
+                }
             });
 
         trace!("build_credential_tags <<< res: {:?}", res);
@@ -373,22 +363,22 @@ impl Prover {
                 let attribute_value = attribute_value.parse::<i32>()
                     .to_indy(IndyErrorKind::InvalidStructure, format!("Credential attribute value \"{:?}\" is invalid", attribute_value))?;
                 Ok(attribute_value >= predicate.p_value)
-            },
+            }
             PredicateTypes::GT => {
-                 let attribute_value = attribute_value.parse::<i32>()
+                let attribute_value = attribute_value.parse::<i32>()
                     .to_indy(IndyErrorKind::InvalidStructure, format!("Credential attribute value \"{:?}\" is invalid", attribute_value))?;
-                 Ok(attribute_value > predicate.p_value)
-             },
-             PredicateTypes::LE => {
-                 let attribute_value = attribute_value.parse::<i32>()
+                Ok(attribute_value > predicate.p_value)
+            }
+            PredicateTypes::LE => {
+                let attribute_value = attribute_value.parse::<i32>()
                     .to_indy(IndyErrorKind::InvalidStructure, format!("Credential attribute value \"{:?}\" is invalid", attribute_value))?;
-                 Ok(attribute_value <= predicate.p_value)
-             },
-             PredicateTypes::LT => {
-                 let attribute_value = attribute_value.parse::<i32>()
+                Ok(attribute_value <= predicate.p_value)
+            }
+            PredicateTypes::LT => {
+                let attribute_value = attribute_value.parse::<i32>()
                     .to_indy(IndyErrorKind::InvalidStructure, format!("Credential attribute value \"{:?}\" is invalid", attribute_value))?;
-                 Ok(attribute_value < predicate.p_value)
-             }
+                Ok(attribute_value < predicate.p_value)
+            }
         };
 
         trace!("attribute_satisfy_predicate <<< res: {:?}", res);
@@ -464,14 +454,14 @@ impl Prover {
 mod tests {
     use super::*;
 
-    const SCHEMA_ID: &'static str = "did:2:gvt:1.0";
-    const SCHEMA_ISSUER_DID: &'static str = "did";
-    const SCHEMA_NAME: &'static str = "gvt";
-    const SCHEMA_VERSION: &'static str = "1.0";
-    const ISSUER_DID: &'static str = "did";
-    const CRED_DEF_ID: &'static str = "did:3:CL:did:2:gvt:1.0";
-    const REV_REG_ID: &'static str = "did:4:did:3:CL:did:2:gvt:1.0:CL_ACCUM:TAG_1";
-    const NO_REV_REG_ID: &'static str = "None";
+    const SCHEMA_ID: &str = "did:2:gvt:1.0";
+    const SCHEMA_ISSUER_DID: &str = "did";
+    const SCHEMA_NAME: &str = "gvt";
+    const SCHEMA_VERSION: &str = "1.0";
+    const ISSUER_DID: &str = "did";
+    const CRED_DEF_ID: &str = "did:3:CL:did:2:gvt:1.0";
+    const REV_REG_ID: &str = "did:4:did:3:CL:did:2:gvt:1.0:CL_ACCUM:TAG_1";
+    const NO_REV_REG_ID: &str = "None";
 
     macro_rules! hashmap {
         ($( $key: expr => $val: expr ),*) => {
@@ -511,7 +501,7 @@ mod tests {
         #[test]
         fn build_credential_tags_works() {
             let ps = Prover::new();
-            let tags = ps.build_credential_tags(&_credential());
+            let tags = ps.build_credential_tags(&_credential(), &None);
 
             let expected_tags: HashMap<String, String> = hashmap!(
                     "schema_id".to_string() => SCHEMA_ID.to_string(),
@@ -531,11 +521,32 @@ mod tests {
         }
 
         #[test]
+        fn build_credential_tags_works_for_catpol() {
+            let ps = Prover::new();
+            let catpol = CredentialAttrTagPolicy::from(vec!(String::from("name")));
+            let tags = ps.build_credential_tags(&_credential(), &Some(catpol).as_ref());
+
+            let expected_tags: HashMap<String, String> = hashmap!(
+                    "schema_id".to_string() => SCHEMA_ID.to_string(),
+                    "schema_issuer_did".to_string() => SCHEMA_ISSUER_DID.to_string(),
+                    "schema_name".to_string() => SCHEMA_NAME.to_string(),
+                    "schema_version".to_string() => SCHEMA_VERSION.to_string(),
+                    "issuer_did".to_string() => ISSUER_DID.to_string(),
+                    "cred_def_id".to_string() => CRED_DEF_ID.to_string(),
+                    "rev_reg_id".to_string() => NO_REV_REG_ID.to_string(),
+                    "attr::name::marker".to_string() => ATTRIBUTE_EXISTENCE_MARKER.to_string(),
+                    "attr::name::value".to_string() => "Alex".to_string()
+                 );
+
+            assert_eq!(expected_tags, tags)
+        }
+
+        #[test]
         fn build_credential_tags_works_for_rev_reg_id() {
             let ps = Prover::new();
             let mut credential = _credential();
             credential.rev_reg_id = Some(REV_REG_ID.to_string());
-            let tags = ps.build_credential_tags(&credential);
+            let tags = ps.build_credential_tags(&credential, &None);
 
             let expected_tags: HashMap<String, String> = hashmap!(
                     "schema_id".to_string() => SCHEMA_ID.to_string(),
@@ -558,8 +569,8 @@ mod tests {
     mod build_query {
         use super::*;
 
-        const ATTR_NAME: &'static str = "name";
-        const ATTR_REFERENT: &'static str = "attr_1";
+        const ATTR_NAME: &str = "name";
+        const ATTR_REFERENT: &str = "attr_1";
 
         fn _value(json: &str) -> serde_json::Value {
             serde_json::from_str::<serde_json::Value>(json).unwrap()
@@ -851,9 +862,9 @@ mod tests {
 
         use super::*;
 
-        const CRED_ID: &'static str = "8591bcac-ee7d-4bef-ba7e-984696440b30";
-        const ATTRIBUTE_REFERENT: &'static str = "attribute_referent";
-        const PREDICATE_REFERENT: &'static str = "predicate_referent";
+        const CRED_ID: &str = "8591bcac-ee7d-4bef-ba7e-984696440b30";
+        const ATTRIBUTE_REFERENT: &str = "attribute_referent";
+        const PREDICATE_REFERENT: &str = "predicate_referent";
 
         fn _attr_info() -> AttributeInfo {
             AttributeInfo {

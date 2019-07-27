@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.10.1 - 2019-07-15
+* Updated Indy CLI to persist command history between sessions.
+* Bugfixes:
+    * Corrected behavior of Indy-CLI `ledger set-fees-prepare` command to not add `Transaction Author Agreement` to request.
+    * Corrected response data types in Indy-CLI `ledger get-fees` command.
+    * Fixed `State Proof` verification for GET_REVOC_REG_DELTA requests in case of from and to are before first entry.
+    * others minor bugfixes
+
+## 1.10.0 - 2019-07-1
+* Added new *EXPERIMENTAL* functions to Libindy Anoncreds API to configure what tags to build on credential storage in prover wallet:
+    * `indy_prover_set_credential_attr_tag_policy` to set credential attribute tagging policy. 
+    * `indy_prover_get_credential_attr_tag_policy` to get credential attribute tagging policy by credential definition id. 
+* Added `indy_build_auth_rules_request` function to Libindy Ledger API to change multiple ledger auth rules. 
+Added correspondent `ledger auth-rules` command to Indy CLI.
+* Bugfixes:
+    * Allowed offline signing of transactions in Indy-CLI.
+    * others minor bugfixes
+
 ## 1.9.0 - 2019-05-31
 * Added a set of functions to support work with `Transaction Author Agreement` concept.
    This guarantees that every write transaction author agree that the information they submit 
@@ -25,7 +43,7 @@
 * Implemented `State Proof` verification for some types of GET requests to the ledger.
 * Bugfixes:
     * others minor bugfixes
-    
+
 ## 1.8.3 - 2019-04-30
 * Bugfixes:
     * Fixed behavior of `auth_rule` and `get_auth_rule` request builders
