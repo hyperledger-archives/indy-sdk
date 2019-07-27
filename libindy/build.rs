@@ -13,12 +13,6 @@ fn main() {
         println!("cargo:rustc-link-lib=static=sodium");
     }
 
-    let sodium = match env::var("SODIUM_LIB_DIR") {
-        Ok(val) => val,
-        Err(..) => panic!("Missing required environment variable SODIUM_LIB_DIR")
-    };
-    println!("cargo:rustc-flags=-L {}\\lib -I{}\\include", sodium, sodium);
-
     if target.find("-windows-").is_some() {
         // do not build c-code on windows, use binaries
         let output_dir = env::var("OUT_DIR").unwrap();
