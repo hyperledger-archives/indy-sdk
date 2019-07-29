@@ -1741,7 +1741,8 @@ mod high_cases {
             "metadata": {},
             "role": "0",
             "constraint_id": "ROLE",
-            "need_to_be_owner": false
+            "need_to_be_owner": false,
+            "off_ledger_signature": false
         }"#;
 
         #[test]
