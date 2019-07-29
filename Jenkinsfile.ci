@@ -24,10 +24,10 @@ def testing() {
 
 def staticValidation() {
     parallel([
-            'libindy'   : { runValdiationRust('libindy') },
-            'libnullpay': { runValdiationRust('libnullpay') },
-            'libvcx'    : { runValdiationRust('vcx/libvcx') },
-            'cli'       : { runValdiationRust('cli') }
+            'libindy'    : { runValdiationRust('libindy') },
+            'libnullpay' : { runValdiationRust('libnullpay') },
+            'libvcx'     : { runValdiationRust('vcx/libvcx') },
+            'cli'        : { runValdiationRust('cli') }
     ])
 }
 
@@ -248,7 +248,7 @@ def androidTesting() {
 
 def iosTesting() {
 
-    def setupRustIOS = {
+    def setupRustIOS ={
         sh "rustup target add x86_64-apple-ios"
     }
 
@@ -341,10 +341,10 @@ def ubuntuTesting() {
     stage('Ubuntu Test') {
         parallel([
                 "ubuntu:16.04": {
-                    linuxTesting("ci/ubuntu.dockerfile ci", "Ubuntu 16.04", true)
+                    linuxTesting("ci/ubuntu.dockerfile ci", "Ubuntu 16.04", "pool_network", true)
                 },
                 "ubuntu:18.04": {
-                    linuxTesting("ci/ubuntu18.dockerfile ci", "Ubuntu 18.04", false)
+                    linuxTesting("ci/ubuntu18.dockerfile ci", "Ubuntu 18.04", "pool_network", false)
                 }
         ])
     }
@@ -352,12 +352,11 @@ def ubuntuTesting() {
 
 def rhelTesting() {
     stage('RedHat Test') {
-        linuxTesting("ci/amazon.dockerfile ci", "RedHat", false)
+        linuxTesting("ci/amazon.dockerfile ci", "RedHat", "pool_network", false)
     }
 }
 
-def linuxTesting(file, env_name, test_wrappers) {
-    def network_name = "pool_network"
+def linuxTesting(file, env_name, network_name, test_wrappers) {
     parallel([
             failFast                                  : true,
             "${env_name} Test: build and test libindy": {
@@ -370,10 +369,10 @@ def linuxTesting(file, env_name, test_wrappers) {
                     libindyBuildFinished[env_name]
                 }
                 def jobs = [
-                        "${env_name}-cli-test": {
+                        "${env_name}-cli-test"        : {
                             linuxModuleTesting(file, env_name, network_name, this.&linuxCLITesting)
                         },
-                        "${env_name}-vcx-test": {
+                        "${env_name}-vcx-test"        : {
                             vcxTesting(file, env_name, network_name, test_wrappers)
                         }
                 ]

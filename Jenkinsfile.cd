@@ -16,7 +16,7 @@ properties([
 
 libindyBuildFinished = ["Ubuntu 16.04": false, "Ubuntu 18.04": false, "RedHat": false]
 libvcxBuildFinished = ["Ubuntu 16.04": false, "Ubuntu 18.04": false, "RedHat": false]
-ubuntuPakageTypes = ["Ubuntu 16.04": "", "Ubuntu 18.04": "--distro"]
+ubuntuPakageTypes = ["Ubuntu 16.04": "xenial", "Ubuntu 18.04": "bionic"]
 
 gitHubUserCredId = env.GITHUB_BOT_USER ?: 'sovbot-github'
 sovrinPackagingRepo = env.SOVRIN_PACKAGING_REPO ?: 'https://github.com/sovrin-foundation/sovrin-packaging'
@@ -60,12 +60,12 @@ def publishing() {
                 'windows-files': { windowsPublishing() },
                 'android-files': { androidPublishing() },
                 'ios-files'    : { iosPublishing() },
-                'macos-files': { macOsPublishing() },
+                'macos-files'  : { macOsPublishing() },
         ])
 
-//        if (publishedVersions['windows-files'] != publishedVersions['ubuntu-files']) { // FIXME check rhel too, IS-307
-//            error "platforms artifacts have different versions"
-//        }
+        if (publishedVersions['windows-files'] != publishedVersions['ubuntu-files']) { // FIXME check rhel too, IS-307
+            error "platforms artifacts have different versions"
+        }
     }
 }
 
@@ -221,10 +221,10 @@ def linuxTesting(file, env_name, network_name, stashBuildResults, test_wrappers)
                     libindyBuildFinished[env_name]
                 }
                 def jobs = [
-                        "${env_name}-cli-test"   : {
+                        "${env_name}-cli-test": {
                             linuxModuleTesting(file, env_name, network_name, this.&linuxCLITesting, stashBuildResults)
                         },
-                        "${env_name}-vcx-test"   : {
+                        "${env_name}-vcx-test": {
                             vcxTesting(file, env_name, network_name, stashBuildResults, test_wrappers)
                         }
                 ]
@@ -927,18 +927,13 @@ def rhelPublishing() {
 
 def ubuntuPublishing() {
     stage('Ubuntu Publishing') {
-        parallel([
-                "ubuntu:16.04": {
-                    linuxPublishing("ci/ubuntu.dockerfile ci", "Ubuntu 16.04", true)
-                },
-                "ubuntu:18.04": {
-                    linuxPublishing("ci/ubuntu18.dockerfile ci", "Ubuntu 18.04", false)
-                }
-        ])
+        def libindyVersion = linuxPublishing("ci/ubuntu.dockerfile ci", "Ubuntu 16.04", true)
+        linuxPublishing("ci/ubuntu18.dockerfile ci", "Ubuntu 18.04", false)
+        return libindyVersion
     }
 }
 
-def linuxPublishing(file, env_name, build_wrappers){
+def linuxPublishing(file, env_name, build_wrappers) {
     def libindyVersion
 
     node('ubuntu') {
@@ -957,7 +952,7 @@ def linuxPublishing(file, env_name, build_wrappers){
                 libvcxDebPublishing(testEnv, env_name)
                 libindyCliDebPublishing(testEnv, libindyVersion, env_name)
 
-                if (build_wrappers){
+                if (build_wrappers) {
                     pythonWrapperPublishing(testEnv, false, 'wrappers/python', 'libindy')
                     nodejsWrapperPublishing(testEnv, false, 'libindy')
                     javaWrapperPublishing(testEnv, false)
@@ -1580,7 +1575,7 @@ def publishLibvcxDebRCtoStable(testEnv, env_name) {
 def publishDebRCtoStable(testEnv, packageName, folder, version, stashName, moveDevArtifacts, env_name) {
     testEnv.inside {
         def rcFullVersion = "${version}~${env.BUILD_NUMBER}"
-        def build_type = ubuntuPakageTypes[env_name]
+        def package_type = ubuntuPakageTypes[env_name]
 
         unstash name: "${stashName}${env_name}"
 
@@ -1598,7 +1593,7 @@ def publishDebRCtoStable(testEnv, packageName, folder, version, stashName, moveD
         withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'sovrin_key')]) {
             path = sh(returnStdout: true, script: 'pwd').trim()
 
-            sh "./sovrin-packaging/upload_debs.py $path $SOVRIN_SDK_REPO_NAME stable --host $SOVRIN_REPO_HOST --ssh-key $sovrin_key ${build_type}"
+            sh "./sovrin-packaging/upload_debs.py $path $SOVRIN_SDK_REPO_NAME stable --distro=${package_type} --host $SOVRIN_REPO_HOST --ssh-key $sovrin_key"
         }
     }
 }

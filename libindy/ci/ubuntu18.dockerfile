@@ -6,10 +6,12 @@ RUN apt-get update && \
     apt-get install -y \
       pkg-config \
       libssl-dev \
+      libgmp3-dev \
       curl \
       build-essential \
       libsqlite3-dev \
       cmake \
+      git \
       python3.5 \
       python3-pip \
       python-setuptools \
@@ -19,7 +21,8 @@ RUN apt-get update && \
       wget \
       devscripts \
       libncursesw5-dev \
-      libzmq3-dev
+      libzmq3-dev \
+      libsodium-dev
 
 RUN pip3 install -U \
 	pip \
@@ -29,13 +32,12 @@ RUN pip3 install -U \
 	plumbum \
 	deb-pkg-tools
 
-RUN cd /tmp && \
-    curl https://download.libsodium.org/libsodium/releases/old/libsodium-1.0.14.tar.gz | tar -xz && \
-    cd /tmp/libsodium-1.0.14 && \
-    ./configure --disable-shared && \
-    make && \
-    make install && \
-    rm -rf /tmp/libsodium-1.0.14
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        ruby \
+        ruby-dev \
+        rubygems \
+    && gem install --no-ri --no-rdoc rake fpm \
+    && rm -rf /var/lib/apt/lists/*
 
 RUN useradd -ms /bin/bash -u $uid indy
 USER indy
