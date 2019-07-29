@@ -414,9 +414,11 @@ pub mod verify_with_address {
         trace!("libnullpay::verify_with_address::handle << address: {:?}\n    message: {:?}\n    message_len: {}\n    signature: {:?}\n    signature_len: {}", address, message_raw, message_len, signature_raw, signature_len);
         if let Some(cb) = cb {
             let signature = rand::gen_rand_signature(&address, message_raw.as_slice());
-            let mut check = true;
+            trace!("generated signature: {:?}", signature);
             let mut i = 0usize;
-            while check {
+            let len = signature.len();
+            let mut check = len == signature_raw.len();
+            while check && i < len {
                 check &= signature[i] == signature_raw[i];
                 i += 1;
             }
