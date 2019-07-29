@@ -687,10 +687,6 @@ impl PaymentsCommandExecutor {
 
     fn sign_with_address(&self, wallet_handle: WalletHandle, address: &str, message: &[u8], cb: Box<Fn(IndyResult<Vec<u8>>) + Send>) {
         trace!("sign_with_address >>> address: {:?}, message: {:?}", address, hex::bin2hex(message));
-        match self.wallet_service.check(wallet_handle).map_err(map_err_err!()) {
-            Err(err) => return cb(Err(IndyError::from(err))),
-            _ => ()
-        };
         let method = match self.payments_service.parse_method_from_payment_address(address) {
             Ok(method) => method,
             Err(err) => {
