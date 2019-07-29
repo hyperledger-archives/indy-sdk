@@ -138,6 +138,18 @@ This function should be called in two places to handle both cases of error occur
 }
 ```
 
+#### Endorser
+As a transaction author, I need my transactions to be written to the ledger preserving me as the author without my needing to accept the responsibilities of an endorser.
+Instead, I will have a relationship with an endorser who will endorse my transactions.
+
+#### Workflow
+1. Transaction Author builds a new request (indy_build_xxx_reqeust).
+1. If no endorser is needed for a transaction (for example, the transaction author is an endorser, or auth rules are configured in a way that transaction author can send requests in permissionless mode), then the author signs and submits the transaction.
+1. Otherwise the author chooses an Endorser and adds Endorser's DID into the request calling `indy_append_request_endorser`.
+1. Transaction author signs the request (`indy_multi_sign_request` or `indy_sign_request`) with the added endorser field (output of `indy_append_request_endorser`).
+1. Transaction author sends the request to the Endorser (out of scope).
+1. Transaction Endorser signs the request (as of now `indy_multi_sign_request` must be called, not `indy_sign_request`) and submits it to the ledger.
+
 ## Indy-CLI
 There is a Command Line Interface (CLI) built over Libindy which provides a set of commands to:
 * Manage wallets
