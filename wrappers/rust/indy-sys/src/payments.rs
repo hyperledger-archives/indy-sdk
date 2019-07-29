@@ -64,6 +64,19 @@ extern {
                                                    cb: Option<ResponseStringI64CB>) -> Error;
 
     #[no_mangle]
+    pub fn indy_build_get_payment_sources_request(command_handle: CommandHandle,
+                                                  wallet_handle: WalletHandle,
+                                                  submitter_did: CString,
+                                                  payment_address: CString,
+                                                  cb: Option<ResponseStringStringCB>) -> Error;
+
+    #[no_mangle]
+    pub fn indy_parse_get_payment_sources_response(command_handle: CommandHandle,
+                                                   payment_method: CString,
+                                                   resp_json: CString,
+                                                   cb: Option<ResponseStringCB>) -> Error;
+
+    #[no_mangle]
     pub fn indy_build_payment_req(command_handle: CommandHandle,
                                   wallet_handle: WalletHandle,
                                   submitter_did: CString,

@@ -341,6 +341,21 @@ mod high_cases {
 
             utils::tear_down_with_wallet(wallet_handle, "parse_get_payment_sources_response_works", &wallet_config);
         }
+
+
+        #[test]
+        fn parse_get_payment_sources_with_from_response_works_has_next() {
+            let (wallet_handle, wallet_config) = setup("parse_get_payment_sources_with_from_response_works");
+
+            payments::mock_method::parse_get_payment_sources_response::inject_mock(ErrorCode::Success, TEST_RES_STRING, 1);
+
+            let (res_plugin, num) = payments::parse_get_payment_sources_with_from_response(PAYMENT_METHOD_NAME, EMPTY_OBJECT).unwrap();
+
+            assert_eq!(res_plugin, TEST_RES_STRING);
+            assert_eq!(num, Some(1));
+
+            utils::tear_down_with_wallet(wallet_handle, "parse_get_payment_sources_response_works", &wallet_config);
+        }
     }
 
     mod payment_request {

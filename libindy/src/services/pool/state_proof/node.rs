@@ -240,7 +240,7 @@ impl Node {
                     new_seen_path.extend_from_slice(seen_path);
                     new_seen_path.extend_from_slice(pair_path.as_slice());
                     pair.next._get_node(db, &path[pair_path.len()..], new_seen_path.as_slice())
-                } else if pair_path.starts_with(&path) {
+                } else if path.starts_with(&pair_path) {
                     Ok(Some((self, seen_path.to_vec())))
                 } else {
                     Ok(None)

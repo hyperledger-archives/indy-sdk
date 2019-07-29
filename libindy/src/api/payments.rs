@@ -634,6 +634,7 @@ pub extern fn indy_parse_response_with_fees(command_handle: CommandHandle,
 
 /// Builds Indy request for getting sources list for payment address
 /// according to this payment method.
+/// Deprecated. This function will be most likely be removed with Indy SDK 2.0 version
 ///
 /// #Params
 /// command_handle: Command handle to map callback to caller context.
@@ -685,6 +686,7 @@ pub extern fn indy_build_get_payment_sources_request(command_handle: CommandHand
 }
 
 /// Parses response for Indy request for getting sources list.
+/// Deprecated. This function will be most likely be removed with Indy SDK 2.0 version
 ///
 /// #Params
 /// command_handle: Command handle to map callback to caller context.
