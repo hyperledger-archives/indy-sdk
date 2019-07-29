@@ -216,6 +216,11 @@ test('ledger', async function (t) {
   res = await indy.signAndSubmitRequest(pool.handle, wh, trusteeDid, req)
   t.is(res.op, 'REPLY')
 
+  // endorser
+  req = await indy.buildSchemaRequest(myDid, schema)
+  req = await indy.appendRequestEndorser(req, trusteeDid)
+  t.is(req['endorser'], trusteeDid)
+
   await indy.closeWallet(wh)
   await indy.deleteWallet(walletConfig, walletCredentials)
   pool.cleanup()

@@ -2270,6 +2270,25 @@ NAN_METHOD(appendTxnAuthorAgreementAcceptanceToRequest) {
   delete arg4;
 }
 
+void appendRequestEndorser_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbString(xerr, arg0);
+  }
+}
+NAN_METHOD(appendRequestEndorser) {
+  INDY_ASSERT_NARGS(appendRequestEndorser, 3)
+  INDY_ASSERT_STRING(appendRequestEndorser, 0, requestJson)
+  INDY_ASSERT_STRING(appendRequestEndorser, 1, endorserDid)
+  INDY_ASSERT_FUNCTION(appendRequestEndorser, 2)
+  const char* arg0 = argToCString(info[0]);
+  const char* arg1 = argToCString(info[1]);
+  IndyCallback* icb = argToIndyCb(info[2]);
+  indyCalled(icb, indy_append_request_endorser(icb->handle, arg0, arg1, appendRequestEndorser_cb));
+  delete arg0;
+  delete arg1;
+}
+
 void getResponseMetadata_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
   IndyCallback* icb = IndyCallback::getCallback(handle);
   if(icb != nullptr){
@@ -3531,6 +3550,7 @@ NAN_MODULE_INIT(InitAll) {
   Nan::Export(target, "buildAcceptanceMechanismsRequest", buildAcceptanceMechanismsRequest);
   Nan::Export(target, "buildGetAcceptanceMechanismsRequest", buildGetAcceptanceMechanismsRequest);
   Nan::Export(target, "appendTxnAuthorAgreementAcceptanceToRequest", appendTxnAuthorAgreementAcceptanceToRequest);
+  Nan::Export(target, "appendRequestEndorser", appendRequestEndorser);
   Nan::Export(target, "getResponseMetadata", getResponseMetadata);
   Nan::Export(target, "addWalletRecord", addWalletRecord);
   Nan::Export(target, "updateWalletRecordValue", updateWalletRecordValue);
