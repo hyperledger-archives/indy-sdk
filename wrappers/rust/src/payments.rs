@@ -251,7 +251,7 @@ fn _build_get_payment_sources_with_from_request(command_handle: CommandHandle, w
 ///   }]
 #[deprecated(since="2.0.0", note="please use `parse_get_payment_sources_with_from_response` instead")]
 pub fn parse_get_payment_sources_response(payment_method: &str, resp_json: &str) -> Box<Future<Item=String, Error=IndyError>> {
-    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_i64();
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
     let err = _parse_get_payment_sources_response(command_handle, payment_method, resp_json, cb);
 
