@@ -130,6 +130,7 @@ extern "C" {
 
     /// Builds Indy request for getting sources list for payment address
     /// according to this payment method.
+    /// This method is be deprecated and will be removed in Indy SDK 2.0. Use indy_build_get_payment_sources_with_from_request
     ///
     /// #Params
     /// command_handle: Command handle to map callback to caller context.
@@ -152,7 +153,34 @@ extern "C" {
                                                                                     const char*   payment_method)
                                                                );
 
+    /// Builds Indy request for getting sources list for payment address
+    /// according to this payment method.
+    ///
+    /// #Params
+    /// command_handle: Command handle to map callback to caller context.
+    /// wallet_handle: wallet handle
+    /// submitter_did: (Optional) DID of request sender
+    /// payment_address: target payment address
+    /// from: pointer to the next slice of UTXOs. -1 by default
+    ///
+    /// #Returns
+    /// get_sources_txn_json - Indy request for getting sources list for payment address
+    /// payment_method - used payment method
+
+    extern indy_error_t indy_build_get_payment_sources_with_from_request(indy_handle_t command_handle,
+                                                                         indy_handle_t wallet_handle,
+                                                                         const char *  submitter_did,
+                                                                         const char *  payment_address,
+                                                                         indy_u64_t    from,
+
+                                                                         void           (*cb)(indy_handle_t command_handle_,
+                                                                                              indy_error_t  err,
+                                                                                              const char*   get_sources_txn_json,
+                                                                                              const char*   payment_method)
+                                                                         );
+
     /// Parses response for Indy request for getting sources list.
+    /// This method is be deprecated and will be removed in Indy SDK 2.0. Use indy_parse_get_payment_sources_with_from_response
     ///
     /// #Params
     /// command_handle: Command handle to map callback to caller context.
@@ -176,6 +204,34 @@ extern "C" {
                                                                 void           (*cb)(indy_handle_t command_handle_,
                                                                                      indy_error_t  err,
                                                                                      const char*   sources_json)
+                                                                );
+
+    /// Parses response for Indy request for getting sources list.
+    ///
+    /// #Params
+    /// command_handle: Command handle to map callback to caller context.
+    /// payment_method: payment method to use.
+    /// resp_json: response for Indy request for getting sources list
+    ///   Note: this param will be used to determine payment_method
+    ///
+    /// #Returns
+    /// sources_json - parsed (payment method and node version agnostic) sources info as json:
+    ///   [{
+    ///      source: <str>, // source input
+    ///      paymentAddress: <str>, //payment address for this source
+    ///      amount: <int>, // amount
+    ///      extra: <str>, // optional data from payment transaction
+    ///   }],
+    /// next -- pointer to the next slice of UTXO
+
+    extern indy_error_t indy_parse_get_payment_sources_with_from_response(indy_handle_t command_handle,
+                                                                const char *  payment_method,
+                                                                const char *  resp_json,
+
+                                                                void           (*cb)(indy_handle_t command_handle_,
+                                                                                     indy_error_t  err,
+                                                                                     const char*   sources_json,
+                                                                                     indy_i64_t    next)
                                                                 );
 
     /// Builds Indy request for doing payment

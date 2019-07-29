@@ -159,6 +159,11 @@ type IndyPaymentCallback = extern fn(command_handle_: i32,
                                      err: i32,
                                      payment_address: *const c_char) -> i32;
 
+type ParsePaymentSourcesCallback = extern fn(command_handle_: i32,
+                                             err: i32,
+                                             payment_address: *const c_char,
+                                             next: i64) -> i32;
+
 lazy_static! {
         static ref CREATE_PAYMENT_METHOD_INIT: Once = ONCE_INIT;
 }
@@ -209,11 +214,50 @@ pub mod mock_method {
     }
 
     pub mod build_get_payment_sources_request {
-        mocked_handler!(_wallet_handle: i32, _submitter_did: *const c_char, _payment_address: *const c_char);
+        mocked_handler!(_wallet_handle: i32, _submitter_did: *const c_char, _payment_address: *const c_char, _from: i64);
     }
 
     pub mod parse_get_payment_sources_response {
-        mocked_handler!(_resp_json: *const c_char);
+        use super::*;
+
+        lazy_static! {
+          static ref INJECTIONS: Mutex<VecDeque<(i32, CString, i64)>> = Default::default();
+        }
+
+        pub extern fn handle(cmd_handle: i32,
+                             _response: *const c_char,
+                             cb: Option<ParsePaymentSourcesCallback>) -> i32 {
+            let cb = cb.unwrap_or_else(|| {
+                panic!("Null passed as callback!")
+            });
+
+            if let Ok(mut injections) = INJECTIONS.lock() {
+                if let Some((err, res, num)) = injections.pop_front() {
+                    return (cb)(cmd_handle, err, res.as_ptr(), num);
+                }
+            } else {
+                panic!("Can't lock injections mutex");
+            }
+
+            panic!("No injections left!");
+        }
+
+        pub fn inject_mock(err: ErrorCode, res: &str, num: i64) {
+            if let Ok(mut injections) = INJECTIONS.lock() {
+                let res = CString::new(res).unwrap();
+                injections.push_back((err as i32, res, num))
+            } else {
+                panic!("Can't lock injections mutex");
+            }
+        }
+
+        pub fn clear_mocks() {
+            if let Ok(mut injections) = INJECTIONS.lock() {
+                injections.clear();
+            } else {
+                panic!("Can't lock injections mutex");
+            }
+        }
     }
 
     pub mod build_payment_req {
@@ -319,6 +363,10 @@ pub fn build_get_payment_sources_request(wallet_handle: i32, submitter_did: Opti
     payments::build_get_payment_sources_request(wallet_handle, submitter_did, payment_address).wait()
 }
 
+pub fn build_get_payment_sources_with_from_request(wallet_handle: i32, submitter_did: Option<&str>, payment_address: &str, from: Option<u64>) -> Result<(String, String), IndyError> {
+    payments::build_get_payment_sources_with_from_request(wallet_handle, submitter_did, payment_address, from).wait()
+}
+
 pub fn build_payment_req(wallet_handle: i32, submitter_did: Option<&str>, inputs_json: &str, outputs_json: &str, extra: Option<&str>) -> Result<(String, String), IndyError> {
     payments::build_payment_req(wallet_handle, submitter_did, inputs_json, outputs_json, extra).wait()
 }
@@ -329,6 +377,10 @@ pub fn parse_response_with_fees(payment_method: &str, resp_json: &str) -> Result
 
 pub fn parse_get_payment_sources_response(payment_method: &str, resp_json: &str) -> Result<String, IndyError> {
     payments::parse_get_payment_sources_response(payment_method, resp_json).wait()
+}
+
+pub fn parse_get_payment_sources_with_from_response(payment_method: &str, resp_json: &str) -> Result<(String, Option<u64>), IndyError> {
+    payments::parse_get_payment_sources_with_from_response(payment_method, resp_json).wait()
 }
 
 pub fn parse_payment_response(payment_method: &str, resp_json: &str) -> Result<String, IndyError> {

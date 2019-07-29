@@ -18,6 +18,7 @@ test('payments', async function (t) {
   var paymentAddress = 'pay:null:test'
   var inputs = ['pay:null:1']
   var outputs = [{ 'recipient': 'pay:null:1', 'amount': 1 }]
+  var from = 1
 
   var err = await t.throwsAsync(indy.createPaymentAddress(wh, paymentMethod, {}))
   t.is(err.indyName, 'PaymentUnknownMethodError')
@@ -33,7 +34,10 @@ test('payments', async function (t) {
   err = await t.throwsAsync(indy.buildGetPaymentSourcesRequest(wh, trusteeDid, paymentAddress))
   t.is(err.indyName, 'PaymentUnknownMethodError')
 
-  err = await t.throwsAsync(indy.parseGetPaymentSourcesResponse(paymentMethod, {}))
+  err = await t.throwsAsync(indy.buildGetPaymentSourcesWithFromRequest(wh, trusteeDid, paymentAddress, from))
+  t.is(err.indyName, 'PaymentUnknownMethodError')
+
+  err = await t.throwsAsync(indy.parseGetPaymentSourcesWithFromResponse(paymentMethod, {}))
   t.is(err.indyName, 'PaymentUnknownMethodError')
 
   err = await t.throwsAsync(indy.buildPaymentReq(wh, trusteeDid, inputs, outputs, null))

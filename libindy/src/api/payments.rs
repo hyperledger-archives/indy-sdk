@@ -100,6 +100,7 @@ pub type ParseResponseWithFeesCB = extern fn(command_handle: CommandHandle,
 /// wallet_handle: wallet handle
 /// submitter_did: (Optional) DID of request sender
 /// payment_address: target payment address
+/// from: shift to the next slice of payment sources
 ///
 /// #Returns
 /// get_sources_txn_json - Indy request for getting sources list for payment address
@@ -107,6 +108,7 @@ pub type BuildGetPaymentSourcesRequestCB = extern fn(command_handle: CommandHand
                                                      wallet_handle: WalletHandle,
                                                      submitter_did: *const c_char,
                                                      payment_address: *const c_char,
+                                                     from: i64,
                                                      cb: Option<extern fn(command_handle_: CommandHandle,
                                                                           err: ErrorCode,
                                                                           get_sources_txn_json: *const c_char) -> ErrorCode>) -> ErrorCode;
@@ -118,6 +120,7 @@ pub type BuildGetPaymentSourcesRequestCB = extern fn(command_handle: CommandHand
 /// resp_json: response for Indy request for getting sources list
 ///
 /// #Returns
+/// next - pointer to the next slice of payment address
 /// sources_json - parsed (payment method and node version agnostic) sources info as json:
 ///   [{
 ///      source: <str>, // source input
@@ -129,7 +132,8 @@ pub type ParseGetPaymentSourcesResponseCB = extern fn(command_handle: CommandHan
                                                       resp_json: *const c_char,
                                                       cb: Option<extern fn(command_handle_: CommandHandle,
                                                                            err: ErrorCode,
-                                                                           sources_json: *const c_char) -> ErrorCode>) -> ErrorCode;
+                                                                           sources_json: *const c_char,
+                                                                           next: i64) -> ErrorCode>) -> ErrorCode;
 
 /// Builds Indy request for doing payment
 /// according to this payment method.
@@ -671,6 +675,7 @@ pub extern fn indy_parse_response_with_fees(command_handle: CommandHandle,
 
 /// Builds Indy request for getting sources list for payment address
 /// according to this payment method.
+/// Deprecated. This function will be most likely be removed with Indy SDK 2.0 version
 ///
 /// #Params
 /// command_handle: Command handle to map callback to caller context.
@@ -704,6 +709,7 @@ pub extern fn indy_build_get_payment_sources_request(command_handle: CommandHand
                     wallet_handle,
                     submitter_did,
                     payment_address,
+                    None,
                     Box::new(move |result| {
                         let (err, get_sources_txn_json, payment_method) = prepare_result_2!(result, String::new(), String::new());
                         trace!("indy_build_get_payment_sources_request: get_sources_txn_json: {:?}, payment_method: {:?}", get_sources_txn_json, payment_method);
@@ -721,6 +727,7 @@ pub extern fn indy_build_get_payment_sources_request(command_handle: CommandHand
 }
 
 /// Parses response for Indy request for getting sources list.
+/// Deprecated. This function will be most likely be removed with Indy SDK 2.0 version
 ///
 /// #Params
 /// command_handle: Command handle to map callback to caller context.
@@ -756,7 +763,7 @@ pub extern fn indy_parse_get_payment_sources_response(command_handle: CommandHan
                     payment_method,
                     resp_json,
                     Box::new(move |result| {
-                        let (err, sources_json) = prepare_result_1!(result, String::new());
+                        let (err, sources_json, _) = prepare_result_2!(result, String::new(), -1);
                         trace!("indy_parse_get_payment_sources_response: sources_json: {:?}", sources_json);
                         let sources_json = ctypes::string_to_cstring(sources_json);
                         cb(command_handle, err, sources_json.as_ptr());

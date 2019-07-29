@@ -1,6 +1,7 @@
 package org.hyperledger.indy.sdk;
 
 import java.io.File;
+import java.util.Optional;
 
 import com.sun.jna.*;
 import com.sun.jna.ptr.PointerByReference;
@@ -174,7 +175,9 @@ public abstract class LibIndy {
 		int indy_add_request_fees(int command_handle, int wallet_handle, String submitter_did, String req_json, String inputs_json, String outputs_json, String extra, Callback cb);
 		int indy_parse_response_with_fees(int command_handle, String payment_method, String resp_json, Callback cb);
 		int indy_build_get_payment_sources_request(int command_handle, int wallet_handle, String submitter_did, String payment_address, Callback cb);
+		int indy_build_get_payment_sources_with_from_request(int command_handle, int wallet_handle, String submitter_did, String payment_address, int from, Callback cb);
 		int indy_parse_get_payment_sources_response(int command_handle, String payment_method, String resp_json, Callback cb);
+		int indy_parse_get_payment_sources_with_from_response(int command_handle, String payment_method, String resp_json, Callback cb);
 		int indy_build_payment_req(int command_handle, int wallet_handle, String submitter_did, String inputs_json, String outputs_json, String extra, Callback cb);
 		int indy_parse_payment_response(int command_handle, String payment_method, String resp_json, Callback cb);
 		int indy_build_mint_req(int command_handle, int wallet_handle, String submitter_did, String outputs_json, String extra, Callback cb);
