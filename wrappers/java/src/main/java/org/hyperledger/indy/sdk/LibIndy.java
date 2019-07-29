@@ -185,6 +185,8 @@ public abstract class LibIndy {
 		int indy_parse_verify_payment_response(int command_handle, String payment_method, String resp_json, Callback cb);
 		int indy_prepare_payment_extra_with_acceptance_data(int command_handle, String extra_json, String text, String version, String hash, String acc_mech_type, long time_of_acceptance, Callback cb);
 		int indy_get_request_info(int command_handle, String get_auth_rule_response_json, String requester_info_json, String fees_json, Callback cb);
+		int indy_sign_with_address(int command_handle, int wallet_handle, String address, byte[] message_raw, int message_len, Callback cb);
+		int indy_verify_with_address(int command_handle, String address, byte[] message_raw, int message_len, byte[] signature_raw, int signature_len, Callback cb);
 
 		int indy_set_logger(Pointer context, Callback enabled, Callback log, Callback flush);
 

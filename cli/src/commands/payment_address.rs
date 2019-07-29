@@ -101,7 +101,7 @@ pub mod sign_command {
     command!(CommandMetadata::build("sign", "Create a proof of payment address control by signing an input and producing a signature.")
                 .add_required_param("address", "Payment address to use")
                 .add_required_param("input", "The input data to be signed")
-                .add_example("sign address=pav:sov:1a2b3c4d5e6f7g8h9ioplkjhgfdsfgbv input=910274529363984")
+                .add_example("payment-address sign address=pay:null:GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa input=910274529363984")
                 .finalize());
 
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
@@ -136,7 +136,7 @@ pub mod verify_command {
              .add_required_param("address", "Payment address to use")
              .add_required_param("input", "The input data that was signed")
              .add_required_param("signature", "The signature generated from sign-with-address")
-             .add_example("verify address=pav:sov:1a2b3c4d5e6f7g8h9ioplkjhgfdsfgbv input=910274529363984 signature=0x1c542a32bd39cf1fd343fd4f211ea2f7fb5c4bca0ab7c7d8c7dc192511593484b86cb9b919040981addf81ee4c0feae080ef592efdb7c6ea6e4ae1c007a60178")
+             .add_example("payment-address verify address=pay:null:GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa input=910274529363984 signature=0x1c542a32bd39cf1fd343fd4f211ea2f7fb5c4bca0ab7c7d8c7dc192511593484b86cb9b919040981addf81ee4c0feae080ef592efdb7c6ea6e4ae1c007a60178")
              .finalize());
 
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {

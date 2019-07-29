@@ -380,4 +380,46 @@
     }
 }
 
++ (void)signWithAddress:(NSString *)address
+                message:(NSData *)message
+           walletHandle:(IndyHandle)walletHandle
+             completion:(void (^)(NSError *error, NSData *signature))completion
+{
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    uint32_t messageLen = (uint32_t) [message length];
+    uint8_t *messageRaw = (uint8_t *) [message bytes];
+    indy_error_t ret = indy_sign_with_address(handle,
+            walletHandle,
+            [address UTF8String],
+            messageRaw,
+            messageLen,
+            IndyWrapperCommonDataCallback);
+
+    [[IndyCallbacks sharedInstance] completeData:completion forHandle:handle ifError:ret];
+}
+
++ (void)verifyWithAddress:(NSString *)address
+                  message:(NSData *)message
+                signature:(NSData *)signature
+               completion:(void (^)(NSError *error, BOOL valid))completion
+{
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    uint32_t messageLen = (uint32_t) [message length];
+    uint8_t *messageRaw = (uint8_t *) [message bytes];
+    uint32_t signatureLen = (uint32_t) [signature length];
+    uint8_t *signatureRaw = (uint8_t *) [signature bytes];
+
+    indy_error_t ret = indy_verify_with_address(handle,
+            [address UTF8String],
+            messageRaw,
+            messageLen,
+            signatureRaw,
+            signatureLen,
+            IndyWrapperCommonBoolCallback);
+
+    [[IndyCallbacks sharedInstance] completeBool:completion forHandle:handle ifError:ret];
+}
+
 @end
