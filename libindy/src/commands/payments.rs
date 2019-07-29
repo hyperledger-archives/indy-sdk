@@ -344,10 +344,12 @@ impl PaymentsCommandExecutor {
 
     fn create_address(&self, wallet_handle: WalletHandle, type_: &str, config: &str, cb: Box<Fn(IndyResult<String>) + Send>) {
         trace!("create_address >>> wallet_handle: {:?}, type_: {:?}, config: {:?}", wallet_handle, type_, config);
+
         match self.wallet_service.check(wallet_handle).map_err(map_err_err!()) {
             Err(err) => return cb(Err(IndyError::from(err))),
             _ => ()
         };
+
         self._process_method(cb, &|i| self.payments_service.create_address(i, wallet_handle, type_, config));
 
         trace!("create_address <<<");
@@ -358,9 +360,8 @@ impl PaymentsCommandExecutor {
         let total_result: IndyResult<String> = match result {
             Ok(res) => {
                 //TODO: think about deleting payment_address on wallet save failure
-                self.wallet_service.check(wallet_handle).and(
-                    self.wallet_service.add_record(wallet_handle, &self.wallet_service.add_prefix("PaymentAddress"), &res, &res, &HashMap::new()).map(|_| res)
-                ).map_err(IndyError::from)
+                self.wallet_service.add_record(wallet_handle, &self.wallet_service.add_prefix("PaymentAddress"), &res, &res, &HashMap::new()).map(|_| res)
+                    .map_err(IndyError::from)
             }
             Err(err) => Err(IndyError::from(err))
         };
@@ -370,10 +371,6 @@ impl PaymentsCommandExecutor {
 
     fn list_addresses(&self, wallet_handle: WalletHandle, cb: Box<Fn(IndyResult<String>) + Send>) {
         trace!("list_addresses >>> wallet_handle: {:?}", wallet_handle);
-        match self.wallet_service.check(wallet_handle).map_err(map_err_err!()) {
-            Err(err) => return cb(Err(IndyError::from(err))),
-            _ => (),
-        };
 
         match self.wallet_service.search_records(wallet_handle, &self.wallet_service.add_prefix("PaymentAddress"), "{}", &RecordOptions::id_value()) {
             Ok(mut search) => {
@@ -405,10 +402,6 @@ impl PaymentsCommandExecutor {
                 _ => ()
             }
         }
-        match self.wallet_service.check(wallet_handle).map_err(map_err_err!()) {
-            Err(err) => return cb(Err(err)),
-            _ => (),
-        };
 
         let method_from_inputs = self.payments_service.parse_method_from_inputs(inputs);
 
@@ -460,10 +453,6 @@ impl PaymentsCommandExecutor {
                 _ => ()
             }
         }
-        match self.wallet_service.check(wallet_handle).map_err(map_err_err!()) {
-            Err(err) => return cb(Err(IndyError::from(err))),
-            _ => (),
-        };
 
         let method = match self.payments_service.parse_method_from_payment_address(payment_address) {
             Ok(method) => method,
@@ -507,11 +496,6 @@ impl PaymentsCommandExecutor {
                 _ => ()
             }
         }
-
-        match self.wallet_service.check(wallet_handle).map_err(map_err_err!()) {
-            Err(err) => return cb(Err(IndyError::from(err))),
-            _ => ()
-        };
 
         let method_from_inputs = self.payments_service.parse_method_from_inputs(inputs);
         let method_from_outputs = self.payments_service.parse_method_from_outputs(outputs);
@@ -584,12 +568,6 @@ impl PaymentsCommandExecutor {
             }
         }
 
-        match self.wallet_service.check(wallet_handle).map_err(map_err_err!()) {
-            //TODO: move to helper
-            Err(err) => return cb(Err(IndyError::from(err))),
-            _ => (),
-        };
-
         match self.payments_service.parse_method_from_outputs(outputs) {
             Ok(type_) => {
                 let type_copy = type_.to_string();
@@ -617,10 +595,6 @@ impl PaymentsCommandExecutor {
                 _ => ()
             }
         }
-        match self.wallet_service.check(wallet_handle).map_err(map_err_err!()) {
-            Err(err) => return cb(Err(IndyError::from(err))),
-            _ => (),
-        };
 
         match serde_json::from_str::<HashMap<String, i64>>(fees) {
             Err(err) => {
@@ -646,10 +620,6 @@ impl PaymentsCommandExecutor {
                 _ => ()
             }
         }
-        match self.wallet_service.check(wallet_handle).map_err(map_err_err!()) {
-            Err(err) => return cb(Err(IndyError::from(err))),
-            _ => (),
-        };
 
         self._process_method(cb, &|i| self.payments_service.build_get_txn_fees_req(i, type_, wallet_handle, submitter_did));
         trace!("build_get_txn_fees_req <<<");
@@ -681,10 +651,6 @@ impl PaymentsCommandExecutor {
                 _ => ()
             }
         }
-        match self.wallet_service.check(wallet_handle).map_err(map_err_err!()) {
-            Err(err) => return cb(Err(IndyError::from(err))),
-            _ => (),
-        };
 
         let method = match self.payments_service.parse_method_from_payment_address(receipt) {
             Ok(method) => method,

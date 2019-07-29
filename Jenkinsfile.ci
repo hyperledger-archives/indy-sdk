@@ -483,7 +483,7 @@ def linuxLibindyBuild(file, env_name, network_name) {
         testEnv.inside("--network=${network_name}") {
             sh '''
                 cd libindy
-                RUST_BACKTRACE=1 cargo test --no-run --features sodium_static
+                RUST_BACKTRACE=1 cargo test -j 1 --no-run --features sodium_static
                 RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --features sodium_static
             '''
         }
@@ -595,9 +595,11 @@ def linuxAndroidOnEmulatorTesting(env_name, network_name, testEnv) {
 
     def emu_arch = "x86"
 
-    echo "${env_name} Libindy Test: Test on ${emu_arch} emulator"
     testEnv.inside("--network=${network_name}") {
-        sh "cd libindy && ./android.test.sh ${emu_arch} --release"
+        for (directory in ["libindy", "libnullpay", "vcx/libvcx"]) {
+            echo "${env_name} ${directory} Test: Test on ${emu_arch} emulator"
+            sh "cd ${directory} && ./android.test.sh ${emu_arch}"
+        }
     }
 }
 
