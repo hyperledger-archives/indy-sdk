@@ -1229,6 +1229,8 @@ mod medium_cases {
         pub fn build_get_payment_sources_with_from_request_works_for_invalid_wallet_handle() {
             let (wallet_handle, wallet_config) = setup("build_get_payment_sources_with_from_request_works_for_invalid_wallet_handle");
 
+            payments::mock_method::build_get_payment_sources_request::inject_mock(ErrorCode::WalletInvalidHandle, "");
+
             let err = payments::build_get_payment_sources_with_from_request(INVALID_WALLET_HANDLE, Some(IDENTIFIER), CORRECT_PAYMENT_ADDRESS, Some(1));
             assert_code!(ErrorCode::WalletInvalidHandle, err);
 
