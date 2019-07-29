@@ -242,4 +242,23 @@ NSString *receipt = @"pay:null:0_PqVjwJC42sxCTJp";
     XCTAssertEqual(ret.code, PaymentUnknownMethodError);
 }
 
+// MARK: - Sign / Verify with Address
+
+- (void)testSignWithAddressWorks {
+    ret = [[PaymentUtils sharedInstance] signWithAddress:paymentAddress
+                                                 message:[TestUtils message]
+                                            walletHandle: walletHandle
+                                               signature:nil];
+    XCTAssertEqual(ret.code, PaymentUnknownMethodError);
+}
+
+- (void)testVerifyWithAddressWorks {
+    BOOL isValid = NO;
+    ret = [[PaymentUtils sharedInstance] verifyWithAddress:paymentAddress
+                                                   message:[TestUtils message]
+                                                 signature: [TestUtils signature]
+                                                outIsValid:&isValid]
+    XCTAssertEqual(ret.code, PaymentUnknownMethodError);
+}
+
 @end

@@ -2556,6 +2556,28 @@ If the requester does not match to the request constraints `TransactionNotAllowe
 
 Errors: `Common*`, `Ledger*`
 
+#### signWithAddress \( wh, address, message \) -&gt; signature
+
+Signs a message with a payment address.
+
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
+* `address`: String - payment address of message signer. The key must be created by calling createPaymentAddress
+* `message`: Buffer - a pointer to first byte of message to be signed
+* __->__ `signature`: Buffer - a signature string
+
+Errors: `Common*`, `Wallet*`, `Payment*`
+
+#### verifyWithAddress \( address, message, signature \) -&gt; valid
+
+Verify a signature with a payment address.
+
+* `address`: String - payment address of the message signer
+* `message`: Buffer - a pointer to first byte of message that has been signed
+* `signature`: Buffer - a pointer to first byte of signature to be verified
+* __->__ `valid`: Boolean - valid: true - if signature is valid, false - otherwise
+
+Errors: `Common*`, `Wallet*`, `Payment*`
+
 
 ### pool
 
