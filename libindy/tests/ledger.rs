@@ -3113,6 +3113,9 @@ mod high_cases {
             pool::check_response_type(&response, ResponseType::REJECT);
 
             // Sign and Send by an Endorser only
+            let my_did = _setup_new_identity(wallet_handle, pool_handle);
+            let request = ledger::build_schema_request(&my_did, SCHEMA_DATA).unwrap();
+
             let request_2 = ledger::append_request_endorser(&request, &endorser_did).unwrap();
             let request_2 = ledger::multi_sign_request(wallet_handle, &endorser_did, &request_2).unwrap();
             let response = ledger::submit_request(pool_handle, &request_2).unwrap();

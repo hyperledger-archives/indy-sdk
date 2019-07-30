@@ -13,6 +13,7 @@ This document contains information on how Indy-SDK components can be configured.
     * [Logging](#logging)
     * [Error Handling](#error-handling)
     * [Runtime](#runtime)
+    * [Endorser](#endorser)
 * [Indy-CLI](#indy-cLI)
     * [Options](#options)
     * [Config](#config)
