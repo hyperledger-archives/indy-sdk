@@ -8,6 +8,7 @@ import org.hyperledger.indy.sdk.ParamGuard;
 import org.hyperledger.indy.sdk.payments.PaymentsResults.*;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 public class Payments extends IndyJava.API {
@@ -31,6 +32,20 @@ public class Payments extends IndyJava.API {
             if (!checkResult(future, err)) return;
 
             future.complete(paymentAddress);
+        }
+    };
+
+    private static Callback parsePaymentResponseWithFromCompleteCb = new Callback() {
+
+        @SuppressWarnings({"unused", "unchecked"})
+        public void callback(int xcommandHandle, int err, String paymentAddress, int num) {
+            CompletableFuture<ParseGetPaymentSourcesWithFromResponseResult> future = (CompletableFuture<ParseGetPaymentSourcesWithFromResponseResult>) removeFuture(xcommandHandle);
+            if (!checkResult(future, err)) return;
+
+            ParseGetPaymentSourcesWithFromResponseResult parsePaymentResponseWithFromResponseResult =
+                    new ParseGetPaymentSourcesWithFromResponseResult(paymentAddress, num);
+
+            future.complete(parsePaymentResponseWithFromResponseResult);
         }
     };
 
@@ -276,6 +291,7 @@ public class Payments extends IndyJava.API {
      * @return Indy request for getting sources list for payment address
      * @throws IndyException Thrown if a call to the underlying SDK fails.
      */
+    @Deprecated
     public static CompletableFuture<BuildGetPaymentSourcesRequestResult> buildGetPaymentSourcesRequest(
             Wallet wallet,
             String submitterDid,
@@ -301,6 +317,51 @@ public class Payments extends IndyJava.API {
     }
 
     /**
+     * Builds Indy request for getting sources list for payment address
+     * according to this payment method.
+     *
+     * @param wallet The wallet.
+     * @param submitterDid (Option) DID of request sender
+     * @param paymentAddress target payment address
+     * @param from shift to the next slice of payment sources
+     * @return Indy request for getting sources list for payment address
+     * @throws IndyException Thrown if a call to the underlying SDK fails.
+     */
+    public static CompletableFuture<BuildGetPaymentSourcesRequestResult> buildGetPaymentSourcesWithFromRequest(
+            Wallet wallet,
+            String submitterDid,
+            String paymentAddress,
+            int from
+    ) throws IndyException {
+        ParamGuard.notNullOrWhiteSpace(paymentAddress, "paymentAddress");
+
+        CompletableFuture<BuildGetPaymentSourcesRequestResult> future = new CompletableFuture<>();
+        int commandHandle = addFuture(future);
+
+        int walletHandle = wallet.getWalletHandle();
+
+        int result = LibIndy.api.indy_build_get_payment_sources_with_from_request(
+                commandHandle,
+                walletHandle,
+                submitterDid,
+                paymentAddress,
+                from,
+                BuildGetPaymentSourcesRequestCB);
+
+        checkResult(future, result);
+
+        return future;
+    }
+
+    public static CompletableFuture<BuildGetPaymentSourcesRequestResult> buildGetPaymentSourcesWithFromRequest(
+            Wallet wallet,
+            String submitterDid,
+            String paymentAddress
+    ) throws IndyException {
+        return buildGetPaymentSourcesWithFromRequest(wallet, submitterDid, paymentAddress, -1);
+    }
+
+    /**
      * Parses response for Indy request for getting sources list.
      * 
      * @param paymentMethod payment method to use.
@@ -314,11 +375,46 @@ public class Payments extends IndyJava.API {
      *   }]
      * @throws IndyException Thrown if a call to the underlying SDK fails.
      */
+    @Deprecated
     public static CompletableFuture<String> parseGetPaymentSourcesResponse(
             String paymentMethod,
             String respJson
     ) throws IndyException {
         return parseResponse(paymentMethod, respJson, LibIndy.api::indy_parse_get_payment_sources_response);
+    }
+
+    /**
+     * Parses response for Indy request for getting sources list.
+     *
+     * @param paymentMethod payment method to use.
+     * @param respJson response for Indy request for getting sources list
+     * @return parsed (payment method and node version agnostic) sources info as json:
+     *   [{
+     *      source: "str", // source input
+     *      paymentAddress: "str", //payment address for this source
+     *      amount: int, // amount
+     *      extra: "str", // optional data from payment transaction
+     *   }],
+     *   next -- pointer to the next slice of payment address
+     * @throws IndyException Thrown if a call to the underlying SDK fails.
+     */
+    public static CompletableFuture<String> parseGetPaymentSourcesWithFromResponse(
+            String paymentMethod,
+            String respJson
+    ) throws IndyException {
+        ParamGuard.notNullOrWhiteSpace(paymentMethod, "paymentMethod");
+        ParamGuard.notNullOrWhiteSpace(respJson, "respJson");
+
+        CompletableFuture<String> future = new CompletableFuture<>();
+        int commandHandle = addFuture(future);
+
+        int result = LibIndy.api.indy_parse_get_payment_sources_with_from_response(
+                commandHandle, paymentMethod, respJson, parsePaymentResponseWithFromCompleteCb
+        );
+
+        checkResult(future, result);
+
+        return future;
     }
 
     /**

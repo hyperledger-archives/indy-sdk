@@ -90,12 +90,12 @@ async def add_request_fees(wallet_handle: int,
     """
     Modifies Indy request by adding information how to pay fees for this transaction
     according to this payment method.
-   
+
     This method consumes set of inputs and outputs. The difference between inputs balance
     and outputs balance is the fee for this transaction.
-   
+
     Not that this method also produces correct fee signatures.
-   
+
     Format of inputs is specific for payment method. Usually it should reference payment transaction
     with at least one output that corresponds to payment address that user owns.
 
@@ -199,6 +199,7 @@ async def build_get_payment_sources_request(wallet_handle: int,
     """
     Builds Indy request for getting sources list for payment address
     according to this payment method.
+    Deprecated. This function will be most likely be removed with Indy SDK 2.0 version
 
     :param wallet_handle: wallet handle (created by open_wallet).
     :param submitter_did : (Option) DID of request sender
@@ -230,6 +231,89 @@ async def build_get_payment_sources_request(wallet_handle: int,
 
     logger.debug("build_get_payment_sources_request: <<< res: %r", res)
     return res
+
+
+async def build_get_payment_sources_with_from_request(wallet_handle: int,
+                                                      submitter_did: str,
+                                                      payment_address: str,
+                                                      from_seqno: int = -1) -> (str, str):
+    """
+    Builds Indy request for getting sources list for payment address
+    according to this payment method.
+
+    :param wallet_handle: wallet handle (created by open_wallet).
+    :param submitter_did : (Option) DID of request sender
+    :param payment_address: target payment address
+    :param from_seqno: shift to the next slice of payment sources
+    :return: get_sources_txn_json: Indy request for getting sources list for payment address
+             payment_method: used payment method
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("build_get_payment_sources_with_from_request: >>> wallet_handle: %r, submitter_did: %r, payment_address: %r",
+                 wallet_handle,
+                 submitter_did,
+                 payment_address)
+
+    if not hasattr(build_get_payment_sources_with_from_request, "cb"):
+        logger.debug("build_get_payment_sources_with_from_request: Creating callback")
+        build_get_payment_sources_with_from_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p, c_char_p))
+
+    c_wallet_handle = c_int32(wallet_handle)
+    c_submitter_did = c_char_p(submitter_did.encode('utf-8')) if submitter_did is not None else None
+    c_payment_address = c_char_p(payment_address.encode('utf-8'))
+    c_from_seqno = c_int64(from_seqno)
+
+    (get_sources_txn_json, payment_method) = await do_call('indy_build_get_payment_sources_with_from_request',
+                                                           c_wallet_handle,
+                                                           c_submitter_did,
+                                                           c_payment_address,
+                                                           c_from_seqno,
+                                                           build_get_payment_sources_with_from_request.cb)
+    res = (get_sources_txn_json.decode(), payment_method.decode())
+
+    logger.debug("build_get_payment_sources_with_from_request: <<< res: %r", res)
+    return res
+
+
+async def parse_get_payment_sources_with_from_response(payment_method: str,
+                                                       resp_json: str) -> str:
+    """
+    Parses response for Indy request for getting sources list.
+
+    :param payment_method: Payment method to use (for example, 'sov').
+    :param resp_json: resp_json: response for Indy request for getting sources list
+                      Note: this param will be used to determine payment_method
+    :return: sources_json: parsed (payment method and node version agnostic) sources info as json:
+      [{
+         source: <str>, // source input
+         paymentAddress: <str>, //payment address for this source
+         amount: <int>, // amount
+         extra: <str>, // optional data from payment transaction
+      }],
+      next: pointer to the next slice of payment address
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("parse_get_payment_sources_with_fromresponse: >>> payment_method: %r, resp_json: %r",
+                 payment_method,
+                 resp_json)
+
+    if not hasattr(parse_get_payment_sources_with_from_response, "cb"):
+        logger.debug("parse_get_payment_sources_with_from_response: Creating callback")
+        parse_get_payment_sources_with_from_response.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p, c_int64))
+
+    c_payment_method = c_char_p(payment_method.encode('utf-8'))
+    c_resp_json = c_char_p(resp_json.encode('utf-8'))
+
+    sources_json, next_seqno = await do_call('indy_parse_get_payment_sources_with_from_response',
+                                       c_payment_method,
+                                       c_resp_json,
+                                       parse_get_payment_sources_with_from_response.cb)
+
+    res = sources_json.decode()
+    logger.debug("parse_get_payment_sources_with_from_response: <<< res: %r", res)
+    return res, next_seqno
 
 
 async def parse_get_payment_sources_response(payment_method: str,

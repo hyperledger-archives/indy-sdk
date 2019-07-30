@@ -8,6 +8,7 @@ pub mod wallet;
 pub mod blob_storage;
 pub mod non_secrets;
 pub mod payments;
+pub mod payments_v2;
 pub mod logger;
 pub mod cache;
 

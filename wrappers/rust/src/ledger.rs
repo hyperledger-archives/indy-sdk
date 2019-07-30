@@ -170,7 +170,8 @@ fn _build_get_ddo_request(command_handle: CommandHandle, submitter_did: Option<&
 /// Builds a NYM request. Request to create a new NYM record for a specific user.
 ///
 /// # Arguments
-/// * `submitter_did` - DID of the submitter stored in secured Wallet.
+/// * `submitter_did` - Identifier (DID) of the transaction author as base58-encoded string.
+///                Actual request sender may differ if Endorser is used (look at `append_request_endorser`)
 /// * `target_did` - Target DID as base58-encoded string for 16 or 32 bit DID value.
 /// * `verkey` - Target identity verification key as base58-encoded string.
 /// * `data`
@@ -221,7 +222,7 @@ fn _build_nym_request(command_handle: CommandHandle,
 /// Builds a GET_NYM request. Request to get information about a DID (NYM).
 ///
 /// # Arguments
-/// * `submitter_did` - DID of the read request sender.
+/// * `submitter_did` - (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
 /// * `target_did` - Target DID as base58-encoded string for 16 or 32 bit DID value.
 ///
 /// # Returns
@@ -244,7 +245,7 @@ fn _build_get_nym_request(command_handle: CommandHandle, submitter_did: Option<&
 /// Builds a GET_TXN request. Request to get any transaction by its seq_no.
 ///
 /// # Arguments
-/// * `submitter_did` - DID of the request submitter.
+/// `submitter_did` - (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
 /// * `ledger_type` - (Optional) type of the ledger the requested transaction belongs to:
 ///     DOMAIN - used default,
 ///     POOL,
@@ -271,7 +272,8 @@ fn _build_get_txn_request(command_handle: CommandHandle, submitter_did: Option<&
 /// Builds an ATTRIB request. Request to add attribute to a NYM record.
 ///
 /// # Arguments
-/// * `submitter_did` - DID of the submitter stored in secured Wallet.
+/// * `submitter_did` - Identifier (DID) of the transaction author as base58-encoded string.
+///                Actual request sender may differ if Endorser is used (look at `append_request_endorser`)
 /// * `target_did` - Target DID as base58-encoded string for 16 or 32 bit DID value.
 /// * `hash` - (Optional) Hash of attribute data.
 /// * `raw` - (Optional) Json, where key is attribute name and value is attribute value.
@@ -347,7 +349,8 @@ fn _build_get_attrib_request(command_handle: CommandHandle, submitter_did: Optio
 /// Builds a SCHEMA request. Request to add Credential's schema.
 ///
 /// # Arguments
-/// * `submitter_did` - DID of the submitter stored in secured Wallet.
+/// * `submitter_did` - Identifier (DID) of the transaction author as base58-encoded string.
+///                Actual request sender may differ if Endorser is used (look at `append_request_endorser`)
 /// * `data` - Credential schema.
 /// {
 ///     id: identifier of schema
@@ -377,7 +380,7 @@ fn _build_schema_request(command_handle: CommandHandle, submitter_did: &str, dat
 /// Builds a GET_SCHEMA request. Request to get Credential's Schema.
 ///
 /// # Arguments
-/// * `submitter_did` - DID of the read request sender.
+/// * `submitter_did` - (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
 /// * `id` - Schema ID in ledger
 ///
 /// # Returns
@@ -429,7 +432,8 @@ fn _parse_get_schema_response(command_handle: CommandHandle, get_schema_response
 /// that Issuer creates for a particular Credential Schema.
 ///
 /// # Arguments
-/// * `submitter_did` - DID of the submitter stored in secured Wallet.
+/// * `submitter_did` - Identifier (DID) of the transaction author as base58-encoded string.
+///                Actual request sender may differ if Endorser is used (look at `append_request_endorser`)
 /// * `data` - credential definition json
 /// {
 ///     id: string - identifier of credential definition
@@ -464,7 +468,7 @@ fn _build_cred_def_request(command_handle: CommandHandle, submitter_did: &str, d
 /// that Issuer creates for a particular Credential Schema.
 ///
 /// # Arguments
-/// * `submitter_did` - DID of the read request sender.
+/// * `submitter_did` - (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
 /// * `id` - Credential Definition ID in ledger.
 ///
 /// # Returns
@@ -519,7 +523,8 @@ fn _parse_get_cred_def_response(command_handle: CommandHandle, get_cred_def_resp
 /// Builds a NODE request. Request to add a new node to the pool, or updates existing in the pool.
 ///
 /// # Arguments
-/// * `submitter_did` - DID of the submitter stored in secured Wallet.
+/// * `submitter_did` - Identifier (DID) of the transaction author as base58-encoded string.
+///                Actual request sender may differ if Endorser is used (look at `append_request_endorser`)
 /// * `target_did` - Target Node's DID.  It differs from submitter_did field.
 /// * `data` - Data associated with the Node: {
 ///     alias: string - Node's alias
@@ -575,7 +580,8 @@ fn _build_get_validator_info_request(command_handle: CommandHandle, submitter_di
 /// Builds a POOL_CONFIG request. Request to change Pool's configuration.
 ///
 /// # Arguments
-/// * `submitter_did` - DID of the submitter stored in secured Wallet.
+/// * `submitter_did` - Identifier (DID) of the transaction author as base58-encoded string.
+///                Actual request sender may differ if Endorser is used (look at `append_request_endorser`)
 /// * `writes` - Whether any write requests can be processed by the pool
 ///         (if false, then pool goes to read-only state). True by default.
 /// * `force` - Whether we should apply transaction (for example, move pool to read-only state)
@@ -600,7 +606,8 @@ fn _build_pool_config_request(command_handle: CommandHandle, submitter_did: &str
 /// Builds a POOL_RESTART request.
 ///
 /// # Arguments
-/// * `submitter_did` - Id of Identity stored in secured Wallet.
+/// * `submitter_did` - Identifier (DID) of the transaction author as base58-encoded string.
+///                Actual request sender may differ if Endorser is used (look at `append_request_endorser`)
 /// * `action`-
 /// * `datetime`-
 ///
@@ -632,7 +639,8 @@ fn _build_pool_restart_request(command_handle: CommandHandle, submitter_did: &st
 /// It upgrades the specified Nodes (either all nodes in the Pool, or some specific ones).
 ///
 /// # Arguments
-/// * `submitter_did` - DID of the submitter stored in secured Wallet.
+/// * `submitter_did` - Identifier (DID) of the transaction author as base58-encoded string.
+///                Actual request sender may differ if Endorser is used (look at `append_request_endorser`)
 /// * `name` - Human-readable name for the upgrade.
 /// * `version` - The version of indy-node package we perform upgrade to.
 ///          Must be greater than existing one (or equal if reinstall flag is True).
@@ -710,7 +718,8 @@ fn _build_pool_upgrade_request(command_handle: CommandHandle,
 /// to an exists credential definition.
 ///
 /// # Arguments
-/// * `submitter_did` - DID of the submitter stored in secured Wallet.
+/// * `submitter_did` - Identifier (DID) of the transaction author as base58-encoded string.
+///                Actual request sender may differ if Endorser is used (look at `append_request_endorser`)
 /// * `data` - Revocation Registry data:
 ///     {
 ///         "id": string - ID of the Revocation Registry,
@@ -748,7 +757,7 @@ fn _build_revoc_reg_def_request(command_handle: CommandHandle, submitter_did: &s
 /// that Issuer creates for a particular Credential Definition.
 ///
 /// # Arguments
-/// * `submitter_did` - DID of the read request sender.
+/// * `submitter_did` - (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
 /// * `id` -  ID of Revocation Registry Definition in ledger.
 ///
 /// # Returns
@@ -810,7 +819,8 @@ fn _parse_get_revoc_reg_def_response(command_handle: CommandHandle, get_revoc_re
 /// So, it can be sent each time a new credential is issued/revoked.
 ///
 /// # Arguments
-/// * `submitter_did` - DID of the submitter stored in secured Wallet.
+/// * `submitter_did` - Identifier (DID) of the transaction author as base58-encoded string.
+///                Actual request sender may differ if Endorser is used (look at `append_request_endorser`)
 /// * `revoc_reg_def_id` - ID of the corresponding RevocRegDef.
 /// * `rev_def_type` - Revocation Registry type (only CL_ACCUM is supported for now).
 /// * `value` - Registry-specific data: {
@@ -847,7 +857,7 @@ fn _build_revoc_reg_entry_request(command_handle: CommandHandle, submitter_did: 
 /// by ID. The state is defined by the given timestamp.
 ///
 /// # Arguments
-/// * `submitter_did` - DID of the read request sender.
+/// * `submitter_did` - (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
 /// * `revoc_reg_def_id` -  ID of the corresponding Revocation Registry Definition in ledger.
 /// * `timestamp` - Requested time represented as a total number of seconds from Unix Epoch
 ///
@@ -900,7 +910,7 @@ fn _parse_get_revoc_reg_response(command_handle: CommandHandle, get_revoc_reg_re
 /// If from is not specified, then the whole state till to will be returned.
 ///
 /// # Arguments
-/// * `submitter_did` - DID of the read request sender.
+/// * `submitter_did` - (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
 /// * `revoc_reg_def_id` -  ID of the corresponding Revocation Registry Definition in ledger.
 /// * `from` - Requested time represented as a total number of seconds from Unix Epoch
 /// * `to` - Requested time represented as a total number of seconds from Unix Epoch
@@ -999,6 +1009,8 @@ fn _get_response_metadata(command_handle: CommandHandle, response: &str, cb: Opt
 /// Builds a AUTH_RULE request. Request to change authentication rules for a ledger transaction.
 ///
 /// # Arguments
+/// * `submitter_did` - Identifier (DID) of the transaction author as base58-encoded string.
+///                Actual request sender may differ if Endorser is used (look at `append_request_endorser`)
 /// * `txn_type`: ledger transaction alias or associated value for which authentication rules will be applied.
 /// * `field`: type of an action for which authentication rules will be applied.
 ///     Can be either "ADD" (to add a new rule) or "EDIT" (to edit an existing one).
@@ -1066,7 +1078,8 @@ fn _build_auth_rule_request(command_handle: CommandHandle,
 /// Builds a AUTH_RULES request. Request to change multiple authentication rules for a ledger transaction.
 ///
 /// # Arguments
-/// * `submitter_did`: DID of the request sender.
+/// * `submitter_did` - Identifier (DID) of the transaction author as base58-encoded string.
+///                Actual request sender may differ if Endorser is used (look at `append_request_endorser`)
 /// * `data`: a list of auth rules: [
 ///     {
 ///         "auth_type": ledger transaction alias or associated value,
@@ -1110,6 +1123,7 @@ fn _build_auth_rules_request(command_handle: CommandHandle,
 ///     * all - to get authentication rules for specific action (`old_value` can be skipped for `ADD` action)
 ///
 /// # Arguments
+/// * `submitter_did` - (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
 /// * `txn_type`: (Optional) target ledger transaction alias or associated value.
 /// * `action`: (Optional) target action type. Can be either "ADD" or "EDIT".
 /// * `field`: (Optional) target transaction field.
@@ -1159,7 +1173,8 @@ fn _build_get_auth_rule_request(command_handle: CommandHandle,
 /// Builds a TXN_AUTHR_AGRMT request. Request to add a new version of Transaction Author Agreement to the ledger.
 ///
 /// # Arguments
-/// * `submitter_did`: DID of the request sender.
+/// * `submitter_did` - Identifier (DID) of the transaction author as base58-encoded string.
+///                Actual request sender may differ if Endorser is used (look at `append_request_endorser`)
 /// * `text`: a content of the TTA.
 /// * `version`: a version of the TTA (unique UTF-8 string).
 ///
@@ -1194,7 +1209,7 @@ fn _build_txn_author_agreement_request(command_handle: CommandHandle,
 /// Builds a GET_TXN_AUTHR_AGRMT request. Request to get a specific Transaction Author Agreement from the ledger.
 ///
 /// # Arguments
-/// * `submitter_did`: (Optional) DID of the request sender.
+/// * `submitter_did` - (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
 /// * `data`: (Optional) specifies a condition for getting specific TAA.
 /// Contains 3 mutually exclusive optional fields:
 /// {
@@ -1233,7 +1248,8 @@ fn _build_get_txn_author_agreement_request(command_handle: CommandHandle,
 /// Acceptance Mechanism is a description of the ways how the user may accept a transaction author agreement.
 ///
 /// # Arguments
-/// * `submitter_did`: DID of the request sender.
+/// * `submitter_did` - Identifier (DID) of the transaction author as base58-encoded string.
+///                Actual request sender may differ if Endorser is used (look at `append_request_endorser`)
 /// * `aml`: a set of new acceptance mechanisms:
 /// {
 ///     “<acceptance mechanism label 1>”: { acceptance mechanism description 1},
@@ -1278,7 +1294,7 @@ fn _build_acceptance_mechanisms_request(command_handle: CommandHandle,
 /// valid for specified time or the latest one.
 ///
 /// # Arguments
-/// * `submitter_did`: (Optional) DID of the request sender.
+/// * `submitter_did` - (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
 /// * `timestamp`: (Optional) time to get an active acceptance mechanisms.
 /// * `version`: (Optional) version of acceptance mechanisms.
 ///
@@ -1366,5 +1382,45 @@ fn _append_txn_author_agreement_acceptance_to_request(command_handle: CommandHan
                                                                        mechanism.as_ptr(),
                                                                        time,
                                                                        cb)
+    })
+}
+
+/// Append Endorser to an existing request.
+///
+/// An author of request still is a `DID` used as a `submitter_did` parameter for the building of the request.
+/// But it is expecting that the transaction will be sent by the specified Endorser.
+///
+/// Note: Both Transaction Author and Endorser must sign output request after that.
+///
+/// More about Transaction Endorser: https://github.com/hyperledger/indy-node/blob/master/design/transaction_endorder.md
+///                                  https://github.com/hyperledger/indy-sdk/blob/master/docs/configuration.md
+///
+/// # Arguments
+/// * `request_json`: original request data json.
+/// * `endorser_did`: DID of the Endorser that will submit the transaction.
+///                   The Endorser's DID must be present on the ledger.
+/// # Returns
+/// Updated request result as json.
+pub fn append_request_endorser(request_json: &str,
+                               endorser_did: &str) -> Box<Future<Item=String, Error=IndyError>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+
+    let err = _append_request_endorser(command_handle, request_json, endorser_did, cb);
+
+    ResultHandler::str(command_handle, err, receiver)
+}
+
+fn _append_request_endorser(command_handle: CommandHandle,
+                            request_json: &str,
+                            endorser_did: &str,
+                            cb: Option<ResponseStringCB>) -> ErrorCode {
+    let request_json = c_str!(request_json);
+    let endorser_did = c_str!(endorser_did);
+
+    ErrorCode::from(unsafe {
+        ledger::indy_append_request_endorser(command_handle,
+                                             request_json.as_ptr(),
+                                             endorser_did.as_ptr(),
+                                             cb)
     })
 }
