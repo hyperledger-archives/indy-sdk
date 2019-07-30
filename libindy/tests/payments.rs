@@ -1968,18 +1968,7 @@ mod medium_cases {
 
             utils::tear_down_with_wallet(wallet_handle, "sign_with_address_fails_for_no_addressn", &wallet_config);
         }
-
-        #[test]
-        pub fn sign_with_address_fails_for_invalid_wallet_handle() {
-            payments::mock_method::init();
-
-            payments::mock_method::sign_with_address::inject_mock(ErrorCode::WalletAccessFailed, vec![]);
-
-            let err = payments::sign_with_address(INVALID_WALLET_HANDLE, CORRECT_PAYMENT_ADDRESS, vec![33].as_slice());
-
-            assert_code!(ErrorCode::WalletAccessFailed, err);
-        }
-
+        
         #[test]
         pub fn sign_with_address_for_incorrect_payment_address() {
             let (wallet_handle, wallet_config) = setup("sign_with_address_for_incorrect_payment_address");
