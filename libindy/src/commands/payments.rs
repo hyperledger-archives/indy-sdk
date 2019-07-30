@@ -182,7 +182,7 @@ impl PaymentsCommandExecutor {
             crypto_service,
             ledger_service,
             pending_array_callbacks: RefCell::new(HashMap::new()),
-            pending_bool_callbacks: RefCell::new(HashMap::new())
+            pending_bool_callbacks: RefCell::new(HashMap::new()),
             pending_callbacks_str: RefCell::new(HashMap::new()),
             pending_callbacks_str_i64: RefCell::new(HashMap::new()),
         }
