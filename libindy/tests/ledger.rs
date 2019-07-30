@@ -1741,7 +1741,8 @@ mod high_cases {
             "metadata": {},
             "role": "0",
             "constraint_id": "ROLE",
-            "need_to_be_owner": false
+            "need_to_be_owner": false,
+            "off_ledger_signature": false
         }"#;
 
         #[test]
@@ -2589,9 +2590,9 @@ mod high_cases {
             });
 
             let request = ledger::build_acceptance_mechanisms_request(DID_TRUSTEE,
-                                                                     &aml.to_string(),
-                                                                     VERSION,
-                                                                     None).unwrap();
+                                                                      &aml.to_string(),
+                                                                      VERSION,
+                                                                      None).unwrap();
             check_request(&request, expected_result);
         }
 
@@ -2610,9 +2611,9 @@ mod high_cases {
             });
 
             let request = ledger::build_acceptance_mechanisms_request(DID_TRUSTEE,
-                                                                     &aml.to_string(),
-                                                                     VERSION,
-                                                                     Some(context)).unwrap();
+                                                                      &aml.to_string(),
+                                                                      VERSION,
+                                                                      Some(context)).unwrap();
             check_request(&request, expected_result);
         }
 
@@ -2667,11 +2668,11 @@ mod high_cases {
         const ACCEPTANCE_MECH_TYPE: &str = "acceptance type 1";
         const TIME_OF_ACCEPTANCE: u64 = 123456789;
 
-        fn _datetime_to_date_timestamp(time: u64) -> u64{
+        fn _datetime_to_date_timestamp(time: u64) -> u64 {
             const SEC_IN_DAY: u64 = 86400;
             time / SEC_IN_DAY * SEC_IN_DAY
         }
-        
+
         fn _check_request_meta(request: &str) {
             let request: serde_json::Value = serde_json::from_str(&request).unwrap();
 
@@ -3043,6 +3044,84 @@ mod high_cases {
             _reset_taa(pool_handle, wallet_handle, &trustee_did);
 
             utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_author_agreement_works_for_using_not_last_taa", &wallet_config);
+        }
+    }
+
+    mod append_request_endorser {
+        use super::*;
+
+        fn _setup_new_identity(wallet_handle: i32, pool_handle: i32) -> String{
+            let (my_did, my_vk) = did::create_and_store_my_did(wallet_handle, None).unwrap();
+            let nym = ledger::build_nym_request(DID_TRUSTEE, &my_did, Some(&my_vk), None, None).unwrap();
+            let response = ledger::sign_and_submit_request(pool_handle, wallet_handle, DID_TRUSTEE, &nym).unwrap();
+            pool::check_response_type(&response, ResponseType::REPLY);
+            my_did
+        }
+
+        #[test]
+        fn indy_append_request_endorser_works() {
+            utils::setup("indy_append_request_endorser_works");
+
+            let endorser_did = DID_TRUSTEE;
+
+            let request = ledger::append_request_endorser(REQUEST, endorser_did).unwrap();
+            let request: serde_json::Value = serde_json::from_str(&request).unwrap();
+            assert_eq!(endorser_did, request["endorser"].as_str().unwrap());
+
+            utils::tear_down("indy_append_request_endorser_works");
+        }
+
+        #[test]
+        fn indy_send_request_by_endorser_works() {
+            let (wallet_handle, pool_handle, endorser_did, _, config) = utils::setup_new_endorser("indy_send_request_by_endorser_works");
+
+            // Multi sign + Multi Sign
+
+            let my_did = _setup_new_identity(wallet_handle, pool_handle);
+
+            let request = ledger::build_schema_request(&my_did, SCHEMA_DATA).unwrap();
+            let request = ledger::append_request_endorser(&request, &endorser_did).unwrap();
+            let request = ledger::multi_sign_request(wallet_handle, &my_did, &request).unwrap();
+            let request = ledger::multi_sign_request(wallet_handle, &endorser_did, &request).unwrap();
+            let response = ledger::submit_request(pool_handle, &request).unwrap();
+            pool::check_response_type(&response, ResponseType::REPLY);
+
+            // Sign + Multi Sign
+
+            let my_did = _setup_new_identity(wallet_handle, pool_handle);
+
+            let request = ledger::build_schema_request(&my_did, SCHEMA_DATA).unwrap();
+            let request = ledger::append_request_endorser(&request, &endorser_did).unwrap();
+            let request = ledger::sign_request(wallet_handle, &my_did, &request).unwrap();
+            let request = ledger::multi_sign_request(wallet_handle, &endorser_did, &request).unwrap();
+            let response = ledger::submit_request(pool_handle, &request).unwrap();
+            pool::check_response_type(&response, ResponseType::REPLY);
+
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_send_request_by_endorser_works", &config);
+        }
+
+        #[test]
+        fn indy_send_request_by_endorser_for_both_author_and_endorser_must_sign() {
+            let (wallet_handle, pool_handle, endorser_did, _, config) = utils::setup_new_endorser("indy_send_request_by_endorser_for_both_author_and_endorser_must_sign");
+            let my_did = _setup_new_identity(wallet_handle, pool_handle);
+
+            let request = ledger::build_schema_request(&my_did, SCHEMA_DATA).unwrap();
+
+            // Sign and Send by an unknown DID
+            let request_1 = ledger::multi_sign_request(wallet_handle, &my_did, &request).unwrap();
+            let response = ledger::submit_request(pool_handle, &request_1).unwrap();
+            pool::check_response_type(&response, ResponseType::REJECT);
+
+            // Sign and Send by an Endorser only
+            let my_did = _setup_new_identity(wallet_handle, pool_handle);
+            let request = ledger::build_schema_request(&my_did, SCHEMA_DATA).unwrap();
+
+            let request_2 = ledger::append_request_endorser(&request, &endorser_did).unwrap();
+            let request_2 = ledger::multi_sign_request(wallet_handle, &endorser_did, &request_2).unwrap();
+            let response = ledger::submit_request(pool_handle, &request_2).unwrap();
+            pool::check_response_type(&response, ResponseType::REQNACK);
+
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_send_request_by_endorser_for_both_author_and_endorser_must_sign", &config);
         }
     }
 }

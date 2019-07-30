@@ -595,6 +595,12 @@ indy.appendTxnAuthorAgreementAcceptanceToRequest = function appendTxnAuthorAgree
   return cb.promise
 }
 
+indy.appendRequestEndorser = function appendRequestEndorser (request, endorserDid, cb) {
+  cb = wrapIndyCallback(cb, fromJson)
+  capi.appendRequestEndorser(toJson(request), endorserDid, cb)
+  return cb.promise
+}
+
 indy.getResponseMetadata = function getResponseMetadata (response, cb) {
   cb = wrapIndyCallback(cb, fromJson)
   capi.getResponseMetadata(toJson(response), cb)

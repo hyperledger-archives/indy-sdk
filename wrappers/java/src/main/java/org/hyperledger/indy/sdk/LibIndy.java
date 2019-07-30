@@ -80,6 +80,7 @@ public abstract class LibIndy {
 		public int indy_build_acceptance_mechanisms_request(int command_handle, String submitter_did, String aml, String version, String aml_context, Callback cb);
 		public int indy_build_get_acceptance_mechanisms_request(int command_handle, String submitter_did, int timestamp, String version, Callback cb);
 		public int indy_append_txn_author_agreement_acceptance_to_request(int command_handle, String request_json, String text, String version, String hash, String acc_mech_type, long time_of_acceptance, Callback cb);
+		public int indy_append_request_endorser(int command_handle, String request_json, String endorser_did, Callback cb);
 
 		// did.rs
 
