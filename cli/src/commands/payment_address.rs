@@ -101,7 +101,7 @@ pub mod sign_command {
     command!(CommandMetadata::build("sign", "Create a proof of payment address control by signing an input and producing a signature.")
                 .add_required_param("address", "Payment address to use")
                 .add_required_param("input", "The input data to be signed")
-                .add_example("payment-address sign address=pay:null:GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa input=910274529363984")
+                .add_example("payment-address sign address=pay:null:lUdSMj9AmoUbmRQ input=123456789")
                 .finalize());
 
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
@@ -136,7 +136,7 @@ pub mod verify_command {
              .add_required_param("address", "Payment address to use")
              .add_required_param("input", "The input data that was signed")
              .add_required_param("signature", "The signature generated from sign-with-address")
-             .add_example("payment-address verify address=pay:null:GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa input=910274529363984 signature=0x1c542a32bd39cf1fd343fd4f211ea2f7fb5c4bca0ab7c7d8c7dc192511593484b86cb9b919040981addf81ee4c0feae080ef592efdb7c6ea6e4ae1c007a60178")
+             .add_example("payment-address verify address=pay:null:lUdSMj9AmoUbmRQ input=123456789 signature=0x0006e83221cdaf70b3c01a613675274dd2064ea376bf35656cff8436e62cdf89")
              .finalize());
 
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
@@ -224,6 +224,8 @@ pub mod tests {
     use super::*;
     use commands::common::tests::{load_null_payment_plugin, NULL_PAYMENT_METHOD};
     use commands::did::tests::SEED_MY1;
+
+    pub const INPUT: &str = "123456789";
 
     mod create {
         use super::*;
@@ -333,6 +335,61 @@ pub mod tests {
                 cmd.execute(&ctx, &params).unwrap_err();
             }
             tear_down();
+        }
+    }
+
+    mod sign {
+        use super::*;
+
+        #[test]
+        pub fn sign_works() {
+            let ctx = setup_with_wallet();
+            load_null_payment_plugin(&ctx);
+            let payment_address = create_payment_address(&ctx);
+            {
+                let cmd = sign_command::new();
+                let mut params = CommandParams::new();
+                params.insert("address", payment_address);
+                params.insert("input", INPUT.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            tear_down_with_wallet(&ctx);
+        }
+    }
+
+    mod verify {
+        use super::*;
+
+        const PAYMENT_ADDRESS: &str = "pay:null:lUdSMj9AmoUbmRQ";
+
+        #[test]
+        pub fn verify_works() {
+            let ctx = setup_with_wallet();
+            load_null_payment_plugin(&ctx);
+            {
+                let cmd = verify_command::new();
+                let mut params = CommandParams::new();
+                params.insert("address", PAYMENT_ADDRESS.to_string());
+                params.insert("input", INPUT.to_string());
+                params.insert("signature", "0x0006e83221cdaf70b3c01a613675274dd2064ea376bf35656cff8436e62cdf89".to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            tear_down_with_wallet(&ctx);
+        }
+
+        #[test]
+        pub fn verify_works_for_invalid_signature() {
+            let ctx = setup_with_wallet();
+            load_null_payment_plugin(&ctx);
+            {
+                let cmd = verify_command::new();
+                let mut params = CommandParams::new();
+                params.insert("address", PAYMENT_ADDRESS.to_string());
+                params.insert("input", INPUT.to_string());
+                params.insert("signature", "0x0006e83221cdaf70b3c01a613675274dd2064ea376bf11111111111111111111".to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            tear_down_with_wallet(&ctx);
         }
     }
 
