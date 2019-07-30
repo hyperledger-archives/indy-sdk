@@ -483,7 +483,7 @@ def linuxLibindyBuild(file, env_name, network_name) {
         testEnv.inside("--network=${network_name}") {
             sh '''
                 cd libindy
-                RUST_BACKTRACE=1 cargo test --no-run --features sodium_static
+                RUST_BACKTRACE=1 cargo test -j 1 --no-run --features sodium_static
                 RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --features sodium_static
             '''
         }
@@ -595,9 +595,11 @@ def linuxAndroidOnEmulatorTesting(env_name, network_name, testEnv) {
 
     def emu_arch = "x86"
 
-    echo "${env_name} Libindy Test: Test on ${emu_arch} emulator"
     testEnv.inside("--network=${network_name}") {
-        sh "cd libindy && ./android.test.sh ${emu_arch} --release"
+        for (directory in ["libindy", "libnullpay", "vcx/libvcx"]) {
+            echo "${env_name} ${directory} Test: Test on ${emu_arch} emulator"
+            sh "cd ${directory} && ./android.test.sh ${emu_arch}"
+        }
     }
 }
 
@@ -752,13 +754,13 @@ def dockerBuild(name, file = 'ci/ubuntu.dockerfile ci', customParams = '') {
 def dockerClean(env_name, network_name) {
     try {
         try {
-            sh "docker ps --format '{{.ID}}' --filter network=${network_name} | xargs docker rm -f || true"//TODO: FIXME
+            sh returnStatus: true, script: "docker ps --format '{{.ID}}' --filter network=${network_name} | xargs docker rm -f"
         } catch (error) {
             echo "${env_name} Test: error while force clean-up network ${network_name} - ${error}"
         }
         try {
             echo "${env_name} Test: remove pool network ${network_name}"
-            sh "docker network rm ${network_name} || true" //TODO: FIXME
+            sh returnStatus: true, script: "docker network rm ${network_name}"
         } catch (error) {
             echo "${env_name} Test: error while delete ${network_name} - ${error}"
         }

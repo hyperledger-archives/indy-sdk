@@ -115,14 +115,12 @@ impl rlp::Decodable for Node {
                         }
                     }
                 }
-                let mut value: Option<Vec<u8>> = None;
-                if !rlp.at(Node::RADIX)?.is_empty() {
-                    value = Some(rlp.at(Node::RADIX)?.as_val()?)
-                }
-                Ok(Node::Full(FullNode {
-                    nodes: nodes,
-                    value: value,
-                }))
+                let value: Option<Vec<u8>> = if !rlp.at(Node::RADIX)?.is_empty() {
+                    Some(rlp.at(Node::RADIX)?.as_val()?)
+                } else {
+                    None
+                };
+                Ok(Node::Full(FullNode {nodes, value }))
             }
             RlpPrototype::Data(Node::HASH_SIZE) => {
                 Ok(Node::Hash(rlp.as_val()?))
@@ -167,7 +165,7 @@ impl Node {
     }
 
     pub fn get_all_values<'a>(&'a self, db: &'a TrieDB, prefix: Option<&[u8]>) -> IndyResult<Vec<(String, String)>> {
-        let node_and_prefix = prefix.map(|prf| self.get_node(db, &Node::path_to_nibbles(prf))).unwrap_or(Ok(Some((self, vec![]))))?;
+        let node_and_prefix = prefix.map(|prf| self.get_node(db, &prf)).unwrap_or(Ok(Some((self, vec![]))))?;
         if let Some((node, prf)) = node_and_prefix {
             let vals = node._get_all_values(db, prf)?;
             let mut res: Vec<(String, String)> = vec![];
@@ -219,7 +217,7 @@ impl Node {
 
                 trace!("Node::_get_value in Leaf searched path {:?}, stored path {:?}", String::from_utf8(path.to_vec()), String::from_utf8(pair_path.clone()));
 
-                if pair_path == path {
+                if pair_path.starts_with(&path) {
                     let mut new_seen_path = vec![];
                     new_seen_path.extend_from_slice(seen_path);
                     new_seen_path.extend_from_slice(pair_path.as_slice());
@@ -242,8 +240,10 @@ impl Node {
                     new_seen_path.extend_from_slice(seen_path);
                     new_seen_path.extend_from_slice(pair_path.as_slice());
                     pair.next._get_node(db, &path[pair_path.len()..], new_seen_path.as_slice())
-                } else {
+                } else if pair_path.starts_with(&path) {
                     Ok(Some((self, seen_path.to_vec())))
+                } else {
+                    Ok(None)
                 }
             }
             Node::Blank => {

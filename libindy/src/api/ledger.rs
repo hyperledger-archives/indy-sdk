@@ -354,7 +354,8 @@ pub extern fn indy_build_get_ddo_request(command_handle: CommandHandle,
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// submitter_did: DID of the submitter stored in secured Wallet.
+/// submitter_did: Identifier (DID) of the transaction author as base58-encoded string.
+///                Actual request sender may differ if Endorser is used (look at `indy_append_request_endorser`)
 /// target_did: Target DID as base58-encoded string for 16 or 32 bit DID value.
 /// verkey: Target identity verification key as base58-encoded string.
 /// alias: NYM's alias.
@@ -469,7 +470,8 @@ pub extern fn indy_build_get_nym_request(command_handle: CommandHandle,
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// submitter_did: DID of the submitter stored in secured Wallet.
+/// submitter_did: Identifier (DID) of the transaction author as base58-encoded string.
+///                Actual request sender may differ if Endorser is used (look at `indy_append_request_endorser`)
 /// target_did: Target DID as base58-encoded string for 16 or 32 bit DID value.
 /// hash: (Optional) Hash of attribute data.
 /// raw: (Optional) Json, where key is attribute name and value is attribute value.
@@ -591,7 +593,8 @@ pub extern fn indy_build_get_attrib_request(command_handle: CommandHandle,
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// submitter_did: DID of the submitter stored in secured Wallet.
+/// submitter_did: Identifier (DID) of the transaction author as base58-encoded string.
+///                Actual request sender may differ if Endorser is used (look at `indy_append_request_endorser`)
 /// data: Credential schema.
 /// {
 ///     id: identifier of schema
@@ -745,7 +748,8 @@ pub extern fn indy_parse_get_schema_response(command_handle: CommandHandle,
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// submitter_did: DID of the submitter stored in secured Wallet.
+/// submitter_did: Identifier (DID) of the transaction author as base58-encoded string.
+///                Actual request sender may differ if Endorser is used (look at `indy_append_request_endorser`)
 /// data: credential definition json
 /// {
 ///     id: string - identifier of credential definition
@@ -907,7 +911,8 @@ pub extern fn indy_parse_get_cred_def_response(command_handle: CommandHandle,
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// submitter_did: DID of the submitter stored in secured Wallet.
+/// submitter_did: Identifier (DID) of the transaction author as base58-encoded string.
+///                Actual request sender may differ if Endorser is used (look at `indy_append_request_endorser`)
 /// target_did: Target Node's DID.  It differs from submitter_did field.
 /// data: Data associated with the Node: {
 ///     alias: string - Node's alias
@@ -1054,7 +1059,8 @@ pub extern fn indy_build_get_txn_request(command_handle: CommandHandle,
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// submitter_did: DID of the submitter stored in secured Wallet.
+/// submitter_did: Identifier (DID) of the transaction author as base58-encoded string.
+///                Actual request sender may differ if Endorser is used (look at `indy_append_request_endorser`)
 /// writes: Whether any write requests can be processed by the pool
 ///         (if false, then pool goes to read-only state). True by default.
 /// force: Whether we should apply transaction (for example, move pool to read-only state)
@@ -1105,7 +1111,7 @@ pub extern fn indy_build_pool_config_request(command_handle: CommandHandle,
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// submitter_did: Id of Identity stored in secured Wallet.
+/// submitter_did: Identifier (DID) of the transaction author as base58-encoded string.
 /// action:        Action that pool has to do after received transaction.
 /// datetime:      <Optional> Restart time in datetime format. Skip to restart as early as possible.
 /// cb: Callback that takes command result as parameter.
@@ -1158,7 +1164,8 @@ pub extern fn indy_build_pool_restart_request(command_handle: CommandHandle,
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// submitter_did: DID of the submitter stored in secured Wallet.
+/// submitter_did: Identifier (DID) of the transaction author as base58-encoded string.
+///                Actual request sender may differ if Endorser is used (look at `indy_append_request_endorser`)
 /// name: Human-readable name for the upgrade.
 /// version: The version of indy-node package we perform upgrade to.
 ///          Must be greater than existing one (or equal if reinstall flag is True).
@@ -1248,7 +1255,8 @@ pub extern fn indy_build_pool_upgrade_request(command_handle: CommandHandle,
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// submitter_did: DID of the submitter stored in secured Wallet.
+/// submitter_did: Identifier (DID) of the transaction author as base58-encoded string.
+///                Actual request sender may differ if Endorser is used (look at `indy_append_request_endorser`)
 /// data: Revocation Registry data:
 ///     {
 ///         "id": string - ID of the Revocation Registry,
@@ -1421,7 +1429,8 @@ pub extern fn indy_parse_get_revoc_reg_def_response(command_handle: CommandHandl
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// submitter_did: DID of the submitter stored in secured Wallet.
+/// submitter_did: Identifier (DID) of the transaction author as base58-encoded string.
+///                Actual request sender may differ if Endorser is used (look at `indy_append_request_endorser`)
 /// revoc_reg_def_id: ID of the corresponding RevocRegDef.
 /// rev_def_type: Revocation Registry type (only CL_ACCUM is supported for now).
 /// value: Registry-specific data: {
@@ -1840,7 +1849,8 @@ pub extern fn indy_get_response_metadata(command_handle: CommandHandle,
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// submitter_did: DID of the request sender.
+/// submitter_did: Identifier (DID) of the transaction author as base58-encoded string.
+///                Actual request sender may differ if Endorser is used (look at `indy_append_request_endorser`)
 /// txn_type: ledger transaction alias or associated value.
 /// action: type of an action.
 ///     Can be either "ADD" (to add a new rule) or "EDIT" (to edit an existing one).
@@ -1851,10 +1861,11 @@ pub extern fn indy_get_response_metadata(command_handle: CommandHandle,
 ///     {
 ///         constraint_id - <string> type of a constraint.
 ///             Can be either "ROLE" to specify final constraint or  "AND"/"OR" to combine constraints.
-///         role - <string> role of a user which satisfy to constrain.
+///         role - <string> (optional) role of a user which satisfy to constrain.
 ///         sig_count - <u32> the number of signatures required to execution action.
-///         need_to_be_owner - <bool> if user must be an owner of transaction.
-///         metadata - <object> additional parameters of the constraint.
+///         need_to_be_owner - <bool> (optional) if user must be an owner of transaction (false by default).
+///         off_ledger_signature - <bool> (optional) allow signature of unknow for ledger did (false by default).
+///         metadata - <object> (optional) additional parameters of the constraint.
 ///     }
 /// can be combined by
 ///     {
@@ -1930,7 +1941,8 @@ pub extern fn indy_build_auth_rule_request(command_handle: CommandHandle,
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// submitter_did: DID of the request sender.
+/// submitter_did: Identifier (DID) of the transaction author as base58-encoded string.
+///                Actual request sender may differ if Endorser is used (look at `indy_append_request_endorser`)
 /// rules: a list of auth rules: [
 ///     {
 ///         "auth_type": ledger transaction alias or associated value,
@@ -2000,7 +2012,7 @@ pub extern fn indy_build_auth_rules_request(command_handle: CommandHandle,
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// submitter_did: (Optional) DID of the read request sender.
+/// submitter_did: (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
 /// txn_type: (Optional) target ledger transaction alias or associated value.
 /// action: (Optional) target action type. Can be either "ADD" or "EDIT".
 /// field: (Optional) target transaction field.
@@ -2070,7 +2082,8 @@ pub extern fn indy_build_get_auth_rule_request(command_handle: CommandHandle,
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// submitter_did: DID of the request sender.
+/// submitter_did: Identifier (DID) of the transaction author as base58-encoded string.
+///                Actual request sender may differ if Endorser is used (look at `indy_append_request_endorser`)
 /// text: a content of the TTA.
 /// version: a version of the TTA (unique UTF-8 string).
 /// cb: Callback that takes command result as parameter.
@@ -2124,7 +2137,7 @@ pub extern fn indy_build_txn_author_agreement_request(command_handle: CommandHan
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// submitter_did: (Optional) DID of the request sender.
+/// submitter_did: (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
 /// data: (Optional) specifies a condition for getting specific TAA.
 /// Contains 3 mutually exclusive optional fields:
 /// {
@@ -2183,7 +2196,8 @@ pub extern fn indy_build_get_txn_author_agreement_request(command_handle: Comman
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// submitter_did: DID of the request sender.
+/// submitter_did: Identifier (DID) of the transaction author as base58-encoded string.
+///                Actual request sender may differ if Endorser is used (look at `indy_append_request_endorser`)
 /// aml: a set of new acceptance mechanisms:
 /// {
 ///     “<acceptance mechanism label 1>”: { acceptance mechanism description 1},
@@ -2254,7 +2268,7 @@ pub extern fn indy_build_acceptance_mechanisms_request(command_handle: CommandHa
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// submitter_did: (Optional) DID of the request sender.
+/// submitter_did: (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
 /// timestamp: i64 - time to get an active acceptance mechanisms. Pass -1 to get the latest one.
 /// version: (Optional) version of acceptance mechanisms.
 /// cb: Callback that takes command result as parameter.
@@ -2272,8 +2286,8 @@ pub extern fn indy_build_get_acceptance_mechanisms_request(command_handle: Comma
                                                            timestamp: i64,
                                                            version: *const c_char,
                                                            cb: Option<extern fn(command_handle_: CommandHandle,
-                                                                               err: ErrorCode,
-                                                                               request_json: *const c_char)>) -> ErrorCode {
+                                                                                err: ErrorCode,
+                                                                                request_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_get_acceptance_mechanisms_request: >>> submitter_did: {:?}, timestamp: {:?}, version: {:?}", submitter_did, timestamp, version);
 
     check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
@@ -2376,6 +2390,61 @@ pub extern fn indy_append_txn_author_agreement_acceptance_to_request(command_han
     let res = prepare_result!(result);
 
     trace!("indy_append_txn_author_agreement_acceptance_to_request: <<< res: {:?}", res);
+
+    res
+}
+
+/// Append Endorser to an existing request.
+///
+/// An author of request still is a `DID` used as a `submitter_did` parameter for the building of the request.
+/// But it is expecting that the transaction will be sent by the specified Endorser.
+///
+/// Note: Both Transaction Author and Endorser must sign output request after that.
+///
+/// More about Transaction Endorser: https://github.com/hyperledger/indy-node/blob/master/design/transaction_endorder.md
+///                                  https://github.com/hyperledger/indy-sdk/blob/master/docs/configuration.md
+///
+/// #Params
+/// request_json: original request
+/// endorser_did: DID of the Endorser that will submit the transaction.
+///               The Endorser's DID must be present on the ledger.
+/// cb: Callback that takes command result as parameter.
+///     The command result is a request JSON with Endorser field appended.
+///
+/// #Errors
+/// Common*
+#[no_mangle]
+pub extern fn indy_append_request_endorser(command_handle: CommandHandle,
+                                           request_json: *const c_char,
+                                           endorser_did: *const c_char,
+                                           cb: Option<extern fn(command_handle_: CommandHandle,
+                                                                err: ErrorCode,
+                                                                out_request_json: *const c_char)>) -> ErrorCode {
+    trace!("indy_append_request_endorser: >>> request_json: {:?}, endorser_did: {:?}",
+           request_json, endorser_did);
+
+    check_useful_c_str!(request_json, ErrorCode::CommonInvalidParam2);
+    check_useful_c_str!(endorser_did, ErrorCode::CommonInvalidParam3);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    trace!("indy_append_request_endorser: entities >>> request_json: {:?},endorser_did: {:?}", request_json, endorser_did);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Ledger(
+            LedgerCommand::AppendRequestEndorser(
+                request_json,
+                endorser_did,
+                Box::new(move |result| {
+                    let (err, request_json) = prepare_result_1!(result, String::new());
+                    trace!("indy_append_request_endorser: request_json: {:?}", request_json);
+                    let request_json = ctypes::string_to_cstring(request_json);
+                    cb(command_handle, err, request_json.as_ptr())
+                })
+            )));
+
+    let res = prepare_result!(result);
+
+    trace!("indy_append_request_endorser: <<< res: {:?}", res);
 
     res
 }

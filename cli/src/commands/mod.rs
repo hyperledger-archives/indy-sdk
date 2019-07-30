@@ -200,6 +200,10 @@ pub fn get_opened_wallet(ctx: &CommandContext) -> Option<(i32, String)> {
     }
 }
 
+pub fn get_opened_wallet_handle(ctx: &CommandContext) -> Option<i32> {
+    ctx.get_int_value("OPENED_WALLET_HANDLE")
+}
+
 pub fn set_opened_wallet(ctx: &CommandContext, value: Option<(i32, String)>) {
     ctx.set_int_value("OPENED_WALLET_HANDLE", value.as_ref().map(|value| value.0.to_owned()));
     ctx.set_string_value("OPENED_WALLET_NAME", value.as_ref().map(|value| value.1.to_owned()));

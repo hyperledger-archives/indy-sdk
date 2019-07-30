@@ -927,4 +927,25 @@
     }
 }
 
++ (void)appendEndorserToRequest:(NSString *)requestJson
+                    endorserDid:(NSString *)endorserDid
+                     completion:(void (^)(NSError *error, NSString *outRequestJson))completion {
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = indy_append_request_endorser(handle,
+            [requestJson UTF8String],
+            [endorserDid UTF8String],
+            IndyWrapperCommonStringCallback);
+
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret], nil);
+        });
+    }
+}
+
 @end

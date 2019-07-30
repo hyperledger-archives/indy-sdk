@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 use std::ffi::{CString, NulError};
 use std::ptr::null;
+use std::ops::Not;
 
 use serde_json;
 
@@ -137,19 +138,21 @@ impl PaymentsService {
         res
     }
 
-    pub fn build_get_payment_sources_request(&self, cmd_handle: i32, type_: &str, wallet_handle: WalletHandle, submitter_did: Option<&str>, address: &str) -> IndyResult<()> {
+    pub fn build_get_payment_sources_request(&self, cmd_handle: i32, type_: &str, wallet_handle: WalletHandle, submitter_did: Option<&str>, address: &str, next: Option<u64>) -> IndyResult<()> {
         trace!("build_get_payment_sources_request >>> type_: {:?}, wallet_handle: {:?}, submitter_did: {:?}, address: {:?}", type_, wallet_handle, submitter_did, address);
         let build_get_payment_sources_request: BuildGetPaymentSourcesRequestCB = self.methods.borrow().get(type_)
             .ok_or(err_msg(IndyErrorKind::UnknownPaymentMethodType, format!("Unknown payment method {}", type_)))?.build_get_payment_sources_request;
 
         let submitter_did = submitter_did.map(ctypes::str_to_cstring);
         let address = CString::new(address)?;
+        let cb = cbs::build_get_payment_sources_request_cb(cmd_handle);
 
         let err = build_get_payment_sources_request(cmd_handle,
-                                                    wallet_handle,
-                                                    submitter_did.as_ref().map(|s| s.as_ptr()).unwrap_or(null()),
-                                                    address.as_ptr(),
-                                                    cbs::build_get_payment_sources_request_cb(cmd_handle));
+                                                              wallet_handle,
+                                                              submitter_did.as_ref().map(|s| s.as_ptr()).unwrap_or(null()),
+                                                              address.as_ptr(),
+                                                              next.map(|a| a as i64).unwrap_or(-1),
+                                                              cb);
 
         let res = err.into();
         trace!("build_get_payment_sources_request <<< result: {:?}", res);
@@ -480,7 +483,7 @@ impl PaymentsService {
                 .into_iter()
                 .map(|req_info| req_info.requirements)
                 .flatten()
-                .collect::<Vec<Requirement>>()
+                .collect::<Vec<Requirement>>(),
         }];
 
         trace!("_handle_and_constraint <<< result: {:?}", req_info);
@@ -514,14 +517,28 @@ impl PaymentsService {
             return Ok(());
         }
 
-        if constraint.role != requester_info.role && constraint.role != "*" {
-            return Err(IndyError::from_msg(IndyErrorKind::TransactionNotAllowed,
-                                           format!("The requester role {:?} doesn't meet to constraint \"{:?}\".", requester_info.role, constraint.role)));
+        match (constraint.role.as_ref(), requester_info.role.as_ref()) {
+            (Some(c_role), Some(r_role)) => {
+                if c_role != r_role && c_role != "*" {
+                    return Err(IndyError::from_msg(IndyErrorKind::TransactionNotAllowed,
+                                                   format!("The requester role {:?} doesn't meet to constraint \"{:?}\".", r_role, c_role)));
+                }
+            }
+            (Some(c_role), None) => {
+                return Err(IndyError::from_msg(IndyErrorKind::TransactionNotAllowed,
+                                               format!("The requester role \"null\" doesn't meet to constraint \"{:?}\".", c_role)));
+            }
+            _ => {}
         }
 
         if constraint.sig_count > requester_info.sig_count {
             return Err(IndyError::from_msg(IndyErrorKind::TransactionNotAllowed,
                                            format!("The requester signatures amount {:?} doesn't meet to constraint \"{:?}\".", requester_info.sig_count, constraint.sig_count)));
+        }
+
+        if !constraint.off_ledger_signature && requester_info.is_off_ledger_signature {
+            return Err(IndyError::from_msg(IndyErrorKind::TransactionNotAllowed,
+                                           format!("The requester must be published on the ledger.")));
         }
 
         if constraint.need_to_be_owner && !requester_info.is_owner {
@@ -543,6 +560,7 @@ impl PaymentsService {
                 role: constraint.role.clone(),
                 sig_count: constraint.sig_count,
                 need_to_be_owner: constraint.need_to_be_owner,
+                off_ledger_signature: constraint.off_ledger_signature,
             }],
         };
 
@@ -577,87 +595,103 @@ mod cbs {
     pub fn create_address_cb(cmd_handle: i32, wallet_handle: WalletHandle) -> Option<extern fn(command_handle: i32,
                                                                                                err: ErrorCode,
                                                                                                c_str: *const c_char) -> ErrorCode> {
-        send_ack(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::CreateAddressAck(cmd_handle, wallet_handle, result)))
+        send_ack_str(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::CreateAddressAck(cmd_handle, wallet_handle, result)))
     }
 
     pub fn add_request_fees_cb(cmd_handle: i32) -> Option<extern fn(command_handle_: i32,
                                                                     err: ErrorCode,
                                                                     req_with_fees_json: *const c_char) -> ErrorCode> {
-        send_ack(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::AddRequestFeesAck(cmd_handle, result)))
+        send_ack_str(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::AddRequestFeesAck(cmd_handle, result)))
     }
 
     pub fn parse_response_with_fees_cb(cmd_handle: i32) -> Option<extern fn(command_handle: i32,
                                                                             err: ErrorCode,
                                                                             c_str: *const c_char) -> ErrorCode> {
-        send_ack(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::ParseResponseWithFeesAck(cmd_handle, result)))
+        send_ack_str(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::ParseResponseWithFeesAck(cmd_handle, result)))
     }
 
     pub fn build_get_payment_sources_request_cb(cmd_handle: i32) -> Option<extern fn(command_handle: i32,
                                                                                      err: ErrorCode,
                                                                                      c_str: *const c_char) -> ErrorCode> {
-        send_ack(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::BuildGetPaymentSourcesRequestAck(cmd_handle, result)))
+        send_ack_str(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::BuildGetPaymentSourcesRequestAck(cmd_handle, result)))
     }
 
     pub fn parse_get_payment_sources_response_cb(cmd_handle: i32) -> Option<extern fn(command_handle: i32,
                                                                                       err: ErrorCode,
-                                                                                      c_str: *const c_char) -> ErrorCode> {
-        send_ack(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::ParseGetPaymentSourcesResponseAck(cmd_handle, result)))
+                                                                                      c_str: *const c_char,
+                                                                                      num: i64) -> ErrorCode> {
+        send_ack_str_i64(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::ParseGetPaymentSourcesResponseAck(cmd_handle, result)))
     }
 
     pub fn build_payment_req_cb(cmd_handle: i32) -> Option<extern fn(command_handle: i32,
                                                                      err: ErrorCode,
                                                                      c_str: *const c_char) -> ErrorCode> {
-        send_ack(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::BuildPaymentReqAck(cmd_handle, result)))
+        send_ack_str(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::BuildPaymentReqAck(cmd_handle, result)))
     }
 
     pub fn parse_payment_response_cb(cmd_handle: i32) -> Option<extern fn(command_handle: i32,
                                                                           err: ErrorCode,
                                                                           c_str: *const c_char) -> ErrorCode> {
-        send_ack(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::ParsePaymentResponseAck(cmd_handle, result)))
+        send_ack_str(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::ParsePaymentResponseAck(cmd_handle, result)))
     }
 
     pub fn build_mint_req_cb(cmd_handle: i32) -> Option<extern fn(command_handle: i32,
                                                                   err: ErrorCode,
                                                                   c_str: *const c_char) -> ErrorCode> {
-        send_ack(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::BuildMintReqAck(cmd_handle, result)))
+        send_ack_str(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::BuildMintReqAck(cmd_handle, result)))
     }
 
     pub fn build_set_txn_fees_req_cb(cmd_handle: i32) -> Option<extern fn(command_handle: i32,
                                                                           err: ErrorCode,
                                                                           c_str: *const c_char) -> ErrorCode> {
-        send_ack(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::BuildSetTxnFeesReqAck(cmd_handle, result)))
+        send_ack_str(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::BuildSetTxnFeesReqAck(cmd_handle, result)))
     }
 
     pub fn build_get_txn_fees_req(cmd_handle: i32) -> Option<extern fn(command_handle: i32,
                                                                        err: ErrorCode,
                                                                        c_str: *const c_char) -> ErrorCode> {
-        send_ack(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::BuildGetTxnFeesReqAck(cmd_handle, result)))
+        send_ack_str(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::BuildGetTxnFeesReqAck(cmd_handle, result)))
     }
 
     pub fn parse_get_txn_fees_response(cmd_handle: i32) -> Option<extern fn(command_handle: i32,
                                                                             err: ErrorCode,
                                                                             c_str: *const c_char) -> ErrorCode> {
-        send_ack(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::ParseGetTxnFeesResponseAck(cmd_handle, result)))
+        send_ack_str(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::ParseGetTxnFeesResponseAck(cmd_handle, result)))
     }
 
     pub fn build_verify_payment_req(cmd_handle: i32) -> Option<extern fn(command_handle: i32,
                                                                          err: ErrorCode,
                                                                          c_str: *const c_char) -> ErrorCode> {
-        send_ack(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::BuildVerifyPaymentReqAck(cmd_handle, result)))
+        send_ack_str(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::BuildVerifyPaymentReqAck(cmd_handle, result)))
     }
 
     pub fn parse_verify_payment_response(cmd_handle: i32) -> Option<extern fn(command_handle: i32,
                                                                               err: ErrorCode,
                                                                               c_str: *const c_char) -> ErrorCode> {
-        send_ack(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::ParseVerifyPaymentResponseAck(cmd_handle, result)))
+        send_ack_str(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::ParseVerifyPaymentResponseAck(cmd_handle, result)))
     }
 
-    fn send_ack(cmd_handle: i32, builder: Box<Fn(i32, IndyResult<String>) -> PaymentsCommand + Send>) -> Option<extern fn(command_handle: i32,
-                                                                                                                          err: ErrorCode,
-                                                                                                                          c_str: *const c_char) -> ErrorCode> {
+    fn send_ack_str(cmd_handle: i32, builder: Box<Fn(i32, IndyResult<String>) -> PaymentsCommand + Send>) -> Option<extern fn(command_handle: i32,
+                                                                                                                              err: ErrorCode,
+                                                                                                                              c_str: *const c_char) -> ErrorCode> {
         cbs::_closure_to_cb_str(cmd_handle, Box::new(move |err, mint_req_json| -> ErrorCode {
             let result = if err == ErrorCode::Success {
                 Ok(mint_req_json)
+            } else {
+                Err(err.into())
+            };
+            CommandExecutor::instance().send(Command::Payments(
+                builder(cmd_handle, result))).into()
+        }))
+    }
+
+    fn send_ack_str_i64(cmd_handle: i32, builder: Box<Fn(i32, IndyResult<(String, i64)>) -> PaymentsCommand + Send>) -> Option<extern fn(command_handle: i32,
+                                                                                                                                         err: ErrorCode,
+                                                                                                                                         c_str: *const c_char,
+                                                                                                                                         num: i64) -> ErrorCode> {
+        cbs::_closure_to_cb_str_i64(cmd_handle, Box::new(move |err, s, num| -> ErrorCode {
+            let result = if err == ErrorCode::Success {
+                Ok((s, num))
             } else {
                 Err(err.into())
             };
@@ -686,29 +720,55 @@ mod cbs {
 
         Some(_callback)
     }
+
+    pub fn _closure_to_cb_str_i64(command_handle: i32, closure: Box<FnMut(ErrorCode, String, i64) -> ErrorCode + Send>)
+                                  -> Option<extern fn(command_handle: i32,
+                                                      err: ErrorCode,
+                                                      c_str: *const c_char,
+                                                      val: i64) -> ErrorCode> {
+        lazy_static! {
+            static ref CALLBACKS_STR_I64: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String, i64) -> ErrorCode + Send > >> = Default::default();
+        }
+
+        extern "C" fn _callback(command_handle: i32, err: ErrorCode, c_str: *const c_char, val: i64) -> ErrorCode {
+            let mut callbacks = CALLBACKS_STR_I64.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            let metadata = unsafe { CStr::from_ptr(c_str).to_str().unwrap().to_string() };
+            cb(err, metadata, val)
+        }
+
+        let mut callbacks = CALLBACKS_STR_I64.lock().unwrap();
+        callbacks.insert(command_handle, closure);
+
+        Some(_callback)
+    }
 }
 
 pub type Fees = HashMap<String, u64>;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct RequesterInfo {
-    pub role: String,
+    pub role: Option<String>,
     pub sig_count: u32,
     #[serde(default)]
     pub is_owner: bool,
+    #[serde(default)]
+    pub is_off_ledger_signature: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct RequestInfo {
     pub price: u64,
-    pub requirements: Vec<Requirement>
+    pub requirements: Vec<Requirement>,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct Requirement {
-    pub role: String,
+    pub role: Option<String>,
     pub sig_count: u32,
     pub need_to_be_owner: bool,
+    #[serde(skip_serializing_if = "Not::not")]
+    pub off_ledger_signature: bool,
 }
 
 mod test {
@@ -724,44 +784,59 @@ mod test {
     fn _single_trustee() -> Constraint {
         Constraint::RoleConstraint(RoleConstraint {
             sig_count: 1,
-            role: "0".to_string(),
+            role: Some("0".to_string()),
             metadata: Some(json!({"fees": "1"})),
             need_to_be_owner: false,
+            off_ledger_signature: false,
         })
     }
 
     fn _two_trustees() -> Constraint {
         Constraint::RoleConstraint(RoleConstraint {
             sig_count: 2,
-            role: "0".to_string(),
+            role: Some("0".to_string()),
             metadata: Some(json!({"fees": "1"})),
             need_to_be_owner: false,
+            off_ledger_signature: false,
         })
     }
 
     fn _single_owner() -> Constraint {
         Constraint::RoleConstraint(RoleConstraint {
             sig_count: 1,
-            role: "*".to_string(),
+            role: Some("*".to_string()),
             metadata: Some(json!({"fees": "2"})),
             need_to_be_owner: true,
+            off_ledger_signature: false,
         })
     }
 
     fn _single_steward() -> Constraint {
         Constraint::RoleConstraint(RoleConstraint {
             sig_count: 1,
-            role: "2".to_string(),
+            role: Some("2".to_string()),
             metadata: Some(json!({"fees": "2"})),
             need_to_be_owner: false,
+            off_ledger_signature: false,
+        })
+    }
+
+    fn _single_identity_owner() -> Constraint {
+        Constraint::RoleConstraint(RoleConstraint {
+            sig_count: 1,
+            role: None,
+            metadata: Some(json!({"fees": "2"})),
+            need_to_be_owner: true,
+            off_ledger_signature: false,
         })
     }
 
     fn _trustee_requester() -> RequesterInfo {
         RequesterInfo {
-            role: "0".to_string(),
+            role: Some("0".to_string()),
             sig_count: 1,
             is_owner: false,
+            is_off_ledger_signature: false,
         }
     }
 
@@ -779,8 +854,9 @@ mod test {
             price: 20,
             requirements: vec![Requirement {
                 sig_count: 1,
-                role: 0.to_string(),
+                role: Some(0.to_string()),
                 need_to_be_owner: false,
+                off_ledger_signature: false,
             }],
         };
 
@@ -795,9 +871,10 @@ mod test {
         let fees = _fees();
 
         let requester_info = RequesterInfo {
-            role: "101".to_string(),
+            role: Some("101".to_string()),
             sig_count: 1,
             is_owner: true,
+            is_off_ledger_signature: false,
         };
 
         let res = payment_service.get_request_info_with_min_price(&constraint, &requester_info, &fees);
@@ -826,8 +903,9 @@ mod test {
             price: 20,
             requirements: vec![Requirement {
                 sig_count: 1,
-                role: 0.to_string(),
+                role: Some(0.to_string()),
                 need_to_be_owner: false,
+                off_ledger_signature: false,
             }],
         };
 
@@ -849,9 +927,10 @@ mod test {
 
         let requester_info =
             RequesterInfo {
-                role: "0".to_string(),
+                role: Some("0".to_string()),
                 sig_count: 1,
                 is_owner: true,
+                is_off_ledger_signature: false,
             };
 
         let fees = _fees();
@@ -862,8 +941,9 @@ mod test {
             price: 10,
             requirements: vec![Requirement {
                 sig_count: 1,
-                role: "*".to_string(),
+                role: Some("*".to_string()),
                 need_to_be_owner: true,
+                off_ledger_signature: false,
             }],
         };
 
@@ -885,9 +965,10 @@ mod test {
 
         let requester_info =
             RequesterInfo {
-                role: "2".to_string(),
+                role: Some("2".to_string()),
                 sig_count: 1,
                 is_owner: false,
+                is_off_ledger_signature: false,
             };
 
         let fees = _fees();
@@ -911,9 +992,10 @@ mod test {
 
         let requester_info =
             RequesterInfo {
-                role: "2".to_string(),
+                role: Some("2".to_string()),
                 sig_count: 1,
                 is_owner: true,
+                is_off_ledger_signature: false,
             };
 
         let fees = _fees();
@@ -924,12 +1006,14 @@ mod test {
             price: 10,
             requirements: vec![Requirement {
                 sig_count: 1,
-                role: 2.to_string(),
+                role: Some(2.to_string()),
                 need_to_be_owner: false,
+                off_ledger_signature: false,
             }, Requirement {
                 sig_count: 1,
-                role: "*".to_string(),
+                role: Some("*".to_string()),
                 need_to_be_owner: true,
+                off_ledger_signature: false,
             }],
         };
 
@@ -969,11 +1053,80 @@ mod test {
             price: 0,
             requirements: vec![Requirement {
                 sig_count: 1,
-                role: 0.to_string(),
+                role: Some(0.to_string()),
                 need_to_be_owner: false,
+                off_ledger_signature: false,
             }],
         };
 
         assert_eq!(expected_req_info, req_info);
+    }
+
+    #[test]
+    fn test_get_min_transaction_price_for_identity_owner() {
+        let payment_service = PaymentsService::new();
+
+        let constraint = _single_identity_owner();
+        let fees = _fees();
+
+        let requester_info =
+            RequesterInfo {
+                role: None,
+                sig_count: 1,
+                is_owner: true,
+                is_off_ledger_signature: false,
+            };
+
+        let req_info = payment_service.get_request_info_with_min_price(&constraint, &requester_info, &fees).unwrap();
+
+        let expected_req_info = RequestInfo {
+            price: 10,
+            requirements: vec![Requirement {
+                sig_count: 1,
+                role: None,
+                need_to_be_owner: true,
+                off_ledger_signature: false,
+            }],
+        };
+
+        assert_eq!(expected_req_info, req_info);
+    }
+
+    #[test]
+    fn test_get_min_transaction_price_for_identity_owner_not_met() {
+        let payment_service = PaymentsService::new();
+
+        let constraint = _single_identity_owner();
+        let fees = _fees();
+
+        let requester_info =
+            RequesterInfo {
+                role: None,
+                sig_count: 1,
+                is_owner: false,
+                is_off_ledger_signature: false,
+            };
+
+        let res = payment_service.get_request_info_with_min_price(&constraint, &requester_info, &fees);
+        assert!(res.is_err());
+    }
+
+    #[test]
+    fn test_get_min_transaction_price_for_off_ledger_signature_not_met() {
+        let payment_service = PaymentsService::new();
+
+        let constraint = _single_identity_owner();
+        let fees = _fees();
+
+        let requester_info =
+            RequesterInfo {
+                role: None,
+                sig_count: 1,
+                is_owner: true,
+                is_off_ledger_signature: true,
+            };
+
+        let res = payment_service.get_request_info_with_min_price(&constraint, &requester_info, &fees);
+        assert!(res.is_err());
     }
 }
