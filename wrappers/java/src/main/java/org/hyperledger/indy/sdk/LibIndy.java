@@ -1,6 +1,7 @@
 package org.hyperledger.indy.sdk;
 
 import java.io.File;
+import java.util.Optional;
 
 import com.sun.jna.*;
 import com.sun.jna.ptr.PointerByReference;
@@ -79,6 +80,7 @@ public abstract class LibIndy {
 		public int indy_build_acceptance_mechanisms_request(int command_handle, String submitter_did, String aml, String version, String aml_context, Callback cb);
 		public int indy_build_get_acceptance_mechanisms_request(int command_handle, String submitter_did, int timestamp, String version, Callback cb);
 		public int indy_append_txn_author_agreement_acceptance_to_request(int command_handle, String request_json, String text, String version, String hash, String acc_mech_type, long time_of_acceptance, Callback cb);
+		public int indy_append_request_endorser(int command_handle, String request_json, String endorser_did, Callback cb);
 
 		// did.rs
 
@@ -174,7 +176,9 @@ public abstract class LibIndy {
 		int indy_add_request_fees(int command_handle, int wallet_handle, String submitter_did, String req_json, String inputs_json, String outputs_json, String extra, Callback cb);
 		int indy_parse_response_with_fees(int command_handle, String payment_method, String resp_json, Callback cb);
 		int indy_build_get_payment_sources_request(int command_handle, int wallet_handle, String submitter_did, String payment_address, Callback cb);
+		int indy_build_get_payment_sources_with_from_request(int command_handle, int wallet_handle, String submitter_did, String payment_address, int from, Callback cb);
 		int indy_parse_get_payment_sources_response(int command_handle, String payment_method, String resp_json, Callback cb);
+		int indy_parse_get_payment_sources_with_from_response(int command_handle, String payment_method, String resp_json, Callback cb);
 		int indy_build_payment_req(int command_handle, int wallet_handle, String submitter_did, String inputs_json, String outputs_json, String extra, Callback cb);
 		int indy_parse_payment_response(int command_handle, String payment_method, String resp_json, Callback cb);
 		int indy_build_mint_req(int command_handle, int wallet_handle, String submitter_did, String outputs_json, String extra, Callback cb);

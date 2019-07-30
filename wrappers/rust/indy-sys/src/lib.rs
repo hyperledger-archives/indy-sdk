@@ -54,6 +54,7 @@ pub type ResponseStringStringStringCB = extern fn(xcommand_handle: CommandHandle
 pub type ResponseSliceCB = extern fn(xcommand_handle: CommandHandle, err: Error, raw: BString, len: u32);
 pub type ResponseStringSliceCB = extern fn(xcommand_handle: CommandHandle, err: Error, str1: CString, raw: BString, len: u32);
 pub type ResponseStringStringU64CB = extern fn(xcommand_handle: CommandHandle, err: Error, arg1: CString, arg2: CString, arg3: u64);
+pub type ResponseStringI64CB = extern fn(xcommand_handle: CommandHandle, err: Error, arg1: CString, arg3: i64);
 
 extern {
     #[no_mangle]
