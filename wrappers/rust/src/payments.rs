@@ -282,7 +282,7 @@ fn _parse_get_payment_sources_response(command_handle: CommandHandle, payment_me
 ///      amount: <int>, // amount of tokens in this input
 ///      extra: <str>, // optional data from payment transaction
 ///   }]
-///   next -- pointer to the next slice of payment address
+///   next -- pointer to the next slice of payment sources
 pub fn parse_get_payment_sources_with_from_response(payment_method: &str, resp_json: &str) -> Box<Future<Item=(String, Option<u64>), Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_i64();
 
