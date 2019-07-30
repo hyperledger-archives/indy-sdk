@@ -120,6 +120,31 @@
     }
 }
 
++ (void)buildGetPaymentSourcesWithFromRequest:(IndyHandle)walletHandle
+                                 submitterDid:(NSString *)submitterDid
+                               paymentAddress:(NSString *)paymentAddress
+                                         from:(NSNumber *)from
+                                   completion:(void (^)(NSError *error, NSString *getSourcesTxnJson, NSString *paymentMethod))completion {
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+
+    ret = indy_build_get_payment_sources_with_from_request(handle,
+            walletHandle,
+            [submitterDid UTF8String],
+            [paymentAddress UTF8String],
+            [from intValue],
+            IndyWrapperCommonStringStringCallback);
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret], nil, nil);
+        });
+    }
+}
+
 + (void)parseGetPaymentSourcesResponse:(NSString *)responseJson
                          paymentMethod:(NSString *)paymentMethod
                             completion:(void (^)(NSError *error, NSString *sourcesJson))completion {
@@ -141,6 +166,26 @@
     }
 }
 
++ (void)parseGetPaymentSourcesWithFromResponse:(NSString *)responseJson
+                                 paymentMethod:(NSString *)paymentMethod
+                                    completion:(void (^)(NSError *error, NSString *sourcesJson, NSNumber *next))completion {
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = indy_parse_get_payment_sources_with_from_response(handle,
+            [paymentMethod UTF8String],
+            [responseJson UTF8String],
+            IndyWrapperCommonStringNumber64Callback);
+
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret], nil, nil);
+        });
+    }
+}
 
 + (void)buildPaymentRequest:(IndyHandle)walletHandle
                submitterDid:(NSString *)submitterDid
