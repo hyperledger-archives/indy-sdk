@@ -6,6 +6,7 @@ import org.hyperledger.indy.sdk.pool.Pool;
 import org.hyperledger.indy.sdk.did.DidJSONParameters;
 import org.hyperledger.indy.sdk.utils.InitHelper;
 import org.hyperledger.indy.sdk.utils.StorageUtils;
+import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -84,6 +85,14 @@ public class IndyIntegrationTest {
 	private static final String EXPORT_KEY = "export_key";
 	protected static final String EXPORT_PATH = getTmpPath("export_wallet");
 	protected static final String EXPORT_CONFIG_JSON = "{ \"key\":\"" + EXPORT_KEY + "\", \"path\":\"" + EXPORT_PATH + "\"}";
+	protected static final JSONObject REQUEST = new JSONObject()
+			.put("reqId", 149682221)
+			.put("identifier", "GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL")
+			.put("operation", new JSONObject()
+					.put("type", "1")
+					.put("dest", "VsKV7grR1BUE29mG2Fm2kX")
+					.put("verkey", "GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa")
+	);
 
 	@Rule
 	public ExpectedException thrown = ExpectedException.none();

@@ -44,7 +44,9 @@ pub struct Request<T: serde::Serialize> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub signature: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub taa_acceptance: Option<TxnAuthrAgrmtAcceptanceData>
+    pub taa_acceptance: Option<TxnAuthrAgrmtAcceptanceData>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub endorser: Option<String>
 }
 
 impl<T: serde::Serialize> Request<T> {
@@ -56,6 +58,7 @@ impl<T: serde::Serialize> Request<T> {
             protocol_version: Some(protocol_version),
             signature: None,
             taa_acceptance: None,
+            endorser: None,
         }
     }
 
