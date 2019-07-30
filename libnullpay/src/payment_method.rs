@@ -394,6 +394,7 @@ pub mod sign_with_address {
         trace!("libnullpay::sign_with_address::handle << wallet_handle: {}\n    address: {:?}\n    message_raw: {:?}, message_len: {}", wallet_handle, address, message_raw, message_len);
 
         if let Some(cb) = cb {
+            let signature = _hash_as_signature(&address, &message_raw.as_slice());
             cb(command_handle, ErrorCode::Success, signature.as_slice().as_ptr() as *const u8, signature.len() as u32);
         }
 
