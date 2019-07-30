@@ -8,7 +8,9 @@ use futures::Future;
 use ffi::payments;
 use ffi::{ResponseStringCB,
           ResponseStringStringCB,
-          ResponseStringI64CB};
+          ResponseStringI64CB,
+          ResponseSliceCB,
+          ResponseBoolCB};
 
 use utils::callbacks::{ClosureHandler, ResultHandler};
 use {WalletHandle, CommandHandle};
@@ -626,5 +628,42 @@ fn _get_request_info(command_handle: CommandHandle, get_auth_rule_resp_json: &st
 
     ErrorCode::from(unsafe {
         payments::indy_get_request_info(command_handle, get_auth_rule_resp_json.as_ptr(), requester_info_json.as_ptr(), fees_json.as_ptr(), cb)
+    })
+}
+
+pub fn sign_with_address(wallet_handle: i32, address: &str, message: &[u8]) -> Box<Future<Item=Vec<u8>, Error=IndyError>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
+
+    let err = _sign_with_address(command_handle, wallet_handle, address, message, cb);
+
+    ResultHandler::slice(command_handle, err, receiver)
+}
+
+fn _sign_with_address(command_handle: CommandHandle, wallet_handle: WalletHandle, address: &str, message: &[u8], cb: Option<ResponseSliceCB>) -> ErrorCode {
+    let address = c_str!(address);
+    ErrorCode::from(unsafe {
+        payments::indy_sign_with_address(command_handle, wallet_handle, address.as_ptr(),
+                         message.as_ptr() as *const u8,
+                         message.len() as u32,
+                         cb)
+    })
+}
+
+pub fn verify_with_address(address: &str, message: &[u8], signature: &[u8]) -> Box<Future<Item=bool, Error=IndyError>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_bool();
+
+    let err = _verify_with_address(command_handle, address, message, signature, cb);
+
+    ResultHandler::bool(command_handle, err, receiver)
+}
+
+fn _verify_with_address(command_handle: CommandHandle, address: &str, message: &[u8], signature: &[u8], cb: Option<ResponseBoolCB>) -> ErrorCode {
+    let address = c_str!(address);
+
+    ErrorCode::from(unsafe {
+        payments::indy_verify_with_address(command_handle, address.as_ptr(),
+                                           message.as_ptr() as *const u8, message.len() as u32,
+                                           signature.as_ptr() as *const u8, signature.len() as u32,
+                                           cb)
     })
 }

@@ -11,6 +11,7 @@ extern crate log;
 extern crate serde_derive;
 extern crate serde_json;
 extern crate serde;
+extern crate sha2;
 
 mod libindy;
 #[macro_use]
@@ -44,6 +45,8 @@ pub extern fn nullpay_init() -> ErrorCode {
         payment_method::parse_get_txn_fees_response::handle,
         payment_method::build_verify_payment_req::handle,
         payment_method::parse_verify_payment_response::handle,
+        payment_method::sign_with_address::handle,
+        payment_method::verify_with_address::handle
     )
 }
 

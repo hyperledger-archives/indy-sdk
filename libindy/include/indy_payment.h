@@ -529,6 +529,67 @@ extern "C" {
                                                                    const char*   request_info_json)
                                               );
 
+
+    /// Signs a message with a payment address.
+    ///
+    /// #Params
+    /// command_handle: command handle to map callback to user context.
+    /// wallet_handle: wallet handler (created by open_wallet).
+    /// address: payment address of message signer. The key must be created by calling indy_create_address
+    /// message_raw: a pointer to first byte of message to be signed
+    /// message_len: a message length
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// a signature string
+    ///
+    /// #Errors
+    /// Common*
+    /// Wallet*
+    /// Crypto*
+    extern indy_error_t indy_sign_with_address(indy_handle_t      command_handle,
+                                               indy_handle_t      wallet_handle,
+                                               const char *       address,
+                                               const indy_u8_t *  message_raw,
+                                               indy_u32_t         message_len,
+
+                                               void           (*cb)(indy_handle_t    command_handle_,
+                                                                    indy_error_t     err,
+                                                                    const indy_u8_t* signature_raw,
+                                                                    indy_u32_t       signature_len)
+                                              );
+
+    /// Verify a signature with a payment address.
+    ///
+    /// #Params
+    /// command_handle: command handle to map callback to user context.
+    /// address: payment address of the message signer
+    /// message_raw: a pointer to first byte of message that has been signed
+    /// message_len: a message length
+    /// signature_raw: a pointer to first byte of signature to be verified
+    /// signature_len: a signature length
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// valid: true - if signature is valid, false - otherwise
+    ///
+    /// #Errors
+    /// Common*
+    /// Wallet*
+    /// Ledger*
+    /// Crypto*
+    extern indy_error_t indy_verify_with_address(indy_handle_t      command_handle,
+                                                 const char *       address,
+                                                 const indy_u8_t *  message_raw,
+                                                 indy_u32_t         message_len,
+                                                 const indy_u8_t *  signature_raw,
+                                                 indy_u32_t         signature_len,
+
+                                                 void           (*cb)(indy_handle_t command_handle_,
+                                                                      indy_error_t  err,
+                                                                      indy_bool_t   valid )
+                                                );
+
 #ifdef __cplusplus
 }
 #endif

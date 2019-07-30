@@ -58,3 +58,11 @@ pub fn build_verify_payment_req(wallet_handle: i32, submitter_did: &str, receipt
 pub fn parse_verify_payment_response(payment_method: &str, resp_json: &str) -> Result<String, IndyError> {
     payments::parse_verify_payment_response(payment_method, resp_json).wait()
 }
+
+pub fn sign_with_address(wallet_handle: i32, address: &str, message: &[u8]) -> Result<Vec<u8>, IndyError> {
+    payments::sign_with_address(wallet_handle, address, message).wait()
+}
+
+pub fn verify_with_address(address: &str, message: &[u8], signature: &[u8]) -> Result<bool, IndyError> {
+    payments::verify_with_address(address, message, signature).wait()
+}
