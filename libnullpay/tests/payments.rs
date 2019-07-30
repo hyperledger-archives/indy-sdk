@@ -1043,10 +1043,6 @@ mod medium_cases {
             assert!(res.is_ok());
             assert!(!res.unwrap());
 
-            //Invalid wallet
-            let res = payments::sign_with_address(0, &payment_address, data);
-            assert!(res.is_err());
-
             //Invalid payment address
             let res = payments::sign_with_address(wallet_handle, "pay:fun:78912hjggehjkdasg", data);
             assert!(res.is_err());
