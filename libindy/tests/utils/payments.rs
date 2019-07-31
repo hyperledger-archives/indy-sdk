@@ -364,7 +364,7 @@ pub fn build_get_payment_sources_request(wallet_handle: i32, submitter_did: Opti
     payments::build_get_payment_sources_request(wallet_handle, submitter_did, payment_address).wait()
 }
 
-pub fn build_get_payment_sources_with_from_request(wallet_handle: i32, submitter_did: Option<&str>, payment_address: &str, from: Option<u64>) -> Result<(String, String), IndyError> {
+pub fn build_get_payment_sources_with_from_request(wallet_handle: i32, submitter_did: Option<&str>, payment_address: &str, from: Option<i64>) -> Result<(String, String), IndyError> {
     payments::build_get_payment_sources_with_from_request(wallet_handle, submitter_did, payment_address, from).wait()
 }
 
