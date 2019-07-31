@@ -159,12 +159,11 @@ pub mod import_command {
                     })
             });
 
-        if let Err(err) = res {
-            println_err!("{}", err);
-            Err(())
-        } else {
-            println_succ!("DIDs import finished");
-            Ok(())
+        match res {
+            Err(err) =>
+                println_err!("{}", err),
+            Ok(_) =>
+                println_succ!("DIDs import finished")
         };
 
         trace!("execute << ");

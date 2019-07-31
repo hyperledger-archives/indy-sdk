@@ -243,19 +243,17 @@ pub mod show_taa_command {
 
         let pool_handle = ensure_connected_pool_handle(&ctx)?;
 
-        match set_transaction_author_agreement(ctx, pool_handle, false) {
-            Ok(Some(_)) => { Ok(()) }
+        let res = match set_transaction_author_agreement(ctx, pool_handle, false) {
+            Err(_) => Err(()),
+            Ok(Some(_)) => Ok(()),
             Ok(None) => {
-                {
-                    println!("There is no transaction agreement set on the Pool.");
-                    Ok(())
-                }
+                println!("There is no transaction agreement set on the Pool.");
+                Ok(())
             }
-            Err(_) => Err(())
         };
 
-        trace!("execute << ");
-        Ok(())
+        trace!("execute << {:?}", res);
+        res
     }
 }
 
