@@ -95,5 +95,17 @@ class Endorser {
         JSONObject responseJson = new JSONObject(response);
 
         assertEquals("REPLY", responseJson.getJSONObject("op"));
+
+        pool.closePoolLedger().get();
+        Pool.deletePoolLedgerConfig(poolName).get();
+
+        trusteeWallet.closeWallet().get();
+        Wallet.deleteWallet(trusteeWalletConfig, trusteeWalletCredentials).get();
+
+        authorWallet.closeWallet().get();
+        Wallet.deleteWallet(authorWalletConfig, authorWalletCredentials).get();
+
+        endorserWallet.closeWallet().get();
+        Wallet.deleteWallet(endorserWalletConfig, endorserWalletCredentials).get();
     }
 }

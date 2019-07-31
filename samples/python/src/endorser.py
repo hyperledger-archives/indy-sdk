@@ -85,6 +85,18 @@ async def demo():
     resp = await ledger.submit_request(target_pool['pool'], author_schema_req_with_endorser_signed)
     assert json.loads(resp)['op'] == 'REPLY'
 
+    await pool.close_pool_ledger(target_pool['pool'])
+    await pool.delete_pool_ledger_config(target_pool['pool_name'])
+
+    await wallet.close_wallet(trustee['wallet'])
+    await wallet.delete_wallet(trustee['wallet_config'], trustee['wallet_credentials'])
+
+    await wallet.close_wallet(author['wallet'])
+    await wallet.delete_wallet(author['wallet_config'], author['wallet_credentials'])
+
+    await wallet.close_wallet(endorser['wallet'])
+    await wallet.delete_wallet(endorser['wallet_config'], endorser['wallet_credentials'])
+
     logger.info("Crypto sample -> completed")
 
 if __name__ == '__main__':
