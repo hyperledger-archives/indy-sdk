@@ -24,10 +24,10 @@ use services::pool::{
     parse_response_metadata
 };
 use services::wallet::{RecordOptions, WalletService};
-use utils::crypto::base58;
 use utils::crypto::signature_serializer::serialize_signature;
 use api::WalletHandle;
 use commands::{Command, CommandExecutor};
+use rust_base58::ToBase58;
 
 pub enum LedgerCommand {
     SignAndSubmitRequest(
@@ -257,6 +257,10 @@ pub enum LedgerCommand {
         Option<String>, // hash
         String, // acceptance mechanism type
         u64, // time of acceptance
+        Box<Fn(IndyResult<String>) + Send>),
+    AppendRequestEndorser(
+        String, // request json
+        String, // endorser did
         Box<Fn(IndyResult<String>) + Send>),
 }
 
@@ -497,6 +501,11 @@ impl LedgerCommandExecutor {
                                                                           &acc_mech_type,
                                                                           time_of_acceptance));
             }
+            LedgerCommand::AppendRequestEndorser(request_json, endorser_did, cb) => {
+                info!(target: "ledger_command_executor", "AppendRequestEndorser command received");
+                cb(self.append_request_endorser(&request_json,
+                                                &endorser_did));
+            }
         };
     }
 
@@ -546,14 +555,14 @@ impl LedgerCommandExecutor {
         let signature = self.crypto_service.sign(&my_key, &serialized_request.as_bytes().to_vec())?;
 
         match signature_type {
-            SignatureType::Single => { request["signature"] = Value::String(base58::encode(&signature)); }
+            SignatureType::Single => { request["signature"] = Value::String(signature.to_base58()); }
             SignatureType::Multi => {
                 request.as_object_mut()
                     .map(|request| {
                         if !request.contains_key("signatures") {
                             request.insert("signatures".to_string(), Value::Object(serde_json::Map::new()));
                         }
-                        request["signatures"].as_object_mut().unwrap().insert(submitter_did.to_string(), Value::String(base58::encode(&signature)));
+                        request["signatures"].as_object_mut().unwrap().insert(submitter_did.to_string(), Value::String(signature.to_base58()));
 
                         if let (Some(identifier), Some(signature)) = (request.get("identifier").and_then(Value::as_str).map(str::to_owned),
                                                                       request.remove("signature")) {
@@ -1051,8 +1060,8 @@ impl LedgerCommandExecutor {
     }
 
     fn build_auth_rules_request(&self,
-                               submitter_did: &str,
-                               rules: AuthRules) -> IndyResult<String> {
+                                submitter_did: &str,
+                                rules: AuthRules) -> IndyResult<String> {
         debug!("build_auth_rules_request >>> submitter_did: {:?}, rules: {:?}", submitter_did, rules);
 
         self.validate_opt_did(Some(submitter_did))?;
@@ -1166,6 +1175,26 @@ impl LedgerCommandExecutor {
         Ok(res)
     }
 
+    fn append_request_endorser(&self,
+                               request_json: &str,
+                               endorser_did: &str) -> IndyResult<String> {
+        debug!("append_request_endorser >>> request_json: {:?}, endorser_did: {:?}", request_json, endorser_did);
+
+        self.crypto_service.validate_did(endorser_did)?;
+
+        let mut request: Request<serde_json::Value> = serde_json::from_str(request_json)
+            .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Cannot deserialize request: {:?}", err)))?;
+
+        request.endorser = Some(endorser_did.to_string());
+
+        let res: String = serde_json::to_string(&request)
+            .to_indy(IndyErrorKind::InvalidState, "Can't serialize request after adding endorser")?;
+
+        debug!("append_request_endorser <<< res: {:?}", res);
+
+        Ok(res)
+    }
+
     fn validate_opt_did(&self, did: Option<&str>) -> IndyResult<()> {
         match did {
             Some(did) => Ok(self.crypto_service.validate_did(did)?),
@@ -1174,7 +1203,6 @@ impl LedgerCommandExecutor {
     }
 
     fn get_schema(&self, pool_handle: i32, submitter_did: Option<&str>, id: &str, cb: Box<Fn(IndyResult<(String, String)>) + Send>) {
-
         let request_json = try_cb!(self.build_get_schema_request(submitter_did, id), cb);
 
         let cb_id = ::utils::sequence::get_next_id();
@@ -1199,7 +1227,6 @@ impl LedgerCommandExecutor {
     }
 
     fn get_cred_def(&self, pool_handle: i32, submitter_did: Option<&str>, id: &str, cb: Box<Fn(IndyResult<(String, String)>) + Send>) {
-
         let request_json = try_cb!(self.build_get_cred_def_request(submitter_did, id), cb);
 
         let cb_id = ::utils::sequence::get_next_id();

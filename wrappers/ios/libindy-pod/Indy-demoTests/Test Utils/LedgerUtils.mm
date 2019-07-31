@@ -878,10 +878,10 @@
 }
 
 - (NSError *)buildAcceptanceMechanismsRequestWithSubmitterDid:(NSString *)submitterDid
-                                                         aml:(NSString *)aml
-                                                     version:(NSString *)version
-                                                  amlContext:(NSString *)amlContext
-                                                  outRequest:(NSString **)resultJson {
+                                                          aml:(NSString *)aml
+                                                      version:(NSString *)version
+                                                   amlContext:(NSString *)amlContext
+                                                   outRequest:(NSString **)resultJson {
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
     __block NSError *err = nil;
     __block NSString *outJson = nil;
@@ -955,6 +955,50 @@
     if (resultJson) {*resultJson = outJson;}
 
     return err;
+}
+
+- (NSError *)appendEndorserToRequest:(NSString *)requestJson
+                         endorserDid:(NSString *)endorserDid
+                          outRequest:(NSString **)outRequestJson {
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+    __block NSString *outJson = nil;
+
+    [IndyLedger appendEndorserToRequest:requestJson
+                            endorserDid:endorserDid
+                             completion:^(NSError *error, NSString *json) {
+                                 err = error;
+                                 outJson = json;
+                                 [completionExpectation fulfill];
+                             }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
+
+    if (outRequestJson) {*outRequestJson = outJson;}
+
+    return err;
+}
+
+
+- (NSString *)submitRetry:(NSString *)requestJson
+               poolHandle:(IndyHandle)poolHandle {
+
+    NSString *response;
+    NSDictionary *resp;
+    int COUNT_RETRIES = 3;
+
+    for (int i = 0; i < COUNT_RETRIES; i++) {
+        [[LedgerUtils sharedInstance] submitRequest:requestJson
+                                     withPoolHandle:poolHandle
+                                         resultJson:&response];
+
+        resp = [NSDictionary fromString:response];
+        
+        if (resp[@"result"][@"seqNo"] != [NSNull null]) {
+            break;
+        };
+    }
+    return response;
 }
 
 @end

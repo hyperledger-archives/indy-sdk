@@ -314,6 +314,12 @@ public class Anoncreds extends IndyJava.API {
 	 *     "max_cred_num": maximum number of credentials the new registry can process (optional, default 100000)
 	 * }
 	 * @param tailsWriter Handle of blob storage to store tails
+	 *
+	 * NOTE:
+	 *      Recursive creation of folder for Default Tails Writer (correspondent to `tailsWriter`)
+	 *      in the system-wide temporary directory may fail in some setup due to permissions: `IO error: Permission denied`.
+	 *      In this case use `TMPDIR` environment variable to define temporary directory specific for an application.
+	 *
 	 * @return A future resolving to:
 	 * revocRegId: identifier of created revocation registry definition
 	 * revocRegDefJson: public part of revocation registry definition
@@ -898,7 +904,7 @@ public class Anoncreds extends IndyJava.API {
 	 *     {
 	 *         "name": string,
 	 *         "version": string,
-	 *         "nonce": string,
+	 *         "nonce": string, - a big number represented as a string (use `generateNonce` function to generate 80-bit number)
 	 *         "requested_attributes": { // set of requested attributes
 	 *              "attr_referent": {attr_info}, // see below
 	 *              ...,
@@ -992,7 +998,7 @@ public class Anoncreds extends IndyJava.API {
 	 *     {
 	 *         "name": string,
 	 *         "version": string,
-	 *         "nonce": string,
+	 *         "nonce": string, - a big number represented as a string (use `generateNonce` function to generate 80-bit number)
 	 *         "requested_attributes": { // set of requested attributes
 	 *              "attr_referent": {attr_info}, // see below
 	 *              ...,
@@ -1121,7 +1127,7 @@ public class Anoncreds extends IndyJava.API {
 	 *     {
 	 *         "name": string,
 	 *         "version": string,
-	 *         "nonce": string,
+	 *         "nonce": string, - a big number represented as a string (use `generateNonce` function to generate 80-bit number)
 	 *         "requested_attributes": { // set of requested attributes
 	 *              "attr_referent": {attr_info}, // see below
 	 *              ...,
@@ -1313,6 +1319,27 @@ public class Anoncreds extends IndyJava.API {
 				revRegDelta,
 				timestamp,
 				credRevId,
+				stringCb);
+
+		checkResult(future, result);
+
+		return future;
+	}
+
+	/**
+	 * Generates 80-bit numbers that can be used as a nonce for proof request.
+	 *
+	 * @return A future that resolves to a generated number as a string
+	 *
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<String> generateNonce() throws IndyException {
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int result = LibIndy.api.indy_generate_nonce(
+				commandHandle,
 				stringCb);
 
 		checkResult(future, result);

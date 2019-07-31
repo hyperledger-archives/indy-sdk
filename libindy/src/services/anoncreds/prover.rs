@@ -19,7 +19,7 @@ use domain::anoncreds::credential_definition::CredentialDefinitionV1 as Credenti
 use domain::anoncreds::credential_offer::CredentialOffer;
 use domain::anoncreds::credential_request::CredentialRequestMetadata;
 use domain::anoncreds::proof::{Identifier, Proof, RequestedProof, RevealedAttributeInfo, SubProofReferent};
-use domain::anoncreds::proof_request::{NonRevocedInterval, PredicateInfo, PredicateTypes, ProofRequest, ProofRequestExtraQuery, RequestedAttributeInfo, RequestedPredicateInfo};
+use domain::anoncreds::proof_request::{PredicateInfo, PredicateTypes, ProofRequest, ProofRequestExtraQuery, RequestedAttributeInfo, RequestedPredicateInfo};
 use domain::anoncreds::requested_credential::ProvingCredentialKey;
 use domain::anoncreds::requested_credential::RequestedCredentials;
 use domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinitionV1;
@@ -63,8 +63,8 @@ impl Prover {
                                   cred_def: &CredentialDefinition,
                                   master_secret: &MasterSecret,
                                   credential_offer: &CredentialOffer) -> IndyResult<(BlindedCredentialSecrets,
-                                                                                 CredentialSecretsBlindingFactors,
-                                                                                 BlindedCredentialSecretsCorrectnessProof)> {
+                                                                                     CredentialSecretsBlindingFactors,
+                                                                                     BlindedCredentialSecretsCorrectnessProof)> {
         trace!("new_credential_request >>> cred_def: {:?}, master_secret: {:?}, credential_offer: {:?}",
                cred_def, secret!(&master_secret), credential_offer);
 
@@ -145,11 +145,7 @@ impl Prover {
             let cred_def: &CredentialDefinition = cred_defs.get(&credential.cred_def_id)
                 .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("CredentialDefinition not found by id: {:?}", credential.cred_def_id)))?;
 
-            let rev_state = if cred_def.value.revocation.is_some() {
-                let timestamp = cred_key.timestamp
-                    .clone()
-                    .ok_or(err_msg(IndyErrorKind::InvalidStructure, "Timestamp not found"))?;
-
+            let rev_state = if let Some(timestamp) = cred_key.timestamp {
                 let rev_reg_id = credential.rev_reg_id
                     .clone()
                     .ok_or(err_msg(IndyErrorKind::InvalidStructure, "Revocation Registry Id not found"))?;
@@ -203,16 +199,6 @@ impl Prover {
         trace!("create_proof <<< full_proof: {:?}", full_proof);
 
         Ok(full_proof)
-    }
-
-    pub fn get_non_revoc_interval(&self, global_interval: &Option<NonRevocedInterval>, local_interval: &Option<NonRevocedInterval>) -> Option<NonRevocedInterval> {
-        trace!("_get_non_revoc_interval >>> global_interval: {:?}, local_interval: {:?}", global_interval, local_interval);
-
-        let interval = local_interval.clone().or(global_interval.clone().or(None));
-
-        trace!("_get_non_revoc_interval <<< interval: {:?}", interval);
-
-        interval
     }
 
     pub fn _prepare_credentials_for_proving(requested_credentials: &RequestedCredentials,
@@ -297,7 +283,8 @@ impl Prover {
         credential.values
             .iter()
             .for_each(|(attr, values)| {
-                if catpol.map(|cp| cp.is_taggable(attr.as_str())).unwrap_or(true) {  // abstain for attrs policy marks untaggable
+                if catpol.map(|cp| cp.is_taggable(attr.as_str())).unwrap_or(true) {
+                    // abstain for attrs policy marks untaggable
                     res.insert(format!("attr::{}::marker", attr_common_view(&attr)), ATTRIBUTE_EXISTENCE_MARKER.to_string());
                     res.insert(format!("attr::{}::value", attr_common_view(&attr)), values.raw.clone());
                 }
@@ -376,22 +363,22 @@ impl Prover {
                 let attribute_value = attribute_value.parse::<i32>()
                     .to_indy(IndyErrorKind::InvalidStructure, format!("Credential attribute value \"{:?}\" is invalid", attribute_value))?;
                 Ok(attribute_value >= predicate.p_value)
-            },
+            }
             PredicateTypes::GT => {
-                 let attribute_value = attribute_value.parse::<i32>()
+                let attribute_value = attribute_value.parse::<i32>()
                     .to_indy(IndyErrorKind::InvalidStructure, format!("Credential attribute value \"{:?}\" is invalid", attribute_value))?;
-                 Ok(attribute_value > predicate.p_value)
-             },
-             PredicateTypes::LE => {
-                 let attribute_value = attribute_value.parse::<i32>()
+                Ok(attribute_value > predicate.p_value)
+            }
+            PredicateTypes::LE => {
+                let attribute_value = attribute_value.parse::<i32>()
                     .to_indy(IndyErrorKind::InvalidStructure, format!("Credential attribute value \"{:?}\" is invalid", attribute_value))?;
-                 Ok(attribute_value <= predicate.p_value)
-             },
-             PredicateTypes::LT => {
-                 let attribute_value = attribute_value.parse::<i32>()
+                Ok(attribute_value <= predicate.p_value)
+            }
+            PredicateTypes::LT => {
+                let attribute_value = attribute_value.parse::<i32>()
                     .to_indy(IndyErrorKind::InvalidStructure, format!("Credential attribute value \"{:?}\" is invalid", attribute_value))?;
-                 Ok(attribute_value < predicate.p_value)
-             }
+                Ok(attribute_value < predicate.p_value)
+            }
         };
 
         trace!("attribute_satisfy_predicate <<< res: {:?}", res);

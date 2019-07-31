@@ -18,11 +18,11 @@ impl Payment {
     }
 
     pub fn build_get_payment_sources_request(wallet_handle: i32, submitter_did: Option<&str>, payment_address: &str) -> Result<(String, String), IndyError> {
-        payments::build_get_payment_sources_request(wallet_handle, submitter_did, payment_address).wait()
+        payments::build_get_payment_sources_with_from_request(wallet_handle, submitter_did, payment_address, None).wait()
     }
 
     pub fn parse_get_payment_sources_response(payment_method: &str, resp_json: &str) -> Result<String, IndyError> {
-        payments::parse_get_payment_sources_response(payment_method, resp_json).wait()
+        payments::parse_get_payment_sources_with_from_response(payment_method, resp_json).wait().map(|(s, _)| s)
     }
 
     pub fn build_payment_req(wallet_handle: i32, submitter_did: Option<&str>, inputs: &str, outputs: &str, extra: Option<&str>) -> Result<(String, String), IndyError> {
@@ -64,5 +64,13 @@ impl Payment {
     pub fn prepare_payment_extra_with_acceptance_data(extra_json: Option<&str>, text: Option<&str>, version: Option<&str>,
                                                       taa_digest: Option<&str>, mechanism: &str, time: u64) -> Result<String, IndyError> {
         payments::prepare_extra_with_acceptance_data(extra_json, text, version, taa_digest, mechanism, time).wait()
+    }
+
+    pub fn sign_with_address(wallet_handle: i32, address: &str, input: &str) -> Result<Vec<u8>, IndyError> {
+        payments::sign_with_address(wallet_handle, address, input.as_bytes()).wait()
+    }
+
+    pub fn verify_with_address(address: &str, input: &str, signature: &[u8]) -> Result<bool, IndyError> {
+        payments::verify_with_address(address, input.as_bytes(), signature).wait()
     }
 }

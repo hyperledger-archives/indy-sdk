@@ -1,6 +1,6 @@
 from ctypes import *
 import logging
-from vcx.common import do_call, create_cb
+from vcx.common import do_call, do_call_sync, create_cb
 
 __all__ = ["vcx_init", "vcx_init_with_config"]
 
@@ -63,4 +63,24 @@ async def vcx_init_with_config(config: str) -> None:
                            vcx_init_with_config.cb)
 
     logger.debug("vcx_init_with_config completed")
+    return result
+
+def vcx_init_minimal(config_string: str) -> None:
+    """
+    Initializes VCX with minimal (no-agency) config file AFTER the wallet and pool are set.
+
+    :param config_string: String
+    Example:
+    vcx_wallet_set_handle(wallet_handle)
+    vcx_pool_set_handle(pool_handle)
+    await vcx_init_minimal('{"wallet_name":"wallet1",.....}')
+    :return:
+    """
+    logger = logging.getLogger(__name__)
+
+    c_config_string = c_char_p(config_string.encode('utf-8'))
+
+    result = do_call_sync('vcx_init_minimal', c_config_string)
+
+    logger.debug("vcx_init_minimal completed")
     return result

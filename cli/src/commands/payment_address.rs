@@ -67,7 +67,7 @@ pub mod list_command {
 
         let res = match Payment::list_payment_addresses(wallet_handle) {
             Ok(payment_addresses_json) => {
-                let mut payment_addresses: Vec<String> = serde_json::from_str(&payment_addresses_json)
+                let payment_addresses: Vec<String> = serde_json::from_str(&payment_addresses_json)
                     .map_err(|_| println_err!("Wrong data has been received"))?;
 
                 let list_addresses =
@@ -95,6 +95,105 @@ pub mod list_command {
     }
 }
 
+pub mod sign_command {
+    use super::*;
+
+    command!(CommandMetadata::build("sign", "Create a proof of payment address control by signing an input and producing a signature.")
+                .add_required_param("address", "Payment address to use")
+                .add_required_param("input", "The input data to be signed")
+                .add_example("payment-address sign address=pay:null:lUdSMj9AmoUbmRQ input=123456789")
+                .finalize());
+
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
+
+        let wallet_handle = ensure_opened_wallet_handle(&ctx)?;
+
+        let address = get_str_param("address", params).map_err(error_err!())?;
+        let input = get_str_param("input", params).map_err(error_err!())?;
+
+        let res = match Payment::sign_with_address(wallet_handle, address, input) {
+            Ok(signature) => Ok(println_succ!("Signature \"0x{}\"", bin2hex(signature.as_slice()))),
+            Err(err) => Err(handle_indy_error(err, None, None, None))
+        };
+
+        trace!("execute << {:?}", res);
+        res
+    }
+
+    fn bin2hex(b: &[u8]) -> String {
+        b.iter()
+            .map(|b| format!("{:02x}", b))
+            .collect::<Vec<_>>()
+            .join("")
+    }
+}
+
+pub mod verify_command {
+    use super::*;
+
+    command!(CommandMetadata::build("verify", "Verify a proof of payment address control by verifying a signature.")
+             .add_required_param("address", "Payment address to use")
+             .add_required_param("input", "The input data that was signed")
+             .add_required_param("signature", "The signature generated from sign-with-address")
+             .add_example("payment-address verify address=pay:null:lUdSMj9AmoUbmRQ input=123456789 signature=0x0006e83221cdaf70b3c01a613675274dd2064ea376bf35656cff8436e62cdf89")
+             .finalize());
+
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
+
+        let address = get_str_param("address", params).map_err(error_err!())?;
+        let input = get_str_param("input", params).map_err(error_err!())?;
+        let signature = get_str_param("signature", params).map_err(error_err!())?;
+
+        if &signature[0..2] != "0x" {
+            println_err!("Wrong data has been received. Expected signature to start with '0x'");
+            return Err(());
+        }
+
+        let sig = hex2bin(&signature[2..]).map_err(|e| println_err!("{}", e))?;
+
+        let res = match Payment::verify_with_address(address, input, sig.as_slice()) {
+            Ok(valid) => {
+                if valid {
+                    Ok(println_succ!("Valid signature"))
+                } else {
+                    Ok(println_err!("Invalid signature"))
+                }
+            }
+            Err(err) => Err(handle_indy_error(err, None, None, None))
+        };
+
+        trace!("execute << {:?}", res);
+        res
+    }
+
+    fn hex2bin(s: &str) -> Result<Vec<u8>, String> {
+        if s.len() % 2 != 0 {
+            return Err("Bad input".to_string());
+        }
+        for (i, ch) in s.chars().enumerate() {
+            if !ch.is_digit(16) {
+                return Err(format!(
+                    "Bad character position {}",
+                    i
+                ));
+            }
+        }
+
+        let input: Vec<_> = s.chars().collect();
+
+        let decoded: Vec<u8> = input
+            .chunks(2)
+            .map(|chunk| {
+                ((chunk[0].to_digit(16).unwrap() << 4) | (chunk[1].to_digit(16).unwrap())) as u8
+            })
+            .collect();
+
+        Ok(decoded)
+    }
+}
+
 pub fn handle_payment_error(err: IndyError, payment_method: Option<&str>) {
     match err.error_code {
         ErrorCode::UnknownPaymentMethod => println_err!("Unknown payment method {}", payment_method.unwrap_or("")),
@@ -108,12 +207,25 @@ pub fn handle_payment_error(err: IndyError, payment_method: Option<&str>) {
     }
 }
 
+pub fn list_payment_addresses(ctx: &CommandContext) -> Vec<String> {
+    get_opened_wallet(ctx)
+        .and_then(|(wallet_handle, _)|
+            Payment::list_payment_addresses(wallet_handle).ok()
+        )
+        .and_then(|payment_addresses|
+            serde_json::from_str(&payment_addresses).ok()
+        )
+        .unwrap_or_default()
+}
+
 #[cfg(test)]
 #[cfg(feature = "nullpay_plugin")]
 pub mod tests {
     use super::*;
     use commands::common::tests::{load_null_payment_plugin, NULL_PAYMENT_METHOD};
     use commands::did::tests::SEED_MY1;
+
+    pub const INPUT: &str = "123456789";
 
     mod create {
         use super::*;
@@ -226,10 +338,59 @@ pub mod tests {
         }
     }
 
-    fn list_payment_addresses(ctx: &CommandContext) -> Vec<String> {
-        let wallet_handle = ensure_opened_wallet_handle(ctx).unwrap();
-        let payment_addresses = Payment::list_payment_addresses(wallet_handle).unwrap();
-        serde_json::from_str(&payment_addresses).unwrap()
+    mod sign {
+        use super::*;
+
+        #[test]
+        pub fn sign_works() {
+            let ctx = setup_with_wallet();
+            load_null_payment_plugin(&ctx);
+            let payment_address = create_payment_address(&ctx);
+            {
+                let cmd = sign_command::new();
+                let mut params = CommandParams::new();
+                params.insert("address", payment_address);
+                params.insert("input", INPUT.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            tear_down_with_wallet(&ctx);
+        }
+    }
+
+    mod verify {
+        use super::*;
+
+        const PAYMENT_ADDRESS: &str = "pay:null:lUdSMj9AmoUbmRQ";
+
+        #[test]
+        pub fn verify_works() {
+            let ctx = setup_with_wallet();
+            load_null_payment_plugin(&ctx);
+            {
+                let cmd = verify_command::new();
+                let mut params = CommandParams::new();
+                params.insert("address", PAYMENT_ADDRESS.to_string());
+                params.insert("input", INPUT.to_string());
+                params.insert("signature", "0x0006e83221cdaf70b3c01a613675274dd2064ea376bf35656cff8436e62cdf89".to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            tear_down_with_wallet(&ctx);
+        }
+
+        #[test]
+        pub fn verify_works_for_invalid_signature() {
+            let ctx = setup_with_wallet();
+            load_null_payment_plugin(&ctx);
+            {
+                let cmd = verify_command::new();
+                let mut params = CommandParams::new();
+                params.insert("address", PAYMENT_ADDRESS.to_string());
+                params.insert("input", INPUT.to_string());
+                params.insert("signature", "0x0006e83221cdaf70b3c01a613675274dd2064ea376bf11111111111111111111".to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            tear_down_with_wallet(&ctx);
+        }
     }
 
     pub fn create_payment_address(ctx: &CommandContext) -> String {

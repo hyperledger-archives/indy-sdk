@@ -1,7 +1,7 @@
 extern crate regex;
 extern crate chrono;
 
-use command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata};
+use command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata, DynamicCompletionType};
 use commands::*;
 use commands::payment_address::handle_payment_error;
 
@@ -23,6 +23,7 @@ use self::chrono::prelude::*;
 pub const DELIMITER: &'static str = ":";
 pub const SCHEMA_MARKER: &'static str = "2";
 pub const CRED_DEF_MARKER: &'static str = "3";
+pub const SIGN_REQUEST: bool = true;
 pub const SEND_REQUEST: bool = true;
 
 pub fn build_schema_id(did: &str, name: &str, version: &str) -> String {
@@ -40,23 +41,29 @@ pub mod group {
 }
 
 macro_rules! send_write_request {
-    ($ctx:expr, $send:expr, $request:expr, $wallet_handle:expr, $wallet_name:expr, $submitter_did:expr) => ({
-        let request = Ledger::sign_request($wallet_handle, $submitter_did, $request)
-            .map_err(|err| handle_indy_error(err, Some($submitter_did), None, Some($wallet_name)))?;
+    ($ctx:expr, $params:expr, $request:expr, $wallet_handle:expr, $wallet_name:expr, $submitter_did:expr) => ({
+        let sign = get_opt_bool_param("sign", $params).map_err(error_err!())?.unwrap_or(SIGN_REQUEST);
 
-        send_request!($ctx, $send, &request, Some($wallet_name), Some($submitter_did))
+        let request = if sign {
+            Ledger::sign_request($wallet_handle, $submitter_did, $request)
+                .map_err(|err| handle_indy_error(err, Some($submitter_did), None, Some($wallet_name)))?
+        } else {$request.to_string()};
+
+        send_request!($ctx, $params, &request, Some($wallet_name), Some($submitter_did))
     })
 }
 
 macro_rules! send_read_request {
-    ($ctx:expr, $send:expr, $request:expr, $submitter_did:expr) => ({
-        send_request!($ctx, $send, $request, None, $submitter_did)
+    ($ctx:expr, $params:expr, $request:expr, $submitter_did:expr) => ({
+        send_request!($ctx, $params, $request, None, $submitter_did)
     })
 }
 
 macro_rules! send_request {
-    ($ctx:expr, $send:expr, $request:expr, $wallet_name:expr, $submitter_did:expr) => {
-        if $send {
+    ($ctx:expr, $params:expr, $request:expr, $wallet_name:expr, $submitter_did:expr) => ({
+        let send = get_opt_bool_param("send", $params).map_err(error_err!())?.unwrap_or(SEND_REQUEST);
+
+        if send {
             let (pool_handle, pool_name) = ensure_connected_pool($ctx)?;
             let response_json = Ledger::submit_request(pool_handle, $request)
                 .map_err(|err| handle_indy_error(err, $submitter_did, Some(&pool_name), $wallet_name))?;
@@ -71,19 +78,25 @@ macro_rules! send_request {
             set_transaction($ctx, Some($request.to_string()));
             return Ok(());
         }
-    }
+    })
 }
 
 pub mod nym_command {
     use super::*;
 
-    command!(CommandMetadata::build("nym", "Send NYM transaction to the Ledger.")
+    command!(CommandMetadata::build("nym", r#"Send NYM transaction to the Ledger.
+                One of the next parameter combinations must be specified to pay a transaction fee (if it is set on the ledger):
+                (source_payment_address, fee) - CLI automatically gets payment sources corresponded to the source payment address and prepares data
+                (fees_inputs, fees_outputs) - explicit specification of payment sources"#)
                 .add_required_param("did", "DID of new identity")
                 .add_optional_param("verkey", "Verification key of new identity")
                 .add_optional_param("role", "Role of identity. One of: STEWARD, TRUSTEE, TRUST_ANCHOR, ENDORSER, NETWORK_MONITOR or associated number, or empty in case of blacklisting NYM")
+                .add_optional_param_with_dynamic_completion("source_payment_address","Payment address of sender.", DynamicCompletionType::PaymentAddress)
+                .add_optional_param("fee","Transaction fee set on the ledger.")
                 .add_optional_param("fees_inputs","The list of source inputs")
                 .add_optional_param("fees_outputs","The list of outputs in the following format: (recipient, amount)")
                 .add_optional_param("extra","Optional information for fees payment operation")
+                .add_optional_param("sign","Sign the request (True by default)")
                 .add_optional_param("send","Send the request to the Ledger (True by default). If false then created request will be printed and stored into CLI context.")
                 .add_example("ledger nym did=VsKV7grR1BUE29mG2Fm2kX")
                 .add_example("ledger nym did=VsKV7grR1BUE29mG2Fm2kX verkey=GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa")
@@ -103,20 +116,33 @@ pub mod nym_command {
         let target_did = get_str_param("did", params).map_err(error_err!())?;
         let verkey = get_opt_str_param("verkey", params).map_err(error_err!())?;
         let role = get_opt_empty_str_param("role", params).map_err(error_err!())?;
-        let fees_inputs = get_opt_str_array_param("fees_inputs", params).map_err(error_err!())?;
-        let fees_outputs = get_opt_str_tuple_array_param("fees_outputs", params).map_err(error_err!())?;
-        let extra = get_opt_str_param("extra", params).map_err(error_err!())?;
-        let send = get_opt_bool_param("send", params).map_err(error_err!())?.unwrap_or(SEND_REQUEST);
+
+        if let Some(target_verkey) = verkey {
+            let dids = did::dids(ctx);
+
+            if let Some((_, verkey_)) = dids.iter().find(|(did_, _)| did_ == target_did) {
+                if verkey_ != target_verkey {
+                    println_warn!("There is the same `DID` stored in the wallet but with different Verkey: {:?}", verkey_);
+                    println_warn!("Do you really want to change Verkey on the ledger? (y/n)");
+
+                    let change_nym = ::command_executor::wait_for_user_reply(ctx);
+
+                    if !change_nym {
+                        return Ok(println!("The transaction has not been sent."));
+                    }
+                }
+            }
+        }
 
         let mut request = Ledger::build_nym_request(&submitter_did, target_did, verkey, None, role)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
 
         set_author_agreement(ctx, &mut request)?;
 
-        let payment_method = set_request_fees(&mut request, wallet_handle, Some(&submitter_did), &fees_inputs, &fees_outputs, extra)?;
+        let payment_method = set_request_fees(ctx, params, &mut request, wallet_handle, Some(&submitter_did))?;
 
         let (response_json, mut response): (String, Response<serde_json::Value>) =
-            send_write_request!(ctx, send, &request, wallet_handle, &wallet_name, &submitter_did);
+            send_write_request!(ctx, params, &request, wallet_handle, &wallet_name, &submitter_did);
 
         if let Some(result) = response.result.as_mut() {
             result["txn"]["data"]["role"] = get_role_title(&result["txn"]["data"]["role"]);
@@ -157,12 +183,11 @@ pub mod get_nym_command {
         let submitter_did = get_active_did(&ctx);
 
         let target_did = get_str_param("did", params).map_err(error_err!())?;
-        let send = get_opt_bool_param("send", params).map_err(error_err!())?.unwrap_or(SEND_REQUEST);
 
         let request = Ledger::build_get_nym_request(submitter_did.as_ref().map(String::as_str), target_did)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
 
-        let (_, mut response) = send_read_request!(&ctx, send, &request, submitter_did.as_ref().map(String::as_str));
+        let (_, mut response) = send_read_request!(&ctx, params, &request, submitter_did.as_ref().map(String::as_str));
 
         if let Some(result) = response.result.as_mut() {
             let data = serde_json::from_str::<serde_json::Value>(&result["data"].as_str().unwrap_or(""));
@@ -192,14 +217,20 @@ pub mod get_nym_command {
 pub mod attrib_command {
     use super::*;
 
-    command!(CommandMetadata::build("attrib", "Send Attribute transaction to the Ledger for exists NYM.")
+    command!(CommandMetadata::build("attrib", r#"Send Attribute transaction to the Ledger for exists NYM.
+                One of the next parameter combinations must be specified to pay a transaction fee (if it is set on the ledger):
+                (source_payment_address, fee) - CLI automatically gets payment sources corresponded to the source payment address and prepares data
+                (fees_inputs, fees_outputs) - explicit specification of payment sources"#)
                 .add_required_param("did",  "DID of identity presented in Ledger")
                 .add_optional_param("hash", "Hash of attribute data")
                 .add_optional_param("raw", "JSON representation of attribute data")
                 .add_optional_param("enc", "Encrypted attribute data")
+                .add_optional_param_with_dynamic_completion("source_payment_address","Payment address of sender.", DynamicCompletionType::PaymentAddress)
+                .add_optional_param("fee","Transaction fee set on the ledger.")
                 .add_optional_param("fees_inputs","The list of source inputs")
                 .add_optional_param("fees_outputs","The list of outputs in the following format: (recipient, amount)")
                 .add_optional_param("extra","Optional information for fees payment operation")
+                .add_optional_param("sign","Sign the request (True by default)")
                 .add_optional_param("send","Send the request to the Ledger (True by default). If false then created request will be printed and stored into CLI context.")
                 .add_example(r#"ledger attrib did=VsKV7grR1BUE29mG2Fm2kX raw={"endpoint":{"ha":"127.0.0.1:5555"}}"#)
                 .add_example(r#"ledger attrib did=VsKV7grR1BUE29mG2Fm2kX hash=83d907821df1c87db829e96569a11f6fc2e7880acba5e43d07ab786959e13bd3"#)
@@ -219,20 +250,16 @@ pub mod attrib_command {
         let hash = get_opt_str_param("hash", params).map_err(error_err!())?;
         let raw = get_opt_str_param("raw", params).map_err(error_err!())?;
         let enc = get_opt_str_param("enc", params).map_err(error_err!())?;
-        let fees_inputs = get_opt_str_array_param("fees_inputs", params).map_err(error_err!())?;
-        let fees_outputs = get_opt_str_tuple_array_param("fees_outputs", params).map_err(error_err!())?;
-        let extra = get_opt_str_param("extra", params).map_err(error_err!())?;
-        let send = get_opt_bool_param("send", params).map_err(error_err!())?.unwrap_or(SEND_REQUEST);
 
         let mut request = Ledger::build_attrib_request(&submitter_did, target_did, hash, raw, enc)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
 
         set_author_agreement(ctx, &mut request)?;
 
-        let payment_method = set_request_fees(&mut request, wallet_handle, Some(&submitter_did), &fees_inputs, &fees_outputs, extra)?;
+        let payment_method = set_request_fees(ctx, params, &mut request, wallet_handle, Some(&submitter_did))?;
 
         let (response_json, response): (String, Response<serde_json::Value>) =
-            send_write_request!(ctx, send, &request, wallet_handle, &wallet_name, &submitter_did);
+            send_write_request!(ctx, params, &request, wallet_handle, &wallet_name, &submitter_did);
 
         let attribute =
             if raw.is_some() {
@@ -281,12 +308,11 @@ pub mod get_attrib_command {
         let raw = get_opt_str_param("raw", params).map_err(error_err!())?;
         let hash = get_opt_str_param("hash", params).map_err(error_err!())?;
         let enc = get_opt_str_param("enc", params).map_err(error_err!())?;
-        let send = get_opt_bool_param("send", params).map_err(error_err!())?.unwrap_or(SEND_REQUEST);
 
         let request = Ledger::build_get_attrib_request(submitter_did.as_ref().map(String::as_str), target_did, raw, hash, enc)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
 
-        let (_, mut response) = send_read_request!(&ctx, send, &request, submitter_did.as_ref().map(String::as_str));
+        let (_, mut response) = send_read_request!(&ctx, params, &request, submitter_did.as_ref().map(String::as_str));
 
         if let Some(result) = response.result.as_mut() {
             let data = result["data"].as_str().map(|data| serde_json::Value::String(data.to_string()));
@@ -310,13 +336,19 @@ pub mod get_attrib_command {
 pub mod schema_command {
     use super::*;
 
-    command!(CommandMetadata::build("schema", "Send Schema transaction to the Ledger.")
+    command!(CommandMetadata::build("schema", r#"Send Schema transaction to the Ledger.
+                One of the next parameter combinations must be specified to pay a transaction fee (if it is set on the ledger):
+                (source_payment_address, fee) - CLI automatically gets payment sources corresponded to the source payment address and prepares data
+                (fees_inputs, fees_outputs) - explicit specification of payment sources"#)
                 .add_required_param("name", "Schema name")
                 .add_required_param("version", "Schema version")
                 .add_required_param("attr_names", "Schema attributes split by comma (the number of attributes should be less or equal than 125)")
+                .add_optional_param_with_dynamic_completion("source_payment_address","Payment address of sender.", DynamicCompletionType::PaymentAddress)
+                .add_optional_param("fee","Transaction fee set on the ledger.")
                 .add_optional_param("fees_inputs","The list of source inputs")
                 .add_optional_param("fees_outputs","The list of outputs in the following format: (recipient, amount)")
                 .add_optional_param("extra","Optional information for fees payment operation")
+                .add_optional_param("sign","Sign the request (True by default)")
                 .add_optional_param("send","Send the request to the Ledger (True by default). If false then created request will be printed and stored into CLI context.")
                 .add_example("ledger schema name=gvt version=1.0 attr_names=name,age")
                 .add_example("ledger schema name=gvt version=1.0 attr_names=name,age send=false")
@@ -333,10 +365,6 @@ pub mod schema_command {
         let name = get_str_param("name", params).map_err(error_err!())?;
         let version = get_str_param("version", params).map_err(error_err!())?;
         let attr_names = get_str_array_param("attr_names", params).map_err(error_err!())?;
-        let fees_inputs = get_opt_str_array_param("fees_inputs", params).map_err(error_err!())?;
-        let fees_outputs = get_opt_str_tuple_array_param("fees_outputs", params).map_err(error_err!())?;
-        let extra = get_opt_str_param("extra", params).map_err(error_err!())?;
-        let send = get_opt_bool_param("send", params).map_err(error_err!())?.unwrap_or(SEND_REQUEST);
 
         let id = build_schema_id(&submitter_did, name, version);
 
@@ -355,10 +383,10 @@ pub mod schema_command {
 
         set_author_agreement(ctx, &mut request)?;
 
-        let payment_method = set_request_fees(&mut request, wallet_handle, Some(&submitter_did), &fees_inputs, &fees_outputs, extra)?;
+        let payment_method = set_request_fees(ctx, params, &mut request, wallet_handle, Some(&submitter_did))?;
 
         let (response_json, response): (String, Response<serde_json::Value>) =
-            send_write_request!(ctx, send, &request, wallet_handle, &wallet_name, &submitter_did);
+            send_write_request!(ctx, params, &request, wallet_handle, &wallet_name, &submitter_did);
 
         handle_transaction_response(response)
             .map(|result| print_transaction_response(result,
@@ -473,14 +501,13 @@ pub mod get_schema_command {
         let target_did = get_str_param("did", params).map_err(error_err!())?;
         let name = get_str_param("name", params).map_err(error_err!())?;
         let version = get_str_param("version", params).map_err(error_err!())?;
-        let send = get_opt_bool_param("send", params).map_err(error_err!())?.unwrap_or(SEND_REQUEST);
 
         let id = build_schema_id(target_did, name, version);
 
         let request = Ledger::build_get_schema_request(submitter_did.as_ref().map(String::as_str), &id)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
 
-        let (_, response) = send_read_request!(&ctx, send, &request, submitter_did.as_ref().map(String::as_str));
+        let (_, response) = send_read_request!(&ctx, params, &request, submitter_did.as_ref().map(String::as_str));
 
         if let Some(result) = response.result.as_ref() {
             if !result["seqNo"].is_i64() {
@@ -504,15 +531,21 @@ pub mod get_schema_command {
 pub mod cred_def_command {
     use super::*;
 
-    command!(CommandMetadata::build("cred-def", "Send Cred Def transaction to the Ledger.")
+    command!(CommandMetadata::build("cred-def", r#"Send Cred Def transaction to the Ledger.
+                One of the next parameter combinations must be specified to pay a transaction fee (if it is set on the ledger):
+                (source_payment_address, fee) - CLI automatically gets payment sources corresponded to the source payment address and prepares data
+                (fees_inputs, fees_outputs) - explicit specification of payment sources"#)
                 .add_required_param("schema_id", "Sequence number of schema")
                 .add_required_param("signature_type", "Signature type (only CL supported now)")
                 .add_optional_param("tag", "Allows to distinct between credential definitions for the same issuer and schema. Note that it is mandatory for indy-node version 1.4.x and higher")
                 .add_required_param("primary", "Primary key in json format")
                 .add_optional_param("revocation", "Revocation key in json format")
+                .add_optional_param_with_dynamic_completion("source_payment_address","Payment address of sender.", DynamicCompletionType::PaymentAddress)
+                .add_optional_param("fee","Transaction fee set on the ledger.")
                 .add_optional_param("fees_inputs","The list of source inputs")
                 .add_optional_param("fees_outputs","The list of outputs in the following format: (recipient, amount)")
                 .add_optional_param("extra","Optional information for fees payment operation")
+                .add_optional_param("sign","Sign the request (True by default)")
                 .add_optional_param("send","Send the request to the Ledger (True by default). If false then created request will be printed and stored into CLI context.")
                 .add_example(r#"ledger cred-def schema_id=1 signature_type=CL tag=1 primary={"n":"1","s":"2","rms":"3","r":{"age":"4","name":"5"},"rctxt":"6","z":"7"}"#)
                 .finalize()
@@ -529,10 +562,6 @@ pub mod cred_def_command {
         let tag = get_opt_str_param("tag", params).map_err(error_err!())?.unwrap_or("");
         let primary = get_object_param("primary", params).map_err(error_err!())?;
         let revocation = get_opt_str_param("revocation", params).map_err(error_err!())?;
-        let fees_inputs = get_opt_str_array_param("fees_inputs", params).map_err(error_err!())?;
-        let fees_outputs = get_opt_str_tuple_array_param("fees_outputs", params).map_err(error_err!())?;
-        let extra = get_opt_str_param("extra", params).map_err(error_err!())?;
-        let send = get_opt_bool_param("send", params).map_err(error_err!())?.unwrap_or(SEND_REQUEST);
 
         let id = build_cred_def_id(&submitter_did, schema_id, signature_type, tag);
 
@@ -559,10 +588,10 @@ pub mod cred_def_command {
 
         set_author_agreement(ctx, &mut request)?;
 
-        let payment_method = set_request_fees(&mut request, wallet_handle, Some(&submitter_did), &fees_inputs, &fees_outputs, extra)?;
+        let payment_method = set_request_fees(ctx, params, &mut request, wallet_handle, Some(&submitter_did))?;
 
         let (response_json, response): (String, Response<serde_json::Value>) =
-            send_write_request!(ctx, send, &request, wallet_handle, &wallet_name, &submitter_did);
+            send_write_request!(ctx, params, &request, wallet_handle, &wallet_name, &submitter_did);
 
         handle_transaction_response(response)
             .map(|result| print_transaction_response(result,
@@ -603,14 +632,13 @@ pub mod get_cred_def_command {
         let signature_type = get_str_param("signature_type", params).map_err(error_err!())?;
         let tag = get_opt_str_param("tag", params).map_err(error_err!())?.unwrap_or("");
         let origin = get_str_param("origin", params).map_err(error_err!())?;
-        let send = get_opt_bool_param("send", params).map_err(error_err!())?.unwrap_or(SEND_REQUEST);
 
         let id = build_cred_def_id(&origin, schema_id, signature_type, tag);
 
         let request = Ledger::build_get_cred_def_request(submitter_did.as_ref().map(String::as_str), &id)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
 
-        let (_, response) = send_read_request!(&ctx, send, &request, submitter_did.as_ref().map(String::as_str));
+        let (_, response) = send_read_request!(&ctx, params, &request, submitter_did.as_ref().map(String::as_str));
 
         if let Some(result) = response.result.as_ref() {
             if !result["seqNo"].is_i64() {
@@ -643,6 +671,7 @@ pub mod node_command {
                 .add_optional_param("blskey",  "Node BLS key")
                 .add_optional_param("blskey_pop",  "Node BLS key proof of possession. Note that it is mandatory if blskey specified")
                 .add_optional_param("services", "Node type. One of: VALIDATOR, OBSERVER or empty in case of blacklisting node")
+                .add_optional_param("sign","Sign the request (True by default)")
                 .add_optional_param("send","Send the request to the Ledger (True by default). If false then created request will be printed and stored into CLI context.")
                 .add_example("ledger node target=A5iWQVT3k8Zo9nXj4otmeqaUziPQPCiDqcydXkAJBk1Y node_ip=127.0.0.1 node_port=9710 client_ip=127.0.0.1 client_port=9711 alias=Node5 services=VALIDATOR blskey=2zN3bHM1m4rLz54MJHYSwvqzPchYp8jkHswveCLAEJVcX6Mm1wHQD1SkPYMzUDTZvWvhuE6VNAkK3KxVeEmsanSmvjVkReDeBEMxeDaayjcZjFGPydyey1qxBHmTvAnBKoPydvuTAqx5f7YNNRAdeLmUi99gERUU7TD8KfAa6MpQ9bw blskey_pop=RPLagxaR5xdimFzwmzYnz4ZhWtYQEj8iR5ZU53T2gitPCyCHQneUn2Huc4oeLd2B2HzkGnjAff4hWTJT6C7qHYB1Mv2wU5iHHGFWkhnTX9WsEAbunJCV2qcaXScKj4tTfvdDKfLiVuU2av6hbsMztirRze7LvYBkRHV3tGwyCptsrP")
                 .add_example("ledger node target=A5iWQVT3k8Zo9nXj4otmeqaUziPQPCiDqcydXkAJBk1Y node_ip=127.0.0.1 node_port=9710 client_ip=127.0.0.1 client_port=9711 alias=Node5 services=VALIDATOR")
@@ -666,7 +695,6 @@ pub mod node_command {
         let blskey = get_opt_str_param("blskey", params).map_err(error_err!())?;
         let blskey_pop = get_opt_str_param("blskey_pop", params).map_err(error_err!())?;
         let services = get_opt_str_array_param("services", params).map_err(error_err!())?;
-        let send = get_opt_bool_param("send", params).map_err(error_err!())?.unwrap_or(SEND_REQUEST);
 
         let node_data = {
             let mut json = JSONMap::new();
@@ -685,7 +713,7 @@ pub mod node_command {
             .map_err(|err| handle_indy_error(err, None, None, None))?;
 
         let (_, response): (String, Response<serde_json::Value>) =
-            send_write_request!(ctx, send, &request, wallet_handle, &wallet_name, &submitter_did);
+            send_write_request!(ctx, params, &request, wallet_handle, &wallet_name, &submitter_did);
 
         let res = handle_transaction_response(response)
             .map(|result| print_transaction_response(result,
@@ -711,6 +739,7 @@ pub mod pool_config_command {
     command!(CommandMetadata::build("pool-config", "Send write configuration to pool.")
                 .add_required_param("writes", "Accept write transactions.")
                 .add_optional_param("force", "Forced configuration applying without reaching pool consensus.")
+                .add_optional_param("sign","Sign the request (True by default)")
                 .add_optional_param("send","Send the request to the Ledger (True by default). If false then created request will be printed and stored into CLI context.")
                 .add_example("ledger pool-config writes=true")
                 .add_example("ledger pool-config writes=true force=true")
@@ -725,13 +754,12 @@ pub mod pool_config_command {
 
         let writes = get_bool_param("writes", params).map_err(error_err!())?;
         let force = get_opt_bool_param("force", params).map_err(error_err!())?.unwrap_or(false);
-        let send = get_opt_bool_param("send", params).map_err(error_err!())?.unwrap_or(SEND_REQUEST);
 
         let request = Ledger::indy_build_pool_config_request(&submitter_did, writes, force)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
 
         let (_, response): (String, Response<serde_json::Value>) =
-            send_write_request!(ctx, send, &request, wallet_handle, &wallet_name, &submitter_did);
+            send_write_request!(ctx, params, &request, wallet_handle, &wallet_name, &submitter_did);
 
         let res = handle_transaction_response(response)
             .map(|result| print_transaction_response(result,
@@ -846,6 +874,7 @@ pub mod pool_upgrade_command {
                 .add_optional_param("reinstall", "Whether it's allowed to re-install the same version. False by default.")
                 .add_optional_param("force", "Whether we should apply transaction without waiting for consensus of this transaction. False by default.")
                 .add_optional_param("package", "Package to be upgraded.")
+                .add_optional_param("sign","Sign the request (True by default)")
                 .add_optional_param("send","Send the request to the Ledger (True by default). If false then created request will be printed and stored into CLI context.")
                 .add_example(r#"ledger pool-upgrade name=upgrade-1 version=2.0 action=start sha256=f284bdc3c1c9e24a494e285cb387c69510f28de51c15bb93179d9c7f28705398 schedule={"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv":"2020-01-25T12:49:05.258870+00:00"}"#)
                 .add_example(r#"ledger pool-upgrade name=upgrade-1 version=2.0 action=start sha256=f284bdc3c1c9e24a494e285cb387c69510f28de51c15bb93179d9c7f28705398 schedule={"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv":"2020-01-25T12:49:05.258870+00:00"} package=some_package"#)
@@ -869,14 +898,13 @@ pub mod pool_upgrade_command {
         let reinstall = get_opt_bool_param("reinstall", params).map_err(error_err!())?.unwrap_or(false);
         let force = get_opt_bool_param("force", params).map_err(error_err!())?.unwrap_or(false);
         let package = get_opt_str_param("package", params).map_err(error_err!())?;
-        let send = get_opt_bool_param("send", params).map_err(error_err!())?.unwrap_or(SEND_REQUEST);
 
         let request = Ledger::indy_build_pool_upgrade_request(&submitter_did, name, version, action, sha256,
                                                               timeout, schedule, justification, reinstall, force, package)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
 
         let (_, response): (String, Response<serde_json::Value>) =
-            send_write_request!(ctx, send, &request, wallet_handle, &wallet_name, &submitter_did);
+            send_write_request!(ctx, params, &request, wallet_handle, &wallet_name, &submitter_did);
 
         let mut schedule = None;
         let mut hash = None;
@@ -1001,7 +1029,7 @@ pub mod get_payment_sources_command {
     use super::*;
 
     command!(CommandMetadata::build("get-payment-sources", "Get sources list for payment address.")
-                .add_required_param("payment_address","Target payment address")
+                .add_required_param_with_dynamic_completion("payment_address","Target payment address", DynamicCompletionType::PaymentAddress)
                 .add_optional_param("send","Send the request to the Ledger (True by default). If false then created request will be printed and stored into CLI context.")
                 .add_example("ledger get-payment-sources payment_address=pay:null:GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa")
                 .finalize()
@@ -1010,20 +1038,19 @@ pub mod get_payment_sources_command {
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
-        let (wallet_handle, _) = ensure_opened_wallet(&ctx)?;
+        let wallet_handle = get_opened_wallet_handle(&ctx).unwrap_or(-1);
         let submitter_did = get_active_did(&ctx);
 
         let payment_address = get_str_param("payment_address", params).map_err(error_err!())?;
-        let send = get_opt_bool_param("send", params).map_err(error_err!())?.unwrap_or(SEND_REQUEST);
 
         let (request, payment_method) = Payment::build_get_payment_sources_request(wallet_handle, submitter_did.as_ref().map(String::as_str), payment_address)
             .map_err(|err| handle_payment_error(err, None))?;
 
-        let (response, _) = send_read_request!(&ctx, send, &request, submitter_did.as_ref().map(String::as_str));
+        let (response, _) = send_read_request!(&ctx, params, &request, submitter_did.as_ref().map(String::as_str));
 
         let res = match Payment::parse_get_payment_sources_response(&payment_method, &response) {
             Ok(sources_json) => {
-                let mut sources: Vec<serde_json::Value> = serde_json::from_str(&sources_json)
+                let sources: Vec<serde_json::Value> = serde_json::from_str(&sources_json)
                     .map_err(|_| println_err!("Wrong data has been received"))?;
 
                 print_list_table(&sources,
@@ -1045,11 +1072,23 @@ pub mod get_payment_sources_command {
 pub mod payment_command {
     use super::*;
 
-    command!(CommandMetadata::build("payment", "Send request for doing payment.")
-                .add_required_param("inputs","The list of payment sources")
-                .add_required_param("outputs","The list of outputs in the following format: (recipient, amount)")
-                .add_required_param("extra","Optional information for payment operation")
+    command!(CommandMetadata::build("payment", r#"Send request for doing the payment.
+                One of the next parameter combinations must be specified:
+                (source_payment_address, target_payment_address, amount, Optional(fee)) - CLI automatically gets payment sources corresponded to the source payment address and prepares data
+                (inputs, outputs) - explicit specification of payment sources"#)
+                .add_optional_param_with_dynamic_completion("source_payment_address","Payment address of sender.", DynamicCompletionType::PaymentAddress)
+                .add_optional_param_with_dynamic_completion("target_payment_address","Payment address of recipient", DynamicCompletionType::PaymentAddress)
+                .add_optional_param("amount","Payment amount.")
+                .add_optional_param("fee","Transaction fee set on the ledger.")
+                .add_optional_param("inputs","The list of payment sources")
+                .add_optional_param("outputs",r#"The list of outputs in the following format: (recipient, amount)
+                recipient - payment address of recipient
+                amount- payment amount"#)
+                .add_optional_param("extra","Optional information for payment operation")
+                .add_optional_param("sign","Sign the request (True by default)")
                 .add_optional_param("send","Send the request to the Ledger (True by default). If false then created request will be printed and stored into CLI context.")
+                .add_example("ledger payment source_payment_address=pay:null:GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa target_payment_address=pay:null:FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4 amount=100")
+                .add_example("ledger payment source_payment_address=pay:null:GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa target_payment_address=pay:null:FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4 amount=100 fee=2")
                 .add_example("ledger payment inputs=pay:null:111_rBuQo2A1sc9jrJg outputs=(pay:null:FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4,100)")
                 .add_example("ledger payment inputs=pay:null:111_rBuQo2A1sc9jrJg outputs=(pay:null:FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4,100) extra=some_extra")
                 .add_example("ledger payment inputs=pay:null:111_rBuQo2A1sc9jrJg,pay:null:222_aEwACvA1sc9jrJg outputs=(pay:null:FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4,100),(pay:null:ABABefwrhscbaAShva7dkx1d2dZ3zUF8ckg7wmL7ofN4,5)")
@@ -1061,14 +1100,18 @@ pub mod payment_command {
 
         let (wallet_handle, _) = ensure_opened_wallet(&ctx)?;
         let submitter_did = get_active_did(&ctx);
+
+        let source_payment_address = get_opt_str_param("source_payment_address", params).map_err(error_err!())?.map(String::from);
+        let target_payment_address = get_opt_str_param("target_payment_address", params).map_err(error_err!())?.map(String::from);
+        let amount = get_opt_number_param::<u64>("amount", params).map_err(error_err!())?;
+        let fee = get_opt_number_param::<u64>("fee", params).map_err(error_err!())?;
+
+        let inputs = get_opt_str_array_param("inputs", params).map_err(error_err!())?;
+        let outputs = get_opt_str_tuple_array_param("outputs", params).map_err(error_err!())?;
+
         let mut extra = get_opt_str_param("extra", params).map_err(error_err!())?.map(String::from);
-        let send = get_opt_bool_param("send", params).map_err(error_err!())?.unwrap_or(SEND_REQUEST);
 
-        let inputs = get_str_array_param("inputs", params).map_err(error_err!())?;
-        let outputs = get_str_tuple_array_param("outputs", params).map_err(error_err!())?;
-
-        let inputs = parse_payment_inputs(&inputs).map_err(error_err!())?;
-        let outputs = parse_payment_outputs(&outputs).map_err(error_err!())?;
+        let (inputs, outputs) = prepare_sources_for_payment_cmd(&ctx, source_payment_address, target_payment_address, amount, fee, inputs, outputs)?;
 
         if let Some((text, version, acc_mech_type, time_of_acceptance)) = get_transaction_author_info(&ctx) {
             extra = Some(Payment::prepare_payment_extra_with_acceptance_data(extra.as_ref().map(String::as_str), Some(&text), Some(&version), None, &acc_mech_type, time_of_acceptance)
@@ -1078,11 +1121,11 @@ pub mod payment_command {
         let (request, payment_method) = Payment::build_payment_req(wallet_handle, submitter_did.as_ref().map(String::as_str), &inputs, &outputs, extra.as_ref().map(String::as_str))
             .map_err(|err| handle_payment_error(err, None))?;
 
-        let (response, _) = send_read_request!(&ctx, send, &request, submitter_did.as_ref().map(String::as_str));
+        let (response, _) = send_read_request!(&ctx, params, &request, submitter_did.as_ref().map(String::as_str));
 
         let res = match Payment::parse_payment_response(&payment_method, &response) {
             Ok(receipts_json) => {
-                let mut receipts: Vec<serde_json::Value> = serde_json::from_str(&receipts_json)
+                let receipts: Vec<serde_json::Value> = serde_json::from_str(&receipts_json)
                     .map_err(|_| println_err!("Wrong data has been received"))?;
 
                 print_list_table(&receipts,
@@ -1114,23 +1157,22 @@ pub mod get_fees_command {
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
-        let (wallet_handle, _) = ensure_opened_wallet(&ctx)?;
+        let wallet_handle = get_opened_wallet_handle(&ctx).unwrap_or(-1);
         let submitter_did = get_active_did(&ctx);
 
         let payment_method = get_str_param("payment_method", params).map_err(error_err!())?;
-        let send = get_opt_bool_param("send", params).map_err(error_err!())?.unwrap_or(SEND_REQUEST);
 
         let request = Payment::build_get_txn_fees_req(wallet_handle, submitter_did.as_ref().map(String::as_str), payment_method)
             .map_err(|err| handle_payment_error(err, Some(payment_method)))?;
 
-        let (response, _) = send_read_request!(&ctx, send, &request, submitter_did.as_ref().map(String::as_str));
-        
+        let (response, _) = send_read_request!(&ctx, params, &request, submitter_did.as_ref().map(String::as_str));
+
         let res = match Payment::parse_get_txn_fees_response(&payment_method, &response) {
             Ok(fees_json) => {
-                let mut fees: HashMap<String, u64> = serde_json::from_str(&fees_json)
+                let fees: HashMap<String, u64> = serde_json::from_str(&fees_json)
                     .map_err(|_| println_err!("Wrong data has been received"))?;
 
-                let mut fees =
+                let fees =
                     fees
                         .iter()
                         .map(|(key, value)|
@@ -1170,11 +1212,14 @@ pub mod mint_prepare_command {
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
-        let wallet_handle = ensure_opened_wallet_handle(ctx)?;
+        let wallet_handle = get_opened_wallet_handle(&ctx).unwrap_or(-1);
         let submitter_did = get_active_did(&ctx);
 
         let outputs = get_str_tuple_array_param("outputs", params).map_err(error_err!())?;
-        let outputs = parse_payment_outputs(&outputs).map_err(error_err!())?;
+        let outputs =
+            parse_payment_outputs(&outputs)
+                .map_err(error_err!())
+                .and_then(|outputs| serialize(&outputs))?;
 
         let extra = get_opt_str_param("extra", params).map_err(error_err!())?;
 
@@ -1206,7 +1251,7 @@ pub mod set_fees_prepare_command {
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
-        let wallet_handle = ensure_opened_wallet_handle(ctx)?;
+        let wallet_handle = get_opened_wallet_handle(&ctx).unwrap_or(-1);
         let submitter_did = get_active_did(&ctx);
 
         let payment_method = get_str_param("payment_method", params).map_err(error_err!())?;
@@ -1240,16 +1285,15 @@ pub mod verify_payment_receipt_command {
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
-        let (wallet_handle, _) = ensure_opened_wallet(&ctx)?;
+        let wallet_handle = get_opened_wallet_handle(&ctx).unwrap_or(-1);
         let submitter_did = get_active_did(&ctx);
 
         let receipt = get_str_param("receipt", params).map_err(error_err!())?;
-        let send = get_opt_bool_param("send", params).map_err(error_err!())?.unwrap_or(SEND_REQUEST);
 
         let (request, payment_method) = Payment::build_verify_payment_req(wallet_handle, submitter_did.as_ref().map(String::as_str), receipt)
             .map_err(|err| handle_payment_error(err, None))?;
 
-        let (response, _) = send_read_request!(&ctx, send, &request, submitter_did.as_ref().map(String::as_str));
+        let (response, _) = send_read_request!(&ctx, params, &request, submitter_did.as_ref().map(String::as_str));
 
         let res = match Payment::parse_verify_payment_response(&payment_method, &response) {
             Ok(info_json) => {
@@ -1335,10 +1379,11 @@ pub mod auth_rule_command {
                 .add_required_param("constraint", r#"Set of constraints required for execution of an action
          {
              constraint_id - type of a constraint. Can be either "ROLE" to specify final constraint or  "AND"/"OR" to combine constraints, or "FORBIDDEN" to forbid action.
-             role - role associated value {TRUSTEE: 0, STEWARD: 2, TRUST_ANCHOR: 101, ENDORSER: 101, NETWORK_MONITOR: 201, ANY: *}.
+             role - (optional) role associated value {TRUSTEE: 0, STEWARD: 2, TRUST_ANCHOR: 101, ENDORSER: 101, NETWORK_MONITOR: 201, ANY: *}.
              sig_count - the number of signatures required to execution action.
-             need_to_be_owner - if user must be an owner of transaction.
-             metadata - additional parameters of the constraint.
+             need_to_be_owner - (optional) if user must be an owner of transaction (false by default).
+             off_ledger_signature - (optional) allow signature of unknow for ledger did (false by default).
+             metadata - (optional) additional parameters of the constraint.
          }
          can be combined by
          {
@@ -1346,8 +1391,10 @@ pub mod auth_rule_command {
              auth_constraints: [<constraint_1>, <constraint_2>]
          }
                 "#)
+                .add_optional_param("sign","Sign the request (True by default)")
                 .add_optional_param("send","Send the request to the Ledger (True by default). If false then created request will be printed and stored into CLI context.")
                 .add_example(r#"ledger auth-rule txn_type=NYM action=ADD field=role new_value=101 constraint="{"sig_count":1,"role":"0","constraint_id":"ROLE","need_to_be_owner":false}""#)
+                .add_example(r#"ledger auth-rule txn_type=NYM action=ADD field=role new_value=101 constraint="{"sig_count":1,"role":"0","constraint_id":"ROLE","need_to_be_owner":false,"off_ledger_signature":true}""#)
                 .add_example(r#"ledger auth-rule txn_type=NYM action=EDIT field=role old_value=101 new_value=0 constraint="{"sig_count":1,"role":"0","constraint_id":"ROLE","need_to_be_owner":false}""#)
                 .add_example(r#"ledger auth-rule txn_type=NYM action=ADD field=role new_value=101 constraint="{"constraint_id":"FORBIDDEN"}""#)
                 .finalize()
@@ -1365,13 +1412,12 @@ pub mod auth_rule_command {
         let old_value = get_opt_str_param("old_value", params).map_err(error_err!())?;
         let new_value = get_opt_str_param("new_value", params).map_err(error_err!())?;
         let constraint = get_str_param("constraint", params).map_err(error_err!())?;
-        let send = get_opt_bool_param("send", params).map_err(error_err!())?.unwrap_or(SEND_REQUEST);
 
         let request = Ledger::build_auth_rule_request(&submitter_did, txn_type, &action.to_uppercase(), field, old_value, new_value, constraint)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
 
         let (_, mut response): (String, Response<serde_json::Value>) =
-            send_write_request!(ctx, send, &request, wallet_handle, &wallet_name, &submitter_did);
+            send_write_request!(ctx, params, &request, wallet_handle, &wallet_name, &submitter_did);
 
         if let Some(result) = response.result.as_mut() {
             result["txn"]["data"]["auth_type"] = get_txn_title(&result["txn"]["data"]["auth_type"]);
@@ -1400,6 +1446,7 @@ pub mod auth_rules_command {
 
     command!(CommandMetadata::build("auth-rules", "Send AUTH_RULES request to change authentication rules for multiple ledger transactions.")
                 .add_main_param("rules", r#"A list of auth rules: [{"auth_type", "auth_action", "field", "old_value", "new_value"},{...}]"#)
+                .add_optional_param("sign","Sign the request (True by default)")
                 .add_optional_param("send","Send the request to the Ledger (True by default). If false then created request will be printed and stored into CLI context.")
                 .add_example(r#"ledger auth-rules [{"auth_type":"1","auth_action":"ADD","field":"role","new_value":"101","constraint":{"sig_count":1,"role":"0","constraint_id":"ROLE","need_to_be_owner":false}}]"#)
                 .finalize()
@@ -1412,13 +1459,12 @@ pub mod auth_rules_command {
         let submitter_did = ensure_active_did(&ctx)?;
 
         let rules = get_str_param("rules", params).map_err(error_err!())?;
-        let send = get_opt_bool_param("send", params).map_err(error_err!())?.unwrap_or(SEND_REQUEST);
 
         let request = Ledger::build_auth_rules_request(&submitter_did, &rules)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
 
         let (_, response): (String, Response<serde_json::Value>) =
-            send_write_request!(ctx, send, &request, wallet_handle, &wallet_name, &submitter_did);
+            send_write_request!(ctx, params, &request, wallet_handle, &wallet_name, &submitter_did);
 
         let result = handle_transaction_response(response)?;
         println!("result {:?}", result);
@@ -1471,12 +1517,11 @@ pub mod get_auth_rule_command {
         let field = get_opt_str_param("field", params).map_err(error_err!())?;
         let old_value = get_opt_str_param("old_value", params).map_err(error_err!())?;
         let new_value = get_opt_str_param("new_value", params).map_err(error_err!())?;
-        let send = get_opt_bool_param("send", params).map_err(error_err!())?.unwrap_or(SEND_REQUEST);
 
         let request = Ledger::build_get_auth_rule_request(submitter_did.as_ref().map(String::as_str), auth_type, auth_action, field, old_value, new_value)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
 
-        let (_, response) = send_read_request!(&ctx, send, &request, submitter_did.as_ref().map(String::as_str));
+        let (_, response) = send_read_request!(&ctx, params, &request, submitter_did.as_ref().map(String::as_str));
 
         let result = handle_transaction_response(response)?;
 
@@ -1512,13 +1557,13 @@ fn print_auth_rules(rules: AuthRulesData) {
         .collect::<Vec<serde_json::Value>>();
 
     print_list_table(&constraints,
-                               &vec![("auth_type", "Type"),
-                                     ("auth_action", "Action"),
-                                     ("field", "Field"),
-                                     ("old_value", "Old Value"),
-                                     ("new_value", "New Value"),
-                                     ("constraint", "Constraint")],
-                               "There are no rules set");
+                     &vec![("auth_type", "Type"),
+                           ("auth_action", "Action"),
+                           ("field", "Field"),
+                           ("old_value", "Old Value"),
+                           ("new_value", "New Value"),
+                           ("constraint", "Constraint")],
+                     "There are no rules set");
 }
 
 pub mod save_transaction_command {
@@ -1599,13 +1644,19 @@ pub mod load_transaction_command {
 pub mod taa_command {
     use super::*;
 
-    command!(CommandMetadata::build("txn-author-agreement", "Send Transaction Author Agreement to the ledger.")
+    command!(CommandMetadata::build("txn-author-agreement", r#"Send Transaction Author Agreement to the ledger.
+                One of the next parameter combinations must be specified to pay a transaction fee (if it is set on the ledger):
+                (source_payment_address, fee) - CLI automatically gets payment sources corresponded to the source payment address and prepares data
+                (fees_inputs, fees_outputs) - explicit specification of payment sources"#)
                 .add_optional_param("text", "The content of a new agreement. Use empty to reset an active agreement")
                 .add_optional_param("file", "The path to file containing a content of agreement to send (an alternative to the `text` parameter)")
                 .add_required_param("version", "The version of a new agreement")
+                .add_optional_param_with_dynamic_completion("source_payment_address","Payment address of sender.", DynamicCompletionType::PaymentAddress)
+                .add_optional_param("fee","Transaction fee set on the ledger.")
                 .add_optional_param("fees_inputs","The list of source inputs")
                 .add_optional_param("fees_outputs","The list of outputs in the following format: (recipient, amount)")
                 .add_optional_param("extra","Optional information for fees payment operation")
+                .add_optional_param("sign","Sign the request (True by default)")
                 .add_optional_param("send","Send the request to the Ledger (True by default). If false then created request will be printed and stored into CLI context.")
                 .add_example("ledger txn-author-agreement text=\"Indy transaction agreement\" version=1")
                 .add_example("ledger txn-author-agreement text= version=1")
@@ -1624,10 +1675,6 @@ pub mod taa_command {
         let text = get_opt_empty_str_param("text", params).map_err(error_err!())?;
         let file = get_opt_str_param("file", params).map_err(error_err!())?;
         let version = get_str_param("version", params).map_err(error_err!())?;
-        let fees_inputs = get_opt_str_array_param("fees_inputs", params).map_err(error_err!())?;
-        let fees_outputs = get_opt_str_tuple_array_param("fees_outputs", params).map_err(error_err!())?;
-        let extra = get_opt_str_param("extra", params).map_err(error_err!())?;
-        let send = get_opt_bool_param("send", params).map_err(error_err!())?.unwrap_or(SEND_REQUEST);
 
         let text = match (text, file) {
             (Some(text_), None) => text_.to_string(),
@@ -1642,10 +1689,10 @@ pub mod taa_command {
         let mut request = Ledger::build_txn_author_agreement_request(&submitter_did, &text, &version)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
 
-        let payment_method = set_request_fees(&mut request, wallet_handle, Some(&submitter_did), &fees_inputs, &fees_outputs, extra)?;
+        let payment_method = set_request_fees(ctx, params, &mut request, wallet_handle, Some(&submitter_did))?;
 
         let (response_json, response): (String, Response<serde_json::Value>) =
-            send_write_request!(ctx, send, &request, wallet_handle, &wallet_name, &submitter_did);
+            send_write_request!(ctx, params, &request, wallet_handle, &wallet_name, &submitter_did);
 
         handle_transaction_response(response)
             .map(|result| {
@@ -1675,14 +1722,20 @@ pub mod taa_command {
 pub mod aml_command {
     use super::*;
 
-    command!(CommandMetadata::build("txn-acceptance-mechanisms", "Send TAA Acceptance Mechanisms to the ledger.")
+    command!(CommandMetadata::build("txn-acceptance-mechanisms", r#"Send TAA Acceptance Mechanisms to the ledger.
+                One of the next parameter combinations must be specified to pay a transaction fee (if it is set on the ledger):
+                (source_payment_address, fee) - CLI automatically gets payment sources corresponded to the source payment address and prepares data
+                (fees_inputs, fees_outputs) - explicit specification of payment sources"#)
                 .add_optional_param("aml", "The set of new acceptance mechanisms.")
                 .add_optional_param("file", "The path to file containing a set of acceptance mechanisms to send (an alternative to the text parameter).")
                 .add_required_param("version", "The version of a new set of acceptance mechanisms.")
                 .add_optional_param("context", "Common context information about acceptance mechanisms (may be a URL to external resource).")
+                .add_optional_param_with_dynamic_completion("source_payment_address","Payment address of sender.", DynamicCompletionType::PaymentAddress)
+                .add_optional_param("fee","Transaction fee set on the ledger.")
                 .add_optional_param("fees_inputs","The list of source inputs")
                 .add_optional_param("fees_outputs","The list of outputs in the following format: (recipient, amount)")
                 .add_optional_param("extra","Optional information for fees payment operation")
+                .add_optional_param("sign","Sign the request (True by default)")
                 .add_optional_param("send","Send the request to the Ledger (True by default). If false then created request will be printed and stored into CLI context.")
                 .add_example("ledger txn-acceptance-mechanisms aml={\"Click Agreement\":\"some description\"} version=1")
                 .add_example("ledger txn-acceptance-mechanisms file=/home/mechanism.txt version=1")
@@ -1701,10 +1754,6 @@ pub mod aml_command {
         let file = get_opt_str_param("file", params).map_err(error_err!())?;
         let version = get_str_param("version", params).map_err(error_err!())?;
         let context = get_opt_str_param("context", params).map_err(error_err!())?;
-        let fees_inputs = get_opt_str_array_param("fees_inputs", params).map_err(error_err!())?;
-        let fees_outputs = get_opt_str_tuple_array_param("fees_outputs", params).map_err(error_err!())?;
-        let extra = get_opt_str_param("extra", params).map_err(error_err!())?;
-        let send = get_opt_bool_param("send", params).map_err(error_err!())?.unwrap_or(SEND_REQUEST);
 
         let aml = match (aml, file) {
             (Some(aml_), None) => aml_.to_string(),
@@ -1719,10 +1768,10 @@ pub mod aml_command {
         let mut request = Ledger::build_acceptance_mechanisms_request(&submitter_did, &aml, &version, context)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
 
-        let payment_method = set_request_fees(&mut request, wallet_handle, Some(&submitter_did), &fees_inputs, &fees_outputs, extra)?;
+        let payment_method = set_request_fees(ctx, params, &mut request, wallet_handle, Some(&submitter_did))?;
 
         let (response_json, response): (String, Response<serde_json::Value>) =
-            send_write_request!(ctx, send, &request, wallet_handle, &wallet_name, &submitter_did);
+            send_write_request!(ctx, params, &request, wallet_handle, &wallet_name, &submitter_did);
 
         handle_transaction_response(response)
             .map(|result| print_transaction_response(result,
@@ -1744,7 +1793,7 @@ pub mod aml_command {
 
 pub fn set_author_agreement(ctx: &CommandContext, request: &mut String) -> Result<(), ()> {
     if let Some((text, version, acc_mech_type, time_of_acceptance)) = get_transaction_author_info(&ctx) {
-        if acc_mech_type.is_empty(){
+        if acc_mech_type.is_empty() {
             return Err(println_err!("Transaction author agreement Acceptance Mechanism isn't set."));
         }
 
@@ -1754,64 +1803,35 @@ pub fn set_author_agreement(ctx: &CommandContext, request: &mut String) -> Resul
     Ok(())
 }
 
-pub fn set_request_fees(request: &mut String, wallet_handle: i32, submitter_did: Option<&str>, fees_inputs: &Option<Vec<&str>>, fees_outputs: &Option<Vec<String>>, extra: Option<&str>) -> Result<Option<String>, ()> {
-    let mut payment_method: Option<String> = None;
-    if let &Some(ref inputs) = fees_inputs {
-        let inputs_json = parse_payment_inputs(&inputs)?;
-
-        let outputs_json = if let &Some(ref o) = fees_outputs {
-            parse_payment_outputs(&o)?
-        } else { "[]".to_string() };
-
-        *request = Payment::add_request_fees(wallet_handle, submitter_did, request, &inputs_json, &outputs_json, extra)
-            .map(|(request, _)| request)
-            .map_err(|err| handle_payment_error(err, None))?;
-
-        payment_method = parse_method_from_payment_address(inputs[0])
-    }
-    Ok(payment_method)
+fn serialize<T>(obj: &T) -> Result<String, ()> where T: ::serde::Serialize {
+    serde_json::to_string(obj).map_err(|err| println_err!("Invalid data: {:?}", err))
 }
 
-fn parse_method_from_payment_address(input: &str) -> Option<String> {
-    let res: Vec<&str> = input.split(':').collect();
-    match res.len() {
-        3 => res.get(1).map(|s| s.to_string()),
-        _ => None
-    }
-}
-
-fn parse_payment_inputs(inputs: &Vec<&str>) -> Result<String, ()> {
-    serde_json::to_string(&inputs)
-        .map_err(|_| println_err!("Wrong data has been received"))
-}
-
-fn parse_payment_outputs(outputs: &Vec<String>) -> Result<String, ()> {
+fn parse_payment_outputs(outputs: &Vec<String>) -> Result<Vec<Output>, ()> {
     const OUTPUTS_DELIMITER: &'static str = ",";
 
     if outputs.is_empty() {
         return Err(println_err!("Outputs list is empty"));
     }
 
-    let mut output_objects: Vec<serde_json::Value> = Vec::new();
+    let mut output_objects: Vec<Output> = Vec::new();
     for output in outputs {
         let parts: Vec<&str> = output.split(OUTPUTS_DELIMITER).collect::<Vec<&str>>();
 
-        output_objects.push(json!({
-                        "recipient": parts.get(0)
-                                          .ok_or(())
-                                          .map_err(|_| println_err!("Invalid format of Outputs: Payment Address not found"))?,
-                        "amount": parts.get(1)
-                                    .ok_or(())
-                                    .map_err(|_| println_err!("Invalid format of Outputs: Amount not found"))
-                                    .and_then(|amount| amount.parse::<u64>()
-                                        .map_err(|_| println_err!("Invalid format of Outputs: Amount must be integer and greater then 0")))?
-                    }));
+        output_objects.push(Output {
+            recipient: parts.get(0)
+                .ok_or(())
+                .map_err(|_| println_err!("Invalid format of Outputs: Payment Address not found"))?
+                .to_string(),
+            amount: parts.get(1)
+                .ok_or(())
+                .map_err(|_| println_err!("Invalid format of Outputs: Amount not found"))
+                .and_then(|amount| amount.parse::<u64>()
+                    .map_err(|_| println_err!("Invalid format of Outputs: Amount must be integer and greater then 0")))?
+        });
     }
-
-    serde_json::to_string(&output_objects)
-        .map_err(|_| println_err!("Wrong data has been received"))
+    Ok(output_objects)
 }
-
 
 pub fn parse_response_with_fees(response: &str, payment_method: Option<String>) -> Result<Option<Vec<serde_json::Value>>, ()> {
     let receipts = if let Some(method) = payment_method {
@@ -1859,8 +1879,7 @@ fn parse_payment_fees(fees: &Vec<&str>) -> Result<String, ()> {
         fees_map.insert(type_, amount);
     }
 
-    serde_json::to_string(&fees_map)
-        .map_err(|_| println_err!("Wrong data has been received"))
+    serialize(&fees_map)
 }
 
 fn print_transaction_response(mut result: serde_json::Value, title: &str,
@@ -2001,6 +2020,189 @@ pub fn get_active_transaction_author_agreement(_pool_handle: i32) -> Result<Opti
     }
 }
 
+#[derive(Deserialize, Debug)]
+struct Source {
+    source: String,
+    amount: u64,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct Output {
+    recipient: String,
+    amount: u64,
+}
+
+fn get_payment_sources(ctx: &CommandContext, payment_address: &str) -> Result<Vec<Source>, ()> {
+    let (pool_handle, pool_name) = ensure_connected_pool(ctx)?;
+    let (wallet_handle, wallet_name) = ensure_opened_wallet(ctx)?;
+    let submitter_did = get_active_did(&ctx);
+
+    Payment::build_get_payment_sources_request(wallet_handle, submitter_did.as_ref().map(String::as_str), payment_address)
+        .and_then(|(request, payment_method)|
+            Ledger::submit_request(pool_handle, &request)
+                .map(|response| (response, payment_method))
+        )
+        .and_then(|(response, payment_method)|
+            Payment::parse_get_payment_sources_response(&payment_method, &response)
+        )
+        .map_err(|err|
+            handle_indy_error(err, submitter_did.as_ref().map(String::as_str), Some(&pool_name), Some(&wallet_name))
+        )
+        .and_then(|sources_json|
+            serde_json::from_str(&sources_json)
+                .map_err(|err| println_err!("Invalid transaction response: {:?}", err))
+        )
+}
+
+pub fn set_request_fees(ctx: &CommandContext,
+                        params: &HashMap<&'static str, String>,
+                        request: &mut String,
+                        wallet_handle: i32,
+                        submitter_did: Option<&str>) -> Result<Option<String>, ()> {
+    let source_payment_address = get_opt_str_param("source_payment_address", params).map_err(error_err!())?;
+    let fee = get_opt_number_param::<u64>("fee", params).map_err(error_err!())?;
+
+    let fees_inputs = get_opt_str_array_param("fees_inputs", params).map_err(error_err!())?;
+    let fees_outputs = get_opt_str_tuple_array_param("fees_outputs", params).map_err(error_err!())?;
+
+    let extra = get_opt_str_param("extra", params).map_err(error_err!())?;
+
+    if source_payment_address.is_none() && fees_inputs.is_none() {
+        return Ok(None);
+    }
+
+    if source_payment_address.is_some() && fees_inputs.is_some() {
+        return Err(println_err!("Only one of `source_payment_address`, `fees_inputs` can be specified."));
+    }
+
+    let (inputs, outputs) = match (source_payment_address, fee) {
+        (Some(source_), Some(fee_)) => {
+            build_payment_sources_for_addresses(ctx, source_, None, None, Some(fee_))?
+        }
+        (Some(_), None) => { return Err(println_err!("Fee value must be specified together with `source_payment_address`.")); }
+        (None, None) => {
+            match fees_inputs {
+                Some(inputs_) => {
+                    let inputs = inputs_.into_iter().map(String::from).collect();
+                    let outputs =
+                        fees_outputs
+                            .as_ref()
+                            .ok_or(())
+                            .and_then(|outputs_| parse_payment_outputs(outputs_))
+                            .unwrap_or_default();
+                    (inputs, outputs)
+                }
+                _ => { return Ok(None); }
+            }
+        }
+        _ => {
+            return Err(println_err!("(source_payment_address, fee) - all or none parameters must be specified"));
+        }
+    };
+
+    let inputs_json = serialize(&inputs)?;
+    let outputs_json = serialize(&outputs)?;
+
+    let (req_with_fees, payment_method) = Payment::add_request_fees(wallet_handle, submitter_did, request, &inputs_json, &outputs_json, extra)
+        .map_err(|err| handle_payment_error(err, None))?;
+
+    *request = req_with_fees;
+
+    Ok(Some(payment_method))
+}
+
+fn prepare_sources_for_payment_cmd(ctx: &CommandContext,
+                                   source_payment_address: Option<String>,
+                                   target_payment_address: Option<String>,
+                                   amount: Option<u64>,
+                                   fee: Option<u64>,
+                                   inputs: Option<Vec<&str>>,
+                                   outputs: Option<Vec<String>>) -> Result<(String, String), ()> {
+    let (inputs, outputs) = match (source_payment_address, target_payment_address, amount) {
+        (Some(source_address), Some(target_address), Some(amount_)) => {
+            if amount_ <= 0{
+                return Err(println_err!("Payment amount must be greater than 0"))
+            }
+
+            build_payment_sources_for_addresses(&ctx, &source_address, Some(&target_address), Some(amount_), fee)?
+        }
+        (None, None, None) => {
+            match (inputs, outputs) {
+                (Some(inputs_), Some(outputs_)) => {
+                    let inputs = inputs_.into_iter().map(String::from).collect();
+                    let outputs = parse_payment_outputs(&outputs_).map_err(error_err!())?;
+                    (inputs, outputs)
+                }
+                (None, None) => return Err(println_err!("One of the next parameter combinations must be specified:\n\
+                        (source_payment_address, target_payment_address, amount, Optional(fee)) - CLI builds payment data according to payment addresses\n\
+                        (inputs, outputs) - explicit specification of payment sources")),
+                _ => {
+                    return Err(println_err!("(inputs, outputs) - all or none parameters must be specified"));
+                }
+            }
+        }
+        _ => {
+            return Err(println_err!("(source_payment_address, target_payment_address, amount) - all or none parameters must be specified"));
+        }
+    };
+
+    let inputs_json = serialize(&inputs)?;
+    let outputs_json = serialize(&outputs)?;
+
+    Ok((inputs_json, outputs_json))
+}
+
+fn build_payment_sources_for_addresses(ctx: &CommandContext,
+                                       source_address: &str,
+                                       target_address: Option<&str>,
+                                       amount: Option<u64>,
+                                       fee: Option<u64>) -> Result<(Vec<String>, Vec<Output>), ()> {
+    let sources: Vec<Source> = get_payment_sources(ctx, source_address)?;
+
+    let (inputs, refund) = inputs(sources, amount, fee)?;
+    let outputs = outputs(target_address, amount, source_address, refund);
+
+    Ok((inputs, outputs))
+}
+
+fn inputs(sources: Vec<Source>, amount: Option<u64>, fee: Option<u64>) -> Result<(Vec<String>, u64), ()> {
+    let mut inputs: Vec<String> = Vec::new();
+    let mut balance = 0;
+    let required = amount.unwrap_or(0) + fee.unwrap_or(0);
+
+    for source in sources {
+        if balance < required {
+            balance += source.amount;
+            inputs.push(source.source);
+        }
+    }
+
+    if balance < required {
+        return Err(println_err!("Not enough payment sources: balance: {}, required: {}", balance, required));
+    }
+
+    let refund = balance - required;
+
+    Ok((inputs, refund))
+}
+
+fn outputs(target_address: Option<&str>,
+           amount: Option<u64>,
+           source_address: &str,
+           refund: u64) -> Vec<Output> {
+    let mut outputs: Vec<Output> = vec![];
+
+    if let (Some(target_), Some(amount_)) = (target_address, amount) {
+        outputs.push(Output { recipient: target_.to_string(), amount: amount_ });
+    }
+
+    if refund > 0 {
+        outputs.push(Output { recipient: source_address.to_string(), amount: refund });
+    }
+
+    outputs
+}
+
 #[derive(Deserialize, Eq, PartialEq, Debug)]
 pub enum ResponseType {
     REQNACK,
@@ -2121,6 +2323,28 @@ pub mod tests {
                 params.insert("verkey", verkey);
                 params.insert("fees_inputs", input);
                 params.insert("fees_outputs", OUTPUT.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            assert!(_ensure_nym_added(&ctx, &did).is_ok());
+            tear_down_with_wallet_and_pool(&ctx);
+        }
+
+        #[test]
+        #[cfg(feature = "nullpay_plugin")]
+        pub fn nym_works_for_set_fees_with_using_payment_address() {
+            let ctx = setup_with_wallet_and_pool_and_payment_plugin();
+            use_trustee(&ctx);
+            set_fees(&ctx, FEES);
+            let payment_address_from = create_address_and_mint_sources(&ctx);
+
+            let (did, verkey) = create_new_did(&ctx);
+            {
+                let cmd = nym_command::new();
+                let mut params = CommandParams::new();
+                params.insert("did", did.clone());
+                params.insert("verkey", verkey);
+                params.insert("source_payment_address", payment_address_from);
+                params.insert("fee", "1".to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
             assert!(_ensure_nym_added(&ctx, &did).is_ok());
@@ -2266,6 +2490,26 @@ pub mod tests {
             }
             assert!(_ensure_nym_added(&ctx, &did).is_err());
             assert!(get_transaction(&ctx).is_some());
+            tear_down_with_wallet_and_pool(&ctx);
+        }
+
+        #[test]
+        pub fn nym_works_without_signing() {
+            let ctx = setup_with_wallet_and_pool();
+            use_trustee(&ctx);
+            let (did, verkey) = create_new_did(&ctx);
+            {
+                let cmd = nym_command::new();
+                let mut params = CommandParams::new();
+                params.insert("did", did.clone());
+                params.insert("verkey", verkey);
+                params.insert("sign", "false".to_string());
+                params.insert("send", "false".to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            let transaction = get_transaction(&ctx).unwrap();
+            let transaction: serde_json::Value = serde_json::from_str(&transaction).unwrap();
+            assert!(transaction["signature"].is_null());
             tear_down_with_wallet_and_pool(&ctx);
         }
     }
@@ -2477,6 +2721,25 @@ pub mod tests {
             }
             assert!(_ensure_attrib_added(&ctx, &did, Some(ATTRIB_RAW_DATA), None, None).is_err());
             assert!(get_transaction(&ctx).is_some());
+            tear_down_with_wallet_and_pool(&ctx);
+        }
+
+        #[test]
+        pub fn attrib_works_without_signing() {
+            let ctx = setup_with_wallet_and_pool();
+            let (did, _) = use_new_identity(&ctx);
+            {
+                let cmd = attrib_command::new();
+                let mut params = CommandParams::new();
+                params.insert("did", did.clone());
+                params.insert("raw", ATTRIB_RAW_DATA.to_string());
+                params.insert("sign", "false".to_string());
+                params.insert("send", "false".to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            let transaction = get_transaction(&ctx).unwrap();
+            let transaction: serde_json::Value = serde_json::from_str(&transaction).unwrap();
+            assert!(transaction["signature"].is_null());
             tear_down_with_wallet_and_pool(&ctx);
         }
     }
@@ -2699,6 +2962,26 @@ pub mod tests {
             }
             assert!(_ensure_schema_added(&ctx, &did).is_err());
             assert!(get_transaction(&ctx).is_some());
+            tear_down_with_wallet_and_pool(&ctx);
+        }
+
+        #[test]
+        pub fn schema_works_without_signing() {
+            let ctx = setup_with_wallet_and_pool();
+            use_new_identity(&ctx);
+            {
+                let cmd = schema_command::new();
+                let mut params = CommandParams::new();
+                params.insert("name", "gvt".to_string());
+                params.insert("version", "1.0".to_string());
+                params.insert("attr_names", "name,age".to_string());
+                params.insert("sign", "false".to_string());
+                params.insert("send", "false".to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            let transaction = get_transaction(&ctx).unwrap();
+            let transaction: serde_json::Value = serde_json::from_str(&transaction).unwrap();
+            assert!(transaction["signature"].is_null());
             tear_down_with_wallet_and_pool(&ctx);
         }
     }
@@ -3384,22 +3667,6 @@ pub mod tests {
         }
 
         #[test]
-        pub fn get_payment_sources_works_for_no_active_wallet() {
-            let ctx = setup();
-
-            ::commands::pool::tests::create_and_connect_pool(&ctx);
-            load_null_payment_plugin(&ctx);
-            {
-                let cmd = get_payment_sources_command::new();
-                let mut params = CommandParams::new();
-                params.insert("payment_address", INVALID_PAYMENT_ADDRESS.to_string());
-                cmd.execute(&ctx, &params).unwrap_err();
-            }
-            disconnect_and_delete_pool(&ctx);
-            tear_down();
-        }
-
-        #[test]
         pub fn get_payment_sources_works_for_no_active_did() {
             let ctx = setup_with_wallet_and_pool_and_payment_plugin();
             {
@@ -3447,6 +3714,22 @@ pub mod tests {
                 let mut params = CommandParams::new();
                 params.insert("inputs", input);
                 params.insert("outputs", format!("({},{})", PAYMENT_ADDRESS, 10));
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            tear_down_with_wallet_and_pool(&ctx);
+        }
+
+        #[test]
+        pub fn payment_works_for_addresses() {
+            let ctx = setup_with_wallet_and_pool_and_payment_plugin();
+            use_trustee(&ctx);
+            let payment_address_from = create_address_and_mint_sources(&ctx);
+            {
+                let cmd = payment_command::new();
+                let mut params = CommandParams::new();
+                params.insert("source_payment_address", payment_address_from);
+                params.insert("target_payment_address", PAYMENT_ADDRESS.to_string());
+                params.insert("amount", "10".to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
             tear_down_with_wallet_and_pool(&ctx);
@@ -3697,6 +3980,21 @@ pub mod tests {
             }
             tear_down_with_wallet_and_pool(&ctx);
         }
+
+        #[test]
+        pub fn payment_works_for_unknown_source_address() {
+            let ctx = setup_with_wallet_and_pool_and_payment_plugin();
+            use_trustee(&ctx);
+            {
+                let cmd = payment_command::new();
+                let mut params = CommandParams::new();
+                params.insert("source_payment_address", PAYMENT_ADDRESS.to_string());
+                params.insert("target_payment_address", PAYMENT_ADDRESS.to_string());
+                params.insert("amount", "10".to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+            tear_down_with_wallet_and_pool(&ctx);
+        }
     }
 
     #[cfg(feature = "nullpay_plugin")]
@@ -3741,22 +4039,6 @@ pub mod tests {
                 cmd.execute(&ctx, &params).unwrap_err();
             }
             tear_down_with_wallet_and_pool(&ctx);
-        }
-
-        #[test]
-        pub fn get_fees_works_for_no_active_wallet() {
-            let ctx = setup();
-
-            ::commands::pool::tests::create_and_connect_pool(&ctx);
-            load_null_payment_plugin(&ctx);
-            {
-                let cmd = get_fees_command::new();
-                let mut params = CommandParams::new();
-                params.insert("payment_method", NULL_PAYMENT_METHOD.to_string());
-                cmd.execute(&ctx, &params).unwrap_err();
-            }
-            disconnect_and_delete_pool(&ctx);
-            tear_down();
         }
 
         #[test]
@@ -3979,22 +4261,6 @@ pub mod tests {
                 cmd.execute(&ctx, &params).unwrap_err();
             }
             tear_down_with_wallet_and_pool(&ctx);
-        }
-
-        #[test]
-        pub fn set_fees_prepare_works_for_no_active_wallet() {
-            let ctx = setup();
-            pool::tests::create_and_connect_pool(&ctx);
-            common::tests::load_null_payment_plugin(&ctx);
-            {
-                let cmd = set_fees_prepare_command::new();
-                let mut params = CommandParams::new();
-                params.insert("payment_method", NULL_PAYMENT_METHOD.to_string());
-                params.insert("fees", FEES.to_string());
-                cmd.execute(&ctx, &params).unwrap_err();
-            }
-            disconnect_and_delete_pool(&ctx);
-            tear_down();
         }
 
         #[test]
@@ -4401,27 +4667,19 @@ pub mod tests {
 
         let payment_address = create_payment_address(&ctx);
 
+        let outputs = serde_json::to_string(&vec![Output { recipient: payment_address.clone(), amount: AMOUNT as u64 }]).unwrap();
+
         Payment::build_mint_req(wallet_handle,
                                 Some(&submitter_did),
-                                &parse_payment_outputs(&vec![format!("{},{}", payment_address, AMOUNT)]).unwrap(),
+                                &outputs,
                                 None).unwrap();
         payment_address
     }
 
     #[cfg(feature = "nullpay_plugin")]
     pub fn get_source_input(ctx: &CommandContext, payment_address: &str) -> String {
-        let (pool_handle, _) = get_connected_pool(ctx).unwrap();
-        let (wallet_handle, _) = get_opened_wallet(ctx).unwrap();
-        let submitter_did = ensure_active_did(&ctx).unwrap();
-
-        let (get_sources_txn_json, _) = Payment::build_get_payment_sources_request(wallet_handle, Some(&submitter_did), payment_address).unwrap();
-        let response = Ledger::submit_request(pool_handle, &get_sources_txn_json).unwrap();
-
-        let sources_json = Payment::parse_get_payment_sources_response(NULL_PAYMENT_METHOD, &response).unwrap();
-
-        let sources = serde_json::from_str::<serde_json::Value>(&sources_json).unwrap();
-        let source: &serde_json::Value = &sources.as_array().unwrap()[0];
-        source["source"].as_str().unwrap().to_string()
+        let sources = get_payment_sources(ctx, payment_address).unwrap();
+        sources[0].source.clone()
     }
 
     #[cfg(feature = "nullpay_plugin")]

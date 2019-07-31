@@ -1,8 +1,7 @@
 import pytest
 
-from indy import wallet
+from indy import wallet, error
 from indy.anoncreds import issuer_create_credential
-from indy.error import ErrorCode, IndyError
 
 
 # noinspection PyUnusedLocal
@@ -17,10 +16,9 @@ async def test_issuer_create_credential_works_for_credential_values_not_correspo
         wallet_handle, prepopulated_wallet, xyz_cred_values_json):
     _, cred_offer, cred_req, _, _ = prepopulated_wallet
 
-    with pytest.raises(IndyError) as e:
+    with pytest.raises(error.CommonInvalidStructure):
         await issuer_create_credential(wallet_handle, cred_offer, cred_req, xyz_cred_values_json, None, None)
 
-    assert ErrorCode.CommonInvalidStructure == e.value.error_code
 
 
 # noinspection PyUnusedLocal
@@ -31,7 +29,5 @@ async def test_issuer_create_credential_works_for_for_invalid_wallet_handle(
 
     invalid_wallet_handle = wallet_handle + 100
 
-    with pytest.raises(IndyError) as e:
+    with pytest.raises(error.WalletInvalidHandle):
         await issuer_create_credential(invalid_wallet_handle, cred_offer, cred_req, gvt_cred_values_json, None, None)
-
-    assert ErrorCode.WalletInvalidHandle == e.value.error_code

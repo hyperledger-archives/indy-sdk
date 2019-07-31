@@ -117,16 +117,14 @@ impl<'a> TagRetriever<'a> {
         let mut tags = Vec::new();
         let mut plain_results = self.plain_tags_stmt.query(&[&id])?;
 
-        while let Some(res) = plain_results.next() {
-            let row = res?;
-            tags.push(Tag::PlainText(row.get(0), row.get(1)));
+        while let Some(row) = plain_results.next()? {
+            tags.push(Tag::PlainText(row.get(0)?, row.get(1)?));
         }
 
         let mut encrypted_results = self.encrypted_tags_stmt.query(&[&id])?;
 
-        while let Some(res) = encrypted_results.next() {
-            let row = res?;
-            tags.push(Tag::Encrypted(row.get(0), row.get(1)));
+        while let Some(row) = encrypted_results.next()? {
+            tags.push(Tag::Encrypted(row.get(0)?, row.get(1)?));
         }
 
         Ok(tags)
@@ -182,18 +180,19 @@ impl StorageIterator for SQLiteStorageIterator {
         }
 
         match self.rows.as_mut().unwrap().next() {
-            Some(Ok(row)) => {
-                let name = row.get(1);
+            Ok(None) => Ok(None),
+            Ok(Some(row)) => {
+                let name = row.get(1)?;
 
                 let value = if self.options.retrieve_value {
-                    Some(EncryptedValue::new(row.get(2), row.get(3)))
+                    Some(EncryptedValue::new(row.get(2)?, row.get(3)?))
                 } else {
                     None
                 };
 
                 let tags = if self.options.retrieve_tags {
                     match self.tag_retriever {
-                        Some(ref mut tag_retriever) => Some(tag_retriever.retrieve(row.get(0))?),
+                        Some(ref mut tag_retriever) => Some(tag_retriever.retrieve(row.get(0)?)?),
                         None => return Err(err_msg(IndyErrorKind::InvalidState, "Fetch tags option set and tag retriever is None"))
                     }
                 } else {
@@ -201,15 +200,14 @@ impl StorageIterator for SQLiteStorageIterator {
                 };
 
                 let type_ = if self.options.retrieve_type {
-                    Some(row.get(4))
+                    Some(row.get(4)?)
                 } else {
                     None
                 };
 
                 Ok(Some(StorageRecord::new(name, value, type_, tags)))
             }
-            Some(Err(err)) => Err(err.into()),
-            None => Ok(None)
+            Err(err) => Err(err.into()),
         }
     }
 
@@ -291,7 +289,7 @@ impl WalletStorage for SQLiteStorage {
             "SELECT id, value, key FROM items where type = ?1 AND name = ?2",
             &[&type_.to_vec(), &id.to_vec()],
             |row| {
-                (row.get(0), row.get(1), row.get(2))
+                Ok((row.get(0)?, row.get(1)?, row.get(2)?))
             },
         );
 
@@ -311,18 +309,16 @@ impl WalletStorage for SQLiteStorage {
             let mut stmt = self.conn.prepare_cached("SELECT name, value FROM tags_encrypted WHERE item_id = ?1")?;
             let mut rows = stmt.query(&[&item.0])?;
 
-            while let Some(row) = rows.next() {
-                let row = row?;
-                tags.push(Tag::Encrypted(row.get(0), row.get(1)));
+            while let Some(row) = rows.next()? {
+                tags.push(Tag::Encrypted(row.get(0)?, row.get(1)?));
             }
 
             // get all plain
             let mut stmt = self.conn.prepare_cached("SELECT name, value FROM tags_plaintext WHERE item_id = ?1")?;
             let mut rows = stmt.query(&[&item.0])?;
 
-            while let Some(row) = rows.next() {
-                let row = row?;
-                tags.push(Tag::PlainText(row.get(0), row.get(1)));
+            while let Some(row) = rows.next()? {
+                tags.push(Tag::PlainText(row.get(0)?, row.get(1)?));
             }
             Some(tags)
         } else { None };
@@ -375,8 +371,8 @@ impl WalletStorage for SQLiteStorage {
 
             for tag in tags {
                 match *tag {
-                    Tag::Encrypted(ref tag_name, ref tag_data) => stmt_e.execute(&[&id, tag_name, tag_data])?,
-                    Tag::PlainText(ref tag_name, ref tag_data) => stmt_p.execute(&[&id, tag_name, tag_data])?
+                    Tag::Encrypted(ref tag_name, ref tag_data) => stmt_e.execute(rusqlite::params![&id, tag_name, tag_data])?,
+                    Tag::PlainText(ref tag_name, ref tag_data) => stmt_p.execute(rusqlite::params![&id, tag_name, tag_data])?
                 };
             }
         }
@@ -387,7 +383,7 @@ impl WalletStorage for SQLiteStorage {
 
     fn update(&self, type_: &[u8], id: &[u8], value: &EncryptedValue) -> IndyResult<()> {
         let res = self.conn.prepare_cached("UPDATE items SET value = ?1, key = ?2 WHERE type = ?3 AND name = ?4")?
-            .execute(&[&value.data, &value.key, &type_.to_vec(), &id.to_vec()]);
+            .execute(rusqlite::params![&value.data, &value.key, &type_.to_vec(), &id.to_vec()]);
 
         match res {
             Ok(1) => Ok(()),
@@ -415,8 +411,8 @@ impl WalletStorage for SQLiteStorage {
 
             for tag in tags {
                 match *tag {
-                    Tag::Encrypted(ref tag_name, ref tag_data) => enc_tag_insert_stmt.execute(&[&item_id, tag_name, tag_data])?,
-                    Tag::PlainText(ref tag_name, ref tag_data) => plain_tag_insert_stmt.execute(&[&item_id, tag_name, tag_data])?
+                    Tag::Encrypted(ref tag_name, ref tag_data) => enc_tag_insert_stmt.execute(rusqlite::params![&item_id, tag_name, tag_data])?,
+                    Tag::PlainText(ref tag_name, ref tag_data) => plain_tag_insert_stmt.execute(rusqlite::params![&item_id, tag_name, tag_data])?
                 };
             }
         }
@@ -446,8 +442,8 @@ impl WalletStorage for SQLiteStorage {
 
             for tag in tags {
                 match *tag {
-                    Tag::Encrypted(ref tag_name, ref tag_data) => enc_tag_insert_stmt.execute(&[&item_id, tag_name, tag_data])?,
-                    Tag::PlainText(ref tag_name, ref tag_data) => plain_tag_insert_stmt.execute(&[&item_id, tag_name, tag_data])?
+                    Tag::Encrypted(ref tag_name, ref tag_data) => enc_tag_insert_stmt.execute(rusqlite::params![&item_id, tag_name, tag_data])?,
+                    Tag::PlainText(ref tag_name, ref tag_data) => plain_tag_insert_stmt.execute(rusqlite::params![&item_id, tag_name, tag_data])?
                 };
             }
         }
@@ -473,8 +469,8 @@ impl WalletStorage for SQLiteStorage {
 
             for tag_name in tag_names {
                 match *tag_name {
-                    TagName::OfEncrypted(ref tag_name) => enc_tag_delete_stmt.execute(&[&item_id, tag_name])?,
-                    TagName::OfPlain(ref tag_name) => plain_tag_delete_stmt.execute(&[&item_id, tag_name])?,
+                    TagName::OfEncrypted(ref tag_name) => enc_tag_delete_stmt.execute(rusqlite::params![&item_id, tag_name])?,
+                    TagName::OfPlain(ref tag_name) => plain_tag_delete_stmt.execute(rusqlite::params![&item_id, tag_name])?,
                 };
             }
         }
@@ -525,7 +521,7 @@ impl WalletStorage for SQLiteStorage {
     fn get_storage_metadata(&self) -> IndyResult<Vec<u8>> {
         let res: Result<Vec<u8>, rusqlite::Error> = self.conn.query_row(
             "SELECT value FROM metadata",
-            &[],
+            rusqlite::NO_PARAMS,
             |row| { row.get(0) },
         );
 
@@ -568,14 +564,15 @@ impl WalletStorage for SQLiteStorage {
         let total_count: Option<usize> = if search_options.retrieve_total_count {
             let (query_string, query_arguments) = query::wql_to_sql_count(&type_, query)?;
 
-            self.conn.query_row(
+            let res: Option<usize> = Option::from(self.conn.query_row(
                 &query_string,
                 &query_arguments,
                 |row| {
-                    let x: i64 = row.get(0);
-                    Some(x as usize)
+                    let x: i64 = row.get(0)?;
+                    Ok(x as usize)
                 },
-            )?
+            )?);
+            res
         } else { None };
 
 
@@ -762,14 +759,14 @@ impl WalletStorageType for SQLiteStorageType {
         // set journal mode to WAL, because it provides better performance.
         let journal_mode: String = conn.query_row(
             "PRAGMA journal_mode = WAL",
-            &[],
+            rusqlite::NO_PARAMS,
             |row| { row.get(0) },
         )?;
 
         // if journal mode is set to WAL, set synchronous to FULL for safety reasons.
         // (synchronous = NORMAL with journal_mode = WAL does not guaranties durability).
         if journal_mode.to_lowercase() == "wal" {
-            conn.execute("PRAGMA synchronous = FULL", &[])?;
+            conn.execute("PRAGMA synchronous = FULL", rusqlite::NO_PARAMS)?;
         }
 
         Ok(Box::new(SQLiteStorage { conn: Rc::new(conn) }))
@@ -779,8 +776,11 @@ impl WalletStorageType for SQLiteStorageType {
 impl From<rusqlite::Error> for IndyError {
     fn from(err: rusqlite::Error) -> IndyError {
         match err {
-            rusqlite::Error::SqliteFailure(libsqlite3_sys::Error { code: libsqlite3_sys::ErrorCode::ConstraintViolation, extended_code: _ }, _) => err.to_indy(IndyErrorKind::WalletItemAlreadyExists, "Wallet item already exists"),
-            rusqlite::Error::SqliteFailure(libsqlite3_sys::Error { code: libsqlite3_sys::ErrorCode::SystemIOFailure, extended_code: _ }, _) => err.to_indy(IndyErrorKind::IOError, "IO error during access sqlite database"),
+            rusqlite::Error::SqliteFailure(
+                rusqlite::ffi::Error { code: rusqlite::ffi::ErrorCode::ConstraintViolation, extended_code: _ }, _) =>
+                err.to_indy(IndyErrorKind::WalletItemAlreadyExists, "Wallet item already exists"),
+            rusqlite::Error::SqliteFailure(rusqlite::ffi::Error { code: rusqlite::ffi::ErrorCode::SystemIOFailure, extended_code: _ }, _) =>
+                err.to_indy(IndyErrorKind::IOError, "IO error during access sqlite database"),
             _ => err.to_indy(IndyErrorKind::InvalidState, "Unexpected sqlite error"),
         }
     }

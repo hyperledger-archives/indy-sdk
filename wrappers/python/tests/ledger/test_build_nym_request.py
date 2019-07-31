@@ -1,10 +1,9 @@
-from indy import ledger, did
-from indy.error import ErrorCode, IndyError
-
-from tests.ledger.test_submit_request import ensure_previous_request_applied
-
 import json
 import pytest
+
+from indy import ledger, did, error
+
+from tests.ledger.test_submit_request import ensure_previous_request_applied
 
 
 @pytest.mark.asyncio
@@ -12,9 +11,8 @@ async def test_build_nym_request_works_for_invalid_identifier():
     identifier = "invalid_base58_identifier"
     dest = "FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4"
 
-    with pytest.raises(IndyError) as e:
+    with pytest.raises(error.CommonInvalidStructure):
         await ledger.build_nym_request(identifier, dest, None, None, None)
-    assert ErrorCode.CommonInvalidStructure == e.value.error_code
 
 
 @pytest.mark.asyncio
@@ -85,6 +83,5 @@ async def test_nym_request_works_for_invalid_role(identity_trustee1, identity_my
     (trustee_did, _) = identity_trustee1
     (my_did, _) = identity_my1
 
-    with pytest.raises(IndyError) as e:
+    with pytest.raises(error.CommonInvalidStructure):
         await ledger.build_nym_request(trustee_did, my_did, None, None, "WRONG_ROLE")
-    assert ErrorCode.CommonInvalidStructure == e.value.error_code
