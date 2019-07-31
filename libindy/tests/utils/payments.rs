@@ -381,7 +381,7 @@ pub fn parse_get_payment_sources_response(payment_method: &str, resp_json: &str)
     payments::parse_get_payment_sources_response(payment_method, resp_json).wait()
 }
 
-pub fn parse_get_payment_sources_with_from_response(payment_method: &str, resp_json: &str) -> Result<(String, Option<u64>), IndyError> {
+pub fn parse_get_payment_sources_with_from_response(payment_method: &str, resp_json: &str) -> Result<(String, Option<i64>), IndyError> {
     payments::parse_get_payment_sources_with_from_response(payment_method, resp_json).wait()
 }
 

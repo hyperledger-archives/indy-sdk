@@ -283,12 +283,12 @@ fn _parse_get_payment_sources_response(command_handle: CommandHandle, payment_me
 ///      extra: <str>, // optional data from payment transaction
 ///   }]
 ///   next -- pointer to the next slice of payment sources
-pub fn parse_get_payment_sources_with_from_response(payment_method: &str, resp_json: &str) -> Box<Future<Item=(String, Option<u64>), Error=IndyError>> {
+pub fn parse_get_payment_sources_with_from_response(payment_method: &str, resp_json: &str) -> Box<Future<Item=(String, Option<i64>), Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_i64();
 
     let err = _parse_get_payment_sources_with_from_response(command_handle, payment_method, resp_json, cb);
 
-    Box::new(ResultHandler::str_i64(command_handle, err, receiver).map(|(s, i)| (s, if i >= 0 {Some(i as u64)} else {None})).into_future())
+    Box::new(ResultHandler::str_i64(command_handle, err, receiver).map(|(s, i)| (s, if i >= 0 {Some(i)} else {None})).into_future())
 }
 
 fn _parse_get_payment_sources_with_from_response(command_handle: CommandHandle, payment_method: &str, resp_json: &str, cb: Option<ResponseStringI64CB>) -> ErrorCode {
