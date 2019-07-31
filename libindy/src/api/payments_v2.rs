@@ -36,7 +36,7 @@ pub extern fn indy_build_get_payment_sources_with_from_request(command_handle: C
     check_useful_c_str!(payment_address, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
-    let from: Option<u64> = if from == -1 { None } else { Some(from as u64) };
+    let from: Option<i64> = if from == -1 { None } else { Some(from) };
 
     trace!("indy_build_get_payment_sources_with_from_request: entities >>> wallet_handle: {:?}, submitter_did: {:?}, payment_address: {:?}, from: {:?}", wallet_handle, submitter_did, payment_address, from);
 
