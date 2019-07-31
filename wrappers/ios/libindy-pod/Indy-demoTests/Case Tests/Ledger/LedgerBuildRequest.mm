@@ -897,4 +897,28 @@
     XCTAssertTrue([expectedMeta isEqualToDictionary:request[@"taaAcceptance"]], @"Wrong Result Json!");
 }
 
+// MARK: Endorser
+
+- (void)testAppendEndorserToRequestWorks {
+    NSDictionary *request = @{
+            @"reqId": @(1496822211362017764),
+            @"identifier": @"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL",
+            @"operation": @{
+                    @"type": @"1",
+                    @"dest": @"VsKV7grR1BUE29mG2Fm2kX",
+                    @"dest": @"GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa"
+            }
+    };
+
+    NSString *requestJson;
+    ret = [[LedgerUtils sharedInstance] appendEndorserToRequest:[NSDictionary toString:request]
+                                                    endorserDid:[TestUtils trusteeDid]
+                                                     outRequest:&requestJson];
+    XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildTxnAuthorAgreementRequestWithSubmitterDid() failed!");
+
+    request = [NSDictionary fromString:requestJson];
+
+    XCTAssertTrue([[TestUtils trusteeDid] isEqualToString:request[@"endorser"]]);
+}
+
 @end

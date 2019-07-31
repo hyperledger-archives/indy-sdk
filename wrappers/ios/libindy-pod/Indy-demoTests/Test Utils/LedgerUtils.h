@@ -232,6 +232,11 @@
                                         timeOfAcceptance:(NSNumber *)timeOfAcceptance
                                               outRequest:(NSString **)resultJson;
 
+// MARK: - Endorser
+- (NSError *)appendEndorserToRequest:(NSString *)requestJson
+                         endorserDid:(NSString *)endorserDid
+                          outRequest:(NSString **)outRequestJson;
+
 // MARK: - Response Metadata
 - (NSError *)getResponseMetadata:(NSString *)response
                 responseMetadata:(NSString **)responseMetadata;

@@ -595,6 +595,12 @@ indy.appendTxnAuthorAgreementAcceptanceToRequest = function appendTxnAuthorAgree
   return cb.promise
 }
 
+indy.appendRequestEndorser = function appendRequestEndorser (request, endorserDid, cb) {
+  cb = wrapIndyCallback(cb, fromJson)
+  capi.appendRequestEndorser(toJson(request), endorserDid, cb)
+  return cb.promise
+}
+
 indy.getResponseMetadata = function getResponseMetadata (response, cb) {
   cb = wrapIndyCallback(cb, fromJson)
   capi.getResponseMetadata(toJson(response), cb)
@@ -755,9 +761,25 @@ indy.buildGetPaymentSourcesRequest = function buildGetPaymentSourcesRequest (wh,
   return cb.promise
 }
 
+indy.buildGetPaymentSourcesWithFromRequest = function buildGetPaymentSourcesWithFromRequest (wh, submitterDid, paymentAddress, from, cb) {
+  cb = wrapIndyCallback(cb, function (data) {
+    return [fromJson(data[0]), data[1]]
+  })
+  capi.buildGetPaymentSourcesWithFromRequest(wh, submitterDid, paymentAddress, from, cb)
+  return cb.promise
+}
+
 indy.parseGetPaymentSourcesResponse = function parseGetPaymentSourcesResponse (paymentMethod, resp, cb) {
   cb = wrapIndyCallback(cb, fromJson)
   capi.parseGetPaymentSourcesResponse(paymentMethod, toJson(resp), cb)
+  return cb.promise
+}
+
+indy.parseGetPaymentSourcesWithFromResponse = function parseGetPaymentSourcesWithFromResponse (paymentMethod, resp, cb) {
+  cb = wrapIndyCallback(cb, function (data) {
+    return [fromJson(data[0]), data[1]]
+  })
+  capi.parseGetPaymentSourcesWithFromResponse(paymentMethod, toJson(resp), cb)
   return cb.promise
 }
 
@@ -826,6 +848,18 @@ indy.getRequestInfo = function getRequestInfo (getAuthRuleResponse, requesterInf
     return fromJson(data)
   })
   capi.getRequestInfo(toJson(getAuthRuleResponse), toJson(requesterInfo), toJson(fees), cb)
+  return cb.promise
+}
+
+indy.signWithAddress = function signWithAddress (wh, address, message, cb) {
+  cb = wrapIndyCallback(cb)
+  capi.signWithAddress(wh, address, message, cb)
+  return cb.promise
+}
+
+indy.verifyWithAddress = function verifyWithAddress (address, message, signature, cb) {
+  cb = wrapIndyCallback(cb)
+  capi.verifyWithAddress(address, message, signature, cb)
   return cb.promise
 }
 

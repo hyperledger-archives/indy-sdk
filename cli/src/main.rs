@@ -187,6 +187,8 @@ fn build_executor() -> CommandExecutor {
         .add_group(payment_address::group::new())
         .add_command(payment_address::create_command::new())
         .add_command(payment_address::list_command::new())
+        .add_command(payment_address::sign_command::new())
+        .add_command(payment_address::verify_command::new())
         .finalize_group()
         .finalize()
 }
@@ -213,10 +215,8 @@ fn execute_interactive<T>(command_executor: CommandExecutor, mut reader: Reader<
                     continue;
                 }
 
-                if command_executor.execute(&line).is_ok() {
-                    reader.add_history(line.to_string());
-                };
-
+                let _ = command_executor.execute(&line).is_ok();
+                reader.add_history(line.to_string());
                 reader.set_prompt(&command_executor.ctx().get_prompt());
 
                 if command_executor.ctx().is_exit() {
