@@ -219,7 +219,7 @@ fn _build_get_payment_sources_request(command_handle: CommandHandle, wallet_hand
 /// # Returns
 /// * `get_utxo_txn_json` - Indy request for getting UTXO list for payment address
 /// * `payment_method`
-pub fn build_get_payment_sources_with_from_request(wallet_handle: WalletHandle, submitter_did: Option<&str>, payment_address: &str, from: Option<u64>) -> Box<Future<Item=(String, String), Error=IndyError>> {
+pub fn build_get_payment_sources_with_from_request(wallet_handle: WalletHandle, submitter_did: Option<&str>, payment_address: &str, from: Option<i64>) -> Box<Future<Item=(String, String), Error=IndyError>> {
     let (receiver, command_handle, cb) =
         ClosureHandler::cb_ec_string_string();
 
@@ -228,11 +228,11 @@ pub fn build_get_payment_sources_with_from_request(wallet_handle: WalletHandle, 
     ResultHandler::str_str(command_handle, err, receiver)
 }
 
-fn _build_get_payment_sources_with_from_request(command_handle: CommandHandle, wallet_handle: WalletHandle, submitter_did: Option<&str>, payment_address: &str, from: Option<u64>, cb: Option<ResponseStringStringCB>) -> ErrorCode {
+fn _build_get_payment_sources_with_from_request(command_handle: CommandHandle, wallet_handle: WalletHandle, submitter_did: Option<&str>, payment_address: &str, from: Option<i64>, cb: Option<ResponseStringStringCB>) -> ErrorCode {
     let submitter_did_str = opt_c_str!(submitter_did);
     let payment_address = c_str!(payment_address);
 
-    ErrorCode::from(unsafe { payments::indy_build_get_payment_sources_with_from_request(command_handle, wallet_handle, opt_c_ptr!(submitter_did, submitter_did_str), payment_address.as_ptr(), from.map(|a| a as i64).unwrap_or(-1), cb) })
+    ErrorCode::from(unsafe { payments::indy_build_get_payment_sources_with_from_request(command_handle, wallet_handle, opt_c_ptr!(submitter_did, submitter_did_str), payment_address.as_ptr(), from.unwrap_or(-1), cb) })
 }
 
 /// Parses response for Indy request for getting UTXO list.
