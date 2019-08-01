@@ -503,7 +503,6 @@ impl PaymentsService {
         let prices: Vec<RequestInfo> = constraint.auth_constraints
             .iter()
             .flat_map(|constraint| PaymentsService::_handle_constraint(&constraint, requester_info, fees))
-            .into_iter()
             .flatten()
             .collect();
 
