@@ -399,4 +399,32 @@
                           feesJson:(NSString *)feesJson
                         completion:(void (^)(NSError *error, NSString *requestInfoJson))completion;
 
+/**
+ Signs a message with a payment address.
+
+ @param  message: The message to be signed
+ @param  address: Payment address of message signer. The key must be created by calling createPaymentAddressForMethod
+ @param  walletHandle: Wallet handle (created by open_wallet).
+ @param completion Callback that takes command result as parameter.
+ Returns a signature string.
+ */
++ (void)signWithAddress:(NSString *)address
+                message:(NSData *)message
+           walletHandle:(IndyHandle)walletHandle
+             completion:(void (^)(NSError *error, NSData *signature))completion;
+
+/**
+ Verify a signature with a payment address.
+
+ @param  signature: A signature to be verified
+ @param  message: Message that has been signed
+ @param  address: Payment address of the message signer
+ @param completion Callback that takes command result as parameter.
+ Returns valid: true - if signature is valid, false - otherwise
+ */
++ (void)verifyWithAddress:(NSString *)address
+                  message:(NSData *)message
+                signature:(NSData *)signature
+               completion:(void (^)(NSError *error, BOOL valid))completion;
+
 @end

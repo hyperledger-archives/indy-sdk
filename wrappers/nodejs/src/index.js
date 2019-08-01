@@ -851,6 +851,18 @@ indy.getRequestInfo = function getRequestInfo (getAuthRuleResponse, requesterInf
   return cb.promise
 }
 
+indy.signWithAddress = function signWithAddress (wh, address, message, cb) {
+  cb = wrapIndyCallback(cb)
+  capi.signWithAddress(wh, address, message, cb)
+  return cb.promise
+}
+
+indy.verifyWithAddress = function verifyWithAddress (address, message, signature, cb) {
+  cb = wrapIndyCallback(cb)
+  capi.verifyWithAddress(address, message, signature, cb)
+  return cb.promise
+}
+
 indy.createPoolLedgerConfig = function createPoolLedgerConfig (configName, config, cb) {
   cb = wrapIndyCallback(cb)
   capi.createPoolLedgerConfig(configName, toJson(config), cb)
