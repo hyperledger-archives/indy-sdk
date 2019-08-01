@@ -322,7 +322,7 @@ impl<T: Networker> RequestSM<T> {
                             let hashable = HashableValue { inner: result_without_proof };
 
                             let cnt = {
-                                let set = state.replies.entry(hashable).or_insert(HashSet::new());
+                                let set = state.replies.entry(hashable).or_insert_with(HashSet::new);
                                 set.insert(node_alias.clone());
                                 set.len()
                             };
@@ -386,7 +386,7 @@ impl<T: Networker> RequestSM<T> {
                             let last_write_time = get_last_signed_time(&raw_msg).unwrap_or(0);
 
                             let (cnt, soonest) = {
-                                let set = state.replies.entry(hashable).or_insert(HashSet::new());
+                                let set = state.replies.entry(hashable).or_insert_with(HashSet::new);
                                 set.insert(NodeResponse { node_alias: node_alias.clone(), timestamp: last_write_time, raw_msg: raw_msg.clone() });
                                 (
                                     set.len(),
