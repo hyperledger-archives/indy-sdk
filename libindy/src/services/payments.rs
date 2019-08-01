@@ -544,12 +544,12 @@ impl PaymentsService {
 
         if !constraint.off_ledger_signature && requester_info.is_off_ledger_signature {
             return Err(IndyError::from_msg(IndyErrorKind::TransactionNotAllowed,
-                                           format!("The requester must be published on the ledger.")));
+                                           "The requester must be published on the ledger.".to_string()));
         }
 
         if constraint.need_to_be_owner && !requester_info.is_owner {
             return Err(IndyError::from_msg(IndyErrorKind::TransactionNotAllowed,
-                                           format!("The requester must be an owner of the transaction that already present on the ledger.")));
+                                           "The requester must be an owner of the transaction that already present on the ledger.".to_string()));
         }
 
         Ok(())
