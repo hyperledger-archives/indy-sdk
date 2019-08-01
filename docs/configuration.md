@@ -52,6 +52,11 @@ This function accepts a config that defines the behavior of the client-side conn
 2 - for Indy Node 1.4 and greater
 ```
 
+* Refresh
+`indy_refresh_pool_ledger` function updates a list of active nodes in the pool.
+This function can be useful for applications working with an Indy network that is run continuously for a long time.
+Note that active requests will be dropped.
+
 * State Proof
 There are some types of requests to Nodes in the Pool which support State Proof optimization in
 Client-Node communication. Instead of sending requests to all nodes in the Pool, a client can send a request
@@ -202,3 +207,20 @@ An example of a batch script:
     wallet close
     exit
     ```
+
+#### Transaction Author Agreement
+CLI uses session-based approach to work with Transaction Author Agreement.
+
+#### Workflow
+1. On CLI start: Pass a config JSON file containing a label of mechanism how a user is going to accept a transaction author agreement.
+`indy-cli --config <path-to-config-json-file>` where config looks like:
+```
+{
+  "taaAcceptanceMechanism": "Click Agreement",
+  .....
+}
+```
+The list of available acceptance mechanisms can be received by sending `get_acceptance_mechanisms` request to ledger.
+1. On `pool connect` command execution: User will be asked if he would like to accept TAA.
+User either can accept it or skip and accept it later by `pool show-taa` command.
+1. On write request sending to Ledger: TAA will be appended to requests.
