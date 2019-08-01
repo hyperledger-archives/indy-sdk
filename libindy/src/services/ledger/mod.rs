@@ -313,10 +313,14 @@ impl LedgerService {
 
         let cred_def = match reply.result() {
             GetCredDefReplyResult::GetCredDefReplyResultV0(res) => CredentialDefinitionV1 {
-                id: CredentialDefinition::cred_def_id(&res.origin, &res.ref_.to_string(), &res.signature_type.to_str(), &res.tag.clone().unwrap_or(String::new())),
+                id: CredentialDefinition::cred_def_id(
+                    &res.origin,
+                    &res.ref_.to_string(),
+                    &res.signature_type.to_str(),
+                    &res.tag.clone().unwrap_or_default()),
                 schema_id: res.ref_.to_string(),
                 signature_type: res.signature_type,
-                tag: res.tag.unwrap_or(String::new()),
+                tag: res.tag.unwrap_or_default(),
                 value: res.data,
             },
             GetCredDefReplyResult::GetCredDefReplyResultV1(res) => CredentialDefinitionV1 {
