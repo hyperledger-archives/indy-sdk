@@ -330,7 +330,7 @@ impl ProverCommandExecutor {
                                       retroactive: bool) -> IndyResult<()> {
         debug!("set_credential_attr_tag_policy >>> wallet_handle: {:?}, cred_def_id: {:?}, catpol: {:?}, retroactive: {:?}", wallet_handle, cred_def_id, catpol, retroactive);
 
-        let res = match catpol {
+        match catpol {
             Some(pol) => {
                 self.wallet_service.upsert_indy_object(wallet_handle, cred_def_id, pol)?;
             },
@@ -353,9 +353,9 @@ impl ProverCommandExecutor {
             }
         }
 
-        debug!("set_credential_attr_tag_policy <<< res: {:?}", res);
+        debug!("set_credential_attr_tag_policy <<< res: ()");
 
-        Ok(res)
+        Ok(())
     }
 
     fn get_credential_attr_tag_policy(&self,
@@ -508,14 +508,14 @@ impl ProverCommandExecutor {
     fn close_credentials_search(&self, search_handle: i32) -> IndyResult<()> {
         trace!("close_credentials_search >>> search_handle: {:?}", search_handle);
 
-        let res = match self.searches.borrow_mut().remove(&search_handle) {
+        match self.searches.borrow_mut().remove(&search_handle) {
             Some(_) => Ok(()),
             None => Err(err_msg(IndyErrorKind::InvalidWalletHandle, format!("Unknown CredentialsSearch handle: {}", search_handle)))
         }?;
 
-        trace!("close_credentials_search <<< res: {:?}", res);
+        trace!("close_credentials_search <<< res: ()");
 
-        Ok(res)
+        Ok(())
     }
 
     fn get_credentials_for_proof_req(&self,
@@ -629,14 +629,14 @@ impl ProverCommandExecutor {
     fn close_credentials_search_for_proof_req(&self, search_handle: i32) -> IndyResult<()> {
         trace!("close_credentials_search_for_proof_req >>> search_handle: {:?}", search_handle);
 
-        let res = match self.searches_for_proof_requests.borrow_mut().remove(&search_handle) {
+        match self.searches_for_proof_requests.borrow_mut().remove(&search_handle) {
             Some(_) => Ok(()),
             None => Err(err_msg(IndyErrorKind::InvalidWalletHandle, format!("Unknown CredentialsSearch handle: {}", search_handle)))
         }?;
 
-        trace!("close_credentials_search_for_proof_req <<< res: {:?}", res);
+        trace!("close_credentials_search_for_proof_req <<< res: ()");
 
-        Ok(res)
+        Ok(())
     }
 
     fn delete_credential(&self,

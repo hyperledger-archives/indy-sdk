@@ -137,21 +137,21 @@ impl PoolCommandExecutor {
     fn create(&self, name: &str, config: Option<PoolConfig>) -> IndyResult<()> {
         debug!("create >>> name: {:?}, config: {:?}", name, config);
 
-        let res = self.pool_service.create(name, config)?;
+        self.pool_service.create(name, config)?;
 
-        debug!("create << res: {:?}", res);
+        debug!("create << res: ()");
 
-        Ok(res)
+        Ok(())
     }
 
     fn delete(&self, name: &str) -> IndyResult<()> {
         debug!("delete >>> name: {:?}", name);
 
-        let res = self.pool_service.delete(name)?;
+        self.pool_service.delete(name)?;
 
-        debug!("delete << res: {:?}", res);
+        debug!("delete << res: ()");
 
-        Ok(res)
+        Ok(())
     }
 
     fn open(&self, name: &str, config: Option<PoolOpenConfig>, cb: Box<Fn(IndyResult<i32>) + Send>) {
