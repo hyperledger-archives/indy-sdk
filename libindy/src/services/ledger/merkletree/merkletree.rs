@@ -82,10 +82,10 @@ impl MerkleTree {
         let root = cur.remove(0);
 
         Ok(MerkleTree {
-            root: root,
-            height: height,
-            count: count,
-            nodes_count: nodes_count
+            root,
+            height,
+            count,
+            nodes_count
         })
     }
 

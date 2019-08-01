@@ -41,7 +41,7 @@ impl Tree {
     pub fn new(hash: Digest, value: TreeLeafData) -> Self {
         Tree::Leaf {
             hash: hash.to_vec(),
-            value: value
+            value
         }
     }
 
