@@ -56,7 +56,7 @@ impl Networker for ZMQNetworker {
     fn process_event(&mut self, pe: Option<NetworkerEvent>) -> Option<RequestEvent> {
         match pe.clone() {
             Some(NetworkerEvent::SendAllRequest(_, req_id, _, _)) | Some(NetworkerEvent::SendOneRequest(_, req_id, _)) | Some(NetworkerEvent::Resend(req_id, _)) => {
-                let num = self.req_id_mappings.get(&req_id).map(|i| i.clone()).or_else(|| {
+                let num = self.req_id_mappings.get(&req_id).map(|i| *i).or_else(|| {
                     trace!("sending new request");
                     self.pool_connections.iter().next_back().and_then(|(pc_idx, pc)| {
                         if pc.is_active() && pc.req_cnt < self.conn_limit

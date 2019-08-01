@@ -176,7 +176,7 @@ impl Prover {
                 schema_id: credential.schema_id.clone(),
                 cred_def_id: credential.cred_def_id.clone(),
                 rev_reg_id: credential.rev_reg_id.clone(),
-                timestamp: cred_key.timestamp.clone(),
+                timestamp: cred_key.timestamp,
             });
 
             self._update_requested_proof(req_attrs_for_cred,
@@ -215,10 +215,10 @@ impl Prover {
             let req_attr_info = RequestedAttributeInfo {
                 attr_referent: attr_referent.clone(),
                 attr_info: attr_info.clone(),
-                revealed: requested_attr.revealed.clone(),
+                revealed: requested_attr.revealed,
             };
 
-            match credentials_for_proving.entry(ProvingCredentialKey { cred_id: requested_attr.cred_id.clone(), timestamp: requested_attr.timestamp.clone() }) {
+            match credentials_for_proving.entry(ProvingCredentialKey { cred_id: requested_attr.cred_id.clone(), timestamp: requested_attr.timestamp }) {
                 Entry::Occupied(cred_for_proving) => {
                     let &mut (ref mut attributes_for_credential, _) = cred_for_proving.into_mut();
                     attributes_for_credential.push(req_attr_info);
