@@ -122,7 +122,7 @@ pub fn verify_parsed_sp(parsed_sps: Vec<ParsedSP>,
                 }
             }
             //TODO IS-713 support KeyValuesInSP::SubTrie
-            kvs @ _ => {
+            kvs => {
                 warn!("Unsupported parsed state proof format for key-values {:?} ", kvs);
                 return false;
             }
