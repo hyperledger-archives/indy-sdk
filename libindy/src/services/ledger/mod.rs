@@ -75,7 +75,7 @@ impl LedgerService {
                     "TRUST_ANCHOR" | "ENDORSER" => ENDORSER,
                     "NETWORK_MONITOR" => NETWORK_MONITOR,
                     role if ROLES.contains(&role) => role,
-                    role @ _ => return Err(err_msg(IndyErrorKind::InvalidStructure, format!("Invalid role: {}", role)))
+                    role => return Err(err_msg(IndyErrorKind::InvalidStructure, format!("Invalid role: {}", role)))
                 }.to_string())
             }
         }
