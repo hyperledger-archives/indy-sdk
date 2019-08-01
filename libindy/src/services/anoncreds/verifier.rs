@@ -218,8 +218,8 @@ impl Verifier {
             .iter()
             .map(|(referent, info)|
                 Verifier::_validate_timestamp(&received_revealed_attrs, referent, &proof_req.non_revoked, &info.non_revoked)
-                    .or(Verifier::_validate_timestamp(&received_unrevealed_attrs, referent, &proof_req.non_revoked, &info.non_revoked))
-                    .or(received_self_attested_attrs.get(referent).map(|_| ()).ok_or(IndyError::from(IndyErrorKind::InvalidStructure)))
+                    .or_else(|_|Verifier::_validate_timestamp(&received_unrevealed_attrs, referent, &proof_req.non_revoked, &info.non_revoked))
+                    .or_else(|_|received_self_attested_attrs.get(referent).map(|_| ()).ok_or(IndyError::from(IndyErrorKind::InvalidStructure)))
             )
             .collect::<IndyResult<Vec<()>>>()?;
 

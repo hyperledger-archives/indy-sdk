@@ -140,8 +140,8 @@ pub fn parse_key_from_request_for_builtin_sp(json_msg: &SJsonValue) -> Option<Ve
     let key_suffix: String = match type_ {
         constants::GET_ATTR => {
             if let Some(attr_name) = json_msg["raw"].as_str()
-                .or(json_msg["enc"].as_str())
-                .or(json_msg["hash"].as_str()) {
+                .or_else(|| json_msg["enc"].as_str())
+                .or_else(|| json_msg["hash"].as_str()) {
                 trace!("TransactionHandler::parse_reply_for_builtin_sp: GET_ATTR attr_name {:?}", attr_name);
 
                 let mut hasher = sha2::Sha256::default();
@@ -254,7 +254,7 @@ pub fn parse_key_from_request_for_builtin_sp(json_msg: &SJsonValue) -> Option<Ve
         }
     };
 
-    let dest = json_msg["dest"].as_str().or(json_msg["origin"].as_str());
+    let dest = json_msg["dest"].as_str().or_else(|| json_msg["origin"].as_str());
     let key_prefix = match type_ {
         constants::GET_NYM => {
             if let Some(dest) = dest {
