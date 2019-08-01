@@ -358,7 +358,7 @@ impl<T: Networker> RequestSM<T> {
                         state.timeout_nodes.insert(node_alias.clone());
                         if state.is_consensus_reachable(f, nodes.len()) {
                             state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
-                            (RequestState::Consensus(state.into()), None)
+                            (RequestState::Consensus(state), None)
                         } else {
                             //TODO: maybe we should change the error, but it was made to escape changing of ErrorCode returned to client
                             _send_replies(&cmd_ids, Err(err_msg(IndyErrorKind::PoolTimeout, "Consensus is impossible")));
@@ -370,7 +370,7 @@ impl<T: Networker> RequestSM<T> {
                         _finish_request(&cmd_ids);
                         (RequestState::finish(), None)
                     }
-                    _ => (RequestState::Consensus(state.into()), None)
+                    _ => (RequestState::Consensus(state), None)
                 }
             }
             RequestState::Single(mut state) => {
