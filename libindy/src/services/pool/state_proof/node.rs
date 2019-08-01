@@ -182,7 +182,7 @@ impl Node {
         trace!("Node::get_node >> path: {:?}", path);
         let nibble_path = Node::path_to_nibbles(path);
         trace!("Node::get_node >> made some nibbles >> nibbles: {:?}", nibble_path);
-        return self._get_node(db, nibble_path.as_slice(), vec![].as_slice())
+        self._get_node(db, nibble_path.as_slice(), vec![].as_slice())
     }
 
     fn _get_node<'a, 'b>(&'a self, db: &'a TrieDB, path: &'b [u8], seen_path: &'b [u8]) -> IndyResult<Option<(&Node, Vec<u8>)>> {
