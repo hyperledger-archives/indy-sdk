@@ -306,7 +306,7 @@ impl Verifier {
                                       received_predicates: &HashMap<String, Identifier>,
                                       self_attested_attrs: &HashSet<String>) -> IndyResult<()> {
         let proof_attr_identifiers: HashMap<String, Identifier> = received_revealed_attrs
-            .into_iter()
+            .iter()
             .chain(received_unrevealed_attrs)
             .map(|(r, id)| (r.to_string(), id.clone()))
             .collect();

@@ -550,7 +550,7 @@ fn _verify_proof_range(proofs_rlp: &[u8],
         } else {
             vals_with_from.as_slice()
         };
-        let vals_prepared: Vec<(String, Option<String>)> = vals_slice.into_iter().map(|&(_, ref pair)| pair.clone()).collect();
+        let vals_prepared: Vec<(String, Option<String>)> = vals_slice.iter().map(|&(_, ref pair)| pair.clone()).collect();
         vals_prepared[..] == kvs[..]
     }).unwrap_or(false)
 }
