@@ -31,8 +31,8 @@ pub fn build_catchup_req(merkle: &MerkleTree, target_mt_size: usize) -> IndyResu
 
     let cr = CatchupReq {
         ledgerId: 0,
-        seqNoStart: seq_no_start.clone(),
-        seqNoEnd: seq_no_end.clone(),
+        seqNoStart: seq_no_start,
+        seqNoEnd: seq_no_end,
         catchupTill: target_mt_size,
     };
 
