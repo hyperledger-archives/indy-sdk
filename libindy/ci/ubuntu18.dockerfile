@@ -6,19 +6,11 @@ RUN apt-get update && \
     apt-get install -y \
       pkg-config \
       libssl-dev \
-      libgmp3-dev \
       curl \
-      build-essential \
       libsqlite3-dev \
       cmake \
-      git \
-      python3.5 \
       python3-pip \
-      python-setuptools \
-      apt-transport-https \
-      ca-certificates \
       debhelper \
-      wget \
       devscripts \
       libncursesw5-dev \
       libzmq3-dev \
@@ -26,8 +18,6 @@ RUN apt-get update && \
 
 RUN pip3 install -U \
 	pip \
-	setuptools \
-	virtualenv \
 	twine \
 	plumbum \
 	deb-pkg-tools
