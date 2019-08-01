@@ -259,7 +259,7 @@ impl ProverCommandExecutor {
                             master_secret_id: Option<&str>) -> IndyResult<String> {
         debug!("create_master_secret >>> wallet_handle: {:?}, master_secret_id: {:?}", wallet_handle, master_secret_id);
 
-        let master_secret_id = master_secret_id.map(String::from).unwrap_or(uuid::Uuid::new_v4().to_string());
+        let master_secret_id = master_secret_id.map(String::from).unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
 
         if self.wallet_service.record_exists::<MasterSecret>(wallet_handle, &master_secret_id)? {
             return Err(err_msg(IndyErrorKind::MasterSecretDuplicateName, format!("MasterSecret already exists {}", master_secret_id)));
@@ -397,7 +397,7 @@ impl ProverCommandExecutor {
         credential.rev_reg = None;
         credential.witness = None;
 
-        let out_cred_id = cred_id.map(String::from).unwrap_or(uuid::Uuid::new_v4().to_string());
+        let out_cred_id = cred_id.map(String::from).unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
 
         let catpol_json = self.get_credential_attr_tag_policy(wallet_handle, credential.cred_def_id.as_str())?;
         let catpol: Option<CredentialAttrTagPolicy> = if catpol_json.ne("null") {

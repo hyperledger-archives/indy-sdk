@@ -527,7 +527,7 @@ impl<T: Networker> RequestSM<T> {
                 .insert(node_alias.clone(), SJsonValue::from(node_result));
         }
 
-        let required_reply_cnt = state.nodes_to_send.as_ref().map(Vec::len).unwrap_or(nodes.len());
+        let required_reply_cnt = state.nodes_to_send.as_ref().map(Vec::len).unwrap_or_else(|| nodes.len());
 
         let reply_cnt = state.accum_reply.as_ref().unwrap()
             .inner.as_object().unwrap().len();
