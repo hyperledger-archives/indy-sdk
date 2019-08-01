@@ -278,7 +278,7 @@ impl Prover {
         res.insert("schema_version".to_string(), credential.schema_version());
         res.insert("issuer_did".to_string(), credential.issuer_did());
         res.insert("cred_def_id".to_string(), credential.cred_def_id());
-        res.insert("rev_reg_id".to_string(), credential.rev_reg_id.clone().unwrap_or("None".to_string()));
+        res.insert("rev_reg_id".to_string(), credential.rev_reg_id.clone().unwrap_or_else(|| "None".to_string()));
 
         credential.values
             .iter()

@@ -159,7 +159,7 @@ pub fn parse_key_from_request_for_builtin_sp(json_msg: &SJsonValue) -> Option<Ve
                 trace!("TransactionHandler::parse_reply_for_builtin_sp: GET_CRED_DEF sign_type {:?}, sch_seq_no: {:?}", sign_type, sch_seq_no);
                 let marker = if ProtocolVersion::is_node_1_3() { '\x03' } else { '3' };
                 let tag = if ProtocolVersion::is_node_1_3() { None } else { json_msg["tag"].as_str() };
-                let tag = tag.map(|t| format!(":{}", t)).unwrap_or("".to_owned());
+                let tag = tag.map(|t| format!(":{}", t)).unwrap_or_else(|| "".to_owned());
                 format!(":{}:{}:{}{}", marker, sign_type, sch_seq_no, tag)
             } else {
                 trace!("TransactionHandler::parse_reply_for_builtin_sp: <<< GET_CRED_DEF No key suffix");

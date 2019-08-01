@@ -64,7 +64,7 @@ impl PoolService {
         trace!("PoolService::create {} with config {:?}", name, config);
 
         let mut path = environment::pool_path(name);
-        let pool_config = config.unwrap_or(PoolConfig::default_for_name(name));
+        let pool_config = config.unwrap_or_else( || PoolConfig::default_for_name(name));
 
         if path.as_path().exists() {
             return Err(err_msg(IndyErrorKind::PoolConfigAlreadyExists, format!("Pool ledger config file with name \"{}\" already exists", name)));
