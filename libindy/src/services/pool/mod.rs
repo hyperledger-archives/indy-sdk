@@ -147,7 +147,7 @@ impl PoolService {
             }
         }
 
-        let config = config.unwrap_or(PoolOpenConfig::default());
+        let config = config.unwrap_or_default();
 
         let pool_handle: PoolHandle = next_pool_handle();
         let mut new_pool = Pool::new(name, pool_handle, config);
