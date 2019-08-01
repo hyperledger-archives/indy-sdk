@@ -705,7 +705,7 @@ fn _finish_request(cmd_ids: &Vec<CommandHandle>) {
 }
 
 fn _send_replies(cmd_ids: &Vec<CommandHandle>, msg: IndyResult<String>) {
-    cmd_ids.into_iter().for_each(|id| {
+    cmd_ids.iter().for_each(|id| {
         CommandExecutor::instance().send(
             Command::Ledger(
                 LedgerCommand::SubmitAck(*id, msg.clone()))
