@@ -146,7 +146,7 @@ impl PoolService {
             }
         }
 
-        let config = config.unwrap_or(PoolOpenConfig::default());
+        let config = config.unwrap_or_default();
 
         let pool_handle: i32 = sequence::get_next_id();
         let mut new_pool = Pool::new(name, pool_handle, config);
