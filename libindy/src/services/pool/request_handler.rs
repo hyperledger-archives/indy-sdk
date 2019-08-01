@@ -708,7 +708,7 @@ fn _send_replies(cmd_ids: &Vec<CommandHandle>, msg: IndyResult<String>) {
     cmd_ids.into_iter().for_each(|id| {
         CommandExecutor::instance().send(
             Command::Ledger(
-                LedgerCommand::SubmitAck(id.clone(), msg.clone()))
+                LedgerCommand::SubmitAck(*id, msg.clone()))
         ).unwrap();
     });
 }
@@ -815,7 +815,7 @@ fn _extract_left_last_write_time(msg_result: &SJsonValue) -> Option<u64> {
 }
 
 fn _get_freshness_threshold() -> u64 {
-    THRESHOLD.lock().unwrap().clone()
+    *THRESHOLD.lock().unwrap()
 }
 
 fn _get_cur_time() -> u64 {

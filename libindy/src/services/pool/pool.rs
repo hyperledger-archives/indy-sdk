@@ -281,7 +281,7 @@ impl<T: Networker, R: RequestHandler<T>> PoolSM<T, R> {
                             Err(err) => {
                                 CommandExecutor::instance().send(
                                     Command::Pool(
-                                        PoolCommand::OpenAck(cmd_id, id.clone(), Err(err)))
+                                        PoolCommand::OpenAck(cmd_id, id, Err(err)))
                                 ).unwrap();
                                 PoolState::Terminated(state.into())
                             }
@@ -493,7 +493,7 @@ impl<S: Networker, R: RequestHandler<S>> Pool<S, R> {
 
     pub fn work(&mut self, cmd_socket: zmq::Socket) {
         let name = self.name.as_str().to_string();
-        let id = self.id.clone();
+        let id = self.id;
         let timeout = self.timeout;
         let extended_timeout = self.extended_timeout;
         let active_timeout = self.active_timeout;
@@ -710,16 +710,16 @@ fn _close_pool_ack(cmd_id: CommandHandle) {
 }
 
 fn _send_submit_ack(cmd_id: CommandHandle, res: IndyResult<String>) {
-    let lc = LedgerCommand::SubmitAck(cmd_id.clone(), res);
+    let lc = LedgerCommand::SubmitAck(cmd_id, res);
     CommandExecutor::instance().send(Command::Ledger(lc)).unwrap();
 }
 
 fn _send_open_refresh_ack(cmd_id: CommandHandle, id: PoolHandle, is_refresh: bool) {
     trace!("PoolSM: from getting catchup target to active");
     let pc = if is_refresh {
-        PoolCommand::RefreshAck(cmd_id.clone(), Ok(()))
+        PoolCommand::RefreshAck(cmd_id, Ok(()))
     } else {
-        PoolCommand::OpenAck(cmd_id.clone(), id, Ok(()))
+        PoolCommand::OpenAck(cmd_id, id, Ok(()))
     };
     CommandExecutor::instance().send(Command::Pool(pc)).unwrap();
 }
@@ -742,7 +742,7 @@ impl Drop for ZMQPool {
     fn drop(&mut self) {
         info!("Drop started");
 
-        if let Err(err) = self.cmd_socket.send("COMMAND_EXIT".as_bytes(), zmq::DONTWAIT) {
+        if let Err(err) = self.cmd_socket.send(COMMAND_EXIT.as_bytes(), zmq::DONTWAIT) {
             warn!("Can't send exit command to pool worker thread (may be already finished) {}", err);
         }
 
