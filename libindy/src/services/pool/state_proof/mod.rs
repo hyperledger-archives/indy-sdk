@@ -701,11 +701,11 @@ fn _calculate_taa_digest(text: &str, version: &str) -> IndyResult<Vec<u8>> {
 }
 
 fn _is_full_taa_state_value_expected(expected_state_key: &[u8]) -> bool {
-    expected_state_key.starts_with("2:d:".as_bytes())
+    expected_state_key.starts_with(b"2:d:")
 }
 
 fn _if_rev_delta_multi_state_proof_expected(sp_key: &[u8]) -> bool {
-    sp_key.starts_with("\x06:".as_bytes()) || sp_key.starts_with("6:".as_bytes())
+    sp_key.starts_with(b"\x06:") || sp_key.starts_with(b"6:")
 }
 
 #[cfg(test)]
