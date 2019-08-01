@@ -553,7 +553,7 @@ impl PaymentsService {
                                            format!("The requester must be an owner of the transaction that already present on the ledger.")));
         }
 
-        return Ok(());
+        Ok(())
     }
 
     fn _get_req_info(constraint: &RoleConstraint, fees: &Fees) -> IndyResult<RequestInfo> {
