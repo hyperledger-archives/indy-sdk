@@ -268,7 +268,7 @@ impl Prover {
         res
     }
 
-    pub fn build_credential_tags(&self, credential: &Credential, catpol: &Option<&CredentialAttrTagPolicy>) -> HashMap<String, String> {
+    pub fn build_credential_tags(&self, credential: &Credential, catpol: Option<&CredentialAttrTagPolicy>) -> HashMap<String, String> {
         trace!("build_credential_tags >>> credential: {:?}, catpol: {:?}", credential, catpol);
 
         let mut res: HashMap<String, String> = HashMap::new();
@@ -299,7 +299,7 @@ impl Prover {
                        name: &str,
                        referent: &str,
                        restrictions: &Option<serde_json::Value>,
-                       extra_query: &Option<&ProofRequestExtraQuery>) -> IndyResult<String> {
+                       extra_query: Option<&ProofRequestExtraQuery>) -> IndyResult<String> {
         trace!("build_query >>> name: {:?}, referent: {:?}, restrictions: {:?}, extra_query: {:?}", name, referent, restrictions, extra_query);
 
         let mut sub_queries: Vec<serde_json::Value> = vec![];
@@ -501,7 +501,7 @@ mod tests {
         #[test]
         fn build_credential_tags_works() {
             let ps = Prover::new();
-            let tags = ps.build_credential_tags(&_credential(), &None);
+            let tags = ps.build_credential_tags(&_credential(), None);
 
             let expected_tags: HashMap<String, String> = hashmap!(
                     "schema_id".to_string() => SCHEMA_ID.to_string(),
@@ -524,7 +524,7 @@ mod tests {
         fn build_credential_tags_works_for_catpol() {
             let ps = Prover::new();
             let catpol = CredentialAttrTagPolicy::from(vec!(String::from("name")));
-            let tags = ps.build_credential_tags(&_credential(), &Some(catpol).as_ref());
+            let tags = ps.build_credential_tags(&_credential(), Some(catpol).as_ref());
 
             let expected_tags: HashMap<String, String> = hashmap!(
                     "schema_id".to_string() => SCHEMA_ID.to_string(),
@@ -546,7 +546,7 @@ mod tests {
             let ps = Prover::new();
             let mut credential = _credential();
             credential.rev_reg_id = Some(REV_REG_ID.to_string());
-            let tags = ps.build_credential_tags(&credential, &None);
+            let tags = ps.build_credential_tags(&credential, None);
 
             let expected_tags: HashMap<String, String> = hashmap!(
                     "schema_id".to_string() => SCHEMA_ID.to_string(),
@@ -579,7 +579,7 @@ mod tests {
         #[test]
         fn build_query_works() {
             let ps = Prover::new();
-            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &None, &None).unwrap();
+            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &None, None).unwrap();
             let expected_query = json!({
                 "$and": vec![
                     json!({
@@ -595,7 +595,7 @@ mod tests {
             let ps = Prover::new();
 
             let restriction = json!({"schema_id": SCHEMA_ID, "cred_def_id": CRED_DEF_ID});
-            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &Some(restriction), &None).unwrap();
+            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &Some(restriction), None).unwrap();
 
             let expected_query = json!({
                 "$and": vec![
@@ -615,7 +615,7 @@ mod tests {
         #[test]
         fn build_query_works_for_empty_restrictions() {
             let ps = Prover::new();
-            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &Some(json!([])), &None).unwrap();
+            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &Some(json!([])), None).unwrap();
             let expected_query = json!({
                 "$and": vec![
                     json!({
@@ -637,7 +637,7 @@ mod tests {
                     )
             );
 
-            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &None, &Some(&extra_query)).unwrap();
+            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &None, Some(&extra_query)).unwrap();
 
             let expected_query = json!({
                 "$and": vec![
@@ -666,7 +666,7 @@ mod tests {
                     )
             );
 
-            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &Some(restriction), &Some(&extra_query)).unwrap();
+            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &Some(restriction), Some(&extra_query)).unwrap();
 
             let expected_query = json!({
                 "$and": vec![
@@ -694,7 +694,7 @@ mod tests {
             let restriction_2 = json!({"cred_def_id": CRED_DEF_ID});
             let restirctions = serde_json::Value::Array(vec![restriction_1, restriction_2]);
 
-            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &Some(restirctions), &None).unwrap();
+            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &Some(restirctions), None).unwrap();
 
             let expected_query = json!({
                 "$and": vec![
@@ -726,7 +726,7 @@ mod tests {
             let restriction_2 = json!({"schema_id":  serde_json::Value::Null, "cred_def_id": CRED_DEF_ID});
             let restirctions = serde_json::Value::Array(vec![restriction_1, restriction_2]);
 
-            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &Some(restirctions), &None).unwrap();
+            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &Some(restirctions), None).unwrap();
 
             let expected_query = json!({
                 "$and": vec![
@@ -760,7 +760,7 @@ mod tests {
                     )
             );
 
-            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &None, &Some(&extra_query)).unwrap();
+            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &None, Some(&extra_query)).unwrap();
 
             let expected_query = json!({
                 "$and": vec![
@@ -795,7 +795,7 @@ mod tests {
                     )
             );
 
-            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &Some(restriction), &Some(&extra_query)).unwrap();
+            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &Some(restriction), Some(&extra_query)).unwrap();
 
             let expected_query = json!({
                 "$and": [

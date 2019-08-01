@@ -319,7 +319,7 @@ impl Verifier {
 
         for (referent, info) in requested_attrs {
             let op = parse_from_json(
-                &build_wql_query(&info.name, &referent, &info.restrictions, &None)?
+                &build_wql_query(&info.name, &referent, &info.restrictions, None)?
             )?;
 
             let filter = Verifier::_gather_filter_info(&referent, &proof_attr_identifiers, schemas, cred_defs)?;
@@ -330,7 +330,7 @@ impl Verifier {
 
         for (referent, info) in proof_req.requested_predicates.iter() {
             let op = parse_from_json(
-                &build_wql_query(&info.name, &referent, &info.restrictions, &None)?
+                &build_wql_query(&info.name, &referent, &info.restrictions, None)?
             )?;
 
             let filter = Verifier::_gather_filter_info(&referent, received_predicates, schemas, cred_defs)?;

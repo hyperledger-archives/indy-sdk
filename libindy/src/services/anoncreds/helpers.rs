@@ -93,7 +93,7 @@ pub fn parse_cred_rev_id(cred_rev_id: &str) -> IndyResult<u32> {
 pub fn build_wql_query(name: &str,
                        referent: &str,
                        restrictions: &Option<serde_json::Value>,
-                       extra_query: &Option<&ProofRequestExtraQuery>) -> IndyResult<String> {
+                       extra_query: Option<&ProofRequestExtraQuery>) -> IndyResult<String> {
 
     trace!("build_wql_query >>> name: {:?}, referent: {:?}, restrictions: {:?}, extra_query: {:?}",
            name, referent, restrictions, extra_query);

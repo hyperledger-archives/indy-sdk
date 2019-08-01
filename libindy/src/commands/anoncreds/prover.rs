@@ -348,7 +348,7 @@ impl ProverCommandExecutor {
 
             while let Some(credential_record) = credentials_search.fetch_next_record()? {
                 let (_, credential) = self._get_credential(&credential_record)?;
-                let cred_tags = self.anoncreds_service.prover.build_credential_tags(&credential, &catpol);
+                let cred_tags = self.anoncreds_service.prover.build_credential_tags(&credential, catpol);
                 self.wallet_service.update_record_tags(wallet_handle, self.wallet_service.add_prefix("Credential").as_str(), credential_record.get_id(), &cred_tags)?;
             }
         }
@@ -406,7 +406,7 @@ impl ProverCommandExecutor {
             None
         };
 
-        let cred_tags = self.anoncreds_service.prover.build_credential_tags(&credential, &catpol.as_ref());
+        let cred_tags = self.anoncreds_service.prover.build_credential_tags(&credential, catpol.as_ref());
         self.wallet_service.add_indy_object(wallet_handle, &out_cred_id, credential, &cred_tags)?;
 
         debug!("store_credential <<< out_cred_id: {:?}", out_cred_id);
@@ -529,7 +529,7 @@ impl ProverCommandExecutor {
             let query_json = self.anoncreds_service.prover.build_query(&requested_attr.name,
                                                                        &attr_id,
                                                                        &requested_attr.restrictions,
-                                                                       &None)?;
+                                                                       None)?;
 
             let interval = get_non_revoc_interval(&proof_request.non_revoked, &requested_attr.non_revoked);
 
@@ -542,7 +542,7 @@ impl ProverCommandExecutor {
             let query_json = self.anoncreds_service.prover.build_query(&requested_predicate.name,
                                                                        &predicate_id,
                                                                        &requested_predicate.restrictions,
-                                                                       &None)?;
+                                                                       None)?;
 
             let interval = get_non_revoc_interval(&proof_request.non_revoked, &requested_predicate.non_revoked);
 
@@ -572,7 +572,7 @@ impl ProverCommandExecutor {
             let query_json = self.anoncreds_service.prover.build_query(&requested_attr.name,
                                                                        &attr_id,
                                                                        &requested_attr.restrictions,
-                                                                       &extra_query)?;
+                                                                       extra_query)?;
             let credentials_search =
                 self.wallet_service.search_indy_records::<Credential>(wallet_handle, &query_json, &SearchOptions::id_value())?;
 
@@ -587,7 +587,7 @@ impl ProverCommandExecutor {
             let query_json = self.anoncreds_service.prover.build_query(&requested_predicate.name,
                                                                        &predicate_id,
                                                                        &requested_predicate.restrictions,
-                                                                       &extra_query)?;
+                                                                       extra_query)?;
             let credentials_search =
                 self.wallet_service.search_indy_records::<Credential>(wallet_handle, &query_json, &SearchOptions::id_value())?;
 
