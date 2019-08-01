@@ -450,10 +450,10 @@ impl<T: Networker> RequestSM<T> {
                     _ => (RequestState::CatchupConsensus(state), None)
                 }
             }
-            RequestState::CatchupSingle(mut state) => {
+            RequestState::CatchupSingle(state) => {
                 match re {
                     RequestEvent::CatchupRep(mut cr, node_alias) => {
-                        match _process_catchup_reply(&mut cr, &mut state.merkle_tree, &state.target_mt_root, state.target_mt_size, &pool_name) {
+                        match _process_catchup_reply(&mut cr, &state.merkle_tree, &state.target_mt_root, state.target_mt_size, &pool_name) {
                             Ok(merkle) => {
                                 state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(state.req_id.clone(), None)));
                                 (RequestState::finish(), Some(PoolEvent::Synced(merkle)))
