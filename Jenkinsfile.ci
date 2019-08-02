@@ -12,12 +12,12 @@ def testing() {
     }
     stage('Testing') {
         parallel([
-                'ubuntu-test' : { ubuntuTesting() },
-                'android-test': { androidTesting() },
-                'macos-test'  : { macosTesting() },
-                'ios-test'    : { iosTesting() },
-                //  FIXME 'redhat-test' : { rhelTesting() }, https://jira.hyperledger.org/browse/IS-1212
-                'windows-test': { windowsTesting() }
+//                'ubuntu-test' : { ubuntuTesting() },
+//                'android-test': { androidTesting() },
+//                'macos-test'  : { macosTesting() },
+//                'ios-test'    : { iosTesting() },
+                  'redhat-test' : { rhelTesting() },
+//                'windows-test': { windowsTesting() }
         ])
     }
 }
@@ -346,6 +346,9 @@ def ubuntuTesting() {
 def rhelTesting() {
     stage('RedHat Test') {
         linuxTesting("ci/amazon.dockerfile ci", "RedHat", "pool_network")
+        linuxTesting("ci/amazon.dockerfile ci", "RedHat", "pool_network")
+        linuxTesting("ci/amazon.dockerfile ci", "RedHat", "pool_network")
+        linuxTesting("ci/amazon.dockerfile ci", "RedHat", "pool_network")
     }
 }
 
@@ -362,30 +365,30 @@ def linuxTesting(file, env_name, network_name) {
                     libindyBuildFinished[env_name]
                 }
                 def jobs = [
-                        "${env_name}-nodejs-test"     : {
-                            linuxModuleTesting(file, env_name, network_name, this.&linuxNodejsTesting)
-                        },
+//                        "${env_name}-nodejs-test"     : {
+//                            linuxModuleTesting(file, env_name, network_name, this.&linuxNodejsTesting)
+//                        },
                         "${env_name}-cli-test"        : {
                             linuxModuleTesting(file, env_name, network_name, this.&linuxCLITesting)
                         },
                         "${env_name}-rust-test"       : {
                             linuxModuleTesting(file, env_name, network_name, this.&linuxRustTesting)
                         },
-                        "${env_name}-vcx-test"        : {
-                            vcxTesting(file, env_name, network_name)
-                        },
-                        "${env_name}-cloud-agent-test": {
-                            linuxModuleTesting(file, env_name, network_name, this.&linuxCloudAgentTesting)
-                        }
+//                        "${env_name}-vcx-test"        : {
+//                            vcxTesting(file, env_name, network_name)
+//                        },
+//                        "${env_name}-cloud-agent-test": {
+//                            linuxModuleTesting(file, env_name, network_name, this.&linuxCloudAgentTesting)
+//                        }
                 ]
-                if (env_name == "Ubuntu") {
-                    jobs["${env_name}-java-test"] = {
-                        linuxModuleTesting(file, env_name, network_name, this.&linuxJavaTesting)
-                    }
-                    jobs["${env_name}-python-test"] = {
-                        linuxModuleTesting(file, env_name, network_name, this.&linuxPythonTesting)
-                    }
-                }
+//                if (env_name == "Ubuntu") {
+//                    jobs["${env_name}-java-test"] = {
+//                        linuxModuleTesting(file, env_name, network_name, this.&linuxJavaTesting)
+//                    }
+//                    jobs["${env_name}-python-test"] = {
+//                        linuxModuleTesting(file, env_name, network_name, this.&linuxPythonTesting)
+//                    }
+//                }
                 parallel(jobs)
             },
     ])
@@ -484,7 +487,6 @@ def linuxLibindyBuild(file, env_name, network_name) {
             sh '''
                 cd libindy
                 RUST_BACKTRACE=1 cargo test -j 1 --no-run --features sodium_static
-                RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --features sodium_static
             '''
         }
 
@@ -493,7 +495,6 @@ def linuxLibindyBuild(file, env_name, network_name) {
             sh '''
                 cd libnullpay
                 LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --no-run
-                LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test
             '''
         }
     }
@@ -696,7 +697,6 @@ def linuxCLITesting(env_name, network_name, testEnv) {
             cd cli
             LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo build --features fatal_warnings
             LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --features "nullpay_plugin" --no-run
-            LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --features "nullpay_plugin"
         '''
     }
 }
