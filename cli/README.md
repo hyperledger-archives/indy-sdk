@@ -63,3 +63,12 @@ By default, this file creates in current folder and has the following name:
     ```
     did import <path to the file created on first step>
     ```
+
+
+### Notes
+Indy-CLI depends on `term` rust library that has a system dependency on terminfo database. 
+That is why CLI Debian package additionally installs `libncursesw5-dev` library.
+More about it read [here](https://crates.io/crates/term) at `Packaging and Distributing` section.
+
+
+
