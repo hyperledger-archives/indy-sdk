@@ -1450,7 +1450,6 @@ mod tests {
 
     fn _custom_path(name: &str) -> String {
         let mut path = environment::tmp_path();
-        path.push("custom_wallet_path");
         path.push(name);
         path.to_str().unwrap().to_owned()
     }
