@@ -648,7 +648,7 @@ fn _get_nodes_and_remotes(merkle: &MerkleTree) -> IndyResult<(HashMap<String, Op
         let node_verkey = txn.txn.data.dest
             .as_str()
             .from_base58()
-            .map_err(|err| Context::new(err))
+            .map_err(Context::new)
             .to_indy(IndyErrorKind::InvalidStructure, "Invalid field dest in genesis transaction")?;
 
         let node_verkey = ed25519_sign::PublicKey::from_slice(&node_verkey)
@@ -677,7 +677,7 @@ fn _get_nodes_and_remotes(merkle: &MerkleTree) -> IndyResult<(HashMap<String, Op
                 let key = blskey
                     .as_str()
                     .from_base58()
-                    .map_err(|err| Context::new(err))
+                    .map_err(Context::new)
                     .to_indy(IndyErrorKind::InvalidStructure, "Invalid field blskey in genesis transaction")?;
 
                 Some(VerKey::from_bytes(&key)

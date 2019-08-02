@@ -127,7 +127,7 @@ fn _try_to_catch_up(ledger_status: &(String, usize, Option<Vec<String>>), merkle
     } else if target_mt_size > cur_mt_size {
         let target_mt_root = target_mt_root
             .from_base58()
-            .map_err(|err| Context::new(err))
+            .map_err(Context::new)
             .to_indy(IndyErrorKind::InvalidStructure, "Can't parse target MerkleTree hash from nodes responses")?; // FIXME: review kind
 
         match *hashes {
@@ -150,7 +150,7 @@ pub fn check_cons_proofs(mt: &MerkleTree, cons_proofs: &Vec<String>, target_mt_r
         bytes_proofs.push(
             cons_proof
                 .from_base58()
-                .map_err(|err| Context::new(err))
+                .map_err(Context::new)
                 .to_indy(IndyErrorKind::InvalidStructure, "Can't decode node consistency proof")? // FIXME: review kind
         );
     }
