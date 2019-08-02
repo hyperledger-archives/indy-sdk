@@ -18,6 +18,7 @@ test('payments', async function (t) {
   var paymentAddress = 'pay:null:test'
   var inputs = ['pay:null:1']
   var outputs = [{ 'recipient': 'pay:null:1', 'amount': 1 }]
+  var from = 1
 
   var err = await t.throwsAsync(indy.createPaymentAddress(wh, paymentMethod, {}))
   t.is(err.indyName, 'PaymentUnknownMethodError')
@@ -33,7 +34,10 @@ test('payments', async function (t) {
   err = await t.throwsAsync(indy.buildGetPaymentSourcesRequest(wh, trusteeDid, paymentAddress))
   t.is(err.indyName, 'PaymentUnknownMethodError')
 
-  err = await t.throwsAsync(indy.parseGetPaymentSourcesResponse(paymentMethod, {}))
+  err = await t.throwsAsync(indy.buildGetPaymentSourcesWithFromRequest(wh, trusteeDid, paymentAddress, from))
+  t.is(err.indyName, 'PaymentUnknownMethodError')
+
+  err = await t.throwsAsync(indy.parseGetPaymentSourcesWithFromResponse(paymentMethod, {}))
   t.is(err.indyName, 'PaymentUnknownMethodError')
 
   err = await t.throwsAsync(indy.buildPaymentReq(wh, trusteeDid, inputs, outputs, null))
@@ -42,11 +46,11 @@ test('payments', async function (t) {
   err = await t.throwsAsync(indy.parsePaymentResponse(paymentMethod, {}))
   t.is(err.indyName, 'PaymentUnknownMethodError')
 
-  var extra = await indy.preparePaymentExtraWithAcceptanceData(null, 'indy agreement', '1.0.0', null, 'acceptance mechanism label 1', 123456789)
+  var extra = await indy.preparePaymentExtraWithAcceptanceData(null, 'indy agreement', '1.0.0', null, 'acceptance mechanism label 1', 123379200)
   var expectedExtra = {
     'mechanism': 'acceptance mechanism label 1',
     'taaDigest': '7213b9aabf8677edf6b17d20a9fbfaddb059ea4cb122d163bdf658ea67196120',
-    'time': 123456789
+    'time': 123379200
   }
   t.deepEqual(extra['taaAcceptance'], expectedExtra)
 
@@ -72,6 +76,29 @@ test('payments', async function (t) {
 
   err = await t.throwsAsync(indy.parseVerifyPaymentResponse(paymentMethod, {}))
   t.is(err.indyName, 'PaymentUnknownMethodError')
+
+  var message = Buffer.from('123456789', 'utf8')
+  err = await t.throwsAsync(indy.signWithAddress(wh, paymentAddress, message))
+  t.is(err.indyName, 'PaymentUnknownMethodError')
+
+  var signature = Buffer.from('987654321', 'utf8')
+  err = await t.throwsAsync(indy.verifyWithAddress(paymentAddress, message, signature))
+  t.is(err.indyName, 'PaymentUnknownMethodError')
+
+  var getAuthRuleResp = { 'result': { 'data': [ { 'new_value': '0', 'constraint': { 'need_to_be_owner': false, 'sig_count': 1, 'metadata': { 'fees': '1' }, 'role': '0', 'constraint_id': 'ROLE' }, 'field': 'role', 'auth_type': '1', 'auth_action': 'ADD' } ], 'identifier': 'LibindyDid111111111111', 'auth_action': 'ADD', 'new_value': '0', 'reqId': 15616, 'auth_type': '1', 'type': '121', 'field': 'role' }, 'op': 'REPLY' }
+  var requesterInfo = { 'role': '0', 'need_to_be_owner': false, 'sig_count': 1 }
+  fees = { '1': 100 }
+
+  var requestInfo = await indy.getRequestInfo(getAuthRuleResp, requesterInfo, fees)
+  var expectedRequestInfo = {
+    'price': 100,
+    'requirements': [{
+      'role': '0',
+      'need_to_be_owner': false,
+      'sig_count': 1
+    }]
+  }
+  t.deepEqual(expectedRequestInfo, requestInfo)
 
   await indy.closeWallet(wh)
   await indy.deleteWallet(walletConfig, walletCredentials)

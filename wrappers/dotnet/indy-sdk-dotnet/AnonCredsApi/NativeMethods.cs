@@ -216,6 +216,9 @@ namespace Hyperledger.Indy.AnonCredsApi
 
         internal delegate void ProverGetCredentialsCompletedDelegate(int xcommand_handle, int err, string matched_credentials_json);
 
+        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_prover_delete_credential(int command_handle, int wallet_handle, string cred_id, IndyMethodCompletedDelegate cb);
+
         /// <summary>
         /// Search for credentials stored in wallet.
         /// Credentials can be filtered by tags created during saving of credential.

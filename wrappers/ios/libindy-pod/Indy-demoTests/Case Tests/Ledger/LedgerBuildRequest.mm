@@ -883,18 +883,42 @@
                                                                             version:@"1.0.0"
                                                                           taaDigest:@"050e52a57837fff904d3d059c8a123e3a04177042bf467db2b2c27abd8045d5e"
                                                                         accMechType:@"acceptance type 1"
-                                                                   timeOfAcceptance:@(123456789)
+                                                                   timeOfAcceptance:@(123379200)
                                                                          outRequest:&requestJson];
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildTxnAuthorAgreementRequestWithSubmitterDid() failed!");
     NSDictionary *expectedMeta = @{
             @"mechanism": @"acceptance type 1",
             @"taaDigest": @"050e52a57837fff904d3d059c8a123e3a04177042bf467db2b2c27abd8045d5e",
-            @"time": @(123456789),
+            @"time": @(123379200),
     };
 
     request = [NSDictionary fromString:requestJson];
 
     XCTAssertTrue([expectedMeta isEqualToDictionary:request[@"taaAcceptance"]], @"Wrong Result Json!");
+}
+
+// MARK: Endorser
+
+- (void)testAppendEndorserToRequestWorks {
+    NSDictionary *request = @{
+            @"reqId": @(1496822211362017764),
+            @"identifier": @"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL",
+            @"operation": @{
+                    @"type": @"1",
+                    @"dest": @"VsKV7grR1BUE29mG2Fm2kX",
+                    @"dest": @"GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa"
+            }
+    };
+
+    NSString *requestJson;
+    ret = [[LedgerUtils sharedInstance] appendEndorserToRequest:[NSDictionary toString:request]
+                                                    endorserDid:[TestUtils trusteeDid]
+                                                     outRequest:&requestJson];
+    XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildTxnAuthorAgreementRequestWithSubmitterDid() failed!");
+
+    request = [NSDictionary fromString:requestJson];
+
+    XCTAssertTrue([[TestUtils trusteeDid] isEqualToString:request[@"endorser"]]);
 }
 
 @end

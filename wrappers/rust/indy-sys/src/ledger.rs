@@ -286,6 +286,12 @@ extern {
                                                                   acc_mech_type: CString,
                                                                   time_of_acceptance: u64,
                                                                   cb: Option<ResponseStringCB>) -> Error;
+
+    #[no_mangle]
+    pub fn indy_append_request_endorser(command_handle: CommandHandle,
+                                        request_json: CString,
+                                        endorser_did: CString,
+                                        cb: Option<ResponseStringCB>) -> Error;
 }
 
 pub type CustomTransactionParser = extern fn(reply_from_node: CString, parsed_sp: *mut CString) -> Error;

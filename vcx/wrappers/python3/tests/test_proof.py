@@ -5,7 +5,7 @@ from vcx.error import ErrorCode, VcxError
 from vcx.state import State, ProofState
 from vcx.api.proof import Proof
 from vcx.api.connection import Connection
-from tests.conftest import proof_message
+from vcx.api.disclosed_proof import DisclosedProof
 
 source_id = '123'
 name = 'proof name'
@@ -118,14 +118,15 @@ async def test_request_proof():
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
-async def test_update_state_with_message():
-    connection = await Connection.create(source_id)
-    await connection.connect(connection_options)
+async def test_get_request_msg():
     proof = await Proof.create(source_id, name, requested_attrs, revocation_interval)
-    await proof.request_proof(connection)
-    assert await proof.get_state() == State.OfferSent
-    state = await proof.update_state_with_message(proof_message)
-    assert state == State.Accepted
+    msg = await proof.get_proof_request_msg()
+    dproof = await DisclosedProof.create(name, msg)
+    proof_msg = await dproof.get_send_proof_msg()
+    assert(proof_msg)
+    print(json.dumps(proof_msg))
+    await proof.update_state_with_message(json.dumps(proof_msg))
+    assert await proof.get_state() == State.Accepted
 
 
 @pytest.mark.asyncio

@@ -130,6 +130,12 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
      }
  @param tailsWriterHandle: handle of blob storage to store tails
  @param completion Callback that takes command result as parameter.
+ 
+ NOTE:
+     Recursive creation of folder for Default Tails Writer (correspondent to `tailsWriterHandle`)
+     in the system-wide temporary directory may fail in some setup due to permissions: `IO error: Permission denied`.
+     In this case use `TMPDIR` environment variable to define temporary directory specific for an application.
+ 
  Returns 
     revocRegID: identifier of created revocation registry definition
     revocRegDefJSON: public part of revocation registry definition
@@ -488,7 +494,7 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
     {
         "name": string,
         "version": string,
-        "nonce": string,
+        "nonce": string, - a big number represented as a string (use `generateNonce` function to generate 80-bit number)
         "requested_attributes": { // set of requested attributes
              "<attr_referent>": <attr_info>, // see below
              ...,
@@ -567,7 +573,7 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
     {
         "name": string,
         "version": string,
-        "nonce": string,
+        "nonce": string, - a big number represented as a string (use `generateNonce` funciton to generate 80-bit number)
         "requested_attributes": { // set of requested attributes
              "<attr_referent>": <attr_info>, // see above
              ...,
@@ -657,7 +663,7 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
     {
         "name": string,
         "version": string,
-        "nonce": string,
+        "nonce": string, - a big number represented as a string (use `generateNonce` function to generate 80-bit number)
         "requested_attributes": { // set of requested attributes
              "<attr_referent>": <attr_info>, // see below
              ...,
@@ -761,7 +767,7 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
     {
         "name": string,
         "version": string,
-        "nonce": string,
+        "nonce": string, - a big number represented as a string (use `generateNonce` function to generate 80-bit number)
         "requested_attributes": { // set of requested attributes
              "<attr_referent>": <attr_info>, // see below
              ...,
@@ -889,5 +895,13 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
               revRegDeltaJSON:(NSString *)revRegDeltaJSON
       blobStorageReaderHandle:(NSNumber *)blobStorageReaderHandle
                    completion:(void (^)(NSError *error, NSString *updatedRevStateJSON))completion;
+
+/**
+ Generates 80-bit numbers that can be used as a nonce for proof request.
+
+ @param completion Callback that takes command result as parameter.
+ Returns nonce: generated number as a string
+ */
++ (void)generateNonce:(void (^)(NSError *error, NSString *nonce))completion;
 
 @end

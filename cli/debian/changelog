@@ -1,6 +1,18 @@
-indy-cli (1.9.0) unstable; urgency=medium
+indy-cli (1.10.1) unstable; urgency=medium
 
 [ Hyperledger ]
+
+## 1.10.1
+* Updated behavior to persist command history between sessions.
+* Bugfixes:
+    * Corrected behavior of `ledger set-fees-prepare` command to not add `Transaction Author Agreement` to request.
+    * Corrected response data types in `ledger get-fees` command.
+    * others minor bugfixes
+
+## 1.10.0
+* Added `ledger auth-rules` command to change multiple auth rules.
+* Allowed offline signing of transactions.
+* Handle `exit` command within a batch mode.
 
 ## 1.9.0
 * Updated Indy-CLI to use session based approach to support work with `Transaction Author Agreement` concept.

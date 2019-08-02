@@ -161,7 +161,8 @@ test('ledger', async function (t) {
     'metadata': {},
     'role': '0',
     'constraint_id': 'ROLE',
-    'need_to_be_owner': false
+    'need_to_be_owner': false,
+    'off_ledger_signature': false
   }
   req = await indy.buildAuthRuleRequest(trusteeDid, 'NYM', 'ADD', 'role', null, '101', constraint)
   res = await indy.signAndSubmitRequest(pool.handle, wh, trusteeDid, req)
@@ -174,7 +175,7 @@ test('ledger', async function (t) {
   t.deepEqual(res['result']['data'][0]['constraint'], constraint)
 
   var expectedAuthRule = {
-    'auth_type': 'NYM',
+    'auth_type': '1',
     'auth_action': 'ADD',
     'field': 'role',
     'new_value': '101',
@@ -183,8 +184,8 @@ test('ledger', async function (t) {
 
   var authRulesData = [expectedAuthRule]
   req = await indy.buildAuthRulesRequest(trusteeDid, authRulesData)
-  res = await indy.submitRequest(pool.handle, req)
-  t.deepEqual(req['operation'], { 'type': '122', 'rules': authRulesData })
+  res = await indy.signAndSubmitRequest(pool.handle, wh, trusteeDid, req)
+  t.is(res.op, 'REPLY')
 
   // author agreement
   req = await indy.buildTxnAuthorAgreementRequest(trusteeDid, 'indy agreement', '1.0.0')
@@ -198,15 +199,15 @@ test('ledger', async function (t) {
   req = await indy.buildAcceptanceMechanismsRequest(trusteeDid, aml, '1.0.0', null)
   t.deepEqual(req['operation'], { 'type': '5', 'aml': aml, 'version': '1.0.0' })
 
-  req = await indy.buildGetAcceptanceMechanismsRequest(null, 123456789, null)
-  t.deepEqual(req['operation'], { 'type': '7', 'timestamp': 123456789 })
+  req = await indy.buildGetAcceptanceMechanismsRequest(null, 123379200, null)
+  t.deepEqual(req['operation'], { 'type': '7', 'timestamp': 123379200 })
 
   // author agreement acceptance data
-  req = await indy.appendTxnAuthorAgreementAcceptanceToRequest(req, 'indy agreement', '1.0.0', null, 'acceptance mechanism label 1', 123456789)
+  req = await indy.appendTxnAuthorAgreementAcceptanceToRequest(req, 'indy agreement', '1.0.0', null, 'acceptance mechanism label 1', 123379200)
   var expectedMeta = {
     'mechanism': 'acceptance mechanism label 1',
     'taaDigest': '7213b9aabf8677edf6b17d20a9fbfaddb059ea4cb122d163bdf658ea67196120',
-    'time': 123456789
+    'time': 123379200
   }
   t.deepEqual(req['taaAcceptance'], expectedMeta)
 
@@ -214,6 +215,11 @@ test('ledger', async function (t) {
   req = await indy.buildAuthRuleRequest(trusteeDid, 'NYM', 'ADD', 'role', null, '101', defaultConstraint)
   res = await indy.signAndSubmitRequest(pool.handle, wh, trusteeDid, req)
   t.is(res.op, 'REPLY')
+
+  // endorser
+  req = await indy.buildSchemaRequest(myDid, schema)
+  req = await indy.appendRequestEndorser(req, trusteeDid)
+  t.is(req['endorser'], trusteeDid)
 
   await indy.closeWallet(wh)
   await indy.deleteWallet(walletConfig, walletCredentials)

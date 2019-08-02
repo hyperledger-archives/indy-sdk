@@ -5,6 +5,7 @@ from ctypes import *
 
 import logging
 
+
 """
 These functions wrap the Ursa algorithm as documented in this paper:
 https://github.com/hyperledger/ursa/blob/master/libursa/docs/AnonCred.pdf
@@ -187,7 +188,13 @@ async def issuer_create_and_store_revoc_reg(wallet_handle: int,
                 2) ISSUANCE_ON_DEMAND: nothing is issued initially accumulator is 1 (used by default);
             "max_cred_num": maximum number of credentials the new registry can process (optional, default 100000)
         }
-    :param tails_writer_handle:
+    :param tails_writer_handle: handle of blob storage to store tails
+
+    NOTE:
+        Recursive creation of folder for Default Tails Writer (correspondent to `tails_writer_handle`)
+        in the system-wide temporary directory may fail in some setup due to permissions: `IO error: Permission denied`.
+        In this case use `TMPDIR` environment variable to define temporary directory specific for an application.
+
     :return:
         revoc_reg_id: identifier of created revocation registry definition
         revoc_reg_def_json: public part of revocation registry definition
@@ -656,11 +663,11 @@ async def prover_set_credential_attr_tag_policy(wallet_handle: int,
     c_retroactive = c_bool(retroactive)
 
     res = await do_call('indy_prover_set_credential_attr_tag_policy',
-                            c_wallet_handle,
-                            c_cred_def_id,
-                            c_tag_attrs_json,
-                            c_retroactive,
-                            prover_set_credential_attr_tag_policy.cb)
+                        c_wallet_handle,
+                        c_cred_def_id,
+                        c_tag_attrs_json,
+                        c_retroactive,
+                        prover_set_credential_attr_tag_policy.cb)
 
     logger.debug("prover_set_credential_attr_tag_policy: <<< res: %r", res)
     return res
@@ -690,13 +697,14 @@ async def prover_get_credential_attr_tag_policy(wallet_handle: int,
     c_cred_def_id = c_char_p(cred_def_id.encode('utf-8'))
 
     catpol_json = await do_call('indy_prover_get_credential_attr_tag_policy',
-                                     c_wallet_handle,
-                                     c_cred_def_id,
-                                     prover_get_credential_attr_tag_policy.cb)
+                                c_wallet_handle,
+                                c_cred_def_id,
+                                prover_get_credential_attr_tag_policy.cb)
 
     res = catpol_json.decode()
     logger.debug("prover_get_credential_attr_tag_policy: <<< res: %r", res)
     return res
+
 
 async def prover_store_credential(wallet_handle: int,
                                   cred_id: Optional[str],
@@ -807,7 +815,7 @@ async def prover_get_credential(wallet_handle: int,
 
 
 async def prover_delete_credential(wallet_handle: int,
-                                cred_id: str) -> None:
+                                   cred_id: str) -> None:
     """
     Delete identified credential from wallet.
 
@@ -828,9 +836,9 @@ async def prover_delete_credential(wallet_handle: int,
     c_cred_id = c_char_p(cred_id.encode('utf-8'))
 
     await do_call('indy_prover_delete_credential',
-                        c_wallet_handle,
-                        c_cred_id,
-                        prover_delete_credential.cb)
+                  c_wallet_handle,
+                  c_cred_id,
+                  prover_delete_credential.cb)
 
     logger.debug("prover_delete_credential: <<<")
 
@@ -1007,7 +1015,7 @@ async def prover_get_credentials_for_proof_req(wallet_handle: int,
         {
             "name": string,
             "version": string,
-            "nonce": string,
+            "nonce": string, - a big number represented as a string (use `generate_nonce` function to generate 80-bit number)
             "requested_attributes": { // set of requested attributes
                  "<attr_referent>": <attr_info>, // see below
                  ...,
@@ -1108,7 +1116,7 @@ async def prover_search_credentials_for_proof_req(wallet_handle: int,
         {
             "name": string,
             "version": string,
-            "nonce": string,
+            "nonce": string, - a big number represented as a string (use `generate_nonce` function to generate 80-bit number)
             "requested_attributes": { // set of requested attributes
                  "<attr_referent>": <attr_info>, // see below
                  ...,
@@ -1254,7 +1262,7 @@ async def prover_create_proof(wallet_handle: int,
         {
             "name": string,
             "version": string,
-            "nonce": string,
+            "nonce": string, - a big number represented as a string (use `generate_nonce` function to generate 80-bit number)
             "requested_attributes": { // set of requested attributes
                  "<attr_referent>": <attr_info>, // see below
                  ...,
@@ -1422,7 +1430,7 @@ async def verifier_verify_proof(proof_request_json: str,
          {
              "name": string,
              "version": string,
-             "nonce": string,
+             "nonce": string, - a big number represented as a string (use `generate_nonce` function to generate 80-bit number)
              "requested_attributes": { // set of requested attributes
                   "<attr_referent>": <attr_info>, // see below
                   ...,
@@ -1635,4 +1643,26 @@ async def update_revocation_state(blob_storage_reader_handle: int,
 
     res = updated_rev_state_json.decode()
     logger.debug("update_revocation_state: <<< res: %r", res)
+    return res
+
+
+async def generate_nonce() -> str:
+    """
+    Generates 80-bit numbers that can be used as a nonce for proof request.
+
+    :return: nonce: generated number as a string
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("generate_nonce: >>>")
+
+    if not hasattr(generate_nonce, "cb"):
+        logger.debug("generate_nonce: Creating callback")
+        generate_nonce.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    nonce = await do_call('indy_generate_nonce',
+                          generate_nonce.cb)
+
+    res = nonce.decode()
+    logger.debug("generate_nonce: <<< res: %r", res)
     return res

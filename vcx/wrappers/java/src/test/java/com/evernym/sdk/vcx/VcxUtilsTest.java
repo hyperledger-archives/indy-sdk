@@ -31,4 +31,23 @@ public class VcxUtilsTest {
         UtilsApi.setActiveTxnAuthorAgreementMeta("indy agreement", "1.0.0", null,
                 "acceptance type 1", 123456789);
     }
+
+    @Test
+    @DisplayName("get request price")
+    void vcxGetRequestPrice() throws VcxException, ExecutionException, InterruptedException {
+        String actionJson = "{\n" +
+                "    \"auth_type\": \"101\",\n" +
+                "    \"auth_action\": \"ADD\",\n" +
+                "    \"field\": \"role\",\n" +
+                "    \"new_value\": \"0\"\n" +
+                "}";
+        String requesterInfo = "{\n" +
+                "    \"role\": \"0\",\n" +
+                "    \"sig_count\": 1\n" +
+                "}";
+
+        Long price = TestHelper.getResultFromFuture(UtilsApi.vcxGetRequestPrice(actionJson, requesterInfo));
+        assert (price == 2);
+
+    }
 }
