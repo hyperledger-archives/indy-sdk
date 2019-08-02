@@ -2312,7 +2312,7 @@ mod tests {
     }
 
     fn _export_file_path(name: &str) -> PathBuf {
-        let mut path = environment::tmp_file_path("export_tests");
+        let mut path = environment::tmp_path();
         path.push(name);
         path
     }
