@@ -530,6 +530,24 @@ mod medium_cases {
         use super::*;
 
         #[test]
+        fn indy_open_wallet_works_create_delete_create_wallet() {
+            const WALLET_CONFIG: &'static str = r#"{"id":"indy_open_wallet_works_create_delete_create_wallet"}"#;
+            utils::setup("indy_open_wallet_works_create_delete_create_wallet");
+
+            let wallet_config_1 = json!({
+                "id": "indy_open_wallet_works_create_delete_create_wallet",
+            }).to_string();
+
+            wallet::create_wallet(&wallet_config_1, WALLET_CREDENTIALS).unwrap();
+
+            wallet::delete_wallet(&wallet_config_1, WALLET_CREDENTIALS).unwrap();
+
+            wallet::create_wallet(&wallet_config_1, WALLET_CREDENTIALS).unwrap();
+
+            utils::tear_down("indy_open_wallet_works_create_delete_create_wallet");
+        }
+
+        #[test]
         fn indy_open_wallet_works_for_not_created_wallet() {
             const WALLET_CONFIG: &'static str = r#"{"id":"indy_open_wallet_works_for_not_created_wallet"}"#;
             utils::setup("indy_open_wallet_works_for_not_created_wallet");
