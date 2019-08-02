@@ -422,8 +422,8 @@ impl Prover {
         Ok(())
     }
 
-    fn _build_sub_proof_request(req_attrs_for_credential: &Vec<RequestedAttributeInfo>,
-                                req_predicates_for_credential: &Vec<RequestedPredicateInfo>) -> IndyResult<SubProofRequest> {
+    fn _build_sub_proof_request(req_attrs_for_credential: &[RequestedAttributeInfo],
+                                req_predicates_for_credential: &[RequestedPredicateInfo]) -> IndyResult<SubProofRequest> {
         trace!("_build_sub_proof_request <<< req_attrs_for_credential: {:?}, req_predicates_for_credential: {:?}",
                req_attrs_for_credential, req_predicates_for_credential);
 

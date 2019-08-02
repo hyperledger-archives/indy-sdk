@@ -496,7 +496,7 @@ fn _verify_proof_range(proofs_rlp: &[u8],
                        prefix: &str,
                        from: Option<u64>,
                        next: Option<u64>,
-                       kvs: &Vec<(String, Option<String>)>) -> bool {
+                       kvs: &[(String, Option<String>)]) -> bool {
     debug!("verify_proof_range >> from {:?}, prefix {:?}, kvs {:?}", from, prefix, kvs);
     let nodes: Vec<Node> = UntrustedRlp::new(proofs_rlp).as_list().unwrap_or_default(); //default will cause error below
     let mut map: TrieDB = HashMap::new();

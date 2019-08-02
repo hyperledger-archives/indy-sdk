@@ -56,8 +56,8 @@ pub fn build_credential_values(credential_values: &HashMap<String, AttributeValu
     Ok(res)
 }
 
-pub fn build_sub_proof_request(attrs_for_credential: &Vec<AttributeInfo>,
-                               predicates_for_credential: &Vec<PredicateInfo>) -> IndyResult<SubProofRequest> {
+pub fn build_sub_proof_request(attrs_for_credential: &[AttributeInfo],
+                               predicates_for_credential: &[PredicateInfo]) -> IndyResult<SubProofRequest> {
     trace!("build_sub_proof_request >>> attrs_for_credential: {:?}, predicates_for_credential: {:?}", attrs_for_credential, predicates_for_credential);
 
     let mut sub_proof_request_builder = verifier::Verifier::new_sub_proof_request_builder()?;
