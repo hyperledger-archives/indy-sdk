@@ -2,7 +2,7 @@ extern crate openssl;
 
 use errors::prelude::*;
 use self::openssl::error::ErrorStack;
-use self::openssl::hash::{DigestBytes, hash as openssl_hash, Hasher, MessageDigest};
+use self::openssl::hash::{Hasher, MessageDigest};
 
 pub const HASHBYTES: usize = 32;
 
@@ -12,22 +12,6 @@ pub fn hash(input: &[u8]) -> Result<Vec<u8>, IndyError> {
     Ok(hasher.finish().map(|b| b.to_vec())?)
 }
 
-pub struct Digest {
-    data: DigestBytes
-}
-
-impl Digest {
-    fn new(data: DigestBytes) -> Digest {
-        Digest {
-            data: data
-        }
-    }
-
-    pub fn to_vec(&self) -> Vec<u8> {
-        self.data.to_vec()
-    }
-}
-
 pub struct Hash {}
 
 impl Hash {
@@ -35,23 +19,23 @@ impl Hash {
         Ok(Hasher::new(MessageDigest::sha256())?)
     }
 
-    pub fn hash_empty() -> Result<Digest, IndyError> {
-        Ok(Digest::new(openssl_hash(MessageDigest::sha256(), &[])?))
+    pub fn hash_empty() -> Result<Vec<u8>, IndyError> {
+        Ok(hash( &[])?)
     }
 
-    pub fn hash_leaf<T>(leaf: &T) -> Result<Digest, IndyError> where T: Hashable {
+    pub fn hash_leaf<T>(leaf: &T) -> Result<Vec<u8>, IndyError> where T: Hashable {
         let mut ctx = Hash::new_context()?;
         ctx.update(&[0x00])?;
         leaf.update_context(&mut ctx)?;
-        Ok(Digest::new(ctx.finish()?))
+        Ok(ctx.finish().map(|b| b.to_vec())?)
     }
 
-    pub fn hash_nodes<T>(left: &T, right: &T) -> Result<Digest, IndyError> where T: Hashable {
+    pub fn hash_nodes<T>(left: &T, right: &T) -> Result<Vec<u8>, IndyError> where T: Hashable {
         let mut ctx = Hash::new_context()?;
         ctx.update(&[0x01])?;
         left.update_context(&mut ctx)?;
         right.update_context(&mut ctx)?;
-        Ok(Digest::new(ctx.finish()?))
+        Ok(ctx.finish().map(|b| b.to_vec())?)
     }
 }
 
