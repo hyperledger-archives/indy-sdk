@@ -10,6 +10,12 @@ package "Programming lanugages wrappers" {
     [Java Wrapper] as java_wrapper
     cinterface <.. java_wrapper
     
+    [NodeJS Wrapper] as nodejs_wrapper
+    cinterface <.. nodejs_wrapper
+    
+    [Rust Wrapper] as rust_wrapper
+    cinterface <.. rust_wrapper
+    
     [Python Wrapper] as python_wrapper
     cinterface <.. python_wrapper
     
