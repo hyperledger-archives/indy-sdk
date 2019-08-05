@@ -1,0 +1,8 @@
+@startuml
+"Client Thread" -> "Command Thread":
+"Command Thread" -> "Pool Thread":
+
+"Client Thread" -> "Command Thread":
+"Command Thread" -> "Wallet Thread":
+
+@enduml
