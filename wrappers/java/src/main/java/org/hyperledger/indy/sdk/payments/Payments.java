@@ -429,7 +429,7 @@ public class Payments extends IndyJava.API {
      *      amount: int, // amount
      *      extra: "str", // optional data from payment transaction
      *   }],
-     *   next -- pointer to the next slice of payment address
+     *   next -- pointer to the next slice of payment sources
      * @throws IndyException Thrown if a call to the underlying SDK fails.
      */
     public static CompletableFuture<String> parseGetPaymentSourcesWithFromResponse(
