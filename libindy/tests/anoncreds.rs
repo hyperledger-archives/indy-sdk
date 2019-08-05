@@ -3489,6 +3489,42 @@ mod high_cases {
             assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
     }
+
+    mod issuer_rotate_credential_def {
+        use super::*;
+
+        #[test]
+        fn issuer_rotate_credential_def_works() {
+            let (wallet_handle, config) = utils::setup_with_wallet("issuer_rotate_credential_def_works");
+
+            let (cred_def_id, cred_def_json) = anoncreds::issuer_create_credential_definition(wallet_handle,
+                                                                                              ISSUER_DID,
+                                                                                              &anoncreds::gvt_schema_json(),
+                                                                                              TAG_1,
+                                                                                              Some(SIGNATURE_TYPE),
+                                                                                              Some(&anoncreds::default_cred_def_config()))
+                .unwrap();
+
+            let temp_cred_def_json = anoncreds::issuer_rotate_credential_def_start(wallet_handle, &cred_def_id, None).unwrap();
+
+            assert_ne!(serde_json::from_str::<serde_json::Value>(&cred_def_json).unwrap(),
+                       serde_json::from_str::<serde_json::Value>(&temp_cred_def_json).unwrap());
+
+            anoncreds::issuer_rotate_credential_def_apply(wallet_handle, &cred_def_id).unwrap();
+
+            utils::tear_down_with_wallet(wallet_handle, "issuer_rotate_credential_def_works", &config);
+        }
+
+        #[test]
+        fn issuer_rotate_credential_def_apply_works_for_no_temporary_cred_def() {
+            let (wallet_handle, config) = utils::setup_with_wallet("issuer_rotate_credential_def_apply_works_for_no_temporary_cred_def");
+
+            let res = anoncreds::issuer_rotate_credential_def_apply(wallet_handle, &anoncreds::issuer_1_gvt_cred_def_id());
+            assert_code!(ErrorCode::WalletItemNotFound, res);
+
+            utils::tear_down_with_wallet(wallet_handle, "issuer_rotate_credential_def_apply_works_for_no_temporary_cred_def", &config);
+        }
+    }
 }
 
 mod medium_cases {
@@ -4109,11 +4145,11 @@ mod medium_cases {
                 }
             );
             let res = anoncreds::verifier_verify_proof(&serde_json::to_string(&proof_req).unwrap(),
-                                                         &anoncreds::proof_json_restrictions(),
-                                                         &anoncreds::schemas_for_proof_restrictions(),
-                                                         &anoncreds::cred_defs_for_proof_restrictions(),
-                                                         "{}",
-                                                         "{}");
+                                                       &anoncreds::proof_json_restrictions(),
+                                                       &anoncreds::schemas_for_proof_restrictions(),
+                                                       &anoncreds::cred_defs_for_proof_restrictions(),
+                                                       "{}",
+                                                       "{}");
             assert!(res.is_ok());
         }
 

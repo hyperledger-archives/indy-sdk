@@ -1,6 +1,7 @@
 use super::DELIMITER;
 
 use std::collections::{HashMap, HashSet};
+use named_type::NamedType;
 
 pub const SCHEMA_MARKER: &str = "2";
 pub const MAX_ATTRIBUTES_COUNT: usize = 125;
@@ -16,7 +17,7 @@ pub struct SchemaV1 {
     pub seq_no: Option<u32>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, NamedType)]
 #[serde(tag = "ver")]
 pub enum Schema {
     #[serde(rename = "1.0")]
