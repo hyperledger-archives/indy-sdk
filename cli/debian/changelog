@@ -1,6 +1,17 @@
-indy-cli (1.10.1) unstable; urgency=medium
+indy-cli (1.11.0) unstable; urgency=medium
 
 [ Hyperledger ]
+
+## 1.11.0
+* Added new `payment-address sign/verify` commands to sign/verify a message with a payment address.
+* Updated Indy CLI behavior to complete values for the following parameters: wallet names, pool names, dids, payment addresses.
+* Updated  behavior to work with payment addresses for `ledger payment` command and commands providing the ability to set fees for a request.
+* Updated `constraint` parameter of `ledger auth-rule` command to accept optional `off_ledger_signature` field that specifies if a signature of unknown `DID` is allowed for an action performing (false by default).
+* Bugfixes:
+    * CLI to build transactions without adding a signature.
+    * CLI to handle exit signals proper way.
+    * CLI to persist both successes and failed commands.
+    * others minor bugfixes
 
 ## 1.10.1
 * Updated behavior to persist command history between sessions.
