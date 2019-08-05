@@ -1,7 +1,7 @@
 [package]
 name = "indy-sys"
 description = "FFI bindings to Libindy C API"
-version = "1.10.1"
+version = "1.11.0"
 authors = ["Mike Lodder <redmike7@gmail.com>"]
 build = "build.rs"
 links = "indy"
