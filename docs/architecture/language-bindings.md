@@ -2,7 +2,7 @@
 
 Libindy has a set of wrappers that convert its patterns to comply the best practices of corresponding languages.
 
-![alt text](indy-sdk-components.svg)
+![Components UML](indy-sdk-components.svg)
 
 There is some more detailed information about these wrappers:
 * Java -- [Sources](https://github.com/hyperledger/indy-sdk/tree/master/wrappers/java) -- [Samples](https://github.com/hyperledger/indy-sdk/tree/master/samples/java)
