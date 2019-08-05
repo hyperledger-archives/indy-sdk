@@ -20,9 +20,9 @@ use utils::file::{read_file, write_file};
 use self::regex::Regex;
 use self::chrono::prelude::*;
 
-pub const DELIMITER: &'static str = ":";
-pub const SCHEMA_MARKER: &'static str = "2";
-pub const CRED_DEF_MARKER: &'static str = "3";
+pub const DELIMITER: &str = ":";
+pub const SCHEMA_MARKER: &str = "2";
+pub const CRED_DEF_MARKER: &str = "3";
 pub const SIGN_REQUEST: bool = true;
 pub const SEND_REQUEST: bool = true;
 
@@ -128,7 +128,8 @@ pub mod nym_command {
                     let change_nym = ::command_executor::wait_for_user_reply(ctx);
 
                     if !change_nym {
-                        return Ok(println!("The transaction has not been sent."));
+                        println!("The transaction has not been sent.");
+                        return Ok(());
                     }
                 }
             }
@@ -153,7 +154,7 @@ pub mod nym_command {
             .map(|result| print_transaction_response(result,
                                                      "Nym request has been sent to Ledger.",
                                                      None,
-                                                     &mut vec![("dest", "Did"),
+                                                     &[("dest", "Did"),
                                                                ("verkey", "Verkey"),
                                                                ("role", "Role")],
                                                      true))?;
@@ -196,7 +197,10 @@ pub mod get_nym_command {
                     data["role"] = get_role_title(&data["role"]);
                     result["data"] = data;
                 }
-                Err(_) => return Err(println_err!("NYM not found"))
+                Err(_) => {
+                    println_err!("NYM not found");
+                    return Err(())
+                }
             };
         };
 
@@ -318,7 +322,10 @@ pub mod get_attrib_command {
             let data = result["data"].as_str().map(|data| serde_json::Value::String(data.to_string()));
             match data {
                 Some(data) => { result["data"] = data; }
-                None => return Err(println_err!("Attribute not found"))
+                None => {
+                    println_err!("Attribute not found");
+                    return Err(())
+                }
             };
         };
 
@@ -511,7 +518,8 @@ pub mod get_schema_command {
 
         if let Some(result) = response.result.as_ref() {
             if !result["seqNo"].is_i64() {
-                return Err(println_err!("Schema not found"));
+                println_err!("Schema not found");
+                return Err(());
             }
         };
 
@@ -579,7 +587,7 @@ pub mod cred_def_command {
             json.insert("schemaId".to_string(), JSONValue::from(schema_id));
             json.insert("type".to_string(), JSONValue::from(signature_type));
             json.insert("tag".to_string(), JSONValue::from(tag));
-            json.insert("value".to_string(), JSONValue::from(cred_def_value));
+            json.insert("value".to_string(), cred_def_value);
             JSONValue::from(json).to_string()
         };
 
@@ -642,7 +650,8 @@ pub mod get_cred_def_command {
 
         if let Some(result) = response.result.as_ref() {
             if !result["seqNo"].is_i64() {
-                return Err(println_err!("Credential Definition not found"));
+                println_err!("Credential Definition not found");
+                return Err(());
             }
         };
 
@@ -978,7 +987,8 @@ pub mod custom_command {
                     let use_transaction = ::command_executor::wait_for_user_reply(ctx);
 
                     if !use_transaction {
-                        return Ok(println!("No transaction has been send."));
+                        println!("No transaction has been send.");
+                        return Ok(());
                     }
 
                     transaction = txn_.to_string();
@@ -1013,11 +1023,20 @@ pub mod custom_command {
 
         let res = match response {
             Response { op: ResponseType::REPLY, result: Some(_), reason: None } =>
-                Ok(println!("Response: \n{}", response_json)),
+                {
+                    println!("Response: \n{}", response_json);
+                    Ok(())
+                },
             Response { op: ResponseType::REQNACK, result: None, reason: Some(reason) } |
             Response { op: ResponseType::REJECT, result: None, reason: Some(reason) } =>
-                Err(println_err!("Transaction has been rejected: {}", extract_error_message(&reason))),
-            _ => Err(println_err!("Invalid data has been received"))
+                {
+                    println_err!("Transaction has been rejected: {}", extract_error_message(&reason));
+                    Err(())
+                },
+            _ => {
+                println_err!("Invalid data has been received");
+                Err(())
+            }
         };
 
         trace!("execute << {:?}", res);
@@ -1054,14 +1073,17 @@ pub mod get_payment_sources_command {
                     .map_err(|_| println_err!("Wrong data has been received"))?;
 
                 print_list_table(&sources,
-                                 &vec![("source", "Source"),
+                                 &[("source", "Source"),
                                        ("paymentAddress", "Payment Address"),
                                        ("amount", "Amount"),
                                        ("extra", "Extra")],
                                  "There are no source's");
                 Ok(())
             }
-            Err(err) => Err(println_err!("Invalid data has been received: {:?}", err)),
+            Err(err) => {
+                println_err!("Invalid data has been received: {:?}", err);
+                Err(())
+            },
         };
 
         trace!("execute << {:?}", res);
@@ -1128,14 +1150,17 @@ pub mod payment_command {
                     .map_err(|_| println_err!("Wrong data has been received"))?;
 
                 print_list_table(&receipts,
-                                 &vec![("receipt", "Receipt"),
+                                 &[("receipt", "Receipt"),
                                        ("recipient", "Recipient Payment Address"),
                                        ("amount", "Amount"),
                                        ("extra", "Extra")],
                                  "There are no receipts's");
                 Ok(())
             }
-            Err(err) => Err(handle_payment_error(err, None)),
+            Err(err) => {
+                handle_payment_error(err, None);
+                Err(())
+            },
         };
 
         trace!("execute << {:?}", res);
@@ -1182,13 +1207,16 @@ pub mod get_fees_command {
                         .collect::<Vec<serde_json::Value>>();
 
                 print_list_table(&fees,
-                                 &vec![("type", "Transaction"),
+                                 &[("type", "Transaction"),
                                        ("amount", "Amount")],
                                  "There are no fees");
 
                 Ok(())
             }
-            Err(err) => Err(handle_payment_error(err, None)),
+            Err(err) => {
+                handle_payment_error(err, None);
+                Err(())
+            },
         };
 
         trace!("execute << {:?}", res);
@@ -1300,7 +1328,10 @@ pub mod verify_payment_receipt_command {
                 println!("{}", info_json);
                 Ok(())
             }
-            Err(err) => Err(handle_payment_error(err, None)),
+            Err(err) => {
+                handle_payment_error(err, None);
+                Err(())
+            },
         };
 
         trace!("execute << {:?}", res);
@@ -1334,7 +1365,8 @@ pub mod sign_multi_command {
             let use_transaction = ::command_executor::wait_for_user_reply(ctx);
 
             if !use_transaction {
-                return Ok(println!("No transaction has been signed."));
+                println!("No transaction has been signed.");
+                return Ok(());
             }
 
             txn_.to_string()
@@ -1355,8 +1387,14 @@ pub mod sign_multi_command {
             }
             Err(err) => {
                 match err.error_code {
-                    ErrorCode::WalletItemNotFound => Err(println_err!("Signer DID: \"{}\" not found", submitter_did)),
-                    _ => Err(handle_indy_error(err, Some(&submitter_did), None, None)),
+                    ErrorCode::WalletItemNotFound => {
+                        println_err!("Signer DID: \"{}\" not found", submitter_did);
+                        Err(())
+                    },
+                    _ => {
+                        handle_indy_error(err, Some(&submitter_did), None, None);
+                        Err(())
+                    },
                 }
             }
         };
@@ -1423,11 +1461,11 @@ pub mod auth_rule_command {
             result["txn"]["data"]["constraint"] = serde_json::Value::String(::serde_json::to_string_pretty(&result["txn"]["data"]["constraint"]).unwrap());
         }
 
-        let res = handle_transaction_response(response)
+        handle_transaction_response(response)
             .map(|result| print_transaction_response(result,
                                                      "Auth Rule request has been sent to Ledger.",
                                                      None,
-                                                     &mut vec![("auth_type", "Txn Type"),
+                                                     &[("auth_type", "Txn Type"),
                                                                ("auth_action", "Action"),
                                                                ("field", "Field"),
                                                                ("old_value", "Old Value"),
@@ -1435,8 +1473,8 @@ pub mod auth_rule_command {
                                                                ("constraint", "Constraint")],
                                                      false))?;
 
-        trace!("execute << {:?}", res);
-        Ok(res)
+        trace!("execute << ");
+        Ok(())
     }
 }
 
@@ -1470,10 +1508,10 @@ pub mod auth_rules_command {
 
         let rules: AuthRulesData = serde_json::from_value(result["txn"]["data"]["rules"].clone())
             .map_err(|_| println_err!("Wrong data has been received"))?;
-        let res = print_auth_rules(rules);
+        print_auth_rules(rules);
 
-        trace!("execute << {:?}", res);
-        Ok(res)
+        trace!("execute << ");
+        Ok(())
     }
 }
 
@@ -1527,10 +1565,10 @@ pub mod get_auth_rule_command {
         let rules: AuthRulesData = serde_json::from_value(result["data"].clone())
             .map_err(|_| println_err!("Wrong data has been received"))?;
 
-        let res = print_auth_rules(rules);
+        print_auth_rules(rules);
 
-        trace!("execute << {:?}", res);
-        Ok(res)
+        trace!("execute << ");
+        Ok(())
     }
 }
 
@@ -1556,7 +1594,7 @@ fn print_auth_rules(rules: AuthRulesData) {
         .collect::<Vec<serde_json::Value>>();
 
     print_list_table(&constraints,
-                     &vec![("auth_type", "Type"),
+                     &[("auth_type", "Type"),
                            ("auth_action", "Action"),
                            ("field", "Field"),
                            ("old_value", "Old Value"),
@@ -1587,7 +1625,8 @@ pub mod save_transaction_command {
         let save_transaction = ::command_executor::wait_for_user_reply(ctx);
 
         if !save_transaction {
-            return Ok(println!("The transaction has not been saved."));
+            println!("The transaction has not been saved.");
+            return Ok(());
         }
 
         write_file(file, &transaction)
@@ -1681,8 +1720,14 @@ pub mod taa_command {
                 read_file(file_)
                     .map_err(|err| println_err!("{}", err))?
             }
-            (Some(_), Some(_)) => return Err(println_err!("Only one of the parameters `text` and `file` can be specified")),
-            (None, None) => return Err(println_err!("Either `text` or `file` parameter must be specified"))
+            (Some(_), Some(_)) => {
+                println_err!("Only one of the parameters `text` and `file` can be specified");
+                return Err(())
+            },
+            (None, None) => {
+                println_err!("Either `text` or `file` parameter must be specified");
+                return Err(())
+            }
         };
 
         let mut request = Ledger::build_txn_author_agreement_request(&submitter_did, &text, &version)
@@ -1760,8 +1805,14 @@ pub mod aml_command {
                 read_file(file_)
                     .map_err(|err| println_err!("{}", err))?
             }
-            (Some(_), Some(_)) => return Err(println_err!("Only one of the parameters `aml` and `file` can be specified")),
-            (None, None) => return Err(println_err!("Either `aml` or `file` parameter must be specified"))
+            (Some(_), Some(_)) => {
+                println_err!("Only one of the parameters `aml` and `file` can be specified");
+                return Err(())
+            },
+            (None, None) => {
+                println_err!("Either `aml` or `file` parameter must be specified");
+                return Err(())
+            }
         };
 
         let mut request = Ledger::build_acceptance_mechanisms_request(&submitter_did, &aml, &version, context)
@@ -1793,7 +1844,8 @@ pub mod aml_command {
 pub fn set_author_agreement(ctx: &CommandContext, request: &mut String) -> Result<(), ()> {
     if let Some((text, version, acc_mech_type, time_of_acceptance)) = get_transaction_author_info(&ctx) {
         if acc_mech_type.is_empty() {
-            return Err(println_err!("Transaction author agreement Acceptance Mechanism isn't set."));
+            println_err!("Transaction author agreement Acceptance Mechanism isn't set.");
+            return Err(());
         }
 
         *request = Ledger::append_txn_author_agreement_acceptance_to_request(&request, Some(&text), Some(&version), None, &acc_mech_type, time_of_acceptance)
@@ -1806,11 +1858,12 @@ fn serialize<T>(obj: &T) -> Result<String, ()> where T: ::serde::Serialize {
     serde_json::to_string(obj).map_err(|err| println_err!("Invalid data: {:?}", err))
 }
 
-fn parse_payment_outputs(outputs: &Vec<String>) -> Result<Vec<Output>, ()> {
-    const OUTPUTS_DELIMITER: &'static str = ",";
+fn parse_payment_outputs(outputs: &[String]) -> Result<Vec<Output>, ()> {
+    const OUTPUTS_DELIMITER: &str = ",";
 
     if outputs.is_empty() {
-        return Err(println_err!("Outputs list is empty"));
+        println_err!("Outputs list is empty");
+        return Err(());
     }
 
     let mut output_objects: Vec<Output> = Vec::new();
@@ -1848,7 +1901,7 @@ pub fn print_response_receipts(receipts: Option<Vec<serde_json::Value>>) -> Resu
         if !receipt.is_empty() {
             println_succ!("Following Receipts has been received.");
             print_list_table(&receipt,
-                             &vec![("receipt", "Receipt"),
+                             &[("receipt", "Receipt"),
                                    ("recipient", "Payment Address of recipient"),
                                    ("amount", "Amount"),
                                    ("extra", "Extra")],
@@ -1858,11 +1911,11 @@ pub fn print_response_receipts(receipts: Option<Vec<serde_json::Value>>) -> Resu
     Ok(())
 }
 
-fn parse_payment_fees(fees: &Vec<&str>) -> Result<String, ()> {
+fn parse_payment_fees(fees: &[&str]) -> Result<String, ()> {
     let mut fees_map: HashMap<String, u64> = HashMap::new();
 
     for fee in fees {
-        let parts = fee.split(":").collect::<Vec<&str>>();
+        let parts = fee.split(':').collect::<Vec<&str>>();
 
         let type_ = parts.get(0)
             .ok_or(())
@@ -1890,7 +1943,7 @@ fn print_transaction_response(mut result: serde_json::Value, title: &str,
     let (metadata_headers, metadata, data) = match result["ver"].clone().as_str() {
         None => parse_transaction_response_v0(&mut result),
         Some("1") => parse_transaction_response_v1(&mut result),
-        ver @ _ => return println_err!("Unsupported transaction response format: {:?}", ver)
+        ver=> return println_err!("Unsupported transaction response format: {:?}", ver)
     };
 
     println_succ!("Metadata:");
@@ -1947,8 +2000,14 @@ pub fn handle_transaction_response(response: Response<serde_json::Value>) -> Res
         Response { op: ResponseType::REPLY, result: Some(result), reason: None } => Ok(result),
         Response { op: ResponseType::REQNACK, result: None, reason: Some(reason) } |
         Response { op: ResponseType::REJECT, result: None, reason: Some(reason) } =>
-            Err(println_err!("Transaction has been rejected: {}", extract_error_message(&reason))),
-        _ => Err(println_err!("Invalid data has been received"))
+            {
+                println_err!("Transaction has been rejected: {}", extract_error_message(&reason));
+                Err(())
+            },
+        _ => {
+            println_err!("Invalid data has been received");
+            Err(())
+        }
     }
 }
 
@@ -2071,14 +2130,17 @@ pub fn set_request_fees(ctx: &CommandContext,
     }
 
     if source_payment_address.is_some() && fees_inputs.is_some() {
-        return Err(println_err!("Only one of `source_payment_address`, `fees_inputs` can be specified."));
+        println_err!("Only one of `source_payment_address`, `fees_inputs` can be specified.");
+        return Err(());
     }
 
     let (inputs, outputs) = match (source_payment_address, fee) {
         (Some(source_), Some(fee_)) => {
             build_payment_sources_for_addresses(ctx, source_, None, None, Some(fee_))?
         }
-        (Some(_), None) => { return Err(println_err!("Fee value must be specified together with `source_payment_address`.")); }
+        (Some(_), None) => {
+            println_err!("Fee value must be specified together with `source_payment_address`.");
+            return Err(()); }
         (None, None) => {
             match fees_inputs {
                 Some(inputs_) => {
@@ -2095,7 +2157,8 @@ pub fn set_request_fees(ctx: &CommandContext,
             }
         }
         _ => {
-            return Err(println_err!("(source_payment_address, fee) - all or none parameters must be specified"));
+            println_err!("(source_payment_address, fee) - all or none parameters must be specified");
+            return Err(());
         }
     };
 
@@ -2120,7 +2183,8 @@ fn prepare_sources_for_payment_cmd(ctx: &CommandContext,
     let (inputs, outputs) = match (source_payment_address, target_payment_address, amount) {
         (Some(source_address), Some(target_address), Some(amount_)) => {
             if amount_ <= 0{
-                return Err(println_err!("Payment amount must be greater than 0"))
+                println_err!("Payment amount must be greater than 0");
+                return Err(())
             }
 
             build_payment_sources_for_addresses(&ctx, &source_address, Some(&target_address), Some(amount_), fee)?
@@ -2132,16 +2196,21 @@ fn prepare_sources_for_payment_cmd(ctx: &CommandContext,
                     let outputs = parse_payment_outputs(&outputs_).map_err(error_err!())?;
                     (inputs, outputs)
                 }
-                (None, None) => return Err(println_err!("One of the next parameter combinations must be specified:\n\
+                (None, None) => {
+                    println_err!("One of the next parameter combinations must be specified:\n\
                         (source_payment_address, target_payment_address, amount, Optional(fee)) - CLI builds payment data according to payment addresses\n\
-                        (inputs, outputs) - explicit specification of payment sources")),
+                        (inputs, outputs) - explicit specification of payment sources");
+                    return Err(())
+                },
                 _ => {
-                    return Err(println_err!("(inputs, outputs) - all or none parameters must be specified"));
+                    println_err!("(inputs, outputs) - all or none parameters must be specified");
+                    return Err(());
                 }
             }
         }
         _ => {
-            return Err(println_err!("(source_payment_address, target_payment_address, amount) - all or none parameters must be specified"));
+            println_err!("(source_payment_address, target_payment_address, amount) - all or none parameters must be specified");
+            return Err(());
         }
     };
 
@@ -2177,7 +2246,8 @@ fn inputs(sources: Vec<Source>, amount: Option<u64>, fee: Option<u64>) -> Result
     }
 
     if balance < required {
-        return Err(println_err!("Not enough payment sources: balance: {}, required: {}", balance, required));
+        println_err!("Not enough payment sources: balance: {}, required: {}", balance, required);
+        return Err(());
     }
 
     let refund = balance - required;
@@ -2240,32 +2310,32 @@ pub mod tests {
 
     const TRANSACTION: &str = r#"{"reqId":1,"identifier":"V4SGRU86Z58d6TV7PBUe6f","operation":{"type":"105","dest":"V4SGRU86Z58d6TV7PBUe6f"},"protocolVersion":2}"#;
 
-    pub const ATTRIB_RAW_DATA: &'static str = r#"{"endpoint":{"ha":"127.0.0.1:5555"}}"#;
-    pub const ATTRIB_HASH_DATA: &'static str = r#"83d907821df1c87db829e96569a11f6fc2e7880acba5e43d07ab786959e13bd3"#;
-    pub const ATTRIB_ENC_DATA: &'static str = r#"aa3f41f619aa7e5e6b6d0d"#;
+    pub const ATTRIB_RAW_DATA: &str = r#"{"endpoint":{"ha":"127.0.0.1:5555"}}"#;
+    pub const ATTRIB_HASH_DATA: &str = r#"83d907821df1c87db829e96569a11f6fc2e7880acba5e43d07ab786959e13bd3"#;
+    pub const ATTRIB_ENC_DATA: &str = r#"aa3f41f619aa7e5e6b6d0d"#;
 
-    pub const CRED_DEF_DATA: &'static str = r#"{"n":"1","s":"1","rms":"1","r":{"age":"1","name":"1"},"rctxt":"1","z":"1"}"#;
+    pub const CRED_DEF_DATA: &str = r#"{"n":"1","s":"1","rms":"1","r":{"age":"1","name":"1"},"rctxt":"1","z":"1"}"#;
 
     #[cfg(feature = "nullpay_plugin")]
-    pub const UNKNOWN_PAYMENT_METHOD: &'static str = "UNKNOWN_PAYMENT_METHOD";
+    pub const UNKNOWN_PAYMENT_METHOD: &str = "UNKNOWN_PAYMENT_METHOD";
     #[cfg(feature = "nullpay_plugin")]
-    pub const PAYMENT_ADDRESS: &'static str = "pay:null:BBQr7K6CP1tslXd";
+    pub const PAYMENT_ADDRESS: &str = "pay:null:BBQr7K6CP1tslXd";
     #[cfg(feature = "nullpay_plugin")]
-    pub const INVALID_PAYMENT_ADDRESS: &'static str = "null";
+    pub const INVALID_PAYMENT_ADDRESS: &str = "null";
     #[cfg(feature = "nullpay_plugin")]
-    pub const INPUT: &'static str = "pay:null:111_rBuQo2A1sc9jrJg";
+    pub const INPUT: &str = "pay:null:111_rBuQo2A1sc9jrJg";
     #[cfg(feature = "nullpay_plugin")]
-    pub const OUTPUT: &'static str = "(pay:null:CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW,10)";
+    pub const OUTPUT: &str = "(pay:null:CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW,10)";
     #[cfg(feature = "nullpay_plugin")]
-    pub const OUTPUT_2: &'static str = "(pay:null:GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa,25)";
+    pub const OUTPUT_2: &str = "(pay:null:GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa,25)";
     #[cfg(feature = "nullpay_plugin")]
-    pub const INVALID_INPUT: &'static str = "pay:null";
+    pub const INVALID_INPUT: &str = "pay:null";
     #[cfg(feature = "nullpay_plugin")]
-    pub const INVALID_OUTPUT: &'static str = "pay:null:CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW,100";
+    pub const INVALID_OUTPUT: &str = "pay:null:CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW,100";
     #[cfg(feature = "nullpay_plugin")]
-    pub const FEES: &'static str = "1:1,100:1,101:1";
+    pub const FEES: &str = "1:1,100:1,101:1";
     #[cfg(feature = "nullpay_plugin")]
-    pub const EXTRA: &'static str = "extra";
+    pub const EXTRA: &str = "extra";
     #[cfg(feature = "nullpay_plugin")]
     pub const AMOUNT: i32 = 100;
 
@@ -3493,7 +3563,7 @@ pub mod tests {
     mod custom {
         use super::*;
 
-        pub const TXN_FOR_SIGN: &'static str = r#"{
+        pub const TXN_FOR_SIGN: &str = r#"{
                                                     "reqId":1513241300414292814,
                                                     "identifier":"V4SGRU86Z58d6TV7PBUe6f",
                                                     "operation":{
