@@ -45,8 +45,14 @@ pub mod create_command {
         };
 
         let res = match Payment::create_payment_address(wallet_handle, payment_method, &config) {
-            Ok(payment_address) => Ok(println_succ!("Payment Address has been created \"{}\"", payment_address)),
-            Err(err) => Err(handle_payment_error(err, Some(payment_method))),
+            Ok(payment_address) => {
+                println_succ!("Payment Address has been created \"{}\"", payment_address);
+                Ok(())
+            },
+            Err(err) => {
+                handle_payment_error(err, Some(payment_method));
+                Err(())
+            },
         };
 
         trace!("execute << {:?}", res);
@@ -73,7 +79,7 @@ pub mod list_command {
                 let list_addresses =
                     payment_addresses.iter()
                         .map(|payment_address| {
-                            let parts = payment_address.split(":").collect::<Vec<&str>>();
+                            let parts = payment_address.split(':').collect::<Vec<&str>>();
                             json!({
                                 "address": payment_address,
                                 "method": parts.get(1).unwrap_or(&"Unknown payment method")
@@ -82,12 +88,15 @@ pub mod list_command {
                         .collect::<Vec<serde_json::Value>>();
 
                 print_list_table(&list_addresses,
-                                 &vec![("address", "Payment Address"),
+                                 &[("address", "Payment Address"),
                                        ("method", "Payment Method")],
                                  "There are no payment addresses");
                 Ok(())
             }
-            Err(err) => Err(handle_indy_error(err, None, None, None)),
+            Err(err) => {
+                handle_indy_error(err, None, None, None);
+                Err(())
+            },
         };
 
         trace!("execute << {:?}", res);
