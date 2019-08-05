@@ -6,6 +6,8 @@ use self::openssl::hash::{Hasher, MessageDigest};
 
 pub const HASHBYTES: usize = 32;
 
+pub const EMPTY_HASH_BYTES : [u8; 32] = [227, 176, 196, 66, 152, 252, 28, 20, 154, 251, 244, 200, 153, 111, 185, 36, 39, 174, 65, 228, 100, 155, 147, 76, 164, 149, 153, 27, 120, 82, 184, 85];
+
 pub fn hash(input: &[u8]) -> Result<Vec<u8>, IndyError> {
     let mut hasher = Hash::new_context()?;
     hasher.update(input)?;
@@ -79,4 +81,11 @@ impl From<ErrorStack> for IndyError {
         // TODO: FIXME: Analyze ErrorStack and split invalid structure errors from other errors
         err.to_indy(IndyErrorKind::InvalidState, "Internal OpenSSL error")
     }
+}
+
+#[test]
+fn test_hash_empty() {
+    let empty_hash = Hash::hash_empty().unwrap();
+    // if this fails then probably the hash function changed
+    assert_eq!(EMPTY_HASH_BYTES.to_vec(), empty_hash);
 }

@@ -1,7 +1,7 @@
 use errors::prelude::*;
 use services::ledger::merkletree::proof::{Lemma, Proof};
 use services::ledger::merkletree::tree::{LeavesIntoIterator, LeavesIterator, Tree, TreeLeafData};
-use utils::crypto::hash::{Hash, HASHBYTES};
+use utils::crypto::hash::{Hash, HASHBYTES, EMPTY_HASH_BYTES};
 
 /// A Merkle tree is a binary tree, with values of type `T` at the leafs,
 /// and where every internal node holds the hash of the concatenation of the hashes of its children nodes.
@@ -29,7 +29,7 @@ impl MerkleTree {
 
         if values.is_empty() {
             return Ok(MerkleTree {
-                root: Tree::empty(Hash::hash_empty()?),
+                root: Tree::empty(EMPTY_HASH_BYTES.to_vec()),
                 height: 0,
                 count: 0,
                 nodes_count: 0
@@ -162,3 +162,17 @@ impl <'a> IntoIterator for &'a MerkleTree {
     }
 
 }
+
+#[test]
+fn test_empty_tree() {
+    let empty_tree = MerkleTree {
+        root: Tree::empty(Hash::hash_empty().unwrap()),
+        height: 0,
+        count: 0,
+        nodes_count: 0
+    };
+    let empty_hash = empty_tree.root.hash();
+    // if this fails then probably the hash function changed
+    assert_eq!(EMPTY_HASH_BYTES.to_vec(), *empty_hash);
+}
+
