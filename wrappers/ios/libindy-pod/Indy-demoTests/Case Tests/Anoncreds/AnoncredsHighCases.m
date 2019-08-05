@@ -927,4 +927,28 @@
     XCTAssertEqual(ret.code, AnoncredsProofRejected, @"AnoncredsUtils::verifierVerifyProof returned wrong error");
 }
 
+// MARK: - Issuer rotate credential def
+
+- (void)testIssuerRotateCredentialDef {
+
+    IndyHandle localWalletHandle = 0;
+
+    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithHandle:&localWalletHandle];
+    XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWallet() failed");
+
+    NSString * credDefId = [[AnoncredsUtils sharedInstance] getIssuer1GvtCredDefId];
+    
+    ret = [[AnoncredsUtils sharedInstance] issuerRotateCredentialDefStartForId:credDefId
+                                                                    configJSON:nil
+                                                                  walletHandle:localWalletHandle
+                                                                   credDefJson:nil];
+    XCTAssertEqual(ret.code, WalletItemNotFound, @"AnoncredsUtils::issuerRotateCredentialDefStartForId() returned wrong code!");
+
+    ret = [[AnoncredsUtils sharedInstance] issuerRotateCredentialDefApplyForId:credDefId
+                                                                  walletHandle:localWalletHandle];
+    XCTAssertEqual(ret.code, WalletItemNotFound, @"AnoncredsUtils::issuerRotateCredentialDefApplyForId() returned wrong code!");
+
+    [[WalletUtils sharedInstance] closeWalletWithHandle:localWalletHandle];
+}
+
 @end

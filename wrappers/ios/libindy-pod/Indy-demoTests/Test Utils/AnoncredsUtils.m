@@ -241,6 +241,47 @@
     return err;
 }
 
+- (NSError *)issuerRotateCredentialDefStartForId:(NSString *)credDefId
+                                      configJSON:(NSString *)configJSON
+                                    walletHandle:(IndyHandle)walletHandle
+                                     credDefJson:(NSString **)credentialDefJson {
+    __block NSError *err = nil;
+    __block NSString *outCredentialDefJson = nil;
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+
+    [IndyAnoncreds issuerRotateCredentialDefStartForId:credDefId
+                                            configJSON:configJSON
+                                          walletHandle:walletHandle
+                                            completion:^(NSError *error, NSString *credDefJSON) {
+                                                       err = error;
+                                                       outCredentialDefJson = credDefJSON;
+                                                       [completionExpectation fulfill];
+                                                   }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
+
+    if (credentialDefJson) {*credentialDefJson = outCredentialDefJson;}
+
+    return err;
+}
+
+- (NSError *)issuerRotateCredentialDefApplyForId:(NSString *)credDefId
+                                    walletHandle:(IndyHandle)walletHandle {
+    __block NSError *err = nil;
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+
+    [IndyAnoncreds issuerRotateCredentialDefApplyForId:credDefId
+                                          walletHandle:walletHandle
+                                            completion:^(NSError *error) {
+                                                       err = error;
+                                                       [completionExpectation fulfill];
+                                                   }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
+
+    return err;
+}
+
 - (NSError *)issuerCreateAndStoreRevocRegForCredentialDefId:(NSString *)credDefID
                                                   issuerDID:(NSString *)issuerDID
                                                        type:(NSString *)type
