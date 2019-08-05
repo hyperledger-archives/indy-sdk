@@ -1,3 +1,3 @@
 # Threading model
 
-![Threading model](threading-model.svg)
+![Threading model](threading_model.svg)
