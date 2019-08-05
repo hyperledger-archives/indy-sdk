@@ -63,6 +63,20 @@ indy.issuerCreateAndStoreCredentialDef = function issuerCreateAndStoreCredential
   return cb.promise
 }
 
+indy.issuerRotateCredentialDefStart = function issuerRotateCredentialDefStart (wh, credDefId, config, cb) {
+  cb = wrapIndyCallback(cb, function (data) {
+    return fromJson(data[0])
+  })
+  capi.issuerRotateCredentialDefStart(wh, credDefId, toJson(config), cb)
+  return cb.promise
+}
+
+indy.issuerRotateCredentialDefApply = function issuerRotateCredentialDefApply (wh, credDefId, cb) {
+  cb = wrapIndyCallback(cb)
+  capi.issuerRotateCredentialDefApply(wh, credDefId, cb)
+  return cb.promise
+}
+
 indy.issuerCreateAndStoreRevocReg = function issuerCreateAndStoreRevocReg (wh, issuerDid, revocDefType, tag, credDefId, config, tailsWriterHandle, cb) {
   cb = wrapIndyCallback(cb, function (data) {
     return [data[0], fromJson(data[1]), fromJson(data[2])]

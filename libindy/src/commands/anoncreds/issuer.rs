@@ -407,7 +407,7 @@ impl IssuerCommandExecutor {
         let cred_def_json = self.wallet_service.add_indy_object(wallet_handle, &cred_def_id, &cred_def, &HashMap::new())?;
         self.wallet_service.add_indy_object(wallet_handle, &cred_def_id, &cred_def_priv_key, &HashMap::new())?;
         self.wallet_service.add_indy_object(wallet_handle, &cred_def_id, &cred_def_correctness_proof, &HashMap::new())?;
-        self.wallet_service.add_indy_object(wallet_handle, &schema_id, &schema_, &HashMap::new())?;
+        let _ = self.wallet_service.add_indy_object(wallet_handle, &schema_id, &schema_, &HashMap::new()).ok();
 
         let schema_id = schema.id.clone();
 

@@ -430,6 +430,45 @@ NAN_METHOD(issuerCreateAndStoreCredentialDef) {
   delete arg5;
 }
 
+void issuerRotateCredentialDefStart_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbString(xerr, arg0);
+  }
+}
+NAN_METHOD(issuerRotateCredentialDefStart) {
+  INDY_ASSERT_NARGS(issuerRotateCredentialDefStart, 4)
+  INDY_ASSERT_NUMBER(issuerRotateCredentialDefStart, 0, wh)
+  INDY_ASSERT_STRING(issuerRotateCredentialDefStart, 1, credDefId)
+  INDY_ASSERT_STRING(issuerRotateCredentialDefStart, 2, config)
+  INDY_ASSERT_FUNCTION(issuerRotateCredentialDefStart, 3)
+  indy_handle_t arg0 = argToInt32(info[0]);
+  const char* arg1 = argToCString(info[1]);
+  const char* arg2 = argToCString(info[2]);
+  IndyCallback* icb = argToIndyCb(info[3]);
+  indyCalled(icb, indy_issuer_rotate_credential_def_start(icb->handle, arg0, arg1, arg2, issuerRotateCredentialDefStart_cb));
+  delete arg1;
+  delete arg2;
+}
+
+void issuerRotateCredentialDefApply_cb(indy_handle_t handle, indy_error_t xerr) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbNone(xerr);
+  }
+}
+NAN_METHOD(issuerRotateCredentialDefApply) {
+  INDY_ASSERT_NARGS(issuerRotateCredentialDefStart, 3)
+  INDY_ASSERT_NUMBER(issuerRotateCredentialDefStart, 0, wh)
+  INDY_ASSERT_STRING(issuerRotateCredentialDefStart, 1, credDefId)
+  INDY_ASSERT_FUNCTION(issuerRotateCredentialDefStart, 2)
+  indy_handle_t arg0 = argToInt32(info[0]);
+  const char* arg1 = argToCString(info[1]);
+  IndyCallback* icb = argToIndyCb(info[2]);
+  indyCalled(icb, indy_issuer_rotate_credential_def_apply(icb->handle, arg0, arg1, issuerRotateCredentialDefApply_cb));
+  delete arg1;
+}
+
 void issuerCreateAndStoreRevocReg_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0, const char* arg1, const char* arg2) {
   IndyCallback* icb = IndyCallback::getCallback(handle);
   if(icb != nullptr){
@@ -3509,6 +3548,8 @@ NAN_METHOD(setDefaultLogger) {
 NAN_MODULE_INIT(InitAll) {
   Nan::Export(target, "issuerCreateSchema", issuerCreateSchema);
   Nan::Export(target, "issuerCreateAndStoreCredentialDef", issuerCreateAndStoreCredentialDef);
+  Nan::Export(target, "issuerRotateCredentialDefStart", issuerRotateCredentialDefStart);
+  Nan::Export(target, "issuerRotateCredentialDefApply", issuerRotateCredentialDefApply);
   Nan::Export(target, "issuerCreateAndStoreRevocReg", issuerCreateAndStoreRevocReg);
   Nan::Export(target, "issuerCreateCredentialOffer", issuerCreateCredentialOffer);
   Nan::Export(target, "issuerCreateCredential", issuerCreateCredential);
