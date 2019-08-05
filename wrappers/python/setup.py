@@ -1,7 +1,7 @@
 from distutils.core import setup
 import os
 
-PKG_VERSION = os.environ.get('PACKAGE_VERSION') or '1.10.1'
+PKG_VERSION = os.environ.get('PACKAGE_VERSION') or '1.11.0'
 
 TEST_DEPS = [
     'pytest<3.7', 'pytest-asyncio', 'base58'

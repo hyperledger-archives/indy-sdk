@@ -55,7 +55,7 @@ pub enum PaymentsCommand {
         WalletHandle,
         Option<String>, //submitter did
         String, //payment address
-        Option<u64>, //from
+        Option<i64>, //from
         Box<Fn(IndyResult<(String, String)>) + Send>),
     BuildGetPaymentSourcesRequestAck(
         i32, //handle
@@ -447,7 +447,7 @@ impl PaymentsCommandExecutor {
         trace!("parse_response_with_fees_ack <<<");
     }
 
-    fn build_get_payment_sources_request(&self, wallet_handle: WalletHandle, submitter_did: Option<&str>, payment_address: &str, next: Option<u64>, cb: Box<Fn(IndyResult<(String, String)>) + Send>) {
+    fn build_get_payment_sources_request(&self, wallet_handle: WalletHandle, submitter_did: Option<&str>, payment_address: &str, next: Option<i64>, cb: Box<Fn(IndyResult<(String, String)>) + Send>) {
         trace!("build_get_payment_sources_request >>> wallet_handle: {:?}, submitter_did: {:?}, payment_address: {:?}", wallet_handle, submitter_did, payment_address);
         if let Some(did) = submitter_did {
             match self.crypto_service.validate_did(did).map_err(map_err_err!()) {
