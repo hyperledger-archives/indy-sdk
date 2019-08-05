@@ -1,6 +1,7 @@
 package org.hyperledger.indy.sdk.payments;
 
 import com.sun.jna.Callback;
+import com.sun.jna.Pointer;
 import org.hyperledger.indy.sdk.IndyException;
 import org.hyperledger.indy.sdk.IndyJava;
 import org.hyperledger.indy.sdk.LibIndy;
@@ -123,6 +124,39 @@ public class Payments extends IndyJava.API {
 			future.complete(verifyRequestResult);
 		}
 	};
+
+    /**
+     * Callback used when bytesCb completes.
+     */
+    private static Callback bytesCb = new Callback() {
+
+        @SuppressWarnings({"unused", "unchecked"})
+        public void callback(int xcommand_handle, int err, Pointer arr_raw, int arr_len) {
+
+            CompletableFuture<byte[]> future = (CompletableFuture<byte[]>) removeFuture(xcommand_handle);
+            if (! checkResult(future, err)) return;
+
+            byte[] result = new byte[arr_len];
+            arr_raw.read(0, result, 0, arr_len);
+            future.complete(result);
+        }
+    };
+
+    /**
+     * Callback used when boolCb completes.
+     */
+    private static Callback boolCb = new Callback() {
+
+        @SuppressWarnings({"unused", "unchecked"})
+        public void callback(int xcommand_handle, int err, boolean valid) {
+
+            CompletableFuture<Boolean> future = (CompletableFuture<Boolean>) removeFuture(xcommand_handle);
+            if (! checkResult(future, err)) return;
+
+            Boolean result = valid;
+            future.complete(result);
+        }
+    };
 	
     /*
      * STATIC METHODS
@@ -395,7 +429,7 @@ public class Payments extends IndyJava.API {
      *      amount: int, // amount
      *      extra: "str", // optional data from payment transaction
      *   }],
-     *   next -- pointer to the next slice of payment address
+     *   next -- pointer to the next slice of payment sources
      * @throws IndyException Thrown if a call to the underlying SDK fails.
      */
     public static CompletableFuture<String> parseGetPaymentSourcesWithFromResponse(
@@ -801,6 +835,79 @@ public class Payments extends IndyJava.API {
                 requesterInfoJson,
                 feesJson,
                 stringCompleteCb);
+
+        checkResult(future, result);
+
+        return future;
+    }
+
+
+    /**
+     * Signs a message with a payment address.
+     *
+     * @param wallet    The wallet.
+     * @param address:  Payment address of message signer. The key must be created by calling indy_create_address
+     * @param message   The message to be signed
+     *
+     * @return A future that resolves to a signature string.
+     * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+     */
+    public static CompletableFuture<byte[]> sigWithAddress(
+            Wallet wallet,
+            String address,
+            byte[] message) throws IndyException {
+
+        ParamGuard.notNull(wallet, "wallet");
+        ParamGuard.notNullOrWhiteSpace(address, "address");
+        ParamGuard.notNull(message, "message");
+
+        CompletableFuture<byte[]> future = new CompletableFuture<byte[]>();
+        int commandHandle = addFuture(future);
+
+        int walletHandle = wallet.getWalletHandle();
+
+        int result = LibIndy.api.indy_sign_with_address(
+                commandHandle,
+                walletHandle,
+                address,
+                message,
+                message.length,
+                bytesCb);
+
+        checkResult(future, result);
+
+        return future;
+    }
+
+    /**
+     * Verify a signature with a payment address.
+     *
+     * @param address   Payment address of the message signer
+     * @param message   Message that has been signed
+     * @param signature A signature to be verified
+     * @return A future that resolves to true if signature is valid, otherwise false.
+     * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+     */
+    public static CompletableFuture<Boolean> verifyWithAddress(
+            String address,
+            byte[] message,
+            byte[] signature) throws IndyException {
+
+        ParamGuard.notNullOrWhiteSpace(address, "address");
+        ParamGuard.notNull(message, "message");
+        ParamGuard.notNull(signature, "signature");
+
+        CompletableFuture<Boolean> future = new CompletableFuture<Boolean>();
+        int commandHandle = addFuture(future);
+
+        int result = LibIndy.api.indy_verify_with_address(
+                commandHandle,
+                address,
+                message,
+                message.length,
+                signature,
+                signature.length,
+                boolCb);
 
         checkResult(future, result);
 

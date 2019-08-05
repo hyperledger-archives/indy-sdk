@@ -423,5 +423,46 @@
     return err;
 }
 
+- (NSError *)signWithAddress:(NSString *)address
+                     message:(NSData *)message
+                walletHandle:(IndyHandle)walletHandle
+                outSignature:(NSData **)outSignature {
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+
+    [IndyPayment signWithAddress:address
+                         message:message
+                    walletHandle:walletHandle
+                      completion:^(NSError *error, NSData *signature) {
+                        err = error;
+                        if (outSignature) *outSignature = signature;
+                        [completionExpectation fulfill];
+                      }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils defaultTimeout]];
+
+    return err;
+}
+
+- (NSError *)verifyWithAddress:(NSString *)address
+                       message:(NSData *)message
+                    signature:(NSData *)signature
+                   outIsValid:(BOOL *)outIsValid {
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+
+    [IndyPayment verifyWithAddress:address
+                           message:message
+                         signature:signature completion:^(NSError *error, BOOL isValid) {
+                          err = error;
+                          if (outIsValid) *outIsValid = isValid;
+                          [completionExpectation fulfill];
+    }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils defaultTimeout]];
+
+    return err;
+}
+
 @end
 
