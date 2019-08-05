@@ -120,7 +120,7 @@ pub type BuildGetPaymentSourcesRequestCB = extern fn(command_handle: CommandHand
 /// resp_json: response for Indy request for getting sources list
 ///
 /// #Returns
-/// next - pointer to the next slice of payment address
+/// next - pointer to the next slice of payment sources
 /// sources_json - parsed (payment method and node version agnostic) sources info as json:
 ///   [{
 ///      source: <str>, // source input
