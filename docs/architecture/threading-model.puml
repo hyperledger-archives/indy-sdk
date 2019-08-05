@@ -134,4 +134,11 @@ Command -> Pool: Pool::close
 deactivate Pool
 Command --> App: error code
 deactivate Command
+
+==Synchronous calls==
+App -> Client: indy_set_protocol_version
+activate Client
+Client -> Client: some config setup
+Client -> App: error code
+deactivate Client
 @enduml
