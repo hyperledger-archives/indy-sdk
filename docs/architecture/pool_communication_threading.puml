@@ -26,8 +26,8 @@ activate Command
 Client --> App: error code
 deactivate Client
 Command -> Pool: Pool::new
-activate Pool
 deactivate Command
+activate Pool
 Pool -> Nodes: sync network
 Nodes --> Pool: fresh network info
 Pool -> Command: OpenAck
