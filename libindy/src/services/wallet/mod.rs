@@ -1095,7 +1095,7 @@ mod tests {
             id: String::from("same_id"),
             storage_type: None,
             storage_config: Some(json!({
-                "path": _custom_path()
+                "path": _custom_path("wallet_service_open_wallet_works_for_two_wallets_with_same_ids_but_different_paths")
             })),
         };
 
@@ -1108,6 +1108,8 @@ mod tests {
 
         wallet_service.delete_wallet(&config_1, &RAW_CREDENTIAL).unwrap();
         wallet_service.delete_wallet(&config_2, &RAW_CREDENTIAL).unwrap();
+
+        _cleanup("wallet_service_open_wallet_works_for_two_wallets_with_same_ids_but_different_paths");
     }
 
     #[test]
@@ -2310,7 +2312,7 @@ mod tests {
     }
 
     fn _export_file_path(name: &str) -> PathBuf {
-        let mut path = environment::tmp_file_path("export_tests");
+        let mut path = environment::tmp_path();
         path.push(name);
         path
     }
@@ -2394,9 +2396,9 @@ mod tests {
             .unwrap();
     }
 
-    fn _custom_path() -> String {
+    fn _custom_path(name : &str) -> String {
         let mut path = environment::tmp_path();
-        path.push("custom_wallet_path");
+        path.push(name );
         path.to_str().unwrap().to_owned()
     }
 }
