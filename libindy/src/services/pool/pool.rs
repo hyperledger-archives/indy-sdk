@@ -742,7 +742,7 @@ impl Drop for ZMQPool {
     fn drop(&mut self) {
         info!("Drop started");
 
-        if let Err(err) = self.cmd_socket.send(COMMAND_EXIT.as_bytes(), zmq::DONTWAIT) {
+        if let Err(err) = self.cmd_socket.send("COMMAND_EXIT".as_bytes(), zmq::DONTWAIT) {
             warn!("Can't send exit command to pool worker thread (may be already finished) {}", err);
         }
 

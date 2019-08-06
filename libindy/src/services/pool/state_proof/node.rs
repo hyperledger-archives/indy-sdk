@@ -218,10 +218,7 @@ impl Node {
                 trace!("Node::_get_value in Leaf searched path {:?}, stored path {:?}", String::from_utf8(path.to_vec()), String::from_utf8(pair_path.clone()));
 
                 if pair_path.starts_with(&path) {
-                    let mut new_seen_path = vec![];
-                    new_seen_path.extend_from_slice(seen_path);
-                    new_seen_path.extend_from_slice(pair_path.as_slice());
-                    Ok(Some((self, new_seen_path)))
+                    Ok(Some((self, seen_path.to_vec())))
                 } else {
                     Ok(None)
                 }

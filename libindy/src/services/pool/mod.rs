@@ -30,7 +30,7 @@ use errors::*;
 use services::pool::pool::{Pool, ZMQPool};
 use utils::environment;
 use utils::sequence;
-use api::{PoolHandle, CommandHandle, next_command_handle};
+use services::pool::events::{COMMAND_EXIT, COMMAND_CONNECT, COMMAND_REFRESH};
 
 mod catchup;
 mod commander;
@@ -235,13 +235,13 @@ impl PoolService {
 
         match pools.remove(&handle) {
             Some(ref pool) => self._send_msg(cmd_id, COMMAND_EXIT, &pool.cmd_socket, None, None)?,
-            None => return Err(err_msg(IndyErrorKind::InvalidPoolHandle, format!("No pool with requested handle {:?}", handle)))
+            None => return Err(err_msg(IndyErrorKind::InvalidPoolHandle, format!("No pool with requested handle {}", handle)))
         }
 
         Ok(cmd_id)
     }
 
-    pub fn refresh(&self, handle: PoolHandle) -> IndyResult<CommandHandle> {
+    pub fn refresh(&self, handle: i32) -> IndyResult<i32> {
         self.send_action(handle, COMMAND_REFRESH, None, None)
     }
 

@@ -38,6 +38,7 @@ mod high_cases {
 
     mod create {
         use super::*;
+        use std::fs;
 
         #[test]
         fn create_pool_ledger_config_works() {
@@ -85,6 +86,7 @@ mod high_cases {
 
             pool::create_pool_ledger_config("create_pool_ledger_config_works_for_specific_config", Some(pool_config.as_str())).unwrap();
 
+            fs::remove_file(txn_file_path);
             utils::tear_down("create_pool_ledger_config_works_for_specific_config");
         }
 

@@ -291,7 +291,7 @@ async def parse_get_payment_sources_with_from_response(payment_method: str,
          amount: <int>, // amount
          extra: <str>, // optional data from payment transaction
       }],
-      next: pointer to the next slice of payment address
+      next: pointer to the next slice of payment sources
     """
 
     logger = logging.getLogger(__name__)
@@ -822,4 +822,84 @@ async def get_request_info(get_auth_rule_response_json: str,
 
     res = request_info_json.decode()
     logger.debug("get_request_info: <<< res: %r", res)
+    return res
+
+
+async def sign_with_address(wallet_handle: int,
+                            address: str,
+                            msg: bytes) -> bytes:
+    """
+    Signs a message with a payment address.
+
+    :param wallet_handle: wallet handler (created by open_wallet).
+    :param address:  payment address of message signer. The key must be created by calling create_payment_address
+    :param msg: a message to be signed
+    :return: a signature string
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("sign_with_address: >>> wallet_handle: %r, address: %r, msg: %r",
+                 wallet_handle,
+                 address,
+                 msg)
+
+
+    def transform_cb(arr_ptr: POINTER(c_uint8), arr_len: c_uint32):
+        return bytes(arr_ptr[:arr_len]),
+
+
+    if not hasattr(sign_with_address, "cb"):
+        logger.debug("sign_with_address: Creating callback")
+        sign_with_address.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, POINTER(c_uint8), c_uint32), transform_cb)
+
+    c_wallet_handle = c_int32(wallet_handle)
+    c_address = c_char_p(address.encode('utf-8'))
+    c_msg_len = c_uint32(len(msg))
+
+    signature = await do_call('indy_sign_with_address',
+                              c_wallet_handle,
+                              c_address,
+                              msg,
+                              c_msg_len,
+                              sign_with_address.cb)
+
+    logger.debug("sign_with_address: <<< res: %r", signature)
+    return signature
+
+
+async def verify_with_address(address: str,
+                              msg: bytes,
+                              signature: bytes) -> bool:
+    """
+    Verify a signature with a payment address.
+
+    :param address: payment address of the message signer
+    :param msg: message that has been signed
+    :param signature: a signature to be verified
+    :return: valid: true - if signature is valid, false - otherwise
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("verify_with_address: >>> address: %r, signed_msg: %r, signature: %r",
+                 address,
+                 msg,
+                 signature)
+
+    if not hasattr(verify_with_address, "cb"):
+        logger.debug("verify_with_address: Creating callback")
+        verify_with_address.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_bool))
+
+    c_address = c_char_p(address.encode('utf-8'))
+    c_msg_len = c_uint32(len(msg))
+    c_signature_len = c_uint32(len(signature))
+
+    res = await do_call('indy_verify_with_address',
+                        c_address,
+                        msg,
+                        c_msg_len,
+                        signature,
+                        c_signature_len,
+                        verify_with_address.cb)
+
+    logger.debug("verify_with_address: <<< res: %r", res)
     return res

@@ -67,6 +67,10 @@ pub enum NetworkerEvent {
     Timeout,
 }
 
+pub const COMMAND_EXIT : &str = "exit";
+pub const COMMAND_CONNECT : &str = "connect";
+pub const COMMAND_REFRESH : &str = "refresh";
+
 #[derive(Clone, Debug)]
 pub enum PoolEvent {
     CheckCache(CommandHandle),

@@ -3101,6 +3101,51 @@ NAN_METHOD(getRequestInfo) {
   delete arg2;
 }
 
+void signWithAddress_cb(indy_handle_t handle, indy_error_t xerr, const indy_u8_t* arg0data, indy_u32_t arg0len) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbBuffer(xerr, arg0data, arg0len);
+  }
+}
+
+NAN_METHOD(signWithAddress) {
+  INDY_ASSERT_NARGS(signWithAddress, 4)
+  INDY_ASSERT_NUMBER(signWithAddress, 0, wh)
+  INDY_ASSERT_STRING(signWithAddress, 1, address)
+  INDY_ASSERT_UINT8ARRAY(signWithAddress, 2, message)
+  INDY_ASSERT_FUNCTION(signWithAddress, 3)
+  indy_handle_t arg0 = argToInt32(info[0]);
+  const char* arg1 = argToCString(info[1]);
+  const indy_u8_t* arg2data = (indy_u8_t*)argToBufferData(info[2]);
+  indy_u32_t arg2len = node::Buffer::Length(info[2]);
+  IndyCallback* icb = argToIndyCb(info[3]);
+  indyCalled(icb, indy_sign_with_address(icb->handle, arg0, arg1, arg2data, arg2len, signWithAddress_cb));
+  delete arg1;
+}
+
+void verifyWithAddress_cb(indy_handle_t handle, indy_error_t xerr, indy_bool_t arg0) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbBoolean(xerr, arg0);
+  }
+}
+
+NAN_METHOD(verifyWithAddress) {
+  INDY_ASSERT_NARGS(verifyWithAddress, 4)
+  INDY_ASSERT_STRING(verifyWithAddress, 0, address)
+  INDY_ASSERT_UINT8ARRAY(verifyWithAddress, 1, message)
+  INDY_ASSERT_UINT8ARRAY(verifyWithAddress, 2, signature)
+  INDY_ASSERT_FUNCTION(verifyWithAddress, 3)
+  const char* arg0 = argToCString(info[0]);
+  const indy_u8_t* arg1data = (indy_u8_t*)argToBufferData(info[1]);
+  indy_u32_t arg1len = node::Buffer::Length(info[1]);
+  const indy_u8_t* arg2data = (indy_u8_t*)argToBufferData(info[2]);
+  indy_u32_t arg2len = node::Buffer::Length(info[2]);
+  IndyCallback* icb = argToIndyCb(info[3]);
+  indyCalled(icb, indy_verify_with_address(icb->handle, arg0, arg1data, arg1len, arg2data, arg2len, verifyWithAddress_cb));
+  delete arg0;
+}
+
 void createPoolLedgerConfig_cb(indy_handle_t handle, indy_error_t xerr) {
   IndyCallback* icb = IndyCallback::getCallback(handle);
   if(icb != nullptr){
@@ -3590,6 +3635,8 @@ NAN_MODULE_INIT(InitAll) {
   Nan::Export(target, "parseVerifyPaymentResponse", parseVerifyPaymentResponse);
   Nan::Export(target, "createPoolLedgerConfig", createPoolLedgerConfig);
   Nan::Export(target, "getRequestInfo", getRequestInfo);
+  Nan::Export(target, "signWithAddress", signWithAddress);
+  Nan::Export(target, "verifyWithAddress", verifyWithAddress);
   Nan::Export(target, "openPoolLedger", openPoolLedger);
   Nan::Export(target, "refreshPoolLedger", refreshPoolLedger);
   Nan::Export(target, "listPools", listPools);
