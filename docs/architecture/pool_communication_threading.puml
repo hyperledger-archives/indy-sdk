@@ -32,6 +32,7 @@ Pool -> Nodes: sync network
 Nodes --> Pool: fresh network info
 Pool -> Command: OpenAck
 activate Command
+Command -> Command: execute callback
 Command --> App: pool_handle
 deactivate Command
 
@@ -64,6 +65,7 @@ Pool -> Nodes: send(json)
 Nodes -> Pool: responses
 Pool --> Command: aggregated response
 activate Command
+Command -> Command: execute callback
 Command --> App: result
 deactivate Command
 
@@ -81,6 +83,7 @@ Client -> App: error code
 deactivate Client
 Command -> Pool: Pool::close
 deactivate Pool
+Command -> Command: execute callback
 Command --> App: error code
 deactivate Command
 @enduml
