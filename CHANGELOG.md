@@ -1,5 +1,52 @@
 # Changelog
 
+## 1.11.0 - 2019-08-2
+* Updated `indy_append_txn_author_agreement_acceptance_to_request` Libindy function to discard the time portion of `acceptance time` on appending TAA metadata into request. 
+It was done cause too much time precision can lead to privacy risk.
+
+    *NOTE* that if the following points are met:
+    - Indy Pool consists of nodes with version less 1.9.2
+    - Transaction Author Agreement is set on the Pool
+    
+    Requests to the Pool will fail during the day TAA was set.
+
+* Added new Libindy Payment API functions (`indy_build_get_payment_sources_with_from_request` and `indy_parse_get_payment_sources_with_from_response`) to get payment sources with pagination support.
+Old `indy_build_get_payment_sources_request` and `indy_parse_get_payment_sources_response` were marked as *Deprecated*.
+
+    *NOTE* that `indy_register_payment_method` API function was updated to accept callbacks correspondent to the new functions instead of deprecated.
+
+* Added new Libindy Payment API functions (`indy_sign_with_address` and `indy_verify_with_address`) to sign/verify a message with a payment address.
+
+    *NOTE* that `indy_register_payment_method` API function was updated to accept additional callbacks correspondent to the new functions.
+
+    Added correspondent `payment-address sign/verify` commands to Indy CLI.
+    
+* Added new *EXPEREMENTAL* functions to get requirements and price for a ledger request.
+    * Libindy `indy_get_request_info` - returns request requirements (with minimal price) correspondent to specific auth rule in case the requester can perform this action.
+    * Libvcx `vcx_get_request_price` - returns request minimal request price for performing an action in case the requester can do it.
+* Added a set of new Libvcx APIs around credentials and proofs that work with messages that should be exchanged without handling the transport of those messages.
+This removes the dependency on an agency/cloud-agent and allows the user of the SDK to transport those messages themselves. 
+There are three types of functions:
+    * `vcx_*_get_request_msg` - gets a message that can be sent to the specified connection.
+    * `vcx_*_update_state_with_message` - checks for any state change from the given message and updates the the state attribute.
+    * `vcx_init_minimal` - initialize vcx with the minimal configuration.
+* Added new Libindy API function `indy_append_request_endorser` to append Endorser to an existing request. 
+It allows writing transactions to the ledger with preserving an original author but by different Endorser.
+An example flow can be found [here](https://github.com/hyperledger/indy-sdk/blob/master/docs/configuration.md)
+* Updated Indy CLI behavior to complete values for the following parameters: wallet names, pool names, dids, payment addresses.
+* Updated Indy CLI  behavior to work with payment addresses for `ledger payment` command and commands providing the ability to set fees for a request.
+* Added new Libindy API function `indy_generate_nonce` to generate a nonce of the size recommended for usage within a proof request. 
+* Updated behavior of `indy_prover_create_proof` to create revocation proof based on `non_revoked` timestamps within a proof request. Now only `primary` proof can be built if `non_revoked` intervals were not requested by a verifier.
+* Updated `constraint` parameter of `indy_build_auth_rule_request` Libindy Ledger API function to accept new optional `off_ledger_signature` field that specifies if a signature of unknown ledger `DID` is allowed for an action performing (false by default). 
+* Updated Indy-SDK CI/CD pipelines to test, to build and to publish Android artifacts for Libvcx.
+* Improved state proof verification to support pagination. 
+* Bugfixes:
+    * CLI to build transactions without adding a signature.
+    * CLI to handle exit signals proper way.
+    * CLI to persist both successes and failed commands.
+    * Android Crash upon logging
+    * others minor bugfixes
+
 ## 1.10.1 - 2019-07-15
 * Updated Indy CLI to persist command history between sessions.
 * Bugfixes:
