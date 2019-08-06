@@ -31,6 +31,7 @@ use services::pool::pool::{Pool, ZMQPool};
 use utils::environment;
 use utils::sequence;
 use services::pool::events::{COMMAND_EXIT, COMMAND_CONNECT, COMMAND_REFRESH};
+use api::{CommandHandle, next_command_handle, PoolHandle};
 
 mod catchup;
 mod commander;
@@ -41,10 +42,6 @@ mod pool;
 mod request_handler;
 mod state_proof;
 mod types;
-
-const COMMAND_CONNECT: &str = "connect";
-const COMMAND_EXIT: &str = "exit";
-const COMMAND_REFRESH: &str = "refresh";
 
 lazy_static! {
     static ref REGISTERED_SP_PARSERS: Mutex<HashMap<String, (CustomTransactionParser, CustomFree)>> = Mutex::new(HashMap::new());
@@ -241,7 +238,7 @@ impl PoolService {
         Ok(cmd_id)
     }
 
-    pub fn refresh(&self, handle: i32) -> IndyResult<i32> {
+    pub fn refresh(&self, handle: PoolHandle) -> IndyResult<i32> {
         self.send_action(handle, COMMAND_REFRESH, None, None)
     }
 

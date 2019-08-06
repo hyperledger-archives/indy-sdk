@@ -18,7 +18,7 @@ use errors::prelude::*;
 use services::ledger::merkletree::merkletree::MerkleTree;
 use services::pool::commander::Commander;
 use services::pool::events::*;
-use services::pool::{merkle_tree_factory, COMMAND_EXIT};
+use services::pool::merkle_tree_factory;
 use services::pool::networker::{Networker, ZMQNetworker};
 use services::pool::request_handler::{RequestHandler, RequestHandlerImpl};
 use rust_base58::{FromBase58, ToBase58};

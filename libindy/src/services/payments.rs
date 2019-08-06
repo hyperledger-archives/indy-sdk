@@ -8,7 +8,7 @@ use std::ops::Not;
 use serde_json;
 
 use ursa::encoding::hex;
-use api::{ErrorCode, WalletHandle};
+use api::{ErrorCode, WalletHandle, CommandHandle};
 use api::payments::*;
 use errors::prelude::*;
 use utils::ctypes;
@@ -145,7 +145,7 @@ impl PaymentsService {
         res
     }
 
-    pub fn build_get_payment_sources_request(&self, cmd_handle: i32, type_: &str, wallet_handle: WalletHandle, submitter_did: Option<&str>, address: &str, next: Option<i64>) -> IndyResult<()> {
+    pub fn build_get_payment_sources_request(&self, cmd_handle: CommandHandle, type_: &str, wallet_handle: WalletHandle, submitter_did: Option<&str>, address: &str, next: Option<i64>) -> IndyResult<()> {
         trace!("build_get_payment_sources_request >>> type_: {:?}, wallet_handle: {:?}, submitter_did: {:?}, address: {:?}", type_, wallet_handle, submitter_did, address);
         let build_get_payment_sources_request: BuildGetPaymentSourcesRequestCB = self.methods.borrow().get(type_)
             .ok_or(err_msg(IndyErrorKind::UnknownPaymentMethodType, format!("Unknown payment method {}", type_)))?.build_get_payment_sources_request;
@@ -574,7 +574,7 @@ impl PaymentsService {
         Ok(req_info)
     }
 
-    pub fn sign_with_address(&self, cmd_handle: i32, method: &str, wallet_handle: WalletHandle, address: &str, message: &[u8]) -> IndyResult<()> {
+    pub fn sign_with_address(&self, cmd_handle: CommandHandle, method: &str, wallet_handle: WalletHandle, address: &str, message: &[u8]) -> IndyResult<()> {
         trace!("sign_with_address >>> wallet_handle: {:?}, address: {:?}, message: {:?}", wallet_handle, address, hex::bin2hex(message));
         let sign_with_address: SignWithAddressCB = self.methods.borrow().get(method)
                     .ok_or(err_msg(IndyErrorKind::UnknownPaymentMethodType, format!("Unknown payment method {}", method)))?.sign_with_address;
@@ -588,7 +588,7 @@ impl PaymentsService {
         res
     }
 
-    pub fn verify_with_address(&self, cmd_handle: i32, method: &str, address: &str, message: &[u8], signature: &[u8]) -> IndyResult<()> {
+    pub fn verify_with_address(&self, cmd_handle: CommandHandle, method: &str, address: &str, message: &[u8], signature: &[u8]) -> IndyResult<()> {
         trace!("verify_with_address >>> address: {:?}, message: {:?}, signature: {:?}", address, hex::bin2hex(message), hex::bin2hex(signature));
         let verify_with_address: VerifyWithAddressCB = self.methods.borrow().get(method)
                     .ok_or(err_msg(IndyErrorKind::UnknownPaymentMethodType, format!("Unknown payment method {}", method)))?.verify_with_address;
@@ -706,15 +706,15 @@ mod cbs {
         send_ack_str(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::ParseVerifyPaymentResponseAck(cmd_handle, result)))
     }
 
-    pub fn sign_with_address_cb(cmd_handle: i32) -> Option<extern fn(command_handle: i32, err: ErrorCode, raw: *const u8, raw_len: u32) -> ErrorCode> {
+    pub fn sign_with_address_cb(cmd_handle: CommandHandle) -> Option<extern fn(command_handle: CommandHandle, err: ErrorCode, raw: *const u8, raw_len: u32) -> ErrorCode> {
         send_array_ack(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::SignWithAddressAck(cmd_handle, result)))
     }
 
-    pub fn verify_with_address_cb(cmd_handle: i32) -> Option<extern fn(command_handle: i32, err: ErrorCode, res: u8) -> ErrorCode> {
+    pub fn verify_with_address_cb(cmd_handle: CommandHandle) -> Option<extern fn(command_handle: CommandHandle, err: ErrorCode, res: u8) -> ErrorCode> {
         send_bool_ack(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::VerifyWithAddressAck(cmd_handle, result)))
     }
 
-    fn send_ack_str(cmd_handle: i32, builder: Box<Fn(i32, IndyResult<String>) -> PaymentsCommand + Send>) -> Option<extern fn(command_handle: i32,
+    fn send_ack_str(cmd_handle: CommandHandle, builder: Box<Fn(CommandHandle, IndyResult<String>) -> PaymentsCommand + Send>) -> Option<extern fn(command_handle: CommandHandle,
                                                                                                                               err: ErrorCode,
                                                                                                                               c_str: *const c_char) -> ErrorCode> {
         cbs::_closure_to_cb_str(cmd_handle, Box::new(move |err, mint_req_json| -> ErrorCode {
@@ -728,7 +728,7 @@ mod cbs {
         }))
     }
 
-    fn send_ack_str_i64(cmd_handle: i32, builder: Box<Fn(i32, IndyResult<(String, i64)>) -> PaymentsCommand + Send>) -> Option<extern fn(command_handle: i32,
+    fn send_ack_str_i64(cmd_handle: CommandHandle, builder: Box<Fn(CommandHandle, IndyResult<(String, i64)>) -> PaymentsCommand + Send>) -> Option<extern fn(command_handle: CommandHandle,
                                                                                                                                          err: ErrorCode,
                                                                                                                                          c_str: *const c_char,
                                                                                                                                          num: i64) -> ErrorCode> {
@@ -743,7 +743,7 @@ mod cbs {
         }))
     }
 
-    fn send_array_ack(cmd_handle: i32, builder: Box<Fn(i32, IndyResult<Vec<u8>>) -> PaymentsCommand + Send>) -> Option<extern fn(command_handle: i32,
+    fn send_array_ack(cmd_handle: CommandHandle, builder: Box<Fn(CommandHandle, IndyResult<Vec<u8>>) -> PaymentsCommand + Send>) -> Option<extern fn(command_handle: CommandHandle,
                                                                                                                                  err: ErrorCode,
                                                                                                                                  raw: *const u8,
                                                                                                                                  raw_len: u32) -> ErrorCode> {
@@ -757,7 +757,7 @@ mod cbs {
             }))
     }
 
-    fn send_bool_ack(cmd_handle: i32, builder: Box<Fn(i32, IndyResult<bool>) -> PaymentsCommand + Send>) -> Option<extern fn(command_handle: i32,
+    fn send_bool_ack(cmd_handle: CommandHandle, builder: Box<Fn(CommandHandle, IndyResult<bool>) -> PaymentsCommand + Send>) -> Option<extern fn(command_handle: CommandHandle,
                                                                                                                            err: ErrorCode,
                                                                                                                            result: u8)-> ErrorCode> {
         cbs::_closure_to_cb_bool(cmd_handle, Box::new(move |err, v| -> ErrorCode {
@@ -770,8 +770,8 @@ mod cbs {
         }))
     }
 
-    pub fn _closure_to_cb_str(command_handle: i32, closure: Box<FnMut(ErrorCode, String) -> ErrorCode + Send>)
-                              -> Option<extern fn(command_handle: i32,
+    pub fn _closure_to_cb_str(command_handle: CommandHandle, closure: Box<FnMut(ErrorCode, String) -> ErrorCode + Send>)
+                              -> Option<extern fn(command_handle: CommandHandle,
                                                   err: ErrorCode,
                                                   c_str: *const c_char) -> ErrorCode> {
         lazy_static! {
@@ -791,13 +791,13 @@ mod cbs {
         Some(_callback)
     }
 
-    pub fn _closure_to_cb_byte_array(command_handle: i32, closure: Box<FnMut(ErrorCode, Vec<u8>) -> ErrorCode + Send>)
-                                     -> Option<extern fn(command_handle: i32, err: ErrorCode, raw: *const u8, len: u32) -> ErrorCode>{
+    pub fn _closure_to_cb_byte_array(command_handle: CommandHandle, closure: Box<FnMut(ErrorCode, Vec<u8>) -> ErrorCode + Send>)
+                                     -> Option<extern fn(command_handle: CommandHandle, err: ErrorCode, raw: *const u8, len: u32) -> ErrorCode>{
         lazy_static! {
             static ref CALLBACKS: Mutex < HashMap <i32, Box < FnMut(ErrorCode, Vec<u8>) -> ErrorCode + Send > >> = Default::default();
         }
 
-        extern "C" fn _callback(command_handle: i32, err: ErrorCode, message_raw: *const u8, message_len: u32) -> ErrorCode {
+        extern "C" fn _callback(command_handle: CommandHandle, err: ErrorCode, message_raw: *const u8, message_len: u32) -> ErrorCode {
             let mut callbacks = CALLBACKS.lock().unwrap();
             let mut cb = callbacks.remove(&command_handle).unwrap();
             let slice = unsafe { ::std::slice::from_raw_parts(message_raw, message_len as usize) };
@@ -810,13 +810,13 @@ mod cbs {
         Some(_callback)
     }
 
-    pub fn _closure_to_cb_bool(command_handle: i32, closure: Box<FnMut(ErrorCode, bool) -> ErrorCode + Send>)
-                               -> Option<extern fn(command_handle: i32, err: ErrorCode, res: u8) -> ErrorCode> {
+    pub fn _closure_to_cb_bool(command_handle: CommandHandle, closure: Box<FnMut(ErrorCode, bool) -> ErrorCode + Send>)
+                               -> Option<extern fn(command_handle: CommandHandle, err: ErrorCode, res: u8) -> ErrorCode> {
         lazy_static! {
             static ref CALLBACKS: Mutex < HashMap <i32, Box < FnMut(ErrorCode, bool) -> ErrorCode + Send > >> = Default::default();
         }
 
-        extern "C" fn _callback(command_handle: i32, err: ErrorCode, result: u8) -> ErrorCode {
+        extern "C" fn _callback(command_handle: CommandHandle, err: ErrorCode, result: u8) -> ErrorCode {
             let mut callbacks = CALLBACKS.lock().unwrap();
             let mut cb = callbacks.remove(&command_handle).unwrap();
 
@@ -829,8 +829,8 @@ mod cbs {
         Some(_callback)
     }
 
-    pub fn _closure_to_cb_str_i64(command_handle: i32, closure: Box<FnMut(ErrorCode, String, i64) -> ErrorCode + Send>)
-                                  -> Option<extern fn(command_handle: i32,
+    pub fn _closure_to_cb_str_i64(command_handle: CommandHandle, closure: Box<FnMut(ErrorCode, String, i64) -> ErrorCode + Send>)
+                                  -> Option<extern fn(command_handle: CommandHandle,
                                                       err: ErrorCode,
                                                       c_str: *const c_char,
                                                       val: i64) -> ErrorCode> {
@@ -838,7 +838,7 @@ mod cbs {
             static ref CALLBACKS_STR_I64: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String, i64) -> ErrorCode + Send > >> = Default::default();
         }
 
-        extern "C" fn _callback(command_handle: i32, err: ErrorCode, c_str: *const c_char, val: i64) -> ErrorCode {
+        extern "C" fn _callback(command_handle: CommandHandle, err: ErrorCode, c_str: *const c_char, val: i64) -> ErrorCode {
             let mut callbacks = CALLBACKS_STR_I64.lock().unwrap();
             let mut cb = callbacks.remove(&command_handle).unwrap();
             let metadata = unsafe { CStr::from_ptr(c_str).to_str().unwrap().to_string() };
