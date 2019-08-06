@@ -100,6 +100,10 @@ pub fn create_address(seed: Option<String>) -> VcxResult<String> {
         .map_err(map_rust_indy_sdk_error)
 }
 
+pub fn sign_with_address() -> VcxResult<String> {
+    payments::sign_with_payment_address
+}
+
 pub fn get_address_info(address: &str) -> VcxResult<AddressInfo> {
     if settings::test_indy_mode_enabled() {
         let utxos = json!(
