@@ -1107,7 +1107,6 @@ pub mod payment_command {
                 recipient - payment address of recipient
                 amount- payment amount"#)
                 .add_optional_param("extra","Optional information for payment operation")
-                .add_optional_param("sign","Sign the request (True by default)")
                 .add_optional_param("send","Send the request to the Ledger (True by default). If false then created request will be printed and stored into CLI context.")
                 .add_example("ledger payment source_payment_address=pay:null:GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa target_payment_address=pay:null:FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4 amount=100")
                 .add_example("ledger payment source_payment_address=pay:null:GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa target_payment_address=pay:null:FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4 amount=100 fee=2")

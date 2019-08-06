@@ -1,7 +1,7 @@
 extern crate regex;
 extern crate chrono;
 
-use command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata};
+use command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata, DynamicCompletionType};
 use commands::*;
 
 use indy::{ErrorCode, IndyError};
@@ -108,7 +108,7 @@ pub mod sign_command {
     use super::*;
 
     command!(CommandMetadata::build("sign", "Create a proof of payment address control by signing an input and producing a signature.")
-                .add_required_param("address", "Payment address to use")
+                .add_required_param_with_dynamic_completion("address","Payment address to use", DynamicCompletionType::PaymentAddress)
                 .add_required_param("input", "The input data to be signed")
                 .add_example("payment-address sign address=pay:null:lUdSMj9AmoUbmRQ input=123456789")
                 .finalize());
@@ -142,7 +142,7 @@ pub mod verify_command {
     use super::*;
 
     command!(CommandMetadata::build("verify", "Verify a proof of payment address control by verifying a signature.")
-             .add_required_param("address", "Payment address to use")
+             .add_required_param_with_dynamic_completion("address","Payment address to use", DynamicCompletionType::PaymentAddress)
              .add_required_param("input", "The input data that was signed")
              .add_required_param("signature", "The signature generated from sign-with-address")
              .add_example("payment-address verify address=pay:null:lUdSMj9AmoUbmRQ input=123456789 signature=0x0006e83221cdaf70b3c01a613675274dd2064ea376bf35656cff8436e62cdf89")
