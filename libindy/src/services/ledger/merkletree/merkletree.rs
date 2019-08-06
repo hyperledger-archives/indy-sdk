@@ -21,6 +21,17 @@ pub struct MerkleTree {
     pub nodes_count: usize
 }
 
+impl Default for MerkleTree {
+    fn default() -> Self {
+        MerkleTree {
+            root: Tree::Empty { hash: EMPTY_HASH_BYTES.to_vec() },
+            height: 0,
+            count: 0,
+            nodes_count: 0,
+        }
+    }
+}
+
 impl MerkleTree {
 
     /// Constructs a Merkle Tree from a vector of data blocks.
@@ -28,12 +39,7 @@ impl MerkleTree {
     pub fn from_vec(values: Vec<TreeLeafData>) -> IndyResult<Self> {
 
         if values.is_empty() {
-            return Ok(MerkleTree {
-                root: Tree::empty(EMPTY_HASH_BYTES.to_vec()),
-                height: 0,
-                count: 0,
-                nodes_count: 0
-            });
+            return Ok(MerkleTree::default());
         }
 
         let count = values.len();
@@ -162,17 +168,3 @@ impl <'a> IntoIterator for &'a MerkleTree {
     }
 
 }
-
-#[test]
-fn test_empty_tree() {
-    let empty_tree = MerkleTree {
-        root: Tree::empty(Hash::hash_empty().unwrap()),
-        height: 0,
-        count: 0,
-        nodes_count: 0
-    };
-    let empty_hash = empty_tree.root.hash();
-    // if this fails then probably the hash function changed
-    assert_eq!(EMPTY_HASH_BYTES.to_vec(), *empty_hash);
-}
-

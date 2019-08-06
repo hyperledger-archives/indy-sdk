@@ -22,10 +22,6 @@ impl Hash {
         Ok(Hasher::new(MessageDigest::sha256())?)
     }
 
-    pub fn hash_empty() -> Result<Vec<u8>, IndyError> {
-        Ok(hash( &[])?)
-    }
-
     pub fn hash_leaf<T>(leaf: &T) -> Result<Vec<u8>, IndyError> where T: Hashable {
         let mut ctx = Hash::new_context()?;
         ctx.update(&[0x00])?;
@@ -82,11 +78,4 @@ impl From<ErrorStack> for IndyError {
         // TODO: FIXME: Analyze ErrorStack and split invalid structure errors from other errors
         err.to_indy(IndyErrorKind::InvalidState, "Internal OpenSSL error")
     }
-}
-
-#[test]
-fn test_hash_empty() {
-    let empty_hash = Hash::hash_empty().unwrap();
-    // if this fails then probably the hash function changed
-    assert_eq!(EMPTY_HASH_BYTES.to_vec(), empty_hash);
 }
