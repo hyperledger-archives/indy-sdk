@@ -107,6 +107,17 @@ pub extern fn vcx_wallet_create_payment_address(command_handle: u32,
 }
 
 
+#[no_mangle]
+pub extern fn vcx_sign_with_payment_address(command_handle: u32,
+                                            payment_address: *const c_char,
+                                            message_raw: *const u8,
+                                            message_len: u32,
+                                            cb: Option<extern fn(xcommand_handle: u32, err: u32,
+                                                                 signed_message: *const c_char)>) -> u32 {
+
+}
+
+
 /// Adds a record to the wallet
 /// Assumes there is an open wallet.
 /// #Params
@@ -251,10 +262,10 @@ pub extern fn vcx_wallet_update_record_value(command_handle: u32,
 
 #[no_mangle]
 pub extern fn vcx_wallet_update_record_tags(command_handle: u32,
-                                             type_: *const c_char,
-                                             id: *const c_char,
-                                             tags: *const c_char,
-                                             cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
+                                            type_: *const c_char,
+                                            id: *const c_char,
+                                            tags: *const c_char,
+                                            cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
     info!("vcx_wallet_update_record_tags >>>");
 
     check_useful_c_str!(type_, VcxErrorKind::InvalidOption);
@@ -294,10 +305,10 @@ pub extern fn vcx_wallet_update_record_tags(command_handle: u32,
 
 #[no_mangle]
 pub extern fn vcx_wallet_add_record_tags(command_handle: u32,
-                                            type_: *const c_char,
-                                            id: *const c_char,
-                                            tags: *const c_char,
-                                            cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
+                                         type_: *const c_char,
+                                         id: *const c_char,
+                                         tags: *const c_char,
+                                         cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
     info!("vcx_wallet_add_record_tags >>>");
 
     check_useful_c_str!(type_, VcxErrorKind::InvalidOption);
@@ -336,10 +347,10 @@ pub extern fn vcx_wallet_add_record_tags(command_handle: u32,
 
 #[no_mangle]
 pub extern fn vcx_wallet_delete_record_tags(command_handle: u32,
-                                         type_: *const c_char,
-                                         id: *const c_char,
-                                         tags: *const c_char,
-                                         cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
+                                            type_: *const c_char,
+                                            id: *const c_char,
+                                            tags: *const c_char,
+                                            cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
     info!("vcx_wallet_delete_record_tags >>>");
 
     check_useful_c_str!(type_, VcxErrorKind::InvalidOption);
